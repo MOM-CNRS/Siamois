@@ -111,12 +111,12 @@
                     <p:commandButton id="saveButton" value='#{langBean.msg("common.action.save")}'
                                      update="panel-#{panelIndex}"
 
-                                     action="#{panelModel.save(false)}"
+                                     action="#{panelModel.saveAction(false)}"
                                      style="margin-right: 1rem">
                     </p:commandButton>
                     <p:commandButton id="saveAndValidateButton" value='#{langBean.msg("common.action.saveAndValidate")}'
                                      update="panel-#{panelIndex}"
-                                     action="#{panelModel.save(true)}"
+                                     action="#{panelModel.saveAction(true)}"
 
                                      style="margin-right: .5rem">
                     </p:commandButton>
