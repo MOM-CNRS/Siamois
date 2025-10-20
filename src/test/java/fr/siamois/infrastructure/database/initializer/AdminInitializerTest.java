@@ -3,10 +3,12 @@ package fr.siamois.infrastructure.database.initializer;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.exceptions.database.DatabaseDataInitException;
 import fr.siamois.domain.models.institution.Institution;
+import fr.siamois.infrastructure.database.initializer.seeder.InstitutionSeeder;
 import fr.siamois.infrastructure.database.repositories.institution.InstitutionRepository;
 import fr.siamois.infrastructure.database.repositories.person.PersonRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.springframework.context.ApplicationContext;
@@ -36,6 +38,9 @@ class AdminInitializerTest {
     @Mock
     private ApplicationContext applicationContext;
 
+    @Mock
+    private InstitutionSeeder institutionSeeder;
+
 
     private AdminInitializer adminInitializer;
 
@@ -45,7 +50,8 @@ class AdminInitializerTest {
         adminInitializer = new AdminInitializer(passwordEncoder,
                 personRepository,
                 institutionRepository,
-                applicationContext);
+                applicationContext,
+                institutionSeeder);
         adminInitializer.setAdminUsername("admin");
         adminInitializer.setAdminPassword("admin");
         adminInitializer.setAdminEmail("admin@example.com");
@@ -83,51 +89,40 @@ class AdminInitializerTest {
         assertThrows(DatabaseDataInitException.class, () -> adminInitializer.initializeAdmin());
     }
 
-    @Test
-    void initializeAdminOrganization_shouldCreateInstitutionWhenNoInstitutionExists() {
-        when(institutionRepository.findInstitutionByIdentifier("SIAMOIS")).thenReturn(Optional.empty());
-        when(institutionRepository.save(any(Institution.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        adminInitializer.setCreatedAdmin(new Person());
-        adminInitializer.initializeAdminOrganization();
-
-        verify(institutionRepository, times(1)).save(any(Institution.class));
-    }
 
     @Test
-    void initializeAdminOrganization_shouldNotCreateInstitutionWhenInstitutionExists() {
-        Person oldAdmin = new Person();
-        oldAdmin.setId(12L);
-
-        Institution existingInstitution = new Institution();
-        existingInstitution.getManagers().add(oldAdmin);
-        when(institutionRepository.findInstitutionByIdentifier("siamois")).thenReturn(Optional.of(existingInstitution));
-
-        adminInitializer.setCreatedAdmin(oldAdmin);
-        adminInitializer.initializeAdminOrganization();
-
-        verify(institutionRepository, never()).save(any(Institution.class));
-    }
-
-    @Test
-    void initializeAdminOrganization_shouldAddSuperAdminAsManager_whenCreatedAdminIsNotManagerAndInitializationExist() {
+    void initializeAdminOrganization_shouldAddSuperAdminAsManager_whenCreatedAdminIsNotManagerAndInitializationExist() throws DatabaseDataInitException {
         Person otherAdmin = new Person();
         otherAdmin.setId(12L);
 
         Person createdAdmin = new Person();
         createdAdmin.setId(13L);
+        createdAdmin.setEmail("admin@example.com");
 
         Institution existingInstitution = new Institution();
         existingInstitution.setId(14L);
         existingInstitution.setManagers(new HashSet<>());
         existingInstitution.getManagers().add(otherAdmin);
 
-        when(institutionRepository.findInstitutionByIdentifier("siamois")).thenReturn(Optional.of(existingInstitution));
-
         adminInitializer.setCreatedAdmin(createdAdmin);
         adminInitializer.initializeAdminOrganization();
 
-        assertThat(existingInstitution.getManagers()).contains(createdAdmin);
-        verify(institutionRepository, times(1)).save(any(Institution.class));
+        // Then: capture argument passed to seed()
+        ArgumentCaptor<List<InstitutionSeeder.InstitutionSpec>> captor =
+                ArgumentCaptor.forClass(List.class);
+
+        verify(institutionSeeder).seed(captor.capture());
+
+        List<InstitutionSeeder.InstitutionSpec> capturedList = captor.getValue();
+        InstitutionSeeder.InstitutionSpec inst = capturedList.get(0);
+
+        // Verify that the InstitutionSpec has the expected properties
+        assertEquals("Organisation par défaut", inst.name());
+        assertEquals("DEFAULT", inst.description());
+        assertEquals("siamois", inst.identifier());
+        assertEquals(List.of("admin@example.com"), inst.managerEmails());
+        assertEquals("https://thesaurus.mom.fr", inst.baseUri());
+        assertEquals("th230", inst.externalId());
     }
 }

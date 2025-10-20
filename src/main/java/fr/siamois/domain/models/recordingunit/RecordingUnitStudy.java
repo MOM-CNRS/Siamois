@@ -30,7 +30,5 @@ public class RecordingUnitStudy extends RecordingUnityStudyParent implements Ark
     )
     private Set<Document> documents = new HashSet<>();
 
-    @FieldCode
-    public static final String TYPE_FIELD = "SIASRU.TYPE";
 
 }

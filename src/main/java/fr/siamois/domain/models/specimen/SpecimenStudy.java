@@ -31,7 +31,5 @@ public class SpecimenStudy extends SpecimenStudyParent implements ArkEntity {
     )
     private Set<Document> documents = new HashSet<>();
 
-    @FieldCode
-    public static final String STUDY_TYPE_FIELD_CODE = "SIASS.METHOD";
 
 }
