@@ -12,7 +12,6 @@ import java.util.Objects;
 @Data
 @Entity
 @Table(name = "institution_settings")
-@Audited
 public class InstitutionSettings implements Serializable {
 
     @Id
