@@ -149,10 +149,6 @@ public class SpatialUnitFieldBean implements Serializable {
 
     public String resolveCustomFieldLabel(CustomField f) {
         if(Boolean.TRUE.equals(f.getIsSystemField())) {
-            if(f.getConcept() != null) {
-                // If concept is set, get label from it
-                return labelBean.findLabelOf(f.getConcept());
-            }
             return langBean.msg(f.getLabel());
         }
         return f.getLabel();

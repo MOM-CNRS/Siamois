@@ -15,6 +15,7 @@ import jakarta.persistence.Converter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -130,6 +131,7 @@ public class CustomFormLayoutConverter implements AttributeConverter<List<Custom
         row.setColumns(columns);
         return row;
     }
+
 
     private CustomCol deserializeCol(Map<String, Object> colMap) {
         CustomCol col = new CustomCol();

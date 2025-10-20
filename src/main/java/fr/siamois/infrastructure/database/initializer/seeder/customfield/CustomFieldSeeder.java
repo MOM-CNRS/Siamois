@@ -62,6 +62,7 @@ public class CustomFieldSeeder {
                 f.setValueBinding(s.valueBinding());
                 f.setFieldCode(s.fieldCode());
                 f.setConcept(c);
+                f.setLabel(s.label());
 
                 if (f instanceof CustomFieldSelectOneFromFieldCode df) {
                     df.setStyleClass(s.styleClass());

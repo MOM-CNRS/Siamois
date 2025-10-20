@@ -51,7 +51,7 @@ public class DefaultFormsInitializer implements DatabaseInitializer {
             new CustomFieldSeederSpec(
                     CustomFieldSelectOneFromFieldCode.class,
                     true,
-                    "spatialunit.field.type",
+                    "recordingunit.property.type",
                     new ConceptSeeder.ConceptKey(DEFAULT_VOCABULARY_ID, "4287605"),
                     "type",
                     "bi bi-pencil-square",
@@ -61,7 +61,7 @@ public class DefaultFormsInitializer implements DatabaseInitializer {
             new CustomFieldSeederSpec(
                     CustomFieldSelectOneFromFieldCode.class,
                     true,
-                    "spatialunit.field.type",
+                    "recordingunit.property.geomorpho",
                     new ConceptSeeder.ConceptKey(DEFAULT_VOCABULARY_ID, "4287606"),
                     "geomorphologicalCycle",
                     "bi bi-pencil-square",
@@ -71,7 +71,7 @@ public class DefaultFormsInitializer implements DatabaseInitializer {
             new CustomFieldSeederSpec(
                     CustomFieldSelectOneFromFieldCode.class,
                     true,
-                    "spatialunit.field.type",
+                    " recordingunit.property.interpretation",
                     new ConceptSeeder.ConceptKey(DEFAULT_VOCABULARY_ID, "4286197"),
                     "normalizedInterpretation",
                     "bi bi-pencil-square",
