@@ -71,4 +71,9 @@ public class Institution implements Serializable {
         return Objects.hash(name, identifier);
     }
 
+    @Override
+    public String toString() {
+        return name;
+    }
+
 }
