@@ -17,6 +17,7 @@ import jakarta.persistence.*;
 import lombok.Data;
 import org.hibernate.annotations.SQLRestriction;
 import org.hibernate.envers.Audited;
+import org.hibernate.envers.NotAudited;
 
 import java.util.HashSet;
 import java.util.List;
@@ -66,6 +67,7 @@ public class SpatialUnit extends SpatialUnitGeneric implements ArkEntity {
             joinColumns = { @JoinColumn(name = "fk_parent_id") },
             inverseJoinColumns = { @JoinColumn(name = "fk_child_id") }
     )
+    @NotAudited
     private Set<SpatialUnit> children = new HashSet<>();
 
     @OneToMany(mappedBy="spatialUnit")
