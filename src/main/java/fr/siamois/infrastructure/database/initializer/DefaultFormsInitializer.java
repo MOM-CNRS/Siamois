@@ -2,13 +2,16 @@ package fr.siamois.infrastructure.database.initializer;
 
 import fr.siamois.domain.models.exceptions.database.DatabaseDataInitException;
 import fr.siamois.domain.models.form.customfield.CustomFieldSelectOneFromFieldCode;
+import fr.siamois.domain.models.form.customform.CustomCol;
 import fr.siamois.domain.models.vocabulary.Vocabulary;
 import fr.siamois.infrastructure.database.initializer.seeder.*;
+import fr.siamois.infrastructure.database.initializer.seeder.customfield.CustomFieldSeeder;
+import fr.siamois.infrastructure.database.initializer.seeder.customfield.CustomFieldSeederSpec;
+import fr.siamois.infrastructure.database.initializer.seeder.customform.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Service;
 
-import java.lang.reflect.InvocationTargetException;
 import java.util.List;
 import java.util.Map;
 
@@ -24,6 +27,7 @@ public class DefaultFormsInitializer implements DatabaseInitializer {
 
     static final String DEFAULT_VOCABULARY_INSTANCE_URI = "https://thesaurus.mom.fr";
     static final String DEFAULT_VOCABULARY_ID = "th230";
+    private final CustomFormSeeder customFormSeeder;
 
     // Default Siamois Thesaurus
     List<ThesaurusSeeder.ThesaurusSpec> thesauri = List.of(
@@ -36,8 +40,8 @@ public class DefaultFormsInitializer implements DatabaseInitializer {
     );
 
     // Default Siamois field
-    List<CustomFieldSeeder.CustomFieldSeederSpec> fields = List.of(
-            new CustomFieldSeeder.CustomFieldSeederSpec(
+    List<CustomFieldSeederSpec> fields = List.of(
+            new CustomFieldSeederSpec(
                     CustomFieldSelectOneFromFieldCode.class,
                     true,
                     "spatialunit.field.type",
@@ -49,10 +53,41 @@ public class DefaultFormsInitializer implements DatabaseInitializer {
             )
     );
 
-    public DefaultFormsInitializer(ConceptSeeder conceptSeeder, ThesaurusSeeder thesaurusSeeder, CustomFieldSeeder customFieldSeeder) {
+    // Default form DTOs
+    List<CustomFormDTO> forms = List.of(
+            new CustomFormDTO(
+                "Le formulaire par défaut pour les unités d'enregistrements non stratigraphique",
+                    "Formulaire d'unité non stratigraphique",
+                    List.of(new CustomFormPanelDTO(
+                            "",
+                            "common.header.general",
+                            List.of(new CustomRowDTO(
+                                    List.of(new CustomColDTO(
+                                            false,
+                                            true,
+                                            new CustomFieldSeederSpec(
+                                                    CustomFieldSelectOneFromFieldCode.class,
+                                                    true,
+                                                    "spatialunit.field.type",
+                                                    new ConceptSeeder.ConceptKey(DEFAULT_VOCABULARY_ID,"4287605"),
+                                                    "type",
+                                                    "bi bi-pencil-square",
+                                                    "mr-2 recording-unit-type-chip",
+                                                    "SIARU.TYPE"
+                                            ),
+                                            "ui-g-12 ui-md-6 ui-lg-4"
+                                    ))
+                            )),
+                            true
+                    ))
+            )
+    );
+
+    public DefaultFormsInitializer(ConceptSeeder conceptSeeder, ThesaurusSeeder thesaurusSeeder, CustomFieldSeeder customFieldSeeder, CustomFormSeeder customFormSeeder) {
         this.conceptSeeder = conceptSeeder;
         this.thesaurusSeeder = thesaurusSeeder;
         this.customFieldSeeder = customFieldSeeder;
+        this.customFormSeeder = customFormSeeder;
     }
 
     @Override
@@ -60,5 +95,6 @@ public class DefaultFormsInitializer implements DatabaseInitializer {
         Map<String, Vocabulary> result = thesaurusSeeder.seed(thesauri);
         conceptSeeder.seed(result.get(DEFAULT_VOCABULARY_ID), concepts);
         customFieldSeeder.seed(fields);
+        customFormSeeder.seed(forms);
     }
 }
