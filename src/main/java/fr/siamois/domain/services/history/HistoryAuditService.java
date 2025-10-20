@@ -50,6 +50,10 @@ public class HistoryAuditService {
 
         Object[] result = (Object[]) query.getSingleResult();
 
+        if (result == null) {
+            return null;
+        }
+
         return new RevisionWithInfo<>(
                 (T) result[0],
                 (InfoRevisionEntity) result[1],
