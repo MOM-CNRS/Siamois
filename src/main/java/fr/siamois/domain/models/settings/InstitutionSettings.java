@@ -4,7 +4,6 @@ import fr.siamois.domain.models.institution.Institution;
 import jakarta.persistence.*;
 import jakarta.ws.rs.DefaultValue;
 import lombok.Data;
-import org.hibernate.envers.Audited;
 
 import java.io.Serializable;
 import java.util.Objects;
