@@ -82,6 +82,11 @@ public class CustomFormSeeder {
         return customFormRepository.findByNameAndDescription(dto.name(), dto.description()).orElse(null);
     }
 
+    public CustomForm findOrThrow(CustomFormDTO dto) {
+        return customFormRepository.findByNameAndDescription(dto.name(), dto.description())
+                .orElseThrow(() -> new IllegalStateException("Form introuvable"));
+    }
+
 
     public void seed(List<CustomFormDTO> specs) throws DatabaseDataInitException {
         for (var s : specs) {

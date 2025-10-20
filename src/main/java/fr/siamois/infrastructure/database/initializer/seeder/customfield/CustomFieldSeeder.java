@@ -2,6 +2,7 @@ package fr.siamois.infrastructure.database.initializer.seeder.customfield;
 
 import fr.siamois.domain.models.exceptions.database.DatabaseDataInitException;
 import fr.siamois.domain.models.form.customfield.CustomField;
+import fr.siamois.domain.models.form.customfield.CustomFieldSelectOneFromFieldCode;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.infrastructure.database.initializer.seeder.ConceptSeeder;
 import fr.siamois.infrastructure.database.repositories.form.CustomFieldRepository;
@@ -21,26 +22,22 @@ public class CustomFieldSeeder {
 
 
     public CustomField findFieldOrReturnNull(CustomFieldSeederSpec s, Concept c) {
-        return customFieldRepository.findByTypeAndSystemAndBindingAndIconClassAndStyleClassAndConcept(
+        return customFieldRepository.findByTypeAndSystemAndBindingAndConcept(
                 s.answerClass(),
                 s.isSystemField(),
                 s.valueBinding(),
-                s.styleClass(),
-                s.iconClass(),
                 c
         ).orElse(null);
     }
 
     public CustomField findFieldOrThrow(CustomFieldSeederSpec s) {
         Concept c = conceptSeeder.findConceptOrThrow(s.conceptKey());
-        return customFieldRepository.findByTypeAndSystemAndBindingAndIconClassAndStyleClassAndConcept(
+        return customFieldRepository.findByTypeAndSystemAndBindingAndConcept(
                 s.answerClass(),
                 s.isSystemField(),
                 s.valueBinding(),
-                s.styleClass(),
-                s.iconClass(),
                 c
-        ).orElseThrow(() -> new IllegalStateException("Can't find concept in Db"));
+        ).orElseThrow(() -> new IllegalStateException("Can't find field in Db"));
     }
 
     public void seed(List<CustomFieldSeederSpec> specs) throws DatabaseDataInitException {
@@ -63,10 +60,13 @@ public class CustomFieldSeeder {
 
                 f.setIsSystemField(s.isSystemField());
                 f.setValueBinding(s.valueBinding());
-                f.setStyleClass(s.styleClass());
-                f.setIconClass(s.iconClass());
                 f.setFieldCode(s.fieldCode());
                 f.setConcept(c);
+
+                if (f instanceof CustomFieldSelectOneFromFieldCode df) {
+                    df.setStyleClass(s.styleClass());
+                    df.setIconClass(s.iconClass());
+                }
 
                 customFieldRepository.save(f);
             }

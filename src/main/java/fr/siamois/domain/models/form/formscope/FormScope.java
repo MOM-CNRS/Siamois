@@ -4,8 +4,10 @@ import fr.siamois.domain.models.form.customform.CustomForm;
 import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.vocabulary.Concept;
 import jakarta.persistence.*;
+import lombok.Data;
 
 @Entity
+@Data
 @Table(
         name = "form_scopes",
         uniqueConstraints = {

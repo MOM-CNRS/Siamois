@@ -33,12 +33,6 @@ public abstract class CustomField implements Serializable {
     @Column(name = "hint")
     private String hint;
 
-    @Column(name = "icon_class")
-    private String iconClass;
-
-    @Column(name = "style_class")
-    private String styleClass;
-
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "fk_concept")
     private Concept concept;

@@ -21,8 +21,12 @@ public class CustomFieldSelectOneFromFieldCode extends CustomField {
     @Column(name = "field_code")
     private String fieldCode ;
 
-    private String iconClass ;
-    private String styleClass ;
+    @Column(name = "icon_class")
+    private String iconClass;
+
+    @Column(name = "style_class")
+    private String styleClass;
+
 
     @Override
     public boolean equals(Object o) {

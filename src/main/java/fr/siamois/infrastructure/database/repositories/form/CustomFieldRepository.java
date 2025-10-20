@@ -35,15 +35,11 @@ public interface CustomFieldRepository extends CrudRepository<CustomField, Long>
               where type(f) = :clazz
                 and f.isSystemField = :isSystemField
                 and f.valueBinding = :valueBinding
-                and f.iconClass = :iconClass
-                and f.styleClass = :styleClass
                 and f.concept = :concept
             """)
-    Optional<CustomField> findByTypeAndSystemAndBindingAndIconClassAndStyleClassAndConcept(
+    Optional<CustomField> findByTypeAndSystemAndBindingAndConcept(
             @Param("clazz" ) Class<? extends CustomField> clazz,
             @Param("isSystemField" ) Boolean isSystemField,
             @Param("valueBinding" ) String valueBinding,
-            @Param("styleClass" ) String styleClass,
-            @Param("iconClass" ) String iconClass,
             @Param("concept" ) Concept concept);
 }

@@ -74,6 +74,7 @@ class AdminInitializerTest {
     void initializeAdmin_shouldNotCreateAdminWhenAdminExists() throws DatabaseDataInitException {
         Person existingAdmin = new Person();
         existingAdmin.setUsername("admin");
+        existingAdmin.setEmail("admin@example.com");
         when(personRepository.findAllSuperAdmin()).thenReturn(List.of(existingAdmin));
 
         adminInitializer.initialize();
