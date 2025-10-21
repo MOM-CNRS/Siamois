@@ -1,7 +1,6 @@
 package fr.siamois.infrastructure.database.initializer.seeder;
 
 
-import fr.siamois.domain.models.exceptions.database.DatabaseDataInitException;
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.customfield.CustomFieldText;
 import fr.siamois.domain.models.form.customform.CustomCol;
@@ -84,7 +83,7 @@ class CustomFormSeederTest {
     // --- Tests ---
 
     @Test
-    void seed_createsForm_whenNotExists_andResolvesFields() throws DatabaseDataInitException {
+    void seed_createsForm_whenNotExists_andResolvesFields()  {
         // Arrange
         CustomField field = new CustomFieldText();
         CustomFieldSeederSpec spec = fieldSpec();
@@ -136,7 +135,7 @@ class CustomFormSeederTest {
     }
 
     @Test
-    void seed_skipsSave_whenFormAlreadyExists() throws DatabaseDataInitException {
+    void seed_skipsSave_whenFormAlreadyExists()  {
         // Arrange
         CustomForm existing = new CustomForm();
         existing.setName("My Form");
