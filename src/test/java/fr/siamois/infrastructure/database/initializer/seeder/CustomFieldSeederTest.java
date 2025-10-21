@@ -1,0 +1,149 @@
+package fr.siamois.infrastructure.database.initializer.seeder;
+
+import fr.siamois.domain.models.exceptions.database.DatabaseDataInitException;
+import fr.siamois.domain.models.form.customfield.CustomField;
+import fr.siamois.domain.models.form.customfield.CustomFieldText;
+import fr.siamois.domain.models.vocabulary.Concept;
+import fr.siamois.domain.models.vocabulary.Vocabulary;
+import fr.siamois.domain.models.vocabulary.label.ConceptLabel;
+import fr.siamois.infrastructure.database.initializer.seeder.customfield.CustomFieldSeeder;
+import fr.siamois.infrastructure.database.initializer.seeder.customfield.CustomFieldSeederSpec;
+import fr.siamois.infrastructure.database.repositories.form.CustomFieldRepository;
+import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRepository;
+import fr.siamois.infrastructure.database.repositories.vocabulary.label.ConceptLabelRepository;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.util.List;
+import java.util.Optional;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.*;
+
+@ExtendWith(MockitoExtension.class)
+class CustomFieldSeederTest {
+
+    @Mock
+    CustomFieldRepository customFieldRepository;
+    @Mock
+    ConceptSeeder conceptSeeder;
+
+    @InjectMocks
+    CustomFieldSeeder seeder;
+
+    @Test
+    void seed_AlreadyExists() throws DatabaseDataInitException {
+
+        Concept c = new Concept();
+        Vocabulary v = new Vocabulary();
+        ConceptLabel label = new ConceptLabel();
+        ConceptSeeder.ConceptKey key =  new ConceptSeeder.ConceptKey(
+                "th230",
+                "123456"
+        );
+
+        List<CustomFieldSeederSpec> toInsert = List.of(
+                new CustomFieldSeederSpec(
+                        CustomFieldText.class,
+                        true,
+                        "",
+                        key,
+                        "type",
+                        "",
+                        "",
+                        ""
+                )
+        );
+
+        when(conceptSeeder.findConceptOrThrow(key)).thenReturn(c);
+        when(customFieldRepository.findByTypeAndSystemAndBindingAndConcept(
+                CustomFieldText.class,
+                true,
+                "type",
+                c
+        )).thenReturn(Optional.of(new CustomFieldText()));
+        seeder.seed(toInsert);
+
+        verify(customFieldRepository, never()).save(any(CustomField.class));
+    }
+
+
+    @Test
+    void seed_throw_ifConceptNotFound() throws DatabaseDataInitException {
+
+        Concept c = new Concept();
+        Vocabulary v = new Vocabulary();
+        ConceptLabel label = new ConceptLabel();
+        ConceptSeeder.ConceptKey key =  new ConceptSeeder.ConceptKey(
+                "th230",
+                "123456"
+        );
+
+        List<CustomFieldSeederSpec> toInsert = List.of(
+                new CustomFieldSeederSpec(
+                        CustomFieldText.class,
+                        true,
+                        "",
+                        key,
+                        "type",
+                        "",
+                        "",
+                        ""
+                )
+        );
+
+        when(conceptSeeder.findConceptOrThrow(key)).thenThrow(
+                new IllegalStateException()
+        );
+
+        IllegalStateException exception = assertThrows(
+                IllegalStateException.class,
+                () -> seeder.seed(toInsert)
+        );
+
+
+    }
+
+    @Test
+    void seed_Create() throws DatabaseDataInitException {
+
+        Concept c = new Concept();
+        Vocabulary v = new Vocabulary();
+        ConceptLabel label = new ConceptLabel();
+        ConceptSeeder.ConceptKey key =  new ConceptSeeder.ConceptKey(
+                "th230",
+                "123456"
+        );
+
+        List<CustomFieldSeederSpec> toInsert = List.of(
+                new CustomFieldSeederSpec(
+                        CustomFieldText.class,
+                        true,
+                        "",
+                        key,
+                        "type",
+                        "",
+                        "",
+                        ""
+                )
+        );
+
+        when(conceptSeeder.findConceptOrThrow(key)).thenReturn(c);
+        when(customFieldRepository.findByTypeAndSystemAndBindingAndConcept(
+                CustomFieldText.class,
+                true,
+                "type",
+                c
+        )).thenReturn(Optional.empty());
+        seeder.seed(toInsert);
+
+        verify(customFieldRepository, times(1)).save(any(CustomField.class));
+    }
+
+
+}
