@@ -22,7 +22,6 @@
     </cc:interface>
 
     <cc:implementation>
-        #{cc.attrs.answer}
         <p:inplace mode="#{cc.attrs.mode}" toggleable="false">
             <f:facet name="output">
                 <p:chip label="#{labelBean.findLabelOf(cc.attrs.answer.value)}"
