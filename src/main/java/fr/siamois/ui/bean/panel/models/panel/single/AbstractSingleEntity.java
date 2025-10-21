@@ -14,6 +14,7 @@ import fr.siamois.domain.models.form.customformresponse.CustomFormResponse;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.models.vocabulary.Vocabulary;
+import fr.siamois.domain.models.vocabulary.VocabularyType;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.document.DocumentService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
@@ -24,10 +25,7 @@ import fr.siamois.ui.bean.panel.models.panel.AbstractPanel;
 import fr.siamois.ui.viewmodel.TreeUiStateViewModel;
 import fr.siamois.utils.DateUtils;
 import jakarta.faces.component.UIComponent;
-import jakarta.faces.component.UIInput;
 import jakarta.faces.context.FacesContext;
-import jakarta.faces.event.AjaxBehaviorEvent;
-import jakarta.faces.event.ValueChangeEvent;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
@@ -62,6 +60,11 @@ public abstract class AbstractSingleEntity<T> extends AbstractPanel implements S
     protected CustomFormResponse formResponse; // answers to all the fields from overview and details
     protected boolean hasUnsavedModifications = false; // Did we modify the unit?
 
+    public CustomFieldAnswer getFieldAnswer(CustomField field) {
+        CustomFieldAnswer ans = formResponse.getAnswers().get(field);
+        return ans;
+    }
+
     protected CustomForm detailsForm;
     protected CustomForm overviewForm;
 
@@ -74,11 +77,15 @@ public abstract class AbstractSingleEntity<T> extends AbstractPanel implements S
     }
 
     public static final Vocabulary SYSTEM_THESO;
+    public static final VocabularyType THESO_VOCABULARY_TYPE;
 
     static {
+        THESO_VOCABULARY_TYPE = new VocabularyType();
+        THESO_VOCABULARY_TYPE.setLabel("Thesaurus");
         SYSTEM_THESO = new Vocabulary();
-        SYSTEM_THESO.setBaseUri("https://thesaurus.mom.fr/");
+        SYSTEM_THESO.setBaseUri("https://thesaurus.mom.fr");
         SYSTEM_THESO.setExternalVocabularyId("th230");
+        SYSTEM_THESO.setType(THESO_VOCABULARY_TYPE);
     }
 
 
@@ -156,6 +163,7 @@ public abstract class AbstractSingleEntity<T> extends AbstractPanel implements S
     protected abstract void setFormScopePropertyValue(Concept concept);
 
     protected void onFormScopeChanged(Concept newVal) {
+        updateJpaEntityFromFormResponse(formResponse, unit);
         setFormScopePropertyValue(newVal); // change type of unit to be able to init forms
         initForms();
     }

@@ -108,8 +108,8 @@ public class DefaultFormsInitializer implements DatabaseInitializer {
                     ))
             ),
             new CustomFormDTO(
-                    "Le formulaire par défaut pour les unités d'enregistrements non stratigraphique",
-                    "Formulaire d'unité non stratigraphique",
+                    "Le formulaire par défaut pour les unités d'enregistrements stratigraphique",
+                    "Formulaire d'unité stratigraphique",
                     List.of(new CustomFormPanelDTO(
                             "",
                             "common.header.general",

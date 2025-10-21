@@ -5,6 +5,7 @@ import jakarta.persistence.Column;
 import jakarta.persistence.DiscriminatorValue;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -26,21 +27,6 @@ public class CustomFieldSelectOneFromFieldCode extends CustomField {
 
     @Column(name = "style_class")
     private String styleClass;
-
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof CustomFieldSelectOneFromFieldCode that)) return false;
-        if (!super.equals(o)) return false;
-
-        return Objects.equals(fieldCode, that.fieldCode);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(super.hashCode(), fieldCode);
-    }
 
     public static class Builder {
 

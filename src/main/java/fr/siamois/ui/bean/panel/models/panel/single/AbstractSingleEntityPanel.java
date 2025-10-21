@@ -67,7 +67,7 @@ public abstract class AbstractSingleEntityPanel<T, H> extends AbstractSingleEnti
 
     static {
         SYSTEM_THESO = new Vocabulary();
-        SYSTEM_THESO.setBaseUri("https://thesaurus.mom.fr/");
+        SYSTEM_THESO.setBaseUri("https://thesaurus.mom.fr");
         SYSTEM_THESO.setExternalVocabularyId("th230");
     }
 

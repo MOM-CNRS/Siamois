@@ -22,6 +22,7 @@
     </cc:interface>
 
     <cc:implementation>
+        #{cc.attrs.answer}
         <p:inplace mode="#{cc.attrs.mode}" toggleable="false">
             <f:facet name="output">
                 <p:chip label="#{labelBean.findLabelOf(cc.attrs.answer.value)}"
@@ -33,11 +34,9 @@
                                                           inputStyleClass="#{cc.attrs.answer.hasBeenModified ? 'track-change sia-modified-field': 'track-change'}"
                                                           panelStyleClass="#{cc.attrs.panelModel.autocompleteClass}"
                                                           selectedConcept="#{cc.attrs.answer.value}"
-                                                          ajaxUpdateTargets="#{cc.attrs.updateTargetsOnBlur}"
                                                           field="#{cc.attrs.field}"
                                                           label="#{cc.attrs.label}"
                                                           required="#{cc.attrs.required}"
-                                                          ajaxProcessTargets="@this"
                                                           itemSelectListener="#{cc.attrs.panelModel.setFieldConceptAnswerHasBeenModified}"
                                                           editConceptUrl="#{spatialUnitFieldBean.getUrlForFieldCode(cc.attrs.fieldCode)}"/>
             </f:facet>
