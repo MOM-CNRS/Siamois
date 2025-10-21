@@ -67,7 +67,7 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
     private final transient HistoryService historyService;
     protected final transient ConceptService conceptService;
     private final transient SpecimenService specimenService;
-    private final FormService formService;
+    private final transient FormService formService;
 
 
     // ---------- Locals
@@ -198,20 +198,7 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
                 .orElse(null); // Retourner null si aucun match
     }
 
-    public void handleSelectType() {
 
-        if (recordingUnit.getType() != null) {
-
-            changeCustomForm();
-        } else {
-
-        }
-
-        recordingUnit.setSecondaryType(null);
-        recordingUnit.setThirdType(null);
-
-
-    }
 
     public void initFormResponseAnswers() {
 

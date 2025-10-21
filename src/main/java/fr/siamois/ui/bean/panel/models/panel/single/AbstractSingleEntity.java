@@ -61,8 +61,7 @@ public abstract class AbstractSingleEntity<T> extends AbstractPanel implements S
     protected boolean hasUnsavedModifications = false; // Did we modify the unit?
 
     public CustomFieldAnswer getFieldAnswer(CustomField field) {
-        CustomFieldAnswer ans = formResponse.getAnswers().get(field);
-        return ans;
+        return formResponse.getAnswers().get(field);
     }
 
     protected CustomForm detailsForm;
@@ -179,7 +178,7 @@ public abstract class AbstractSingleEntity<T> extends AbstractPanel implements S
 
         formResponse.getAnswers().get(field).setHasBeenModified(true);
         hasUnsavedModifications = true;
-        if(field.getIsSystemField() && Objects.equals(field.getValueBinding(), getFormScopePropertyName())) {
+        if(Boolean.TRUE.equals(field.getIsSystemField()) && Objects.equals(field.getValueBinding(), getFormScopePropertyName())) {
             Concept newValue =  event.getObject(); // ← la nouvelle valeur
             onFormScopeChanged(newValue);
         }

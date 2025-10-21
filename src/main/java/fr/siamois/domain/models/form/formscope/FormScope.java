@@ -27,7 +27,7 @@ public class FormScope {
 
     @Id
     @GeneratedValue
-    private Long form_scope_id;
+    private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "fk_custom_form_id", nullable = false)

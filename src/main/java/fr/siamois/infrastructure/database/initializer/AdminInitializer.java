@@ -135,10 +135,5 @@ public class AdminInitializer implements DatabaseInitializer {
         log.info("Created institution {}","siamois");
     }
 
-    private boolean createdAdminIsNotOwnerOf(Set<Person> managers) {
-        return managers
-                .stream()
-                .noneMatch(admin -> admin.getId().equals(createdAdmin.getId()));
-    }
 
 }

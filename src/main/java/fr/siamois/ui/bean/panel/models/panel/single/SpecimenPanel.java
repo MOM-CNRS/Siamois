@@ -363,7 +363,7 @@ public class SpecimenPanel extends AbstractSingleEntityPanel<Specimen, SpecimenH
 
     @Override
     protected void setFormScopePropertyValue(Concept concept) {
-
+        unit.setType(concept);
     }
 
     @Override

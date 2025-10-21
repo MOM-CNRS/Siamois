@@ -28,6 +28,16 @@ public class CustomFieldSelectOneFromFieldCode extends CustomField {
     @Column(name = "style_class")
     private String styleClass;
 
+    @Override
+    public boolean equals(Object other) {
+        return super.equals(other);
+    }
+
+    @Override
+    public int hashCode() {
+        return super.hashCode();
+    }
+
     public static class Builder {
 
         private final CustomFieldSelectOneFromFieldCode field = new  CustomFieldSelectOneFromFieldCode();

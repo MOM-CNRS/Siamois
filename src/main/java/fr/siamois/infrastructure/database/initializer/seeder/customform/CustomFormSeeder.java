@@ -1,12 +1,10 @@
 package fr.siamois.infrastructure.database.initializer.seeder.customform;
 
-import fr.siamois.domain.models.exceptions.database.DatabaseDataInitException;
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.customform.CustomCol;
 import fr.siamois.domain.models.form.customform.CustomForm;
 import fr.siamois.domain.models.form.customform.CustomFormPanel;
 import fr.siamois.domain.models.form.customform.CustomRow;
-import fr.siamois.infrastructure.database.initializer.seeder.ConceptSeeder;
 import fr.siamois.infrastructure.database.initializer.seeder.customfield.CustomFieldSeeder;
 import fr.siamois.infrastructure.database.repositories.form.CustomFormRepository;
 import lombok.RequiredArgsConstructor;
@@ -88,7 +86,7 @@ public class CustomFormSeeder {
     }
 
 
-    public void seed(List<CustomFormDTO> specs) throws DatabaseDataInitException {
+    public void seed(List<CustomFormDTO> specs)  {
         for (var s : specs) {
             CustomForm form = findOrNull(s);
             if(form == null) {

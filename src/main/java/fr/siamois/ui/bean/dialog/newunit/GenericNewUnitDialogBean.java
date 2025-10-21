@@ -200,7 +200,8 @@ public class GenericNewUnitDialogBean<T extends TraceableEntity>
 
     @Override
     protected void setFormScopePropertyValue(Concept concept) {
-
+        // Empty because new unit form don't change based on type.
+        // Need refactoring? Wrong parent class
     }
 
     private void performCreate(boolean openAfter, boolean scrollToTop) {

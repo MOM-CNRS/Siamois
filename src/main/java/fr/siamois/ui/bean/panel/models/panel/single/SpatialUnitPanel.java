@@ -189,7 +189,7 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
 
     @Override
     protected void setFormScopePropertyValue(Concept concept) {
-
+        unit.setCategory(concept);
     }
 
     public void refreshUnit() {

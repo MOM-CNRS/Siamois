@@ -5,13 +5,10 @@ import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.customfield.CustomFieldSelectOneFromFieldCode;
 import fr.siamois.domain.models.form.customfield.CustomFieldText;
 import fr.siamois.domain.models.vocabulary.Concept;
-import fr.siamois.domain.models.vocabulary.Vocabulary;
-import fr.siamois.domain.models.vocabulary.label.ConceptLabel;
+
 import fr.siamois.infrastructure.database.initializer.seeder.customfield.CustomFieldSeeder;
 import fr.siamois.infrastructure.database.initializer.seeder.customfield.CustomFieldSeederSpec;
 import fr.siamois.infrastructure.database.repositories.form.CustomFieldRepository;
-import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRepository;
-import fr.siamois.infrastructure.database.repositories.vocabulary.label.ConceptLabelRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -23,7 +20,7 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
+
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -41,8 +38,7 @@ class CustomFieldSeederTest {
     void seed_AlreadyExists() throws DatabaseDataInitException {
 
         Concept c = new Concept();
-        Vocabulary v = new Vocabulary();
-        ConceptLabel label = new ConceptLabel();
+
         ConceptSeeder.ConceptKey key =  new ConceptSeeder.ConceptKey(
                 "th230",
                 "123456"
@@ -75,11 +71,9 @@ class CustomFieldSeederTest {
 
 
     @Test
-    void seed_throw_ifConceptNotFound() throws DatabaseDataInitException {
+    void seed_throw_ifConceptNotFound()  {
 
-        Concept c = new Concept();
-        Vocabulary v = new Vocabulary();
-        ConceptLabel label = new ConceptLabel();
+
         ConceptSeeder.ConceptKey key =  new ConceptSeeder.ConceptKey(
                 "th230",
                 "123456"
@@ -102,7 +96,7 @@ class CustomFieldSeederTest {
                 new IllegalStateException()
         );
 
-        IllegalStateException exception = assertThrows(
+        assertThrows(
                 IllegalStateException.class,
                 () -> seeder.seed(toInsert)
         );
@@ -114,8 +108,6 @@ class CustomFieldSeederTest {
     void seed_Create() throws DatabaseDataInitException {
 
         Concept c = new Concept();
-        Vocabulary v = new Vocabulary();
-        ConceptLabel label = new ConceptLabel();
         ConceptSeeder.ConceptKey key =  new ConceptSeeder.ConceptKey(
                 "th230",
                 "123456"

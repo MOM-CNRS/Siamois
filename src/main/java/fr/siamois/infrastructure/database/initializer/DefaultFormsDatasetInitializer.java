@@ -21,6 +21,9 @@ import java.util.Map;
 @Order(0)
 public class DefaultFormsDatasetInitializer implements DatabaseInitializer {
 
+    public static final String BI_BI_PENCIL_SQUARE = "bi bi-pencil-square";
+    public static final String MR_2_RECORDING_UNIT_TYPE_CHIP = "mr-2 recording-unit-type-chip";
+    public static final String UI_G_12_UI_MD_6_UI_LG_3 = "ui-g-12 ui-md-6 ui-lg-3";
     private final ConceptSeeder conceptSeeder;
     private final ThesaurusSeeder thesaurusSeeder;
     private final CustomFieldSeeder customFieldSeeder;
@@ -53,8 +56,8 @@ public class DefaultFormsDatasetInitializer implements DatabaseInitializer {
                     "recordingunit.property.type",
                     new ConceptSeeder.ConceptKey(DEFAULT_VOCABULARY_ID, "4287605"),
                     "type",
-                    "bi bi-pencil-square",
-                    "mr-2 recording-unit-type-chip",
+                    BI_BI_PENCIL_SQUARE,
+                    MR_2_RECORDING_UNIT_TYPE_CHIP,
                     "SIARU.TYPE"
             ),
             new CustomFieldSeederSpec(
@@ -63,8 +66,8 @@ public class DefaultFormsDatasetInitializer implements DatabaseInitializer {
                     "recordingunit.property.geomorpho",
                     new ConceptSeeder.ConceptKey(DEFAULT_VOCABULARY_ID, "4287606"),
                     "geomorphologicalCycle",
-                    "bi bi-pencil-square",
-                    "mr-2 recording-unit-type-chip",
+                    BI_BI_PENCIL_SQUARE,
+                    MR_2_RECORDING_UNIT_TYPE_CHIP,
                     "SIARU.GEOMORPHO"
             ),
             new CustomFieldSeederSpec(
@@ -73,8 +76,8 @@ public class DefaultFormsDatasetInitializer implements DatabaseInitializer {
                     "recordingunit.property.interpretation",
                     new ConceptSeeder.ConceptKey(DEFAULT_VOCABULARY_ID, "4286197"),
                     "normalizedInterpretation",
-                    "bi bi-pencil-square",
-                    "mr-2 recording-unit-type-chip",
+                    BI_BI_PENCIL_SQUARE,
+                    MR_2_RECORDING_UNIT_TYPE_CHIP,
                     "SIARU.INTERPRETATION"
             )
     );
@@ -93,13 +96,13 @@ public class DefaultFormsDatasetInitializer implements DatabaseInitializer {
                                                     false,
                                                     true,
                                                     fields.get(0),
-                                                    "ui-g-12 ui-md-6 ui-lg-3"
+                                                    UI_G_12_UI_MD_6_UI_LG_3
                                             ),
                                             new CustomColDTO(
                                                     false,
                                                     true,
                                                     fields.get(2),
-                                                    "ui-g-12 ui-md-6 ui-lg-3"
+                                                    UI_G_12_UI_MD_6_UI_LG_3
                                             )
                                     )
                             )),
@@ -118,19 +121,19 @@ public class DefaultFormsDatasetInitializer implements DatabaseInitializer {
                                                     false,
                                                     true,
                                                     fields.get(0),
-                                                    "ui-g-12 ui-md-6 ui-lg-3"
+                                                    UI_G_12_UI_MD_6_UI_LG_3
                                             ),
                                             new CustomColDTO(
                                                     false,
                                                     true,
                                                     fields.get(1),
-                                                    "ui-g-12 ui-md-6 ui-lg-3"
+                                                    UI_G_12_UI_MD_6_UI_LG_3
                                             ),
                                             new CustomColDTO(
                                                     false,
                                                     true,
                                                     fields.get(2),
-                                                    "ui-g-12 ui-md-6 ui-lg-3"
+                                                    UI_G_12_UI_MD_6_UI_LG_3
                                             )
                                     )
                             )),
@@ -142,17 +145,17 @@ public class DefaultFormsDatasetInitializer implements DatabaseInitializer {
     List<CustomFormScopeDTO> scopes = List.of(
             new CustomFormScopeDTO(
                     FormScope.ScopeLevel.GLOBAL_DEFAULT.toString(),
-                    new ConceptSeeder.ConceptKey("th230", concepts.get(3).externalId()),
+                    new ConceptSeeder.ConceptKey(DEFAULT_VOCABULARY_ID, concepts.get(3).externalId()),
                     forms.get(0)
             ),
             new CustomFormScopeDTO(
                     FormScope.ScopeLevel.GLOBAL_DEFAULT.toString(),
-                    new ConceptSeeder.ConceptKey("th230", concepts.get(4).externalId()),
+                    new ConceptSeeder.ConceptKey(DEFAULT_VOCABULARY_ID, concepts.get(4).externalId()),
                     forms.get(1)
             ),
             new CustomFormScopeDTO(
                     FormScope.ScopeLevel.GLOBAL_DEFAULT.toString(),
-                    new ConceptSeeder.ConceptKey("th230", concepts.get(5).externalId()),
+                    new ConceptSeeder.ConceptKey(DEFAULT_VOCABULARY_ID, concepts.get(5).externalId()),
                     forms.get(1)
             )
     );
