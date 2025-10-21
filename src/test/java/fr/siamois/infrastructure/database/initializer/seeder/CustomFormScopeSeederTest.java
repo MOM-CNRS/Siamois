@@ -1,11 +1,9 @@
 package fr.siamois.infrastructure.database.initializer.seeder;
 
 
-import fr.siamois.domain.models.exceptions.database.DatabaseDataInitException;
 import fr.siamois.domain.models.form.customform.CustomForm;
 import fr.siamois.domain.models.form.formscope.FormScope;
 import fr.siamois.domain.models.vocabulary.Concept;
-import fr.siamois.infrastructure.database.initializer.seeder.ConceptSeeder;
 import fr.siamois.infrastructure.database.initializer.seeder.customform.CustomFormScopeDTO;
 import fr.siamois.infrastructure.database.initializer.seeder.customform.CustomFormScopeSeeder;
 import fr.siamois.infrastructure.database.initializer.seeder.customform.CustomFormSeeder;
@@ -99,24 +97,31 @@ class CustomFormScopeSeederTest {
     }
 
     @Test
-    void seed_propagatesConceptSeederException() throws Exception {
+    void seed_propagatesConceptSeederException() {
         when(conceptSeeder.findConceptOrThrow(any()))
                 .thenThrow(new IllegalStateException("Concept introuvable"));
 
-        assertThatThrownBy(() -> seeder.seed(List.of(dto)))
+        // Prepare the argument outside the lambda
+        var dtos = List.of(dto);
+
+        assertThatThrownBy(() -> seeder.seed(dtos))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("Concept introuvable");
 
         verify(formScopeRepository, never()).save(any());
     }
 
+
     @Test
-    void seed_propagatesCustomFormSeederException() throws Exception {
+    void seed_propagatesCustomFormSeederException()  {
         when(conceptSeeder.findConceptOrThrow(any())).thenReturn(concept);
         when(customFormSeeder.findOrThrow(any()))
                 .thenThrow(new IllegalStateException("Form introuvable"));
 
-        assertThatThrownBy(() -> seeder.seed(List.of(dto)))
+        // Build args outside the lambda to keep a single call inside it
+        var dtos = List.of(dto);
+
+        assertThatThrownBy(() -> seeder.seed(dtos))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("Form introuvable");
 
