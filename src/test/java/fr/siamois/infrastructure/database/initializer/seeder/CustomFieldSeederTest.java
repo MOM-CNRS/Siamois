@@ -145,5 +145,78 @@ class CustomFieldSeederTest {
         verify(customFieldRepository, times(1)).save(any(CustomField.class));
     }
 
+    @Test
+    void findFieldOrThrow_returnsField() {
+        // Arrange
+        Concept c = new Concept();
+        ConceptSeeder.ConceptKey key = new ConceptSeeder.ConceptKey("th230", "123456");
+
+        CustomFieldSeederSpec spec = new CustomFieldSeederSpec(
+                CustomFieldText.class,
+                true,
+                "",
+                key,
+                "type",
+                "",
+                "",
+                ""
+        );
+
+        CustomFieldText expected = new CustomFieldText();
+
+        when(conceptSeeder.findConceptOrThrow(key)).thenReturn(c);
+        when(customFieldRepository.findByTypeAndSystemAndBindingAndConcept(
+                CustomFieldText.class,
+                true,
+                "type",
+                c
+        )).thenReturn(Optional.of(expected));
+
+        // Act
+        CustomField result = seeder.findFieldOrThrow(spec);
+
+        // Assert
+        assertSame(expected, result);
+        verify(conceptSeeder).findConceptOrThrow(key);
+        verify(customFieldRepository).findByTypeAndSystemAndBindingAndConcept(
+                CustomFieldText.class, true, "type", c
+        );
+    }
+
+    @Test
+    void findFieldOrThrow_throwsWhenFieldMissing() {
+        // Arrange
+        Concept c = new Concept();
+        ConceptSeeder.ConceptKey key = new ConceptSeeder.ConceptKey("th230", "123456");
+
+        CustomFieldSeederSpec spec = new CustomFieldSeederSpec(
+                CustomFieldText.class,
+                true,
+                "",
+                key,
+                "type",
+                "",
+                "",
+                ""
+        );
+
+        when(conceptSeeder.findConceptOrThrow(key)).thenReturn(c);
+        when(customFieldRepository.findByTypeAndSystemAndBindingAndConcept(
+                CustomFieldText.class,
+                true,
+                "type",
+                c
+        )).thenReturn(Optional.empty());
+
+        // Act + Assert
+        assertThrows(IllegalStateException.class, () -> seeder.findFieldOrThrow(spec));
+
+        verify(conceptSeeder).findConceptOrThrow(key);
+        verify(customFieldRepository).findByTypeAndSystemAndBindingAndConcept(
+                CustomFieldText.class, true, "type", c
+        );
+    }
+
+
 
 }
