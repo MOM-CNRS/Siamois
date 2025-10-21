@@ -21,7 +21,6 @@ import java.util.Set;
 @Data
 @Entity
 @Table(name = "institution")
-@Audited
 public class Institution implements Serializable {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

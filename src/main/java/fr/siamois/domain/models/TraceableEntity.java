@@ -9,6 +9,7 @@ import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.envers.Audited;
+import org.hibernate.envers.NotAudited;
 
 import java.io.Serializable;
 import java.time.OffsetDateTime;
@@ -23,7 +24,6 @@ import java.time.ZoneId;
 @Setter
 @Getter
 @MappedSuperclass
-@Audited
 public abstract class TraceableEntity implements Serializable {
 
     @NotNull

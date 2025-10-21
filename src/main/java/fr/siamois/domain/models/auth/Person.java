@@ -23,7 +23,6 @@ import java.util.Objects;
 @Entity
 @Table(name = "person", schema = "public")
 @JsonIgnoreProperties(value = {"hibernateLazyInitializer", "handler"})
-@Audited(targetAuditMode = RelationTargetAuditMode.NOT_AUDITED)
 public class Person implements UserDetails {
 
     // This limit allows the UI to be controlled

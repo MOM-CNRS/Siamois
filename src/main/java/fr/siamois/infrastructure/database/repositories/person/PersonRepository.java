@@ -14,7 +14,7 @@ import java.util.Optional;
 import java.util.Set;
 
 @Repository
-public interface PersonRepository extends JpaRepository<Person, Long>, RevisionRepository<Person, Long, Long> {
+public interface PersonRepository extends JpaRepository<Person, Long> {
 
     Optional<Person> findByUsernameIgnoreCase(String username);
 

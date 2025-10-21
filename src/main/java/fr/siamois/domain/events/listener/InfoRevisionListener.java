@@ -4,6 +4,7 @@ import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.history.InfoRevisionEntity;
 import fr.siamois.domain.models.institution.Institution;
+import fr.siamois.infrastructure.database.initializer.SystemUserInitializer;
 import fr.siamois.infrastructure.database.repositories.institution.InstitutionRepository;
 import fr.siamois.infrastructure.database.repositories.person.PersonRepository;
 import fr.siamois.ui.bean.SessionSettingsBean;
@@ -20,8 +21,8 @@ public class InfoRevisionListener {
     private final ApplicationContext applicationContext;
 
     private SessionSettingsBean sessionSettingsBean;
-    private PersonRepository personRepository;
     private InstitutionRepository institutionRepository;
+    private PersonRepository personRepository;
 
     public InfoRevisionListener(ApplicationContext applicationContext) {
         this.applicationContext = applicationContext;
@@ -43,8 +44,8 @@ public class InfoRevisionListener {
 
         UserInfo info = sessionSettingsBean.getUserInfo();
         if (info == null) {
-            Person admin = personRepository.findAllSuperAdmin().get(0);
-            Institution defaultInsti = institutionRepository.findInstitutionByIdentifier("siamois").orElse(null);
+            Person admin = personRepository.findByUsernameIgnoreCase("system").orElseThrow(() -> new IllegalStateException("System user should exists"));
+            Institution defaultInsti = institutionRepository.findInstitutionByIdentifier("siamois").orElseThrow(() -> new IllegalStateException("Default institution should exist"));
             info = new UserInfo(defaultInsti, admin, "en");
         }
 

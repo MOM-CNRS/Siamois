@@ -61,7 +61,11 @@ public class AdminInitializer implements DatabaseInitializer {
     @Transactional
     public void initialize() throws DatabaseDataInitException {
         initializeAdmin();
-        initializeAdminOrganization();
+        Institution defaultInstitution = institutionRepository.findInstitutionByIdentifier("siamois").orElseThrow(() -> new IllegalStateException("Default Institution not found"));
+        if (!defaultInstitution.getManagers().contains(createdAdmin)) {
+            defaultInstitution.getManagers().add(createdAdmin);
+            institutionRepository.save(defaultInstitution);
+        }
     }
 
     void initializeAdmin() throws DatabaseDataInitException {
@@ -117,35 +121,7 @@ public class AdminInitializer implements DatabaseInitializer {
      * Creates the Siamois Administration organisation if it doesn't exist. Changes the manager of the organisation
      * to the current admin
      */
-    void initializeAdminOrganization() {
-        if (processExistingInstitution()) return;
 
-        Institution institution = new Institution();
-        institution.setName("Organisation par défaut");
-        institution.setDescription("DEFAULT");
-        institution.getManagers().add(createdAdmin);
-        institution.setIdentifier("siamois");
-
-        createdInstitution = institutionRepository.save(institution);
-
-        log.info("Created institution {}", institution.getIdentifier());
-    }
-
-    protected boolean processExistingInstitution() {
-        Institution institution;
-        Optional<Institution> optInstitution = institutionRepository.findInstitutionByIdentifier("siamois");
-        if (optInstitution.isPresent()) {
-            institution = optInstitution.get();
-            if (createdAdminIsNotOwnerOf(institution.getManagers())) {
-                institution.getManagers().add(createdAdmin);
-                institutionRepository.save(institution);
-            }
-            log.debug("Institution already exists: {}", institution.getName());
-            createdInstitution = institution;
-            return true;
-        }
-        return false;
-    }
 
     private boolean createdAdminIsNotOwnerOf(Set<Person> managers) {
         return managers
