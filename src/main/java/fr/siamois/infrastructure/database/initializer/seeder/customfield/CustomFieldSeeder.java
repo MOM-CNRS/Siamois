@@ -60,13 +60,13 @@ public class CustomFieldSeeder {
 
                 f.setIsSystemField(s.isSystemField());
                 f.setValueBinding(s.valueBinding());
-                f.setFieldCode(s.fieldCode());
                 f.setConcept(c);
                 f.setLabel(s.label());
 
                 if (f instanceof CustomFieldSelectOneFromFieldCode df) {
                     df.setStyleClass(s.styleClass());
                     df.setIconClass(s.iconClass());
+                    df.setFieldCode(s.fieldCode());
                 }
 
                 customFieldRepository.save(f);

@@ -71,7 +71,7 @@ public class DefaultFormsInitializer implements DatabaseInitializer {
             new CustomFieldSeederSpec(
                     CustomFieldSelectOneFromFieldCode.class,
                     true,
-                    " recordingunit.property.interpretation",
+                    "recordingunit.property.interpretation",
                     new ConceptSeeder.ConceptKey(DEFAULT_VOCABULARY_ID, "4286197"),
                     "normalizedInterpretation",
                     "bi bi-pencil-square",
@@ -94,13 +94,13 @@ public class DefaultFormsInitializer implements DatabaseInitializer {
                                                     false,
                                                     true,
                                                     fields.get(0),
-                                                    "ui-g-12 ui-md-6 ui-lg-4"
+                                                    "ui-g-12 ui-md-6 ui-lg-3"
                                             ),
                                             new CustomColDTO(
                                                     false,
                                                     true,
                                                     fields.get(2),
-                                                    "ui-g-12 ui-md-6 ui-lg-4"
+                                                    "ui-g-12 ui-md-6 ui-lg-3"
                                             )
                                     )
                             )),
@@ -119,19 +119,19 @@ public class DefaultFormsInitializer implements DatabaseInitializer {
                                                     false,
                                                     true,
                                                     fields.get(0),
-                                                    "ui-g-12 ui-md-6 ui-lg-4"
+                                                    "ui-g-12 ui-md-6 ui-lg-3"
                                             ),
                                             new CustomColDTO(
                                                     false,
                                                     true,
                                                     fields.get(1),
-                                                    "ui-g-12 ui-md-6 ui-lg-4"
+                                                    "ui-g-12 ui-md-6 ui-lg-3"
                                             ),
                                             new CustomColDTO(
                                                     false,
                                                     true,
                                                     fields.get(2),
-                                                    "ui-g-12 ui-md-6 ui-lg-4"
+                                                    "ui-g-12 ui-md-6 ui-lg-3"
                                             )
                                     )
                             )),

@@ -40,9 +40,6 @@ public abstract class CustomField implements Serializable {
     @Column(name = "value_binding")
     private String valueBinding; // e.g. "creationTime", "authors" to bind system field with JPA entities attributes
 
-    @Column(name = "field_code")
-    private String fieldCode;
-
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "fk_unit_concept")
     private Concept unitConcept;
