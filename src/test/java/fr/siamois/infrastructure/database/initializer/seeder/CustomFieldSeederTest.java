@@ -2,6 +2,7 @@ package fr.siamois.infrastructure.database.initializer.seeder;
 
 import fr.siamois.domain.models.exceptions.database.DatabaseDataInitException;
 import fr.siamois.domain.models.form.customfield.CustomField;
+import fr.siamois.domain.models.form.customfield.CustomFieldSelectOneFromFieldCode;
 import fr.siamois.domain.models.form.customfield.CustomFieldText;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.models.vocabulary.Vocabulary;
@@ -122,7 +123,7 @@ class CustomFieldSeederTest {
 
         List<CustomFieldSeederSpec> toInsert = List.of(
                 new CustomFieldSeederSpec(
-                        CustomFieldText.class,
+                        CustomFieldSelectOneFromFieldCode.class,
                         true,
                         "",
                         key,
@@ -135,7 +136,7 @@ class CustomFieldSeederTest {
 
         when(conceptSeeder.findConceptOrThrow(key)).thenReturn(c);
         when(customFieldRepository.findByTypeAndSystemAndBindingAndConcept(
-                CustomFieldText.class,
+                CustomFieldSelectOneFromFieldCode.class,
                 true,
                 "type",
                 c

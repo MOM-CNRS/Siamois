@@ -2,7 +2,6 @@ package fr.siamois.infrastructure.database.initializer;
 
 import fr.siamois.domain.models.exceptions.database.DatabaseDataInitException;
 import fr.siamois.domain.models.form.customfield.CustomFieldSelectOneFromFieldCode;
-import fr.siamois.domain.models.form.customform.CustomCol;
 import fr.siamois.domain.models.form.formscope.FormScope;
 import fr.siamois.domain.models.vocabulary.Vocabulary;
 import fr.siamois.infrastructure.database.initializer.seeder.*;
@@ -20,7 +19,7 @@ import java.util.Map;
 @Slf4j
 @Service
 @Order(0)
-public class DefaultFormsInitializer implements DatabaseInitializer {
+public class DefaultFormsDatasetInitializer implements DatabaseInitializer {
 
     private final ConceptSeeder conceptSeeder;
     private final ThesaurusSeeder thesaurusSeeder;
@@ -158,7 +157,7 @@ public class DefaultFormsInitializer implements DatabaseInitializer {
             )
     );
 
-    public DefaultFormsInitializer(ConceptSeeder conceptSeeder, ThesaurusSeeder thesaurusSeeder, CustomFieldSeeder customFieldSeeder, CustomFormScopeSeeder customFormScopeSeeder, CustomFormSeeder customFormSeeder) {
+    public DefaultFormsDatasetInitializer(ConceptSeeder conceptSeeder, ThesaurusSeeder thesaurusSeeder, CustomFieldSeeder customFieldSeeder, CustomFormScopeSeeder customFormScopeSeeder, CustomFormSeeder customFormSeeder) {
         this.conceptSeeder = conceptSeeder;
         this.thesaurusSeeder = thesaurusSeeder;
         this.customFieldSeeder = customFieldSeeder;
