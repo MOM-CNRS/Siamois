@@ -17,7 +17,6 @@ import java.util.Objects;
 @Audited(targetAuditMode = RelationTargetAuditMode.NOT_AUDITED)
 public class Concept implements Serializable {
 
-    // Copy constructor
     public Concept(Concept concept) {
         this.id = concept.getId();
         this.vocabulary = concept.getVocabulary();
