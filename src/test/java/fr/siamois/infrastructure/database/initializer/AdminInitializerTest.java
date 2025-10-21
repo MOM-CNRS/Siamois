@@ -2,6 +2,7 @@ package fr.siamois.infrastructure.database.initializer;
 
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.exceptions.database.DatabaseDataInitException;
+import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.infrastructure.database.repositories.institution.InstitutionRepository;
 import fr.siamois.infrastructure.database.repositories.person.PersonRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -13,6 +14,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 import java.util.List;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -35,6 +37,8 @@ class AdminInitializerTest {
 
     private AdminInitializer adminInitializer;
 
+    private Institution institution;
+
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
@@ -45,6 +49,11 @@ class AdminInitializerTest {
         adminInitializer.setAdminUsername("admin");
         adminInitializer.setAdminPassword("admin");
         adminInitializer.setAdminEmail("admin@example.com");
+
+        institution = new Institution();
+        institution.setId(1L);
+        institution.setName("Siamois");
+        institution.setIdentifier("siamois");
     }
 
     @Test
@@ -52,6 +61,8 @@ class AdminInitializerTest {
         when(personRepository.findAllSuperAdmin()).thenReturn(List.of());
         when(passwordEncoder.encode("admin")).thenReturn("encodedPassword");
         when(personRepository.save(any(Person.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(institutionRepository.findInstitutionByIdentifier("siamois")).thenReturn(Optional.of(institution));
+
 
         adminInitializer.initialize();
 
@@ -65,6 +76,7 @@ class AdminInitializerTest {
         Person existingAdmin = new Person();
         existingAdmin.setUsername("admin");
         when(personRepository.findAllSuperAdmin()).thenReturn(List.of(existingAdmin));
+        when(institutionRepository.findInstitutionByIdentifier("siamois")).thenReturn(Optional.of(institution));
 
         adminInitializer.initialize();
 
