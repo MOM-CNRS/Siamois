@@ -25,6 +25,7 @@ public class DefaultFormsDatasetInitializer implements DatabaseInitializer {
     public static final String BI_BI_PENCIL_SQUARE = "bi bi-pencil-square";
     public static final String MR_2_RECORDING_UNIT_TYPE_CHIP = "mr-2 recording-unit-type-chip";
     public static final String UI_G_12_UI_MD_6_UI_LG_3 = "ui-g-12 ui-md-6 ui-lg-3";
+    public static final String COMMON_HEADER_GENERAL = "common.header.general";
     private final ConceptSeeder conceptSeeder;
     private final ThesaurusSeeder thesaurusSeeder;
     private final CustomFieldSeeder customFieldSeeder;
@@ -90,7 +91,7 @@ public class DefaultFormsDatasetInitializer implements DatabaseInitializer {
                     "Formulaire d'unité non stratigraphique",
                     List.of(new CustomFormPanelDTO(
                             "",
-                            "common.header.general",
+                            COMMON_HEADER_GENERAL,
                             List.of(new CustomRowDTO(
                                     List.of(
                                             new CustomColDTO(
@@ -115,7 +116,7 @@ public class DefaultFormsDatasetInitializer implements DatabaseInitializer {
                     "Formulaire d'unité stratigraphique",
                     List.of(new CustomFormPanelDTO(
                             "",
-                            "common.header.general",
+                            COMMON_HEADER_GENERAL,
                             List.of(new CustomRowDTO(
                                     List.of(
                                             new CustomColDTO(
@@ -146,7 +147,7 @@ public class DefaultFormsDatasetInitializer implements DatabaseInitializer {
                     "Formulaire d'unité d'enregistrements sans type",
                     List.of(new CustomFormPanelDTO(
                             "",
-                            "common.header.general",
+                            COMMON_HEADER_GENERAL,
                             List.of(new CustomRowDTO(
                                     List.of(
                                             new CustomColDTO(
