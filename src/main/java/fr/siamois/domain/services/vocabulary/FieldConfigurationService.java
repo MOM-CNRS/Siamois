@@ -5,6 +5,7 @@ import fr.siamois.domain.models.exceptions.ErrorProcessingExpansionException;
 import fr.siamois.domain.models.exceptions.api.NotSiamoisThesaurusException;
 import fr.siamois.domain.models.exceptions.vocabulary.NoConfigForFieldException;
 import fr.siamois.domain.models.institution.Institution;
+import fr.siamois.domain.models.settings.ConceptFieldConfig;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.models.vocabulary.GlobalFieldConfig;
@@ -13,6 +14,7 @@ import fr.siamois.infrastructure.api.ConceptApi;
 import fr.siamois.infrastructure.api.dto.ConceptBranchDTO;
 import fr.siamois.infrastructure.api.dto.FullInfoDTO;
 import fr.siamois.infrastructure.database.repositories.FieldRepository;
+import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptFieldConfigRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -36,19 +38,21 @@ public class FieldConfigurationService {
     private final ConceptService conceptService;
 
     private final LabelService labelService;
+    private final ConceptFieldConfigRepository conceptFieldConfigRepository;
 
 
     public FieldConfigurationService(ConceptApi conceptApi,
                                      FieldService fieldService,
                                      FieldRepository fieldRepository,
                                      ConceptRepository conceptRepository,
-                                     ConceptService conceptService, LabelService labelService) {
+                                     ConceptService conceptService, LabelService labelService, ConceptFieldConfigRepository conceptFieldConfigRepository) {
         this.conceptApi = conceptApi;
         this.fieldService = fieldService;
         this.fieldRepository = fieldRepository;
         this.conceptRepository = conceptRepository;
         this.conceptService = conceptService;
         this.labelService = labelService;
+        this.conceptFieldConfigRepository = conceptFieldConfigRepository;
     }
 
     private boolean containsFieldCode(FullInfoDTO conceptDTO) {
@@ -172,21 +176,8 @@ public class FieldConfigurationService {
      * @return the Concept associated with the field code
      * @throws NoConfigForFieldException if no configuration is found for the field code
      */
-    public Concept findConfigurationForFieldCode(UserInfo info, String fieldCode) throws NoConfigForFieldException {
-        Optional<Concept> optConcept = conceptRepository
-                .findTopTermConfigForFieldCodeOfUser(info.getInstitution().getId(),
-                        info.getUser().getId(),
-                        fieldCode);
-
-        if (optConcept.isPresent()) return optConcept.get();
-
-        optConcept = conceptRepository
-                .findTopTermConfigForFieldCodeOfInstitution(info.getInstitution().getId(), fieldCode);
-
-        if (optConcept.isEmpty())
-            throw new NoConfigForFieldException(info, fieldCode);
-
-        return optConcept.get();
+    public Concept findParentConceptForFieldcode(UserInfo info, String fieldCode) throws NoConfigForFieldException {
+        return findConfigurationForFieldCode(info, fieldCode).getConcept();
     }
 
     /**
@@ -208,7 +199,7 @@ public class FieldConfigurationService {
      */
     public String getUrlForFieldCode(UserInfo info, String fieldCode) {
         try {
-            return getUrlOfConcept(findConfigurationForFieldCode(info, fieldCode));
+            return getUrlOfConcept(findParentConceptForFieldcode(info, fieldCode));
         } catch (NoConfigForFieldException e) {
             return null;
         }
@@ -222,6 +213,7 @@ public class FieldConfigurationService {
      * @param input         the user input to filter concepts
      * @return a list of concepts that match the input
      */
+    @Deprecated(forRemoval = true)
     public List<Concept> fetchAutocomplete(UserInfo info, Concept parentConcept, String input) {
         try {
             List<Concept> candidates = conceptService.findDirectSubConceptOf(parentConcept);
@@ -238,23 +230,36 @@ public class FieldConfigurationService {
         }
     }
 
+    public ConceptFieldConfig findConfigurationForFieldCode(UserInfo info, String fieldCode) throws NoConfigForFieldException {
+        Optional<ConceptFieldConfig> institutionConfig = conceptFieldConfigRepository.findByFieldCodeForInstitution(info.getInstitution().getId(), fieldCode);
+        if (institutionConfig.isEmpty()) {
+            Optional<ConceptFieldConfig> personConfig = conceptFieldConfigRepository.findByFieldCodeForUser(info.getUser().getId(),  fieldCode);
+            if (personConfig.isEmpty()) {
+                throw new NoConfigForFieldException(fieldCode);
+            }
+            return personConfig.get();
+        }
+        return institutionConfig.get();
+    }
+
+    public List<Concept> fetchAutocomplete(UserInfo info, String fieldCode, String input) {
+        try {
+            ConceptFieldConfig config = findConfigurationForFieldCode(info, fieldCode);
+            conceptService.saveAllSubConceptOfIfUpdated(config);
+
+            // Search in all labels
+
+        } catch (NoConfigForFieldException e) {
+            log.warn(e.getMessage());
+            return List.of();
+        } catch (ErrorProcessingExpansionException e) {
+            log.error(e.getMessage());
+            return List.of();
+        }
+    }
+
     private boolean labelContainsInputIgnoreCase(UserInfo info, String input, Concept c) {
         return labelService.findLabelOf(c, info.getLang()).getValue().toLowerCase().contains(input.toLowerCase());
     }
-
-    /**
-     * Fetches autocomplete suggestions for a specific field code based on user input.
-     *
-     * @param info      the user information containing institution and user details
-     * @param fieldCode the field code for which to fetch autocomplete suggestions
-     * @param input     the user input to filter concepts
-     * @return a list of concepts that match the input
-     * @throws NoConfigForFieldException if no configuration is found for the field code
-     */
-    public List<Concept> fetchAutocomplete(UserInfo info, String fieldCode, String input) throws NoConfigForFieldException {
-        Concept parentConcept = findConfigurationForFieldCode(info, fieldCode);
-        return fetchAutocomplete(info, parentConcept, input);
-    }
-
 
 }

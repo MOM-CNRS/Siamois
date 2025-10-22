@@ -103,7 +103,7 @@ public class UserDialogBean implements Serializable {
         if (shouldRenderRole) {
             conceptCompleteUrl = fieldConfigurationService.getUrlForFieldCode(sessionSettingsBean.getUserInfo(), Person.USER_ROLE_FIELD_CODE);
             try {
-                parentConcept = fieldConfigurationService.findConfigurationForFieldCode(sessionSettingsBean.getUserInfo(), Person.USER_ROLE_FIELD_CODE);
+                parentConcept = fieldConfigurationService.findParentConceptForFieldcode(sessionSettingsBean.getUserInfo(), Person.USER_ROLE_FIELD_CODE);
             } catch (NoConfigForFieldException e) {
                 MessageUtils.displayNoThesaurusConfiguredMessage(langBean);
             }

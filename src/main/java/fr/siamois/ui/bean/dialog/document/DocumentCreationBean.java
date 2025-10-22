@@ -95,9 +95,9 @@ public class DocumentCreationBean implements Serializable {
 
     private void prepareParentConcept() throws NoConfigForFieldException {
         UserInfo info = sessionSettingsBean.getUserInfo();
-        parentNature = fieldConfigurationService.findConfigurationForFieldCode(info, Document.NATURE_FIELD_CODE);
-        parentScale = fieldConfigurationService.findConfigurationForFieldCode(info, Document.SCALE_FIELD_CODE);
-        parentType = fieldConfigurationService.findConfigurationForFieldCode(info, Document.FORMAT_FIELD_CODE);
+        parentNature = fieldConfigurationService.findParentConceptForFieldcode(info, Document.NATURE_FIELD_CODE);
+        parentScale = fieldConfigurationService.findParentConceptForFieldcode(info, Document.SCALE_FIELD_CODE);
+        parentType = fieldConfigurationService.findParentConceptForFieldcode(info, Document.FORMAT_FIELD_CODE);
     }
 
     public String getUrlForConcept(Concept concept) {

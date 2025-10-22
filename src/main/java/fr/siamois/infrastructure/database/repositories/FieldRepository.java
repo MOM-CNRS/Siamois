@@ -56,4 +56,13 @@ public interface FieldRepository extends CrudRepository<CustomField, Long> {
     )
     boolean hasUserConfig(Long personId, Long institutionId);
 
+    @Transactional
+    @Modifying
+    @Query(
+            nativeQuery = true,
+            value = "UPDATE concept_field_config cfc " +
+                    "SET cfc.existing_checksum = :checksum " +
+                    "WHERE cfc.config_id = :fieldConfigId"
+    )
+    void updateChecksumForFieldConfig(Long fieldConfigId, Long checksum);
 }

@@ -212,12 +212,12 @@ class FieldConfigurationServiceTest {
     }
 
     @Test
-    void findConfigurationForFieldCode_shouldThrow_whenNoConfigSet() {
-        assertThrows(NoConfigForFieldException.class, () -> service.findConfigurationForFieldCode(userInfo, "SIATEST"));
+    void findParentConceptForFieldcode_shouldThrow_whenNoConfigSet() {
+        assertThrows(NoConfigForFieldException.class, () -> service.findParentConceptForFieldcode(userInfo, "SIATEST"));
     }
 
     @Test
-    void findConfigurationForFieldCode_shouldReturnUserConcept_whenUserConfig() throws NoConfigForFieldException {
+    void findParentConceptForFieldcode_shouldReturnUserConcept_whenUserConfig() throws NoConfigForFieldException {
         Concept concept = new Concept();
         concept.setId(-1L);
         
@@ -228,13 +228,13 @@ class FieldConfigurationServiceTest {
         when(conceptRepository.findTopTermConfigForFieldCodeOfUser(anyLong(), anyLong(), anyString()))
                 .thenReturn(Optional.of(concept));
 
-        Concept result = service.findConfigurationForFieldCode(userInfo, "SIATEST");
+        Concept result = service.findParentConceptForFieldcode(userInfo, "SIATEST");
 
         assertThat(result).isEqualTo(concept);
     }
 
     @Test
-    void findConfigurationForFieldCode_shouldReturnInstitConcept_whenNoUserConfig() throws NoConfigForFieldException {
+    void findParentConceptForFieldcode_shouldReturnInstitConcept_whenNoUserConfig() throws NoConfigForFieldException {
         Concept concept = new Concept();
         concept.setId(-1L);
         
@@ -245,7 +245,7 @@ class FieldConfigurationServiceTest {
         when(conceptRepository.findTopTermConfigForFieldCodeOfInstitution(anyLong(), anyString()))
                 .thenReturn(Optional.of(concept));
 
-        Concept result = service.findConfigurationForFieldCode(userInfo, "SIATEST");
+        Concept result = service.findParentConceptForFieldcode(userInfo, "SIATEST");
 
         assertThat(result).isEqualTo(concept);
     }

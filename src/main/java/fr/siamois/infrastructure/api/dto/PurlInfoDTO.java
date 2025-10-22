@@ -2,6 +2,8 @@ package fr.siamois.infrastructure.api.dto;
 
 import lombok.Data;
 
+import java.util.Objects;
+
 @Data
 public class PurlInfoDTO {
     private String value;
@@ -11,15 +13,14 @@ public class PurlInfoDTO {
 
     public PurlInfoDTO() {}
 
-    public PurlInfoDTO(String dataType, String value) {
-        this.value = value;
-        this.datatype = dataType;
+    @Override
+    public boolean equals(Object o) {
+        if (!(o instanceof PurlInfoDTO that)) return false;
+        return Objects.equals(value, that.value) && Objects.equals(lang, that.lang);
     }
 
-    public PurlInfoDTO(String dataType, String value, String lang) {
-        this.value = value;
-        this.datatype = dataType;
-        this.lang = lang;
+    @Override
+    public int hashCode() {
+        return Objects.hash(value, lang);
     }
-
 }

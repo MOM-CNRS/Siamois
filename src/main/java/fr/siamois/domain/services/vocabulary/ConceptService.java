@@ -2,19 +2,18 @@ package fr.siamois.domain.services.vocabulary;
 
 import fr.siamois.domain.models.exceptions.ErrorProcessingExpansionException;
 import fr.siamois.domain.models.institution.Institution;
+import fr.siamois.domain.models.settings.ConceptFieldConfig;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.models.vocabulary.Vocabulary;
 import fr.siamois.infrastructure.api.ConceptApi;
 import fr.siamois.infrastructure.api.dto.ConceptBranchDTO;
 import fr.siamois.infrastructure.api.dto.FullInfoDTO;
 import fr.siamois.infrastructure.api.dto.PurlInfoDTO;
+import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRelationRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRepository;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 /**
  * Service for managing concepts in the vocabulary.
@@ -27,11 +26,13 @@ public class ConceptService {
     private final ConceptRepository conceptRepository;
     private final ConceptApi conceptApi;
     private final LabelService labelService;
+    private final ConceptRelationRepository conceptRelationRepository;
 
-    public ConceptService(ConceptRepository conceptRepository, ConceptApi conceptApi, LabelService labelService) {
+    public ConceptService(ConceptRepository conceptRepository, ConceptApi conceptApi, LabelService labelService, ConceptRelationRepository conceptRelationRepository) {
         this.conceptRepository = conceptRepository;
         this.conceptApi = conceptApi;
         this.labelService = labelService;
+        this.conceptRelationRepository = conceptRelationRepository;
     }
 
     /**
@@ -117,6 +118,7 @@ public class ConceptService {
      * @return a list of direct sub-concepts
      * @throws ErrorProcessingExpansionException if there is an error processing the expansion of concepts
      */
+    @Deprecated(forRemoval = true)
     public List<Concept> findDirectSubConceptOf(Concept concept) throws ErrorProcessingExpansionException {
         ConceptBranchDTO branch = conceptApi.fetchDownExpansion(concept.getVocabulary(), concept.getExternalId());
         List<Concept> result = new ArrayList<>();
@@ -142,6 +144,36 @@ public class ConceptService {
         }
 
         return result;
+    }
+
+    public void saveAllSubConceptOfIfUpdated(ConceptFieldConfig config) throws ErrorProcessingExpansionException {
+        Concept concept = config.getConcept();
+        Vocabulary vocabulary = concept.getVocabulary();
+        ConceptBranchDTO branchDTO = conceptApi.fetchDownExpansion(config);
+        if (branchDTO == null) return;
+
+        FullInfoDTO parentConcept = branchDTO.getData().values().stream()
+                .filter(dto -> concept.getExternalId().equalsIgnoreCase(dto.getIdentifier()[0].getValue()))
+                .findFirst()
+                .orElseThrow(() -> new RuntimeException("No concept found for " + concept.getExternalId()));
+
+        if (parentConcept.getNarrower() == null) return;
+
+
+        Map<String, Concept> concepts = new HashMap<>();
+        for (Map.Entry<String, FullInfoDTO> entry : branchDTO.getData().entrySet()) {
+            concepts.put(entry.getKey(), saveOrGetConceptFromFullDTO(vocabulary, entry.getValue()));
+        }
+
+        for (Map.Entry<String, FullInfoDTO> entry : branchDTO.getData().entrySet()) {
+            for (PurlInfoDTO narrower : entry.getValue().getNarrower()) {
+                Concept parent = concepts.get(entry.getKey());
+                Concept child =  concepts.get(narrower.getValue());
+                ConceptRelation relation = new  ConceptRelation(parent,child);
+                conceptRelationRepository.save(relation);
+            }
+        }
+
     }
 
     /**
