@@ -2,6 +2,7 @@ package fr.siamois.domain.services.history;
 
 import fr.siamois.domain.models.history.InfoRevisionEntity;
 import fr.siamois.domain.models.history.RevisionWithInfo;
+import jakarta.persistence.NoResultException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.envers.AuditReader;
@@ -57,17 +58,18 @@ public class HistoryAuditService {
         query.add(AuditEntity.id().eq(entityId));
         query.add(AuditEntity.revisionNumber().maximize().computeAggregationInInstanceContext());
 
-        Object[] result = (Object[]) query.getSingleResult();
+        try {
+            Object[] result = (Object[]) query.getSingleResult();
 
-        if (result == null) {
+
+            return new RevisionWithInfo<>(
+                    (T) result[0],
+                    (InfoRevisionEntity) result[1],
+                    (RevisionType) result[2]
+            );
+        } catch (NoResultException e) {
             return null;
         }
-
-        return new RevisionWithInfo<>(
-                (T) result[0],
-                (InfoRevisionEntity) result[1],
-                (RevisionType) result[2]
-        );
 
     }
 
