@@ -109,8 +109,7 @@ class HistoryAuditServiceTest {
         when(query.add(any())).thenReturn(query);
         when(query.getSingleResult()).thenThrow(new NoResultException());
 
-        assertThrows(NoResultException.class, () -> service.findLastRevisionForEntity(String.class, 999L));
-        verify(query).getSingleResult();
+        assertNull(service.findLastRevisionForEntity(String.class, 999L));
     }
 
     @Test

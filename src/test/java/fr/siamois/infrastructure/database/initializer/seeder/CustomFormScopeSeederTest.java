@@ -4,6 +4,7 @@ package fr.siamois.infrastructure.database.initializer.seeder;
 import fr.siamois.domain.models.form.customform.CustomForm;
 import fr.siamois.domain.models.form.formscope.FormScope;
 import fr.siamois.domain.models.vocabulary.Concept;
+import fr.siamois.infrastructure.database.initializer.seeder.customform.CustomFormDTO;
 import fr.siamois.infrastructure.database.initializer.seeder.customform.CustomFormScopeDTO;
 import fr.siamois.infrastructure.database.initializer.seeder.customform.CustomFormScopeSeeder;
 import fr.siamois.infrastructure.database.initializer.seeder.customform.CustomFormSeeder;
@@ -66,11 +67,17 @@ class CustomFormScopeSeederTest {
     }
 
     @Test
-    void seed_createsScopeWhenMissing_withCorrectFields() throws Exception {
+    void seed_createsScopeWhenMissing_withCorrectFields()  {
         // Arrange – the DTO just needs to hand inputs to the seeders.
         when(conceptSeeder.findConceptOrThrow(any())).thenReturn(concept);
         when(customFormSeeder.findOrThrow(any())).thenReturn(form);
         when(formScopeRepository.findGlobalByTypeAndForm(concept, form)).thenReturn(Optional.empty());
+
+        dto = new CustomFormScopeDTO(
+                FormScope.ScopeLevel.GLOBAL_DEFAULT.toString(),
+                mock(ConceptSeeder.ConceptKey.class),
+                mock(CustomFormDTO.class)
+        );
 
         // Act
         seeder.seed(List.of(dto));
@@ -89,10 +96,15 @@ class CustomFormScopeSeederTest {
     }
 
     @Test
-    void seed_doesNotCreateWhenAlreadyExists() throws Exception {
+    void seed_doesNotCreateWhenAlreadyExists()  {
         when(conceptSeeder.findConceptOrThrow(any())).thenReturn(concept);
         when(customFormSeeder.findOrThrow(any())).thenReturn(form);
         when(formScopeRepository.findGlobalByTypeAndForm(concept, form)).thenReturn(Optional.of(new FormScope()));
+        dto = new CustomFormScopeDTO(
+                FormScope.ScopeLevel.GLOBAL_DEFAULT.toString(),
+                mock(ConceptSeeder.ConceptKey.class),
+                mock(CustomFormDTO.class)
+        );
 
         seeder.seed(List.of(dto));
 
@@ -104,6 +116,11 @@ class CustomFormScopeSeederTest {
         when(conceptSeeder.findConceptOrThrow(any()))
                 .thenThrow(new IllegalStateException("Concept introuvable"));
 
+        dto = new CustomFormScopeDTO(
+                FormScope.ScopeLevel.GLOBAL_DEFAULT.toString(),
+                mock(ConceptSeeder.ConceptKey.class),
+                mock(CustomFormDTO.class)
+        );
         // Prepare the argument outside the lambda
         var dtos = List.of(dto);
 
@@ -122,6 +139,11 @@ class CustomFormScopeSeederTest {
                 .thenThrow(new IllegalStateException("Form introuvable"));
 
         // Build args outside the lambda to keep a single call inside it
+        dto = new CustomFormScopeDTO(
+                FormScope.ScopeLevel.GLOBAL_DEFAULT.toString(),
+                mock(ConceptSeeder.ConceptKey.class),
+                mock(CustomFormDTO.class)
+        );
         var dtos = List.of(dto);
 
         assertThatThrownBy(() -> seeder.seed(dtos))
