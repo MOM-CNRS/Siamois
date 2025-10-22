@@ -1,8 +1,10 @@
 package fr.siamois.ui.bean.panel.models.panel.single;
 
+import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.document.Document;
 import fr.siamois.domain.models.exceptions.vocabulary.NoConfigForFieldException;
+import fr.siamois.domain.models.history.InfoRevisionEntity;
 import fr.siamois.domain.models.history.RevisionWithInfo;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.models.vocabulary.Vocabulary;
@@ -14,6 +16,7 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import org.hibernate.envers.RevisionType;
 import org.primefaces.PrimeFaces;
 import org.primefaces.event.TabChangeEvent;
 import org.springframework.util.MimeType;
@@ -21,6 +24,7 @@ import org.springframework.util.MimeType;
 import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.Serializable;
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -189,12 +193,29 @@ public abstract class AbstractSingleEntityPanel<T> extends AbstractSingleEntity<
     }
 
     @SuppressWarnings("unchecked")
+    private RevisionWithInfo<T> findLastRevisionForEntity() {
+        var result = (RevisionWithInfo<T>) historyAuditService.findLastRevisionForEntity(unit.getClass(), idunit);
+        if (bufferedLastRevision == null) {
+            InfoRevisionEntity info = new InfoRevisionEntity();
+            UserInfo userInfo = sessionSettingsBean.getUserInfo();
+            info.setRevId(0L);
+            info.setEpochTimestamp(OffsetDateTime.now().toEpochSecond());
+            info.setUpdatedBy(userInfo.getUser());
+            info.setUpdatedFrom(userInfo.getInstitution());
+            result = new RevisionWithInfo<>(unit, info, RevisionType.MOD);
+        }
+        return result;
+    }
+
     public String lastUpdateDate() {
-        bufferedLastRevision = (RevisionWithInfo<T>) historyAuditService.findLastRevisionForEntity(unit.getClass(), idunit);
+        bufferedLastRevision = findLastRevisionForEntity();
         return bufferedLastRevision.getDate().toString();
     }
 
     public String lastUpdater() {
+        if (bufferedLastRevision == null) {
+            bufferedLastRevision = findLastRevisionForEntity();
+        }
         String result = bufferedLastRevision.revisionEntity().getUpdatedBy().displayName();
         bufferedLastRevision = null;
         return result;

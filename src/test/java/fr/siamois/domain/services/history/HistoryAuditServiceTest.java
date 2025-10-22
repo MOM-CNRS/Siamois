@@ -1,9 +1,12 @@
 package fr.siamois.domain.services.history;
 
+import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.history.InfoRevisionEntity;
 import fr.siamois.domain.models.history.RevisionWithInfo;
+import fr.siamois.domain.models.institution.Institution;
 import jakarta.persistence.NoResultException;
 import org.hibernate.envers.AuditReader;
+import org.hibernate.envers.NotAudited;
 import org.hibernate.envers.RevisionType;
 import org.hibernate.envers.query.AuditQuery;
 import org.hibernate.envers.query.AuditQueryCreator;
@@ -109,4 +112,38 @@ class HistoryAuditServiceTest {
         assertThrows(NoResultException.class, () -> service.findLastRevisionForEntity(String.class, 999L));
         verify(query).getSingleResult();
     }
+
+    @Test
+    void restoreEntity_shouldCopyNotAuditedFieldsFromBaseEntity() {
+        TestEntity baseEntity = new TestEntity();
+        baseEntity.auditedField = "updated";
+        baseEntity.notAuditedField = "updatedNotAudited";
+
+        TestEntity revisionEntity = new TestEntity();
+        revisionEntity.auditedField = "revision";
+        revisionEntity.notAuditedField = "revisionNotAudited";
+
+        Person person = mock(Person.class);
+        Institution institution = mock(Institution.class);
+
+        RevisionWithInfo<TestEntity> revision = new RevisionWithInfo<>(
+                revisionEntity,
+                new InfoRevisionEntity(1L, 50L, person, institution),
+                RevisionType.MOD
+        );
+
+        // Act
+        TestEntity result = service.restoreEntity(revision, baseEntity);
+
+        // Assert
+        assertEquals("revision", result.auditedField);
+        assertEquals("updatedNotAudited", result.notAuditedField);
+    }
+
+    static class TestEntity {
+        public String auditedField = "original";
+        @NotAudited
+        public String notAuditedField = "originalNotAudited";
+    }
+
 }
