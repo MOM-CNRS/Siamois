@@ -6,6 +6,7 @@ import fr.siamois.domain.models.ark.Ark;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.exceptions.spatialunit.SpatialUnitAlreadyExistsException;
 import fr.siamois.domain.models.exceptions.spatialunit.SpatialUnitNotFoundException;
+import fr.siamois.domain.models.history.RevisionWithInfo;
 import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.settings.InstitutionSettings;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
@@ -19,6 +20,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -595,6 +597,24 @@ class SpatialUnitServiceTest {
         assertThat(result).isEmpty();
         verify(spatialUnitRepository).findParentsOf(id);
         verifyNoMoreInteractions(spatialUnitRepository);
+    }
+
+    @Test
+    void restore_shouldSaveRevisionFromHistory() {
+        // GIVEN
+        SpatialUnit spatialUnit = new SpatialUnit();
+        RevisionWithInfo<SpatialUnit> history = mock(RevisionWithInfo.class);
+        when(history.entity()).thenReturn(spatialUnit);
+
+        // WHEN
+        spatialUnitService.restore(history);
+
+        // THEN
+        ArgumentCaptor<SpatialUnit> captor = ArgumentCaptor.forClass(SpatialUnit.class);
+        verify(spatialUnitRepository).save(captor.capture());
+
+        // Vérifie que c’est bien le spatialUnit récupéré du history
+        assert(captor.getValue() == spatialUnit);
     }
 
 }
