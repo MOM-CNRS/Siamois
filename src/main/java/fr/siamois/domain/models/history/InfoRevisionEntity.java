@@ -6,8 +6,10 @@ import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.institution.Institution;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
+import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
 import org.hibernate.envers.RevisionEntity;
 import org.hibernate.envers.RevisionNumber;
 import org.hibernate.envers.RevisionTimestamp;
@@ -21,6 +23,8 @@ import org.hibernate.envers.RevisionTimestamp;
 @RevisionEntity
 @EqualsAndHashCode
 @Data
+@AllArgsConstructor
+@NoArgsConstructor
 @Table(name = "revinfo")
 @EntityListeners(InfoRevisionListener.class)
 public class InfoRevisionEntity {

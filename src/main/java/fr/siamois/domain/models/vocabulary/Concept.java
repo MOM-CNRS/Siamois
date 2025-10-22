@@ -14,7 +14,7 @@ import java.util.Objects;
 @Entity
 @Table(name = "concept")
 @NoArgsConstructor
-@Audited(targetAuditMode = RelationTargetAuditMode.NOT_AUDITED)
+@Audited
 public class Concept implements Serializable {
 
     public Concept(Concept concept) {
