@@ -39,6 +39,9 @@ public class ConceptFieldConfig {
     @Column(name = "field_code", nullable = false, length = Integer.MAX_VALUE)
     private String fieldCode;
 
+    @Column(name = "existing_checksum", length = Integer.MAX_VALUE)
+    private Long existingChecksum = null;
+
     @Override
     public boolean equals(Object o) {
         if (!(o instanceof ConceptFieldConfig that)) return false;

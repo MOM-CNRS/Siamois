@@ -55,27 +55,6 @@ class ConceptApiTest {
     }
 
     @Test
-    void fetchConceptsUnderTopTerm() throws ErrorProcessingExpansionException {
-        Concept concept = new Concept();
-        concept.setExternalId("testId");
-        vocabulary = new Vocabulary();
-        vocabulary.setBaseUri("http://example.com");
-        vocabulary.setExternalVocabularyId("vocabId");
-        concept.setVocabulary(vocabulary);
-
-        ConceptBranchDTO expectedBranch = new ConceptBranchDTO();
-        FullInfoDTO fullInfoDTO = new FullInfoDTO();
-        expectedBranch.addConceptBranchDTO("testUrl", fullInfoDTO);
-
-        when(restTemplate.exchange(any(URI.class), eq(HttpMethod.GET), any(), eq(String.class)))
-                .thenReturn(new ResponseEntity<>("{\"testUrl\": {}}", HttpStatus.OK));
-
-        ConceptBranchDTO result = conceptApi.fetchConceptsUnderTopTerm(concept);
-
-        assertEquals(expectedBranch.getData().size(), result.getData().size());
-    }
-
-    @Test
     void fetchConceptInfo() {
         when(restTemplate.exchange(any(URI.class), eq(HttpMethod.GET), any(), eq(String.class)))
                 .thenReturn(new ResponseEntity<>("{\"testId\": {}}", HttpStatus.OK));

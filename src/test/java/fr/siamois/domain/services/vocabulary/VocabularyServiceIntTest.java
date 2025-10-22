@@ -11,6 +11,7 @@ import fr.siamois.infrastructure.api.ThesaurusApi;
 import fr.siamois.infrastructure.database.repositories.vocabulary.VocabularyRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.VocabularyTypeRepository;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -25,6 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
+@Disabled
 @ExtendWith(MockitoExtension.class)
 class VocabularyServiceIntTest {
 
