@@ -68,11 +68,6 @@ jobs:
         with:
           ssh-private-key: ${{ secrets.DEPLOY_SERVER_KEY }} # clé privée du user SSH
 
-      - name: Add known_hosts
-        run: |
-          mkdir -p ~/.ssh
-          ssh-keyscan -p "${SSH_PORT:-22}" "$SSH_HOST" >> ~/.ssh/known_hosts
-
       - name: Copy JAR to server
         run: |
           scp -P "${SSH_PORT:-22}" "${{ steps.jar.outputs.jar_path }}" "${SSH_USER}@${SSH_HOST}:${REMOTE_DIR}/"
