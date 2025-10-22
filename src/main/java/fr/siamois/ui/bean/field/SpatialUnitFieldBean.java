@@ -10,6 +10,7 @@ import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.domain.services.vocabulary.FieldConfigurationService;
 import fr.siamois.domain.services.vocabulary.FieldService;
+import fr.siamois.ui.bean.LabelBean;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.RedirectBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
@@ -49,6 +50,7 @@ public class SpatialUnitFieldBean implements Serializable {
     private final transient ConceptService conceptService;
     private final transient FieldConfigurationService fieldConfigurationService;
     private final RedirectBean redirectBean;
+    private final LabelBean labelBean;
 
     // Storage
     private List<SpatialUnit> refSpatialUnits = new ArrayList<>();
@@ -67,7 +69,7 @@ public class SpatialUnitFieldBean implements Serializable {
                                 SpatialUnitService spatialUnitService,
                                 ConceptService conceptService,
                                 FieldConfigurationService fieldConfigurationService,
-                                RedirectBean redirectBean) {
+                                RedirectBean redirectBean, LabelBean labelBean) {
         this.fieldService = fieldService;
         this.langBean = langBean;
         this.sessionSettingsBean = sessionSettingsBean;
@@ -75,6 +77,7 @@ public class SpatialUnitFieldBean implements Serializable {
         this.conceptService = conceptService;
         this.fieldConfigurationService = fieldConfigurationService;
         this.redirectBean = redirectBean;
+        this.labelBean = labelBean;
     }
 
     @EventListener(LoginEvent.class)

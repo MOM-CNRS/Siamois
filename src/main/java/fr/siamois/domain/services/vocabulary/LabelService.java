@@ -7,6 +7,7 @@ import fr.siamois.domain.models.vocabulary.label.VocabularyLabel;
 import fr.siamois.infrastructure.database.repositories.vocabulary.label.ConceptLabelRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.label.VocabularyLabelRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
@@ -35,6 +36,7 @@ public class LabelService {
      * @param langCode the language code for the label
      * @return the found or default label
      */
+    @Transactional(readOnly = true)
     public ConceptLabel findLabelOf(Concept concept, String langCode) {
         if (concept == null) {
             ConceptLabel label = new ConceptLabel();

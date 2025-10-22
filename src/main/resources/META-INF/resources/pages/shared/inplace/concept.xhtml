@@ -21,6 +21,7 @@
         <cc:attribute name="required" type="java.lang.Boolean" required="false" default="false"/>
     </cc:interface>
 
+
     <cc:implementation>
         <p:inplace mode="#{cc.attrs.mode}" toggleable="false">
             <f:facet name="output">
@@ -33,7 +34,6 @@
                                                           inputStyleClass="#{cc.attrs.answer.hasBeenModified ? 'track-change sia-modified-field': 'track-change'}"
                                                           panelStyleClass="#{cc.attrs.panelModel.autocompleteClass}"
                                                           selectedConcept="#{cc.attrs.answer.value}"
-                                                          ajaxUpdateTargets="#{cc.attrs.updateTargetsOnBlur}"
                                                           field="#{cc.attrs.field}"
                                                           label="#{cc.attrs.label}"
                                                           required="#{cc.attrs.required}"

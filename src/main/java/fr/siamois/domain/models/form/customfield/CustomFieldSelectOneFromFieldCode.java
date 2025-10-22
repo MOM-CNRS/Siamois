@@ -8,8 +8,6 @@ import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.util.Objects;
-
 
 @Getter
 @Setter
@@ -21,21 +19,20 @@ public class CustomFieldSelectOneFromFieldCode extends CustomField {
     @Column(name = "field_code")
     private String fieldCode ;
 
-    private String iconClass ;
-    private String styleClass ;
+    @Column(name = "icon_class")
+    private String iconClass;
+
+    @Column(name = "style_class")
+    private String styleClass;
 
     @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof CustomFieldSelectOneFromFieldCode that)) return false;
-        if (!super.equals(o)) return false;
-
-        return Objects.equals(fieldCode, that.fieldCode);
+    public boolean equals(Object other) {
+        return super.equals(other);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), fieldCode);
+        return super.hashCode();
     }
 
     public static class Builder {

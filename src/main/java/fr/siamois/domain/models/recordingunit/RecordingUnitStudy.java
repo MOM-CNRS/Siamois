@@ -2,7 +2,6 @@ package fr.siamois.domain.models.recordingunit;
 
 
 import fr.siamois.domain.models.ArkEntity;
-import fr.siamois.domain.models.FieldCode;
 import fr.siamois.domain.models.document.Document;
 import jakarta.persistence.*;
 import lombok.Data;
@@ -30,7 +29,5 @@ public class RecordingUnitStudy extends RecordingUnityStudyParent implements Ark
     )
     private Set<Document> documents = new HashSet<>();
 
-    @FieldCode
-    public static final String TYPE_FIELD = "SIASRU.TYPE";
 
 }

@@ -357,6 +357,16 @@ public class SpecimenPanel extends AbstractSingleEntityPanel<Specimen, SpecimenH
     }
 
     @Override
+    protected String getFormScopePropertyName() {
+        return "";
+    }
+
+    @Override
+    protected void setFormScopePropertyValue(Concept concept) {
+        unit.setType(concept);
+    }
+
+    @Override
     public void cancelChanges() {
 
         unit.setType(backupClone.getType());

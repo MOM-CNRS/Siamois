@@ -9,7 +9,7 @@ import org.springframework.stereotype.Service;
 import java.util.Optional;
 
 @Service
-@Order(3)
+@Order(-1)
 public class VocabularyTypeInitializer implements DatabaseInitializer {
 
     private final VocabularyTypeRepository vocabularyTypeRepository;

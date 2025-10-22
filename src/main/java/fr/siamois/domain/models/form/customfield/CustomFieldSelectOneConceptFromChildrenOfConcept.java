@@ -1,10 +1,7 @@
 package fr.siamois.domain.models.form.customfield;
 
 import fr.siamois.domain.models.vocabulary.Concept;
-import jakarta.persistence.DiscriminatorValue;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Table;
-import jakarta.persistence.Transient;
+import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -21,8 +18,11 @@ public class CustomFieldSelectOneConceptFromChildrenOfConcept extends CustomFiel
     @Transient
     private CustomField parentField ; // field that has the parent answer in the form
 
-    private String iconClass ;
-    private String styleClass ;
+    @Column(name = "icon_class")
+    private String iconClass;
+
+    @Column(name = "style_class")
+    private String styleClass;
 
     @Override
     public boolean equals(Object o) {
