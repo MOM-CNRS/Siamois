@@ -343,6 +343,13 @@
             <version>${jackson.version}</version>
         </dependency>
 
+        <!-- https://mvnrepository.com/artifact/org.springframework.data/spring-data-envers -->
+        <dependency>
+            <groupId>org.springframework.data</groupId>
+            <artifactId>spring-data-envers</artifactId>
+            <version>4.0.0-M6</version>
+        </dependency>
+
     </dependencies>
 
     <build>

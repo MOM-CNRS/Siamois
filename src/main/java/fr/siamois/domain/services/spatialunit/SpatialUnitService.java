@@ -6,7 +6,7 @@ import fr.siamois.domain.models.ark.Ark;
 import fr.siamois.domain.models.exceptions.recordingunit.FailedRecordingUnitSaveException;
 import fr.siamois.domain.models.exceptions.spatialunit.SpatialUnitAlreadyExistsException;
 import fr.siamois.domain.models.exceptions.spatialunit.SpatialUnitNotFoundException;
-import fr.siamois.domain.models.history.SpatialUnitHist;
+import fr.siamois.domain.models.history.RevisionWithInfo;
 import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.settings.InstitutionSettings;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
@@ -83,10 +83,9 @@ public class SpatialUnitService implements ArkEntityService {
      *
      * @param history The history of the spatial unit to restore
      */
-    public void restore(SpatialUnitHist history) {
-        SpatialUnit spatialUnit = history.createOriginal(SpatialUnit.class);
-        log.trace(spatialUnit.toString());
-        spatialUnitRepository.save(spatialUnit);
+    public void restore(RevisionWithInfo<SpatialUnit> history) {
+        SpatialUnit revision = history.entity();
+        spatialUnitRepository.save(revision);
     }
 
     private Page<SpatialUnit> initializeSpatialUnitLazyAttributes(Page<SpatialUnit> list) {

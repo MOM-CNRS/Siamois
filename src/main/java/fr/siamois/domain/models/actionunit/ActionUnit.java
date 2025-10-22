@@ -16,6 +16,7 @@ import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.ui.bean.panel.models.panel.single.AbstractSingleEntity;
 import jakarta.persistence.*;
 import lombok.Data;
+import org.hibernate.envers.Audited;
 
 import java.util.HashSet;
 import java.util.List;
@@ -27,6 +28,7 @@ import static fr.siamois.ui.bean.panel.models.panel.single.AbstractSingleEntity.
 @Data
 @Entity
 @Table(name = "action_unit", uniqueConstraints = @UniqueConstraint(columnNames = "identifier"))
+@Audited
 public class ActionUnit extends ActionUnitParent implements ArkEntity {
 
     private static final String SPATIAL_UNIT_CONTEXT_LABEL_CODE = "common.label.spatialContext";

@@ -11,6 +11,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
+import org.springframework.data.repository.history.RevisionRepository;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
@@ -18,7 +19,7 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository
-public interface RecordingUnitRepository extends CrudRepository<RecordingUnit, Long> {
+public interface RecordingUnitRepository extends CrudRepository<RecordingUnit, Long>, RevisionRepository<RecordingUnit, Long, Long> {
 
     @Query(
             value = "UPDATE recording_unit SET fk_type = :type WHERE recording_unit.recording_unit_id IN (:ids)",

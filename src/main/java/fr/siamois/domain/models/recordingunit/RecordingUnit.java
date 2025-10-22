@@ -19,6 +19,9 @@ import fr.siamois.domain.models.specimen.Specimen;
 import fr.siamois.domain.models.vocabulary.Concept;
 import jakarta.persistence.*;
 import lombok.Data;
+import lombok.NoArgsConstructor;
+import org.hibernate.envers.Audited;
+import org.hibernate.envers.NotAudited;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -31,11 +34,9 @@ import static fr.siamois.ui.bean.panel.models.panel.single.AbstractSingleEntity.
 @Data
 @Entity
 @Table(name = "recording_unit")
+@NoArgsConstructor
+@Audited
 public class RecordingUnit extends RecordingUnitParent implements ArkEntity, ReferencableEntity {
-
-    public RecordingUnit() {
-
-    }
 
     public RecordingUnit(RecordingUnit recordingUnit) {
         setType(recordingUnit.getType());
@@ -78,6 +79,7 @@ public class RecordingUnit extends RecordingUnitParent implements ArkEntity, Ref
             name = "recording_unit_authors",
             joinColumns = @JoinColumn(name = "fk_recording_unit_id"),
             inverseJoinColumns = @JoinColumn(name = "fk_person_id"))
+    @NotAudited
     private List<Person> authors = new ArrayList<>();
 
     @ManyToMany(fetch = FetchType.EAGER)
@@ -85,6 +87,7 @@ public class RecordingUnit extends RecordingUnitParent implements ArkEntity, Ref
             name = "recording_unit_excavators",
             joinColumns = @JoinColumn(name = "fk_recording_unit_id"),
             inverseJoinColumns = @JoinColumn(name = "fk_person_id"))
+    @NotAudited
     private List<Person> excavators = new ArrayList<>();
 
     @OneToMany(mappedBy = "recordingUnit")

@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.hibernate.envers.Audited;
+import org.hibernate.envers.RelationTargetAuditMode;
 
 import java.io.Serializable;
 import java.util.Objects;
@@ -12,9 +14,9 @@ import java.util.Objects;
 @Entity
 @Table(name = "concept")
 @NoArgsConstructor
+@Audited(targetAuditMode = RelationTargetAuditMode.NOT_AUDITED)
 public class Concept implements Serializable {
 
-    // Copy constructor
     public Concept(Concept concept) {
         this.id = concept.getId();
         this.vocabulary = concept.getVocabulary();

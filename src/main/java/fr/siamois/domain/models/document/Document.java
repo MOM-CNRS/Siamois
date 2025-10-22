@@ -4,11 +4,13 @@ import fr.siamois.domain.models.ArkEntity;
 import fr.siamois.domain.models.FieldCode;
 import jakarta.persistence.*;
 import lombok.Data;
+import org.hibernate.envers.Audited;
 import org.springframework.util.MimeType;
 
 @Data
 @Entity
 @Table(name = "siamois_document", schema = "public")
+@Audited
 public class Document extends DocumentParent implements ArkEntity {
 
     @Id

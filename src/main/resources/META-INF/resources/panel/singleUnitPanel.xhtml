@@ -98,7 +98,7 @@
             <!-- Save/Cancel Toolbar -->
             <p:toolbar class="panel-footer" >
                 <p:toolbarGroup align="left">
-                    Dernière modification le #{panelModel.unit.creationTime} par #{panelModel.unit.author.displayName()}
+                    Dernière modification le #{panelModel.lastUpdateDate()} par #{panelModel.lastUpdater()}
                 </p:toolbarGroup>
                 <p:toolbarGroup align="right" rendered="#{flowBean.readWriteMode == 'WRITE'}">
                     <p:commandLink value='#{langBean.msg("common.action.cancel")}'

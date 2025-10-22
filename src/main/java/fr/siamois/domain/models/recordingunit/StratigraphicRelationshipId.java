@@ -3,6 +3,7 @@ package fr.siamois.domain.models.recordingunit;
 import jakarta.persistence.Embeddable;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.envers.Audited;
 
 import java.io.Serializable;
 import java.util.Objects;
@@ -10,6 +11,7 @@ import java.util.Objects;
 @Embeddable
 @Getter
 @Setter
+@Audited
 public class StratigraphicRelationshipId implements Serializable {
 
     private Long unit1Id;

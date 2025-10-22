@@ -3,6 +3,7 @@ package fr.siamois.infrastructure.database.repositories.vocabulary;
 import fr.siamois.domain.models.vocabulary.Concept;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
+import org.springframework.data.repository.history.RevisionRepository;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
@@ -10,7 +11,7 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository
-public interface ConceptRepository extends CrudRepository<Concept, Long> {
+public interface ConceptRepository extends CrudRepository<Concept, Long>, RevisionRepository<Concept, Long, Long> {
 
     /**
      * Find a concept by its external ids.

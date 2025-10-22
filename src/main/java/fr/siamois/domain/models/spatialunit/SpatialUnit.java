@@ -16,6 +16,8 @@ import fr.siamois.domain.models.vocabulary.Concept;
 import jakarta.persistence.*;
 import lombok.Data;
 import org.hibernate.annotations.SQLRestriction;
+import org.hibernate.envers.Audited;
+import org.hibernate.envers.NotAudited;
 
 import java.util.HashSet;
 import java.util.List;
@@ -29,6 +31,7 @@ import static fr.siamois.ui.bean.panel.models.panel.single.AbstractSingleEntity.
 @Entity
 @Table(name = "spatial_unit")
 @SQLRestriction("fk_parent_action_unit_id IS NULL")
+@Audited
 public class SpatialUnit extends SpatialUnitGeneric implements ArkEntity {
 
     @SuppressWarnings("CopyConstructorMissesField")
@@ -64,6 +67,7 @@ public class SpatialUnit extends SpatialUnitGeneric implements ArkEntity {
             joinColumns = { @JoinColumn(name = "fk_parent_id") },
             inverseJoinColumns = { @JoinColumn(name = "fk_child_id") }
     )
+    @NotAudited
     private Set<SpatialUnit> children = new HashSet<>();
 
     @OneToMany(mappedBy="spatialUnit")

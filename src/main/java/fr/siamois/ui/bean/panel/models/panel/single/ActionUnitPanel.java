@@ -7,9 +7,9 @@ import fr.siamois.domain.models.document.Document;
 import fr.siamois.domain.models.exceptions.actionunit.ActionUnitNotFoundException;
 import fr.siamois.domain.models.exceptions.actionunit.FailedActionUnitSaveException;
 import fr.siamois.domain.models.exceptions.vocabulary.NoConfigForFieldException;
-import fr.siamois.domain.models.history.ActionUnitHist;
+import fr.siamois.domain.models.history.RevisionWithInfo;
 import fr.siamois.domain.models.vocabulary.Concept;
-import fr.siamois.domain.services.HistoryService;
+import fr.siamois.domain.services.history.HistoryAuditService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.specimen.SpecimenService;
 import fr.siamois.domain.services.vocabulary.FieldService;
@@ -24,8 +24,9 @@ import fr.siamois.ui.bean.settings.team.TeamMembersBean;
 import fr.siamois.ui.lazydatamodel.RecordingUnitInActionUnitLazyDataModel;
 import fr.siamois.ui.lazydatamodel.SpecimenInActionUnitLazyDataModel;
 import fr.siamois.utils.MessageUtils;
-import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.config.BeanDefinition;
@@ -45,10 +46,11 @@ import java.util.stream.Collectors;
  */
 @EqualsAndHashCode(callSuper = true, onlyExplicitlyIncluded = true)
 @Slf4j
-@Data
+@Getter
+@Setter
 @Component
 @Scope(BeanDefinition.SCOPE_PROTOTYPE)
-public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnit, ActionUnitHist> implements Serializable {
+public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnit> implements Serializable {
 
     // Deps
 
@@ -58,10 +60,8 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnit, Actio
     private final RedirectBean redirectBean;
     private final transient LabelService labelService;
     private final TeamMembersBean teamMembersBean;
-    private final transient HistoryService historyService;
     private final transient RecordingUnitService recordingUnitService;
     private final transient SpecimenService specimenService;
-
 
     // For entering new code
     private ActionCode newCode;
@@ -97,17 +97,16 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnit, Actio
                            FieldService fieldService, RedirectBean redirectBean,
                            LabelService labelService, TeamMembersBean teamMembersBean,
                            DocumentCreationBean documentCreationBean,
-                           HistoryService historyService, RecordingUnitService recordingUnitService,
-                           AbstractSingleEntity.Deps deps, SpecimenService specimenService) {
+                           RecordingUnitService recordingUnitService,
+                           AbstractSingleEntity.Deps deps, SpecimenService specimenService, HistoryAuditService historyAuditService) {
         super("Unité d'action", "bi bi-arrow-down-square", "siamois-panel action-unit-panel single-panel",
-                documentCreationBean, deps);
+                documentCreationBean, deps, historyAuditService);
 
         this.langBean = langBean;
         this.fieldService = fieldService;
         this.redirectBean = redirectBean;
         this.labelService = labelService;
         this.teamMembersBean = teamMembersBean;
-        this.historyService = historyService;
         this.recordingUnitService = recordingUnitService;
         this.specimenService = specimenService;
     }
@@ -154,7 +153,7 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnit, Actio
         }
 
 
-        historyVersion = historyService.findActionUnitHistory(unit);
+        history = historyAuditService.findAllRevisionForEntity(ActionUnit.class, idunit);
         documents = documentService.findForActionUnit(unit);
     }
 
@@ -256,7 +255,7 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnit, Actio
     }
 
     @Override
-    public void visualise(ActionUnitHist history) {
+    public void visualise(RevisionWithInfo<ActionUnit> history) {
         // TODO: implement
     }
 

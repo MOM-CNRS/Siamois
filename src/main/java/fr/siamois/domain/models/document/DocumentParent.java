@@ -6,14 +6,14 @@ import fr.siamois.domain.models.vocabulary.Concept;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
-import lombok.EqualsAndHashCode;
+import org.hibernate.envers.Audited;
 
 import java.util.Objects;
 
 
-@EqualsAndHashCode(callSuper = true)
 @Data
 @MappedSuperclass
+@Audited
 public abstract class DocumentParent extends TraceableEntity {
 
     @NotNull

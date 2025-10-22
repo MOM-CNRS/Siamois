@@ -8,7 +8,6 @@ import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.specimen.Specimen;
-import fr.siamois.domain.services.HistoryService;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.authorization.PermissionService;
 import fr.siamois.domain.services.person.PersonService;
@@ -27,8 +26,9 @@ import fr.siamois.ui.bean.panel.models.panel.single.*;
 import fr.siamois.utils.MessageUtils;
 import jakarta.el.MethodExpression;
 import jakarta.faces.context.FacesContext;
-import lombok.Data;
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.primefaces.PrimeFaces;
 import org.primefaces.model.dashboard.DashboardModel;
@@ -52,13 +52,14 @@ import java.util.Set;
 @Slf4j
 @Component
 @SessionScoped
-@Data
+@RequiredArgsConstructor
+@Getter
+@Setter
 public class FlowBean implements Serializable {
 
     private final transient SpatialUnitService spatialUnitService;
     private final transient RecordingUnitService recordingUnitService;
     private final transient ActionUnitService actionUnitService;
-    private final transient HistoryService historyService;
     private final SessionSettingsBean sessionSettings;
     private final LangBean langBean;
     private final transient FieldConfigurationService fieldConfigurationService;
@@ -88,36 +89,7 @@ public class FlowBean implements Serializable {
     private transient List<AbstractPanel> panels = new ArrayList<>();
     private transient int fullscreenPanelIndex = -1;
 
-    private transient Set<AbstractSingleEntityPanel<?, ?>> unsavedPanels = new HashSet<>();
-
-    public FlowBean(SpatialUnitService spatialUnitService,
-                    RecordingUnitService recordingUnitService,
-                    ActionUnitService actionUnitService,
-                    HistoryService historyService,
-                    SessionSettingsBean sessionSettings,
-                    LangBean langBean,
-                    FieldConfigurationService fieldConfigurationService,
-                    FieldService fieldService,
-                    PanelFactory panelFactory,
-                    PersonService personService,
-                    ConceptService conceptService,
-                    StratigraphicRelationshipService stratigraphicRelationshipService,
-                    PermissionService permissionService) {
-        this.spatialUnitService = spatialUnitService;
-        this.recordingUnitService = recordingUnitService;
-        this.actionUnitService = actionUnitService;
-        this.historyService = historyService;
-        this.sessionSettings = sessionSettings;
-        this.langBean = langBean;
-        this.fieldConfigurationService = fieldConfigurationService;
-        this.fieldService = fieldService;
-        this.panelFactory = panelFactory;
-        this.personService = personService;
-        this.conceptService = conceptService;
-        this.stratigraphicRelationshipService = stratigraphicRelationshipService;
-        this.permissionService = permissionService;
-    }
-
+    private transient Set<AbstractSingleEntityPanel<?>> unsavedPanels = new HashSet<>();
 
     public void init() {
         fullscreenPanelIndex = -1;
@@ -356,7 +328,7 @@ public class FlowBean implements Serializable {
     private void fillAllUnsavedPanel() {
         unsavedPanels.clear();
         for (AbstractPanel panel : panels) {
-            if (panel instanceof AbstractSingleEntityPanel<?, ?> singleEntity && singleEntity.isHasUnsavedModifications()) {
+            if (panel instanceof AbstractSingleEntityPanel<?> singleEntity && singleEntity.isHasUnsavedModifications()) {
                 unsavedPanels.add(singleEntity);
             }
         }
@@ -381,7 +353,7 @@ public class FlowBean implements Serializable {
     }
 
     public void saveAllPanels() {
-        for (AbstractSingleEntityPanel<?,?> panel : unsavedPanels) {
+        for (AbstractSingleEntityPanel<?> panel : unsavedPanels) {
             boolean entityHasBeenSaved = panel.save(true);
             if (!entityHasBeenSaved) {
                 String title = findMatchingTitle(panel);
@@ -392,7 +364,7 @@ public class FlowBean implements Serializable {
         readWriteMode = READ_MODE;
     }
 
-    private static String findMatchingTitle(AbstractSingleEntityPanel<?, ?> panel) {
+    private static String findMatchingTitle(AbstractSingleEntityPanel<?> panel) {
         String title = "UNKNOWN";
         if (panel.getUnit() instanceof SpatialUnit su) {
             title = su.getName();
@@ -407,7 +379,7 @@ public class FlowBean implements Serializable {
     }
 
     public void undoChangesOnAllPanels() {
-        for (AbstractSingleEntityPanel<?,?> panel : unsavedPanels) {
+        for (AbstractSingleEntityPanel<?> panel : unsavedPanels) {
             panel.cancelChanges();
         }
         readWriteMode = READ_MODE;

@@ -8,6 +8,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
+import org.springframework.data.repository.history.RevisionRepository;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
@@ -16,7 +17,7 @@ import java.util.Optional;
 import java.util.Set;
 
 @Repository
-public interface ActionUnitRepository extends CrudRepository<ActionUnit, Long> {
+public interface ActionUnitRepository extends CrudRepository<ActionUnit, Long>, RevisionRepository<ActionUnit, Long, Long> {
 
     Optional<ActionUnit> findByFullIdentifier(String fullIdentifier);
 

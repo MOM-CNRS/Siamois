@@ -8,6 +8,7 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,6 +22,7 @@ import java.util.Set;
 @Component
 @Getter
 @Setter
+@Order
 public class ChartresDatasetInitializer implements DatabaseInitializer {
 
     public static final String CHARTRES = "chartres";

@@ -62,7 +62,11 @@ public class AdminInitializer implements DatabaseInitializer {
     @Transactional
     public void initialize() throws DatabaseDataInitException {
         initializeAdmin();
-        initializeAdminOrganization();
+        Institution defaultInstitution = institutionRepository.findInstitutionByIdentifier("siamois").orElseThrow(() -> new IllegalStateException("Default Institution not found"));
+        if (!defaultInstitution.getManagers().contains(createdAdmin)) {
+            defaultInstitution.getManagers().add(createdAdmin);
+            institutionRepository.save(defaultInstitution);
+        }
     }
 
     void initializeAdmin() throws DatabaseDataInitException {
@@ -114,24 +118,7 @@ public class AdminInitializer implements DatabaseInitializer {
         return !admin.getUsername().equalsIgnoreCase(adminUsername);
     }
 
-    /**
-     * Creates the Siamois Administration organisation if it doesn't exist. Changes the manager of the organisation
-     * to the current admin
-     */
-    void initializeAdminOrganization() throws DatabaseDataInitException {
 
-        InstitutionSeeder.InstitutionSpec inst = new InstitutionSeeder.InstitutionSpec(
-                "Organisation par défaut",
-                "DEFAULT",
-                "siamois",
-                List.of(createdAdmin.getEmail()),
-                "https://thesaurus.mom.fr", "th230"
-        );
-        
-        institutionSeeder.seed(List.of(inst));
-
-        log.info("Created institution {}","siamois");
-    }
 
 
 }

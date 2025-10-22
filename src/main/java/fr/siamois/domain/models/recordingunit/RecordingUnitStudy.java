@@ -6,6 +6,7 @@ import fr.siamois.domain.models.document.Document;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import org.hibernate.envers.Audited;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -14,6 +15,7 @@ import java.util.Set;
 @Data
 @Entity
 @Table(name = "recording_unit_study")
+@Audited
 public class RecordingUnitStudy extends RecordingUnityStudyParent implements ArkEntity {
 
     @Id

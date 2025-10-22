@@ -52,11 +52,5 @@ public abstract class TraceableEntity implements Serializable {
     @JsonIgnore
     protected Person validatedBy ;
 
-    @ColumnDefault("NULL")
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "fk_last_modification_person_id")
-    @JsonIgnore
-    protected Person lastModifiedBy = null;
-
     public abstract Long getId();
 }

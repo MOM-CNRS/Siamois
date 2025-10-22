@@ -4,10 +4,12 @@ import fr.siamois.domain.models.vocabulary.Concept;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.Getter;
+import org.hibernate.envers.Audited;
 
 @Entity
 @Table(name = "ru_study_typology")
 @Getter
+@Audited
 public class RecordingUnitStudyTypology {
 
     @Data

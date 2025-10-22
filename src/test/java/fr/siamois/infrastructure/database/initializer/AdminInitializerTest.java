@@ -8,15 +8,14 @@ import fr.siamois.infrastructure.database.repositories.institution.InstitutionRe
 import fr.siamois.infrastructure.database.repositories.person.PersonRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.springframework.context.ApplicationContext;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
-import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -42,6 +41,8 @@ class AdminInitializerTest {
 
     private AdminInitializer adminInitializer;
 
+    private Institution institution;
+
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
@@ -53,6 +54,11 @@ class AdminInitializerTest {
         adminInitializer.setAdminUsername("admin");
         adminInitializer.setAdminPassword("admin");
         adminInitializer.setAdminEmail("admin@example.com");
+
+        institution = new Institution();
+        institution.setId(1L);
+        institution.setName("Siamois");
+        institution.setIdentifier("siamois");
     }
 
     @Test
@@ -60,6 +66,8 @@ class AdminInitializerTest {
         when(personRepository.findAllSuperAdmin()).thenReturn(List.of());
         when(passwordEncoder.encode("admin")).thenReturn("encodedPassword");
         when(personRepository.save(any(Person.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(institutionRepository.findInstitutionByIdentifier("siamois")).thenReturn(Optional.of(institution));
+
 
         adminInitializer.initialize();
 
@@ -74,6 +82,7 @@ class AdminInitializerTest {
         existingAdmin.setUsername("admin");
         existingAdmin.setEmail("admin@example.com");
         when(personRepository.findAllSuperAdmin()).thenReturn(List.of(existingAdmin));
+        when(institutionRepository.findInstitutionByIdentifier("siamois")).thenReturn(Optional.of(institution));
 
         adminInitializer.initialize();
 
@@ -86,42 +95,5 @@ class AdminInitializerTest {
         when(personRepository.save(any(Person.class))).thenThrow(DataIntegrityViolationException.class);
 
         assertThrows(DatabaseDataInitException.class, () -> adminInitializer.initializeAdmin());
-    }
-
-
-
-    @Test
-    void initializeAdminOrganization_shouldAddSuperAdminAsManager_whenCreatedAdminIsNotManagerAndInitializationExist() throws DatabaseDataInitException {
-        Person otherAdmin = new Person();
-        otherAdmin.setId(12L);
-
-        Person createdAdmin = new Person();
-        createdAdmin.setId(13L);
-        createdAdmin.setEmail("admin@example.com");
-
-        Institution existingInstitution = new Institution();
-        existingInstitution.setId(14L);
-        existingInstitution.setManagers(new HashSet<>());
-        existingInstitution.getManagers().add(otherAdmin);
-
-        adminInitializer.setCreatedAdmin(createdAdmin);
-        adminInitializer.initializeAdminOrganization();
-
-        // Then: capture argument passed to seed()
-        ArgumentCaptor<List<InstitutionSeeder.InstitutionSpec>> captor =
-                ArgumentCaptor.forClass(List.class);
-
-        verify(institutionSeeder).seed(captor.capture());
-
-        List<InstitutionSeeder.InstitutionSpec> capturedList = captor.getValue();
-        InstitutionSeeder.InstitutionSpec inst = capturedList.get(0);
-
-        // Verify that the InstitutionSpec has the expected properties
-        assertEquals("Organisation par défaut", inst.name());
-        assertEquals("DEFAULT", inst.description());
-        assertEquals("siamois", inst.identifier());
-        assertEquals(List.of("admin@example.com"), inst.managerEmails());
-        assertEquals("https://thesaurus.mom.fr", inst.baseUri());
-        assertEquals("th230", inst.externalId());
     }
 }

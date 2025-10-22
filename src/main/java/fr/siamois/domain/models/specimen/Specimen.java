@@ -16,6 +16,8 @@ import fr.siamois.domain.models.form.customform.CustomRow;
 import fr.siamois.domain.models.vocabulary.Concept;
 import jakarta.persistence.*;
 import lombok.Data;
+import org.hibernate.envers.Audited;
+import org.hibernate.envers.NotAudited;
 
 import java.util.HashSet;
 import java.util.List;
@@ -27,6 +29,7 @@ import static fr.siamois.ui.bean.panel.models.panel.single.AbstractSingleEntity.
 @Data
 @Entity
 @Table(name = "specimen")
+@Audited
 public class Specimen extends SpecimenParent implements ArkEntity {
 
     public Specimen() {
@@ -62,6 +65,7 @@ public class Specimen extends SpecimenParent implements ArkEntity {
             name = "specimen_authors",
             joinColumns = @JoinColumn(name = "fk_specimen_id"),
             inverseJoinColumns = @JoinColumn(name = "fk_person_id"))
+    @NotAudited
     private List<Person> authors;
 
     @ManyToMany
@@ -69,6 +73,7 @@ public class Specimen extends SpecimenParent implements ArkEntity {
             name = "specimen_collectors",
             joinColumns = @JoinColumn(name = "fk_specimen_id"),
             inverseJoinColumns = @JoinColumn(name = "fk_person_id"))
+    @NotAudited
     private List<Person> collectors;
 
 
