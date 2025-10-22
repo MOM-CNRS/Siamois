@@ -4,7 +4,6 @@ import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.history.InfoRevisionEntity;
 import fr.siamois.domain.models.institution.Institution;
-import fr.siamois.infrastructure.database.initializer.SystemUserInitializer;
 import fr.siamois.infrastructure.database.repositories.institution.InstitutionRepository;
 import fr.siamois.infrastructure.database.repositories.person.PersonRepository;
 import fr.siamois.ui.bean.SessionSettingsBean;

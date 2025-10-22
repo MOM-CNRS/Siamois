@@ -16,7 +16,7 @@ import java.util.Optional;
 @Order(0)
 @RequiredArgsConstructor
 @Slf4j
-public class SystemUserInitializer implements DatabaseInitializer {
+public class SystemUserDatasetInitializer implements DatabaseInitializer {
 
     private final PersonRepository personRepository;
     private final InstitutionRepository institutionRepository;
