@@ -159,8 +159,8 @@ public class RecordingUnitService implements ArkEntityService {
             managedRecordingUnit.setEndDate(recordingUnit.getEndDate());
             managedRecordingUnit.setStartDate(recordingUnit.getStartDate());
             managedRecordingUnit.setSize(recordingUnit.getSize());
-            managedRecordingUnit.setSecondaryType(recordingUnit.getSecondaryType());
-            managedRecordingUnit.setThirdType(recordingUnit.getThirdType());
+            managedRecordingUnit.setGeomorphologicalCycle(recordingUnit.getGeomorphologicalCycle());
+            managedRecordingUnit.setNormalizedInterpretation(recordingUnit.getNormalizedInterpretation());
             managedRecordingUnit.setValidated(recordingUnit.getValidated());
             managedRecordingUnit.setValidatedAt(recordingUnit.getValidatedAt());
             managedRecordingUnit.setValidatedBy(recordingUnit.getValidatedBy());

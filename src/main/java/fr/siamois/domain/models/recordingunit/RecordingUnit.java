@@ -48,6 +48,8 @@ public class RecordingUnit extends RecordingUnitParent implements ArkEntity, Ref
         setAuthor(recordingUnit.getAuthor());
         setAuthors(recordingUnit.getAuthors());
         setExcavators(recordingUnit.getExcavators());
+        setNormalizedInterpretation(recordingUnit.getNormalizedInterpretation());
+        setGeomorphologicalCycle(recordingUnit.getGeomorphologicalCycle());
         setSpatialUnit(recordingUnit.getSpatialUnit());
     }
 
@@ -155,7 +157,7 @@ public class RecordingUnit extends RecordingUnitParent implements ArkEntity, Ref
     @JsonIgnore
     public List<String> getBindableFieldNames() {
         return List.of("creationTime", "startDate", "endDate", "fullIdentifier", "authors",
-                "excavators", "type", "secondaryType", "thirdType", "actionUnit", "spatialUnit", "geomorphologicalCycle");
+                "excavators", "type", "secondaryType", "thirdType", "actionUnit", "spatialUnit", "geomorphologicalCycle", "normalizedInterpretation");
     }
 
     // ----------- Concepts for system fields
