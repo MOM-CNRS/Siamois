@@ -114,7 +114,7 @@ class HistoryAuditServiceTest {
     }
 
     @Test
-    void restoreEntity_shouldCopyNotAuditedFieldsFromBaseEntity() throws IllegalAccessException {
+    void restoreEntity_shouldCopyNotAuditedFieldsFromBaseEntity() {
         TestEntity baseEntity = new TestEntity();
         baseEntity.auditedField = "updated";
         baseEntity.notAuditedField = "updatedNotAudited";
