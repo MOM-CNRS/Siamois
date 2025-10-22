@@ -23,7 +23,7 @@ import java.util.List;
 @Component
 @Getter
 @Setter
-@Order(1)
+@Order(-10)
 public class AdminInitializer implements DatabaseInitializer {
 
     private final BCryptPasswordEncoder passwordEncoder;
