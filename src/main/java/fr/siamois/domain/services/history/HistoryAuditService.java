@@ -44,6 +44,13 @@ public class HistoryAuditService {
         return results.stream().toList();
     }
 
+    /**
+     * Find the last revision of the entity with the given ID. If the revision does not exist, returns a system user
+     * @param entityClass The class of the entity
+     * @param entityId The ID of the entity
+     * @return The revision
+     * @param <T> The type of the entity
+     */
     @SuppressWarnings("unchecked")
     public <T> RevisionWithInfo<T> findLastRevisionForEntity(Class<T> entityClass, Long entityId) {
         AuditQuery query = auditReader.createQuery().forRevisionsOfEntity(entityClass, false, false);
