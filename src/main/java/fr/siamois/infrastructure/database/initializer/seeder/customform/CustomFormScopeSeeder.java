@@ -1,19 +1,14 @@
 package fr.siamois.infrastructure.database.initializer.seeder.customform;
 
 import fr.siamois.domain.models.exceptions.database.DatabaseDataInitException;
-import fr.siamois.domain.models.form.customfield.CustomField;
-import fr.siamois.domain.models.form.customfield.CustomFieldSelectOneFromFieldCode;
 import fr.siamois.domain.models.form.customform.CustomForm;
 import fr.siamois.domain.models.form.formscope.FormScope;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.infrastructure.database.initializer.seeder.ConceptSeeder;
-import fr.siamois.infrastructure.database.initializer.seeder.customfield.CustomFieldSeederSpec;
-import fr.siamois.infrastructure.database.repositories.form.CustomFormRepository;
 import fr.siamois.infrastructure.database.repositories.form.FormScopeRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import java.lang.reflect.InvocationTargetException;
 import java.util.List;
 
 @Service

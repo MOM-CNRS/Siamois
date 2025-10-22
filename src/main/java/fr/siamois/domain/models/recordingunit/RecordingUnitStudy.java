@@ -2,7 +2,6 @@ package fr.siamois.domain.models.recordingunit;
 
 
 import fr.siamois.domain.models.ArkEntity;
-import fr.siamois.domain.models.FieldCode;
 import fr.siamois.domain.models.document.Document;
 import jakarta.persistence.*;
 import lombok.Data;

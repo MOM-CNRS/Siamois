@@ -6,7 +6,6 @@ import fr.siamois.domain.models.form.customfield.CustomFieldSelectOneFromFieldCo
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.infrastructure.database.initializer.seeder.ConceptSeeder;
 import fr.siamois.infrastructure.database.repositories.form.CustomFieldRepository;
-import io.micrometer.common.lang.Nullable;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 

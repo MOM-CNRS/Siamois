@@ -17,7 +17,6 @@ import fr.siamois.domain.models.form.customform.CustomRow;
 import fr.siamois.domain.models.form.customformresponse.CustomFormResponse;
 import fr.siamois.domain.models.specimen.Specimen;
 import fr.siamois.domain.models.vocabulary.Concept;
-import fr.siamois.infrastructure.database.initializer.seeder.ConceptSeeder;
 import jakarta.persistence.*;
 import lombok.Data;
 

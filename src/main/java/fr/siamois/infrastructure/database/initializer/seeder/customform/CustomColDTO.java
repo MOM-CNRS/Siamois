@@ -2,7 +2,6 @@ package fr.siamois.infrastructure.database.initializer.seeder.customform;
 
 import fr.siamois.infrastructure.database.initializer.seeder.customfield.CustomFieldSeederSpec;
 
-
 import java.io.Serializable;
 
 
