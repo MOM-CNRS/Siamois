@@ -4,7 +4,6 @@ import fr.siamois.domain.models.form.customform.CustomForm;
 import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.infrastructure.database.repositories.form.FormRepository;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -31,7 +30,7 @@ class FormServiceTest {
     private Institution institution;
 
 
-    void setUp() {
+    void setUpForReturnTypeSpecificTests() {
         recordingUnitType = mock(Concept.class);
         institution = mock(Institution.class);
 
@@ -68,7 +67,7 @@ class FormServiceTest {
     @Test
     void returnsTypeSpecificFormWhenPresent() {
         // arrange
-        setUp();
+        setUpForReturnTypeSpecificTests();
         CustomForm typeSpecific = new CustomForm();
         given(formRepository.findEffectiveFormByTypeAndInstitution(101L, 55L))
                 .willReturn(Optional.of(typeSpecific));
@@ -87,7 +86,7 @@ class FormServiceTest {
     @Test
     void fallsBackToInstitutionOnlyWhenTypeSpecificMissing() {
         // arrange
-        setUp();
+        setUpForReturnTypeSpecificTests();
         CustomForm fallback = new CustomForm();
         given(formRepository.findEffectiveFormByTypeAndInstitution(101L, 55L))
                 .willReturn(Optional.empty());
@@ -107,7 +106,7 @@ class FormServiceTest {
     @Test
     void returnsNullWhenNothingFound() {
         // arrange
-        setUp();
+        setUpForReturnTypeSpecificTests();
         given(formRepository.findEffectiveFormByTypeAndInstitution(101L, 55L))
                 .willReturn(Optional.empty());
         given(formRepository.findEffectiveFormByTypeAndInstitution(null, 55L))
