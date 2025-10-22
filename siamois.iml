@@ -36,7 +36,7 @@
         <setting name="validation-enabled" value="true" />
         <setting name="provider-name" value="Hibernate" />
         <datasource-mapping>
-          <factory-entry name="entityManagerFactory" value="518ffab8-ee3c-4608-b7ce-0e21d66e6fef" />
+          <factory-entry name="entityManagerFactory" value="7efb3cac-0438-49a2-90ee-43cb103e28d7" />
           <factory-entry name="siamois" value="518ffab8-ee3c-4608-b7ce-0e21d66e6fef" />
         </datasource-mapping>
         <naming-strategy-map>

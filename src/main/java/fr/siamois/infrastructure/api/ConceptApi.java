@@ -116,7 +116,7 @@ public class ConceptApi {
         Concept concept = config.getConcept();
         Vocabulary vocabulary = concept.getVocabulary();
         Long existingChecksum = config.getExistingChecksum();
-        URI uri = URI.create(String.format("%s/openapi/v1/concept/%s/%s/expansion?way=down", vocabulary.getBaseUri(), vocabulary.getExternalVocabularyId(), idConcept));
+        URI uri = URI.create(String.format("%s/openapi/v1/concept/%s/%s/expansion?way=down", vocabulary.getBaseUri(), vocabulary.getExternalVocabularyId(), concept.getExternalId()));
         ResponseEntity<String> response = sendRequestAcceptJson(uri);
         String body = response.getBody();
         if (body == null) return null;

@@ -9,7 +9,7 @@ import lombok.NoArgsConstructor;
 
 @Getter
 @Entity
-@Table("concept_hierarchy")
+@Table(name = "concept_hierarchy")
 public class ConceptRelation {
 
     @EmbeddedId

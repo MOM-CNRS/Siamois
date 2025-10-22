@@ -83,6 +83,7 @@ public class ConceptService {
 
         if (optConcept.isPresent()) {
             updateAllLabelsFromDTO(optConcept.get(), conceptDTO);
+            updateAllDefinitionsFromDTO(optConcept.get(), conceptDTO);
             return optConcept.get();
         }
 
@@ -93,6 +94,7 @@ public class ConceptService {
         concept = conceptRepository.save(concept);
 
         updateAllLabelsFromDTO(concept, conceptDTO);
+        updateAllDefinitionsFromDTO(concept, conceptDTO);
 
         return concept;
     }
@@ -109,6 +111,15 @@ public class ConceptService {
                 labelService.updateLabel(savedConcept, label.getLang(), label.getValue());
             }
         }
+    }
+
+    /**
+     * Updates all definitions of a saved concept from FullInfoDTO
+     * @param savedConcept
+     * @param conceptDto
+     */
+    public void updateAllDefinitionsFromDTO(Concept savedConcept, FullInfoDTO conceptDto) {
+        // TODO: Implement definition LOADING
     }
 
     /**

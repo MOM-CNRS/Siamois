@@ -12,6 +12,7 @@ import java.util.Objects;
 @Entity
 @DiscriminatorValue("concept")
 @Data
+@Deprecated
 public class ConceptLabel extends Label {
 
     @ManyToOne

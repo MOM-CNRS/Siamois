@@ -242,15 +242,12 @@ public class FieldConfigurationService {
         return institutionConfig.get();
     }
 
-    public List<Concept> fetchAutocomplete(UserInfo info, String fieldCode, String input) {
+    public List<Concept> fetchAutocomplete(UserInfo info, String fieldCode, String input) throws NoConfigForFieldException {
         try {
             ConceptFieldConfig config = findConfigurationForFieldCode(info, fieldCode);
             conceptService.saveAllSubConceptOfIfUpdated(config);
 
-            // Search in all labels
-
-        } catch (NoConfigForFieldException e) {
-            log.warn(e.getMessage());
+            // TODO: Search in all concept data
             return List.of();
         } catch (ErrorProcessingExpansionException e) {
             log.error(e.getMessage());
