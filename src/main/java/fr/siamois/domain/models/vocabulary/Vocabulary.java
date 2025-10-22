@@ -45,12 +45,12 @@ public class Vocabulary implements Serializable {
 
         return Objects.equals(baseUri, that.baseUri) &&
                 Objects.equals(externalVocabularyId, that.externalVocabularyId) &&
-                Objects.equals(type, that.type);  // Added comparison for VocabularyType
+                Objects.equals(type, that.type);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(baseUri, externalVocabularyId, type);  // Added VocabularyType to hashCode
+        return Objects.hash(baseUri, externalVocabularyId, type);
     }
 
 

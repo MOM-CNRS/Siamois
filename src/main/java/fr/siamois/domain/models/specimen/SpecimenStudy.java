@@ -2,7 +2,6 @@ package fr.siamois.domain.models.specimen;
 
 
 import fr.siamois.domain.models.ArkEntity;
-import fr.siamois.domain.models.FieldCode;
 import fr.siamois.domain.models.document.Document;
 import jakarta.persistence.*;
 import lombok.Data;
@@ -33,7 +32,5 @@ public class SpecimenStudy extends SpecimenStudyParent implements ArkEntity {
     )
     private Set<Document> documents = new HashSet<>();
 
-    @FieldCode
-    public static final String STUDY_TYPE_FIELD_CODE = "SIASS.METHOD";
 
 }

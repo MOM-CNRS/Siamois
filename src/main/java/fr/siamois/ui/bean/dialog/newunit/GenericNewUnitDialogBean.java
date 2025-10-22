@@ -4,6 +4,7 @@ import fr.siamois.domain.models.TraceableEntity;
 import fr.siamois.domain.models.exceptions.EntityAlreadyExistsException;
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
+import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.RedirectBean;
 import fr.siamois.ui.bean.dialog.newunit.handler.INewUnitHandler;
@@ -13,12 +14,12 @@ import fr.siamois.ui.exceptions.CannotInitializeNewUnitDialogException;
 import fr.siamois.ui.lazydatamodel.BaseLazyDataModel;
 import fr.siamois.utils.MessageUtils;
 import jakarta.faces.component.UIComponent;
-import jakarta.faces.event.AjaxBehaviorEvent;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.primefaces.PrimeFaces;
+import org.primefaces.event.SelectEvent;
 import org.springframework.stereotype.Component;
 
 import javax.faces.bean.ViewScoped;
@@ -141,7 +142,7 @@ public class GenericNewUnitDialogBean<T extends TraceableEntity>
 
     // ==== logique ====
     @Override
-    public void setFieldConceptAnswerHasBeenModified(AjaxBehaviorEvent event) {
+    public void setFieldConceptAnswerHasBeenModified(SelectEvent event) {
         UIComponent component = event.getComponent();
         CustomField field = (CustomField) component.getAttributes().get("field");
         formResponse.getAnswers().get(field).setHasBeenModified(true);
@@ -188,6 +189,17 @@ public class GenericNewUnitDialogBean<T extends TraceableEntity>
     @Override
     public List<SpatialUnit> getSpatialUnitOptions() {
         return handler.getSpatialUnitOptions(unit);
+    }
+
+    @Override
+    protected String getFormScopePropertyName() {
+        return "";
+    }
+
+    @Override
+    protected void setFormScopePropertyValue(Concept concept) {
+        // Empty because new unit form don't change based on type.
+        // Need refactoring? Wrong parent class
     }
 
     private void performCreate(boolean openAfter, boolean scrollToTop) {

@@ -3,6 +3,7 @@ package fr.siamois.domain.models.form.customform;
 import fr.siamois.domain.services.attributeconverter.CustomFormLayoutConverter;
 import jakarta.persistence.*;
 import lombok.Data;
+import org.hibernate.annotations.ColumnTransformer;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -26,6 +27,7 @@ public class CustomForm implements Serializable {
 
     @Column(name = "layout", columnDefinition = "jsonb")
     @Convert(converter = CustomFormLayoutConverter.class)
+    @ColumnTransformer(write = "?::jsonb")
     private List<CustomFormPanel> layout;
 
     public static class Builder {

@@ -184,6 +184,16 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
         formResponse = initializeFormResponse(detailsForm, unit);
     }
 
+    @Override
+    protected String getFormScopePropertyName() {
+        return "";
+    }
+
+    @Override
+    protected void setFormScopePropertyValue(Concept concept) {
+        unit.setCategory(concept);
+    }
+
     public void refreshUnit() {
 
         hasUnsavedModifications = false;

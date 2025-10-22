@@ -45,7 +45,6 @@ public class InstitutionSeeder {
         } catch (NotSiamoisThesaurusException | ErrorProcessingExpansionException e) {
             throw new DatabaseDataInitException("error with thesaurus init",e);
         }
-
     }
 
     public void seed(List<InstitutionSpec> specs) throws DatabaseDataInitException {

@@ -72,8 +72,7 @@
                                         label="#{spatialUnitFieldBean.resolveCustomFieldLabel(col.field)}"
                                         mode="#{col.readOnly ? 'output' : flowBean.getInPlaceFieldMode()}"
                                         panelModel="#{bean}"
-                                        updateTargetsOnBlur="#{root}:field-#{prefix}-#{statusIndex}-#{rowStatus.index}-#{colStatus.index}"
-                                        answer="#{bean.formResponse.answers.get(col.field)}"/>
+                                        answer="#{bean.getFieldAnswer(col.field)}"/>
 
 
                                 <!-- Select one concept from field parent concept children -->

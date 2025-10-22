@@ -234,6 +234,15 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnit> imple
 
     }
 
+    @Override
+    protected String getFormScopePropertyName() {
+        return "";
+    }
+
+    @Override
+    protected void setFormScopePropertyValue(Concept concept) {
+        // to be implemented
+    }
 
 
     @Override

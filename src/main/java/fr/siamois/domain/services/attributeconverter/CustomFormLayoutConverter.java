@@ -131,6 +131,7 @@ public class CustomFormLayoutConverter implements AttributeConverter<List<Custom
         return row;
     }
 
+
     private CustomCol deserializeCol(Map<String, Object> colMap) {
         CustomCol col = new CustomCol();
         col.setClassName((String) colMap.get(CLASS_NAME_KEY));

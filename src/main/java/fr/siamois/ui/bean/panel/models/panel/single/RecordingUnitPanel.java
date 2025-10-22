@@ -19,6 +19,7 @@ import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.history.HistoryAuditService;
+import fr.siamois.domain.services.form.FormService;
 import fr.siamois.domain.services.person.PersonService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.specimen.SpecimenService;
@@ -67,6 +68,7 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
     private final transient RedirectBean redirectBean;
     protected final transient ConceptService conceptService;
     private final transient SpecimenService specimenService;
+    private final transient FormService formService;
 
     // ---------- Locals
     // RU
@@ -89,7 +91,7 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
                                  DocumentCreationBean documentCreationBean,
                                  RedirectBean redirectBean,
                                  AbstractSingleEntity.Deps deps,
-                                 SpecimenService specimenService, HistoryAuditService historyAuditService) {
+                                 SpecimenService specimenService, HistoryAuditService historyAuditService, FormService formService)  {
 
         super("common.entity.recordingunit",
                 "bi bi-pencil-square",
@@ -101,6 +103,7 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
         this.conceptService = conceptService;
         this.redirectBean = redirectBean;
         this.specimenService = specimenService;
+        this.formService = formService;
     }
 
 
@@ -126,6 +129,16 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
         }
 
         return List.of();
+    }
+
+    @Override
+    protected String getFormScopePropertyName() {
+        return "type";
+    }
+
+    @Override
+    protected void setFormScopePropertyValue(Concept concept) {
+        unit.setType(concept);
     }
 
     public LocalDate offsetDateTimeToLocalDate(OffsetDateTime offsetDT) {
@@ -183,20 +196,7 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
                 .orElse(null); // Retourner null si aucun match
     }
 
-    public void handleSelectType() {
 
-        if (recordingUnit.getType() != null) {
-
-            changeCustomForm();
-        } else {
-
-        }
-
-        recordingUnit.setSecondaryType(null);
-        recordingUnit.setThirdType(null);
-
-
-    }
 
     public void initFormResponseAnswers() {
 
@@ -320,10 +320,9 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
     @Override
     public void initForms() {
         overviewForm = RecordingUnit.OVERVIEW_FORM;
-        detailsForm = RecordingUnit.DETAILS_FORM;
+        detailsForm = formService.findCustomFormByRecordingUnitTypeAndInstitutionId(unit.getType(), sessionSettingsBean.getSelectedInstitution());
         // Init system form answers
         formResponse = initializeFormResponse(detailsForm, unit);
-
     }
 
     @Override
