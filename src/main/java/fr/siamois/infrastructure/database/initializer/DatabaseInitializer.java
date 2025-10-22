@@ -3,7 +3,6 @@ package fr.siamois.infrastructure.database.initializer;
 
 import fr.siamois.domain.models.exceptions.database.DatabaseDataInitException;
 
-import java.lang.reflect.InvocationTargetException;
 
 /**
  * Database initializer are services that are executed after the application startup.
