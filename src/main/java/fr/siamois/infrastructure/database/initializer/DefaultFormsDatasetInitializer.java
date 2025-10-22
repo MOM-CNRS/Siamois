@@ -140,6 +140,25 @@ public class DefaultFormsDatasetInitializer implements DatabaseInitializer {
                             )),
                             true
                     ))
+            ),
+            new CustomFormDTO(
+                    "Le formulaire par défaut pour les unités d'enregistrements sans type",
+                    "Formulaire d'unité d'enregistrements sans type",
+                    List.of(new CustomFormPanelDTO(
+                            "",
+                            "common.header.general",
+                            List.of(new CustomRowDTO(
+                                    List.of(
+                                            new CustomColDTO(
+                                                    false,
+                                                    true,
+                                                    fields.get(0),
+                                                    UI_G_12_UI_MD_6_UI_LG_3
+                                            )
+                                    )
+                            )),
+                            true
+                    ))
             )
     );
 
@@ -158,6 +177,11 @@ public class DefaultFormsDatasetInitializer implements DatabaseInitializer {
                     FormScope.ScopeLevel.GLOBAL_DEFAULT.toString(),
                     new ConceptSeeder.ConceptKey(DEFAULT_VOCABULARY_ID, concepts.get(5).externalId()),
                     forms.get(1)
+            ),
+            new CustomFormScopeDTO(
+                    FormScope.ScopeLevel.GLOBAL_DEFAULT.toString(),
+                    null,
+                    forms.get(2)
             )
     );
 
