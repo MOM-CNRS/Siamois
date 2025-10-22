@@ -37,7 +37,7 @@ public class SystemUserDatasetInitializer implements DatabaseInitializer {
             person.setLastname("SYSTEM");
             person.setEmail("system@siamois.fr");
             person.setPassword("SIAMOIS_UNHASHED");
-            person.setSuperAdmin(true);
+            person.setSuperAdmin(false);
             personRepository.save(person);
         }
     }
