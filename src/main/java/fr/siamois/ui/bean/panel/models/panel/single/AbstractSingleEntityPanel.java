@@ -194,8 +194,8 @@ public abstract class AbstractSingleEntityPanel<T> extends AbstractSingleEntity<
 
     @SuppressWarnings("unchecked")
     private RevisionWithInfo<T> findLastRevisionForEntity() {
-        var result = (RevisionWithInfo<T>) historyAuditService.findLastRevisionForEntity(unit.getClass(), idunit);
-        if (bufferedLastRevision == null) {
+        RevisionWithInfo<T> result = (RevisionWithInfo<T>) historyAuditService.findLastRevisionForEntity(unit.getClass(), idunit);
+        if (result == null) {
             InfoRevisionEntity info = new InfoRevisionEntity();
             UserInfo userInfo = sessionSettingsBean.getUserInfo();
             info.setRevId(0L);
