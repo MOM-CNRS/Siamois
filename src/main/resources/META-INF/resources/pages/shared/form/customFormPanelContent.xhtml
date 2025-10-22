@@ -72,6 +72,7 @@
                                         label="#{spatialUnitFieldBean.resolveCustomFieldLabel(col.field)}"
                                         mode="#{col.readOnly ? 'output' : flowBean.getInPlaceFieldMode()}"
                                         panelModel="#{bean}"
+                                        updateTargetsOnBlur="#{bean.getConceptFieldsUpdateTargetsOnBlur()}"
                                         answer="#{bean.getFieldAnswer(col.field)}"/>
 
 

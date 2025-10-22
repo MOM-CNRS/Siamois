@@ -21,6 +21,7 @@ import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitTreeService;
 import fr.siamois.domain.services.vocabulary.FieldConfigurationService;
 import fr.siamois.ui.bean.SessionSettingsBean;
+import fr.siamois.ui.bean.dialog.newunit.GenericNewUnitDialogBean;
 import fr.siamois.ui.bean.panel.models.panel.AbstractPanel;
 import fr.siamois.ui.viewmodel.TreeUiStateViewModel;
 import fr.siamois.utils.DateUtils;
@@ -73,6 +74,16 @@ public abstract class AbstractSingleEntity<T> extends AbstractPanel implements S
     public static String generateRandomActionUnitIdentifier() {
         int currentYear = LocalDate.now().getYear();
         return String.valueOf(currentYear);
+    }
+
+    public String getConceptFieldsUpdateTargetsOnBlur() {
+        // If new unit panel form, update @this when concept is selected, otherwise @form
+        if(this.getClass() == GenericNewUnitDialogBean.class) {
+            return "@this";
+        }
+        else {
+            return "@form";
+        }
     }
 
     public static final Vocabulary SYSTEM_THESO;

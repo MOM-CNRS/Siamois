@@ -13,7 +13,7 @@ import org.springframework.stereotype.Service;
 import java.util.Optional;
 
 @Service
-@Order(0)
+@Order(-9)
 @RequiredArgsConstructor
 @Slf4j
 public class SystemUserDatasetInitializer implements DatabaseInitializer {

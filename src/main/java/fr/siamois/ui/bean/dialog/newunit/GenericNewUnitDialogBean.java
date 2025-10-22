@@ -142,7 +142,7 @@ public class GenericNewUnitDialogBean<T extends TraceableEntity>
 
     // ==== logique ====
     @Override
-    public void setFieldConceptAnswerHasBeenModified(SelectEvent event) {
+    public void setFieldConceptAnswerHasBeenModified(SelectEvent<Concept> event) {
         UIComponent component = event.getComponent();
         CustomField field = (CustomField) component.getAttributes().get("field");
         formResponse.getAnswers().get(field).setHasBeenModified(true);

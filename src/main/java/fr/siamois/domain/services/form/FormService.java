@@ -7,6 +7,8 @@ import fr.siamois.infrastructure.database.repositories.form.FormRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Optional;
+
 /**
  * Service for managing custom forms.
  */
@@ -39,8 +41,10 @@ public class FormService {
      */
     @Transactional(readOnly = true)
     public CustomForm findCustomFormByRecordingUnitTypeAndInstitutionId(Concept recordingUnitType, Institution institution) {
+        Optional<CustomForm> optForm = formRepository.findEffectiveFormByTypeAndInstitution(recordingUnitType.getId(), institution.getId());
+        // If none found, try to find a form without specifying the type
         // Should we throw an error if none found?
-        return formRepository.findEffectiveFormByTypeAndInstitution(recordingUnitType.getId(), institution.getId()).orElse(null);
+        return optForm.orElseGet(() -> formRepository.findEffectiveFormByTypeAndInstitution(null, institution.getId()).orElse(null));
     }
 
 }

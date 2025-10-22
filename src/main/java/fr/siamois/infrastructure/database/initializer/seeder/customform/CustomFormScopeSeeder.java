@@ -1,6 +1,5 @@
 package fr.siamois.infrastructure.database.initializer.seeder.customform;
 
-import fr.siamois.domain.models.exceptions.database.DatabaseDataInitException;
 import fr.siamois.domain.models.form.customform.CustomForm;
 import fr.siamois.domain.models.form.formscope.FormScope;
 import fr.siamois.domain.models.vocabulary.Concept;
@@ -24,10 +23,15 @@ public class CustomFormScopeSeeder {
         .orElse(null);
     }
 
-    public void seed(List<CustomFormScopeDTO> specs) throws DatabaseDataInitException {
+    public void seed(List<CustomFormScopeDTO> specs) {
         for (var s : specs) {
+
             // Check if concept exists
-            Concept c = conceptSeeder.findConceptOrThrow(s.type());
+            Concept c = null;
+            if(s.type() != null) {
+                c = conceptSeeder.findConceptOrThrow(s.type());
+            }
+
             // Check if form exist
             CustomForm f = customFormSeeder.findOrThrow(s.form());
             FormScope scope = findOrReturnNull(c,f);

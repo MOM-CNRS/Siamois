@@ -36,6 +36,7 @@
                                                           selectedConcept="#{cc.attrs.answer.value}"
                                                           field="#{cc.attrs.field}"
                                                           label="#{cc.attrs.label}"
+                                                          ajaxUpdateTargets="#{cc.attrs.updateTargetsOnBlur}"
                                                           required="#{cc.attrs.required}"
                                                           itemSelectListener="#{cc.attrs.panelModel.setFieldConceptAnswerHasBeenModified}"
                                                           editConceptUrl="#{spatialUnitFieldBean.getUrlForFieldCode(cc.attrs.fieldCode)}"/>
