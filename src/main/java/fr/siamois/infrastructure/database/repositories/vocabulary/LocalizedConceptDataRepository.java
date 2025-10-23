@@ -2,6 +2,7 @@ package fr.siamois.infrastructure.database.repositories.vocabulary;
 
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.models.vocabulary.LocalizedConceptData;
+import fr.siamois.domain.models.vocabulary.LocalizedConceptDataId;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.stereotype.Repository;
@@ -10,10 +11,7 @@ import java.util.Optional;
 import java.util.Set;
 
 @Repository
-public interface LocalizedConceptDataRepository extends CrudRepository<LocalizedConceptData, LocalizedConceptData.LocalizedConceptDataId> {
-
-    Optional<LocalizedConceptData> findByLangCodeAndConcept(String langCode, Concept concept);
-
+public interface LocalizedConceptDataRepository extends CrudRepository<LocalizedConceptData, LocalizedConceptDataId> {
 
     @Query(
             nativeQuery = true,
@@ -49,11 +47,30 @@ public interface LocalizedConceptDataRepository extends CrudRepository<Localized
             String input,
             double minSimilarityScore);
 
+    @Query(
+            nativeQuery = true,
+            value = "SELECT lcd.* FROM localized_concept_data lcd " +
+                    "WHERE lcd.fk_field_parent_concept_id = :parentConceptId " +
+                    "AND lcd.lang_code = :langCode"
+    )
     Set<LocalizedConceptData> findAllByParentConceptAndLangCode(Concept parentConcept, String langCode);
 
     Set<LocalizedConceptData> findAllByParentConcept(Concept parentConcept);
 
+    @Query(
+            nativeQuery = true,
+            value = "SELECT lcd.* FROM localized_concept_data lcd " +
+                    "WHERE lcd.lang_code = :langCode " +
+                    "AND lcd.fk_field_parent_concept_id = :#{#parentConcept.id} " +
+                    "AND lcd.label ILIKE '%' || :label || '%'"
+    )
     Set<LocalizedConceptData> findAllByLangCodeAndParentConceptAndLabelContaining(String langCode, Concept parentConcept, String label);
 
+    @Query(
+            nativeQuery = true,
+            value = "SELECT lcd.* FROM localized_concept_data lcd " +
+                    "WHERE lcd.fk_concept_id = :#{#concept.id} " +
+                    "AND lcd.lang_code = :langCode"
+    )
     Optional<LocalizedConceptData> findByConceptAndLangCode(Concept concept, String langCode);
 }

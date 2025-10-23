@@ -85,7 +85,7 @@ public class LabelService {
      * @param label    the label of the label
      */
     public void updateLabel(Concept concept, String langCode, String label, Concept fieldParentConcept) {
-        Optional<LocalizedConceptData> conceptData = localizedConceptDataRepository.findByLangCodeAndConcept(langCode, concept);
+        Optional<LocalizedConceptData> conceptData = localizedConceptDataRepository.findByConceptAndLangCode(concept, langCode);
         LocalizedConceptData savedConceptData = null;
         if (conceptData.isEmpty()) {
             savedConceptData = new LocalizedConceptData();

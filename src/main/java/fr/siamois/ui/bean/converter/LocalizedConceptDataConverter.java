@@ -1,6 +1,7 @@
 package fr.siamois.ui.bean.converter;
 
 import fr.siamois.domain.models.vocabulary.LocalizedConceptData;
+import fr.siamois.domain.models.vocabulary.LocalizedConceptDataId;
 import fr.siamois.infrastructure.database.repositories.vocabulary.LocalizedConceptDataRepository;
 import jakarta.faces.component.UIComponent;
 import jakarta.faces.context.FacesContext;
@@ -21,9 +22,9 @@ public class LocalizedConceptDataConverter implements Converter<LocalizedConcept
     public LocalizedConceptData getAsObject(FacesContext facesContext, UIComponent uiComponent, String s) {
         if (s == null || s.isEmpty()) return null;
         String[] keys = s.split(",");
-        LocalizedConceptData.LocalizedConceptDataId id = new LocalizedConceptData.LocalizedConceptDataId();
-        id.conceptId = Long.parseLong(keys[0]);
-        id.langCode = keys[1];
+        LocalizedConceptDataId id = new LocalizedConceptDataId();
+        id.setConceptId(Long.parseLong(keys[0]));
+        id.setLangCode(keys[1]);
         return  localizedConceptDataRepository.findById(id).orElse(null);
     }
 
