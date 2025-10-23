@@ -1,6 +1,7 @@
 package fr.siamois.infrastructure.database.initializer;
 
 import fr.siamois.domain.models.exceptions.database.DatabaseDataInitException;
+import fr.siamois.domain.models.form.customfield.CustomFieldInteger;
 import fr.siamois.domain.models.form.customfield.CustomFieldSelectOneFromFieldCode;
 import fr.siamois.domain.models.form.formscope.FormScope;
 import fr.siamois.domain.models.vocabulary.Vocabulary;
@@ -24,7 +25,7 @@ public class DefaultFormsDatasetInitializer implements DatabaseInitializer {
 
     public static final String BI_BI_PENCIL_SQUARE = "bi bi-pencil-square";
     public static final String MR_2_RECORDING_UNIT_TYPE_CHIP = "mr-2 recording-unit-type-chip";
-    public static final String UI_G_12_UI_MD_6_UI_LG_3 = "ui-g-12 ui-md-6 ui-lg-3";
+    public static final String UI_G_12_UI_MD_6_UI_LG_2 = "ui-g-12 ui-md-6 ui-lg-2";
     public static final String COMMON_HEADER_GENERAL = "common.header.general";
     private final ConceptSeeder conceptSeeder;
     private final ThesaurusSeeder thesaurusSeeder;
@@ -47,7 +48,8 @@ public class DefaultFormsDatasetInitializer implements DatabaseInitializer {
             new ConceptSeeder.ConceptSpec(DEFAULT_VOCABULARY_ID, "4286197", "Interprétation normalisée", "fr"),
             new ConceptSeeder.ConceptSpec(DEFAULT_VOCABULARY_ID, "4287629", "Subdivision", "fr"),
             new ConceptSeeder.ConceptSpec(DEFAULT_VOCABULARY_ID, "4287627", "Unité élémentaire", "fr"),
-            new ConceptSeeder.ConceptSpec(DEFAULT_VOCABULARY_ID, "4287628", "Unité incluante", "fr")
+            new ConceptSeeder.ConceptSpec(DEFAULT_VOCABULARY_ID, "4287628", "Unité incluante", "fr"),
+            new ConceptSeeder.ConceptSpec(DEFAULT_VOCABULARY_ID, "4287640", "Identifiant de l'unité d'enregistrement", "fr")
     );
 
     // Default Siamois field
@@ -81,6 +83,16 @@ public class DefaultFormsDatasetInitializer implements DatabaseInitializer {
                     BI_BI_PENCIL_SQUARE,
                     MR_2_RECORDING_UNIT_TYPE_CHIP,
                     "SIARU.INTERPRETATION"
+            ),
+            new CustomFieldSeederSpec(
+                    CustomFieldInteger.class,
+                    true,
+                    "common.label.identifier",
+                    new ConceptSeeder.ConceptKey(DEFAULT_VOCABULARY_ID, "4287640"),
+                    "identifier",
+                    null,
+                    null,
+                    null
             )
     );
 
@@ -97,15 +109,22 @@ public class DefaultFormsDatasetInitializer implements DatabaseInitializer {
                                             new CustomColDTO(
                                                     false,
                                                     true,
+                                                    fields.get(3),
+                                                    UI_G_12_UI_MD_6_UI_LG_2
+                                            ),
+                                            new CustomColDTO(
+                                                    false,
+                                                    true,
                                                     fields.get(0),
-                                                    UI_G_12_UI_MD_6_UI_LG_3
+                                                    UI_G_12_UI_MD_6_UI_LG_2
                                             ),
                                             new CustomColDTO(
                                                     false,
                                                     true,
                                                     fields.get(2),
-                                                    UI_G_12_UI_MD_6_UI_LG_3
+                                                    UI_G_12_UI_MD_6_UI_LG_2
                                             )
+
                                     )
                             )),
                             true
@@ -122,20 +141,26 @@ public class DefaultFormsDatasetInitializer implements DatabaseInitializer {
                                             new CustomColDTO(
                                                     false,
                                                     true,
+                                                    fields.get(3),
+                                                    UI_G_12_UI_MD_6_UI_LG_2
+                                            ),
+                                            new CustomColDTO(
+                                                    false,
+                                                    true,
                                                     fields.get(0),
-                                                    UI_G_12_UI_MD_6_UI_LG_3
+                                                    UI_G_12_UI_MD_6_UI_LG_2
                                             ),
                                             new CustomColDTO(
                                                     false,
                                                     true,
                                                     fields.get(1),
-                                                    UI_G_12_UI_MD_6_UI_LG_3
+                                                    UI_G_12_UI_MD_6_UI_LG_2
                                             ),
                                             new CustomColDTO(
                                                     false,
                                                     true,
                                                     fields.get(2),
-                                                    UI_G_12_UI_MD_6_UI_LG_3
+                                                    UI_G_12_UI_MD_6_UI_LG_2
                                             )
                                     )
                             )),
@@ -153,8 +178,14 @@ public class DefaultFormsDatasetInitializer implements DatabaseInitializer {
                                             new CustomColDTO(
                                                     false,
                                                     true,
+                                                    fields.get(3),
+                                                    UI_G_12_UI_MD_6_UI_LG_2
+                                            ),
+                                            new CustomColDTO(
+                                                    false,
+                                                    true,
                                                     fields.get(0),
-                                                    UI_G_12_UI_MD_6_UI_LG_3
+                                                    UI_G_12_UI_MD_6_UI_LG_2
                                             )
                                     )
                             )),

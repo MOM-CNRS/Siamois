@@ -108,7 +108,8 @@ public abstract class AbstractSingleEntity<T> extends AbstractPanel implements S
             CustomFieldSelectOneActionUnit.class, CustomFieldAnswerSelectOneActionUnit::new,
             CustomFieldSelectOneSpatialUnit.class, CustomFieldAnswerSelectOneSpatialUnit::new,
             CustomFieldSelectMultipleSpatialUnitTree.class, CustomFieldAnswerSelectMultipleSpatialUnitTree::new,
-            CustomFieldSelectOneActionCode.class, CustomFieldAnswerSelectOneActionCode::new
+            CustomFieldSelectOneActionCode.class, CustomFieldAnswerSelectOneActionCode::new,
+            CustomFieldInteger.class, CustomFieldAnswerInteger::new
     );
 
     public boolean hasAutoGenerationFunction(CustomFieldText field) {
@@ -311,11 +312,21 @@ public abstract class AbstractSingleEntity<T> extends AbstractPanel implements S
         answers.put(field, answer);
     }
 
-    private static void initializeAnswer(CustomFieldAnswer answer, CustomField field) {
+    /*
+    Specific initialization for system fields. Override it in the child classes
+     */
+    protected void initializeSystemField(CustomFieldAnswer answer, CustomField field) {
+
+    }
+
+    private void initializeAnswer(CustomFieldAnswer answer, CustomField field) {
         CustomFieldAnswerId answerId = new CustomFieldAnswerId();
         answerId.setField(field);
         answer.setPk(answerId);
         answer.setHasBeenModified(false);
+        if(Boolean.TRUE.equals(field.getIsSystemField())) {
+            initializeSystemField(answer, field);
+        }
     }
 
     // --------------------Spatial Unit Tree
@@ -435,7 +446,11 @@ public abstract class AbstractSingleEntity<T> extends AbstractPanel implements S
             spatialUnitAnswer.setValue(s);
         } else if (value instanceof ActionCode code && answer instanceof CustomFieldAnswerSelectOneActionCode actionCodeAnswer) {
             actionCodeAnswer.setValue(code);
-        } else if (value instanceof Set<?> set && answer instanceof CustomFieldAnswerSelectMultipleSpatialUnitTree treeAnswer) {
+        }
+        else if (value instanceof Integer val && answer instanceof CustomFieldAnswerInteger integerAnswer) {
+            integerAnswer.setValue(val);
+        }
+        else if (value instanceof Set<?> set && answer instanceof CustomFieldAnswerSelectMultipleSpatialUnitTree treeAnswer) {
             // Cast set to the expected type
             treeAnswer.setValue((Set<SpatialUnit>) set);
             TreeUiStateViewModel ui = buildUiFor(treeAnswer);
@@ -488,6 +503,8 @@ public abstract class AbstractSingleEntity<T> extends AbstractPanel implements S
         } else if (answer instanceof CustomFieldAnswerSelectMultipleSpatialUnitTree a) {
             return a.getValue();
         } else if (answer instanceof CustomFieldAnswerSelectOneActionCode a) {
+            return a.getValue();
+        } else if (answer instanceof CustomFieldAnswerInteger a) {
             return a.getValue();
         }
 

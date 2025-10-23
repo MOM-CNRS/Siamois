@@ -156,7 +156,7 @@ public class RecordingUnit extends RecordingUnitParent implements ArkEntity, Ref
     @Transient
     @JsonIgnore
     public List<String> getBindableFieldNames() {
-        return List.of("creationTime", "startDate", "endDate", "fullIdentifier", "authors",
+        return List.of("creationTime", "startDate", "endDate", "identifier", "authors",
                 "excavators", "type", "secondaryType", "thirdType", "actionUnit", "spatialUnit", "geomorphologicalCycle", "normalizedInterpretation");
     }
 

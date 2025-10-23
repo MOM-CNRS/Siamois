@@ -1,0 +1,41 @@
+<ui:composition
+        xmlns="http://www.w3.org/1999/xhtml"
+        xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
+        xmlns:cc="http://java.sun.com/jsf/composite"
+        xmlns:p="http://primefaces.org/ui" xmlns:f="http://java.sun.com/jsf/core" xmlns:h="http://java.sun.com/jsf/html"
+>
+
+    <cc:interface>
+        <cc:attribute name="answer" type="fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerInteger" required="true"/>
+        <cc:attribute name="panelModel" type="fr.siamois.ui.bean.panel.models.panel.single.AbstractSingleEntity" required="true"/>
+        <cc:attribute name="hasBeenModified" type="Boolean" required="false" default="false"/>
+        <cc:attribute name="field" type="fr.siamois.domain.models.form.customfield.CustomFieldInteger"
+                      required="true"/>
+        <cc:attribute name="mode" type="String" required="false" default="READ"/>
+        <cc:attribute name="label" type="String" required="false"/>
+        <cc:attribute name="required" type="java.lang.Boolean" required="true"/>
+        <cc:attribute name="updateTargetsOnBlur" type="String" required="false" default="@this"/>
+    </cc:interface>
+
+    <cc:implementation>
+        <p:inplace mode="#{cc.attrs.mode}" toggleable="false">
+            <f:facet name="output">
+                <h:outputText value="#{cc.attrs.answer.value}"/>
+            </f:facet>
+            <f:facet name="input">
+                <p:inputNumber value="#{cc.attrs.answer.value}"
+                             styleClass="#{cc.attrs.answer.hasBeenModified ? 'track-change sia-modified-field': 'track-change'}"
+                             label="#{cc.attrs.label}"
+                             minValue="#{cc.attrs.field.minValue}"
+                             maxValue="#{cc.attrs.field.maxValue}"
+                             required="#{cc.attrs.required}"
+                             id="input">
+                    <p:ajax event="valueChange" delay="1000" update="#{cc.attrs.updateTargetsOnBlur}"
+                            process="@this"
+                            listener="#{cc.attrs.panelModel.setFieldAnswerHasBeenModified(cc.attrs.field)}" />
+                </p:inputNumber>
+            </f:facet>
+        </p:inplace>
+    </cc:implementation>
+
+</ui:composition>

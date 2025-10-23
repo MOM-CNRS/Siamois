@@ -116,19 +116,17 @@ public class RecordingUnitService implements ArkEntityService {
                 managedRecordingUnit = new RecordingUnit();
             }
 
-            // Generate unique identifier if not present
+            // Generate unique identifier
             managedRecordingUnit.setIdentifier(recordingUnit.getIdentifier());
-            managedRecordingUnit.setFullIdentifier(recordingUnit.getFullIdentifier());
             managedRecordingUnit.setActionUnit(recordingUnit.getActionUnit());
             managedRecordingUnit.setCreatedByInstitution(recordingUnit.getCreatedByInstitution());
-            if (managedRecordingUnit.getFullIdentifier() == null) {
-                if (managedRecordingUnit.getIdentifier() == null) {
-
-                    managedRecordingUnit.setIdentifier(generateNextIdentifier(managedRecordingUnit));
-                }
-                // Set full identifier
-                managedRecordingUnit.setFullIdentifier(managedRecordingUnit.displayFullIdentifier());
+            if (managedRecordingUnit.getIdentifier() == null) {
+                managedRecordingUnit.setIdentifier(generateNextIdentifier(managedRecordingUnit));
             }
+            // Set full identifier
+            managedRecordingUnit.setFullIdentifier(null); // reseting so that displayFullIdentifier generated a new one
+            managedRecordingUnit.setFullIdentifier(managedRecordingUnit.displayFullIdentifier());
+
 
             // Add concept
             Concept type = conceptService.saveOrGetConcept(concept);

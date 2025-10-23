@@ -9,6 +9,7 @@ import fr.siamois.domain.models.exceptions.recordingunit.FailedRecordingUnitSave
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.customfield.CustomFieldInteger;
 import fr.siamois.domain.models.form.customfield.CustomFieldSelectMultiple;
+import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswer;
 import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerInteger;
 import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerSelectMultiple;
 import fr.siamois.domain.models.form.customform.CustomCol;
@@ -48,10 +49,7 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 @Slf4j
 @EqualsAndHashCode(callSuper = true, onlyExplicitlyIncluded = true)
@@ -331,6 +329,7 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
         unit.setThirdType(backupClone.getThirdType());
         unit.setSecondaryType(backupClone.getSecondaryType());
         unit.setArk(backupClone.getArk());
+        unit.setIdentifier(backupClone.getIdentifier());
         unit.setType(backupClone.getType());
         unit.setStartDate(backupClone.getStartDate());
         unit.setEndDate(backupClone.getEndDate());
@@ -340,6 +339,17 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
         unit.setNormalizedInterpretation(backupClone.getNormalizedInterpretation());
         hasUnsavedModifications = false;
         initForms(true);
+    }
+
+    @Override
+    protected void initializeSystemField(CustomFieldAnswer answer, CustomField field) {
+
+        // Recording unit identifier
+        if(Objects.equals(field.getValueBinding(), "identifier") && field.getClass().equals(CustomFieldInteger.class)) {
+            ((CustomFieldInteger) field).setMaxValue(unit.getActionUnit().getMaxRecordingUnitCode());
+            ((CustomFieldInteger) field).setMinValue(unit.getActionUnit().getMinRecordingUnitCode());
+        }
+
     }
 
     @Override

@@ -98,6 +98,11 @@ public class CustomFormSeeder {
                 f.setLayout(convertLayoutFromDto(s.layout()));
                 customFormRepository.save(f);
             }
+            else {
+                form.setLayout(convertLayoutFromDto(s.layout()));
+                // appliquer les modifications
+                customFormRepository.save(form);
+            }
         }
     }
 
