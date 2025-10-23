@@ -69,4 +69,5 @@ public interface ConceptRepository extends CrudRepository<Concept, Long>, Revisi
     )
     Optional<Concept> findTopTermConfigForFieldCodeOfInstitution(Long institutionId, String fieldCode);
 
+    Optional<Concept> findByExternalId(String externalId);
 }

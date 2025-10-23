@@ -52,6 +52,9 @@ public class FullInfoDTO implements Comparable<FullInfoDTO> {
     @JsonProperty("http://purl.org/umu/uneskos#memberOf")
     private PurlInfoDTO[] memberOf;
 
+    @JsonProperty("http://www.w3.org/2004/02/skos/core#definition")
+    private PurlInfoDTO[] definition;
+
     @JsonIgnore
     private String baseUri;
 

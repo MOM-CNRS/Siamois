@@ -3,14 +3,13 @@ package fr.siamois.domain.services.vocabulary;
 import fr.siamois.domain.models.vocabulary.Concept;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
-import lombok.Data;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Getter
 @Entity
 @Table(name = "concept_hierarchy")
-public class ConceptRelation {
+public class ConceptHierarchy {
 
     @EmbeddedId
     private ConceptRelationId id;
@@ -25,13 +24,13 @@ public class ConceptRelation {
     @JoinColumn(name = "fk_child_concept_id")
     private Concept child;
 
-    public ConceptRelation(Concept parent, Concept child) {
+    public ConceptHierarchy(Concept parent, Concept child) {
         id = new ConceptRelationId(parent.getId(), child.getId());
         this.parent = parent;
         this.child = child;
     }
 
-    public ConceptRelation() {
+    public ConceptHierarchy() {
         id = new ConceptRelationId();
         parent = null;
         child = null;

@@ -187,61 +187,6 @@ class ConceptServiceTest {
     }
 
     @Test
-    void findDirectSubConceptOf_shouldReturnSubConcepts_whenSubConceptsExist() throws ErrorProcessingExpansionException {
-        // Given
-        ConceptBranchDTO branch = new ConceptBranchDTO();
-        FullInfoDTO parentConceptDTO = new FullInfoDTO();
-        PurlInfoDTO parentIdentifier = new PurlInfoDTO();
-        parentIdentifier.setValue("concept1");
-        parentConceptDTO.setIdentifier(new PurlInfoDTO[]{parentIdentifier});
-
-        FullInfoDTO childConceptDTO = new FullInfoDTO();
-        PurlInfoDTO childIdentifier = new PurlInfoDTO();
-        childIdentifier.setValue("concept2");
-        childConceptDTO.setIdentifier(new PurlInfoDTO[]{childIdentifier});
-
-        PurlInfoDTO narrower = new PurlInfoDTO();
-        narrower.setValue("concept2");
-        parentConceptDTO.setNarrower(new PurlInfoDTO[]{narrower});
-
-        branch.getData().put("concept1", parentConceptDTO);
-        branch.getData().put("concept2", childConceptDTO);
-
-        when(conceptApi.fetchDownExpansion(vocabulary, "concept1")).thenReturn(branch);
-        when(conceptRepository.findConceptByExternalIdIgnoreCase("vocab1", "concept2")).thenReturn(Optional.empty());
-        when(conceptRepository.save(any(Concept.class))).thenAnswer(invocation -> {
-            Concept savedConcept = invocation.getArgument(0);
-            savedConcept.setId(2L);
-            return savedConcept;
-        });
-
-        // When
-        List<Concept> result = conceptService.findDirectSubConceptOf(concept);
-
-        // Then
-        assertNotNull(result);
-        assertEquals(1, result.size());
-        assertEquals("concept2", result.get(0).getExternalId());
-        verify(conceptRepository, times(1)).save(any(Concept.class));
-    }
-
-    @Test
-    void findDirectSubConceptOf_shouldReturnEmptyList_whenNoSubConceptsExist() throws ErrorProcessingExpansionException {
-        // Given
-        ConceptBranchDTO branch = new ConceptBranchDTO();
-
-        when(conceptApi.fetchDownExpansion(vocabulary, "concept1")).thenReturn(branch);
-
-        // When
-        List<Concept> result = conceptService.findDirectSubConceptOf(concept);
-
-        // Then
-        assertNotNull(result);
-        assertTrue(result.isEmpty());
-        verify(conceptRepository, never()).save(any(Concept.class));
-    }
-
-    @Test
     void findAllById_shouldReturnConcepts_whenIdsExist() {
         // Given
         Concept concept1 = new Concept();

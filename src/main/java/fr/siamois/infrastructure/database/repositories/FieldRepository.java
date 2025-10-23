@@ -60,9 +60,9 @@ public interface FieldRepository extends CrudRepository<CustomField, Long> {
     @Modifying
     @Query(
             nativeQuery = true,
-            value = "UPDATE concept_field_config cfc " +
-                    "SET cfc.existing_checksum = :checksum " +
-                    "WHERE cfc.config_id = :fieldConfigId"
+            value = "UPDATE concept_field_config " +
+                    "SET existing_hash = :hash " +
+                    "WHERE config_id = :fieldConfigId"
     )
-    void updateChecksumForFieldConfig(Long fieldConfigId, Long checksum);
+    void updateChecksumForFieldConfig(Long fieldConfigId, String hash);
 }

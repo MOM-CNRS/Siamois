@@ -21,12 +21,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 import java.net.URI;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.zip.CRC32;
-import java.util.zip.Checksum;
 
 /**
  * Service to fetch concept information from the API.
@@ -106,21 +106,37 @@ public class ConceptApi {
         }
     }
 
-    private static long checksumOfString(String string) {
-        Checksum crc32 = new CRC32();
-        crc32.update(string.getBytes(), 0, string.length());
-        return crc32.getValue();
+    private static String bytesToHex(byte[] hash) {
+        StringBuilder hexString = new StringBuilder(2 * hash.length);
+        for (byte b : hash) {
+            String hex = Integer.toHexString(0xff & b);
+            if (hex.length() == 1) {
+                hexString.append('0');
+            }
+            hexString.append(hex);
+        }
+        return hexString.toString();
+    }
+
+    private static String hashOfString(String string) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA3-256");
+            byte[] hash = digest.digest(string.getBytes());
+            return bytesToHex(hash);
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public ConceptBranchDTO fetchDownExpansion(ConceptFieldConfig config) throws ErrorProcessingExpansionException {
         Concept concept = config.getConcept();
         Vocabulary vocabulary = concept.getVocabulary();
-        Long existingChecksum = config.getExistingChecksum();
+        String existingChecksum = config.getExistingHash();
         URI uri = URI.create(String.format("%s/openapi/v1/concept/%s/%s/expansion?way=down", vocabulary.getBaseUri(), vocabulary.getExternalVocabularyId(), concept.getExternalId()));
         ResponseEntity<String> response = sendRequestAcceptJson(uri);
         String body = response.getBody();
         if (body == null) return null;
-        long contentSum = checksumOfString(body);
+        String contentSum = hashOfString(body);
         if (existingChecksum != null && existingChecksum.equals(contentSum))
             return null;
 

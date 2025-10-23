@@ -7,7 +7,7 @@ import java.util.Objects;
 
 @Data
 @Entity
-@Table(name = "localized_concept_data", indexes = @Index(name = "label_idx", columnList = "label"))
+@Table(name = "localized_concept_data")
 public class LocalizedConceptData {
 
     @Id
@@ -27,6 +27,10 @@ public class LocalizedConceptData {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "fk_concept_id", nullable = false)
     private Concept concept;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "fk_field_parent_concept_id")
+    private Concept parentConcept;
 
     @Override
     public boolean equals(Object o) {

@@ -16,6 +16,8 @@ import fr.siamois.infrastructure.api.dto.FullInfoDTO;
 import fr.siamois.infrastructure.database.repositories.FieldRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptFieldConfigRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRepository;
+import fr.siamois.infrastructure.database.repositories.vocabulary.LocalizedConceptDataRepository;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
@@ -28,6 +30,7 @@ import java.util.Optional;
  */
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class FieldConfigurationService {
 
     private static final IllegalStateException FIELD_CODE_NOT_FOUND = new IllegalStateException("Field code not found");
@@ -39,21 +42,7 @@ public class FieldConfigurationService {
 
     private final LabelService labelService;
     private final ConceptFieldConfigRepository conceptFieldConfigRepository;
-
-
-    public FieldConfigurationService(ConceptApi conceptApi,
-                                     FieldService fieldService,
-                                     FieldRepository fieldRepository,
-                                     ConceptRepository conceptRepository,
-                                     ConceptService conceptService, LabelService labelService, ConceptFieldConfigRepository conceptFieldConfigRepository) {
-        this.conceptApi = conceptApi;
-        this.fieldService = fieldService;
-        this.fieldRepository = fieldRepository;
-        this.conceptRepository = conceptRepository;
-        this.conceptService = conceptService;
-        this.labelService = labelService;
-        this.conceptFieldConfigRepository = conceptFieldConfigRepository;
-    }
+    private final LocalizedConceptDataRepository localizedConceptDataRepository;
 
     private boolean containsFieldCode(FullInfoDTO conceptDTO) {
         return conceptDTO.getFieldcode().isPresent();
@@ -87,8 +76,8 @@ public class FieldConfigurationService {
         if (config.isWrongConfig()) return Optional.of(config);
 
         for (FullInfoDTO conceptDTO : config.conceptWithValidFieldCode()) {
-            Concept concept = conceptService.saveOrGetConceptFromFullDTO(vocabulary, conceptDTO);
             String fieldCode = conceptDTO.getFieldcode().orElseThrow(() -> FIELD_CODE_NOT_FOUND);
+            Concept concept = conceptService.saveOrGetConceptFromFullDTO(vocabulary, conceptDTO, null);
 
             int rowAffected = fieldRepository.updateConfigForFieldOfInstitution(institution.getId(), fieldCode, concept.getId());
             if (rowAffected == 0) {
@@ -136,8 +125,9 @@ public class FieldConfigurationService {
         if (config.isWrongConfig()) return Optional.of(config);
 
         for (FullInfoDTO conceptDTO : config.conceptWithValidFieldCode()) {
-            Concept concept = conceptService.saveOrGetConceptFromFullDTO(vocabulary, conceptDTO);
             String fieldCode = conceptDTO.getFieldcode().orElseThrow(() -> FIELD_CODE_NOT_FOUND);
+
+            Concept concept = conceptService.saveOrGetConceptFromFullDTO(vocabulary, conceptDTO, null);
 
             int rowAffected = fieldRepository.updateConfigForFieldOfUser(info.getInstitution().getId(),
                     info.getUser().getId(),
@@ -215,19 +205,7 @@ public class FieldConfigurationService {
      */
     @Deprecated(forRemoval = true)
     public List<Concept> fetchAutocomplete(UserInfo info, Concept parentConcept, String input) {
-        try {
-            List<Concept> candidates = conceptService.findDirectSubConceptOf(parentConcept);
-            if (StringUtils.isEmpty(input)) return candidates;
-
-            return candidates
-                    .stream()
-                    .filter(c -> labelContainsInputIgnoreCase(info, input, c))
-                    .toList();
-
-        } catch (ErrorProcessingExpansionException e) {
-            log.debug("Error fetching children concepts for autocomplete", e);
-            return List.of();
-        }
+        throw new UnsupportedOperationException("This method should be removed");
     }
 
     public ConceptFieldConfig findConfigurationForFieldCode(UserInfo info, String fieldCode) throws NoConfigForFieldException {
@@ -246,17 +224,11 @@ public class FieldConfigurationService {
         try {
             ConceptFieldConfig config = findConfigurationForFieldCode(info, fieldCode);
             conceptService.saveAllSubConceptOfIfUpdated(config);
-
-            // TODO: Search in all concept data
-            return List.of();
+            return labelService.findMatchingConcepts(config.getConcept(), info.getLang(), input);
         } catch (ErrorProcessingExpansionException e) {
             log.error(e.getMessage());
             return List.of();
         }
-    }
-
-    private boolean labelContainsInputIgnoreCase(UserInfo info, String input, Concept c) {
-        return labelService.findLabelOf(c, info.getLang()).getValue().toLowerCase().contains(input.toLowerCase());
     }
 
 }
