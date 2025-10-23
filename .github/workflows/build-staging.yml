@@ -1,0 +1,81 @@
+name: Build and publish JAR on staging release
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: write  # nécessaire pour uploader un asset
+
+concurrency:
+  group: deploy-staging
+  cancel-in-progress: false
+
+jobs:
+  build-and-publish:
+    name: Build, Test and Publish JAR
+    runs-on: ubuntu-latest
+    environment: STAGING
+
+    # On ne build que si la release cible la branche staging
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.release.target_commitish == 'staging' }}
+
+    env:
+      BUILD_DIR: target
+      ARTIFACT_PATTERN: "*.jar"
+
+    steps:
+      - name: Checkout (release tag)
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'release' && github.event.release.tag_name || github.ref }}
+          fetch-depth: 0
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: 17
+          distribution: zulu
+          cache: maven
+
+      - name: Cache Maven packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2
+          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ runner.os }}-m2
+
+      - name: Build & Test (Maven)
+        run: |
+          mvn -B clean verify
+        # "verify" = compile + test + package + integration tests éventuels
+
+      - name: Locate JAR
+        id: jar
+        run: |
+          shopt -s nullglob
+          files=($BUILD_DIR/$ARTIFACT_PATTERN)
+          if [ ${#files[@]} -eq 0 ]; then
+            echo "Aucun JAR trouvé dans $BUILD_DIR" >&2
+            exit 1
+          fi
+          newest=$(ls -t $BUILD_DIR/$ARTIFACT_PATTERN | head -n1)
+          echo "jar_path=$newest" >> "$GITHUB_OUTPUT"
+          echo "Found JAR: $newest"
+
+      - name: Upload JAR to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ steps.jar.outputs.jar_path }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # (Optionnel) Publier les rapports de tests
+      - name: Upload test reports (JUnit)
+        if: always() # même si les tests échouent
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-reports
+          path: target/surefire-reports/
+          retention-days: 7
