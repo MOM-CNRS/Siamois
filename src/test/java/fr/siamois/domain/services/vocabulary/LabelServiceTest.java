@@ -1,10 +1,7 @@
 package fr.siamois.domain.services.vocabulary;
 
-import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.models.vocabulary.Vocabulary;
-import fr.siamois.domain.models.vocabulary.label.ConceptLabel;
 import fr.siamois.domain.models.vocabulary.label.VocabularyLabel;
-import fr.siamois.infrastructure.database.repositories.vocabulary.label.ConceptLabelRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.label.VocabularyLabelRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -23,58 +20,12 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class LabelServiceTest {
 
-    @Mock
-    private ConceptLabelRepository conceptLabelRepository;
 
     @Mock
     private VocabularyLabelRepository vocabularyLabelRepository;
 
     @InjectMocks
     private LabelService labelService;
-
-    @Test
-    void updateLabelConcept_shouldCreateLabel_whenLabelDoesNotExist() {
-        // Given
-        Concept concept = new Concept();
-        when(conceptLabelRepository.findByConceptAndLangCode(concept, "en")).thenReturn(Optional.empty());
-
-        // When
-        labelService.updateLabel(concept, "en", "New Label");
-
-        // Then
-        verify(conceptLabelRepository, times(1)).save(any(ConceptLabel.class));
-    }
-
-    @Test
-    void updateLabelConcept_shouldUpdateLabel_whenLabelExistsAndValueDiffers() {
-        // Given
-        Concept concept = new Concept();
-        ConceptLabel label = new ConceptLabel();
-        label.setValue("Old Label");
-        when(conceptLabelRepository.findByConceptAndLangCode(concept, "en")).thenReturn(Optional.of(label));
-
-        // When
-        labelService.updateLabel(concept, "en", "Updated Label");
-
-        // Then
-        assertEquals("Updated Label", label.getValue());
-        verify(conceptLabelRepository, times(1)).save(label);
-    }
-
-    @Test
-    void updateLabelConcept_shouldDoNothing_whenLabelExistsAndValueIsSame() {
-        // Given
-        Concept concept = new Concept();
-        ConceptLabel label = new ConceptLabel();
-        label.setValue("Same Label");
-        when(conceptLabelRepository.findByConceptAndLangCode(concept, "en")).thenReturn(Optional.of(label));
-
-        // When
-        labelService.updateLabel(concept, "en", "Same Label");
-
-        // Then
-        verify(conceptLabelRepository, never()).save(any(ConceptLabel.class));
-    }
 
     @Test
     void findLabelOfVocabulary_shouldReturnExistingLabel_whenLabelExists() {

@@ -5,7 +5,6 @@ import fr.siamois.domain.models.vocabulary.LocalizedConceptData;
 import fr.siamois.domain.models.vocabulary.Vocabulary;
 import fr.siamois.domain.models.vocabulary.label.VocabularyLabel;
 import fr.siamois.infrastructure.database.repositories.vocabulary.LocalizedConceptDataRepository;
-import fr.siamois.infrastructure.database.repositories.vocabulary.label.ConceptLabelRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.label.VocabularyLabelRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -25,7 +24,6 @@ import java.util.Set;
 @RequiredArgsConstructor
 public class LabelService {
 
-    private final ConceptLabelRepository conceptLabelRepository;
     private final VocabularyLabelRepository vocabularyLabelRepository;
     private final LocalizedConceptDataRepository localizedConceptDataRepository;
 
