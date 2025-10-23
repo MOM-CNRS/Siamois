@@ -149,9 +149,9 @@ public class GenericNewUnitDialogBean<T extends TraceableEntity>
     }
 
     @Override
-    public void initForms() {
+    public void initForms(boolean forceInit) {
         detailsForm = handler.formLayout();
-        formResponse = initializeFormResponse(detailsForm, unit);
+        formResponse = initializeFormResponse(detailsForm, unit, forceInit);
     }
 
     protected void reset() {
@@ -165,7 +165,7 @@ public class GenericNewUnitDialogBean<T extends TraceableEntity>
         unit.setAuthor(sessionSettingsBean.getAuthenticatedUser());
         unit.setCreatedByInstitution(sessionSettingsBean.getSelectedInstitution());
         handler.initFromContext(this);
-        initForms();
+        initForms(true);
     }
 
     public void createAndOpen() { performCreate(true, true); }

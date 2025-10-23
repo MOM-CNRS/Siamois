@@ -211,7 +211,7 @@ public class SpecimenPanel extends AbstractSingleEntityPanel<Specimen>  implemen
             backupClone = new Specimen(unit);
             this.titleCodeOrTitle = unit.getFullIdentifier();
 
-            initForms();
+            initForms(true);
 
             // Get all the CHILDREN of the recording unit
             selectedCategoriesChildren = new ArrayList<>();
@@ -349,10 +349,10 @@ public class SpecimenPanel extends AbstractSingleEntityPanel<Specimen>  implemen
 
 
     @Override
-    public void initForms() {
+    public void initForms(boolean forceInit) {
 
         // Init system form answers
-        formResponse = initializeFormResponse(detailsForm, unit);
+        formResponse = initializeFormResponse(detailsForm, unit, forceInit);
 
     }
 
@@ -377,7 +377,7 @@ public class SpecimenPanel extends AbstractSingleEntityPanel<Specimen>  implemen
         unit.setAuthors(backupClone.getAuthors());
         unit.setCollectors(backupClone.getCollectors());
         unit.setCollectionDate(backupClone.getCollectionDate());
-        initForms();
+        initForms(true);
     }
 
     @Override

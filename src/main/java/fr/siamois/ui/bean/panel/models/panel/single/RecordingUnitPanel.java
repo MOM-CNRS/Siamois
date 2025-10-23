@@ -236,7 +236,7 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
             specimenListLazyDataModel.setSelectedUnits(new ArrayList<>());
 
             backupClone = new RecordingUnit(unit);
-            initForms();
+            initForms(true);
             this.titleCodeOrTitle = unit.getFullIdentifier();
 
             specimenListLazyDataModel.setSelectedUnits(new ArrayList<>());
@@ -318,11 +318,11 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
 
 
     @Override
-    public void initForms() {
+    public void initForms(boolean forceInit) {
         overviewForm = RecordingUnit.OVERVIEW_FORM;
         detailsForm = formService.findCustomFormByRecordingUnitTypeAndInstitutionId(unit.getType(), sessionSettingsBean.getSelectedInstitution());
         // Init system form answers
-        formResponse = initializeFormResponse(detailsForm, unit);
+        formResponse = initializeFormResponse(detailsForm, unit, forceInit);
     }
 
     @Override
@@ -339,7 +339,7 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
         unit.setGeomorphologicalCycle(backupClone.getGeomorphologicalCycle());
         unit.setNormalizedInterpretation(backupClone.getNormalizedInterpretation());
         hasUnsavedModifications = false;
-        initForms();
+        initForms(true);
     }
 
     @Override

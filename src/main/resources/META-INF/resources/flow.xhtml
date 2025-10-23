@@ -236,9 +236,12 @@
                             <p:outputPanel rendered="#{panel.displayHeader() == null}">
                                 <i class="#{panel.icon}"/> #{flowBean.headerName(panel)}
                             </p:outputPanel>
-                            <ui:include rendered="#{panel.displayHeader() != null}" src="#{panel.displayHeader()}">
+                                <p:outputPanel id="panelHeader">
+                                    <ui:include rendered="#{panel.displayHeader() != null}"
+                                                src="#{panel.displayHeader()}">
                                 <ui:param name="panelModel" value="#{panel}"/>
-                            </ui:include>
+                                     </ui:include>
+                                </p:outputPanel>
                             </span>
                         </f:facet>
                         <ui:include src="#{panel.display()}" id="panel-body">

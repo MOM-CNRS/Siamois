@@ -79,10 +79,10 @@ public abstract class AbstractSingleEntity<T> extends AbstractPanel implements S
     public String getConceptFieldsUpdateTargetsOnBlur() {
         // If new unit panel form, update @this when concept is selected, otherwise @form
         if(this.getClass() == GenericNewUnitDialogBean.class) {
-            return "@this";
+            return "@this panelHeader";
         }
         else {
-            return "@form";
+            return "@form panelHeader";
         }
     }
 
@@ -160,7 +160,7 @@ public abstract class AbstractSingleEntity<T> extends AbstractPanel implements S
     }
 
 
-    public abstract void initForms();
+    public abstract void initForms(boolean forceInit);
 
 
     public List<SpatialUnit> getSpatialUnitOptions() {
@@ -175,7 +175,7 @@ public abstract class AbstractSingleEntity<T> extends AbstractPanel implements S
     protected void onFormScopeChanged(Concept newVal) {
         updateJpaEntityFromFormResponse(formResponse, unit);
         setFormScopePropertyValue(newVal); // change type of unit to be able to init forms
-        initForms();
+        initForms(false);
     }
 
     public void setFieldAnswerHasBeenModified(CustomField field) {
@@ -247,36 +247,54 @@ public abstract class AbstractSingleEntity<T> extends AbstractPanel implements S
         return parentConcept != null ? fieldConfigurationService.getUrlOfConcept(parentConcept) : null;
     }
 
-    public CustomFormResponse initializeFormResponse(CustomForm form, Object jpaEntity) {
-        CustomFormResponse response = new CustomFormResponse();
+    public CustomFormResponse initializeFormResponse(CustomForm form, Object jpaEntity, boolean forceInit) {
+
+        // Determine whether to reuse or recreate the response
+        CustomFormResponse response;
+        Map<CustomField, CustomFieldAnswer> answers;
+
+        if (formResponse != null && !forceInit) {
+            // Reuse existing form response
+            response = formResponse;
+            answers = formResponse.getAnswers();
+        } else {
+            // Create a new form response
+            response = new CustomFormResponse();
+            answers = new HashMap<>();
+        }
+
+        // If we’re reusing an existing form response, we only need to initialize missing fields
+        boolean onlyInitMissingProperties = (response == formResponse && !forceInit);
+
         if (form.getLayout() == null) return response;
 
-        Map<CustomField, CustomFieldAnswer> answers = new HashMap<>();
         List<String> bindableFields = getBindableFieldNames(jpaEntity);
 
         for (CustomFormPanel panel : form.getLayout()) {
-            processPanel(panel, jpaEntity, bindableFields, answers);
+            processPanel(panel, jpaEntity, bindableFields, answers, onlyInitMissingProperties);
         }
 
         response.setAnswers(answers);
         return response;
     }
 
-    private void processPanel(CustomFormPanel panel, Object jpaEntity, List<String> bindableFields, Map<CustomField, CustomFieldAnswer> answers) {
+    private void processPanel(CustomFormPanel panel, Object jpaEntity, List<String> bindableFields, Map<CustomField,
+            CustomFieldAnswer> answers, boolean onlyInitMissingProperties) {
         if (panel.getRows() == null) return;
 
         for (CustomRow row : panel.getRows()) {
             if (row.getColumns() == null) continue;
 
             for (CustomCol col : row.getColumns()) {
-                processColumn(col, jpaEntity, bindableFields, answers);
+                processColumn(col, jpaEntity, bindableFields, answers, onlyInitMissingProperties);
             }
         }
     }
 
-    private void processColumn(CustomCol col, Object jpaEntity, List<String> bindableFields, Map<CustomField, CustomFieldAnswer> answers) {
+    private void processColumn(CustomCol col, Object jpaEntity, List<String> bindableFields, Map<CustomField, CustomFieldAnswer> answers,
+                               boolean onlyInitMissingProperties) {
         CustomField field = col.getField();
-        if (field == null || answers.containsKey(field)) return;
+        if (field == null || (answers.containsKey(field) && onlyInitMissingProperties)) return;
 
         CustomFieldAnswer answer = instantiateAnswerForField(field);
         if (answer == null) return;

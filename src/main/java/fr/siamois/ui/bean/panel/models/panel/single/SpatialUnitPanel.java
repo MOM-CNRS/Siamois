@@ -176,12 +176,12 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
     }
 
     @Override
-    public void initForms() {
+    public void initForms(boolean forceInit) {
 
         overviewForm = SpatialUnit.OVERVIEW_FORM;
         detailsForm = SpatialUnit.DETAILS_FORM;
         // Init system form answers
-        formResponse = initializeFormResponse(detailsForm, unit);
+        formResponse = initializeFormResponse(detailsForm, unit, forceInit);
     }
 
     @Override
@@ -214,7 +214,7 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
 
             backupClone = new SpatialUnit(unit);
 
-            initForms();
+            initForms(true);
 
             // Get all the CHILDREN of the spatial unit
             selectedCategoriesChildren = new ArrayList<>();
@@ -276,7 +276,7 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
         unit.setArk(backupClone.getArk());
         unit.setCategory(backupClone.getCategory());
         hasUnsavedModifications = false;
-        initForms();
+        initForms(true);
     }
 
     @Override
