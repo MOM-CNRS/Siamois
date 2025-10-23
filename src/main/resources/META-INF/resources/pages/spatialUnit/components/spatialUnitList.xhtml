@@ -128,12 +128,12 @@
                                 updateLabel="true"
                                 filterMatchMode="contains"
                                 onchange="PF('#{cc.clientId}_spatialUnitListTable').filter()"
-                                converter="#{conceptLabelConverter}">
+                                converter="#{localizedConceptDataConverter}">
 
                             <f:selectItems value="#{cc.attrs.panelModel.categoriesAvailable()}"
                                            var="cat"
                                            itemValue="#{cat}"
-                                           itemLabel="#{cat.value}"
+                                           itemLabel="#{cat.getLabel()}"
                             />
                         </p:selectCheckboxMenu>
 

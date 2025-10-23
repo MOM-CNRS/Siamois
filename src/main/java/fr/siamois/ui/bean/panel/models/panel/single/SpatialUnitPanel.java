@@ -6,7 +6,7 @@ import fr.siamois.domain.models.exceptions.recordingunit.FailedRecordingUnitSave
 import fr.siamois.domain.models.history.RevisionWithInfo;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
-import fr.siamois.domain.models.vocabulary.label.ConceptLabel;
+import fr.siamois.domain.models.vocabulary.LocalizedConceptData;
 import fr.siamois.domain.services.form.CustomFieldService;
 import fr.siamois.domain.services.history.HistoryAuditService;
 import fr.siamois.domain.services.person.PersonService;
@@ -118,7 +118,7 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
     }
 
 
-    public List<ConceptLabel> categoriesAvailable() {
+    public List<LocalizedConceptData> categoriesAvailable() {
         List<Concept> cList = conceptService.findAllBySpatialUnitOfInstitution(sessionSettings.getSelectedInstitution());
         return cList.stream()
                 .map(concept -> labelService.findLabelOf(
@@ -350,7 +350,7 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
             // Handle list of concepts
             String langCode = sessionSettings.getLanguageCode();
             return list.stream()
-                    .map(item -> (item instanceof Concept concept) ? labelService.findLabelOf(concept, langCode).getValue() : item.toString())
+                    .map(item -> (item instanceof Concept concept) ? labelService.findLabelOf(concept, langCode).getLabel() : item.toString())
                     .collect(Collectors.joining(", "));
         }
 

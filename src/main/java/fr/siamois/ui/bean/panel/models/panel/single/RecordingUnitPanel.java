@@ -3,7 +3,6 @@ package fr.siamois.ui.bean.panel.models.panel.single;
 import fr.siamois.domain.models.actionunit.ActionUnitFormMapping;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.document.Document;
-import fr.siamois.domain.models.exceptions.ErrorProcessingExpansionException;
 import fr.siamois.domain.models.exceptions.actionunit.ActionUnitNotFoundException;
 import fr.siamois.domain.models.exceptions.recordingunit.FailedRecordingUnitSaveException;
 import fr.siamois.domain.models.form.customfield.CustomField;
@@ -139,25 +138,6 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
     @Override
     protected void setFormScopePropertyValue(Concept concept) {
         unit.setType(concept);
-    }
-
-    public LocalDate offsetDateTimeToLocalDate(OffsetDateTime offsetDT) {
-        return offsetDT.toLocalDate();
-    }
-
-    public List<Concept> fetchChildrenOfConcept(Concept concept) {
-        List<Concept> concepts;
-
-        try {
-            concepts = conceptService.findDirectSubConceptOf(concept);
-        } catch (ErrorProcessingExpansionException e) {
-            log.error(e.getMessage());
-            log.debug(e.getMessage(), e);
-            return new ArrayList<>();
-        }
-
-        return concepts;
-
     }
 
     public void initializeAnswer(CustomField field) {

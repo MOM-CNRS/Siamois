@@ -370,7 +370,7 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnit> imple
             // Handle list of concepts
             String langCode = sessionSettingsBean.getLanguageCode();
             return list.stream()
-                    .map(item -> (item instanceof Concept concept) ? labelService.findLabelOf(concept, langCode).getValue() : item.toString())
+                    .map(item -> (item instanceof Concept concept) ? labelService.findLabelOf(concept, langCode).getLabel() : item.toString())
                     .collect(Collectors.joining(", "));
         }
 

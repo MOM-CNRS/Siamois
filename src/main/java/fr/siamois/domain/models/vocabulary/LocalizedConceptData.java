@@ -1,7 +1,10 @@
 package fr.siamois.domain.models.vocabulary;
 
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
 
 import java.util.Objects;
 
@@ -10,11 +13,10 @@ import java.util.Objects;
 @Table(name = "localized_concept_data")
 public class LocalizedConceptData {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "label_id")
-    private Long id;
+    @EmbeddedId
+    private LocalizedConceptDataId id;
 
+    @MapsId("langCode")
     @Column(name = "lang_code", nullable = false)
     private String langCode;
 
@@ -24,6 +26,7 @@ public class LocalizedConceptData {
     @Column(name = "concept_definition", length = Integer.MAX_VALUE)
     private String definition;
 
+    @MapsId("conceptId")
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "fk_concept_id", nullable = false)
     private Concept concept;
@@ -42,4 +45,33 @@ public class LocalizedConceptData {
     public int hashCode() {
         return Objects.hash(langCode, concept);
     }
+
+    public LocalizedConceptData() {
+        this.id = new LocalizedConceptDataId();
+    }
+
+    public void setLangCode(String langCode) {
+        this.langCode = langCode;
+        this.id.langCode =  langCode;
+    }
+
+    public void setConcept(Concept concept) {
+        this.concept = concept;
+        this.id.conceptId = concept.getId();
+    }
+
+    @Embeddable
+    @AllArgsConstructor
+    @NoArgsConstructor
+    @EqualsAndHashCode
+    public static class LocalizedConceptDataId {
+        public Long conceptId;
+        public String langCode;
+
+        @Override
+        public String toString() {
+            return conceptId + "," + langCode;
+        }
+    }
+
 }

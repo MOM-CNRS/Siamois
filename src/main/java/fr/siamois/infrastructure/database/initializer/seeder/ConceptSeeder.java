@@ -1,8 +1,10 @@
 package fr.siamois.infrastructure.database.initializer.seeder;
 
 import fr.siamois.domain.models.vocabulary.Concept;
+import fr.siamois.domain.models.vocabulary.LocalizedConceptData;
 import fr.siamois.domain.models.vocabulary.Vocabulary;
 import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRepository;
+import fr.siamois.infrastructure.database.repositories.vocabulary.LocalizedConceptDataRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -12,6 +14,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class ConceptSeeder {
     private final ConceptRepository conceptRepo;
+    private final LocalizedConceptDataRepository localizedConceptDataRepository;
 
     public record ConceptKey(String vocabularyExtId, String conceptExtId) {}
 
@@ -25,13 +28,15 @@ public class ConceptSeeder {
 //                .orElse(null);
 //    }
 
-//    private void saveLabel(Concept concept, String label, String lang) {
-//        var l = new ConceptLabel();
-//        l.setConcept(concept);
-//        l.setValue(label);
-//        l.setLangCode(lang);
-//        labelRepo.save(l);
-//    }
+    private void saveLabel(Concept concept, String label, String lang) {
+        localizedConceptDataRepository.findByConceptAndLangCode(concept, lang);
+        LocalizedConceptData data = new LocalizedConceptData();
+        data.setLabel(label);
+        data.setConcept(concept);
+        data.setParentConcept(null);
+        data.setLangCode(lang);
+        localizedConceptDataRepository.save(data);
+    }
 
     public Concept findConceptOrReturnNull(ConceptKey key) {
         return conceptRepo
@@ -56,14 +61,8 @@ public class ConceptSeeder {
                 c.setExternalId(s.externalId());
                 c.setVocabulary(vocab);
                 concept = conceptRepo.save(c);
-                // saveLabel(concept, s.label, s.lang);
             }
-//            else {
-//                ConceptLabel label = findConceptLabelOrReturnNull(concept, s.lang());
-//                if (label == null) {
-//                    saveLabel(concept, s.label, s.lang);
-//                }
-//            }
+            saveLabel(concept, s.label, s.lang);
 
         }
     }

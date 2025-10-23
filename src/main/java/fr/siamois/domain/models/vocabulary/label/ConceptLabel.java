@@ -21,11 +21,6 @@ public class ConceptLabel extends Label {
 
     public ConceptLabel() {}
 
-    public ConceptLabel(String emptyLabelValue) {
-        concept = new Concept();
-        value = emptyLabelValue;
-    }
-
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

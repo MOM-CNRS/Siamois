@@ -10,7 +10,7 @@ import java.util.Optional;
 import java.util.Set;
 
 @Repository
-public interface LocalizedConceptDataRepository extends CrudRepository<LocalizedConceptData, Long> {
+public interface LocalizedConceptDataRepository extends CrudRepository<LocalizedConceptData, LocalizedConceptData.LocalizedConceptDataId> {
 
     Optional<LocalizedConceptData> findByLangCodeAndConcept(String langCode, Concept concept);
 

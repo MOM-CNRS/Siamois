@@ -3,7 +3,7 @@ package fr.siamois.ui.bean.panel.models.panel.list;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
-import fr.siamois.domain.models.vocabulary.label.ConceptLabel;
+import fr.siamois.domain.models.vocabulary.LocalizedConceptData;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.person.PersonService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
@@ -85,7 +85,7 @@ public class SpatialUnitListPanel extends AbstractListPanel<SpatialUnit>  implem
         this.spatialUnitListErrorMessage = msg;
     }
 
-    public List<ConceptLabel> categoriesAvailable() {
+    public List<LocalizedConceptData> categoriesAvailable() {
         List<Concept> cList = conceptService.findAllBySpatialUnitOfInstitution(sessionSettingsBean.getSelectedInstitution());
 
         return cList.stream()

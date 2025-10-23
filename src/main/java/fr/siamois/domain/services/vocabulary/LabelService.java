@@ -38,16 +38,12 @@ public class LabelService {
      * @return the found or default label
      */
     @Transactional(readOnly = true)
-    public String findLabelOf(Concept concept, String langCode) {
+    public LocalizedConceptData findLabelOf(Concept concept, String langCode) {
         if (concept == null) {
-            return "NULL";
+            return null;
         }
         Optional<LocalizedConceptData> optLocalized = localizedConceptDataRepository.findByConceptAndLangCode(concept, langCode);
-        if (optLocalized.isPresent()) {
-            return optLocalized.get().getLabel();
-        } else {
-            return concept.getExternalId();
-        }
+        return optLocalized.orElse(null);
     }
 
     /**
