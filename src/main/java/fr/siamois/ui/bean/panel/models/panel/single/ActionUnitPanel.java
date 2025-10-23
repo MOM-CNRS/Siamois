@@ -137,7 +137,7 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnit> imple
             secondaryActionCodes = new ArrayList<>(unit.getSecondaryActionCodes());
             fType = this.unit.getType();
 
-            initForms();
+            initForms(true);
 
 
             // Get all the CHILDREN of the spatial unit
@@ -225,12 +225,12 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnit> imple
     }
 
     @Override
-    public void initForms() {
+    public void initForms(boolean forceInit) {
 
         overviewForm = ActionUnit.OVERVIEW_FORM;
         detailsForm = ActionUnit.DETAILS_FORM;
         // Init system form answers
-        formResponse = initializeFormResponse(detailsForm, unit);
+        formResponse = initializeFormResponse(detailsForm, unit, forceInit);
 
     }
 
@@ -251,7 +251,7 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnit> imple
         unit.setValidated(backupClone.getValidated());
         unit.setType(backupClone.getType());
         hasUnsavedModifications = false;
-        initForms();
+        initForms(true);
     }
 
     @Override

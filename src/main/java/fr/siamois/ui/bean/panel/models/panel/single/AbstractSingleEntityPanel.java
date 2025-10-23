@@ -108,7 +108,7 @@ public abstract class AbstractSingleEntityPanel<T> extends AbstractSingleEntity<
     }
 
 
-    public abstract void initForms();
+    public abstract void initForms(boolean forceInit);
 
     public abstract void cancelChanges();
 
