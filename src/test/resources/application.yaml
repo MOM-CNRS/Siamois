@@ -13,6 +13,7 @@ server:
     whitelabel:
       enabled: false
 
+
 spring:
   main:
     allow-bean-definition-overriding: true
@@ -28,3 +29,8 @@ logging:
     org.hibernate.SQL: DEBUG
     org.hibernate.type.descriptor.sql.BasicBinder: TRACE
 
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
