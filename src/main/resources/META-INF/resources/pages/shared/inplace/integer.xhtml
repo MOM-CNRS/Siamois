@@ -24,13 +24,13 @@
             </f:facet>
             <f:facet name="input">
                 <p:inputNumber value="#{cc.attrs.answer.value}"
-                             styleClass="#{cc.attrs.answer.hasBeenModified ? 'track-change sia-modified-field': 'track-change'}"
+                             inputStyleClass="#{cc.attrs.answer.hasBeenModified ? 'track-change sia-modified-field': 'track-change'}"
                              label="#{cc.attrs.label}"
                              minValue="#{cc.attrs.field.minValue}"
                              maxValue="#{cc.attrs.field.maxValue}"
                              required="#{cc.attrs.required}"
                              id="input">
-                    <p:ajax event="valueChange" delay="1000" update="#{cc.attrs.updateTargetsOnBlur}"
+                    <p:ajax event="keyup" delay="500" update="#{cc.attrs.updateTargetsOnBlur}"
                             process="@this"
                             listener="#{cc.attrs.panelModel.setFieldAnswerHasBeenModified(cc.attrs.field)}" />
                 </p:inputNumber>

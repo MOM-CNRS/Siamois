@@ -27,6 +27,7 @@ public class DefaultFormsDatasetInitializer implements DatabaseInitializer {
     public static final String MR_2_RECORDING_UNIT_TYPE_CHIP = "mr-2 recording-unit-type-chip";
     public static final String UI_G_12_UI_MD_6_UI_LG_2 = "ui-g-12 ui-md-6 ui-lg-2";
     public static final String COMMON_HEADER_GENERAL = "common.header.general";
+    public static final String UI_G_12_UI_MD_6_UI_LG_3 = "ui-g-12 ui-md-6 ui-lg-3";
     private final ConceptSeeder conceptSeeder;
     private final ThesaurusSeeder thesaurusSeeder;
     private final CustomFieldSeeder customFieldSeeder;
@@ -110,19 +111,19 @@ public class DefaultFormsDatasetInitializer implements DatabaseInitializer {
                                                     false,
                                                     true,
                                                     fields.get(3),
-                                                    UI_G_12_UI_MD_6_UI_LG_2
+                                                    UI_G_12_UI_MD_6_UI_LG_3
                                             ),
                                             new CustomColDTO(
                                                     false,
                                                     true,
                                                     fields.get(0),
-                                                    UI_G_12_UI_MD_6_UI_LG_2
+                                                    UI_G_12_UI_MD_6_UI_LG_3
                                             ),
                                             new CustomColDTO(
                                                     false,
                                                     true,
                                                     fields.get(2),
-                                                    UI_G_12_UI_MD_6_UI_LG_2
+                                                    UI_G_12_UI_MD_6_UI_LG_3
                                             )
 
                                     )
@@ -148,19 +149,19 @@ public class DefaultFormsDatasetInitializer implements DatabaseInitializer {
                                                     false,
                                                     true,
                                                     fields.get(0),
-                                                    UI_G_12_UI_MD_6_UI_LG_2
+                                                    UI_G_12_UI_MD_6_UI_LG_3
                                             ),
                                             new CustomColDTO(
                                                     false,
                                                     true,
                                                     fields.get(1),
-                                                    UI_G_12_UI_MD_6_UI_LG_2
+                                                    UI_G_12_UI_MD_6_UI_LG_3
                                             ),
                                             new CustomColDTO(
                                                     false,
                                                     true,
                                                     fields.get(2),
-                                                    UI_G_12_UI_MD_6_UI_LG_2
+                                                    UI_G_12_UI_MD_6_UI_LG_3
                                             )
                                     )
                             )),
@@ -179,13 +180,13 @@ public class DefaultFormsDatasetInitializer implements DatabaseInitializer {
                                                     false,
                                                     true,
                                                     fields.get(3),
-                                                    UI_G_12_UI_MD_6_UI_LG_2
+                                                    UI_G_12_UI_MD_6_UI_LG_3
                                             ),
                                             new CustomColDTO(
                                                     false,
                                                     true,
                                                     fields.get(0),
-                                                    UI_G_12_UI_MD_6_UI_LG_2
+                                                    UI_G_12_UI_MD_6_UI_LG_3
                                             )
                                     )
                             )),
