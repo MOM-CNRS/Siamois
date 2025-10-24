@@ -3,6 +3,7 @@ package fr.siamois.infrastructure.database.repositories.vocabulary;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.models.vocabulary.LocalizedConceptData;
 import fr.siamois.domain.models.vocabulary.LocalizedConceptDataId;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.stereotype.Repository;
@@ -29,7 +30,9 @@ public interface LocalizedConceptDataRepository extends CrudRepository<Localized
             Long parentFieldConceptId,
             String langCode,
             String input,
-            double minSimilarityScore);
+            double minSimilarityScore,
+            Pageable pageable
+            );
 
     @Query(
             nativeQuery = true,
@@ -64,7 +67,12 @@ public interface LocalizedConceptDataRepository extends CrudRepository<Localized
                     "AND lcd.fk_field_parent_concept_id = :parentConceptId " +
                     "AND lcd.label ILIKE '%' || :label || '%'"
     )
-    Set<LocalizedConceptData> findAllByLangCodeAndParentConceptAndLabelContaining(String langCode, Long parentConceptId, String label);
+    Set<LocalizedConceptData> findAllByLangCodeAndParentConceptAndLabelContaining(
+            String langCode,
+            Long parentConceptId,
+            String label,
+            Pageable pageable
+    );
 
     @Query(
             nativeQuery = true,

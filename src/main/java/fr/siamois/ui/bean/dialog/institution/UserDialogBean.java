@@ -13,13 +13,16 @@ import fr.siamois.ui.bean.LabelBean;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
 import fr.siamois.ui.email.EmailManager;
+import fr.siamois.ui.lazydatamodel.ConceptLazyDataModel;
 import fr.siamois.utils.MessageUtils;
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.primefaces.PrimeFaces;
 import org.primefaces.event.TabChangeEvent;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
@@ -35,6 +38,7 @@ import static fr.siamois.utils.MessageUtils.displayErrorMessage;
 @SessionScoped
 @Getter
 @Setter
+@RequiredArgsConstructor
 public class UserDialogBean implements Serializable {
 
     // Injections
@@ -45,6 +49,7 @@ public class UserDialogBean implements Serializable {
     private final transient FieldConfigurationService fieldConfigurationService;
     private final SessionSettingsBean sessionSettingsBean;
     private final LabelBean labelBean;
+    private final ApplicationContext applicationContext;
 
     // Data storage
     private Institution institution;
@@ -54,6 +59,8 @@ public class UserDialogBean implements Serializable {
     private List<Person> alreadyExistingPersons = new ArrayList<>();
     private String conceptCompleteUrl;
     private Concept parentConcept;
+
+    private ConceptLazyDataModel conceptLazyDataModel;
 
     private boolean shouldRenderRoleField = false;
 
@@ -72,16 +79,6 @@ public class UserDialogBean implements Serializable {
     private String password;
     private String confirmPassword;
 
-    public UserDialogBean(EmailManager emailManager, PersonService personService, InstitutionService institutionService, LangBean langBean, FieldConfigurationService fieldConfigurationService, SessionSettingsBean sessionSettingsBean, LabelBean labelBean) {
-        this.emailManager = emailManager;
-        this.personService = personService;
-        this.institutionService = institutionService;
-        this.langBean = langBean;
-        this.fieldConfigurationService = fieldConfigurationService;
-        this.sessionSettingsBean = sessionSettingsBean;
-        this.labelBean = labelBean;
-    }
-
     public void init(String title, String buttonLabel, Institution institution, ProcessPerson processPerson) {
         reset();
         this.title = title;
@@ -90,6 +87,10 @@ public class UserDialogBean implements Serializable {
         this.shouldRenderRoleField = false;
         this.processPerson = processPerson;
         this.tabState = TabState.SEARCH;
+
+        conceptLazyDataModel = applicationContext.getBean(ConceptLazyDataModel.class);
+        conceptLazyDataModel.prepare(sessionSettingsBean.getUserInfo(), Person.USER_ROLE_FIELD_CODE);
+
         PrimeFaces.current().ajax().update("newMemberDialog");
     }
 
@@ -124,6 +125,7 @@ public class UserDialogBean implements Serializable {
         this.email = null;
         this.password = null;
         this.confirmPassword = null;
+        this.conceptLazyDataModel = null;
     }
 
     public void applyToAllPerson() {
@@ -263,15 +265,6 @@ public class UserDialogBean implements Serializable {
 
     public void removeFromList(PersonRole personRole) {
         personSelectedList.remove(personRole);
-    }
-
-    public List<Concept> completeRole(String input) {
-        try {
-            return fieldConfigurationService.fetchAutocomplete(sessionSettingsBean.getUserInfo(), Person.USER_ROLE_FIELD_CODE, input);
-        } catch (NoConfigForFieldException e) {
-            MessageUtils.displayNoThesaurusConfiguredMessage(langBean);
-            return List.of();
-        }
     }
 
 }

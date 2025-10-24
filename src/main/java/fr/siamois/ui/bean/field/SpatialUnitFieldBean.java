@@ -120,33 +120,6 @@ public class SpatialUnitFieldBean implements Serializable {
         return fieldConfigurationService.getUrlForFieldCode(sessionSettingsBean.getUserInfo(), fieldCode);
     }
 
-    /**
-     * Fetch the autocomplete results on API for the selected field and add them to the list of concepts.
-     *
-     * @param input the input of the user
-     * @return the list of concepts that match the input to display in the autocomplete
-     */
-    public List<Concept> completeWithFieldCode(String input) {
-        String fieldCode = "Undefined";
-        try {
-            FacesContext context = FacesContext.getCurrentInstance();
-            fieldCode = (String) UIComponent.getCurrentComponent(context).getAttributes().get("fieldCode");
-            return fieldConfigurationService.fetchAutocomplete(sessionSettingsBean.getUserInfo(), fieldCode, input);
-        }
-        catch (NoConfigForFieldException e) {
-            displayErrorMessage(langBean, "common.error.thesaurus.noConfigForField",fieldCode);
-            return List.of();
-        }
-        catch(ResourceAccessException e) {
-            displayErrorMessage(langBean, "common.error.thesaurus.resourceAccess",fieldCode);
-            return List.of();
-        }
-        catch(Exception e) {
-            displayErrorMessage(langBean, "common.error.thesaurus.field.exception",fieldCode);
-            return List.of();
-        }
-    }
-
     public String resolveCustomFieldLabel(CustomField f) {
         if(Boolean.TRUE.equals(f.getIsSystemField())) {
             return langBean.msg(f.getLabel());

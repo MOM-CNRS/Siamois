@@ -9,6 +9,7 @@ import fr.siamois.infrastructure.database.repositories.vocabulary.LocalizedConce
 import fr.siamois.infrastructure.database.repositories.vocabulary.label.VocabularyLabelRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -187,20 +188,25 @@ public class LabelService {
      * @return List of unique concepts matching the input
      */
     @Transactional(readOnly = true)
-    public List<Concept> findMatchingConcepts(Concept parentConcept, String langCode, String input) {
+    public List<Concept> findMatchingConcepts(Concept parentConcept, String langCode, String input, Pageable pageable) {
         if (input == null || input.isEmpty())
             return findAllConcepts(parentConcept, langCode);
 
         Map<Concept, List<LocalizedConceptData>> result = new HashMap<>();
 
-        fillData(result, localizedConceptDataRepository.findAllByLangCodeAndParentConceptAndLabelContaining(langCode, parentConcept.getId(), input));
-        fillData(result, localizedConceptDataRepository.findConceptByFieldcodeAndLabelInputWithSimilarity(parentConcept.getId(), langCode, input, SIMILARITY_MIN_SCORE));
+        fillData(result, localizedConceptDataRepository.findAllByLangCodeAndParentConceptAndLabelContaining(langCode, parentConcept.getId(), input, pageable));
+        fillData(result, localizedConceptDataRepository.findConceptByFieldcodeAndLabelInputWithSimilarity(parentConcept.getId(), langCode, input, SIMILARITY_MIN_SCORE, pageable));
 
         if (result.isEmpty()) {
             fillData(result, localizedConceptDataRepository.findConceptByFieldcodeAndLabelInputWithSimilarityNoLang(parentConcept.getId(), input, SIMILARITY_MIN_SCORE));
         }
 
         return oneLangForEachConcept(result, langCode);
+    }
+
+    @Transactional(readOnly = true)
+    public List<Concept> findAllCandidatesConcept(Concept parentConcept, String langCode, Pageable pageable) {
+        return findMatchingConcepts(parentConcept , langCode, null, pageable);
     }
 
 }

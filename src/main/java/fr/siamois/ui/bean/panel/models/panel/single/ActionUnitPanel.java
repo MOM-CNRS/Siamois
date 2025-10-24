@@ -306,27 +306,6 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnit> imple
 
     }
 
-    public String getUrlForActionCodeTypeFieldCode() {
-        return fieldConfigurationService.getUrlForFieldCode(sessionSettingsBean.getUserInfo(), ActionCode.TYPE_FIELD_CODE);
-    }
-
-    /**
-     * Fetch the autocomplete results on API for the action code type field
-     *
-     * @param input the input of the user
-     * @return the list of concepts that match the input to display in the autocomplete
-     */
-    public List<Concept> completeActionCodeType(String input) {
-
-        try {
-            return fieldConfigurationService.fetchAutocomplete(sessionSettingsBean.getUserInfo(), ActionCode.TYPE_FIELD_CODE, input);
-        } catch (NoConfigForFieldException e) {
-            log.error(e.getMessage(), e);
-            return List.of();
-        }
-
-    }
-
     public void handleSelectPrimaryCode() {
         // To implement
     }
