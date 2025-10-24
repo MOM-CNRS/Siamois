@@ -32,7 +32,6 @@
                         </h:outputLink>
                         <p:chip
                                 label="#{labelBean.findLabelOf(cc.attrs.answer.value.category)}"
-                                icon="bi bi-geo-alt"
                                 styleClass="mr-2 spatial-unit-type-chip"/>
                     </div>
 
@@ -40,7 +39,7 @@
             </f:facet>
             <f:facet name="input">
                 <p:selectOneMenu id="select-one-spatial-unit"
-                                 panelStyleClass="#{cc.attrs.panelModel.autocompleteClass}"
+                                 panelStyleClass="spatial-unit-selectonemenu"
                                  styleClass="#{cc.attrs.answer.hasBeenModified ? 'track-change sia-modified-field': 'track-change'}"
                                  value="#{cc.attrs.answer.value}"
                                  label="#{cc.attrs.label}"

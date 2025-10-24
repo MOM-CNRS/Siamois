@@ -82,6 +82,8 @@ public class CustomFormLayoutConverter implements AttributeConverter<List<Custom
     private Map<String, Object> serializeCol(CustomCol col) {
         Map<String, Object> colMap = new HashMap<>();
         colMap.put(CLASS_NAME_KEY, col.getClassName());
+        colMap.put("isRequired", col.isRequired());
+        colMap.put("isReadOnly", col.isReadOnly());
         if (col.getField() != null) {
             colMap.put("fieldId", col.getField().getId());
         }
@@ -135,7 +137,8 @@ public class CustomFormLayoutConverter implements AttributeConverter<List<Custom
     private CustomCol deserializeCol(Map<String, Object> colMap) {
         CustomCol col = new CustomCol();
         col.setClassName((String) colMap.get(CLASS_NAME_KEY));
-
+        col.setRequired((Boolean) colMap.get("isRequired"));
+        col.setReadOnly((Boolean) colMap.get("isReadOnly"));
         Object fieldId = colMap.get("fieldId");
         if (fieldId != null) {
             CustomField field = getCustomFieldRepository().findById(Long.valueOf(fieldId.toString()))

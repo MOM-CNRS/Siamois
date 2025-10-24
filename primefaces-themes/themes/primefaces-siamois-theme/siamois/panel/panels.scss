@@ -283,13 +283,36 @@
     }
 
     .ui-autocomplete-items .ui-autocomplete-item.ui-state-highlight {
-      background: var(--main-color);
+      background: var(--dark-color);
     }
   }
 
 }
 
-// welcome cards
+  // Select one
+  .#{$panel-selector}-selectonemenu {
+
+    // CSS custom properties for this panel
+    --main-color: #{$main-color};
+    --light-color-50: #{$light50-color};
+    --light-color-100: #{$light100-color};
+    --light-color-200: #{$light200-color};
+    --dark-color: #{$dark-color};
+
+    &.ui-selectonemenu-panel {
+      .ui-button {
+        background: var(--dark-color);
+        border-color: var(--main-color);
+      }
+
+      .ui-selectonemenu-items .ui-selectonemenu-item.ui-state-highlight {
+        background: var(--dark-color);
+      }
+    }
+
+  }
+
+  // welcome cards
 .sia-welcome-card.sia-#{$panel-selector} {
 
   // CSS custom properties for this panel

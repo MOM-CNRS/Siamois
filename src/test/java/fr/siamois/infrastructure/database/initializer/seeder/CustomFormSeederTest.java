@@ -137,7 +137,7 @@ class CustomFormSeederTest {
     }
 
     @Test
-    void seed_skipsSave_whenFormAlreadyExists()  {
+    void seed_update_whenFormAlreadyExists()  {
         // Arrange
         CustomForm existing = new CustomForm();
         existing.setName("My Form");
@@ -152,9 +152,9 @@ class CustomFormSeederTest {
         seeder.seed(List.of(dto));
 
         // Assert
-        verify(customFormRepository, never()).save(any());
-        // Since form exists, layout conversion and field resolution should not be needed
-        verifyNoInteractions(fieldSeeder);
+        verify(customFormRepository, times(1)).save(any());
+
+
     }
 
     @Test
