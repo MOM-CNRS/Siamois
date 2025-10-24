@@ -33,6 +33,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.Serializable;
 import java.util.List;
+import java.util.Set;
 
 @Slf4j
 @Component
@@ -99,7 +100,7 @@ public class DocumentCreationBean implements Serializable {
     }
 
 
-    public List<Concept> autocomplete(String fieldCode, String input) {
+    public Set<Concept> autocomplete(String fieldCode, String input) {
         log.trace("Autocomplete order received");
 
         try {
@@ -108,19 +109,19 @@ public class DocumentCreationBean implements Serializable {
                     fieldCode,
                     input);
         } catch (NoConfigForFieldException e) {
-            return List.of();
+            return Set.of();
         }
     }
 
-    public List<Concept> autocompleteNature(String input) {
+    public Set<Concept> autocompleteNature(String input) {
         return autocomplete(Document.NATURE_FIELD_CODE, input);
     }
 
-    public List<Concept> autocompleteScale(String input) {
+    public Set<Concept> autocompleteScale(String input) {
         return autocomplete(Document.SCALE_FIELD_CODE, input);
     }
 
-    public List<Concept> autocompleteType(String input) {
+    public Set<Concept> autocompleteType(String input) {
         return autocomplete(Document.FORMAT_FIELD_CODE, input);
     }
 

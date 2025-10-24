@@ -129,7 +129,7 @@ public class LabelService {
     }
 
     @Transactional(readOnly = true)
-    protected List<Concept> findAllConcepts(Concept parentConcept, String langCode) {
+    protected Set<Concept> findAllConcepts(Concept parentConcept, String langCode) {
         try {
             Map<Concept, List<LocalizedConceptData>> result = new HashMap<>();
             Long parentId = parentConcept.getId();
@@ -141,7 +141,7 @@ public class LabelService {
             return oneLangForEachConcept(result, langCode);
         } catch (RuntimeException e) {
             log.error(e.getMessage());
-            return List.of();
+            return Set.of();
         }
     }
 
@@ -154,8 +154,8 @@ public class LabelService {
         }
     }
 
-    private List<Concept> oneLangForEachConcept(Map<Concept, List<LocalizedConceptData>> map, String preferredLang) {
-        List<Concept> concepts = new ArrayList<>();
+    private Set<Concept> oneLangForEachConcept(Map<Concept, List<LocalizedConceptData>> map, String preferredLang) {
+        Set<Concept> concepts = new HashSet<>();
         for (Map.Entry<Concept, List<LocalizedConceptData>> entry : map.entrySet()) {
             List<LocalizedConceptData> datas = entry.getValue();
             int currentIndex = 0;
@@ -173,8 +173,19 @@ public class LabelService {
         return datas.get(currentIndex).getLangCode().equals(preferredLang);
     }
 
+    /**
+     * Finds concepts matching the input label under the specified parent concept and language.
+     * When the input is null or empty, it returns all concepts under the parent concept in the specified language.
+     * Search is done by exact match and by similarity.
+     * If no results are found, it falls back to searching without language restriction.
+     * The results contain one concept per language, prioritizing the preferred language.
+     * @param parentConcept The concept of the generic field
+     * @param langCode   The language code
+     * @param input      The input label to search for
+     * @return List of unique concepts matching the input
+     */
     @Transactional(readOnly = true)
-    public List<Concept> findMatchingConcepts(Concept parentConcept, String langCode, String input) {
+    public Set<Concept> findMatchingConcepts(Concept parentConcept, String langCode, String input) {
         if (input == null || input.isEmpty()) return findAllConcepts(parentConcept, langCode);
         Map<Concept, List<LocalizedConceptData>> result = new HashMap<>();
 

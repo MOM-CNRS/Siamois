@@ -27,6 +27,7 @@ import javax.faces.bean.SessionScoped;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 import static fr.siamois.utils.MessageUtils.displayErrorMessage;
 
@@ -126,7 +127,7 @@ public class SpatialUnitFieldBean implements Serializable {
      * @param input the input of the user
      * @return the list of concepts that match the input to display in the autocomplete
      */
-    public List<Concept> completeWithFieldCode(String input) {
+    public Set<Concept> completeWithFieldCode(String input) {
         String fieldCode = "Undefined";
         try {
             FacesContext context = FacesContext.getCurrentInstance();
@@ -135,15 +136,15 @@ public class SpatialUnitFieldBean implements Serializable {
         }
         catch (NoConfigForFieldException e) {
             displayErrorMessage(langBean, "common.error.thesaurus.noConfigForField",fieldCode);
-            return new ArrayList<>();
+            return Set.of();
         }
         catch(ResourceAccessException e) {
             displayErrorMessage(langBean, "common.error.thesaurus.resourceAccess",fieldCode);
-            return new ArrayList<>();
+            return Set.of();
         }
         catch(Exception e) {
             displayErrorMessage(langBean, "common.error.thesaurus.field.exception",fieldCode);
-            return new ArrayList<>();
+            return Set.of();
         }
     }
 

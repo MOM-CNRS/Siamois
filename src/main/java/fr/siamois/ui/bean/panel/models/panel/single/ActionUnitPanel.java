@@ -37,6 +37,7 @@ import org.springframework.stereotype.Component;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -316,13 +317,13 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnit> imple
      * @param input the input of the user
      * @return the list of concepts that match the input to display in the autocomplete
      */
-    public List<Concept> completeActionCodeType(String input) {
+    public Set<Concept> completeActionCodeType(String input) {
 
         try {
             return fieldConfigurationService.fetchAutocomplete(sessionSettingsBean.getUserInfo(), ActionCode.TYPE_FIELD_CODE, input);
         } catch (NoConfigForFieldException e) {
             log.error(e.getMessage(), e);
-            return new ArrayList<>();
+            return Set.of();
         }
 
     }

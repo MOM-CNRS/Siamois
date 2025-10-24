@@ -28,6 +28,7 @@ import javax.faces.bean.SessionScoped;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 import static fr.siamois.utils.MessageUtils.displayErrorMessage;
 
@@ -266,12 +267,12 @@ public class UserDialogBean implements Serializable {
         personSelectedList.remove(personRole);
     }
 
-    public List<Concept> completeRole(String input) {
+    public Set<Concept> completeRole(String input) {
         try {
             return fieldConfigurationService.fetchAutocomplete(sessionSettingsBean.getUserInfo(), Person.USER_ROLE_FIELD_CODE, input);
         } catch (NoConfigForFieldException e) {
             MessageUtils.displayNoThesaurusConfiguredMessage(langBean);
-            return List.of();
+            return Set.of();
         }
     }
 

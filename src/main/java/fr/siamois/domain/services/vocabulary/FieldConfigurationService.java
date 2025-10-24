@@ -24,6 +24,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * Service for managing field configurations of the vocabulary.
@@ -216,14 +217,14 @@ public class FieldConfigurationService {
         return institutionConfig.get();
     }
 
-    public List<Concept> fetchAutocomplete(UserInfo info, String fieldCode, String input) throws NoConfigForFieldException {
+    public Set<Concept> fetchAutocomplete(UserInfo info, String fieldCode, String input) throws NoConfigForFieldException {
         try {
             ConceptFieldConfig config = findConfigurationForFieldCode(info, fieldCode);
             conceptService.saveAllSubConceptOfIfUpdated(config);
             return labelService.findMatchingConcepts(config.getConcept(), info.getLang(), input);
         } catch (ErrorProcessingExpansionException e) {
             log.error(e.getMessage());
-            return List.of();
+            return Set.of();
         }
     }
 

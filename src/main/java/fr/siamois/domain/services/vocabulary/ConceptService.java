@@ -14,18 +14,17 @@ import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRelatio
 import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.LocalizedConceptDataRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 /**
  * Service for managing concepts in the vocabulary.
  * This service provides methods to save, retrieve, and update concepts,
  * as well as to find concepts related to spatial and action units of an institution.
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ConceptService {
@@ -143,30 +142,37 @@ public class ConceptService {
     }
 
     public void saveAllSubConceptOfIfUpdated(ConceptFieldConfig config) throws ErrorProcessingExpansionException {
-        Concept concept = config.getConcept();
-        Vocabulary vocabulary = concept.getVocabulary();
-        ConceptBranchDTO branchDTO = conceptApi.fetchDownExpansion(config);
-        if (branchDTO == null) return;
+        try {
+            Concept concept = config.getConcept();
+            Vocabulary vocabulary = concept.getVocabulary();
+            ConceptBranchDTO branchDTO = conceptApi.fetchDownExpansion(config);
+            if (branchDTO == null) return;
 
-        FullInfoDTO parentConcept = branchDTO.getData().values().stream()
-                .filter(dto -> concept.getExternalId().equalsIgnoreCase(dto.getIdentifier()[0].getValue()))
-                .findFirst()
-                .orElseThrow(() -> new RuntimeException("No concept found for " + concept.getExternalId()));
+            FullInfoDTO parentConcept = branchDTO.getData().values().stream()
+                    .filter(dto -> concept.getExternalId().equalsIgnoreCase(dto.getIdentifier()[0].getValue()))
+                    .findFirst()
+                    .orElseThrow(() -> new RuntimeException("No concept found for " + concept.getExternalId()));
 
-        if (parentConcept.getNarrower() == null) return;
+            if (parentConcept.getNarrower() == null) return;
 
-        Map<String, Concept> concepts = new HashMap<>();
-        for (Map.Entry<String, FullInfoDTO> entry : branchDTO.getData().entrySet()) {
-            concepts.put(entry.getKey(), saveOrGetConceptFromFullDTO(vocabulary, entry.getValue(), config.getConcept()));
-        }
-
-        for (Map.Entry<String, FullInfoDTO> entry : branchDTO.getData().entrySet()) {
-            for (PurlInfoDTO narrower : entry.getValue().getNarrower()) {
-                Concept parent = concepts.get(entry.getKey());
-                Concept child =  concepts.get(narrower.getValue());
-                ConceptHierarchy relation = new ConceptHierarchy(parent,child);
-                conceptRelationRepository.save(relation);
+            Map<String, Concept> concepts = new HashMap<>();
+            for (Map.Entry<String, FullInfoDTO> entry : branchDTO.getData().entrySet()) {
+                concepts.put(entry.getKey(), saveOrGetConceptFromFullDTO(vocabulary, entry.getValue(), config.getConcept()));
             }
+
+            for (Map.Entry<String, FullInfoDTO> entry : branchDTO.getData().entrySet()) {
+                if (Objects.nonNull(entry.getValue().getNarrower())) {
+                    for (PurlInfoDTO narrower : entry.getValue().getNarrower()) {
+                        Concept parent = concepts.get(entry.getKey());
+                        Concept child =  concepts.get(narrower.getValue());
+                        ConceptHierarchy relation = new ConceptHierarchy(parent,child);
+                        conceptRelationRepository.save(relation);
+                    }
+                }
+            }
+        } catch (RuntimeException e) {
+            log.error(e.getMessage(), e);
+            throw new ErrorProcessingExpansionException("Error processing expansion for concept field config id " + config.getId());
         }
 
     }
