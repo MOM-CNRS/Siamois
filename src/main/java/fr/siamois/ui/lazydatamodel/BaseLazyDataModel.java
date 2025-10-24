@@ -19,6 +19,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 
@@ -197,6 +198,7 @@ public abstract class BaseLazyDataModel<T> extends LazyDataModel<T> {
         return Objects.equals(value1, value2);
     }
 
+    @Transactional
     public List<T> load(int first, int pageSize, Map<String, SortMeta> sortBy, Map<String, FilterMeta> filterBy) {
         boolean isSortSame = isSortCriteriaSame(this.cachedSortBy, sortBy);
         boolean isFilterSame = isFilterCriteriaSame(this.cachedFilterBy, filterBy);
@@ -230,9 +232,9 @@ public abstract class BaseLazyDataModel<T> extends LazyDataModel<T> {
             FilterMeta categoryMeta = filterBy.get("category");
             if (categoryMeta != null && categoryMeta.getFilterValue() != null) {
                 @SuppressWarnings("unchecked")
-                List<ConceptLabel> selectedCategoryLabels = (List<ConceptLabel>) categoryMeta.getFilterValue();
+                List<LocalizedConceptData> selectedCategoryLabels = (List<LocalizedConceptData>) categoryMeta.getFilterValue();
                 List<Concept> selectedCategories = selectedCategoryLabels.stream()
-                        .map(ConceptLabel::getConcept)
+                        .map(LocalizedConceptData::getConcept)
                         .toList();
                 categoryIds = selectedCategories.stream()
                         .filter(Objects::nonNull)
