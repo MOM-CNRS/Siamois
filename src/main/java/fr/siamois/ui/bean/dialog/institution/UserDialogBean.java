@@ -1,7 +1,6 @@
 package fr.siamois.ui.bean.dialog.institution;
 
 import fr.siamois.domain.models.auth.Person;
-import fr.siamois.domain.models.document.Document;
 import fr.siamois.domain.models.events.LoginEvent;
 import fr.siamois.domain.models.exceptions.auth.*;
 import fr.siamois.domain.models.exceptions.vocabulary.NoConfigForFieldException;
@@ -28,7 +27,6 @@ import javax.faces.bean.SessionScoped;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 
 import static fr.siamois.utils.MessageUtils.displayErrorMessage;
 

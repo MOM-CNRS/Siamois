@@ -19,12 +19,10 @@ import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptReposit
 import fr.siamois.infrastructure.database.repositories.vocabulary.LocalizedConceptDataRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.primefaces.model.LazyDataModel;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 
 /**
  * Service for managing field configurations of the vocabulary.

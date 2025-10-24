@@ -1,6 +1,5 @@
 package fr.siamois.ui.bean.panel.models.panel.single;
 
-import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.actionunit.ActionCode;
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.auth.Person;
@@ -26,7 +25,6 @@ import fr.siamois.ui.bean.panel.models.panel.AbstractPanel;
 import fr.siamois.ui.viewmodel.TreeUiStateViewModel;
 import fr.siamois.utils.DateUtils;
 import jakarta.faces.component.UIComponent;
-import jakarta.faces.context.FacesContext;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;

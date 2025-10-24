@@ -27,7 +27,6 @@ import javax.faces.bean.SessionScoped;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 
 import static fr.siamois.utils.MessageUtils.displayErrorMessage;
 
