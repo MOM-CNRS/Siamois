@@ -24,7 +24,7 @@ public class LabelBean implements Serializable {
     public String findLabelOf(Concept concept) {
         if (concept == null) return null;
         UserInfo userInfo = sessionSettingsBean.getUserInfo();
-        Optional<LocalizedConceptData> optData = localizedConceptDataRepository.findByConceptAndLangCode(concept, userInfo.getLang());
+        Optional<LocalizedConceptData> optData = localizedConceptDataRepository.findByConceptAndLangCode(concept.getId(), userInfo.getLang());
         if (optData.isPresent()) {
             return optData.get().getLabel();
         }

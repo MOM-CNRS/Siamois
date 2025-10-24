@@ -29,7 +29,7 @@ public class ConceptSeeder {
 //    }
 
     private void saveLabel(Concept concept, String label, String lang) {
-        localizedConceptDataRepository.findByConceptAndLangCode(concept, lang);
+        localizedConceptDataRepository.findByConceptAndLangCode(concept.getId(), lang);
         LocalizedConceptData data = new LocalizedConceptData();
         data.setLabel(label);
         data.setConcept(concept);

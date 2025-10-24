@@ -19,6 +19,7 @@ import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptReposit
 import fr.siamois.infrastructure.database.repositories.vocabulary.LocalizedConceptDataRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.primefaces.model.LazyDataModel;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -77,11 +78,18 @@ public class FieldConfigurationService {
         for (FullInfoDTO conceptDTO : config.conceptWithValidFieldCode()) {
             String fieldCode = conceptDTO.getFieldcode().orElseThrow(() -> FIELD_CODE_NOT_FOUND);
             Concept concept = conceptService.saveOrGetConceptFromFullDTO(vocabulary, conceptDTO, null);
-
-            int rowAffected = fieldRepository.updateConfigForFieldOfInstitution(institution.getId(), fieldCode, concept.getId());
-            if (rowAffected == 0) {
-                fieldRepository.saveConceptForFieldOfInstitution(institution.getId(), fieldCode, concept.getId());
+            ConceptFieldConfig fieldConfig;
+            Optional<ConceptFieldConfig> optConfig = conceptFieldConfigRepository.findByFieldCodeForInstitution(institution.getId(), fieldCode);
+            if (optConfig.isEmpty()) {
+                fieldConfig = new ConceptFieldConfig();
+                fieldConfig.setInstitution(institution);
+                fieldConfig.setFieldCode(fieldCode);
+                fieldConfig.setConcept(concept);
+                fieldConfig = conceptFieldConfigRepository.save(fieldConfig);
+            } else {
+                fieldConfig = optConfig.get();
             }
+            conceptService.saveAllSubConceptOfIfUpdated(fieldConfig);
         }
 
         return Optional.empty();
@@ -127,17 +135,19 @@ public class FieldConfigurationService {
             String fieldCode = conceptDTO.getFieldcode().orElseThrow(() -> FIELD_CODE_NOT_FOUND);
 
             Concept concept = conceptService.saveOrGetConceptFromFullDTO(vocabulary, conceptDTO, null);
-
-            int rowAffected = fieldRepository.updateConfigForFieldOfUser(info.getInstitution().getId(),
-                    info.getUser().getId(),
-                    fieldCode,
-                    concept.getId());
-            if (rowAffected == 0) {
-                fieldRepository.saveConceptForFieldOfUser(info.getInstitution().getId(),
-                        info.getUser().getId(),
-                        fieldCode,
-                        concept.getId());
+            ConceptFieldConfig fieldConfig;
+            Optional<ConceptFieldConfig> optConfig = conceptFieldConfigRepository.findByFieldCodeForUser(info.getUser().getId(), fieldCode);
+            if (optConfig.isEmpty()) {
+                fieldConfig = new ConceptFieldConfig();
+                fieldConfig.setInstitution(info.getInstitution());
+                fieldConfig.setUser(info.getUser());
+                fieldConfig.setFieldCode(fieldCode);
+                fieldConfig.setConcept(concept);
+                fieldConfig = conceptFieldConfigRepository.save(fieldConfig);
+            } else {
+                fieldConfig = optConfig.get();
             }
+            conceptService.saveAllSubConceptOfIfUpdated(fieldConfig);
         }
 
         return Optional.empty();

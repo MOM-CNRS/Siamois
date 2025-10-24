@@ -21,7 +21,7 @@ public interface LocalizedConceptDataRepository extends CrudRepository<Localized
                     "  WHERE lcd.lang_code = :langCode " +
                     "    AND lcd.fk_field_parent_concept_id = :parentFieldConceptId " +
                     ")" +
-                    "SELECT s.label_id, s.concept_definition, s.label, s.lang_code, s.fk_concept_id, s.fk_field_parent_concept_id FROM scored s " +
+                    "SELECT s.concept_definition, s.label, s.lang_code, s.fk_concept_id, s.fk_field_parent_concept_id FROM scored s " +
                     "WHERE s.score >= :minSimilarityScore " +
                     "ORDER BY s.score DESC"
     )
@@ -38,7 +38,7 @@ public interface LocalizedConceptDataRepository extends CrudRepository<Localized
                     "  FROM localized_concept_data lcd " +
                     "  WHERE lcd.fk_field_parent_concept_id = :parentFieldConceptId " +
                     ")" +
-                    "SELECT s.label_id, s.concept_definition, s.label, s.lang_code, s.fk_concept_id, s.fk_field_parent_concept_id FROM scored s " +
+                    "SELECT s.concept_definition, s.label, s.lang_code, s.fk_concept_id, s.fk_field_parent_concept_id FROM scored s " +
                     "WHERE s.score >= :minSimilarityScore " +
                     "ORDER BY s.score DESC"
     )
@@ -69,8 +69,8 @@ public interface LocalizedConceptDataRepository extends CrudRepository<Localized
     @Query(
             nativeQuery = true,
             value = "SELECT lcd.* FROM localized_concept_data lcd " +
-                    "WHERE lcd.fk_concept_id = :#{#concept.id} " +
+                    "WHERE lcd.fk_concept_id = :conceptId " +
                     "AND lcd.lang_code = :langCode"
     )
-    Optional<LocalizedConceptData> findByConceptAndLangCode(Concept concept, String langCode);
+    Optional<LocalizedConceptData> findByConceptAndLangCode(Long conceptId, String langCode);
 }

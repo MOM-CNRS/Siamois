@@ -16,6 +16,7 @@ import fr.siamois.infrastructure.api.dto.ConceptBranchDTO;
 import fr.siamois.infrastructure.api.dto.FullInfoDTO;
 import fr.siamois.infrastructure.api.dto.PurlInfoDTO;
 import fr.siamois.infrastructure.database.repositories.FieldRepository;
+import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptFieldConfigRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -40,7 +41,7 @@ class FieldConfigurationServiceTest {
     @Mock private FieldRepository fieldRepository;
     @Mock private ConceptRepository conceptRepository;
     @Mock private ConceptService conceptService;
-    @Mock private LabelService labelService;
+    @Mock private ConceptFieldConfigRepository conceptFieldConfigRepository;
 
     @InjectMocks
     private FieldConfigurationService service;
@@ -104,14 +105,14 @@ class FieldConfigurationServiceTest {
 
         when(conceptApi.fetchFieldsBranch(vocabulary)).thenReturn(dto);
         when(fieldService.searchAllFieldCodes()).thenReturn(List.of("SIATEST"));
-        when(conceptService.saveOrGetConceptFromFullDTO( any(Vocabulary.class), any(FullInfoDTO.class)))
+        when(conceptService.saveOrGetConceptFromFullDTO( any(Vocabulary.class), any(FullInfoDTO.class), any()))
                 .thenReturn(parentConcept);
-        when(fieldRepository.updateConfigForFieldOfInstitution(anyLong(), anyString(), anyLong())).thenReturn(0);
+        when(conceptFieldConfigRepository.updateConfigForFieldOfInstitution(anyLong(), anyString(), anyLong())).thenReturn(0);
 
         Optional<GlobalFieldConfig> result = service.setupFieldConfigurationForInstitution(userInfo, vocabulary);
 
         assertThat(result).isEmpty();
-        verify(fieldRepository, times(1)).saveConceptForFieldOfInstitution(anyLong(), anyString(), anyLong());
+        verify(conceptFieldConfigRepository, times(1)).saveConceptForFieldOfInstitution(anyLong(), anyString(), anyLong());
     }
 
     @Test
@@ -127,14 +128,14 @@ class FieldConfigurationServiceTest {
 
         when(conceptApi.fetchFieldsBranch(vocabulary)).thenReturn(dto);
         when(fieldService.searchAllFieldCodes()).thenReturn(List.of("SIATEST"));
-        when(conceptService.saveOrGetConceptFromFullDTO( any(Vocabulary.class), any(FullInfoDTO.class)))
+        when(conceptService.saveOrGetConceptFromFullDTO( any(Vocabulary.class), any(FullInfoDTO.class), any()))
                 .thenReturn(parentConcept);
-        when(fieldRepository.updateConfigForFieldOfInstitution(anyLong(), anyString(), anyLong())).thenReturn(1);
+        when(conceptFieldConfigRepository.updateConfigForFieldOfInstitution(anyLong(), anyString(), anyLong())).thenReturn(1);
 
         Optional<GlobalFieldConfig> result = service.setupFieldConfigurationForInstitution(userInfo, vocabulary);
 
         assertThat(result).isEmpty();
-        verify(fieldRepository, never()).saveConceptForFieldOfInstitution(anyLong(), anyString(), anyLong());
+        verify(conceptFieldConfigRepository, never()).saveConceptForFieldOfInstitution(anyLong(), anyString(), anyLong());
     }
 
     @Test
@@ -147,8 +148,8 @@ class FieldConfigurationServiceTest {
         Optional<GlobalFieldConfig> result = service.setupFieldConfigurationForInstitution(userInfo, vocabulary);
 
         assertThat(result).isPresent();
-        verify(fieldRepository, never()).updateConfigForFieldOfInstitution(anyLong(), anyString(), anyLong());
-        verify(fieldRepository, never()).saveConceptForFieldOfInstitution(anyLong(), anyString(), anyLong());
+        verify(conceptFieldConfigRepository, never()).updateConfigForFieldOfInstitution(anyLong(), anyString(), anyLong());
+        verify(conceptFieldConfigRepository, never()).saveConceptForFieldOfInstitution(anyLong(), anyString(), anyLong());
     }
 
     @Test
@@ -164,14 +165,14 @@ class FieldConfigurationServiceTest {
 
         when(conceptApi.fetchFieldsBranch(vocabulary)).thenReturn(dto);
         when(fieldService.searchAllFieldCodes()).thenReturn(List.of("SIATEST"));
-        when(conceptService.saveOrGetConceptFromFullDTO( any(Vocabulary.class), any(FullInfoDTO.class)))
+        when(conceptService.saveOrGetConceptFromFullDTO( any(Vocabulary.class), any(FullInfoDTO.class), any()))
                 .thenReturn(parentConcept);
-        when(fieldRepository.updateConfigForFieldOfUser(anyLong(), anyLong(), anyString(), anyLong())).thenReturn(0);
+        when(conceptFieldConfigRepository.updateConfigForFieldOfUser(anyLong(), anyLong(), anyString(), anyLong())).thenReturn(0);
 
         Optional<GlobalFieldConfig> result = service.setupFieldConfigurationForUser(userInfo, vocabulary);
 
         assertThat(result).isEmpty();
-        verify(fieldRepository, times(1)).saveConceptForFieldOfUser(anyLong(), anyLong(), anyString(), anyLong());
+        verify(conceptFieldConfigRepository, times(1)).saveConceptForFieldOfUser(anyLong(), anyLong(), anyString(), anyLong());
     }
 
     @Test
@@ -187,14 +188,14 @@ class FieldConfigurationServiceTest {
 
         when(conceptApi.fetchFieldsBranch(vocabulary)).thenReturn(dto);
         when(fieldService.searchAllFieldCodes()).thenReturn(List.of("SIATEST"));
-        when(conceptService.saveOrGetConceptFromFullDTO( any(Vocabulary.class), any(FullInfoDTO.class)))
+        when(conceptService.saveOrGetConceptFromFullDTO( any(Vocabulary.class), any(FullInfoDTO.class), any()))
                 .thenReturn(parentConcept);
-        when(fieldRepository.updateConfigForFieldOfUser(anyLong(), anyLong(),anyString(), anyLong())).thenReturn(1);
+        when(conceptFieldConfigRepository.updateConfigForFieldOfUser(anyLong(), anyLong(),anyString(), anyLong())).thenReturn(1);
 
         Optional<GlobalFieldConfig> result = service.setupFieldConfigurationForUser(userInfo, vocabulary);
 
         assertThat(result).isEmpty();
-        verify(fieldRepository, never()).saveConceptForFieldOfUser(anyLong(), anyLong(),anyString(), anyLong());
+        verify(conceptFieldConfigRepository, never()).saveConceptForFieldOfUser(anyLong(), anyLong(),anyString(), anyLong());
     }
 
     @Test
@@ -207,8 +208,8 @@ class FieldConfigurationServiceTest {
         Optional<GlobalFieldConfig> result = service.setupFieldConfigurationForUser(userInfo, vocabulary);
 
         assertThat(result).isPresent();
-        verify(fieldRepository, never()).updateConfigForFieldOfUser(anyLong(), anyLong(), anyString(), anyLong());
-        verify(fieldRepository, never()).saveConceptForFieldOfUser(anyLong(), anyLong(), anyString(), anyLong());
+        verify(conceptFieldConfigRepository, never()).updateConfigForFieldOfUser(anyLong(), anyLong(), anyString(), anyLong());
+        verify(conceptFieldConfigRepository, never()).saveConceptForFieldOfUser(anyLong(), anyLong(), anyString(), anyLong());
     }
 
     @Test

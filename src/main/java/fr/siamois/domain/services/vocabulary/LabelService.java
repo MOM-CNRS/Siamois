@@ -4,6 +4,7 @@ import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.models.vocabulary.LocalizedConceptData;
 import fr.siamois.domain.models.vocabulary.Vocabulary;
 import fr.siamois.domain.models.vocabulary.label.VocabularyLabel;
+import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.LocalizedConceptDataRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.label.VocabularyLabelRepository;
 import lombok.RequiredArgsConstructor;
@@ -11,10 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Service to manage labels for concepts and vocabularies.
@@ -28,6 +26,7 @@ public class LabelService {
 
     private final VocabularyLabelRepository vocabularyLabelRepository;
     private final LocalizedConceptDataRepository localizedConceptDataRepository;
+    private final ConceptRepository conceptRepository;
 
     private static final double SIMILARITY_MIN_SCORE = 0.4;
 
@@ -44,7 +43,7 @@ public class LabelService {
         if (concept == null) {
             return null;
         }
-        Optional<LocalizedConceptData> optLocalized = localizedConceptDataRepository.findByConceptAndLangCode(concept, langCode);
+        Optional<LocalizedConceptData> optLocalized = localizedConceptDataRepository.findByConceptAndLangCode(concept.getId(), langCode);
         return optLocalized.orElse(null);
     }
 
@@ -87,7 +86,7 @@ public class LabelService {
      * @param label    the label of the label
      */
     public void updateLabel(Concept concept, String langCode, String label, Concept fieldParentConcept) {
-        Optional<LocalizedConceptData> conceptData = localizedConceptDataRepository.findByConceptAndLangCode(concept, langCode);
+        Optional<LocalizedConceptData> conceptData = localizedConceptDataRepository.findByConceptAndLangCode(concept.getId(), langCode);
         LocalizedConceptData savedConceptData = null;
         if (conceptData.isEmpty()) {
             savedConceptData = new LocalizedConceptData();
@@ -132,36 +131,61 @@ public class LabelService {
     @Transactional(readOnly = true)
     protected List<Concept> findAllConcepts(Concept parentConcept, String langCode) {
         try {
-            Set<LocalizedConceptData> result = localizedConceptDataRepository.findAllByParentConceptAndLangCode(parentConcept.getId(), langCode);
+            Map<Concept, List<LocalizedConceptData>> result = new HashMap<>();
+            Long parentId = parentConcept.getId();
+            fillData(result, localizedConceptDataRepository.findAllByParentConceptAndLangCode(parentId, langCode));
             if (result.isEmpty()) {
-                result = localizedConceptDataRepository.findAllByParentConcept(parentConcept);
+                fillData(result, localizedConceptDataRepository.findAllByParentConcept(parentConcept));
             }
 
-            return result
-                    .stream()
-                    .map(LocalizedConceptData::getConcept)
-                    .toList();
+            return oneLangForEachConcept(result, langCode);
         } catch (RuntimeException e) {
             log.error(e.getMessage());
             return List.of();
         }
     }
 
+    @Transactional
+    protected void fillData(Map<Concept, List<LocalizedConceptData>> sortedMap, Set<LocalizedConceptData> dataSet) {
+        for (LocalizedConceptData data : dataSet) {
+            Concept savedConcept = conceptRepository.findByExternalId(data.getConcept().getExternalId()).orElseThrow(() -> new IllegalStateException("Concept should be in the database not found"));
+            sortedMap.putIfAbsent(savedConcept, new ArrayList<>());
+            sortedMap.get(data.getConcept()).add(data);
+        }
+    }
+
+    private List<Concept> oneLangForEachConcept(Map<Concept, List<LocalizedConceptData>> map, String preferredLang) {
+        List<Concept> concepts = new ArrayList<>();
+        for (Map.Entry<Concept, List<LocalizedConceptData>> entry : map.entrySet()) {
+            List<LocalizedConceptData> datas = entry.getValue();
+            int currentIndex = 0;
+            while (currentIndex < datas.size() && !isPreferredLang(preferredLang, datas, currentIndex)) currentIndex++;
+            if (currentIndex < datas.size()) {
+                concepts.add(datas.get(currentIndex).getConcept());
+            } else {
+                concepts.add(datas.get(0).getConcept());
+            }
+        }
+        return concepts;
+    }
+
+    private static boolean isPreferredLang(String preferredLang, List<LocalizedConceptData> datas, int currentIndex) {
+        return datas.get(currentIndex).getLangCode().equals(preferredLang);
+    }
+
     @Transactional(readOnly = true)
     public List<Concept> findMatchingConcepts(Concept parentConcept, String langCode, String input) {
         if (input == null || input.isEmpty()) return findAllConcepts(parentConcept, langCode);
-        Set<LocalizedConceptData> result = new HashSet<>();
-        result.addAll(localizedConceptDataRepository.findAllByLangCodeAndParentConceptAndLabelContaining(langCode, parentConcept.getId(), input));
-        result.addAll(localizedConceptDataRepository.findConceptByFieldcodeAndLabelInputWithSimilarity(parentConcept.getId(), langCode, input, SIMILARITY_MIN_SCORE));
+        Map<Concept, List<LocalizedConceptData>> result = new HashMap<>();
+
+        fillData(result, localizedConceptDataRepository.findAllByLangCodeAndParentConceptAndLabelContaining(langCode, parentConcept.getId(), input));
+        fillData(result, localizedConceptDataRepository.findConceptByFieldcodeAndLabelInputWithSimilarity(parentConcept.getId(), langCode, input, SIMILARITY_MIN_SCORE));
 
         if (result.isEmpty()) {
-            result.addAll(localizedConceptDataRepository.findConceptByFieldcodeAndLabelInputWithSimilarityNoLang(parentConcept.getId(), input, SIMILARITY_MIN_SCORE));
+            fillData(result, localizedConceptDataRepository.findConceptByFieldcodeAndLabelInputWithSimilarityNoLang(parentConcept.getId(), input, SIMILARITY_MIN_SCORE));
         }
 
-        return result
-                .stream()
-                .map(LocalizedConceptData::getConcept)
-                .toList();
+        return oneLangForEachConcept(result, langCode);
     }
 
 }

@@ -115,7 +115,7 @@ public class ConceptService {
     }
 
     private void updateDefinition(Concept savedConcept, String lang, String definition, Concept fieldParentConcept) {
-        Optional<LocalizedConceptData> optData = localizedConceptDataRepository.findByConceptAndLangCode(savedConcept, lang);
+        Optional<LocalizedConceptData> optData = localizedConceptDataRepository.findByConceptAndLangCode(savedConcept.getId(), lang);
         LocalizedConceptData localizedConceptData = null;
         if (optData.isPresent()) {
             localizedConceptData = optData.get();
