@@ -2,6 +2,7 @@ package fr.siamois.infrastructure.database.initializer;
 
 import fr.siamois.domain.models.exceptions.database.DatabaseDataInitException;
 import fr.siamois.domain.models.form.customfield.CustomFieldInteger;
+import fr.siamois.domain.models.form.customfield.CustomFieldSelectOneActionUnit;
 import fr.siamois.domain.models.form.customfield.CustomFieldSelectOneFromFieldCode;
 import fr.siamois.domain.models.form.formscope.FormScope;
 import fr.siamois.domain.models.vocabulary.Vocabulary;
@@ -50,7 +51,8 @@ public class DefaultFormsDatasetInitializer implements DatabaseInitializer {
             new ConceptSeeder.ConceptSpec(DEFAULT_VOCABULARY_ID, "4287629", "Subdivision", "fr"),
             new ConceptSeeder.ConceptSpec(DEFAULT_VOCABULARY_ID, "4287627", "Unité élémentaire", "fr"),
             new ConceptSeeder.ConceptSpec(DEFAULT_VOCABULARY_ID, "4287628", "Unité incluante", "fr"),
-            new ConceptSeeder.ConceptSpec(DEFAULT_VOCABULARY_ID, "4287640", "Identifiant de l'unité d'enregistrement", "fr")
+            new ConceptSeeder.ConceptSpec(DEFAULT_VOCABULARY_ID, "4287640", "Identifiant de l'unité d'enregistrement", "fr"),
+            new ConceptSeeder.ConceptSpec(DEFAULT_VOCABULARY_ID, "4286244", "Unité d'action d'appartenance d'une unité d'enregistrement", "fr")
     );
 
     // Default Siamois field
@@ -94,8 +96,19 @@ public class DefaultFormsDatasetInitializer implements DatabaseInitializer {
                     null,
                     null,
                     null
+            ),
+            new CustomFieldSeederSpec(
+                    CustomFieldSelectOneActionUnit.class,
+                    true,
+                    "recordingunit.field.actionUnit",
+                    new ConceptSeeder.ConceptKey(DEFAULT_VOCABULARY_ID, "4286244"),
+                    "actionUnit",
+                    null,
+                    null,
+                    null
             )
     );
+
 
     // Default form DTOs
     List<CustomFormDTO> forms = List.of(
@@ -105,29 +118,41 @@ public class DefaultFormsDatasetInitializer implements DatabaseInitializer {
                     List.of(new CustomFormPanelDTO(
                             "",
                             COMMON_HEADER_GENERAL,
-                            List.of(new CustomRowDTO(
-                                    List.of(
-                                            new CustomColDTO(
-                                                    false,
-                                                    true,
-                                                    fields.get(3),
-                                                    UI_G_12_UI_MD_6_UI_LG_3
-                                            ),
-                                            new CustomColDTO(
-                                                    false,
-                                                    true,
-                                                    fields.get(0),
-                                                    UI_G_12_UI_MD_6_UI_LG_3
-                                            ),
-                                            new CustomColDTO(
-                                                    false,
-                                                    true,
-                                                    fields.get(2),
-                                                    UI_G_12_UI_MD_6_UI_LG_3
+                            List.of(
+                                    new CustomRowDTO(
+                                            List.of(
+                                                    new CustomColDTO(
+                                                            true,
+                                                            true,
+                                                            fields.get(4),
+                                                            UI_G_12_UI_MD_6_UI_LG_3
+                                                    )
                                             )
+                                    ),
+                                    new CustomRowDTO(
+                                            List.of(
+                                                    new CustomColDTO(
+                                                            false,
+                                                            true,
+                                                            fields.get(3),
+                                                            UI_G_12_UI_MD_6_UI_LG_3
+                                                    ),
+                                                    new CustomColDTO(
+                                                            false,
+                                                            true,
+                                                            fields.get(0),
+                                                            UI_G_12_UI_MD_6_UI_LG_3
+                                                    ),
+                                                    new CustomColDTO(
+                                                            false,
+                                                            false,
+                                                            fields.get(2),
+                                                            UI_G_12_UI_MD_6_UI_LG_3
+                                                    )
 
+                                            )
                                     )
-                            )),
+                            ),
                             true
                     ))
             ),
@@ -138,33 +163,43 @@ public class DefaultFormsDatasetInitializer implements DatabaseInitializer {
                             "",
                             COMMON_HEADER_GENERAL,
                             List.of(new CustomRowDTO(
-                                    List.of(
-                                            new CustomColDTO(
-                                                    false,
-                                                    true,
-                                                    fields.get(3),
-                                                    UI_G_12_UI_MD_6_UI_LG_2
-                                            ),
-                                            new CustomColDTO(
-                                                    false,
-                                                    true,
-                                                    fields.get(0),
-                                                    UI_G_12_UI_MD_6_UI_LG_3
-                                            ),
-                                            new CustomColDTO(
-                                                    false,
-                                                    true,
-                                                    fields.get(1),
-                                                    UI_G_12_UI_MD_6_UI_LG_3
-                                            ),
-                                            new CustomColDTO(
-                                                    false,
-                                                    true,
-                                                    fields.get(2),
-                                                    UI_G_12_UI_MD_6_UI_LG_3
+                                            List.of(
+                                                    new CustomColDTO(
+                                                            true,
+                                                            true,
+                                                            fields.get(4),
+                                                            UI_G_12_UI_MD_6_UI_LG_3
+                                                    )
                                             )
-                                    )
-                            )),
+                                    ),
+                                    new CustomRowDTO(
+                                            List.of(
+                                                    new CustomColDTO(
+                                                            false,
+                                                            true,
+                                                            fields.get(3),
+                                                            UI_G_12_UI_MD_6_UI_LG_2
+                                                    ),
+                                                    new CustomColDTO(
+                                                            false,
+                                                            true,
+                                                            fields.get(0),
+                                                            UI_G_12_UI_MD_6_UI_LG_3
+                                                    ),
+                                                    new CustomColDTO(
+                                                            false,
+                                                            false,
+                                                            fields.get(1),
+                                                            UI_G_12_UI_MD_6_UI_LG_3
+                                                    ),
+                                                    new CustomColDTO(
+                                                            false,
+                                                            false,
+                                                            fields.get(2),
+                                                            UI_G_12_UI_MD_6_UI_LG_3
+                                                    )
+                                            )
+                                    )),
                             true
                     ))
             ),
@@ -175,6 +210,17 @@ public class DefaultFormsDatasetInitializer implements DatabaseInitializer {
                             "",
                             COMMON_HEADER_GENERAL,
                             List.of(new CustomRowDTO(
+                                            List.of(
+                                                    new CustomColDTO(
+                                                            true,
+                                                            true,
+                                                            fields.get(4),
+                                                            UI_G_12_UI_MD_6_UI_LG_3
+                                                    )
+                                            )
+                                    ),
+                                    new CustomRowDTO(
+
                                     List.of(
                                             new CustomColDTO(
                                                     false,
@@ -184,7 +230,7 @@ public class DefaultFormsDatasetInitializer implements DatabaseInitializer {
                                             ),
                                             new CustomColDTO(
                                                     false,
-                                                    true,
+                                                    false,
                                                     fields.get(0),
                                                     UI_G_12_UI_MD_6_UI_LG_3
                                             )
