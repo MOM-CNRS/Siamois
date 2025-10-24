@@ -3,6 +3,7 @@ package fr.siamois.infrastructure.database.repositories.vocabulary;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.models.vocabulary.LocalizedConceptData;
 import fr.siamois.domain.models.vocabulary.LocalizedConceptDataId;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
@@ -26,7 +27,7 @@ public interface LocalizedConceptDataRepository extends CrudRepository<Localized
                     "WHERE s.score >= :minSimilarityScore " +
                     "ORDER BY s.score DESC"
     )
-    Set<LocalizedConceptData> findConceptByFieldcodeAndLabelInputWithSimilarity(
+    Page<LocalizedConceptData> findConceptByFieldcodeAndLabelInputWithSimilarity(
             Long parentFieldConceptId,
             String langCode,
             String input,
@@ -67,7 +68,7 @@ public interface LocalizedConceptDataRepository extends CrudRepository<Localized
                     "AND lcd.fk_field_parent_concept_id = :parentConceptId " +
                     "AND lcd.label ILIKE '%' || :label || '%'"
     )
-    Set<LocalizedConceptData> findAllByLangCodeAndParentConceptAndLabelContaining(
+    Page<LocalizedConceptData> findAllByLangCodeAndParentConceptAndLabelContaining(
             String langCode,
             Long parentConceptId,
             String label,

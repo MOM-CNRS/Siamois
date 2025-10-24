@@ -91,7 +91,7 @@ public class DocumentCreationBean implements Serializable {
         return fieldConfigurationService.getUrlOfConcept(concept);
     }
 
-    private void prepareLazyModels() {
+    private void prepareLazyModels() throws NoConfigForFieldException {
         UserInfo info = sessionSettingsBean.getUserInfo();
         natureModel = applicationContext.getBean(ConceptLazyDataModel.class);
         scaleModel = applicationContext.getBean(ConceptLazyDataModel.class);

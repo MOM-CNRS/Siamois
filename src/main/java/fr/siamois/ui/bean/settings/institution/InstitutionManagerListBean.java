@@ -2,6 +2,7 @@ package fr.siamois.ui.bean.settings.institution;
 
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.events.LoginEvent;
+import fr.siamois.domain.models.exceptions.vocabulary.NoConfigForFieldException;
 import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.auth.PendingPersonService;
@@ -24,8 +25,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import static fr.siamois.utils.MessageUtils.displayInfoMessage;
-import static fr.siamois.utils.MessageUtils.displayWarnMessage;
+import static fr.siamois.utils.MessageUtils.*;
 
 @Slf4j
 @Component
@@ -91,12 +91,16 @@ public class InstitutionManagerListBean implements SettingsDatatableBean {
     @Override
     public void add() {
         log.trace("Creating manager");
-        userDialogBean.init(langBean.msg("organisationSettings.managers.dialog.label"),
-                langBean.msg("organisationSettings.managers.add"),
-                institution,
-                this::processPerson);
-        PrimeFaces.current().ajax().update("newMemberDialog");
-        PrimeFaces.current().executeScript("PF('newMemberDialog').show();");
+        try {
+            userDialogBean.init(langBean.msg("organisationSettings.managers.dialog.label"),
+                    langBean.msg("organisationSettings.managers.add"),
+                    institution,
+                    this::processPerson);
+            PrimeFaces.current().ajax().update("newMemberDialog");
+            PrimeFaces.current().executeScript("PF('newMemberDialog').show();");
+        } catch (NoConfigForFieldException e) {
+            displayErrorMessage(langBean, "common.error.thesaurus.noConfigForField", Person.USER_ROLE_FIELD_CODE);
+        }
     }
 
     private Boolean addPersonToInstitution(PersonRole saved) {

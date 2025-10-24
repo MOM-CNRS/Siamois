@@ -79,7 +79,7 @@ public class UserDialogBean implements Serializable {
     private String password;
     private String confirmPassword;
 
-    public void init(String title, String buttonLabel, Institution institution, ProcessPerson processPerson) {
+    public void init(String title, String buttonLabel, Institution institution, ProcessPerson processPerson) throws NoConfigForFieldException {
         reset();
         this.title = title;
         this.buttonLabel = buttonLabel;

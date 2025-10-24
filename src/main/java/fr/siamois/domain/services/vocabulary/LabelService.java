@@ -9,6 +9,8 @@ import fr.siamois.infrastructure.database.repositories.vocabulary.LocalizedConce
 import fr.siamois.infrastructure.database.repositories.vocabulary.label.VocabularyLabelRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -147,7 +149,7 @@ public class LabelService {
     }
 
     @Transactional
-    protected void fillData(Map<Concept, List<LocalizedConceptData>> sortedMap, Set<LocalizedConceptData> dataSet) {
+    protected void fillData(Map<Concept, List<LocalizedConceptData>> sortedMap, Iterable<LocalizedConceptData> dataSet) {
         for (LocalizedConceptData data : dataSet) {
             Concept savedConcept = conceptRepository.findByExternalId(data.getConcept().getExternalId()).orElseThrow(() -> new IllegalStateException("Concept should be in the database not found"));
             sortedMap.putIfAbsent(savedConcept, new ArrayList<>());
@@ -156,7 +158,7 @@ public class LabelService {
     }
 
     private List<Concept> oneLangForEachConcept(Map<Concept, List<LocalizedConceptData>> map, String preferredLang) {
-        Set<Concept> concepts = new HashSet<>();
+        List<Concept> concepts = new ArrayList<>();
         for (Map.Entry<Concept, List<LocalizedConceptData>> entry : map.entrySet()) {
             List<LocalizedConceptData> datas = entry.getValue();
             int currentIndex = 0;
@@ -167,9 +169,7 @@ public class LabelService {
                 concepts.add(datas.get(0).getConcept());
             }
         }
-        return concepts
-                .stream()
-                .toList();
+        return concepts;
     }
 
     private static boolean isPreferredLang(String preferredLang, List<LocalizedConceptData> datas, int currentIndex) {
@@ -189,8 +189,9 @@ public class LabelService {
      */
     @Transactional(readOnly = true)
     public List<Concept> findMatchingConcepts(Concept parentConcept, String langCode, String input, Pageable pageable) {
-        if (input == null || input.isEmpty())
+        if (input == null || input.isEmpty()) {
             return findAllConcepts(parentConcept, langCode);
+        };
 
         Map<Concept, List<LocalizedConceptData>> result = new HashMap<>();
 
