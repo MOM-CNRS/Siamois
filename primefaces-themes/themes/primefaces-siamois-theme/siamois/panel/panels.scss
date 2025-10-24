@@ -4,6 +4,19 @@
 // Mixin that creates themed styles
 @mixin themed-panel($panel-selector, $main-color, $light50-color, $light100-color, $light200-color, $dark-color) {
 
+  .#{$panel-selector} {
+
+    // CSS custom properties for this panel
+
+    // TODO : move this in a main css class $panel-selector and refactor classes
+    --main-color: #{$main-color};
+    --light-color-50: #{$light50-color};
+    --light-color-100: #{$light100-color};
+    --light-color-200: #{$light200-color};
+    --dark-color: #{$dark-color};
+
+  }
+
   .#{$panel-selector}-panel {
 
     // CSS custom properties for this panel
@@ -183,17 +196,6 @@
     }
   }
 
-  .ui-selectonemenu {
-    &.ui-state-hover {
-      border-color: var(--light-color-200);
-    }
-
-    &.ui-state-focus {
-      border-color: var(--light-color-200);
-      box-shadow: 0 0 0 .2em var(--light-color-100);
-    }
-  }
-
   .sia-modified-field {
     border-color: var(--main-color);
   }
@@ -300,28 +302,7 @@
 
 }
 
-  // Select one
-  .#{$panel-selector}-selectonemenu {
 
-    // CSS custom properties for this panel
-    --main-color: #{$main-color};
-    --light-color-50: #{$light50-color};
-    --light-color-100: #{$light100-color};
-    --light-color-200: #{$light200-color};
-    --dark-color: #{$dark-color};
-
-    &.ui-selectonemenu-panel {
-      .ui-button {
-        background: var(--dark-color);
-        border-color: var(--main-color);
-      }
-
-      .ui-selectonemenu-items .ui-selectonemenu-item.ui-state-highlight {
-        background: var(--dark-color);
-      }
-    }
-
-  }
 
   // welcome cards
 .sia-welcome-card.sia-#{$panel-selector} {
