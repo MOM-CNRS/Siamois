@@ -97,7 +97,9 @@
                                                                               panelStyleClass="recording-unit-autocomplete"
                                                                               selectedConcept="#{cc.attrs.lazyDataModel.bulkEditTypeValue}"
                                                                               field="#{cc.attrs.lazyDataModel.typeField}"
-                                                                              editConceptUrl="#{spatialUnitFieldBean.getUrlForFieldCode('SIARU.TYPE')}"/>
+                                                                              editConceptUrl="#{spatialUnitFieldBean.getUrlForFieldCode('SIARU.TYPE')}"
+                                                                              lazyDataModel="#{recordingUnitListPanel.findLazyModelForFieldCode('SIARU.TYPE')}"
+                                    />
                                     <p:commandButton value="Enregistrer"
                                                      update=":#{cc.clientId}:recordingUnitDataTable"
                                                      action="#{cc.attrs.lazyDataModel.saveFieldBulk()}"
@@ -180,7 +182,9 @@
                                                                   panelStyleClass="recording-unit-autocomplete"
                                                                   selectedConcept="#{item.type}"
                                                                   field="#{cc.attrs.lazyDataModel.typeField}"
-                                                                  editConceptUrl="#{spatialUnitFieldBean.getUrlForFieldCode('SIARU.TYPE')}"/>
+                                                                  editConceptUrl="#{spatialUnitFieldBean.getUrlForFieldCode('SIARU.TYPE')}"
+                                                                  lazyDataModel="#{recordingUnitListPanel.findLazyModelForFieldCode('SIARU.TYPE')}"
+                        />
                     </f:facet>
                 </p:cellEditor>
 

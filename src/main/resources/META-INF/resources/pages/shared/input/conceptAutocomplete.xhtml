@@ -7,7 +7,7 @@
 
     <cc:interface>
 
-        <cc:attribute name="completeMethod" required="true" method-signature="java.util.List &lt;java.lang.String&gt;(java.lang.String)" />
+        <cc:attribute name="lazyDataModel" required="true" type="fr.siamois.ui.lazydatamodel.ConceptLazyDataModel" />
         <cc:attribute name="itemSelectListener" required="false" method-signature="void &lt;java.lang.String&gt;()" />
         <cc:attribute name="selectedConcept" type="fr.siamois.domain.models.vocabulary.Concept" required="true"/>
         <cc:attribute name="editConceptUrl" required="true"/>
@@ -23,7 +23,7 @@
     <cc:implementation>
         <p:autoComplete value="#{cc.attrs.selectedConcept}"
                         id="conceptAutocomplete"
-                        completeMethod="#{cc.attrs.completeMethod}"
+                        lazyModel="#{cc.attrs.lazyDataModel}"
                         var="field"
                         panelStyleClass="#{cc.attrs.panelStyleClass}"
                         itemValue="#{field}"

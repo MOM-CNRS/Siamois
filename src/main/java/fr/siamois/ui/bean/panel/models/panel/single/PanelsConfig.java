@@ -6,6 +6,7 @@ import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitTreeService;
 import fr.siamois.domain.services.vocabulary.FieldConfigurationService;
 import fr.siamois.ui.bean.SessionSettingsBean;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -18,10 +19,10 @@ class PanelsConfig {
             SpatialUnitTreeService spatialUnitTreeService,
             SpatialUnitService spatialUnitService,
             ActionUnitService actionUnitService,
-            DocumentService documentService
-    ) {
+            DocumentService documentService,
+            ApplicationContext applicationContext) {
         return new AbstractSingleEntity.Deps(
-                sessionSettingsBean, fieldConfigurationService, spatialUnitTreeService, spatialUnitService, actionUnitService, documentService
+                sessionSettingsBean, fieldConfigurationService, spatialUnitTreeService, spatialUnitService, actionUnitService, documentService, applicationContext
         );
     }
 }

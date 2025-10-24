@@ -38,7 +38,7 @@
                             id="nature"
                             editConceptUrl="#{documentCreationBean.getUrlForConcept(documentCreationBean.parentNature)}"
                             selectedConcept="#{documentCreationBean.docNature}"
-                            completeMethod="#{documentCreationBean.autocompleteNature}"/>
+                            lazyDataModel="#{documentCreationBean.natureModel}"/>
                 </div>
             </div>
             <div class="form-group row">
@@ -48,7 +48,7 @@
                             id="scale"
                             editConceptUrl="#{documentCreationBean.getUrlForConcept(documentCreationBean.parentScale)}"
                             selectedConcept="#{documentCreationBean.docScale}"
-                            completeMethod="#{documentCreationBean.autocompleteScale}"/>
+                            lazyDataModel="#{documentCreationBean.scaleModel}"/>
                 </div>
             </div>
             <div class="form-group row">
@@ -58,7 +58,7 @@
                             id="type"
                             editConceptUrl="#{documentCreationBean.getUrlForConcept(documentCreationBean.parentType)}"
                             selectedConcept="#{documentCreationBean.docType}"
-                            completeMethod="#{documentCreationBean.autocompleteType}"/>
+                            lazyDataModel="#{documentCreationBean.typeModel}"/>
                 </div>
             </div>
             <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>

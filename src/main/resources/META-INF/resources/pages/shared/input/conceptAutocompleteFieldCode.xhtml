@@ -9,6 +9,7 @@
 
         <cc:attribute name="itemSelectListener" required="false" method-signature="void &lt;java.lang.String&gt;(java.lang.Object)" />
         <cc:attribute name="selectedConcept" type="fr.siamois.domain.models.vocabulary.Concept" required="true"/>
+        <cc:attribute name="lazyDataModel" required="true" type="fr.siamois.ui.lazydatamodel.ConceptLazyDataModel" />
         <cc:attribute name="editConceptUrl" required="true"/>
         <cc:attribute name="disabled" required="false" default="false"/>
         <cc:attribute name="ajaxUpdateTargets" required="false" default="@form"/>
@@ -28,6 +29,7 @@
                         id="conceptAutocomplete"
                         var="field"
                         label="#{cc.attrs.label}"
+                        lazyModel="#{cc.attrs.lazyDataModel}"
                         panelStyleClass="#{cc.attrs.panelStyleClass}"
                         itemValue="#{field}"
                         disabled="#{cc.attrs.disabled}"

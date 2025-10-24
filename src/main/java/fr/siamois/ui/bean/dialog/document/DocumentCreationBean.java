@@ -29,6 +29,7 @@ import org.primefaces.model.file.UploadedFile;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.MimeType;
 
 import javax.faces.bean.SessionScoped;
@@ -64,6 +65,10 @@ public class DocumentCreationBean implements Serializable {
     private transient UploadedFile docFile;
     private String panelIdToUpdate ;
 
+    private Concept parentNature;
+    private Concept parentScale;
+    private Concept parentType;
+
     private ConceptLazyDataModel natureModel;
     private ConceptLazyDataModel scaleModel;
     private ConceptLazyDataModel typeModel;
@@ -91,7 +96,8 @@ public class DocumentCreationBean implements Serializable {
         return fieldConfigurationService.getUrlOfConcept(concept);
     }
 
-    private void prepareLazyModels() throws NoConfigForFieldException {
+    @Transactional
+    protected void prepareLazyModels() throws NoConfigForFieldException {
         UserInfo info = sessionSettingsBean.getUserInfo();
         natureModel = applicationContext.getBean(ConceptLazyDataModel.class);
         scaleModel = applicationContext.getBean(ConceptLazyDataModel.class);
@@ -100,6 +106,10 @@ public class DocumentCreationBean implements Serializable {
         natureModel.prepare(info, Document.NATURE_FIELD_CODE);
         scaleModel.prepare(info, Document.SCALE_FIELD_CODE);
         typeModel.prepare(info, Document.FORMAT_FIELD_CODE);
+
+        parentNature = fieldConfigurationService.findParentConceptForFieldcode(info, Document.NATURE_FIELD_CODE);
+        parentScale = fieldConfigurationService.findParentConceptForFieldcode(info, Document.SCALE_FIELD_CODE);
+        parentType = fieldConfigurationService.findParentConceptForFieldcode(info, Document.FORMAT_FIELD_CODE);
     }
 
     public Document createDocument() {

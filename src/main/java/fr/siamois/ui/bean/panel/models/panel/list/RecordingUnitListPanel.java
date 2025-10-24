@@ -1,8 +1,14 @@
 package fr.siamois.ui.bean.panel.models.panel.list;
 
 
+import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.exceptions.recordingunit.FailedRecordingUnitSaveException;
+import fr.siamois.domain.models.exceptions.vocabulary.NoConfigForFieldException;
+import fr.siamois.domain.models.form.customfield.CustomField;
+import fr.siamois.domain.models.form.customfield.CustomFieldSelectOneConceptFromChildrenOfConcept;
+import fr.siamois.domain.models.form.customfield.CustomFieldSelectOneFromFieldCode;
+import fr.siamois.domain.models.form.customform.CustomCol;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.BookmarkService;
@@ -17,14 +23,18 @@ import fr.siamois.ui.bean.NavBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
 import fr.siamois.ui.bean.panel.models.PanelBreadcrumb;
 import fr.siamois.ui.lazydatamodel.BaseLazyDataModel;
+import fr.siamois.ui.lazydatamodel.ConceptLazyDataModel;
 import fr.siamois.ui.lazydatamodel.RecordingUnitLazyDataModel;
 import fr.siamois.utils.MessageUtils;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 import org.primefaces.event.RowEditEvent;
+import org.primefaces.model.LazyDataModel;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.config.BeanDefinition;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
@@ -34,6 +44,7 @@ import java.util.List;
 
 
 
+@Slf4j
 @EqualsAndHashCode(callSuper = true, onlyExplicitlyIncluded = true)
 @Getter
 @Setter
@@ -43,6 +54,7 @@ public class RecordingUnitListPanel extends AbstractListPanel<RecordingUnit>  im
 
     private final transient RecordingUnitService recordingUnitService;
     private final transient NavBean navBean;
+    private final ApplicationContext applicationContext;
 
     // locals
     private String actionUnitListErrorMessage;
@@ -73,7 +85,7 @@ public class RecordingUnitListPanel extends AbstractListPanel<RecordingUnit>  im
                                   LangBean langBean,
                                   LabelService labelService,
                                   ActionUnitService actionUnitService,
-                                  RecordingUnitService recordingUnitService, BookmarkService bookmarkService, NavBean navBean) {
+                                  RecordingUnitService recordingUnitService, BookmarkService bookmarkService, NavBean navBean, ApplicationContext applicationContext) {
 
 
 
@@ -90,6 +102,7 @@ public class RecordingUnitListPanel extends AbstractListPanel<RecordingUnit>  im
                 bookmarkService);
         this.recordingUnitService = recordingUnitService;
         this.navBean = navBean;
+        this.applicationContext = applicationContext;
     }
 
     @Override
@@ -172,7 +185,25 @@ public class RecordingUnitListPanel extends AbstractListPanel<RecordingUnit>  im
         lazyDataModel.addRowToModel(newRec);
     }
 
+    public String fieldCodeOfCustomCol(CustomCol col) {
+        CustomField field = col.getField();
+        if (field instanceof CustomFieldSelectOneFromFieldCode conceptField) {
+            return conceptField.getFieldCode();
+        }
+        return null;
+    }
 
+    public LazyDataModel<Concept> findLazyModelForFieldCode(String fieldCode) {
+        try {
+            UserInfo userInfo = sessionSettingsBean.getUserInfo();
+            ConceptLazyDataModel model = applicationContext.getBean(ConceptLazyDataModel.class);
+            model.prepare(userInfo, fieldCode);
+            return model;
+        } catch (NoConfigForFieldException e) {
+            log.error("No configuration for field code: {}", fieldCode);
+            return null;
+        }
+    }
 
 
     public static class RecordingUnitListPanelBuilder {
@@ -194,9 +225,6 @@ public class RecordingUnitListPanel extends AbstractListPanel<RecordingUnit>  im
             return recordingUnitListPanel;
         }
     }
-
-
-
 
 
 }

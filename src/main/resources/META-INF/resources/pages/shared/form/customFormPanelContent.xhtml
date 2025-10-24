@@ -73,7 +73,9 @@
                                         mode="#{col.readOnly ? 'output' : flowBean.getInPlaceFieldMode()}"
                                         panelModel="#{bean}"
                                         updateTargetsOnBlur="#{bean.getConceptFieldsUpdateTargetsOnBlur()}"
-                                        answer="#{bean.getFieldAnswer(col.field)}"/>
+                                        answer="#{bean.getFieldAnswer(col.field)}"
+                                        lazyConceptModel="#{bean.findLazyModelForFieldCode(recordingUnitListPanel.fieldCodeOfCustomCol(col))}"
+                                />
 
 
                                 <!-- Select one concept from field parent concept children -->

@@ -1,8 +1,10 @@
 package fr.siamois.ui.bean.panel.models.panel.single;
 
+import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.actionunit.ActionCode;
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.auth.Person;
+import fr.siamois.domain.models.exceptions.vocabulary.NoConfigForFieldException;
 import fr.siamois.domain.models.form.customfield.*;
 import fr.siamois.domain.models.form.customfieldanswer.*;
 import fr.siamois.domain.models.form.customform.CustomCol;
@@ -22,6 +24,7 @@ import fr.siamois.domain.services.vocabulary.FieldConfigurationService;
 import fr.siamois.ui.bean.SessionSettingsBean;
 import fr.siamois.ui.bean.dialog.newunit.GenericNewUnitDialogBean;
 import fr.siamois.ui.bean.panel.models.panel.AbstractPanel;
+import fr.siamois.ui.lazydatamodel.ConceptLazyDataModel;
 import fr.siamois.ui.viewmodel.TreeUiStateViewModel;
 import fr.siamois.utils.DateUtils;
 import jakarta.faces.component.UIComponent;
@@ -29,7 +32,9 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
 import org.primefaces.event.SelectEvent;
+import org.primefaces.model.LazyDataModel;
 import org.primefaces.model.TreeNode;
+import org.springframework.context.ApplicationContext;
 
 import java.beans.PropertyDescriptor;
 import java.io.Serializable;
@@ -53,6 +58,7 @@ public abstract class AbstractSingleEntity<T> extends AbstractPanel implements S
     protected final transient SpatialUnitService spatialUnitService;
     protected final transient ActionUnitService actionUnitService;
     protected final transient DocumentService documentService;
+    protected final transient ApplicationContext applicationContext;
 
     //--------------- Locals
     protected transient T unit;
@@ -130,7 +136,7 @@ public abstract class AbstractSingleEntity<T> extends AbstractPanel implements S
 
     public record Deps(SessionSettingsBean sessionSettingsBean, FieldConfigurationService fieldConfigurationService,
                        SpatialUnitTreeService spatialUnitTreeService, SpatialUnitService spatialUnitService,
-                       ActionUnitService actionUnitService, DocumentService documentService) {
+                       ActionUnitService actionUnitService, DocumentService documentService, ApplicationContext applicationContext) {
     }
 
     protected AbstractSingleEntity(String titleCodeOrTitle,
@@ -144,6 +150,7 @@ public abstract class AbstractSingleEntity<T> extends AbstractPanel implements S
         this.spatialUnitService = deps.spatialUnitService;
         this.actionUnitService = deps.actionUnitService;
         this.documentService = deps.documentService;
+        this.applicationContext = deps.applicationContext;
     }
 
 
@@ -531,5 +538,16 @@ public abstract class AbstractSingleEntity<T> extends AbstractPanel implements S
         throw new IllegalArgumentException("Unsupported CustomField type: " + field.getClass().getName());
     }
 
+    public LazyDataModel<Concept> findLazyModelForFieldCode(String fieldCode) {
+        try {
+            UserInfo userInfo = sessionSettingsBean.getUserInfo();
+            ConceptLazyDataModel model = applicationContext.getBean(ConceptLazyDataModel.class);
+            model.prepare(userInfo, fieldCode);
+            return model;
+        } catch (NoConfigForFieldException e) {
+            log.error("No configuration for field code: {}", fieldCode);
+            return null;
+        }
+    }
 
 }

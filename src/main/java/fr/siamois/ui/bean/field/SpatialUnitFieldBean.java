@@ -1,6 +1,8 @@
 package fr.siamois.ui.bean.field;
 
+import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.events.LoginEvent;
+import fr.siamois.domain.models.exceptions.vocabulary.NoConfigForFieldException;
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.customform.CustomFormPanel;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
@@ -13,9 +15,12 @@ import fr.siamois.ui.bean.LabelBean;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.RedirectBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
+import fr.siamois.ui.lazydatamodel.ConceptLazyDataModel;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import org.primefaces.model.LazyDataModel;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
@@ -45,6 +50,7 @@ public class SpatialUnitFieldBean implements Serializable {
     private final transient FieldConfigurationService fieldConfigurationService;
     private final RedirectBean redirectBean;
     private final LabelBean labelBean;
+    private final ApplicationContext applicationContext;
 
     // Storage
     private List<SpatialUnit> refSpatialUnits = new ArrayList<>();
@@ -63,7 +69,7 @@ public class SpatialUnitFieldBean implements Serializable {
                                 SpatialUnitService spatialUnitService,
                                 ConceptService conceptService,
                                 FieldConfigurationService fieldConfigurationService,
-                                RedirectBean redirectBean, LabelBean labelBean) {
+                                RedirectBean redirectBean, LabelBean labelBean, ApplicationContext applicationContext) {
         this.fieldService = fieldService;
         this.langBean = langBean;
         this.sessionSettingsBean = sessionSettingsBean;
@@ -72,6 +78,7 @@ public class SpatialUnitFieldBean implements Serializable {
         this.fieldConfigurationService = fieldConfigurationService;
         this.redirectBean = redirectBean;
         this.labelBean = labelBean;
+        this.applicationContext = applicationContext;
     }
 
     @EventListener(LoginEvent.class)
@@ -136,5 +143,17 @@ public class SpatialUnitFieldBean implements Serializable {
      */
     public boolean isCreateAllowed() {
         return spatialUnitService.hasCreatePermission(sessionSettingsBean.getUserInfo());
+    }
+
+    public LazyDataModel<Concept> findLazyModelForFieldCode(String fieldCode) {
+        try {
+            UserInfo userInfo = sessionSettingsBean.getUserInfo();
+            ConceptLazyDataModel model = applicationContext.getBean(ConceptLazyDataModel.class);
+            model.prepare(userInfo, fieldCode);
+            return model;
+        } catch (NoConfigForFieldException e) {
+            log.error("No configuration for field code: {}", fieldCode);
+            return null;
+        }
     }
 }
