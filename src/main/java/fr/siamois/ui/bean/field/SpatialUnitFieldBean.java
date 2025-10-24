@@ -127,7 +127,7 @@ public class SpatialUnitFieldBean implements Serializable {
      * @param input the input of the user
      * @return the list of concepts that match the input to display in the autocomplete
      */
-    public Set<Concept> completeWithFieldCode(String input) {
+    public List<Concept> completeWithFieldCode(String input) {
         String fieldCode = "Undefined";
         try {
             FacesContext context = FacesContext.getCurrentInstance();
@@ -136,15 +136,15 @@ public class SpatialUnitFieldBean implements Serializable {
         }
         catch (NoConfigForFieldException e) {
             displayErrorMessage(langBean, "common.error.thesaurus.noConfigForField",fieldCode);
-            return Set.of();
+            return List.of();
         }
         catch(ResourceAccessException e) {
             displayErrorMessage(langBean, "common.error.thesaurus.resourceAccess",fieldCode);
-            return Set.of();
+            return List.of();
         }
         catch(Exception e) {
             displayErrorMessage(langBean, "common.error.thesaurus.field.exception",fieldCode);
-            return Set.of();
+            return List.of();
         }
     }
 

@@ -317,13 +317,13 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnit> imple
      * @param input the input of the user
      * @return the list of concepts that match the input to display in the autocomplete
      */
-    public Set<Concept> completeActionCodeType(String input) {
+    public List<Concept> completeActionCodeType(String input) {
 
         try {
             return fieldConfigurationService.fetchAutocomplete(sessionSettingsBean.getUserInfo(), ActionCode.TYPE_FIELD_CODE, input);
         } catch (NoConfigForFieldException e) {
             log.error(e.getMessage(), e);
-            return Set.of();
+            return List.of();
         }
 
     }

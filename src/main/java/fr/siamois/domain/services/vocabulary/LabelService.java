@@ -129,7 +129,7 @@ public class LabelService {
     }
 
     @Transactional(readOnly = true)
-    protected Set<Concept> findAllConcepts(Concept parentConcept, String langCode) {
+    protected List<Concept> findAllConcepts(Concept parentConcept, String langCode) {
         try {
             Map<Concept, List<LocalizedConceptData>> result = new HashMap<>();
             Long parentId = parentConcept.getId();
@@ -141,7 +141,7 @@ public class LabelService {
             return oneLangForEachConcept(result, langCode);
         } catch (RuntimeException e) {
             log.error(e.getMessage());
-            return Set.of();
+            return List.of();
         }
     }
 
@@ -154,7 +154,7 @@ public class LabelService {
         }
     }
 
-    private Set<Concept> oneLangForEachConcept(Map<Concept, List<LocalizedConceptData>> map, String preferredLang) {
+    private List<Concept> oneLangForEachConcept(Map<Concept, List<LocalizedConceptData>> map, String preferredLang) {
         Set<Concept> concepts = new HashSet<>();
         for (Map.Entry<Concept, List<LocalizedConceptData>> entry : map.entrySet()) {
             List<LocalizedConceptData> datas = entry.getValue();
@@ -166,7 +166,9 @@ public class LabelService {
                 concepts.add(datas.get(0).getConcept());
             }
         }
-        return concepts;
+        return concepts
+                .stream()
+                .toList();
     }
 
     private static boolean isPreferredLang(String preferredLang, List<LocalizedConceptData> datas, int currentIndex) {
@@ -185,8 +187,10 @@ public class LabelService {
      * @return List of unique concepts matching the input
      */
     @Transactional(readOnly = true)
-    public Set<Concept> findMatchingConcepts(Concept parentConcept, String langCode, String input) {
-        if (input == null || input.isEmpty()) return findAllConcepts(parentConcept, langCode);
+    public List<Concept> findMatchingConcepts(Concept parentConcept, String langCode, String input) {
+        if (input == null || input.isEmpty())
+            return findAllConcepts(parentConcept, langCode);
+
         Map<Concept, List<LocalizedConceptData>> result = new HashMap<>();
 
         fillData(result, localizedConceptDataRepository.findAllByLangCodeAndParentConceptAndLabelContaining(langCode, parentConcept.getId(), input));

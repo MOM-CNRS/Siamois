@@ -100,7 +100,7 @@ public class DocumentCreationBean implements Serializable {
     }
 
 
-    public Set<Concept> autocomplete(String fieldCode, String input) {
+    public List<Concept> autocomplete(String fieldCode, String input) {
         log.trace("Autocomplete order received");
 
         try {
@@ -109,19 +109,19 @@ public class DocumentCreationBean implements Serializable {
                     fieldCode,
                     input);
         } catch (NoConfigForFieldException e) {
-            return Set.of();
+            return List.of();
         }
     }
 
-    public Set<Concept> autocompleteNature(String input) {
+    public List<Concept> autocompleteNature(String input) {
         return autocomplete(Document.NATURE_FIELD_CODE, input);
     }
 
-    public Set<Concept> autocompleteScale(String input) {
+    public List<Concept> autocompleteScale(String input) {
         return autocomplete(Document.SCALE_FIELD_CODE, input);
     }
 
-    public Set<Concept> autocompleteType(String input) {
+    public List<Concept> autocompleteType(String input) {
         return autocomplete(Document.FORMAT_FIELD_CODE, input);
     }
 
