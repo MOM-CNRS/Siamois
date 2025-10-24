@@ -1,7 +1,6 @@
 package fr.siamois.ui.bean.field;
 
 import fr.siamois.domain.models.events.LoginEvent;
-import fr.siamois.domain.models.exceptions.vocabulary.NoConfigForFieldException;
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.customform.CustomFormPanel;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
@@ -14,21 +13,16 @@ import fr.siamois.ui.bean.LabelBean;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.RedirectBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
-import jakarta.faces.component.UIComponent;
-import jakarta.faces.context.FacesContext;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
-import org.springframework.web.client.ResourceAccessException;
 
 import javax.faces.bean.SessionScoped;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
-
-import static fr.siamois.utils.MessageUtils.displayErrorMessage;
 
 /**
  * <p>This bean handles the creation of new Spatial Unit</p>

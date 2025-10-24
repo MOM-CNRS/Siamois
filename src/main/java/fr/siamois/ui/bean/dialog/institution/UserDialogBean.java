@@ -14,7 +14,6 @@ import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
 import fr.siamois.ui.email.EmailManager;
 import fr.siamois.ui.lazydatamodel.ConceptLazyDataModel;
-import fr.siamois.utils.MessageUtils;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
