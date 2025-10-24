@@ -55,9 +55,6 @@ public class DocumentCreationBean implements Serializable {
     private String docDescription;
 
     private transient ActionFromBean actionOnSave = null;
-    private Concept parentNature = null;
-    private Concept parentScale = null;
-    private Concept parentType = null;
     private transient UploadedFile docFile;
     private String panelIdToUpdate ;
 
@@ -95,9 +92,6 @@ public class DocumentCreationBean implements Serializable {
 
     private void prepareParentConcept() throws NoConfigForFieldException {
         UserInfo info = sessionSettingsBean.getUserInfo();
-        parentNature = fieldConfigurationService.findParentConceptForFieldcode(info, Document.NATURE_FIELD_CODE);
-        parentScale = fieldConfigurationService.findParentConceptForFieldcode(info, Document.SCALE_FIELD_CODE);
-        parentType = fieldConfigurationService.findParentConceptForFieldcode(info, Document.FORMAT_FIELD_CODE);
     }
 
     public String getUrlForConcept(Concept concept) {
@@ -105,25 +99,29 @@ public class DocumentCreationBean implements Serializable {
     }
 
 
-    public List<Concept> autocomplete(Concept parent, String input) {
+    public List<Concept> autocomplete(String fieldCode, String input) {
         log.trace("Autocomplete order received");
 
-        return fieldConfigurationService.fetchAutocomplete(
-                sessionSettingsBean.getUserInfo(),
-                parent,
-                input);
+        try {
+            return fieldConfigurationService.fetchAutocomplete(
+                    sessionSettingsBean.getUserInfo(),
+                    fieldCode,
+                    input);
+        } catch (NoConfigForFieldException e) {
+            return List.of();
+        }
     }
 
     public List<Concept> autocompleteNature(String input) {
-        return autocomplete(parentNature, input);
+        return autocomplete(Document.NATURE_FIELD_CODE, input);
     }
 
     public List<Concept> autocompleteScale(String input) {
-        return autocomplete(parentScale, input);
+        return autocomplete(Document.SCALE_FIELD_CODE, input);
     }
 
     public List<Concept> autocompleteType(String input) {
-        return autocomplete(parentType, input);
+        return autocomplete(Document.FORMAT_FIELD_CODE, input);
     }
 
     public Document createDocument() {

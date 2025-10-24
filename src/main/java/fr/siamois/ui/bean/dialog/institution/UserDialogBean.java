@@ -1,6 +1,7 @@
 package fr.siamois.ui.bean.dialog.institution;
 
 import fr.siamois.domain.models.auth.Person;
+import fr.siamois.domain.models.document.Document;
 import fr.siamois.domain.models.events.LoginEvent;
 import fr.siamois.domain.models.exceptions.auth.*;
 import fr.siamois.domain.models.exceptions.vocabulary.NoConfigForFieldException;
@@ -102,11 +103,6 @@ public class UserDialogBean implements Serializable {
         this.processPerson = processPerson;
         if (shouldRenderRole) {
             conceptCompleteUrl = fieldConfigurationService.getUrlForFieldCode(sessionSettingsBean.getUserInfo(), Person.USER_ROLE_FIELD_CODE);
-            try {
-                parentConcept = fieldConfigurationService.findParentConceptForFieldcode(sessionSettingsBean.getUserInfo(), Person.USER_ROLE_FIELD_CODE);
-            } catch (NoConfigForFieldException e) {
-                MessageUtils.displayNoThesaurusConfiguredMessage(langBean);
-            }
         }
         PrimeFaces.current().ajax().update("newMemberDialog");
 
@@ -271,7 +267,12 @@ public class UserDialogBean implements Serializable {
     }
 
     public List<Concept> completeRole(String input) {
-        return fieldConfigurationService.fetchAutocomplete(sessionSettingsBean.getUserInfo(), parentConcept, input);
+        try {
+            return fieldConfigurationService.fetchAutocomplete(sessionSettingsBean.getUserInfo(), Person.USER_ROLE_FIELD_CODE, input);
+        } catch (NoConfigForFieldException e) {
+            MessageUtils.displayNoThesaurusConfiguredMessage(langBean);
+            return List.of();
+        }
     }
 
 }

@@ -7,6 +7,7 @@ import fr.siamois.domain.models.vocabulary.label.VocabularyLabel;
 import fr.siamois.infrastructure.database.repositories.vocabulary.LocalizedConceptDataRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.label.VocabularyLabelRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,6 +21,7 @@ import java.util.Set;
  * This service provides methods to find, update, and create labels for concepts and vocabularies.
  * It handles the retrieval of labels based on language codes and ensures that default labels are created when necessary.
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class LabelService {
@@ -129,22 +131,27 @@ public class LabelService {
 
     @Transactional(readOnly = true)
     protected List<Concept> findAllConcepts(Concept parentConcept, String langCode) {
-        Set<LocalizedConceptData> result = localizedConceptDataRepository.findAllByParentConceptAndLangCode(parentConcept, langCode);
-        if (result.isEmpty()) {
-            result = localizedConceptDataRepository.findAllByParentConcept(parentConcept);
-        }
+        try {
+            Set<LocalizedConceptData> result = localizedConceptDataRepository.findAllByParentConceptAndLangCode(parentConcept.getId(), langCode);
+            if (result.isEmpty()) {
+                result = localizedConceptDataRepository.findAllByParentConcept(parentConcept);
+            }
 
-        return result
-                .stream()
-                .map(LocalizedConceptData::getConcept)
-                .toList();
+            return result
+                    .stream()
+                    .map(LocalizedConceptData::getConcept)
+                    .toList();
+        } catch (RuntimeException e) {
+            log.error(e.getMessage());
+            return List.of();
+        }
     }
 
     @Transactional(readOnly = true)
     public List<Concept> findMatchingConcepts(Concept parentConcept, String langCode, String input) {
         if (input == null || input.isEmpty()) return findAllConcepts(parentConcept, langCode);
         Set<LocalizedConceptData> result = new HashSet<>();
-        result.addAll(localizedConceptDataRepository.findAllByLangCodeAndParentConceptAndLabelContaining(langCode, parentConcept, input));
+        result.addAll(localizedConceptDataRepository.findAllByLangCodeAndParentConceptAndLabelContaining(langCode, parentConcept.getId(), input));
         result.addAll(localizedConceptDataRepository.findConceptByFieldcodeAndLabelInputWithSimilarity(parentConcept.getId(), langCode, input, SIMILARITY_MIN_SCORE));
 
         if (result.isEmpty()) {

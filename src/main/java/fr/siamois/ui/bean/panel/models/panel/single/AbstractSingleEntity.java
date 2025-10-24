@@ -200,30 +200,31 @@ public abstract class AbstractSingleEntity<T> extends AbstractPanel implements S
             String input
     ) {
 
-        FacesContext context = FacesContext.getCurrentInstance();
-        CustomFieldSelectOneConceptFromChildrenOfConcept dependentField =
-                (CustomFieldSelectOneConceptFromChildrenOfConcept) UIComponent.getCurrentComponent(context).getAttributes().get("field");
-
-        CustomField parentField = dependentField.getParentField();
-        if (parentField == null) {
-            return Collections.emptyList();
-        }
-
-        CustomFieldAnswer answer = formResponse.getAnswers().get(parentField);
-        Concept parentConcept = null;
-
-        if (answer instanceof CustomFieldAnswerSelectOneConceptFromChildrenOfConcept a1) {
-            parentConcept = a1.getValue();
-        } else if (answer instanceof CustomFieldAnswerSelectOneFromFieldCode a2) {
-            parentConcept = a2.getValue();
-        }
-
-        if (parentConcept == null) {
-            return Collections.emptyList();
-        }
-
-        UserInfo userInfo = sessionSettingsBean.getUserInfo();
-        return fieldConfigurationService.fetchAutocomplete(userInfo, parentConcept, input);
+//        FacesContext context = FacesContext.getCurrentInstance();
+//        CustomFieldSelectOneConceptFromChildrenOfConcept dependentField =
+//                (CustomFieldSelectOneConceptFromChildrenOfConcept) UIComponent.getCurrentComponent(context).getAttributes().get("field");
+//
+//        CustomField parentField = dependentField.getParentField();
+//        if (parentField == null) {
+//            return Collections.emptyList();
+//        }
+//
+//        CustomFieldAnswer answer = formResponse.getAnswers().get(parentField);
+//        Concept parentConcept = null;
+//
+//        if (answer instanceof CustomFieldAnswerSelectOneConceptFromChildrenOfConcept a1) {
+//            parentConcept = a1.getValue();
+//        } else if (answer instanceof CustomFieldAnswerSelectOneFromFieldCode a2) {
+//            parentConcept = a2.getValue();
+//        }
+//
+//        if (parentConcept == null) {
+//            return Collections.emptyList();
+//        }
+//
+//        UserInfo userInfo = sessionSettingsBean.getUserInfo();
+//        return fieldConfigurationService.fetchAutocomplete(userInfo, parentConcept, input);
+        return List.of();
     }
 
     public String getUrlForDependentConcept(

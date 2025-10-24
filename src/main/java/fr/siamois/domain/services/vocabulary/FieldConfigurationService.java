@@ -194,19 +194,6 @@ public class FieldConfigurationService {
         }
     }
 
-    /**
-     * Fetches autocomplete suggestions for concepts under a given parent concept based on user input.
-     *
-     * @param info          the user information containing language settings
-     * @param parentConcept the parent concept under which to search for children concepts
-     * @param input         the user input to filter concepts
-     * @return a list of concepts that match the input
-     */
-    @Deprecated(forRemoval = true)
-    public List<Concept> fetchAutocomplete(UserInfo info, Concept parentConcept, String input) {
-        throw new UnsupportedOperationException("This method should be removed");
-    }
-
     public ConceptFieldConfig findConfigurationForFieldCode(UserInfo info, String fieldCode) throws NoConfigForFieldException {
         Optional<ConceptFieldConfig> institutionConfig = conceptFieldConfigRepository.findByFieldCodeForInstitution(info.getInstitution().getId(), fieldCode);
         if (institutionConfig.isEmpty()) {

@@ -53,7 +53,7 @@ public interface LocalizedConceptDataRepository extends CrudRepository<Localized
                     "WHERE lcd.fk_field_parent_concept_id = :parentConceptId " +
                     "AND lcd.lang_code = :langCode"
     )
-    Set<LocalizedConceptData> findAllByParentConceptAndLangCode(Concept parentConcept, String langCode);
+    Set<LocalizedConceptData> findAllByParentConceptAndLangCode(Long parentConceptId, String langCode);
 
     Set<LocalizedConceptData> findAllByParentConcept(Concept parentConcept);
 
@@ -61,10 +61,10 @@ public interface LocalizedConceptDataRepository extends CrudRepository<Localized
             nativeQuery = true,
             value = "SELECT lcd.* FROM localized_concept_data lcd " +
                     "WHERE lcd.lang_code = :langCode " +
-                    "AND lcd.fk_field_parent_concept_id = :#{#parentConcept.id} " +
+                    "AND lcd.fk_field_parent_concept_id = :parentConceptId " +
                     "AND lcd.label ILIKE '%' || :label || '%'"
     )
-    Set<LocalizedConceptData> findAllByLangCodeAndParentConceptAndLabelContaining(String langCode, Concept parentConcept, String label);
+    Set<LocalizedConceptData> findAllByLangCodeAndParentConceptAndLabelContaining(String langCode, Long parentConceptId, String label);
 
     @Query(
             nativeQuery = true,
