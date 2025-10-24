@@ -183,6 +183,17 @@
     }
   }
 
+  .ui-selectonemenu {
+    &.ui-state-hover {
+      border-color: var(--light-color-200);
+    }
+
+    &.ui-state-focus {
+      border-color: var(--light-color-200);
+      box-shadow: 0 0 0 .2em var(--light-color-100);
+    }
+  }
+
   .sia-modified-field {
     border-color: var(--main-color);
   }
