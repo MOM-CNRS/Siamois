@@ -41,6 +41,7 @@ public class ConceptHierarchy {
         id = new ConceptRelationId();
         parent = null;
         child = null;
+        parentFieldContext = null;
     }
 
     public void setChild(Concept child) {
