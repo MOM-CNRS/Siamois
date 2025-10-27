@@ -55,8 +55,7 @@ public class SpatialUnitListPanel extends AbstractListPanel<SpatialUnit>  implem
                 actionUnitService,
                 bookmarkService,
                 fieldService,
-                fieldConfigurationService,
-                SpatialUnit.class);
+                fieldConfigurationService);
     }
 
     @Override

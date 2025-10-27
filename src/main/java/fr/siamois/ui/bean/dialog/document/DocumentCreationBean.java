@@ -23,6 +23,7 @@ import fr.siamois.utils.DocumentUtils;
 import fr.siamois.utils.MessageUtils;
 import jakarta.servlet.ServletContext;
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.primefaces.PrimeFaces;
@@ -44,6 +45,7 @@ import java.util.Map;
 @Getter
 @Setter
 @SessionScoped
+@RequiredArgsConstructor
 public class DocumentCreationBean implements Serializable {
 
     private final SessionSettingsBean sessionSettingsBean;
@@ -64,28 +66,8 @@ public class DocumentCreationBean implements Serializable {
     private transient UploadedFile docFile;
     private String panelIdToUpdate;
 
-    private Map<String, ConceptFieldConfig> fieldConfigMap = new HashMap<>();
-
-    public DocumentCreationBean(SessionSettingsBean sessionSettingsBean,
-                                DocumentService documentService,
-                                FieldConfigurationService fieldConfigurationService,
-                                LangBean langBean,
-                                ServletContext servletContext,
-                                ConceptService conceptService,
-                                ArkService arkService, FieldService fieldService) {
-        this.sessionSettingsBean = sessionSettingsBean;
-        this.documentService = documentService;
-        this.fieldConfigurationService = fieldConfigurationService;
-        this.langBean = langBean;
-        this.servletContext = servletContext;
-        this.conceptService = conceptService;
-        this.arkService = arkService;
-        this.fieldService = fieldService;
-    }
-
     public void init() throws NoConfigForFieldException {
         PrimeFaces.current().ajax().update("newDocumentDiag");
-        prepareConceptConfig();
         reset();
     }
 
@@ -99,18 +81,6 @@ public class DocumentCreationBean implements Serializable {
         docDescription = null;
     }
 
-    private void prepareConceptConfig() throws NoConfigForFieldException {
-        UserInfo info = sessionSettingsBean.getUserInfo();
-        for (String fieldCode : fieldService.findFieldCodesOf(Document.class)) {
-            ConceptFieldConfig config = fieldConfigurationService.findConfigurationForFieldCode(info, fieldCode);
-            try {
-                conceptService.saveAllSubConceptOfIfUpdated(config);
-                fieldConfigMap.put(fieldCode, config);
-            } catch (ErrorProcessingExpansionException e) {
-                log.error("Error while updating sub-concepts of field config {}", fieldCode);
-            }
-        }
-    }
 
     public String getUrlForConcept(Concept concept) {
         return fieldConfigurationService.getUrlOfConcept(concept);
@@ -123,7 +93,7 @@ public class DocumentCreationBean implements Serializable {
         try {
             return fieldConfigurationService.fetchAutocomplete(
                     sessionSettingsBean.getUserInfo(),
-                    fieldConfigMap.get(fieldCode),
+                    fieldCode,
                     input);
         } catch (NoConfigForFieldException e) {
             return List.of();

@@ -171,29 +171,12 @@ public class GenericNewUnitDialogBean<T extends TraceableEntity>
         formResponse = null;
     }
 
-    private void prepareConcepts() {
-        UserInfo userInfo = sessionSettingsBean.getUserInfo();
-        for (String fieldCode : fieldService.findFieldCodesOf(unit.getClass())) {
-            try {
-                ConceptFieldConfig config = fieldConfigurationService.findConfigurationForFieldCode(userInfo, fieldCode);
-                conceptService.saveAllSubConceptOfIfUpdated(config);
-                fieldConfigurations.put(fieldCode, config);
-                spatialUnitFieldBean.getConceptFieldConfigMap().put(fieldCode, config);
-            } catch (NoConfigForFieldException e) {
-                MessageUtils.displayNoThesaurusConfiguredMessage(langBean);
-            } catch (ErrorProcessingExpansionException e) {
-                log.error("Error while processing expansion for field code {}", fieldCode, e);
-            }
-        }
-    }
-
     public void init() throws CannotInitializeNewUnitDialogException {
         reset();
         unit = handler.newEmpty();
         unit.setAuthor(sessionSettingsBean.getAuthenticatedUser());
         unit.setCreatedByInstitution(sessionSettingsBean.getSelectedInstitution());
         handler.initFromContext(this);
-        prepareConcepts();
         initForms(true);
     }
 

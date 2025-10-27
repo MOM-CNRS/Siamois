@@ -75,29 +75,7 @@ public abstract class AbstractSingleEntityPanel<T> extends AbstractSingleEntity<
         return "/panel/singleUnitPanel.xhtml";
     }
 
-    /**
-     * Prepare the configuration entity for the given field code.
-     * This method must call the {@link fr.siamois.domain.services.vocabulary.ConceptService#saveAllSubConceptOfIfUpdated(ConceptFieldConfig)} after updating the configuration.
-     * When the configuration is update, the {@link fr.siamois.domain.services.vocabulary.FieldConfigurationService} associated to the field code must be updated in the {@link #fieldConfigurations} map.
-     * @param fieldCode the field code to prepare the configuration for
-     */
-    protected void prepareConfigForFieldCode(String fieldCode) throws NoConfigForFieldException {
-        ConceptFieldConfig config = fieldConfigurationService.findConfigurationForFieldCode(sessionSettingsBean.getUserInfo(), fieldCode);
-        try {
-            conceptService.saveAllSubConceptOfIfUpdated(config);
-            fieldConfigs.put(fieldCode, config);
-        } catch (Exception e) {
-            log.error(e.getMessage(), e);
-        }
-    }
-
     public abstract void init();
-
-    protected void initFieldCodes() throws NoConfigForFieldException {
-        for (String fieldCode : fieldService.findFieldCodesOf(backupClone.getClass())) {
-            prepareConfigForFieldCode(fieldCode);
-        }
-    }
 
     public abstract List<Person> authorsAvailable();
 

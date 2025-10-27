@@ -57,8 +57,6 @@ public abstract class AbstractListPanel<T> extends AbstractPanel  implements Ser
     protected BaseLazyDataModel<T> lazyDataModel;
     protected long totalNumberOfUnits;
     protected String errorMessage;
-    protected Map<String, ConceptFieldConfig> fieldConfigs = new HashMap<>();
-    protected Class<T> entityClass;
 
     protected AbstractListPanel(BookmarkService bookmarkService) {
         this.bookmarkService = bookmarkService;
@@ -72,22 +70,6 @@ public abstract class AbstractListPanel<T> extends AbstractPanel  implements Ser
         sessionSettingsBean = null;
         fieldService = null;
         fieldConfigurationService = null;
-    }
-
-    /**
-     * Prepare the configuration entity for the given field code.
-     * This method must call the {@link fr.siamois.domain.services.vocabulary.ConceptService#saveAllSubConceptOfIfUpdated(ConceptFieldConfig)} after updating the configuration.
-     * When the configuration is update, the {@link fr.siamois.domain.services.vocabulary.FieldConfigurationService} associated to the field code must be updated in the {@link #fieldConfigurations} map.
-     * @param fieldCode the field code to prepare the configuration for
-     */
-    protected void prepareConfigForFieldCode(String fieldCode) throws NoConfigForFieldException {
-        ConceptFieldConfig config = fieldConfigurationService.findConfigurationForFieldCode(sessionSettingsBean.getUserInfo(), fieldCode);
-        try {
-            conceptService.saveAllSubConceptOfIfUpdated(config);
-            fieldConfigurations.put(fieldCode, config);
-        } catch (ErrorProcessingExpansionException e) {
-            log.error(e.getMessage(), e);
-        }
     }
 
     public void onToggle(ColumnToggleEvent e) {
@@ -112,8 +94,7 @@ public abstract class AbstractListPanel<T> extends AbstractPanel  implements Ser
             ActionUnitService actionUnitService,
             BookmarkService bookmarkService,
             FieldService fieldService,
-            FieldConfigurationService fieldConfigurationService,
-            Class<T> entityClass) {
+            FieldConfigurationService fieldConfigurationService) {
 
         super(titleKey, icon, cssClass);
 
@@ -127,7 +108,6 @@ public abstract class AbstractListPanel<T> extends AbstractPanel  implements Ser
         this.bookmarkService = bookmarkService;
         this.fieldService = fieldService;
         this.fieldConfigurationService = fieldConfigurationService;
-        this.entityClass = entityClass;
     }
 
     protected abstract long countUnitsByInstitution();
@@ -174,14 +154,6 @@ public abstract class AbstractListPanel<T> extends AbstractPanel  implements Ser
         totalNumberOfUnits = countUnitsByInstitution();
         lazyDataModel = createLazyDataModel();
         configureLazyDataModel(lazyDataModel);
-
-        for (String fieldCode : fieldService.findFieldCodesOf(entityClass)) {
-            try {
-                prepareConfigForFieldCode(fieldCode);
-            } catch (NoConfigForFieldException e) {
-                setErrorMessage(langBean.msg("panel.list.fieldconfig.error.missing", fieldCode));
-            }
-        }
 
     }
 

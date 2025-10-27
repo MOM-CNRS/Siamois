@@ -86,8 +86,7 @@ public class SpecimenListPanel extends AbstractListPanel<Specimen>  implements S
                 actionUnitService,
                 bookmarkService,
                 fieldService,
-                fieldConfigurationService,
-                Specimen.class);
+                fieldConfigurationService);
         this.specimenService = specimenService;
         this.navBean = navBean;
     }

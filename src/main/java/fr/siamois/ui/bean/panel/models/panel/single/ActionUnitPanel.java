@@ -216,13 +216,6 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnit> imple
             this.errorMessage = "Failed to load action unit: " + e.getMessage();
             redirectBean.redirectTo(HttpStatus.INTERNAL_SERVER_ERROR);
         }
-
-        try {
-            initFieldCodes();
-            prepareConfigForFieldCode(ActionCode.TYPE_FIELD_CODE);
-        } catch (NoConfigForFieldException e) {
-            MessageUtils.displayNoThesaurusConfiguredMessage(langBean);
-        }
     }
 
     @Override
@@ -325,7 +318,7 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnit> imple
     public List<Concept> completeActionCodeType(String input) {
 
         try {
-            return fieldConfigurationService.fetchAutocomplete(sessionSettingsBean.getUserInfo(), fieldConfigs.get(ActionCode.TYPE_FIELD_CODE), input);
+            return fieldConfigurationService.fetchAutocomplete(sessionSettingsBean.getUserInfo(), ActionCode.TYPE_FIELD_CODE, input);
         } catch (NoConfigForFieldException e) {
             log.error(e.getMessage(), e);
             return List.of();

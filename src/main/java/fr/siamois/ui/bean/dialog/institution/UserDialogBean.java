@@ -300,7 +300,7 @@ public class UserDialogBean implements Serializable {
 
     public List<Concept> completeRole(String input) {
         try {
-            return fieldConfigurationService.fetchAutocomplete(sessionSettingsBean.getUserInfo(), fieldConfigMap.get(Person.USER_ROLE_FIELD_CODE), input);
+            return fieldConfigurationService.fetchAutocomplete(sessionSettingsBean.getUserInfo(), Person.USER_ROLE_FIELD_CODE, input);
         } catch (NoConfigForFieldException e) {
             MessageUtils.displayNoThesaurusConfiguredMessage(langBean);
             return List.of();

@@ -324,11 +324,6 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
 
         tabs.add(specimenTab);
 
-        try {
-            initFieldCodes();
-        } catch (NoConfigForFieldException e) {
-            MessageUtils.displayNoThesaurusConfiguredMessage(langBean);
-        }
     }
 
     @Override

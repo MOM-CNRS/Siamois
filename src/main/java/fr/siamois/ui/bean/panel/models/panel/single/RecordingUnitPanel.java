@@ -292,13 +292,6 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
             redirectBean.redirectTo(HttpStatus.INTERNAL_SERVER_ERROR);
         }
 
-        try {
-            initFieldCodes();
-        } catch (NoConfigForFieldException e) {
-            MessageUtils.displayNoThesaurusConfiguredMessage(langBean);
-        }
-
-
     }
 
     @Override

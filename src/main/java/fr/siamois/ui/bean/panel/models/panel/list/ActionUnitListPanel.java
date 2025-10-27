@@ -37,7 +37,7 @@ import java.util.List;
 @Setter
 @Component
 @Scope(BeanDefinition.SCOPE_PROTOTYPE)
-public class ActionUnitListPanel extends AbstractListPanel<ActionUnit>   implements Serializable {
+public class ActionUnitListPanel extends AbstractListPanel<ActionUnit> implements Serializable {
 
     private final FieldConfigurationService fieldConfigurationService;
     private final BookmarkService bookmarkService;
@@ -45,23 +45,6 @@ public class ActionUnitListPanel extends AbstractListPanel<ActionUnit>   impleme
     // locals
     private String actionUnitListErrorMessage;
 
-    /**
-     * Prepare the configuration entity for the given field code.
-     * This method must call the {@link ConceptService#saveAllSubConceptOfIfUpdated(ConceptFieldConfig)} after updating the configuration.
-     * When the configuration is update, the {@link FieldConfigurationService} associated to the field code must be updated in the {@link #fieldConfigurations} map.
-     *
-     * @param fieldCode the field code to prepare the configuration for
-     */
-    @Override
-    protected void prepareConfigForFieldCode(String fieldCode) throws NoConfigForFieldException {
-        ConceptFieldConfig config = fieldConfigurationService.findConfigurationForFieldCode(sessionSettingsBean.getUserInfo(), fieldCode);
-        try {
-            conceptService.saveAllSubConceptOfIfUpdated(config);
-            fieldConfigurations.put(fieldCode, config);
-        } catch (ErrorProcessingExpansionException e) {
-            log.error(e.getMessage(), e);
-        }
-    }
 
     @Override
     protected long countUnitsByInstitution() {
@@ -90,7 +73,7 @@ public class ActionUnitListPanel extends AbstractListPanel<ActionUnit>   impleme
                 "bi bi-arrow-down-square",
                 "siamois-panel action-unit-panel list-panel",
                 spatialUnitService, personService, conceptService, sessionSettingsBean, langBean, labelService,
-                actionUnitService, bookmarkService, fieldService, fieldConfigurationService, ActionUnit.class);
+                actionUnitService, bookmarkService, fieldService, fieldConfigurationService);
         this.fieldConfigurationService = fieldConfigurationService;
         this.bookmarkService = bookmarkService;
         this.fieldService = fieldService;

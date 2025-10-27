@@ -63,7 +63,6 @@ public class SpatialUnitFieldBean implements Serializable {
     private List<SpatialUnit> refSpatialUnits = new ArrayList<>();
     private List<String> labels;
     private List<Concept> concepts;
-    private Map<String, ConceptFieldConfig> conceptFieldConfigMap = new HashMap<>();
 
     // Fields
     private Concept selectedConcept = null;
@@ -93,22 +92,6 @@ public class SpatialUnitFieldBean implements Serializable {
         selectedConcept = null;
         fName = "";
         fParentsSpatialUnits = new ArrayList<>();
-        loadConceptConfig();
-    }
-
-    private void loadConceptConfig() {
-        for (String fieldCode : fieldService.findFieldCodesOf(SpatialUnit.class)) {
-            try {
-                ConceptFieldConfig config = fieldConfigurationService.findConfigurationForFieldCode(sessionSettingsBean.getUserInfo(), fieldCode);
-                conceptService.saveAllSubConceptOfIfUpdated(config);
-                conceptFieldConfigMap.put(fieldCode, config);
-            } catch (NoConfigForFieldException e) {
-                log.warn("No configuration found for field code {} in SpatialUnit", fieldCode);
-                MessageUtils.displayNoThesaurusConfiguredMessage(langBean);
-            } catch (ErrorProcessingExpansionException e) {
-                log.error("Error while updating sub-concepts of field config {}", fieldCode);
-            }
-        }
     }
 
     public void init(List<SpatialUnit> parents, List<SpatialUnit> children) {
@@ -121,7 +104,6 @@ public class SpatialUnitFieldBean implements Serializable {
         fName = "";
         fParentsSpatialUnits = parents;
         fChildrenSpatialUnits = children;
-        loadConceptConfig();
     }
 
     public String getUrlForFieldCode(String fieldCode) {
@@ -135,14 +117,11 @@ public class SpatialUnitFieldBean implements Serializable {
      * @return the list of concepts that match the input to display in the autocomplete
      */
     public List<Concept> completeWithFieldCode(String input) {
-        if (conceptFieldConfigMap.isEmpty()) {
-            loadConceptConfig();
-        }
         String fieldCode = "Undefined";
         try {
             FacesContext context = FacesContext.getCurrentInstance();
             fieldCode = (String) UIComponent.getCurrentComponent(context).getAttributes().get("fieldCode");
-            return fieldConfigurationService.fetchAutocomplete(sessionSettingsBean.getUserInfo(), conceptFieldConfigMap.get(fieldCode), input);
+            return fieldConfigurationService.fetchAutocomplete(sessionSettingsBean.getUserInfo(), fieldCode, input);
         }
         catch (NoConfigForFieldException e) {
             displayErrorMessage(langBean, "common.error.thesaurus.noConfigForField",fieldCode);

@@ -93,8 +93,7 @@ public class RecordingUnitListPanel extends AbstractListPanel<RecordingUnit>  im
                 actionUnitService,
                 bookmarkService,
                 fieldService,
-                fieldConfigurationService,
-                RecordingUnit.class);
+                fieldConfigurationService);
         this.recordingUnitService = recordingUnitService;
         this.navBean = navBean;
         this.fieldService = fieldService;

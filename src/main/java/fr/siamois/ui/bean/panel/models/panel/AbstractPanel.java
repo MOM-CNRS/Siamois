@@ -33,8 +33,6 @@ public abstract class AbstractPanel implements Serializable {
     protected Boolean isBreadcrumbVisible = true;
     protected Boolean collapsed = false;
 
-    protected Map<String, ConceptFieldConfig> fieldConfigurations = new HashMap<>();
-
     protected AbstractPanel() {
     }
 

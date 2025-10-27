@@ -86,8 +86,11 @@ public class FieldConfigurationService {
                 fieldConfig.setInstitution(institution);
                 fieldConfig.setFieldCode(fieldCode);
                 fieldConfig.setConcept(concept);
-                conceptFieldConfigRepository.save(fieldConfig);
+                fieldConfig = conceptFieldConfigRepository.save(fieldConfig);
+            } else {
+                fieldConfig =  optConfig.get();
             }
+            conceptService.saveAllSubConceptOfIfUpdated(fieldConfig);
         }
 
         return Optional.empty();
@@ -141,8 +144,11 @@ public class FieldConfigurationService {
                 fieldConfig.setUser(info.getUser());
                 fieldConfig.setFieldCode(fieldCode);
                 fieldConfig.setConcept(concept);
-                conceptFieldConfigRepository.save(fieldConfig);
+                fieldConfig = conceptFieldConfigRepository.save(fieldConfig);
+            } else {
+                fieldConfig =  optConfig.get();
             }
+            conceptService.saveAllSubConceptOfIfUpdated(fieldConfig);
         }
 
         return Optional.empty();
@@ -211,9 +217,8 @@ public class FieldConfigurationService {
         return institutionConfig.get();
     }
 
-    public List<Concept> fetchAutocomplete(UserInfo info, ConceptFieldConfig config, String input) throws NoConfigForFieldException {
-        if (config == null)
-            return Collections.emptyList();
+    public List<Concept> fetchAutocomplete(UserInfo info, String fieldCode, String input) throws NoConfigForFieldException {
+        ConceptFieldConfig config = findConfigurationForFieldCode(info, fieldCode);
         return labelService.findMatchingConcepts(config.getConcept(), info.getLang(), input, LIMIT_RESULTS);
     }
 

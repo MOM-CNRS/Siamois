@@ -344,12 +344,6 @@ public class SpecimenPanel extends AbstractSingleEntityPanel<Specimen>  implemen
             redirectBean.redirectTo(HttpStatus.INTERNAL_SERVER_ERROR);
         }
 
-        try {
-            initFieldCodes();
-        } catch (NoConfigForFieldException e) {
-            MessageUtils.displayNoThesaurusConfiguredMessage(langBean);
-        }
-
     }
 
     @Override
