@@ -25,10 +25,16 @@ public class ConceptHierarchy {
     @JoinColumn(name = "fk_child_concept_id")
     private Concept child;
 
-    public ConceptHierarchy(Concept parent, Concept child) {
-        id = new ConceptRelationId(parent.getId(), child.getId());
+    @MapsId("parentFieldContextId")
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "fk_parent_field_context_id")
+    private Concept parentFieldContext;
+
+    public ConceptHierarchy(Concept parent, Concept child, Concept parentFieldContext) {
+        id = new ConceptRelationId(parent.getId(), child.getId(), parentFieldContext.getId());
         this.parent = parent;
         this.child = child;
+        this.parentFieldContext = parentFieldContext;
     }
 
     public ConceptHierarchy() {
@@ -47,6 +53,11 @@ public class ConceptHierarchy {
         id.parentId = parent.getId();
     }
 
+    public void setParentFieldContext(Concept parentFieldContext) {
+        this.parentFieldContext = parentFieldContext;
+        id.parentFieldContextId = parentFieldContext.getId();
+    }
+
     @AllArgsConstructor
     @NoArgsConstructor
     @Embeddable
@@ -54,6 +65,7 @@ public class ConceptHierarchy {
     public static class ConceptRelationId {
         public long parentId;
         public long childId;
+        public long parentFieldContextId;
     }
 
 }

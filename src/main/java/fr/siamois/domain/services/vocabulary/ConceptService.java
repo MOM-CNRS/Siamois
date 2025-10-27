@@ -164,13 +164,24 @@ public class ConceptService {
                 concepts.put(entry.getKey(), saveOrGetConceptFromFullDTO(vocabulary, entry.getValue(), config.getConcept()));
             }
 
+            Concept parentSavedConcept = concepts.get(parentConcept.getIdentifier()[0].getValue());
+
+            Map<Concept, Concept> childAndParentMap = new HashMap<>();
             for (Map.Entry<String, FullInfoDTO> entry : branchDTO.getData().entrySet()) {
                 if (Objects.nonNull(entry.getValue().getNarrower())) {
                     for (PurlInfoDTO narrower : entry.getValue().getNarrower()) {
-                        Concept parent = concepts.get(entry.getKey());
-                        Concept child =  concepts.get(narrower.getValue());
-                        ConceptHierarchy relation = new ConceptHierarchy(parent,child);
-                        conceptRelationRepository.save(relation);
+                        if (narrowerIsNotParentConcept(narrower, parentConcept)) {
+                            Concept parent = concepts.get(entry.getKey());
+                            Concept child =  concepts.get(narrower.getValue());
+
+                            if (!childAndParentMap.containsKey(child)) {
+                                ConceptHierarchy relation = new ConceptHierarchy(parent,child, parentSavedConcept);
+                                conceptRelationRepository.save(relation);
+                                childAndParentMap.put(child, parent);
+                            } else {
+                                log.debug("Concept {} already has a parent concept, skipping relation creation for {}.", child.getExternalId(), parent.getExternalId());
+                            }
+                        }
                     }
                 }
             }
@@ -179,6 +190,10 @@ public class ConceptService {
             throw new ErrorProcessingExpansionException("Error processing expansion for concept field config id " + config.getId());
         }
 
+    }
+
+    private static boolean narrowerIsNotParentConcept(PurlInfoDTO narrower, FullInfoDTO parentConcept) {
+        return !narrower.getValue().equalsIgnoreCase(parentConcept.getIdentifier()[0].getValue());
     }
 
     /**
