@@ -57,12 +57,12 @@ public interface ActionUnitRepository extends CrudRepository<ActionUnit, Long>, 
                     "    p.lastname as p_lastname, " +
                     "    rl.label_value AS c_label " +
                     "FROM action_unit au " +
-                    "LEFT JOIN person p ON au.fk_author_id = p.person_id " +
+                    "LEFT JOIN person p ON au.fk_created_by = p.person_id " +
                     "LEFT JOIN concept c ON au.fk_type = c.concept_id " +
                     "LEFT JOIN ranked_labels rl ON c.concept_id = rl.fk_concept_id AND rl.rank = 1 " +
                     "WHERE au.fk_institution_id = :institutionId " +
                     "  AND (CAST(:name AS TEXT) IS NULL OR LOWER(au.name) LIKE LOWER(CONCAT('%', CAST(:name AS TEXT), '%'))) " +
-                    "  AND (CAST(:personIds AS BIGINT[]) IS NULL OR au.fk_author_id IN (:personIds)) " +
+                    "  AND (CAST(:personIds AS BIGINT[]) IS NULL OR au.fk_created_by IN (:personIds)) " +
                     "  AND (CAST(:categoryIds AS BIGINT[]) IS NULL OR au.fk_type IN (:categoryIds)) " +
                     "  AND (CAST(:global AS TEXT) IS NULL OR LOWER(au.name) LIKE LOWER(CONCAT('%', CAST(:global AS TEXT), '%'))  " +
                     "                                     OR LOWER(rl.label_value) LIKE LOWER(CONCAT('%', CAST(:global AS TEXT), '%'))" +
@@ -87,12 +87,12 @@ public interface ActionUnitRepository extends CrudRepository<ActionUnit, Long>, 
                     "SELECT " +
                     "    count(au) " +
                     "FROM action_unit au " +
-                    "LEFT JOIN person p ON au.fk_author_id = p.person_id " +
+                    "LEFT JOIN person p ON au.fk_created_by = p.person_id " +
                     "LEFT JOIN concept c ON au.fk_type = c.concept_id " +
                     "LEFT JOIN ranked_labels rl ON c.concept_id = rl.fk_concept_id AND rl.rank = 1 " +
                     "WHERE au.fk_institution_id = :institutionId " +
                     "  AND (CAST(:name AS TEXT) IS NULL OR LOWER(au.name) LIKE LOWER(CONCAT('%', CAST(:name AS TEXT), '%'))) " +
-                    "  AND (CAST(:personIds AS BIGINT[]) IS NULL OR au.fk_author_id IN (:personIds)) " +
+                    "  AND (CAST(:personIds AS BIGINT[]) IS NULL OR au.fk_created_by IN (:personIds)) " +
                     "  AND (CAST(:categoryIds AS BIGINT[]) IS NULL OR au.fk_type IN (:categoryIds)) " +
                     "  AND (CAST(:global AS TEXT) IS NULL OR LOWER(au.name) LIKE LOWER(CONCAT('%', CAST(:global AS TEXT), '%'))  " +
                     "                                     OR LOWER(rl.label_value) LIKE LOWER(CONCAT('%', CAST(:global AS TEXT), '%'))" +
@@ -132,13 +132,13 @@ public interface ActionUnitRepository extends CrudRepository<ActionUnit, Long>, 
                     "    rl.label_value AS c_label " +
                     "FROM action_unit au " +
                     "LEFT JOIN action_unit_spatial_context ausc ON au.action_unit_id = ausc.fk_action_unit_id " +
-                    "LEFT JOIN person p ON au.fk_author_id = p.person_id " +
+                    "LEFT JOIN person p ON au.fk_created_by = p.person_id " +
                     "LEFT JOIN concept c ON au.fk_type = c.concept_id " +
                     "LEFT JOIN ranked_labels rl ON c.concept_id = rl.fk_concept_id AND rl.rank = 1 " +
                     "WHERE au.fk_institution_id = :institutionId " +
                     "  AND ausc.fk_spatial_unit_id = :spatialUnitId " +
                     "  AND (CAST(:name AS TEXT) IS NULL OR LOWER(au.name) LIKE LOWER(CONCAT('%', CAST(:name AS TEXT), '%'))) " +
-                    "  AND (CAST(:personIds AS BIGINT[]) IS NULL OR au.fk_author_id IN (:personIds)) " +
+                    "  AND (CAST(:personIds AS BIGINT[]) IS NULL OR au.fk_created_by IN (:personIds)) " +
                     "  AND (CAST(:categoryIds AS BIGINT[]) IS NULL OR au.fk_type IN (:categoryIds)) " +
                     "  AND (CAST(:global AS TEXT) IS NULL OR LOWER(au.name) LIKE LOWER(CONCAT('%', CAST(:global AS TEXT), '%'))  " +
                     "                                     OR LOWER(rl.label_value) LIKE LOWER(CONCAT('%', CAST(:global AS TEXT), '%'))" +
@@ -164,13 +164,13 @@ public interface ActionUnitRepository extends CrudRepository<ActionUnit, Long>, 
                     "    count(au) " +
                     "FROM action_unit au " +
                     "LEFT JOIN action_unit_spatial_context ausc ON au.action_unit_id = ausc.fk_action_unit_id " +
-                    "LEFT JOIN person p ON au.fk_author_id = p.person_id " +
+                    "LEFT JOIN person p ON au.fk_created_by = p.person_id " +
                     "LEFT JOIN concept c ON au.fk_type = c.concept_id " +
                     "LEFT JOIN ranked_labels rl ON c.concept_id = rl.fk_concept_id AND rl.rank = 1 " +
                     "WHERE au.fk_institution_id = :institutionId " +
                     "  AND ausc.fk_spatial_unit_id = :spatialUnitId " +
                     "  AND (CAST(:name AS TEXT) IS NULL OR LOWER(au.name) LIKE LOWER(CONCAT('%', CAST(:name AS TEXT), '%'))) " +
-                    "  AND (CAST(:personIds AS BIGINT[]) IS NULL OR au.fk_author_id IN (:personIds)) " +
+                    "  AND (CAST(:personIds AS BIGINT[]) IS NULL OR au.fk_created_by IN (:personIds)) " +
                     "  AND (CAST(:categoryIds AS BIGINT[]) IS NULL OR au.fk_type IN (:categoryIds)) " +
                     "  AND (CAST(:global AS TEXT) IS NULL OR LOWER(au.name) LIKE LOWER(CONCAT('%', CAST(:global AS TEXT), '%'))  " +
                     "                                     OR LOWER(rl.label_value) LIKE LOWER(CONCAT('%', CAST(:global AS TEXT), '%'))" +
