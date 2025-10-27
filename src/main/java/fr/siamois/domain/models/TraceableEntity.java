@@ -30,12 +30,6 @@ public abstract class TraceableEntity implements Serializable {
     @JsonIgnore
     protected Person createdBy;
 
-    @NotNull
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "fk_author_id", nullable = false)
-    @JsonIgnore
-    protected Person author;
-
     @ColumnDefault("NOW()")
     @Column(name = "creation_time")
     protected OffsetDateTime creationTime = OffsetDateTime.now(ZoneId.systemDefault());

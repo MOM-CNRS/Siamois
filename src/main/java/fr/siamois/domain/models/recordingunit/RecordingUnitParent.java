@@ -1,8 +1,10 @@
 package fr.siamois.domain.models.recordingunit;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import fr.siamois.domain.models.TraceableEntity;
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.ark.Ark;
+import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.form.customformresponse.CustomFormResponse;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
@@ -14,6 +16,8 @@ import org.hibernate.envers.NotAudited;
 
 import java.time.OffsetDateTime;
 import java.util.Objects;
+
+import static org.hibernate.envers.RelationTargetAuditMode.NOT_AUDITED;
 
 
 /**
@@ -30,6 +34,13 @@ public abstract class RecordingUnitParent extends TraceableEntity {
     @OneToOne(fetch = FetchType.EAGER, cascade = {CascadeType.MERGE, CascadeType.PERSIST})
     @JoinColumn(name = "fk_ark_id")
     protected Ark ark;
+
+    @NotNull
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "fk_author_id", nullable = false)
+    @JsonIgnore
+    @Audited(targetAuditMode = NOT_AUDITED)
+    protected Person author;
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "fk_type")

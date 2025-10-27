@@ -120,9 +120,9 @@ public class DefaultFormsDatasetInitializer implements DatabaseInitializer {
             new CustomFieldSeederSpec(
                     CustomFieldSelectOnePerson.class,
                     true,
-                    "recordingunit.field.spatialUnit",
+                    "recordingunit.field.author",
                     new ConceptSeeder.ConceptKey(DEFAULT_VOCABULARY_ID, "4286195"),
-                    "spatialUnit",
+                    "author",
                     null,
                     null,
                     null
@@ -151,6 +151,12 @@ public class DefaultFormsDatasetInitializer implements DatabaseInitializer {
                                                             false,
                                                             true,
                                                             fields.get(5),
+                                                            UI_G_12_UI_MD_6_UI_LG_3
+                                                    ),
+                                                    new CustomColDTO(
+                                                            false,
+                                                            true,
+                                                            fields.get(6),
                                                             UI_G_12_UI_MD_6_UI_LG_3
                                                     )
                                             )
@@ -200,6 +206,12 @@ public class DefaultFormsDatasetInitializer implements DatabaseInitializer {
                                                             false,
                                                             true,
                                                             fields.get(5),
+                                                            UI_G_12_UI_MD_6_UI_LG_3
+                                                    ),
+                                                    new CustomColDTO(
+                                                            false,
+                                                            true,
+                                                            fields.get(6),
                                                             UI_G_12_UI_MD_6_UI_LG_3
                                                     )
                                             )
@@ -253,6 +265,12 @@ public class DefaultFormsDatasetInitializer implements DatabaseInitializer {
                                                             false,
                                                             true,
                                                             fields.get(5),
+                                                            UI_G_12_UI_MD_6_UI_LG_3
+                                                    ),
+                                                    new CustomColDTO(
+                                                            false,
+                                                            true,
+                                                            fields.get(6),
                                                             UI_G_12_UI_MD_6_UI_LG_3
                                                     )
                                             )
