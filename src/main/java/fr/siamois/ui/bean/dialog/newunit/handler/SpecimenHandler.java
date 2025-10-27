@@ -67,7 +67,7 @@ public class SpecimenHandler implements INewUnitHandler<Specimen> {
         }
         unit.setRecordingUnit(ru);
         unit.setCreatedByInstitution(sessionSettingsBean.getSelectedInstitution());
-        unit.setAuthor(sessionSettingsBean.getAuthenticatedUser());
+        unit.setCreatedBy(sessionSettingsBean.getAuthenticatedUser());
         unit.setAuthors(List.of(sessionSettingsBean.getAuthenticatedUser()));
         unit.setCollectors(List.of(sessionSettingsBean.getAuthenticatedUser()));
         unit.setCollectionDate(OffsetDateTime.now());

@@ -153,7 +153,7 @@ public class RecordingUnitService implements ArkEntityService {
             managedRecordingUnit.setAltitude(recordingUnit.getAltitude());
             managedRecordingUnit.setArk(recordingUnit.getArk());
             managedRecordingUnit.setDescription(recordingUnit.getDescription());
-            managedRecordingUnit.setAuthor(recordingUnit.getAuthor());
+            managedRecordingUnit.setCreatedBy(recordingUnit.getCreatedBy());
             managedRecordingUnit.setEndDate(recordingUnit.getEndDate());
             managedRecordingUnit.setStartDate(recordingUnit.getStartDate());
             managedRecordingUnit.setSize(recordingUnit.getSize());

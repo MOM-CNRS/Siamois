@@ -1,11 +1,7 @@
 package fr.siamois.infrastructure.database.initializer;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import fr.siamois.domain.models.exceptions.database.DatabaseDataInitException;
-import fr.siamois.domain.models.form.customfield.CustomFieldInteger;
-import fr.siamois.domain.models.form.customfield.CustomFieldSelectOneActionUnit;
-import fr.siamois.domain.models.form.customfield.CustomFieldSelectOneFromFieldCode;
-import fr.siamois.domain.models.form.customfield.CustomFieldSelectOneSpatialUnit;
+import fr.siamois.domain.models.form.customfield.*;
 import fr.siamois.domain.models.form.formscope.FormScope;
 import fr.siamois.domain.models.vocabulary.Vocabulary;
 import fr.siamois.infrastructure.database.initializer.seeder.ConceptSeeder;
@@ -13,7 +9,6 @@ import fr.siamois.infrastructure.database.initializer.seeder.ThesaurusSeeder;
 import fr.siamois.infrastructure.database.initializer.seeder.customfield.CustomFieldSeeder;
 import fr.siamois.infrastructure.database.initializer.seeder.customfield.CustomFieldSeederSpec;
 import fr.siamois.infrastructure.database.initializer.seeder.customform.*;
-import jakarta.persistence.Transient;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Service;
@@ -56,7 +51,8 @@ public class DefaultFormsDatasetInitializer implements DatabaseInitializer {
             new ConceptSeeder.ConceptSpec(DEFAULT_VOCABULARY_ID, "4287628", "Unité incluante", "fr"),
             new ConceptSeeder.ConceptSpec(DEFAULT_VOCABULARY_ID, "4287640", "Identifiant de l'unité d'enregistrement", "fr"),
             new ConceptSeeder.ConceptSpec(DEFAULT_VOCABULARY_ID, "4286244", "Unité d'action d'appartenance d'une unité d'enregistrement", "fr"),
-            new ConceptSeeder.ConceptSpec(DEFAULT_VOCABULARY_ID, "4286245", "Unité spatiale d'appartenance d'une unité d'enregistrement", "fr")
+            new ConceptSeeder.ConceptSpec(DEFAULT_VOCABULARY_ID, "4286245", "Unité spatiale d'appartenance d'une unité d'enregistrement", "fr"),
+            new ConceptSeeder.ConceptSpec(DEFAULT_VOCABULARY_ID, "4286195", "Auteur scientifique/technique", "fr")
     );
 
     // Default Siamois field
@@ -116,6 +112,16 @@ public class DefaultFormsDatasetInitializer implements DatabaseInitializer {
                     true,
                     "recordingunit.field.spatialUnit",
                     new ConceptSeeder.ConceptKey(DEFAULT_VOCABULARY_ID, "4286245"),
+                    "spatialUnit",
+                    null,
+                    null,
+                    null
+            ),
+            new CustomFieldSeederSpec(
+                    CustomFieldSelectOnePerson.class,
+                    true,
+                    "recordingunit.field.spatialUnit",
+                    new ConceptSeeder.ConceptKey(DEFAULT_VOCABULARY_ID, "4286195"),
                     "spatialUnit",
                     null,
                     null,

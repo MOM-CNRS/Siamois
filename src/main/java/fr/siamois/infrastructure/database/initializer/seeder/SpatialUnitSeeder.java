@@ -84,6 +84,7 @@ public class SpatialUnitSeeder {
             SpatialUnit toGetOrCreate = new SpatialUnit();
             toGetOrCreate.setName(s.name);
             toGetOrCreate.setCreatedByInstitution(institution);
+            toGetOrCreate.setCreatedBy(author);
             toGetOrCreate.setAuthor(author);
             toGetOrCreate.setCategory(type);
             toGetOrCreate.setChildren(children);

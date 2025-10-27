@@ -202,7 +202,7 @@ public class SpatialUnitService implements ArkEntityService {
         SpatialUnit spatialUnit = new SpatialUnit();
         spatialUnit.setName(name);
         spatialUnit.setCreatedByInstitution(institutionService.findById(info.getInstitution().getId()));
-        spatialUnit.setAuthor(personService.findById(info.getUser().getId()));
+        spatialUnit.setCreatedBy(personService.findById(info.getUser().getId()));
         spatialUnit.setCategory(conceptService.saveOrGetConcept(type));
         spatialUnit.setCreationTime(OffsetDateTime.now(ZoneId.systemDefault()));
 
@@ -269,7 +269,7 @@ public class SpatialUnitService implements ArkEntityService {
             managedSpatialUnit.setName(spatialUnit.getName());
             managedSpatialUnit.setValidated(spatialUnit.getValidated());
             managedSpatialUnit.setArk(spatialUnit.getArk());
-            managedSpatialUnit.setAuthor(spatialUnit.getAuthor());
+            managedSpatialUnit.setCreatedBy(spatialUnit.getCreatedBy());
             managedSpatialUnit.setGeom(spatialUnit.getGeom());
             managedSpatialUnit.setCreatedByInstitution(spatialUnit.getCreatedByInstitution());
             // Add concept

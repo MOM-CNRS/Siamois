@@ -82,10 +82,11 @@ public class ActionUnitSeeder {
             toGetOrCreate.setCreatedByInstitution(institution);
             toGetOrCreate.setIdentifier(s.identifier);
             toGetOrCreate.setName(s.name);
-            toGetOrCreate.setAuthor(author);
+            toGetOrCreate.setCreatedBy(author);
             toGetOrCreate.setPrimaryActionCode(actionCode);
             toGetOrCreate.setFullIdentifier(s.fullIdentifier);
             toGetOrCreate.setType(type);
+            toGetOrCreate.setAuthor(author);
             toGetOrCreate.setSpatialContext(spatialContext);
             toGetOrCreate.setBeginDate(s.beginDate);
             toGetOrCreate.setEndDate(s.endDate);

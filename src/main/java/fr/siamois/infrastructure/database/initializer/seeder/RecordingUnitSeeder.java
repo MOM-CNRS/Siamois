@@ -109,7 +109,7 @@ public class RecordingUnitSeeder {
             RecordingUnit toGetOrCreate = new RecordingUnit();
             toGetOrCreate.setCreatedByInstitution(institution);
             toGetOrCreate.setIdentifier(s.identifier);
-            toGetOrCreate.setAuthor(author);
+            toGetOrCreate.setCreatedBy(author);
             toGetOrCreate.setFullIdentifier(s.fullIdentifier);
             toGetOrCreate.setType(type);
             toGetOrCreate.setSecondaryType(secondaryType);
@@ -117,6 +117,7 @@ public class RecordingUnitSeeder {
             toGetOrCreate.setStartDate(s.beginDate);
             toGetOrCreate.setAuthors(authors);
             toGetOrCreate.setExcavators(excavators);
+            toGetOrCreate.setAuthor(author);
             toGetOrCreate.setEndDate(s.endDate);
             toGetOrCreate.setCreationTime(s.creationTime);
             toGetOrCreate.setEndDate(s.endDate);

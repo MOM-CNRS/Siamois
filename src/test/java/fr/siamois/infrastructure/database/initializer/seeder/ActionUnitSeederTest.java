@@ -105,7 +105,7 @@ class ActionUnitSeederTest {
         assertThat(saved.getName()).isEqualTo("Name 1");
         assertThat(saved.getPrimaryActionCode()).isEqualTo(code);
         assertThat(saved.getType()).isEqualTo(concept);
-        assertThat(saved.getAuthor()).isEqualTo(author);
+        assertThat(saved.getCreatedBy()).isEqualTo(author);
         assertThat(saved.getCreatedByInstitution()).isEqualTo(institution);
         assertThat(saved.getBeginDate()).isEqualTo(begin);
         assertThat(saved.getEndDate()).isEqualTo(end);
