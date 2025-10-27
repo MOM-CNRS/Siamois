@@ -6,9 +6,12 @@ import fr.siamois.domain.models.document.Document;
 import fr.siamois.domain.models.exceptions.vocabulary.NoConfigForFieldException;
 import fr.siamois.domain.models.history.InfoRevisionEntity;
 import fr.siamois.domain.models.history.RevisionWithInfo;
+import fr.siamois.domain.models.settings.ConceptFieldConfig;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.models.vocabulary.Vocabulary;
 import fr.siamois.domain.services.history.HistoryAuditService;
+import fr.siamois.domain.services.vocabulary.ConceptService;
+import fr.siamois.domain.services.vocabulary.FieldService;
 import fr.siamois.ui.bean.dialog.document.DocumentCreationBean;
 import fr.siamois.ui.bean.panel.models.panel.single.tab.*;
 import io.micrometer.common.lang.Nullable;
@@ -26,7 +29,9 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @EqualsAndHashCode(callSuper = true, onlyExplicitlyIncluded = true)
 @Getter
@@ -38,6 +43,8 @@ public abstract class AbstractSingleEntityPanel<T> extends AbstractSingleEntity<
     // Deps
     protected final transient DocumentCreationBean documentCreationBean;
     protected final transient HistoryAuditService historyAuditService;
+    protected final transient FieldService fieldService;
+    protected final transient ConceptService conceptService;
 
     //--------------- Locals
 
@@ -48,6 +55,7 @@ public abstract class AbstractSingleEntityPanel<T> extends AbstractSingleEntity<
     protected transient RevisionWithInfo<T> revisionToDisplay = null;
     protected Long idunit;  // ID of the spatial unit
     protected transient List<Document> documents;
+    protected transient Map<String, ConceptFieldConfig> fieldConfigs = new HashMap<>();
 
     // lazy model for children of entity
     protected long totalChildrenCount = 0;
@@ -67,7 +75,29 @@ public abstract class AbstractSingleEntityPanel<T> extends AbstractSingleEntity<
         return "/panel/singleUnitPanel.xhtml";
     }
 
+    /**
+     * Prepare the configuration entity for the given field code.
+     * This method must call the {@link fr.siamois.domain.services.vocabulary.ConceptService#saveAllSubConceptOfIfUpdated(ConceptFieldConfig)} after updating the configuration.
+     * When the configuration is update, the {@link fr.siamois.domain.services.vocabulary.FieldConfigurationService} associated to the field code must be updated in the {@link #fieldConfigurations} map.
+     * @param fieldCode the field code to prepare the configuration for
+     */
+    protected void prepareConfigForFieldCode(String fieldCode) throws NoConfigForFieldException {
+        ConceptFieldConfig config = fieldConfigurationService.findConfigurationForFieldCode(sessionSettingsBean.getUserInfo(), fieldCode);
+        try {
+            conceptService.saveAllSubConceptOfIfUpdated(config);
+            fieldConfigs.put(fieldCode, config);
+        } catch (Exception e) {
+            log.error(e.getMessage(), e);
+        }
+    }
+
     public abstract void init();
+
+    protected void initFieldCodes() throws NoConfigForFieldException {
+        for (String fieldCode : fieldService.findFieldCodesOf(backupClone.getClass())) {
+            prepareConfigForFieldCode(fieldCode);
+        }
+    }
 
     public abstract List<Person> authorsAvailable();
 
@@ -85,10 +115,12 @@ public abstract class AbstractSingleEntityPanel<T> extends AbstractSingleEntity<
                                         String icon, String panelClass,
                                         DocumentCreationBean documentCreationBean,
                                         AbstractSingleEntity.Deps deps,
-                                        HistoryAuditService historyAuditService) {
+                                        HistoryAuditService historyAuditService, FieldService fieldService, ConceptService conceptService) {
         super(titleCodeOrTitle, icon, panelClass, deps);
         this.documentCreationBean = documentCreationBean;
         this.historyAuditService = historyAuditService;
+        this.fieldService = fieldService;
+        this.conceptService = conceptService;
 
         // Overview tab
         tabs = new ArrayList<>();

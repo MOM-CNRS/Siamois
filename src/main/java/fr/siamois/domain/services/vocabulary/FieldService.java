@@ -11,6 +11,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -53,6 +54,22 @@ public class FieldService {
      */
     public List<String> searchAllFieldCodes() {
         return new ArrayList<>(FIELD_CODES);
+    }
+
+    public <T> List<String> findFieldCodesOf(Class<T> entityClass) {
+        List<String> fieldCodes = new ArrayList<>();
+        Field[] fields = entityClass.getDeclaredFields();
+        for (Field field : fields) {
+            if (field.isAnnotationPresent(FieldCode.class) && isValidFieldCode(field)) {
+                try {
+                    String fieldCode = (String) field.get(null);
+                    fieldCodes.add(fieldCode.toUpperCase());
+                } catch (IllegalAccessException e) {
+                    log.error("Error while searching for field code {} in class {}", field.getName(), entityClass.getSimpleName());
+                }
+            }
+        }
+        return fieldCodes;
     }
 
     private static boolean isValidFieldCode(Field field) {

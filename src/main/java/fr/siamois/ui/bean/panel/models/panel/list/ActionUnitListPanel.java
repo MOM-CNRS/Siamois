@@ -2,10 +2,16 @@ package fr.siamois.ui.bean.panel.models.panel.list;
 
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.auth.Person;
+import fr.siamois.domain.models.exceptions.ErrorProcessingExpansionException;
+import fr.siamois.domain.models.exceptions.vocabulary.NoConfigForFieldException;
+import fr.siamois.domain.models.settings.ConceptFieldConfig;
+import fr.siamois.domain.services.BookmarkService;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.person.PersonService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
+import fr.siamois.domain.services.vocabulary.FieldConfigurationService;
+import fr.siamois.domain.services.vocabulary.FieldService;
 import fr.siamois.domain.services.vocabulary.LabelService;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
@@ -15,6 +21,7 @@ import fr.siamois.ui.lazydatamodel.BaseLazyDataModel;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.context.annotation.Scope;
@@ -24,6 +31,7 @@ import java.io.Serializable;
 import java.util.List;
 
 
+@Slf4j
 @EqualsAndHashCode(callSuper = true, onlyExplicitlyIncluded = true)
 @Getter
 @Setter
@@ -31,8 +39,29 @@ import java.util.List;
 @Scope(BeanDefinition.SCOPE_PROTOTYPE)
 public class ActionUnitListPanel extends AbstractListPanel<ActionUnit>   implements Serializable {
 
+    private final FieldConfigurationService fieldConfigurationService;
+    private final BookmarkService bookmarkService;
+    private final FieldService fieldService;
     // locals
     private String actionUnitListErrorMessage;
+
+    /**
+     * Prepare the configuration entity for the given field code.
+     * This method must call the {@link ConceptService#saveAllSubConceptOfIfUpdated(ConceptFieldConfig)} after updating the configuration.
+     * When the configuration is update, the {@link FieldConfigurationService} associated to the field code must be updated in the {@link #fieldConfigurations} map.
+     *
+     * @param fieldCode the field code to prepare the configuration for
+     */
+    @Override
+    protected void prepareConfigForFieldCode(String fieldCode) throws NoConfigForFieldException {
+        ConceptFieldConfig config = fieldConfigurationService.findConfigurationForFieldCode(sessionSettingsBean.getUserInfo(), fieldCode);
+        try {
+            conceptService.saveAllSubConceptOfIfUpdated(config);
+            fieldConfigurations.put(fieldCode, config);
+        } catch (ErrorProcessingExpansionException e) {
+            log.error(e.getMessage(), e);
+        }
+    }
 
     @Override
     protected long countUnitsByInstitution() {
@@ -55,16 +84,16 @@ public class ActionUnitListPanel extends AbstractListPanel<ActionUnit>   impleme
                                SessionSettingsBean sessionSettingsBean,
                                LangBean langBean,
                                LabelService labelService,
-                               ActionUnitService actionUnitService) {
-
-
-
+                               ActionUnitService actionUnitService,
+                               FieldConfigurationService fieldConfigurationService, BookmarkService bookmarkService, FieldService fieldService) {
         super("panel.title.allactionunit",
                 "bi bi-arrow-down-square",
                 "siamois-panel action-unit-panel list-panel",
                 spatialUnitService, personService, conceptService, sessionSettingsBean, langBean, labelService,
-                actionUnitService, null);
-
+                actionUnitService, bookmarkService, fieldService, fieldConfigurationService, ActionUnit.class);
+        this.fieldConfigurationService = fieldConfigurationService;
+        this.bookmarkService = bookmarkService;
+        this.fieldService = fieldService;
     }
 
     @Override

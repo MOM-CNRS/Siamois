@@ -11,6 +11,8 @@ import fr.siamois.domain.services.person.PersonService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
+import fr.siamois.domain.services.vocabulary.FieldConfigurationService;
+import fr.siamois.domain.services.vocabulary.FieldService;
 import fr.siamois.domain.services.vocabulary.LabelService;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.NavBean;
@@ -43,6 +45,8 @@ public class RecordingUnitListPanel extends AbstractListPanel<RecordingUnit>  im
 
     private final transient RecordingUnitService recordingUnitService;
     private final transient NavBean navBean;
+    private final FieldService fieldService;
+    private final FieldConfigurationService fieldConfigurationService;
 
     // locals
     private String actionUnitListErrorMessage;
@@ -73,7 +77,7 @@ public class RecordingUnitListPanel extends AbstractListPanel<RecordingUnit>  im
                                   LangBean langBean,
                                   LabelService labelService,
                                   ActionUnitService actionUnitService,
-                                  RecordingUnitService recordingUnitService, BookmarkService bookmarkService, NavBean navBean) {
+                                  RecordingUnitService recordingUnitService, BookmarkService bookmarkService, NavBean navBean, FieldService fieldService, FieldConfigurationService fieldConfigurationService) {
 
 
 
@@ -87,9 +91,14 @@ public class RecordingUnitListPanel extends AbstractListPanel<RecordingUnit>  im
                 langBean,
                 labelService,
                 actionUnitService,
-                bookmarkService);
+                bookmarkService,
+                fieldService,
+                fieldConfigurationService,
+                RecordingUnit.class);
         this.recordingUnitService = recordingUnitService;
         this.navBean = navBean;
+        this.fieldService = fieldService;
+        this.fieldConfigurationService = fieldConfigurationService;
     }
 
     @Override

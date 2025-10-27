@@ -9,6 +9,7 @@ import fr.siamois.infrastructure.database.repositories.vocabulary.LocalizedConce
 import fr.siamois.infrastructure.database.repositories.vocabulary.label.VocabularyLabelRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Limit;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,11 +25,9 @@ import java.util.*;
 @RequiredArgsConstructor
 public class LabelService {
 
+    public static final double MIN_SIMILARITY_SCORE = 0.6;
     private final VocabularyLabelRepository vocabularyLabelRepository;
     private final LocalizedConceptDataRepository localizedConceptDataRepository;
-    private final ConceptRepository conceptRepository;
-
-    private static final double SIMILARITY_MIN_SCORE = 0.4;
 
     /**
      * Finds the label for a given concept in the specified language.
@@ -129,50 +128,16 @@ public class LabelService {
     }
 
     @Transactional(readOnly = true)
-    protected List<Concept> findAllConcepts(Concept parentConcept, String langCode) {
+    protected List<Concept> findAllConcepts(Concept parentConcept, int limit) {
         try {
-            Map<Concept, List<LocalizedConceptData>> result = new HashMap<>();
-            Long parentId = parentConcept.getId();
-            fillData(result, localizedConceptDataRepository.findAllByParentConceptAndLangCode(parentId, langCode));
-            if (result.isEmpty()) {
-                fillData(result, localizedConceptDataRepository.findAllByParentConcept(parentConcept));
-            }
-
-            return oneLangForEachConcept(result, langCode);
+            return localizedConceptDataRepository.findAllByParentConcept(parentConcept, Limit.of(limit))
+                    .stream()
+                    .map(LocalizedConceptData::getConcept)
+                    .toList();
         } catch (RuntimeException e) {
             log.error(e.getMessage());
             return List.of();
         }
-    }
-
-    @Transactional
-    protected void fillData(Map<Concept, List<LocalizedConceptData>> sortedMap, Set<LocalizedConceptData> dataSet) {
-        for (LocalizedConceptData data : dataSet) {
-            Concept savedConcept = conceptRepository.findByExternalId(data.getConcept().getExternalId()).orElseThrow(() -> new IllegalStateException("Concept should be in the database not found"));
-            sortedMap.putIfAbsent(savedConcept, new ArrayList<>());
-            sortedMap.get(data.getConcept()).add(data);
-        }
-    }
-
-    private List<Concept> oneLangForEachConcept(Map<Concept, List<LocalizedConceptData>> map, String preferredLang) {
-        Set<Concept> concepts = new HashSet<>();
-        for (Map.Entry<Concept, List<LocalizedConceptData>> entry : map.entrySet()) {
-            List<LocalizedConceptData> datas = entry.getValue();
-            int currentIndex = 0;
-            while (currentIndex < datas.size() && !isPreferredLang(preferredLang, datas, currentIndex)) currentIndex++;
-            if (currentIndex < datas.size()) {
-                concepts.add(datas.get(currentIndex).getConcept());
-            } else {
-                concepts.add(datas.get(0).getConcept());
-            }
-        }
-        return concepts
-                .stream()
-                .toList();
-    }
-
-    private static boolean isPreferredLang(String preferredLang, List<LocalizedConceptData> datas, int currentIndex) {
-        return datas.get(currentIndex).getLangCode().equals(preferredLang);
     }
 
     /**
@@ -181,26 +146,37 @@ public class LabelService {
      * Search is done by exact match and by similarity.
      * If no results are found, it falls back to searching without language restriction.
      * The results contain one concept per language, prioritizing the preferred language.
+     *
      * @param parentConcept The concept of the generic field
-     * @param langCode   The language code
-     * @param input      The input label to search for
+     * @param langCode      The language code
+     * @param input         The input label to search for
      * @return List of unique concepts matching the input
      */
     @Transactional(readOnly = true)
-    public List<Concept> findMatchingConcepts(Concept parentConcept, String langCode, String input) {
-        if (input == null || input.isEmpty())
-            return findAllConcepts(parentConcept, langCode);
+    public List<Concept> findMatchingConcepts(Concept parentConcept, String langCode, String input, int limit) {
+        Set<Concept> results = new HashSet<>();
+        if (input == null || input.isEmpty()) {
+            results.addAll(findAllConcepts(parentConcept, limit));
+        } else {
+            results.addAll(localizedConceptDataRepository
+                    .findConceptByFieldCodeAndInputLimit(parentConcept.getId(), langCode, input, MIN_SIMILARITY_SCORE, limit)
+                    .stream()
+                    .map(LocalizedConceptData::getConcept)
+                    .toList());
 
-        Map<Concept, List<LocalizedConceptData>> result = new HashMap<>();
-
-        fillData(result, localizedConceptDataRepository.findAllByLangCodeAndParentConceptAndLabelContaining(langCode, parentConcept.getId(), input));
-        fillData(result, localizedConceptDataRepository.findConceptByFieldcodeAndLabelInputWithSimilarity(parentConcept.getId(), langCode, input, SIMILARITY_MIN_SCORE));
-
-        if (result.isEmpty()) {
-            fillData(result, localizedConceptDataRepository.findConceptByFieldcodeAndLabelInputWithSimilarityNoLang(parentConcept.getId(), input, SIMILARITY_MIN_SCORE));
+            Set<LocalizedConceptData> exactMatchOtherLang = localizedConceptDataRepository.findLocalizedConceptDataByParentConceptAndLabelContaining(parentConcept, input);
+            for (LocalizedConceptData lcd : exactMatchOtherLang) {
+                if (results.size() < limit) {
+                    results.add(lcd.getConcept());
+                } else {
+                    break;
+                }
+            }
         }
 
-        return oneLangForEachConcept(result, langCode);
+        return results
+                .stream()
+                .toList();
     }
 
 }

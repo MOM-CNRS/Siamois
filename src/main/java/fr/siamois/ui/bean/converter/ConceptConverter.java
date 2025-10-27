@@ -18,11 +18,16 @@ public class ConceptConverter implements Converter<Concept> {
 
     @Override
     public Concept getAsObject(FacesContext facesContext, UIComponent uiComponent, String s) {
-        return conceptService.findByExternalId(s).orElse(null);
+        try {
+            return conceptService.findById(Long.parseLong(s)).orElse(null);
+        } catch (NumberFormatException e) {
+            log.error("Error converting String to Concept: {}", s, e);
+            return null;
+        }
     }
 
     @Override
     public String getAsString(FacesContext facesContext, UIComponent uiComponent, Concept concept) {
-        return concept.getExternalId();
+        return concept.getId().toString();
     }
 }

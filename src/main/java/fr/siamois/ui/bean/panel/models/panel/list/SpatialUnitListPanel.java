@@ -4,10 +4,13 @@ import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.models.vocabulary.LocalizedConceptData;
+import fr.siamois.domain.services.BookmarkService;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.person.PersonService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
+import fr.siamois.domain.services.vocabulary.FieldConfigurationService;
+import fr.siamois.domain.services.vocabulary.FieldService;
 import fr.siamois.domain.services.vocabulary.LabelService;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
@@ -39,7 +42,7 @@ public class SpatialUnitListPanel extends AbstractListPanel<SpatialUnit>  implem
                                 SessionSettingsBean sessionSettingsBean,
                                 LangBean langBean,
                                 LabelService labelService,
-                                ActionUnitService actionUnitService) {
+                                ActionUnitService actionUnitService, BookmarkService bookmarkService, FieldService fieldService, FieldConfigurationService fieldConfigurationService) {
         super("panel.title.allspatialunit",
                 "bi bi-geo-alt",
                 "siamois-panel spatial-unit-panel list-panel",
@@ -50,7 +53,10 @@ public class SpatialUnitListPanel extends AbstractListPanel<SpatialUnit>  implem
                 langBean,
                 labelService,
                 actionUnitService,
-                null);
+                bookmarkService,
+                fieldService,
+                fieldConfigurationService,
+                SpatialUnit.class);
     }
 
     @Override

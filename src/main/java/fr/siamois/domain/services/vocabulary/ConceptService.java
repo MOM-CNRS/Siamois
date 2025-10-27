@@ -142,6 +142,7 @@ public class ConceptService {
     }
 
     public void saveAllSubConceptOfIfUpdated(ConceptFieldConfig config) throws ErrorProcessingExpansionException {
+        log.trace("API call to fetch down expansion for concept FieldCode : {}", config.getFieldCode());
         try {
             Concept concept = config.getConcept();
             Vocabulary vocabulary = concept.getVocabulary();
@@ -187,7 +188,8 @@ public class ConceptService {
         return conceptRepository.findAllById(conceptIds);
     }
 
-    public Optional<Concept> findByExternalId(String conceptExternalId) {
-        return conceptRepository.findByExternalId(conceptExternalId);
+
+    public Optional<Concept> findById(Long id) {
+        return conceptRepository.findById(id);
     }
 }

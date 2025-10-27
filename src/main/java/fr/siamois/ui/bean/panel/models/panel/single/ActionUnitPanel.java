@@ -8,10 +8,13 @@ import fr.siamois.domain.models.exceptions.actionunit.ActionUnitNotFoundExceptio
 import fr.siamois.domain.models.exceptions.actionunit.FailedActionUnitSaveException;
 import fr.siamois.domain.models.exceptions.vocabulary.NoConfigForFieldException;
 import fr.siamois.domain.models.history.RevisionWithInfo;
+import fr.siamois.domain.models.settings.ConceptFieldConfig;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.history.HistoryAuditService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.specimen.SpecimenService;
+import fr.siamois.domain.services.vocabulary.ConceptService;
+import fr.siamois.domain.services.vocabulary.FieldConfigurationService;
 import fr.siamois.domain.services.vocabulary.FieldService;
 import fr.siamois.domain.services.vocabulary.LabelService;
 import fr.siamois.ui.bean.LangBean;
@@ -56,7 +59,6 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnit> imple
 
     private final LangBean langBean;
 
-    private final transient FieldService fieldService;
     private final RedirectBean redirectBean;
     private final transient LabelService labelService;
     private final TeamMembersBean teamMembersBean;
@@ -98,12 +100,11 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnit> imple
                            LabelService labelService, TeamMembersBean teamMembersBean,
                            DocumentCreationBean documentCreationBean,
                            RecordingUnitService recordingUnitService,
-                           AbstractSingleEntity.Deps deps, SpecimenService specimenService, HistoryAuditService historyAuditService) {
+                           AbstractSingleEntity.Deps deps, SpecimenService specimenService, HistoryAuditService historyAuditService, ConceptService conceptService) {
         super("Unité d'action", "bi bi-arrow-down-square", "siamois-panel action-unit-panel single-panel",
-                documentCreationBean, deps, historyAuditService);
+                documentCreationBean, deps, historyAuditService, fieldService, conceptService);
 
         this.langBean = langBean;
-        this.fieldService = fieldService;
         this.redirectBean = redirectBean;
         this.labelService = labelService;
         this.teamMembersBean = teamMembersBean;
@@ -216,7 +217,12 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnit> imple
             redirectBean.redirectTo(HttpStatus.INTERNAL_SERVER_ERROR);
         }
 
-
+        try {
+            initFieldCodes();
+            prepareConfigForFieldCode(ActionCode.TYPE_FIELD_CODE);
+        } catch (NoConfigForFieldException e) {
+            MessageUtils.displayNoThesaurusConfiguredMessage(langBean);
+        }
     }
 
     @Override
@@ -319,7 +325,7 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnit> imple
     public List<Concept> completeActionCodeType(String input) {
 
         try {
-            return fieldConfigurationService.fetchAutocomplete(sessionSettingsBean.getUserInfo(), ActionCode.TYPE_FIELD_CODE, input);
+            return fieldConfigurationService.fetchAutocomplete(sessionSettingsBean.getUserInfo(), fieldConfigs.get(ActionCode.TYPE_FIELD_CODE), input);
         } catch (NoConfigForFieldException e) {
             log.error(e.getMessage(), e);
             return List.of();

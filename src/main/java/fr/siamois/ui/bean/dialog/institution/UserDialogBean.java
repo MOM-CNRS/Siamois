@@ -2,12 +2,15 @@ package fr.siamois.ui.bean.dialog.institution;
 
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.events.LoginEvent;
+import fr.siamois.domain.models.exceptions.ErrorProcessingExpansionException;
 import fr.siamois.domain.models.exceptions.auth.*;
 import fr.siamois.domain.models.exceptions.vocabulary.NoConfigForFieldException;
 import fr.siamois.domain.models.institution.Institution;
+import fr.siamois.domain.models.settings.ConceptFieldConfig;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.person.PersonService;
+import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.domain.services.vocabulary.FieldConfigurationService;
 import fr.siamois.ui.bean.LabelBean;
 import fr.siamois.ui.bean.LangBean;
@@ -15,6 +18,7 @@ import fr.siamois.ui.bean.SessionSettingsBean;
 import fr.siamois.ui.email.EmailManager;
 import fr.siamois.utils.MessageUtils;
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -26,15 +30,19 @@ import org.springframework.stereotype.Component;
 import javax.faces.bean.SessionScoped;
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static fr.siamois.utils.MessageUtils.displayErrorMessage;
+import static fr.siamois.utils.MessageUtils.displayNoThesaurusConfiguredMessage;
 
 @Slf4j
 @Component
 @SessionScoped
 @Getter
 @Setter
+@RequiredArgsConstructor
 public class UserDialogBean implements Serializable {
 
     // Injections
@@ -45,6 +53,7 @@ public class UserDialogBean implements Serializable {
     private final transient FieldConfigurationService fieldConfigurationService;
     private final SessionSettingsBean sessionSettingsBean;
     private final LabelBean labelBean;
+    private final ConceptService conceptService;
 
     // Data storage
     private Institution institution;
@@ -54,6 +63,7 @@ public class UserDialogBean implements Serializable {
     private List<Person> alreadyExistingPersons = new ArrayList<>();
     private String conceptCompleteUrl;
     private Concept parentConcept;
+    private Map<String, ConceptFieldConfig> fieldConfigMap = new HashMap<>();
 
     private boolean shouldRenderRoleField = false;
 
@@ -72,18 +82,39 @@ public class UserDialogBean implements Serializable {
     private String password;
     private String confirmPassword;
 
-    public UserDialogBean(EmailManager emailManager, PersonService personService, InstitutionService institutionService, LangBean langBean, FieldConfigurationService fieldConfigurationService, SessionSettingsBean sessionSettingsBean, LabelBean labelBean) {
-        this.emailManager = emailManager;
-        this.personService = personService;
-        this.institutionService = institutionService;
-        this.langBean = langBean;
-        this.fieldConfigurationService = fieldConfigurationService;
-        this.sessionSettingsBean = sessionSettingsBean;
-        this.labelBean = labelBean;
+    private void initConceptConfig() {
+        for (String fieldCode : List.of(Person.USER_ROLE_FIELD_CODE)) {
+            try {
+                ConceptFieldConfig conceptFieldConfig = fieldConfigurationService.findConfigurationForFieldCode(sessionSettingsBean.getUserInfo(), fieldCode);
+                conceptService.saveAllSubConceptOfIfUpdated(conceptFieldConfig);
+                fieldConfigMap.put(fieldCode, conceptFieldConfig);
+            } catch (NoConfigForFieldException e) {
+                log.warn("No configuration found for field code: {}", fieldCode);
+                displayNoThesaurusConfiguredMessage(langBean);
+            } catch (ErrorProcessingExpansionException e) {
+                log.error("Error processing expansion for field code: {}", fieldCode);
+            }
+        }
+    }
+
+    private void prepareConceptConfig() {
+        for (String fieldCode : List.of(Person.USER_ROLE_FIELD_CODE)) {
+            ConceptFieldConfig config = null;
+            try {
+                config = fieldConfigurationService.findConfigurationForFieldCode(sessionSettingsBean.getUserInfo(), fieldCode);
+                conceptService.saveAllSubConceptOfIfUpdated(config);
+                fieldConfigMap.put(fieldCode, config);
+            } catch (NoConfigForFieldException e) {
+                displayNoThesaurusConfiguredMessage(langBean);
+            } catch (ErrorProcessingExpansionException e) {
+                log.error("Error while updating sub-concepts of field config {}", fieldCode);
+            }
+        }
     }
 
     public void init(String title, String buttonLabel, Institution institution, ProcessPerson processPerson) {
         reset();
+        initConceptConfig();
         this.title = title;
         this.buttonLabel = buttonLabel;
         this.institution = institution;
@@ -95,6 +126,7 @@ public class UserDialogBean implements Serializable {
 
     public void init(String title, String buttonLabel, Institution institution, boolean shouldRenderRole, ProcessPerson processPerson) {
         reset();
+        initConceptConfig();
         this.title = title;
         this.buttonLabel = buttonLabel;
         this.institution = institution;
@@ -102,6 +134,7 @@ public class UserDialogBean implements Serializable {
         this.processPerson = processPerson;
         if (shouldRenderRole) {
             conceptCompleteUrl = fieldConfigurationService.getUrlForFieldCode(sessionSettingsBean.getUserInfo(), Person.USER_ROLE_FIELD_CODE);
+            prepareConceptConfig();
         }
         PrimeFaces.current().ajax().update("newMemberDialog");
 
@@ -267,7 +300,7 @@ public class UserDialogBean implements Serializable {
 
     public List<Concept> completeRole(String input) {
         try {
-            return fieldConfigurationService.fetchAutocomplete(sessionSettingsBean.getUserInfo(), Person.USER_ROLE_FIELD_CODE, input);
+            return fieldConfigurationService.fetchAutocomplete(sessionSettingsBean.getUserInfo(), fieldConfigMap.get(Person.USER_ROLE_FIELD_CODE), input);
         } catch (NoConfigForFieldException e) {
             MessageUtils.displayNoThesaurusConfiguredMessage(langBean);
             return List.of();

@@ -3,6 +3,7 @@ package fr.siamois.ui.bean.panel.models.panel.single;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.document.Document;
 import fr.siamois.domain.models.exceptions.recordingunit.FailedRecordingUnitSaveException;
+import fr.siamois.domain.models.exceptions.vocabulary.NoConfigForFieldException;
 import fr.siamois.domain.models.history.RevisionWithInfo;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
@@ -13,6 +14,8 @@ import fr.siamois.domain.services.person.PersonService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.specimen.SpecimenService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
+import fr.siamois.domain.services.vocabulary.FieldConfigurationService;
+import fr.siamois.domain.services.vocabulary.FieldService;
 import fr.siamois.domain.services.vocabulary.LabelService;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
@@ -66,7 +69,6 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
     private final transient SessionSettingsBean sessionSettings;
     private final transient SpatialUnitHelperService spatialUnitHelperService;
     private final transient CustomFieldService customFieldService;
-    private final transient ConceptService conceptService;
     private final transient LabelService labelService;
     private final transient LangBean langBean;
     private final transient PersonService personService;
@@ -102,16 +104,15 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
                              DocumentCreationBean documentCreationBean, CustomFieldService customFieldService,
                              ConceptService conceptService,
                              LabelService labelService, LangBean langBean, PersonService personService,
-                             AbstractSingleEntity.Deps deps, SpecimenService specimenService, HistoryAuditService historyAuditService) {
+                             AbstractSingleEntity.Deps deps, SpecimenService specimenService, HistoryAuditService historyAuditService, FieldService fieldService) {
 
         super("common.entity.spatialUnit", "bi bi-geo-alt", "siamois-panel spatial-unit-panel single-panel",
-                documentCreationBean, deps, historyAuditService);
+                documentCreationBean, deps, historyAuditService, fieldService, conceptService);
         this.recordingUnitService = recordingUnitService;
         this.sessionSettings = sessionSettings;
         this.spatialUnitHelperService = spatialUnitHelperService;
         this.customFieldService = customFieldService;
         this.labelService = labelService;
-        this.conceptService = conceptService;
         this.langBean = langBean;
         this.personService = personService;
         this.specimenService = specimenService;
@@ -323,6 +324,11 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
 
         tabs.add(specimenTab);
 
+        try {
+            initFieldCodes();
+        } catch (NoConfigForFieldException e) {
+            MessageUtils.displayNoThesaurusConfiguredMessage(langBean);
+        }
     }
 
     @Override

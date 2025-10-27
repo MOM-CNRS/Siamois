@@ -21,6 +21,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -33,6 +34,7 @@ import java.util.Optional;
 public class FieldConfigurationService {
 
     private static final IllegalStateException FIELD_CODE_NOT_FOUND = new IllegalStateException("Field code not found");
+    public static final int LIMIT_RESULTS = 30;
     private final ConceptApi conceptApi;
     private final FieldService fieldService;
     private final FieldRepository fieldRepository;
@@ -84,11 +86,8 @@ public class FieldConfigurationService {
                 fieldConfig.setInstitution(institution);
                 fieldConfig.setFieldCode(fieldCode);
                 fieldConfig.setConcept(concept);
-                fieldConfig = conceptFieldConfigRepository.save(fieldConfig);
-            } else {
-                fieldConfig = optConfig.get();
+                conceptFieldConfigRepository.save(fieldConfig);
             }
-            conceptService.saveAllSubConceptOfIfUpdated(fieldConfig);
         }
 
         return Optional.empty();
@@ -142,11 +141,8 @@ public class FieldConfigurationService {
                 fieldConfig.setUser(info.getUser());
                 fieldConfig.setFieldCode(fieldCode);
                 fieldConfig.setConcept(concept);
-                fieldConfig = conceptFieldConfigRepository.save(fieldConfig);
-            } else {
-                fieldConfig = optConfig.get();
+                conceptFieldConfigRepository.save(fieldConfig);
             }
-            conceptService.saveAllSubConceptOfIfUpdated(fieldConfig);
         }
 
         return Optional.empty();
@@ -215,15 +211,10 @@ public class FieldConfigurationService {
         return institutionConfig.get();
     }
 
-    public List<Concept> fetchAutocomplete(UserInfo info, String fieldCode, String input) throws NoConfigForFieldException {
-        try {
-            ConceptFieldConfig config = findConfigurationForFieldCode(info, fieldCode);
-            conceptService.saveAllSubConceptOfIfUpdated(config);
-            return labelService.findMatchingConcepts(config.getConcept(), info.getLang(), input);
-        } catch (ErrorProcessingExpansionException e) {
-            log.error(e.getMessage());
-            return List.of();
-        }
+    public List<Concept> fetchAutocomplete(UserInfo info, ConceptFieldConfig config, String input) throws NoConfigForFieldException {
+        if (config == null)
+            return Collections.emptyList();
+        return labelService.findMatchingConcepts(config.getConcept(), info.getLang(), input, LIMIT_RESULTS);
     }
 
 }

@@ -4,6 +4,7 @@ import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.document.Document;
 import fr.siamois.domain.models.exceptions.actionunit.ActionUnitNotFoundException;
 import fr.siamois.domain.models.exceptions.recordingunit.FailedRecordingUnitSaveException;
+import fr.siamois.domain.models.exceptions.vocabulary.NoConfigForFieldException;
 import fr.siamois.domain.models.form.customfield.CustomFieldDateTime;
 import fr.siamois.domain.models.form.customfield.CustomFieldSelectMultiplePerson;
 import fr.siamois.domain.models.form.customfield.CustomFieldSelectOneFromFieldCode;
@@ -14,6 +15,7 @@ import fr.siamois.domain.models.form.customform.CustomFormPanel;
 import fr.siamois.domain.models.form.customform.CustomRow;
 import fr.siamois.domain.models.history.RevisionWithInfo;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
+import fr.siamois.domain.models.settings.ConceptFieldConfig;
 import fr.siamois.domain.models.specimen.Specimen;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.history.HistoryAuditService;
@@ -21,6 +23,8 @@ import fr.siamois.domain.services.person.PersonService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.specimen.SpecimenService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
+import fr.siamois.domain.services.vocabulary.FieldConfigurationService;
+import fr.siamois.domain.services.vocabulary.FieldService;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.RedirectBean;
 import fr.siamois.ui.bean.dialog.document.DocumentCreationBean;
@@ -58,7 +62,6 @@ public class SpecimenPanel extends AbstractSingleEntityPanel<Specimen>  implemen
     protected final transient PersonService personService;
     private final transient RedirectBean redirectBean;
     private final transient SpecimenService specimenService;
-    protected final transient ConceptService conceptService;
 
     @Override
     protected boolean documentExistsInUnitByHash(Specimen unit, String hash) {
@@ -169,21 +172,23 @@ public class SpecimenPanel extends AbstractSingleEntityPanel<Specimen>  implemen
 
     protected SpecimenPanel(LangBean langBean,
                             RecordingUnitService recordingUnitService,
-                            PersonService personService, SpecimenService specimenService, ConceptService conceptService,
+                            PersonService personService,
+                            SpecimenService specimenService,
+                            ConceptService conceptService,
                             DocumentCreationBean documentCreationBean,
                             RedirectBean redirectBean,
                             AbstractSingleEntity.Deps deps,
-                            HistoryAuditService historyAuditService) {
+                            HistoryAuditService historyAuditService,
+                            FieldService fieldService) {
 
         super("common.entity.specimen",
                 "bi bi-box2",
                 "siamois-panel specimen-panel single-panel",
-                documentCreationBean, deps, historyAuditService);
+                documentCreationBean, deps, historyAuditService, fieldService, conceptService);
         this.langBean = langBean;
         this.recordingUnitService = recordingUnitService;
         this.personService = personService;
         this.specimenService = specimenService;
-        this.conceptService = conceptService;
         this.redirectBean = redirectBean;
     }
 
@@ -339,6 +344,11 @@ public class SpecimenPanel extends AbstractSingleEntityPanel<Specimen>  implemen
             redirectBean.redirectTo(HttpStatus.INTERNAL_SERVER_ERROR);
         }
 
+        try {
+            initFieldCodes();
+        } catch (NoConfigForFieldException e) {
+            MessageUtils.displayNoThesaurusConfiguredMessage(langBean);
+        }
 
     }
 

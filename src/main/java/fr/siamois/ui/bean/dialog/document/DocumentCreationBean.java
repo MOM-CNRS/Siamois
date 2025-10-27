@@ -5,14 +5,17 @@ import fr.siamois.domain.models.ark.Ark;
 import fr.siamois.domain.models.document.Document;
 import fr.siamois.domain.models.document.DocumentParent;
 import fr.siamois.domain.models.events.LoginEvent;
+import fr.siamois.domain.models.exceptions.ErrorProcessingExpansionException;
 import fr.siamois.domain.models.exceptions.InvalidFileSizeException;
 import fr.siamois.domain.models.exceptions.InvalidFileTypeException;
 import fr.siamois.domain.models.exceptions.vocabulary.NoConfigForFieldException;
+import fr.siamois.domain.models.settings.ConceptFieldConfig;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.ark.ArkService;
 import fr.siamois.domain.services.document.DocumentService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.domain.services.vocabulary.FieldConfigurationService;
+import fr.siamois.domain.services.vocabulary.FieldService;
 import fr.siamois.ui.bean.ActionFromBean;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
@@ -32,7 +35,9 @@ import javax.faces.bean.SessionScoped;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Serializable;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @Component
@@ -48,6 +53,7 @@ public class DocumentCreationBean implements Serializable {
     private final transient ServletContext servletContext;
     private final transient ConceptService conceptService;
     private final transient ArkService arkService;
+    private final FieldService fieldService;
     private String docTitle;
     private Concept docNature;
     private Concept docScale;
@@ -56,7 +62,9 @@ public class DocumentCreationBean implements Serializable {
 
     private transient ActionFromBean actionOnSave = null;
     private transient UploadedFile docFile;
-    private String panelIdToUpdate ;
+    private String panelIdToUpdate;
+
+    private Map<String, ConceptFieldConfig> fieldConfigMap = new HashMap<>();
 
     public DocumentCreationBean(SessionSettingsBean sessionSettingsBean,
                                 DocumentService documentService,
@@ -64,7 +72,7 @@ public class DocumentCreationBean implements Serializable {
                                 LangBean langBean,
                                 ServletContext servletContext,
                                 ConceptService conceptService,
-                                ArkService arkService) {
+                                ArkService arkService, FieldService fieldService) {
         this.sessionSettingsBean = sessionSettingsBean;
         this.documentService = documentService;
         this.fieldConfigurationService = fieldConfigurationService;
@@ -72,11 +80,12 @@ public class DocumentCreationBean implements Serializable {
         this.servletContext = servletContext;
         this.conceptService = conceptService;
         this.arkService = arkService;
+        this.fieldService = fieldService;
     }
 
     public void init() throws NoConfigForFieldException {
         PrimeFaces.current().ajax().update("newDocumentDiag");
-        prepareParentConcept();
+        prepareConceptConfig();
         reset();
     }
 
@@ -90,8 +99,17 @@ public class DocumentCreationBean implements Serializable {
         docDescription = null;
     }
 
-    private void prepareParentConcept() throws NoConfigForFieldException {
+    private void prepareConceptConfig() throws NoConfigForFieldException {
         UserInfo info = sessionSettingsBean.getUserInfo();
+        for (String fieldCode : fieldService.findFieldCodesOf(Document.class)) {
+            ConceptFieldConfig config = fieldConfigurationService.findConfigurationForFieldCode(info, fieldCode);
+            try {
+                conceptService.saveAllSubConceptOfIfUpdated(config);
+                fieldConfigMap.put(fieldCode, config);
+            } catch (ErrorProcessingExpansionException e) {
+                log.error("Error while updating sub-concepts of field config {}", fieldCode);
+            }
+        }
     }
 
     public String getUrlForConcept(Concept concept) {
@@ -105,7 +123,7 @@ public class DocumentCreationBean implements Serializable {
         try {
             return fieldConfigurationService.fetchAutocomplete(
                     sessionSettingsBean.getUserInfo(),
-                    fieldCode,
+                    fieldConfigMap.get(fieldCode),
                     input);
         } catch (NoConfigForFieldException e) {
             return List.of();

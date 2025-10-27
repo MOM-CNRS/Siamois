@@ -1,5 +1,7 @@
 package fr.siamois.ui.bean.panel.models.panel;
 
+import fr.siamois.domain.models.settings.ConceptFieldConfig;
+import fr.siamois.domain.services.vocabulary.FieldConfigurationService;
 import fr.siamois.ui.bean.panel.models.PanelBreadcrumb;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -9,6 +11,8 @@ import java.io.Serializable;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 
 /**
@@ -28,6 +32,8 @@ public abstract class AbstractPanel implements Serializable {
     @Getter(AccessLevel.NONE)
     protected Boolean isBreadcrumbVisible = true;
     protected Boolean collapsed = false;
+
+    protected Map<String, ConceptFieldConfig> fieldConfigurations = new HashMap<>();
 
     protected AbstractPanel() {
     }

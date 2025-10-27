@@ -5,6 +5,7 @@ import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.document.Document;
 import fr.siamois.domain.models.exceptions.actionunit.ActionUnitNotFoundException;
 import fr.siamois.domain.models.exceptions.recordingunit.FailedRecordingUnitSaveException;
+import fr.siamois.domain.models.exceptions.vocabulary.NoConfigForFieldException;
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.customfield.CustomFieldInteger;
 import fr.siamois.domain.models.form.customfield.CustomFieldSelectMultiple;
@@ -15,6 +16,7 @@ import fr.siamois.domain.models.form.customform.CustomForm;
 import fr.siamois.domain.models.form.customformresponse.CustomFormResponse;
 import fr.siamois.domain.models.history.RevisionWithInfo;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
+import fr.siamois.domain.models.settings.ConceptFieldConfig;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.form.FormService;
@@ -23,6 +25,8 @@ import fr.siamois.domain.services.person.PersonService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.specimen.SpecimenService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
+import fr.siamois.domain.services.vocabulary.FieldConfigurationService;
+import fr.siamois.domain.services.vocabulary.FieldService;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.RedirectBean;
 import fr.siamois.ui.bean.dialog.document.DocumentCreationBean;
@@ -65,9 +69,9 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
     protected final transient RecordingUnitService recordingUnitService;
     protected final transient PersonService personService;
     private final transient RedirectBean redirectBean;
-    protected final transient ConceptService conceptService;
     private final transient SpecimenService specimenService;
     private final transient FormService formService;
+    private final FieldService fieldService;
 
     // ---------- Locals
     // RU
@@ -90,19 +94,19 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
                                  DocumentCreationBean documentCreationBean,
                                  RedirectBean redirectBean,
                                  AbstractSingleEntity.Deps deps,
-                                 SpecimenService specimenService, HistoryAuditService historyAuditService, FormService formService)  {
+                                 SpecimenService specimenService, HistoryAuditService historyAuditService, FormService formService, FieldService fieldService)  {
 
         super("common.entity.recordingunit",
                 "bi bi-pencil-square",
                 "siamois-panel recording-unit-panel single-panel",
-                documentCreationBean, deps, historyAuditService);
+                documentCreationBean, deps, historyAuditService, fieldService, conceptService);
         this.langBean = langBean;
         this.recordingUnitService = recordingUnitService;
         this.personService = personService;
-        this.conceptService = conceptService;
         this.redirectBean = redirectBean;
         this.specimenService = specimenService;
         this.formService = formService;
+        this.fieldService = fieldService;
     }
 
 
@@ -286,6 +290,12 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
                 RuntimeException e) {
             this.errorMessage = "Failed to load recording unit: " + e.getMessage();
             redirectBean.redirectTo(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+
+        try {
+            initFieldCodes();
+        } catch (NoConfigForFieldException e) {
+            MessageUtils.displayNoThesaurusConfiguredMessage(langBean);
         }
 
 

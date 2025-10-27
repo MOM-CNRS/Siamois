@@ -1,9 +1,11 @@
 package fr.siamois.ui.bean.field;
 
 import fr.siamois.domain.models.events.LoginEvent;
+import fr.siamois.domain.models.exceptions.ErrorProcessingExpansionException;
 import fr.siamois.domain.models.exceptions.vocabulary.NoConfigForFieldException;
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.customform.CustomFormPanel;
+import fr.siamois.domain.models.settings.ConceptFieldConfig;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
@@ -14,9 +16,11 @@ import fr.siamois.ui.bean.LabelBean;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.RedirectBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
+import fr.siamois.utils.MessageUtils;
 import jakarta.faces.component.UIComponent;
 import jakarta.faces.context.FacesContext;
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.event.EventListener;
@@ -26,7 +30,9 @@ import org.springframework.web.client.ResourceAccessException;
 import javax.faces.bean.SessionScoped;
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static fr.siamois.utils.MessageUtils.displayErrorMessage;
 
@@ -40,6 +46,7 @@ import static fr.siamois.utils.MessageUtils.displayErrorMessage;
 @Slf4j
 @Component
 @SessionScoped
+@RequiredArgsConstructor
 public class SpatialUnitFieldBean implements Serializable {
 
     // Injections
@@ -56,29 +63,13 @@ public class SpatialUnitFieldBean implements Serializable {
     private List<SpatialUnit> refSpatialUnits = new ArrayList<>();
     private List<String> labels;
     private List<Concept> concepts;
+    private Map<String, ConceptFieldConfig> conceptFieldConfigMap = new HashMap<>();
 
     // Fields
     private Concept selectedConcept = null;
     private String fName = "";
     private List<SpatialUnit> fParentsSpatialUnits = new ArrayList<>();
     private List<SpatialUnit> fChildrenSpatialUnits = new ArrayList<>();
-
-    public SpatialUnitFieldBean(FieldService fieldService,
-                                LangBean langBean,
-                                SessionSettingsBean sessionSettingsBean,
-                                SpatialUnitService spatialUnitService,
-                                ConceptService conceptService,
-                                FieldConfigurationService fieldConfigurationService,
-                                RedirectBean redirectBean, LabelBean labelBean) {
-        this.fieldService = fieldService;
-        this.langBean = langBean;
-        this.sessionSettingsBean = sessionSettingsBean;
-        this.spatialUnitService = spatialUnitService;
-        this.conceptService = conceptService;
-        this.fieldConfigurationService = fieldConfigurationService;
-        this.redirectBean = redirectBean;
-        this.labelBean = labelBean;
-    }
 
     @EventListener(LoginEvent.class)
     public void reset() {
@@ -102,6 +93,22 @@ public class SpatialUnitFieldBean implements Serializable {
         selectedConcept = null;
         fName = "";
         fParentsSpatialUnits = new ArrayList<>();
+        loadConceptConfig();
+    }
+
+    private void loadConceptConfig() {
+        for (String fieldCode : fieldService.findFieldCodesOf(SpatialUnit.class)) {
+            try {
+                ConceptFieldConfig config = fieldConfigurationService.findConfigurationForFieldCode(sessionSettingsBean.getUserInfo(), fieldCode);
+                conceptService.saveAllSubConceptOfIfUpdated(config);
+                conceptFieldConfigMap.put(fieldCode, config);
+            } catch (NoConfigForFieldException e) {
+                log.warn("No configuration found for field code {} in SpatialUnit", fieldCode);
+                MessageUtils.displayNoThesaurusConfiguredMessage(langBean);
+            } catch (ErrorProcessingExpansionException e) {
+                log.error("Error while updating sub-concepts of field config {}", fieldCode);
+            }
+        }
     }
 
     public void init(List<SpatialUnit> parents, List<SpatialUnit> children) {
@@ -114,6 +121,7 @@ public class SpatialUnitFieldBean implements Serializable {
         fName = "";
         fParentsSpatialUnits = parents;
         fChildrenSpatialUnits = children;
+        loadConceptConfig();
     }
 
     public String getUrlForFieldCode(String fieldCode) {
@@ -127,11 +135,14 @@ public class SpatialUnitFieldBean implements Serializable {
      * @return the list of concepts that match the input to display in the autocomplete
      */
     public List<Concept> completeWithFieldCode(String input) {
+        if (conceptFieldConfigMap.isEmpty()) {
+            loadConceptConfig();
+        }
         String fieldCode = "Undefined";
         try {
             FacesContext context = FacesContext.getCurrentInstance();
             fieldCode = (String) UIComponent.getCurrentComponent(context).getAttributes().get("fieldCode");
-            return fieldConfigurationService.fetchAutocomplete(sessionSettingsBean.getUserInfo(), fieldCode, input);
+            return fieldConfigurationService.fetchAutocomplete(sessionSettingsBean.getUserInfo(), conceptFieldConfigMap.get(fieldCode), input);
         }
         catch (NoConfigForFieldException e) {
             displayErrorMessage(langBean, "common.error.thesaurus.noConfigForField",fieldCode);

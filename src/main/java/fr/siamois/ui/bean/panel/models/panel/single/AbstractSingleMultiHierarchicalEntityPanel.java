@@ -1,6 +1,8 @@
 package fr.siamois.ui.bean.panel.models.panel.single;
 
 import fr.siamois.domain.services.history.HistoryAuditService;
+import fr.siamois.domain.services.vocabulary.ConceptService;
+import fr.siamois.domain.services.vocabulary.FieldService;
 import fr.siamois.ui.bean.dialog.document.DocumentCreationBean;
 import fr.siamois.ui.bean.panel.models.panel.single.tab.MultiHierarchyTab;
 import fr.siamois.ui.lazydatamodel.BaseLazyDataModel;
@@ -9,9 +11,16 @@ import java.io.Serializable;
 
 public abstract class AbstractSingleMultiHierarchicalEntityPanel<T> extends AbstractSingleEntityPanel<T> implements Serializable {
 
-    protected AbstractSingleMultiHierarchicalEntityPanel(String titleCodeOrTitle, String icon, String panelClass, DocumentCreationBean documentCreationBean,
-                                                         AbstractSingleEntity.Deps deps, HistoryAuditService historyAuditService) {
-        super(titleCodeOrTitle, icon, panelClass, documentCreationBean, deps, historyAuditService);
+    protected AbstractSingleMultiHierarchicalEntityPanel(
+            String titleCodeOrTitle,
+            String icon,
+            String panelClass,
+            DocumentCreationBean documentCreationBean,
+            AbstractSingleEntity.Deps deps,
+            HistoryAuditService historyAuditService,
+            FieldService fieldService,
+            ConceptService conceptService) {
+        super(titleCodeOrTitle, icon, panelClass, documentCreationBean, deps, historyAuditService, fieldService, conceptService);
     }
 
     public abstract BaseLazyDataModel<T> getLazyDataModelChildren();

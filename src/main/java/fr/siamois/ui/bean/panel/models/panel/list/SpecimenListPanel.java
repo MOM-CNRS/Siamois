@@ -9,6 +9,8 @@ import fr.siamois.domain.services.person.PersonService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.domain.services.specimen.SpecimenService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
+import fr.siamois.domain.services.vocabulary.FieldConfigurationService;
+import fr.siamois.domain.services.vocabulary.FieldService;
 import fr.siamois.domain.services.vocabulary.LabelService;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.NavBean;
@@ -68,7 +70,7 @@ public class SpecimenListPanel extends AbstractListPanel<Specimen>  implements S
                              LangBean langBean,
                              LabelService labelService,
                              ActionUnitService actionUnitService,
-                             BookmarkService bookmarkService, SpecimenService specimenService, NavBean navBean) {
+                             BookmarkService bookmarkService, SpecimenService specimenService, NavBean navBean, FieldService fieldService, FieldConfigurationService fieldConfigurationService) {
 
 
 
@@ -82,7 +84,10 @@ public class SpecimenListPanel extends AbstractListPanel<Specimen>  implements S
                 langBean,
                 labelService,
                 actionUnitService,
-                bookmarkService);
+                bookmarkService,
+                fieldService,
+                fieldConfigurationService,
+                Specimen.class);
         this.specimenService = specimenService;
         this.navBean = navBean;
     }
