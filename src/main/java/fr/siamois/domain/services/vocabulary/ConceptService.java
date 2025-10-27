@@ -1,5 +1,6 @@
 package fr.siamois.domain.services.vocabulary;
 
+import fr.siamois.domain.events.publisher.ConceptChangeEventPublisher;
 import fr.siamois.domain.models.exceptions.ErrorProcessingExpansionException;
 import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.settings.ConceptFieldConfig;
@@ -34,6 +35,7 @@ public class ConceptService {
     private final LabelService labelService;
     private final ConceptRelationRepository conceptRelationRepository;
     private final LocalizedConceptDataRepository  localizedConceptDataRepository;
+    private final ConceptChangeEventPublisher conceptChangeEventPublisher;
 
     /**
      * Saves a concept if it does not already exist in the repository.
@@ -170,6 +172,8 @@ public class ConceptService {
                     }
                 }
             }
+
+            conceptChangeEventPublisher.publishEvent(config.getFieldCode());
         } catch (RuntimeException e) {
             log.error(e.getMessage(), e);
             throw new ErrorProcessingExpansionException("Error processing expansion for concept field config id " + config.getId());
