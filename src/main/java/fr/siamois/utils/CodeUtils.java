@@ -1,7 +1,6 @@
 package fr.siamois.utils;
 
 import java.security.SecureRandom;
-import java.util.List;
 import java.util.Random;
 
 /**

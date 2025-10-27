@@ -1,8 +1,5 @@
 package fr.siamois.ui.bean.panel.models.panel.list;
 
-import fr.siamois.domain.models.exceptions.ErrorProcessingExpansionException;
-import fr.siamois.domain.models.exceptions.vocabulary.NoConfigForFieldException;
-import fr.siamois.domain.models.settings.ConceptFieldConfig;
 import fr.siamois.domain.services.BookmarkService;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.person.PersonService;
@@ -30,9 +27,7 @@ import org.primefaces.model.menu.DefaultMenuItem;
 
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Map;
 
 @Getter
 @Setter
