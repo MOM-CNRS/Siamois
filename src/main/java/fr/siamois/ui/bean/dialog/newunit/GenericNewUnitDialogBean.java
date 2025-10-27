@@ -1,13 +1,20 @@
 package fr.siamois.ui.bean.dialog.newunit;
 
 import fr.siamois.domain.models.TraceableEntity;
+import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.exceptions.EntityAlreadyExistsException;
+import fr.siamois.domain.models.exceptions.ErrorProcessingExpansionException;
+import fr.siamois.domain.models.exceptions.vocabulary.NoConfigForFieldException;
 import fr.siamois.domain.models.form.customfield.CustomField;
+import fr.siamois.domain.models.settings.ConceptFieldConfig;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
+import fr.siamois.domain.services.vocabulary.ConceptService;
+import fr.siamois.domain.services.vocabulary.FieldService;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.RedirectBean;
 import fr.siamois.ui.bean.dialog.newunit.handler.INewUnitHandler;
+import fr.siamois.ui.bean.field.SpatialUnitFieldBean;
 import fr.siamois.ui.bean.panel.FlowBean;
 import fr.siamois.ui.bean.panel.models.panel.single.AbstractSingleEntity;
 import fr.siamois.ui.exceptions.CannotInitializeNewUnitDialogException;
@@ -24,10 +31,7 @@ import org.springframework.stereotype.Component;
 
 import javax.faces.bean.ViewScoped;
 import java.io.Serializable;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 @Slf4j
 @ViewScoped
@@ -38,6 +42,9 @@ import java.util.Set;
 public class GenericNewUnitDialogBean<T extends TraceableEntity>
         extends AbstractSingleEntity<T> implements Serializable {
 
+    private final FieldService fieldService;
+    private final ConceptService conceptService;
+    private final SpatialUnitFieldBean spatialUnitFieldBean;
     // The sets to update after creation
     protected BaseLazyDataModel<T> lazyDataModel;
     protected transient Set<T> setToUpdate;
@@ -64,13 +71,18 @@ public class GenericNewUnitDialogBean<T extends TraceableEntity>
                                     LangBean langBean,
                                     FlowBean flowBean,
                                     RedirectBean redirectBean,
-                                    Set<INewUnitHandler<? extends TraceableEntity>> handlerSet) {
+                                    Set<INewUnitHandler<? extends TraceableEntity>> handlerSet,
+                                    FieldService fieldService,
+                                    ConceptService conceptService, SpatialUnitFieldBean spatialUnitFieldBean) {
         super(deps);
         this.langBean = langBean;
         this.flowBean = flowBean;
         this.redirectBean = redirectBean;
         this.handlers = handlerSet.stream()
                 .collect(java.util.stream.Collectors.toMap(INewUnitHandler::kind, h -> h));
+        this.fieldService = fieldService;
+        this.conceptService = conceptService;
+        this.spatialUnitFieldBean = spatialUnitFieldBean;
     }
 
     @SuppressWarnings("unchecked")
@@ -159,12 +171,29 @@ public class GenericNewUnitDialogBean<T extends TraceableEntity>
         formResponse = null;
     }
 
+    private void prepareConcepts() {
+        UserInfo userInfo = sessionSettingsBean.getUserInfo();
+        for (String fieldCode : fieldService.findFieldCodesOf(unit.getClass())) {
+            try {
+                ConceptFieldConfig config = fieldConfigurationService.findConfigurationForFieldCode(userInfo, fieldCode);
+                conceptService.saveAllSubConceptOfIfUpdated(config);
+                fieldConfigurations.put(fieldCode, config);
+                spatialUnitFieldBean.getConceptFieldConfigMap().put(fieldCode, config);
+            } catch (NoConfigForFieldException e) {
+                MessageUtils.displayNoThesaurusConfiguredMessage(langBean);
+            } catch (ErrorProcessingExpansionException e) {
+                log.error("Error while processing expansion for field code {}", fieldCode, e);
+            }
+        }
+    }
+
     public void init() throws CannotInitializeNewUnitDialogException {
         reset();
         unit = handler.newEmpty();
         unit.setAuthor(sessionSettingsBean.getAuthenticatedUser());
         unit.setCreatedByInstitution(sessionSettingsBean.getSelectedInstitution());
         handler.initFromContext(this);
+        prepareConcepts();
         initForms(true);
     }
 
