@@ -88,6 +88,8 @@ public class RecordingUnitSeeder {
                 throw new IllegalStateException("Institution introuvable");
             }
 
+            Person authorPerson = personSeeder.findPersonOrThrow(s.author);
+            Person createdBy = personSeeder.findPersonOrThrow(s.createdBy);
 
             List<Person> contributors = new ArrayList<>();
 
@@ -98,8 +100,7 @@ public class RecordingUnitSeeder {
                 }
             }
 
-            Person authorPerson = personSeeder.findPersonOrThrow(s.author);
-            Person createdBy = personSeeder.findPersonOrThrow(s.createdBy);
+
             SpatialUnit su = getSpatialUnitFromKey(s.spatialUnitName, institution);
             ActionUnit au = getActionUnitFromKey(s.actionUnitIdentifier);
 
