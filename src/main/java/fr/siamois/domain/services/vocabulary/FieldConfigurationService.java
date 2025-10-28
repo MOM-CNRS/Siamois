@@ -36,13 +36,11 @@ public class FieldConfigurationService {
     public static final int LIMIT_RESULTS = 30;
     private final ConceptApi conceptApi;
     private final FieldService fieldService;
-    private final FieldRepository fieldRepository;
     private final ConceptRepository conceptRepository;
     private final ConceptService conceptService;
 
     private final LabelService labelService;
     private final ConceptFieldConfigRepository conceptFieldConfigRepository;
-    private final LocalizedConceptDataRepository localizedConceptDataRepository;
 
     private boolean containsFieldCode(FullInfoDTO conceptDTO) {
         return conceptDTO.getFieldcode().isPresent();

@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -29,13 +30,15 @@ public class ConceptSeeder {
 //    }
 
     private void saveLabel(Concept concept, String label, String lang) {
-        localizedConceptDataRepository.findByConceptAndLangCode(concept.getId(), lang);
-        LocalizedConceptData data = new LocalizedConceptData();
-        data.setLabel(label);
-        data.setConcept(concept);
-        data.setParentConcept(null);
-        data.setLangCode(lang);
-        localizedConceptDataRepository.save(data);
+        Optional<LocalizedConceptData> opt = localizedConceptDataRepository.findByConceptAndLangCode(concept.getId(), lang);
+        if (opt.isPresent()) {
+            LocalizedConceptData data = new LocalizedConceptData();
+            data.setLabel(label);
+            data.setConcept(concept);
+            data.setParentConcept(null);
+            data.setLangCode(lang);
+            localizedConceptDataRepository.save(data);
+        }
     }
 
     public Concept findConceptOrReturnNull(ConceptKey key) {

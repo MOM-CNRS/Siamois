@@ -9,6 +9,7 @@ import fr.siamois.domain.models.vocabulary.Vocabulary;
 import fr.siamois.infrastructure.api.dto.ConceptBranchDTO;
 import fr.siamois.infrastructure.api.dto.FullInfoDTO;
 import fr.siamois.infrastructure.api.dto.LabelDTO;
+import fr.siamois.infrastructure.database.repositories.FieldRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
@@ -33,6 +34,9 @@ class ConceptApiTest {
     private RestTemplate restTemplate;
 
     @Mock
+    private FieldRepository fieldRepository;
+
+    @Mock
     private RequestFactory requestFactory;
 
     private ConceptApi conceptApi;
@@ -46,7 +50,7 @@ class ConceptApiTest {
     void setUp() {
         MockitoAnnotations.openMocks(this);
         when(requestFactory.buildRestTemplate(true)).thenReturn(restTemplate);
-        conceptApi = new ConceptApi(requestFactory);
+        conceptApi = new ConceptApi(requestFactory, fieldRepository);
 
         vocabulary = new Vocabulary();
         vocabulary.setBaseUri("http://example.com");
