@@ -132,8 +132,8 @@ public class ConceptService {
 
     /**
      * Updates all definitions of a saved concept from FullInfoDTO
-     * @param savedConcept
-     * @param conceptDto
+     * @param savedConcept the concept to update
+     * @param conceptDto  the FullInfoDTO containing definition information
      */
     public void updateAllDefinitionsFromDTO(Concept savedConcept, FullInfoDTO conceptDto, Concept fieldParentConcept) {
         if (conceptDto.getDefinition() != null) {
@@ -150,46 +150,58 @@ public class ConceptService {
             Vocabulary vocabulary = concept.getVocabulary();
             ConceptBranchDTO branchDTO = conceptApi.fetchDownExpansion(config);
             if (branchDTO == null) return;
-
             conceptChangeEventPublisher.publishEvent(config.getFieldCode());
-            FullInfoDTO parentConcept = branchDTO.getData().values().stream()
-                    .filter(dto -> concept.getExternalId().equalsIgnoreCase(dto.getIdentifier()[0].getValue()))
-                    .findFirst()
-                    .orElseThrow(() -> new RuntimeException("No concept found for " + concept.getExternalId()));
-
-            if (parentConcept.getNarrower() == null) return;
 
             Map<String, Concept> concepts = new HashMap<>();
-            for (Map.Entry<String, FullInfoDTO> entry : branchDTO.getData().entrySet()) {
-                concepts.put(entry.getKey(), saveOrGetConceptFromFullDTO(vocabulary, entry.getValue(), config.getConcept()));
-            }
+            FullInfoDTO parentConcept = findParentConceptDTO(branchDTO, concept);
+            if (parentConcept.getNarrower() == null) return;
+
+            saveOrGetAllConceptsFromBranchAndStoreInMap(config, branchDTO, concepts, vocabulary);
 
             Concept parentSavedConcept = concepts.get(parentConcept.getIdentifier()[0].getValue());
 
             Map<Concept, Concept> childAndParentMap = new HashMap<>();
             for (Map.Entry<String, FullInfoDTO> entry : branchDTO.getData().entrySet()) {
                 if (Objects.nonNull(entry.getValue().getNarrower())) {
-                    for (PurlInfoDTO narrower : entry.getValue().getNarrower()) {
-                        if (narrowerIsNotParentConcept(narrower, parentConcept)) {
-                            Concept parent = concepts.get(entry.getKey());
-                            Concept child =  concepts.get(narrower.getValue());
-
-                            if (!childAndParentMap.containsKey(child)) {
-                                ConceptHierarchy relation = new ConceptHierarchy(parent,child, parentSavedConcept);
-                                conceptRelationRepository.save(relation);
-                                childAndParentMap.put(child, parent);
-                            } else {
-                                log.debug("Concept {} already has a parent concept, skipping relation creation for {}.", child.getExternalId(), parent.getExternalId());
-                            }
-                        }
-                    }
+                    createRelationBetweenConcepts(entry, parentConcept, concepts, childAndParentMap, parentSavedConcept);
                 }
             }
+
         } catch (RuntimeException e) {
             log.error(e.getMessage(), e);
             throw new ErrorProcessingExpansionException("Error processing expansion for concept field config id " + config.getId());
         }
 
+    }
+
+    private void createRelationBetweenConcepts(Map.Entry<String, FullInfoDTO> entry, FullInfoDTO parentConcept, Map<String, Concept> concepts, Map<Concept, Concept> childAndParentMap, Concept parentSavedConcept) {
+        for (PurlInfoDTO narrower : entry.getValue().getNarrower()) {
+            if (narrowerIsNotParentConcept(narrower, parentConcept)) {
+                Concept parent = concepts.get(entry.getKey());
+                Concept child =  concepts.get(narrower.getValue());
+
+                if (!childAndParentMap.containsKey(child)) {
+                    ConceptHierarchy relation = new ConceptHierarchy(parent,child, parentSavedConcept);
+                    conceptRelationRepository.save(relation);
+                    childAndParentMap.put(child, parent);
+                } else {
+                    log.debug("Concept {} already has a parent concept, skipping relation creation for {}.", child.getExternalId(), parent.getExternalId());
+                }
+            }
+        }
+    }
+
+    private void saveOrGetAllConceptsFromBranchAndStoreInMap(ConceptFieldConfig config, ConceptBranchDTO branchDTO, Map<String, Concept> concepts, Vocabulary vocabulary) {
+        for (Map.Entry<String, FullInfoDTO> entry : branchDTO.getData().entrySet()) {
+            concepts.put(entry.getKey(), saveOrGetConceptFromFullDTO(vocabulary, entry.getValue(), config.getConcept()));
+        }
+    }
+
+    private static FullInfoDTO findParentConceptDTO(ConceptBranchDTO branchDTO, Concept concept) {
+        return branchDTO.getData().values().stream()
+                .filter(dto -> concept.getExternalId().equalsIgnoreCase(dto.getIdentifier()[0].getValue()))
+                .findFirst()
+                .orElseThrow(() -> new RuntimeException("No concept found for " + concept.getExternalId()));
     }
 
     private static boolean narrowerIsNotParentConcept(PurlInfoDTO narrower, FullInfoDTO parentConcept) {
