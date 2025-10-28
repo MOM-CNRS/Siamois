@@ -1,11 +1,18 @@
 package fr.siamois.domain.services.vocabulary;
 
 import fr.siamois.domain.events.publisher.ConceptChangeEventPublisher;
+import fr.siamois.domain.models.UserInfo;
+import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.institution.Institution;
+import fr.siamois.domain.models.settings.ConceptFieldConfig;
 import fr.siamois.domain.models.vocabulary.Concept;
+import fr.siamois.domain.models.vocabulary.LocalizedConceptData;
 import fr.siamois.domain.models.vocabulary.Vocabulary;
 import fr.siamois.domain.models.vocabulary.VocabularyType;
 import fr.siamois.infrastructure.api.ConceptApi;
+import fr.siamois.infrastructure.api.dto.ConceptBranchDTO;
+import fr.siamois.infrastructure.api.dto.FullInfoDTO;
+import fr.siamois.infrastructure.api.dto.PurlInfoDTO;
 import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRelationRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.LocalizedConceptDataRepository;
@@ -19,8 +26,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.List;
 import java.util.Optional;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -49,6 +58,7 @@ class ConceptServiceTest {
 
     private Vocabulary vocabulary;
     private Concept concept;
+    private UserInfo userInfo;
 
     @BeforeEach
     void setUp() {
@@ -67,6 +77,19 @@ class ConceptServiceTest {
         concept.setId(1L);
         concept.setExternalId("concept1");
         concept.setVocabulary(vocabulary);
+
+        Institution institution = new Institution();
+        institution.setId(1L);
+        institution.setName("Institution 1");
+        institution.setIdentifier("inst1");
+
+        Person person = new Person();
+        person.setId(1L);
+        person.setName("User 1");
+        person.setUsername("User1");
+        person.setEmail("some@mail.com");
+
+        userInfo = new UserInfo(institution, person, "fr");
     }
 
     @Test
@@ -190,6 +213,240 @@ class ConceptServiceTest {
         assertNotNull(result);
         assertEquals(expectedConcepts, result);
 
+    }
+
+    @Test
+    void findById() {
+        Concept concept = new Concept();
+        concept.setId(1L);
+
+        when(conceptRepository.findById(1L)).thenReturn(Optional.of(concept));
+
+        Optional<Concept> result = conceptService.findById(1L);
+        assertThat(result)
+                .isPresent()
+                .get()
+                .isEqualTo(concept);
+    }
+
+    @Test
+    void saveOrGetConceptFromFullDTO_shouldReturnExistingConcept_andUpdateLabelsAndDefinitions() {
+        FullInfoDTO dto = new FullInfoDTO();
+        PurlInfoDTO id = new PurlInfoDTO();
+        id.setValue("concept1");
+        PurlInfoDTO label = new PurlInfoDTO();
+        label.setLang("fr");
+        label.setValue("Libellé FR");
+        PurlInfoDTO def = new PurlInfoDTO();
+        def.setLang("fr");
+        def.setValue("Définition FR");
+
+        dto.setIdentifier(new PurlInfoDTO[]{id});
+        dto.setPrefLabel(new PurlInfoDTO[]{label});
+        dto.setDefinition(new PurlInfoDTO[]{def});
+
+        when(conceptRepository.findConceptByExternalIdIgnoreCase("vocab1", "concept1")).thenReturn(Optional.of(concept));
+        when(localizedConceptDataRepository.findByConceptAndLangCode(concept.getId(), "fr")).thenReturn(Optional.empty());
+
+        // When
+        Concept result = conceptService.saveOrGetConceptFromFullDTO(vocabulary, dto, null);
+
+        // Then
+        assertNotNull(result);
+        assertEquals(concept, result);
+        verify(labelService, times(1)).updateLabel(concept, "fr", "Libellé FR", null);
+        verify(localizedConceptDataRepository, times(1)).save(any(LocalizedConceptData.class));
+        verify(conceptRepository, never()).save(any(Concept.class));
+    }
+
+    @Test
+    void saveOrGetConceptFromFullDTO_shouldCreateAndReturnNewConcept_andUpdateLabelsAndDefinitions() {
+        // Given repository does not contain concept
+        FullInfoDTO dto = new FullInfoDTO();
+        PurlInfoDTO id = new PurlInfoDTO();
+        id.setValue("concept1");
+        PurlInfoDTO label = new PurlInfoDTO();
+        label.setLang("en");
+        label.setValue("Label EN");
+        PurlInfoDTO def = new PurlInfoDTO();
+        def.setLang("en");
+        def.setValue("Definition EN");
+
+        dto.setIdentifier(new PurlInfoDTO[]{id});
+        dto.setPrefLabel(new PurlInfoDTO[]{label});
+        dto.setDefinition(new PurlInfoDTO[]{def});
+
+        when(conceptRepository.findConceptByExternalIdIgnoreCase("vocab1", "concept1")).thenReturn(Optional.empty());
+
+        Concept savedConcept = new Concept();
+        savedConcept.setId(2L);
+        savedConcept.setExternalId("concept1");
+        savedConcept.setVocabulary(vocabulary);
+
+        when(conceptRepository.save(any(Concept.class))).thenReturn(savedConcept);
+        when(localizedConceptDataRepository.findByConceptAndLangCode(savedConcept.getId(), "en")).thenReturn(Optional.empty());
+
+        // When
+        Concept result = conceptService.saveOrGetConceptFromFullDTO(vocabulary, dto, null);
+
+        // Then
+        assertNotNull(result);
+        assertEquals(savedConcept, result);
+        verify(conceptRepository, times(1)).save(any(Concept.class));
+        verify(labelService, times(1)).updateLabel(savedConcept, "en", "Label EN", null);
+        verify(localizedConceptDataRepository, times(1)).save(any(LocalizedConceptData.class));
+    }
+
+    @Test
+    void updateAllLabelsFromDTO_shouldDoNothingWhenPrefLabelNull() {
+        FullInfoDTO dto = new FullInfoDTO();
+        dto.setPrefLabel(null);
+
+        conceptService.updateAllLabelsFromDTO(concept, dto, null);
+
+        verify(labelService, never()).updateLabel(any(Concept.class), any(), any(), any());
+    }
+
+    @Test
+    void updateAllLabelsFromDTO_shouldDoNothingWhenPrefLabelEmpty() {
+        FullInfoDTO dto = new FullInfoDTO();
+        dto.setPrefLabel(new PurlInfoDTO[]{});
+
+        conceptService.updateAllLabelsFromDTO(concept, dto, null);
+
+        verify(labelService, never()).updateLabel(any(Concept.class), any(), any(), any());
+    }
+
+    @Test
+    void updateAllLabelsFromDTO_shouldUpdateMultipleLabels_withParentConcept() {
+        FullInfoDTO dto = new FullInfoDTO();
+        PurlInfoDTO l1 = new PurlInfoDTO();
+        l1.setLang("fr");
+        l1.setValue("Libelle FR");
+        PurlInfoDTO l2 = new PurlInfoDTO();
+        l2.setLang("en");
+        l2.setValue("Label EN");
+
+        dto.setPrefLabel(new PurlInfoDTO[]{l1, l2});
+
+        Concept parent = new Concept();
+        parent.setId(99L);
+
+        conceptService.updateAllLabelsFromDTO(concept, dto, parent);
+
+        verify(labelService, times(1)).updateLabel(concept, "fr", "Libelle FR", parent);
+        verify(labelService, times(1)).updateLabel(concept, "en", "Label EN", parent);
+    }
+
+    @Test
+    void updateAllLabelsFromDTO_shouldUpdateLabel_withNullParent() {
+        FullInfoDTO dto = new FullInfoDTO();
+        PurlInfoDTO l1 = new PurlInfoDTO();
+        l1.setLang("fr");
+        l1.setValue("Libelle FR");
+
+        dto.setPrefLabel(new PurlInfoDTO[]{l1});
+
+        conceptService.updateAllLabelsFromDTO(concept, dto, null);
+
+        verify(labelService, times(1)).updateLabel(concept, "fr", "Libelle FR", null);
+    }
+
+    @Test
+    void saveAllSubConceptOfIfUpdated_shouldReturnWhenApiReturnsNull() throws Exception {
+        // Given
+        fr.siamois.domain.models.settings.ConceptFieldConfig config = new fr.siamois.domain.models.settings.ConceptFieldConfig();
+        config.setId(10L);
+        config.setFieldCode("FIELD1");
+        config.setConcept(concept);
+
+        when(conceptApi.fetchDownExpansion(config)).thenReturn(null);
+
+        // When
+        conceptService.saveAllSubConceptOfIfUpdated(config);
+
+        // Then
+        verify(conceptChangeEventPublisher, never()).publishEvent(anyString());
+        verify(conceptRepository, never()).save(any(Concept.class));
+    }
+
+    @Test
+    void saveAllSubConceptOfIfUpdated_shouldReturnWhenParentHasNoNarrower() throws Exception {
+        // Given
+        fr.siamois.domain.models.settings.ConceptFieldConfig config = new fr.siamois.domain.models.settings.ConceptFieldConfig();
+        config.setId(11L);
+        config.setFieldCode("FIELD2");
+        config.setConcept(concept);
+
+        // Build a branch where parent exists but has no narrower
+        ConceptBranchDTO.ConceptBranchDTOBuilder builder = new ConceptBranchDTO.ConceptBranchDTOBuilder();
+        ConceptBranchDTO branchDTO = builder
+                .identifier("url1", "concept1")
+                .build();
+
+        when(conceptApi.fetchDownExpansion(config)).thenReturn(branchDTO);
+
+        // When
+        conceptService.saveAllSubConceptOfIfUpdated(config);
+
+        // Then
+        verify(conceptChangeEventPublisher, times(1)).publishEvent(config.getFieldCode());
+        verify(conceptRepository, never()).save(any(Concept.class));
+    }
+
+    @Test
+    void saveAllSubConceptOfIfUpdated_shouldSaveConceptsAndRelations_whenBranchHasNarrowers() throws Exception {
+        // Given
+        ConceptFieldConfig config = new ConceptFieldConfig();
+        config.setId(12L);
+        config.setFieldCode("FIELD3");
+        config.setConcept(concept);
+
+        // Build branch with parent and child
+        ConceptBranchDTO.ConceptBranchDTOBuilder builder = new ConceptBranchDTO.ConceptBranchDTOBuilder();
+        ConceptBranchDTO branchDTO = builder
+                .identifier("concept1", "concept1")
+                .identifier("url-child", "concept-child")
+                .label("concept1", "Parent Label", "fr")
+                .label("url-child", "Child Label", "fr")
+                .definition("concept1", "Parent Def", "fr")
+                .definition("url-child", "Child Def", "fr")
+                .build();
+
+        // Set narrower on parent to reference child
+        FullInfoDTO parentDto = branchDTO.getData().get("concept1");
+        PurlInfoDTO narrower = new PurlInfoDTO();
+        narrower.setValue("url-child");
+        parentDto.setNarrower(new PurlInfoDTO[]{narrower});
+
+        when(conceptApi.fetchDownExpansion(config)).thenReturn(branchDTO);
+
+        // No existing concepts -> will be created
+        when(conceptRepository.findConceptByExternalIdIgnoreCase(anyString(), anyString())).thenReturn(Optional.empty());
+
+        Concept savedParent = new Concept();
+        savedParent.setId(100L);
+        savedParent.setExternalId("concept1");
+        savedParent.setVocabulary(vocabulary);
+
+        Concept savedChild = new Concept();
+        savedChild.setId(101L);
+        savedChild.setExternalId("concept-child");
+        savedChild.setVocabulary(vocabulary);
+
+        // Ensure save returns parent then child
+        when(conceptRepository.save(any(Concept.class))).thenReturn(savedParent).thenReturn(savedChild);
+
+        when(localizedConceptDataRepository.findByConceptAndLangCode(anyLong(), anyString())).thenReturn(Optional.empty());
+
+        // When
+        conceptService.saveAllSubConceptOfIfUpdated(config);
+
+        // Then
+        verify(conceptChangeEventPublisher, times(1)).publishEvent(config.getFieldCode());
+        verify(conceptRepository, atLeast(2)).save(any(Concept.class));
+        verify(conceptRelationRepository, atLeast(1)).save(any());
+        verify(localizedConceptDataRepository, atLeast(2)).save(any(LocalizedConceptData.class));
     }
 
 }
