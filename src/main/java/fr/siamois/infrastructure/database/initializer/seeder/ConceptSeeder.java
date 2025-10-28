@@ -24,11 +24,6 @@ public class ConceptSeeder {
                 .orElse(null);
     }
 
-//    public ConceptLabel findConceptLabelOrReturnNull(Concept concept, String lang) {
-//        return labelRepo.findByConceptAndLangCode(concept, lang)
-//                .orElse(null);
-//    }
-
     private void saveLabel(Concept concept, String label, String lang) {
         Optional<LocalizedConceptData> opt = localizedConceptDataRepository.findByConceptAndLangCode(concept.getId(), lang);
         if (opt.isPresent()) {
