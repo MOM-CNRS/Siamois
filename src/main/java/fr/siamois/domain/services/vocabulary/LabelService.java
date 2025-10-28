@@ -129,13 +129,9 @@ public class LabelService {
 
     }
 
-    @Transactional(readOnly = true)
-    protected List<Concept> findAllConcepts(Concept parentConcept, int limit) {
+    protected List<LocalizedConceptData> findAllConcepts(Concept parentConcept, int limit) {
         try {
-            return localizedConceptDataRepository.findAllByParentConcept(parentConcept, Limit.of(limit))
-                    .stream()
-                    .map(LocalizedConceptData::getConcept)
-                    .toList();
+            return localizedConceptDataRepository.findAllByParentConcept(parentConcept, Limit.of(limit));
         } catch (RuntimeException e) {
             log.error(e.getMessage());
             return List.of();
@@ -158,7 +154,9 @@ public class LabelService {
     public List<Concept> findMatchingConcepts(Concept parentConcept, String langCode, String input, int limit) {
         Set<Concept> results = new HashSet<>();
         if (input == null || input.isEmpty()) {
-            results.addAll(findAllConcepts(parentConcept, limit));
+            results.addAll(this.findAllConcepts(parentConcept, limit).stream()
+                    .map(LocalizedConceptData::getConcept)
+                    .toList());
         } else {
             results.addAll(localizedConceptDataRepository
                     .findConceptByFieldCodeAndInputLimit(parentConcept.getId(), langCode, input, MIN_SIMILARITY_SCORE, limit)
