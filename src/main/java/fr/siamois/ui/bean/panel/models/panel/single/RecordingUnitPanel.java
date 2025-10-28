@@ -66,7 +66,6 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
     private final transient RedirectBean redirectBean;
     private final transient SpecimenService specimenService;
     private final transient FormService formService;
-    private final FieldService fieldService;
 
     // ---------- Locals
     // RU
@@ -95,7 +94,6 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
         this.redirectBean = context.getBean(RedirectBean.class);
         this.specimenService = context.getBean(SpecimenService.class);
         this.formService = context.getBean(FormService.class);
-        this.fieldService = context.getBean(FieldService.class);
     }
 
 
