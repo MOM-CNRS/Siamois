@@ -86,14 +86,17 @@ public class ConceptApi {
      * @return ConceptBranchDTO containing the expanded concepts
      * @throws ErrorProcessingExpansionException if there is an error processing the expansion
      */
-    @Deprecated(forRemoval = true)
     public ConceptBranchDTO fetchDownExpansion(Vocabulary vocabulary, String idConcept) throws ErrorProcessingExpansionException {
         URI uri = URI.create(String.format("%s/openapi/v1/concept/%s/%s/expansion?way=down", vocabulary.getBaseUri(), vocabulary.getExternalVocabularyId(), idConcept));
 
         ResponseEntity<String> response = sendRequestAcceptJson(uri);
 
-        TypeReference<Map<String, FullInfoDTO>> typeReference = new TypeReference<>() {
-        };
+        TypeReference<Map<String, FullInfoDTO>> typeReference = new TypeReference<>() {};
+
+        return processApiResponse(response, typeReference);
+    }
+
+    private ConceptBranchDTO processApiResponse(ResponseEntity<String> response, TypeReference<Map<String, FullInfoDTO>> typeReference) throws ErrorProcessingExpansionException {
         Map<String, FullInfoDTO> result;
         try {
             result = mapper.readValue(response.getBody(), typeReference);
@@ -124,7 +127,7 @@ public class ConceptApi {
             byte[] hash = digest.digest(string.getBytes());
             return bytesToHex(hash);
         } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException(e);
+            throw new IllegalArgumentException("SHA3-256 algorithm not found", e);
         }
     }
 
@@ -144,16 +147,7 @@ public class ConceptApi {
 
         TypeReference<Map<String, FullInfoDTO>> typeReference = new TypeReference<>() {
         };
-        Map<String, FullInfoDTO> result;
-        try {
-            result = mapper.readValue(response.getBody(), typeReference);
-            ConceptBranchDTO branch = new ConceptBranchDTO();
-            result.forEach(branch::addConceptBranchDTO);
-            return branch;
-        } catch (JsonProcessingException e) {
-            log.error("Error while processing JSON", e);
-            throw new ErrorProcessingExpansionException("Error while processing JSON for expansion");
-        }
+        return processApiResponse(response, typeReference);
     }
 
     static class ConceptDTO {
