@@ -6,8 +6,6 @@ import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.models.vocabulary.Vocabulary;
 import fr.siamois.domain.models.vocabulary.VocabularyType;
 import fr.siamois.infrastructure.api.ConceptApi;
-import fr.siamois.infrastructure.api.dto.FullInfoDTO;
-import fr.siamois.infrastructure.api.dto.PurlInfoDTO;
 import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRelationRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.LocalizedConceptDataRepository;
