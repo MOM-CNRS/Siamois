@@ -12,7 +12,7 @@ import fr.siamois.domain.models.settings.InstitutionSettings;
 import fr.siamois.domain.models.team.ActionManagerRelation;
 import fr.siamois.domain.models.team.TeamMemberRelation;
 import fr.siamois.domain.models.vocabulary.Concept;
-import fr.siamois.domain.models.vocabulary.GlobalFieldConfig;
+import fr.siamois.domain.models.vocabulary.FeedbackFieldConfig;
 import fr.siamois.domain.models.vocabulary.Vocabulary;
 import fr.siamois.domain.services.vocabulary.FieldConfigurationService;
 import fr.siamois.domain.services.vocabulary.VocabularyService;
@@ -116,7 +116,7 @@ class InstitutionServiceTest {
         when(vocabularyService.findOrCreateVocabularyOfUri(anyString()))
                 .thenReturn(fakeVocabulary);
         when(fieldConfigurationService
-                .setupFieldConfigurationForInstitution(any(Institution.class), any(Vocabulary.class))).thenReturn(Optional.of(mock(GlobalFieldConfig.class)));
+                .setupFieldConfigurationForInstitution(any(Institution.class), any(Vocabulary.class))).thenReturn(Optional.of(mock(FeedbackFieldConfig.class)));
         when(institutionRepository.save(any(Institution.class))).thenReturn(mock(Institution.class));
 
         institutionService.createInstitution(institution1, "valid_url");

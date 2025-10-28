@@ -8,7 +8,7 @@ import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.settings.ConceptFieldConfig;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
-import fr.siamois.domain.models.vocabulary.GlobalFieldConfig;
+import fr.siamois.domain.models.vocabulary.FeedbackFieldConfig;
 import fr.siamois.domain.models.vocabulary.Vocabulary;
 import fr.siamois.infrastructure.api.ConceptApi;
 import fr.siamois.infrastructure.api.dto.ConceptBranchDTO;
@@ -53,7 +53,7 @@ public class FieldConfigurationService {
      * @throws NotSiamoisThesaurusException      if the vocabulary is not a Siamois thesaurus
      * @throws ErrorProcessingExpansionException if there is an error processing the vocabulary expansion
      */
-    public Optional<GlobalFieldConfig> setupFieldConfigurationForInstitution(UserInfo info, Vocabulary vocabulary) throws NotSiamoisThesaurusException, ErrorProcessingExpansionException {
+    public Optional<FeedbackFieldConfig> setupFieldConfigurationForInstitution(UserInfo info, Vocabulary vocabulary) throws NotSiamoisThesaurusException, ErrorProcessingExpansionException {
         return setupFieldConfigurationForInstitution(info.getInstitution(), vocabulary);
     }
 
@@ -66,9 +66,9 @@ public class FieldConfigurationService {
      * @throws NotSiamoisThesaurusException      if the vocabulary is not a Siamois thesaurus
      * @throws ErrorProcessingExpansionException if there is an error processing the vocabulary expansion
      */
-    public Optional<GlobalFieldConfig> setupFieldConfigurationForInstitution(Institution institution, Vocabulary vocabulary) throws NotSiamoisThesaurusException, ErrorProcessingExpansionException {
+    public Optional<FeedbackFieldConfig> setupFieldConfigurationForInstitution(Institution institution, Vocabulary vocabulary) throws NotSiamoisThesaurusException, ErrorProcessingExpansionException {
         ConceptBranchDTO conceptBranchDTO = conceptApi.fetchFieldsBranch(vocabulary);
-        GlobalFieldConfig config = createConfigOfThesaurus(conceptBranchDTO);
+        FeedbackFieldConfig config = createConfigOfThesaurus(conceptBranchDTO);
         if (config.isWrongConfig()) return Optional.of(config);
 
         for (FullInfoDTO conceptDTO : config.conceptWithValidFieldCode()) {
@@ -91,7 +91,7 @@ public class FieldConfigurationService {
         return Optional.empty();
     }
 
-    private GlobalFieldConfig createConfigOfThesaurus(ConceptBranchDTO conceptBranchDTO) {
+    private FeedbackFieldConfig createConfigOfThesaurus(ConceptBranchDTO conceptBranchDTO) {
         final List<String> existingFieldCodes = fieldService.searchAllFieldCodes();
         final List<FullInfoDTO> allConceptsWithPotentialFieldCode = conceptBranchDTO.getData().values().stream()
                 .filter(this::containsFieldCode)
@@ -110,7 +110,7 @@ public class FieldConfigurationService {
                 })
                 .toList();
 
-        return new GlobalFieldConfig(missingFieldCode, validConcept);
+        return new FeedbackFieldConfig(missingFieldCode, validConcept);
     }
 
     /**
@@ -122,9 +122,9 @@ public class FieldConfigurationService {
      * @throws NotSiamoisThesaurusException      if the vocabulary is not a Siamois thesaurus
      * @throws ErrorProcessingExpansionException if there is an error processing the vocabulary expansion
      */
-    public Optional<GlobalFieldConfig> setupFieldConfigurationForUser(UserInfo info, Vocabulary vocabulary) throws NotSiamoisThesaurusException, ErrorProcessingExpansionException {
+    public Optional<FeedbackFieldConfig> setupFieldConfigurationForUser(UserInfo info, Vocabulary vocabulary) throws NotSiamoisThesaurusException, ErrorProcessingExpansionException {
         ConceptBranchDTO conceptBranchDTO = conceptApi.fetchFieldsBranch(vocabulary);
-        GlobalFieldConfig config = createConfigOfThesaurus(conceptBranchDTO);
+        FeedbackFieldConfig config = createConfigOfThesaurus(conceptBranchDTO);
         if (config.isWrongConfig()) return Optional.of(config);
 
         for (FullInfoDTO conceptDTO : config.conceptWithValidFieldCode()) {

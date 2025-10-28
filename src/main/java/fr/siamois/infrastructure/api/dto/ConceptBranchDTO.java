@@ -18,4 +18,70 @@ public class ConceptBranchDTO {
         return data.isEmpty();
     }
 
+    public static class ConceptBranchDTOBuilder {
+        private final ConceptBranchDTO conceptBranchDTO;
+
+        public ConceptBranchDTOBuilder() {
+            this.conceptBranchDTO = new ConceptBranchDTO();
+        }
+
+        public ConceptBranchDTOBuilder identifier(String url, String identifier) {
+            FullInfoDTO fullInfoDTO = conceptBranchDTO.data.computeIfAbsent(url, k -> new FullInfoDTO());
+            PurlInfoDTO purlInfoDTO = new PurlInfoDTO();
+            purlInfoDTO.setType("string");
+            purlInfoDTO.setValue(identifier);
+            fullInfoDTO.setIdentifier(new PurlInfoDTO[]{ purlInfoDTO });
+            return this;
+        }
+
+        public ConceptBranchDTOBuilder notation(String url, String fieldCode) {
+            FullInfoDTO fullInfoDTO = conceptBranchDTO.data.computeIfAbsent(url, k -> new FullInfoDTO());
+            PurlInfoDTO purlInfoDTO = new PurlInfoDTO();
+            purlInfoDTO.setType("string");
+            purlInfoDTO.setValue(fieldCode);
+            fullInfoDTO.setNotation(new PurlInfoDTO[]{ purlInfoDTO });
+            return this;
+        }
+
+        public ConceptBranchDTOBuilder label(String url, String label, String lang) {
+            FullInfoDTO fullInfoDTO = conceptBranchDTO.data.computeIfAbsent(url, k -> new FullInfoDTO());
+            PurlInfoDTO purlInfoDTO = new PurlInfoDTO();
+            purlInfoDTO.setType("string");
+            purlInfoDTO.setValue(label);
+            purlInfoDTO.setLang(lang);
+            if (fullInfoDTO.getPrefLabel() == null) {
+                fullInfoDTO.setPrefLabel(new PurlInfoDTO[]{ purlInfoDTO });
+            } else {
+                PurlInfoDTO[] existingLabels = fullInfoDTO.getPrefLabel();
+                PurlInfoDTO[] newLabels = new PurlInfoDTO[existingLabels.length + 1];
+                System.arraycopy(existingLabels, 0, newLabels, 0, existingLabels.length);
+                newLabels[existingLabels.length] = purlInfoDTO;
+                fullInfoDTO.setPrefLabel(newLabels);
+            }
+            return this;
+        }
+
+        public ConceptBranchDTOBuilder definition(String url, String definition, String lang) {
+            FullInfoDTO fullInfoDTO = conceptBranchDTO.data.computeIfAbsent(url, k -> new FullInfoDTO());
+            PurlInfoDTO purlInfoDTO = new PurlInfoDTO();
+            purlInfoDTO.setType("string");
+            purlInfoDTO.setValue(definition);
+            purlInfoDTO.setLang(lang);
+            if (fullInfoDTO.getDefinition() == null) {
+                fullInfoDTO.setDefinition(new PurlInfoDTO[]{ purlInfoDTO });
+            } else {
+                PurlInfoDTO[] existingLabels = fullInfoDTO.getDefinition();
+                PurlInfoDTO[] newLabels = new PurlInfoDTO[existingLabels.length + 1];
+                System.arraycopy(existingLabels, 0, newLabels, 0, existingLabels.length);
+                newLabels[existingLabels.length] = purlInfoDTO;
+                fullInfoDTO.setDefinition(newLabels);
+            }
+            return this;
+        }
+
+        public ConceptBranchDTO build() {
+            return this.conceptBranchDTO;
+        }
+    }
+
 }
