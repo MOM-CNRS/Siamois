@@ -45,8 +45,8 @@ public class RecordingUnitListPanel extends AbstractListPanel<RecordingUnit>  im
 
     private final transient RecordingUnitService recordingUnitService;
     private final transient NavBean navBean;
-    private final FieldService fieldService;
-    private final FieldConfigurationService fieldConfigurationService;
+    private final transient FieldService fieldService;
+    private final transient FieldConfigurationService fieldConfigurationService;
 
     // locals
     private String actionUnitListErrorMessage;

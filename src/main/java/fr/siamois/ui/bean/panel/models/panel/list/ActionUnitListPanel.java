@@ -36,9 +36,9 @@ import java.util.List;
 @Scope(BeanDefinition.SCOPE_PROTOTYPE)
 public class ActionUnitListPanel extends AbstractListPanel<ActionUnit> implements Serializable {
 
-    private final FieldConfigurationService fieldConfigurationService;
-    private final BookmarkService bookmarkService;
-    private final FieldService fieldService;
+    private final transient FieldConfigurationService fieldConfigurationService;
+    private final transient BookmarkService bookmarkService;
+    private final transient FieldService fieldService;
     // locals
     private String actionUnitListErrorMessage;
 

@@ -51,7 +51,7 @@ public class DocumentCreationBean implements Serializable {
     private final transient ServletContext servletContext;
     private final transient ConceptService conceptService;
     private final transient ArkService arkService;
-    private final FieldService fieldService;
+    private final transient FieldService fieldService;
     private String docTitle;
     private Concept docNature;
     private Concept docScale;
@@ -62,7 +62,7 @@ public class DocumentCreationBean implements Serializable {
     private transient UploadedFile docFile;
     private String panelIdToUpdate;
 
-    public void init() throws NoConfigForFieldException {
+    public void init() {
         PrimeFaces.current().ajax().update("newDocumentDiag");
         reset();
     }

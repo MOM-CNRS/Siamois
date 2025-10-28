@@ -21,7 +21,7 @@ public class LabelBean implements Serializable {
 
     private final transient LabelService labelService;
     private final SessionSettingsBean sessionSettingsBean;
-    private final LocalizedConceptDataRepository localizedConceptDataRepository;
+    private final transient LocalizedConceptDataRepository localizedConceptDataRepository;
 
     private static final List<String> FALLBACK_LANGS = List.of("en", "fr");
 

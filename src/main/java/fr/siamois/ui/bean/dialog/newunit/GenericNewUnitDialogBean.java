@@ -41,8 +41,8 @@ import java.util.Set;
 public class GenericNewUnitDialogBean<T extends TraceableEntity>
         extends AbstractSingleEntity<T> implements Serializable {
 
-    private final FieldService fieldService;
-    private final ConceptService conceptService;
+    private final transient FieldService fieldService;
+    private final transient ConceptService conceptService;
     private final SpatialUnitFieldBean spatialUnitFieldBean;
     // The sets to update after creation
     protected BaseLazyDataModel<T> lazyDataModel;

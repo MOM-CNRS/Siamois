@@ -53,7 +53,7 @@ public class UserDialogBean implements Serializable {
     private final transient FieldConfigurationService fieldConfigurationService;
     private final SessionSettingsBean sessionSettingsBean;
     private final LabelBean labelBean;
-    private final ConceptService conceptService;
+    private final transient ConceptService conceptService;
 
     // Data storage
     private Institution institution;
@@ -63,7 +63,6 @@ public class UserDialogBean implements Serializable {
     private List<Person> alreadyExistingPersons = new ArrayList<>();
     private String conceptCompleteUrl;
     private Concept parentConcept;
-    private Map<String, ConceptFieldConfig> fieldConfigMap = new HashMap<>();
 
     private boolean shouldRenderRoleField = false;
 
@@ -82,39 +81,8 @@ public class UserDialogBean implements Serializable {
     private String password;
     private String confirmPassword;
 
-    private void initConceptConfig() {
-        for (String fieldCode : List.of(Person.USER_ROLE_FIELD_CODE)) {
-            try {
-                ConceptFieldConfig conceptFieldConfig = fieldConfigurationService.findConfigurationForFieldCode(sessionSettingsBean.getUserInfo(), fieldCode);
-                conceptService.saveAllSubConceptOfIfUpdated(conceptFieldConfig);
-                fieldConfigMap.put(fieldCode, conceptFieldConfig);
-            } catch (NoConfigForFieldException e) {
-                log.warn("No configuration found for field code: {}", fieldCode);
-                displayNoThesaurusConfiguredMessage(langBean);
-            } catch (ErrorProcessingExpansionException e) {
-                log.error("Error processing expansion for field code: {}", fieldCode);
-            }
-        }
-    }
-
-    private void prepareConceptConfig() {
-        for (String fieldCode : List.of(Person.USER_ROLE_FIELD_CODE)) {
-            ConceptFieldConfig config = null;
-            try {
-                config = fieldConfigurationService.findConfigurationForFieldCode(sessionSettingsBean.getUserInfo(), fieldCode);
-                conceptService.saveAllSubConceptOfIfUpdated(config);
-                fieldConfigMap.put(fieldCode, config);
-            } catch (NoConfigForFieldException e) {
-                displayNoThesaurusConfiguredMessage(langBean);
-            } catch (ErrorProcessingExpansionException e) {
-                log.error("Error while updating sub-concepts of field config {}", fieldCode);
-            }
-        }
-    }
-
     public void init(String title, String buttonLabel, Institution institution, ProcessPerson processPerson) {
         reset();
-        initConceptConfig();
         this.title = title;
         this.buttonLabel = buttonLabel;
         this.institution = institution;
@@ -126,7 +94,6 @@ public class UserDialogBean implements Serializable {
 
     public void init(String title, String buttonLabel, Institution institution, boolean shouldRenderRole, ProcessPerson processPerson) {
         reset();
-        initConceptConfig();
         this.title = title;
         this.buttonLabel = buttonLabel;
         this.institution = institution;
@@ -134,7 +101,6 @@ public class UserDialogBean implements Serializable {
         this.processPerson = processPerson;
         if (shouldRenderRole) {
             conceptCompleteUrl = fieldConfigurationService.getUrlForFieldCode(sessionSettingsBean.getUserInfo(), Person.USER_ROLE_FIELD_CODE);
-            prepareConceptConfig();
         }
         PrimeFaces.current().ajax().update("newMemberDialog");
 
