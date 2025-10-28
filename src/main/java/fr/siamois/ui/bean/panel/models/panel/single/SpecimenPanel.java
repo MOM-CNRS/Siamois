@@ -34,6 +34,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.primefaces.model.menu.DefaultMenuItem;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.config.BeanDefinition;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Scope;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
@@ -167,26 +168,17 @@ public class SpecimenPanel extends AbstractSingleEntityPanel<Specimen>  implemen
             .build();
 
 
-    protected SpecimenPanel(LangBean langBean,
-                            RecordingUnitService recordingUnitService,
-                            PersonService personService,
-                            SpecimenService specimenService,
-                            ConceptService conceptService,
-                            DocumentCreationBean documentCreationBean,
-                            RedirectBean redirectBean,
-                            AbstractSingleEntity.Deps deps,
-                            HistoryAuditService historyAuditService,
-                            FieldService fieldService) {
+    protected SpecimenPanel(ApplicationContext context) {
 
         super("common.entity.specimen",
                 "bi bi-box2",
                 "siamois-panel specimen-panel single-panel",
-                documentCreationBean, deps, historyAuditService, fieldService, conceptService);
-        this.langBean = langBean;
-        this.recordingUnitService = recordingUnitService;
-        this.personService = personService;
-        this.specimenService = specimenService;
-        this.redirectBean = redirectBean;
+                context);
+        this.langBean = context.getBean(LangBean.class);
+        this.recordingUnitService = context.getBean(RecordingUnitService.class);
+        this.personService = context.getBean(PersonService.class);
+        this.specimenService = context.getBean(SpecimenService.class);
+        this.redirectBean = context.getBean(RedirectBean.class);
     }
 
     @Override

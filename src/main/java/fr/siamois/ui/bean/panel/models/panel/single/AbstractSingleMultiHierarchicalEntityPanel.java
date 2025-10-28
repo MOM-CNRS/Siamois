@@ -6,6 +6,7 @@ import fr.siamois.domain.services.vocabulary.FieldService;
 import fr.siamois.ui.bean.dialog.document.DocumentCreationBean;
 import fr.siamois.ui.bean.panel.models.panel.single.tab.MultiHierarchyTab;
 import fr.siamois.ui.lazydatamodel.BaseLazyDataModel;
+import org.springframework.context.ApplicationContext;
 
 import java.io.Serializable;
 
@@ -15,12 +16,8 @@ public abstract class AbstractSingleMultiHierarchicalEntityPanel<T> extends Abst
             String titleCodeOrTitle,
             String icon,
             String panelClass,
-            DocumentCreationBean documentCreationBean,
-            AbstractSingleEntity.Deps deps,
-            HistoryAuditService historyAuditService,
-            FieldService fieldService,
-            ConceptService conceptService) {
-        super(titleCodeOrTitle, icon, panelClass, documentCreationBean, deps, historyAuditService, fieldService, conceptService);
+            ApplicationContext context) {
+        super(titleCodeOrTitle, icon, panelClass, context);
     }
 
     public abstract BaseLazyDataModel<T> getLazyDataModelChildren();

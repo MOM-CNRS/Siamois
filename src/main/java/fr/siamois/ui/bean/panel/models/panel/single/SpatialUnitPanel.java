@@ -32,6 +32,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.BeanDefinition;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 import software.xdev.chartjs.model.charts.BarChart;
@@ -96,24 +97,17 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
 
 
     @Autowired
-    private SpatialUnitPanel(RecordingUnitService recordingUnitService,
-                             SessionSettingsBean sessionSettings,
-                             SpatialUnitHelperService spatialUnitHelperService,
-                             DocumentCreationBean documentCreationBean, CustomFieldService customFieldService,
-                             ConceptService conceptService,
-                             LabelService labelService, LangBean langBean, PersonService personService,
-                             AbstractSingleEntity.Deps deps, SpecimenService specimenService, HistoryAuditService historyAuditService, FieldService fieldService) {
+    private SpatialUnitPanel(ApplicationContext context) {
 
-        super("common.entity.spatialUnit", "bi bi-geo-alt", "siamois-panel spatial-unit-panel single-panel",
-                documentCreationBean, deps, historyAuditService, fieldService, conceptService);
-        this.recordingUnitService = recordingUnitService;
-        this.sessionSettings = sessionSettings;
-        this.spatialUnitHelperService = spatialUnitHelperService;
-        this.customFieldService = customFieldService;
-        this.labelService = labelService;
-        this.langBean = langBean;
-        this.personService = personService;
-        this.specimenService = specimenService;
+        super("common.entity.spatialUnit", "bi bi-geo-alt", "siamois-panel spatial-unit-panel single-panel", context);
+        this.recordingUnitService = context.getBean(RecordingUnitService.class);
+        this.sessionSettings = context.getBean(SessionSettingsBean.class);
+        this.spatialUnitHelperService = context.getBean(SpatialUnitHelperService.class);
+        this.customFieldService = context.getBean(CustomFieldService.class);
+        this.labelService = context.getBean(LabelService.class);
+        this.langBean = context.getBean(LangBean.class);
+        this.personService = context.getBean(PersonService.class);
+        this.specimenService = context.getBean(SpecimenService.class);
     }
 
 

@@ -39,6 +39,7 @@ import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.config.BeanDefinition;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Scope;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
@@ -85,25 +86,19 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
     // lazy model for parents
     private RecordingUnitParentsLazyDataModel lazyDataModelParents ;
 
-    protected RecordingUnitPanel(LangBean langBean,
-                                 RecordingUnitService recordingUnitService,
-                                 PersonService personService, ConceptService conceptService,
-                                 DocumentCreationBean documentCreationBean,
-                                 RedirectBean redirectBean,
-                                 AbstractSingleEntity.Deps deps,
-                                 SpecimenService specimenService, HistoryAuditService historyAuditService, FormService formService, FieldService fieldService)  {
+    protected RecordingUnitPanel(ApplicationContext context)  {
 
         super("common.entity.recordingunit",
                 "bi bi-pencil-square",
                 "siamois-panel recording-unit-panel single-panel",
-                documentCreationBean, deps, historyAuditService, fieldService, conceptService);
-        this.langBean = langBean;
-        this.recordingUnitService = recordingUnitService;
-        this.personService = personService;
-        this.redirectBean = redirectBean;
-        this.specimenService = specimenService;
-        this.formService = formService;
-        this.fieldService = fieldService;
+                context);
+        this.langBean = context.getBean(LangBean.class);
+        this.recordingUnitService = context.getBean(RecordingUnitService.class);
+        this.personService = context.getBean(PersonService.class);
+        this.redirectBean = context.getBean(RedirectBean.class);
+        this.specimenService = context.getBean(SpecimenService.class);
+        this.formService = context.getBean(FormService.class);
+        this.fieldService = context.getBean(FieldService.class);
     }
 
 

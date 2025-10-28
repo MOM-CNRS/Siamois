@@ -31,6 +31,7 @@ import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.config.BeanDefinition;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Scope;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
@@ -93,21 +94,16 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnit> imple
     private Integer totalSpecimenCount;
 
 
-    public ActionUnitPanel(LangBean langBean,
-                           FieldService fieldService, RedirectBean redirectBean,
-                           LabelService labelService, TeamMembersBean teamMembersBean,
-                           DocumentCreationBean documentCreationBean,
-                           RecordingUnitService recordingUnitService,
-                           AbstractSingleEntity.Deps deps, SpecimenService specimenService, HistoryAuditService historyAuditService, ConceptService conceptService) {
+    public ActionUnitPanel(ApplicationContext context) {
         super("Unité d'action", "bi bi-arrow-down-square", "siamois-panel action-unit-panel single-panel",
-                documentCreationBean, deps, historyAuditService, fieldService, conceptService);
+                context);
 
-        this.langBean = langBean;
-        this.redirectBean = redirectBean;
-        this.labelService = labelService;
-        this.teamMembersBean = teamMembersBean;
-        this.recordingUnitService = recordingUnitService;
-        this.specimenService = specimenService;
+        this.langBean = context.getBean(LangBean.class);
+        this.redirectBean = context.getBean(RedirectBean.class);
+        this.labelService = context.getBean(LabelService.class);
+        this.teamMembersBean = context.getBean(TeamMembersBean.class);
+        this.recordingUnitService = context.getBean(RecordingUnitService.class);
+        this.specimenService = context.getBean(SpecimenService.class);
     }
 
 

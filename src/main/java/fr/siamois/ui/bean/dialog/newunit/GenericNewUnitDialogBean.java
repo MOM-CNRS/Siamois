@@ -23,6 +23,7 @@ import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.primefaces.PrimeFaces;
 import org.primefaces.event.SelectEvent;
+import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 
 import javax.faces.bean.ViewScoped;
@@ -66,22 +67,17 @@ public class GenericNewUnitDialogBean<T extends TraceableEntity>
     private transient INewUnitHandler<T> handler;
 
 
-    public GenericNewUnitDialogBean(AbstractSingleEntity.Deps deps,
-                                    LangBean langBean,
-                                    FlowBean flowBean,
-                                    RedirectBean redirectBean,
-                                    Set<INewUnitHandler<? extends TraceableEntity>> handlerSet,
-                                    FieldService fieldService,
-                                    ConceptService conceptService, SpatialUnitFieldBean spatialUnitFieldBean) {
-        super(deps);
-        this.langBean = langBean;
-        this.flowBean = flowBean;
-        this.redirectBean = redirectBean;
+    public GenericNewUnitDialogBean(ApplicationContext context,
+                                    Set<INewUnitHandler<? extends TraceableEntity>> handlerSet) {
+        super(context);
+        this.langBean = context.getBean(LangBean.class);
+        this.flowBean = context.getBean(FlowBean.class);
+        this.redirectBean = context.getBean(RedirectBean.class);
         this.handlers = handlerSet.stream()
                 .collect(java.util.stream.Collectors.toMap(INewUnitHandler::kind, h -> h));
-        this.fieldService = fieldService;
-        this.conceptService = conceptService;
-        this.spatialUnitFieldBean = spatialUnitFieldBean;
+        this.fieldService = context.getBean(FieldService.class);
+        this.conceptService = context.getBean(ConceptService.class);
+        this.spatialUnitFieldBean = context.getBean(SpatialUnitFieldBean.class);
     }
 
     @SuppressWarnings("unchecked")

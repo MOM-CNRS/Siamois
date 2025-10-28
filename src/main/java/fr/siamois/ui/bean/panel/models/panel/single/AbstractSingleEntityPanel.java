@@ -22,6 +22,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.hibernate.envers.RevisionType;
 import org.primefaces.PrimeFaces;
 import org.primefaces.event.TabChangeEvent;
+import org.springframework.context.ApplicationContext;
 import org.springframework.util.MimeType;
 
 import java.io.BufferedInputStream;
@@ -91,14 +92,12 @@ public abstract class AbstractSingleEntityPanel<T> extends AbstractSingleEntity<
 
     protected AbstractSingleEntityPanel(String titleCodeOrTitle,
                                         String icon, String panelClass,
-                                        DocumentCreationBean documentCreationBean,
-                                        AbstractSingleEntity.Deps deps,
-                                        HistoryAuditService historyAuditService, FieldService fieldService, ConceptService conceptService) {
-        super(titleCodeOrTitle, icon, panelClass, deps);
-        this.documentCreationBean = documentCreationBean;
-        this.historyAuditService = historyAuditService;
-        this.fieldService = fieldService;
-        this.conceptService = conceptService;
+                                        ApplicationContext context) {
+        super(titleCodeOrTitle, icon, panelClass, context);
+        this.documentCreationBean = context.getBean(DocumentCreationBean.class);
+        this.historyAuditService = context.getBean(HistoryAuditService.class);
+        this.fieldService = context.getBean(FieldService.class);
+        this.conceptService = context.getBean(ConceptService.class);
 
         // Overview tab
         tabs = new ArrayList<>();
