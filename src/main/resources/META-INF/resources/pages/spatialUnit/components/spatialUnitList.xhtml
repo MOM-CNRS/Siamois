@@ -110,37 +110,38 @@
 
 
             </p:column>
+          
+                          <!-- Spatial unit type column -->
+                <p:column responsivePriority="1" headerText="#{langBean.msg('table.spatialunit.column.type')}"
+                          sortable="true"
+                          filterable="true"
+                          field="category"
+                          id="categoryCol"
+                          filterMatchMode="exact">
+                    <f:facet name="filter">
 
-            <!-- Spatial unit type column -->
-            <p:column responsivePriority="1" headerText="#{langBean.msg('table.spatialunit.column.type')}"
-                      sortable="true"
-                      filterable="true"
-                      field="category"
-                      id="categoryCol"
-                      filterMatchMode="exact">
-                <f:facet name="filter">
+                        <p:selectCheckboxMenu
 
-                    <p:selectCheckboxMenu
+                                label="#{langBean.msg('table.spatialunit.column.type.filter')}"
+                                filter="true"
+                                value="#{cc.attrs.lazyDataModel.selectedTypes}"
+                                updateLabel="true"
+                                filterMatchMode="contains"
+                                onchange="PF('#{cc.clientId}_spatialUnitListTable').filter()"
+                                converter="#{localizedConceptDataConverter}">
 
-                            label="#{langBean.msg('table.spatialunit.column.type.filter')}"
-                            filter="true"
-                            value="#{cc.attrs.lazyDataModel.selectedTypes}"
-                            updateLabel="true"
-                            filterMatchMode="contains"
-                            onchange="PF('#{cc.clientId}_spatialUnitListTable').filter()"
-                            converter="#{conceptLabelConverter}">
+                            <f:selectItems value="#{cc.attrs.panelModel.categoriesAvailable()}"
+                                           var="cat"
+                                           itemValue="#{cat}"
+                                           itemLabel="#{cat.getLabel()}"
+                            />
+                        </p:selectCheckboxMenu>
 
-                        <f:selectItems value="#{cc.attrs.panelModel.categoriesAvailable()}"
-                                       var="cat"
-                                       itemValue="#{cat}"
-                                       itemLabel="#{cat.value}"
-                        />
-                    </p:selectCheckboxMenu>
+                    </f:facet>
+                    <p:chip label="#{labelBean.findLabelOf(item.category)}"
+                            styleClass="mr-2 spatial-unit-type-chip"/>
+                </p:column>
 
-                </f:facet>
-                <p:chip label="#{labelBean.findLabelOf(item.category)}"
-                        styleClass="mr-2 spatial-unit-type-chip"/>
-            </p:column>
 
             <!-- Creation time -->
             <p:column responsivePriority="2" headerText="#{langBean.msg('table.spatialunit.column.creationdate')}"

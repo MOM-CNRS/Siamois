@@ -16,14 +16,11 @@ import fr.siamois.domain.models.history.RevisionWithInfo;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.specimen.Specimen;
 import fr.siamois.domain.models.vocabulary.Concept;
-import fr.siamois.domain.services.history.HistoryAuditService;
 import fr.siamois.domain.services.person.PersonService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.specimen.SpecimenService;
-import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.RedirectBean;
-import fr.siamois.ui.bean.dialog.document.DocumentCreationBean;
 import fr.siamois.ui.bean.panel.models.PanelBreadcrumb;
 import fr.siamois.utils.MessageUtils;
 import lombok.EqualsAndHashCode;
@@ -33,6 +30,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.primefaces.model.menu.DefaultMenuItem;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.config.BeanDefinition;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Scope;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
@@ -58,7 +56,6 @@ public class SpecimenPanel extends AbstractSingleEntityPanel<Specimen>  implemen
     protected final transient PersonService personService;
     private final transient RedirectBean redirectBean;
     private final transient SpecimenService specimenService;
-    protected final transient ConceptService conceptService;
 
     @Override
     protected boolean documentExistsInUnitByHash(Specimen unit, String hash) {
@@ -167,24 +164,17 @@ public class SpecimenPanel extends AbstractSingleEntityPanel<Specimen>  implemen
             .build();
 
 
-    protected SpecimenPanel(LangBean langBean,
-                            RecordingUnitService recordingUnitService,
-                            PersonService personService, SpecimenService specimenService, ConceptService conceptService,
-                            DocumentCreationBean documentCreationBean,
-                            RedirectBean redirectBean,
-                            AbstractSingleEntity.Deps deps,
-                            HistoryAuditService historyAuditService) {
+    protected SpecimenPanel(ApplicationContext context) {
 
         super("common.entity.specimen",
                 "bi bi-box2",
                 "siamois-panel specimen-panel single-panel",
-                documentCreationBean, deps, historyAuditService);
-        this.langBean = langBean;
-        this.recordingUnitService = recordingUnitService;
-        this.personService = personService;
-        this.specimenService = specimenService;
-        this.conceptService = conceptService;
-        this.redirectBean = redirectBean;
+                context);
+        this.langBean = context.getBean(LangBean.class);
+        this.recordingUnitService = context.getBean(RecordingUnitService.class);
+        this.personService = context.getBean(PersonService.class);
+        this.specimenService = context.getBean(SpecimenService.class);
+        this.redirectBean = context.getBean(RedirectBean.class);
     }
 
     @Override
@@ -338,7 +328,6 @@ public class SpecimenPanel extends AbstractSingleEntityPanel<Specimen>  implemen
             this.errorMessage = "Failed to load recording unit: " + e.getMessage();
             redirectBean.redirectTo(HttpStatus.INTERNAL_SERVER_ERROR);
         }
-
 
     }
 

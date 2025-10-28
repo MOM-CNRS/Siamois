@@ -1,6 +1,7 @@
 package fr.siamois.domain.models.vocabulary.label;
 
 import fr.siamois.domain.models.vocabulary.Concept;
+import fr.siamois.domain.models.vocabulary.Vocabulary;
 import jakarta.persistence.DiscriminatorValue;
 import jakarta.persistence.Entity;
 import jakarta.persistence.JoinColumn;
@@ -9,35 +10,30 @@ import lombok.Data;
 
 import java.util.Objects;
 
+/**
+ * @deprecated Use {@link fr.siamois.domain.models.vocabulary.LocalizedConceptData} as a replacement for ConceptLabel.
+ * This class is maintained only for backward compatibility and will be removed in future releases.
+ * Some query still depend on it.
+ */
 @Entity
 @DiscriminatorValue("concept")
 @Data
+@Deprecated
 public class ConceptLabel extends Label {
 
     @ManyToOne
     @JoinColumn(name = "fk_concept_id")
     private Concept concept;
 
-    public ConceptLabel() {}
-
-    public ConceptLabel(String emptyLabelValue) {
-        concept = new Concept();
-        value = emptyLabelValue;
-    }
-
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof ConceptLabel cl)) return false;
-
-        return Objects.equals(concept, cl.concept) &&
-                Objects.equals(value, cl.value)&&
-                Objects.equals(langCode, cl.langCode);
+        if (!(o instanceof ConceptLabel that)) return false;
+        if (!super.equals(o)) return false;
+        return Objects.equals(concept, that.concept) && super.equals(that);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(concept, value, langCode);
+        return Objects.hash(super.hashCode(), concept);
     }
-
 }

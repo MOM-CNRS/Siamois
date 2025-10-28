@@ -5,9 +5,12 @@ import fr.siamois.domain.models.exceptions.EntityAlreadyExistsException;
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
+import fr.siamois.domain.services.vocabulary.ConceptService;
+import fr.siamois.domain.services.vocabulary.FieldService;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.RedirectBean;
 import fr.siamois.ui.bean.dialog.newunit.handler.INewUnitHandler;
+import fr.siamois.ui.bean.field.SpatialUnitFieldBean;
 import fr.siamois.ui.bean.panel.FlowBean;
 import fr.siamois.ui.bean.panel.models.panel.single.AbstractSingleEntity;
 import fr.siamois.ui.exceptions.CannotInitializeNewUnitDialogException;
@@ -20,6 +23,7 @@ import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.primefaces.PrimeFaces;
 import org.primefaces.event.SelectEvent;
+import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 
 import javax.faces.bean.ViewScoped;
@@ -38,6 +42,9 @@ import java.util.Set;
 public class GenericNewUnitDialogBean<T extends TraceableEntity>
         extends AbstractSingleEntity<T> implements Serializable {
 
+    private final transient FieldService fieldService;
+    private final transient ConceptService conceptService;
+    private final SpatialUnitFieldBean spatialUnitFieldBean;
     // The sets to update after creation
     protected BaseLazyDataModel<T> lazyDataModel;
     protected transient Set<T> setToUpdate;
@@ -60,17 +67,17 @@ public class GenericNewUnitDialogBean<T extends TraceableEntity>
     private transient INewUnitHandler<T> handler;
 
 
-    public GenericNewUnitDialogBean(AbstractSingleEntity.Deps deps,
-                                    LangBean langBean,
-                                    FlowBean flowBean,
-                                    RedirectBean redirectBean,
+    public GenericNewUnitDialogBean(ApplicationContext context,
                                     Set<INewUnitHandler<? extends TraceableEntity>> handlerSet) {
-        super(deps);
-        this.langBean = langBean;
-        this.flowBean = flowBean;
-        this.redirectBean = redirectBean;
+        super(context);
+        this.langBean = context.getBean(LangBean.class);
+        this.flowBean = context.getBean(FlowBean.class);
+        this.redirectBean = context.getBean(RedirectBean.class);
         this.handlers = handlerSet.stream()
                 .collect(java.util.stream.Collectors.toMap(INewUnitHandler::kind, h -> h));
+        this.fieldService = context.getBean(FieldService.class);
+        this.conceptService = context.getBean(ConceptService.class);
+        this.spatialUnitFieldBean = context.getBean(SpatialUnitFieldBean.class);
     }
 
     @SuppressWarnings("unchecked")

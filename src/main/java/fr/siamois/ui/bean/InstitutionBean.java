@@ -1,7 +1,7 @@
 package fr.siamois.ui.bean;
 
 import fr.siamois.domain.models.vocabulary.Concept;
-import fr.siamois.domain.models.vocabulary.label.ConceptLabel;
+import fr.siamois.domain.models.vocabulary.LocalizedConceptData;
 import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.domain.services.vocabulary.LabelService;
 import org.springframework.stereotype.Component;
@@ -26,7 +26,7 @@ public class InstitutionBean {
     }
 
 
-    public List<ConceptLabel> actionUnitTypeUsedInInstitution() {
+    public List<LocalizedConceptData> actionUnitTypeUsedInInstitution() {
         List<Concept> cList = conceptService.findAllByActionUnitOfInstitution(sessionSettingsBean.getSelectedInstitution());
 
         return cList.stream()

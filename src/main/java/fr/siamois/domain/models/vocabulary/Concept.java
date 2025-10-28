@@ -49,7 +49,6 @@ public class Concept implements Serializable {
         return Objects.hash(externalId, vocabulary);
     }
 
-
     public static class Builder {
         private Long id;
         private Vocabulary vocabulary;

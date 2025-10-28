@@ -4,12 +4,12 @@ import fr.siamois.infrastructure.api.dto.FullInfoDTO;
 
 import java.util.List;
 
-public class GlobalFieldConfig {
+public class FeedbackFieldConfig {
 
     private final List<String> missingFieldCode;
     private final List<FullInfoDTO> conceptWithValidFieldCode;
 
-    public GlobalFieldConfig(List<String> missingFieldCode, List<FullInfoDTO> conceptWithValidFieldCode) {
+    public FeedbackFieldConfig(List<String> missingFieldCode, List<FullInfoDTO> conceptWithValidFieldCode) {
         this.missingFieldCode = missingFieldCode;
         this.conceptWithValidFieldCode = conceptWithValidFieldCode;
     }

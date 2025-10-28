@@ -17,6 +17,7 @@ import fr.siamois.ui.bean.SessionSettingsBean;
 import jakarta.faces.component.UIComponent;
 import jakarta.faces.context.FacesContext;
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.event.EventListener;
@@ -40,6 +41,7 @@ import static fr.siamois.utils.MessageUtils.displayErrorMessage;
 @Slf4j
 @Component
 @SessionScoped
+@RequiredArgsConstructor
 public class SpatialUnitFieldBean implements Serializable {
 
     // Injections
@@ -62,23 +64,6 @@ public class SpatialUnitFieldBean implements Serializable {
     private String fName = "";
     private List<SpatialUnit> fParentsSpatialUnits = new ArrayList<>();
     private List<SpatialUnit> fChildrenSpatialUnits = new ArrayList<>();
-
-    public SpatialUnitFieldBean(FieldService fieldService,
-                                LangBean langBean,
-                                SessionSettingsBean sessionSettingsBean,
-                                SpatialUnitService spatialUnitService,
-                                ConceptService conceptService,
-                                FieldConfigurationService fieldConfigurationService,
-                                RedirectBean redirectBean, LabelBean labelBean) {
-        this.fieldService = fieldService;
-        this.langBean = langBean;
-        this.sessionSettingsBean = sessionSettingsBean;
-        this.spatialUnitService = spatialUnitService;
-        this.conceptService = conceptService;
-        this.fieldConfigurationService = fieldConfigurationService;
-        this.redirectBean = redirectBean;
-        this.labelBean = labelBean;
-    }
 
     @EventListener(LoginEvent.class)
     public void reset() {
@@ -135,15 +120,15 @@ public class SpatialUnitFieldBean implements Serializable {
         }
         catch (NoConfigForFieldException e) {
             displayErrorMessage(langBean, "common.error.thesaurus.noConfigForField",fieldCode);
-            return new ArrayList<>();
+            return List.of();
         }
         catch(ResourceAccessException e) {
             displayErrorMessage(langBean, "common.error.thesaurus.resourceAccess",fieldCode);
-            return new ArrayList<>();
+            return List.of();
         }
         catch(Exception e) {
             displayErrorMessage(langBean, "common.error.thesaurus.field.exception",fieldCode);
-            return new ArrayList<>();
+            return List.of();
         }
     }
 
