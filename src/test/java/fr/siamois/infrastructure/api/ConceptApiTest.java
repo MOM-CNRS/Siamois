@@ -247,7 +247,7 @@ class ConceptApiTest {
 
         // Assert
         assertNotNull(result);
-        verify(fieldRepository, times(1)).updateChecksumForFieldConfig(eq(config.getId()), eq(expectedChecksum));
+        verify(fieldRepository, times(1)).updateChecksumForFieldConfig(config.getId(), expectedChecksum);
     }
 
     @Test

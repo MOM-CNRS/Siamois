@@ -19,6 +19,7 @@ public class ConceptBranchDTO {
     }
 
     public static class ConceptBranchDTOBuilder {
+        public static final String STRING_TYPE = "string";
         private final ConceptBranchDTO conceptBranchDTO;
 
         public ConceptBranchDTOBuilder() {
@@ -64,7 +65,7 @@ public class ConceptBranchDTO {
         public ConceptBranchDTOBuilder definition(String url, String definition, String lang) {
             FullInfoDTO fullInfoDTO = conceptBranchDTO.data.computeIfAbsent(url, k -> new FullInfoDTO());
             PurlInfoDTO purlInfoDTO = new PurlInfoDTO();
-            purlInfoDTO.setType("string");
+            purlInfoDTO.setType(STRING_TYPE);
             purlInfoDTO.setValue(definition);
             purlInfoDTO.setLang(lang);
             if (fullInfoDTO.getDefinition() == null) {

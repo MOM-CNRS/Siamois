@@ -1,7 +1,6 @@
 package fr.siamois.domain.services.vocabulary;
 
 import fr.siamois.domain.events.publisher.ConceptChangeEventPublisher;
-import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.settings.ConceptFieldConfig;
@@ -58,7 +57,6 @@ class ConceptServiceTest {
 
     private Vocabulary vocabulary;
     private Concept concept;
-    private UserInfo userInfo;
 
     @BeforeEach
     void setUp() {
@@ -88,8 +86,6 @@ class ConceptServiceTest {
         person.setName("User 1");
         person.setUsername("User1");
         person.setEmail("some@mail.com");
-
-        userInfo = new UserInfo(institution, person, "fr");
     }
 
     @Test
@@ -217,7 +213,6 @@ class ConceptServiceTest {
 
     @Test
     void findById() {
-        Concept concept = new Concept();
         concept.setId(1L);
 
         when(conceptRepository.findById(1L)).thenReturn(Optional.of(concept));
