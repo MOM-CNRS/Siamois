@@ -1,6 +1,5 @@
-package fr.siamois.domain.services.vocabulary;
+package fr.siamois.domain.models.vocabulary;
 
-import fr.siamois.domain.models.vocabulary.Concept;
 import jakarta.persistence.*;
 import lombok.*;
 
