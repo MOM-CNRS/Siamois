@@ -52,7 +52,8 @@ public class DefaultFormsDatasetInitializer implements DatabaseInitializer {
             new ConceptSeeder.ConceptSpec(DEFAULT_VOCABULARY_ID, "4287640", "Identifiant de l'unité d'enregistrement", "fr"),
             new ConceptSeeder.ConceptSpec(DEFAULT_VOCABULARY_ID, "4286244", "Unité d'action d'appartenance d'une unité d'enregistrement", "fr"),
             new ConceptSeeder.ConceptSpec(DEFAULT_VOCABULARY_ID, "4286245", "Unité spatiale d'appartenance d'une unité d'enregistrement", "fr"),
-            new ConceptSeeder.ConceptSpec(DEFAULT_VOCABULARY_ID, "4286195", "Auteur scientifique/technique", "fr")
+            new ConceptSeeder.ConceptSpec(DEFAULT_VOCABULARY_ID, "4286195", "Auteur scientifique/technique", "fr"),
+            new ConceptSeeder.ConceptSpec(DEFAULT_VOCABULARY_ID, "4287594", "Contributeur(s) scientifique(s)/technique(s)", "fr")
     );
 
     // Default Siamois field
@@ -126,6 +127,16 @@ public class DefaultFormsDatasetInitializer implements DatabaseInitializer {
                     null,
                     null,
                     null
+            ),
+            new CustomFieldSeederSpec(
+                    CustomFieldSelectMultiplePerson.class,
+                    true,
+                    "recordingunit.field.contributors",
+                    new ConceptSeeder.ConceptKey(DEFAULT_VOCABULARY_ID, "4287594"),
+                    "contributors",
+                    null,
+                    null,
+                    null
             )
     );
 
@@ -157,6 +168,12 @@ public class DefaultFormsDatasetInitializer implements DatabaseInitializer {
                                                             false,
                                                             true,
                                                             fields.get(6),
+                                                            UI_G_12_UI_MD_6_UI_LG_3
+                                                    ),
+                                                    new CustomColDTO(
+                                                            false,
+                                                            false,
+                                                            fields.get(7),
                                                             UI_G_12_UI_MD_6_UI_LG_3
                                                     )
                                             )
@@ -212,6 +229,12 @@ public class DefaultFormsDatasetInitializer implements DatabaseInitializer {
                                                             false,
                                                             true,
                                                             fields.get(6),
+                                                            UI_G_12_UI_MD_6_UI_LG_3
+                                                    ),
+                                                    new CustomColDTO(
+                                                            false,
+                                                            false,
+                                                            fields.get(7),
                                                             UI_G_12_UI_MD_6_UI_LG_3
                                                     )
                                             )
@@ -271,6 +294,12 @@ public class DefaultFormsDatasetInitializer implements DatabaseInitializer {
                                                             false,
                                                             true,
                                                             fields.get(6),
+                                                            UI_G_12_UI_MD_6_UI_LG_3
+                                                    ),
+                                                    new CustomColDTO(
+                                                            false,
+                                                            false,
+                                                            fields.get(7),
                                                             UI_G_12_UI_MD_6_UI_LG_3
                                                     )
                                             )

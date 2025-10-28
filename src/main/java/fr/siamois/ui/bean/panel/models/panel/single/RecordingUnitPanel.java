@@ -333,8 +333,9 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
         unit.setType(backupClone.getType());
         unit.setStartDate(backupClone.getStartDate());
         unit.setEndDate(backupClone.getEndDate());
-        unit.setAuthors(backupClone.getAuthors());
-        unit.setExcavators(backupClone.getExcavators());
+        unit.setAuthor(backupClone.getAuthor());
+        unit.setCreatedBy(unit.getCreatedBy());
+        unit.setContributors(backupClone.getContributors());
         unit.setGeomorphologicalCycle(backupClone.getGeomorphologicalCycle());
         unit.setNormalizedInterpretation(backupClone.getNormalizedInterpretation());
         hasUnsavedModifications = false;

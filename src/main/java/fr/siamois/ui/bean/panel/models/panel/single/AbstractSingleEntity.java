@@ -78,10 +78,9 @@ public abstract class AbstractSingleEntity<T> extends AbstractPanel implements S
 
     public String getConceptFieldsUpdateTargetsOnBlur() {
         // If new unit panel form, update @this when concept is selected, otherwise @form
-        if(this.getClass() == GenericNewUnitDialogBean.class) {
+        if (this.getClass() == GenericNewUnitDialogBean.class) {
             return "@this panelHeader";
-        }
-        else {
+        } else {
             return "@form panelHeader";
         }
     }
@@ -99,18 +98,20 @@ public abstract class AbstractSingleEntity<T> extends AbstractPanel implements S
     }
 
 
-    private static final Map<Class<? extends CustomField>, Supplier<? extends CustomFieldAnswer>> ANSWER_CREATORS = Map.of(
-            CustomFieldText.class, CustomFieldAnswerText::new,
-            CustomFieldSelectOneFromFieldCode.class, CustomFieldAnswerSelectOneFromFieldCode::new,
-            CustomFieldSelectOneConceptFromChildrenOfConcept.class, CustomFieldAnswerSelectOneConceptFromChildrenOfConcept::new,
-            CustomFieldSelectMultiplePerson.class, CustomFieldAnswerSelectMultiplePerson::new,
-            CustomFieldDateTime.class, CustomFieldAnswerDateTime::new,
-            CustomFieldSelectOneActionUnit.class, CustomFieldAnswerSelectOneActionUnit::new,
-            CustomFieldSelectOneSpatialUnit.class, CustomFieldAnswerSelectOneSpatialUnit::new,
-            CustomFieldSelectMultipleSpatialUnitTree.class, CustomFieldAnswerSelectMultipleSpatialUnitTree::new,
-            CustomFieldSelectOneActionCode.class, CustomFieldAnswerSelectOneActionCode::new,
-            CustomFieldInteger.class, CustomFieldAnswerInteger::new
-    );
+    private static final Map<Class<? extends CustomField>, Supplier<? extends CustomFieldAnswer>> ANSWER_CREATORS =
+            Map.ofEntries(
+                    Map.entry(CustomFieldText.class, CustomFieldAnswerText::new),
+                    Map.entry(CustomFieldSelectOneFromFieldCode.class, CustomFieldAnswerSelectOneFromFieldCode::new),
+                    Map.entry(CustomFieldSelectOneConceptFromChildrenOfConcept.class, CustomFieldAnswerSelectOneConceptFromChildrenOfConcept::new),
+                    Map.entry(CustomFieldSelectMultiplePerson.class, CustomFieldAnswerSelectMultiplePerson::new),
+                    Map.entry(CustomFieldDateTime.class, CustomFieldAnswerDateTime::new),
+                    Map.entry(CustomFieldSelectOneActionUnit.class, CustomFieldAnswerSelectOneActionUnit::new),
+                    Map.entry(CustomFieldSelectOneSpatialUnit.class, CustomFieldAnswerSelectOneSpatialUnit::new),
+                    Map.entry(CustomFieldSelectMultipleSpatialUnitTree.class, CustomFieldAnswerSelectMultipleSpatialUnitTree::new),
+                    Map.entry(CustomFieldSelectOneActionCode.class, CustomFieldAnswerSelectOneActionCode::new),
+                    Map.entry(CustomFieldInteger.class, CustomFieldAnswerInteger::new),
+                    Map.entry(CustomFieldSelectOnePerson.class, CustomFieldAnswerSelectOnePerson::new)
+            );
 
     public boolean hasAutoGenerationFunction(CustomFieldText field) {
         return field != null && field.getAutoGenerationFunction() != null;
@@ -171,6 +172,7 @@ public abstract class AbstractSingleEntity<T> extends AbstractPanel implements S
 
     // Nom de la propriété qui fait eventuellement changer le formulaire
     protected abstract String getFormScopePropertyName();
+
     protected abstract void setFormScopePropertyValue(Concept concept);
 
     protected void onFormScopeChanged(Concept newVal) {
@@ -190,8 +192,8 @@ public abstract class AbstractSingleEntity<T> extends AbstractPanel implements S
 
         formResponse.getAnswers().get(field).setHasBeenModified(true);
         hasUnsavedModifications = true;
-        if(Boolean.TRUE.equals(field.getIsSystemField()) && Objects.equals(field.getValueBinding(), getFormScopePropertyName())) {
-            Concept newValue =  event.getObject(); // ← la nouvelle valeur
+        if (Boolean.TRUE.equals(field.getIsSystemField()) && Objects.equals(field.getValueBinding(), getFormScopePropertyName())) {
+            Concept newValue = event.getObject(); // ← la nouvelle valeur
             onFormScopeChanged(newValue);
         }
     }
@@ -324,7 +326,7 @@ public abstract class AbstractSingleEntity<T> extends AbstractPanel implements S
         answerId.setField(field);
         answer.setPk(answerId);
         answer.setHasBeenModified(false);
-        if(Boolean.TRUE.equals(field.getIsSystemField())) {
+        if (Boolean.TRUE.equals(field.getIsSystemField())) {
             initializeSystemField(answer, field);
         }
     }
@@ -431,6 +433,8 @@ public abstract class AbstractSingleEntity<T> extends AbstractPanel implements S
             dateTimeAnswer.setValue(odt.toLocalDateTime());
         } else if (value instanceof String str && answer instanceof CustomFieldAnswerText textAnswer) {
             textAnswer.setValue(str);
+        } else if (value instanceof Person p && answer instanceof CustomFieldAnswerSelectOnePerson singlePersonAnswer) {
+            singlePersonAnswer.setValue(p);
         } else if (value instanceof List<?> list && answer instanceof CustomFieldAnswerSelectMultiplePerson multiplePersonAnswer &&
                 list.stream().allMatch(Person.class::isInstance)) {
             multiplePersonAnswer.setValue((List<Person>) list);
@@ -446,11 +450,9 @@ public abstract class AbstractSingleEntity<T> extends AbstractPanel implements S
             spatialUnitAnswer.setValue(s);
         } else if (value instanceof ActionCode code && answer instanceof CustomFieldAnswerSelectOneActionCode actionCodeAnswer) {
             actionCodeAnswer.setValue(code);
-        }
-        else if (value instanceof Integer val && answer instanceof CustomFieldAnswerInteger integerAnswer) {
+        } else if (value instanceof Integer val && answer instanceof CustomFieldAnswerInteger integerAnswer) {
             integerAnswer.setValue(val);
-        }
-        else if (value instanceof Set<?> set && answer instanceof CustomFieldAnswerSelectMultipleSpatialUnitTree treeAnswer) {
+        } else if (value instanceof Set<?> set && answer instanceof CustomFieldAnswerSelectMultipleSpatialUnitTree treeAnswer) {
             // Cast set to the expected type
             treeAnswer.setValue((Set<SpatialUnit>) set);
             TreeUiStateViewModel ui = buildUiFor(treeAnswer);
@@ -491,6 +493,8 @@ public abstract class AbstractSingleEntity<T> extends AbstractPanel implements S
         } else if (answer instanceof CustomFieldAnswerText a) {
             return a.getValue();
         } else if (answer instanceof CustomFieldAnswerSelectMultiplePerson a) {
+            return a.getValue();
+        } else if (answer instanceof CustomFieldAnswerSelectOnePerson a) {
             return a.getValue();
         } else if (answer instanceof CustomFieldAnswerSelectOneFromFieldCode a) {
             return a.getValue();

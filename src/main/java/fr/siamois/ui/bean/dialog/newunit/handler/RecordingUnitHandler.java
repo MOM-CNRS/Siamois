@@ -64,8 +64,8 @@ public class RecordingUnitHandler implements INewUnitHandler<RecordingUnit> {
         }
         unit.setCreatedByInstitution(actionUnit.getCreatedByInstitution());
         unit.setActionUnit(actionUnit);
-        unit.setExcavators(List.of(sessionSettingsBean.getAuthenticatedUser()));
-        unit.setAuthors(List.of(sessionSettingsBean.getAuthenticatedUser()));
+        unit.setAuthor(sessionSettingsBean.getAuthenticatedUser());
+        unit.setContributors(List.of(sessionSettingsBean.getAuthenticatedUser()));
         unit.setStartDate(OffsetDateTime.now());
     }
 

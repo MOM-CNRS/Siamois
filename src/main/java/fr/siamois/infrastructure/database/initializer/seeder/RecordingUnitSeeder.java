@@ -36,7 +36,8 @@ public class RecordingUnitSeeder {
                                      ConceptSeeder.ConceptKey thirdType,
                                      String authorEmail,
                                      String institutionIdentifier,
-                                     List<String> authors,
+                                     String author,
+                                     String createdBy,
                                      List<String> excavators,
                                      OffsetDateTime creationTime,
                                      OffsetDateTime beginDate,
@@ -80,7 +81,6 @@ public class RecordingUnitSeeder {
             Concept type = conceptSeeder.findConceptOrThrow(s.type);
             Concept secondaryType = conceptSeeder.findConceptOrThrow(s.secondaryType);
             Concept thirdType = conceptSeeder.findConceptOrThrow(s.thirdType);
-            Person author = personSeeder.findPersonOrThrow(s.authorEmail);
 
             // Find Institution
             Institution institution = institutionSeeder.findInstitutionOrReturnNull(s.institutionIdentifier);
@@ -88,36 +88,32 @@ public class RecordingUnitSeeder {
                 throw new IllegalStateException("Institution introuvable");
             }
 
-            List<Person> authors = new ArrayList<>();
-            List<Person> excavators = new ArrayList<>();
-            if (s.authors != null) {
-                for (var email : s.authors) {
-                    Person p = personSeeder.findPersonOrThrow(email);
-                    authors.add(p);
-                }
-            }
+
+            List<Person> contributors = new ArrayList<>();
+
             if (s.excavators != null) {
                 for (var email : s.excavators) {
                     Person p = personSeeder.findPersonOrThrow(email);
-                    excavators.add(p);
+                    contributors.add(p);
                 }
             }
 
+            Person authorPerson = personSeeder.findPersonOrThrow(s.author);
+            Person createdBy = personSeeder.findPersonOrThrow(s.createdBy);
             SpatialUnit su = getSpatialUnitFromKey(s.spatialUnitName, institution);
             ActionUnit au = getActionUnitFromKey(s.actionUnitIdentifier);
 
             RecordingUnit toGetOrCreate = new RecordingUnit();
             toGetOrCreate.setCreatedByInstitution(institution);
             toGetOrCreate.setIdentifier(s.identifier);
-            toGetOrCreate.setCreatedBy(author);
             toGetOrCreate.setFullIdentifier(s.fullIdentifier);
             toGetOrCreate.setType(type);
             toGetOrCreate.setSecondaryType(secondaryType);
             toGetOrCreate.setThirdType(thirdType);
             toGetOrCreate.setStartDate(s.beginDate);
-            toGetOrCreate.setAuthors(authors);
-            toGetOrCreate.setExcavators(excavators);
-            toGetOrCreate.setAuthor(author);
+            toGetOrCreate.setAuthor(authorPerson);
+            toGetOrCreate.setContributors(contributors);
+            toGetOrCreate.setCreatedBy(createdBy);
             toGetOrCreate.setEndDate(s.endDate);
             toGetOrCreate.setCreationTime(s.creationTime);
             toGetOrCreate.setEndDate(s.endDate);

@@ -124,7 +124,7 @@ public class RecordingUnitService implements ArkEntityService {
                 managedRecordingUnit.setIdentifier(generateNextIdentifier(managedRecordingUnit));
             }
             // Set full identifier
-            managedRecordingUnit.setFullIdentifier(null); // reseting so that displayFullIdentifier generated a new one
+            managedRecordingUnit.setFullIdentifier(null); // reseting so that displayFullIdentifier updates it
             managedRecordingUnit.setFullIdentifier(managedRecordingUnit.displayFullIdentifier());
 
 
@@ -135,15 +135,8 @@ public class RecordingUnitService implements ArkEntityService {
             // Spatial Unit
             managedRecordingUnit.setSpatialUnit(recordingUnit.getSpatialUnit());
 
-            // many to many (need managed instances)
-            managedRecordingUnit.setAuthors(personRepository.findAllById(
-                            recordingUnit.getAuthors().stream()
-                                    .map(Person::getId)
-                                    .toList()
-                    )
-            );
-            managedRecordingUnit.setExcavators(personRepository.findAllById(
-                            recordingUnit.getExcavators().stream()
+            managedRecordingUnit.setContributors(personRepository.findAllById(
+                            recordingUnit.getContributors().stream()
                                     .map(Person::getId)
                                     .toList()
                     )
@@ -154,6 +147,7 @@ public class RecordingUnitService implements ArkEntityService {
             managedRecordingUnit.setArk(recordingUnit.getArk());
             managedRecordingUnit.setDescription(recordingUnit.getDescription());
             managedRecordingUnit.setCreatedBy(recordingUnit.getCreatedBy());
+            managedRecordingUnit.setAuthor(recordingUnit.getAuthor());
             managedRecordingUnit.setEndDate(recordingUnit.getEndDate());
             managedRecordingUnit.setStartDate(recordingUnit.getStartDate());
             managedRecordingUnit.setSize(recordingUnit.getSize());

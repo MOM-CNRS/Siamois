@@ -235,20 +235,20 @@
                         />
                     </p:selectCheckboxMenu>
                 </f:facet>
-                #{item.author.displayName()}
+                #{item.createdBy.displayName()}
             </p:column>
 
             <!-- Redacteurs -->
-            <p:column responsivePriority="2" headerText="#{langBean.msg('common.field.authors')}"
+            <p:column responsivePriority="2" headerText="#{langBean.msg('recordingunit.field.author')}"
             >
-                <cellbody:cellBodyMultiplePersons persons="#{item.authors}"/>
+                #{item.author.displayName()}
             </p:column>
 
 
             <!-- Fouilleurs -->
-            <p:column responsivePriority="2" headerText="#{langBean.msg('common.field.excavators')}"
+            <p:column responsivePriority="2" headerText="#{langBean.msg('recordingunit.field.contributors')}"
             >
-                <cellbody:cellBodyMultiplePersons persons="#{item.excavators}"/>
+                <cellbody:cellBodyMultiplePersons persons="#{item.contributors}"/>
             </p:column>
 
             <!-- parents -->
