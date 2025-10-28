@@ -23,6 +23,7 @@ import lombok.Getter;
 import lombok.Setter;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.config.BeanDefinition;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
@@ -39,7 +40,6 @@ import java.util.List;
 public class SpecimenListPanel extends AbstractListPanel<Specimen>  implements Serializable {
 
     private final transient SpecimenService specimenService;
-    private final transient NavBean navBean;
 
     // locals
     private String actionUnitListErrorMessage;
@@ -64,31 +64,12 @@ public class SpecimenListPanel extends AbstractListPanel<Specimen>  implements S
 
 
 
-    public SpecimenListPanel(SpatialUnitService spatialUnitService, PersonService personService,
-                             ConceptService conceptService,
-                             SessionSettingsBean sessionSettingsBean,
-                             LangBean langBean,
-                             LabelService labelService,
-                             ActionUnitService actionUnitService,
-                             BookmarkService bookmarkService, SpecimenService specimenService, NavBean navBean, FieldService fieldService, FieldConfigurationService fieldConfigurationService) {
-
-
-
+    public SpecimenListPanel(ApplicationContext context) {
         super("panel.title.allspecimenunit",
                 "bi bi-box2",
                 "siamois-panel specimen-panel list-panel",
-                spatialUnitService,
-                personService,
-                conceptService,
-                sessionSettingsBean,
-                langBean,
-                labelService,
-                actionUnitService,
-                bookmarkService,
-                fieldService,
-                fieldConfigurationService);
-        this.specimenService = specimenService;
-        this.navBean = navBean;
+                context);
+        specimenService = context.getBean(SpecimenService.class);
     }
 
     @Override

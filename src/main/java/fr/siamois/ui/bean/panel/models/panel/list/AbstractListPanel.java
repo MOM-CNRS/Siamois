@@ -24,6 +24,7 @@ import org.primefaces.component.api.UIColumn;
 import org.primefaces.event.ColumnToggleEvent;
 import org.primefaces.model.Visibility;
 import org.primefaces.model.menu.DefaultMenuItem;
+import org.springframework.context.ApplicationContext;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -80,29 +81,20 @@ public abstract class AbstractListPanel<T> extends AbstractPanel  implements Ser
             String titleKey,
             String icon,
             String cssClass,
-            SpatialUnitService spatialUnitService,
-            PersonService personService,
-            ConceptService conceptService,
-            SessionSettingsBean sessionSettingsBean,
-            LangBean langBean,
-            LabelService labelService,
-            ActionUnitService actionUnitService,
-            BookmarkService bookmarkService,
-            FieldService fieldService,
-            FieldConfigurationService fieldConfigurationService) {
+            ApplicationContext applicationContext) {
 
         super(titleKey, icon, cssClass);
 
-        this.spatialUnitService = spatialUnitService;
-        this.personService = personService;
-        this.conceptService = conceptService;
-        this.sessionSettingsBean = sessionSettingsBean;
-        this.langBean = langBean;
-        this.labelService = labelService;
-        this.actionUnitService = actionUnitService;
-        this.bookmarkService = bookmarkService;
-        this.fieldService = fieldService;
-        this.fieldConfigurationService = fieldConfigurationService;
+        this.spatialUnitService = applicationContext.getBean(SpatialUnitService.class);
+        this.personService = applicationContext.getBean(PersonService.class);
+        this.conceptService = applicationContext.getBean(ConceptService.class);
+        this.sessionSettingsBean = applicationContext.getBean(SessionSettingsBean.class);
+        this.langBean = applicationContext.getBean(LangBean.class);
+        this.labelService = applicationContext.getBean(LabelService.class);
+        this.actionUnitService = applicationContext.getBean(ActionUnitService.class);
+        this.bookmarkService = applicationContext.getBean(BookmarkService.class);
+        this.fieldService = applicationContext.getBean(FieldService.class);
+        this.fieldConfigurationService = applicationContext.getBean(FieldConfigurationService.class);
     }
 
     protected abstract long countUnitsByInstitution();

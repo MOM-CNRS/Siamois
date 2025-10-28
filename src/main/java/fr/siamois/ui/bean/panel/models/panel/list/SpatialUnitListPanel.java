@@ -21,6 +21,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.config.BeanDefinition;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
@@ -36,26 +37,11 @@ public class SpatialUnitListPanel extends AbstractListPanel<SpatialUnit>  implem
     // locals
     private String spatialUnitListErrorMessage;
 
-    public SpatialUnitListPanel(SpatialUnitService spatialUnitService,
-                                PersonService personService,
-                                ConceptService conceptService,
-                                SessionSettingsBean sessionSettingsBean,
-                                LangBean langBean,
-                                LabelService labelService,
-                                ActionUnitService actionUnitService, BookmarkService bookmarkService, FieldService fieldService, FieldConfigurationService fieldConfigurationService) {
+    public SpatialUnitListPanel(ApplicationContext context) {
         super("panel.title.allspatialunit",
                 "bi bi-geo-alt",
                 "siamois-panel spatial-unit-panel list-panel",
-                spatialUnitService,
-                personService,
-                conceptService,
-                sessionSettingsBean,
-                langBean,
-                labelService,
-                actionUnitService,
-                bookmarkService,
-                fieldService,
-                fieldConfigurationService);
+                context);
     }
 
     @Override

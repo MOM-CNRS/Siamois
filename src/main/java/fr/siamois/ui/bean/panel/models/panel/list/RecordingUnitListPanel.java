@@ -27,6 +27,7 @@ import lombok.Setter;
 import org.primefaces.event.RowEditEvent;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.config.BeanDefinition;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
@@ -44,9 +45,6 @@ import java.util.List;
 public class RecordingUnitListPanel extends AbstractListPanel<RecordingUnit>  implements Serializable {
 
     private final transient RecordingUnitService recordingUnitService;
-    private final transient NavBean navBean;
-    private final transient FieldService fieldService;
-    private final transient FieldConfigurationService fieldConfigurationService;
 
     // locals
     private String actionUnitListErrorMessage;
@@ -71,33 +69,12 @@ public class RecordingUnitListPanel extends AbstractListPanel<RecordingUnit>  im
 
 
 
-    public RecordingUnitListPanel(SpatialUnitService spatialUnitService, PersonService personService,
-                                  ConceptService conceptService,
-                                  SessionSettingsBean sessionSettingsBean,
-                                  LangBean langBean,
-                                  LabelService labelService,
-                                  ActionUnitService actionUnitService,
-                                  RecordingUnitService recordingUnitService, BookmarkService bookmarkService, NavBean navBean, FieldService fieldService, FieldConfigurationService fieldConfigurationService) {
-
-
-
+    public RecordingUnitListPanel(ApplicationContext context) {
         super("panel.title.allrecordingunit",
                 "bi bi-pencil-square",
                 "siamois-panel recording-unit-panel list-panel",
-                spatialUnitService,
-                personService,
-                conceptService,
-                sessionSettingsBean,
-                langBean,
-                labelService,
-                actionUnitService,
-                bookmarkService,
-                fieldService,
-                fieldConfigurationService);
-        this.recordingUnitService = recordingUnitService;
-        this.navBean = navBean;
-        this.fieldService = fieldService;
-        this.fieldConfigurationService = fieldConfigurationService;
+                context);
+        recordingUnitService = context.getBean(RecordingUnitService.class);
     }
 
     @Override

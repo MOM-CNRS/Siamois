@@ -21,6 +21,7 @@ import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.config.BeanDefinition;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
@@ -36,9 +37,6 @@ import java.util.List;
 @Scope(BeanDefinition.SCOPE_PROTOTYPE)
 public class ActionUnitListPanel extends AbstractListPanel<ActionUnit> implements Serializable {
 
-    private final transient FieldConfigurationService fieldConfigurationService;
-    private final transient BookmarkService bookmarkService;
-    private final transient FieldService fieldService;
     // locals
     private String actionUnitListErrorMessage;
 
@@ -59,21 +57,11 @@ public class ActionUnitListPanel extends AbstractListPanel<ActionUnit> implement
     }
 
 
-    public ActionUnitListPanel(SpatialUnitService spatialUnitService, PersonService personService,
-                               ConceptService conceptService,
-                               SessionSettingsBean sessionSettingsBean,
-                               LangBean langBean,
-                               LabelService labelService,
-                               ActionUnitService actionUnitService,
-                               FieldConfigurationService fieldConfigurationService, BookmarkService bookmarkService, FieldService fieldService) {
+    public ActionUnitListPanel(ApplicationContext context) {
         super("panel.title.allactionunit",
                 "bi bi-arrow-down-square",
                 "siamois-panel action-unit-panel list-panel",
-                spatialUnitService, personService, conceptService, sessionSettingsBean, langBean, labelService,
-                actionUnitService, bookmarkService, fieldService, fieldConfigurationService);
-        this.fieldConfigurationService = fieldConfigurationService;
-        this.bookmarkService = bookmarkService;
-        this.fieldService = fieldService;
+                context);
     }
 
     @Override
@@ -95,9 +83,7 @@ public class ActionUnitListPanel extends AbstractListPanel<ActionUnit> implement
 
 
     public List<Person> authorsAvailable() {
-
         return personService.findAllAuthorsOfActionUnitByInstitution(sessionSettingsBean.getSelectedInstitution());
-
     }
 
 
