@@ -11,8 +11,6 @@ public class PurlInfoDTO {
     private String datatype;
     private String lang;
 
-    public PurlInfoDTO() {}
-
     @Override
     public boolean equals(Object o) {
         if (!(o instanceof PurlInfoDTO that)) return false;
