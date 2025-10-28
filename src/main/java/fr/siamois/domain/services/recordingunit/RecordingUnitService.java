@@ -116,19 +116,17 @@ public class RecordingUnitService implements ArkEntityService {
                 managedRecordingUnit = new RecordingUnit();
             }
 
-            // Generate unique identifier if not present
+            // Generate unique identifier
             managedRecordingUnit.setIdentifier(recordingUnit.getIdentifier());
-            managedRecordingUnit.setFullIdentifier(recordingUnit.getFullIdentifier());
             managedRecordingUnit.setActionUnit(recordingUnit.getActionUnit());
             managedRecordingUnit.setCreatedByInstitution(recordingUnit.getCreatedByInstitution());
-            if (managedRecordingUnit.getFullIdentifier() == null) {
-                if (managedRecordingUnit.getIdentifier() == null) {
-
-                    managedRecordingUnit.setIdentifier(generateNextIdentifier(managedRecordingUnit));
-                }
-                // Set full identifier
-                managedRecordingUnit.setFullIdentifier(managedRecordingUnit.displayFullIdentifier());
+            if (managedRecordingUnit.getIdentifier() == null) {
+                managedRecordingUnit.setIdentifier(generateNextIdentifier(managedRecordingUnit));
             }
+            // Set full identifier
+            managedRecordingUnit.setFullIdentifier(null); // reseting so that displayFullIdentifier updates it
+            managedRecordingUnit.setFullIdentifier(managedRecordingUnit.displayFullIdentifier());
+
 
             // Add concept
             Concept type = conceptService.saveOrGetConcept(concept);
@@ -137,15 +135,8 @@ public class RecordingUnitService implements ArkEntityService {
             // Spatial Unit
             managedRecordingUnit.setSpatialUnit(recordingUnit.getSpatialUnit());
 
-            // many to many (need managed instances)
-            managedRecordingUnit.setAuthors(personRepository.findAllById(
-                            recordingUnit.getAuthors().stream()
-                                    .map(Person::getId)
-                                    .toList()
-                    )
-            );
-            managedRecordingUnit.setExcavators(personRepository.findAllById(
-                            recordingUnit.getExcavators().stream()
+            managedRecordingUnit.setContributors(personRepository.findAllById(
+                            recordingUnit.getContributors().stream()
                                     .map(Person::getId)
                                     .toList()
                     )
@@ -155,6 +146,7 @@ public class RecordingUnitService implements ArkEntityService {
             managedRecordingUnit.setAltitude(recordingUnit.getAltitude());
             managedRecordingUnit.setArk(recordingUnit.getArk());
             managedRecordingUnit.setDescription(recordingUnit.getDescription());
+            managedRecordingUnit.setCreatedBy(recordingUnit.getCreatedBy());
             managedRecordingUnit.setAuthor(recordingUnit.getAuthor());
             managedRecordingUnit.setEndDate(recordingUnit.getEndDate());
             managedRecordingUnit.setStartDate(recordingUnit.getStartDate());

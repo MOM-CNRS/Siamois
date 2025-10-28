@@ -177,7 +177,7 @@ public class ActionUnitService implements ArkEntityService {
         // Add concept
         Concept type = conceptService.saveOrGetConcept(typeConcept);
         actionUnit.setType(type);
-        actionUnit.setAuthor(info.getUser());
+        actionUnit.setCreatedBy(info.getUser());
 
         try {
             return actionUnitRepository.save(actionUnit);
@@ -402,7 +402,7 @@ public class ActionUnitService implements ArkEntityService {
      */
     public boolean isManagerOf(ActionUnit action, Person person) {
         // For now only the author is the manager, but we might need to extend it.
-        return Objects.equals(action.getAuthor().getId(), person.getId());
+        return Objects.equals(action.getCreatedBy().getId(), person.getId());
     }
 
 }

@@ -197,6 +197,7 @@ public abstract class BaseLazyDataModel<T> extends LazyDataModel<T> {
         return Objects.equals(value1, value2);
     }
 
+    @Override
     @Transactional
     public List<T> load(int first, int pageSize, Map<String, SortMeta> sortBy, Map<String, FilterMeta> filterBy) {
         boolean isSortSame = isSortCriteriaSame(this.cachedSortBy, sortBy);

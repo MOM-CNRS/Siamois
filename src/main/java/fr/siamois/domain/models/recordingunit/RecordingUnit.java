@@ -45,9 +45,8 @@ public class RecordingUnit extends RecordingUnitParent implements ArkEntity, Ref
         setSize(recordingUnit.getSize());
         setAltitude(recordingUnit.getAltitude());
         setCreatedByInstitution(recordingUnit.getCreatedByInstitution());
+        setCreatedBy(recordingUnit.getCreatedBy());
         setAuthor(recordingUnit.getAuthor());
-        setAuthors(recordingUnit.getAuthors());
-        setExcavators(recordingUnit.getExcavators());
         setNormalizedInterpretation(recordingUnit.getNormalizedInterpretation());
         setGeomorphologicalCycle(recordingUnit.getGeomorphologicalCycle());
         setSpatialUnit(recordingUnit.getSpatialUnit());
@@ -78,19 +77,11 @@ public class RecordingUnit extends RecordingUnitParent implements ArkEntity, Ref
 
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
-            name = "recording_unit_authors",
+            name = "recording_unit_contributors",
             joinColumns = @JoinColumn(name = "fk_recording_unit_id"),
             inverseJoinColumns = @JoinColumn(name = "fk_person_id"))
     @NotAudited
-    private List<Person> authors = new ArrayList<>();
-
-    @ManyToMany(fetch = FetchType.EAGER)
-    @JoinTable(
-            name = "recording_unit_excavators",
-            joinColumns = @JoinColumn(name = "fk_recording_unit_id"),
-            inverseJoinColumns = @JoinColumn(name = "fk_person_id"))
-    @NotAudited
-    private List<Person> excavators = new ArrayList<>();
+    private List<Person> contributors = new ArrayList<>();
 
     @OneToMany(mappedBy = "recordingUnit")
     private Set<Specimen> specimenList;
@@ -156,8 +147,9 @@ public class RecordingUnit extends RecordingUnitParent implements ArkEntity, Ref
     @Transient
     @JsonIgnore
     public List<String> getBindableFieldNames() {
-        return List.of("creationTime", "startDate", "endDate", "fullIdentifier", "authors",
-                "excavators", "type", "secondaryType", "thirdType", "actionUnit", "spatialUnit", "geomorphologicalCycle", "normalizedInterpretation");
+        return List.of("creationTime", "startDate", "endDate", "identifier",
+                "contributors", "type", "secondaryType", "thirdType", "actionUnit", "spatialUnit",
+                "geomorphologicalCycle", "normalizedInterpretation", "author");
     }
 
     // ----------- Concepts for system fields
@@ -168,6 +160,8 @@ public class RecordingUnit extends RecordingUnitParent implements ArkEntity, Ref
             .vocabulary(SYSTEM_THESO)
             .externalId("4286194")
             .build();
+
+
     // Excavators
     @Transient
     @JsonIgnore
@@ -212,12 +206,13 @@ public class RecordingUnit extends RecordingUnitParent implements ArkEntity, Ref
 
     @Transient
     @JsonIgnore
-    private static CustomFieldSelectMultiplePerson authorsField = new CustomFieldSelectMultiplePerson.Builder()
-            .label("recordingunit.field.authors")
+    private static CustomFieldSelectOnePerson authorField = new CustomFieldSelectOnePerson.Builder()
+            .label("recordingunit.field.mainAuthor")
             .isSystemField(true)
-            .valueBinding("authors")
+            .valueBinding("author")
             .concept(authorsConcept)
             .build();
+
     @Transient
     @JsonIgnore
     private static CustomFieldSelectMultiplePerson excavatorsField = new CustomFieldSelectMultiplePerson.Builder()
@@ -393,13 +388,7 @@ public class RecordingUnit extends RecordingUnitParent implements ArkEntity, Ref
                                                     .readOnly(false)
                                                     .className(COLUMN_CLASS_NAME)
                                                     .isRequired(true)
-                                                    .field(authorsField)
-                                                    .build())
-                                            .addColumn(new CustomCol.Builder()
-                                                    .readOnly(false)
-                                                    .className(COLUMN_CLASS_NAME)
-                                                    .isRequired(true)
-                                                    .field(excavatorsField)
+                                                    .field(authorField)
                                                     .build())
                                             .addColumn(new CustomCol.Builder()
                                                     .readOnly(false)
@@ -448,12 +437,7 @@ public class RecordingUnit extends RecordingUnitParent implements ArkEntity, Ref
                                             .addColumn(new CustomCol.Builder()
                                                     .readOnly(false)
                                                     .className(COLUMN_CLASS_NAME)
-                                                    .field(authorsField)
-                                                    .build())
-                                            .addColumn(new CustomCol.Builder()
-                                                    .readOnly(false)
-                                                    .className(COLUMN_CLASS_NAME)
-                                                    .field(excavatorsField)
+                                                    .field(authorField)
                                                     .build())
                                             .build()
                             ).addRow(

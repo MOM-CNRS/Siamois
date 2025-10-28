@@ -1,140 +1,166 @@
 .content-body {
-    background: var(--siamois-green-unknown);
+  background: var(--siamois-green-unknown);
 }
 
 .siamois-panel .ui-widget {
-    font-family: 'Inter', sans-serif;
+  font-family: 'Inter', sans-serif;
 }
 
 .siamois-panel .field-value-group {
-    display: block;
-    margin-top: 0;
-    width: auto;
+  display: block;
+  margin-top: 0;
+  width: auto;
 }
 
 .panel-highlight {
-    outline: 3px solid var(--siamois-green-light-350);
-    transition: outline 0.5s ease-in-out;
+  outline: 3px solid var(--siamois-green-light-350);
+  transition: outline 0.5s ease-in-out;
 }
 
 .sia-flow-panel-title, .ui-chip-text {
-    font-size: 14px;
+  font-size: 14px;
 }
 
 .siamois-panel {
-    border-radius: 8px;
-    font-family: 'Inter', sans-serif;
-    border: 1px solid var(--siamois-green-light-100);
+  border-radius: 8px;
+  font-family: 'Inter', sans-serif;
+  border: 1px solid var(--siamois-green-light-100);
 }
 
 .siamois-panel .ui-datatable .ui-datatable-header {
-    background: transparent;
-    border: none;
+  background: transparent;
+  border: none;
 }
 
 .sia-panel-title {
-    font-size: 22px;
-    padding: 0.5em 0.5em 0.5em 2em;
+  font-size: 22px;
+  padding: 0.5em 0.5em 0.5em 2em;
 }
 
 /* BUTTONS */
 .ui-button.sia-icon-btn {
-    background: transparent;
-    border: none;
+  background: transparent;
+  border: none;
 }
 
 /* input fields */
 
 .siamois-panel .ui-datatable .ui-datatable-data > tr > td {
-    padding: 0.5em;
+  padding: 0.5em;
 }
 
 .ui-panel.siamois-panel .ui-panel-content {
-    padding: 0;
+  padding: 0;
 }
 
 .ui-panel.siamois-panel .ui-panel-titlebar {
-    font-family: 'Inter', sans-serif;
-    background: var(--siamois-green-light-100);
-    color: var(--text-light)
+  font-family: 'Inter', sans-serif;
+  background: var(--siamois-green-light-100);
+  color: var(--text-light)
 }
 
 .siamois-panel .panel-top-section {
-    padding: 1em;
+  padding: 1em;
 }
 
 .siamois-panel .ui-tabs.ui-tabs-top > .ui-tabs-nav li.ui-tabs-header {
-    background: transparent;
+  background: transparent;
 }
 
 .siamois-panel .ui-tabs .ui-tabs-nav {
-    background: transparent;
+  background: transparent;
 }
 
 .siamois-panel .ui-breadcrumb {
-    border: none;
-    border-radius: 0;
+  border: none;
+  border-radius: 0;
 }
 
 .siamois-panel .ui-toolbar {
-    border: none;
-    padding-top: 0.5em;
-    padding-bottom: 0.5em;
-    background: none;
+  border: none;
+  padding-top: 0.5em;
+  padding-bottom: 0.5em;
+  background: none;
 }
 
 .siamois-toolbar {
-    background: transparent;
-    box-shadow: none;
+  background: transparent;
+  box-shadow: none;
 }
 
 .recording-unit-single-panel .siamois-toolbar {
-    background: transparent;
-    box-shadow: none;
+  background: transparent;
+  box-shadow: none;
 }
 
 /* forms */
 
 .ui-panel.sia-form-panel .ui-panel-content {
-    background: transparent;
-    color: var(--text-main);
-    border: none;
-    padding: 0;
+  background: transparent;
+  color: var(--text-main);
+  border: none;
+  padding: 0;
 }
 
 
 .siamois-panel .ui-panel.sia-form-panel .ui-panel-titlebar {
-    background: transparent;
-    border: none;
-    border-bottom: 1px solid var(--siamois-green-light-350);
-    color: var(--text-main);
-    padding: 0.5em;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--siamois-green-light-350);
+  color: var(--text-main);
+  padding: 0.5em;
 }
 
 /* Welcome cards */
 .sia-welcome-card.ui-card {
-    display: flex;
-    flex-direction: column;
-    height: 100%; /* important so the body/footer layout fills column height */
+  display: flex;
+  flex-direction: column;
+  height: 100%; /* important so the body/footer layout fills column height */
 }
 
 /* Let the body take up remaining space and keep content at the top */
 .sia-welcome-card .ui-card-body {
-    flex: 1 1 auto;         /* grow/shrink to fill */
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-start; /* content starts at top */
+  flex: 1 1 auto; /* grow/shrink to fill */
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start; /* content starts at top */
 }
 
 /* dialogs */
 
 .sia-new-unit-dialog.ui-dialog .ui-dialog-titlebar {
-    padding: 0;
+  padding: 0;
 }
 
 .sia-new-unit-dialog.ui-dialog .ui-dialog-footer {
-    padding: 0;
+  padding: 0;
 }
+
+body {
+  .ui-selectonemenu {
+    &.ui-state-hover {
+      border-color: var(--light-color-200);
+    }
+
+    &.ui-state-focus {
+      border-color: var(--light-color-200);
+      box-shadow: 0 0 0 .2em var(--light-color-100);
+    }
+  }
+
+  .ui-selectonemenu-panel {
+    .ui-button {
+      background: var(--main-color);
+      border-color: var(--main-color);
+    }
+
+    .ui-selectonemenu-items .ui-selectonemenu-item.ui-state-highlight {
+      background: var(--dark-color);
+    }
+  }
+}
+
+
 
 
 

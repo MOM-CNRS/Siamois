@@ -169,7 +169,7 @@ public class GenericNewUnitDialogBean<T extends TraceableEntity>
     public void init() throws CannotInitializeNewUnitDialogException {
         reset();
         unit = handler.newEmpty();
-        unit.setAuthor(sessionSettingsBean.getAuthenticatedUser());
+        unit.setCreatedBy(sessionSettingsBean.getAuthenticatedUser());
         unit.setCreatedByInstitution(sessionSettingsBean.getSelectedInstitution());
         handler.initFromContext(this);
         initForms(true);

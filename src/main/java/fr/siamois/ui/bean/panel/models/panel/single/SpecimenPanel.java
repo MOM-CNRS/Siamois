@@ -362,7 +362,7 @@ public class SpecimenPanel extends AbstractSingleEntityPanel<Specimen>  implemen
         unit.setRecordingUnit(backupClone.getRecordingUnit());
         unit.setCategory(backupClone.getCategory());
         unit.setCreatedByInstitution(backupClone.getCreatedByInstitution());
-        unit.setAuthor(backupClone.getAuthor());
+        unit.setCreatedBy(backupClone.getCreatedBy());
         unit.setAuthors(backupClone.getAuthors());
         unit.setCollectors(backupClone.getCollectors());
         unit.setCollectionDate(backupClone.getCollectionDate());

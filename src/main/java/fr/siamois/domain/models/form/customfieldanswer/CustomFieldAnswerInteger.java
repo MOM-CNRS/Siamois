@@ -18,6 +18,8 @@ public class CustomFieldAnswerInteger extends CustomFieldAnswer {
     @Column(name = "value_as_integer")
     private Integer value;
 
+
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

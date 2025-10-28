@@ -129,7 +129,7 @@ public class InstitutionService {
      */
     public Set<TeamMemberRelation> findRelationsOf(ActionUnit actionUnit) {
         Set<TeamMemberRelation> result = teamMemberRepository.findAllByActionUnit(actionUnit);
-        result.add(new TeamMemberRelation(actionUnit, actionUnit.getAuthor()));
+        result.add(new TeamMemberRelation(actionUnit, actionUnit.getCreatedBy()));
         return result;
     }
 

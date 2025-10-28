@@ -41,7 +41,7 @@ public class Specimen extends SpecimenParent implements ArkEntity {
         setRecordingUnit(specimen.getRecordingUnit());
         setCategory(specimen.getCategory());
         setCreatedByInstitution(specimen.getCreatedByInstitution());
-        setAuthor(specimen.getAuthor());
+        setCreatedBy(specimen.getCreatedBy());
         setAuthors(specimen.getAuthors());
         setCollectors(specimen.getCollectors());
         setCollectionDate(specimen.getCollectionDate());

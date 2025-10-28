@@ -2,6 +2,8 @@ package fr.siamois.ui.bean.panel.models.panel.single.tab;
 
 import lombok.Data;
 
+import java.util.Objects;
+
 @Data
 public class PanelTab {
 
@@ -18,5 +20,19 @@ public class PanelTab {
         this.titleCode = titleCode;
         this.icon = icon;
         this.id = id;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof PanelTab that)) return false;
+
+        return Objects.equals(titleCode, that.titleCode) &&
+                Objects.equals(icon, that.icon);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(titleCode, icon);
     }
 }

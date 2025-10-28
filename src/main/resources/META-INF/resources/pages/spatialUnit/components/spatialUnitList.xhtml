@@ -8,7 +8,8 @@
 >
     <cc:interface>
         <!-- Attributes to pass the bean's list and optional additional parameters -->
-        <cc:attribute name="lazyDataModel" required="true" type="fr.siamois.ui.lazydatamodel.BaseSpatialUnitLazyDataModel"/>
+        <cc:attribute name="lazyDataModel" required="true"
+                      type="fr.siamois.ui.lazydatamodel.BaseSpatialUnitLazyDataModel"/>
         <cc:attribute name="panelModel" required="true" type="fr.siamois.ui.bean.panel.models.panel.AbstractPanel"/>
         <cc:attribute name="panelIndex" required="true" type="java.lang.Integer"/>
         <cc:attribute name="disableAddBtn" required="false" default="false" type="java.lang.Boolean"/>
@@ -19,39 +20,39 @@
 
         <!--@elvariable id="panelModel" type="fr.siamois.ui.bean.panel.models.panel.list.SpatialUnitListPanel"-->
 
-            <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
+        <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
 
-            <!-- datatable property partialUpdate=false because otherwise the paginator template is reset after sort or filter actions-->
-            <p:dataTable paginator="true"
-                         id="spatialUnitDataTable"
-                         paginatorPosition="bottom" var="item"
-                         widgetVar="#{cc.clientId}_spatialUnitListTable"
-                         lazy="true"
-                         globalFilter="#{cc.attrs.lazyDataModel.globalFilter}"
-                         allowUnsorting="true"
-                         sortBy="#{cc.attrs.lazyDataModel.sortBy}"
-                         rows="#{cc.attrs.lazyDataModel.pageSizeState}"
-                         first="#{cc.attrs.lazyDataModel.first}"
-                         sortMode="multiple"
-                         partialUpdate="false"
-                         emptyMessage="#{langBean.msg('spatialUnitList.empty')}"
-                         paginatorTemplate="Rows per page: {RowsPerPageDropdown} {RowReport} {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink}"
-                         rowsPerPageTemplate="5,10,15,20,25"
-                         value="#{cc.attrs.lazyDataModel}" class="spatial-unit-datatable">
+        <!-- datatable property partialUpdate=false because otherwise the paginator template is reset after sort or filter actions-->
+        <p:dataTable paginator="true"
+                     id="spatialUnitDataTable"
+                     paginatorPosition="bottom" var="item"
+                     widgetVar="#{cc.clientId}_spatialUnitListTable"
+                     lazy="true"
+                     globalFilter="#{cc.attrs.lazyDataModel.globalFilter}"
+                     allowUnsorting="true"
+                     sortBy="#{cc.attrs.lazyDataModel.sortBy}"
+                     rows="#{cc.attrs.lazyDataModel.pageSizeState}"
+                     first="#{cc.attrs.lazyDataModel.first}"
+                     sortMode="multiple"
+                     partialUpdate="false"
+                     emptyMessage="#{langBean.msg('spatialUnitList.empty')}"
+                     paginatorTemplate="Rows per page: {RowsPerPageDropdown} {RowReport} {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink}"
+                     rowsPerPageTemplate="5,10,15,20,25"
+                     value="#{cc.attrs.lazyDataModel}" class="spatial-unit-datatable">
 
-                <f:facet name="{RowReport}">
+            <f:facet name="{RowReport}">
 
                         <span class="ui-paginator-current">#{cc.attrs.lazyDataModel.getFirstIndexOnPage()}-#{cc.attrs.lazyDataModel.getLastIndexOnPage()}
                             of #{cc.attrs.lazyDataModel.rowCount}</span>
-                </f:facet>
+            </f:facet>
 
-                <f:facet name="header">
-                    <p:toolbar>
-                        <p:toolbarGroup>
-                            <p:toolbarGroup align="left">
+            <f:facet name="header">
+                <p:toolbar>
+                    <p:toolbarGroup>
+                        <p:toolbarGroup align="left">
 
-                                <!-- Global search -->
-                                <span class="filter-container ui-input-icon-left">
+                            <!-- Global search -->
+                            <span class="filter-container ui-input-icon-left">
                                 <i class="bi bi-search"/>
 
                                             <p:inputText id="globalFilter"
@@ -63,55 +64,54 @@
                                             </p:inputText>
                                 </span>
 
-                                <!-- Column toggler -->
-                                <p:commandButton style="margin-left: 1em;" id="toggler" type="button"
-                                                 rendered="#{cc.attrs.displayColumnToggler}"
-                                                 value="#{langBean.msg('table.columnvisibility')}"
-                                                 icon="pi pi-align-justify"/>
-                                <p:columnToggler datasource=":#{cc.clientId}:spatialUnitDataTable"
-                                                 rendered="#{cc.attrs.displayColumnToggler}"
-                                                 trigger=":#{cc.clientId}:spatialUnitDataTable:toggler">
-                                    <p:ajax event="toggle" listener="#{cc.attrs.panelModel.onToggle}"/>
-                                </p:columnToggler>
-
-
-                            </p:toolbarGroup>
+                            <!-- Column toggler -->
+                            <p:commandButton style="margin-left: 1em;" id="toggler" type="button"
+                                             rendered="#{cc.attrs.displayColumnToggler}"
+                                             value="#{langBean.msg('table.columnvisibility')}"
+                                             icon="pi pi-align-justify"/>
+                            <p:columnToggler datasource=":#{cc.clientId}:spatialUnitDataTable"
+                                             rendered="#{cc.attrs.displayColumnToggler}"
+                                             trigger=":#{cc.clientId}:spatialUnitDataTable:toggler">
+                                <p:ajax event="toggle" listener="#{cc.attrs.panelModel.onToggle}"/>
+                            </p:columnToggler>
 
 
                         </p:toolbarGroup>
 
 
-                        <p:toolbarGroup align="right">
-                            <cc:renderFacet name="rightToolbar"/>
-                        </p:toolbarGroup>
-                    </p:toolbar>
-
-                </f:facet>
+                    </p:toolbarGroup>
 
 
+                    <p:toolbarGroup align="right">
+                        <cc:renderFacet name="rightToolbar"/>
+                    </p:toolbarGroup>
+                </p:toolbar>
 
-                <p:column toggleable="false" responsivePriority="1"
-                          headerText="#{langBean.msg('table.spatialunit.column.name')}"
-                          sortable="true"
-                          filterValue="#{cc.attrs.lazyDataModel.nameFilter}"
-                          filterable="true"
-                          field="name"
-                          id="nameCol">
-
-                    <p:commandLink
-                            action="#{flowBean.goToSpatialUnitByIdNewPanel(item.id,cc.attrs.panelModel)}"
-                            process="@form"
-                            onstart="PF('buiContent').show()"
-                            oncomplete="PF('buiContent').hide();handleScrollToTop();"
-                            update="flow"
-                    >
-                        <h:outputText value="#{item.name}"/>
-                    </p:commandLink>
+            </f:facet>
 
 
-                </p:column>
+            <p:column toggleable="false" responsivePriority="1"
+                      headerText="#{langBean.msg('table.spatialunit.column.name')}"
+                      sortable="true"
+                      filterValue="#{cc.attrs.lazyDataModel.nameFilter}"
+                      filterable="true"
+                      field="name"
+                      id="nameCol">
 
-                <!-- Spatial unit type column -->
+                <p:commandLink
+                        action="#{flowBean.goToSpatialUnitByIdNewPanel(item.id,cc.attrs.panelModel)}"
+                        process="@form"
+                        onstart="PF('buiContent').show()"
+                        oncomplete="PF('buiContent').hide();handleScrollToTop();"
+                        update="flow"
+                >
+                    <h:outputText value="#{item.name}"/>
+                </p:commandLink>
+
+
+            </p:column>
+          
+                          <!-- Spatial unit type column -->
                 <p:column responsivePriority="1" headerText="#{langBean.msg('table.spatialunit.column.type')}"
                           sortable="true"
                           filterable="true"
@@ -142,61 +142,64 @@
                             styleClass="mr-2 spatial-unit-type-chip"/>
                 </p:column>
 
-                <!-- Creation time -->
-                <p:column responsivePriority="2" headerText="#{langBean.msg('table.spatialunit.column.creationdate')}"
-                          sortable="true"
-                          filterable="false"
-                          field="creationTime"
-                          id="creationTimeCol"
-                >
-                    <h:outputText value="#{panelModel.formatUtcDateTime(item.creationTime)}"/>
-                </p:column>
 
-                <!-- Auteur/Proprietaire -->
-                <p:column responsivePriority="2" headerText="#{langBean.msg('table.spatialunit.column.author')}"
-                          sortable="true"
-                          filterable="true"
-                          field="author"
-                          id="authorCol"
-                          filterMatchMode="exact"
-                >
-                    <f:facet name="filter">
-                        <p:selectCheckboxMenu
-                                label="#{langBean.msg('table.spatialunit.column.author.filter')}"
-                                filter="true"
-                                updateLabel="true"
-                                value="#{cc.attrs.lazyDataModel.selectedAuthors}"
-                                filterMatchMode="contains"
-                                onchange="PF('#{cc.clientId}_spatialUnitListTable').filter()"
-                                converter="#{personConverter}">
-                            <f:selectItems value="#{cc.attrs.panelModel.authorsAvailable()}"
-                                           var="person"
-                                           itemValue="#{person}"
-                                           itemLabel="#{person.displayName()}"
-                            />
-                        </p:selectCheckboxMenu>
-                    </f:facet>
-                    #{item.author.displayName()}
-                </p:column>
+            <!-- Creation time -->
+            <p:column responsivePriority="2" headerText="#{langBean.msg('table.spatialunit.column.creationdate')}"
+                      sortable="true"
+                      filterable="false"
+                      field="creationTime"
+                      id="creationTimeCol"
+            >
+                <h:outputText value="#{panelModel.formatUtcDateTime(item.creationTime)}"/>
+            </p:column>
+
+            <!-- Auteur/Proprietaire -->
+            <p:column responsivePriority="2" headerText="#{langBean.msg('table.spatialunit.column.author')}"
+                      sortable="true"
+                      filterable="true"
+                      field="author"
+                      id="authorCol"
+                      filterMatchMode="exact"
+            >
+                <f:facet name="filter">
+                    <p:selectCheckboxMenu
+                            label="#{langBean.msg('table.spatialunit.column.author.filter')}"
+                            filter="true"
+                            updateLabel="true"
+                            value="#{cc.attrs.lazyDataModel.selectedAuthors}"
+                            filterMatchMode="contains"
+                            onchange="PF('#{cc.clientId}_spatialUnitListTable').filter()"
+                            converter="#{personConverter}">
+                        <f:selectItems value="#{cc.attrs.panelModel.authorsAvailable()}"
+                                       var="person"
+                                       itemValue="#{person}"
+                                       itemLabel="#{person.displayName()}"
+                        />
+                    </p:selectCheckboxMenu>
+                </f:facet>
+                #{item.createdBy.displayName()}
+            </p:column>
 
 
-                <!-- Parents -->
-                <p:column responsivePriority="3">
-                    <f:facet name="header">
-                        <cellheader:withIcon icon="bi bi-geo-alt"
+            <!-- Parents -->
+            <p:column responsivePriority="3">
+                <f:facet name="header">
+                    <cellheader:withIcon icon="bi bi-geo-alt"
 
-                                             text="#{langBean.msg('table.spatialunit.column.parents')}"/>
-                    </f:facet>
-                    <p:commandLink
-                            action="#{flowBean.goToSpatialUnitByIdNewPanel(item.id,cc.attrs.panelModel,2)}"
-                            onstart="PF('buiContent').show()"
-                            oncomplete="PF('buiContent').hide();handleScrollToTop();"
-                            process="@form"
-                            update="flow"
-                    >
-                        <h:outputText value="#{item.parents.size()} (voir)"/>
-                    </p:commandLink>
-                    <p:commandButton value="#{langBean.msg('common.action.create')}" icon="bi bi-plus-square"
+                                         text="#{langBean.msg('table.spatialunit.column.parents')}"/>
+                </f:facet>
+
+
+                <div style="display: flex; gap: 1em;">
+                    <span> #{item.parents.size()} </span>
+                    <p:commandButton icon="bi bi-eye"
+                                     action="#{flowBean.goToSpatialUnitByIdNewPanel(item.id,cc.attrs.panelModel,2)}"
+                                     onstart="PF('buiContent').show()"
+                                     oncomplete="PF('buiContent').hide();handleScrollToTop();"
+                                     process="@form"
+                                     update="flow">
+                    </p:commandButton>
+                    <p:commandButton icon="bi bi-plus-square"
                                      id="newSpatialUnitParentsButton"
                                      actionListener="#{genericNewUnitDialogBean.selectKind('SPATIAL', item.parents, null, item)}"
                                      oncomplete="PF('newUnitDiag').show()"
@@ -204,26 +207,29 @@
                                      rendered="#{flowBean.readWriteMode == 'WRITE'}"
                                      style="margin-right: .5rem">
                     </p:commandButton>
+                </div>
 
-                </p:column>
+            </p:column>
 
 
-                <!-- Children -->
-                <p:column responsivePriority="3">
-                    <f:facet name="header">
-                        <cellheader:withIcon icon="bi bi-geo-alt"
-                                             text="#{langBean.msg('table.spatialunit.column.children')}"/>
-                    </f:facet>
-                    <p:commandLink
-                            action="#{flowBean.goToSpatialUnitByIdNewPanel(item.id,cc.attrs.panelModel,2)}"
-                            onstart="PF('buiContent').show()"
-                            oncomplete="PF('buiContent').hide();handleScrollToTop();"
-                            process="@form"
-                            update="flow"
-                    >
-                        <h:outputText value="#{item.children.size()} (voir)"/>
-                    </p:commandLink>
-                    <p:commandButton value="#{langBean.msg('common.action.create')}" icon="bi bi-plus-square"
+            <!-- Children -->
+            <p:column responsivePriority="3">
+                <f:facet name="header">
+                    <cellheader:withIcon icon="bi bi-geo-alt"
+                                         text="#{langBean.msg('table.spatialunit.column.children')}"/>
+                </f:facet>
+
+                <div style="display: flex; gap: 1em;">
+                    <span> #{item.children.size()} </span>
+
+                    <p:commandButton icon="bi bi-eye"
+                                     action="#{flowBean.goToSpatialUnitByIdNewPanel(item.id,cc.attrs.panelModel,2)}"
+                                     onstart="PF('buiContent').show()"
+                                     oncomplete="PF('buiContent').hide();handleScrollToTop();"
+                                     process="@form"
+                                     update="flow">
+                    </p:commandButton>
+                    <p:commandButton icon="bi bi-plus-square"
                                      id="newSpatialUnitChildrenButton"
                                      actionListener="#{genericNewUnitDialogBean.selectKind('SPATIAL', item.children, item, null)}"
                                      oncomplete="PF('newUnitDiag').show()"
@@ -231,70 +237,76 @@
                                      rendered="#{flowBean.readWriteMode == 'WRITE'}"
                                      style="margin-right: .5rem">
                     </p:commandButton>
+                </div>
 
-                </p:column>
 
-                <!-- Actions -->
-                <p:column responsivePriority="3">
-                    <f:facet name="header">
-                        <cellheader:withIcon icon="bi bi-arrow-down-square"
-                                             text="#{langBean.msg('table.spatialunit.column.actions')}"/>
-                    </f:facet>
-                    <p:commandLink
-                            action="#{flowBean.goToSpatialUnitByIdNewPanel(item.id,cc.attrs.panelModel,4)}"
-                            onstart="PF('buiContent').show()"
-                            oncomplete="PF('buiContent').hide();handleScrollToTop();"
-                            process="@form"
-                            update="flow"
-                    >
-                        <h:outputText value="#{item.relatedActionUnitList.size()} (voir)"/>
-                    </p:commandLink>
+            </p:column>
 
-                    <p:commandButton value="#{langBean.msg('common.action.create')}" icon="bi bi-plus-square"
+            <!-- Actions -->
+            <p:column responsivePriority="3">
+                <f:facet name="header">
+                    <cellheader:withIcon icon="bi bi-arrow-down-square"
+                                         text="#{langBean.msg('table.spatialunit.column.actions')}"/>
+                </f:facet>
+
+                <div style="display: flex; gap: 1em;">
+                    <span> #{item.children.size()} </span>
+
+                    <p:commandButton icon="bi bi-eye"
+                                     action="#{flowBean.goToSpatialUnitByIdNewPanel(item.id,cc.attrs.panelModel,4)}"
+                                     onstart="PF('buiContent').show()"
+                                     oncomplete="PF('buiContent').hide();handleScrollToTop();"
+                                     process="@form"
+                                     update="flow">
+                    </p:commandButton>
+
+                    <p:commandButton icon="bi bi-plus-square"
                                      actionListener="#{genericNewUnitDialogBean.selectKind('ACTION',item.relatedActionUnitList, item)}"
                                      oncomplete="PF('newUnitDiag').show()"
                                      rendered="#{flowBean.readWriteMode == 'WRITE' and flowBean.isActionUnitCreateAllowed()}"
                                      update="newUnitForm"
                                      style="margin-right: .5rem">
                     </p:commandButton>
-                </p:column>
+                </div>
+
+            </p:column>
 
 
-                <!-- Enregistrements -->
-                <p:column responsivePriority="3">
-                    <f:facet name="header">
-                        <cellheader:withIcon icon="bi bi-pencil-square"
-                                             text="#{langBean.msg('table.spatialunit.column.recordings')}"/>
-                    </f:facet>
-                    <p:commandLink
-                            action="#{flowBean.goToSpatialUnitByIdNewPanel(item.id,cc.attrs.panelModel,5)}"
-                            onstart="PF('buiContent').show()"
-                            oncomplete="PF('buiContent').hide();handleScrollToTop();"
-                            process="@form"
-                            update="flow"
-                    >
-                        <h:outputText value="#{item.recordingUnitList.size()} (voir)"/>
-                    </p:commandLink>
-                </p:column>
+            <!-- Enregistrements -->
+            <p:column responsivePriority="3">
+                <f:facet name="header">
+                    <cellheader:withIcon icon="bi bi-pencil-square"
+                                         text="#{langBean.msg('table.spatialunit.column.recordings')}"/>
+                </f:facet>
+                <p:commandLink
+                        action="#{flowBean.goToSpatialUnitByIdNewPanel(item.id,cc.attrs.panelModel,5)}"
+                        onstart="PF('buiContent').show()"
+                        oncomplete="PF('buiContent').hide();handleScrollToTop();"
+                        process="@form"
+                        update="flow"
+                >
+                    <h:outputText value="#{item.recordingUnitList.size()} (voir)"/>
+                </p:commandLink>
+            </p:column>
 
 
-                <!-- Action toolbar-->
-                <p:column responsivePriority="1" exportable="false" toggleable="false">
-                    <p:toolbar>
-                        <p:toolbarGroup>
-                            <p:commandButton icon="bi bi-bookmark" disabled="true" styleClass="sia-icon-btn"/>
-                            <p:commandButton icon="bi bi-pencil" disabled="true" styleClass="sia-icon-btn"/>
-                            <p:commandButton icon="bi bi-copy" disabled="true" styleClass="sia-icon-btn"/>
-                        </p:toolbarGroup>
-                    </p:toolbar>
-                </p:column>
+            <!-- Action toolbar-->
+            <p:column responsivePriority="1" exportable="false" toggleable="false">
+                <p:toolbar>
+                    <p:toolbarGroup>
+                        <p:commandButton icon="bi bi-bookmark" disabled="true" styleClass="sia-icon-btn"/>
+                        <p:commandButton icon="bi bi-pencil" disabled="true" styleClass="sia-icon-btn"/>
+                        <p:commandButton icon="bi bi-copy" disabled="true" styleClass="sia-icon-btn"/>
+                    </p:toolbarGroup>
+                </p:toolbar>
+            </p:column>
 
-            </p:dataTable>
+        </p:dataTable>
 
-            <p:blockUI block="spatialUnitDataTable" trigger="spatialUnitDataTable" widgetVar="#{cc.clientId}_buiSpatialUnitDatatable">
-                <i class="pi pi-spin pi-spinner" style="font-size: 3rem"></i>
-            </p:blockUI>
-
+        <p:blockUI block="spatialUnitDataTable" trigger="spatialUnitDataTable"
+                   widgetVar="#{cc.clientId}_buiSpatialUnitDatatable">
+            <i class="pi pi-spin pi-spinner" style="font-size: 3rem"></i>
+        </p:blockUI>
 
 
     </cc:implementation>

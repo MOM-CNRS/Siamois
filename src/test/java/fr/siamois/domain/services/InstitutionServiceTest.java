@@ -78,7 +78,7 @@ class InstitutionServiceTest {
 
         actionUnit = new ActionUnit();
         actionUnit.setId(1L);
-        actionUnit.setAuthor(manager);
+        actionUnit.setCreatedBy(manager);
         actionUnit.setCreatedByInstitution(institution1);
     }
 
@@ -238,7 +238,7 @@ class InstitutionServiceTest {
     void findRelationsOf_shouldReturnAllRelations() {
         actionUnit = new ActionUnit();
         actionUnit.setId(1L);
-        actionUnit.setAuthor(manager);
+        actionUnit.setCreatedBy(manager);
 
         Institution institution = new Institution();
         institution.setId(1L);
@@ -260,7 +260,7 @@ class InstitutionServiceTest {
     void findMembersOf_shouldReturnAllMembers() {
         actionUnit = new ActionUnit();
         actionUnit.setId(1L);
-        actionUnit.setAuthor(manager);
+        actionUnit.setCreatedBy(manager);
 
         Institution institution = new Institution();
         institution.setId(1L);

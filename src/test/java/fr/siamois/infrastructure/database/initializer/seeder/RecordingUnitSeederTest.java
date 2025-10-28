@@ -59,7 +59,8 @@ class RecordingUnitSeederTest {
                         new ConceptSeeder.ConceptKey(VOCABULARY_ID, "4287541"),
                         "author@siamois.fr",
                         "chartres",
-                        List.of("author@siamois.fr"),
+                        "author@siamois.fr",
+                        "author@siamois.fr",
                         List.of("author@siamois.fr", "author@siamois.fr"),
                         OffsetDateTime.of(2012, 6, 22, 0, 0, 0, 0, ZoneOffset.UTC),
                         null,
@@ -95,7 +96,8 @@ class RecordingUnitSeederTest {
                         new ConceptSeeder.ConceptKey(VOCABULARY_ID, "4287541"),
                         "author@siamois.fr",
                         "chartres",
-                        List.of("author@siamois.fr"),
+                        "author@siamois.fr",
+                        "author@siamois.fr",
                         List.of("author@siamois.fr", "author@siamois.fr"),
                         OffsetDateTime.of(2012, 6, 22, 0, 0, 0, 0, ZoneOffset.UTC),
                         null,
@@ -118,7 +120,7 @@ class RecordingUnitSeederTest {
     }
 
     @Test
-    void seed_AuthorsDoesNotExist() {
+    void seed_AuthorDoesNotExist() {
 
         final String VOCABULARY_ID = "th240";
 
@@ -131,7 +133,8 @@ class RecordingUnitSeederTest {
                         new ConceptSeeder.ConceptKey(VOCABULARY_ID, "4287541"),
                         "author@siamois.fr",
                         "chartres",
-                        List.of("author1@siamois.fr"),
+                        "author@siamois.fr",
+                        "author@siamois.fr",
                         List.of("author2@siamois.fr", "author3@siamois.fr"),
                         OffsetDateTime.of(2012, 6, 22, 0, 0, 0, 0, ZoneOffset.UTC),
                         null,
@@ -146,8 +149,6 @@ class RecordingUnitSeederTest {
         when(institutionSeeder.findInstitutionOrReturnNull("chartres"))
                 .thenReturn(new Institution());
         when(personSeeder.findPersonOrThrow("author@siamois.fr"))
-                .thenReturn(new Person());
-        when(personSeeder.findPersonOrThrow("author1@siamois.fr"))
                 .thenThrow(new IllegalStateException("Person introuvable"));
 
         IllegalStateException ex = assertThrows(
@@ -173,7 +174,8 @@ class RecordingUnitSeederTest {
                         new ConceptSeeder.ConceptKey(VOCABULARY_ID, "4287541"),
                         "author@siamois.fr",
                         "chartres",
-                        List.of("author1@siamois.fr"),
+                        "author@siamois.fr",
+                        "author@siamois.fr",
                         List.of("author2@siamois.fr", "author3@siamois.fr"),
                         OffsetDateTime.of(2012, 6, 22, 0, 0, 0, 0, ZoneOffset.UTC),
                         null,
@@ -212,7 +214,8 @@ class RecordingUnitSeederTest {
                         new ConceptSeeder.ConceptKey(VOCABULARY_ID, "4287541"),
                         "author@siamois.fr",
                         "chartres",
-                        List.of("author1@siamois.fr"),
+                        "author@siamois.fr",
+                        "author@siamois.fr",
                         List.of("author2@siamois.fr", "author3@siamois.fr"),
                         OffsetDateTime.of(2012, 6, 22, 0, 0, 0, 0, ZoneOffset.UTC),
                         null,
@@ -254,7 +257,8 @@ class RecordingUnitSeederTest {
                         new ConceptSeeder.ConceptKey(VOCABULARY_ID, "4287541"),
                         "author@siamois.fr",
                         "chartres",
-                        List.of("author1@siamois.fr"),
+                        "author@siamois.fr",
+                        "author@siamois.fr",
                         List.of("author2@siamois.fr", "author3@siamois.fr"),
                         OffsetDateTime.of(2012, 6, 22, 0, 0, 0, 0, ZoneOffset.UTC),
                         null,
@@ -296,7 +300,8 @@ class RecordingUnitSeederTest {
                         new ConceptSeeder.ConceptKey(VOCABULARY_ID, "4287541"),
                         "author@siamois.fr",
                         "chartres",
-                        List.of("author1@siamois.fr"),
+                        "author@siamois.fr",
+                        "author@siamois.fr",
                         List.of("author2@siamois.fr", "author3@siamois.fr"),
                         OffsetDateTime.of(2012, 6, 22, 0, 0, 0, 0, ZoneOffset.UTC),
                         null,

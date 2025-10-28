@@ -48,6 +48,18 @@
                                         updateTargetsOnBlur="#{root}:field-#{prefix}-#{statusIndex}-#{rowStatus.index}-#{colStatus.index} panelHeader"
                                 />
 
+                                <siaInplace:integer
+                                        rendered="#{col.field['class'].simpleName eq 'CustomFieldInteger'}"
+                                        panelModel="#{bean}"
+                                        field="#{col.field}"
+                                        required="#{col.required}"
+                                        label="#{spatialUnitFieldBean.resolveCustomFieldLabel(col.field)}"
+                                        hasBeenModified="#{bean.formResponse.answers.get(col.field).hasBeenModified}"
+                                        answer="#{bean.formResponse.answers.get(col.field)}"
+                                        mode="#{col.readOnly ? 'output' : flowBean.getInPlaceFieldMode()}"
+                                        updateTargetsOnBlur="#{root}:field-#{prefix}-#{statusIndex}-#{rowStatus.index}-#{colStatus.index} panelHeader"
+                                />
+
 
                                 <siaInplace:datePicker
                                         required="#{col.required}"

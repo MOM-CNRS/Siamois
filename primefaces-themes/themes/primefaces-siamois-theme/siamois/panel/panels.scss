@@ -4,6 +4,19 @@
 // Mixin that creates themed styles
 @mixin themed-panel($panel-selector, $main-color, $light50-color, $light100-color, $light200-color, $dark-color) {
 
+  .#{$panel-selector} {
+
+    // CSS custom properties for this panel
+
+    // TODO : move this in a main css class $panel-selector and refactor classes
+    --main-color: #{$main-color};
+    --light-color-50: #{$light50-color};
+    --light-color-100: #{$light100-color};
+    --light-color-200: #{$light200-color};
+    --dark-color: #{$dark-color};
+
+  }
+
   .#{$panel-selector}-panel {
 
     // CSS custom properties for this panel
@@ -283,13 +296,15 @@
     }
 
     .ui-autocomplete-items .ui-autocomplete-item.ui-state-highlight {
-      background: var(--main-color);
+      background: var(--dark-color);
     }
   }
 
 }
 
-// welcome cards
+
+
+  // welcome cards
 .sia-welcome-card.sia-#{$panel-selector} {
 
   // CSS custom properties for this panel

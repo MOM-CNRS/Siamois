@@ -1,4 +1,4 @@
-name: Build & Deploy (staging)
+name: Build on new test release
 
 on:
   push:
@@ -15,18 +15,13 @@ concurrency:
 
 jobs:
   build-and-deploy:
-    name: Build and deploy to staging
+    name: Build
     runs-on: ubuntu-latest
     environment: STAGING
 
     env:
       BUILD_DIR: target
       ARTIFACT_PATTERN: "*.jar"
-      REMOTE_DIR: ${{ secrets.SERVER_PATH }}      # ex: /opt/app
-      SSH_HOST: ${{ secrets.SSH_HOST }}           # ex: your.server.tld
-      SSH_USER: ${{ secrets.SSH_USER }}           # ex: deploy
-      SSH_PORT: ${{ secrets.SSH_PORT }}           # ex: 22 (optionnel)
-      DEPLOY_SCRIPT: ${{ secrets.DEPLOY_SCRIPT_PATH }}  # ex: /opt/app/deploy.sh
 
     steps:
       - name: Checkout
@@ -63,20 +58,3 @@ jobs:
           echo "jar_path=$newest" >> "$GITHUB_OUTPUT"
           echo "Found JAR: $newest"
 
-      - name: Setup SSH agent
-        uses: webfactory/ssh-agent@v0.9.0
-        with:
-          ssh-private-key: ${{ secrets.DEPLOY_SERVER_KEY }} # clé privée du user SSH
-
-      - name: Copy JAR to server
-        run: |
-          scp -P "${SSH_PORT:-22}" "${{ steps.jar.outputs.jar_path }}" "${SSH_USER}@${SSH_HOST}:${REMOTE_DIR}/"
-
-      - name: Run deploy.sh on server
-        run: |
-          ssh -p "${SSH_PORT:-22}" "${SSH_USER}@${SSH_HOST}" bash -lc '
-            set -euo pipefail
-            JAR_PATH=$(ls -t "'"$REMOTE_DIR"'"/*.jar | head -n1)
-            echo "Deploying $JAR_PATH with: "'"$DEPLOY_SCRIPT"'"
-            "'"$DEPLOY_SCRIPT"'"
-          '

@@ -83,7 +83,7 @@ public class SpecimenSeeder {
             toGetOrCreate.setCreatedByInstitution(institution);
             toGetOrCreate.setIdentifier(s.identifier);
             toGetOrCreate.setCategory(cat);
-            toGetOrCreate.setAuthor(author);
+            toGetOrCreate.setCreatedBy(author);
             toGetOrCreate.setFullIdentifier(s.fullIdentifier);
             toGetOrCreate.setType(type);
             toGetOrCreate.setRecordingUnit(ru);

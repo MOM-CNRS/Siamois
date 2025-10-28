@@ -164,7 +164,7 @@ class ActionUnitServiceTest {
         assertEquals("MOM-Test", result.getFullIdentifier());
         assertEquals(actionUnit, result);
         assertEquals(typeConcept, result.getType());
-        assertEquals(userInfo.getUser(), result.getAuthor());
+        assertEquals(userInfo.getUser(), result.getCreatedBy());
         assertEquals(userInfo.getInstitution(), result.getCreatedByInstitution());
     }
 

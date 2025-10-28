@@ -26,9 +26,9 @@ public abstract class TraceableEntity implements Serializable {
 
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "fk_author_id", nullable = false)
+    @JoinColumn(name = "fk_created_by", nullable = false)
     @JsonIgnore
-    protected Person author;
+    protected Person createdBy;
 
     @ColumnDefault("NOW()")
     @Column(name = "creation_time")
