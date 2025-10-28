@@ -2,10 +2,7 @@ package fr.siamois.domain.services.vocabulary;
 
 import fr.siamois.domain.models.vocabulary.Concept;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 @Getter
 @Entity
@@ -63,10 +60,12 @@ public class ConceptHierarchy {
     @NoArgsConstructor
     @Embeddable
     @EqualsAndHashCode
+    @Getter
+    @Setter
     public static class ConceptRelationId {
-        public long parentId;
-        public long childId;
-        public long parentFieldContextId;
+        private long parentId;
+        private long childId;
+        private long parentFieldContextId;
     }
 
 }
