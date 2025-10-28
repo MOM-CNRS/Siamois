@@ -86,7 +86,7 @@ class FieldConfigurationServiceTest {
     @Test
     void setupFieldConfigurationForInstitution_shouldReturnFieldConfigIfWrong_whenMissingFieldCodes() throws NotSiamoisThesaurusException, ErrorProcessingExpansionException {
         when(conceptApi.fetchFieldsBranch(vocabulary)).thenReturn(conceptBranchDTO);
-        when(fieldService.searchAllFieldCodes()).thenReturn(List.of("SIATEST", "SIATEST2"));
+        when(fieldService.searchAllFieldCodes()).thenReturn(List.of("SIATEST", "SIATEST2", "SIATEST3"));
 
         Optional<FeedbackFieldConfig> result = service.setupFieldConfigurationForInstitution(userInfo, vocabulary);
 
