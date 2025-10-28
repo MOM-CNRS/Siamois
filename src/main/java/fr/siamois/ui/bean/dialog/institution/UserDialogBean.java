@@ -2,11 +2,9 @@ package fr.siamois.ui.bean.dialog.institution;
 
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.events.LoginEvent;
-import fr.siamois.domain.models.exceptions.ErrorProcessingExpansionException;
 import fr.siamois.domain.models.exceptions.auth.*;
 import fr.siamois.domain.models.exceptions.vocabulary.NoConfigForFieldException;
 import fr.siamois.domain.models.institution.Institution;
-import fr.siamois.domain.models.settings.ConceptFieldConfig;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.person.PersonService;
@@ -30,12 +28,9 @@ import org.springframework.stereotype.Component;
 import javax.faces.bean.SessionScoped;
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import static fr.siamois.utils.MessageUtils.displayErrorMessage;
-import static fr.siamois.utils.MessageUtils.displayNoThesaurusConfiguredMessage;
 
 @Slf4j
 @Component
