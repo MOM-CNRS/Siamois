@@ -1,10 +1,10 @@
 package fr.siamois.infrastructure.database.initializer.seeder;
 
 import fr.siamois.domain.models.vocabulary.Concept;
+import fr.siamois.domain.models.vocabulary.LocalizedConceptData;
 import fr.siamois.domain.models.vocabulary.Vocabulary;
-import fr.siamois.domain.models.vocabulary.label.ConceptLabel;
 import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRepository;
-import fr.siamois.infrastructure.database.repositories.vocabulary.label.ConceptLabelRepository;
+import fr.siamois.infrastructure.database.repositories.vocabulary.LocalizedConceptDataRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -24,8 +24,9 @@ class ConceptSeederTest {
 
     @Mock
     ConceptRepository conceptRepository;
+
     @Mock
-    ConceptLabelRepository conceptLabelRepository;
+    LocalizedConceptDataRepository localizedConceptDataRepository;
 
     @InjectMocks
     ConceptSeeder seeder;
@@ -35,19 +36,19 @@ class ConceptSeederTest {
 
         Concept c = new Concept();
         Vocabulary v = new Vocabulary();
-        ConceptLabel label = new ConceptLabel();
 
         List<ConceptSeeder.ConceptSpec> toInsert = List.of(
                 new ConceptSeeder.ConceptSpec("th240", "1234556", "Label", "fr")
         );
 
-        when(conceptRepository.findConceptByExternalIdIgnoreCase(anyString(),anyString())).thenReturn(Optional.of(c));
-        when(conceptLabelRepository.findByConceptAndLangCode(any(Concept.class), anyString())).thenReturn(Optional.of(label));
+        LocalizedConceptData lcd = new LocalizedConceptData();
+
+        when(conceptRepository.findConceptByExternalIdIgnoreCase(anyString(), anyString())).thenReturn(Optional.of(c));
+        doReturn(Optional.of(lcd)).when(localizedConceptDataRepository).findByConceptAndLangCode(any(), eq("fr"));
 
         seeder.seed(v, toInsert);
 
         verify(conceptRepository, never()).save(any(Concept.class));
-        verify(conceptLabelRepository, never()).save(any(ConceptLabel.class));
     }
 
     @Test
@@ -55,18 +56,17 @@ class ConceptSeederTest {
 
         Concept c = new Concept();
         Vocabulary v = new Vocabulary();
+        c.setVocabulary(v);
 
         List<ConceptSeeder.ConceptSpec> toInsert = List.of(
                 new ConceptSeeder.ConceptSpec("th240", "1234556", "Label", "fr")
         );
 
-        when(conceptRepository.findConceptByExternalIdIgnoreCase(anyString(),anyString())).thenReturn(Optional.of(c));
-        when(conceptLabelRepository.findByConceptAndLangCode(any(Concept.class), anyString())).thenReturn(Optional.empty());
+        when(conceptRepository.findConceptByExternalIdIgnoreCase(anyString(), anyString())).thenReturn(Optional.of(c));
 
         seeder.seed(v, toInsert);
 
         verify(conceptRepository, never()).save(any(Concept.class));
-        verify(conceptLabelRepository, times(1)).save(any(ConceptLabel.class));
     }
 
     @Test
@@ -78,12 +78,16 @@ class ConceptSeederTest {
                 new ConceptSeeder.ConceptSpec("th240", "1234556", "Label", "fr")
         );
 
-        when(conceptRepository.findConceptByExternalIdIgnoreCase(anyString(),anyString())).thenReturn(Optional.empty());
+        when(localizedConceptDataRepository.findByConceptAndLangCode(anyLong(), anyString())).thenReturn(Optional.empty());
+        when(conceptRepository.save(any(Concept.class))).thenAnswer(i -> {
+            Concept c = i.getArgument(0);
+            c.setId(-1L);
+            return c;
+        });
 
         seeder.seed(v, toInsert);
 
         verify(conceptRepository, times(1)).save(any(Concept.class));
-        verify(conceptLabelRepository, times(1)).save(any(ConceptLabel.class));
     }
 
     @Test

@@ -8,6 +8,7 @@ import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.person.PersonService;
+import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.domain.services.vocabulary.FieldConfigurationService;
 import fr.siamois.ui.bean.LabelBean;
 import fr.siamois.ui.bean.LangBean;
@@ -15,6 +16,7 @@ import fr.siamois.ui.bean.SessionSettingsBean;
 import fr.siamois.ui.email.EmailManager;
 import fr.siamois.utils.MessageUtils;
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -35,6 +37,7 @@ import static fr.siamois.utils.MessageUtils.displayErrorMessage;
 @SessionScoped
 @Getter
 @Setter
+@RequiredArgsConstructor
 public class UserDialogBean implements Serializable {
 
     // Injections
@@ -45,6 +48,7 @@ public class UserDialogBean implements Serializable {
     private final transient FieldConfigurationService fieldConfigurationService;
     private final SessionSettingsBean sessionSettingsBean;
     private final LabelBean labelBean;
+    private final transient ConceptService conceptService;
 
     // Data storage
     private Institution institution;
@@ -72,16 +76,6 @@ public class UserDialogBean implements Serializable {
     private String password;
     private String confirmPassword;
 
-    public UserDialogBean(EmailManager emailManager, PersonService personService, InstitutionService institutionService, LangBean langBean, FieldConfigurationService fieldConfigurationService, SessionSettingsBean sessionSettingsBean, LabelBean labelBean) {
-        this.emailManager = emailManager;
-        this.personService = personService;
-        this.institutionService = institutionService;
-        this.langBean = langBean;
-        this.fieldConfigurationService = fieldConfigurationService;
-        this.sessionSettingsBean = sessionSettingsBean;
-        this.labelBean = labelBean;
-    }
-
     public void init(String title, String buttonLabel, Institution institution, ProcessPerson processPerson) {
         reset();
         this.title = title;
@@ -102,11 +96,6 @@ public class UserDialogBean implements Serializable {
         this.processPerson = processPerson;
         if (shouldRenderRole) {
             conceptCompleteUrl = fieldConfigurationService.getUrlForFieldCode(sessionSettingsBean.getUserInfo(), Person.USER_ROLE_FIELD_CODE);
-            try {
-                parentConcept = fieldConfigurationService.findConfigurationForFieldCode(sessionSettingsBean.getUserInfo(), Person.USER_ROLE_FIELD_CODE);
-            } catch (NoConfigForFieldException e) {
-                MessageUtils.displayNoThesaurusConfiguredMessage(langBean);
-            }
         }
         PrimeFaces.current().ajax().update("newMemberDialog");
 
@@ -271,7 +260,12 @@ public class UserDialogBean implements Serializable {
     }
 
     public List<Concept> completeRole(String input) {
-        return fieldConfigurationService.fetchAutocomplete(sessionSettingsBean.getUserInfo(), parentConcept, input);
+        try {
+            return fieldConfigurationService.fetchAutocomplete(sessionSettingsBean.getUserInfo(), Person.USER_ROLE_FIELD_CODE, input);
+        } catch (NoConfigForFieldException e) {
+            MessageUtils.displayNoThesaurusConfiguredMessage(langBean);
+            return List.of();
+        }
     }
 
 }

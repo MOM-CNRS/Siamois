@@ -158,12 +158,12 @@
                             updateLabel="true"
                             filterMatchMode="contains"
                             onchange="PF('#{cc.clientId}_recordingUnitListTable').filter()"
-                            converter="#{conceptLabelConverter}">
+                            converter="#{localizedConceptDataConverter}">
 
                         <f:selectItems
                                 var="cat"
                                 itemValue="#{cat}"
-                                itemLabel="#{cat.value}"
+                                itemLabel="#{cat.getLabel()}"
                         />
                     </p:selectCheckboxMenu>
 

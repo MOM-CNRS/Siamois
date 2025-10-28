@@ -6,9 +6,12 @@ import fr.siamois.domain.models.document.Document;
 import fr.siamois.domain.models.exceptions.vocabulary.NoConfigForFieldException;
 import fr.siamois.domain.models.history.InfoRevisionEntity;
 import fr.siamois.domain.models.history.RevisionWithInfo;
+import fr.siamois.domain.models.settings.ConceptFieldConfig;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.models.vocabulary.Vocabulary;
 import fr.siamois.domain.services.history.HistoryAuditService;
+import fr.siamois.domain.services.vocabulary.ConceptService;
+import fr.siamois.domain.services.vocabulary.FieldService;
 import fr.siamois.ui.bean.dialog.document.DocumentCreationBean;
 import fr.siamois.ui.bean.panel.models.panel.single.tab.*;
 import io.micrometer.common.lang.Nullable;
@@ -19,6 +22,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.hibernate.envers.RevisionType;
 import org.primefaces.PrimeFaces;
 import org.primefaces.event.TabChangeEvent;
+import org.springframework.context.ApplicationContext;
 import org.springframework.util.MimeType;
 
 import java.io.BufferedInputStream;
@@ -26,7 +30,9 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @EqualsAndHashCode(callSuper = true, onlyExplicitlyIncluded = true)
 @Getter
@@ -38,6 +44,8 @@ public abstract class AbstractSingleEntityPanel<T> extends AbstractSingleEntity<
     // Deps
     protected final transient DocumentCreationBean documentCreationBean;
     protected final transient HistoryAuditService historyAuditService;
+    protected final transient FieldService fieldService;
+    protected final transient ConceptService conceptService;
 
     //--------------- Locals
 
@@ -48,6 +56,7 @@ public abstract class AbstractSingleEntityPanel<T> extends AbstractSingleEntity<
     protected transient RevisionWithInfo<T> revisionToDisplay = null;
     protected Long idunit;  // ID of the spatial unit
     protected transient List<Document> documents;
+    protected transient Map<String, ConceptFieldConfig> fieldConfigs = new HashMap<>();
 
     // lazy model for children of entity
     protected long totalChildrenCount = 0;
@@ -83,12 +92,12 @@ public abstract class AbstractSingleEntityPanel<T> extends AbstractSingleEntity<
 
     protected AbstractSingleEntityPanel(String titleCodeOrTitle,
                                         String icon, String panelClass,
-                                        DocumentCreationBean documentCreationBean,
-                                        AbstractSingleEntity.Deps deps,
-                                        HistoryAuditService historyAuditService) {
-        super(titleCodeOrTitle, icon, panelClass, deps);
-        this.documentCreationBean = documentCreationBean;
-        this.historyAuditService = historyAuditService;
+                                        ApplicationContext context) {
+        super(titleCodeOrTitle, icon, panelClass, context);
+        this.documentCreationBean = context.getBean(DocumentCreationBean.class);
+        this.historyAuditService = context.getBean(HistoryAuditService.class);
+        this.fieldService = context.getBean(FieldService.class);
+        this.conceptService = context.getBean(ConceptService.class);
 
         // Overview tab
         tabs = new ArrayList<>();

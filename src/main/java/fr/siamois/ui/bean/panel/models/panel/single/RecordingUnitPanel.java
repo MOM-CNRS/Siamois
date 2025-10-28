@@ -3,7 +3,6 @@ package fr.siamois.ui.bean.panel.models.panel.single;
 import fr.siamois.domain.models.actionunit.ActionUnitFormMapping;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.document.Document;
-import fr.siamois.domain.models.exceptions.ErrorProcessingExpansionException;
 import fr.siamois.domain.models.exceptions.actionunit.ActionUnitNotFoundException;
 import fr.siamois.domain.models.exceptions.recordingunit.FailedRecordingUnitSaveException;
 import fr.siamois.domain.models.form.customfield.CustomField;
@@ -19,14 +18,11 @@ import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.form.FormService;
-import fr.siamois.domain.services.history.HistoryAuditService;
 import fr.siamois.domain.services.person.PersonService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.specimen.SpecimenService;
-import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.RedirectBean;
-import fr.siamois.ui.bean.dialog.document.DocumentCreationBean;
 import fr.siamois.ui.bean.panel.models.PanelBreadcrumb;
 import fr.siamois.ui.bean.panel.models.panel.single.tab.SpecimenTab;
 import fr.siamois.ui.lazydatamodel.RecordingUnitChildrenLazyDataModel;
@@ -39,6 +35,7 @@ import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.config.BeanDefinition;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Scope;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
@@ -66,7 +63,6 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
     protected final transient RecordingUnitService recordingUnitService;
     protected final transient PersonService personService;
     private final transient RedirectBean redirectBean;
-    protected final transient ConceptService conceptService;
     private final transient SpecimenService specimenService;
     private final transient FormService formService;
 
@@ -85,25 +81,18 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
     // lazy model for parents
     private RecordingUnitParentsLazyDataModel lazyDataModelParents ;
 
-    protected RecordingUnitPanel(LangBean langBean,
-                                 RecordingUnitService recordingUnitService,
-                                 PersonService personService, ConceptService conceptService,
-                                 DocumentCreationBean documentCreationBean,
-                                 RedirectBean redirectBean,
-                                 AbstractSingleEntity.Deps deps,
-                                 SpecimenService specimenService, HistoryAuditService historyAuditService, FormService formService)  {
+    protected RecordingUnitPanel(ApplicationContext context)  {
 
         super("common.entity.recordingunit",
                 "bi bi-pencil-square",
                 "siamois-panel recording-unit-panel single-panel",
-                documentCreationBean, deps, historyAuditService);
-        this.langBean = langBean;
-        this.recordingUnitService = recordingUnitService;
-        this.personService = personService;
-        this.conceptService = conceptService;
-        this.redirectBean = redirectBean;
-        this.specimenService = specimenService;
-        this.formService = formService;
+                context);
+        this.langBean = context.getBean(LangBean.class);
+        this.recordingUnitService = context.getBean(RecordingUnitService.class);
+        this.personService = context.getBean(PersonService.class);
+        this.redirectBean = context.getBean(RedirectBean.class);
+        this.specimenService = context.getBean(SpecimenService.class);
+        this.formService = context.getBean(FormService.class);
     }
 
 
@@ -139,25 +128,6 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
     @Override
     protected void setFormScopePropertyValue(Concept concept) {
         unit.setType(concept);
-    }
-
-    public LocalDate offsetDateTimeToLocalDate(OffsetDateTime offsetDT) {
-        return offsetDT.toLocalDate();
-    }
-
-    public List<Concept> fetchChildrenOfConcept(Concept concept) {
-        List<Concept> concepts;
-
-        try {
-            concepts = conceptService.findDirectSubConceptOf(concept);
-        } catch (ErrorProcessingExpansionException e) {
-            log.error(e.getMessage());
-            log.debug(e.getMessage(), e);
-            return new ArrayList<>();
-        }
-
-        return concepts;
-
     }
 
     public void initializeAnswer(CustomField field) {
@@ -307,7 +277,6 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
             this.errorMessage = "Failed to load recording unit: " + e.getMessage();
             redirectBean.redirectTo(HttpStatus.INTERNAL_SERVER_ERROR);
         }
-
 
     }
 

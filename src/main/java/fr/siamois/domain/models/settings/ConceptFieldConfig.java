@@ -39,6 +39,9 @@ public class ConceptFieldConfig {
     @Column(name = "field_code", nullable = false, length = Integer.MAX_VALUE)
     private String fieldCode;
 
+    @Column(name = "existing_hash", length = Integer.MAX_VALUE)
+    private String existingHash = null;
+
     @Override
     public boolean equals(Object o) {
         if (!(o instanceof ConceptFieldConfig that)) return false;

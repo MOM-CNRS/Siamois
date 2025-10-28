@@ -23,19 +23,34 @@ public class ActionUnitHandler implements INewUnitHandler<ActionUnit> {
         this.actionUnitService = actionUnitService;
     }
 
-    @Override public UnitKind kind() { return UnitKind.ACTION; }
-    @Override public ActionUnit newEmpty() { return new ActionUnit(); }
-    @Override public ActionUnit save(UserInfo u, ActionUnit unit) throws EntityAlreadyExistsException { return actionUnitService.save(u, unit, unit.getType()); }
-    @Override public String dialogWidgetVar() { return "newUnitDiag"; }
+    @Override
+    public UnitKind kind() {
+        return UnitKind.ACTION;
+    }
 
-    @Override public void initFromContext(GenericNewUnitDialogBean<?> bean) throws CannotInitializeNewUnitDialogException {
+    @Override
+    public ActionUnit newEmpty() {
+        return new ActionUnit();
+    }
+
+    @Override
+    public ActionUnit save(UserInfo u, ActionUnit unit) throws EntityAlreadyExistsException {
+        return actionUnitService.save(u, unit, unit.getType());
+    }
+
+    @Override
+    public String dialogWidgetVar() {
+        return "newUnitDiag";
+    }
+
+    @Override
+    public void initFromContext(GenericNewUnitDialogBean<?> bean) throws CannotInitializeNewUnitDialogException {
         ActionUnit unit = (ActionUnit) bean.getUnit();
-        SpatialUnit spatialUnit ;
+        SpatialUnit spatialUnit;
         if (bean.getLazyDataModel() instanceof ActionUnitInSpatialUnitLazyDataModel typedModel) {
             spatialUnit = typedModel.getSpatialUnit();
             unit.getSpatialContext().add(spatialUnit);
-        }
-        else if(bean.getParent() instanceof SpatialUnit) {
+        } else if (bean.getParent() instanceof SpatialUnit) {
             spatialUnit = (SpatialUnit) bean.getParent();
             unit.getSpatialContext().add(spatialUnit);
         }

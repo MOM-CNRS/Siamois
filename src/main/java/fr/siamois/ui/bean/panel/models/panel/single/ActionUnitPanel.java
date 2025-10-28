@@ -9,14 +9,11 @@ import fr.siamois.domain.models.exceptions.actionunit.FailedActionUnitSaveExcept
 import fr.siamois.domain.models.exceptions.vocabulary.NoConfigForFieldException;
 import fr.siamois.domain.models.history.RevisionWithInfo;
 import fr.siamois.domain.models.vocabulary.Concept;
-import fr.siamois.domain.services.history.HistoryAuditService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.specimen.SpecimenService;
-import fr.siamois.domain.services.vocabulary.FieldService;
 import fr.siamois.domain.services.vocabulary.LabelService;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.RedirectBean;
-import fr.siamois.ui.bean.dialog.document.DocumentCreationBean;
 import fr.siamois.ui.bean.panel.models.PanelBreadcrumb;
 import fr.siamois.ui.bean.panel.models.panel.single.tab.RecordingTab;
 import fr.siamois.ui.bean.panel.models.panel.single.tab.SpecimenTab;
@@ -30,6 +27,7 @@ import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.config.BeanDefinition;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Scope;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
@@ -56,7 +54,6 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnit> imple
 
     private final LangBean langBean;
 
-    private final transient FieldService fieldService;
     private final RedirectBean redirectBean;
     private final transient LabelService labelService;
     private final TeamMembersBean teamMembersBean;
@@ -93,22 +90,16 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnit> imple
     private Integer totalSpecimenCount;
 
 
-    public ActionUnitPanel(LangBean langBean,
-                           FieldService fieldService, RedirectBean redirectBean,
-                           LabelService labelService, TeamMembersBean teamMembersBean,
-                           DocumentCreationBean documentCreationBean,
-                           RecordingUnitService recordingUnitService,
-                           AbstractSingleEntity.Deps deps, SpecimenService specimenService, HistoryAuditService historyAuditService) {
+    public ActionUnitPanel(ApplicationContext context) {
         super("Unité d'action", "bi bi-arrow-down-square", "siamois-panel action-unit-panel single-panel",
-                documentCreationBean, deps, historyAuditService);
+                context);
 
-        this.langBean = langBean;
-        this.fieldService = fieldService;
-        this.redirectBean = redirectBean;
-        this.labelService = labelService;
-        this.teamMembersBean = teamMembersBean;
-        this.recordingUnitService = recordingUnitService;
-        this.specimenService = specimenService;
+        this.langBean = context.getBean(LangBean.class);
+        this.redirectBean = context.getBean(RedirectBean.class);
+        this.labelService = context.getBean(LabelService.class);
+        this.teamMembersBean = context.getBean(TeamMembersBean.class);
+        this.recordingUnitService = context.getBean(RecordingUnitService.class);
+        this.specimenService = context.getBean(SpecimenService.class);
     }
 
 
@@ -215,8 +206,6 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnit> imple
             this.errorMessage = "Failed to load action unit: " + e.getMessage();
             redirectBean.redirectTo(HttpStatus.INTERNAL_SERVER_ERROR);
         }
-
-
     }
 
     @Override
@@ -322,7 +311,7 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnit> imple
             return fieldConfigurationService.fetchAutocomplete(sessionSettingsBean.getUserInfo(), ActionCode.TYPE_FIELD_CODE, input);
         } catch (NoConfigForFieldException e) {
             log.error(e.getMessage(), e);
-            return new ArrayList<>();
+            return List.of();
         }
 
     }
@@ -370,7 +359,7 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnit> imple
             // Handle list of concepts
             String langCode = sessionSettingsBean.getLanguageCode();
             return list.stream()
-                    .map(item -> (item instanceof Concept concept) ? labelService.findLabelOf(concept, langCode).getValue() : item.toString())
+                    .map(item -> (item instanceof Concept concept) ? labelService.findLabelOf(concept, langCode).getLabel() : item.toString())
                     .collect(Collectors.joining(", "));
         }
 

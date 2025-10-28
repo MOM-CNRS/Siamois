@@ -7,11 +7,13 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import fr.siamois.domain.models.exceptions.ErrorProcessingExpansionException;
 import fr.siamois.domain.models.exceptions.api.NotSiamoisThesaurusException;
+import fr.siamois.domain.models.settings.ConceptFieldConfig;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.models.vocabulary.Vocabulary;
 import fr.siamois.infrastructure.api.dto.ConceptBranchDTO;
 import fr.siamois.infrastructure.api.dto.FullInfoDTO;
 import fr.siamois.infrastructure.api.dto.LabelDTO;
+import fr.siamois.infrastructure.database.repositories.FieldRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.*;
@@ -19,6 +21,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 import java.net.URI;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -36,6 +40,7 @@ public class ConceptApi {
     private final RestTemplate restTemplate;
 
     private final ObjectMapper mapper;
+    private FieldRepository fieldRepository;
 
     /**
      * Autowired constructor for ConceptApi.
@@ -43,10 +48,11 @@ public class ConceptApi {
      * @param factory RequestFactory to build the RestTemplate.
      */
     @Autowired
-    public ConceptApi(RequestFactory factory) {
+    public ConceptApi(RequestFactory factory, FieldRepository fieldRepository) {
         restTemplate = factory.buildRestTemplate(true);
         mapper = new ObjectMapper();
         mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        this.fieldRepository = fieldRepository;
     }
 
     /**
@@ -73,17 +79,6 @@ public class ConceptApi {
     }
 
     /**
-     * Fetches the concepts under the top term of a given concept.
-     *
-     * @param concept the concept for which to fetch the expansion
-     * @return ConceptBranchDTO containing the concepts under the top term
-     * @throws ErrorProcessingExpansionException if there is an error processing the expansion
-     */
-    public ConceptBranchDTO fetchConceptsUnderTopTerm(Concept concept) throws ErrorProcessingExpansionException {
-        return fetchDownExpansion(concept.getVocabulary(), concept.getExternalId());
-    }
-
-    /**
      * Fetches the down expansion of a concept in a given vocabulary.
      *
      * @param vocabulary the vocabulary in which the concept is defined
@@ -96,8 +91,12 @@ public class ConceptApi {
 
         ResponseEntity<String> response = sendRequestAcceptJson(uri);
 
-        TypeReference<Map<String, FullInfoDTO>> typeReference = new TypeReference<>() {
-        };
+        TypeReference<Map<String, FullInfoDTO>> typeReference = new TypeReference<>() {};
+
+        return processApiResponse(response, typeReference);
+    }
+
+    private ConceptBranchDTO processApiResponse(ResponseEntity<String> response, TypeReference<Map<String, FullInfoDTO>> typeReference) throws ErrorProcessingExpansionException {
         Map<String, FullInfoDTO> result;
         try {
             result = mapper.readValue(response.getBody(), typeReference);
@@ -108,6 +107,47 @@ public class ConceptApi {
             log.error("Error while processing JSON", e);
             throw new ErrorProcessingExpansionException("Error while processing JSON for expansion");
         }
+    }
+
+    private static String bytesToHex(byte[] hash) {
+        StringBuilder hexString = new StringBuilder(2 * hash.length);
+        for (byte b : hash) {
+            String hex = Integer.toHexString(0xff & b);
+            if (hex.length() == 1) {
+                hexString.append('0');
+            }
+            hexString.append(hex);
+        }
+        return hexString.toString();
+    }
+
+    private static String hashOfString(String string) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA3-256");
+            byte[] hash = digest.digest(string.getBytes());
+            return bytesToHex(hash);
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalArgumentException("SHA3-256 algorithm not found", e);
+        }
+    }
+
+    public ConceptBranchDTO fetchDownExpansion(ConceptFieldConfig config) throws ErrorProcessingExpansionException {
+        Concept concept = config.getConcept();
+        Vocabulary vocabulary = concept.getVocabulary();
+        String existingChecksum = config.getExistingHash();
+        URI uri = URI.create(String.format("%s/openapi/v1/concept/%s/%s/expansion?way=down", vocabulary.getBaseUri(), vocabulary.getExternalVocabularyId(), concept.getExternalId()));
+        ResponseEntity<String> response = sendRequestAcceptJson(uri);
+        String body = response.getBody();
+        if (body == null) return null;
+        String contentSum = hashOfString(body);
+        if (existingChecksum != null && existingChecksum.equals(contentSum))
+            return null;
+
+        fieldRepository.updateChecksumForFieldConfig(config.getId(), contentSum);
+
+        TypeReference<Map<String, FullInfoDTO>> typeReference = new TypeReference<>() {
+        };
+        return processApiResponse(response, typeReference);
     }
 
     static class ConceptDTO {

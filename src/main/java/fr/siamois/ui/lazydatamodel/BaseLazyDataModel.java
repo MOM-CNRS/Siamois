@@ -3,7 +3,7 @@ package fr.siamois.ui.lazydatamodel;
 
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.vocabulary.Concept;
-import fr.siamois.domain.models.vocabulary.label.ConceptLabel;
+import fr.siamois.domain.models.vocabulary.LocalizedConceptData;
 import jakarta.faces.application.FacesMessage;
 import jakarta.faces.context.FacesContext;
 import lombok.Getter;
@@ -18,6 +18,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 
@@ -55,8 +56,8 @@ public abstract class BaseLazyDataModel<T> extends LazyDataModel<T> {
     // Filters
     private String globalFilter;
     // Filters
-    protected transient List<ConceptLabel> selectedTypes = new ArrayList<>();
-    protected transient List<ConceptLabel> selectedAuthors = new ArrayList<>();
+    protected transient List<LocalizedConceptData> selectedTypes = new ArrayList<>();
+    protected transient List<LocalizedConceptData> selectedAuthors = new ArrayList<>();
     protected String nameFilter;
     // selection
     protected transient List<T> selectedUnits ;
@@ -196,6 +197,7 @@ public abstract class BaseLazyDataModel<T> extends LazyDataModel<T> {
         return Objects.equals(value1, value2);
     }
 
+    @Transactional
     public List<T> load(int first, int pageSize, Map<String, SortMeta> sortBy, Map<String, FilterMeta> filterBy) {
         boolean isSortSame = isSortCriteriaSame(this.cachedSortBy, sortBy);
         boolean isFilterSame = isFilterCriteriaSame(this.cachedFilterBy, filterBy);
@@ -229,9 +231,9 @@ public abstract class BaseLazyDataModel<T> extends LazyDataModel<T> {
             FilterMeta categoryMeta = filterBy.get("category");
             if (categoryMeta != null && categoryMeta.getFilterValue() != null) {
                 @SuppressWarnings("unchecked")
-                List<ConceptLabel> selectedCategoryLabels = (List<ConceptLabel>) categoryMeta.getFilterValue();
+                List<LocalizedConceptData> selectedCategoryLabels = (List<LocalizedConceptData>) categoryMeta.getFilterValue();
                 List<Concept> selectedCategories = selectedCategoryLabels.stream()
-                        .map(ConceptLabel::getConcept)
+                        .map(LocalizedConceptData::getConcept)
                         .toList();
                 categoryIds = selectedCategories.stream()
                         .filter(Objects::nonNull)

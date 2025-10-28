@@ -1,6 +1,5 @@
 package fr.siamois.ui.bean.panel.models.panel.single;
 
-import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.actionunit.ActionCode;
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.auth.Person;
@@ -26,12 +25,12 @@ import fr.siamois.ui.bean.panel.models.panel.AbstractPanel;
 import fr.siamois.ui.viewmodel.TreeUiStateViewModel;
 import fr.siamois.utils.DateUtils;
 import jakarta.faces.component.UIComponent;
-import jakarta.faces.context.FacesContext;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
 import org.primefaces.event.SelectEvent;
 import org.primefaces.model.TreeNode;
+import org.springframework.context.ApplicationContext;
 
 import java.beans.PropertyDescriptor;
 import java.io.Serializable;
@@ -125,27 +124,26 @@ public abstract class AbstractSingleEntity<T> extends AbstractPanel implements S
 
     public static final String COLUMN_CLASS_NAME = "ui-g-12 ui-md-6 ui-lg-4";
 
-    protected AbstractSingleEntity(Deps deps) {
-        this(null, null, null, deps);
-    }
-
-
-    public record Deps(SessionSettingsBean sessionSettingsBean, FieldConfigurationService fieldConfigurationService,
-                       SpatialUnitTreeService spatialUnitTreeService, SpatialUnitService spatialUnitService,
-                       ActionUnitService actionUnitService, DocumentService documentService) {
+    protected AbstractSingleEntity(ApplicationContext context) {
+        this.sessionSettingsBean = context.getBean(SessionSettingsBean.class);
+        this.fieldConfigurationService = context.getBean(FieldConfigurationService.class);
+        this.spatialUnitTreeService = context.getBean(SpatialUnitTreeService.class);
+        this.spatialUnitService = context.getBean(SpatialUnitService.class);
+        this.actionUnitService = context.getBean(ActionUnitService.class);
+        this.documentService = context.getBean(DocumentService.class);
     }
 
     protected AbstractSingleEntity(String titleCodeOrTitle,
                                    String icon,
                                    String panelClass,
-                                   Deps deps) {
+                                   ApplicationContext context) {
         super(titleCodeOrTitle, icon, panelClass);
-        this.sessionSettingsBean = deps.sessionSettingsBean;
-        this.fieldConfigurationService = deps.fieldConfigurationService;
-        this.spatialUnitTreeService = deps.spatialUnitTreeService;
-        this.spatialUnitService = deps.spatialUnitService;
-        this.actionUnitService = deps.actionUnitService;
-        this.documentService = deps.documentService;
+        this.sessionSettingsBean = context.getBean(SessionSettingsBean.class);
+        this.fieldConfigurationService = context.getBean(FieldConfigurationService.class);
+        this.spatialUnitTreeService = context.getBean(SpatialUnitTreeService.class);
+        this.spatialUnitService = context.getBean(SpatialUnitService.class);
+        this.actionUnitService = context.getBean(ActionUnitService.class);
+        this.documentService = context.getBean(DocumentService.class);
     }
 
 
@@ -199,31 +197,7 @@ public abstract class AbstractSingleEntity<T> extends AbstractPanel implements S
     public List<Concept> completeDependentConceptChildren(
             String input
     ) {
-
-        FacesContext context = FacesContext.getCurrentInstance();
-        CustomFieldSelectOneConceptFromChildrenOfConcept dependentField =
-                (CustomFieldSelectOneConceptFromChildrenOfConcept) UIComponent.getCurrentComponent(context).getAttributes().get("field");
-
-        CustomField parentField = dependentField.getParentField();
-        if (parentField == null) {
-            return Collections.emptyList();
-        }
-
-        CustomFieldAnswer answer = formResponse.getAnswers().get(parentField);
-        Concept parentConcept = null;
-
-        if (answer instanceof CustomFieldAnswerSelectOneConceptFromChildrenOfConcept a1) {
-            parentConcept = a1.getValue();
-        } else if (answer instanceof CustomFieldAnswerSelectOneFromFieldCode a2) {
-            parentConcept = a2.getValue();
-        }
-
-        if (parentConcept == null) {
-            return Collections.emptyList();
-        }
-
-        UserInfo userInfo = sessionSettingsBean.getUserInfo();
-        return fieldConfigurationService.fetchAutocomplete(userInfo, parentConcept, input);
+        return List.of();
     }
 
     public String getUrlForDependentConcept(
