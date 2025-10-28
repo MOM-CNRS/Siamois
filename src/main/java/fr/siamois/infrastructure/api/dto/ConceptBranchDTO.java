@@ -29,7 +29,7 @@ public class ConceptBranchDTO {
         public ConceptBranchDTOBuilder identifier(String url, String identifier) {
             FullInfoDTO fullInfoDTO = conceptBranchDTO.data.computeIfAbsent(url, k -> new FullInfoDTO());
             PurlInfoDTO purlInfoDTO = new PurlInfoDTO();
-            purlInfoDTO.setType("string");
+            purlInfoDTO.setType(STRING_TYPE);
             purlInfoDTO.setValue(identifier);
             fullInfoDTO.setIdentifier(new PurlInfoDTO[]{ purlInfoDTO });
             return this;
@@ -38,7 +38,7 @@ public class ConceptBranchDTO {
         public ConceptBranchDTOBuilder notation(String url, String fieldCode) {
             FullInfoDTO fullInfoDTO = conceptBranchDTO.data.computeIfAbsent(url, k -> new FullInfoDTO());
             PurlInfoDTO purlInfoDTO = new PurlInfoDTO();
-            purlInfoDTO.setType("string");
+            purlInfoDTO.setType(STRING_TYPE);
             purlInfoDTO.setValue(fieldCode);
             fullInfoDTO.setNotation(new PurlInfoDTO[]{ purlInfoDTO });
             return this;
@@ -47,7 +47,7 @@ public class ConceptBranchDTO {
         public ConceptBranchDTOBuilder label(String url, String label, String lang) {
             FullInfoDTO fullInfoDTO = conceptBranchDTO.data.computeIfAbsent(url, k -> new FullInfoDTO());
             PurlInfoDTO purlInfoDTO = new PurlInfoDTO();
-            purlInfoDTO.setType("string");
+            purlInfoDTO.setType(STRING_TYPE);
             purlInfoDTO.setValue(label);
             purlInfoDTO.setLang(lang);
             if (fullInfoDTO.getPrefLabel() == null) {
