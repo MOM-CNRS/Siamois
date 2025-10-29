@@ -180,7 +180,7 @@ public class ConceptService {
         for (String url : relatedUrl) {
             FullInfoDTO fetchedConceptDTO = conceptApi.fetchConceptInfoByUri(vocabulary, url);
             if (fetchedConceptDTO != null) {
-                Concept relatedConcept = urlToSavedConceptMap.computeIfAbsent(url, (currentUrl) -> saveOrGetConceptFromFullDTO(vocabulary, fetchedConceptDTO, null));
+                Concept relatedConcept = urlToSavedConceptMap.computeIfAbsent(url, currentUrl -> saveOrGetConceptFromFullDTO(vocabulary, fetchedConceptDTO, null));
                 conceptRelatedLinkRepository.save(new ConceptRelatedLink(concept, relatedConcept));
             }
         }
