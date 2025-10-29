@@ -159,7 +159,11 @@ public class ConceptService {
 
             saveOrGetAllConceptsFromBranchAndStoreInMap(config, branchDTO, concepts, vocabulary);
 
-            Concept parentSavedConcept = concepts.get(parentConcept.getIdentifier()[0].getValue());
+            Concept parentSavedConcept = concepts.values()
+                    .stream()
+                    .filter(c -> concept.getExternalId().equalsIgnoreCase(parentConcept.getIdentifierStr()))
+                    .findFirst()
+                    .orElseThrow(() -> new IllegalStateException("No concept found for " + concept));
 
             Map<Concept, Concept> childAndParentMap = new HashMap<>();
             for (Map.Entry<String, FullInfoDTO> entry : branchDTO.getData().entrySet()) {
