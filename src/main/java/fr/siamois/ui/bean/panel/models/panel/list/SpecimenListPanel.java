@@ -55,7 +55,7 @@ public class SpecimenListPanel extends AbstractListPanel<Specimen>  implements S
 
     public SpecimenListPanel(ApplicationContext context) {
         super("panel.title.allspecimenunit",
-                "bi bi-box2",
+                "bi bi-bucket",
                 "siamois-panel specimen-panel list-panel",
                 context);
         specimenService = context.getBean(SpecimenService.class);
@@ -74,7 +74,7 @@ public class SpecimenListPanel extends AbstractListPanel<Specimen>  implements S
 
     @Override
     protected String getBreadcrumbIcon() {
-        return "bi bi-box2";
+        return "bi bi-bucket";
     }
 
 

@@ -1,13 +1,15 @@
 <ui:fragment xmlns="http://www.w3.org/1999/xhtml"
              xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
-             xmlns:p="http://primefaces.org/ui"
+             xmlns:p="http://primefaces.org/ui" xmlns:chip="http://xmlns.jcp.org/jsf/composite/pages/shared/chip"
 >
     <!--@elvariable id="panelModel" type="fr.siamois.ui.bean.panel.models.panel.single.SpecimenPanel"-->
 
-    <p:chip label="#{labelBean.findLabelOf(panelModel.unit.type)}"
-            icon="#{panelModel.icon}"
-            styleClass="mr-2 specimen-type-chip"/>
+
+    <i class="#{panelModel.icon}" style="font-size: 2rem; color:var(--main-color)"/>
+
     <span>#{panelModel.titleCodeOrTitle}</span>
+
+    <chip:conceptChip concept="#{panelModel.unit.type}" styleClass="mr-2 specimen-type-chip"/>
 
     <p:chip
             label="#{panelModel.unit.createdBy.displayName()}"

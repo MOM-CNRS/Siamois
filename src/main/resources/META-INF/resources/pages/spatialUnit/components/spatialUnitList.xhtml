@@ -4,7 +4,7 @@
                 xmlns:h="http://xmlns.jcp.org/jsf/html"
                 xmlns:cc="http://xmlns.jcp.org/jsf/composite"
                 xmlns:cellheader="http://java.sun.com/jsf/composite/pages/shared/cellheader"
-                xmlns:f="http://java.sun.com/jsf/core"
+                xmlns:f="http://java.sun.com/jsf/core" xmlns:chip="http://xmlns.jcp.org/jsf/composite/pages/shared/chip"
 >
     <cc:interface>
         <!-- Attributes to pass the bean's list and optional additional parameters -->
@@ -138,8 +138,9 @@
                         </p:selectCheckboxMenu>
 
                     </f:facet>
-                    <p:chip label="#{labelBean.findLabelOf(item.category)}"
-                            styleClass="mr-2 spatial-unit-type-chip"/>
+
+                    <chip:conceptChip  concept="#{item.category}" styleClass="mr-2 spatial-unit-type-chip"/>
+
                 </p:column>
 
 

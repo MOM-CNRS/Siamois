@@ -1,13 +1,13 @@
 <ui:fragment xmlns="http://www.w3.org/1999/xhtml"
              xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
-             xmlns:p="http://primefaces.org/ui"
+             xmlns:p="http://primefaces.org/ui" xmlns:chip="http://xmlns.jcp.org/jsf/composite/pages/shared/chip"
 >
     <!--@elvariable id="panelModel" type="fr.siamois.ui.bean.panel.models.panel.single.SpatialUnitPanel"-->
+    <i class="#{panelModel.icon}" style="font-size: 2rem; color:var(--main-color)"/>
 
-    <p:chip label="#{labelBean.findLabelOf(panelModel.unit.category)}"
-            icon="pi pi-map-marker"
-            styleClass="mr-2 spatial-unit-type-chip"/>
     <span>#{panelModel.titleCodeOrTitle}</span>
+
+    <chip:conceptChip concept="#{panelModel.unit.category}" styleClass="mr-2 spatial-unit-type-chip"/>
 
     <p:chip rendered="#{not panelModel.unit.validated}" label="Non validé"
             styleClass="mr-2 error-chip"

@@ -48,6 +48,7 @@ import java.util.List;
 @Scope(BeanDefinition.SCOPE_PROTOTYPE)
 public class SpecimenPanel extends AbstractSingleEntityPanel<Specimen>  implements Serializable {
 
+    public static final String BI_BI_BUCKET = "bi bi-bucket";
     // Deps
     protected final transient LangBean langBean;
 
@@ -139,7 +140,7 @@ public class SpecimenPanel extends AbstractSingleEntityPanel<Specimen>  implemen
             .isSystemField(true)
             .valueBinding("type")
             .styleClass("mr-2 specimen-type-chip")
-            .iconClass("bi bi-box2")
+            .iconClass(BI_BI_BUCKET)
             .fieldCode(Specimen.CATEGORY_FIELD)
             .concept(specimenTypeConcept)
             .build();
@@ -158,7 +159,7 @@ public class SpecimenPanel extends AbstractSingleEntityPanel<Specimen>  implemen
             .isSystemField(true)
             .valueBinding("category")
             .styleClass("mr-2 specimen-type-chip")
-            .iconClass("bi bi-box2")
+            .iconClass(BI_BI_BUCKET)
             .fieldCode(Specimen.CAT_FIELD)
             .concept(specimenCategoryConcept)
             .build();
@@ -167,7 +168,7 @@ public class SpecimenPanel extends AbstractSingleEntityPanel<Specimen>  implemen
     protected SpecimenPanel(ApplicationContext context) {
 
         super("common.entity.specimen",
-                "bi bi-box2",
+                BI_BI_BUCKET,
                 "siamois-panel specimen-panel single-panel",
                 context);
         this.langBean = context.getBean(LangBean.class);

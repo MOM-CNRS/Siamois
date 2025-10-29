@@ -195,7 +195,7 @@ public class ActionUnit extends ActionUnitParent implements ArkEntity {
             .isSystemField(true)
             .valueBinding("type")
             .styleClass("mr-2 action-unit-type-chip")
-            .iconClass("bi bi-box2")
+            .iconClass("bi bi-bucket")
             .fieldCode(ActionUnit.TYPE_FIELD_CODE)
             .concept(ACTION_UNIT_TYPE_CONCEPT)
             .build();
