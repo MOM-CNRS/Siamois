@@ -30,7 +30,11 @@ public final class VitrineMapper {
         Document photo = new Document();
         photo.setId(1L);
         photo.setUrl("227a1-copie.jpg");
+        Document photo2 = new Document();
+        photo2.setId(2L);
+        photo2.setUrl("227a1-copie.jpg");
         mockupDocuments.add(photo);
+        mockupDocuments.add(photo2);
 
         return new PrelevementDTO(
                 p.getId(),
@@ -40,7 +44,7 @@ public final class VitrineMapper {
                 List.of(4L),
                 0L,
                 toPhotographiesDTO(mockupDocuments),
-                List.of(mockupCartel),
+                List.of(mockupCartel, mockupCartel),
                 toMediasDTO()
         );
     }

@@ -32,10 +32,10 @@ public class MatiereController {
 
         Concept metal = new Concept();
         metal.setExternalId("4282395");
-        metal.setId(1L);
+        metal.setId(23L);
         Concept monnaie = new Concept();
         monnaie.setExternalId("4287742");
-        monnaie.setId(2L);
+        monnaie.setId(24L);
 
         ConceptLabel cl1 = new ConceptLabel();
         cl1.setConcept(metal);
