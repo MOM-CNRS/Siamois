@@ -15,6 +15,7 @@ import fr.siamois.infrastructure.api.dto.PurlInfoDTO;
 import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRelationRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.LocalizedConceptDataRepository;
+import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRelatedLinkRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -48,6 +49,9 @@ class ConceptServiceTest {
 
     @Mock
     private LocalizedConceptDataRepository localizedConceptDataRepository;
+
+    @Mock
+    private ConceptRelatedLinkRepository conceptRelatedLinkRepository;
 
     @Mock
     private ConceptChangeEventPublisher conceptChangeEventPublisher;
@@ -414,6 +418,12 @@ class ConceptServiceTest {
         narrower.setValue("url-child");
         parentDto.setNarrower(new PurlInfoDTO[]{narrower});
 
+        // Add a related URL on the child to trigger createRelatedLinkAndSetRelatedConcepts
+        FullInfoDTO childDto = branchDTO.getData().get("url-child");
+        PurlInfoDTO related = new PurlInfoDTO();
+        related.setValue("url-related");
+        childDto.setRelated(new PurlInfoDTO[]{related});
+
         when(conceptApi.fetchDownExpansion(config)).thenReturn(branchDTO);
 
         // No existing concepts -> will be created
@@ -429,10 +439,23 @@ class ConceptServiceTest {
         savedChild.setExternalId("concept-child");
         savedChild.setVocabulary(vocabulary);
 
-        // Ensure save returns parent then child
-        when(conceptRepository.save(any(Concept.class))).thenReturn(savedParent).thenReturn(savedChild);
+        // Related concept that will be fetched and saved
+        Concept savedRelated = new Concept();
+        savedRelated.setId(102L);
+        savedRelated.setExternalId("concept-related");
+        savedRelated.setVocabulary(vocabulary);
+
+        // Ensure save returns parent then child (and then related)
+        when(conceptRepository.save(any(Concept.class))).thenReturn(savedParent).thenReturn(savedChild).thenReturn(savedRelated);
 
         when(localizedConceptDataRepository.findByConceptAndLangCode(anyLong(), anyString())).thenReturn(Optional.empty());
+
+        // Mock fetching the related concept info by its URL
+        FullInfoDTO fetchedRelated = new FullInfoDTO();
+        PurlInfoDTO relatedId = new PurlInfoDTO();
+        relatedId.setValue("concept-related");
+        fetchedRelated.setIdentifier(new PurlInfoDTO[]{relatedId});
+        when(conceptApi.fetchConceptInfoByUri(vocabulary, "url-related")).thenReturn(fetchedRelated);
 
         // When
         conceptService.saveAllSubConceptOfIfUpdated(config);
@@ -442,6 +465,7 @@ class ConceptServiceTest {
         verify(conceptRepository, atLeast(2)).save(any(Concept.class));
         verify(conceptRelationRepository, atLeast(1)).save(any());
         verify(localizedConceptDataRepository, atLeast(2)).save(any(LocalizedConceptData.class));
+        verify(conceptRelatedLinkRepository, atLeast(1)).save(any());
     }
 
 }
