@@ -4,10 +4,13 @@ import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.models.vocabulary.LocalizedConceptData;
 import fr.siamois.domain.models.vocabulary.Vocabulary;
 import fr.siamois.domain.models.vocabulary.label.VocabularyLabel;
+import fr.siamois.domain.models.vocabulary.label.LocalizedAltConceptLabel;
 import fr.siamois.infrastructure.database.repositories.vocabulary.LocalizedConceptDataRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.label.VocabularyLabelRepository;
+import fr.siamois.infrastructure.database.repositories.vocabulary.label.LocalizedAltConceptLabelRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -23,12 +26,14 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class LabelServiceTest {
 
-
     @Mock
     private VocabularyLabelRepository vocabularyLabelRepository;
 
     @Mock
     private LocalizedConceptDataRepository localizedConceptDataRepository;
+
+    @Mock
+    private LocalizedAltConceptLabelRepository localizedAltConceptLabelRepository;
 
     @InjectMocks
     private LabelService labelService;
@@ -330,6 +335,75 @@ class LabelServiceTest {
         // Then
         assertNotNull(results);
         assertEquals(0, results.size());
+    }
+
+    @Test
+    void updateAltLabel_shouldCreateAndSave_whenAltLabelDoesNotExist_andParentDifferent() {
+        // Given
+        Concept savedConcept = new Concept();
+        savedConcept.setId(1L);
+        savedConcept.setExternalId("1L");
+        Concept parent = new Concept();
+        parent.setId(2L);
+        parent.setExternalId("2L");
+
+        when(localizedAltConceptLabelRepository.findById(any())).thenReturn(Optional.empty());
+
+        // When
+        labelService.updateAltLabel(savedConcept, "en", "New Alt", parent);
+
+        // Then
+        ArgumentCaptor<LocalizedAltConceptLabel> captor = ArgumentCaptor.forClass(LocalizedAltConceptLabel.class);
+        verify(localizedAltConceptLabelRepository, times(1)).save(captor.capture());
+        LocalizedAltConceptLabel saved = captor.getValue();
+        assertNotNull(saved);
+        assertEquals("New Alt", saved.getLabel());
+        assertEquals("en", saved.getLangCode());
+        assertEquals(savedConcept, saved.getConcept());
+        assertEquals(parent, saved.getParentConcept());
+    }
+
+    @Test
+    void updateAltLabel_shouldUpdateExistingAndSave_whenAltLabelExists_andNoParentProvided() {
+        // Given
+        Concept savedConcept = new Concept();
+        savedConcept.setId(3L);
+        savedConcept.setExternalId("3L");
+
+        LocalizedAltConceptLabel existing = new LocalizedAltConceptLabel();
+        existing.setLabel("Old");
+        existing.setConcept(savedConcept);
+        existing.setLangCode("fr");
+
+        when(localizedAltConceptLabelRepository.findById(any())).thenReturn(Optional.of(existing));
+
+        // When
+        labelService.updateAltLabel(savedConcept, "fr", "Updated", null);
+
+        // Then
+        assertEquals("Updated", existing.getLabel());
+        verify(localizedAltConceptLabelRepository, times(1)).save(existing);
+    }
+
+    @Test
+    void updateAltLabel_shouldNotSetParent_whenParentEqualsSavedConcept() {
+        // Given
+        Concept savedConcept = new Concept();
+        savedConcept.setId(4L);
+        savedConcept.setExternalId("4L");
+
+        when(localizedAltConceptLabelRepository.findById(any())).thenReturn(Optional.empty());
+
+        // When
+        labelService.updateAltLabel(savedConcept, "en", "Value", savedConcept);
+
+        // Then
+        ArgumentCaptor<LocalizedAltConceptLabel> captor = ArgumentCaptor.forClass(LocalizedAltConceptLabel.class);
+        verify(localizedAltConceptLabelRepository, times(1)).save(captor.capture());
+        LocalizedAltConceptLabel saved = captor.getValue();
+        assertNotNull(saved);
+        // parent must not be set because it's equal to savedConcept
+        assertNull(saved.getParentConcept());
     }
 
 }
