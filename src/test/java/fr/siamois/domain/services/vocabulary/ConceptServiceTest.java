@@ -16,7 +16,6 @@ import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRelated
 import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRelationRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.LocalizedConceptDataRepository;
-import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRelatedLinkRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
