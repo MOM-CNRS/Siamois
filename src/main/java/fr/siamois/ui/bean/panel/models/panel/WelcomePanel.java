@@ -25,7 +25,7 @@ import java.io.Serializable;
 @Component
 @Slf4j
 @Scope(BeanDefinition.SCOPE_PROTOTYPE)
-public class WelcomePanel extends AbstractPanel  implements Serializable {
+public class WelcomePanel extends AbstractPanel implements Serializable {
 
     private final SessionSettingsBean sessionSettingsBean;
     private final transient RecordingUnitService recordingUnitService;

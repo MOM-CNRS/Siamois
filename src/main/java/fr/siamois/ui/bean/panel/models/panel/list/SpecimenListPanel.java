@@ -3,16 +3,7 @@ package fr.siamois.ui.bean.panel.models.panel.list;
 
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.specimen.Specimen;
-import fr.siamois.domain.services.BookmarkService;
-import fr.siamois.domain.services.actionunit.ActionUnitService;
-import fr.siamois.domain.services.person.PersonService;
-import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.domain.services.specimen.SpecimenService;
-import fr.siamois.domain.services.vocabulary.ConceptService;
-import fr.siamois.domain.services.vocabulary.LabelService;
-import fr.siamois.ui.bean.LangBean;
-import fr.siamois.ui.bean.NavBean;
-import fr.siamois.ui.bean.SessionSettingsBean;
 import fr.siamois.ui.bean.panel.models.PanelBreadcrumb;
 import fr.siamois.ui.lazydatamodel.BaseLazyDataModel;
 import fr.siamois.ui.lazydatamodel.SpecimenLazyDataModel;
@@ -21,6 +12,7 @@ import lombok.Getter;
 import lombok.Setter;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.config.BeanDefinition;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
@@ -37,7 +29,6 @@ import java.util.List;
 public class SpecimenListPanel extends AbstractListPanel<Specimen>  implements Serializable {
 
     private final transient SpecimenService specimenService;
-    private final transient NavBean navBean;
 
     // locals
     private String actionUnitListErrorMessage;
@@ -62,29 +53,12 @@ public class SpecimenListPanel extends AbstractListPanel<Specimen>  implements S
 
 
 
-    public SpecimenListPanel(SpatialUnitService spatialUnitService, PersonService personService,
-                             ConceptService conceptService,
-                             SessionSettingsBean sessionSettingsBean,
-                             LangBean langBean,
-                             LabelService labelService,
-                             ActionUnitService actionUnitService,
-                             BookmarkService bookmarkService, SpecimenService specimenService, NavBean navBean) {
-
-
-
+    public SpecimenListPanel(ApplicationContext context) {
         super("panel.title.allspecimenunit",
-                "bi bi-box2",
+                "bi bi-bucket",
                 "siamois-panel specimen-panel list-panel",
-                spatialUnitService,
-                personService,
-                conceptService,
-                sessionSettingsBean,
-                langBean,
-                labelService,
-                actionUnitService,
-                bookmarkService);
-        this.specimenService = specimenService;
-        this.navBean = navBean;
+                context);
+        specimenService = context.getBean(SpecimenService.class);
     }
 
     @Override
@@ -100,7 +74,7 @@ public class SpecimenListPanel extends AbstractListPanel<Specimen>  implements S
 
     @Override
     protected String getBreadcrumbIcon() {
-        return "bi bi-box2";
+        return "bi bi-bucket";
     }
 
 

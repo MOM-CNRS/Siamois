@@ -1,6 +1,5 @@
 package fr.siamois.ui.bean.panel.models.panel.single;
 
-import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.actionunit.ActionCode;
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.auth.Person;
@@ -14,22 +13,24 @@ import fr.siamois.domain.models.form.customformresponse.CustomFormResponse;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.models.vocabulary.Vocabulary;
+import fr.siamois.domain.models.vocabulary.VocabularyType;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.document.DocumentService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitTreeService;
 import fr.siamois.domain.services.vocabulary.FieldConfigurationService;
 import fr.siamois.ui.bean.SessionSettingsBean;
+import fr.siamois.ui.bean.dialog.newunit.GenericNewUnitDialogBean;
 import fr.siamois.ui.bean.panel.models.panel.AbstractPanel;
 import fr.siamois.ui.viewmodel.TreeUiStateViewModel;
 import fr.siamois.utils.DateUtils;
 import jakarta.faces.component.UIComponent;
-import jakarta.faces.context.FacesContext;
-import jakarta.faces.event.AjaxBehaviorEvent;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
+import org.primefaces.event.SelectEvent;
 import org.primefaces.model.TreeNode;
+import org.springframework.context.ApplicationContext;
 
 import java.beans.PropertyDescriptor;
 import java.io.Serializable;
@@ -59,6 +60,10 @@ public abstract class AbstractSingleEntity<T> extends AbstractPanel implements S
     protected CustomFormResponse formResponse; // answers to all the fields from overview and details
     protected boolean hasUnsavedModifications = false; // Did we modify the unit?
 
+    public CustomFieldAnswer getFieldAnswer(CustomField field) {
+        return formResponse.getAnswers().get(field);
+    }
+
     protected CustomForm detailsForm;
     protected CustomForm overviewForm;
 
@@ -70,26 +75,42 @@ public abstract class AbstractSingleEntity<T> extends AbstractPanel implements S
         return String.valueOf(currentYear);
     }
 
+    public String getConceptFieldsUpdateTargetsOnBlur() {
+        // If new unit panel form, update @this when concept is selected, otherwise @form
+        if (this.getClass() == GenericNewUnitDialogBean.class) {
+            return "@this panelHeader";
+        } else {
+            return "@form panelHeader";
+        }
+    }
+
     public static final Vocabulary SYSTEM_THESO;
+    public static final VocabularyType THESO_VOCABULARY_TYPE;
 
     static {
+        THESO_VOCABULARY_TYPE = new VocabularyType();
+        THESO_VOCABULARY_TYPE.setLabel("Thesaurus");
         SYSTEM_THESO = new Vocabulary();
-        SYSTEM_THESO.setBaseUri("https://thesaurus.mom.fr/");
+        SYSTEM_THESO.setBaseUri("https://thesaurus.mom.fr");
         SYSTEM_THESO.setExternalVocabularyId("th230");
+        SYSTEM_THESO.setType(THESO_VOCABULARY_TYPE);
     }
 
 
-    private static final Map<Class<? extends CustomField>, Supplier<? extends CustomFieldAnswer>> ANSWER_CREATORS = Map.of(
-            CustomFieldText.class, CustomFieldAnswerText::new,
-            CustomFieldSelectOneFromFieldCode.class, CustomFieldAnswerSelectOneFromFieldCode::new,
-            CustomFieldSelectOneConceptFromChildrenOfConcept.class, CustomFieldAnswerSelectOneConceptFromChildrenOfConcept::new,
-            CustomFieldSelectMultiplePerson.class, CustomFieldAnswerSelectMultiplePerson::new,
-            CustomFieldDateTime.class, CustomFieldAnswerDateTime::new,
-            CustomFieldSelectOneActionUnit.class, CustomFieldAnswerSelectOneActionUnit::new,
-            CustomFieldSelectOneSpatialUnit.class, CustomFieldAnswerSelectOneSpatialUnit::new,
-            CustomFieldSelectMultipleSpatialUnitTree.class, CustomFieldAnswerSelectMultipleSpatialUnitTree::new,
-            CustomFieldSelectOneActionCode.class, CustomFieldAnswerSelectOneActionCode::new
-    );
+    private static final Map<Class<? extends CustomField>, Supplier<? extends CustomFieldAnswer>> ANSWER_CREATORS =
+            Map.ofEntries(
+                    Map.entry(CustomFieldText.class, CustomFieldAnswerText::new),
+                    Map.entry(CustomFieldSelectOneFromFieldCode.class, CustomFieldAnswerSelectOneFromFieldCode::new),
+                    Map.entry(CustomFieldSelectOneConceptFromChildrenOfConcept.class, CustomFieldAnswerSelectOneConceptFromChildrenOfConcept::new),
+                    Map.entry(CustomFieldSelectMultiplePerson.class, CustomFieldAnswerSelectMultiplePerson::new),
+                    Map.entry(CustomFieldDateTime.class, CustomFieldAnswerDateTime::new),
+                    Map.entry(CustomFieldSelectOneActionUnit.class, CustomFieldAnswerSelectOneActionUnit::new),
+                    Map.entry(CustomFieldSelectOneSpatialUnit.class, CustomFieldAnswerSelectOneSpatialUnit::new),
+                    Map.entry(CustomFieldSelectMultipleSpatialUnitTree.class, CustomFieldAnswerSelectMultipleSpatialUnitTree::new),
+                    Map.entry(CustomFieldSelectOneActionCode.class, CustomFieldAnswerSelectOneActionCode::new),
+                    Map.entry(CustomFieldInteger.class, CustomFieldAnswerInteger::new),
+                    Map.entry(CustomFieldSelectOnePerson.class, CustomFieldAnswerSelectOnePerson::new)
+            );
 
     public boolean hasAutoGenerationFunction(CustomFieldText field) {
         return field != null && field.getAutoGenerationFunction() != null;
@@ -105,27 +126,26 @@ public abstract class AbstractSingleEntity<T> extends AbstractPanel implements S
 
     public static final String COLUMN_CLASS_NAME = "ui-g-12 ui-md-6 ui-lg-4";
 
-    protected AbstractSingleEntity(Deps deps) {
-        this(null, null, null, deps);
-    }
-
-
-    public record Deps(SessionSettingsBean sessionSettingsBean, FieldConfigurationService fieldConfigurationService,
-                       SpatialUnitTreeService spatialUnitTreeService, SpatialUnitService spatialUnitService,
-                       ActionUnitService actionUnitService, DocumentService documentService) {
+    protected AbstractSingleEntity(ApplicationContext context) {
+        this.sessionSettingsBean = context.getBean(SessionSettingsBean.class);
+        this.fieldConfigurationService = context.getBean(FieldConfigurationService.class);
+        this.spatialUnitTreeService = context.getBean(SpatialUnitTreeService.class);
+        this.spatialUnitService = context.getBean(SpatialUnitService.class);
+        this.actionUnitService = context.getBean(ActionUnitService.class);
+        this.documentService = context.getBean(DocumentService.class);
     }
 
     protected AbstractSingleEntity(String titleCodeOrTitle,
                                    String icon,
                                    String panelClass,
-                                   Deps deps) {
+                                   ApplicationContext context) {
         super(titleCodeOrTitle, icon, panelClass);
-        this.sessionSettingsBean = deps.sessionSettingsBean;
-        this.fieldConfigurationService = deps.fieldConfigurationService;
-        this.spatialUnitTreeService = deps.spatialUnitTreeService;
-        this.spatialUnitService = deps.spatialUnitService;
-        this.actionUnitService = deps.actionUnitService;
-        this.documentService = deps.documentService;
+        this.sessionSettingsBean = context.getBean(SessionSettingsBean.class);
+        this.fieldConfigurationService = context.getBean(FieldConfigurationService.class);
+        this.spatialUnitTreeService = context.getBean(SpatialUnitTreeService.class);
+        this.spatialUnitService = context.getBean(SpatialUnitService.class);
+        this.actionUnitService = context.getBean(ActionUnitService.class);
+        this.documentService = context.getBean(DocumentService.class);
     }
 
 
@@ -140,7 +160,7 @@ public abstract class AbstractSingleEntity<T> extends AbstractPanel implements S
     }
 
 
-    public abstract void initForms();
+    public abstract void initForms(boolean forceInit);
 
 
     public List<SpatialUnit> getSpatialUnitOptions() {
@@ -148,49 +168,39 @@ public abstract class AbstractSingleEntity<T> extends AbstractPanel implements S
         return List.of();
     }
 
+    // Nom de la propriété qui fait eventuellement changer le formulaire
+    protected abstract String getFormScopePropertyName();
+
+    protected abstract void setFormScopePropertyValue(Concept concept);
+
+    protected void onFormScopeChanged(Concept newVal) {
+        updateJpaEntityFromFormResponse(formResponse, unit);
+        setFormScopePropertyValue(newVal); // change type of unit to be able to init forms
+        initForms(false);
+    }
 
     public void setFieldAnswerHasBeenModified(CustomField field) {
         formResponse.getAnswers().get(field).setHasBeenModified(true);
         hasUnsavedModifications = true;
     }
 
-    public void setFieldConceptAnswerHasBeenModified(AjaxBehaviorEvent event) {
+    public void setFieldConceptAnswerHasBeenModified(SelectEvent<Concept> event) {
         UIComponent component = event.getComponent();
         CustomField field = (CustomField) component.getAttributes().get("field");
 
         formResponse.getAnswers().get(field).setHasBeenModified(true);
         hasUnsavedModifications = true;
+        if (Boolean.TRUE.equals(field.getIsSystemField()) && Objects.equals(field.getValueBinding(), getFormScopePropertyName())) {
+            Concept newValue = event.getObject(); // ← la nouvelle valeur
+            onFormScopeChanged(newValue);
+        }
     }
 
 
     public List<Concept> completeDependentConceptChildren(
             String input
     ) {
-
-        FacesContext context = FacesContext.getCurrentInstance();
-        CustomFieldSelectOneConceptFromChildrenOfConcept dependentField =
-                (CustomFieldSelectOneConceptFromChildrenOfConcept) UIComponent.getCurrentComponent(context).getAttributes().get("field");
-
-        CustomField parentField = dependentField.getParentField();
-        if (parentField == null) {
-            return Collections.emptyList();
-        }
-
-        CustomFieldAnswer answer = formResponse.getAnswers().get(parentField);
-        Concept parentConcept = null;
-
-        if (answer instanceof CustomFieldAnswerSelectOneConceptFromChildrenOfConcept a1) {
-            parentConcept = a1.getValue();
-        } else if (answer instanceof CustomFieldAnswerSelectOneFromFieldCode a2) {
-            parentConcept = a2.getValue();
-        }
-
-        if (parentConcept == null) {
-            return Collections.emptyList();
-        }
-
-        UserInfo userInfo = sessionSettingsBean.getUserInfo();
-        return fieldConfigurationService.fetchAutocomplete(userInfo, parentConcept, input);
+        return List.of();
     }
 
     public String getUrlForDependentConcept(
@@ -214,36 +224,54 @@ public abstract class AbstractSingleEntity<T> extends AbstractPanel implements S
         return parentConcept != null ? fieldConfigurationService.getUrlOfConcept(parentConcept) : null;
     }
 
-    public CustomFormResponse initializeFormResponse(CustomForm form, Object jpaEntity) {
-        CustomFormResponse response = new CustomFormResponse();
+    public CustomFormResponse initializeFormResponse(CustomForm form, Object jpaEntity, boolean forceInit) {
+
+        // Determine whether to reuse or recreate the response
+        CustomFormResponse response;
+        Map<CustomField, CustomFieldAnswer> answers;
+
+        if (formResponse != null && !forceInit) {
+            // Reuse existing form response
+            response = formResponse;
+            answers = formResponse.getAnswers();
+        } else {
+            // Create a new form response
+            response = new CustomFormResponse();
+            answers = new HashMap<>();
+        }
+
+        // If we’re reusing an existing form response, we only need to initialize missing fields
+        boolean onlyInitMissingProperties = (response == formResponse && !forceInit);
+
         if (form.getLayout() == null) return response;
 
-        Map<CustomField, CustomFieldAnswer> answers = new HashMap<>();
         List<String> bindableFields = getBindableFieldNames(jpaEntity);
 
         for (CustomFormPanel panel : form.getLayout()) {
-            processPanel(panel, jpaEntity, bindableFields, answers);
+            processPanel(panel, jpaEntity, bindableFields, answers, onlyInitMissingProperties);
         }
 
         response.setAnswers(answers);
         return response;
     }
 
-    private void processPanel(CustomFormPanel panel, Object jpaEntity, List<String> bindableFields, Map<CustomField, CustomFieldAnswer> answers) {
+    private void processPanel(CustomFormPanel panel, Object jpaEntity, List<String> bindableFields, Map<CustomField,
+            CustomFieldAnswer> answers, boolean onlyInitMissingProperties) {
         if (panel.getRows() == null) return;
 
         for (CustomRow row : panel.getRows()) {
             if (row.getColumns() == null) continue;
 
             for (CustomCol col : row.getColumns()) {
-                processColumn(col, jpaEntity, bindableFields, answers);
+                processColumn(col, jpaEntity, bindableFields, answers, onlyInitMissingProperties);
             }
         }
     }
 
-    private void processColumn(CustomCol col, Object jpaEntity, List<String> bindableFields, Map<CustomField, CustomFieldAnswer> answers) {
+    private void processColumn(CustomCol col, Object jpaEntity, List<String> bindableFields, Map<CustomField, CustomFieldAnswer> answers,
+                               boolean onlyInitMissingProperties) {
         CustomField field = col.getField();
-        if (field == null || answers.containsKey(field)) return;
+        if (field == null || (answers.containsKey(field) && onlyInitMissingProperties)) return;
 
         CustomFieldAnswer answer = instantiateAnswerForField(field);
         if (answer == null) return;
@@ -260,11 +288,21 @@ public abstract class AbstractSingleEntity<T> extends AbstractPanel implements S
         answers.put(field, answer);
     }
 
-    private static void initializeAnswer(CustomFieldAnswer answer, CustomField field) {
+    /*
+    Specific initialization for system fields. Override it in the child classes
+     */
+    protected void initializeSystemField(CustomFieldAnswer answer, CustomField field) {
+
+    }
+
+    private void initializeAnswer(CustomFieldAnswer answer, CustomField field) {
         CustomFieldAnswerId answerId = new CustomFieldAnswerId();
         answerId.setField(field);
         answer.setPk(answerId);
         answer.setHasBeenModified(false);
+        if (Boolean.TRUE.equals(field.getIsSystemField())) {
+            initializeSystemField(answer, field);
+        }
     }
 
     // --------------------Spatial Unit Tree
@@ -369,6 +407,8 @@ public abstract class AbstractSingleEntity<T> extends AbstractPanel implements S
             dateTimeAnswer.setValue(odt.toLocalDateTime());
         } else if (value instanceof String str && answer instanceof CustomFieldAnswerText textAnswer) {
             textAnswer.setValue(str);
+        } else if (value instanceof Person p && answer instanceof CustomFieldAnswerSelectOnePerson singlePersonAnswer) {
+            singlePersonAnswer.setValue(p);
         } else if (value instanceof List<?> list && answer instanceof CustomFieldAnswerSelectMultiplePerson multiplePersonAnswer &&
                 list.stream().allMatch(Person.class::isInstance)) {
             multiplePersonAnswer.setValue((List<Person>) list);
@@ -384,6 +424,8 @@ public abstract class AbstractSingleEntity<T> extends AbstractPanel implements S
             spatialUnitAnswer.setValue(s);
         } else if (value instanceof ActionCode code && answer instanceof CustomFieldAnswerSelectOneActionCode actionCodeAnswer) {
             actionCodeAnswer.setValue(code);
+        } else if (value instanceof Integer val && answer instanceof CustomFieldAnswerInteger integerAnswer) {
+            integerAnswer.setValue(val);
         } else if (value instanceof Set<?> set && answer instanceof CustomFieldAnswerSelectMultipleSpatialUnitTree treeAnswer) {
             // Cast set to the expected type
             treeAnswer.setValue((Set<SpatialUnit>) set);
@@ -426,6 +468,8 @@ public abstract class AbstractSingleEntity<T> extends AbstractPanel implements S
             return a.getValue();
         } else if (answer instanceof CustomFieldAnswerSelectMultiplePerson a) {
             return a.getValue();
+        } else if (answer instanceof CustomFieldAnswerSelectOnePerson a) {
+            return a.getValue();
         } else if (answer instanceof CustomFieldAnswerSelectOneFromFieldCode a) {
             return a.getValue();
         } else if (answer instanceof CustomFieldAnswerSelectOneConceptFromChildrenOfConcept a) {
@@ -437,6 +481,8 @@ public abstract class AbstractSingleEntity<T> extends AbstractPanel implements S
         } else if (answer instanceof CustomFieldAnswerSelectMultipleSpatialUnitTree a) {
             return a.getValue();
         } else if (answer instanceof CustomFieldAnswerSelectOneActionCode a) {
+            return a.getValue();
+        } else if (answer instanceof CustomFieldAnswerInteger a) {
             return a.getValue();
         }
 

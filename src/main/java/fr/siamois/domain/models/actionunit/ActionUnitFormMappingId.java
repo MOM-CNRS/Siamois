@@ -8,6 +8,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.envers.Audited;
 
 import java.io.Serializable;
 import java.util.Objects;
@@ -15,7 +16,7 @@ import java.util.Objects;
 @Embeddable
 @Getter
 @Setter
-
+@Audited
 public class ActionUnitFormMappingId implements Serializable {
 
     @ManyToOne

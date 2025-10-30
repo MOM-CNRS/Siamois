@@ -1,10 +1,17 @@
 package fr.siamois.ui.bean.panel.models.panel.single;
 
+import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.document.Document;
 import fr.siamois.domain.models.exceptions.vocabulary.NoConfigForFieldException;
+import fr.siamois.domain.models.history.InfoRevisionEntity;
+import fr.siamois.domain.models.history.RevisionWithInfo;
+import fr.siamois.domain.models.settings.ConceptFieldConfig;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.models.vocabulary.Vocabulary;
+import fr.siamois.domain.services.history.HistoryAuditService;
+import fr.siamois.domain.services.vocabulary.ConceptService;
+import fr.siamois.domain.services.vocabulary.FieldService;
 import fr.siamois.ui.bean.dialog.document.DocumentCreationBean;
 import fr.siamois.ui.bean.panel.models.panel.single.tab.*;
 import io.micrometer.common.lang.Nullable;
@@ -12,35 +19,44 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import org.hibernate.envers.RevisionType;
 import org.primefaces.PrimeFaces;
 import org.primefaces.event.TabChangeEvent;
+import org.springframework.context.ApplicationContext;
 import org.springframework.util.MimeType;
 
 import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.Serializable;
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @EqualsAndHashCode(callSuper = true, onlyExplicitlyIncluded = true)
 @Getter
 @Setter
 @Slf4j
-public abstract class AbstractSingleEntityPanel<T, H> extends AbstractSingleEntity<T>  implements Serializable {
+public abstract class AbstractSingleEntityPanel<T> extends AbstractSingleEntity<T>  implements Serializable {
 
     public static final String RECORDING_UNIT_FORM_RECORDING_UNIT_TABS = "recordingUnitForm:recordingUnitTabs";
     // Deps
     protected final transient DocumentCreationBean documentCreationBean;
+    protected final transient HistoryAuditService historyAuditService;
+    protected final transient FieldService fieldService;
+    protected final transient ConceptService conceptService;
 
     //--------------- Locals
 
     protected Integer activeTabIndex; // Keeping state of active tab
     protected transient T backupClone;
     protected String errorMessage;
-    protected transient List<H> historyVersion;
-    protected transient H revisionToDisplay = null;
+    protected transient List<RevisionWithInfo<T>> history;
+    protected transient RevisionWithInfo<T> revisionToDisplay = null;
     protected Long idunit;  // ID of the spatial unit
     protected transient List<Document> documents;
+    protected transient Map<String, ConceptFieldConfig> fieldConfigs = new HashMap<>();
 
     // lazy model for children of entity
     protected long totalChildrenCount = 0;
@@ -51,8 +67,9 @@ public abstract class AbstractSingleEntityPanel<T, H> extends AbstractSingleEnti
     protected long totalParentsCount = 0;
     protected transient List<Concept> selectedCategoriesParents;
 
-
     protected transient List<PanelTab> tabs;
+
+    protected transient RevisionWithInfo<T> bufferedLastRevision;
 
     @Override
     public String display() {
@@ -67,7 +84,7 @@ public abstract class AbstractSingleEntityPanel<T, H> extends AbstractSingleEnti
 
     static {
         SYSTEM_THESO = new Vocabulary();
-        SYSTEM_THESO.setBaseUri("https://thesaurus.mom.fr/");
+        SYSTEM_THESO.setBaseUri("https://thesaurus.mom.fr");
         SYSTEM_THESO.setExternalVocabularyId("th230");
     }
 
@@ -75,10 +92,12 @@ public abstract class AbstractSingleEntityPanel<T, H> extends AbstractSingleEnti
 
     protected AbstractSingleEntityPanel(String titleCodeOrTitle,
                                         String icon, String panelClass,
-                                        DocumentCreationBean documentCreationBean,
-                                        AbstractSingleEntity.Deps deps) {
-        super(titleCodeOrTitle, icon, panelClass, deps);
-        this.documentCreationBean = documentCreationBean;
+                                        ApplicationContext context) {
+        super(titleCodeOrTitle, icon, panelClass, context);
+        this.documentCreationBean = context.getBean(DocumentCreationBean.class);
+        this.historyAuditService = context.getBean(HistoryAuditService.class);
+        this.fieldService = context.getBean(FieldService.class);
+        this.conceptService = context.getBean(ConceptService.class);
 
         // Overview tab
         tabs = new ArrayList<>();
@@ -98,11 +117,11 @@ public abstract class AbstractSingleEntityPanel<T, H> extends AbstractSingleEnti
     }
 
 
-    public abstract void initForms();
+    public abstract void initForms(boolean forceInit);
 
     public abstract void cancelChanges();
 
-    public abstract void visualise(H history);
+    public abstract void visualise(RevisionWithInfo<T> history);
 
     /**
      * Save the current entity in the database.
@@ -182,4 +201,32 @@ public abstract class AbstractSingleEntityPanel<T, H> extends AbstractSingleEnti
         return null; // N/A for others
     }
 
+    @SuppressWarnings("unchecked")
+    private RevisionWithInfo<T> findLastRevisionForEntity() {
+        RevisionWithInfo<T> result = (RevisionWithInfo<T>) historyAuditService.findLastRevisionForEntity(unit.getClass(), idunit);
+        if (result == null) {
+            InfoRevisionEntity info = new InfoRevisionEntity();
+            UserInfo userInfo = sessionSettingsBean.getUserInfo();
+            info.setRevId(0L);
+            info.setEpochTimestamp(OffsetDateTime.now().toEpochSecond());
+            info.setUpdatedBy(userInfo.getUser());
+            info.setUpdatedFrom(userInfo.getInstitution());
+            result = new RevisionWithInfo<>(unit, info, RevisionType.MOD);
+        }
+        return result;
+    }
+
+    public String lastUpdateDate() {
+        bufferedLastRevision = findLastRevisionForEntity();
+        return bufferedLastRevision.getDate().toString();
+    }
+
+    public String lastUpdater() {
+        if (bufferedLastRevision == null) {
+            bufferedLastRevision = findLastRevisionForEntity();
+        }
+        String result = bufferedLastRevision.revisionEntity().getUpdatedBy().displayName();
+        bufferedLastRevision = null;
+        return result;
+    }
 }

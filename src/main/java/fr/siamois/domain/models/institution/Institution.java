@@ -7,6 +7,7 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import jakarta.ws.rs.DefaultValue;
 import lombok.Data;
+import org.hibernate.envers.NotAudited;
 
 import java.io.Serializable;
 import java.time.OffsetDateTime;
@@ -42,6 +43,7 @@ public class Institution implements Serializable {
     private OffsetDateTime creationDate = OffsetDateTime.now();
 
     @ManyToMany(fetch = FetchType.LAZY)
+    @NotAudited
     @JoinTable(name = "institution_manager",
             joinColumns = @JoinColumn(name = "fk_institution_id"),
             inverseJoinColumns = @JoinColumn(name = "fk_person_id"))
@@ -67,6 +69,11 @@ public class Institution implements Serializable {
     @Override
     public int hashCode() {
         return Objects.hash(name, identifier);
+    }
+
+    @Override
+    public String toString() {
+        return name;
     }
 
 }

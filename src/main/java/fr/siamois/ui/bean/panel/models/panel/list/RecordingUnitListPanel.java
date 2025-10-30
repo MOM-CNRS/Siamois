@@ -5,16 +5,7 @@ import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.exceptions.recordingunit.FailedRecordingUnitSaveException;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
-import fr.siamois.domain.services.BookmarkService;
-import fr.siamois.domain.services.actionunit.ActionUnitService;
-import fr.siamois.domain.services.person.PersonService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
-import fr.siamois.domain.services.spatialunit.SpatialUnitService;
-import fr.siamois.domain.services.vocabulary.ConceptService;
-import fr.siamois.domain.services.vocabulary.LabelService;
-import fr.siamois.ui.bean.LangBean;
-import fr.siamois.ui.bean.NavBean;
-import fr.siamois.ui.bean.SessionSettingsBean;
 import fr.siamois.ui.bean.panel.models.PanelBreadcrumb;
 import fr.siamois.ui.lazydatamodel.BaseLazyDataModel;
 import fr.siamois.ui.lazydatamodel.RecordingUnitLazyDataModel;
@@ -25,6 +16,7 @@ import lombok.Setter;
 import org.primefaces.event.RowEditEvent;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.config.BeanDefinition;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
@@ -42,7 +34,6 @@ import java.util.List;
 public class RecordingUnitListPanel extends AbstractListPanel<RecordingUnit>  implements Serializable {
 
     private final transient RecordingUnitService recordingUnitService;
-    private final transient NavBean navBean;
 
     // locals
     private String actionUnitListErrorMessage;
@@ -67,29 +58,12 @@ public class RecordingUnitListPanel extends AbstractListPanel<RecordingUnit>  im
 
 
 
-    public RecordingUnitListPanel(SpatialUnitService spatialUnitService, PersonService personService,
-                                  ConceptService conceptService,
-                                  SessionSettingsBean sessionSettingsBean,
-                                  LangBean langBean,
-                                  LabelService labelService,
-                                  ActionUnitService actionUnitService,
-                                  RecordingUnitService recordingUnitService, BookmarkService bookmarkService, NavBean navBean) {
-
-
-
+    public RecordingUnitListPanel(ApplicationContext context) {
         super("panel.title.allrecordingunit",
                 "bi bi-pencil-square",
                 "siamois-panel recording-unit-panel list-panel",
-                spatialUnitService,
-                personService,
-                conceptService,
-                sessionSettingsBean,
-                langBean,
-                labelService,
-                actionUnitService,
-                bookmarkService);
-        this.recordingUnitService = recordingUnitService;
-        this.navBean = navBean;
+                context);
+        recordingUnitService = context.getBean(RecordingUnitService.class);
     }
 
     @Override

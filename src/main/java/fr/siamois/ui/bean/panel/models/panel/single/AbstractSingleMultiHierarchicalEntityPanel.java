@@ -1,19 +1,23 @@
 package fr.siamois.ui.bean.panel.models.panel.single;
 
-import fr.siamois.ui.bean.dialog.document.DocumentCreationBean;
 import fr.siamois.ui.bean.panel.models.panel.single.tab.MultiHierarchyTab;
 import fr.siamois.ui.lazydatamodel.BaseLazyDataModel;
+import org.springframework.context.ApplicationContext;
 
 import java.io.Serializable;
 
-public abstract class AbstractSingleMultiHierarchicalEntityPanel<T, H> extends AbstractSingleEntityPanel<T, H>  implements Serializable {
+public abstract class AbstractSingleMultiHierarchicalEntityPanel<T> extends AbstractSingleEntityPanel<T> implements Serializable {
 
-    protected AbstractSingleMultiHierarchicalEntityPanel(String titleCodeOrTitle, String icon, String panelClass, DocumentCreationBean documentCreationBean,
-                                        AbstractSingleEntity.Deps deps) {
-        super(titleCodeOrTitle, icon, panelClass, documentCreationBean, deps);
+    protected AbstractSingleMultiHierarchicalEntityPanel(
+            String titleCodeOrTitle,
+            String icon,
+            String panelClass,
+            ApplicationContext context) {
+        super(titleCodeOrTitle, icon, panelClass, context);
     }
 
     public abstract BaseLazyDataModel<T> getLazyDataModelChildren();
+
     public abstract BaseLazyDataModel<T> getLazyDataModelParents();
 
     @Override
@@ -24,7 +28,7 @@ public abstract class AbstractSingleMultiHierarchicalEntityPanel<T, H> extends A
                 this.getIcon(),
                 "hierarchyTab");
 
-        tabs.add(2,multiHierTab);
+        tabs.add(2, multiHierTab);
     }
 
 }

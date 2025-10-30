@@ -104,7 +104,7 @@ public class DocumentService implements ArkEntityService {
 
             document.setMd5Sum(DocumentUtils.md5(bufferedInputStream));
             document.setFileCode(generateFileInternalCode());
-            document.setAuthor(userInfo.getUser());
+            document.setCreatedBy(userInfo.getUser());
             document.setCreatedByInstitution(userInfo.getInstitution());
             document.setUrl(String.format("%s/content/%s", contextPath, document.contentFileName()));
 

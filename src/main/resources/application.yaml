@@ -47,6 +47,10 @@ spring:
     properties:
       hibernate:
         show_sql: false
+        envers:
+          audit_table_suffix: _AUD
+          store_data_at_delete: true
+          global_with_modified_flag: true
 
   liquibase:
     enabled: true

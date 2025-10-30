@@ -5,10 +5,11 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 
 import java.util.Arrays;
+import java.util.Objects;
 import java.util.Optional;
 
 @Data
-public class FullInfoDTO {
+public class FullInfoDTO implements Comparable<FullInfoDTO> {
     @JsonProperty("http://purl.org/dc/terms/contributor")
     private PurlInfoDTO[] contributor;
 
@@ -51,6 +52,9 @@ public class FullInfoDTO {
     @JsonProperty("http://purl.org/umu/uneskos#memberOf")
     private PurlInfoDTO[] memberOf;
 
+    @JsonProperty("http://www.w3.org/2004/02/skos/core#definition")
+    private PurlInfoDTO[] definition;
+
     @JsonIgnore
     private String baseUri;
 
@@ -63,4 +67,23 @@ public class FullInfoDTO {
                 .findFirst();
     }
 
+    public String getIdentifierStr() {
+        return identifier[0].getValue();
+    }
+
+    @Override
+    public int compareTo(FullInfoDTO o) {
+        return getIdentifierStr().compareTo(o.getIdentifierStr());
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (!(o instanceof FullInfoDTO that)) return false;
+        return Objects.deepEquals(identifier, that.identifier);
+    }
+
+    @Override
+    public int hashCode() {
+        return Arrays.hashCode(identifier);
+    }
 }

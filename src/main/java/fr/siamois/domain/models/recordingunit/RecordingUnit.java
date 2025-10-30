@@ -19,6 +19,9 @@ import fr.siamois.domain.models.specimen.Specimen;
 import fr.siamois.domain.models.vocabulary.Concept;
 import jakarta.persistence.*;
 import lombok.Data;
+import lombok.NoArgsConstructor;
+import org.hibernate.envers.Audited;
+import org.hibernate.envers.NotAudited;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -31,11 +34,9 @@ import static fr.siamois.ui.bean.panel.models.panel.single.AbstractSingleEntity.
 @Data
 @Entity
 @Table(name = "recording_unit")
+@NoArgsConstructor
+@Audited
 public class RecordingUnit extends RecordingUnitParent implements ArkEntity, ReferencableEntity {
-
-    public RecordingUnit() {
-
-    }
 
     public RecordingUnit(RecordingUnit recordingUnit) {
         setType(recordingUnit.getType());
@@ -44,9 +45,10 @@ public class RecordingUnit extends RecordingUnitParent implements ArkEntity, Ref
         setSize(recordingUnit.getSize());
         setAltitude(recordingUnit.getAltitude());
         setCreatedByInstitution(recordingUnit.getCreatedByInstitution());
+        setCreatedBy(recordingUnit.getCreatedBy());
         setAuthor(recordingUnit.getAuthor());
-        setAuthors(recordingUnit.getAuthors());
-        setExcavators(recordingUnit.getExcavators());
+        setNormalizedInterpretation(recordingUnit.getNormalizedInterpretation());
+        setGeomorphologicalCycle(recordingUnit.getGeomorphologicalCycle());
         setSpatialUnit(recordingUnit.getSpatialUnit());
     }
 
@@ -75,17 +77,11 @@ public class RecordingUnit extends RecordingUnitParent implements ArkEntity, Ref
 
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
-            name = "recording_unit_authors",
+            name = "recording_unit_contributors",
             joinColumns = @JoinColumn(name = "fk_recording_unit_id"),
             inverseJoinColumns = @JoinColumn(name = "fk_person_id"))
-    private List<Person> authors = new ArrayList<>();
-
-    @ManyToMany(fetch = FetchType.EAGER)
-    @JoinTable(
-            name = "recording_unit_excavators",
-            joinColumns = @JoinColumn(name = "fk_recording_unit_id"),
-            inverseJoinColumns = @JoinColumn(name = "fk_person_id"))
-    private List<Person> excavators = new ArrayList<>();
+    @NotAudited
+    private List<Person> contributors = new ArrayList<>();
 
     @OneToMany(mappedBy = "recordingUnit")
     private Set<Specimen> specimenList;
@@ -100,6 +96,12 @@ public class RecordingUnit extends RecordingUnitParent implements ArkEntity, Ref
 
     @FieldCode
     public static final String TYPE_FIELD_CODE = "SIARU.TYPE";
+
+    @FieldCode
+    public static final String GEOMORPHO_CYCLE_FIELD_CODE = "SIARU.GEOMORPHO";
+
+    @FieldCode
+    public static final String INTERPRETATION_FIELD_CODE = "SIARU.INTERPRETATION";
 
     @FieldCode
     public static final String METHOD_FIELD_CODE = "SIARU.TYPE";
@@ -145,8 +147,9 @@ public class RecordingUnit extends RecordingUnitParent implements ArkEntity, Ref
     @Transient
     @JsonIgnore
     public List<String> getBindableFieldNames() {
-        return List.of("creationTime", "startDate", "endDate", "fullIdentifier", "authors",
-                "excavators", "type", "secondaryType", "thirdType", "actionUnit", "spatialUnit");
+        return List.of("creationTime", "startDate", "endDate", "identifier",
+                "contributors", "type", "secondaryType", "thirdType", "actionUnit", "spatialUnit",
+                "geomorphologicalCycle", "normalizedInterpretation", "author");
     }
 
     // ----------- Concepts for system fields
@@ -157,6 +160,8 @@ public class RecordingUnit extends RecordingUnitParent implements ArkEntity, Ref
             .vocabulary(SYSTEM_THESO)
             .externalId("4286194")
             .build();
+
+
     // Excavators
     @Transient
     @JsonIgnore
@@ -170,8 +175,9 @@ public class RecordingUnit extends RecordingUnitParent implements ArkEntity, Ref
     @JsonIgnore
     private static Concept recordingUnitTypeConcept = new Concept.Builder()
             .vocabulary(SYSTEM_THESO)
-            .externalId("4282367")
+            .externalId("4287605")
             .build();
+
 
     // Date
     @Transient
@@ -200,12 +206,13 @@ public class RecordingUnit extends RecordingUnitParent implements ArkEntity, Ref
 
     @Transient
     @JsonIgnore
-    private static CustomFieldSelectMultiplePerson authorsField = new CustomFieldSelectMultiplePerson.Builder()
-            .label("recordingunit.field.authors")
+    private static CustomFieldSelectOnePerson authorField = new CustomFieldSelectOnePerson.Builder()
+            .label("recordingunit.field.mainAuthor")
             .isSystemField(true)
-            .valueBinding("authors")
+            .valueBinding("author")
             .concept(authorsConcept)
             .build();
+
     @Transient
     @JsonIgnore
     private static CustomFieldSelectMultiplePerson excavatorsField = new CustomFieldSelectMultiplePerson.Builder()
@@ -219,7 +226,7 @@ public class RecordingUnit extends RecordingUnitParent implements ArkEntity, Ref
     @Transient
     @JsonIgnore
     private static CustomFieldSelectOneFromFieldCode recordingUnitTypeField = new CustomFieldSelectOneFromFieldCode.Builder()
-            .label("spatialunit.field.type")
+            .label("recordingunit.property.type")
             .isSystemField(true)
             .valueBinding("type")
             .styleClass(MR_2_RECORDING_UNIT_TYPE_CHIP)
@@ -227,6 +234,7 @@ public class RecordingUnit extends RecordingUnitParent implements ArkEntity, Ref
             .fieldCode(RecordingUnit.TYPE_FIELD_CODE)
             .concept(recordingUnitTypeConcept)
             .build();
+
 
     @Transient
     @JsonIgnore
@@ -341,9 +349,6 @@ public class RecordingUnit extends RecordingUnitParent implements ArkEntity, Ref
             .build();
 
 
-
-
-
     @Transient
     @JsonIgnore
     private static CustomFieldDateTime closingDateField = new CustomFieldDateTime.Builder()
@@ -383,13 +388,7 @@ public class RecordingUnit extends RecordingUnitParent implements ArkEntity, Ref
                                                     .readOnly(false)
                                                     .className(COLUMN_CLASS_NAME)
                                                     .isRequired(true)
-                                                    .field(authorsField)
-                                                    .build())
-                                            .addColumn(new CustomCol.Builder()
-                                                    .readOnly(false)
-                                                    .className(COLUMN_CLASS_NAME)
-                                                    .isRequired(true)
-                                                    .field(excavatorsField)
+                                                    .field(authorField)
                                                     .build())
                                             .addColumn(new CustomCol.Builder()
                                                     .readOnly(false)
@@ -413,112 +412,97 @@ public class RecordingUnit extends RecordingUnitParent implements ArkEntity, Ref
     @JsonIgnore
     public static final CustomForm DETAILS_FORM = new CustomForm.Builder()
             .name("Details tab form")
-                    .description("Contains the main form")
-                    .addPanel(
-                            new CustomFormPanel.Builder()
-                                    .name(COMMON_HEADER_GENERAL)
-                                    .isSystemPanel(true)
-                                    .addRow(
-                                            new CustomRow.Builder()
-                                                    .addColumn(new CustomCol.Builder()
-                                                            .readOnly(true)
-                                                            .className(COLUMN_CLASS_NAME)
-                                                            .field(recordingUnitIdField)
-                                                            .build())
-            .addColumn(new CustomCol.Builder()
-                                                            .readOnly(true)
-                                                            .className(COLUMN_CLASS_NAME)
-                                                            .field(actionUnitField)
-                                                            .build())
-            .addColumn(new CustomCol.Builder()
-                                                            .readOnly(false)
-                                                            .className(COLUMN_CLASS_NAME)
-                                                            .field(spatialUnitField)
-                                                            .build())
-            .addColumn(new CustomCol.Builder()
-                                                            .readOnly(false)
-                                                            .className(COLUMN_CLASS_NAME)
-                                                            .field(authorsField)
-                                                            .build())
-            .addColumn(new CustomCol.Builder()
-                                                            .readOnly(false)
-                                                            .className(COLUMN_CLASS_NAME)
-                                                            .field(excavatorsField)
-                                                            .build())
-            .build()
-                                    ).addRow(
-                                            new CustomRow.Builder()
-                                                    .addColumn(new CustomCol.Builder()
-                                                            .readOnly(false)
-                                                            .className(COLUMN_CLASS_NAME)
-                                                            .field(recordingUnitTypeField)
-                                                            .build())
-            .addColumn(new CustomCol.Builder()
-                                                            .readOnly(false)
-                                                            .className(COLUMN_CLASS_NAME)
-                                                            .field(recordingUnitSecondaryTypeField)
-                                                            .build())
-            .addColumn(new CustomCol.Builder()
-                                                            .readOnly(false)
-                                                            .className(COLUMN_CLASS_NAME)
-                                                            .field(recordingUnitIdentificationField)
-                                                            .build())
-            .build()
-                                    ).addRow(
-                                            new CustomRow.Builder()
-                                                    .addColumn(new CustomCol.Builder()
-                                                            .readOnly(true)
-                                                            .className(COLUMN_CLASS_NAME)
-                                                            .field(creationDateField)
-                                                            .build())
-            .addColumn(new CustomCol.Builder()
-                                                            .readOnly(false)
-                                                            .className(COLUMN_CLASS_NAME)
-                                                            .field(openingDateField)
-                                                            .build())
-            .addColumn(new CustomCol.Builder()
-                                                            .readOnly(false)
-                                                            .className(COLUMN_CLASS_NAME)
-                                                            .field(closingDateField)
-                                                            .build())
-            .build()
-                                    )
+            .description("Contains the main form")
+            .addPanel(
+                    new CustomFormPanel.Builder()
+                            .name(COMMON_HEADER_GENERAL)
+                            .isSystemPanel(true)
+                            .addRow(
+                                    new CustomRow.Builder()
+                                            .addColumn(new CustomCol.Builder()
+                                                    .readOnly(true)
+                                                    .className(COLUMN_CLASS_NAME)
+                                                    .field(recordingUnitIdField)
+                                                    .build())
+                                            .addColumn(new CustomCol.Builder()
+                                                    .readOnly(true)
+                                                    .className(COLUMN_CLASS_NAME)
+                                                    .field(actionUnitField)
+                                                    .build())
+                                            .addColumn(new CustomCol.Builder()
+                                                    .readOnly(false)
+                                                    .className(COLUMN_CLASS_NAME)
+                                                    .field(spatialUnitField)
+                                                    .build())
+                                            .addColumn(new CustomCol.Builder()
+                                                    .readOnly(false)
+                                                    .className(COLUMN_CLASS_NAME)
+                                                    .field(authorField)
+                                                    .build())
                                             .build()
-                    )
-                            .build();
+                            ).addRow(
+                                    new CustomRow.Builder()
+                                            .addColumn(new CustomCol.Builder()
+                                                    .readOnly(false)
+                                                    .className(COLUMN_CLASS_NAME)
+                                                    .field(recordingUnitTypeField)
+                                                    .build())
+                                            .addColumn(new CustomCol.Builder()
+                                                    .readOnly(false)
+                                                    .className(COLUMN_CLASS_NAME)
+                                                    .field(recordingUnitSecondaryTypeField)
+                                                    .build())
+                                            .addColumn(new CustomCol.Builder()
+                                                    .readOnly(false)
+                                                    .className(COLUMN_CLASS_NAME)
+                                                    .field(recordingUnitIdentificationField)
+                                                    .build())
+                                            .build()
+                            ).addRow(
+                                    new CustomRow.Builder()
+                                            .addColumn(new CustomCol.Builder()
+                                                    .readOnly(true)
+                                                    .className(COLUMN_CLASS_NAME)
+                                                    .field(creationDateField)
+                                                    .build())
+                                            .addColumn(new CustomCol.Builder()
+                                                    .readOnly(false)
+                                                    .className(COLUMN_CLASS_NAME)
+                                                    .field(openingDateField)
+                                                    .build())
+                                            .addColumn(new CustomCol.Builder()
+                                                    .readOnly(false)
+                                                    .className(COLUMN_CLASS_NAME)
+                                                    .field(closingDateField)
+                                                    .build())
+                                            .build()
+                            )
+                            .build()
+            )
+            .build();
 
     // Details form
     @Transient
     @JsonIgnore
     public static final CustomForm OVERVIEW_FORM = new CustomForm.Builder()
             .name("Overview tab form")
-                    .description("Contains the overview")
-                    .addPanel(
-                            new CustomFormPanel.Builder()
-                                    .name(COMMON_HEADER_GENERAL)
-                                    .isSystemPanel(true)
-                                    .addRow(
-                                            new CustomRow.Builder()
-                                                    .addColumn(new CustomCol.Builder()
-                                                            .readOnly(true)
-                                                            .className(COLUMN_CLASS_NAME)
-                                                            .field(recordingUnitTypeField)
-                                                            .build())
-            .addColumn(new CustomCol.Builder()
-                                                            .readOnly(true)
-                                                            .className(COLUMN_CLASS_NAME)
-                                                            .field(recordingUnitSecondaryTypeField)
-                                                            .build())
-            .addColumn(new CustomCol.Builder()
-                                                            .readOnly(true)
-                                                            .className(COLUMN_CLASS_NAME)
-                                                            .field(recordingUnitIdentificationField)
-                                                            .build())
-            .build()
-                                    )
+            .description("Contains the overview")
+            .addPanel(
+                    new CustomFormPanel.Builder()
+                            .name(COMMON_HEADER_GENERAL)
+                            .isSystemPanel(true)
+                            .addRow(
+                                    new CustomRow.Builder()
+                                            .addColumn(new CustomCol.Builder()
+                                                    .readOnly(true)
+                                                    .className(COLUMN_CLASS_NAME)
+                                                    .field(recordingUnitTypeField)
+                                                    .build())
                                             .build()
-                    )
-                            .build();
+                            )
+                            .build()
+            )
+            .build();
 
     @Override
     public boolean equals(Object obj) {

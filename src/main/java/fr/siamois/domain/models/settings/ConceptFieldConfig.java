@@ -5,7 +5,6 @@ import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.vocabulary.Concept;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
-import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -14,7 +13,6 @@ import java.util.Objects;
 @Getter
 @Setter
 @Entity
-@EqualsAndHashCode
 @Table(name = "concept_field_config")
 public class ConceptFieldConfig {
 
@@ -40,6 +38,9 @@ public class ConceptFieldConfig {
     @NotNull
     @Column(name = "field_code", nullable = false, length = Integer.MAX_VALUE)
     private String fieldCode;
+
+    @Column(name = "existing_hash", length = Integer.MAX_VALUE)
+    private String existingHash = null;
 
     @Override
     public boolean equals(Object o) {

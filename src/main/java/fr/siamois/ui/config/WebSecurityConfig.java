@@ -2,6 +2,8 @@ package fr.siamois.ui.config;
 
 import fr.siamois.ui.config.handler.LoginSuccessHandler;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.actuate.autoconfigure.security.servlet.EndpointRequest;
+import org.springframework.boot.actuate.health.HealthEndpoint;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -37,6 +39,7 @@ public class WebSecurityConfig {
                 .requestMatchers("/error/**", "/pages/error/**").permitAll()
                 .requestMatchers("/api/**").permitAll()
                 .requestMatchers("/register/**").permitAll()
+                .requestMatchers(EndpointRequest.to(HealthEndpoint.class)).permitAll()
                 .anyRequest().authenticated()
         );
         http.formLogin(login -> login

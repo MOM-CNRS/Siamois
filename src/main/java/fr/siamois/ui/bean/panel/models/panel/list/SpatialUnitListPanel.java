@@ -3,14 +3,7 @@ package fr.siamois.ui.bean.panel.models.panel.list;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
-import fr.siamois.domain.models.vocabulary.label.ConceptLabel;
-import fr.siamois.domain.services.actionunit.ActionUnitService;
-import fr.siamois.domain.services.person.PersonService;
-import fr.siamois.domain.services.spatialunit.SpatialUnitService;
-import fr.siamois.domain.services.vocabulary.ConceptService;
-import fr.siamois.domain.services.vocabulary.LabelService;
-import fr.siamois.ui.bean.LangBean;
-import fr.siamois.ui.bean.SessionSettingsBean;
+import fr.siamois.domain.models.vocabulary.LocalizedConceptData;
 import fr.siamois.ui.bean.panel.models.PanelBreadcrumb;
 import fr.siamois.ui.lazydatamodel.BaseLazyDataModel;
 import fr.siamois.ui.lazydatamodel.SpatialUnitLazyDataModel;
@@ -18,6 +11,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.config.BeanDefinition;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
@@ -33,24 +27,11 @@ public class SpatialUnitListPanel extends AbstractListPanel<SpatialUnit>  implem
     // locals
     private String spatialUnitListErrorMessage;
 
-    public SpatialUnitListPanel(SpatialUnitService spatialUnitService,
-                                PersonService personService,
-                                ConceptService conceptService,
-                                SessionSettingsBean sessionSettingsBean,
-                                LangBean langBean,
-                                LabelService labelService,
-                                ActionUnitService actionUnitService) {
+    public SpatialUnitListPanel(ApplicationContext context) {
         super("panel.title.allspatialunit",
                 "bi bi-geo-alt",
                 "siamois-panel spatial-unit-panel list-panel",
-                spatialUnitService,
-                personService,
-                conceptService,
-                sessionSettingsBean,
-                langBean,
-                labelService,
-                actionUnitService,
-                null);
+                context);
     }
 
     @Override
@@ -85,7 +66,7 @@ public class SpatialUnitListPanel extends AbstractListPanel<SpatialUnit>  implem
         this.spatialUnitListErrorMessage = msg;
     }
 
-    public List<ConceptLabel> categoriesAvailable() {
+    public List<LocalizedConceptData> categoriesAvailable() {
         List<Concept> cList = conceptService.findAllBySpatialUnitOfInstitution(sessionSettingsBean.getSelectedInstitution());
 
         return cList.stream()

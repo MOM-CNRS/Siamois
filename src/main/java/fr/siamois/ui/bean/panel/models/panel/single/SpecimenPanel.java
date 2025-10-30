@@ -12,26 +12,25 @@ import fr.siamois.domain.models.form.customform.CustomCol;
 import fr.siamois.domain.models.form.customform.CustomForm;
 import fr.siamois.domain.models.form.customform.CustomFormPanel;
 import fr.siamois.domain.models.form.customform.CustomRow;
-import fr.siamois.domain.models.history.SpecimenHist;
+import fr.siamois.domain.models.history.RevisionWithInfo;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.specimen.Specimen;
 import fr.siamois.domain.models.vocabulary.Concept;
-import fr.siamois.domain.services.HistoryService;
 import fr.siamois.domain.services.person.PersonService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.specimen.SpecimenService;
-import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.RedirectBean;
-import fr.siamois.ui.bean.dialog.document.DocumentCreationBean;
 import fr.siamois.ui.bean.panel.models.PanelBreadcrumb;
 import fr.siamois.utils.MessageUtils;
-import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.primefaces.model.menu.DefaultMenuItem;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.config.BeanDefinition;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Scope;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
@@ -43,11 +42,13 @@ import java.util.List;
 
 @Slf4j
 @EqualsAndHashCode(callSuper = true, onlyExplicitlyIncluded = true)
-@Data
+@Getter
+@Setter
 @Component
 @Scope(BeanDefinition.SCOPE_PROTOTYPE)
-public class SpecimenPanel extends AbstractSingleEntityPanel<Specimen, SpecimenHist>  implements Serializable {
+public class SpecimenPanel extends AbstractSingleEntityPanel<Specimen>  implements Serializable {
 
+    public static final String BI_BI_BUCKET = "bi bi-bucket";
     // Deps
     protected final transient LangBean langBean;
 
@@ -56,8 +57,6 @@ public class SpecimenPanel extends AbstractSingleEntityPanel<Specimen, SpecimenH
     protected final transient PersonService personService;
     private final transient RedirectBean redirectBean;
     private final transient SpecimenService specimenService;
-    private final transient HistoryService historyService;
-    protected final transient ConceptService conceptService;
 
     @Override
     protected boolean documentExistsInUnitByHash(Specimen unit, String hash) {
@@ -141,7 +140,7 @@ public class SpecimenPanel extends AbstractSingleEntityPanel<Specimen, SpecimenH
             .isSystemField(true)
             .valueBinding("type")
             .styleClass("mr-2 specimen-type-chip")
-            .iconClass("bi bi-box2")
+            .iconClass(BI_BI_BUCKET)
             .fieldCode(Specimen.CATEGORY_FIELD)
             .concept(specimenTypeConcept)
             .build();
@@ -160,31 +159,23 @@ public class SpecimenPanel extends AbstractSingleEntityPanel<Specimen, SpecimenH
             .isSystemField(true)
             .valueBinding("category")
             .styleClass("mr-2 specimen-type-chip")
-            .iconClass("bi bi-box2")
+            .iconClass(BI_BI_BUCKET)
             .fieldCode(Specimen.CAT_FIELD)
             .concept(specimenCategoryConcept)
             .build();
 
 
-    protected SpecimenPanel(LangBean langBean,
-                            RecordingUnitService recordingUnitService,
-                            PersonService personService, SpecimenService specimenService, ConceptService conceptService,
-                            DocumentCreationBean documentCreationBean,
-                            RedirectBean redirectBean,
-                            AbstractSingleEntity.Deps deps,
-                            HistoryService historyService) {
+    protected SpecimenPanel(ApplicationContext context) {
 
         super("common.entity.specimen",
-                "bi bi-box2",
+                BI_BI_BUCKET,
                 "siamois-panel specimen-panel single-panel",
-                documentCreationBean, deps);
-        this.langBean = langBean;
-        this.recordingUnitService = recordingUnitService;
-        this.personService = personService;
-        this.specimenService = specimenService;
-        this.conceptService = conceptService;
-        this.redirectBean = redirectBean;
-        this.historyService = historyService;
+                context);
+        this.langBean = context.getBean(LangBean.class);
+        this.recordingUnitService = context.getBean(RecordingUnitService.class);
+        this.personService = context.getBean(PersonService.class);
+        this.specimenService = context.getBean(SpecimenService.class);
+        this.redirectBean = context.getBean(RedirectBean.class);
     }
 
     @Override
@@ -211,7 +202,7 @@ public class SpecimenPanel extends AbstractSingleEntityPanel<Specimen, SpecimenH
             backupClone = new Specimen(unit);
             this.titleCodeOrTitle = unit.getFullIdentifier();
 
-            initForms();
+            initForms(true);
 
             // Get all the CHILDREN of the recording unit
             selectedCategoriesChildren = new ArrayList<>();
@@ -226,7 +217,7 @@ public class SpecimenPanel extends AbstractSingleEntityPanel<Specimen, SpecimenH
         }
 
 
-        historyVersion = historyService.findSpecimenHistory(unit);
+        history = historyAuditService.findAllRevisionForEntity(Specimen.class, idunit);
         documents = documentService.findForSpecimen(unit);
     }
 
@@ -339,7 +330,6 @@ public class SpecimenPanel extends AbstractSingleEntityPanel<Specimen, SpecimenH
             redirectBean.redirectTo(HttpStatus.INTERNAL_SERVER_ERROR);
         }
 
-
     }
 
     @Override
@@ -349,11 +339,21 @@ public class SpecimenPanel extends AbstractSingleEntityPanel<Specimen, SpecimenH
 
 
     @Override
-    public void initForms() {
+    public void initForms(boolean forceInit) {
 
         // Init system form answers
-        formResponse = initializeFormResponse(detailsForm, unit);
+        formResponse = initializeFormResponse(detailsForm, unit, forceInit);
 
+    }
+
+    @Override
+    protected String getFormScopePropertyName() {
+        return "";
+    }
+
+    @Override
+    protected void setFormScopePropertyValue(Concept concept) {
+        unit.setType(concept);
     }
 
     @Override
@@ -363,15 +363,15 @@ public class SpecimenPanel extends AbstractSingleEntityPanel<Specimen, SpecimenH
         unit.setRecordingUnit(backupClone.getRecordingUnit());
         unit.setCategory(backupClone.getCategory());
         unit.setCreatedByInstitution(backupClone.getCreatedByInstitution());
-        unit.setAuthor(backupClone.getAuthor());
+        unit.setCreatedBy(backupClone.getCreatedBy());
         unit.setAuthors(backupClone.getAuthors());
         unit.setCollectors(backupClone.getCollectors());
         unit.setCollectionDate(backupClone.getCollectionDate());
-        initForms();
+        initForms(true);
     }
 
     @Override
-    public void visualise(SpecimenHist history) {
+    public void visualise(RevisionWithInfo<Specimen> history) {
         // todo: implement
     }
 

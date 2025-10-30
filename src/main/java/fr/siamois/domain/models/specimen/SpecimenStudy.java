@@ -2,11 +2,11 @@ package fr.siamois.domain.models.specimen;
 
 
 import fr.siamois.domain.models.ArkEntity;
-import fr.siamois.domain.models.FieldCode;
 import fr.siamois.domain.models.document.Document;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import org.hibernate.envers.Audited;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -15,6 +15,7 @@ import java.util.Set;
 @Data
 @Entity
 @Table(name = "specimen_study")
+@Audited
 public class SpecimenStudy extends SpecimenStudyParent implements ArkEntity {
 
     @Id
@@ -31,7 +32,5 @@ public class SpecimenStudy extends SpecimenStudyParent implements ArkEntity {
     )
     private Set<Document> documents = new HashSet<>();
 
-    @FieldCode
-    public static final String STUDY_TYPE_FIELD_CODE = "SIASS.METHOD";
 
 }

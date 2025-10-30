@@ -7,6 +7,7 @@ import fr.siamois.ui.bean.LangBean;
 import jakarta.faces.application.FacesMessage;
 import jakarta.faces.context.FacesContext;
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -20,6 +21,7 @@ import java.io.Serializable;
 @Component
 @Getter
 @Setter
+@RequiredArgsConstructor
 public class UpdatePasswordBean implements Serializable {
 
     private final transient PersonService personService;
@@ -29,11 +31,6 @@ public class UpdatePasswordBean implements Serializable {
 
     private String newPassword;
     private String confirmNewPassword;
-
-    public UpdatePasswordBean(PersonService personService, LangBean langBean) {
-        this.personService = personService;
-        this.langBean = langBean;
-    }
 
     public void init(Person authenticatedUser, String nextUrl) {
         this.authenticatedUser = authenticatedUser;

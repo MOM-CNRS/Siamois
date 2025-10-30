@@ -8,10 +8,10 @@
     <!--@elvariable id="panelModel" type="fr.siamois.ui.bean.panel.models.panel.single.SpatialUnitPanel"-->
     <!--@elvariable id="panelIndex" type="java.lang.Integer"-->
 
-    <p:dataTable var="version" value="#{panelModel.historyVersion}" rows="5" paginator="true">
+    <p:dataTable var="version" value="#{panelModel.history}" rows="5" paginator="true">
         <p:column headerText="Date de la version">
 
-            <h:outputText value="#{panelModel.formatDate(version.updateTime)}"/>
+            <h:outputText value="#{panelModel.formatDate(version.date)}"/>
 
         </p:column>
         <p:column>

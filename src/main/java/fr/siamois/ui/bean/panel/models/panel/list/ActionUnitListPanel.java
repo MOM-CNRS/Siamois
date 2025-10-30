@@ -2,21 +2,16 @@ package fr.siamois.ui.bean.panel.models.panel.list;
 
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.auth.Person;
-import fr.siamois.domain.services.actionunit.ActionUnitService;
-import fr.siamois.domain.services.person.PersonService;
-import fr.siamois.domain.services.spatialunit.SpatialUnitService;
-import fr.siamois.domain.services.vocabulary.ConceptService;
-import fr.siamois.domain.services.vocabulary.LabelService;
-import fr.siamois.ui.bean.LangBean;
-import fr.siamois.ui.bean.SessionSettingsBean;
 import fr.siamois.ui.bean.panel.models.PanelBreadcrumb;
 import fr.siamois.ui.lazydatamodel.ActionUnitLazyDataModel;
 import fr.siamois.ui.lazydatamodel.BaseLazyDataModel;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.config.BeanDefinition;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
@@ -24,15 +19,17 @@ import java.io.Serializable;
 import java.util.List;
 
 
+@Slf4j
 @EqualsAndHashCode(callSuper = true, onlyExplicitlyIncluded = true)
 @Getter
 @Setter
 @Component
 @Scope(BeanDefinition.SCOPE_PROTOTYPE)
-public class ActionUnitListPanel extends AbstractListPanel<ActionUnit>   implements Serializable {
+public class ActionUnitListPanel extends AbstractListPanel<ActionUnit> implements Serializable {
 
     // locals
     private String actionUnitListErrorMessage;
+
 
     @Override
     protected long countUnitsByInstitution() {
@@ -50,21 +47,11 @@ public class ActionUnitListPanel extends AbstractListPanel<ActionUnit>   impleme
     }
 
 
-    public ActionUnitListPanel(SpatialUnitService spatialUnitService, PersonService personService,
-                               ConceptService conceptService,
-                               SessionSettingsBean sessionSettingsBean,
-                               LangBean langBean,
-                               LabelService labelService,
-                               ActionUnitService actionUnitService) {
-
-
-
+    public ActionUnitListPanel(ApplicationContext context) {
         super("panel.title.allactionunit",
                 "bi bi-arrow-down-square",
                 "siamois-panel action-unit-panel list-panel",
-                spatialUnitService, personService, conceptService, sessionSettingsBean, langBean, labelService,
-                actionUnitService, null);
-
+                context);
     }
 
     @Override
@@ -86,9 +73,7 @@ public class ActionUnitListPanel extends AbstractListPanel<ActionUnit>   impleme
 
 
     public List<Person> authorsAvailable() {
-
         return personService.findAllAuthorsOfActionUnitByInstitution(sessionSettingsBean.getSelectedInstitution());
-
     }
 
 

@@ -7,6 +7,7 @@
                 xmlns:sharedInput="http://xmlns.jcp.org/jsf/composite/pages/shared/input"
                 xmlns:cellheader="http://java.sun.com/jsf/composite/pages/shared/cellheader"
                 xmlns:f="http://java.sun.com/jsf/core"
+                xmlns:chip="http://xmlns.jcp.org/jsf/composite/pages/shared/chip"
 >
     <cc:interface>
         <!-- Attributes to pass the bean's list and optional additional parameters -->
@@ -158,22 +159,19 @@
                             updateLabel="true"
                             filterMatchMode="contains"
                             onchange="PF('#{cc.clientId}_recordingUnitListTable').filter()"
-                            converter="#{conceptLabelConverter}">
+                            converter="#{localizedConceptDataConverter}">
 
                         <f:selectItems
                                 var="cat"
                                 itemValue="#{cat}"
-                                itemLabel="#{cat.value}"
+                                itemLabel="#{cat.getLabel()}"
                         />
                     </p:selectCheckboxMenu>
 
                 </f:facet>
                 <p:cellEditor>
                     <f:facet name="output">
-                        <p:chip id="typeChip" label="#{labelBean.findLabelOf(item.type)}"
-                                styleClass="mr-2 recording-unit-type-chip">
-                        </p:chip>
-                        <p:tooltip for="typeChip" value="#{labelBean.findLabelOf(item.type)}" position="bottom"/>
+                        <chip:conceptChip  concept="#{item.type}" styleClass="mr-2 recording-unit-type-chip"/>
                     </f:facet>
                     <f:facet name="input">
                         <sharedInput:conceptAutocompleteFieldCode id="typeComponent"
@@ -186,20 +184,13 @@
 
             </p:column>
 
-            <!-- sous type -->
-            <p:column responsivePriority="2" headerText="#{langBean.msg('recordingunit.field.secondaryType')}">
-                        <p:chip id="typeChip2" label="#{labelBean.findLabelOf(item.secondaryType)}"
-                                styleClass="mr-2 recording-unit-type-chip"/>
-                <p:tooltip for="typeChip2" value="#{labelBean.findLabelOf(item.secondaryType)}" position="bottom"/>
+            <!-- interpretation normalisée -->
+            <p:column responsivePriority="2" headerText="#{langBean.msg('recordingunit.property.interpretation')}">
+
+                <chip:conceptChip  concept="#{item.normalizedInterpretation}" styleClass="mr-2 recording-unit-type-chip"/>
 
             </p:column>
 
-            <!-- third type -->
-            <p:column responsivePriority="2" headerText="#{langBean.msg('recordingunit.field.thirdType')}">
-                <p:chip label="#{labelBean.findLabelOf(item.thirdType)}"
-                        styleClass="mr-2 recording-unit-type-chip" id="typeChip3"/>
-                <p:tooltip for="typeChip3" value="#{labelBean.findLabelOf(item.thirdType)}" position="bottom"/>
-            </p:column>
 
             <!-- Creation time -->
             <p:column responsivePriority="4" headerText="#{langBean.msg('table.spatialunit.column.creationdate')}"
@@ -235,20 +226,20 @@
                         />
                     </p:selectCheckboxMenu>
                 </f:facet>
-                #{item.author.displayName()}
+                #{item.createdBy.displayName()}
             </p:column>
 
             <!-- Redacteurs -->
-            <p:column responsivePriority="2" headerText="#{langBean.msg('common.field.authors')}"
+            <p:column responsivePriority="2" headerText="#{langBean.msg('recordingunit.field.author')}"
             >
-                <cellbody:cellBodyMultiplePersons persons="#{item.authors}"/>
+                #{item.author.displayName()}
             </p:column>
 
 
-            <!-- Fouilleurs -->
-            <p:column responsivePriority="2" headerText="#{langBean.msg('common.field.excavators')}"
+            <!-- Contributeurs -->
+            <p:column responsivePriority="2" headerText="#{langBean.msg('recordingunit.field.contributors')}"
             >
-                <cellbody:cellBodyMultiplePersons persons="#{item.excavators}"/>
+                <cellbody:cellBodyMultiplePersons persons="#{item.contributors}"/>
             </p:column>
 
             <!-- parents -->

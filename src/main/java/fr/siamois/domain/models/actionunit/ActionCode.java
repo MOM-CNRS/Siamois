@@ -5,6 +5,7 @@ import fr.siamois.domain.models.FieldCode;
 import fr.siamois.domain.models.vocabulary.Concept;
 import jakarta.persistence.*;
 import lombok.Data;
+import org.hibernate.envers.Audited;
 
 import java.io.Serializable;
 import java.util.Objects;
@@ -12,6 +13,7 @@ import java.util.Objects;
 @Data
 @Entity
 @Table(name = "action_code")
+@Audited
 public class ActionCode implements Serializable {
 
     @Id

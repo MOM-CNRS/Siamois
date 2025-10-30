@@ -3,6 +3,8 @@ package fr.siamois.domain.models.specimen;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
+import org.hibernate.envers.Audited;
+import org.hibernate.envers.RelationTargetAuditMode;
 
 import java.io.Serializable;
 import java.util.HashSet;
@@ -11,6 +13,7 @@ import java.util.Set;
 @Data
 @Entity
 @Table(name = "specimen_group")
+@Audited(targetAuditMode = RelationTargetAuditMode.NOT_AUDITED)
 public class SpecimenGroup implements Serializable {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

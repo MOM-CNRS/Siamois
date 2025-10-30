@@ -5,6 +5,8 @@ import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.person.PersonService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
+import fr.siamois.domain.services.vocabulary.FieldConfigurationService;
+import fr.siamois.domain.services.vocabulary.FieldService;
 import fr.siamois.domain.services.vocabulary.LabelService;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
@@ -17,10 +19,12 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 import org.primefaces.component.api.UIColumn;
 import org.primefaces.event.ColumnToggleEvent;
 import org.primefaces.model.Visibility;
 import org.primefaces.model.menu.DefaultMenuItem;
+import org.springframework.context.ApplicationContext;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -30,6 +34,7 @@ import java.util.HashSet;
 @Setter
 @NoArgsConstructor(force = true)
 @EqualsAndHashCode(callSuper = true, onlyExplicitlyIncluded = true)
+@Slf4j
 public abstract class AbstractListPanel<T> extends AbstractPanel  implements Serializable {
 
     // deps
@@ -41,12 +46,13 @@ public abstract class AbstractListPanel<T> extends AbstractPanel  implements Ser
     protected final transient LabelService labelService;
     protected final transient ActionUnitService actionUnitService;
     protected final transient BookmarkService bookmarkService;
+    protected final transient FieldService fieldService;
+    protected final transient FieldConfigurationService fieldConfigurationService;
 
     // local
     protected BaseLazyDataModel<T> lazyDataModel;
     protected long totalNumberOfUnits;
     protected String errorMessage;
-
 
     protected AbstractListPanel(BookmarkService bookmarkService) {
         this.bookmarkService = bookmarkService;
@@ -58,6 +64,8 @@ public abstract class AbstractListPanel<T> extends AbstractPanel  implements Ser
         labelService = null;
         actionUnitService = null;
         sessionSettingsBean = null;
+        fieldService = null;
+        fieldConfigurationService = null;
     }
 
     public void onToggle(ColumnToggleEvent e) {
@@ -73,25 +81,20 @@ public abstract class AbstractListPanel<T> extends AbstractPanel  implements Ser
             String titleKey,
             String icon,
             String cssClass,
-            SpatialUnitService spatialUnitService,
-            PersonService personService,
-            ConceptService conceptService,
-            SessionSettingsBean sessionSettingsBean,
-            LangBean langBean,
-            LabelService labelService,
-            ActionUnitService actionUnitService,
-            BookmarkService bookmarkService) {
+            ApplicationContext applicationContext) {
 
         super(titleKey, icon, cssClass);
 
-        this.spatialUnitService = spatialUnitService;
-        this.personService = personService;
-        this.conceptService = conceptService;
-        this.sessionSettingsBean = sessionSettingsBean;
-        this.langBean = langBean;
-        this.labelService = labelService;
-        this.actionUnitService = actionUnitService;
-        this.bookmarkService = bookmarkService;
+        this.spatialUnitService = applicationContext.getBean(SpatialUnitService.class);
+        this.personService = applicationContext.getBean(PersonService.class);
+        this.conceptService = applicationContext.getBean(ConceptService.class);
+        this.sessionSettingsBean = applicationContext.getBean(SessionSettingsBean.class);
+        this.langBean = applicationContext.getBean(LangBean.class);
+        this.labelService = applicationContext.getBean(LabelService.class);
+        this.actionUnitService = applicationContext.getBean(ActionUnitService.class);
+        this.bookmarkService = applicationContext.getBean(BookmarkService.class);
+        this.fieldService = applicationContext.getBean(FieldService.class);
+        this.fieldConfigurationService = applicationContext.getBean(FieldConfigurationService.class);
     }
 
     protected abstract long countUnitsByInstitution();

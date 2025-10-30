@@ -3,13 +3,14 @@ package fr.siamois.infrastructure.database.repositories.specimen;
 import fr.siamois.domain.models.specimen.SpecimenGroup;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
+import org.springframework.data.repository.history.RevisionRepository;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
 
 @Repository
-public interface SpecimenGroupRepository extends CrudRepository<SpecimenGroup, Long> {
+public interface SpecimenGroupRepository extends CrudRepository<SpecimenGroup, Long>, RevisionRepository<SpecimenGroup, Long, Long> {
 
     @Query(
             nativeQuery = true,

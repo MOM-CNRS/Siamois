@@ -30,5 +30,6 @@ public interface INewUnitHandler<T extends TraceableEntity> {
     default CustomForm formLayout(){ return kind().getConfig().customForm(); }
     default String viewUrlFor(Long id){ return kind().getConfig().urlPrefix() + id; }
     default String successMessageCode(){ return kind().getConfig().successMessageCode(); }
+
 }
 

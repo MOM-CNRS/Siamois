@@ -7,6 +7,7 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 import org.hibernate.annotations.ColumnDefault;
+import org.hibernate.envers.NotAudited;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
@@ -56,6 +57,7 @@ public class Person implements UserDetails {
     // The password length shouldn't be set in the database as we don't know their size after hash.
     @NotNull
     @Column(name = "password", nullable = false, length = Integer.MAX_VALUE)
+    @NotAudited
     private String password;
 
     @NotNull

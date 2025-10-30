@@ -8,6 +8,7 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,6 +22,7 @@ import java.util.Set;
 @Component
 @Getter
 @Setter
+@Order
 public class ChartresDatasetInitializer implements DatabaseInitializer {
 
     public static final String CHARTRES = "chartres";
@@ -113,7 +115,8 @@ public class ChartresDatasetInitializer implements DatabaseInitializer {
                     new ConceptSeeder.ConceptKey(VOCABULARY_ID, "4287541"),
                     PASCAL_GIBUT_SIAMOIS_FR,
                     CHARTRES,
-                    List.of(PASCAL_GIBUT_SIAMOIS_FR),
+                    PASCAL_GIBUT_SIAMOIS_FR,
+                    PASCAL_GIBUT_SIAMOIS_FR,
                     List.of(PASCAL_GIBUT_SIAMOIS_FR, "duflos.franck@siamois.fr"),
                     OffsetDateTime.of(2012, 6, 22, 0, 0, 0, 0, ZoneOffset.UTC),
                     null,
@@ -127,7 +130,8 @@ public class ChartresDatasetInitializer implements DatabaseInitializer {
                     new ConceptSeeder.ConceptKey(VOCABULARY_ID, "4287540"),
                     PASCAL_GIBUT_SIAMOIS_FR,
                     CHARTRES,
-                    List.of(PASCAL_GIBUT_SIAMOIS_FR),
+                    PASCAL_GIBUT_SIAMOIS_FR,
+                    PASCAL_GIBUT_SIAMOIS_FR,
                     List.of(PASCAL_GIBUT_SIAMOIS_FR),
                     OffsetDateTime.of(2012, 7, 5, 0, 0, 0, 0, ZoneOffset.UTC),
                     null,

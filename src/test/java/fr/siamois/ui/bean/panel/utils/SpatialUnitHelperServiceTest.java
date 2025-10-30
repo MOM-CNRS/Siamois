@@ -1,8 +1,6 @@
 package fr.siamois.ui.bean.panel.utils;
 
-import fr.siamois.domain.models.history.SpatialUnitHist;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
-import fr.siamois.domain.services.HistoryService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import jakarta.faces.context.FacesContext;
 import org.junit.jupiter.api.BeforeEach;
@@ -13,11 +11,15 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.primefaces.PrimeFaces;
 
-import java.util.*;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.function.Consumer;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.springframework.test.util.AssertionErrors.assertTrue;
 
 @ExtendWith(MockitoExtension.class)
@@ -26,14 +28,9 @@ class SpatialUnitHelperServiceTest {
     @Mock
     private SpatialUnitService spatialUnitService;
 
-    @Mock
-    private HistoryService historyService;
-
     @InjectMocks
     private SpatialUnitHelperService spatialUnitHelperService;
 
-    private SpatialUnitHist spatialUnitHist;
-    private SpatialUnit spatialUnit;
     private PrimeFaces mockPrimeFaces;
 
     @Mock
@@ -42,37 +39,11 @@ class SpatialUnitHelperServiceTest {
 
     @BeforeEach
     void setUp() {
-        spatialUnitHist = mock(SpatialUnitHist.class);
-        spatialUnit = mock(SpatialUnit.class);
 
         // Mock PrimeFaces
         mockPrimeFaces = mock(PrimeFaces.class);
         PrimeFaces.setCurrent(mockPrimeFaces);
 
-    }
-
-    @Test
-    void testVisualise() {
-        Consumer<SpatialUnitHist> revisionSetter = mock(Consumer.class);
-        spatialUnitHelperService.visualise(spatialUnitHist, revisionSetter);
-        verify(revisionSetter).accept(spatialUnitHist);
-    }
-
-    @Test
-    void testRestore() {
-
-        spatialUnitHelperService.restore(spatialUnitHist);
-        verify(spatialUnitService, times(1)).restore(spatialUnitHist);
-    }
-
-
-
-    @Test
-    void testFindHistory() {
-        List<SpatialUnitHist> historyList = Collections.singletonList(spatialUnitHist);
-        when(historyService.findSpatialUnitHistory(spatialUnit)).thenReturn(historyList);
-        List<SpatialUnitHist> result = spatialUnitHelperService.findHistory(spatialUnit);
-        assertEquals(historyList, result);
     }
 
     @Test

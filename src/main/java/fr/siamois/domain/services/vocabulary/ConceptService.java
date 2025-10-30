@@ -1,38 +1,42 @@
 package fr.siamois.domain.services.vocabulary;
 
+import fr.siamois.domain.events.publisher.ConceptChangeEventPublisher;
 import fr.siamois.domain.models.exceptions.ErrorProcessingExpansionException;
 import fr.siamois.domain.models.institution.Institution;
+import fr.siamois.domain.models.settings.ConceptFieldConfig;
 import fr.siamois.domain.models.vocabulary.Concept;
+import fr.siamois.domain.models.vocabulary.ConceptHierarchy;
+import fr.siamois.domain.models.vocabulary.LocalizedConceptData;
 import fr.siamois.domain.models.vocabulary.Vocabulary;
 import fr.siamois.infrastructure.api.ConceptApi;
 import fr.siamois.infrastructure.api.dto.ConceptBranchDTO;
 import fr.siamois.infrastructure.api.dto.FullInfoDTO;
 import fr.siamois.infrastructure.api.dto.PurlInfoDTO;
+import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRelationRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRepository;
+import fr.siamois.infrastructure.database.repositories.vocabulary.LocalizedConceptDataRepository;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 /**
  * Service for managing concepts in the vocabulary.
  * This service provides methods to save, retrieve, and update concepts,
  * as well as to find concepts related to spatial and action units of an institution.
  */
+@Slf4j
 @Service
+@RequiredArgsConstructor
 public class ConceptService {
 
     private final ConceptRepository conceptRepository;
     private final ConceptApi conceptApi;
     private final LabelService labelService;
-
-    public ConceptService(ConceptRepository conceptRepository, ConceptApi conceptApi, LabelService labelService) {
-        this.conceptRepository = conceptRepository;
-        this.conceptApi = conceptApi;
-        this.labelService = labelService;
-    }
+    private final ConceptRelationRepository conceptRelationRepository;
+    private final LocalizedConceptDataRepository  localizedConceptDataRepository;
+    private final ConceptChangeEventPublisher conceptChangeEventPublisher;
 
     /**
      * Saves a concept if it does not already exist in the repository.
@@ -73,7 +77,7 @@ public class ConceptService {
      * @param conceptDTO the FullInfoDTO containing concept information
      * @return the saved or existing concept
      */
-    public Concept saveOrGetConceptFromFullDTO(Vocabulary vocabulary, FullInfoDTO conceptDTO) {
+    public Concept saveOrGetConceptFromFullDTO(Vocabulary vocabulary, FullInfoDTO conceptDTO, Concept fieldParentConcept) {
         Optional<Concept> optConcept = conceptRepository
                 .findConceptByExternalIdIgnoreCase(
                         vocabulary.getExternalVocabularyId(),
@@ -81,7 +85,8 @@ public class ConceptService {
                 );
 
         if (optConcept.isPresent()) {
-            updateAllLabelsFromDTO(optConcept.get(), conceptDTO);
+            updateAllLabelsFromDTO(optConcept.get(), conceptDTO, fieldParentConcept);
+            updateAllDefinitionsFromDTO(optConcept.get(), conceptDTO, fieldParentConcept);
             return optConcept.get();
         }
 
@@ -91,7 +96,8 @@ public class ConceptService {
 
         concept = conceptRepository.save(concept);
 
-        updateAllLabelsFromDTO(concept, conceptDTO);
+        updateAllLabelsFromDTO(concept, conceptDTO, fieldParentConcept);
+        updateAllDefinitionsFromDTO(concept, conceptDTO, fieldParentConcept);
 
         return concept;
     }
@@ -102,46 +108,105 @@ public class ConceptService {
      * @param savedConcept the concept to update
      * @param conceptDto   the FullInfoDTO containing label information
      */
-    public void updateAllLabelsFromDTO(Concept savedConcept, FullInfoDTO conceptDto) {
+    public void updateAllLabelsFromDTO(Concept savedConcept, FullInfoDTO conceptDto, Concept fieldParentConcept) {
         if (conceptDto.getPrefLabel() != null) {
             for (PurlInfoDTO label : conceptDto.getPrefLabel()) {
-                labelService.updateLabel(savedConcept, label.getLang(), label.getValue());
+                labelService.updateLabel(savedConcept, label.getLang(), label.getValue(), fieldParentConcept);
             }
         }
     }
 
+    private void updateDefinition(Concept savedConcept, String lang, String definition, Concept fieldParentConcept) {
+        Optional<LocalizedConceptData> optData = localizedConceptDataRepository.findByConceptAndLangCode(savedConcept.getId(), lang);
+        LocalizedConceptData localizedConceptData = null;
+        if (optData.isPresent()) {
+            localizedConceptData = optData.get();
+        } else {
+            localizedConceptData = new LocalizedConceptData();
+            localizedConceptData.setConcept(savedConcept);
+            localizedConceptData.setLangCode(lang);
+            localizedConceptData.setParentConcept(fieldParentConcept);
+        }
+        localizedConceptData.setDefinition(definition);
+        localizedConceptDataRepository.save(localizedConceptData);
+    }
+
     /**
-     * Finds all direct sub-concepts of a given concept.
-     *
-     * @param concept the concept for which to find direct sub-concepts
-     * @return a list of direct sub-concepts
-     * @throws ErrorProcessingExpansionException if there is an error processing the expansion of concepts
+     * Updates all definitions of a saved concept from FullInfoDTO
+     * @param savedConcept the concept to update
+     * @param conceptDto  the FullInfoDTO containing definition information
      */
-    public List<Concept> findDirectSubConceptOf(Concept concept) throws ErrorProcessingExpansionException {
-        ConceptBranchDTO branch = conceptApi.fetchDownExpansion(concept.getVocabulary(), concept.getExternalId());
-        List<Concept> result = new ArrayList<>();
-        if (branch.isEmpty()) {
-            return result;
+    public void updateAllDefinitionsFromDTO(Concept savedConcept, FullInfoDTO conceptDto, Concept fieldParentConcept) {
+        if (conceptDto.getDefinition() != null) {
+            for (PurlInfoDTO definition : conceptDto.getDefinition()) {
+                updateDefinition(savedConcept, definition.getLang(), definition.getValue(), fieldParentConcept);
+            }
+        }
+    }
+
+    public void saveAllSubConceptOfIfUpdated(ConceptFieldConfig config) throws ErrorProcessingExpansionException {
+        log.trace("API call to fetch down expansion for concept FieldCode : {}", config.getFieldCode());
+        try {
+            Concept concept = config.getConcept();
+            Vocabulary vocabulary = concept.getVocabulary();
+            ConceptBranchDTO branchDTO = conceptApi.fetchDownExpansion(config);
+            if (branchDTO == null) return;
+            conceptChangeEventPublisher.publishEvent(config.getFieldCode());
+
+            Map<String, Concept> concepts = new HashMap<>();
+            FullInfoDTO parentConcept = findParentConceptDTO(branchDTO, concept);
+            if (parentConcept.getNarrower() == null) return;
+
+            saveOrGetAllConceptsFromBranchAndStoreInMap(config, branchDTO, concepts, vocabulary);
+
+            Concept parentSavedConcept = concepts.get(parentConcept.getIdentifier()[0].getValue());
+
+            Map<Concept, Concept> childAndParentMap = new HashMap<>();
+            for (Map.Entry<String, FullInfoDTO> entry : branchDTO.getData().entrySet()) {
+                if (Objects.nonNull(entry.getValue().getNarrower())) {
+                    createRelationBetweenConcepts(entry, parentConcept, concepts, childAndParentMap, parentSavedConcept);
+                }
+            }
+
+        } catch (RuntimeException e) {
+            log.error(e.getMessage(), e);
+            throw new ErrorProcessingExpansionException("Error processing expansion for concept field config id " + config.getId());
         }
 
-        FullInfoDTO parentConcept = branch.getData().values().stream()
+    }
+
+    private void createRelationBetweenConcepts(Map.Entry<String, FullInfoDTO> entry, FullInfoDTO parentConcept, Map<String, Concept> concepts, Map<Concept, Concept> childAndParentMap, Concept parentSavedConcept) {
+        for (PurlInfoDTO narrower : entry.getValue().getNarrower()) {
+            if (narrowerIsNotParentConcept(narrower, parentConcept)) {
+                Concept parent = concepts.get(entry.getKey());
+                Concept child =  concepts.get(narrower.getValue());
+
+                if (!childAndParentMap.containsKey(child)) {
+                    ConceptHierarchy relation = new ConceptHierarchy(parent,child, parentSavedConcept);
+                    conceptRelationRepository.save(relation);
+                    childAndParentMap.put(child, parent);
+                } else {
+                    log.debug("Concept {} already has a parent concept, skipping relation creation for {}.", child.getExternalId(), parent.getExternalId());
+                }
+            }
+        }
+    }
+
+    private void saveOrGetAllConceptsFromBranchAndStoreInMap(ConceptFieldConfig config, ConceptBranchDTO branchDTO, Map<String, Concept> concepts, Vocabulary vocabulary) {
+        for (Map.Entry<String, FullInfoDTO> entry : branchDTO.getData().entrySet()) {
+            concepts.put(entry.getKey(), saveOrGetConceptFromFullDTO(vocabulary, entry.getValue(), config.getConcept()));
+        }
+    }
+
+    private static FullInfoDTO findParentConceptDTO(ConceptBranchDTO branchDTO, Concept concept) {
+        return branchDTO.getData().values().stream()
                 .filter(dto -> concept.getExternalId().equalsIgnoreCase(dto.getIdentifier()[0].getValue()))
                 .findFirst()
                 .orElseThrow(() -> new RuntimeException("No concept found for " + concept.getExternalId()));
+    }
 
-        if (parentConcept.getNarrower() == null) return result;
-
-        List<FullInfoDTO> childs = Arrays.stream(parentConcept.getNarrower())
-                .filter((purlInfoDTO -> branch.getData().containsKey(purlInfoDTO.getValue())))
-                .map((purlInfoDTO -> branch.getData().get(purlInfoDTO.getValue())))
-                .toList();
-
-        for (FullInfoDTO child : childs) {
-            Concept newConcept = saveOrGetConceptFromFullDTO(concept.getVocabulary(), child);
-            result.add(newConcept);
-        }
-
-        return result;
+    private static boolean narrowerIsNotParentConcept(PurlInfoDTO narrower, FullInfoDTO parentConcept) {
+        return !narrower.getValue().equalsIgnoreCase(parentConcept.getIdentifier()[0].getValue());
     }
 
     /**
@@ -152,5 +217,10 @@ public class ConceptService {
      */
     public Object findAllById(List<Long> conceptIds) {
         return conceptRepository.findAllById(conceptIds);
+    }
+
+
+    public Optional<Concept> findById(Long id) {
+        return conceptRepository.findById(id);
     }
 }

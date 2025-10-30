@@ -3,19 +3,17 @@ package fr.siamois.ui.bean.panel.models.panel.single;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.document.Document;
 import fr.siamois.domain.models.exceptions.recordingunit.FailedRecordingUnitSaveException;
-import fr.siamois.domain.models.history.SpatialUnitHist;
+import fr.siamois.domain.models.history.RevisionWithInfo;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
-import fr.siamois.domain.models.vocabulary.label.ConceptLabel;
+import fr.siamois.domain.models.vocabulary.LocalizedConceptData;
 import fr.siamois.domain.services.form.CustomFieldService;
 import fr.siamois.domain.services.person.PersonService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.specimen.SpecimenService;
-import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.domain.services.vocabulary.LabelService;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
-import fr.siamois.ui.bean.dialog.document.DocumentCreationBean;
 import fr.siamois.ui.bean.panel.models.PanelBreadcrumb;
 import fr.siamois.ui.bean.panel.models.panel.single.tab.ActionTab;
 import fr.siamois.ui.bean.panel.models.panel.single.tab.RecordingTab;
@@ -23,12 +21,14 @@ import fr.siamois.ui.bean.panel.models.panel.single.tab.SpecimenTab;
 import fr.siamois.ui.bean.panel.utils.SpatialUnitHelperService;
 import fr.siamois.ui.lazydatamodel.*;
 import fr.siamois.utils.MessageUtils;
-import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.BeanDefinition;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 import software.xdev.chartjs.model.charts.BarChart;
@@ -52,10 +52,11 @@ import java.util.stream.Collectors;
  */
 @EqualsAndHashCode(callSuper = true, onlyExplicitlyIncluded = true)
 @Slf4j
-@Data
+@Getter
+@Setter
 @Component
 @Scope(BeanDefinition.SCOPE_PROTOTYPE)
-public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel<SpatialUnit, SpatialUnitHist> implements Serializable {
+public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel<SpatialUnit> implements Serializable {
 
     // Dependencies
     private final transient RecordingUnitService recordingUnitService;
@@ -63,11 +64,9 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
     private final transient SessionSettingsBean sessionSettings;
     private final transient SpatialUnitHelperService spatialUnitHelperService;
     private final transient CustomFieldService customFieldService;
-    private final transient ConceptService conceptService;
     private final transient LabelService labelService;
     private final transient LangBean langBean;
     private final transient PersonService personService;
-
 
     private String spatialUnitErrorMessage;
     private transient List<SpatialUnit> spatialUnitList;
@@ -94,29 +93,21 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
 
 
     @Autowired
-    private SpatialUnitPanel(RecordingUnitService recordingUnitService,
-                             SessionSettingsBean sessionSettings,
-                             SpatialUnitHelperService spatialUnitHelperService,
-                             DocumentCreationBean documentCreationBean, CustomFieldService customFieldService,
-                             ConceptService conceptService,
-                             LabelService labelService, LangBean langBean, PersonService personService,
-                             AbstractSingleEntity.Deps deps, SpecimenService specimenService) {
+    private SpatialUnitPanel(ApplicationContext context) {
 
-        super("common.entity.spatialUnit", "bi bi-geo-alt", "siamois-panel spatial-unit-panel single-panel",
-                documentCreationBean, deps);
-        this.recordingUnitService = recordingUnitService;
-        this.sessionSettings = sessionSettings;
-        this.spatialUnitHelperService = spatialUnitHelperService;
-        this.customFieldService = customFieldService;
-        this.labelService = labelService;
-        this.conceptService = conceptService;
-        this.langBean = langBean;
-        this.personService = personService;
-        this.specimenService = specimenService;
+        super("common.entity.spatialUnit", "bi bi-geo-alt", "siamois-panel spatial-unit-panel single-panel", context);
+        this.recordingUnitService = context.getBean(RecordingUnitService.class);
+        this.sessionSettings = context.getBean(SessionSettingsBean.class);
+        this.spatialUnitHelperService = context.getBean(SpatialUnitHelperService.class);
+        this.customFieldService = context.getBean(CustomFieldService.class);
+        this.labelService = context.getBean(LabelService.class);
+        this.langBean = context.getBean(LangBean.class);
+        this.personService = context.getBean(PersonService.class);
+        this.specimenService = context.getBean(SpecimenService.class);
     }
 
 
-    public List<ConceptLabel> categoriesAvailable() {
+    public List<LocalizedConceptData> categoriesAvailable() {
         List<Concept> cList = conceptService.findAllBySpatialUnitOfInstitution(sessionSettings.getSelectedInstitution());
         return cList.stream()
                 .map(concept -> labelService.findLabelOf(
@@ -174,12 +165,22 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
     }
 
     @Override
-    public void initForms() {
+    public void initForms(boolean forceInit) {
 
         overviewForm = SpatialUnit.OVERVIEW_FORM;
         detailsForm = SpatialUnit.DETAILS_FORM;
         // Init system form answers
-        formResponse = initializeFormResponse(detailsForm, unit);
+        formResponse = initializeFormResponse(detailsForm, unit, forceInit);
+    }
+
+    @Override
+    protected String getFormScopePropertyName() {
+        return "";
+    }
+
+    @Override
+    protected void setFormScopePropertyValue(Concept concept) {
+        unit.setCategory(concept);
     }
 
     public void refreshUnit() {
@@ -202,7 +203,7 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
 
             backupClone = new SpatialUnit(unit);
 
-            initForms();
+            initForms(true);
 
             // Get all the CHILDREN of the spatial unit
             selectedCategoriesChildren = new ArrayList<>();
@@ -252,7 +253,7 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
         }
 
 
-        historyVersion = spatialUnitHelperService.findHistory(unit);
+        history = historyAuditService.findAllRevisionForEntity(SpatialUnit.class, idunit);
         documents = documentService.findForSpatialUnit(unit);
     }
 
@@ -264,7 +265,7 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
         unit.setArk(backupClone.getArk());
         unit.setCategory(backupClone.getCategory());
         hasUnsavedModifications = false;
-        initForms();
+        initForms(true);
     }
 
     @Override
@@ -314,15 +315,14 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
     }
 
     @Override
-    public void visualise(SpatialUnitHist history) {
-        spatialUnitHelperService.visualise(history, hist -> this.revisionToDisplay = hist);
+    public void visualise(RevisionWithInfo<SpatialUnit> history) {
+        // spatialUnitHelperService.visualise(history, hist -> this.revisionToDisplay = hist);
     }
 
-    public void restore(SpatialUnitHist history) {
+    public void restore(RevisionWithInfo<SpatialUnit> history) {
         spatialUnitHelperService.restore(history);
-        // refresh panel
         init();
-        MessageUtils.displayInfoMessage(langBean, "common.entity.spatialUnits.updated", history.getName());
+        MessageUtils.displayInfoMessage(langBean, "common.entity.spatialUnits.updated", history.getDate().toString());
     }
 
 
@@ -339,7 +339,7 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
             // Handle list of concepts
             String langCode = sessionSettings.getLanguageCode();
             return list.stream()
-                    .map(item -> (item instanceof Concept concept) ? labelService.findLabelOf(concept, langCode).getValue() : item.toString())
+                    .map(item -> (item instanceof Concept concept) ? labelService.findLabelOf(concept, langCode).getLabel() : item.toString())
                     .collect(Collectors.joining(", "));
         }
 

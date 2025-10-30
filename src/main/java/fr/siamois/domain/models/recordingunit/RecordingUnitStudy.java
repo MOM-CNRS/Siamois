@@ -2,11 +2,11 @@ package fr.siamois.domain.models.recordingunit;
 
 
 import fr.siamois.domain.models.ArkEntity;
-import fr.siamois.domain.models.FieldCode;
 import fr.siamois.domain.models.document.Document;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import org.hibernate.envers.Audited;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -15,6 +15,7 @@ import java.util.Set;
 @Data
 @Entity
 @Table(name = "recording_unit_study")
+@Audited
 public class RecordingUnitStudy extends RecordingUnityStudyParent implements ArkEntity {
 
     @Id
@@ -30,7 +31,5 @@ public class RecordingUnitStudy extends RecordingUnityStudyParent implements Ark
     )
     private Set<Document> documents = new HashSet<>();
 
-    @FieldCode
-    public static final String TYPE_FIELD = "SIASRU.TYPE";
 
 }

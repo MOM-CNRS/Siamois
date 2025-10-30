@@ -30,7 +30,7 @@ public interface PersonRepository extends JpaRepository<Person, Long> {
             nativeQuery = true,
             value = "SELECT DISTINCT p.* " +
             "FROM person p " +
-            "JOIN spatial_unit su ON su.fk_author_id = p.person_id " +
+            "JOIN spatial_unit su ON su.fk_created_by = p.person_id " +
                     "WHERE su.fk_institution_id = :institutionId"
     )
     List<Person> findAllAuthorsOfSpatialUnitByInstitution(Long institutionId);
@@ -39,7 +39,7 @@ public interface PersonRepository extends JpaRepository<Person, Long> {
             nativeQuery = true,
             value = "SELECT DISTINCT p.* " +
                     "FROM person p " +
-                    "JOIN action_unit au ON au.fk_author_id = p.person_id " +
+                    "JOIN action_unit au ON au.fk_created_by = p.person_id " +
                     "WHERE au.fk_institution_id = :institutionId"
     )
     List<Person> findAllAuthorsOfActionUnitByInstitution(Long institutionId);

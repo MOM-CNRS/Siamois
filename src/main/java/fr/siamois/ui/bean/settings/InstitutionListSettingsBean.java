@@ -16,6 +16,7 @@ import fr.siamois.ui.bean.dialog.institution.InstitutionDialogBean;
 import fr.siamois.utils.DateUtils;
 import fr.siamois.utils.MessageUtils;
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.primefaces.PrimeFaces;
@@ -34,6 +35,7 @@ import java.util.*;
 @Setter
 @Component
 @SessionScoped
+@RequiredArgsConstructor
 public class InstitutionListSettingsBean implements Serializable {
 
     private final transient InstitutionService institutionService;
@@ -50,20 +52,6 @@ public class InstitutionListSettingsBean implements Serializable {
     private Map<Long, Boolean> toggleSwitchState = new HashMap<>();
 
     private String filterText;
-
-    public InstitutionListSettingsBean(InstitutionService institutionService,
-                                       SessionSettingsBean sessionSettingsBean,
-                                       InstitutionChangeEventPublisher institutionChangeEventPublisher,
-                                       InstitutionDialogBean institutionDialogBean, RecordingUnitService recordingUnitService, InstitutionDetailsBean institutionDetailsBean, LangBean langBean, RedirectBean redirectBean) {
-        this.institutionService = institutionService;
-        this.sessionSettingsBean = sessionSettingsBean;
-        this.institutionChangeEventPublisher = institutionChangeEventPublisher;
-        this.institutionDialogBean = institutionDialogBean;
-        this.recordingUnitService = recordingUnitService;
-        this.institutionDetailsBean = institutionDetailsBean;
-        this.langBean = langBean;
-        this.redirectBean = redirectBean;
-    }
 
     public void init() {
             UserInfo info = sessionSettingsBean.getUserInfo();

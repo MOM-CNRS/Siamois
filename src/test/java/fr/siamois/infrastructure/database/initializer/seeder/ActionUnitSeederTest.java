@@ -11,18 +11,20 @@ import fr.siamois.infrastructure.database.repositories.actionunit.ActionUnitRepo
 import fr.siamois.infrastructure.database.repositories.institution.InstitutionRepository;
 import fr.siamois.infrastructure.database.repositories.person.PersonRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRepository;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.*;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
+import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -103,7 +105,7 @@ class ActionUnitSeederTest {
         assertThat(saved.getName()).isEqualTo("Name 1");
         assertThat(saved.getPrimaryActionCode()).isEqualTo(code);
         assertThat(saved.getType()).isEqualTo(concept);
-        assertThat(saved.getAuthor()).isEqualTo(author);
+        assertThat(saved.getCreatedBy()).isEqualTo(author);
         assertThat(saved.getCreatedByInstitution()).isEqualTo(institution);
         assertThat(saved.getBeginDate()).isEqualTo(begin);
         assertThat(saved.getEndDate()).isEqualTo(end);

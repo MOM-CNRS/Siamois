@@ -13,6 +13,7 @@ import fr.siamois.domain.services.ark.ArkService;
 import fr.siamois.domain.services.document.DocumentService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.domain.services.vocabulary.FieldConfigurationService;
+import fr.siamois.domain.services.vocabulary.FieldService;
 import fr.siamois.ui.bean.ActionFromBean;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
@@ -20,6 +21,7 @@ import fr.siamois.utils.DocumentUtils;
 import fr.siamois.utils.MessageUtils;
 import jakarta.servlet.ServletContext;
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.primefaces.PrimeFaces;
@@ -39,6 +41,7 @@ import java.util.List;
 @Getter
 @Setter
 @SessionScoped
+@RequiredArgsConstructor
 public class DocumentCreationBean implements Serializable {
 
     private final SessionSettingsBean sessionSettingsBean;
@@ -48,6 +51,7 @@ public class DocumentCreationBean implements Serializable {
     private final transient ServletContext servletContext;
     private final transient ConceptService conceptService;
     private final transient ArkService arkService;
+    private final transient FieldService fieldService;
     private String docTitle;
     private Concept docNature;
     private Concept docScale;
@@ -55,31 +59,11 @@ public class DocumentCreationBean implements Serializable {
     private String docDescription;
 
     private transient ActionFromBean actionOnSave = null;
-    private Concept parentNature = null;
-    private Concept parentScale = null;
-    private Concept parentType = null;
     private transient UploadedFile docFile;
-    private String panelIdToUpdate ;
+    private String panelIdToUpdate;
 
-    public DocumentCreationBean(SessionSettingsBean sessionSettingsBean,
-                                DocumentService documentService,
-                                FieldConfigurationService fieldConfigurationService,
-                                LangBean langBean,
-                                ServletContext servletContext,
-                                ConceptService conceptService,
-                                ArkService arkService) {
-        this.sessionSettingsBean = sessionSettingsBean;
-        this.documentService = documentService;
-        this.fieldConfigurationService = fieldConfigurationService;
-        this.langBean = langBean;
-        this.servletContext = servletContext;
-        this.conceptService = conceptService;
-        this.arkService = arkService;
-    }
-
-    public void init() throws NoConfigForFieldException {
+    public void init() {
         PrimeFaces.current().ajax().update("newDocumentDiag");
-        prepareParentConcept();
         reset();
     }
 
@@ -93,37 +77,35 @@ public class DocumentCreationBean implements Serializable {
         docDescription = null;
     }
 
-    private void prepareParentConcept() throws NoConfigForFieldException {
-        UserInfo info = sessionSettingsBean.getUserInfo();
-        parentNature = fieldConfigurationService.findConfigurationForFieldCode(info, Document.NATURE_FIELD_CODE);
-        parentScale = fieldConfigurationService.findConfigurationForFieldCode(info, Document.SCALE_FIELD_CODE);
-        parentType = fieldConfigurationService.findConfigurationForFieldCode(info, Document.FORMAT_FIELD_CODE);
-    }
 
     public String getUrlForConcept(Concept concept) {
         return fieldConfigurationService.getUrlOfConcept(concept);
     }
 
 
-    public List<Concept> autocomplete(Concept parent, String input) {
+    public List<Concept> autocomplete(String fieldCode, String input) {
         log.trace("Autocomplete order received");
 
-        return fieldConfigurationService.fetchAutocomplete(
-                sessionSettingsBean.getUserInfo(),
-                parent,
-                input);
+        try {
+            return fieldConfigurationService.fetchAutocomplete(
+                    sessionSettingsBean.getUserInfo(),
+                    fieldCode,
+                    input);
+        } catch (NoConfigForFieldException e) {
+            return List.of();
+        }
     }
 
     public List<Concept> autocompleteNature(String input) {
-        return autocomplete(parentNature, input);
+        return autocomplete(Document.NATURE_FIELD_CODE, input);
     }
 
     public List<Concept> autocompleteScale(String input) {
-        return autocomplete(parentScale, input);
+        return autocomplete(Document.SCALE_FIELD_CODE, input);
     }
 
     public List<Concept> autocompleteType(String input) {
-        return autocomplete(parentType, input);
+        return autocomplete(Document.FORMAT_FIELD_CODE, input);
     }
 
     public Document createDocument() {

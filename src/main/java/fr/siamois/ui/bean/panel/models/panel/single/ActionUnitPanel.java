@@ -6,18 +6,14 @@ import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.document.Document;
 import fr.siamois.domain.models.exceptions.actionunit.ActionUnitNotFoundException;
 import fr.siamois.domain.models.exceptions.actionunit.FailedActionUnitSaveException;
-import fr.siamois.domain.models.exceptions.recordingunit.FailedRecordingUnitSaveException;
 import fr.siamois.domain.models.exceptions.vocabulary.NoConfigForFieldException;
-import fr.siamois.domain.models.history.ActionUnitHist;
+import fr.siamois.domain.models.history.RevisionWithInfo;
 import fr.siamois.domain.models.vocabulary.Concept;
-import fr.siamois.domain.services.HistoryService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.specimen.SpecimenService;
-import fr.siamois.domain.services.vocabulary.FieldService;
 import fr.siamois.domain.services.vocabulary.LabelService;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.RedirectBean;
-import fr.siamois.ui.bean.dialog.document.DocumentCreationBean;
 import fr.siamois.ui.bean.panel.models.PanelBreadcrumb;
 import fr.siamois.ui.bean.panel.models.panel.single.tab.RecordingTab;
 import fr.siamois.ui.bean.panel.models.panel.single.tab.SpecimenTab;
@@ -25,11 +21,13 @@ import fr.siamois.ui.bean.settings.team.TeamMembersBean;
 import fr.siamois.ui.lazydatamodel.RecordingUnitInActionUnitLazyDataModel;
 import fr.siamois.ui.lazydatamodel.SpecimenInActionUnitLazyDataModel;
 import fr.siamois.utils.MessageUtils;
-import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.config.BeanDefinition;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Scope;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
@@ -46,23 +44,21 @@ import java.util.stream.Collectors;
  */
 @EqualsAndHashCode(callSuper = true, onlyExplicitlyIncluded = true)
 @Slf4j
-@Data
+@Getter
+@Setter
 @Component
 @Scope(BeanDefinition.SCOPE_PROTOTYPE)
-public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnit, ActionUnitHist> implements Serializable {
+public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnit> implements Serializable {
 
     // Deps
 
     private final LangBean langBean;
 
-    private final transient FieldService fieldService;
     private final RedirectBean redirectBean;
     private final transient LabelService labelService;
     private final TeamMembersBean teamMembersBean;
-    private final transient HistoryService historyService;
     private final transient RecordingUnitService recordingUnitService;
     private final transient SpecimenService specimenService;
-
 
     // For entering new code
     private ActionCode newCode;
@@ -94,23 +90,16 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnit, Actio
     private Integer totalSpecimenCount;
 
 
-    public ActionUnitPanel(LangBean langBean,
-                           FieldService fieldService, RedirectBean redirectBean,
-                           LabelService labelService, TeamMembersBean teamMembersBean,
-                           DocumentCreationBean documentCreationBean,
-                           HistoryService historyService, RecordingUnitService recordingUnitService,
-                           AbstractSingleEntity.Deps deps, SpecimenService specimenService) {
+    public ActionUnitPanel(ApplicationContext context) {
         super("Unité d'action", "bi bi-arrow-down-square", "siamois-panel action-unit-panel single-panel",
-                documentCreationBean, deps);
+                context);
 
-        this.langBean = langBean;
-        this.fieldService = fieldService;
-        this.redirectBean = redirectBean;
-        this.labelService = labelService;
-        this.teamMembersBean = teamMembersBean;
-        this.historyService = historyService;
-        this.recordingUnitService = recordingUnitService;
-        this.specimenService = specimenService;
+        this.langBean = context.getBean(LangBean.class);
+        this.redirectBean = context.getBean(RedirectBean.class);
+        this.labelService = context.getBean(LabelService.class);
+        this.teamMembersBean = context.getBean(TeamMembersBean.class);
+        this.recordingUnitService = context.getBean(RecordingUnitService.class);
+        this.specimenService = context.getBean(SpecimenService.class);
     }
 
 
@@ -139,7 +128,7 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnit, Actio
             secondaryActionCodes = new ArrayList<>(unit.getSecondaryActionCodes());
             fType = this.unit.getType();
 
-            initForms();
+            initForms(true);
 
 
             // Get all the CHILDREN of the spatial unit
@@ -155,7 +144,7 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnit, Actio
         }
 
 
-        historyVersion = historyService.findActionUnitHistory(unit);
+        history = historyAuditService.findAllRevisionForEntity(ActionUnit.class, idunit);
         documents = documentService.findForActionUnit(unit);
     }
 
@@ -217,8 +206,6 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnit, Actio
             this.errorMessage = "Failed to load action unit: " + e.getMessage();
             redirectBean.redirectTo(HttpStatus.INTERNAL_SERVER_ERROR);
         }
-
-
     }
 
     @Override
@@ -227,15 +214,24 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnit, Actio
     }
 
     @Override
-    public void initForms() {
+    public void initForms(boolean forceInit) {
 
         overviewForm = ActionUnit.OVERVIEW_FORM;
         detailsForm = ActionUnit.DETAILS_FORM;
         // Init system form answers
-        formResponse = initializeFormResponse(detailsForm, unit);
+        formResponse = initializeFormResponse(detailsForm, unit, forceInit);
 
     }
 
+    @Override
+    protected String getFormScopePropertyName() {
+        return "";
+    }
+
+    @Override
+    protected void setFormScopePropertyValue(Concept concept) {
+        // to be implemented
+    }
 
 
     @Override
@@ -244,11 +240,11 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnit, Actio
         unit.setValidated(backupClone.getValidated());
         unit.setType(backupClone.getType());
         hasUnsavedModifications = false;
-        initForms();
+        initForms(true);
     }
 
     @Override
-    public void visualise(ActionUnitHist history) {
+    public void visualise(RevisionWithInfo<ActionUnit> history) {
         // TODO: implement
     }
 
@@ -315,7 +311,7 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnit, Actio
             return fieldConfigurationService.fetchAutocomplete(sessionSettingsBean.getUserInfo(), ActionCode.TYPE_FIELD_CODE, input);
         } catch (NoConfigForFieldException e) {
             log.error(e.getMessage(), e);
-            return new ArrayList<>();
+            return List.of();
         }
 
     }
@@ -363,7 +359,7 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnit, Actio
             // Handle list of concepts
             String langCode = sessionSettingsBean.getLanguageCode();
             return list.stream()
-                    .map(item -> (item instanceof Concept concept) ? labelService.findLabelOf(concept, langCode).getValue() : item.toString())
+                    .map(item -> (item instanceof Concept concept) ? labelService.findLabelOf(concept, langCode).getLabel() : item.toString())
                     .collect(Collectors.joining(", "));
         }
 

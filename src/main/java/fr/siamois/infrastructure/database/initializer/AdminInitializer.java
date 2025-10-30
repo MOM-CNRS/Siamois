@@ -3,6 +3,7 @@ package fr.siamois.infrastructure.database.initializer;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.exceptions.database.DatabaseDataInitException;
 import fr.siamois.domain.models.institution.Institution;
+import fr.siamois.infrastructure.database.initializer.seeder.InstitutionSeeder;
 import fr.siamois.infrastructure.database.repositories.institution.InstitutionRepository;
 import fr.siamois.infrastructure.database.repositories.person.PersonRepository;
 import lombok.Getter;
@@ -17,20 +18,19 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.Optional;
-import java.util.Set;
 
 @Slf4j
 @Component
 @Getter
 @Setter
-@Order(1)
+@Order(-10)
 public class AdminInitializer implements DatabaseInitializer {
 
     private final BCryptPasswordEncoder passwordEncoder;
     private final PersonRepository personRepository;
     private final InstitutionRepository institutionRepository;
     private final ApplicationContext applicationContext;
+    private final InstitutionSeeder institutionSeeder;
 
     @Value("${siamois.admin.username}")
     private String adminUsername;
@@ -47,11 +47,12 @@ public class AdminInitializer implements DatabaseInitializer {
     public AdminInitializer(BCryptPasswordEncoder passwordEncoder,
                             PersonRepository personRepository,
                             InstitutionRepository institutionRepository,
-                            ApplicationContext applicationContext) {
+                            ApplicationContext applicationContext, InstitutionSeeder institutionSeeder) {
         this.passwordEncoder = passwordEncoder;
         this.personRepository = personRepository;
         this.institutionRepository = institutionRepository;
         this.applicationContext = applicationContext;
+        this.institutionSeeder = institutionSeeder;
     }
 
     /**
@@ -61,7 +62,11 @@ public class AdminInitializer implements DatabaseInitializer {
     @Transactional
     public void initialize() throws DatabaseDataInitException {
         initializeAdmin();
-        initializeAdminOrganization();
+        Institution defaultInstitution = institutionRepository.findInstitutionByIdentifier("siamois").orElseThrow(() -> new IllegalStateException("Default Institution not found"));
+        if (!defaultInstitution.getManagers().contains(createdAdmin)) {
+            defaultInstitution.getManagers().add(createdAdmin);
+            institutionRepository.save(defaultInstitution);
+        }
     }
 
     void initializeAdmin() throws DatabaseDataInitException {
@@ -113,44 +118,7 @@ public class AdminInitializer implements DatabaseInitializer {
         return !admin.getUsername().equalsIgnoreCase(adminUsername);
     }
 
-    /**
-     * Creates the Siamois Administration organisation if it doesn't exist. Changes the manager of the organisation
-     * to the current admin
-     */
-    void initializeAdminOrganization() {
-        if (processExistingInstitution()) return;
 
-        Institution institution = new Institution();
-        institution.setName("Organisation par défaut");
-        institution.setDescription("DEFAULT");
-        institution.getManagers().add(createdAdmin);
-        institution.setIdentifier("siamois");
 
-        createdInstitution = institutionRepository.save(institution);
-
-        log.info("Created institution {}", institution.getIdentifier());
-    }
-
-    protected boolean processExistingInstitution() {
-        Institution institution;
-        Optional<Institution> optInstitution = institutionRepository.findInstitutionByIdentifier("siamois");
-        if (optInstitution.isPresent()) {
-            institution = optInstitution.get();
-            if (createdAdminIsNotOwnerOf(institution.getManagers())) {
-                institution.getManagers().add(createdAdmin);
-                institutionRepository.save(institution);
-            }
-            log.debug("Institution already exists: {}", institution.getName());
-            createdInstitution = institution;
-            return true;
-        }
-        return false;
-    }
-
-    private boolean createdAdminIsNotOwnerOf(Set<Person> managers) {
-        return managers
-                .stream()
-                .noneMatch(admin -> admin.getId().equals(createdAdmin.getId()));
-    }
 
 }

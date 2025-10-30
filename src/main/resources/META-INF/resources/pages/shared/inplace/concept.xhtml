@@ -3,6 +3,7 @@
         xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
         xmlns:cc="http://java.sun.com/jsf/composite"
         xmlns:sharedInput="http://xmlns.jcp.org/jsf/composite/pages/shared/input"
+        xmlns:chip="http://xmlns.jcp.org/jsf/composite/pages/shared/chip"
         xmlns:p="http://primefaces.org/ui" xmlns:f="http://java.sun.com/jsf/core"
 >
 
@@ -21,21 +22,20 @@
         <cc:attribute name="required" type="java.lang.Boolean" required="false" default="false"/>
     </cc:interface>
 
+
     <cc:implementation>
         <p:inplace mode="#{cc.attrs.mode}" toggleable="false">
             <f:facet name="output">
-                <p:chip label="#{labelBean.findLabelOf(cc.attrs.answer.value)}"
-                        icon="#{cc.attrs.field.iconClass}"
-                        styleClass="#{cc.attrs.field.styleClass}"/>
+                <chip:conceptChip concept="#{cc.attrs.answer.value}" styleClass="#{cc.attrs.field.styleClass}"/>
             </f:facet>
             <f:facet name="input">
                 <sharedInput:conceptAutocompleteFieldCode id="typeComponent"
                                                           inputStyleClass="#{cc.attrs.answer.hasBeenModified ? 'track-change sia-modified-field': 'track-change'}"
                                                           panelStyleClass="#{cc.attrs.panelModel.autocompleteClass}"
                                                           selectedConcept="#{cc.attrs.answer.value}"
-                                                          ajaxUpdateTargets="#{cc.attrs.updateTargetsOnBlur}"
                                                           field="#{cc.attrs.field}"
                                                           label="#{cc.attrs.label}"
+                                                          ajaxUpdateTargets="#{cc.attrs.updateTargetsOnBlur}"
                                                           required="#{cc.attrs.required}"
                                                           itemSelectListener="#{cc.attrs.panelModel.setFieldConceptAnswerHasBeenModified}"
                                                           editConceptUrl="#{spatialUnitFieldBean.getUrlForFieldCode(cc.attrs.fieldCode)}"/>

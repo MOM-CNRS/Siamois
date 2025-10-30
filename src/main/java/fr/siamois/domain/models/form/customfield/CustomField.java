@@ -56,14 +56,12 @@ public abstract class CustomField implements Serializable {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         CustomField that = (CustomField) o;
-        return Objects.equals(concept, that.concept) &&
-                Objects.equals(unitConcept, that.unitConcept) &&
-                Objects.equals(unitLabel, that.unitLabel);
+        return Objects.equals(concept, that.concept);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(concept, unitConcept, unitLabel);
+        return Objects.hash(concept);
     }
 
     @SuppressWarnings("unchecked")

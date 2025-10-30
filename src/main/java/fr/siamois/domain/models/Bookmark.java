@@ -47,7 +47,7 @@ public class Bookmark {
             "/spatialunit", "bi bi-geo-alt",
             "/actionunit", "bi bi-arrow-down-square",
             "/recordingunit", "bi bi-pencil-square",
-            "/specimen", "bi bi-box2"
+            "/specimen", "bi bi-bucket"
     );
 
     public String getBookmarkColor() {

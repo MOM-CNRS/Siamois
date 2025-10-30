@@ -3,6 +3,7 @@ package fr.siamois.domain.models.specimen;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
+import org.hibernate.envers.Audited;
 
 import java.time.OffsetDateTime;
 import java.util.Objects;
@@ -10,6 +11,7 @@ import java.util.Objects;
 @Data
 @Entity
 @Table(name = "specimen_movement")
+@Audited
 public class Movement {
 
     @Id

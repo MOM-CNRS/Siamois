@@ -3,40 +3,40 @@ package fr.siamois.ui.bean.panel.models.panel.single;
 import fr.siamois.domain.models.actionunit.ActionUnitFormMapping;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.document.Document;
-import fr.siamois.domain.models.exceptions.ErrorProcessingExpansionException;
 import fr.siamois.domain.models.exceptions.actionunit.ActionUnitNotFoundException;
 import fr.siamois.domain.models.exceptions.recordingunit.FailedRecordingUnitSaveException;
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.customfield.CustomFieldInteger;
 import fr.siamois.domain.models.form.customfield.CustomFieldSelectMultiple;
+import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswer;
 import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerInteger;
 import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerSelectMultiple;
 import fr.siamois.domain.models.form.customform.CustomCol;
 import fr.siamois.domain.models.form.customform.CustomForm;
 import fr.siamois.domain.models.form.customformresponse.CustomFormResponse;
-import fr.siamois.domain.models.history.RecordingUnitHist;
+import fr.siamois.domain.models.history.RevisionWithInfo;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
-import fr.siamois.domain.services.HistoryService;
+import fr.siamois.domain.services.form.FormService;
 import fr.siamois.domain.services.person.PersonService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.specimen.SpecimenService;
-import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.RedirectBean;
-import fr.siamois.ui.bean.dialog.document.DocumentCreationBean;
 import fr.siamois.ui.bean.panel.models.PanelBreadcrumb;
 import fr.siamois.ui.bean.panel.models.panel.single.tab.SpecimenTab;
 import fr.siamois.ui.lazydatamodel.RecordingUnitChildrenLazyDataModel;
 import fr.siamois.ui.lazydatamodel.RecordingUnitParentsLazyDataModel;
 import fr.siamois.ui.lazydatamodel.SpecimenInRecordingUnitLazyDataModel;
 import fr.siamois.utils.MessageUtils;
-import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.config.BeanDefinition;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Scope;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
@@ -46,27 +46,23 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 @Slf4j
 @EqualsAndHashCode(callSuper = true, onlyExplicitlyIncluded = true)
-@Data
+@Getter
+@Setter
 @Component
 @Scope(BeanDefinition.SCOPE_PROTOTYPE)
-public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel<RecordingUnit, RecordingUnitHist>  implements Serializable {
+public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel<RecordingUnit>  implements Serializable {
 
     // Deps
     protected final transient LangBean langBean;
     protected final transient RecordingUnitService recordingUnitService;
     protected final transient PersonService personService;
     private final transient RedirectBean redirectBean;
-    private final transient HistoryService historyService;
-    protected final transient ConceptService conceptService;
     private final transient SpecimenService specimenService;
-
+    private final transient FormService formService;
 
     // ---------- Locals
     // RU
@@ -83,26 +79,18 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
     // lazy model for parents
     private RecordingUnitParentsLazyDataModel lazyDataModelParents ;
 
-    protected RecordingUnitPanel(LangBean langBean,
-                                 RecordingUnitService recordingUnitService,
-                                 PersonService personService, ConceptService conceptService,
-                                 DocumentCreationBean documentCreationBean,
-                                 RedirectBean redirectBean,
-                                 HistoryService historyService,
-                                 AbstractSingleEntity.Deps deps,
-                                 SpecimenService specimenService) {
+    protected RecordingUnitPanel(ApplicationContext context)  {
 
         super("common.entity.recordingunit",
                 "bi bi-pencil-square",
                 "siamois-panel recording-unit-panel single-panel",
-                documentCreationBean, deps);
-        this.langBean = langBean;
-        this.recordingUnitService = recordingUnitService;
-        this.personService = personService;
-        this.conceptService = conceptService;
-        this.redirectBean = redirectBean;
-        this.historyService = historyService;
-        this.specimenService = specimenService;
+                context);
+        this.langBean = context.getBean(LangBean.class);
+        this.recordingUnitService = context.getBean(RecordingUnitService.class);
+        this.personService = context.getBean(PersonService.class);
+        this.redirectBean = context.getBean(RedirectBean.class);
+        this.specimenService = context.getBean(SpecimenService.class);
+        this.formService = context.getBean(FormService.class);
     }
 
 
@@ -130,23 +118,14 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
         return List.of();
     }
 
-    public LocalDate offsetDateTimeToLocalDate(OffsetDateTime offsetDT) {
-        return offsetDT.toLocalDate();
+    @Override
+    protected String getFormScopePropertyName() {
+        return "type";
     }
 
-    public List<Concept> fetchChildrenOfConcept(Concept concept) {
-        List<Concept> concepts;
-
-        try {
-            concepts = conceptService.findDirectSubConceptOf(concept);
-        } catch (ErrorProcessingExpansionException e) {
-            log.error(e.getMessage());
-            log.debug(e.getMessage(), e);
-            return new ArrayList<>();
-        }
-
-        return concepts;
-
+    @Override
+    protected void setFormScopePropertyValue(Concept concept) {
+        unit.setType(concept);
     }
 
     public void initializeAnswer(CustomField field) {
@@ -185,20 +164,7 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
                 .orElse(null); // Retourner null si aucun match
     }
 
-    public void handleSelectType() {
 
-        if (recordingUnit.getType() != null) {
-
-            changeCustomForm();
-        } else {
-
-        }
-
-        recordingUnit.setSecondaryType(null);
-        recordingUnit.setThirdType(null);
-
-
-    }
 
     public void initFormResponseAnswers() {
 
@@ -238,7 +204,7 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
             specimenListLazyDataModel.setSelectedUnits(new ArrayList<>());
 
             backupClone = new RecordingUnit(unit);
-            initForms();
+            initForms(true);
             this.titleCodeOrTitle = unit.getFullIdentifier();
 
             specimenListLazyDataModel.setSelectedUnits(new ArrayList<>());
@@ -266,7 +232,7 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
         }
 
 
-        historyVersion = historyService.findRecordingUnitHistory(unit);
+        history = historyAuditService.findAllRevisionForEntity(RecordingUnit.class, idunit);
         documents = documentService.findForRecordingUnit(unit);
     }
 
@@ -310,7 +276,6 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
             redirectBean.redirectTo(HttpStatus.INTERNAL_SERVER_ERROR);
         }
 
-
     }
 
     @Override
@@ -320,12 +285,11 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
 
 
     @Override
-    public void initForms() {
+    public void initForms(boolean forceInit) {
         overviewForm = RecordingUnit.OVERVIEW_FORM;
-        detailsForm = RecordingUnit.DETAILS_FORM;
+        detailsForm = formService.findCustomFormByRecordingUnitTypeAndInstitutionId(unit.getType(), sessionSettingsBean.getSelectedInstitution());
         // Init system form answers
-        formResponse = initializeFormResponse(detailsForm, unit);
-
+        formResponse = initializeFormResponse(detailsForm, unit, forceInit);
     }
 
     @Override
@@ -334,17 +298,32 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
         unit.setThirdType(backupClone.getThirdType());
         unit.setSecondaryType(backupClone.getSecondaryType());
         unit.setArk(backupClone.getArk());
+        unit.setIdentifier(backupClone.getIdentifier());
         unit.setType(backupClone.getType());
         unit.setStartDate(backupClone.getStartDate());
         unit.setEndDate(backupClone.getEndDate());
-        unit.setAuthors(backupClone.getAuthors());
-        unit.setExcavators(backupClone.getExcavators());
+        unit.setAuthor(backupClone.getAuthor());
+        unit.setCreatedBy(unit.getCreatedBy());
+        unit.setContributors(backupClone.getContributors());
+        unit.setGeomorphologicalCycle(backupClone.getGeomorphologicalCycle());
+        unit.setNormalizedInterpretation(backupClone.getNormalizedInterpretation());
         hasUnsavedModifications = false;
-        initForms();
+        initForms(true);
     }
 
     @Override
-    public void visualise(RecordingUnitHist history) {
+    protected void initializeSystemField(CustomFieldAnswer answer, CustomField field) {
+
+        // Recording unit identifier
+        if(Objects.equals(field.getValueBinding(), "identifier") && field.getClass().equals(CustomFieldInteger.class)) {
+            ((CustomFieldInteger) field).setMaxValue(unit.getActionUnit().getMaxRecordingUnitCode());
+            ((CustomFieldInteger) field).setMinValue(unit.getActionUnit().getMinRecordingUnitCode());
+        }
+
+    }
+
+    @Override
+    public void visualise(RevisionWithInfo<RecordingUnit> history) {
         // todo: implement
     }
 
