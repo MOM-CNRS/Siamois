@@ -180,7 +180,7 @@ public class LabelService {
 
     public void updateAltLabel(Concept savedConcept, String lang, String value, Concept fieldParentConcept) {
         Optional<LocalizedAltConceptLabel> opt = localizedAltConceptLabelRepository.findById(new ConceptLabel.Id(savedConcept, lang));
-        LocalizedAltConceptLabel altLabel = null;
+        LocalizedAltConceptLabel altLabel;
         if (opt.isPresent()) {
             altLabel = opt.get();
         } else {

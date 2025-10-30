@@ -10,6 +10,7 @@ import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.models.vocabulary.FeedbackFieldConfig;
 import fr.siamois.domain.models.vocabulary.Vocabulary;
+import fr.siamois.domain.models.vocabulary.label.ConceptLabel;
 import fr.siamois.infrastructure.api.ConceptApi;
 import fr.siamois.infrastructure.api.dto.ConceptBranchDTO;
 import fr.siamois.infrastructure.api.dto.FullInfoDTO;
@@ -214,7 +215,9 @@ public class FieldConfigurationService {
 
     public List<Concept> fetchAutocomplete(UserInfo info, String fieldCode, String input) throws NoConfigForFieldException {
         ConceptFieldConfig config = findConfigurationForFieldCode(info, fieldCode);
-        return labelService.findMatchingConcepts(config.getConcept(), info.getLang(), input, LIMIT_RESULTS);
+        return labelService.findMatchingConcepts(config.getConcept(), info.getLang(), input, LIMIT_RESULTS).stream()
+                .map(ConceptLabel::getConcept)
+                .toList();
     }
 
 }
