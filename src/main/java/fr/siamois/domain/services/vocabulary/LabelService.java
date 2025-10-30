@@ -27,7 +27,6 @@ import java.util.Set;
 @RequiredArgsConstructor
 public class LabelService {
 
-    public static final double MIN_SIMILARITY_SCORE = 0.6;
     private final VocabularyLabelRepository vocabularyLabelRepository;
     private final LocalizedConceptDataRepository localizedConceptDataRepository;
 
@@ -88,16 +87,17 @@ public class LabelService {
      */
     public void updateLabel(Concept concept, String langCode, String label, Concept fieldParentConcept) {
         Optional<LocalizedConceptData> conceptData = localizedConceptDataRepository.findByConceptAndLangCode(concept.getId(), langCode);
-        LocalizedConceptData savedConceptData = null;
+        LocalizedConceptData savedConceptData;
         if (conceptData.isEmpty()) {
             savedConceptData = new LocalizedConceptData();
             savedConceptData.setConcept(concept);
             savedConceptData.setLangCode(langCode);
-            savedConceptData.setLabel(label);
-            savedConceptData.setParentConcept(fieldParentConcept);
         } else {
             savedConceptData = conceptData.get();
-            savedConceptData.setLabel(label);
+        }
+        savedConceptData.setLabel(label);
+        if (fieldParentConcept != null && !fieldParentConcept.equals(concept)) {
+            savedConceptData.setParentConcept(fieldParentConcept);
         }
         localizedConceptDataRepository.save(savedConceptData);
     }
@@ -154,28 +154,39 @@ public class LabelService {
     public List<Concept> findMatchingConcepts(Concept parentConcept, String langCode, String input, int limit) {
         Set<Concept> results = new HashSet<>();
         if (input == null || input.isEmpty()) {
-            results.addAll(this.findAllConcepts(parentConcept, limit).stream()
-                    .map(LocalizedConceptData::getConcept)
-                    .toList());
+            results.addAll(findAllConceptsLimited(parentConcept, limit));
         } else {
-            results.addAll(localizedConceptDataRepository
-                    .findConceptByFieldCodeAndInputLimit(parentConcept.getId(), langCode, input, MIN_SIMILARITY_SCORE, limit)
-                    .stream()
-                    .map(LocalizedConceptData::getConcept)
-                    .toList());
-
-            Set<LocalizedConceptData> exactMatchOtherLang = localizedConceptDataRepository.findLocalizedConceptDataByParentConceptAndLabelContaining(parentConcept, input);
-            for (LocalizedConceptData lcd : exactMatchOtherLang) {
-                if (results.size() < limit) {
-                    results.add(lcd.getConcept());
-                } else {
-                    break;
-                }
-            }
+            results.addAll(findAllLabelContainingInputWithLangLimited(parentConcept, langCode, input, limit));
+            findAndAddAllLabelContainingInputInOtherLangsLimited(parentConcept, input, limit, results);
         }
 
         return results
                 .stream()
+                .toList();
+    }
+
+    private void findAndAddAllLabelContainingInputInOtherLangsLimited(Concept parentConcept, String input, int limit, Set<Concept> results) {
+        Set<LocalizedConceptData> exactMatchOtherLang = localizedConceptDataRepository.findLocalizedConceptDataByParentConceptAndLabelContaining(parentConcept, input);
+        for (LocalizedConceptData lcd : exactMatchOtherLang) {
+            if (results.size() < limit) {
+                results.add(lcd.getConcept());
+            } else {
+                break;
+            }
+        }
+    }
+
+    private List<Concept> findAllConceptsLimited(Concept parentConcept, int limit) {
+        return this.findAllConcepts(parentConcept, limit).stream()
+                .map(LocalizedConceptData::getConcept)
+                .toList();
+    }
+
+    private List<Concept> findAllLabelContainingInputWithLangLimited(Concept parentConcept, String langCode, String input, int limit) {
+        return localizedConceptDataRepository
+                .findConceptByFieldCodeAndInputLimit(parentConcept.getId(), langCode, input, limit)
+                .stream()
+                .map(LocalizedConceptData::getConcept)
                 .toList();
     }
 
