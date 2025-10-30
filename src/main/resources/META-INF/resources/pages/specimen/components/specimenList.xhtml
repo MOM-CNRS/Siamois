@@ -5,7 +5,7 @@
                 xmlns:cc="http://xmlns.jcp.org/jsf/composite"
                 xmlns:cellbody="http://java.sun.com/jsf/composite/pages/shared/cellbody"
                 xmlns:sharedInput="http://xmlns.jcp.org/jsf/composite/pages/shared/input"
-                xmlns:f="http://java.sun.com/jsf/core"
+                xmlns:f="http://java.sun.com/jsf/core" xmlns:chip="http://xmlns.jcp.org/jsf/composite/pages/shared/chip"
 >
     <cc:interface>
         <!-- Attributes to pass the bean's list and optional additional parameters -->
@@ -182,8 +182,8 @@
                     </f:facet>
                     <p:cellEditor>
                         <f:facet name="output">
-                            <p:chip label="#{labelBean.findLabelOf(item.type)}"
-                                    styleClass="mr-2 recording-unit-type-chip"/>
+
+                            <chip:conceptChip  concept="#{item.type}" styleClass="mr-2 specimen-type-chip"/>
                         </f:facet>
                         <f:facet name="input">
                             <sharedInput:conceptAutocompleteFieldCode id="typeComponent"

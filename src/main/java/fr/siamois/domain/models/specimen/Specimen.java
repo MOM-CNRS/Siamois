@@ -161,7 +161,7 @@ public class Specimen extends SpecimenParent implements ArkEntity {
             .isSystemField(true)
             .valueBinding("type")
             .styleClass("mr-2 specimen-type-chip")
-            .iconClass("bi bi-box2")
+            .iconClass("bi bi-bucket")
             .fieldCode(Specimen.CATEGORY_FIELD)
             .concept(specimenTypeConcept)
             .build();
@@ -173,7 +173,7 @@ public class Specimen extends SpecimenParent implements ArkEntity {
             .isSystemField(true)
             .valueBinding("category")
             .styleClass("mr-2 specimen-type-chip")
-            .iconClass("bi bi-box2")
+            .iconClass("bi bi-bucket")
             .fieldCode(Specimen.CAT_FIELD)
             .concept(specimenCategoryConcept)
             .build();

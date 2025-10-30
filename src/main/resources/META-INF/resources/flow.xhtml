@@ -218,7 +218,7 @@
              overflow-y: auto;">
 
             <h:panelGroup
-                    style="#{flowBean.fullscreenPanelIndex == -1 ? 'display:flex;flex-direction: column;gap:1em;padding:1em;' : 'display:flex;flex-direction: column;gap:1em;padding:0.5em;'}"
+                    style="#{flowBean.fullscreenPanelIndex == -1 ? 'display:flex;flex-direction: column;gap:3em;padding:1em;' : 'display:flex;flex-direction: column;gap:1em;padding:0.5em;'}"
                     id="flow-panels">
                 <c:forEach items="#{flowBean.panels}" var="panel" varStatus="status">
                     <p:panel styleClass="#{panel.panelClass}"
@@ -236,7 +236,7 @@
                             <p:outputPanel rendered="#{panel.displayHeader() == null}">
                                 <i class="#{panel.icon}"/> #{flowBean.headerName(panel)}
                             </p:outputPanel>
-                                <p:outputPanel id="panelHeader">
+                                <p:outputPanel id="panelHeader" style="display: flex;gap: 0.5em; align-items: center; flex-wrap: wrap;">
                                     <ui:include rendered="#{panel.displayHeader() != null}"
                                                 src="#{panel.displayHeader()}">
                                 <ui:param name="panelModel" value="#{panel}"/>

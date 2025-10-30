@@ -1,0 +1,26 @@
+<ui:composition
+        xmlns="http://www.w3.org/1999/xhtml"
+        xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
+        xmlns:cc="http://java.sun.com/jsf/composite"
+        xmlns:p="http://primefaces.org/ui"
+>
+
+    <cc:interface>
+        <cc:attribute name="concept"
+                      type="fr.siamois.domain.models.vocabulary.Concept"
+                      shortDescription="The concept to display"
+                      required="true"/>
+        <cc:attribute name="styleClass"
+                      shortDescription="Style class for the chip's styleClass attribute"
+                      type="java.lang.String"
+                      required="true"/>
+    </cc:interface>
+
+    <cc:implementation>
+        <p:chip label="#{labelBean.findLabelOf(cc.attrs.concept)}"
+                rendered="#{not empty cc.attrs.concept}"
+                id="chip"
+                styleClass="#{cc.attrs.styleClass}" />
+        <p:tooltip for="chip" value="#{labelBean.findLabelOf(cc.attrs.concept)}" position="bottom"/>
+    </cc:implementation>
+</ui:composition>
