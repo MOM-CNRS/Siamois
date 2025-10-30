@@ -14,7 +14,6 @@ import fr.siamois.infrastructure.api.dto.ConceptBranchDTO;
 import fr.siamois.infrastructure.api.dto.FullInfoDTO;
 import fr.siamois.infrastructure.api.dto.LabelDTO;
 import fr.siamois.infrastructure.database.repositories.FieldRepository;
-import jakarta.ws.rs.core.UriBuilder;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.*;

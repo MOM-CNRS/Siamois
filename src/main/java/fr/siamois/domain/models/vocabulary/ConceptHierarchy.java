@@ -1,7 +1,8 @@
 package fr.siamois.domain.models.vocabulary;
 
 import jakarta.persistence.*;
-import lombok.*;
+import lombok.Getter;
+import lombok.Setter;
 
 @Getter
 @Entity
