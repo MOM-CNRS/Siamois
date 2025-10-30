@@ -21,14 +21,6 @@ public class LocalizedConceptData extends ConceptLabel {
         super();
     }
 
-    public void setLangCode(String langCode) {
-        this.id.setLangCode(langCode);
-    }
-
-    public String getLangCode() {
-        return this.id.getLangCode();
-    }
-
     public void setConcept(Concept concept) {
         this.concept = concept;
         if (concept != null) {
