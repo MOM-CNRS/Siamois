@@ -23,14 +23,11 @@ public interface LocalizedConceptDataRepository extends CrudRepository<Localized
                     "AND unaccent(lcd.label) ILIKE unaccent('%' || :input || '%') " +
                     "LIMIT :limit"
     )
-    Set<LocalizedConceptData> findConceptByFieldCodeAndInputLimit(
+    Set<LocalizedConceptData> findByParentConceptAndFieldCodeAndInputLimited(
             Long parentFieldConceptId,
             String langCode,
             String input,
             int limit);
-
-    Set<LocalizedConceptData> findLocalizedConceptDataByParentConceptAndLabelContaining(Concept parentConcept, String label);
-
 
     @Query(
             nativeQuery = true,

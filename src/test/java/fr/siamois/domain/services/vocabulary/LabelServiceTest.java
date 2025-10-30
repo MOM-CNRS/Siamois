@@ -202,75 +202,6 @@ class LabelServiceTest {
     }
 
     @Test
-    void findMatchingConcepts_shouldReturnAllConcepts_whenInputIsNullOrEmpty() {
-        // Given
-        Concept parent = new Concept();
-        parent.setId(100L);
-
-        LocalizedConceptData lcd1 = new LocalizedConceptData();
-        Concept c1 = new Concept();
-        c1.setId(1L);
-        c1.setExternalId("1L");
-        lcd1.setConcept(c1);
-
-        LocalizedConceptData lcd2 = new LocalizedConceptData();
-        Concept c2 = new Concept();
-        c2.setId(2L);
-        c2.setExternalId("2L");
-        lcd2.setConcept(c2);
-
-        when(localizedConceptDataRepository.findAllByParentConcept(parent, org.springframework.data.domain.Limit.of(10)))
-                .thenReturn(List.of(lcd1, lcd2));
-
-        // When
-        var results = labelService.findMatchingConcepts(parent, "en", null, 10);
-
-        // Then
-        assertEquals(2, results.size());
-        // ensure both concepts are present
-        boolean contains1 = results.stream().anyMatch(c -> c.getId().equals(1L));
-        boolean contains2 = results.stream().anyMatch(c -> c.getId().equals(2L));
-        assertTrue(contains1);
-        assertTrue(contains2);
-    }
-
-    @Test
-    void findMatchingConcepts_shouldReturnMatchingConcepts_whenInputProvided() {
-        // Given
-        Concept parent = new Concept();
-        parent.setId(200L);
-
-        LocalizedConceptData matched = new LocalizedConceptData();
-        Concept cm = new Concept();
-        cm.setId(3L);
-        // no-op
-        matched.setConcept(cm);
-
-        when(localizedConceptDataRepository.findConceptByFieldCodeAndInputLimit(200L, "en", "inp", 5))
-                .thenReturn(Set.of(matched));
-
-        LocalizedConceptData otherLang = new LocalizedConceptData();
-        Concept co = new Concept();
-        co.setId(4L);
-        co.setExternalId("4L");
-        otherLang.setConcept(co);
-
-        when(localizedConceptDataRepository.findLocalizedConceptDataByParentConceptAndLabelContaining(parent, "inp"))
-                .thenReturn(Set.of(otherLang));
-
-        // When
-        var results = labelService.findMatchingConcepts(parent, "en", "inp", 5);
-
-        // Then
-        // Should contain both concepts up to the limit
-        assertEquals(2, results.size());
-        boolean has3 = results.stream().anyMatch(c -> c.getId().equals(3L));
-        boolean has4 = results.stream().anyMatch(c -> c.getId().equals(4L));
-        assertTrue(has3);
-        assertTrue(has4);
-    }
-
-    @Test
     void findMatchingConcepts_shouldReturnEmpty_whenNoMatchesFound() {
         // Given
         Concept parent = new Concept();
@@ -278,9 +209,7 @@ class LabelServiceTest {
         parent.setExternalId("300L");
 
 
-        when(localizedConceptDataRepository.findConceptByFieldCodeAndInputLimit(300L, "en", "nope", 5))
-                .thenReturn(Set.of());
-        when(localizedConceptDataRepository.findLocalizedConceptDataByParentConceptAndLabelContaining(parent, "nope"))
+        when(localizedConceptDataRepository.findByParentConceptAndFieldCodeAndInputLimited(300L, "en", "nope", 5))
                 .thenReturn(Set.of());
 
         // When
@@ -289,35 +218,6 @@ class LabelServiceTest {
         // Then
         assertNotNull(results);
         assertEquals(0, results.size());
-    }
-
-    @Test
-    void findMatchingConcepts_shouldEnforceLimit_whenOtherLangReturnsMoreThanLimit() {
-        // Given
-        Concept parent = new Concept();
-        parent.setId(400L);
-
-        // similarity search returns nothing
-        when(localizedConceptDataRepository.findConceptByFieldCodeAndInputLimit(400L, "en", "inp", 1))
-                .thenReturn(Set.of());
-
-        // other lang returns 3 matches but limit is 1
-        LocalizedConceptData a = new LocalizedConceptData();
-        Concept ca = new Concept(); ca.setId(10L); ca.setExternalId("10"); a.setConcept(ca);
-        LocalizedConceptData b = new LocalizedConceptData();
-        Concept cb = new Concept(); cb.setId(11L); cb.setExternalId("11"); b.setConcept(cb);
-        LocalizedConceptData c = new LocalizedConceptData();
-        Concept cc = new Concept(); cc.setId(12L); cc.setExternalId("12"); c.setConcept(cc);
-
-        when(localizedConceptDataRepository.findLocalizedConceptDataByParentConceptAndLabelContaining(parent, "inp"))
-                .thenReturn(Set.of(a, b, c));
-
-        // When
-        var results = labelService.findMatchingConcepts(parent, "en", "inp", 1);
-
-        // Then
-        assertNotNull(results);
-        assertEquals(1, results.size());
     }
 
     @Test
