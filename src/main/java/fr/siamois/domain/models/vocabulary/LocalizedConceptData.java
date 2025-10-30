@@ -1,46 +1,24 @@
 package fr.siamois.domain.models.vocabulary;
 
+import fr.siamois.domain.models.vocabulary.label.ConceptLabel;
+import fr.siamois.domain.models.vocabulary.label.LabelType;
 import jakarta.persistence.*;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 import java.util.Objects;
 
+@EqualsAndHashCode(callSuper = true)
 @Data
 @Entity
 @Table(name = "localized_concept_data")
-public class LocalizedConceptData {
-
-    @EmbeddedId
-    private LocalizedConceptDataId id;
-
-    @Column(name = "label", nullable = false, columnDefinition = "citext")
-    private String label;
+public class LocalizedConceptData extends ConceptLabel {
 
     @Column(name = "concept_definition", length = Integer.MAX_VALUE)
     private String definition;
 
-    @MapsId("conceptId")
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "fk_concept_id", nullable = false)
-    private Concept concept;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "fk_field_parent_concept_id")
-    private Concept parentConcept;
-
-    @Override
-    public boolean equals(Object o) {
-        if (!(o instanceof LocalizedConceptData that)) return false;
-        return Objects.equals(getLangCode(), that.getLangCode()) && Objects.equals(concept, that.concept);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(getLangCode(), concept);
-    }
-
     public LocalizedConceptData() {
-        this.id = new LocalizedConceptDataId();
+        super();
     }
 
     public void setLangCode(String langCode) {
@@ -60,4 +38,8 @@ public class LocalizedConceptData {
         }
     }
 
+    @Override
+    public LabelType getLabelType() {
+        return LabelType.PREF_LABEL;
+    }
 }

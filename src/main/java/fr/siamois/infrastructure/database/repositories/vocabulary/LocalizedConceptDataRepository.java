@@ -3,6 +3,7 @@ package fr.siamois.infrastructure.database.repositories.vocabulary;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.models.vocabulary.LocalizedConceptData;
 import fr.siamois.domain.models.vocabulary.LocalizedConceptDataId;
+import fr.siamois.domain.models.vocabulary.label.ConceptLabel;
 import org.springframework.data.domain.Limit;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
@@ -13,7 +14,7 @@ import java.util.Optional;
 import java.util.Set;
 
 @Repository
-public interface LocalizedConceptDataRepository extends CrudRepository<LocalizedConceptData, LocalizedConceptDataId> {
+public interface LocalizedConceptDataRepository extends CrudRepository<LocalizedConceptData, ConceptLabel.Id> {
 
     @Query(
             nativeQuery = true,

@@ -113,7 +113,15 @@ public class ConceptService {
                 labelService.updateLabel(savedConcept, label.getLang(), label.getValue(), fieldParentConcept);
             }
         }
+
+        if (conceptDto.getAltLabel() != null) {
+            for (PurlInfoDTO altLabel : conceptDto.getAltLabel()) {
+                labelService.updateAltLabel(savedConcept, altLabel.getLang(), altLabel.getValue(), fieldParentConcept);
+            }
+        }
     }
+
+
 
     private void updateDefinition(Concept savedConcept, String lang, String definition, Concept fieldParentConcept) {
         Optional<LocalizedConceptData> optData = localizedConceptDataRepository.findByConceptAndLangCode(savedConcept.getId(), lang);
