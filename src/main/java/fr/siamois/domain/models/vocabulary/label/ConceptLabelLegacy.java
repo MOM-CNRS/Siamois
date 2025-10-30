@@ -10,14 +10,14 @@ import lombok.Data;
 import java.util.Objects;
 
 /**
- * @deprecated Use {@link fr.siamois.domain.models.vocabulary.LocalizedConceptData} as a replacement for ConceptLabel.
+ * @deprecated Use {@link fr.siamois.domain.models.vocabulary.LocalizedConceptData} as a replacement for ConceptLabel Pref-label.
  * This class is maintained only for backward compatibility and will be removed in future releases.
  * Some query still depend on it.
  */
 @Entity
 @DiscriminatorValue("concept")
 @Data
-@Deprecated
+@Deprecated(forRemoval = true, since = "0.1.2-DEV")
 public class ConceptLabelLegacy extends Label {
 
     @ManyToOne
