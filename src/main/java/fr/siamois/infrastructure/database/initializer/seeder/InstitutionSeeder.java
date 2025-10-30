@@ -35,7 +35,7 @@ public class InstitutionSeeder {
         return opt.orElse(null);
     }
 
-    private void getOrCreateInstitution(Institution i, Vocabulary vocabulary) throws DatabaseDataInitException {
+    private Institution getOrCreateInstitution(Institution i, Vocabulary vocabulary) throws DatabaseDataInitException {
         Institution inst = findInstitutionOrReturnNull(i.getIdentifier());
         if (inst == null) {
             inst = institutionRepository.save(i);
@@ -45,6 +45,8 @@ public class InstitutionSeeder {
         } catch (NotSiamoisThesaurusException | ErrorProcessingExpansionException e) {
             throw new DatabaseDataInitException("error with thesaurus init",e);
         }
+
+        return inst;
     }
 
     public void seed(List<InstitutionSpec> specs) throws DatabaseDataInitException {
@@ -71,7 +73,14 @@ public class InstitutionSeeder {
             toCreate.setIdentifier(s.identifier);
             toCreate.setDescription(s.description);
             toCreate.setManagers(managers);
-            getOrCreateInstitution(toCreate, thesaurus);
+            toCreate = getOrCreateInstitution(toCreate, thesaurus);
+
+            // Import the thesaurus
+            try {
+                fieldConfigurationService.setupFieldConfigurationForInstitution(toCreate, thesaurus);
+            } catch (NotSiamoisThesaurusException | ErrorProcessingExpansionException e) {
+                throw new DatabaseDataInitException(e.getMessage(), e);
+            }
         }
     }
 }

@@ -26,7 +26,8 @@ public class ConceptSeeder {
 
     private void saveLabel(Concept concept, String label, String lang) {
         Optional<LocalizedConceptData> opt = localizedConceptDataRepository.findByConceptAndLangCode(concept.getId(), lang);
-        if (opt.isPresent()) {
+
+        if (opt.isEmpty()) {
             LocalizedConceptData data = new LocalizedConceptData();
             data.setLabel(label);
             data.setConcept(concept);
