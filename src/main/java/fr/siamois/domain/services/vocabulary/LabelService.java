@@ -3,8 +3,11 @@ package fr.siamois.domain.services.vocabulary;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.models.vocabulary.LocalizedConceptData;
 import fr.siamois.domain.models.vocabulary.Vocabulary;
+import fr.siamois.domain.models.vocabulary.label.ConceptLabel;
+import fr.siamois.domain.models.vocabulary.label.LocalizedAltConceptLabel;
 import fr.siamois.domain.models.vocabulary.label.VocabularyLabel;
 import fr.siamois.infrastructure.database.repositories.vocabulary.LocalizedConceptDataRepository;
+import fr.siamois.infrastructure.database.repositories.vocabulary.label.LocalizedAltConceptLabelRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.label.VocabularyLabelRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -29,6 +32,7 @@ public class LabelService {
 
     private final VocabularyLabelRepository vocabularyLabelRepository;
     private final LocalizedConceptDataRepository localizedConceptDataRepository;
+    private final LocalizedAltConceptLabelRepository localizedAltConceptLabelRepository;
 
     /**
      * Finds the label for a given concept in the specified language.
@@ -190,4 +194,20 @@ public class LabelService {
                 .toList();
     }
 
+    public void updateAltLabel(Concept savedConcept, String lang, String value, Concept fieldParentConcept) {
+        Optional<LocalizedAltConceptLabel> opt = localizedAltConceptLabelRepository.findById(new ConceptLabel.Id(savedConcept, lang));
+        LocalizedAltConceptLabel altLabel = null;
+        if (opt.isPresent()) {
+            altLabel = opt.get();
+        } else {
+            altLabel = new LocalizedAltConceptLabel();
+            altLabel.setConcept(savedConcept);
+            altLabel.setLangCode(lang);
+        }
+        altLabel.setLabel(value);
+        if (fieldParentConcept != null && !fieldParentConcept.equals(savedConcept)) {
+            altLabel.setParentConcept(fieldParentConcept);
+        }
+        localizedAltConceptLabelRepository.save(altLabel);
+    }
 }
