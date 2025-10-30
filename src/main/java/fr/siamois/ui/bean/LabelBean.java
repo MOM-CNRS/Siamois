@@ -4,6 +4,8 @@ import fr.siamois.domain.events.ConceptChangeEvent;
 import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.models.vocabulary.LocalizedConceptData;
+import fr.siamois.domain.models.vocabulary.label.ConceptLabel;
+import fr.siamois.domain.models.vocabulary.label.LabelType;
 import fr.siamois.domain.services.vocabulary.LabelService;
 import fr.siamois.infrastructure.database.repositories.vocabulary.LocalizedConceptDataRepository;
 import lombok.RequiredArgsConstructor;
@@ -52,6 +54,14 @@ public class LabelBean implements Serializable {
 
     private void addToCache(String lang, Concept concept, String label) {
         labelCache.computeIfAbsent(lang, k -> new HashMap<>()).put(concept, label);
+    }
+
+    public String findPrefLabelof(ConceptLabel conceptLabel) {
+        if (conceptLabel.getLabelType() == LabelType.PREF_LABEL) {
+            return conceptLabel.getLabel();
+        } else {
+            return findLabelOf(conceptLabel.getConcept());
+        }
     }
 
     public String findLabelOf(Concept concept) {

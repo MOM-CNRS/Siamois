@@ -15,10 +15,7 @@ import org.springframework.data.domain.Limit;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Service to manage labels for concepts and vocabularies.
@@ -155,42 +152,29 @@ public class LabelService {
      * @return List of unique concepts matching the input
      */
     @Transactional(readOnly = true)
-    public List<Concept> findMatchingConcepts(Concept parentConcept, String langCode, String input, int limit) {
-        Set<Concept> results = new HashSet<>();
+    public List<ConceptLabel> findMatchingConcepts(Concept parentConcept, String langCode, String input, int limit) {
+        List<ConceptLabel> results = new ArrayList<>();
         if (input == null || input.isEmpty()) {
             results.addAll(findAllConceptsLimited(parentConcept, limit));
         } else {
             results.addAll(findAllLabelContainingInputWithLangLimited(parentConcept, langCode, input, limit));
-            findAndAddAllLabelContainingInputInOtherLangsLimited(parentConcept, input, limit, results);
+            results.addAll(findAllAltLabelContainingInputWithLangLimited(parentConcept, langCode, input, limit));
         }
-
-        return results
-                .stream()
-                .toList();
+        return results;
     }
 
-    private void findAndAddAllLabelContainingInputInOtherLangsLimited(Concept parentConcept, String input, int limit, Set<Concept> results) {
-        Set<LocalizedConceptData> exactMatchOtherLang = localizedConceptDataRepository.findLocalizedConceptDataByParentConceptAndLabelContaining(parentConcept, input);
-        for (LocalizedConceptData lcd : exactMatchOtherLang) {
-            if (results.size() < limit) {
-                results.add(lcd.getConcept());
-            } else {
-                break;
-            }
-        }
+    private List<LocalizedAltConceptLabel> findAllAltLabelContainingInputWithLangLimited(Concept parentConcept, String langCode, String input, int limit) {
+        return localizedAltConceptLabelRepository.findAllByParentConceptAndInputLimited(parentConcept.getId(), langCode, input, limit);
     }
 
-    private List<Concept> findAllConceptsLimited(Concept parentConcept, int limit) {
-        return this.findAllConcepts(parentConcept, limit).stream()
-                .map(LocalizedConceptData::getConcept)
-                .toList();
+    private List<LocalizedConceptData> findAllConceptsLimited(Concept parentConcept, int limit) {
+        return this.findAllConcepts(parentConcept, limit);
     }
 
-    private List<Concept> findAllLabelContainingInputWithLangLimited(Concept parentConcept, String langCode, String input, int limit) {
+    private List<LocalizedConceptData> findAllLabelContainingInputWithLangLimited(Concept parentConcept, String langCode, String input, int limit) {
         return localizedConceptDataRepository
-                .findConceptByFieldCodeAndInputLimit(parentConcept.getId(), langCode, input, limit)
+                .findByParentConceptAndFieldCodeAndInputLimited(parentConcept.getId(), langCode, input, limit)
                 .stream()
-                .map(LocalizedConceptData::getConcept)
                 .toList();
     }
 

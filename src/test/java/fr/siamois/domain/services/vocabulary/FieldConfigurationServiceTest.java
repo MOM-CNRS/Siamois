@@ -8,10 +8,8 @@ import fr.siamois.domain.models.exceptions.vocabulary.NoConfigForFieldException;
 import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.settings.ConceptFieldConfig;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
-import fr.siamois.domain.models.vocabulary.Concept;
-import fr.siamois.domain.models.vocabulary.FeedbackFieldConfig;
-import fr.siamois.domain.models.vocabulary.Vocabulary;
-import fr.siamois.domain.models.vocabulary.VocabularyType;
+import fr.siamois.domain.models.vocabulary.*;
+import fr.siamois.domain.models.vocabulary.label.ConceptLabel;
 import fr.siamois.infrastructure.api.ConceptApi;
 import fr.siamois.infrastructure.api.dto.ConceptBranchDTO;
 import fr.siamois.infrastructure.api.dto.FullInfoDTO;
@@ -285,6 +283,11 @@ class FieldConfigurationServiceTest {
         Concept concept = new Concept();
         concept.setVocabulary(vocabulary);
 
+        LocalizedConceptData lcd = new LocalizedConceptData();
+        lcd.setConcept(concept);
+        lcd.setLangCode(userInfo.getLang());
+        lcd.setLabel("Test Label");
+
         String fieldCode = "TESTFIELD";
         String query = "test query";
 
@@ -294,14 +297,14 @@ class FieldConfigurationServiceTest {
 
         when(conceptFieldConfigRepository.findByFieldCodeForInstitution(userInfo.getInstitution().getId(), fieldCode))
                 .thenReturn(Optional.of(cfc));
-        when(labelService.findMatchingConcepts(concept, userInfo.getLang(), query, FieldConfigurationService.LIMIT_RESULTS)).thenReturn(List.of(concept));
+        when(labelService.findMatchingConcepts(concept, userInfo.getLang(), query, FieldConfigurationService.LIMIT_RESULTS)).thenReturn(List.of(lcd));
 
-        List<Concept> result = service.fetchAutocomplete(userInfo, fieldCode, query);
+        List<ConceptLabel> result = service.fetchAutocomplete(userInfo, fieldCode, query);
 
         assertThat(result)
                 .isNotNull()
                 .hasSize(1)
-                .containsExactly(concept);
+                .containsExactly(lcd);
     }
 
     @Test
