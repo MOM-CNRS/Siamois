@@ -85,7 +85,7 @@ public class ActionUnitListPanel extends AbstractListPanel<ActionUnit> implement
 
     @Override
     public String ressourceUri() {
-        return "/actionunit";
+        return "/action-unit";
     }
 
     public static class ActionUnitListPanelBuilder {

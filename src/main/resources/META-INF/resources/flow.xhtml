@@ -248,7 +248,8 @@
                                 <p:commandLink id="bookmarkToggleButton"
                                                styleClass="ui-panel-titlebar-icon ui-corner-all ui-state-default"
                                                action="#{navBean.togglePanelBookmark(panel)}"
-                                               update="bookmarkToggleButton navBarCsrfForm:siamoisNavForm:bookmarkGroup">
+                                               onclick="event.stopPropagation();"
+                                               update="bookmarkToggleButton navBarCsrfForm:siamoisNavForm">
                                     <h:outputText styleClass="#{navBean.isPanelBookmarkedByUser(panel) ?
                             'ui-icon bi bi-bookmark-fill' : 'ui-icon bi bi-bookmark'}"/>
                                 </p:commandLink>
