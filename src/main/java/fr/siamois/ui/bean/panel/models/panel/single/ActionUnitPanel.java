@@ -105,7 +105,7 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnit> imple
 
     @Override
     public String ressourceUri() {
-        return String.format("/actionunit/%s", unit.getId());
+        return String.format("/action-unit/%s", unit.getId());
     }
 
 

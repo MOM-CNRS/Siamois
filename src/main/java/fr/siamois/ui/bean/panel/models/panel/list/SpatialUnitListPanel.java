@@ -90,7 +90,7 @@ public class SpatialUnitListPanel extends AbstractListPanel<SpatialUnit>  implem
 
     @Override
     public String ressourceUri() {
-        return "/spatialunit";
+        return "/spatial-unit";
     }
 
     public static class SpatialUnitListPanelBuilder {
