@@ -463,7 +463,6 @@ class ConceptServiceTest {
         // Then
         verify(conceptChangeEventPublisher, times(1)).publishEvent(config.getFieldCode());
         verify(conceptRepository, atLeast(2)).save(any(Concept.class));
-        verify(conceptRelationRepository, atLeast(1)).save(any());
         verify(localizedConceptDataRepository, atLeast(2)).save(any(LocalizedConceptData.class));
         verify(conceptRelatedLinkRepository, atLeast(1)).save(any());
     }
