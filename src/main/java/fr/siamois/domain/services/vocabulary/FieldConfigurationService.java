@@ -31,7 +31,7 @@ import java.util.Optional;
 public class FieldConfigurationService {
 
     private static final IllegalStateException FIELD_CODE_NOT_FOUND = new IllegalStateException("Field code not found");
-    public static final int LIMIT_RESULTS = 30;
+    public static final int LIMIT_RESULTS = 200;
     private final ConceptApi conceptApi;
     private final FieldService fieldService;
     private final ConceptRepository conceptRepository;

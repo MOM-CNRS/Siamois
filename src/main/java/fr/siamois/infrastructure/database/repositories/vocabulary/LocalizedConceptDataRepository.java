@@ -17,35 +17,20 @@ public interface LocalizedConceptDataRepository extends CrudRepository<Localized
 
     @Query(
             nativeQuery = true,
-            value = "WITH scored AS ( " +
-                    "  SELECT lcd.*, similarity(lcd.label, :input) AS score " +
-                    "  FROM localized_concept_data lcd " +
-                    "  WHERE lcd.lang_code = :langCode " +
-                    "    AND lcd.fk_field_parent_concept_id = :parentFieldConceptId " +
-                    ")" +
-                    "SELECT s.concept_definition, s.label, s.lang_code, s.fk_concept_id, s.fk_field_parent_concept_id FROM scored s " +
-                    "WHERE s.score >= :minSimilarityScore " +
-                    "ORDER BY s.score DESC " +
+            value = "SELECT lcd.* FROM localized_concept_data lcd " +
+                    "WHERE lcd.fk_field_parent_concept_id = :parentFieldConceptId " +
+                    "AND lcd.lang_code = :langCode " +
+                    "AND unaccent(lcd.label) ILIKE unaccent('%' || :input || '%') " +
                     "LIMIT :limit"
     )
     Set<LocalizedConceptData> findConceptByFieldCodeAndInputLimit(
             Long parentFieldConceptId,
             String langCode,
             String input,
-            double minSimilarityScore,
             int limit);
 
     Set<LocalizedConceptData> findLocalizedConceptDataByParentConceptAndLabelContaining(Concept parentConcept, String label);
 
-    @Query(
-            nativeQuery = true,
-            value = "SELECT lcd.* FROM localized_concept_data lcd " +
-                    "WHERE lcd.fk_field_parent_concept_id = :parentConceptId " +
-                    "AND lcd.lang_code = :langCode"
-    )
-    Set<LocalizedConceptData> findAllByParentConceptAndLangCode(Long parentConceptId, String langCode);
-
-    Set<LocalizedConceptData> findAllByParentConcept(Concept parentConcept);
 
     @Query(
             nativeQuery = true,
