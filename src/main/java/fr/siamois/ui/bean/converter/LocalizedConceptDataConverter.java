@@ -1,7 +1,6 @@
 package fr.siamois.ui.bean.converter;
 
 import fr.siamois.domain.models.vocabulary.LocalizedConceptData;
-import fr.siamois.domain.models.vocabulary.LocalizedConceptDataId;
 import fr.siamois.domain.models.vocabulary.label.ConceptLabel;
 import fr.siamois.infrastructure.database.repositories.vocabulary.LocalizedConceptDataRepository;
 import jakarta.faces.component.UIComponent;

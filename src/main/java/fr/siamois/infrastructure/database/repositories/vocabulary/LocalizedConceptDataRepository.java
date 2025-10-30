@@ -2,7 +2,6 @@ package fr.siamois.infrastructure.database.repositories.vocabulary;
 
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.models.vocabulary.LocalizedConceptData;
-import fr.siamois.domain.models.vocabulary.LocalizedConceptDataId;
 import fr.siamois.domain.models.vocabulary.label.ConceptLabel;
 import org.springframework.data.domain.Limit;
 import org.springframework.data.jpa.repository.Query;
