@@ -241,7 +241,7 @@ class LabelServiceTest {
         // no-op
         matched.setConcept(cm);
 
-        when(localizedConceptDataRepository.findConceptByFieldCodeAndInputLimit(200L, "en", "inp", LabelService.MIN_SIMILARITY_SCORE, 5))
+        when(localizedConceptDataRepository.findConceptByFieldCodeAndInputLimit(200L, "en", "inp", 5))
                 .thenReturn(Set.of(matched));
 
         LocalizedConceptData otherLang = new LocalizedConceptData();
@@ -273,7 +273,7 @@ class LabelServiceTest {
         parent.setExternalId("300L");
 
 
-        when(localizedConceptDataRepository.findConceptByFieldCodeAndInputLimit(300L, "en", "nope", LabelService.MIN_SIMILARITY_SCORE, 5))
+        when(localizedConceptDataRepository.findConceptByFieldCodeAndInputLimit(300L, "en", "nope", 5))
                 .thenReturn(Set.of());
         when(localizedConceptDataRepository.findLocalizedConceptDataByParentConceptAndLabelContaining(parent, "nope"))
                 .thenReturn(Set.of());
@@ -293,7 +293,7 @@ class LabelServiceTest {
         parent.setId(400L);
 
         // similarity search returns nothing
-        when(localizedConceptDataRepository.findConceptByFieldCodeAndInputLimit(400L, "en", "inp", LabelService.MIN_SIMILARITY_SCORE, 1))
+        when(localizedConceptDataRepository.findConceptByFieldCodeAndInputLimit(400L, "en", "inp", 1))
                 .thenReturn(Set.of());
 
         // other lang returns 3 matches but limit is 1

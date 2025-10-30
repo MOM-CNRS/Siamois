@@ -124,9 +124,11 @@ public class ConceptService {
             localizedConceptData = new LocalizedConceptData();
             localizedConceptData.setConcept(savedConcept);
             localizedConceptData.setLangCode(lang);
-            localizedConceptData.setParentConcept(fieldParentConcept);
         }
         localizedConceptData.setDefinition(definition);
+        if (fieldParentConcept != null && !fieldParentConcept.equals(savedConcept)) {
+            localizedConceptData.setParentConcept(fieldParentConcept);
+        }
         localizedConceptDataRepository.save(localizedConceptData);
     }
 
@@ -146,24 +148,23 @@ public class ConceptService {
     public void saveAllSubConceptOfIfUpdated(ConceptFieldConfig config) throws ErrorProcessingExpansionException {
         log.trace("API call to fetch down expansion for concept FieldCode : {}", config.getFieldCode());
         try {
-            Concept concept = config.getConcept();
-            Vocabulary vocabulary = concept.getVocabulary();
+            Concept parentSavedConcept = config.getConcept();
+            Vocabulary vocabulary = parentSavedConcept.getVocabulary();
             ConceptBranchDTO branchDTO = conceptApi.fetchDownExpansion(config);
             if (branchDTO == null) return;
             conceptChangeEventPublisher.publishEvent(config.getFieldCode());
 
             Map<String, Concept> urlToSavedConceptMap = new HashMap<>();
-            FullInfoDTO parentConcept = findAndSetParentConceptDTO(branchDTO, concept);
+            FullInfoDTO parentConcept = findAndSetParentConceptDTO(branchDTO, parentSavedConcept);
             if (parentConcept.getNarrower() == null) return;
 
             saveOrGetAllConceptsFromBranchAndStoreInMap(config, branchDTO, urlToSavedConceptMap, vocabulary);
 
-            Concept parentSavedConcept = urlToSavedConceptMap.get(branchDTO.getParentUrl());
-
             Map<Concept, Concept> childAndParentMap = new HashMap<>();
             for (Map.Entry<String, FullInfoDTO> entry : branchDTO.getData().entrySet()) {
+
                 if (Objects.nonNull(entry.getValue().getNarrower())) {
-                    createRelationBetweenConcepts(entry, parentConcept, urlToSavedConceptMap, childAndParentMap, parentSavedConcept);
+                    createRelationBetweenConcepts(entry, branchDTO.getParentUrl(), urlToSavedConceptMap, childAndParentMap, parentSavedConcept);
                 }
 
                 createRelatedLinkAndSetRelatedConcepts(vocabulary, urlToSavedConceptMap.get(entry.getKey()), entry.getValue().getUrlOfRelated(), urlToSavedConceptMap);
@@ -186,9 +187,9 @@ public class ConceptService {
         }
     }
 
-    private void createRelationBetweenConcepts(Map.Entry<String, FullInfoDTO> entry, FullInfoDTO parentConcept, Map<String, Concept> concepts, Map<Concept, Concept> childAndParentMap, Concept parentSavedConcept) {
+    private void createRelationBetweenConcepts(Map.Entry<String, FullInfoDTO> entry, String parentUrlConcept, Map<String, Concept> concepts, Map<Concept, Concept> childAndParentMap, Concept parentSavedConcept) {
         for (PurlInfoDTO narrower : entry.getValue().getNarrower()) {
-            if (narrowerIsNotParentConcept(narrower, parentConcept)) {
+            if (narrower.getValue().equalsIgnoreCase(parentUrlConcept)) {
                 Concept parent = concepts.get(entry.getKey());
                 Concept child =  concepts.get(narrower.getValue());
 
