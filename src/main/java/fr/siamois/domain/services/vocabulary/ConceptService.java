@@ -227,10 +227,6 @@ public class ConceptService {
         throw new IllegalStateException("No concept found for " + concept.getExternalId());
     }
 
-    private static boolean narrowerIsNotParentConcept(PurlInfoDTO narrower, FullInfoDTO parentConcept) {
-        return !narrower.getValue().equalsIgnoreCase(parentConcept.getIdentifier()[0].getValue());
-    }
-
     /**
      * Finds all concepts by their IDs.
      *
