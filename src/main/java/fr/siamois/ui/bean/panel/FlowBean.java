@@ -102,6 +102,7 @@ public class FlowBean implements Serializable {
     @EventListener(InstitutionChangeEvent.class)
     public void handleInstitutionChange() {
         init();
+        MessageUtils.displayInfoMessage(langBean, "institution.change.success", sessionSettings.getUserInfo().getInstitution());
     }
 
     @EventListener(LoginEvent.class)
