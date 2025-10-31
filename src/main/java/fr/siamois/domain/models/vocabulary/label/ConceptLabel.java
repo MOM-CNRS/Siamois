@@ -6,6 +6,12 @@ import lombok.*;
 
 import java.util.Objects;
 
+/**
+ * Abstract base class for different types of concept labels.
+ * It uses a composite primary key consisting of concept ID and language code.
+ *
+ * @author Julien Linget
+ */
 @Getter
 @Setter
 @MappedSuperclass
@@ -18,6 +24,9 @@ public abstract class ConceptLabel {
         this.id = new Id();
     }
 
+    /**
+     * The concept associated with this label.
+     */
     @MapsId("conceptId")
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "fk_concept_id", nullable = false)
@@ -26,6 +35,11 @@ public abstract class ConceptLabel {
     @Column(name = "label", nullable = false, columnDefinition = "citext")
     protected String label;
 
+    /**
+     *  This field is used as caching for faster search when autocompleting labels.
+     *  This parent concept is a concept that is associated with the field in the application.
+     *  In this field, the value can be the current concept associated to the label.
+     */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "fk_field_parent_concept_id")
     protected Concept parentConcept;
