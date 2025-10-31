@@ -1,5 +1,6 @@
 package fr.siamois.domain.models.vocabulary.label;
 
+import jakarta.persistence.DiscriminatorValue;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
 import lombok.Data;
@@ -12,11 +13,11 @@ import lombok.EqualsAndHashCode;
  */
 @EqualsAndHashCode(callSuper = true)
 @Entity
-@Table(name = "localized_alt_concept_label")
 @Data
-public class LocalizedAltConceptLabel extends ConceptLabel {
+@DiscriminatorValue("ALT_LABEL")
+public class ConceptAltLabel extends ConceptLabel {
 
-    public LocalizedAltConceptLabel() {
+    public ConceptAltLabel() {
         super();
     }
 

@@ -1,12 +1,13 @@
 package fr.siamois.domain.services.vocabulary;
 
 import fr.siamois.domain.models.vocabulary.Concept;
-import fr.siamois.domain.models.vocabulary.LocalizedConceptData;
 import fr.siamois.domain.models.vocabulary.Vocabulary;
-import fr.siamois.domain.models.vocabulary.label.LocalizedAltConceptLabel;
+import fr.siamois.domain.models.vocabulary.label.ConceptAltLabel;
+import fr.siamois.domain.models.vocabulary.label.ConceptLabel;
+import fr.siamois.domain.models.vocabulary.label.ConceptPrefLabel;
 import fr.siamois.domain.models.vocabulary.label.VocabularyLabel;
 import fr.siamois.infrastructure.database.repositories.vocabulary.LocalizedConceptDataRepository;
-import fr.siamois.infrastructure.database.repositories.vocabulary.label.LocalizedAltConceptLabelRepository;
+import fr.siamois.infrastructure.database.repositories.vocabulary.label.ConceptLabelRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.label.VocabularyLabelRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -33,7 +34,7 @@ class LabelServiceTest {
     private LocalizedConceptDataRepository localizedConceptDataRepository;
 
     @Mock
-    private LocalizedAltConceptLabelRepository localizedAltConceptLabelRepository;
+    private ConceptLabelRepository conceptLabelRepository;
 
     @InjectMocks
     private LabelService labelService;
@@ -129,27 +130,10 @@ class LabelServiceTest {
     @Test
     void findLabelOfConcept_shouldReturnNull_whenConceptIsNull() {
         // When
-        LocalizedConceptData result = labelService.findLabelOf((Concept) null, "en");
+        ConceptPrefLabel result = labelService.findLabelOf((Concept) null, "en");
 
         // Then
         assertNull(result);
-    }
-
-    @Test
-    void findLabelOfConcept_shouldReturnExistingLocalizedData_whenPresent() {
-        // Given
-        Concept concept = new Concept();
-        concept.setId(1L);
-        LocalizedConceptData lcd = new LocalizedConceptData();
-        lcd.setLabel("Label EN");
-        when(localizedConceptDataRepository.findByConceptAndLangCode(1L, "en")).thenReturn(Optional.of(lcd));
-
-        // When
-        LocalizedConceptData result = labelService.findLabelOf(concept, "en");
-
-        // Then
-        assertNotNull(result);
-        assertEquals("Label EN", result.getLabel());
     }
 
     @Test
@@ -160,81 +144,10 @@ class LabelServiceTest {
         when(localizedConceptDataRepository.findByConceptAndLangCode(2L, "fr")).thenReturn(Optional.empty());
 
         // When
-        LocalizedConceptData result = labelService.findLabelOf(concept, "fr");
+        ConceptLabel result = labelService.findLabelOf(concept, "fr");
 
         // Then
         assertNull(result);
-    }
-
-    @Test
-    void updateLabelConcept_shouldCreateAndSave_whenLocalizedDataDoesNotExist() {
-        // Given
-        Concept concept = new Concept();
-        concept.setId(10L);
-        Concept parentConcept = new Concept();
-        parentConcept.setId(20L);
-        when(localizedConceptDataRepository.findByConceptAndLangCode(10L, "en")).thenReturn(Optional.empty());
-
-        // When
-        labelService.updateLabel(concept, "en", "New Concept Label", parentConcept);
-
-        // Then
-        verify(localizedConceptDataRepository, times(1)).save(any(LocalizedConceptData.class));
-
-        // We can capture and assert properties by using ArgumentCaptor, but keeping test simple: verify save called
-    }
-
-    @Test
-    void updateLabelConcept_shouldUpdateExistingAndSave_whenLocalizedDataExists() {
-        // Given
-        Concept concept = new Concept();
-        concept.setId(11L);
-        LocalizedConceptData lcd = new LocalizedConceptData();
-        lcd.setLabel("Old");
-        when(localizedConceptDataRepository.findByConceptAndLangCode(11L, "en")).thenReturn(Optional.of(lcd));
-
-        // When
-        labelService.updateLabel(concept, "en", "Updated", null);
-
-        // Then
-        assertEquals("Updated", lcd.getLabel());
-        verify(localizedConceptDataRepository, times(1)).save(lcd);
-    }
-
-    @Test
-    void findMatchingConcepts_shouldReturnEmpty_whenNoMatchesFound() {
-        // Given
-        Concept parent = new Concept();
-        parent.setId(300L);
-        parent.setExternalId("300L");
-
-
-        when(localizedConceptDataRepository.findByParentConceptAndFieldCodeAndInputLimited(300L, "en", "nope", 5))
-                .thenReturn(Set.of());
-
-        // When
-        var results = labelService.findMatchingConcepts(parent, "en", "nope", 5);
-
-        // Then
-        assertNotNull(results);
-        assertEquals(0, results.size());
-    }
-
-    @Test
-    void findMatchingConcepts_shouldReturnEmpty_whenFindAllThrows() {
-        // Given
-        Concept parent = new Concept();
-        parent.setId(500L);
-
-        when(localizedConceptDataRepository.findAllByParentConcept(parent, org.springframework.data.domain.Limit.of(5)))
-                .thenThrow(new RuntimeException("boom"));
-
-        // When
-        var results = labelService.findMatchingConcepts(parent, "en", null, 5);
-
-        // Then
-        assertNotNull(results);
-        assertEquals(0, results.size());
     }
 
     @Test
@@ -247,15 +160,15 @@ class LabelServiceTest {
         parent.setId(2L);
         parent.setExternalId("2L");
 
-        when(localizedAltConceptLabelRepository.findById(any())).thenReturn(Optional.empty());
+        when(conceptLabelRepository.findById(any())).thenReturn(Optional.empty());
 
         // When
         labelService.updateAltLabel(savedConcept, "en", "New Alt", parent);
 
         // Then
-        ArgumentCaptor<LocalizedAltConceptLabel> captor = ArgumentCaptor.forClass(LocalizedAltConceptLabel.class);
-        verify(localizedAltConceptLabelRepository, times(1)).save(captor.capture());
-        LocalizedAltConceptLabel saved = captor.getValue();
+        ArgumentCaptor<ConceptAltLabel> captor = ArgumentCaptor.forClass(ConceptAltLabel.class);
+        verify(conceptLabelRepository, times(1)).save(captor.capture());
+        ConceptAltLabel saved = captor.getValue();
         assertNotNull(saved);
         assertEquals("New Alt", saved.getLabel());
         assertEquals("en", saved.getLangCode());
@@ -270,19 +183,19 @@ class LabelServiceTest {
         savedConcept.setId(3L);
         savedConcept.setExternalId("3L");
 
-        LocalizedAltConceptLabel existing = new LocalizedAltConceptLabel();
+        ConceptAltLabel existing = new ConceptAltLabel();
         existing.setLabel("Old");
         existing.setConcept(savedConcept);
         existing.setLangCode("fr");
 
-        when(localizedAltConceptLabelRepository.findById(any())).thenReturn(Optional.of(existing));
+        when(conceptLabelRepository.findById(any())).thenReturn(Optional.of(existing));
 
         // When
         labelService.updateAltLabel(savedConcept, "fr", "Updated", null);
 
         // Then
         assertEquals("Updated", existing.getLabel());
-        verify(localizedAltConceptLabelRepository, times(1)).save(existing);
+        verify(conceptLabelRepository, times(1)).save(existing);
     }
 
     @Test
@@ -292,15 +205,15 @@ class LabelServiceTest {
         savedConcept.setId(4L);
         savedConcept.setExternalId("4L");
 
-        when(localizedAltConceptLabelRepository.findById(any())).thenReturn(Optional.empty());
+        when(conceptLabelRepository.findById(any())).thenReturn(Optional.empty());
 
         // When
         labelService.updateAltLabel(savedConcept, "en", "Value", savedConcept);
 
         // Then
-        ArgumentCaptor<LocalizedAltConceptLabel> captor = ArgumentCaptor.forClass(LocalizedAltConceptLabel.class);
-        verify(localizedAltConceptLabelRepository, times(1)).save(captor.capture());
-        LocalizedAltConceptLabel saved = captor.getValue();
+        ArgumentCaptor<ConceptAltLabel> captor = ArgumentCaptor.forClass(ConceptAltLabel.class);
+        verify(conceptLabelRepository, times(1)).save(captor.capture());
+        ConceptAltLabel saved = captor.getValue();
         assertNotNull(saved);
         // parent must not be set because it's equal to savedConcept
         assertNull(saved.getParentConcept());

@@ -3,8 +3,10 @@ package fr.siamois.infrastructure.database.initializer.seeder;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.models.vocabulary.LocalizedConceptData;
 import fr.siamois.domain.models.vocabulary.Vocabulary;
+import fr.siamois.domain.models.vocabulary.label.ConceptPrefLabel;
 import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.LocalizedConceptDataRepository;
+import fr.siamois.infrastructure.database.repositories.vocabulary.label.ConceptLabelRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -16,6 +18,7 @@ import java.util.Optional;
 public class ConceptSeeder {
     private final ConceptRepository conceptRepo;
     private final LocalizedConceptDataRepository localizedConceptDataRepository;
+    private final ConceptLabelRepository conceptLabelRepository;
 
     public record ConceptKey(String vocabularyExtId, String conceptExtId) {}
 
@@ -25,14 +28,13 @@ public class ConceptSeeder {
     }
 
     private void saveLabel(Concept concept, String label, String lang) {
-        Optional<LocalizedConceptData> opt = localizedConceptDataRepository.findByConceptAndLangCode(concept.getId(), lang);
-        if (opt.isPresent()) {
-            LocalizedConceptData data = new LocalizedConceptData();
-            data.setLabel(label);
-            data.setConcept(concept);
-            data.setParentConcept(null);
-            data.setLangCode(lang);
-            localizedConceptDataRepository.save(data);
+        Optional<ConceptPrefLabel> opt = conceptLabelRepository.findPrefLabelByLangCodeAndConcept(lang, concept);
+        if (opt.isEmpty()) {
+            ConceptPrefLabel prefLabel = new ConceptPrefLabel();
+            prefLabel.setConcept(concept);
+            prefLabel.setLangCode(lang);
+            prefLabel.setLabel(label);
+            conceptLabelRepository.save(prefLabel);
         }
     }
 

@@ -13,21 +13,9 @@ import java.util.Optional;
 import java.util.Set;
 
 @Repository
-public interface LocalizedConceptDataRepository extends CrudRepository<LocalizedConceptData, ConceptLabel.Id> {
+public interface LocalizedConceptDataRepository extends CrudRepository<LocalizedConceptData, Long> {
 
-    @Query(
-            nativeQuery = true,
-            value = "SELECT lcd.* FROM localized_concept_data lcd " +
-                    "WHERE lcd.fk_field_parent_concept_id = :parentFieldConceptId " +
-                    "AND lcd.lang_code = :langCode " +
-                    "AND unaccent(lcd.label) ILIKE unaccent('%' || :input || '%') " +
-                    "LIMIT :limit"
-    )
-    Set<LocalizedConceptData> findByParentConceptAndFieldCodeAndInputLimited(
-            Long parentFieldConceptId,
-            String langCode,
-            String input,
-            int limit);
+
 
     @Query(
             nativeQuery = true,
@@ -36,8 +24,6 @@ public interface LocalizedConceptDataRepository extends CrudRepository<Localized
                     "AND lcd.lang_code = :langCode"
     )
     Optional<LocalizedConceptData> findByConceptAndLangCode(Long conceptId, String langCode);
-
-    List<LocalizedConceptData> findAllByParentConcept(Concept parentConcept, Limit limit);
 
     @Query(
             nativeQuery = true,
@@ -48,12 +34,4 @@ public interface LocalizedConceptDataRepository extends CrudRepository<Localized
 
     Set<LocalizedConceptData> findAllByConcept(Concept concept);
 
-    @Query(
-            nativeQuery = true,
-            value = "SELECT lcd.* FROM localized_concept_data lcd " +
-                    "WHERE lcd.fk_field_parent_concept_id = :parentConceptId " +
-                    "AND lcd.lang_code = :langCode " +
-                    "LIMIT :limit"
-    )
-    List<LocalizedConceptData> findAllByParentConceptAndLangCode(Long parentConceptId, String langCode, int limit);
 }

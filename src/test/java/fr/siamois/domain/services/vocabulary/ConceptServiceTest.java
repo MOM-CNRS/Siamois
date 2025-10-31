@@ -8,7 +8,7 @@ import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.models.vocabulary.LocalizedConceptData;
 import fr.siamois.domain.models.vocabulary.Vocabulary;
 import fr.siamois.domain.models.vocabulary.VocabularyType;
-import fr.siamois.domain.models.vocabulary.label.LocalizedAltConceptLabel;
+import fr.siamois.domain.models.vocabulary.label.ConceptAltLabel;
 import fr.siamois.infrastructure.api.ConceptApi;
 import fr.siamois.infrastructure.api.dto.ConceptBranchDTO;
 import fr.siamois.infrastructure.api.dto.FullInfoDTO;
@@ -17,7 +17,7 @@ import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRelated
 import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRelationRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.LocalizedConceptDataRepository;
-import fr.siamois.infrastructure.database.repositories.vocabulary.label.LocalizedAltConceptLabelRepository;
+import fr.siamois.infrastructure.database.repositories.vocabulary.label.ConceptLabelRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -60,7 +60,7 @@ class ConceptServiceTest {
     private ConceptChangeEventPublisher conceptChangeEventPublisher;
 
     @Mock
-    private LocalizedAltConceptLabelRepository localizedAltConceptLabelRepository;
+    private ConceptLabelRepository conceptLabelRepository;
 
     @InjectMocks
     private ConceptService conceptService;
@@ -516,10 +516,10 @@ class ConceptServiceTest {
         when(localizedConceptDataRepository.findAllByConcept(other)).thenReturn(Set.of(childData));
 
         // And localized alt labels exist for the concept
-        LocalizedAltConceptLabel alt = new LocalizedAltConceptLabel();
+        ConceptAltLabel alt = new ConceptAltLabel();
         alt.setConcept(other);
         alt.setParentConcept(concept);
-        when(localizedAltConceptLabelRepository.findAllByConcept(other)).thenReturn(Set.of(alt));
+        when(conceptLabelRepository.findAllByConcept(other)).thenReturn(Set.of(alt));
 
         // When
         conceptService.saveAllSubConceptOfIfUpdated(config);
@@ -531,7 +531,7 @@ class ConceptServiceTest {
         // Parent links on localized data should be nulled and saved
         verify(localizedConceptDataRepository, atLeastOnce()).save(argThat(d -> d.getParentConcept() == null));
         // Alt labels parent should be nulled and saved
-        verify(localizedAltConceptLabelRepository, atLeastOnce()).save(argThat(a -> a.getParentConcept() == null));
+        verify(conceptLabelRepository, atLeastOnce()).save(argThat(a -> a.getParentConcept() == null));
     }
 
     @Test
