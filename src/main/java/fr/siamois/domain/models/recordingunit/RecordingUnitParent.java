@@ -55,6 +55,10 @@ public abstract class RecordingUnitParent extends TraceableEntity {
     protected Concept geomorphologicalCycle;
 
     @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "fk_geomorphological_agent")
+    protected Concept geomorphologicalAgent;
+
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "fk_normalized_interpretation")
     protected Concept normalizedInterpretation;
 
@@ -70,6 +74,34 @@ public abstract class RecordingUnitParent extends TraceableEntity {
 
     @Column(name = "description")
     protected String description;
+
+    @Column(name = "matrix_composition")
+    protected String matrixComposition;
+
+    @Column(name = "matrix_color")
+    protected String matrixColor;
+
+    @Column(name = "matrix_texture")
+    protected String matrixTexture;
+
+    @Column(name = "erosion_shape")
+    protected String erosionShape;
+
+    @Column(name = "erosion_orientation")
+    protected String erosionOrientation;
+
+    @Column(name = "erosion_profile")
+    protected String erosionProfile;
+
+    @Column(name = "taq")
+    protected Integer taq;
+
+    @Column(name = "tpq")
+    protected Integer tpq;
+
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "fk_chronological_phase")
+    protected Concept chronologicalPhase;
 
     @NotNull
     @ManyToOne(fetch = FetchType.EAGER, optional = false)

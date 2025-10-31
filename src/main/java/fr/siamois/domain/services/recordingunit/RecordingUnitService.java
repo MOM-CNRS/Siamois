@@ -156,6 +156,17 @@ public class RecordingUnitService implements ArkEntityService {
             managedRecordingUnit.setValidated(recordingUnit.getValidated());
             managedRecordingUnit.setValidatedAt(recordingUnit.getValidatedAt());
             managedRecordingUnit.setValidatedBy(recordingUnit.getValidatedBy());
+            managedRecordingUnit.setTaq(recordingUnit.getTaq());
+            managedRecordingUnit.setTpq(recordingUnit.getTpq());
+            managedRecordingUnit.setMatrixColor(recordingUnit.getMatrixColor());
+            managedRecordingUnit.setMatrixComposition(recordingUnit.getMatrixComposition());
+            managedRecordingUnit.setMatrixTexture(recordingUnit.getMatrixTexture());
+            managedRecordingUnit.setErosionOrientation(recordingUnit.getErosionOrientation());
+            managedRecordingUnit.setErosionProfile(recordingUnit.getErosionProfile());
+            managedRecordingUnit.setErosionShape(recordingUnit.getErosionShape());
+
+            managedRecordingUnit.setChronologicalPhase(recordingUnit.getChronologicalPhase());
+            managedRecordingUnit.setGeomorphologicalAgent(recordingUnit.getGeomorphologicalAgent());
 
             CustomFormResponse managedFormResponse;
 

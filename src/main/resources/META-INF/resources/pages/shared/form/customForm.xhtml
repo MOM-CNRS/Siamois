@@ -11,23 +11,15 @@
     <!--@elvariable id="root" type="String" -->
     <!--@elvariable id="panelId" type="String" -->
 
-    <c:forEach items="#{layout}" var="customFormPanel" varStatus="status">
-        <p:panel header="#{spatialUnitFieldBean.resolvePanelLabel(customFormPanel)}" id="customFormPanel-#{status.index}-#{prefix}"
-                 class="sia-form-panel"
-                 toggleable="true">
 
-            <ui:include src="/pages/shared/form/customFormPanelContent.xhtml">
-                <ui:param name="bean" value="#{panelModel}"/>
-                <ui:param name="customFormPanel" value="#{customFormPanel}"/>
-                <ui:param name="readOnly" value="#{readOnly}"/>
-                <ui:param name="prefix" value="#{prefix}"/>
-                <ui:param name="root" value="#{root}"/>
-                <ui:param name="updateTargetsOnBlur" value="#{panelId}"/>
-                <ui:param name="statusIndex" value="#{status.index}"/>
-            </ui:include>
-
-        </p:panel>
-    </c:forEach>
+    <c:forEach items="#{layout}" var="customFormPanel" varStatus="status"> <p:panel
+            header="#{spatialUnitFieldBean.resolvePanelLabel(customFormPanel)}"
+            id="customFormPanel-#{status.index}-#{prefix}" class="sia-form-panel" toggleable="true"> <ui:include
+            src="/pages/shared/form/customFormPanelContent.xhtml"> <ui:param name="bean" value="#{panelModel}"/>
+        <ui:param name="customFormPanel" value="#{customFormPanel}"/> <ui:param name="readOnly" value="#{readOnly}"/>
+        <ui:param name="prefix" value="#{prefix}"/> <ui:param name="root" value="#{root}"/> <ui:param
+                name="updateTargetsOnBlur" value="#{panelId}"/> <ui:param name="statusIndex" value="#{status.index}"/>
+    </ui:include> </p:panel> </c:forEach>
 
 
 </ui:fragment>

@@ -101,6 +101,9 @@ public class RecordingUnit extends RecordingUnitParent implements ArkEntity, Ref
     public static final String GEOMORPHO_CYCLE_FIELD_CODE = "SIARU.GEOMORPHO";
 
     @FieldCode
+    public static final String GEOMORPHO_AGENT_FIELD_CODE = "SIARU.GEOMORPHOAGENT";
+
+    @FieldCode
     public static final String INTERPRETATION_FIELD_CODE = "SIARU.INTERPRETATION";
 
     @FieldCode
@@ -149,7 +152,9 @@ public class RecordingUnit extends RecordingUnitParent implements ArkEntity, Ref
     public List<String> getBindableFieldNames() {
         return List.of("creationTime", "startDate", "endDate", "identifier",
                 "contributors", "type", "secondaryType", "thirdType", "actionUnit", "spatialUnit",
-                "geomorphologicalCycle", "normalizedInterpretation", "author");
+                "geomorphologicalCycle", "normalizedInterpretation", "author", "geomorphologicalAgent",
+                "matrixComposition", "matrixColor", "matrixTexture", "erosionShape", "erosionOrientation",
+                "erosionProfile", "taq", "tpq", "chronologicalPhase");
     }
 
     // ----------- Concepts for system fields
