@@ -3,6 +3,7 @@ package fr.siamois.infrastructure.database.initializer.seeder.customfield;
 import fr.siamois.domain.models.exceptions.database.DatabaseDataInitException;
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.customfield.CustomFieldSelectOneFromFieldCode;
+import fr.siamois.domain.models.form.customfield.CustomFieldText;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.infrastructure.database.initializer.seeder.ConceptSeeder;
 import fr.siamois.infrastructure.database.repositories.form.CustomFieldRepository;
@@ -62,10 +63,15 @@ public class CustomFieldSeeder {
                 f.setConcept(c);
                 f.setLabel(s.label());
 
+
                 if (f instanceof CustomFieldSelectOneFromFieldCode df) {
                     df.setStyleClass(s.styleClass());
                     df.setIconClass(s.iconClass());
                     df.setFieldCode(s.fieldCode());
+                }
+
+                else if (f instanceof CustomFieldText df) {
+                    df.setIsTextArea(s.isTextArea());
                 }
 
                 customFieldRepository.save(f);

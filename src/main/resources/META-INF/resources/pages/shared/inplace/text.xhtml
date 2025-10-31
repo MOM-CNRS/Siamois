@@ -25,11 +25,10 @@
                 <h:outputText value="#{cc.attrs.answer.value}"/>
             </f:facet>
             <f:facet name="input">
-                #{cc.attrs.field.isTextArea}
                 <h:panelGroup id="input" rendered="true">
-                    #{cc.attrs.field.isTextArea.toString()}
                     <h:panelGroup rendered="#{cc.attrs.field.isTextArea}">
                         <p:inputTextarea value="#{cc.attrs.answer.value}"
+                                         style="width: 100%"
                                          styleClass="#{cc.attrs.answer.hasBeenModified ? 'track-change sia-modified-field': 'track-change'}"
                                          label="#{cc.attrs.label}"
                                          required="#{cc.attrs.required}"

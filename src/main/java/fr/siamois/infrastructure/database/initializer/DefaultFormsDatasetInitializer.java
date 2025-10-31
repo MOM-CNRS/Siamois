@@ -63,7 +63,8 @@ public class DefaultFormsDatasetInitializer implements DatabaseInitializer {
             new ConceptSeeder.ConceptSpec(DEFAULT_VOCABULARY_ID, "4287642", "Profil de l'érosion", "fr"),
             new ConceptSeeder.ConceptSpec(DEFAULT_VOCABULARY_ID, "4287614", "TAQ", "fr"),
             new ConceptSeeder.ConceptSpec(DEFAULT_VOCABULARY_ID, "4287613", "TPQ", "fr"),
-            new ConceptSeeder.ConceptSpec(DEFAULT_VOCABULARY_ID, "4287612", "Phase chronologique", "fr")
+            new ConceptSeeder.ConceptSpec(DEFAULT_VOCABULARY_ID, "4287612", "Phase chronologique", "fr"),
+            new ConceptSeeder.ConceptSpec(DEFAULT_VOCABULARY_ID, "4287611", "Description", "fr")
     );
 
     // Default Siamois field
@@ -247,6 +248,17 @@ public class DefaultFormsDatasetInitializer implements DatabaseInitializer {
                     null,
                     null,
                     null
+            ),
+            new CustomFieldSeederSpec(
+                    CustomFieldText.class,
+                    true,
+                    "recordingunit.field.description",
+                    new ConceptSeeder.ConceptKey(DEFAULT_VOCABULARY_ID, "4287611"),
+                    "description",
+                    null,
+                    null,
+                    null,
+                    true
             )
     );
 
@@ -306,6 +318,12 @@ public class DefaultFormsDatasetInitializer implements DatabaseInitializer {
                                                             false,
                                                             false,
                                                             fields.get(2),
+                                                            UI_G_12_UI_MD_6_UI_LG_3
+                                                    ),
+                                                    new CustomColDTO(
+                                                            false,
+                                                            false,
+                                                            fields.get(18),
                                                             UI_G_12_UI_MD_6_UI_LG_3
                                                     )
 
@@ -369,6 +387,12 @@ public class DefaultFormsDatasetInitializer implements DatabaseInitializer {
                                                                     false,
                                                                     fields.get(2),
                                                                     UI_G_12_UI_MD_6_UI_LG_3
+                                                            ),
+                                                            new CustomColDTO(
+                                                                    false,
+                                                                    false,
+                                                                    fields.get(18),
+                                                                    "ui-g-12 ui-md-6 ui-lg-4"
                                                             )
                                                     )
                                             )),
@@ -524,6 +548,12 @@ public class DefaultFormsDatasetInitializer implements DatabaseInitializer {
                                                             false,
                                                             false,
                                                             fields.get(0),
+                                                            UI_G_12_UI_MD_6_UI_LG_3
+                                                    ),
+                                                    new CustomColDTO(
+                                                            false,
+                                                            false,
+                                                            fields.get(18),
                                                             UI_G_12_UI_MD_6_UI_LG_3
                                                     )
                                             )
