@@ -206,11 +206,9 @@ public class FieldConfigurationService {
         return institutionConfig.get();
     }
 
-    public List<Concept> fetchAutocomplete(UserInfo info, String fieldCode, String input) throws NoConfigForFieldException {
+    public List<ConceptLabel> fetchAutocomplete(UserInfo info, String fieldCode, String input) throws NoConfigForFieldException {
         ConceptFieldConfig config = findConfigurationForFieldCode(info, fieldCode);
-        return labelService.findMatchingConcepts(config.getConcept(), info.getLang(), input, LIMIT_RESULTS).stream()
-                .map(ConceptLabel::getConcept)
-                .toList();
+        return labelService.findMatchingConcepts(config.getConcept(), info.getLang(), input, LIMIT_RESULTS);
     }
 
 }

@@ -24,9 +24,7 @@ public class LabelBean implements Serializable {
     private final transient LabelService labelService;
     private final SessionSettingsBean sessionSettingsBean;
     private final transient LocalizedConceptDataRepository localizedConceptDataRepository;
-
-    private static final List<String> FALLBACK_LANGS = List.of("en", "fr");
-
+    
     private final Map<String, Map<Concept, String>> labelCache = new HashMap<>();
 
     @EventListener(ConceptChangeEvent.class)
@@ -83,14 +81,6 @@ public class LabelBean implements Serializable {
         if (preferedLang.isPresent()) {
             addToCache(userInfo.getLang(), concept, preferedLang.get());
             return preferedLang.get();
-        }
-
-        for (String lang : FALLBACK_LANGS) {
-            Optional<String> optFallbackLang = searchMatchingLang(lang, concept, labels);
-            if (optFallbackLang.isPresent()) {
-                addToCache(lang, concept, optFallbackLang.get());
-                return labelWithLangTag(optFallbackLang.get(), lang);
-            }
         }
 
         if (!labels.isEmpty()) {

@@ -9,6 +9,7 @@ import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.settings.ConceptFieldConfig;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.*;
+import fr.siamois.domain.models.vocabulary.label.ConceptLabel;
 import fr.siamois.infrastructure.api.ConceptApi;
 import fr.siamois.infrastructure.api.dto.ConceptBranchDTO;
 import fr.siamois.infrastructure.api.dto.FullInfoDTO;
@@ -298,7 +299,7 @@ class FieldConfigurationServiceTest {
                 .thenReturn(Optional.of(cfc));
         when(labelService.findMatchingConcepts(concept, userInfo.getLang(), query, FieldConfigurationService.LIMIT_RESULTS)).thenReturn(List.of(lcd));
 
-        List<Concept> result = service.fetchAutocomplete(userInfo, fieldCode, query);
+        List<Concept> result = service.fetchAutocomplete(userInfo, fieldCode, query).stream().map(ConceptLabel::getConcept).toList();
 
         assertThat(result)
                 .isNotNull()

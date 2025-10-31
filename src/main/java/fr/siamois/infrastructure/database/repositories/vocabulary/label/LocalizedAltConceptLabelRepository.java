@@ -24,4 +24,13 @@ public interface LocalizedAltConceptLabelRepository extends CrudRepository<Local
     List<LocalizedAltConceptLabel> findAllByParentConceptAndInputLimited(Long fieldConceptId, String langCode, String input, int limit);
 
     Set<LocalizedAltConceptLabel> findAllByConcept(Concept concept);
+
+    @Query(
+            nativeQuery = true,
+            value = "SELECT lcd.* FROM localized_alt_concept_label lcd " +
+                    "WHERE lcd.fk_field_parent_concept_id = :parentConceptId " +
+                    "AND lcd.lang_code = :langCode " +
+                    "LIMIT :limit"
+    )
+    List<LocalizedAltConceptLabel> findAllByParentConceptAndLangCodeLimited(Long parentConceptId, String langCode, int limit);
 }
