@@ -56,6 +56,11 @@ public class LabelBean implements Serializable {
         labelCache.computeIfAbsent(lang, k -> new HashMap<>()).put(concept, label);
     }
 
+    /**
+     * Find the pref label of the given concept label
+     * @param conceptLabel the concept label
+     * @return the pref label
+     */
     public String findPrefLabelof(ConceptLabel conceptLabel) {
         if (conceptLabel.getLabelType() == LabelType.PREF_LABEL) {
             return conceptLabel.getLabel();
@@ -64,6 +69,11 @@ public class LabelBean implements Serializable {
         }
     }
 
+    /**
+     * Find the best matching pref label for the given concept based on the user's preferred language
+     * @param concept the concept to find the label for
+     * @return the best matching label, or the concept's external ID if no label is found
+     */
     public String findLabelOf(Concept concept) {
         if (concept == null) return null;
         UserInfo userInfo = sessionSettingsBean.getUserInfo();
