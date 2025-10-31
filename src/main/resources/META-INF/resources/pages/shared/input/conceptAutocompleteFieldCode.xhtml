@@ -27,10 +27,10 @@
         <p:autoComplete value="#{cc.attrs.selectedConcept}"
                         id="conceptAutocomplete"
                         completeMethod="#{spatialUnitFieldBean.completeWithFieldCode}"
-                        var="field"
-                        label="#{cc.attrs.label}"
+                        var="conceptLabel"
+                        label="#{conceptLabel.label}"
                         panelStyleClass="#{cc.attrs.panelStyleClass}"
-                        itemValue="#{field}"
+                        itemValue="#{conceptLabel.concept}"
                         disabled="#{cc.attrs.disabled}"
                         inputStyleClass="#{cc.attrs.inputStyleClass}"
                         required="#{cc.attrs.required}"
@@ -38,7 +38,6 @@
                         forceSelection="true"
                         scrollHeight="300"
                         dropdown="true"
-                        itemLabel="#{labelBean.findLabelOf(field)}"
                         placeholder="#{langBean.msg('common.action.chooseConcept')}"
                         showEmptyMessage="false"
         >
@@ -61,8 +60,11 @@
             </p:column>
             <p:column>
                 <div style="display:flex; flex-direction: column">
-                    <h:outputText style="vertical-align: middle; margin-left: .5rem" value="#{labelBean.findLabelOf(field)}"/>
-                    <small>#{field.vocabulary.baseUri} - #{labelBean.findVocabularyLabelOf(field)}</small>
+                    <h:outputText style="vertical-align: middle" value="#{conceptLabel.label}"/>
+                    <h:panelGroup rendered="#{conceptLabel.isAltLabel()}">
+                        <small>#{labelBean.findPrefLabelof(conceptLabel)}</small>
+                    </h:panelGroup>
+                    <small>#{conceptLabel.concept.vocabulary.baseUri} - #{labelBean.findVocabularyLabelOf(conceptLabel.concept)}</small>
                 </div>
 
             </p:column>

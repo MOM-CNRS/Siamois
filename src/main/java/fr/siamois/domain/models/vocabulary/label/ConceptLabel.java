@@ -54,6 +54,10 @@ public abstract class ConceptLabel {
         return id.langCode;
     }
 
+    public boolean isAltLabel() {
+        return getLabelType() == LabelType.ALT_LABEL;
+    }
+
     @Embeddable
     @Data
     @AllArgsConstructor
