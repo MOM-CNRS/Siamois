@@ -38,7 +38,7 @@ public abstract class ConceptLabel {
     /**
      *  This field is used as caching for faster search when autocompleting labels.
      *  This parent concept is a concept that is associated with the field in the application.
-     *  In this field, the value can be the current concept associated to the label.
+     *  In this field, the value can be the current concept associated with the label.
      */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "fk_field_parent_concept_id")
