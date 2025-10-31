@@ -27,6 +27,7 @@ import fr.siamois.ui.bean.SessionSettingsBean;
 import fr.siamois.utils.MessageUtils;
 import jakarta.faces.application.FacesMessage;
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -46,6 +47,7 @@ import static fr.siamois.utils.MessageUtils.displayErrorMessage;
 @Setter
 @Component
 @SessionScoped
+@RequiredArgsConstructor
 public class ProfileSettingsBean implements Serializable {
 
     private final SessionSettingsBean sessionSettingsBean;
@@ -69,24 +71,6 @@ public class ProfileSettingsBean implements Serializable {
 
     private String fThesaurusUrl;
     private Long fDefaultInstitutionId;
-
-    public ProfileSettingsBean(SessionSettingsBean sessionSettingsBean,
-                               PersonService personService,
-                               FieldConfigurationService fieldConfigurationService,
-                               VocabularyService vocabularyService,
-                               InstitutionService institutionService,
-                               LangService langService,
-                               LangBean langBean,
-                               LangageChangeEventPublisher langageChangeEventPublisher) {
-        this.sessionSettingsBean = sessionSettingsBean;
-        this.personService = personService;
-        this.fieldConfigurationService = fieldConfigurationService;
-        this.vocabularyService = vocabularyService;
-        this.institutionService = institutionService;
-        this.langService = langService;
-        this.langBean = langBean;
-        this.langageChangeEventPublisher = langageChangeEventPublisher;
-    }
 
     @EventListener(InstitutionChangeEvent.class)
     public void init() {
