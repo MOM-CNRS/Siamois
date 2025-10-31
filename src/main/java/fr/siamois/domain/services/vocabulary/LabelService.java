@@ -31,7 +31,6 @@ import java.util.Set;
 public class LabelService {
 
     private final VocabularyLabelRepository vocabularyLabelRepository;
-    private final LocalizedConceptDataRepository localizedConceptDataRepository;
     private final ConceptLabelRepository conceptLabelRepository;
 
     /**

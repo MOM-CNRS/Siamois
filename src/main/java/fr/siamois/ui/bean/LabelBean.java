@@ -28,10 +28,12 @@ public class LabelBean implements Serializable {
     private final ConceptLabelRepository conceptLabelRepository;
 
     private final Map<String, Map<Concept, String>> prefLabelCache = new HashMap<>();
+    private final Map<Long, ConceptLabel> idToLabelCache = new HashMap<>();
 
     @EventListener(ConceptChangeEvent.class)
     public void resetCache() {
         prefLabelCache.clear();
+        idToLabelCache.clear();
     }
 
     private Optional<String> searchMatchingLangAndPrefLabel(String lang, Concept concept, List<ConceptPrefLabel> existingLabels) {
@@ -75,10 +77,25 @@ public class LabelBean implements Serializable {
 
     }
 
+    public String findLabelFrom(ConceptLabel label) {
+        if (label == null) return null;
+        return label.getLabel();
+    }
+
+
     public String findVocabularyLabelOf(Concept concept) {
         if (concept == null) return null;
         UserInfo info = sessionSettingsBean.getUserInfo();
         return labelService.findLabelOf(concept.getVocabulary(), info.getLang()).getValue();
+    }
+
+    public Optional<ConceptLabel> findById(Long id) {
+        if (idToLabelCache.containsKey(id)) {
+            return Optional.of(idToLabelCache.get(id));
+        }
+        Optional<ConceptLabel> label = conceptLabelRepository.findById(id);
+        label.ifPresent(l -> idToLabelCache.put(id, l));
+        return label;
     }
 
 }

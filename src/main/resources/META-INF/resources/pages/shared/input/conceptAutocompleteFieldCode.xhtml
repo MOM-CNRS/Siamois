@@ -8,7 +8,7 @@
     <cc:interface>
 
         <cc:attribute name="itemSelectListener" required="false" method-signature="void &lt;java.lang.String&gt;(java.lang.Object)" />
-        <cc:attribute name="selectedConcept" type="fr.siamois.domain.models.vocabulary.Concept" required="true"/>
+        <cc:attribute name="selectedConcept" type="fr.siamois.domain.models.vocabulary.label.ConceptLabel" required="true"/>
         <cc:attribute name="editConceptUrl" required="true"/>
         <cc:attribute name="disabled" required="false" default="false"/>
         <cc:attribute name="ajaxUpdateTargets" required="false" default="@form"/>
@@ -28,13 +28,13 @@
                         id="conceptAutocomplete"
                         completeMethod="#{spatialUnitFieldBean.completeWithFieldCode}"
                         var="conceptLabel"
-                        label="#{conceptLabel.label}"
                         panelStyleClass="#{cc.attrs.panelStyleClass}"
                         itemValue="#{conceptLabel.concept}"
+                        itemLabel="#{conceptLabel.label}"
                         disabled="#{cc.attrs.disabled}"
                         inputStyleClass="#{cc.attrs.inputStyleClass}"
                         required="#{cc.attrs.required}"
-                        converter="#{conceptConverter}"
+                        converter="#{conceptLabelConverter}"
                         forceSelection="true"
                         scrollHeight="300"
                         dropdown="true"

@@ -14,6 +14,7 @@ import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.models.vocabulary.Vocabulary;
 import fr.siamois.domain.models.vocabulary.VocabularyType;
+import fr.siamois.domain.models.vocabulary.label.ConceptLabel;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.document.DocumentService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
@@ -197,7 +198,7 @@ public abstract class AbstractSingleEntity<T> extends AbstractPanel implements S
     }
 
 
-    public List<Concept> completeDependentConceptChildren(
+    public List<ConceptLabel> completeDependentConceptChildren(
             String input
     ) {
         return List.of();

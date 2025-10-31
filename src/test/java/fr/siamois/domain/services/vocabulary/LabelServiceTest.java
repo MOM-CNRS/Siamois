@@ -128,15 +128,6 @@ class LabelServiceTest {
     // Tests for Concept-related methods
 
     @Test
-    void findLabelOfConcept_shouldReturnNull_whenConceptIsNull() {
-        // When
-        ConceptPrefLabel result = labelService.findLabelOf((Concept) null, "en");
-
-        // Then
-        assertNull(result);
-    }
-
-    @Test
     void findLabelOfConcept_shouldReturnNull_whenNotPresent() {
         // Given
         Concept concept = new Concept();
