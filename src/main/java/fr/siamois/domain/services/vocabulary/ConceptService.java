@@ -189,10 +189,10 @@ public class ConceptService {
     private void processDeletedConcepts(Map<String, Concept> urlToSavedConceptMap, Concept parentSavedConcept) {
         Set<Concept> conceptsInBranch = new HashSet<>(urlToSavedConceptMap.values());
         long nbdeletedConcepts = 0;
-        for (LocalizedConceptData data : localizedConceptDataRepository.findAllByParentConcept(parentSavedConcept, Limit.unlimited())) {
-            Concept currentConcept = data.getConcept();
-            if (!currentConcept.isDeleted() && !conceptsInBranch.contains(data.getConcept())) {
-                markConceptAsDeletedAndSetAllParentFieldToNull(data, currentConcept);
+        for (LocalizedConceptData someConceptData : localizedConceptDataRepository.findAllWithDistinctConceptByParentConcept(parentSavedConcept.getId())) {
+            Concept currentConcept = someConceptData.getConcept();
+            if (!currentConcept.isDeleted() && !conceptsInBranch.contains(someConceptData.getConcept())) {
+                markConceptAsDeletedAndSetAllParentFieldToNull(someConceptData, currentConcept);
                 nbdeletedConcepts++;
             }
         }
@@ -202,8 +202,10 @@ public class ConceptService {
     private void markConceptAsDeletedAndSetAllParentFieldToNull(LocalizedConceptData data, Concept currentConcept) {
         currentConcept.setDeleted(true);
         conceptRepository.save(currentConcept);
-        data.setParentConcept(null);
-        localizedConceptDataRepository.save(data);
+        for (LocalizedConceptData conceptData : localizedConceptDataRepository.findAllByConcept(currentConcept)) {
+            conceptData.setParentConcept(null);
+            localizedConceptDataRepository.save(conceptData);
+        }
         for (LocalizedAltConceptLabel altConcept : localizedAltConceptLabelRepository.findAllByConcept(currentConcept)) {
             altConcept.setParentConcept(null);
             localizedAltConceptLabelRepository.save(altConcept);

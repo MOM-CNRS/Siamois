@@ -39,5 +39,12 @@ public interface LocalizedConceptDataRepository extends CrudRepository<Localized
 
     List<LocalizedConceptData> findAllByParentConcept(Concept parentConcept, Limit limit);
 
-    List<LocalizedConceptData> findAllByConcept(Concept concept);
+    @Query(
+            nativeQuery = true,
+            value = "SELECT DISTINCT ON (lcd.fk_concept_id) lcd.* FROM localized_concept_data lcd " +
+                    "WHERE lcd.fk_field_parent_concept_id = :parentConceptId"
+    )
+    Set<LocalizedConceptData> findAllWithDistinctConceptByParentConcept(Long parentConceptId);
+
+    Set<LocalizedConceptData> findAllByConcept(Concept concept);
 }
