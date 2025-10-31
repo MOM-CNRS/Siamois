@@ -191,14 +191,14 @@ public class ConceptService {
         for (LocalizedConceptData someConceptData : localizedConceptDataRepository.findAllWithDistinctConceptByParentConcept(parentSavedConcept.getId())) {
             Concept currentConcept = someConceptData.getConcept();
             if (!currentConcept.isDeleted() && !conceptsInBranch.contains(someConceptData.getConcept())) {
-                markConceptAsDeletedAndSetAllParentFieldToNull(someConceptData, currentConcept);
+                markConceptAsDeletedAndSetAllParentFieldToNull(currentConcept);
                 nbdeletedConcepts++;
             }
         }
         log.debug("Mark as deleted {} concepts for parent concept {} in {}", nbdeletedConcepts, parentSavedConcept.getExternalId(), parentSavedConcept.getVocabulary().getExternalVocabularyId());
     }
 
-    private void markConceptAsDeletedAndSetAllParentFieldToNull(LocalizedConceptData data, Concept currentConcept) {
+    private void markConceptAsDeletedAndSetAllParentFieldToNull(Concept currentConcept) {
         currentConcept.setDeleted(true);
         conceptRepository.save(currentConcept);
         for (LocalizedConceptData conceptData : localizedConceptDataRepository.findAllByConcept(currentConcept)) {
