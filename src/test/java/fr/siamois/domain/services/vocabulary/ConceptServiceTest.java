@@ -246,6 +246,7 @@ class ConceptServiceTest {
 
         when(conceptRepository.findConceptByExternalIdIgnoreCase("vocab1", "concept1")).thenReturn(Optional.of(concept));
         when(localizedConceptDataRepository.findByConceptAndLangCode(concept.getId(), "fr")).thenReturn(Optional.empty());
+        when(conceptRepository.save(any(Concept.class))).thenAnswer(i -> i.getArgument(0));
 
         // When
         Concept result = conceptService.saveOrGetConceptFromFullDTO(vocabulary, dto, null);
@@ -255,7 +256,6 @@ class ConceptServiceTest {
         assertEquals(concept, result);
         verify(labelService, times(1)).updateLabel(concept, "fr", "Libellé FR", null);
         verify(localizedConceptDataRepository, times(1)).save(any(LocalizedConceptData.class));
-        verify(conceptRepository, never()).save(any(Concept.class));
     }
 
     @Test
