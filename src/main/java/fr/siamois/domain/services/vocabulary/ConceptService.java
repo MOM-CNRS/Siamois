@@ -5,7 +5,8 @@ import fr.siamois.domain.models.exceptions.ErrorProcessingExpansionException;
 import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.settings.ConceptFieldConfig;
 import fr.siamois.domain.models.vocabulary.*;
-import fr.siamois.domain.models.vocabulary.label.LocalizedAltConceptLabel;
+import fr.siamois.domain.models.vocabulary.label.ConceptAltLabel;
+import fr.siamois.domain.models.vocabulary.label.ConceptLabel;
 import fr.siamois.infrastructure.api.ConceptApi;
 import fr.siamois.infrastructure.api.dto.ConceptBranchDTO;
 import fr.siamois.infrastructure.api.dto.FullInfoDTO;
@@ -14,7 +15,7 @@ import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRelated
 import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRelationRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.LocalizedConceptDataRepository;
-import fr.siamois.infrastructure.database.repositories.vocabulary.label.LocalizedAltConceptLabelRepository;
+import fr.siamois.infrastructure.database.repositories.vocabulary.label.ConceptLabelRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -38,7 +39,7 @@ public class ConceptService {
     private final ConceptRelationRepository conceptRelationRepository;
     private final LocalizedConceptDataRepository  localizedConceptDataRepository;
     private final ConceptChangeEventPublisher conceptChangeEventPublisher;
-    private final LocalizedAltConceptLabelRepository localizedAltConceptLabelRepository;
+    private final ConceptLabelRepository conceptLabelRepository;
 
     /**
      * Saves a concept if it does not already exist in the repository.
@@ -138,9 +139,6 @@ public class ConceptService {
             localizedConceptData.setLangCode(lang);
         }
         localizedConceptData.setDefinition(definition);
-        if (fieldParentConcept != null && !fieldParentConcept.equals(savedConcept)) {
-            localizedConceptData.setParentConcept(fieldParentConcept);
-        }
         localizedConceptDataRepository.save(localizedConceptData);
     }
 
@@ -187,28 +185,20 @@ public class ConceptService {
 
     private void processDeletedConcepts(Map<String, Concept> urlToSavedConceptMap, Concept parentSavedConcept) {
         Set<Concept> conceptsInBranch = new HashSet<>(urlToSavedConceptMap.values());
-        long nbdeletedConcepts = 0;
-        for (LocalizedConceptData someConceptData : localizedConceptDataRepository.findAllWithDistinctConceptByParentConcept(parentSavedConcept.getId())) {
-            Concept currentConcept = someConceptData.getConcept();
-            if (!currentConcept.isDeleted() && !conceptsInBranch.contains(someConceptData.getConcept())) {
-                markConceptAsDeletedAndSetAllParentFieldToNull(currentConcept);
-                nbdeletedConcepts++;
+        Set<Concept> deletedConcepts = new HashSet<>();
+        for (ConceptLabel conceptLabel : conceptLabelRepository.findAllByParentConcept(parentSavedConcept)) {
+            Concept currentConcept = conceptLabel.getConcept();
+            if (!currentConcept.isDeleted() && !conceptsInBranch.contains(conceptLabel.getConcept())) {
+                if (!deletedConcepts.contains(currentConcept)) {
+                    currentConcept.setDeleted(true);
+                    conceptRepository.save(currentConcept);
+                    deletedConcepts.add(currentConcept);
+                }
+                conceptLabel.setParentConcept(null);
+                conceptLabelRepository.save(conceptLabel);
             }
         }
-        log.debug("Mark as deleted {} concepts for parent concept {} in {}", nbdeletedConcepts, parentSavedConcept.getExternalId(), parentSavedConcept.getVocabulary().getExternalVocabularyId());
-    }
-
-    private void markConceptAsDeletedAndSetAllParentFieldToNull(Concept currentConcept) {
-        currentConcept.setDeleted(true);
-        conceptRepository.save(currentConcept);
-        for (LocalizedConceptData conceptData : localizedConceptDataRepository.findAllByConcept(currentConcept)) {
-            conceptData.setParentConcept(null);
-            localizedConceptDataRepository.save(conceptData);
-        }
-        for (LocalizedAltConceptLabel altConcept : localizedAltConceptLabelRepository.findAllByConcept(currentConcept)) {
-            altConcept.setParentConcept(null);
-            localizedAltConceptLabelRepository.save(altConcept);
-        }
+        log.debug("Mark as deleted {} concepts for parent concept {} in {}", deletedConcepts.size(), parentSavedConcept.getExternalId(), parentSavedConcept.getVocabulary().getExternalVocabularyId());
     }
 
     private void saveAllConceptDataAndRelations(ConceptBranchDTO branchDTO, Map<String, Concept> urlToSavedConceptMap, Concept parentSavedConcept, Vocabulary vocabulary) {

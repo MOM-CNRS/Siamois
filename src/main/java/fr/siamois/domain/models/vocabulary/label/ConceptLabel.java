@@ -14,26 +14,31 @@ import java.util.Objects;
  */
 @Getter
 @Setter
-@MappedSuperclass
+@Entity
+@Table(name = "concept_label", uniqueConstraints = {
+        @UniqueConstraint(columnNames = {"fk_concept_id", "lang_code", "label_type"})
+})
+@Inheritance(strategy = InheritanceType.SINGLE_TABLE)
+@DiscriminatorColumn(name = "label_type", discriminatorType = DiscriminatorType.STRING)
 public abstract class ConceptLabel {
 
-    @EmbeddedId
-    protected Id id;
-
-    protected ConceptLabel() {
-        this.id = new Id();
-    }
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "concept_label_id")
+    protected Long id;
 
     /**
      * The concept associated with this label.
      */
-    @MapsId("conceptId")
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "fk_concept_id", nullable = false)
     protected Concept concept;
 
     @Column(name = "label", nullable = false, columnDefinition = "citext")
     protected String label;
+
+    @Column(name = "lang_code", nullable = false, length = 3)
+    protected String langCode;
 
     /**
      *  This field is used as caching for faster search when autocompleting labels.
@@ -46,31 +51,8 @@ public abstract class ConceptLabel {
 
     public abstract LabelType getLabelType();
 
-    public void setLangCode(String langCode) {
-        id.langCode = langCode;
-    }
-
-    public String getLangCode() {
-        return id.langCode;
-    }
-
     public boolean isAltLabel() {
         return getLabelType() == LabelType.ALT_LABEL;
-    }
-
-    @Embeddable
-    @Data
-    @AllArgsConstructor
-    @NoArgsConstructor
-    public static class Id {
-        protected Long conceptId;
-        protected String langCode;
-
-        public Id(Concept concept, String langCode) {
-            this.conceptId = concept.getId();
-            this.langCode = langCode;
-        }
-
     }
 
     @Override

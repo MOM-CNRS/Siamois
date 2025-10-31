@@ -56,13 +56,13 @@
 
             <p:column>
                 <p:commandButton icon="bi bi-box-arrow-up-right" styleClass="btn btn-primary"
-                                 onclick="event.stopPropagation(); window.open('#{field.vocabulary.baseUri}/?idc=#{field.externalId}&amp;idt=#{field.vocabulary.externalVocabularyId}', '_blank'); return false;" />
+                                 onclick="event.stopPropagation(); window.open('#{conceptLabel.concept.vocabulary.baseUri}/?idc=#{conceptLabel.concept.externalId}&amp;idt=#{field.vocabulary.externalVocabularyId}', '_blank'); return false;" />
             </p:column>
             <p:column>
                 <div style="display:flex; flex-direction: column">
                     <h:outputText style="vertical-align: middle" value="#{conceptLabel.label}"/>
                     <h:panelGroup rendered="#{conceptLabel.isAltLabel()}">
-                        <small>#{labelBean.findPrefLabelof(conceptLabel)}</small>
+                        <small>#{labelBean.findPrefLabelOf(conceptLabel)}</small>
                     </h:panelGroup>
                     <small>#{conceptLabel.concept.vocabulary.baseUri} - #{labelBean.findVocabularyLabelOf(conceptLabel.concept)}</small>
                 </div>
