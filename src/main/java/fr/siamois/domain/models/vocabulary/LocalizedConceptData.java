@@ -9,8 +9,8 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 
 /**
- * Entity representing localized data for a concept, including its definition.
- * May be extended in the future to include additional fieds such as notes, examples, etc.
+ * Entity representing localized data for a concept, including its definition and prefLabel.
+ * May be extended in the future to include additional fields such as notes, examples, etc.
  *
  * @author Julien Linget
  */
