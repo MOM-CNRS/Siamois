@@ -8,6 +8,12 @@ import jakarta.persistence.Table;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
+/**
+ * Entity representing localized data for a concept, including its definition.
+ * May be extended in the future to include additional fieds such as notes, examples, etc.
+ *
+ * @author Julien Linget
+ */
 @EqualsAndHashCode(callSuper = true)
 @Data
 @Entity
