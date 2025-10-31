@@ -527,7 +527,7 @@ class ConceptServiceTest {
         // Then
         verify(conceptChangeEventPublisher, times(1)).publishEvent(config.getFieldCode());
         // The concept should be saved as deleted
-        verify(conceptRepository, atLeastOnce()).save(argThat(c -> c instanceof Concept && ((Concept) c).isDeleted()));
+        verify(conceptRepository, atLeastOnce()).save(argThat(c -> c != null && c.isDeleted()));
         // Parent links on localized data should be nulled and saved
         verify(localizedConceptDataRepository, atLeastOnce()).save(argThat(d -> d.getParentConcept() == null));
         // Alt labels parent should be nulled and saved
@@ -539,7 +539,7 @@ class ConceptServiceTest {
         // Given
         ConceptFieldConfig config = new ConceptFieldConfig();
         config.setId(21L);
-        config.setFieldCode("FIELD-DELETE-ALREADY");
+        config.setFieldCode("SIATEST");
         config.setConcept(concept);
 
         // Build branch with only the parent but with narrower present

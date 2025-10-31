@@ -3,7 +3,6 @@ package fr.siamois.infrastructure.database.repositories.vocabulary.label;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.models.vocabulary.label.ConceptLabel;
 import fr.siamois.domain.models.vocabulary.label.LocalizedAltConceptLabel;
-import org.springframework.data.domain.Limit;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.stereotype.Repository;
