@@ -17,7 +17,6 @@ import fr.siamois.infrastructure.database.repositories.vocabulary.LocalizedConce
 import fr.siamois.infrastructure.database.repositories.vocabulary.label.LocalizedAltConceptLabelRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.Limit;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
