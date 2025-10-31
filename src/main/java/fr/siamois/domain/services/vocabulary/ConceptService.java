@@ -5,6 +5,7 @@ import fr.siamois.domain.models.exceptions.ErrorProcessingExpansionException;
 import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.settings.ConceptFieldConfig;
 import fr.siamois.domain.models.vocabulary.*;
+import fr.siamois.domain.models.vocabulary.label.LocalizedAltConceptLabel;
 import fr.siamois.infrastructure.api.ConceptApi;
 import fr.siamois.infrastructure.api.dto.ConceptBranchDTO;
 import fr.siamois.infrastructure.api.dto.FullInfoDTO;
@@ -13,8 +14,10 @@ import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRelated
 import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRelationRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.LocalizedConceptDataRepository;
+import fr.siamois.infrastructure.database.repositories.vocabulary.label.LocalizedAltConceptLabelRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Limit;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -36,6 +39,7 @@ public class ConceptService {
     private final ConceptRelationRepository conceptRelationRepository;
     private final LocalizedConceptDataRepository  localizedConceptDataRepository;
     private final ConceptChangeEventPublisher conceptChangeEventPublisher;
+    private final LocalizedAltConceptLabelRepository localizedAltConceptLabelRepository;
 
     /**
      * Saves a concept if it does not already exist in the repository.
@@ -83,15 +87,16 @@ public class ConceptService {
                         conceptDTO.getIdentifier()[0].getValue()
                 );
 
-        if (optConcept.isPresent()) {
-            updateAllLabelsFromDTO(optConcept.get(), conceptDTO, fieldParentConcept);
-            updateAllDefinitionsFromDTO(optConcept.get(), conceptDTO, fieldParentConcept);
-            return optConcept.get();
-        }
+        Concept concept;
 
-        Concept concept = new Concept();
-        concept.setVocabulary(vocabulary);
-        concept.setExternalId(conceptDTO.getIdentifier()[0].getValue());
+        if (optConcept.isPresent()) {
+            concept = optConcept.get();
+            concept.setDeleted(false);
+        } else {
+            concept = new Concept();
+            concept.setVocabulary(vocabulary);
+            concept.setExternalId(conceptDTO.getIdentifier()[0].getValue());
+        }
 
         concept = conceptRepository.save(concept);
 
@@ -159,7 +164,10 @@ public class ConceptService {
             Concept parentSavedConcept = config.getConcept();
             Vocabulary vocabulary = parentSavedConcept.getVocabulary();
             ConceptBranchDTO branchDTO = conceptApi.fetchDownExpansion(config);
-            if (branchDTO == null) return;
+            if (branchDTO == null) {
+                log.trace("No update found for concept FieldCode : {}", config.getFieldCode());
+                return;
+            }
             conceptChangeEventPublisher.publishEvent(config.getFieldCode());
 
             Map<String, Concept> urlToSavedConceptMap = new HashMap<>();
@@ -167,22 +175,51 @@ public class ConceptService {
             if (parentConcept.getNarrower() == null) return;
 
             saveOrGetAllConceptsFromBranchAndStoreInMap(config, branchDTO, urlToSavedConceptMap, vocabulary);
+            saveAllConceptDataAndRelations(branchDTO, urlToSavedConceptMap, parentSavedConcept, vocabulary);
+            processDeletedConcepts(urlToSavedConceptMap, parentSavedConcept);
 
-            Map<Concept, Concept> childAndParentMap = new HashMap<>();
-            for (Map.Entry<String, FullInfoDTO> entry : branchDTO.getData().entrySet()) {
-
-                if (Objects.nonNull(entry.getValue().getNarrower())) {
-                    createRelationBetweenConcepts(entry, branchDTO.getParentUrl(), urlToSavedConceptMap, childAndParentMap, parentSavedConcept);
-                }
-
-                createRelatedLinkAndSetRelatedConcepts(vocabulary, urlToSavedConceptMap.get(entry.getKey()), entry.getValue().getUrlOfRelated(), urlToSavedConceptMap);
-            }
 
         } catch (RuntimeException e) {
             log.error(e.getMessage(), e);
             throw new ErrorProcessingExpansionException("Error processing expansion for concept field config id " + config.getId());
         }
 
+    }
+
+    private void processDeletedConcepts(Map<String, Concept> urlToSavedConceptMap, Concept parentSavedConcept) {
+        Set<Concept> conceptsInBranch = new HashSet<>(urlToSavedConceptMap.values());
+        long nbdeletedConcepts = 0;
+        for (LocalizedConceptData data : localizedConceptDataRepository.findAllByParentConcept(parentSavedConcept, Limit.unlimited())) {
+            Concept currentConcept = data.getConcept();
+            if (!currentConcept.isDeleted() && !conceptsInBranch.contains(data.getConcept())) {
+                markConceptAsDeletedAndSetAllParentFieldToNull(data, currentConcept);
+                nbdeletedConcepts++;
+            }
+        }
+        log.debug("Mark as deleted {} concepts for parent concept {} in {}", nbdeletedConcepts, parentSavedConcept.getExternalId(), parentSavedConcept.getVocabulary().getExternalVocabularyId());
+    }
+
+    private void markConceptAsDeletedAndSetAllParentFieldToNull(LocalizedConceptData data, Concept currentConcept) {
+        currentConcept.setDeleted(true);
+        conceptRepository.save(currentConcept);
+        data.setParentConcept(null);
+        localizedConceptDataRepository.save(data);
+        for (LocalizedAltConceptLabel altConcept : localizedAltConceptLabelRepository.findAllByConcept(currentConcept)) {
+            altConcept.setParentConcept(null);
+            localizedAltConceptLabelRepository.save(altConcept);
+        }
+    }
+
+    private void saveAllConceptDataAndRelations(ConceptBranchDTO branchDTO, Map<String, Concept> urlToSavedConceptMap, Concept parentSavedConcept, Vocabulary vocabulary) {
+        Map<Concept, Concept> childAndParentMap = new HashMap<>();
+        for (Map.Entry<String, FullInfoDTO> entry : branchDTO.getData().entrySet()) {
+
+            if (Objects.nonNull(entry.getValue().getNarrower())) {
+                createRelationBetweenConcepts(entry, branchDTO.getParentUrl(), urlToSavedConceptMap, childAndParentMap, parentSavedConcept);
+            }
+
+            createRelatedLinkAndSetRelatedConcepts(vocabulary, urlToSavedConceptMap.get(entry.getKey()), entry.getValue().getUrlOfRelated(), urlToSavedConceptMap);
+        }
     }
 
     private void createRelatedLinkAndSetRelatedConcepts(Vocabulary vocabulary, Concept concept, List<String> relatedUrl, Map<String, Concept> urlToSavedConceptMap) {
