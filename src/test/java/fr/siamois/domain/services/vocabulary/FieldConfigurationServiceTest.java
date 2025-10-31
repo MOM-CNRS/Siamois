@@ -299,12 +299,12 @@ class FieldConfigurationServiceTest {
                 .thenReturn(Optional.of(cfc));
         when(labelService.findMatchingConcepts(concept, userInfo.getLang(), query, FieldConfigurationService.LIMIT_RESULTS)).thenReturn(List.of(lcd));
 
-        List<ConceptLabel> result = service.fetchAutocomplete(userInfo, fieldCode, query);
+        List<Concept> result = service.fetchAutocomplete(userInfo, fieldCode, query);
 
         assertThat(result)
                 .isNotNull()
                 .hasSize(1)
-                .containsExactly(lcd);
+                .containsExactly(lcd.getConcept());
     }
 
     @Test
