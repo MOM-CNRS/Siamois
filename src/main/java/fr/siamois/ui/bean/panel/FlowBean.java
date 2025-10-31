@@ -72,11 +72,14 @@ public class FlowBean implements Serializable {
 
     public static final String READ_MODE = "READ";
     public static final String WRITE_MODE = "WRITE";
+    public static final String FIELD_MODE = "FIELD";
+    public static final String OFFICE_MODE = "OFFICE";
 
     // locals
     private transient DashboardModel responsiveModel;
     private static final String RESPONSIVE_CLASS = "col-12 lg:col-6 xl:col-6";
     private String readWriteMode = READ_MODE;
+    private String fieldOfficeMode = FIELD_MODE;
     private static final int MAX_NUMBER_OF_PANEL = 10;
 
     // Search bar
@@ -351,6 +354,11 @@ public class FlowBean implements Serializable {
             PrimeFaces.current().ajax().update("flow");
         }
     }
+
+    /**
+     * Listener called when the FieldOffice mode variable is flipped.
+     */
+    public void changeFieldOfficeMode() {}
 
     public void saveAllPanels() {
         for (AbstractSingleEntityPanel<?> panel : unsavedPanels) {
