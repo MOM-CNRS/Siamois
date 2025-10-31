@@ -1,12 +1,15 @@
 package fr.siamois.infrastructure.database.repositories.vocabulary.label;
 
+import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.models.vocabulary.label.ConceptLabel;
 import fr.siamois.domain.models.vocabulary.label.LocalizedAltConceptLabel;
+import org.springframework.data.domain.Limit;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Set;
 
 @Repository
 public interface LocalizedAltConceptLabelRepository extends CrudRepository<LocalizedAltConceptLabel, ConceptLabel.Id> {
@@ -20,4 +23,6 @@ public interface LocalizedAltConceptLabelRepository extends CrudRepository<Local
                     "LIMIT :limit"
     )
     List<LocalizedAltConceptLabel> findAllByParentConceptAndInputLimited(Long fieldConceptId, String langCode, String input, int limit);
+
+    Set<LocalizedAltConceptLabel> findAllByConcept(Concept concept);
 }

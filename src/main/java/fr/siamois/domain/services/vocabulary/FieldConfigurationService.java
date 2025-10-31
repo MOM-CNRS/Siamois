@@ -1,6 +1,7 @@
 package fr.siamois.domain.services.vocabulary;
 
 import fr.siamois.domain.models.UserInfo;
+import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.exceptions.ErrorProcessingExpansionException;
 import fr.siamois.domain.models.exceptions.api.NotSiamoisThesaurusException;
 import fr.siamois.domain.models.exceptions.vocabulary.NoConfigForFieldException;
@@ -18,6 +19,8 @@ import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptFieldCo
 import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.lang.NonNull;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -68,28 +71,7 @@ public class FieldConfigurationService {
      * @throws ErrorProcessingExpansionException if there is an error processing the vocabulary expansion
      */
     public Optional<FeedbackFieldConfig> setupFieldConfigurationForInstitution(Institution institution, Vocabulary vocabulary) throws NotSiamoisThesaurusException, ErrorProcessingExpansionException {
-        ConceptBranchDTO conceptBranchDTO = conceptApi.fetchFieldsBranch(vocabulary);
-        FeedbackFieldConfig config = createConfigOfThesaurus(conceptBranchDTO);
-        if (config.isWrongConfig()) return Optional.of(config);
-
-        for (FullInfoDTO conceptDTO : config.conceptWithValidFieldCode()) {
-            String fieldCode = conceptDTO.getFieldcode().orElseThrow(() -> FIELD_CODE_NOT_FOUND);
-            Concept concept = conceptService.saveOrGetConceptFromFullDTO(vocabulary, conceptDTO, null);
-            ConceptFieldConfig fieldConfig;
-            Optional<ConceptFieldConfig> optConfig = conceptFieldConfigRepository.findByFieldCodeForInstitution(institution.getId(), fieldCode);
-            if (optConfig.isEmpty()) {
-                fieldConfig = new ConceptFieldConfig();
-                fieldConfig.setInstitution(institution);
-                fieldConfig.setFieldCode(fieldCode);
-                fieldConfig.setConcept(concept);
-                fieldConfig = conceptFieldConfigRepository.save(fieldConfig);
-            } else {
-                fieldConfig =  optConfig.get();
-            }
-            conceptService.saveAllSubConceptOfIfUpdated(fieldConfig);
-        }
-
-        return Optional.empty();
+        return setupFieldConfiguration(institution, null, vocabulary);
     }
 
     private FeedbackFieldConfig createConfigOfThesaurus(ConceptBranchDTO conceptBranchDTO) {
@@ -124,6 +106,10 @@ public class FieldConfigurationService {
      * @throws ErrorProcessingExpansionException if there is an error processing the vocabulary expansion
      */
     public Optional<FeedbackFieldConfig> setupFieldConfigurationForUser(UserInfo info, Vocabulary vocabulary) throws NotSiamoisThesaurusException, ErrorProcessingExpansionException {
+        return setupFieldConfiguration(info.getInstitution(), info.getUser(), vocabulary);
+    }
+
+    private Optional<FeedbackFieldConfig> setupFieldConfiguration(@NonNull Institution institution, @Nullable Person user, @NonNull Vocabulary vocabulary) throws NotSiamoisThesaurusException, ErrorProcessingExpansionException {
         ConceptBranchDTO conceptBranchDTO = conceptApi.fetchFieldsBranch(vocabulary);
         FeedbackFieldConfig config = createConfigOfThesaurus(conceptBranchDTO);
         if (config.isWrongConfig()) return Optional.of(config);
@@ -133,11 +119,18 @@ public class FieldConfigurationService {
 
             Concept concept = conceptService.saveOrGetConceptFromFullDTO(vocabulary, conceptDTO, null);
             ConceptFieldConfig fieldConfig;
-            Optional<ConceptFieldConfig> optConfig = conceptFieldConfigRepository.findByFieldCodeForUser(info.getUser().getId(), fieldCode);
+            Optional<ConceptFieldConfig> optConfig;
+
+            if (user == null) {
+                optConfig = conceptFieldConfigRepository.findByFieldCodeForInstitution(institution.getId(), fieldCode);
+            } else {
+                optConfig = conceptFieldConfigRepository.findByFieldCodeForUser(user.getId(), fieldCode);
+            }
+
             if (optConfig.isEmpty()) {
                 fieldConfig = new ConceptFieldConfig();
-                fieldConfig.setInstitution(info.getInstitution());
-                fieldConfig.setUser(info.getUser());
+                fieldConfig.setInstitution(institution);
+                fieldConfig.setUser(user);
                 fieldConfig.setFieldCode(fieldCode);
                 fieldConfig.setConcept(concept);
                 fieldConfig = conceptFieldConfigRepository.save(fieldConfig);
