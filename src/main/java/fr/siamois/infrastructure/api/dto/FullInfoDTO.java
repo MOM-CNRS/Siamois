@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -55,6 +56,9 @@ public class FullInfoDTO implements Comparable<FullInfoDTO> {
     @JsonProperty("http://www.w3.org/2004/02/skos/core#definition")
     private PurlInfoDTO[] definition;
 
+    @JsonProperty("http://www.w3.org/2004/02/skos/core#related")
+    private PurlInfoDTO[] related;
+
     @JsonIgnore
     private String baseUri;
 
@@ -65,6 +69,13 @@ public class FullInfoDTO implements Comparable<FullInfoDTO> {
                 .filter(value -> value.startsWith("SIAMOIS#"))
                 .map(value -> value.replace("SIAMOIS#", ""))
                 .findFirst();
+    }
+
+    public List<String> getUrlOfRelated() {
+        if (related == null) return List.of();
+        return Arrays.stream(related)
+                .map(PurlInfoDTO::getValue)
+                .toList();
     }
 
     public String getIdentifierStr() {

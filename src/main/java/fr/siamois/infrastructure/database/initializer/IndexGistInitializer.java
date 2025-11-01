@@ -27,7 +27,7 @@ public class IndexGistInitializer implements DatabaseInitializer {
              Statement statement = connection.createStatement()) {
             statement.addBatch("CREATE INDEX IF NOT EXISTS users_username_trgm ON person USING gist (username gist_trgm_ops);");
             statement.addBatch("CREATE INDEX IF NOT EXISTS users_email_trgm ON person USING gist (mail gist_trgm_ops);");
-            statement.addBatch("CREATE INDEX IF NOT EXISTS localized_concept_data_label_trgm ON localized_concept_data USING gist(label gist_trgm_ops)");
+            statement.addBatch("CREATE INDEX IF NOT EXISTS concept_label_trgm ON concept_label USING gist(label gist_trgm_ops)");
             statement.executeBatch();
             log.info("GIST indexes created successfully");
         } catch (SQLException e) {

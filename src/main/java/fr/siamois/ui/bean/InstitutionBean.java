@@ -2,11 +2,13 @@ package fr.siamois.ui.bean;
 
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.models.vocabulary.LocalizedConceptData;
+import fr.siamois.domain.models.vocabulary.label.ConceptLabel;
 import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.domain.services.vocabulary.LabelService;
 import org.springframework.stereotype.Component;
 
 import javax.faces.bean.SessionScoped;
+import java.util.ArrayList;
 import java.util.List;
 
 @Component
@@ -26,14 +28,14 @@ public class InstitutionBean {
     }
 
 
-    public List<LocalizedConceptData> actionUnitTypeUsedInInstitution() {
+    public List<ConceptLabel> actionUnitTypeUsedInInstitution() {
         List<Concept> cList = conceptService.findAllByActionUnitOfInstitution(sessionSettingsBean.getSelectedInstitution());
 
-        return cList.stream()
+        return new ArrayList<>(cList.stream()
                 .map(concept -> labelService.findLabelOf(
                         concept, langBean.getLanguageCode()
                 ))
-                .toList();
+                .toList());
 
     }
 

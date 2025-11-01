@@ -28,7 +28,8 @@
                         completeMethod="#{cc.attrs.panelModel.completeDependentConceptChildren}"
                         var="field"
                         panelStyleClass="#{cc.attrs.panelStyleClass}"
-                        itemValue="#{field}"
+                        itemValue="#{field.concept}"
+                        itemLabel="#{labelBean.findLabelFrom(field)}"
                         disabled="#{cc.attrs.disabled}"
                         inputStyleClass="#{cc.attrs.inputStyleClass}"
                         required="false"
@@ -36,7 +37,6 @@
                         forceSelection="true"
                         scrollHeight="300"
                         dropdown="true"
-                        itemLabel="#{labelBean.findLabelOf(field)}"
                         placeholder="#{langBean.msg('common.action.chooseConcept')}"
                         showEmptyMessage="false"
         >

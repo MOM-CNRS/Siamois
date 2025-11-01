@@ -6,6 +6,7 @@ import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.customform.CustomFormPanel;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
+import fr.siamois.domain.models.vocabulary.label.ConceptLabel;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.domain.services.vocabulary.FieldConfigurationService;
@@ -111,7 +112,7 @@ public class SpatialUnitFieldBean implements Serializable {
      * @param input the input of the user
      * @return the list of concepts that match the input to display in the autocomplete
      */
-    public List<Concept> completeWithFieldCode(String input) {
+    public List<ConceptLabel> completeWithFieldCode(String input) {
         String fieldCode = "Undefined";
         try {
             FacesContext context = FacesContext.getCurrentInstance();

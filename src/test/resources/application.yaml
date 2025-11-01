@@ -34,3 +34,10 @@ management:
     web:
       exposure:
         include: health
+
+junit:
+  jupiter:
+    execution:
+      parallel:
+        enabled: true
+        mode: concurrent

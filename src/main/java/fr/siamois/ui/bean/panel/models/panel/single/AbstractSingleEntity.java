@@ -12,8 +12,11 @@ import fr.siamois.domain.models.form.customform.CustomRow;
 import fr.siamois.domain.models.form.customformresponse.CustomFormResponse;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
+import fr.siamois.domain.models.vocabulary.LocalizedConceptData;
 import fr.siamois.domain.models.vocabulary.Vocabulary;
 import fr.siamois.domain.models.vocabulary.VocabularyType;
+import fr.siamois.domain.models.vocabulary.label.ConceptLabel;
+import fr.siamois.domain.models.vocabulary.label.ConceptPrefLabel;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.document.DocumentService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
@@ -197,7 +200,7 @@ public abstract class AbstractSingleEntity<T> extends AbstractPanel implements S
     }
 
 
-    public List<Concept> completeDependentConceptChildren(
+    public List<ConceptLabel> completeDependentConceptChildren(
             String input
     ) {
         return List.of();
@@ -415,6 +418,11 @@ public abstract class AbstractSingleEntity<T> extends AbstractPanel implements S
         } else if (value instanceof Concept c) {
             if (answer instanceof CustomFieldAnswerSelectOneFromFieldCode codeAnswer) {
                 codeAnswer.setValue(c);
+                // TODO : find a conceptlabel (pref label in the current lang?) for this concept
+                ConceptPrefLabel uiVal = new ConceptPrefLabel();
+                uiVal.setConcept(c);
+                uiVal.setLabel("Juste un test");
+                codeAnswer.setUiValue(uiVal);
             } else if (answer instanceof CustomFieldAnswerSelectOneConceptFromChildrenOfConcept childAnswer) {
                 childAnswer.setValue(c);
             }
@@ -471,7 +479,7 @@ public abstract class AbstractSingleEntity<T> extends AbstractPanel implements S
         } else if (answer instanceof CustomFieldAnswerSelectOnePerson a) {
             return a.getValue();
         } else if (answer instanceof CustomFieldAnswerSelectOneFromFieldCode a) {
-            return a.getValue();
+            return a.getUiValue().getConcept();
         } else if (answer instanceof CustomFieldAnswerSelectOneConceptFromChildrenOfConcept a) {
             return a.getValue();
         } else if (answer instanceof CustomFieldAnswerSelectOneActionUnit a) {

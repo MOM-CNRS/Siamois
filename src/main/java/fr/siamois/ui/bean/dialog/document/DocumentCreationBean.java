@@ -9,6 +9,7 @@ import fr.siamois.domain.models.exceptions.InvalidFileSizeException;
 import fr.siamois.domain.models.exceptions.InvalidFileTypeException;
 import fr.siamois.domain.models.exceptions.vocabulary.NoConfigForFieldException;
 import fr.siamois.domain.models.vocabulary.Concept;
+import fr.siamois.domain.models.vocabulary.label.ConceptLabel;
 import fr.siamois.domain.services.ark.ArkService;
 import fr.siamois.domain.services.document.DocumentService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
@@ -90,7 +91,7 @@ public class DocumentCreationBean implements Serializable {
             return fieldConfigurationService.fetchAutocomplete(
                     sessionSettingsBean.getUserInfo(),
                     fieldCode,
-                    input);
+                    input).stream().map(ConceptLabel::getConcept).toList();
         } catch (NoConfigForFieldException e) {
             return List.of();
         }

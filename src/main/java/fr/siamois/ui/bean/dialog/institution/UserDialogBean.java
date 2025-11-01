@@ -6,6 +6,7 @@ import fr.siamois.domain.models.exceptions.auth.*;
 import fr.siamois.domain.models.exceptions.vocabulary.NoConfigForFieldException;
 import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.vocabulary.Concept;
+import fr.siamois.domain.models.vocabulary.label.ConceptLabel;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.person.PersonService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
@@ -261,7 +262,7 @@ public class UserDialogBean implements Serializable {
 
     public List<Concept> completeRole(String input) {
         try {
-            return fieldConfigurationService.fetchAutocomplete(sessionSettingsBean.getUserInfo(), Person.USER_ROLE_FIELD_CODE, input);
+            return fieldConfigurationService.fetchAutocomplete(sessionSettingsBean.getUserInfo(), Person.USER_ROLE_FIELD_CODE, input).stream().map(ConceptLabel::getConcept).toList();
         } catch (NoConfigForFieldException e) {
             MessageUtils.displayNoThesaurusConfiguredMessage(langBean);
             return List.of();

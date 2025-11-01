@@ -169,18 +169,7 @@
                     </p:selectCheckboxMenu>
 
                 </f:facet>
-                <p:cellEditor>
-                    <f:facet name="output">
-                        <chip:conceptChip  concept="#{item.type}" styleClass="mr-2 recording-unit-type-chip"/>
-                    </f:facet>
-                    <f:facet name="input">
-                        <sharedInput:conceptAutocompleteFieldCode id="typeComponent"
-                                                                  panelStyleClass="recording-unit-autocomplete"
-                                                                  selectedConcept="#{item.type}"
-                                                                  field="#{cc.attrs.lazyDataModel.typeField}"
-                                                                  editConceptUrl="#{spatialUnitFieldBean.getUrlForFieldCode('SIARU.TYPE')}"/>
-                    </f:facet>
-                </p:cellEditor>
+                <chip:conceptChip  concept="#{item.type}" styleClass="mr-2 recording-unit-type-chip"/>
 
             </p:column>
 

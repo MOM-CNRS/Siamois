@@ -279,6 +279,106 @@ class ConceptApiTest {
         assertThrows(ErrorProcessingExpansionException.class, () -> conceptApi.fetchDownExpansion(config));
     }
 
+    @Test
+    void fetchConceptInfoByUri_withArk_returnsDTO() throws Exception {
+        // Arrange
+        String arkUri = "http://other.example/ark:12345/abc";
+        URI expected = URI.create("http://example.com/openapi/v1/concept/ark:12345/abc");
+
+        when(restTemplate.exchange(eq(expected), eq(HttpMethod.GET), any(), eq(String.class)))
+                .thenReturn(new ResponseEntity<>("{\"k\":{}}", HttpStatus.OK));
+
+        // inject mocked mapper
+        java.lang.reflect.Field mapperField = ConceptApi.class.getDeclaredField("mapper");
+        mapperField.setAccessible(true);
+        mapperField.set(conceptApi, mapper);
+
+        when(mapper.readValue(anyString(), any(TypeReference.class)))
+                .thenReturn(Map.of("k", new FullInfoDTO()));
+
+        // Act
+        FullInfoDTO result = conceptApi.fetchConceptInfoByUri(vocabulary, arkUri);
+
+        // Assert
+        assertNotNull(result);
+        verify(restTemplate, times(1)).exchange(eq(expected), eq(HttpMethod.GET), any(), eq(String.class));
+    }
+
+    @Test
+    void fetchConceptInfoByUri_withQueryParams_returnsDTO() throws Exception {
+        // Arrange
+        String uriStr = "http://host.example/path?idt=th223&idc=testId";
+        URI expected = URI.create("http://example.com/openapi/v1/concept/th223/testId");
+
+        when(restTemplate.exchange(eq(expected), eq(HttpMethod.GET), any(), eq(String.class)))
+                .thenReturn(new ResponseEntity<>("{\"x\":{}}", HttpStatus.OK));
+
+        // inject mocked mapper
+        java.lang.reflect.Field mapperField = ConceptApi.class.getDeclaredField("mapper");
+        mapperField.setAccessible(true);
+        mapperField.set(conceptApi, mapper);
+
+        when(mapper.readValue(anyString(), any(TypeReference.class)))
+                .thenReturn(Map.of("x", new FullInfoDTO()));
+
+        // Act
+        FullInfoDTO result = conceptApi.fetchConceptInfoByUri(vocabulary, uriStr);
+
+        // Assert
+        assertNotNull(result);
+        verify(restTemplate, times(1)).exchange(eq(expected), eq(HttpMethod.GET), any(), eq(String.class));
+    }
+
+    @Test
+    void fetchConceptInfoByUri_returnsNull_whenJsonProcessingException() throws Exception {
+        // Arrange
+        String uriStr = "http://host.example/path?idt=th223&idc=testId";
+        URI expected = URI.create("http://example.com/openapi/v1/concept/th223/testId");
+
+        when(restTemplate.exchange(eq(expected), eq(HttpMethod.GET), any(), eq(String.class)))
+                .thenReturn(new ResponseEntity<>("{not json}", HttpStatus.OK));
+
+        // inject mocked mapper that throws
+        java.lang.reflect.Field mapperField = ConceptApi.class.getDeclaredField("mapper");
+        mapperField.setAccessible(true);
+        mapperField.set(conceptApi, mapper);
+
+        //noinspection unchecked
+        when(mapper.readValue(anyString(), any(TypeReference.class))).thenThrow(new com.fasterxml.jackson.core.JsonProcessingException("err"){});
+
+        // Act
+        FullInfoDTO result = conceptApi.fetchConceptInfoByUri(vocabulary, uriStr);
+
+        // Assert
+        assertNull(result);
+        verify(restTemplate, times(1)).exchange(eq(expected), eq(HttpMethod.GET), any(), eq(String.class));
+    }
+
+    @Test
+    void fetchConceptInfoByUri_returnsNull_whenEmptyMap() throws Exception {
+        // Arrange
+        String uriStr = "http://host.example/path?idt=th223&idc=testId";
+        URI expected = URI.create("http://example.com/openapi/v1/concept/th223/testId");
+
+        when(restTemplate.exchange(eq(expected), eq(HttpMethod.GET), any(), eq(String.class)))
+                .thenReturn(new ResponseEntity<>("{\"empty\":{}}", HttpStatus.OK));
+
+        // inject mocked mapper returning empty map
+        java.lang.reflect.Field mapperField = ConceptApi.class.getDeclaredField("mapper");
+        mapperField.setAccessible(true);
+        mapperField.set(conceptApi, mapper);
+
+        when(mapper.readValue(anyString(), any(TypeReference.class)))
+                .thenReturn(Map.of());
+
+        // Act
+        FullInfoDTO result = conceptApi.fetchConceptInfoByUri(vocabulary, uriStr);
+
+        // Assert
+        assertNull(result);
+        verify(restTemplate, times(1)).exchange(eq(expected), eq(HttpMethod.GET), any(), eq(String.class));
+    }
+
     private static String sha3Hex(String input) throws NoSuchAlgorithmException {
         MessageDigest digest = MessageDigest.getInstance("SHA3-256");
         byte[] hash = digest.digest(input.getBytes());
@@ -292,4 +392,7 @@ class ConceptApiTest {
         }
         return hexString.toString();
     }
+
+
+
 }

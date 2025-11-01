@@ -16,12 +16,6 @@ import java.util.Objects;
 @Audited
 public class Concept implements Serializable {
 
-    public Concept(Concept concept) {
-        this.id = concept.getId();
-        this.vocabulary = concept.getVocabulary();
-        this.externalId = concept.getExternalId();
-    }
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "concept_id", nullable = false)
@@ -34,6 +28,9 @@ public class Concept implements Serializable {
 
     @Column(name = "external_id", length = Integer.MAX_VALUE)
     private String externalId;
+
+    @Column(name = "is_deleted", nullable = false, columnDefinition = "boolean default false")
+    private boolean isDeleted = false;
 
     @Override
     public boolean equals(Object o) {
