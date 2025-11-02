@@ -64,7 +64,9 @@ public class DefaultFormsDatasetInitializer implements DatabaseInitializer {
             new ConceptSeeder.ConceptSpec(DEFAULT_VOCABULARY_ID, "4287614", "TAQ", "fr"),
             new ConceptSeeder.ConceptSpec(DEFAULT_VOCABULARY_ID, "4287613", "TPQ", "fr"),
             new ConceptSeeder.ConceptSpec(DEFAULT_VOCABULARY_ID, "4287612", "Phase chronologique", "fr"),
-            new ConceptSeeder.ConceptSpec(DEFAULT_VOCABULARY_ID, "4287611", "Description", "fr")
+            new ConceptSeeder.ConceptSpec(DEFAULT_VOCABULARY_ID, "4287611", "Description", "fr"),
+            new ConceptSeeder.ConceptSpec(DEFAULT_VOCABULARY_ID, "4286198", "Date d'ouverture", "fr"),
+            new ConceptSeeder.ConceptSpec(DEFAULT_VOCABULARY_ID, "4286199", "Date de fermeture", "fr")
     );
 
     // Default Siamois field
@@ -259,6 +261,26 @@ public class DefaultFormsDatasetInitializer implements DatabaseInitializer {
                     null,
                     null,
                     true
+            ),
+            new CustomFieldSeederSpec(
+                    CustomFieldDateTime.class,
+                    true,
+                    "recordingunit.field.openingDate",
+                    new ConceptSeeder.ConceptKey(DEFAULT_VOCABULARY_ID, "4286198"),
+                    "openingDate",
+                    null,
+                    null,
+                    null
+            ),
+            new CustomFieldSeederSpec(
+                    CustomFieldDateTime.class,
+                    true,
+                    "recordingunit.field.closingDate",
+                    new ConceptSeeder.ConceptKey(DEFAULT_VOCABULARY_ID, "4286199"),
+                    "closingDate",
+                    null,
+                    null,
+                    null
             )
     );
 
@@ -296,6 +318,18 @@ public class DefaultFormsDatasetInitializer implements DatabaseInitializer {
                                                             false,
                                                             false,
                                                             fields.get(7),
+                                                            UI_G_12_UI_MD_6_UI_LG_3
+                                                    ),
+                                                    new CustomColDTO(
+                                                            false,
+                                                            true,
+                                                            fields.get(19),
+                                                            UI_G_12_UI_MD_6_UI_LG_3
+                                                    ),
+                                                    new CustomColDTO(
+                                                            false,
+                                                            false,
+                                                            fields.get(20),
                                                             UI_G_12_UI_MD_6_UI_LG_3
                                                     )
                                             )
@@ -363,6 +397,18 @@ public class DefaultFormsDatasetInitializer implements DatabaseInitializer {
                                                                     false,
                                                                     false,
                                                                     fields.get(7),
+                                                                    UI_G_12_UI_MD_6_UI_LG_3
+                                                            ),
+                                                            new CustomColDTO(
+                                                                    false,
+                                                                    true,
+                                                                    fields.get(19),
+                                                                    UI_G_12_UI_MD_6_UI_LG_3
+                                                            ),
+                                                            new CustomColDTO(
+                                                                    false,
+                                                                    false,
+                                                                    fields.get(20),
                                                                     UI_G_12_UI_MD_6_UI_LG_3
                                                             )
                                                     )
@@ -531,6 +577,18 @@ public class DefaultFormsDatasetInitializer implements DatabaseInitializer {
                                                             false,
                                                             false,
                                                             fields.get(7),
+                                                            UI_G_12_UI_MD_6_UI_LG_3
+                                                    ),
+                                                    new CustomColDTO(
+                                                            false,
+                                                            true,
+                                                            fields.get(19),
+                                                            UI_G_12_UI_MD_6_UI_LG_3
+                                                    ),
+                                                    new CustomColDTO(
+                                                            false,
+                                                            false,
+                                                            fields.get(20),
                                                             UI_G_12_UI_MD_6_UI_LG_3
                                                     )
                                             )

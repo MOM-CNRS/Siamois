@@ -67,10 +67,10 @@ public abstract class RecordingUnitParent extends TraceableEntity {
     protected Concept thirdType;
 
     @Column(name = "start_date")
-    protected OffsetDateTime startDate;
+    protected OffsetDateTime openingDate;
 
     @Column(name = "end_date")
-    protected OffsetDateTime endDate;
+    protected OffsetDateTime closingDate;
 
     @Column(name = "description")
     protected String description;

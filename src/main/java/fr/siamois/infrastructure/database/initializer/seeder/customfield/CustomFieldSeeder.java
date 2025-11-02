@@ -2,6 +2,7 @@ package fr.siamois.infrastructure.database.initializer.seeder.customfield;
 
 import fr.siamois.domain.models.exceptions.database.DatabaseDataInitException;
 import fr.siamois.domain.models.form.customfield.CustomField;
+import fr.siamois.domain.models.form.customfield.CustomFieldDateTime;
 import fr.siamois.domain.models.form.customfield.CustomFieldSelectOneFromFieldCode;
 import fr.siamois.domain.models.form.customfield.CustomFieldText;
 import fr.siamois.domain.models.vocabulary.Concept;
@@ -72,6 +73,10 @@ public class CustomFieldSeeder {
 
                 else if (f instanceof CustomFieldText df) {
                     df.setIsTextArea(s.isTextArea());
+                }
+
+                else if(f instanceof CustomFieldDateTime df) {
+                    df.setShowTime(false);
                 }
 
                 customFieldRepository.save(f);

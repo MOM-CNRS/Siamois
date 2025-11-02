@@ -26,6 +26,9 @@
             </f:facet>
             <f:facet name="input">
                 <p:datePicker id="datePicker"
+                              mindate="#{cc.attrs.field.min}"
+                              maxdate="#{cc.attrs.field.max}"
+                              panelStyleClass="#{cc.attrs.panelModel.panelClass}"
                               showTime="#{cc.attrs.field.showTime}"
                               label="#{cc.attrs.label}"
                               inputStyleClass="#{cc.attrs.answer.hasBeenModified ? 'track-change sia-modified-field': 'track-change'}"
