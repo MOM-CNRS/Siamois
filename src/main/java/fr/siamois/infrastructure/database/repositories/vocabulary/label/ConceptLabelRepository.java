@@ -18,7 +18,7 @@ public interface ConceptLabelRepository extends CrudRepository<ConceptLabel, Lon
 
     @Query(
             nativeQuery = true,
-            value = "SELECT lacl.* FROM localized_alt_concept_label lacl " +
+            value = "SELECT lacl.* FROM concept_label lacl " +
                     "WHERE lacl.fk_field_parent_concept_id = :fieldConceptId " +
                     "AND lacl.lang_code = :langCode " +
                     "AND unaccent(lacl.label) ILIKE unaccent('%' || :input || '%') " +
