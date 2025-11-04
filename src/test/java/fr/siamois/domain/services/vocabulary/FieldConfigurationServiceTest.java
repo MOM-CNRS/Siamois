@@ -279,36 +279,6 @@ class FieldConfigurationServiceTest {
         assertThrows(NoConfigForFieldException.class, () -> service.findConfigurationForFieldCode(userInfo, SpatialUnit.CATEGORY_FIELD_CODE));
     }
 
-    @Disabled
-    @Test
-    void fetchAutocomplete() throws NoConfigForFieldException {
-        Concept concept = new Concept();
-        concept.setVocabulary(vocabulary);
-
-        LocalizedConceptData lcd = new LocalizedConceptData();
-        lcd.setConcept(concept);
-        lcd.setLangCode(userInfo.getLang());
-//        lcd.setLabel("Test Label");
-
-        String fieldCode = "TESTFIELD";
-        String query = "test query";
-
-        ConceptFieldConfig cfc = new ConceptFieldConfig();
-        cfc.setConcept(concept);
-        cfc.setFieldCode(fieldCode);
-
-        when(conceptFieldConfigRepository.findByFieldCodeForInstitution(userInfo.getInstitution().getId(), fieldCode))
-                .thenReturn(Optional.of(cfc));
-//        when(labelService.findMatchingConcepts(concept, userInfo.getLang(), query, FieldConfigurationService.LIMIT_RESULTS)).thenReturn(List.of(lcd));
-
-        List<Concept> result = service.fetchAutocomplete(userInfo, fieldCode, query).stream().map(ConceptLabel::getConcept).toList();
-
-        assertThat(result)
-                .isNotNull()
-                .hasSize(1)
-                .containsExactly(lcd.getConcept());
-    }
-
     @Test
     void fetchAutocomplete_shouldThrowNoConfigException_whenConfigDoesNotExist() {
         String fieldCode = "TESTFIELD";
