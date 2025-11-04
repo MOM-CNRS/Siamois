@@ -127,7 +127,7 @@ public class ConceptService {
 
 
 
-    private void updateDefinition(Concept savedConcept, String lang, String definition, Concept fieldParentConcept) {
+    private void updateDefinition(Concept savedConcept, String lang, String definition) {
         Optional<LocalizedConceptData> optData = localizedConceptDataRepository.findByConceptAndLangCode(savedConcept.getId(), lang);
         LocalizedConceptData localizedConceptData = null;
         if (optData.isPresent()) {
@@ -149,7 +149,7 @@ public class ConceptService {
     public void updateAllDefinitionsFromDTO(Concept savedConcept, FullInfoDTO conceptDto, Concept fieldParentConcept) {
         if (conceptDto.getDefinition() != null) {
             for (PurlInfoDTO definition : conceptDto.getDefinition()) {
-                updateDefinition(savedConcept, definition.getLang(), definition.getValue(), fieldParentConcept);
+                updateDefinition(savedConcept, definition.getLang(), definition.getValue());
             }
         }
     }
