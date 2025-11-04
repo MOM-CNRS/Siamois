@@ -22,6 +22,7 @@ import fr.siamois.domain.services.document.DocumentService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitTreeService;
 import fr.siamois.domain.services.vocabulary.FieldConfigurationService;
+import fr.siamois.ui.bean.LabelBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
 import fr.siamois.ui.bean.dialog.newunit.GenericNewUnitDialogBean;
 import fr.siamois.ui.bean.panel.models.panel.AbstractPanel;
@@ -57,6 +58,7 @@ public abstract class AbstractSingleEntity<T> extends AbstractPanel implements S
     protected final transient SpatialUnitService spatialUnitService;
     protected final transient ActionUnitService actionUnitService;
     protected final transient DocumentService documentService;
+    protected final transient LabelBean labelBean;
 
     //--------------- Locals
     protected transient T unit;
@@ -136,6 +138,7 @@ public abstract class AbstractSingleEntity<T> extends AbstractPanel implements S
         this.spatialUnitService = context.getBean(SpatialUnitService.class);
         this.actionUnitService = context.getBean(ActionUnitService.class);
         this.documentService = context.getBean(DocumentService.class);
+        this.labelBean = context.getBean(LabelBean.class);
     }
 
     protected AbstractSingleEntity(String titleCodeOrTitle,
@@ -149,6 +152,7 @@ public abstract class AbstractSingleEntity<T> extends AbstractPanel implements S
         this.spatialUnitService = context.getBean(SpatialUnitService.class);
         this.actionUnitService = context.getBean(ActionUnitService.class);
         this.documentService = context.getBean(DocumentService.class);
+        this.labelBean = context.getBean(LabelBean.class);
     }
 
 
@@ -421,7 +425,7 @@ public abstract class AbstractSingleEntity<T> extends AbstractPanel implements S
                 // TODO : find a conceptlabel (pref label in the current lang?) for this concept
                 ConceptPrefLabel uiVal = new ConceptPrefLabel();
                 uiVal.setConcept(c);
-                uiVal.setLabel("Juste un test");
+                uiVal.setLabel(labelBean.findLabelOf(c));
                 codeAnswer.setUiValue(uiVal);
             } else if (answer instanceof CustomFieldAnswerSelectOneConceptFromChildrenOfConcept childAnswer) {
                 childAnswer.setValue(c);
