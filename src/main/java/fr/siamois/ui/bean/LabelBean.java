@@ -23,7 +23,7 @@ public class LabelBean implements Serializable {
 
     private final transient LabelService labelService;
     private final SessionSettingsBean sessionSettingsBean;
-    private final ConceptLabelRepository conceptLabelRepository;
+    private final transient ConceptLabelRepository conceptLabelRepository;
 
     private final Map<String, Map<Concept, String>> prefLabelCache = new HashMap<>();
     private final Map<Long, ConceptLabel> idToLabelCache = new HashMap<>();
