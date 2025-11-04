@@ -45,8 +45,6 @@ class ConceptSeederTest {
                 new ConceptSeeder.ConceptSpec("th240", "1234556", "Label", "fr")
         );
 
-        LocalizedConceptData lcd = new LocalizedConceptData();
-
         when(conceptRepository.findConceptByExternalIdIgnoreCase(anyString(), anyString())).thenReturn(Optional.of(c));
 
         seeder.seed(v, toInsert);
