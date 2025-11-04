@@ -18,6 +18,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.List;
 import java.util.Optional;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
@@ -126,17 +127,19 @@ class LabelServiceTest {
     // Tests for Concept-related methods
 
     @Test
-    void findLabelOfConcept_shouldReturnNull_whenNotPresent() {
+    void findLabelOfConcept_shouldReturnExternalCodeWhenNoFallbackMatch_whenNotPresent() {
         // Given
         Concept concept = new Concept();
         concept.setId(2L);
-        when(localizedConceptDataRepository.findByConceptAndLangCode(2L, "fr")).thenReturn(Optional.empty());
+        concept.setExternalId("212");
 
         // When
         ConceptLabel result = labelService.findLabelOf(concept, "fr");
 
         // Then
-        assertNull(result);
+        assertNotNull(result);
+        assertEquals("[212]",  result.getLabel());
+        assertEquals("fr", result.getLangCode());
     }
 
     @Test
@@ -148,8 +151,6 @@ class LabelServiceTest {
         Concept parent = new Concept();
         parent.setId(2L);
         parent.setExternalId("2L");
-
-        when(conceptLabelRepository.findById(any())).thenReturn(Optional.empty());
 
         // When
         labelService.updateAltLabel(savedConcept, "en", "New Alt", parent);
@@ -177,7 +178,9 @@ class LabelServiceTest {
         existing.setConcept(savedConcept);
         existing.setLangCode("fr");
 
-        when(conceptLabelRepository.findById(any())).thenReturn(Optional.of(existing));
+
+        when(conceptLabelRepository.findAltLabelByConceptAndLangCode(savedConcept, "fr")).thenReturn(Optional.of(existing));
+        when(conceptLabelRepository.save(any(ConceptAltLabel.class))).thenAnswer(i -> i.getArgument(0));
 
         // When
         labelService.updateAltLabel(savedConcept, "fr", "Updated", null);
@@ -193,8 +196,6 @@ class LabelServiceTest {
         Concept savedConcept = new Concept();
         savedConcept.setId(4L);
         savedConcept.setExternalId("4L");
-
-        when(conceptLabelRepository.findById(any())).thenReturn(Optional.empty());
 
         // When
         labelService.updateAltLabel(savedConcept, "en", "Value", savedConcept);

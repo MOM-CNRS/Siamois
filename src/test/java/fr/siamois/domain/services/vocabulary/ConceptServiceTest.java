@@ -567,8 +567,6 @@ class ConceptServiceTest {
         LocalizedConceptData lcd = new LocalizedConceptData();
         lcd.setConcept(other);
 
-        when(localizedConceptDataRepository.findAllWithDistinctConceptByParentConcept(concept.getId())).thenReturn(Set.of(lcd));
-
         // When
         conceptService.saveAllSubConceptOfIfUpdated(config);
 
