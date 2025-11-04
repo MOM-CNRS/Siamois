@@ -100,7 +100,7 @@ public class ConceptService {
         concept = conceptRepository.save(concept);
 
         updateAllLabelsFromDTO(concept, conceptDTO, fieldParentConcept);
-        updateAllDefinitionsFromDTO(concept, conceptDTO, fieldParentConcept);
+        updateAllDefinitionsFromDTO(concept, conceptDTO);
 
         return concept;
     }
@@ -146,7 +146,7 @@ public class ConceptService {
      * @param savedConcept the concept to update
      * @param conceptDto  the FullInfoDTO containing definition information
      */
-    public void updateAllDefinitionsFromDTO(Concept savedConcept, FullInfoDTO conceptDto, Concept fieldParentConcept) {
+    public void updateAllDefinitionsFromDTO(Concept savedConcept, FullInfoDTO conceptDto) {
         if (conceptDto.getDefinition() != null) {
             for (PurlInfoDTO definition : conceptDto.getDefinition()) {
                 updateDefinition(savedConcept, definition.getLang(), definition.getValue());
