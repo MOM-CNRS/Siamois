@@ -285,11 +285,11 @@ public class ConceptService {
         List<Concept> result = new ArrayList<>();
         List<ConceptHierarchy> parents = conceptHierarchyRepository.findAllByChildAndParentFieldContext(concept, parentFieldConcept);
         while (!parents.isEmpty()) {
-            result.add(0, parents.get(0).getParent());
+            Concept toAdd = parents.get(0).getParent();
+            result.add(0, toAdd);
             concept = parents.get(0).getParent();
             parents = conceptHierarchyRepository.findAllByChildAndParentFieldContext(concept, parentFieldConcept);
         }
-
         return result;
     }
 }
