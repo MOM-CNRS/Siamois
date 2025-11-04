@@ -14,7 +14,7 @@ import lombok.EqualsAndHashCode;
 @EqualsAndHashCode(callSuper = true)
 @Entity
 @Data
-@DiscriminatorValue("ALT_LABEL")
+@DiscriminatorValue("1")
 public class ConceptAltLabel extends ConceptLabel {
 
     public ConceptAltLabel() {

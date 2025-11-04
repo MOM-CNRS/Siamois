@@ -8,6 +8,7 @@ import jakarta.faces.component.UIComponent;
 import jakarta.faces.context.FacesContext;
 import jakarta.faces.convert.Converter;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import javax.faces.bean.SessionScoped;
@@ -15,6 +16,7 @@ import javax.faces.bean.SessionScoped;
 /**
  * Converter for ConceptLabel objects. Uses the LabelBean cache to convert between ConceptLabel objects and their string representations.
  */
+@Slf4j
 @SessionScoped
 @Component
 @RequiredArgsConstructor
@@ -24,7 +26,15 @@ public class ConceptLabelConverter implements Converter<ConceptLabel> {
 
     @Override
     public ConceptLabel getAsObject(FacesContext facesContext, UIComponent uiComponent, String s) {
-        return labelBean.findById(Long.parseLong(s)).orElse(null);
+        if (s == null || s.isEmpty()) {
+            return null;
+        }
+        try {
+            return labelBean.findById(Long.parseLong(s)).orElse(null);
+        } catch (NumberFormatException e) {
+            log.debug("Invalid ConceptLabel ID format: \"{}\"", s, e);
+            return null;
+        }
     }
 
     @Override

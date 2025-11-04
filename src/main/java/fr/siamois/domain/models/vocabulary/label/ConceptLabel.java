@@ -19,7 +19,7 @@ import java.util.Objects;
         @UniqueConstraint(columnNames = {"fk_concept_id", "lang_code", "label_type"})
 })
 @Inheritance(strategy = InheritanceType.SINGLE_TABLE)
-@DiscriminatorColumn(name = "label_type", discriminatorType = DiscriminatorType.STRING)
+@DiscriminatorColumn(name = "label_type", discriminatorType = DiscriminatorType.INTEGER)
 public abstract class ConceptLabel {
 
     @Id
