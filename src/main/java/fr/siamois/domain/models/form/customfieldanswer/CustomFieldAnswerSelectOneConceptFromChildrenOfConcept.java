@@ -19,7 +19,7 @@ public class CustomFieldAnswerSelectOneConceptFromChildrenOfConcept extends Cust
     private Concept value;
 
     @Transient
-    private ConceptLabel uiVal;
+    private transient ConceptLabel uiVal;
 
     @Override
     public boolean equals(Object o) {
