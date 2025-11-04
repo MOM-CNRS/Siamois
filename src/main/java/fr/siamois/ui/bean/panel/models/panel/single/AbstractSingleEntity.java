@@ -422,13 +422,10 @@ public abstract class AbstractSingleEntity<T> extends AbstractPanel implements S
         } else if (value instanceof Concept c) {
             if (answer instanceof CustomFieldAnswerSelectOneFromFieldCode codeAnswer) {
                 codeAnswer.setValue(c);
-                // TODO : find a conceptlabel (pref label in the current lang?) for this concept
-                ConceptPrefLabel uiVal = new ConceptPrefLabel();
-                uiVal.setConcept(c);
-                uiVal.setLabel(labelBean.findLabelOf(c));
-                codeAnswer.setUiValue(uiVal);
+                codeAnswer.setUiVal(labelBean.findPrefLabelOf(c));
             } else if (answer instanceof CustomFieldAnswerSelectOneConceptFromChildrenOfConcept childAnswer) {
                 childAnswer.setValue(c);
+                childAnswer.setUiVal(labelBean.findPrefLabelOf(c));
             }
         } else if (value instanceof ActionUnit a && answer instanceof CustomFieldAnswerSelectOneActionUnit actionUnitAnswer) {
             actionUnitAnswer.setValue(a);
@@ -483,9 +480,9 @@ public abstract class AbstractSingleEntity<T> extends AbstractPanel implements S
         } else if (answer instanceof CustomFieldAnswerSelectOnePerson a) {
             return a.getValue();
         } else if (answer instanceof CustomFieldAnswerSelectOneFromFieldCode a) {
-            return a.getUiValue().getConcept();
+            return a.getUiVal().getConcept();
         } else if (answer instanceof CustomFieldAnswerSelectOneConceptFromChildrenOfConcept a) {
-            return a.getValue();
+            return a.getUiVal().getConcept();
         } else if (answer instanceof CustomFieldAnswerSelectOneActionUnit a) {
             return a.getValue();
         } else if (answer instanceof CustomFieldAnswerSelectOneSpatialUnit a) {

@@ -89,6 +89,12 @@ public class LabelBean implements Serializable {
         return labelService.findLabelOf(concept.getVocabulary(), info.getLang()).getValue();
     }
 
+    public ConceptLabel findPrefLabelOf(Concept concept) {
+        if (concept == null) return null;
+        UserInfo info = sessionSettingsBean.getUserInfo();
+        return labelService.findLabelOf(concept,  info.getLang());
+    }
+
     public Optional<ConceptLabel> findById(Long id) {
         if (idToLabelCache.containsKey(id)) {
             return Optional.of(idToLabelCache.get(id));

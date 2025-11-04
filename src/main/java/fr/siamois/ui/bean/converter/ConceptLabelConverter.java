@@ -32,7 +32,7 @@ public class ConceptLabelConverter implements Converter<ConceptLabel> {
         try {
             return labelBean.findById(Long.parseLong(s)).orElse(null);
         } catch (NumberFormatException e) {
-            log.debug("Invalid ConceptLabel ID format: \"{}\"", s, e);
+            log.debug("Invalid ConceptLabel ID format: \"{}\"", s);
             return null;
         }
     }

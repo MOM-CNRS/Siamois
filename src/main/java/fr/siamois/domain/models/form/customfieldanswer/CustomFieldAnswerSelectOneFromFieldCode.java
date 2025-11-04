@@ -20,7 +20,7 @@ public class CustomFieldAnswerSelectOneFromFieldCode extends CustomFieldAnswer {
     private Concept value;
 
     @Transient
-    private ConceptLabel uiValue;
+    private ConceptLabel uiVal;
 
     public void setValue(ConceptLabel conceptLabel) {
         this.value = conceptLabel.getConcept();
