@@ -15,11 +15,11 @@ public class ConceptHierarchy {
     @Column(name = "concept_hierarchy_id", nullable = false)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @ManyToOne(fetch = FetchType.EAGER, optional = false)
     @JoinColumn(name = "fk_parent_concept_id")
     private Concept parent;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @ManyToOne(fetch = FetchType.EAGER, optional = false)
     @JoinColumn(name = "fk_child_concept_id")
     private Concept child;
 

@@ -10,10 +10,7 @@ import fr.siamois.infrastructure.api.ConceptApi;
 import fr.siamois.infrastructure.api.dto.ConceptBranchDTO;
 import fr.siamois.infrastructure.api.dto.FullInfoDTO;
 import fr.siamois.infrastructure.api.dto.PurlInfoDTO;
-import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRelatedLinkRepository;
-import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRelationRepository;
-import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRepository;
-import fr.siamois.infrastructure.database.repositories.vocabulary.LocalizedConceptDataRepository;
+import fr.siamois.infrastructure.database.repositories.vocabulary.*;
 import fr.siamois.infrastructure.database.repositories.vocabulary.label.ConceptLabelRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -35,10 +32,10 @@ public class ConceptService {
     private final ConceptApi conceptApi;
     private final LabelService labelService;
     private final ConceptRelatedLinkRepository conceptRelatedLinkRepository;
-    private final ConceptRelationRepository conceptRelationRepository;
     private final LocalizedConceptDataRepository  localizedConceptDataRepository;
     private final ConceptChangeEventPublisher conceptChangeEventPublisher;
     private final ConceptLabelRepository conceptLabelRepository;
+    private final ConceptHierarchyRepository conceptHierarchyRepository;
 
     /**
      * Saves a concept if it does not already exist in the repository.
@@ -205,7 +202,7 @@ public class ConceptService {
         for (Map.Entry<String, FullInfoDTO> entry : branchDTO.getData().entrySet()) {
 
             if (Objects.nonNull(entry.getValue().getNarrower())) {
-                createRelationBetweenConcepts(entry, branchDTO.getParentUrl(), urlToSavedConceptMap, childAndParentMap, parentSavedConcept);
+                createRelationBetweenConcepts(entry, urlToSavedConceptMap, childAndParentMap, parentSavedConcept);
             }
 
             createRelatedLinkAndSetRelatedConcepts(vocabulary, urlToSavedConceptMap.get(entry.getKey()), entry.getValue().getUrlOfRelated(), urlToSavedConceptMap);
@@ -222,19 +219,26 @@ public class ConceptService {
         }
     }
 
-    private void createRelationBetweenConcepts(Map.Entry<String, FullInfoDTO> entry, String parentUrlConcept, Map<String, Concept> concepts, Map<Concept, Concept> childAndParentMap, Concept parentSavedConcept) {
+    private void createRelationBetweenConcepts(Map.Entry<String, FullInfoDTO> entry, Map<String, Concept> concepts, Map<Concept, Concept> childAndParentMap, Concept parentSavedConcept) {
         for (PurlInfoDTO narrower : entry.getValue().getNarrower()) {
-            if (narrower.getValue().equalsIgnoreCase(parentUrlConcept)) {
-                Concept parent = concepts.get(entry.getKey());
-                Concept child =  concepts.get(narrower.getValue());
+            Concept parent = concepts.get(entry.getKey());
+            if (parent == null) {
+                throw new IllegalStateException("No concept found in cache map for URL " + entry.getKey());
+            }
+            Concept child =  concepts.get(narrower.getValue());
+            if (child == null) {
+                throw new IllegalStateException("No concept found in cache map for URL " + narrower.getValue());
+            }
 
-                if (!childAndParentMap.containsKey(child)) {
-                    ConceptHierarchy relation = new ConceptHierarchy(parent,child, parentSavedConcept);
-                    conceptRelationRepository.save(relation);
-                    childAndParentMap.put(child, parent);
-                } else {
-                    log.debug("Concept {} already has a parent concept, skipping relation creation for {}.", child.getExternalId(), parent.getExternalId());
-                }
+            if (parent.equals(parentSavedConcept))
+                continue;
+
+            if (!childAndParentMap.containsKey(child)) {
+                ConceptHierarchy relation = new ConceptHierarchy(parent,child, parentSavedConcept);
+                conceptHierarchyRepository.save(relation);
+                childAndParentMap.put(child, parent);
+            } else {
+                log.debug("Concept {} already has a parent concept, skipping relation creation for {}.", child.getExternalId(), parent.getExternalId());
             }
         }
     }
@@ -275,5 +279,17 @@ public class ConceptService {
 
     public Optional<Concept> findById(Long id) {
         return conceptRepository.findById(id);
+    }
+
+    public List<Concept> findParentsOfConceptInField(Concept concept, Concept parentFieldConcept) {
+        List<Concept> result = new ArrayList<>();
+        List<ConceptHierarchy> parents = conceptHierarchyRepository.findAllByChildAndParentFieldContext(concept, parentFieldConcept);
+        while (!parents.isEmpty()) {
+            result.add(0, parents.get(0).getParent());
+            concept = parents.get(0).getParent();
+            parents = conceptHierarchyRepository.findAllByChildAndParentFieldContext(concept, parentFieldConcept);
+        }
+
+        return result;
     }
 }

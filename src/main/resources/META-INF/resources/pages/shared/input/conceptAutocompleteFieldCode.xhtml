@@ -59,13 +59,14 @@
                                  onclick="event.stopPropagation(); window.open('#{conceptLabel.concept.vocabulary.baseUri}/?idc=#{conceptLabel.concept.externalId}&amp;idt=#{field.vocabulary.externalVocabularyId}', '_blank'); return false;" />
             </p:column>
             <p:column>
-                <div style="display:flex; flex-direction: column">
+
+                <h:panelGroup layout="block" style="display:flex; flex-direction: column">
                     <h:outputText style="vertical-align: middle" value="#{conceptLabel.label}"/>
                     <h:panelGroup rendered="#{conceptLabel.isAltLabel()}">
-                        <small>#{labelBean.findPrefLabelOf(conceptLabel)}</small>
+                        <small>Libellé : #{labelBean.findPrefLabelOf(conceptLabel)}</small>
                     </h:panelGroup>
-                    <small>#{conceptLabel.concept.vocabulary.baseUri} - #{labelBean.findVocabularyLabelOf(conceptLabel.concept)}</small>
-                </div>
+                    <small>Parents : #{labelBean.hierarchyLabel(conceptLabel, cc.attrs.field.fieldCode)}</small>
+                </h:panelGroup>
 
             </p:column>
 

@@ -2,10 +2,14 @@ package fr.siamois.ui.bean;
 
 import fr.siamois.domain.events.ConceptChangeEvent;
 import fr.siamois.domain.models.UserInfo;
+import fr.siamois.domain.models.exceptions.vocabulary.NoConfigForFieldException;
+import fr.siamois.domain.models.settings.ConceptFieldConfig;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.models.vocabulary.label.ConceptAltLabel;
 import fr.siamois.domain.models.vocabulary.label.ConceptLabel;
 import fr.siamois.domain.models.vocabulary.label.ConceptPrefLabel;
+import fr.siamois.domain.services.vocabulary.ConceptService;
+import fr.siamois.domain.services.vocabulary.FieldConfigurationService;
 import fr.siamois.domain.services.vocabulary.LabelService;
 import fr.siamois.infrastructure.database.repositories.vocabulary.label.ConceptLabelRepository;
 import lombok.RequiredArgsConstructor;
@@ -15,6 +19,7 @@ import org.springframework.stereotype.Component;
 import javax.faces.bean.SessionScoped;
 import java.io.Serializable;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Component
 @SessionScoped
@@ -24,14 +29,19 @@ public class LabelBean implements Serializable {
     private final transient LabelService labelService;
     private final SessionSettingsBean sessionSettingsBean;
     private final transient ConceptLabelRepository conceptLabelRepository;
+    private final transient FieldConfigurationService fieldConfigurationService;
+    private final transient ConceptService conceptService;
+
 
     private final Map<String, Map<Concept, String>> prefLabelCache = new HashMap<>();
     private final Map<Long, ConceptLabel> idToLabelCache = new HashMap<>();
+    private final Map<HierarchyCallParams, String> hierarchyLabelCache = new HashMap<>();
 
     @EventListener(ConceptChangeEvent.class)
     public void resetCache() {
         prefLabelCache.clear();
         idToLabelCache.clear();
+        hierarchyLabelCache.clear();
     }
 
     private Optional<String> searchMatchingLangAndPrefLabel(String lang, Concept concept, List<ConceptPrefLabel> existingLabels) {
@@ -100,6 +110,42 @@ public class LabelBean implements Serializable {
         Optional<ConceptLabel> label = conceptLabelRepository.findById(id);
         label.ifPresent(l -> idToLabelCache.put(id, l));
         return label;
+    }
+
+    public String hierarchyLabel(ConceptLabel label, String fieldCode) {
+        if (label == null || fieldCode == null) return "";
+        HierarchyCallParams params = new HierarchyCallParams(label, fieldCode);
+        if (hierarchyLabelCache.containsKey(params)) {
+            return hierarchyLabelCache.get(params);
+        }
+
+        try {
+            UserInfo userInfo = sessionSettingsBean.getUserInfo();
+            ConceptFieldConfig cfg = fieldConfigurationService.findConfigurationForFieldCode(userInfo, fieldCode);
+            List<Concept> parents = conceptService.findParentsOfConceptInField(label.getConcept(), cfg.getConcept());
+            if (parents.isEmpty()) return "";
+
+            String result = parents
+                    .stream()
+                    .map(this::findLabelOf)
+                    .collect(Collectors.joining(" > "));
+
+            hierarchyLabelCache.put(new HierarchyCallParams(label, fieldCode), result);
+
+            return result;
+        } catch (NoConfigForFieldException e) {
+            return "";
+        }
+    }
+
+    private record HierarchyCallParams(ConceptLabel label, String fieldCode) {
+            @Override
+            public boolean equals(Object o) {
+                if (this == o) return true;
+                if (!(o instanceof HierarchyCallParams that)) return false;
+                return Objects.equals(label, that.label) && Objects.equals(fieldCode, that.fieldCode);
+            }
+
     }
 
 }
