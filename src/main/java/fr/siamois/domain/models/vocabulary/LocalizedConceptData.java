@@ -1,7 +1,5 @@
 package fr.siamois.domain.models.vocabulary;
 
-import fr.siamois.domain.models.vocabulary.label.ConceptLabel;
-import fr.siamois.domain.models.vocabulary.label.LabelType;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
