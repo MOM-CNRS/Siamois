@@ -321,7 +321,7 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
         if(field.getClass().equals(CustomFieldDateTime.class)) {
             if(Objects.equals(field.getValueBinding(), "openingDate") && unit.getClosingDate() != null) {
                 ((CustomFieldDateTime) field).setMax(unit.getClosingDate().toLocalDateTime());
-                ((CustomFieldDateTime) field).setMin(LocalDateTime.of(0,Month.JANUARY,1, 0, 0));
+                ((CustomFieldDateTime) field).setMin(LocalDateTime.of(1000,Month.JANUARY,1, 1, 1));
             };
             if(Objects.equals(field.getValueBinding(), "closingDate") && unit.getOpeningDate() != null) {
                 ((CustomFieldDateTime) field).setMin(unit.getOpeningDate().toLocalDateTime());
