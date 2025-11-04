@@ -6,7 +6,6 @@ import fr.siamois.domain.models.vocabulary.label.ConceptAltLabel;
 import fr.siamois.domain.models.vocabulary.label.ConceptLabel;
 import fr.siamois.domain.models.vocabulary.label.ConceptPrefLabel;
 import fr.siamois.domain.models.vocabulary.label.VocabularyLabel;
-import fr.siamois.infrastructure.database.repositories.vocabulary.LocalizedConceptDataRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.label.ConceptLabelRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.label.VocabularyLabelRepository;
 import org.junit.jupiter.api.Test;
