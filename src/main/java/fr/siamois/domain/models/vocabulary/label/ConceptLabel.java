@@ -2,7 +2,8 @@ package fr.siamois.domain.models.vocabulary.label;
 
 import fr.siamois.domain.models.vocabulary.Concept;
 import jakarta.persistence.*;
-import lombok.*;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.util.Objects;
 
@@ -19,7 +20,7 @@ import java.util.Objects;
         @UniqueConstraint(columnNames = {"fk_concept_id", "lang_code", "label_type"})
 })
 @Inheritance(strategy = InheritanceType.SINGLE_TABLE)
-@DiscriminatorColumn(name = "label_type", discriminatorType = DiscriminatorType.STRING)
+@DiscriminatorColumn(name = "label_type", discriminatorType = DiscriminatorType.INTEGER)
 public abstract class ConceptLabel {
 
     @Id

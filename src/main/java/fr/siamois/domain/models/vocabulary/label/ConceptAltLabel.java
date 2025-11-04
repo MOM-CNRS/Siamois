@@ -2,7 +2,6 @@ package fr.siamois.domain.models.vocabulary.label;
 
 import jakarta.persistence.DiscriminatorValue;
 import jakarta.persistence.Entity;
-import jakarta.persistence.Table;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
@@ -14,7 +13,7 @@ import lombok.EqualsAndHashCode;
 @EqualsAndHashCode(callSuper = true)
 @Entity
 @Data
-@DiscriminatorValue("ALT_LABEL")
+@DiscriminatorValue("1")
 public class ConceptAltLabel extends ConceptLabel {
 
     public ConceptAltLabel() {

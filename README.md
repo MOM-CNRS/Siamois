@@ -1,6 +1,6 @@
 # Siamois
 
-[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=miledrousset_Siamois&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=miledrousset_Siamois)
+[![Quality gate](https://sonarcloud.io/api/project_badges/quality_gate?project=MOM-CNRS_Siamois)](https://sonarcloud.io/summary/new_code?id=MOM-CNRS_Siamois)
 
 > Description courte du projet
 

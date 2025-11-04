@@ -8,7 +8,7 @@ import lombok.EqualsAndHashCode;
 @EqualsAndHashCode(callSuper = true)
 @Entity
 @Data
-@DiscriminatorValue("PREF_LABEL")
+@DiscriminatorValue("0")
 public class ConceptPrefLabel extends ConceptLabel {
     @Override
     public LabelType getLabelType() {

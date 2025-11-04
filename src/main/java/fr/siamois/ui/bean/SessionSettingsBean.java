@@ -12,9 +12,11 @@ import fr.siamois.domain.services.person.PersonService;
 import fr.siamois.utils.AuthenticatedUserUtils;
 import lombok.AccessLevel;
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.context.event.EventListener;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 import javax.faces.bean.SessionScoped;
@@ -27,6 +29,7 @@ import java.util.Set;
 @Getter
 @Component
 @SessionScoped
+@RequiredArgsConstructor
 public class SessionSettingsBean implements Serializable {
 
     private final transient InstitutionService institutionService;
@@ -41,22 +44,16 @@ public class SessionSettingsBean implements Serializable {
     @Setter(AccessLevel.NONE)
     private UserInfo userInfo;
 
-    public SessionSettingsBean(InstitutionService institutionService,
-                               LangBean langBean,
-                               RedirectBean redirectBean,
-                               PersonService personService) {
-        this.institutionService = institutionService;
-        this.langBean = langBean;
-        this.redirectBean = redirectBean;
-        this.personService = personService;
-    }
-
     public Person getAuthenticatedUser() {
         return AuthenticatedUserUtils.getAuthenticatedUser().orElse(null);
     }
 
     public Institution getSelectedInstitution() {
-        return getUserInfo().getInstitution();
+        UserInfo currentUserInfo = getUserInfo();
+        if (currentUserInfo == null) {
+            return null;
+        }
+        return currentUserInfo.getInstitution();
     }
 
     public void setupSession() {
@@ -98,16 +95,17 @@ public class SessionSettingsBean implements Serializable {
     }
 
     public UserInfo getUserInfo() {
-        if (selectedInstitution == null || getAuthenticatedUser() == null) {
-            return null;
-        }
         if (userInfo == null) {
             userInfo = new UserInfo(selectedInstitution, getAuthenticatedUser(), getLanguageCode());
+        }
+        if (selectedInstitution == null || getAuthenticatedUser() == null) {
+            return null;
         }
         return userInfo;
     }
 
     @EventListener({InstitutionChangeEvent.class, LangageChangeEvent.class})
+    @Order(Integer.MIN_VALUE)
     public void markUserInfoAsChanged() {
         userInfo = null;
     }

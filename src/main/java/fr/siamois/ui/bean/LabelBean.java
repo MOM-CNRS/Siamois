@@ -6,9 +6,7 @@ import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.models.vocabulary.label.ConceptAltLabel;
 import fr.siamois.domain.models.vocabulary.label.ConceptLabel;
 import fr.siamois.domain.models.vocabulary.label.ConceptPrefLabel;
-import fr.siamois.domain.models.vocabulary.label.LabelType;
 import fr.siamois.domain.services.vocabulary.LabelService;
-import fr.siamois.infrastructure.database.repositories.vocabulary.LocalizedConceptDataRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.label.ConceptLabelRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.event.EventListener;
@@ -87,6 +85,12 @@ public class LabelBean implements Serializable {
         if (concept == null) return null;
         UserInfo info = sessionSettingsBean.getUserInfo();
         return labelService.findLabelOf(concept.getVocabulary(), info.getLang()).getValue();
+    }
+
+    public ConceptLabel findPrefLabelOf(Concept concept) {
+        if (concept == null) return null;
+        UserInfo info = sessionSettingsBean.getUserInfo();
+        return labelService.findLabelOf(concept,  info.getLang());
     }
 
     public Optional<ConceptLabel> findById(Long id) {

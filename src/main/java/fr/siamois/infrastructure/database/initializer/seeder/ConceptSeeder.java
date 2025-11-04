@@ -1,7 +1,6 @@
 package fr.siamois.infrastructure.database.initializer.seeder;
 
 import fr.siamois.domain.models.vocabulary.Concept;
-import fr.siamois.domain.models.vocabulary.LocalizedConceptData;
 import fr.siamois.domain.models.vocabulary.Vocabulary;
 import fr.siamois.domain.models.vocabulary.label.ConceptPrefLabel;
 import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRepository;

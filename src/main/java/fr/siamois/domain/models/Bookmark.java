@@ -37,16 +37,16 @@ public class Bookmark {
     }
 
     private static final Map<String, String> COLOR_MAP = Map.of(
-            "/spatialunit", "var(--context-main-color)",
-            "/actionunit", "var(--context-main-color)",
-            "/recordingunit", "var(--ground-main-color)",
+            "/spatial-unit", "var(--context-main-color)",
+            "/action-unit", "var(--context-main-color)",
+            "/recording-unit", "var(--ground-main-color)",
             "/specimen", "var(--ground-main-color)"
     );
 
     private static final Map<String, String> ICON_MAP = Map.of(
-            "/spatialunit", "bi bi-geo-alt",
-            "/actionunit", "bi bi-arrow-down-square",
-            "/recordingunit", "bi bi-pencil-square",
+            "/spatial-unit", "bi bi-geo-alt",
+            "/action-unit", "bi bi-arrow-down-square",
+            "/recording-unit", "bi bi-pencil-square",
             "/specimen", "bi bi-bucket"
     );
 
