@@ -2,7 +2,8 @@ package fr.siamois.domain.models.vocabulary.label;
 
 import fr.siamois.domain.models.vocabulary.Concept;
 import jakarta.persistence.*;
-import lombok.*;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.util.Objects;
 

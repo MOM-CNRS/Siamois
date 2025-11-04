@@ -1,7 +1,5 @@
 package fr.siamois.ui.bean.converter;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import fr.siamois.domain.models.vocabulary.label.ConceptLabel;
 import fr.siamois.ui.bean.LabelBean;
 import jakarta.faces.component.UIComponent;

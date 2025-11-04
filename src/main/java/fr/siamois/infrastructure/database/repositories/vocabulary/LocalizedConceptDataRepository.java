@@ -2,13 +2,10 @@ package fr.siamois.infrastructure.database.repositories.vocabulary;
 
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.models.vocabulary.LocalizedConceptData;
-import fr.siamois.domain.models.vocabulary.label.ConceptLabel;
-import org.springframework.data.domain.Limit;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.stereotype.Repository;
 
-import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 

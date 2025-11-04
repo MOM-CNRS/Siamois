@@ -2,7 +2,6 @@ package fr.siamois.domain.models.form.customfieldanswer;
 
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.models.vocabulary.label.ConceptLabel;
-import fr.siamois.domain.models.vocabulary.label.LabelType;
 import jakarta.persistence.*;
 import lombok.Data;
 
