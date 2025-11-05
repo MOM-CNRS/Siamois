@@ -1,9 +1,11 @@
 package fr.siamois.domain.models.form.customform;
 
-package fr.siamois.domain.models.form.customform;
 
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswer;
+import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -16,6 +18,7 @@ import java.util.Objects;
  *   enabledWhen = (agent geomorphologique == "erosion")
  *   ou           (agent geomorphologique  in {"depot","interface"})
  */
+@Setter
 public class EnabledWhenSpec implements Serializable {
 
     public enum Operator { EQUALS, NOT_EQUALS, IN }
@@ -25,12 +28,6 @@ public class EnabledWhenSpec implements Serializable {
 
     /** Valeurs attendues : une ou plusieurs CustomFieldAnswer du même CustomField */
     private List<CustomFieldAnswer> expectedValues = new ArrayList<>();
-
-    public Operator getOperator() { return operator; }
-    public void setOperator(Operator operator) { this.operator = operator; }
-
-    public List<CustomFieldAnswer> getExpectedValues() { return expectedValues; }
-    public void setExpectedValues(List<CustomFieldAnswer> expectedValues) { this.expectedValues = expectedValues; }
 
     /** Champ comparé, inféré depuis la première valeur */
     public CustomField getComparedField() {

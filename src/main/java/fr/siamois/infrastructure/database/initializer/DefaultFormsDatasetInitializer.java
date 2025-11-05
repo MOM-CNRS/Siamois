@@ -2,10 +2,14 @@ package fr.siamois.infrastructure.database.initializer;
 
 import fr.siamois.domain.models.exceptions.database.DatabaseDataInitException;
 import fr.siamois.domain.models.form.customfield.*;
+import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswer;
+import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerSelectOneFromFieldCode;
+import fr.siamois.domain.models.form.customform.EnabledWhenSpec;
 import fr.siamois.domain.models.form.formscope.FormScope;
 import fr.siamois.domain.models.vocabulary.Vocabulary;
 import fr.siamois.infrastructure.database.initializer.seeder.ConceptSeeder;
 import fr.siamois.infrastructure.database.initializer.seeder.ThesaurusSeeder;
+import fr.siamois.infrastructure.database.initializer.seeder.customfield.CustomFieldAnswerDTO;
 import fr.siamois.infrastructure.database.initializer.seeder.customfield.CustomFieldSeeder;
 import fr.siamois.infrastructure.database.initializer.seeder.customfield.CustomFieldSeederSpec;
 import fr.siamois.infrastructure.database.initializer.seeder.customform.*;
@@ -13,6 +17,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -43,6 +48,8 @@ public class DefaultFormsDatasetInitializer implements DatabaseInitializer {
 
     // Default Siamois field concept
     List<ConceptSeeder.ConceptSpec> concepts = List.of(
+
+            // Champs
             new ConceptSeeder.ConceptSpec(DEFAULT_VOCABULARY_ID, "4287605", "Type d'unité", "fr"),
             new ConceptSeeder.ConceptSpec(DEFAULT_VOCABULARY_ID, "4287606", "Cycle géomorphologique", "fr"),
             new ConceptSeeder.ConceptSpec(DEFAULT_VOCABULARY_ID, "4286197", "Interprétation normalisée", "fr"),
@@ -66,7 +73,10 @@ public class DefaultFormsDatasetInitializer implements DatabaseInitializer {
             new ConceptSeeder.ConceptSpec(DEFAULT_VOCABULARY_ID, "4287612", "Phase chronologique", "fr"),
             new ConceptSeeder.ConceptSpec(DEFAULT_VOCABULARY_ID, "4287611", "Description", "fr"),
             new ConceptSeeder.ConceptSpec(DEFAULT_VOCABULARY_ID, "4286198", "Date d'ouverture", "fr"),
-            new ConceptSeeder.ConceptSpec(DEFAULT_VOCABULARY_ID, "4286199", "Date de fermeture", "fr")
+            new ConceptSeeder.ConceptSpec(DEFAULT_VOCABULARY_ID, "4286199", "Date de fermeture", "fr"),
+
+            // Réponses de champs
+            new ConceptSeeder.ConceptSpec(DEFAULT_VOCABULARY_ID, "4287636", "Altération", "fr")
     );
 
     // Default Siamois field
@@ -285,6 +295,26 @@ public class DefaultFormsDatasetInitializer implements DatabaseInitializer {
     );
 
 
+    // Regle d'activation du champ basé sur la valeur de la réponse à un autre champ
+    EnabledWhenSpecSeedDTO matrixColorEnabledWhenDTO = new EnabledWhenSpecSeedDTO(
+            EnabledWhenSpecSeedDTO.Operator.EQUALS,
+            List.of(
+                    new CustomFieldAnswerDTO(
+                            CustomFieldAnswerSelectOneFromFieldCode.class,
+                            fields.get(1),
+                            new ConceptSeeder.ConceptKey(DEFAULT_VOCABULARY_ID, "4287636")
+                    )
+            )
+    );
+    CustomColDTO matrixColorColDTO = new CustomColDTO(
+            true,
+            true,
+            fields.get(10),
+            UI_G_12_UI_MD_6_UI_LG_3,
+            matrixColorEnabledWhenDTO
+    );
+
+
     // Default form DTOs
     List<CustomFormDTO> forms = List.of(
             new CustomFormDTO(
@@ -471,13 +501,7 @@ public class DefaultFormsDatasetInitializer implements DatabaseInitializer {
                                                                     fields.get(9),
                                                                     UI_G_12_UI_MD_6_UI_LG_3
                                                             ),
-
-                                                            new CustomColDTO(
-                                                                    false,
-                                                                    false,
-                                                                    fields.get(10),
-                                                                    UI_G_12_UI_MD_6_UI_LG_3
-                                                            ),
+                                                            matrixColorColDTO,
                                                             new CustomColDTO(
                                                                     false,
                                                                     false,
