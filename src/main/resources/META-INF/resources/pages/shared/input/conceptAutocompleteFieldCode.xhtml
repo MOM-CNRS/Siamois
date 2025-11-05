@@ -63,9 +63,11 @@
                 <h:panelGroup layout="block" style="display:flex; flex-direction: column">
                     <h:outputText style="vertical-align: middle" value="#{conceptLabel.label}"/>
                     <h:panelGroup rendered="#{conceptLabel.isAltLabel()}">
-                        <small>#{langBean.msg('concept.common.preflabel')} : #{labelBean.findPrefLabelOf(conceptLabel)}</small>
+                        <small>#{langBean.msg('concept.common.preflabel')} : #{labelBean.findConceptLabelOf(conceptLabel)}</small>
                     </h:panelGroup>
-                    <h:outputText rendered="#{not empty labelBean.hierarchyLabel(conceptLabel, cc.attrs.field.fieldCode)}" value="#{langBean.msg('concept.common.parents')} : #{labelBean.hierarchyLabel(conceptLabel, cc.attrs.field.fieldCode)}"/>
+                    <h:panelGroup rendered="#{not empty labelBean.hierarchyLabel(conceptLabel, cc.attrs.field.fieldCode)}">
+                        <small>#{langBean.msg('concept.common.parents')} : #{labelBean.hierarchyLabel(conceptLabel, cc.attrs.field.fieldCode)}</small>
+                    </h:panelGroup>
                 </h:panelGroup>
 
             </p:column>
