@@ -1,6 +1,7 @@
 package fr.siamois.domain.models.form.customfieldanswer;
 
 import fr.siamois.domain.models.vocabulary.Concept;
+import fr.siamois.domain.models.vocabulary.label.ConceptLabel;
 import jakarta.persistence.*;
 import lombok.Data;
 
@@ -16,6 +17,17 @@ public class CustomFieldAnswerSelectOneFromFieldCode extends CustomFieldAnswer {
     @ManyToOne
     @JoinColumn(name = "fk_value_as_concept")
     private Concept value;
+
+    @Transient
+    private transient ConceptLabel uiVal;
+
+    public void setValue(ConceptLabel conceptLabel) {
+        this.value = conceptLabel.getConcept();
+    }
+
+    public void setValue(Concept concept) {
+        this.value = concept;
+    }
 
     @Override
     public boolean equals(Object o) {

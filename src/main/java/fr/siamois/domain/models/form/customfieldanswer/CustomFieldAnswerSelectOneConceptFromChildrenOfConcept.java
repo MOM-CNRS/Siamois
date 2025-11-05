@@ -1,6 +1,7 @@
 package fr.siamois.domain.models.form.customfieldanswer;
 
 import fr.siamois.domain.models.vocabulary.Concept;
+import fr.siamois.domain.models.vocabulary.label.ConceptLabel;
 import jakarta.persistence.*;
 import lombok.Data;
 
@@ -16,6 +17,9 @@ public class CustomFieldAnswerSelectOneConceptFromChildrenOfConcept extends Cust
     @ManyToOne
     @JoinColumn(name = "fk_value_as_concept")
     private Concept value;
+
+    @Transient
+    private transient ConceptLabel uiVal;
 
     @Override
     public boolean equals(Object o) {

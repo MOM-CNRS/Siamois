@@ -1,63 +1,51 @@
 package fr.siamois.domain.models.vocabulary;
 
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
-import java.util.Objects;
-
+/**
+ * Entity representing localized data for a concept, including its definition.
+ * May be extended in the future to include additional fields such as notes, examples, etc.
+ *
+ * @author Julien Linget
+ */
 @Data
 @Entity
 @Table(name = "localized_concept_data")
 public class LocalizedConceptData {
 
     @EmbeddedId
-    private LocalizedConceptDataId id;
+    private Id id;
 
-    @Column(name = "label", nullable = false, columnDefinition = "citext")
-    private String label;
+    @MapsId("conceptId")
+    @ManyToOne(fetch =  FetchType.LAZY)
+    @JoinColumn(name = "fk_concept_id")
+    private Concept concept;
 
     @Column(name = "concept_definition", length = Integer.MAX_VALUE)
     private String definition;
 
-    @MapsId("conceptId")
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "fk_concept_id", nullable = false)
-    private Concept concept;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "fk_field_parent_concept_id")
-    private Concept parentConcept;
-
-    @Override
-    public boolean equals(Object o) {
-        if (!(o instanceof LocalizedConceptData that)) return false;
-        return Objects.equals(getLangCode(), that.getLangCode()) && Objects.equals(concept, that.concept);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(getLangCode(), concept);
-    }
-
     public LocalizedConceptData() {
-        this.id = new LocalizedConceptDataId();
-    }
-
-    public void setLangCode(String langCode) {
-        this.id.setLangCode(langCode);
+        this.id = new Id();
     }
 
     public String getLangCode() {
-        return this.id.getLangCode();
+        return id.getLangCode();
     }
 
-    public void setConcept(Concept concept) {
-        this.concept = concept;
-        if (concept != null) {
-            this.id.setConceptId(concept.getId());
-        } else {
-            this.id.setConceptId(null);
-        }
+    public void setLangCode(String langCode) {
+        id.setLangCode(langCode);
+    }
+
+    @Data
+    @Embeddable
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class Id {
+        private Long conceptId;
+        private String langCode;
     }
 
 }

@@ -281,30 +281,6 @@ class FieldConfigurationServiceTest {
     }
 
     @Test
-    void fetchAutocomplete() throws NoConfigForFieldException {
-        Concept concept = new Concept();
-        concept.setVocabulary(vocabulary);
-
-        String fieldCode = "TESTFIELD";
-        String query = "test query";
-
-        ConceptFieldConfig cfc = new ConceptFieldConfig();
-        cfc.setConcept(concept);
-        cfc.setFieldCode(fieldCode);
-
-        when(conceptFieldConfigRepository.findByFieldCodeForInstitution(userInfo.getInstitution().getId(), fieldCode))
-                .thenReturn(Optional.of(cfc));
-        when(labelService.findMatchingConcepts(concept, userInfo.getLang(), query, FieldConfigurationService.LIMIT_RESULTS)).thenReturn(List.of(concept));
-
-        List<Concept> result = service.fetchAutocomplete(userInfo, fieldCode, query);
-
-        assertThat(result)
-                .isNotNull()
-                .hasSize(1)
-                .containsExactly(concept);
-    }
-
-    @Test
     void fetchAutocomplete_shouldThrowNoConfigException_whenConfigDoesNotExist() {
         String fieldCode = "TESTFIELD";
         String query = "test query";

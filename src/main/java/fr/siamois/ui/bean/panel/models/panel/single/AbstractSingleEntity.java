@@ -14,11 +14,13 @@ import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.models.vocabulary.Vocabulary;
 import fr.siamois.domain.models.vocabulary.VocabularyType;
+import fr.siamois.domain.models.vocabulary.label.ConceptLabel;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.document.DocumentService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitTreeService;
 import fr.siamois.domain.services.vocabulary.FieldConfigurationService;
+import fr.siamois.ui.bean.LabelBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
 import fr.siamois.ui.bean.dialog.newunit.GenericNewUnitDialogBean;
 import fr.siamois.ui.bean.panel.models.panel.AbstractPanel;
@@ -54,6 +56,7 @@ public abstract class AbstractSingleEntity<T> extends AbstractPanel implements S
     protected final transient SpatialUnitService spatialUnitService;
     protected final transient ActionUnitService actionUnitService;
     protected final transient DocumentService documentService;
+    protected final transient LabelBean labelBean;
 
     //--------------- Locals
     protected transient T unit;
@@ -133,6 +136,7 @@ public abstract class AbstractSingleEntity<T> extends AbstractPanel implements S
         this.spatialUnitService = context.getBean(SpatialUnitService.class);
         this.actionUnitService = context.getBean(ActionUnitService.class);
         this.documentService = context.getBean(DocumentService.class);
+        this.labelBean = context.getBean(LabelBean.class);
     }
 
     protected AbstractSingleEntity(String titleCodeOrTitle,
@@ -146,6 +150,7 @@ public abstract class AbstractSingleEntity<T> extends AbstractPanel implements S
         this.spatialUnitService = context.getBean(SpatialUnitService.class);
         this.actionUnitService = context.getBean(ActionUnitService.class);
         this.documentService = context.getBean(DocumentService.class);
+        this.labelBean = context.getBean(LabelBean.class);
     }
 
 
@@ -197,7 +202,7 @@ public abstract class AbstractSingleEntity<T> extends AbstractPanel implements S
     }
 
 
-    public List<Concept> completeDependentConceptChildren(
+    public List<ConceptLabel> completeDependentConceptChildren(
             String input
     ) {
         return List.of();
@@ -415,8 +420,10 @@ public abstract class AbstractSingleEntity<T> extends AbstractPanel implements S
         } else if (value instanceof Concept c) {
             if (answer instanceof CustomFieldAnswerSelectOneFromFieldCode codeAnswer) {
                 codeAnswer.setValue(c);
+                codeAnswer.setUiVal(labelBean.findConceptLabelOf(c));
             } else if (answer instanceof CustomFieldAnswerSelectOneConceptFromChildrenOfConcept childAnswer) {
                 childAnswer.setValue(c);
+                childAnswer.setUiVal(labelBean.findConceptLabelOf(c));
             }
         } else if (value instanceof ActionUnit a && answer instanceof CustomFieldAnswerSelectOneActionUnit actionUnitAnswer) {
             actionUnitAnswer.setValue(a);
@@ -471,9 +478,9 @@ public abstract class AbstractSingleEntity<T> extends AbstractPanel implements S
         } else if (answer instanceof CustomFieldAnswerSelectOnePerson a) {
             return a.getValue();
         } else if (answer instanceof CustomFieldAnswerSelectOneFromFieldCode a) {
-            return a.getValue();
+            return a.getUiVal().getConcept();
         } else if (answer instanceof CustomFieldAnswerSelectOneConceptFromChildrenOfConcept a) {
-            return a.getValue();
+            return a.getUiVal().getConcept();
         } else if (answer instanceof CustomFieldAnswerSelectOneActionUnit a) {
             return a.getValue();
         } else if (answer instanceof CustomFieldAnswerSelectOneSpatialUnit a) {
