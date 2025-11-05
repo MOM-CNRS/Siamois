@@ -22,6 +22,7 @@ import fr.siamois.ui.bean.LabelBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
 import fr.siamois.ui.bean.dialog.newunit.GenericNewUnitDialogBean;
 import fr.siamois.ui.bean.panel.models.panel.AbstractPanel;
+import fr.siamois.ui.form.EnabledRulesEngine;
 import fr.siamois.ui.form.rules.*;
 import fr.siamois.ui.viewmodel.TreeUiStateViewModel;
 import fr.siamois.utils.DateUtils;
@@ -76,7 +77,7 @@ public abstract class AbstractSingleEntity<T> extends AbstractPanel implements S
 
 
     // provider pour lire la réponse actuelle
-    private final ValueProvider vp = this::getFieldAnswer;
+    private final transient ValueProvider vp = this::getFieldAnswer;
 
     public static final String COLUMN_CLASS_NAME = "ui-g-12 ui-md-6 ui-lg-4";
 
@@ -90,10 +91,10 @@ public abstract class AbstractSingleEntity<T> extends AbstractPanel implements S
     }
 
     // applier pour mettre à jour l'état UI
-    private final ColumnApplier applier = (colField, enabled) ->
+    private final transient ColumnApplier applier = (colField, enabled) ->
             colEnabledByFieldId.put(colField.getId(), enabled);
 
-    private EnabledRulesEngine enabledEngine;
+    private transient EnabledRulesEngine enabledEngine;
 
     protected void initEnabledRulesFromForms() {
         List<ColumnRule> rules = new ArrayList<>();
@@ -103,7 +104,7 @@ public abstract class AbstractSingleEntity<T> extends AbstractPanel implements S
         enabledEngine.applyAll(vp, applier); // calcule l'état initial
     }
 
-    private Condition toCondition(EnabledWhenJson ew, CustomField columnField) {
+    private Condition toCondition(EnabledWhenJson ew) {
         // champ observé à partir de l'id
         CustomField comparedField = findFieldInFormsById(ew.getFieldId());
         if (comparedField == null)
@@ -175,7 +176,7 @@ public abstract class AbstractSingleEntity<T> extends AbstractPanel implements S
                     if (c.getField() == null) continue;
                     if (c.getEnabledWhenSpec() == null) continue;
 
-                    Condition cond = toCondition(c.getEnabledWhenSpec(), c.getField());
+                    Condition cond = toCondition(c.getEnabledWhenSpec());
                     acc.add(new ColumnRule(c.getField(), cond));
                 }
             }
@@ -316,11 +317,6 @@ public abstract class AbstractSingleEntity<T> extends AbstractPanel implements S
     }
 
 
-    public List<ConceptLabel> completeDependentConceptChildren(
-            String input
-    ) {
-        return List.of();
-    }
 
     public String getUrlForDependentConcept(
             CustomFieldSelectOneConceptFromChildrenOfConcept dependentField

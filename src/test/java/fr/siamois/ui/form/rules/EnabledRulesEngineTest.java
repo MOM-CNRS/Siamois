@@ -8,14 +8,13 @@ import fr.siamois.domain.models.form.customfieldanswer.*;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.models.vocabulary.Vocabulary;
 import fr.siamois.ui.bean.panel.models.panel.single.AbstractSingleEntity;
+import fr.siamois.ui.form.EnabledRulesEngine;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.*;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 @ExtendWith(MockitoExtension.class)
 class EnabledRulesEngineTest {
@@ -80,17 +79,17 @@ class EnabledRulesEngineTest {
     private CustomField colB;            // another column controlled by same driverField
 
     private Concept driverConcept;
-    private Concept C_A;                 // expected concept for "enabled"
-    private Concept C_B;                 // another concept
+    private Concept conceptA;                 // expected concept for "enabled"
+    private Concept conceptB;                 // another concept
 
     @BeforeEach
     void setUp() {
         driverConcept = concept("th", "driver");
         driverField = conceptField(10L, "Driver Field", driverConcept);
-        C_A = concept("th", "A");
-        C_B = concept("th", "B");
-        colA = anyColumnField(100L, "Column A",C_A);
-        colB = anyColumnField(200L, "Column B",C_B);
+        conceptA = concept("th", "A");
+        conceptB = concept("th", "B");
+        colA = anyColumnField(100L, "Column A", conceptA);
+        colB = anyColumnField(200L, "Column B", conceptB);
     }
 
     // Helper: a Condition that checks driverField's concept equals an expected concept
@@ -120,13 +119,13 @@ class EnabledRulesEngineTest {
     void applyAll_enablesOrDisablesBasedOnCurrentValues() {
         // Given current = C_A
         Map<CustomField, CustomFieldAnswer> answers = new HashMap<>();
-        answers.put(driverField, answerFor(driverField, C_A));
+        answers.put(driverField, answerFor(driverField, conceptA));
         ValueProvider vp = new MapValueProvider(answers);
 
         // Two columns, both enabled when driver == C_A
         List<ColumnRule> rules = List.of(
-                new ColumnRule(colA, conceptEquals(driverField, C_A)),
-                new ColumnRule(colB, conceptEquals(driverField, C_A))
+                new ColumnRule(colA, conceptEquals(driverField, conceptA)),
+                new ColumnRule(colB, conceptEquals(driverField, conceptA))
         );
 
         EnabledRulesEngine engine = new EnabledRulesEngine(rules);
@@ -140,7 +139,7 @@ class EnabledRulesEngineTest {
         assertTrue(applier.enabled(colB));
 
         // Now change the provider to current = C_B (without calling engine onAnswerChange)
-        answers.put(driverField, answerFor(driverField, C_B));
+        answers.put(driverField, answerFor(driverField, conceptB));
         engine.applyAll(vp, applier);
 
         // Then both disabled (condition false)
@@ -152,22 +151,22 @@ class EnabledRulesEngineTest {
     void onAnswerChange_usesOverriddenConcept_notOldValue() {
         // Given current = C_B (old value), but event proposes C_A (new value)
         Map<CustomField, CustomFieldAnswer> answers = new HashMap<>();
-        answers.put(driverField, answerFor(driverField, C_B));
+        answers.put(driverField, answerFor(driverField, conceptB));
         ValueProvider baseVp = new MapValueProvider(answers);
 
         // colA enabled iff driver == C_A
-        ColumnRule rule = new ColumnRule(colA, conceptEquals(driverField, C_A));
+        ColumnRule rule = new ColumnRule(colA, conceptEquals(driverField, conceptA));
         EnabledRulesEngine engine = new EnabledRulesEngine(List.of(rule));
         RecordingApplier applier = new RecordingApplier();
 
         // When evaluating with override newConcept = C_A:
-        engine.onAnswerChange(driverField, C_A, baseVp, applier);
+        engine.onAnswerChange(driverField, conceptA, baseVp, applier);
 
         // Then: even though base answer was C_B, we should get enabled=true thanks to the override
         assertTrue(applier.enabled(colA));
 
         // Sanity: if we override with C_B, it should disable
-        engine.onAnswerChange(driverField, C_B, baseVp, applier);
+        engine.onAnswerChange(driverField, conceptB, baseVp, applier);
         assertFalse(applier.enabled(colA));
     }
 
@@ -180,21 +179,21 @@ class EnabledRulesEngineTest {
         // Rules:
         //  - colA depends on driverField == C_A
         //  - colB depends on otherDriver == C_A
-        ColumnRule rA = new ColumnRule(colA, conceptEquals(driverField, C_A));
-        ColumnRule rB = new ColumnRule(colB, conceptEquals(otherDriver, C_A));
+        ColumnRule rA = new ColumnRule(colA, conceptEquals(driverField, conceptA));
+        ColumnRule rB = new ColumnRule(colB, conceptEquals(otherDriver, conceptA));
 
         EnabledRulesEngine engine = new EnabledRulesEngine(List.of(rA, rB));
 
         // Provider has some initial values
         Map<CustomField, CustomFieldAnswer> answers = new HashMap<>();
-        answers.put(driverField, answerFor(driverField, C_B));    // currently B
-        answers.put(otherDriver, answerFor(otherDriver, C_B));    // currently B
+        answers.put(driverField, answerFor(driverField, conceptB));    // currently B
+        answers.put(otherDriver, answerFor(otherDriver, conceptB));    // currently B
         ValueProvider vp = new MapValueProvider(answers);
 
         RecordingApplier applier = new RecordingApplier();
 
         // Change driverField only (override = C_A). Should update colA but not touch colB.
-        engine.onAnswerChange(driverField, C_A, vp, applier);
+        engine.onAnswerChange(driverField, conceptA, vp, applier);
 
         assertTrue(applier.states.containsKey(colA.getId())); // got recomputed
         assertFalse(applier.states.containsKey(colB.getId())); // untouched
@@ -212,7 +211,7 @@ class EnabledRulesEngineTest {
 
         // Provider with some value (won't be used)
         Map<CustomField, CustomFieldAnswer> answers = new HashMap<>();
-        answers.put(driverField, answerFor(driverField, C_A));
+        answers.put(driverField, answerFor(driverField, conceptA));
         RecordingApplier applier = new RecordingApplier();
 
         engine.applyAll(new MapValueProvider(answers), applier);
@@ -232,8 +231,8 @@ class EnabledRulesEngineTest {
         CustomFieldAnswerId id = new CustomFieldAnswerId();
         id.setField(driverField);
         tmp.setPk(id);
-        ((CustomFieldAnswerSelectOneFromFieldCode) tmp).setValue(C_A);
+        ((CustomFieldAnswerSelectOneFromFieldCode) tmp).setValue(conceptA);
 
-        assertEquals(C_A, ((CustomFieldAnswerSelectOneFromFieldCode) tmp).getValue());
+        assertEquals(conceptA, ((CustomFieldAnswerSelectOneFromFieldCode) tmp).getValue());
     }
 }

@@ -1,4 +1,4 @@
-package fr.siamois.ui.form.rules;
+package fr.siamois.ui.form;
 
 
 import fr.siamois.domain.models.form.customfield.CustomField;
@@ -8,6 +8,10 @@ import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerSelectOn
 import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerSelectOneFromFieldCode;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.ui.bean.panel.models.panel.single.AbstractSingleEntity;
+import fr.siamois.ui.form.rules.ColumnApplier;
+import fr.siamois.ui.form.rules.ColumnRule;
+import fr.siamois.ui.form.rules.Condition;
+import fr.siamois.ui.form.rules.ValueProvider;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -31,7 +35,7 @@ public final class EnabledRulesEngine {
         Map<CustomField, Set<CustomField>> idx = new HashMap<>();
         for (ColumnRule r : rules) {
             for (CustomField f : r.enabledWhen().dependsOn()) {
-                idx.computeIfAbsent(f, __ -> new LinkedHashSet<>()).add(r.columnField());
+                idx.computeIfAbsent(f, customField -> new LinkedHashSet<>()).add(r.columnField());
             }
         }
         this.dependentsByField = idx;

@@ -23,55 +23,7 @@
     </cc:interface>
 
     <cc:implementation>
-        <p:autoComplete value="#{cc.attrs.selectedConcept}"
-                        id="conceptAutocomplete"
-                        completeMethod="#{cc.attrs.panelModel.completeDependentConceptChildren}"
-                        var="field"
-                        panelStyleClass="#{cc.attrs.panelStyleClass}"
-                        itemValue="#{field.concept}"
-                        itemLabel="#{field.label}"
-                        disabled="#{cc.attrs.disabled}"
-                        inputStyleClass="#{cc.attrs.inputStyleClass}"
-                        required="false"
-                        converter="#{conceptConverter}"
-                        forceSelection="true"
-                        scrollHeight="300"
-                        dropdown="true"
-                        placeholder="#{langBean.msg('common.action.chooseConcept')}"
-                        showEmptyMessage="false"
-        >
 
-            <f:attribute name="field" value="#{cc.attrs.field}" />
-
-            <p:ajax
-                    listener="#{cc.attrs.itemSelectListener}"
-                    disabled="#{empty cc.attrs.itemSelectListener}"
-                    update="#{cc.attrs.ajaxUpdateTargets}"
-                    immediate="true"
-                    process="#{cc.attrs.ajaxProcessTargets}"/>
-
-            <p:column>
-                <p:commandButton icon="bi bi-box-arrow-up-right" styleClass="btn btn-primary"
-                                 onclick="event.stopPropagation(); window.open('#{field.vocabulary.baseUri}/?idc=#{field.externalId}&amp;idt=#{field.vocabulary.externalVocabularyId}', '_blank'); return false;" />
-            </p:column>
-            <p:column>
-                <div style="display:flex; flex-direction: column">
-                    <h:outputText style="vertical-align: middle; margin-left: .5rem" value="#{labelBean.findLabelOf(field)}"/>
-                    <small>#{field.vocabulary.baseUri} - #{labelBean.findVocabularyLabelOf(field)}</small>
-                </div>
-
-            </p:column>
-
-            <f:facet name="footer">
-                <div class="ui-fluid" style="padding:0.5rem 1rem 1rem 1rem">
-                    <h:outputLink value="#{cc.attrs.editConceptUrl}" target="_blank"
-                                  disabled="#{empty cc.attrs.editConceptUrl}"
-                                  styleClass="ui-button ui-widget ui-state-default ui-corner-all ui-button-text-only">
-                        <span class="ui-button-text">#{langBean.msg('common.action.editConcept')}</span>
-                    </h:outputLink>
-                </div>
-            </f:facet>
-        </p:autoComplete>
 
     </cc:implementation>
 
