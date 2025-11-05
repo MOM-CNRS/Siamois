@@ -156,7 +156,7 @@ public class CustomFormSeeder {
             col.setEnabledWhenSpec(toEnabledWhenJson(colDto.enabledWhen()));
         }
 
-        // Resolve/create field by natural key (code) from your earlier design
+        // Resolve/create field by natural key 
         CustomField field = fieldSeeder.findFieldOrThrow(colDto.field());
         col.setField(field);
 
