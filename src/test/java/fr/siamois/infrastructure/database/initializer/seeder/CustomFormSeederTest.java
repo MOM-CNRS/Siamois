@@ -341,8 +341,8 @@ class CustomFormSeederTest {
         CustomColDTO colEmpty = colDTO(colSpec,
                 new EnabledWhenSpecSeedDTO(EnabledWhenSpecSeedDTO.Operator.IN, condSpec, List.of()));
 
-        List<CustomFormDTO> list = List.of(formWith(colEmpty));
-        assertThrows(IllegalArgumentException.class, () -> seeder.seed(list));
+        List<CustomFormDTO> list2 = List.of(formWith(colEmpty));
+        assertThrows(IllegalArgumentException.class, () -> seeder.seed(list2));
 
         verify(customFormRepository, never()).save(any());
     }
