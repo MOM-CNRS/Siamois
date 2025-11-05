@@ -140,7 +140,7 @@ public abstract class AbstractSingleEntity<T> extends AbstractPanel implements S
                 }
                 public Class<?> expectedAnswerClass() { return CustomFieldAnswerSelectOneFromFieldCode.class; }
             };
-            // ajoute d’autres cases si tu as d’autres sous-types (person, actionCode, spatialUnit, etc.)
+            // ajoute d’autres cases si on gère plus de type dans le futur
             default -> new ValueMatcher() {
                 public boolean matches(CustomFieldAnswer cur) { return false; } // inconnu -> jamais égal
                 public Class<?> expectedAnswerClass() { return Object.class; }
