@@ -114,6 +114,7 @@ public class LabelBean implements Serializable {
 
     public String hierarchyLabel(ConceptLabel label, String fieldCode) {
         if (label == null || fieldCode == null) return "";
+
         HierarchyCallParams params = new HierarchyCallParams(label, fieldCode);
         if (hierarchyLabelCache.containsKey(params)) {
             return hierarchyLabelCache.get(params);
