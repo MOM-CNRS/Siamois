@@ -76,7 +76,10 @@ public class DefaultFormsDatasetInitializer implements DatabaseInitializer {
             new ConceptSeeder.ConceptSpec(DEFAULT_VOCABULARY_ID, "4286199", "Date de fermeture", "fr"),
 
             // Réponses de champs
-            new ConceptSeeder.ConceptSpec(DEFAULT_VOCABULARY_ID, "4287636", "Altération", "fr")
+            new ConceptSeeder.ConceptSpec(DEFAULT_VOCABULARY_ID, "4287636", "Altération", "fr"),
+            new ConceptSeeder.ConceptSpec(DEFAULT_VOCABULARY_ID, "4287637", "Composite", "fr"),
+            new ConceptSeeder.ConceptSpec(DEFAULT_VOCABULARY_ID, "4287638", "Dépôt", "fr"),
+            new ConceptSeeder.ConceptSpec(DEFAULT_VOCABULARY_ID, "4287639", "Erosion", "fr")
     );
 
     // Default Siamois field
@@ -296,24 +299,85 @@ public class DefaultFormsDatasetInitializer implements DatabaseInitializer {
 
 
     // Regle d'activation du champ basé sur la valeur de la réponse à un autre champ
-    EnabledWhenSpecSeedDTO matrixColorEnabledWhenDTO = new EnabledWhenSpecSeedDTO(
+    EnabledWhenSpecSeedDTO erosionEnabledWhenDTO = new EnabledWhenSpecSeedDTO(
             EnabledWhenSpecSeedDTO.Operator.EQUALS,
             fields.get(1),
             List.of(
                     new CustomFieldAnswerDTO(
                             CustomFieldAnswerSelectOneFromFieldCode.class,
                             fields.get(1),
+                            new ConceptSeeder.ConceptKey(DEFAULT_VOCABULARY_ID, "4287639")
+                    )
+            )
+    );
+    EnabledWhenSpecSeedDTO  matrixEnabledWhenDTO = new EnabledWhenSpecSeedDTO(
+            EnabledWhenSpecSeedDTO.Operator.IN,
+            fields.get(1),
+            List.of(
+                    new CustomFieldAnswerDTO(
+                            CustomFieldAnswerSelectOneFromFieldCode.class,
+                            fields.get(1),
                             new ConceptSeeder.ConceptKey(DEFAULT_VOCABULARY_ID, "4287636")
+                    ),
+                    new CustomFieldAnswerDTO(
+                            CustomFieldAnswerSelectOneFromFieldCode.class,
+                            fields.get(1),
+                            new ConceptSeeder.ConceptKey(DEFAULT_VOCABULARY_ID, "4287637")
+                    ),
+                    new CustomFieldAnswerDTO(
+                            CustomFieldAnswerSelectOneFromFieldCode.class,
+                            fields.get(1),
+                            new ConceptSeeder.ConceptKey(DEFAULT_VOCABULARY_ID, "4287638")
                     )
             )
     );
 
     CustomColDTO matrixColorColDTO = new CustomColDTO(
-            true,
-            true,
+            false,
+            false,
             fields.get(10),
             UI_G_12_UI_MD_6_UI_LG_3,
-            matrixColorEnabledWhenDTO
+            matrixEnabledWhenDTO
+    );
+
+    CustomColDTO matrixCompositionColDTO = new CustomColDTO(
+            false,
+            false,
+            fields.get(9),
+            UI_G_12_UI_MD_6_UI_LG_3,
+            matrixEnabledWhenDTO
+    );
+
+    CustomColDTO matrixTextureColDTO =
+            new CustomColDTO(
+                    false,
+                    false,
+                    fields.get(11),
+                    UI_G_12_UI_MD_6_UI_LG_3,
+                    matrixEnabledWhenDTO
+            );
+
+    CustomColDTO erosionShapeCol = new CustomColDTO(
+            false,
+            false,
+            fields.get(12),
+            UI_G_12_UI_MD_6_UI_LG_3,
+            erosionEnabledWhenDTO
+    );
+
+    CustomColDTO erosionProfileCol = new CustomColDTO(
+            false,
+            false,
+            fields.get(13),
+            UI_G_12_UI_MD_6_UI_LG_3,
+            erosionEnabledWhenDTO
+    );
+    CustomColDTO erosionOrientationCol = new CustomColDTO(
+            false,
+            false,
+            fields.get(14),
+            UI_G_12_UI_MD_6_UI_LG_3,
+            erosionEnabledWhenDTO
     );
 
 
@@ -497,42 +561,16 @@ public class DefaultFormsDatasetInitializer implements DatabaseInitializer {
                                             ),
                                             new CustomRowDTO(
                                                     List.of(
-                                                            new CustomColDTO(
-                                                                    false,
-                                                                    false,
-                                                                    fields.get(9),
-                                                                    UI_G_12_UI_MD_6_UI_LG_3
-                                                            ),
+                                                            matrixCompositionColDTO,
                                                             matrixColorColDTO,
-                                                            new CustomColDTO(
-                                                                    false,
-                                                                    false,
-                                                                    fields.get(11),
-                                                                    UI_G_12_UI_MD_6_UI_LG_3
-                                                            )
+                                                            matrixTextureColDTO
                                                     )
                                             ),
                                             new CustomRowDTO(
                                                     List.of(
-                                                            new CustomColDTO(
-                                                                    false,
-                                                                    false,
-                                                                    fields.get(12),
-                                                                    UI_G_12_UI_MD_6_UI_LG_3
-                                                            ),
-
-                                                            new CustomColDTO(
-                                                                    false,
-                                                                    false,
-                                                                    fields.get(13),
-                                                                    UI_G_12_UI_MD_6_UI_LG_3
-                                                            ),
-                                                            new CustomColDTO(
-                                                                    false,
-                                                                    false,
-                                                                    fields.get(14),
-                                                                    UI_G_12_UI_MD_6_UI_LG_3
-                                                            )
+                                                            erosionShapeCol,
+                                                            erosionProfileCol,
+                                                            erosionOrientationCol
                                                     )
                                             )),
                                     true

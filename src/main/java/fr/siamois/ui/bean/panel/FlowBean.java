@@ -79,7 +79,7 @@ public class FlowBean implements Serializable {
     private transient DashboardModel responsiveModel;
     private static final String RESPONSIVE_CLASS = "col-12 lg:col-6 xl:col-6";
     private String readWriteMode = READ_MODE;
-    private String fieldOfficeMode = FIELD_MODE;
+    private String fieldOfficeMode = OFFICE_MODE;
     private static final int MAX_NUMBER_OF_PANEL = 10;
 
     // Search bar

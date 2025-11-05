@@ -26,7 +26,7 @@
 
                     <p:column styleClass="#{col.className}"
                               id="col-#{prefix}-#{statusIndex}-#{rowStatus.index}-#{colStatus.index}">
-                        <p:outputPanel id="field-#{prefix}-#{statusIndex}-#{rowStatus.index}-#{colStatus.index}">
+                        <p:outputPanel rendered="#{bean.isColumnEnabled(col.field)}" id="field-#{prefix}-#{statusIndex}-#{rowStatus.index}-#{colStatus.index}">
                             <sharedInput:panelField
                                     id="panelField-#{prefix}-#{statusIndex}-#{rowStatus.index}-#{colStatus.index}"
                                     required="#{col.required}"
@@ -187,5 +187,9 @@
             </p:row>
         </c:forEach>
     </p:panelGrid>
+
+    <ui:fragment rendered="#{empty customFormPanel.rows}">
+        <i>Aucun champ</i>
+    </ui:fragment>
 
 </ui:fragment>

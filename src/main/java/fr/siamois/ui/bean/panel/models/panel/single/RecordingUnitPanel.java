@@ -288,6 +288,7 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
         detailsForm = formService.findCustomFormByRecordingUnitTypeAndInstitutionId(unit.getType(), sessionSettingsBean.getSelectedInstitution());
         // Init system form answers
         formResponse = initializeFormResponse(detailsForm, unit, forceInit);
+        initEnabledRulesFromForms();
     }
 
     @Override

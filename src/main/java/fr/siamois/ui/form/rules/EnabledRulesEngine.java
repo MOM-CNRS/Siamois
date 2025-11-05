@@ -2,6 +2,12 @@ package fr.siamois.ui.form.rules;
 
 
 import fr.siamois.domain.models.form.customfield.CustomField;
+import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswer;
+import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerId;
+import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerSelectOneConceptFromChildrenOfConcept;
+import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerSelectOneFromFieldCode;
+import fr.siamois.domain.models.vocabulary.Concept;
+import fr.siamois.ui.bean.panel.models.panel.single.AbstractSingleEntity;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -41,19 +47,52 @@ public final class EnabledRulesEngine {
         }
     }
 
+    private CustomFieldAnswer buildConceptOverride(CustomField field, Concept concept) {
+        CustomFieldAnswer answer = AbstractSingleEntity.instantiateAnswerForField(field);
+        CustomFieldAnswerId id = new CustomFieldAnswerId();
+        id.setField(field);
+        answer.setPk(id);
+
+        if (answer instanceof CustomFieldAnswerSelectOneFromFieldCode a) {
+            a.setValue(concept);
+        } else if (answer instanceof CustomFieldAnswerSelectOneConceptFromChildrenOfConcept a) {
+            a.setValue(concept);
+        } else {
+            throw new IllegalArgumentException(
+                    "Field " + field.getLabel() + " does not accept a Concept value"
+            );
+        }
+
+        return answer;
+    }
+
     /** À appeler quand la réponse d'un champ a changé. */
-    public void onAnswerChange(CustomField changedField, ValueProvider vp, ColumnApplier applier) {
+    public void onAnswerChange(
+            CustomField changedField,
+            Concept newConcept,
+            ValueProvider baseVp,
+            ColumnApplier applier
+    ) {
         Objects.requireNonNull(changedField, "changedField must not be null");
-        Objects.requireNonNull(vp, "vp must not be null");
+        Objects.requireNonNull(baseVp, "baseVp must not be null");
         Objects.requireNonNull(applier, "applier must not be null");
 
-        Set<CustomField> impactedCols = dependentsByField.getOrDefault(changedField, Collections.emptySet());
+        // Build a temporary answer holding the proposed concept
+        CustomFieldAnswer proposedAnswer = buildConceptOverride(changedField, newConcept);
+
+        // Wrap the base ValueProvider: return our proposedAnswer for this field
+        ValueProvider overridingVp = f ->
+                f.equals(changedField) ? proposedAnswer : baseVp.getCurrentAnswer(f);
+
+        Set<CustomField> impactedCols =
+                dependentsByField.getOrDefault(changedField, java.util.Collections.emptySet());
         if (impactedCols.isEmpty()) return;
 
         for (CustomField colField : impactedCols) {
-            ColumnRule r = rulesByCol.get(colField);
-            if (r == null) continue; // parano
-            boolean enabled = safeTest(r.enabledWhen(), vp);
+            ColumnRule rule = rulesByCol.get(colField);
+            if (rule == null) continue;
+
+            boolean enabled = safeTest(rule.enabledWhen(), overridingVp);
             applier.setColumnEnabled(colField, enabled);
         }
     }
@@ -62,7 +101,7 @@ public final class EnabledRulesEngine {
         try {
             return c.test(vp);
         } catch (RuntimeException ex) {
-            // fallback sécurisé : en cas d'erreur d'évaluation, désactive la colonne
+            // If we have an error we disable the column
             return false;
         }
     }
