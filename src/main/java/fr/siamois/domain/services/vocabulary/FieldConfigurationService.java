@@ -122,7 +122,7 @@ public class FieldConfigurationService {
             Optional<ConceptFieldConfig> optConfig;
 
             if (user == null) {
-                optConfig = conceptFieldConfigRepository.findByFieldCodeForInstitution(institution.getId(), fieldCode);
+                optConfig = conceptFieldConfigRepository.findOneByFieldCodeForInstitution(institution.getId(), fieldCode);
             } else {
                 optConfig = conceptFieldConfigRepository.findByFieldCodeForUser(user.getId(), institution.getId(), fieldCode);
             }

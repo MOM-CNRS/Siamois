@@ -18,11 +18,44 @@
     </ui:define>
 
     <ui:define name="content">
+
+        <script>
+            //<![CDATA[
+            function start() {
+                PF('startButton1').disable();
+
+                window['progress'] = setInterval(function () {
+                    var pbClient = PF('pbClient'),
+                        oldValue = pbClient.getValue(),
+                        newValue = oldValue + 10;
+
+                    pbClient.setValue(pbClient.getValue() + 10);
+
+                    if (newValue === 100) {
+                        clearInterval(window['progress']);
+                    }
+
+
+                }, 1000);
+            }
+
+            function cancel() {
+                clearInterval(window['progress']);
+                PF('pbClient').setValue(0);
+                PF('startButton1').enable();
+            }
+
+            //]]>
+        </script>
+
         <main>
             <settingscomp:fieldValue
                     title="#{langBean.msg('nav.myThesaurus')}"
                     formId="thesaurusForm"
                     saveMethod="#{profileSettingsBean.saveThesaurusUserConfig()}"
+                    update="pbAjaxUserLoad"
+                    onstart="PF('pbAjaxUserLoadWidget').start();"
+                    oncomplete="PF('pbAjaxUserLoadWidget').cancel();"
             >
                 <div>
                     <p style="font-style: italic">
@@ -35,6 +68,15 @@
                 <settingscomp:fieldValueRow label="#{langBean.msg('myThesaurus.url')}" inputId="profile-thesaurus">
                     <p:inputText id="profile-thesaurus" value="#{profileSettingsBean.FThesaurusUrl}"/>
                 </settingscomp:fieldValueRow>
+                <p:progressBar widgetVar="pbAjaxUserLoadWidget"
+                               id="pbAjaxUserLoad"
+                               ajax="true"
+                               value="#{profileSettingsBean.progressWrapper.progressPercentage}"
+                               labelTemplate="{value}%"
+                               styleClass="mt-3"
+                               global="true"
+                               interval="500"
+                />
             </settingscomp:fieldValue>
         </main>
     </ui:define>

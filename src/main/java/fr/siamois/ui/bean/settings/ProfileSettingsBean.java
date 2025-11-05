@@ -24,6 +24,7 @@ import fr.siamois.domain.services.vocabulary.FieldConfigurationService;
 import fr.siamois.domain.services.vocabulary.VocabularyService;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
+import fr.siamois.ui.bean.settings.components.ProgressWrapper;
 import fr.siamois.utils.MessageUtils;
 import jakarta.faces.application.FacesMessage;
 import lombok.Getter;
@@ -31,6 +32,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.primefaces.PrimeFaces;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
@@ -71,6 +73,8 @@ public class ProfileSettingsBean implements Serializable {
 
     private String fThesaurusUrl;
     private Long fDefaultInstitutionId;
+
+    private ProgressWrapper progressWrapper = new ProgressWrapper();
 
     @EventListener(InstitutionChangeEvent.class)
     public void init() {
@@ -157,10 +161,16 @@ public class ProfileSettingsBean implements Serializable {
             return;
         }
 
+        progressWrapper.setTotalSteps(3);
+
         UserInfo info = sessionSettingsBean.getUserInfo();
+        progressWrapper.incrementStep();
         try {
             Vocabulary vocabulary = vocabularyService.findOrCreateVocabularyOfUri(fThesaurusUrl);
+            progressWrapper.incrementStep();
             fieldConfigurationService.setupFieldConfigurationForUser(info, vocabulary);
+            progressWrapper.incrementStep();
+
             MessageUtils.displayMessage(langBean, FacesMessage.SEVERITY_INFO, "myProfile.thesaurus.message.success");
         } catch (InvalidEndpointException e) {
             MessageUtils.displayMessage(langBean, FacesMessage.SEVERITY_ERROR, "myProfile.thesaurus.uri.invalid");
@@ -168,6 +178,8 @@ public class ProfileSettingsBean implements Serializable {
             MessageUtils.displayMessage(langBean, FacesMessage.SEVERITY_ERROR, "myProfile.thesaurus.siamois.invalid");
         } catch (ErrorProcessingExpansionException e) {
             displayErrorMessage(langBean, "thesaurus.error.processingExpansion");
+        } finally {
+            progressWrapper.reset();
         }
     }
 
@@ -230,6 +242,6 @@ public class ProfileSettingsBean implements Serializable {
         personSettings = null;
         refConfigConcept = null;
         refInstitutions = null;
+        progressWrapper = new ProgressWrapper();
     }
-
 }
