@@ -10,10 +10,8 @@ import org.hibernate.annotations.Checks;
 @Entity
 @Setter
 @Table(name = "concept_hierarchy")
-@Checks({
-        @Check(name = "ck_different_concepts_concept_hierarchy", constraints = "fk_parent_concept_id <> fk_child_concept_id"),
-        @Check(name = "ck_parent_is_not_field_concept_hierarchy", constraints = "fk_parent_concept_id <> fk_parent_field_context_id")
-})
+@Check(name = "ck_different_concepts_concept_hierarchy", constraints = "fk_parent_concept_id <> fk_child_concept_id")
+@Check(name = "ck_parent_is_not_field_concept_hierarchy", constraints = "fk_parent_concept_id <> fk_parent_field_context_id")
 public class ConceptHierarchy {
 
     @Id

@@ -572,56 +572,56 @@ class ConceptServiceTest {
     private Map<Long, Concept> prepareConceptsForHierarchy() {
         Map<Long, Concept> concepts = new HashMap<>();
 
-        Vocabulary vocabulary = new Vocabulary();
-        vocabulary.setId(1L);
-        vocabulary.setExternalVocabularyId("vocab1");
+        Vocabulary currentVocabulary = new Vocabulary();
+        currentVocabulary.setId(1L);
+        currentVocabulary.setExternalVocabularyId("vocab1");
 
         Concept parentConcept = new Concept();
         parentConcept.setId(10L);
         parentConcept.setExternalId("parentFieldConcept");
-        parentConcept.setVocabulary(vocabulary);
+        parentConcept.setVocabulary(currentVocabulary);
         concepts.put(10L, parentConcept);
 
         Concept child1 = new Concept();
         child1.setId(11L);
         child1.setExternalId("concept1");
-        child1.setVocabulary(vocabulary);
+        child1.setVocabulary(currentVocabulary);
         concepts.put(11L, child1);
 
         Concept child2 = new Concept();
         child2.setId(12L);
         child2.setExternalId("concept2");
-        child2.setVocabulary(vocabulary);
+        child2.setVocabulary(currentVocabulary);
         concepts.put(12L, child2);
 
         Concept child3 = new Concept();
         child3.setId(13L);
         child3.setExternalId("concept3");
-        child3.setVocabulary(vocabulary);
+        child3.setVocabulary(currentVocabulary);
         concepts.put(13L, child3);
 
         Concept child4 = new Concept();
         child4.setId(14L);
         child4.setExternalId("concept4");
-        child4.setVocabulary(vocabulary);
+        child4.setVocabulary(currentVocabulary);
         concepts.put(14L, child4);
 
         Concept child5 = new Concept();
         child5.setId(15L);
         child5.setExternalId("concept5");
-        child5.setVocabulary(vocabulary);
+        child5.setVocabulary(currentVocabulary);
         concepts.put(15L, child5);
 
         Concept child6 = new Concept();
         child6.setId(16L);
         child6.setExternalId("concept6");
-        child6.setVocabulary(vocabulary);
+        child6.setVocabulary(currentVocabulary);
         concepts.put(16L, child6);
 
         Concept child8 = new Concept();
         child8.setId(18L);
         child8.setExternalId("concept8");
-        child8.setVocabulary(vocabulary);
+        child8.setVocabulary(currentVocabulary);
         concepts.put(18L, child8);
 
         return concepts;
