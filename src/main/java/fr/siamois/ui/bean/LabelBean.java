@@ -65,8 +65,10 @@ public class LabelBean implements Serializable {
     public String findPrefLabelOf(ConceptAltLabel altLabel) {
         return findLabelOf(altLabel.getConcept());
     }
+
     /**
      * Find the best matching pref label for the given concept based on the user's preferred language
+     *
      * @param concept the concept to find the label for
      * @return the best matching label, or the concept's external ID if no label is found
      */
@@ -100,7 +102,7 @@ public class LabelBean implements Serializable {
     public ConceptLabel findPrefLabelOf(Concept concept) {
         if (concept == null) return null;
         UserInfo info = sessionSettingsBean.getUserInfo();
-        return labelService.findLabelOf(concept,  info.getLang());
+        return labelService.findLabelOf(concept, info.getLang());
     }
 
     public Optional<ConceptLabel> findById(Long id) {
@@ -140,13 +142,17 @@ public class LabelBean implements Serializable {
     }
 
     private record HierarchyCallParams(ConceptLabel label, String fieldCode) {
-            @Override
-            public boolean equals(Object o) {
-                if (this == o) return true;
-                if (!(o instanceof HierarchyCallParams that)) return false;
-                return Objects.equals(label, that.label) && Objects.equals(fieldCode, that.fieldCode);
-            }
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (!(o instanceof HierarchyCallParams that)) return false;
+            return Objects.equals(label, that.label) && Objects.equals(fieldCode, that.fieldCode);
+        }
 
+        @Override
+        public int hashCode() {
+            return Objects.hash(label, fieldCode);
+        }
     }
 
 }
