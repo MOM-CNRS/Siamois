@@ -66,7 +66,7 @@ public class CustomFormSeeder {
         // 5) mapping des valeurs -> ValueJson
         List<EnabledWhenJson.ValueJson> values = new ArrayList<>(n);
         for (CustomFieldAnswerDTO ev : dto.expectedValues()) {
-            values.add(toValueJson(ev)); // construit {answerClass, value(JsonNode)} selon ton DTO
+            values.add(toValueJson(ev)); // construit {answerClass, value(JsonNode)}
         }
 
         // 6) build modèle
