@@ -80,27 +80,6 @@ public abstract class AbstractSingleEntity<T> extends AbstractPanel implements S
 
     public static final String COLUMN_CLASS_NAME = "ui-g-12 ui-md-6 ui-lg-4";
 
-    protected AbstractSingleEntity(ApplicationContext context) {
-        this.sessionSettingsBean = context.getBean(SessionSettingsBean.class);
-        this.fieldConfigurationService = context.getBean(FieldConfigurationService.class);
-        this.spatialUnitTreeService = context.getBean(SpatialUnitTreeService.class);
-        this.spatialUnitService = context.getBean(SpatialUnitService.class);
-        this.actionUnitService = context.getBean(ActionUnitService.class);
-        this.documentService = context.getBean(DocumentService.class);
-    }
-
-    protected AbstractSingleEntity(String titleCodeOrTitle,
-                                   String icon,
-                                   String panelClass,
-                                   ApplicationContext context) {
-        super(titleCodeOrTitle, icon, panelClass);
-        this.sessionSettingsBean = context.getBean(SessionSettingsBean.class);
-        this.fieldConfigurationService = context.getBean(FieldConfigurationService.class);
-        this.spatialUnitTreeService = context.getBean(SpatialUnitTreeService.class);
-        this.spatialUnitService = context.getBean(SpatialUnitService.class);
-        this.actionUnitService = context.getBean(ActionUnitService.class);
-        this.documentService = context.getBean(DocumentService.class);
-    }
 
     public boolean isColumnEnabled(CustomField field) {
         return colEnabledByFieldId.getOrDefault(field.getId(), true);
@@ -257,7 +236,6 @@ public abstract class AbstractSingleEntity<T> extends AbstractPanel implements S
         }
     }
 
-    public static final String COLUMN_CLASS_NAME = "ui-g-12 ui-md-6 ui-lg-4";
 
     protected AbstractSingleEntity(ApplicationContext context) {
         this.sessionSettingsBean = context.getBean(SessionSettingsBean.class);
