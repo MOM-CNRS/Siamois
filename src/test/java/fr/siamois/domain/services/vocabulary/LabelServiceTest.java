@@ -253,7 +253,7 @@ class LabelServiceTest {
         concept.setExternalId("5L");
 
         when(conceptLabelRepository
-                .findAllLabelsByParentConceptAndLangCode(eq(concept), anyString(), any(Limit.class)))
+                .findAllLabelsByParentConceptAndLangCode(eq(concept.getId()), anyString(), anyInt()))
                 .thenReturn(List.of(label, altLabel, altLabel2));
 
         List<ConceptLabel> results = labelService.findMatchingConcepts(concept, "fr", "", 10);

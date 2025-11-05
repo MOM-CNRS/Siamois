@@ -129,7 +129,7 @@ public class LabelService {
     @Transactional(readOnly = true)
     public List<ConceptLabel> findMatchingConcepts(Concept parentConcept, String langCode, String input, int limit) {
         if (input == null || input.isEmpty()) {
-            return conceptLabelRepository.findAllLabelsByParentConceptAndLangCode(parentConcept, langCode, Limit.of(limit));
+            return conceptLabelRepository.findAllLabelsByParentConceptAndLangCode(parentConcept.getId(), langCode, limit);
         } else {
             return conceptLabelRepository.findAllByParentConceptAndInputLimited(parentConcept.getId(), langCode, input, limit);
         }
