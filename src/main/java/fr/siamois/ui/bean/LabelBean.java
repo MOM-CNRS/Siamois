@@ -33,6 +33,9 @@ public class LabelBean implements Serializable {
     private final transient ConceptService conceptService;
 
 
+    // This caching mechanism is a simple in-memory cache to avoid repeated database calls during a user session.
+    // However, it would be better to use Spring boot's embedded caching mechanism with a proper cache manager.
+    // Can't do it right now because of the JSF managed bean session scope.
     private final Map<String, Map<Concept, String>> prefLabelCache = new HashMap<>();
     private final Map<Long, ConceptLabel> idToLabelCache = new HashMap<>();
     private final Map<HierarchyCallParams, String> hierarchyLabelCache = new HashMap<>();
@@ -62,7 +65,7 @@ public class LabelBean implements Serializable {
         prefLabelCache.computeIfAbsent(lang, k -> new HashMap<>()).put(concept, label);
     }
 
-    public String findPrefLabelOf(ConceptAltLabel altLabel) {
+    public String findConceptLabelOf(ConceptAltLabel altLabel) {
         return findLabelOf(altLabel.getConcept());
     }
 
@@ -87,19 +90,13 @@ public class LabelBean implements Serializable {
 
     }
 
-    public String findLabelFrom(ConceptLabel label) {
-        if (label == null) return null;
-        return label.getLabel();
-    }
-
-
     public String findVocabularyLabelOf(Concept concept) {
         if (concept == null) return null;
         UserInfo info = sessionSettingsBean.getUserInfo();
         return labelService.findLabelOf(concept.getVocabulary(), info.getLang()).getValue();
     }
 
-    public ConceptLabel findPrefLabelOf(Concept concept) {
+    public ConceptLabel findConceptLabelOf(Concept concept) {
         if (concept == null) return null;
         UserInfo info = sessionSettingsBean.getUserInfo();
         return labelService.findLabelOf(concept, info.getLang());

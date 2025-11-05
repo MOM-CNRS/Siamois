@@ -420,10 +420,10 @@ public abstract class AbstractSingleEntity<T> extends AbstractPanel implements S
         } else if (value instanceof Concept c) {
             if (answer instanceof CustomFieldAnswerSelectOneFromFieldCode codeAnswer) {
                 codeAnswer.setValue(c);
-                codeAnswer.setUiVal(labelBean.findPrefLabelOf(c));
+                codeAnswer.setUiVal(labelBean.findConceptLabelOf(c));
             } else if (answer instanceof CustomFieldAnswerSelectOneConceptFromChildrenOfConcept childAnswer) {
                 childAnswer.setValue(c);
-                childAnswer.setUiVal(labelBean.findPrefLabelOf(c));
+                childAnswer.setUiVal(labelBean.findConceptLabelOf(c));
             }
         } else if (value instanceof ActionUnit a && answer instanceof CustomFieldAnswerSelectOneActionUnit actionUnitAnswer) {
             actionUnitAnswer.setValue(a);
