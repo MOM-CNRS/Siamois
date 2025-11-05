@@ -292,4 +292,162 @@ class CustomFormSeederTest {
         verify(fieldSeeder).findFieldOrThrow(condSpec);
     }
 
+    // Build a form DTO with a single panel/row/col
+    private CustomFormDTO formWith(CustomColDTO col) {
+        return formDTO(List.of(panelDTO(rowDTO(col))));
+    }
+
+    @Test
+    void seed_fails_whenEnabledWhen_field_isNull() {
+        // Arrange
+        CustomField columnField = new CustomFieldText(); columnField.setId(100L);
+        CustomFieldSeederSpec colSpec = fieldSpec(new ConceptSeeder.ConceptKey("ext", "CF"));
+        CustomColDTO col = colDTO(colSpec,
+                new EnabledWhenSpecSeedDTO(
+                        EnabledWhenSpecSeedDTO.Operator.EQUALS,
+                        null,                  // <-- field is null
+                        List.of()              // irrelevant, we should fail before
+                )
+        );
+        CustomFormDTO dto = formWith(col);
+
+        when(customFormRepository.findByNameAndDescription("My Form","A sample form"))
+                .thenReturn(Optional.empty());
+
+        // Act + Assert
+        List<CustomFormDTO> list = List.of(dto);
+        assertThrows(IllegalArgumentException.class, () -> seeder.seed(list));
+        verify(customFormRepository, never()).save(any());
+    }
+
+    @Test
+    void seed_fails_whenEnabledWhen_values_nullOrEmpty() {
+        CustomField columnField = new CustomFieldText(); columnField.setId(100L);
+        CustomField observedField = new CustomFieldText(); observedField.setId(200L);
+
+        CustomFieldSeederSpec colSpec  = fieldSpec(new ConceptSeeder.ConceptKey("ext","CF"));
+        CustomFieldSeederSpec condSpec = fieldSpec(new ConceptSeeder.ConceptKey("ext","COND"));
+
+        when(customFormRepository.findByNameAndDescription("My Form","A sample form"))
+                .thenReturn(Optional.empty());
+
+        // null values
+        CustomColDTO colNull = colDTO(colSpec,
+                new EnabledWhenSpecSeedDTO(EnabledWhenSpecSeedDTO.Operator.IN, condSpec, null));
+        List<CustomFormDTO> list = List.of(formWith(colNull));
+        assertThrows(IllegalArgumentException.class, () -> seeder.seed(list));
+
+        // empty values
+        CustomColDTO colEmpty = colDTO(colSpec,
+                new EnabledWhenSpecSeedDTO(EnabledWhenSpecSeedDTO.Operator.IN, condSpec, List.of()));
+
+        List<CustomFormDTO> list = List.of(formWith(colEmpty));
+        assertThrows(IllegalArgumentException.class, () -> seeder.seed(list));
+
+        verify(customFormRepository, never()).save(any());
+    }
+
+    // One expected value of type Concept bound to a given observed-field spec
+    private CustomFieldAnswerDTO expectedConceptValue(CustomFieldSeederSpec observedSpec,
+                                                      String vocabExtId, String conceptExtId) {
+        return new CustomFieldAnswerDTO(
+                fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerSelectOneFromFieldCode.class,
+                observedSpec,
+                new ConceptSeeder.ConceptKey(vocabExtId, conceptExtId)
+        );
+    }
+
+    @Test
+    void seed_fails_whenEquals_hasMoreThanOneValue() {
+        CustomField columnField = new CustomFieldText(); columnField.setId(100L);
+        CustomField observedField = new CustomFieldText(); observedField.setId(200L);
+
+        CustomFieldSeederSpec colSpec  = fieldSpec(new ConceptSeeder.ConceptKey("ext","CF"));
+        CustomFieldSeederSpec condSpec = fieldSpec(new ConceptSeeder.ConceptKey("ext","COND"));
+
+        var v1 = expectedConceptValue(condSpec, "ext", "C1");
+        var v2 = expectedConceptValue(condSpec, "ext", "C2");
+
+        CustomColDTO col = colDTO(colSpec,
+                new EnabledWhenSpecSeedDTO(EnabledWhenSpecSeedDTO.Operator.EQUALS, condSpec, List.of(v1, v2)));
+
+        when(customFormRepository.findByNameAndDescription("My Form","A sample form"))
+                .thenReturn(Optional.empty());
+        when(fieldSeeder.findFieldOrThrow(condSpec)).thenReturn(observedField);
+
+        List<CustomFormDTO> list = List.of(formWith(col));
+        assertThrows(IllegalArgumentException.class, () -> seeder.seed(list));
+        verify(customFormRepository, never()).save(any());
+    }
+
+    @Test
+    void seed_fails_whenNotEquals_hasMoreThanOneValue() {
+        CustomField columnField = new CustomFieldText(); columnField.setId(100L);
+        CustomField observedField = new CustomFieldText(); observedField.setId(200L);
+
+        CustomFieldSeederSpec colSpec  = fieldSpec(new ConceptSeeder.ConceptKey("ext","CF"));
+        CustomFieldSeederSpec condSpec = fieldSpec(new ConceptSeeder.ConceptKey("ext","COND"));
+
+        var v1 = expectedConceptValue(condSpec, "ext", "C1");
+        var v2 = expectedConceptValue(condSpec, "ext", "C2");
+
+        CustomColDTO col = colDTO(colSpec,
+                new EnabledWhenSpecSeedDTO(EnabledWhenSpecSeedDTO.Operator.NOT_EQUALS, condSpec, List.of(v1, v2)));
+
+        when(customFormRepository.findByNameAndDescription("My Form","A sample form"))
+                .thenReturn(Optional.empty());
+        when(fieldSeeder.findFieldOrThrow(condSpec)).thenReturn(observedField);
+
+        List<CustomFormDTO> list = List.of(formWith(col));
+        assertThrows(IllegalArgumentException.class, () -> seeder.seed(list));
+        verify(customFormRepository, never()).save(any());
+    }
+
+    @Test
+    void seed_fails_whenIn_hasNoValues() {
+        CustomField columnField = new CustomFieldText(); columnField.setId(100L);
+        CustomField observedField = new CustomFieldText(); observedField.setId(200L);
+
+        CustomFieldSeederSpec colSpec  = fieldSpec(new ConceptSeeder.ConceptKey("ext","CF"));
+        CustomFieldSeederSpec condSpec = fieldSpec(new ConceptSeeder.ConceptKey("ext","COND"));
+
+        CustomColDTO col = colDTO(colSpec,
+                new EnabledWhenSpecSeedDTO(EnabledWhenSpecSeedDTO.Operator.IN, condSpec, List.of()));
+
+        when(customFormRepository.findByNameAndDescription("My Form","A sample form"))
+                .thenReturn(Optional.empty());
+
+        List<CustomFormDTO> list = List.of(formWith(col));
+        assertThrows(IllegalArgumentException.class, () -> seeder.seed(list));
+        verify(customFormRepository, never()).save(any());
+    }
+
+    @Test
+    void seed_fails_whenExpectedValues_fieldDiffersFromEnabledField() {
+        CustomField columnField = new CustomFieldText(); columnField.setId(100L);
+        CustomField observedField = new CustomFieldText(); observedField.setId(200L);
+        CustomField wrongObserved = new CustomFieldText(); wrongObserved.setId(300L);
+
+        CustomFieldSeederSpec colSpec   = fieldSpec(new ConceptSeeder.ConceptKey("ext","CF"));
+        CustomFieldSeederSpec condSpec  = fieldSpec(new ConceptSeeder.ConceptKey("ext","COND"));
+        CustomFieldSeederSpec wrongSpec = fieldSpec(new ConceptSeeder.ConceptKey("ext","WRONG"));
+
+        var v1 = expectedConceptValue(wrongSpec, "ext", "C1"); // <-- wrong field spec
+
+        CustomColDTO col = colDTO(colSpec,
+                new EnabledWhenSpecSeedDTO(EnabledWhenSpecSeedDTO.Operator.EQUALS, condSpec, List.of(v1)));
+
+        when(customFormRepository.findByNameAndDescription("My Form","A sample form"))
+                .thenReturn(Optional.empty());
+        when(fieldSeeder.findFieldOrThrow(condSpec)).thenReturn(observedField);
+        List<CustomFormDTO> list = List.of(formWith(col));
+        assertThrows(IllegalArgumentException.class, () -> seeder.seed(list));
+        verify(customFormRepository, never()).save(any());
+    }
+
+
+
+
+
+
 }
