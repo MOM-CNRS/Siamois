@@ -41,20 +41,19 @@ public class CustomFormSeeder {
             default         -> throw new IllegalArgumentException("Unsupported operator: " + dto.operator());
         };
 
-        // 2) champ observé = dto.field()
-        final Long fieldId = extractFieldId(dto.field()); // <- utilise le seeder pour retrouver/créer et renvoyer l'id
 
-        // 3) toutes les expectedValues doivent référencer le même champ
+        // 2) resolve the observed field ONCE
+        final Long fieldId = extractFieldId(dto.field());
+
+        // 3) ensure all expected values reference the SAME field, but without extra lookups
         for (int i = 0; i < dto.expectedValues().size(); i++) {
-            CustomFieldAnswerDTO ev = dto.expectedValues().get(i);
+            var ev = dto.expectedValues().get(i);
             if (ev == null || ev.field() == null) {
                 throw new IllegalArgumentException("expectedValues[" + i + "].field is required");
             }
-            Long otherId = extractFieldId(ev.field());
-            if (!fieldId.equals(otherId)) {
+            if (!ev.field().equals(dto.field())) { // compare specs directly
                 throw new IllegalArgumentException(
-                        "All expectedValues must reference the same fieldId as enabledWhen.field (expected "
-                                + fieldId + ", got " + otherId + " at index " + i + ")"
+                        "All expectedValues must reference the same field as enabledWhen.field"
                 );
             }
         }

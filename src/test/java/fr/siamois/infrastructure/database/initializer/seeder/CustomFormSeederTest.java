@@ -3,10 +3,10 @@ package fr.siamois.infrastructure.database.initializer.seeder;
 
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.customfield.CustomFieldText;
-import fr.siamois.domain.models.form.customform.CustomCol;
-import fr.siamois.domain.models.form.customform.CustomForm;
-import fr.siamois.domain.models.form.customform.CustomFormPanel;
-import fr.siamois.domain.models.form.customform.CustomRow;
+import fr.siamois.domain.models.form.customform.*;
+import fr.siamois.domain.models.vocabulary.Concept;
+import fr.siamois.domain.models.vocabulary.Vocabulary;
+import fr.siamois.infrastructure.database.initializer.seeder.customfield.CustomFieldAnswerDTO;
 import fr.siamois.infrastructure.database.initializer.seeder.customfield.CustomFieldSeeder;
 import fr.siamois.infrastructure.database.initializer.seeder.customfield.CustomFieldSeederSpec;
 import fr.siamois.infrastructure.database.initializer.seeder.customform.*;
@@ -50,13 +50,28 @@ class CustomFormSeederTest {
         );
     }
 
-    private CustomColDTO colDTO(CustomFieldSeederSpec spec) {
-        return new CustomColDTO(
-                /* readOnly */ true,
-                /* isRequired */ true,
-                /* field */ spec,
-                /* className */ "col-6"
+    private CustomFieldSeederSpec fieldSpec(ConceptSeeder.ConceptKey key) {
+        return new CustomFieldSeederSpec(
+                CustomFieldText.class,
+                true,
+                "",              // valueBinding
+                key,            // conceptKey (unused by this seeder)
+                "type",          // binding/type key
+                "", "", ""
+        );
+    }
 
+    private CustomColDTO colDTO(CustomFieldSeederSpec spec) {
+        return colDTO(spec, null);
+    }
+
+    private CustomColDTO colDTO(CustomFieldSeederSpec spec, EnabledWhenSpecSeedDTO enabled) {
+        return new CustomColDTO(
+                /* readOnly   */ true,
+                /* isRequired */ true,
+                /* field      */ spec,
+                /* className  */ "col-6",
+                /* enabledWhen*/ enabled
         );
     }
 
@@ -183,4 +198,98 @@ class CustomFormSeederTest {
                 .thenReturn(Optional.empty());
         assertThrows(IllegalStateException.class, () -> seeder.findOrThrow(dto));
     }
+
+    @Test
+    void seed_mapsEnabledWhenSpec_intoModel() {
+
+        // Arrange
+        Vocabulary vocabulary = new Vocabulary();
+        vocabulary.setExternalVocabularyId("extid");
+        vocabulary.setBaseUri("baseUri");
+        Concept c = new Concept();
+        c.setExternalId("1");
+        c.setVocabulary(vocabulary);
+        Concept c2 = new Concept();
+        c2.setExternalId("2");
+        c2.setVocabulary(vocabulary);
+
+        // Champ de la colonne (affiché)
+        CustomField columnField = new CustomFieldText();
+        columnField.setId(100L);
+        columnField.setLabel("Column 1");
+        columnField.setConcept(c);
+
+        // Champ observé par la règle (comparé)
+        CustomField comparedField = new CustomFieldText();
+        comparedField.setId(200L);
+        columnField.setLabel("Column 2");
+        columnField.setConcept(c2);
+
+        // Specs pour retrouver/creer ces champs
+        CustomFieldSeederSpec colSpec = fieldSpec(new ConceptSeeder.ConceptKey("extid","1"));        // helper existant
+        CustomFieldSeederSpec condSpec = fieldSpec(new ConceptSeeder.ConceptKey("extid","2"));
+
+        // DTO "valeur attendue" = réponse de type Concept
+        var conceptKey = new fr.siamois.infrastructure.database.initializer.seeder.ConceptSeeder.ConceptKey("extid", "2");
+        var expectedValue = new CustomFieldAnswerDTO(
+                fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerSelectOneFromFieldCode.class,
+                condSpec, // IMPORTANT: même champ que la condition
+                conceptKey
+        );
+
+        // Règle enabledWhen = EQUALS (une seule valeur)
+        EnabledWhenSpecSeedDTO enabled = new EnabledWhenSpecSeedDTO(
+                EnabledWhenSpecSeedDTO.Operator.EQUALS,
+                condSpec,                         // champ observé
+                java.util.List.of(expectedValue)  // 1 valeur
+        );
+
+        // Colonne avec enabledWhen
+        CustomColDTO col = colDTO(colSpec, enabled);
+        CustomRowDTO row = rowDTO(col);
+        CustomFormPanelDTO panel = panelDTO(row);
+        CustomFormDTO dto = formDTO(java.util.List.of(panel));
+
+        when(customFormRepository.findByNameAndDescription("My Form", "A sample form"))
+                .thenReturn(Optional.empty());
+
+        // fieldSeeder doit renvoyer le bon champ selon la spec passée
+        when(fieldSeeder.findFieldOrThrow(colSpec)).thenReturn(columnField);
+        when(fieldSeeder.findFieldOrThrow(condSpec)).thenReturn(comparedField);
+
+        ArgumentCaptor<CustomForm> formCaptor = ArgumentCaptor.forClass(CustomForm.class);
+
+        // Act
+        seeder.seed(java.util.List.of(dto));
+
+        // Assert
+        verify(customFormRepository).save(formCaptor.capture());
+        CustomForm saved = formCaptor.getValue();
+
+        // retrouve la 1ère colonne
+        CustomCol savedCol = saved.getLayout().get(0).getRows().get(0).getColumns().get(0);
+
+        assertSame(columnField, savedCol.getField());
+        assertNotNull(savedCol.getEnabledWhenSpec(), "enabledWhen should be set");
+
+        EnabledWhenJson ew = savedCol.getEnabledWhenSpec();
+        assertEquals(EnabledWhenJson.Op.eq, ew.getOp());
+        assertEquals(200L, ew.getFieldId()); // id du champ comparé
+        assertNotNull(ew.getValues());
+        assertEquals(1, ew.getValues().size());
+
+        EnabledWhenJson.ValueJson vj = ew.getValues().get(0);
+        assertEquals(
+                fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerSelectOneFromFieldCode.class.getName(),
+                vj.getAnswerClass()
+        );
+        assertNotNull(vj.getValue());
+        assertEquals("extid", vj.getValue().get("vocabularyExtId").asText());
+        assertEquals("2",  vj.getValue().get("conceptExtId").asText());
+
+        // vérifie que les deux champs ont été résolus via le seeder
+        verify(fieldSeeder).findFieldOrThrow(colSpec);
+        verify(fieldSeeder).findFieldOrThrow(condSpec);
+    }
+
 }
