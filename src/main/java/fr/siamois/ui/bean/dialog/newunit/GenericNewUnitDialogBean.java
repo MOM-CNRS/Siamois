@@ -5,6 +5,7 @@ import fr.siamois.domain.models.exceptions.EntityAlreadyExistsException;
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
+import fr.siamois.domain.models.vocabulary.label.ConceptLabel;
 import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.domain.services.vocabulary.FieldService;
 import fr.siamois.ui.bean.LangBean;
@@ -151,7 +152,7 @@ public class GenericNewUnitDialogBean<T extends TraceableEntity>
 
     // ==== logique ====
     @Override
-    public void setFieldConceptAnswerHasBeenModified(SelectEvent<Concept> event) {
+    public void setFieldConceptAnswerHasBeenModified(SelectEvent<ConceptLabel> event) {
         UIComponent component = event.getComponent();
         CustomField field = (CustomField) component.getAttributes().get("field");
         formResponse.getAnswers().get(field).setHasBeenModified(true);

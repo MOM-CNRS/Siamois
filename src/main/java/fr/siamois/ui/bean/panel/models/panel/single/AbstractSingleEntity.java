@@ -12,6 +12,7 @@ import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.models.vocabulary.Vocabulary;
 import fr.siamois.domain.models.vocabulary.VocabularyType;
+import fr.siamois.domain.models.vocabulary.label.ConceptLabel;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.document.DocumentService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
@@ -297,13 +298,13 @@ public abstract class AbstractSingleEntity<T> extends AbstractPanel implements S
         hasUnsavedModifications = true;
     }
 
-    public void setFieldConceptAnswerHasBeenModified(SelectEvent<Concept> event) {
+    public void setFieldConceptAnswerHasBeenModified(SelectEvent<ConceptLabel> event) {
         UIComponent component = event.getComponent();
         CustomField field = (CustomField) component.getAttributes().get("field");
 
         formResponse.getAnswers().get(field).setHasBeenModified(true);
         hasUnsavedModifications = true;
-        Concept newValue = event.getObject(); // ← la nouvelle valeur
+        Concept newValue = event.getObject().getConcept(); // ← la nouvelle valeur
 
         if (Boolean.TRUE.equals(field.getIsSystemField()) && Objects.equals(field.getValueBinding(), getFormScopePropertyName())) {
 
@@ -587,7 +588,11 @@ public abstract class AbstractSingleEntity<T> extends AbstractPanel implements S
         } else if (answer instanceof CustomFieldAnswerSelectOnePerson a) {
             return a.getValue();
         } else if (answer instanceof CustomFieldAnswerSelectOneFromFieldCode a) {
-            return a.getUiVal().getConcept();
+            try {
+                return a.getUiVal().getConcept();
+            } catch(NullPointerException e) {
+                return null;
+            }
         } else if (answer instanceof CustomFieldAnswerSelectOneConceptFromChildrenOfConcept a) {
             return a.getUiVal().getConcept();
         } else if (answer instanceof CustomFieldAnswerSelectOneActionUnit a) {
