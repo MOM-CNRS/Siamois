@@ -2,6 +2,7 @@ package fr.siamois.infrastructure.api.dto;
 
 
 import lombok.Getter;
+import lombok.Setter;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -9,6 +10,9 @@ import java.util.Map;
 @Getter
 public class ConceptBranchDTO {
     private final Map<String, FullInfoDTO> data = new HashMap<>();
+
+    @Setter
+    private String parentUrl;
 
     public void addConceptBranchDTO(String url, FullInfoDTO dto) {
         this.data.putIfAbsent(url, dto);

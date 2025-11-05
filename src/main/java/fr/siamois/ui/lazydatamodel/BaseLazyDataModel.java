@@ -4,6 +4,7 @@ package fr.siamois.ui.lazydatamodel;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.models.vocabulary.LocalizedConceptData;
+import fr.siamois.domain.models.vocabulary.label.ConceptLabel;
 import jakarta.faces.application.FacesMessage;
 import jakarta.faces.context.FacesContext;
 import lombok.Getter;
@@ -56,8 +57,8 @@ public abstract class BaseLazyDataModel<T> extends LazyDataModel<T> {
     // Filters
     private String globalFilter;
     // Filters
-    protected transient List<LocalizedConceptData> selectedTypes = new ArrayList<>();
-    protected transient List<LocalizedConceptData> selectedAuthors = new ArrayList<>();
+    protected transient List<ConceptLabel> selectedTypes = new ArrayList<>();
+    protected transient List<ConceptLabel> selectedAuthors = new ArrayList<>();
     protected String nameFilter;
     // selection
     protected transient List<T> selectedUnits ;

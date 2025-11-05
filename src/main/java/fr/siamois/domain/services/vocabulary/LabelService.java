@@ -1,18 +1,19 @@
 package fr.siamois.domain.services.vocabulary;
 
 import fr.siamois.domain.models.vocabulary.Concept;
-import fr.siamois.domain.models.vocabulary.LocalizedConceptData;
 import fr.siamois.domain.models.vocabulary.Vocabulary;
+import fr.siamois.domain.models.vocabulary.label.ConceptAltLabel;
+import fr.siamois.domain.models.vocabulary.label.ConceptLabel;
+import fr.siamois.domain.models.vocabulary.label.ConceptPrefLabel;
 import fr.siamois.domain.models.vocabulary.label.VocabularyLabel;
-import fr.siamois.infrastructure.database.repositories.vocabulary.LocalizedConceptDataRepository;
+import fr.siamois.infrastructure.database.repositories.vocabulary.label.ConceptLabelRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.label.VocabularyLabelRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.Limit;
+import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -27,26 +28,8 @@ import java.util.Set;
 @RequiredArgsConstructor
 public class LabelService {
 
-    public static final double MIN_SIMILARITY_SCORE = 0.6;
     private final VocabularyLabelRepository vocabularyLabelRepository;
-    private final LocalizedConceptDataRepository localizedConceptDataRepository;
-
-    /**
-     * Finds the label for a given concept in the specified language.
-     * If no label exists, it returns a default label with the concept's external ID.
-     *
-     * @param concept  the concept to find the label for
-     * @param langCode the language code for the label
-     * @return the found or default label
-     */
-    @Transactional(readOnly = true)
-    public LocalizedConceptData findLabelOf(Concept concept, String langCode) {
-        if (concept == null) {
-            return null;
-        }
-        Optional<LocalizedConceptData> optLocalized = localizedConceptDataRepository.findByConceptAndLangCode(concept.getId(), langCode);
-        return optLocalized.orElse(null);
-    }
+    private final ConceptLabelRepository conceptLabelRepository;
 
     /**
      * Finds the label for a given vocabulary in the specified language.
@@ -87,19 +70,20 @@ public class LabelService {
      * @param label    the label of the label
      */
     public void updateLabel(Concept concept, String langCode, String label, Concept fieldParentConcept) {
-        Optional<LocalizedConceptData> conceptData = localizedConceptDataRepository.findByConceptAndLangCode(concept.getId(), langCode);
-        LocalizedConceptData savedConceptData = null;
-        if (conceptData.isEmpty()) {
-            savedConceptData = new LocalizedConceptData();
-            savedConceptData.setConcept(concept);
-            savedConceptData.setLangCode(langCode);
-            savedConceptData.setLabel(label);
-            savedConceptData.setParentConcept(fieldParentConcept);
+        Optional<ConceptPrefLabel> optPrefLabel = conceptLabelRepository.findByConceptAndLangCode(concept, langCode);
+        ConceptPrefLabel prefLabel;
+        if (optPrefLabel.isEmpty()) {
+            prefLabel = new ConceptPrefLabel();
+            prefLabel.setConcept(concept);
+            prefLabel.setLangCode(langCode);
         } else {
-            savedConceptData = conceptData.get();
-            savedConceptData.setLabel(label);
+            prefLabel = optPrefLabel.get();
         }
-        localizedConceptDataRepository.save(savedConceptData);
+        prefLabel.setLabel(label);
+        if (fieldParentConcept != null && !fieldParentConcept.equals(concept)) {
+            prefLabel.setParentConcept(fieldParentConcept);
+        }
+        conceptLabelRepository.save(prefLabel);
     }
 
     /**
@@ -129,15 +113,6 @@ public class LabelService {
 
     }
 
-    protected List<LocalizedConceptData> findAllConcepts(Concept parentConcept, int limit) {
-        try {
-            return localizedConceptDataRepository.findAllByParentConcept(parentConcept, Limit.of(limit));
-        } catch (RuntimeException e) {
-            log.error(e.getMessage());
-            return List.of();
-        }
-    }
-
     /**
      * Finds concepts matching the input label under the specified parent concept and language.
      * When the input is null or empty, it returns all concepts under the parent concept in the specified language.
@@ -151,32 +126,48 @@ public class LabelService {
      * @return List of unique concepts matching the input
      */
     @Transactional(readOnly = true)
-    public List<Concept> findMatchingConcepts(Concept parentConcept, String langCode, String input, int limit) {
-        Set<Concept> results = new HashSet<>();
+    public List<ConceptLabel> findMatchingConcepts(Concept parentConcept, String langCode, String input, int limit) {
         if (input == null || input.isEmpty()) {
-            results.addAll(this.findAllConcepts(parentConcept, limit).stream()
-                    .map(LocalizedConceptData::getConcept)
-                    .toList());
+            return conceptLabelRepository.findAllLabelsByParentConceptAndLangCode(parentConcept.getId(), langCode, limit);
         } else {
-            results.addAll(localizedConceptDataRepository
-                    .findConceptByFieldCodeAndInputLimit(parentConcept.getId(), langCode, input, MIN_SIMILARITY_SCORE, limit)
-                    .stream()
-                    .map(LocalizedConceptData::getConcept)
-                    .toList());
+            return conceptLabelRepository.findAllByParentConceptAndInputLimited(parentConcept.getId(), langCode, input, limit);
+        }
 
-            Set<LocalizedConceptData> exactMatchOtherLang = localizedConceptDataRepository.findLocalizedConceptDataByParentConceptAndLabelContaining(parentConcept, input);
-            for (LocalizedConceptData lcd : exactMatchOtherLang) {
-                if (results.size() < limit) {
-                    results.add(lcd.getConcept());
-                } else {
-                    break;
-                }
+    }
+
+    public void updateAltLabel(Concept savedConcept, String lang, String value, Concept fieldParentConcept) {
+        Optional<ConceptAltLabel> opt = conceptLabelRepository.findAltLabelByConceptAndLangCode(savedConcept, lang);
+        ConceptAltLabel altLabel;
+        if (opt.isPresent()) {
+            altLabel = opt.get();
+        } else {
+            altLabel = new ConceptAltLabel();
+            altLabel.setConcept(savedConcept);
+            altLabel.setLangCode(lang);
+        }
+        altLabel.setLabel(value);
+        if (fieldParentConcept != null && !fieldParentConcept.equals(savedConcept)) {
+            altLabel.setParentConcept(fieldParentConcept);
+        }
+        conceptLabelRepository.save(altLabel);
+    }
+
+    public ConceptLabel findLabelOf(@NonNull Concept concept, @NonNull String langCode) {
+        Optional<ConceptPrefLabel> opt = conceptLabelRepository.findPrefLabelByLangCodeAndConcept(langCode, concept);
+        if (opt.isPresent()) return opt.get();
+
+        Set<ConceptAltLabel> altLabels = conceptLabelRepository.findAllAltLabelsByLangCodeAndConcept(langCode, concept);
+        for (ConceptAltLabel altLabel : altLabels) {
+            if (altLabel.getLangCode().equalsIgnoreCase(langCode)) {
+                return altLabel;
             }
         }
 
-        return results
-                .stream()
-                .toList();
+        ConceptPrefLabel fallbackLabel = new ConceptPrefLabel();
+        fallbackLabel.setConcept(concept);
+        fallbackLabel.setLangCode(langCode);
+        fallbackLabel.setLabel("[" + concept.getExternalId() + "]");
+        return fallbackLabel;
     }
 
 }

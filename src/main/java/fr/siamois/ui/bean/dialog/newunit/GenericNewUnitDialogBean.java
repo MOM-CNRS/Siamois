@@ -102,6 +102,7 @@ public class GenericNewUnitDialogBean<T extends TraceableEntity>
         init();
     }
 
+    @SuppressWarnings("unchecked")
     public void selectKind(UnitKind kind, Set<T> context, TraceableEntity parent) throws CannotInitializeNewUnitDialogException {
         this.kind = kind;
         this.handler = (INewUnitHandler<T>) handlers.get(kind);
@@ -113,6 +114,7 @@ public class GenericNewUnitDialogBean<T extends TraceableEntity>
         init();
     }
 
+    @SuppressWarnings("unchecked")
     public void selectKind(UnitKind kind, Set<T> context, T parent, T child) throws CannotInitializeNewUnitDialogException {
         this.kind = kind;
         this.handler = (INewUnitHandler<T>) handlers.get(kind);

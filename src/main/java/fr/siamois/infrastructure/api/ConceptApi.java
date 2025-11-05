@@ -18,7 +18,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import java.net.URI;
 import java.security.MessageDigest;
@@ -91,7 +93,8 @@ public class ConceptApi {
 
         ResponseEntity<String> response = sendRequestAcceptJson(uri);
 
-        TypeReference<Map<String, FullInfoDTO>> typeReference = new TypeReference<>() {};
+        TypeReference<Map<String, FullInfoDTO>> typeReference = new TypeReference<>() {
+        };
 
         return processApiResponse(response, typeReference);
     }
@@ -175,6 +178,35 @@ public class ConceptApi {
         try {
             Map<String, FullInfoDTO> result = mapper.readValue(response.getBody(), typeReference);
             return result.values().stream().findFirst().orElseThrow(() -> new RuntimeException("Invalid concept"));
+        } catch (JsonProcessingException e) {
+            log.error(e.getMessage(), e);
+            return null;
+        }
+    }
+
+    public FullInfoDTO fetchConceptInfoByUri(Vocabulary vocabulary, String uriStr) {
+        String identifier = "";
+        if (uriStr.contains("ark:")) {
+            identifier = uriStr.substring(uriStr.indexOf("ark:"));
+        } else {
+            MultiValueMap<String, String> params = UriComponentsBuilder.fromUriString(uriStr).build().getQueryParams();
+            identifier = params.getFirst("idt") + "/" + params.getFirst("idc");
+        }
+        URI uri = URI.create(vocabulary.getBaseUri() + String.format("/openapi/v1/concept/%s", identifier));
+        ResponseEntity<String> response = sendRequestAcceptJson(uri);
+
+        TypeReference<Map<String, FullInfoDTO>> typeReference = new TypeReference<>() {
+        };
+
+        try {
+            Map<String, FullInfoDTO> result = mapper.readValue(response.getBody(), typeReference);
+            if (result.isEmpty()) {
+                return null;
+            }
+            return result.values()
+                    .stream()
+                    .findFirst()
+                    .orElseThrow(() -> new IllegalStateException("Map should not be empty here"));
         } catch (JsonProcessingException e) {
             log.error(e.getMessage(), e);
             return null;

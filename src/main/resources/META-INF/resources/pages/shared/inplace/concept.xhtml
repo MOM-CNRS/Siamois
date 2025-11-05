@@ -32,13 +32,13 @@
                 <sharedInput:conceptAutocompleteFieldCode id="typeComponent"
                                                           inputStyleClass="#{cc.attrs.answer.hasBeenModified ? 'track-change sia-modified-field': 'track-change'}"
                                                           panelStyleClass="#{cc.attrs.panelModel.autocompleteClass}"
-                                                          selectedConcept="#{cc.attrs.answer.value}"
+                                                          selectedConcept="#{cc.attrs.answer.uiVal}"
                                                           field="#{cc.attrs.field}"
                                                           label="#{cc.attrs.label}"
                                                           ajaxUpdateTargets="#{cc.attrs.updateTargetsOnBlur}"
                                                           required="#{cc.attrs.required}"
                                                           itemSelectListener="#{cc.attrs.panelModel.setFieldConceptAnswerHasBeenModified}"
-                                                          editConceptUrl="#{spatialUnitFieldBean.getUrlForFieldCode(cc.attrs.fieldCode)}"/>
+                                                          editConceptUrl="#{spatialUnitFieldBean.getUrlForFieldCode(cc.attrs.field.fieldCode)}"/>
             </f:facet>
         </p:inplace>
 
