@@ -298,6 +298,7 @@ public class DefaultFormsDatasetInitializer implements DatabaseInitializer {
     // Regle d'activation du champ basé sur la valeur de la réponse à un autre champ
     EnabledWhenSpecSeedDTO matrixColorEnabledWhenDTO = new EnabledWhenSpecSeedDTO(
             EnabledWhenSpecSeedDTO.Operator.EQUALS,
+            fields.get(1),
             List.of(
                     new CustomFieldAnswerDTO(
                             CustomFieldAnswerSelectOneFromFieldCode.class,
@@ -306,6 +307,7 @@ public class DefaultFormsDatasetInitializer implements DatabaseInitializer {
                     )
             )
     );
+
     CustomColDTO matrixColorColDTO = new CustomColDTO(
             true,
             true,

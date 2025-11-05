@@ -13,7 +13,7 @@ public class CustomCol implements Serializable {
     private boolean isRequired = false;
     private CustomField field;
     private String className;
-    private EnabledWhenSpec enabledWhenSpec;
+    private EnabledWhenJson enabledWhenSpec;
 
     public static class Builder {
 
@@ -39,7 +39,7 @@ public class CustomCol implements Serializable {
             return this;
         }
 
-        public Builder enabledWhenSpec(EnabledWhenSpec enabledWhenSpec) {
+        public Builder enabledWhenSpec(EnabledWhenJson enabledWhenSpec) {
             col.setEnabledWhenSpec(enabledWhenSpec);
             return this;
         }
