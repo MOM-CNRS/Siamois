@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.NullNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import fr.siamois.domain.models.form.customfield.CustomField;
-import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswer;
 import fr.siamois.domain.models.form.customform.*;
 import fr.siamois.infrastructure.database.initializer.seeder.customfield.CustomFieldAnswerDTO;
 import fr.siamois.infrastructure.database.initializer.seeder.customfield.CustomFieldSeeder;
@@ -35,9 +34,9 @@ public class CustomFormSeeder {
 
         // 1) opérateur
         final EnabledWhenJson.Op op = switch (dto.operator()) {
-            case EQUALS     -> EnabledWhenJson.Op.eq;
-            case NOT_EQUALS -> EnabledWhenJson.Op.neq;
-            case IN         -> EnabledWhenJson.Op.in;
+            case EQUALS     -> EnabledWhenJson.Op.EQ;
+            case NOT_EQUALS -> EnabledWhenJson.Op.NEQ;
+            case IN         -> EnabledWhenJson.Op.IN;
             default         -> throw new IllegalArgumentException("Unsupported operator: " + dto.operator());
         };
 
@@ -60,7 +59,7 @@ public class CustomFormSeeder {
 
         // 4) cardinalité selon l’opérateur
         int n = dto.expectedValues().size();
-        if ((op == EnabledWhenJson.Op.eq || op == EnabledWhenJson.Op.neq) && n != 1) {
+        if ((op == EnabledWhenJson.Op.EQ || op == EnabledWhenJson.Op.NEQ) && n != 1) {
             throw new IllegalArgumentException("EQUALS/NOT_EQUALS require exactly 1 expected value (got " + n + ")");
         }
 

@@ -12,7 +12,6 @@ import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.models.vocabulary.Vocabulary;
 import fr.siamois.domain.models.vocabulary.VocabularyType;
-import fr.siamois.domain.models.vocabulary.label.ConceptLabel;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.document.DocumentService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
@@ -116,9 +115,9 @@ public abstract class AbstractSingleEntity<T> extends AbstractPanel implements S
                 .toList();
 
         return switch (ew.getOp()) {
-            case eq  -> new EqCondition(comparedField, matchers.get(0));
-            case neq -> new NeqCondition(comparedField, matchers.get(0));
-            case in  -> new InCondition(comparedField, matchers);
+            case EQ -> new EqCondition(comparedField, matchers.get(0));
+            case NEQ -> new NeqCondition(comparedField, matchers.get(0));
+            case IN -> new InCondition(comparedField, matchers);
         };
     }
 

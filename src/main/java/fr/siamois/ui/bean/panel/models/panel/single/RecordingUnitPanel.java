@@ -323,11 +323,11 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
             if(Objects.equals(field.getValueBinding(), "openingDate") && unit.getClosingDate() != null) {
                 ((CustomFieldDateTime) field).setMax(unit.getClosingDate().toLocalDateTime());
                 ((CustomFieldDateTime) field).setMin(LocalDateTime.of(1000,Month.JANUARY,1, 1, 1));
-            };
+            }
             if(Objects.equals(field.getValueBinding(), "closingDate") && unit.getOpeningDate() != null) {
                 ((CustomFieldDateTime) field).setMin(unit.getOpeningDate().toLocalDateTime());
                 ((CustomFieldDateTime) field).setMax(LocalDateTime.of(9999,Month.DECEMBER,31, 23, 59));
-            };
+            }
         }
 
     }

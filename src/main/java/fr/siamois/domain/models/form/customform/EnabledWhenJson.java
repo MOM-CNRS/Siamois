@@ -9,7 +9,7 @@ import java.util.List;
 
 @Data
 public class EnabledWhenJson implements Serializable {
-    public enum Op { eq, neq, in }
+    public enum Op {EQ, NEQ, IN}
 
     private Op op;                   // "eq" | "neq" | "in"
     private Long fieldId;            // ID du CustomField comparé
@@ -23,8 +23,7 @@ public class EnabledWhenJson implements Serializable {
 
         /** Valeur sérialisée, typée JSON:
          *  - nombre (IntNode/LongNode/DoubleNode)
-         *  - texte (TextNode, ex ISO-8601 pour datetime)
          *  - objet (ObjectNode), ex { "vocabularyExtId":"th230", "conceptExtId":"1234" } */
-        private JsonNode value;
+        private transient JsonNode value;
     }
 }

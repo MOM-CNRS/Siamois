@@ -359,7 +359,9 @@ public class FlowBean implements Serializable {
     /**
      * Listener called when the FieldOffice mode variable is flipped.
      */
-    public void changeFieldOfficeMode() {}
+    public void changeFieldOfficeMode() {
+        // Listener called when the FieldOffice mode variable is flipped.
+    }
 
     public void saveAllPanels() {
         for (AbstractSingleEntityPanel<?> panel : unsavedPanels) {

@@ -273,7 +273,7 @@ class CustomFormSeederTest {
         assertNotNull(savedCol.getEnabledWhenSpec(), "enabledWhen should be set");
 
         EnabledWhenJson ew = savedCol.getEnabledWhenSpec();
-        assertEquals(EnabledWhenJson.Op.eq, ew.getOp());
+        assertEquals(EnabledWhenJson.Op.EQ, ew.getOp());
         assertEquals(200L, ew.getFieldId()); // id du champ comparé
         assertNotNull(ew.getValues());
         assertEquals(1, ew.getValues().size());
