@@ -17,11 +17,14 @@ import fr.siamois.infrastructure.api.dto.ConceptBranchDTO;
 import fr.siamois.infrastructure.api.dto.FullInfoDTO;
 import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptFieldConfigRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRepository;
+import fr.siamois.ui.bean.settings.components.ProgressWrapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.hibernate.Hibernate;
 import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
@@ -71,7 +74,7 @@ public class FieldConfigurationService {
      * @throws ErrorProcessingExpansionException if there is an error processing the vocabulary expansion
      */
     public Optional<FeedbackFieldConfig> setupFieldConfigurationForInstitution(Institution institution, Vocabulary vocabulary) throws NotSiamoisThesaurusException, ErrorProcessingExpansionException {
-        return setupFieldConfiguration(institution, null, vocabulary);
+        return setupFieldConfiguration(institution, null, vocabulary, new ProgressWrapper());
     }
 
     private FeedbackFieldConfig createConfigOfThesaurus(ConceptBranchDTO conceptBranchDTO) {
@@ -106,13 +109,23 @@ public class FieldConfigurationService {
      * @throws ErrorProcessingExpansionException if there is an error processing the vocabulary expansion
      */
     public Optional<FeedbackFieldConfig> setupFieldConfigurationForUser(UserInfo info, Vocabulary vocabulary) throws NotSiamoisThesaurusException, ErrorProcessingExpansionException {
-        return setupFieldConfiguration(info.getInstitution(), info.getUser(), vocabulary);
+        return setupFieldConfiguration(info.getInstitution(), info.getUser(), vocabulary, new ProgressWrapper());
     }
 
-    private Optional<FeedbackFieldConfig> setupFieldConfiguration(@NonNull Institution institution, @Nullable Person user, @NonNull Vocabulary vocabulary) throws NotSiamoisThesaurusException, ErrorProcessingExpansionException {
+    public Optional<FeedbackFieldConfig> setupFieldConfigurationForUser(UserInfo info, Vocabulary vocabulary, ProgressWrapper progressWrapper) throws NotSiamoisThesaurusException, ErrorProcessingExpansionException {
+        return setupFieldConfiguration(info.getInstitution(), info.getUser(), vocabulary, progressWrapper);
+    }
+
+    private Optional<FeedbackFieldConfig> setupFieldConfiguration(@NonNull Institution institution,
+                                                                  @Nullable Person user,
+                                                                  @NonNull Vocabulary vocabulary,
+                                                                  @NonNull ProgressWrapper progressWrapper) throws NotSiamoisThesaurusException, ErrorProcessingExpansionException {
         ConceptBranchDTO conceptBranchDTO = conceptApi.fetchFieldsBranch(vocabulary);
         FeedbackFieldConfig config = createConfigOfThesaurus(conceptBranchDTO);
         if (config.isWrongConfig()) return Optional.of(config);
+
+        // We consider one step for saving de ConceptFieldConfig and one step for saving all sub-concepts data
+        progressWrapper.setTotalSteps(config.conceptWithValidFieldCode().size() * 2);
 
         for (FullInfoDTO conceptDTO : config.conceptWithValidFieldCode()) {
             String fieldCode = conceptDTO.getFieldcode().orElseThrow(() -> FIELD_CODE_NOT_FOUND);
@@ -137,7 +150,9 @@ public class FieldConfigurationService {
             } else {
                 fieldConfig =  optConfig.get();
             }
+            progressWrapper.incrementStep();
             conceptService.saveAllSubConceptOfIfUpdated(fieldConfig);
+            progressWrapper.incrementStep();
         }
 
         return Optional.empty();
@@ -165,8 +180,11 @@ public class FieldConfigurationService {
      * @return the Concept associated with the field code
      * @throws NoConfigForFieldException if no configuration is found for the field code
      */
+    @Transactional
     public Concept findParentConceptForFieldcode(UserInfo info, String fieldCode) throws NoConfigForFieldException {
-        return findConfigurationForFieldCode(info, fieldCode).getConcept();
+        Concept concept = findConfigurationForFieldCode(info, fieldCode).getConcept();
+        Hibernate.initialize(concept.getVocabulary());
+        return concept;
     }
 
     /**

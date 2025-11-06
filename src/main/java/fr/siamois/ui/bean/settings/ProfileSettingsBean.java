@@ -32,7 +32,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.primefaces.PrimeFaces;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
@@ -161,15 +160,10 @@ public class ProfileSettingsBean implements Serializable {
             return;
         }
 
-        progressWrapper.setTotalSteps(3);
-
         UserInfo info = sessionSettingsBean.getUserInfo();
-        progressWrapper.incrementStep();
         try {
             Vocabulary vocabulary = vocabularyService.findOrCreateVocabularyOfUri(fThesaurusUrl);
-            progressWrapper.incrementStep();
-            fieldConfigurationService.setupFieldConfigurationForUser(info, vocabulary);
-            progressWrapper.incrementStep();
+            fieldConfigurationService.setupFieldConfigurationForUser(info, vocabulary, progressWrapper);
             MessageUtils.displayMessage(langBean, FacesMessage.SEVERITY_INFO, "myProfile.thesaurus.message.success");
             refConfigConcept = fieldConfigurationService.findParentConceptForFieldcode(info, SpatialUnit.CATEGORY_FIELD_CODE);
         } catch (InvalidEndpointException e) {
