@@ -24,7 +24,6 @@ import org.hibernate.Hibernate;
 import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
@@ -189,7 +188,6 @@ public class FieldConfigurationService {
      * @return the Concept associated with the field code
      * @throws NoConfigForFieldException if no configuration is found for the field code
      */
-    @Transactional
     public Concept findParentConceptForFieldcode(UserInfo info, String fieldCode) throws NoConfigForFieldException {
         Concept concept = findConfigurationForFieldCode(info, fieldCode).getConcept();
         Hibernate.initialize(concept.getVocabulary());
