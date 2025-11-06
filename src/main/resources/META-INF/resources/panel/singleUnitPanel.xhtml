@@ -98,7 +98,21 @@
             <!-- Save/Cancel Toolbar -->
             <p:toolbar class="panel-footer" >
                 <p:toolbarGroup align="left">
-                    Dernière modification le #{panelModel.lastUpdateDate()} par #{panelModel.lastUpdater()}
+                    <div style="flex-direction: row; display: flex; gap: 1em;">
+                        <div style="display: flex; flex-direction: column" >
+                            <small><i>Crée le #{panelModel.unit.creationTime} par #{panelModel.unit.createdBy.displayName()}</i></small>
+                            <small><i>Dernière modification le #{panelModel.lastUpdateDate()} par #{panelModel.lastUpdater()}</i></small>
+                            <h:panelGroup rendered="#{panelModel.unit.validated}">
+                                <small><i>Validé le #{panelModel.unit.validatedAt} par #{panelModel.unit.validatedBy.displayName()}</i></small>
+                            </h:panelGroup>
+                        </div>
+                        <div>
+                            <p:commandButton icon="bi bi-clock-history">
+
+                            </p:commandButton>
+                        </div>
+                    </div>
+
                 </p:toolbarGroup>
                 <p:toolbarGroup align="right" rendered="#{flowBean.readWriteMode == 'WRITE'}">
                     <p:commandLink value='#{langBean.msg("common.action.cancel")}'

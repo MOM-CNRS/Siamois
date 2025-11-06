@@ -118,10 +118,6 @@ html, body {
 }
 
 
-.edit-type-chip:hover {
-    background: #2196f3;
-    color: white;
-}
 
 .stratigraphy-neighborhood .ui-chronoline-event-opposite {
     display: none !important; /* Hides the opposite side */
@@ -131,4 +127,8 @@ html, body {
 i#user-icon {
     width: 40px;
     height: 40px;
+}
+
+.bootstrap-icon-select-one-button .ui-button.ui-widget.ui-state-default.ui-button-text-only {
+  font-family: 'bootstrap-icons';
 }

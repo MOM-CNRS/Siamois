@@ -26,6 +26,7 @@ import fr.siamois.ui.bean.panel.models.panel.single.*;
 import fr.siamois.utils.MessageUtils;
 import jakarta.el.MethodExpression;
 import jakarta.faces.context.FacesContext;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
@@ -38,10 +39,7 @@ import org.springframework.stereotype.Component;
 
 import javax.faces.bean.SessionScoped;
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 /**
  * <p>This ui.bean handles the home page</p>
@@ -93,6 +91,20 @@ public class FlowBean implements Serializable {
     private transient int fullscreenPanelIndex = -1;
 
     private transient Set<AbstractSingleEntityPanel<?>> unsavedPanels = new HashSet<>();
+
+    @Getter
+    @AllArgsConstructor
+    public class IconItem {
+        private String icon;
+        private String value;
+    }
+
+    public List<IconItem> getReadWriteChoices() {
+        return Arrays.asList(
+                new IconItem("bi bi-eyeglass", READ_MODE),
+                new IconItem("User", WRITE_MODE)
+        );
+    }
 
     public void init() {
         fullscreenPanelIndex = -1;
