@@ -4,17 +4,17 @@ import fr.siamois.domain.events.publisher.ConceptChangeEventPublisher;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.settings.ConceptFieldConfig;
-import fr.siamois.domain.models.vocabulary.Concept;
-import fr.siamois.domain.models.vocabulary.LocalizedConceptData;
-import fr.siamois.domain.models.vocabulary.Vocabulary;
-import fr.siamois.domain.models.vocabulary.VocabularyType;
+import fr.siamois.domain.models.vocabulary.*;
+import fr.siamois.domain.models.vocabulary.label.ConceptAltLabel;
 import fr.siamois.infrastructure.api.ConceptApi;
 import fr.siamois.infrastructure.api.dto.ConceptBranchDTO;
 import fr.siamois.infrastructure.api.dto.FullInfoDTO;
 import fr.siamois.infrastructure.api.dto.PurlInfoDTO;
-import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRelationRepository;
+import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptHierarchyRepository;
+import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRelatedLinkRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.LocalizedConceptDataRepository;
+import fr.siamois.infrastructure.database.repositories.vocabulary.label.ConceptLabelRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -22,12 +22,13 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -44,13 +45,19 @@ class ConceptServiceTest {
     private LabelService labelService;
 
     @Mock
-    private ConceptRelationRepository conceptRelationRepository;
-
-    @Mock
     private LocalizedConceptDataRepository localizedConceptDataRepository;
 
     @Mock
+    private ConceptRelatedLinkRepository conceptRelatedLinkRepository;
+
+    @Mock
     private ConceptChangeEventPublisher conceptChangeEventPublisher;
+
+    @Mock
+    private ConceptLabelRepository conceptLabelRepository;
+
+    @Mock
+    private ConceptHierarchyRepository conceptHierarchyRepository;
 
     @InjectMocks
     private ConceptService conceptService;
@@ -242,6 +249,7 @@ class ConceptServiceTest {
 
         when(conceptRepository.findConceptByExternalIdIgnoreCase("vocab1", "concept1")).thenReturn(Optional.of(concept));
         when(localizedConceptDataRepository.findByConceptAndLangCode(concept.getId(), "fr")).thenReturn(Optional.empty());
+        when(conceptRepository.save(any(Concept.class))).thenAnswer(i -> i.getArgument(0));
 
         // When
         Concept result = conceptService.saveOrGetConceptFromFullDTO(vocabulary, dto, null);
@@ -251,7 +259,6 @@ class ConceptServiceTest {
         assertEquals(concept, result);
         verify(labelService, times(1)).updateLabel(concept, "fr", "Libellé FR", null);
         verify(localizedConceptDataRepository, times(1)).save(any(LocalizedConceptData.class));
-        verify(conceptRepository, never()).save(any(Concept.class));
     }
 
     @Test
@@ -414,6 +421,12 @@ class ConceptServiceTest {
         narrower.setValue("url-child");
         parentDto.setNarrower(new PurlInfoDTO[]{narrower});
 
+        // Add a related URL on the child to trigger createRelatedLinkAndSetRelatedConcepts
+        FullInfoDTO childDto = branchDTO.getData().get("url-child");
+        PurlInfoDTO related = new PurlInfoDTO();
+        related.setValue("url-related");
+        childDto.setRelated(new PurlInfoDTO[]{related});
+
         when(conceptApi.fetchDownExpansion(config)).thenReturn(branchDTO);
 
         // No existing concepts -> will be created
@@ -429,10 +442,23 @@ class ConceptServiceTest {
         savedChild.setExternalId("concept-child");
         savedChild.setVocabulary(vocabulary);
 
-        // Ensure save returns parent then child
-        when(conceptRepository.save(any(Concept.class))).thenReturn(savedParent).thenReturn(savedChild);
+        // Related concept that will be fetched and saved
+        Concept savedRelated = new Concept();
+        savedRelated.setId(102L);
+        savedRelated.setExternalId("concept-related");
+        savedRelated.setVocabulary(vocabulary);
+
+        // Ensure save returns parent then child (and then related)
+        when(conceptRepository.save(any(Concept.class))).thenReturn(savedParent).thenReturn(savedChild).thenReturn(savedRelated);
 
         when(localizedConceptDataRepository.findByConceptAndLangCode(anyLong(), anyString())).thenReturn(Optional.empty());
+
+        // Mock fetching the related concept info by its URL
+        FullInfoDTO fetchedRelated = new FullInfoDTO();
+        PurlInfoDTO relatedId = new PurlInfoDTO();
+        relatedId.setValue("concept-related");
+        fetchedRelated.setIdentifier(new PurlInfoDTO[]{relatedId});
+        when(conceptApi.fetchConceptInfoByUri(vocabulary, "url-related")).thenReturn(fetchedRelated);
 
         // When
         conceptService.saveAllSubConceptOfIfUpdated(config);
@@ -440,8 +466,281 @@ class ConceptServiceTest {
         // Then
         verify(conceptChangeEventPublisher, times(1)).publishEvent(config.getFieldCode());
         verify(conceptRepository, atLeast(2)).save(any(Concept.class));
-        verify(conceptRelationRepository, atLeast(1)).save(any());
         verify(localizedConceptDataRepository, atLeast(2)).save(any(LocalizedConceptData.class));
+        verify(conceptRelatedLinkRepository, atLeast(1)).save(any());
+    }
+
+    @Test
+    void saveAllSubConceptOfIfUpdated_shouldMarkConceptAsDeleted_whenNotInBranch() throws Exception {
+        // Given
+        ConceptFieldConfig config = new ConceptFieldConfig();
+        config.setId(20L);
+        config.setFieldCode("FIELD-DELETE");
+        config.setConcept(concept);
+
+        // Build branch with only the parent but with narrower present (so method continues)
+        ConceptBranchDTO.ConceptBranchDTOBuilder builder = new ConceptBranchDTO.ConceptBranchDTOBuilder();
+        ConceptBranchDTO branchDTO = builder
+                .identifier("parent-url", "concept1")
+                .identifier("some-child", "concept-child")
+                .build();
+
+        FullInfoDTO parentDto = branchDTO.getData().get("parent-url");
+        PurlInfoDTO narrower = new PurlInfoDTO();
+        narrower.setValue("some-child");
+        parentDto.setNarrower(new PurlInfoDTO[]{narrower});
+
+        branchDTO.setParentUrl("parent-url");
+
+        when(conceptApi.fetchDownExpansion(config)).thenReturn(branchDTO);
+
+        // Default behaviour: no existing concepts in repo for branch entries -> will be created
+        when(conceptRepository.findConceptByExternalIdIgnoreCase(anyString(), anyString())).thenReturn(Optional.empty());
+
+        // Create a concept that is NOT part of the branch and not deleted
+        Concept other = new Concept();
+        other.setId(200L);
+        other.setExternalId("other-concept");
+        other.setVocabulary(vocabulary);
+        other.setDeleted(false);
+
+        // Create a label attached to that concept and referenced by the parent concept (field parent)
+        ConceptAltLabel alt = new ConceptAltLabel();
+        alt.setConcept(other);
+        alt.setParentConcept(concept);
+
+        // The service will query labels by parent concept -> return our alt label which refers to 'other'
+        when(conceptLabelRepository.findAllByParentConcept(concept)).thenReturn(List.of(alt));
+
+        // When
+        when(conceptRepository.save(any(Concept.class))).thenAnswer(i -> i.getArgument(0));
+        conceptService.saveAllSubConceptOfIfUpdated(config);
+
+        // Then
+        verify(conceptChangeEventPublisher, times(1)).publishEvent(config.getFieldCode());
+        // The non-branch concept should be marked deleted and saved
+        verify(conceptRepository, atLeastOnce()).save(argThat(c -> c != null && c.isDeleted()));
+        // The parent link on the label should be nulled and saved
+        verify(conceptLabelRepository, atLeastOnce()).save(argThat(a -> a.getParentConcept() == null));
+    }
+
+    @Test
+    void saveAllSubConceptOfIfUpdated_shouldNotMarkAlreadyDeletedConcept() throws Exception {
+        // Given
+        ConceptFieldConfig config = new ConceptFieldConfig();
+        config.setId(21L);
+        config.setFieldCode("SIATEST");
+        config.setConcept(concept);
+
+        // Build branch with only the parent but with narrower present
+        ConceptBranchDTO.ConceptBranchDTOBuilder builder = new ConceptBranchDTO.ConceptBranchDTOBuilder();
+        ConceptBranchDTO branchDTO = builder
+                .identifier("parent-url", "concept1")
+                .identifier("some-child", "concept-child")
+                .build();
+
+        FullInfoDTO parentDto = branchDTO.getData().get("parent-url");
+        PurlInfoDTO narrower = new PurlInfoDTO();
+        narrower.setValue("some-child");
+        parentDto.setNarrower(new PurlInfoDTO[]{narrower});
+
+        branchDTO.setParentUrl("parent-url");
+
+        when(conceptRepository.save(any(Concept.class))).thenAnswer(i -> i.getArgument(0));
+        when(conceptApi.fetchDownExpansion(config)).thenReturn(branchDTO);
+
+        // Create a concept that is part of existing localized data but already deleted
+        Concept other = new Concept();
+        other.setId(201L);
+        other.setExternalId("other-concept-deleted");
+        other.setVocabulary(vocabulary);
+        other.setDeleted(true);
+
+        LocalizedConceptData lcd = new LocalizedConceptData();
+        lcd.setConcept(other);
+
+        // When
+        conceptService.saveAllSubConceptOfIfUpdated(config);
+
+        // Then
+        verify(conceptChangeEventPublisher, times(1)).publishEvent(config.getFieldCode());
+        // No save of concept as deleted because it already was
+        verify(conceptRepository, never()).save(argThat(c -> c != null && c.isDeleted()));
+    }
+
+    private Map<Long, Concept> prepareConceptsForHierarchy() {
+        Map<Long, Concept> concepts = new HashMap<>();
+
+        Vocabulary currentVocabulary = new Vocabulary();
+        currentVocabulary.setId(1L);
+        currentVocabulary.setExternalVocabularyId("vocab1");
+
+        Concept parentConcept = new Concept();
+        parentConcept.setId(10L);
+        parentConcept.setExternalId("parentFieldConcept");
+        parentConcept.setVocabulary(currentVocabulary);
+        concepts.put(10L, parentConcept);
+
+        Concept child1 = new Concept();
+        child1.setId(11L);
+        child1.setExternalId("concept1");
+        child1.setVocabulary(currentVocabulary);
+        concepts.put(11L, child1);
+
+        Concept child2 = new Concept();
+        child2.setId(12L);
+        child2.setExternalId("concept2");
+        child2.setVocabulary(currentVocabulary);
+        concepts.put(12L, child2);
+
+        Concept child3 = new Concept();
+        child3.setId(13L);
+        child3.setExternalId("concept3");
+        child3.setVocabulary(currentVocabulary);
+        concepts.put(13L, child3);
+
+        Concept child4 = new Concept();
+        child4.setId(14L);
+        child4.setExternalId("concept4");
+        child4.setVocabulary(currentVocabulary);
+        concepts.put(14L, child4);
+
+        Concept child5 = new Concept();
+        child5.setId(15L);
+        child5.setExternalId("concept5");
+        child5.setVocabulary(currentVocabulary);
+        concepts.put(15L, child5);
+
+        Concept child6 = new Concept();
+        child6.setId(16L);
+        child6.setExternalId("concept6");
+        child6.setVocabulary(currentVocabulary);
+        concepts.put(16L, child6);
+
+        Concept child8 = new Concept();
+        child8.setId(18L);
+        child8.setExternalId("concept8");
+        child8.setVocabulary(currentVocabulary);
+        concepts.put(18L, child8);
+
+        return concepts;
+    }
+
+    @Test
+    void findParentsOfConceptInField_shouldReturnParents_whenParentsArePresent() {
+        Map<Long, Concept> concepts = prepareConceptsForHierarchy();
+        Concept finalChild = concepts.get(18L);
+        Concept parentField = concepts.get(10L);
+
+        Concept concept5 = concepts.get(15L);
+        Concept concept3 = concepts.get(13L);
+
+        ConceptHierarchy h1 = new ConceptHierarchy();
+        h1.setId(1L);
+        h1.setChild(finalChild);
+        h1.setParent(concept5);
+
+        ConceptHierarchy h2 = new ConceptHierarchy();
+        h2.setId(2L);
+        h2.setChild(concept5);
+        h2.setParent(concept3);
+
+        when(conceptHierarchyRepository.findAllByChildAndParentFieldContext(finalChild, parentField))
+                .thenReturn(List.of(h1));
+        when(conceptHierarchyRepository.findAllByChildAndParentFieldContext(concept5, parentField))
+                .thenReturn(List.of(h2));
+
+        List<Concept> results = conceptService.findParentsOfConceptInField(finalChild, parentField);
+
+        assertThat(results)
+                .hasSize(2)
+                .containsExactly(concept3, concept5);
+    }
+
+    @Test
+    void findParentsOfConceptInField_shouldEmpty_whenNoParentsBesidesField() {
+        Map<Long, Concept> concepts = prepareConceptsForHierarchy();
+        Concept finalChild = concepts.get(11L);
+        Concept parentField = concepts.get(10L);
+
+
+        List<Concept> results = conceptService.findParentsOfConceptInField(finalChild, parentField);
+
+        assertThat(results)
+                .isEmpty();
+    }
+
+    @Test
+    void findParentsOfConceptInField_shouldOneHierarchy_whenPolyHierarchy() {
+        Map<Long, Concept> concepts = prepareConceptsForHierarchy();
+        Concept finalChild = concepts.get(14L);
+        Concept parentField = concepts.get(10L);
+
+        Concept concept6 = concepts.get(16L);
+        Concept concept3 = concepts.get(13L);
+
+        ConceptHierarchy h3 = new ConceptHierarchy();
+        h3.setId(3L);
+        h3.setChild(finalChild);
+        h3.setParent(concept3);
+
+        ConceptHierarchy h4 = new ConceptHierarchy();
+        h4.setId(4L);
+        h4.setChild(finalChild);
+        h4.setParent(concept6);
+
+        when(conceptHierarchyRepository.findAllByChildAndParentFieldContext(finalChild, parentField))
+                .thenReturn(List.of(h3, h4));
+
+        List<Concept> results = conceptService.findParentsOfConceptInField(finalChild, parentField);
+
+        assertThat(results)
+                .hasSize(1)
+                .containsAnyOf(concept6, concept3);
+    }
+
+
+
+    @Test
+    void testGetLocalizedConceptDataByConceptAndLangCode_Found() {
+        // given
+        LocalizedConceptData localizedConceptData;
+
+        localizedConceptData = new LocalizedConceptData();
+        localizedConceptData.setLangCode("en");
+        localizedConceptData.setConcept(concept);
+        when(localizedConceptDataRepository.findByConceptAndLangCode(concept.getId(), "en"))
+                .thenReturn(Optional.of(localizedConceptData));
+
+        // when
+        LocalizedConceptData result = conceptService.getLocalizedConceptDataByConceptAndLangCode(concept, "en");
+
+        // then
+        assertNotNull(result);
+        assertEquals("en", result.getLangCode());
+        assertEquals(concept, result.getConcept());
+        verify(localizedConceptDataRepository, times(1))
+                .findByConceptAndLangCode(concept.getId(), "en");
+    }
+
+    @Test
+    void testGetLocalizedConceptDataByConceptAndLangCode_NotFound() {
+        // given
+        LocalizedConceptData localizedConceptData;
+
+        localizedConceptData = new LocalizedConceptData();
+        localizedConceptData.setLangCode("en");
+        localizedConceptData.setConcept(concept);
+        when(localizedConceptDataRepository.findByConceptAndLangCode(concept.getId(), "fr"))
+                .thenReturn(Optional.empty());
+
+        // when
+        LocalizedConceptData result = conceptService.getLocalizedConceptDataByConceptAndLangCode(concept, "fr");
+
+        // then
+        assertNull(result);
+        verify(localizedConceptDataRepository, times(1))
+                .findByConceptAndLangCode(concept.getId(), "fr");
     }
 
 }

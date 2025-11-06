@@ -3,7 +3,7 @@ package fr.siamois.ui.bean.panel.models.panel.list;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
-import fr.siamois.domain.models.vocabulary.LocalizedConceptData;
+import fr.siamois.domain.models.vocabulary.label.ConceptLabel;
 import fr.siamois.ui.bean.panel.models.PanelBreadcrumb;
 import fr.siamois.ui.lazydatamodel.BaseLazyDataModel;
 import fr.siamois.ui.lazydatamodel.SpatialUnitLazyDataModel;
@@ -16,6 +16,7 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.List;
 
 @EqualsAndHashCode(callSuper = true, onlyExplicitlyIncluded = true)
@@ -66,14 +67,14 @@ public class SpatialUnitListPanel extends AbstractListPanel<SpatialUnit>  implem
         this.spatialUnitListErrorMessage = msg;
     }
 
-    public List<LocalizedConceptData> categoriesAvailable() {
+    public List<ConceptLabel> categoriesAvailable() {
         List<Concept> cList = conceptService.findAllBySpatialUnitOfInstitution(sessionSettingsBean.getSelectedInstitution());
 
-        return cList.stream()
+        return new ArrayList<>(cList.stream()
                 .map(concept -> labelService.findLabelOf(
                         concept, langBean.getLanguageCode()
                 ))
-                .toList();
+                .toList());
 
     }
 
@@ -90,7 +91,7 @@ public class SpatialUnitListPanel extends AbstractListPanel<SpatialUnit>  implem
 
     @Override
     public String ressourceUri() {
-        return "/spatialunit";
+        return "/spatial-unit";
     }
 
     public static class SpatialUnitListPanelBuilder {

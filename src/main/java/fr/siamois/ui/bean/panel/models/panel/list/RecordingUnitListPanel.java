@@ -103,7 +103,7 @@ public class RecordingUnitListPanel extends AbstractListPanel<RecordingUnit>  im
 
     @Override
     public String ressourceUri() {
-        return "/recordingunit";
+        return "/recording-unit";
     }
 
     public void handleRowEdit(RowEditEvent<RecordingUnit> event) {

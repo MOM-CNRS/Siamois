@@ -101,6 +101,9 @@ public class RecordingUnit extends RecordingUnitParent implements ArkEntity, Ref
     public static final String GEOMORPHO_CYCLE_FIELD_CODE = "SIARU.GEOMORPHO";
 
     @FieldCode
+    public static final String GEOMORPHO_AGENT_FIELD_CODE = "SIARU.GEOMORPHOAGENT";
+
+    @FieldCode
     public static final String INTERPRETATION_FIELD_CODE = "SIARU.INTERPRETATION";
 
     @FieldCode
@@ -147,9 +150,11 @@ public class RecordingUnit extends RecordingUnitParent implements ArkEntity, Ref
     @Transient
     @JsonIgnore
     public List<String> getBindableFieldNames() {
-        return List.of("creationTime", "startDate", "endDate", "identifier",
+        return List.of("creationTime", "openingDate", "closingDate", "description","identifier",
                 "contributors", "type", "secondaryType", "thirdType", "actionUnit", "spatialUnit",
-                "geomorphologicalCycle", "normalizedInterpretation", "author");
+                "geomorphologicalCycle", "normalizedInterpretation", "author", "geomorphologicalAgent",
+                "matrixComposition", "matrixColor", "matrixTexture", "erosionShape", "erosionOrientation",
+                "erosionProfile", "taq", "tpq", "chronologicalPhase");
     }
 
     // ----------- Concepts for system fields
@@ -314,29 +319,9 @@ public class RecordingUnit extends RecordingUnitParent implements ArkEntity, Ref
             .build();
 
 
-    @Transient
-    @JsonIgnore
-    private static CustomFieldSelectOneConceptFromChildrenOfConcept recordingUnitSecondaryTypeField = new CustomFieldSelectOneConceptFromChildrenOfConcept.Builder()
-            .label("recordingunit.field.secondaryType")
-            .isSystemField(true)
-            .valueBinding("secondaryType")
-            .styleClass(MR_2_RECORDING_UNIT_TYPE_CHIP)
-            .iconClass(BI_BI_PENCIL_SQUARE)
-            .parentField(recordingUnitTypeField)
-            .concept(recordingUnitSecondaryTypeConcept)
-            .build();
 
-    @Transient
-    @JsonIgnore
-    private static CustomFieldSelectOneConceptFromChildrenOfConcept recordingUnitIdentificationField = new CustomFieldSelectOneConceptFromChildrenOfConcept.Builder()
-            .label("recordingunit.field.thirdType")
-            .isSystemField(true)
-            .valueBinding("thirdType")
-            .styleClass(MR_2_RECORDING_UNIT_TYPE_CHIP)
-            .iconClass(BI_BI_PENCIL_SQUARE)
-            .parentField(recordingUnitSecondaryTypeField)
-            .concept(recordingUnitIdentificationConcept)
-            .build();
+
+
 
     @Transient
     @JsonIgnore
@@ -407,79 +392,7 @@ public class RecordingUnit extends RecordingUnitParent implements ArkEntity, Ref
             )
             .build();
 
-    // Details form
-    @Transient
-    @JsonIgnore
-    public static final CustomForm DETAILS_FORM = new CustomForm.Builder()
-            .name("Details tab form")
-            .description("Contains the main form")
-            .addPanel(
-                    new CustomFormPanel.Builder()
-                            .name(COMMON_HEADER_GENERAL)
-                            .isSystemPanel(true)
-                            .addRow(
-                                    new CustomRow.Builder()
-                                            .addColumn(new CustomCol.Builder()
-                                                    .readOnly(true)
-                                                    .className(COLUMN_CLASS_NAME)
-                                                    .field(recordingUnitIdField)
-                                                    .build())
-                                            .addColumn(new CustomCol.Builder()
-                                                    .readOnly(true)
-                                                    .className(COLUMN_CLASS_NAME)
-                                                    .field(actionUnitField)
-                                                    .build())
-                                            .addColumn(new CustomCol.Builder()
-                                                    .readOnly(false)
-                                                    .className(COLUMN_CLASS_NAME)
-                                                    .field(spatialUnitField)
-                                                    .build())
-                                            .addColumn(new CustomCol.Builder()
-                                                    .readOnly(false)
-                                                    .className(COLUMN_CLASS_NAME)
-                                                    .field(authorField)
-                                                    .build())
-                                            .build()
-                            ).addRow(
-                                    new CustomRow.Builder()
-                                            .addColumn(new CustomCol.Builder()
-                                                    .readOnly(false)
-                                                    .className(COLUMN_CLASS_NAME)
-                                                    .field(recordingUnitTypeField)
-                                                    .build())
-                                            .addColumn(new CustomCol.Builder()
-                                                    .readOnly(false)
-                                                    .className(COLUMN_CLASS_NAME)
-                                                    .field(recordingUnitSecondaryTypeField)
-                                                    .build())
-                                            .addColumn(new CustomCol.Builder()
-                                                    .readOnly(false)
-                                                    .className(COLUMN_CLASS_NAME)
-                                                    .field(recordingUnitIdentificationField)
-                                                    .build())
-                                            .build()
-                            ).addRow(
-                                    new CustomRow.Builder()
-                                            .addColumn(new CustomCol.Builder()
-                                                    .readOnly(true)
-                                                    .className(COLUMN_CLASS_NAME)
-                                                    .field(creationDateField)
-                                                    .build())
-                                            .addColumn(new CustomCol.Builder()
-                                                    .readOnly(false)
-                                                    .className(COLUMN_CLASS_NAME)
-                                                    .field(openingDateField)
-                                                    .build())
-                                            .addColumn(new CustomCol.Builder()
-                                                    .readOnly(false)
-                                                    .className(COLUMN_CLASS_NAME)
-                                                    .field(closingDateField)
-                                                    .build())
-                                            .build()
-                            )
-                            .build()
-            )
-            .build();
+
 
     // Details form
     @Transient

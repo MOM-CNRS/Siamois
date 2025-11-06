@@ -205,6 +205,16 @@
                                 onstart="PF('buiContent').show()" oncomplete="PF('buiContent').hide()"/>
                     </p:selectOneButton>
                 </h:form>
+                <h:form id="fieldDesktopSwitchForm">
+                    <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
+                    <p:selectOneButton value="#{flowBean.fieldOfficeMode}" var="ic" id="fieldOfficeSwitchButton">
+                        <f:selectItem icon="" itemLabel="Bureau" itemValue="OFFICE"/>
+                        <f:selectItem itemLabel="Terrain" itemValue="FIELD"/>
+
+                        <p:ajax event="change" listener="#{flowBean.changeFieldOfficeMode()}" update="flow"
+                                onstart="PF('buiContent').show()" oncomplete="PF('buiContent').hide()"/>
+                    </p:selectOneButton>
+                </h:form>
                 <ui:include src="/dialog/unsavedUpdates/unsavedUpdatesDialog.xhtml">
                     <ui:param name="saveAllAction" value="#{flowBean.saveAllPanels()}"/>
                     <ui:param name="deleteAllAction" value="#{flowBean.undoChangesOnAllPanels()}"/>
@@ -232,17 +242,12 @@
                         <p:ajax event="toggle" listener="#{flowBean.handleToggleOfPanelAtIndex(status.index)}"/>
 
                         <f:facet name="header">
-                            <span class="sia-flow-panel-title" id="panel-${status.index}-header">
-                            <p:outputPanel rendered="#{panel.displayHeader() == null}">
-                                <i class="#{panel.icon}"/> #{flowBean.headerName(panel)}
+                            <p:outputPanel id="panel-${status.index}-header" style="display: flex;gap: 0.5em; align-items: center; flex-wrap: wrap; float:left;">
+                                <ui:include rendered="#{panel.displayHeader() != null}"
+                                            src="#{panel.displayHeader()}">
+                                    <ui:param name="panelModel" value="#{panel}"/>
+                                 </ui:include>
                             </p:outputPanel>
-                                <p:outputPanel id="panelHeader" style="display: flex;gap: 0.5em; align-items: center; flex-wrap: wrap;">
-                                    <ui:include rendered="#{panel.displayHeader() != null}"
-                                                src="#{panel.displayHeader()}">
-                                <ui:param name="panelModel" value="#{panel}"/>
-                                     </ui:include>
-                                </p:outputPanel>
-                            </span>
                         </f:facet>
                         <ui:include src="#{panel.display()}" id="panel-body">
                             <ui:param name="panelModel" value="#{panel}"/>
@@ -253,7 +258,8 @@
                                 <p:commandLink id="bookmarkToggleButton"
                                                styleClass="ui-panel-titlebar-icon ui-corner-all ui-state-default"
                                                action="#{navBean.togglePanelBookmark(panel)}"
-                                               update="bookmarkToggleButton navBarCsrfForm:siamoisNavForm:bookmarkGroup">
+                                               onclick="event.stopPropagation();"
+                                               update="bookmarkToggleButton navBarCsrfForm:siamoisNavForm">
                                     <h:outputText styleClass="#{navBean.isPanelBookmarkedByUser(panel) ?
                             'ui-icon bi bi-bookmark-fill' : 'ui-icon bi bi-bookmark'}"/>
                                 </p:commandLink>

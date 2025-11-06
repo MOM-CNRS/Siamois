@@ -4,11 +4,20 @@ import fr.siamois.infrastructure.database.initializer.seeder.customfield.CustomF
 
 import java.io.Serializable;
 
-
 public record CustomColDTO(
         boolean readOnly,
         boolean isRequired,
         CustomFieldSeederSpec field,
-        String className
+        String className,
+        EnabledWhenSpecSeedDTO enabledWhen
 ) implements Serializable {
+
+    public CustomColDTO(
+            boolean readOnly,
+            boolean isRequired,
+            CustomFieldSeederSpec field,
+            String className
+    ) {
+        this(readOnly, isRequired, field, className, null);
+    }
 }

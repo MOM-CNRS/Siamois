@@ -128,7 +128,7 @@
                                 updateLabel="true"
                                 filterMatchMode="contains"
                                 onchange="PF('#{cc.clientId}_spatialUnitListTable').filter()"
-                                converter="#{localizedConceptDataConverter}">
+                                converter="#{conceptLabelConverter}">
 
                             <f:selectItems value="#{cc.attrs.panelModel.categoriesAvailable()}"
                                            var="cat"
@@ -194,7 +194,7 @@
                 <div style="display: flex; gap: 1em;">
                     <span> #{item.parents.size()} </span>
                     <p:commandButton icon="bi bi-eye"
-                                     action="#{flowBean.goToSpatialUnitByIdNewPanel(item.id,cc.attrs.panelModel,2)}"
+                                     action="#{flowBean.goToSpatialUnitByIdNewPanel(item.id,cc.attrs.panelModel,0)}"
                                      onstart="PF('buiContent').show()"
                                      oncomplete="PF('buiContent').hide();handleScrollToTop();"
                                      process="@form"
@@ -224,7 +224,7 @@
                     <span> #{item.children.size()} </span>
 
                     <p:commandButton icon="bi bi-eye"
-                                     action="#{flowBean.goToSpatialUnitByIdNewPanel(item.id,cc.attrs.panelModel,2)}"
+                                     action="#{flowBean.goToSpatialUnitByIdNewPanel(item.id,cc.attrs.panelModel,0)}"
                                      onstart="PF('buiContent').show()"
                                      oncomplete="PF('buiContent').hide();handleScrollToTop();"
                                      process="@form"
@@ -254,7 +254,7 @@
                     <span> #{item.children.size()} </span>
 
                     <p:commandButton icon="bi bi-eye"
-                                     action="#{flowBean.goToSpatialUnitByIdNewPanel(item.id,cc.attrs.panelModel,4)}"
+                                     action="#{flowBean.goToSpatialUnitByIdNewPanel(item.id,cc.attrs.panelModel,2)}"
                                      onstart="PF('buiContent').show()"
                                      oncomplete="PF('buiContent').hide();handleScrollToTop();"
                                      process="@form"
@@ -280,7 +280,7 @@
                                          text="#{langBean.msg('table.spatialunit.column.recordings')}"/>
                 </f:facet>
                 <p:commandLink
-                        action="#{flowBean.goToSpatialUnitByIdNewPanel(item.id,cc.attrs.panelModel,5)}"
+                        action="#{flowBean.goToSpatialUnitByIdNewPanel(item.id,cc.attrs.panelModel,3)}"
                         onstart="PF('buiContent').show()"
                         oncomplete="PF('buiContent').hide();handleScrollToTop();"
                         process="@form"

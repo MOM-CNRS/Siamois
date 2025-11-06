@@ -8,6 +8,8 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.time.LocalDateTime;
+
 
 @EqualsAndHashCode(callSuper = true)
 @Getter
@@ -18,6 +20,10 @@ import lombok.Setter;
 public class CustomFieldDateTime extends CustomField {
 
     private Boolean showTime = false;
+
+    private LocalDateTime min;
+
+    private LocalDateTime max;
 
     public static class Builder {
 

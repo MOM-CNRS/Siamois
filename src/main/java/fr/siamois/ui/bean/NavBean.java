@@ -56,7 +56,7 @@ public class NavBean implements Serializable {
     @Getter(AccessLevel.NONE)
     private transient List<Bookmark> bookmarkedPanels = null;
 
-    private static final String RECORDING_UNIT_BASE_URI = "/recordingunit/";
+    private static final String RECORDING_UNIT_BASE_URI = "/recording-unit/";
     private static final String SPECIMEN_BASE_URI = "/specimen/";
 
     public NavBean(SessionSettingsBean sessionSettingsBean,

@@ -13,6 +13,7 @@ public class CustomCol implements Serializable {
     private boolean isRequired = false;
     private CustomField field;
     private String className;
+    private EnabledWhenJson enabledWhenSpec;
 
     public static class Builder {
 
@@ -35,6 +36,11 @@ public class CustomCol implements Serializable {
 
         public Builder className(String className) {
             col.setClassName(className);
+            return this;
+        }
+
+        public Builder enabledWhenSpec(EnabledWhenJson enabledWhenSpec) {
+            col.setEnabledWhenSpec(enabledWhenSpec);
             return this;
         }
 

@@ -6,7 +6,6 @@ import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.document.Document;
 import fr.siamois.domain.models.exceptions.actionunit.ActionUnitNotFoundException;
 import fr.siamois.domain.models.exceptions.actionunit.FailedActionUnitSaveException;
-import fr.siamois.domain.models.exceptions.vocabulary.NoConfigForFieldException;
 import fr.siamois.domain.models.history.RevisionWithInfo;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
@@ -105,7 +104,7 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnit> imple
 
     @Override
     public String ressourceUri() {
-        return String.format("/actionunit/%s", unit.getId());
+        return String.format("/action-unit/%s", unit.getId());
     }
 
 
@@ -269,56 +268,10 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnit> imple
         MessageUtils.displayInfoMessage(langBean, "common.entity.actionUnits.updated", unit.getFullIdentifier());
         return true;
     }
+    
 
 
-    public void saveNewActionCode() {
-        // Update the action code
-        if (newCodeIndex == 0) {
-            // update primary action code
-            unit.setPrimaryActionCode(newCode);
-        } else if (newCodeIndex > 0) {
-            unit.getSecondaryActionCodes().add(newCode);
-            secondaryActionCodes.set(newCodeIndex - 1, newCode);
-        }
-    }
 
-
-    /**
-     * Fetch the autocomplete results for the action codes
-     *
-     * @param input the input of the user
-     * @return the list of codes the input to display in the autocomplete
-     */
-    public List<ActionCode> completeActionCode(String input) {
-
-        return actionUnitService.findAllActionCodeByCodeIsContainingIgnoreCase(input);
-
-    }
-
-    public String getUrlForActionCodeTypeFieldCode() {
-        return fieldConfigurationService.getUrlForFieldCode(sessionSettingsBean.getUserInfo(), ActionCode.TYPE_FIELD_CODE);
-    }
-
-    /**
-     * Fetch the autocomplete results on API for the action code type field
-     *
-     * @param input the input of the user
-     * @return the list of concepts that match the input to display in the autocomplete
-     */
-    public List<Concept> completeActionCodeType(String input) {
-
-        try {
-            return fieldConfigurationService.fetchAutocomplete(sessionSettingsBean.getUserInfo(), ActionCode.TYPE_FIELD_CODE, input);
-        } catch (NoConfigForFieldException e) {
-            log.error(e.getMessage(), e);
-            return List.of();
-        }
-
-    }
-
-    public void handleSelectPrimaryCode() {
-        // To implement
-    }
 
     @Override
     public String displayHeader() {

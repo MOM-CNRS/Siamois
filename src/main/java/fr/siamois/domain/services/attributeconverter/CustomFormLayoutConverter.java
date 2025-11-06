@@ -9,6 +9,7 @@ import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.customform.CustomCol;
 import fr.siamois.domain.models.form.customform.CustomFormPanel;
 import fr.siamois.domain.models.form.customform.CustomRow;
+import fr.siamois.domain.models.form.customform.EnabledWhenJson;
 import fr.siamois.infrastructure.database.repositories.form.CustomFieldRepository;
 import jakarta.persistence.AttributeConverter;
 import jakarta.persistence.Converter;
@@ -87,6 +88,11 @@ public class CustomFormLayoutConverter implements AttributeConverter<List<Custom
         if (col.getField() != null) {
             colMap.put("fieldId", col.getField().getId());
         }
+        if (col.getEnabledWhenSpec() != null) {
+            // convertit le POJO en map JSON-friendly
+            Map<String, Object> ew = objectMapper.convertValue(col.getEnabledWhenSpec(), Map.class);
+            colMap.put("enabledWhen", ew);
+        }
         return colMap;
     }
 
@@ -144,6 +150,12 @@ public class CustomFormLayoutConverter implements AttributeConverter<List<Custom
             CustomField field = getCustomFieldRepository().findById(Long.valueOf(fieldId.toString()))
                     .orElse(null);
             col.setField(field);
+        }
+
+        Object ewObj = colMap.get("enabledWhen");
+        if (ewObj instanceof Map<?, ?> ewMap) {
+            EnabledWhenJson ew = objectMapper.convertValue(ewMap, EnabledWhenJson.class);
+            col.setEnabledWhenSpec(ew);
         }
 
         return col;

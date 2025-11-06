@@ -66,7 +66,7 @@ public class RecordingUnitHandler implements INewUnitHandler<RecordingUnit> {
         unit.setActionUnit(actionUnit);
         unit.setAuthor(sessionSettingsBean.getAuthenticatedUser());
         unit.setContributors(List.of(sessionSettingsBean.getAuthenticatedUser()));
-        unit.setStartDate(OffsetDateTime.now());
+        unit.setOpeningDate(OffsetDateTime.now());
     }
 
     @Override

@@ -152,7 +152,7 @@ class FieldConfigurationServiceTest {
             concept.setExternalId(dto.getIdentifier()[0].getValue());
             return concept;
         }).when(conceptService).saveOrGetConceptFromFullDTO(any(Vocabulary.class), any(FullInfoDTO.class), eq(null));
-        when(conceptFieldConfigRepository.findByFieldCodeForUser(eq(userInfo.getUser().getId()), anyString())).thenReturn(Optional.empty());
+        when(conceptFieldConfigRepository.findByFieldCodeForUser(eq(userInfo.getUser().getId()), eq(userInfo.getInstitution().getId()),anyString())).thenReturn(Optional.empty());
         when(conceptFieldConfigRepository.save(any(ConceptFieldConfig.class))).thenAnswer(i -> i.getArgument(0));
 
         Optional<FeedbackFieldConfig> result = service.setupFieldConfigurationForUser(userInfo, vocabulary);
@@ -278,30 +278,6 @@ class FieldConfigurationServiceTest {
     @Test
     void findConfigurationForFieldCode_shouldThrowNoConfigException_whenConfigDoesNotExist() {
         assertThrows(NoConfigForFieldException.class, () -> service.findConfigurationForFieldCode(userInfo, SpatialUnit.CATEGORY_FIELD_CODE));
-    }
-
-    @Test
-    void fetchAutocomplete() throws NoConfigForFieldException {
-        Concept concept = new Concept();
-        concept.setVocabulary(vocabulary);
-
-        String fieldCode = "TESTFIELD";
-        String query = "test query";
-
-        ConceptFieldConfig cfc = new ConceptFieldConfig();
-        cfc.setConcept(concept);
-        cfc.setFieldCode(fieldCode);
-
-        when(conceptFieldConfigRepository.findByFieldCodeForInstitution(userInfo.getInstitution().getId(), fieldCode))
-                .thenReturn(Optional.of(cfc));
-        when(labelService.findMatchingConcepts(concept, userInfo.getLang(), query, FieldConfigurationService.LIMIT_RESULTS)).thenReturn(List.of(concept));
-
-        List<Concept> result = service.fetchAutocomplete(userInfo, fieldCode, query);
-
-        assertThat(result)
-                .isNotNull()
-                .hasSize(1)
-                .containsExactly(concept);
     }
 
     @Test

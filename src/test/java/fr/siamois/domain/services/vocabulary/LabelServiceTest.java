@@ -1,13 +1,16 @@
 package fr.siamois.domain.services.vocabulary;
 
 import fr.siamois.domain.models.vocabulary.Concept;
-import fr.siamois.domain.models.vocabulary.LocalizedConceptData;
 import fr.siamois.domain.models.vocabulary.Vocabulary;
+import fr.siamois.domain.models.vocabulary.label.ConceptAltLabel;
+import fr.siamois.domain.models.vocabulary.label.ConceptLabel;
+import fr.siamois.domain.models.vocabulary.label.ConceptPrefLabel;
 import fr.siamois.domain.models.vocabulary.label.VocabularyLabel;
-import fr.siamois.infrastructure.database.repositories.vocabulary.LocalizedConceptDataRepository;
+import fr.siamois.infrastructure.database.repositories.vocabulary.label.ConceptLabelRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.label.VocabularyLabelRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -16,6 +19,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
@@ -23,12 +27,11 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class LabelServiceTest {
 
-
     @Mock
     private VocabularyLabelRepository vocabularyLabelRepository;
 
     @Mock
-    private LocalizedConceptDataRepository localizedConceptDataRepository;
+    private ConceptLabelRepository conceptLabelRepository;
 
     @InjectMocks
     private LabelService labelService;
@@ -119,217 +122,295 @@ class LabelServiceTest {
         verify(vocabularyLabelRepository, never()).save(any(VocabularyLabel.class));
     }
 
-    // Tests for Concept-related methods
 
     @Test
-    void findLabelOfConcept_shouldReturnNull_whenConceptIsNull() {
-        // When
-        LocalizedConceptData result = labelService.findLabelOf((Concept) null, "en");
-
-        // Then
-        assertNull(result);
-    }
-
-    @Test
-    void findLabelOfConcept_shouldReturnExistingLocalizedData_whenPresent() {
-        // Given
-        Concept concept = new Concept();
-        concept.setId(1L);
-        LocalizedConceptData lcd = new LocalizedConceptData();
-        lcd.setLabel("Label EN");
-        when(localizedConceptDataRepository.findByConceptAndLangCode(1L, "en")).thenReturn(Optional.of(lcd));
-
-        // When
-        LocalizedConceptData result = labelService.findLabelOf(concept, "en");
-
-        // Then
-        assertNotNull(result);
-        assertEquals("Label EN", result.getLabel());
-    }
-
-    @Test
-    void findLabelOfConcept_shouldReturnNull_whenNotPresent() {
+    void findLabelOfConcept_shouldReturnExternalCodeWhenNoFallbackMatch_whenNotPresent() {
         // Given
         Concept concept = new Concept();
         concept.setId(2L);
-        when(localizedConceptDataRepository.findByConceptAndLangCode(2L, "fr")).thenReturn(Optional.empty());
+        concept.setExternalId("212");
 
         // When
-        LocalizedConceptData result = labelService.findLabelOf(concept, "fr");
+        ConceptLabel result = labelService.findLabelOf(concept, "fr");
 
         // Then
-        assertNull(result);
+        assertNotNull(result);
+        assertEquals("[212]", result.getLabel());
+        assertEquals("fr", result.getLangCode());
     }
 
     @Test
-    void updateLabelConcept_shouldCreateAndSave_whenLocalizedDataDoesNotExist() {
+    void updateAltLabel_shouldCreateAndSave_whenAltLabelDoesNotExist_andParentDifferent() {
         // Given
+        Concept savedConcept = new Concept();
+        savedConcept.setId(1L);
+        savedConcept.setExternalId("1L");
+        Concept parent = new Concept();
+        parent.setId(2L);
+        parent.setExternalId("2L");
+
+        // When
+        labelService.updateAltLabel(savedConcept, "en", "New Alt", parent);
+
+        // Then
+        ArgumentCaptor<ConceptAltLabel> captor = ArgumentCaptor.forClass(ConceptAltLabel.class);
+        verify(conceptLabelRepository, times(1)).save(captor.capture());
+        ConceptAltLabel saved = captor.getValue();
+        assertNotNull(saved);
+        assertEquals("New Alt", saved.getLabel());
+        assertEquals("en", saved.getLangCode());
+        assertEquals(savedConcept, saved.getConcept());
+        assertEquals(parent, saved.getParentConcept());
+    }
+
+    @Test
+    void updateAltLabel_shouldUpdateExistingAndSave_whenAltLabelExists_andNoParentProvided() {
+        // Given
+        Concept savedConcept = new Concept();
+        savedConcept.setId(3L);
+        savedConcept.setExternalId("3L");
+
+        ConceptAltLabel existing = new ConceptAltLabel();
+        existing.setLabel("Old");
+        existing.setConcept(savedConcept);
+        existing.setLangCode("fr");
+
+
+        when(conceptLabelRepository.findAltLabelByConceptAndLangCode(savedConcept, "fr")).thenReturn(Optional.of(existing));
+        when(conceptLabelRepository.save(any(ConceptAltLabel.class))).thenAnswer(i -> i.getArgument(0));
+
+        // When
+        labelService.updateAltLabel(savedConcept, "fr", "Updated", null);
+
+        // Then
+        assertEquals("Updated", existing.getLabel());
+        verify(conceptLabelRepository, times(1)).save(existing);
+    }
+
+    @Test
+    void updateAltLabel_shouldNotSetParent_whenParentEqualsSavedConcept() {
+        // Given
+        Concept savedConcept = new Concept();
+        savedConcept.setId(4L);
+        savedConcept.setExternalId("4L");
+
+        // When
+        labelService.updateAltLabel(savedConcept, "en", "Value", savedConcept);
+
+        // Then
+        ArgumentCaptor<ConceptAltLabel> captor = ArgumentCaptor.forClass(ConceptAltLabel.class);
+        verify(conceptLabelRepository, times(1)).save(captor.capture());
+        ConceptAltLabel saved = captor.getValue();
+        assertNotNull(saved);
+        // parent must not be set because it's equal to savedConcept
+        assertNull(saved.getParentConcept());
+    }
+
+    @Test
+    void findMatchingConcepts_shouldReturnListOfMatchingConcepts_whenInputIsNotNull() {
+        ConceptPrefLabel label = new ConceptPrefLabel();
+        label.setLangCode("fr");
+        label.setLabel("New Label");
+        ConceptAltLabel altLabel = new ConceptAltLabel();
+        altLabel.setLangCode("fr");
+        altLabel.setLabel("Alternative Label");
+
+        ConceptAltLabel altLabel2 = new ConceptAltLabel();
+        altLabel2.setLangCode("fr");
+        altLabel2.setLabel("Non matching");
+
+        when(conceptLabelRepository
+                .findAllByParentConceptAndInputLimited(anyLong(), anyString(), anyString(), anyInt()))
+                .thenReturn(List.of(label, altLabel));
+
         Concept concept = new Concept();
-        concept.setId(10L);
-        Concept parentConcept = new Concept();
-        parentConcept.setId(20L);
-        when(localizedConceptDataRepository.findByConceptAndLangCode(10L, "en")).thenReturn(Optional.empty());
+        concept.setId(5L);
+        concept.setExternalId("5L");
 
-        // When
-        labelService.updateLabel(concept, "en", "New Concept Label", parentConcept);
+        List<ConceptLabel> results = labelService.findMatchingConcepts(concept, "fr", "Label", 10);
 
-        // Then
-        verify(localizedConceptDataRepository, times(1)).save(any(LocalizedConceptData.class));
-
-        // We can capture and assert properties by using ArgumentCaptor, but keeping test simple: verify save called
+        assertThat(results)
+                .hasSize(2)
+                .containsExactlyInAnyOrder(label, altLabel);
     }
 
     @Test
-    void updateLabelConcept_shouldUpdateExistingAndSave_whenLocalizedDataExists() {
-        // Given
+    void findMatchingConcepts_shouldReturnAllConcepts_whenInputIsEmpty() {
+        ConceptPrefLabel label = new ConceptPrefLabel();
+        label.setLangCode("fr");
+        label.setLabel("New Label");
+        ConceptAltLabel altLabel = new ConceptAltLabel();
+        altLabel.setLangCode("fr");
+        altLabel.setLabel("Alternative Label");
+
+        ConceptAltLabel altLabel2 = new ConceptAltLabel();
+        altLabel2.setLangCode("fr");
+        altLabel2.setLabel("Non matching");
+
         Concept concept = new Concept();
-        concept.setId(11L);
-        LocalizedConceptData lcd = new LocalizedConceptData();
-        lcd.setLabel("Old");
-        when(localizedConceptDataRepository.findByConceptAndLangCode(11L, "en")).thenReturn(Optional.of(lcd));
+        concept.setId(5L);
+        concept.setExternalId("5L");
 
-        // When
-        labelService.updateLabel(concept, "en", "Updated", null);
+        when(conceptLabelRepository
+                .findAllLabelsByParentConceptAndLangCode(eq(concept.getId()), anyString(), anyInt()))
+                .thenReturn(List.of(label, altLabel, altLabel2));
 
-        // Then
-        assertEquals("Updated", lcd.getLabel());
-        verify(localizedConceptDataRepository, times(1)).save(lcd);
+        List<ConceptLabel> results = labelService.findMatchingConcepts(concept, "fr", "", 10);
+
+        assertThat(results)
+                .hasSize(3)
+                .containsExactlyInAnyOrder(label, altLabel, altLabel2);
     }
 
     @Test
-    void findMatchingConcepts_shouldReturnAllConcepts_whenInputIsNullOrEmpty() {
+    void updateLabelConcept_shouldCreateAndSave_whenPrefLabelDoesNotExist_andParentDifferent() {
         // Given
+        Concept savedConcept = new Concept();
+        savedConcept.setId(10L);
+        savedConcept.setExternalId("10L");
         Concept parent = new Concept();
-        parent.setId(100L);
+        parent.setId(11L);
+        parent.setExternalId("11L");
 
-        LocalizedConceptData lcd1 = new LocalizedConceptData();
-        Concept c1 = new Concept();
-        c1.setId(1L);
-        c1.setExternalId("1L");
-        lcd1.setConcept(c1);
-
-        LocalizedConceptData lcd2 = new LocalizedConceptData();
-        Concept c2 = new Concept();
-        c2.setId(2L);
-        c2.setExternalId("2L");
-        lcd2.setConcept(c2);
-
-        when(localizedConceptDataRepository.findAllByParentConcept(parent, org.springframework.data.domain.Limit.of(10)))
-                .thenReturn(List.of(lcd1, lcd2));
+        when(conceptLabelRepository.findByConceptAndLangCode(savedConcept, "en")).thenReturn(Optional.empty());
 
         // When
-        var results = labelService.findMatchingConcepts(parent, "en", null, 10);
+        labelService.updateLabel(savedConcept, "en", "New Pref", parent);
 
         // Then
-        assertEquals(2, results.size());
-        // ensure both concepts are present
-        boolean contains1 = results.stream().anyMatch(c -> c.getId().equals(1L));
-        boolean contains2 = results.stream().anyMatch(c -> c.getId().equals(2L));
-        assertTrue(contains1);
-        assertTrue(contains2);
+        ArgumentCaptor<ConceptPrefLabel> captor = ArgumentCaptor.forClass(ConceptPrefLabel.class);
+        verify(conceptLabelRepository, times(1)).save(captor.capture());
+        ConceptPrefLabel saved = captor.getValue();
+        assertNotNull(saved);
+        assertEquals("New Pref", saved.getLabel());
+        assertEquals("en", saved.getLangCode());
+        assertEquals(savedConcept, saved.getConcept());
+        assertEquals(parent, saved.getParentConcept());
     }
 
     @Test
-    void findMatchingConcepts_shouldReturnMatchingConcepts_whenInputProvided() {
+    void updateLabelConcept_shouldUpdateExistingAndSave_whenPrefLabelExists_andValueDiffers() {
         // Given
-        Concept parent = new Concept();
-        parent.setId(200L);
+        Concept savedConcept = new Concept();
+        savedConcept.setId(20L);
+        savedConcept.setExternalId("20L");
 
-        LocalizedConceptData matched = new LocalizedConceptData();
-        Concept cm = new Concept();
-        cm.setId(3L);
-        // no-op
-        matched.setConcept(cm);
+        ConceptPrefLabel existing = new ConceptPrefLabel();
+        existing.setLabel("Old");
+        existing.setConcept(savedConcept);
+        existing.setLangCode("fr");
 
-        when(localizedConceptDataRepository.findConceptByFieldCodeAndInputLimit(200L, "en", "inp", LabelService.MIN_SIMILARITY_SCORE, 5))
-                .thenReturn(Set.of(matched));
-
-        LocalizedConceptData otherLang = new LocalizedConceptData();
-        Concept co = new Concept();
-        co.setId(4L);
-        co.setExternalId("4L");
-        otherLang.setConcept(co);
-
-        when(localizedConceptDataRepository.findLocalizedConceptDataByParentConceptAndLabelContaining(parent, "inp"))
-                .thenReturn(Set.of(otherLang));
+        when(conceptLabelRepository.findByConceptAndLangCode(savedConcept, "fr")).thenReturn(Optional.of(existing));
+        when(conceptLabelRepository.save(any(ConceptPrefLabel.class))).thenAnswer(i -> i.getArgument(0));
 
         // When
-        var results = labelService.findMatchingConcepts(parent, "en", "inp", 5);
+        labelService.updateLabel(savedConcept, "fr", "Updated", null);
 
         // Then
-        // Should contain both concepts up to the limit
-        assertEquals(2, results.size());
-        boolean has3 = results.stream().anyMatch(c -> c.getId().equals(3L));
-        boolean has4 = results.stream().anyMatch(c -> c.getId().equals(4L));
-        assertTrue(has3);
-        assertTrue(has4);
+        assertEquals("Updated", existing.getLabel());
+        verify(conceptLabelRepository, times(1)).save(existing);
     }
 
     @Test
-    void findMatchingConcepts_shouldReturnEmpty_whenNoMatchesFound() {
+    void updateLabelConcept_shouldSaveEvenWhenValueIsSame() {
         // Given
-        Concept parent = new Concept();
-        parent.setId(300L);
-        parent.setExternalId("300L");
+        Concept savedConcept = new Concept();
+        savedConcept.setId(21L);
+        savedConcept.setExternalId("21L");
 
+        ConceptPrefLabel existing = new ConceptPrefLabel();
+        existing.setLabel("Same");
+        existing.setConcept(savedConcept);
+        existing.setLangCode("en");
 
-        when(localizedConceptDataRepository.findConceptByFieldCodeAndInputLimit(300L, "en", "nope", LabelService.MIN_SIMILARITY_SCORE, 5))
+        when(conceptLabelRepository.findByConceptAndLangCode(savedConcept, "en")).thenReturn(Optional.of(existing));
+
+        // When
+        labelService.updateLabel(savedConcept, "en", "Same", null);
+
+        // Then
+        verify(conceptLabelRepository, times(1)).save(existing);
+    }
+
+    @Test
+    void updateLabelConcept_shouldNotSetParent_whenParentEqualsSavedConcept() {
+        // Given
+        Concept savedConcept = new Concept();
+        savedConcept.setId(30L);
+        savedConcept.setExternalId("30L");
+
+        when(conceptLabelRepository.findByConceptAndLangCode(savedConcept, "en")).thenReturn(Optional.empty());
+
+        // When
+        labelService.updateLabel(savedConcept, "en", "Value", savedConcept);
+
+        // Then
+        ArgumentCaptor<ConceptPrefLabel> captor = ArgumentCaptor.forClass(ConceptPrefLabel.class);
+        verify(conceptLabelRepository, times(1)).save(captor.capture());
+        ConceptPrefLabel saved = captor.getValue();
+        assertNotNull(saved);
+        assertNull(saved.getParentConcept());
+    }
+
+    @Test
+    void testFindAllAltLabelOf_Found() {
+        // given
+        Concept concept;
+        ConceptAltLabel altLabel1;
+        ConceptAltLabel altLabel2;
+        concept = new Concept();
+        concept.setId(1L);
+
+        altLabel1 = new ConceptAltLabel();
+        altLabel1.setLabel("Synonym A");
+        altLabel1.setLangCode("en");
+
+        altLabel2 = new ConceptAltLabel();
+        altLabel2.setLabel("Synonym B");
+        altLabel2.setLangCode("en");
+
+        when(conceptLabelRepository.findAllAltLabelsByLangCodeAndConcept("en", concept))
+                .thenReturn(Set.of(altLabel1, altLabel2));
+
+        // when
+        Set<ConceptAltLabel> result = labelService.findAllAltLabelOf(concept, "en");
+
+        // then
+        assertNotNull(result);
+        assertEquals(2, result.size());
+        assertTrue(result.contains(altLabel1));
+        assertTrue(result.contains(altLabel2));
+
+        verify(conceptLabelRepository, times(1))
+                .findAllAltLabelsByLangCodeAndConcept("en", concept);
+    }
+
+    @Test
+    void testFindAllAltLabelOf_Empty() {
+        // given
+        Concept concept;
+        ConceptAltLabel altLabel1;
+        ConceptAltLabel altLabel2;
+        concept = new Concept();
+        concept.setId(1L);
+
+        altLabel1 = new ConceptAltLabel();
+        altLabel1.setLabel("Synonym A");
+        altLabel1.setLangCode("en");
+
+        altLabel2 = new ConceptAltLabel();
+        altLabel2.setLabel("Synonym B");
+        altLabel2.setLangCode("en");
+        when(conceptLabelRepository.findAllAltLabelsByLangCodeAndConcept("fr", concept))
                 .thenReturn(Set.of());
-        when(localizedConceptDataRepository.findLocalizedConceptDataByParentConceptAndLabelContaining(parent, "nope"))
-                .thenReturn(Set.of());
 
-        // When
-        var results = labelService.findMatchingConcepts(parent, "en", "nope", 5);
+        // when
+        Set<ConceptAltLabel> result = labelService.findAllAltLabelOf(concept, "fr");
 
-        // Then
-        assertNotNull(results);
-        assertEquals(0, results.size());
+        // then
+        assertNotNull(result);
+        assertTrue(result.isEmpty());
+        verify(conceptLabelRepository, times(1))
+                .findAllAltLabelsByLangCodeAndConcept("fr", concept);
     }
-
-    @Test
-    void findMatchingConcepts_shouldEnforceLimit_whenOtherLangReturnsMoreThanLimit() {
-        // Given
-        Concept parent = new Concept();
-        parent.setId(400L);
-
-        // similarity search returns nothing
-        when(localizedConceptDataRepository.findConceptByFieldCodeAndInputLimit(400L, "en", "inp", LabelService.MIN_SIMILARITY_SCORE, 1))
-                .thenReturn(Set.of());
-
-        // other lang returns 3 matches but limit is 1
-        LocalizedConceptData a = new LocalizedConceptData();
-        Concept ca = new Concept(); ca.setId(10L); ca.setExternalId("10"); a.setConcept(ca);
-        LocalizedConceptData b = new LocalizedConceptData();
-        Concept cb = new Concept(); cb.setId(11L); cb.setExternalId("11"); b.setConcept(cb);
-        LocalizedConceptData c = new LocalizedConceptData();
-        Concept cc = new Concept(); cc.setId(12L); cc.setExternalId("12"); c.setConcept(cc);
-
-        when(localizedConceptDataRepository.findLocalizedConceptDataByParentConceptAndLabelContaining(parent, "inp"))
-                .thenReturn(Set.of(a, b, c));
-
-        // When
-        var results = labelService.findMatchingConcepts(parent, "en", "inp", 1);
-
-        // Then
-        assertNotNull(results);
-        assertEquals(1, results.size());
-    }
-
-    @Test
-    void findMatchingConcepts_shouldReturnEmpty_whenFindAllThrows() {
-        // Given
-        Concept parent = new Concept();
-        parent.setId(500L);
-
-        when(localizedConceptDataRepository.findAllByParentConcept(parent, org.springframework.data.domain.Limit.of(5)))
-                .thenThrow(new RuntimeException("boom"));
-
-        // When
-        var results = labelService.findMatchingConcepts(parent, "en", null, 5);
-
-        // Then
-        assertNotNull(results);
-        assertEquals(0, results.size());
-    }
-
 }

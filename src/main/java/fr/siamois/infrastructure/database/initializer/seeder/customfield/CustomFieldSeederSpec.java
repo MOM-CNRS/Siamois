@@ -12,5 +12,22 @@ public record CustomFieldSeederSpec(
         @Nullable String valueBinding,
         @Nullable String iconClass,
         @Nullable String styleClass,
-        @Nullable String fieldCode
-){}
+        @Nullable String fieldCode,
+        @Nullable Boolean isTextArea
+){
+    public CustomFieldSeederSpec(
+            Class<? extends CustomField> answerClass,
+            Boolean isSystemField,
+            String label,
+            ConceptSeeder.ConceptKey conceptKey,
+            @Nullable String valueBinding,
+            @Nullable String iconClass,
+            @Nullable String styleClass,
+            @Nullable String fieldCode
+    ) {
+        this(answerClass, isSystemField, label, conceptKey,
+                valueBinding, iconClass, styleClass, fieldCode, null);
+    }
+}
+
+

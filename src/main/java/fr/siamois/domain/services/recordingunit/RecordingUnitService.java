@@ -148,14 +148,25 @@ public class RecordingUnitService implements ArkEntityService {
             managedRecordingUnit.setDescription(recordingUnit.getDescription());
             managedRecordingUnit.setCreatedBy(recordingUnit.getCreatedBy());
             managedRecordingUnit.setAuthor(recordingUnit.getAuthor());
-            managedRecordingUnit.setEndDate(recordingUnit.getEndDate());
-            managedRecordingUnit.setStartDate(recordingUnit.getStartDate());
+            managedRecordingUnit.setClosingDate(recordingUnit.getClosingDate());
+            managedRecordingUnit.setOpeningDate(recordingUnit.getOpeningDate());
             managedRecordingUnit.setSize(recordingUnit.getSize());
             managedRecordingUnit.setGeomorphologicalCycle(recordingUnit.getGeomorphologicalCycle());
             managedRecordingUnit.setNormalizedInterpretation(recordingUnit.getNormalizedInterpretation());
             managedRecordingUnit.setValidated(recordingUnit.getValidated());
             managedRecordingUnit.setValidatedAt(recordingUnit.getValidatedAt());
             managedRecordingUnit.setValidatedBy(recordingUnit.getValidatedBy());
+            managedRecordingUnit.setTaq(recordingUnit.getTaq());
+            managedRecordingUnit.setTpq(recordingUnit.getTpq());
+            managedRecordingUnit.setMatrixColor(recordingUnit.getMatrixColor());
+            managedRecordingUnit.setMatrixComposition(recordingUnit.getMatrixComposition());
+            managedRecordingUnit.setMatrixTexture(recordingUnit.getMatrixTexture());
+            managedRecordingUnit.setErosionOrientation(recordingUnit.getErosionOrientation());
+            managedRecordingUnit.setErosionProfile(recordingUnit.getErosionProfile());
+            managedRecordingUnit.setErosionShape(recordingUnit.getErosionShape());
+
+            managedRecordingUnit.setChronologicalPhase(recordingUnit.getChronologicalPhase());
+            managedRecordingUnit.setGeomorphologicalAgent(recordingUnit.getGeomorphologicalAgent());
 
             CustomFormResponse managedFormResponse;
 

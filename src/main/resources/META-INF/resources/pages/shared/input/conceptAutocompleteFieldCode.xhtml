@@ -8,7 +8,7 @@
     <cc:interface>
 
         <cc:attribute name="itemSelectListener" required="false" method-signature="void &lt;java.lang.String&gt;(java.lang.Object)" />
-        <cc:attribute name="selectedConcept" type="fr.siamois.domain.models.vocabulary.Concept" required="true"/>
+        <cc:attribute name="selectedConcept" type="fr.siamois.domain.models.vocabulary.label.ConceptLabel" required="true"/>
         <cc:attribute name="editConceptUrl" required="true"/>
         <cc:attribute name="disabled" required="false" default="false"/>
         <cc:attribute name="ajaxUpdateTargets" required="false" default="@form"/>
@@ -23,28 +23,45 @@
     </cc:interface>
 
     <cc:implementation>
-
+        <!--@elvariable id="conceptLabel" type="fr.siamois.domain.models.vocabulary.label.ConceptLabel"-->
         <p:autoComplete value="#{cc.attrs.selectedConcept}"
                         id="conceptAutocomplete"
                         completeMethod="#{spatialUnitFieldBean.completeWithFieldCode}"
-                        var="field"
-                        label="#{cc.attrs.label}"
+                        var="conceptLabel"
                         panelStyleClass="#{cc.attrs.panelStyleClass}"
-                        itemValue="#{field}"
+                        itemValue="#{conceptLabel}"
+                        itemLabel="#{conceptLabel.label}"
                         disabled="#{cc.attrs.disabled}"
                         inputStyleClass="#{cc.attrs.inputStyleClass}"
                         required="#{cc.attrs.required}"
-                        converter="#{conceptConverter}"
+                        converter="#{conceptLabelConverter}"
                         forceSelection="true"
                         scrollHeight="300"
                         dropdown="true"
-                        itemLabel="#{labelBean.findLabelOf(field)}"
                         placeholder="#{langBean.msg('common.action.chooseConcept')}"
                         showEmptyMessage="false"
         >
             <f:attribute name="fieldCode" value="#{cc.attrs.field.fieldCode}" />
             <f:attribute name="field" value="#{cc.attrs.field}" />
             <f:attribute name="selected" value="#{cc.attrs.selectedConcept}"/>
+
+
+
+            <f:facet name="itemtip">
+                <h:panelGrid columns="1" cellpadding="5" styleClass="#{cc.attrs.panelStyleClass}"
+                style="background: var(--main-color); min-width: 20em;">
+
+                    <small>#{labelBean.findConceptLabelOf(conceptLabel.concept).label}</small><br/>
+                    <small><i>#{labelBean.findAllAltLabelsOfConcept(conceptLabel.concept)}</i></small><br/>
+                    <small>#{labelBean.findDescriptionOfConcept(conceptLabel.concept)}</small><br/>
+                    <p:commandLink
+                            onclick="window.open('#{conceptLabel.concept.vocabulary.baseUri}/?idc=#{conceptLabel.concept.externalId}&amp;idt=#{conceptLabel.concept.vocabulary.externalVocabularyId}', '_blank'); return false;"
+                    >
+                        <small><i>#{langBean.msg("common.action.seeMore")}</i></small>
+                    </p:commandLink>
+
+                </h:panelGrid>
+            </f:facet>
 
             <!-- If defined, we need to update on select to synchronise secondary type choices -->
             <p:ajax
@@ -56,14 +73,24 @@
                     process="#{cc.attrs.ajaxProcessTargets}"/>
 
             <p:column>
-                <p:commandButton icon="bi bi-box-arrow-up-right" styleClass="btn btn-primary"
-                                 onclick="event.stopPropagation(); window.open('#{field.vocabulary.baseUri}/?idc=#{field.externalId}&amp;idt=#{field.vocabulary.externalVocabularyId}', '_blank'); return false;" />
+                <p:commandLink
+                                 onclick="event.stopPropagation(); window.open('#{conceptLabel.concept.vocabulary.baseUri}/?idc=#{conceptLabel.concept.externalId}&amp;idt=#{conceptLabel.concept.vocabulary.externalVocabularyId}', '_blank'); return false;"
+                >
+                    <i class="bi bi-box-arrow-up-right"></i>
+                </p:commandLink>
             </p:column>
             <p:column>
-                <div style="display:flex; flex-direction: column">
-                    <h:outputText style="vertical-align: middle; margin-left: .5rem" value="#{labelBean.findLabelOf(field)}"/>
-                    <small>#{field.vocabulary.baseUri} - #{labelBean.findVocabularyLabelOf(field)}</small>
-                </div>
+
+                <h:panelGroup id="conceptItem" layout="block" style="display:flex; flex-direction: column">
+                    <h:outputText style="vertical-align: middle" value="#{conceptLabel.label}"/>
+                    <h:panelGroup rendered="#{conceptLabel.isAltLabel()}">
+                        <small>#{langBean.msg('concept.common.preflabel')} : #{labelBean.findConceptLabelOf(conceptLabel)}</small>
+                    </h:panelGroup>
+                    <h:panelGroup rendered="#{not empty labelBean.hierarchyStr(conceptLabel, cc.attrs.field.fieldCode)}">
+                        <small>#{langBean.msg('concept.common.parents')} : #{labelBean.hierarchyStr(conceptLabel, cc.attrs.field.fieldCode)}</small>
+                    </h:panelGroup>
+                </h:panelGroup>
+
 
             </p:column>
 

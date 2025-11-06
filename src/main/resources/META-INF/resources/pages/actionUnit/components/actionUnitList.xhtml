@@ -145,7 +145,7 @@
                                 updateLabel="true"
                                 filterMatchMode="contains"
                                 onchange="PF('#{cc.clientId}_actionUnitListTable').filter()"
-                                converter="#{localizedConceptDataConverter}">
+                                converter="#{conceptLabelConverter}">
 
                             <f:selectItems value="#{institutionBean.actionUnitTypeUsedInInstitution()}"
                                            var="cat"
@@ -243,7 +243,7 @@
                                              text="#{langBean.msg('table.spatialunit.column.spatialunits')}"/>
                     </f:facet>
                     <p:commandLink
-                            action="#{flowBean.goToActionUnitByIdNewPanel(item.id,cc.attrs.panelModel,1)}"
+                            action="#{flowBean.goToActionUnitByIdNewPanel(item.id,cc.attrs.panelModel,0)}"
                             onstart="PF('buiContent').show()"
                             oncomplete="PF('buiContent').hide();handleScrollToTop();"
                             process="@form"
@@ -265,7 +265,7 @@
                                              text="#{langBean.msg('table.spatialunit.column.recordings')}"/>
                     </f:facet>
                     <p:commandLink
-                            action="#{flowBean.goToActionUnitByIdNewPanel(item.id,cc.attrs.panelModel,3)}"
+                            action="#{flowBean.goToActionUnitByIdNewPanel(item.id,cc.attrs.panelModel,2)}"
                             onstart="PF('buiContent').show()"
                             oncomplete="PF('buiContent').hide();handleScrollToTop();"
                             process="@form"
