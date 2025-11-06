@@ -20,9 +20,11 @@
     <cc:implementation>
         <p:inplace mode="#{cc.attrs.mode}" toggleable="false">
             <f:facet name="output">
-                <h:outputLabel value="#{cc.attrs.answer.value}">
-
-                </h:outputLabel>
+                <p:inputText value="#{cc.attrs.answer.value}"
+                             disabled="true"
+                             label="#{cc.attrs.label}"
+                >
+                </p:inputText>
             </f:facet>
             <f:facet name="input">
                 <p:datePicker id="datePicker"

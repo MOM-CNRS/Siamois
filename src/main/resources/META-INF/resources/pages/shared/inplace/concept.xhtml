@@ -29,7 +29,7 @@
                 <chip:conceptChip concept="#{cc.attrs.answer.value}" styleClass="#{cc.attrs.field.styleClass}"/>
             </f:facet>
             <f:facet name="input">
-                <sharedInput:conceptAutocompleteFieldCode id="typeComponent"
+                <sharedInput:conceptAutocompleteFieldCode id="typeComponent" rendered="#{not empty cc.attrs.answer}"
                                                           inputStyleClass="#{cc.attrs.answer.hasBeenModified ? 'track-change sia-modified-field': 'track-change'}"
                                                           panelStyleClass="#{cc.attrs.panelModel.autocompleteClass}"
                                                           selectedConcept="#{cc.attrs.answer.uiVal}"

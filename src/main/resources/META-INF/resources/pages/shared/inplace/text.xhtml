@@ -22,7 +22,21 @@
     <cc:implementation>
         <p:inplace mode="#{cc.attrs.mode}" toggleable="false">
             <f:facet name="output">
-                <h:outputText value="#{cc.attrs.answer.value}"/>
+                <h:panelGroup rendered="#{cc.attrs.field.isTextArea}">
+                    <p:inputTextarea value="#{cc.attrs.answer.value}"
+                                     style="width: 100%"
+                                     disabled="true"
+                                     label="#{cc.attrs.label}"
+                    >
+                    </p:inputTextarea>
+                </h:panelGroup>
+                <h:panelGroup rendered="#{not cc.attrs.field.isTextArea}">
+                    <p:inputText value="#{cc.attrs.answer.value}"
+                                 disabled="true"
+                                 label="#{cc.attrs.label}"
+                    >
+                    </p:inputText>
+                </h:panelGroup>
             </f:facet>
             <f:facet name="input">
                 <h:panelGroup id="input" rendered="true">
