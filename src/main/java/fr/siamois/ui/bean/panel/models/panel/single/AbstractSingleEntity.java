@@ -214,7 +214,6 @@ public abstract class AbstractSingleEntity<T> extends AbstractPanel implements S
             Map.ofEntries(
                     Map.entry(CustomFieldText.class, CustomFieldAnswerText::new),
                     Map.entry(CustomFieldSelectOneFromFieldCode.class, CustomFieldAnswerSelectOneFromFieldCode::new),
-                    Map.entry(CustomFieldSelectOneConceptFromChildrenOfConcept.class, CustomFieldAnswerSelectOneConceptFromChildrenOfConcept::new),
                     Map.entry(CustomFieldSelectMultiplePerson.class, CustomFieldAnswerSelectMultiplePerson::new),
                     Map.entry(CustomFieldDateTime.class, CustomFieldAnswerDateTime::new),
                     Map.entry(CustomFieldSelectOneActionUnit.class, CustomFieldAnswerSelectOneActionUnit::new),
@@ -317,27 +316,6 @@ public abstract class AbstractSingleEntity<T> extends AbstractPanel implements S
     }
 
 
-
-    public String getUrlForDependentConcept(
-            CustomFieldSelectOneConceptFromChildrenOfConcept dependentField
-    ) {
-        if (dependentField == null || dependentField.getParentField() == null) {
-            return null;
-        }
-
-        CustomField parentField = dependentField.getParentField();
-        CustomFieldAnswer parentAnswer = formResponse.getAnswers().get(parentField);
-
-        Concept parentConcept = null;
-
-        if (parentAnswer instanceof CustomFieldAnswerSelectOneConceptFromChildrenOfConcept a1) {
-            parentConcept = a1.getValue();
-        } else if (parentAnswer instanceof CustomFieldAnswerSelectOneFromFieldCode a2) {
-            parentConcept = a2.getValue();
-        }
-
-        return parentConcept != null ? fieldConfigurationService.getUrlOfConcept(parentConcept) : null;
-    }
 
     public CustomFormResponse initializeFormResponse(CustomForm form, Object jpaEntity, boolean forceInit) {
 
@@ -531,9 +509,6 @@ public abstract class AbstractSingleEntity<T> extends AbstractPanel implements S
             if (answer instanceof CustomFieldAnswerSelectOneFromFieldCode codeAnswer) {
                 codeAnswer.setValue(c);
                 codeAnswer.setUiVal(labelBean.findConceptLabelOf(c));
-            } else if (answer instanceof CustomFieldAnswerSelectOneConceptFromChildrenOfConcept childAnswer) {
-                childAnswer.setValue(c);
-                childAnswer.setUiVal(labelBean.findConceptLabelOf(c));
             }
         } else if (value instanceof ActionUnit a && answer instanceof CustomFieldAnswerSelectOneActionUnit actionUnitAnswer) {
             actionUnitAnswer.setValue(a);
@@ -593,8 +568,6 @@ public abstract class AbstractSingleEntity<T> extends AbstractPanel implements S
             } catch(NullPointerException e) {
                 return null;
             }
-        } else if (answer instanceof CustomFieldAnswerSelectOneConceptFromChildrenOfConcept a) {
-            return a.getUiVal().getConcept();
         } else if (answer instanceof CustomFieldAnswerSelectOneActionUnit a) {
             return a.getValue();
         } else if (answer instanceof CustomFieldAnswerSelectOneSpatialUnit a) {

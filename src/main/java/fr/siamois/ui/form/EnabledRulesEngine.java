@@ -4,7 +4,6 @@ package fr.siamois.ui.form;
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswer;
 import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerId;
-import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerSelectOneConceptFromChildrenOfConcept;
 import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerSelectOneFromFieldCode;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.ui.bean.panel.models.panel.single.AbstractSingleEntity;
@@ -58,8 +57,6 @@ public final class EnabledRulesEngine {
         answer.setPk(id);
 
         if (answer instanceof CustomFieldAnswerSelectOneFromFieldCode a) {
-            a.setValue(concept);
-        } else if (answer instanceof CustomFieldAnswerSelectOneConceptFromChildrenOfConcept a) {
             a.setValue(concept);
         } else {
             throw new IllegalArgumentException(

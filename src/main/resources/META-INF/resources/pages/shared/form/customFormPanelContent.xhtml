@@ -88,14 +88,7 @@
 
                                 <!-- Select one concept from field parent concept children -->
 
-                                <siaInplace:childConcept
-                                        rendered="#{col.field['class'].simpleName eq 'CustomFieldSelectOneConceptFromChildrenOfConcept'}"
-                                        hasBeenModified="#{bean.formResponse.answers.get(col.field).hasBeenModified}"
-                                        field="#{col.field}"
-                                        mode="#{col.readOnly ? 'output' : flowBean.getInPlaceFieldMode()}"
-                                        panelModel="#{bean}"
-                                        updateTargetsOnBlur="#{root}:field-#{prefix}-#{statusIndex}-#{rowStatus.index}-#{colStatus.index} panelHeader"
-                                        answer="#{bean.formResponse.answers.get(col.field)}"/>
+
 
 
                                 <!-- Select one action -->
