@@ -20,32 +20,21 @@
     <ui:define name="content">
 
         <script>
-            //<![CDATA[
-            function start() {
-                PF('startButton1').disable();
-
-                window['progress'] = setInterval(function () {
-                    var pbClient = PF('pbClient'),
-                        oldValue = pbClient.getValue(),
-                        newValue = oldValue + 10;
-
-                    pbClient.setValue(pbClient.getValue() + 10);
-
-                    if (newValue === 100) {
-                        clearInterval(window['progress']);
-                    }
-
-
-                }, 1000);
+            function startProgressBar() {
+                const bars = document.getElementsByClassName('thesaurus-progress-bar');
+                for (const bar of bars) {
+                    bar.style.visibility = 'visible';
+                }
+                PF('pbAjaxUserLoadWidget').start();
             }
 
-            function cancel() {
-                clearInterval(window['progress']);
-                PF('pbClient').setValue(0);
-                PF('startButton1').enable();
+            function endProgressBar() {
+                const bars = document.getElementsByClassName('thesaurus-progress-bar');
+                for (const bar of bars) {
+                    bar.style.visibility = 'collapse';
+                }
+                PF('pbAjaxUserLoadWidget').cancel();
             }
-
-            //]]>
         </script>
 
         <main>
@@ -54,8 +43,8 @@
                     formId="thesaurusForm"
                     saveMethod="#{profileSettingsBean.saveThesaurusUserConfig()}"
                     update="pbAjaxUserLoad"
-                    onstart="PF('pbAjaxUserLoadWidget').start();"
-                    oncomplete="PF('pbAjaxUserLoadWidget').cancel();"
+                    onstart="startProgressBar()"
+                    oncomplete="endProgressBar()"
             >
                 <div>
                     <p style="font-style: italic">
@@ -73,10 +62,10 @@
                                ajax="true"
                                value="#{profileSettingsBean.progressWrapper.progressPercentage}"
                                labelTemplate="{value}%"
-                               styleClass="mt-3"
+                               styleClass="mt-3 thesaurus-progress-bar"
                                global="true"
                                interval="500"
-                               style="visibility: #{profileSettingsBean.progressWrapper.visibilityStyle()}"
+                               style="visibility: collapse"
                 />
             </settingscomp:fieldValue>
         </main>
