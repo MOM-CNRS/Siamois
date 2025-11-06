@@ -22,6 +22,7 @@
     <cc:implementation>
 
 
+
         <!-- datatable property partialUpdate=false because otherwise the paginator template is reset after sort or filter actions-->
         <p:dataTable paginator="true"
                      editable="true"
@@ -51,6 +52,7 @@
                     update=":#{cc.clientId}:recordingUnitDataTable:tableToolbar"/>
             <p:ajax event="rowUnselect" listener="#{cc.attrs.lazyDataModel.handleRowUnselect}" immediate="true"
                     update=":#{cc.clientId}:recordingUnitDataTable:tableToolbar"/>
+
 
             <f:facet name="{RowReport}">
 
