@@ -242,7 +242,8 @@
                         <p:ajax event="toggle" listener="#{flowBean.handleToggleOfPanelAtIndex(status.index)}"/>
 
                         <f:facet name="header">
-                            <p:outputPanel id="panel-${status.index}-header" style="display: flex;gap: 0.5em; align-items: center; flex-wrap: wrap; float:left;">
+                            <p:outputPanel id="panel-${status.index}-header" style="display: flex;gap: 0.5em; align-items: center;
+                            flex-wrap: wrap; float:left;color: var(--main-color);">
                                 <ui:include rendered="#{panel.displayHeader() != null}"
                                             src="#{panel.displayHeader()}">
                                     <ui:param name="panelModel" value="#{panel}"/>
