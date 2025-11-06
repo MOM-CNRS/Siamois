@@ -32,4 +32,8 @@ public class ProgressWrapper {
         return currentStepNumber > 0;
     }
 
+    public String visibilityStyle() {
+        return isStarted() ? "visible" : "hidden";
+    }
+
 }

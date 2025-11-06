@@ -170,14 +170,17 @@ public class ProfileSettingsBean implements Serializable {
             progressWrapper.incrementStep();
             fieldConfigurationService.setupFieldConfigurationForUser(info, vocabulary);
             progressWrapper.incrementStep();
-
             MessageUtils.displayMessage(langBean, FacesMessage.SEVERITY_INFO, "myProfile.thesaurus.message.success");
+            refConfigConcept = fieldConfigurationService.findParentConceptForFieldcode(info, SpatialUnit.CATEGORY_FIELD_CODE);
         } catch (InvalidEndpointException e) {
             MessageUtils.displayMessage(langBean, FacesMessage.SEVERITY_ERROR, "myProfile.thesaurus.uri.invalid");
         } catch (NotSiamoisThesaurusException e) {
             MessageUtils.displayMessage(langBean, FacesMessage.SEVERITY_ERROR, "myProfile.thesaurus.siamois.invalid");
         } catch (ErrorProcessingExpansionException e) {
             displayErrorMessage(langBean, "thesaurus.error.processingExpansion");
+        } catch (NoConfigForFieldException e) {
+            log.error("Unexpected error after setting up thesaurus for user", e);
+            displayErrorMessage(langBean, "common.error.internal");
         } finally {
             progressWrapper.reset();
         }
