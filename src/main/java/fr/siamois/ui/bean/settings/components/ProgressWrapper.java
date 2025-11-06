@@ -16,6 +16,13 @@ public class ProgressWrapper {
         }
     }
 
+    public void incrementStep(int steps) {
+        currentStepNumber += steps;
+        if (currentStepNumber > totalSteps) {
+            currentStepNumber = totalSteps;
+        }
+    }
+
     public void reset() {
         currentStepNumber = 0;
         totalSteps = 0;
@@ -30,10 +37,6 @@ public class ProgressWrapper {
 
     public boolean isStarted() {
         return currentStepNumber > 0;
-    }
-
-    public String visibilityStyle() {
-        return isStarted() ? "visible" : "hidden";
     }
 
 }

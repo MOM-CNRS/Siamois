@@ -39,6 +39,8 @@ public class FieldConfigurationService {
 
     private static final IllegalStateException FIELD_CODE_NOT_FOUND = new IllegalStateException("Field code not found");
     public static final int LIMIT_RESULTS = 200;
+    public static final int NUMBER_OF_STEPS_IN_FIELD_CONFIG = 2;
+    public static final int NUMBER_OF_STEPS_IN_CONCEPT_UPDATE = 5;
     private final ConceptApi conceptApi;
     private final FieldService fieldService;
     private final ConceptRepository conceptRepository;
@@ -124,8 +126,7 @@ public class FieldConfigurationService {
         FeedbackFieldConfig config = createConfigOfThesaurus(conceptBranchDTO);
         if (config.isWrongConfig()) return Optional.of(config);
 
-        // We consider one step for saving de ConceptFieldConfig and one step for saving all sub-concepts data
-        progressWrapper.setTotalSteps(config.conceptWithValidFieldCode().size() * 2);
+        progressWrapper.setTotalSteps((config.conceptWithValidFieldCode().size() * (NUMBER_OF_STEPS_IN_FIELD_CONFIG + NUMBER_OF_STEPS_IN_CONCEPT_UPDATE)));
 
         for (FullInfoDTO conceptDTO : config.conceptWithValidFieldCode()) {
             String fieldCode = conceptDTO.getFieldcode().orElseThrow(() -> FIELD_CODE_NOT_FOUND);
@@ -151,7 +152,7 @@ public class FieldConfigurationService {
                 fieldConfig =  optConfig.get();
             }
             progressWrapper.incrementStep();
-            conceptService.saveAllSubConceptOfIfUpdated(fieldConfig);
+            conceptService.saveAllSubConceptOfIfUpdated(fieldConfig, progressWrapper);
             progressWrapper.incrementStep();
         }
 
