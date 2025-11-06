@@ -1,5 +1,6 @@
 package fr.siamois.domain.services.history;
 
+import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.history.InfoRevisionEntity;
 import fr.siamois.domain.models.history.RevisionWithInfo;
 import jakarta.persistence.NoResultException;
@@ -14,8 +15,10 @@ import org.springframework.stereotype.Service;
 
 import java.lang.reflect.Field;
 import java.util.List;
+import java.util.Objects;
 import java.util.SortedSet;
 import java.util.TreeSet;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -97,4 +100,19 @@ public class HistoryAuditService {
         }
         return revision.entity();
     }
+
+    @SuppressWarnings("unchecked")
+    public List<Person> findContributors(Class<?> entityClass, Object entityId) {
+        List<Person> contributors = auditReader.createQuery()
+                .forRevisionsOfEntity(entityClass, false, false)
+                .add(AuditEntity.id().eq(entityId))
+                .addProjection(AuditEntity.revisionProperty("updatedBy"))
+                .getResultList();
+
+        return contributors.stream()
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
+    }
+
 }
