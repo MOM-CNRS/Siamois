@@ -15,16 +15,18 @@ public interface ConceptFieldConfigRepository extends CrudRepository<ConceptFiel
     @Query(
             nativeQuery = true,
             value = "SELECT cfc.* FROM concept_field_config cfc " +
-                    "WHERE cfc.fk_institution_id = :institutionId AND cfc.field_code = :fieldCode"
+                    "WHERE cfc.fk_institution_id = :institutionId AND cfc.field_code = :fieldCode AND cfc.fk_user_id IS NULL " +
+                    "LIMIT 1"
     )
     Optional<ConceptFieldConfig> findByFieldCodeForInstitution(Long institutionId, String fieldCode);
 
     @Query(
             nativeQuery = true,
             value = "SELECT cfc.* FROM concept_field_config cfc " +
-                    "WHERE cfc.fk_user_id = :personId AND cfc.field_code = :fieldCode"
+                    "WHERE cfc.fk_user_id = :personId AND cfc.fk_institution_id = :institutionId AND cfc.field_code = :fieldCode " +
+                    "LIMIT 1"
     )
-    Optional<ConceptFieldConfig> findByFieldCodeForUser(Long personId, String fieldCode);
+    Optional<ConceptFieldConfig> findByFieldCodeForUser(Long personId, Long institutionId, String fieldCode);
 
     @Transactional
     @Modifying
