@@ -160,6 +160,10 @@ body {
   }
 }
 
+body .ui-datepicker .ui-datepicker-calendar td>a.ui-state-active, body .ui-datepicker .ui-datepicker-calendar td>span.ui-state-active {
+  background-color: var(--main-color);
+}
+
 
 
 

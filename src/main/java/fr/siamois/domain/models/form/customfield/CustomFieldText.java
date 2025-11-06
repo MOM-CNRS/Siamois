@@ -1,6 +1,7 @@
 package fr.siamois.domain.models.form.customfield;
 
 import fr.siamois.domain.models.vocabulary.Concept;
+import jakarta.persistence.Column;
 import jakarta.persistence.DiscriminatorValue;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
@@ -19,6 +20,8 @@ import java.util.function.Supplier;
 @Table(name = "custom_field")
 public class CustomFieldText extends CustomField {
 
+    @Column(name = "is_text_area")
+    private Boolean isTextArea;
 
     private transient Supplier<String> autoGenerationFunction;
 

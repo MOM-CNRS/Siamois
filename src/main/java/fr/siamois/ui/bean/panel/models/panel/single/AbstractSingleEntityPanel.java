@@ -101,10 +101,6 @@ public abstract class AbstractSingleEntityPanel<T> extends AbstractSingleEntity<
 
         // Overview tab
         tabs = new ArrayList<>();
-        OverviewFormTab overviewTab = new OverviewFormTab("panel.tab.overview",
-                "bi bi-eye",
-                "overviewTab");
-        tabs.add(overviewTab);
         DetailsFormTab detailsTab = new DetailsFormTab("panel.tab.details",
                 "bi bi-pen",
                 "detailTab");
@@ -113,7 +109,7 @@ public abstract class AbstractSingleEntityPanel<T> extends AbstractSingleEntity<
                 "bi bi-paperclip",
                 "documentsTab");
         tabs.add(documentTab);
-        if(activeTabIndex == null) { activeTabIndex = 1; }
+        if(activeTabIndex == null) { activeTabIndex = 0; }
     }
 
 

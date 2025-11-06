@@ -1,7 +1,7 @@
 <ui:fragment xmlns="http://www.w3.org/1999/xhtml"
              xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
              xmlns:p="http://primefaces.org/ui"
-             xmlns:c="http://java.sun.com/jsp/jstl/core"
+             xmlns:c="http://java.sun.com/jsp/jstl/core" xmlns:h="http://java.sun.com/jsf/html"
 >
 
     <!--@elvariable id="panelModel" type="fr.siamois.ui.bean.panel.models.panel.single.AbstractSingleEntity"-->
@@ -11,23 +11,48 @@
     <!--@elvariable id="root" type="String" -->
     <!--@elvariable id="panelId" type="String" -->
 
-    <c:forEach items="#{layout}" var="customFormPanel" varStatus="status">
-        <p:panel header="#{spatialUnitFieldBean.resolvePanelLabel(customFormPanel)}" id="customFormPanel-#{status.index}-#{prefix}"
-                 class="sia-form-panel"
-                 toggleable="true">
 
-            <ui:include src="/pages/shared/form/customFormPanelContent.xhtml">
-                <ui:param name="bean" value="#{panelModel}"/>
-                <ui:param name="customFormPanel" value="#{customFormPanel}"/>
-                <ui:param name="readOnly" value="#{readOnly}"/>
-                <ui:param name="prefix" value="#{prefix}"/>
-                <ui:param name="root" value="#{root}"/>
-                <ui:param name="updateTargetsOnBlur" value="#{panelId}"/>
-                <ui:param name="statusIndex" value="#{status.index}"/>
-            </ui:include>
+    <!-- show panel view -->
+    <h:panelGroup rendered="#{flowBean.fieldOfficeMode == 'OFFICE'}">
+        <c:forEach items="#{layout}" var="customFormPanel" varStatus="status">
+            <p:panel
+                    header="#{spatialUnitFieldBean.resolvePanelLabel(customFormPanel)}"
+                    id="customFormPanel-#{status.index}-#{prefix}"
+                    class="sia-form-panel"
+                    toggleable="true">
+                <ui:include src="/pages/shared/form/customFormPanelContent.xhtml">
+                    <ui:param name="bean" value="#{panelModel}" />
+                    <ui:param name="customFormPanel" value="#{customFormPanel}" />
+                    <ui:param name="readOnly" value="#{readOnly}" />
+                    <ui:param name="prefix" value="#{prefix}" />
+                    <ui:param name="root" value="#{root}" />
+                    <ui:param name="updateTargetsOnBlur" value="#{panelId}" />
+                    <ui:param name="statusIndex" value="#{status.index}" />
+                </ui:include>
+            </p:panel>
+        </c:forEach>
+    </h:panelGroup>
 
-        </p:panel>
-    </c:forEach>
+    <!-- show tab view -->
+    <h:panelGroup rendered="#{flowBean.fieldOfficeMode == 'FIELD'}">
+        <p:tabView id="customTabView-#{prefix}" dynamic="true" styleClass="fieldmode-tabview">
+            <c:forEach items="#{layout}" var="customFormPanel" varStatus="status">
+                <p:tab title="#{spatialUnitFieldBean.resolvePanelLabel(customFormPanel)}"
+                       titleStyleClass="fieldmode-tabtitle">
+                    <ui:include src="/pages/shared/form/customFormPanelContent.xhtml">
+                        <ui:param name="bean" value="#{panelModel}" />
+                        <ui:param name="customFormPanel" value="#{customFormPanel}" />
+                        <ui:param name="readOnly" value="#{readOnly}" />
+                        <ui:param name="prefix" value="#{prefix}" />
+                        <ui:param name="root" value="#{root}:customTabView-#{prefix}" />
+                        <ui:param name="updateTargetsOnBlur" value="#{panelId}" />
+                        <ui:param name="statusIndex" value="#{status.index}" />
+                    </ui:include>
+                </p:tab>
+            </c:forEach>
+        </p:tabView>
+    </h:panelGroup>
+
 
 
 </ui:fragment>

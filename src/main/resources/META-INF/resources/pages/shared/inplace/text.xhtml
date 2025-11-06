@@ -6,8 +6,10 @@
 >
 
     <cc:interface>
-        <cc:attribute name="answer" type="fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerText" required="true"/>
-        <cc:attribute name="panelModel" type="fr.siamois.ui.bean.panel.models.panel.single.AbstractSingleEntity" required="true"/>
+        <cc:attribute name="answer" type="fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerText"
+                      required="true"/>
+        <cc:attribute name="panelModel" type="fr.siamois.ui.bean.panel.models.panel.single.AbstractSingleEntity"
+                      required="true"/>
         <cc:attribute name="hasBeenModified" type="Boolean" required="false" default="false"/>
         <cc:attribute name="field" type="fr.siamois.domain.models.form.customfield.CustomFieldText"
                       required="true"/>
@@ -20,27 +22,58 @@
     <cc:implementation>
         <p:inplace mode="#{cc.attrs.mode}" toggleable="false">
             <f:facet name="output">
-                <h:outputText value="#{cc.attrs.answer.value}"/>
+                <h:panelGroup rendered="#{cc.attrs.field.isTextArea}">
+                    <p:inputTextarea value="#{cc.attrs.answer.value}"
+                                     style="width: 100%"
+                                     disabled="true"
+                                     label="#{cc.attrs.label}"
+                    >
+                    </p:inputTextarea>
+                </h:panelGroup>
+                <h:panelGroup rendered="#{not cc.attrs.field.isTextArea}">
+                    <p:inputText value="#{cc.attrs.answer.value}"
+                                 disabled="true"
+                                 label="#{cc.attrs.label}"
+                    >
+                    </p:inputText>
+                </h:panelGroup>
             </f:facet>
             <f:facet name="input">
-                <p:commandButton
-                        rendered="#{cc.attrs.panelModel.hasAutoGenerationFunction(cc.attrs.field)}"
-                        icon="pi pi-refresh"
-                        styleClass="rounded-button"
-                        immediate="true"
-                        process="@this"
-                        actionListener="#{cc.attrs.panelModel.generateValueForField(cc.attrs.field, cc.attrs.answer)}"
-                        update="#{cc.attrs.updateTargetsOnBlur}"
-                />
-                <p:inputText value="#{cc.attrs.answer.value}"
-                             styleClass="#{cc.attrs.answer.hasBeenModified ? 'track-change sia-modified-field': 'track-change'}"
-                             label="#{cc.attrs.label}"
-                             required="#{cc.attrs.required}"
-                             id="input">
-                    <p:ajax event="keyup" delay="1000" update="#{cc.attrs.updateTargetsOnBlur}"
-                            process="@this"
-                            listener="#{cc.attrs.panelModel.setFieldAnswerHasBeenModified(cc.attrs.field)}" />
-                </p:inputText>
+                <h:panelGroup id="input" rendered="true">
+                    <h:panelGroup rendered="#{cc.attrs.field.isTextArea}">
+                        <p:inputTextarea value="#{cc.attrs.answer.value}"
+                                         style="width: 100%"
+                                         styleClass="#{cc.attrs.answer.hasBeenModified ? 'track-change sia-modified-field': 'track-change'}"
+                                         label="#{cc.attrs.label}"
+                                         required="#{cc.attrs.required}"
+                        >
+                            <p:ajax event="keyup" delay="1000" update="#{cc.attrs.updateTargetsOnBlur}"
+                                    process="@this"
+                                    listener="#{cc.attrs.panelModel.setFieldAnswerHasBeenModified(cc.attrs.field)}"/>
+                        </p:inputTextarea>
+                    </h:panelGroup>
+                    <h:panelGroup rendered="#{not cc.attrs.field.isTextArea}">
+                        <p:commandButton
+                                rendered="#{cc.attrs.panelModel.hasAutoGenerationFunction(cc.attrs.field)}"
+                                icon="pi pi-refresh"
+                                styleClass="rounded-button"
+                                immediate="true"
+                                process="@this"
+                                actionListener="#{cc.attrs.panelModel.generateValueForField(cc.attrs.field, cc.attrs.answer)}"
+                                update="#{cc.attrs.updateTargetsOnBlur}"
+                        />
+                        <p:inputText value="#{cc.attrs.answer.value}"
+                                     styleClass="#{cc.attrs.answer.hasBeenModified ? 'track-change sia-modified-field': 'track-change'}"
+                                     label="#{cc.attrs.label}"
+                                     required="#{cc.attrs.required}"
+                        >
+                            <p:ajax event="keyup" delay="1000" update="#{cc.attrs.updateTargetsOnBlur}"
+                                    process="@this"
+                                    listener="#{cc.attrs.panelModel.setFieldAnswerHasBeenModified(cc.attrs.field)}"/>
+                        </p:inputText>
+                    </h:panelGroup>
+                </h:panelGroup>
+
             </f:facet>
         </p:inplace>
     </cc:implementation>

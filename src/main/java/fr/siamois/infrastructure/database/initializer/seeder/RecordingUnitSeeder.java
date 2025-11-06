@@ -111,13 +111,13 @@ public class RecordingUnitSeeder {
             toGetOrCreate.setType(type);
             toGetOrCreate.setSecondaryType(secondaryType);
             toGetOrCreate.setThirdType(thirdType);
-            toGetOrCreate.setStartDate(s.beginDate);
+            toGetOrCreate.setOpeningDate(s.beginDate);
             toGetOrCreate.setAuthor(authorPerson);
             toGetOrCreate.setContributors(contributors);
             toGetOrCreate.setCreatedBy(createdBy);
-            toGetOrCreate.setEndDate(s.endDate);
+            toGetOrCreate.setClosingDate(s.endDate);
             toGetOrCreate.setCreationTime(s.creationTime);
-            toGetOrCreate.setEndDate(s.endDate);
+            toGetOrCreate.setClosingDate(s.endDate);
             toGetOrCreate.setActionUnit(au);
             toGetOrCreate.setSpatialUnit(su);
             getOrCreateRecordingUnit(toGetOrCreate);

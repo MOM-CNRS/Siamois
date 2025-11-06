@@ -6,6 +6,7 @@ import fr.siamois.domain.models.document.Document;
 import fr.siamois.domain.models.exceptions.actionunit.ActionUnitNotFoundException;
 import fr.siamois.domain.models.exceptions.recordingunit.FailedRecordingUnitSaveException;
 import fr.siamois.domain.models.form.customfield.CustomField;
+import fr.siamois.domain.models.form.customfield.CustomFieldDateTime;
 import fr.siamois.domain.models.form.customfield.CustomFieldInteger;
 import fr.siamois.domain.models.form.customfield.CustomFieldSelectMultiple;
 import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswer;
@@ -42,10 +43,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 
 import java.io.Serializable;
-import java.time.LocalDate;
-import java.time.LocalTime;
-import java.time.OffsetDateTime;
-import java.time.ZoneOffset;
+import java.time.*;
 import java.util.*;
 
 @Slf4j
@@ -290,6 +288,7 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
         detailsForm = formService.findCustomFormByRecordingUnitTypeAndInstitutionId(unit.getType(), sessionSettingsBean.getSelectedInstitution());
         // Init system form answers
         formResponse = initializeFormResponse(detailsForm, unit, forceInit);
+        initEnabledRulesFromForms();
     }
 
     @Override
@@ -300,8 +299,8 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
         unit.setArk(backupClone.getArk());
         unit.setIdentifier(backupClone.getIdentifier());
         unit.setType(backupClone.getType());
-        unit.setStartDate(backupClone.getStartDate());
-        unit.setEndDate(backupClone.getEndDate());
+        unit.setOpeningDate(backupClone.getOpeningDate());
+        unit.setClosingDate(backupClone.getClosingDate());
         unit.setAuthor(backupClone.getAuthor());
         unit.setCreatedBy(unit.getCreatedBy());
         unit.setContributors(backupClone.getContributors());
@@ -318,6 +317,17 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
         if(Objects.equals(field.getValueBinding(), "identifier") && field.getClass().equals(CustomFieldInteger.class)) {
             ((CustomFieldInteger) field).setMaxValue(unit.getActionUnit().getMaxRecordingUnitCode());
             ((CustomFieldInteger) field).setMinValue(unit.getActionUnit().getMinRecordingUnitCode());
+        }
+        // Min and max datetime
+        if(field.getClass().equals(CustomFieldDateTime.class)) {
+            if(Objects.equals(field.getValueBinding(), "openingDate") && unit.getClosingDate() != null) {
+                ((CustomFieldDateTime) field).setMax(unit.getClosingDate().toLocalDateTime());
+                ((CustomFieldDateTime) field).setMin(LocalDateTime.of(1000,Month.JANUARY,1, 1, 1));
+            }
+            if(Objects.equals(field.getValueBinding(), "closingDate") && unit.getOpeningDate() != null) {
+                ((CustomFieldDateTime) field).setMin(unit.getOpeningDate().toLocalDateTime());
+                ((CustomFieldDateTime) field).setMax(LocalDateTime.of(9999,Month.DECEMBER,31, 23, 59));
+            }
         }
 
     }
@@ -341,6 +351,8 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
     public String getAutocompleteClass() {
         return "recording-unit-autocomplete";
     }
+
+
 
     @Override
     public boolean save(Boolean validated) {

@@ -281,7 +281,12 @@ public abstract class BaseLazyDataModel<T> extends LazyDataModel<T> {
 
     public void addRowToModel(T newUnit) {
         // Create modifiable copy
-        List<T> modifiableCopy = new ArrayList<>(getWrappedData());
+        List<T> modifiableCopy = new ArrayList<>();
+
+        if(getWrappedData()!=null) {
+            modifiableCopy  = new ArrayList<>(getWrappedData());
+        }
+
 
         // Insert new record at the top
         modifiableCopy.add(0, newUnit);

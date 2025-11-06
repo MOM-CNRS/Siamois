@@ -1,14 +1,12 @@
 package fr.siamois.ui.bean.panel.models.panel.single;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import fr.siamois.domain.models.actionunit.ActionCode;
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.form.customfield.*;
 import fr.siamois.domain.models.form.customfieldanswer.*;
-import fr.siamois.domain.models.form.customform.CustomCol;
-import fr.siamois.domain.models.form.customform.CustomForm;
-import fr.siamois.domain.models.form.customform.CustomFormPanel;
-import fr.siamois.domain.models.form.customform.CustomRow;
+import fr.siamois.domain.models.form.customform.*;
 import fr.siamois.domain.models.form.customformresponse.CustomFormResponse;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
@@ -24,6 +22,8 @@ import fr.siamois.ui.bean.LabelBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
 import fr.siamois.ui.bean.dialog.newunit.GenericNewUnitDialogBean;
 import fr.siamois.ui.bean.panel.models.panel.AbstractPanel;
+import fr.siamois.ui.form.EnabledRulesEngine;
+import fr.siamois.ui.form.rules.*;
 import fr.siamois.ui.viewmodel.TreeUiStateViewModel;
 import fr.siamois.utils.DateUtils;
 import jakarta.faces.component.UIComponent;
@@ -63,15 +63,125 @@ public abstract class AbstractSingleEntity<T> extends AbstractPanel implements S
     protected CustomFormResponse formResponse; // answers to all the fields from overview and details
     protected boolean hasUnsavedModifications = false; // Did we modify the unit?
 
-    public CustomFieldAnswer getFieldAnswer(CustomField field) {
-        return formResponse.getAnswers().get(field);
-    }
+
 
     protected CustomForm detailsForm;
     protected CustomForm overviewForm;
 
     // For multi select tree UI
     private final Map<CustomFieldAnswerSelectMultipleSpatialUnitTree, TreeUiStateViewModel> treeStates = new HashMap<>();
+
+    // --- état des colonnes: activé ou non. Si non présent dans cette map le champ est considéré activé
+    private final Map<Long, Boolean> colEnabledByFieldId = new HashMap<>();
+
+
+
+    // provider pour lire la réponse actuelle
+    private final transient ValueProvider vp = this::getFieldAnswer;
+
+    public static final String COLUMN_CLASS_NAME = "ui-g-12 ui-md-6 ui-lg-4";
+
+
+    public boolean isColumnEnabled(CustomField field) {
+        return colEnabledByFieldId.getOrDefault(field.getId(), true);
+    }
+
+    public CustomFieldAnswer getFieldAnswer(CustomField field) {
+        return formResponse.getAnswers().get(field);
+    }
+
+    // applier pour mettre à jour l'état UI
+    private final transient ColumnApplier applier = (colField, enabled) ->
+            colEnabledByFieldId.put(colField.getId(), enabled);
+
+    private transient EnabledRulesEngine enabledEngine;
+
+    protected void initEnabledRulesFromForms() {
+        List<ColumnRule> rules = new ArrayList<>();
+        if (detailsForm  != null) buildRulesFromForm(detailsForm,  rules);
+
+        enabledEngine = new EnabledRulesEngine(rules);
+        enabledEngine.applyAll(vp, applier); // calcule l'état initial
+    }
+
+    private Condition toCondition(EnabledWhenJson ew) {
+        // champ observé à partir de l'id
+        CustomField comparedField = findFieldInFormsById(ew.getFieldId());
+        if (comparedField == null)
+            throw new IllegalStateException("enabledWhen.fieldId=" + ew.getFieldId() + " introuvable dans le layout");
+
+        // valeurs attendues (JSON) -> ValueMatcher génériques
+        List<ValueMatcher> matchers = ew.getValues().stream()
+                .map(this::toMatcher)
+                .toList();
+
+        return switch (ew.getOp()) {
+            case EQ -> new EqCondition(comparedField, matchers.get(0));
+            case NEQ -> new NeqCondition(comparedField, matchers.get(0));
+            case IN -> new InCondition(comparedField, matchers);
+        };
+    }
+
+    private ValueMatcher toMatcher(EnabledWhenJson.ValueJson vj) {
+        String className = vj.getAnswerClass();
+        JsonNode node = vj.getValue();
+
+        return switch (className) {
+            case "fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerSelectOneFromFieldCode" -> new ValueMatcher() {
+                public boolean matches(CustomFieldAnswer cur) {
+                    if (!(cur instanceof CustomFieldAnswerSelectOneFromFieldCode a)) return false;
+                    // on compare par external ids (vocabularyExtId + conceptExtId) présents dans node
+                    String ev = node != null && node.has("vocabularyExtId") ? node.get("vocabularyExtId").asText(null) : null;
+                    String ec = node != null && node.has("conceptExtId")   ? node.get("conceptExtId").asText(null)   : null;
+                    Concept val = a.getValue();
+                    if (val == null) return ev == null && ec == null;
+                    return Objects.equals(val.getVocabulary().getExternalVocabularyId(), ev)
+                            && Objects.equals(val.getExternalId(), ec);
+                }
+                public Class<?> expectedAnswerClass() { return CustomFieldAnswerSelectOneFromFieldCode.class; }
+            };
+            // ajoute d’autres cases si on gère plus de type dans le futur
+            default -> new ValueMatcher() {
+                public boolean matches(CustomFieldAnswer cur) { return false; } // inconnu -> jamais égal
+                public Class<?> expectedAnswerClass() { return Object.class; }
+            };
+        };
+    }
+
+    private CustomField findFieldInFormsById(Long id) {
+        // parcours overview+details pour retrouver l’instance CustomField
+        for (CustomForm f : List.of(overviewForm, detailsForm)) {
+            if (f == null || f.getLayout() == null) continue;
+            for (CustomFormPanel p : f.getLayout()) {
+                if (p.getRows() == null) continue;
+                for (CustomRow r : p.getRows()) {
+                    if (r.getColumns() == null) continue;
+                    for (CustomCol c : r.getColumns()) {
+                        if (c.getField() != null && id.equals(c.getField().getId())) return c.getField();
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
+
+    private void buildRulesFromForm(CustomForm form, List<ColumnRule> acc) {
+        if (form.getLayout() == null) return;
+        for (CustomFormPanel p : form.getLayout()) {
+            if (p.getRows() == null) continue;
+            for (CustomRow r : p.getRows()) {
+                if (r.getColumns() == null) continue;
+                for (CustomCol c : r.getColumns()) {
+                    if (c.getField() == null) continue;
+                    if (c.getEnabledWhenSpec() == null) continue;
+
+                    Condition cond = toCondition(c.getEnabledWhenSpec());
+                    acc.add(new ColumnRule(c.getField(), cond));
+                }
+            }
+        }
+    }
 
     public static String generateRandomActionUnitIdentifier() {
         int currentYear = LocalDate.now().getYear();
@@ -104,7 +214,6 @@ public abstract class AbstractSingleEntity<T> extends AbstractPanel implements S
             Map.ofEntries(
                     Map.entry(CustomFieldText.class, CustomFieldAnswerText::new),
                     Map.entry(CustomFieldSelectOneFromFieldCode.class, CustomFieldAnswerSelectOneFromFieldCode::new),
-                    Map.entry(CustomFieldSelectOneConceptFromChildrenOfConcept.class, CustomFieldAnswerSelectOneConceptFromChildrenOfConcept::new),
                     Map.entry(CustomFieldSelectMultiplePerson.class, CustomFieldAnswerSelectMultiplePerson::new),
                     Map.entry(CustomFieldDateTime.class, CustomFieldAnswerDateTime::new),
                     Map.entry(CustomFieldSelectOneActionUnit.class, CustomFieldAnswerSelectOneActionUnit::new),
@@ -127,7 +236,6 @@ public abstract class AbstractSingleEntity<T> extends AbstractPanel implements S
         }
     }
 
-    public static final String COLUMN_CLASS_NAME = "ui-g-12 ui-md-6 ui-lg-4";
 
     protected AbstractSingleEntity(ApplicationContext context) {
         this.sessionSettingsBean = context.getBean(SessionSettingsBean.class);
@@ -189,45 +297,25 @@ public abstract class AbstractSingleEntity<T> extends AbstractPanel implements S
         hasUnsavedModifications = true;
     }
 
-    public void setFieldConceptAnswerHasBeenModified(SelectEvent<Concept> event) {
+    public void setFieldConceptAnswerHasBeenModified(SelectEvent<ConceptLabel> event) {
         UIComponent component = event.getComponent();
         CustomField field = (CustomField) component.getAttributes().get("field");
 
         formResponse.getAnswers().get(field).setHasBeenModified(true);
         hasUnsavedModifications = true;
+        Concept newValue = event.getObject().getConcept(); // ← la nouvelle valeur
+
         if (Boolean.TRUE.equals(field.getIsSystemField()) && Objects.equals(field.getValueBinding(), getFormScopePropertyName())) {
-            Concept newValue = event.getObject(); // ← la nouvelle valeur
+
             onFormScopeChanged(newValue);
         }
-    }
 
-
-    public List<ConceptLabel> completeDependentConceptChildren(
-            String input
-    ) {
-        return List.of();
-    }
-
-    public String getUrlForDependentConcept(
-            CustomFieldSelectOneConceptFromChildrenOfConcept dependentField
-    ) {
-        if (dependentField == null || dependentField.getParentField() == null) {
-            return null;
+        if (enabledEngine != null) {
+            enabledEngine.onAnswerChange(field, newValue, vp, applier);
         }
-
-        CustomField parentField = dependentField.getParentField();
-        CustomFieldAnswer parentAnswer = formResponse.getAnswers().get(parentField);
-
-        Concept parentConcept = null;
-
-        if (parentAnswer instanceof CustomFieldAnswerSelectOneConceptFromChildrenOfConcept a1) {
-            parentConcept = a1.getValue();
-        } else if (parentAnswer instanceof CustomFieldAnswerSelectOneFromFieldCode a2) {
-            parentConcept = a2.getValue();
-        }
-
-        return parentConcept != null ? fieldConfigurationService.getUrlOfConcept(parentConcept) : null;
     }
+
+
 
     public CustomFormResponse initializeFormResponse(CustomForm form, Object jpaEntity, boolean forceInit) {
 
@@ -421,9 +509,6 @@ public abstract class AbstractSingleEntity<T> extends AbstractPanel implements S
             if (answer instanceof CustomFieldAnswerSelectOneFromFieldCode codeAnswer) {
                 codeAnswer.setValue(c);
                 codeAnswer.setUiVal(labelBean.findConceptLabelOf(c));
-            } else if (answer instanceof CustomFieldAnswerSelectOneConceptFromChildrenOfConcept childAnswer) {
-                childAnswer.setValue(c);
-                childAnswer.setUiVal(labelBean.findConceptLabelOf(c));
             }
         } else if (value instanceof ActionUnit a && answer instanceof CustomFieldAnswerSelectOneActionUnit actionUnitAnswer) {
             actionUnitAnswer.setValue(a);
@@ -478,9 +563,11 @@ public abstract class AbstractSingleEntity<T> extends AbstractPanel implements S
         } else if (answer instanceof CustomFieldAnswerSelectOnePerson a) {
             return a.getValue();
         } else if (answer instanceof CustomFieldAnswerSelectOneFromFieldCode a) {
-            return a.getUiVal().getConcept();
-        } else if (answer instanceof CustomFieldAnswerSelectOneConceptFromChildrenOfConcept a) {
-            return a.getUiVal().getConcept();
+            try {
+                return a.getUiVal().getConcept();
+            } catch(NullPointerException e) {
+                return null;
+            }
         } else if (answer instanceof CustomFieldAnswerSelectOneActionUnit a) {
             return a.getValue();
         } else if (answer instanceof CustomFieldAnswerSelectOneSpatialUnit a) {
@@ -526,7 +613,7 @@ public abstract class AbstractSingleEntity<T> extends AbstractPanel implements S
         }
     }
 
-    private static CustomFieldAnswer instantiateAnswerForField(CustomField field) {
+    public static CustomFieldAnswer instantiateAnswerForField(CustomField field) {
         Supplier<? extends CustomFieldAnswer> creator = ANSWER_CREATORS.get(field.getClass());
         if (creator != null) {
             return creator.get();

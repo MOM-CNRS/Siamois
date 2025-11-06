@@ -1,11 +1,13 @@
 package fr.siamois.infrastructure.database.initializer.seeder.customform;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.NullNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import fr.siamois.domain.models.form.customfield.CustomField;
-import fr.siamois.domain.models.form.customform.CustomCol;
-import fr.siamois.domain.models.form.customform.CustomForm;
-import fr.siamois.domain.models.form.customform.CustomFormPanel;
-import fr.siamois.domain.models.form.customform.CustomRow;
+import fr.siamois.domain.models.form.customform.*;
+import fr.siamois.infrastructure.database.initializer.seeder.customfield.CustomFieldAnswerDTO;
 import fr.siamois.infrastructure.database.initializer.seeder.customfield.CustomFieldSeeder;
+import fr.siamois.infrastructure.database.initializer.seeder.customfield.CustomFieldSeederSpec;
 import fr.siamois.infrastructure.database.repositories.form.CustomFormRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -19,6 +21,87 @@ public class CustomFormSeeder {
 
     private final CustomFormRepository customFormRepository;
     private final CustomFieldSeeder fieldSeeder;
+
+    private static final ObjectMapper OM = new ObjectMapper();
+
+
+    private EnabledWhenJson toEnabledWhenJson(EnabledWhenSpecSeedDTO dto) {
+        if (dto == null) throw new IllegalArgumentException("enabledWhen must not be null");
+        if (dto.field() == null) throw new IllegalArgumentException("enabledWhen.field is required");
+        if (dto.expectedValues() == null || dto.expectedValues().isEmpty()) {
+            throw new IllegalArgumentException("enabledWhen.expectedValues must not be empty");
+        }
+
+        // 1) opérateur
+        final EnabledWhenJson.Op op = switch (dto.operator()) {
+            case EQUALS     -> EnabledWhenJson.Op.EQ;
+            case NOT_EQUALS -> EnabledWhenJson.Op.NEQ;
+            case IN         -> EnabledWhenJson.Op.IN;
+            default         -> throw new IllegalArgumentException("Unsupported operator: " + dto.operator());
+        };
+
+
+        // 2) resolve the observed field ONCE
+        final Long fieldId = extractFieldId(dto.field());
+
+        // 3) ensure all expected values reference the SAME field, but without extra lookups
+        for (int i = 0; i < dto.expectedValues().size(); i++) {
+            var ev = dto.expectedValues().get(i);
+            if (ev == null || ev.field() == null) {
+                throw new IllegalArgumentException("expectedValues[" + i + "].field is required");
+            }
+            if (!ev.field().equals(dto.field())) { // compare specs directly
+                throw new IllegalArgumentException(
+                        "All expectedValues must reference the same field as enabledWhen.field"
+                );
+            }
+        }
+
+        // 4) cardinalité selon l’opérateur
+        int n = dto.expectedValues().size();
+        if ((op == EnabledWhenJson.Op.EQ || op == EnabledWhenJson.Op.NEQ) && n != 1) {
+            throw new IllegalArgumentException("EQUALS/NOT_EQUALS require exactly 1 expected value (got " + n + ")");
+        }
+
+        // 5) mapping des valeurs -> ValueJson
+        List<EnabledWhenJson.ValueJson> values = new ArrayList<>(n);
+        for (CustomFieldAnswerDTO ev : dto.expectedValues()) {
+            values.add(toValueJson(ev)); // construit {answerClass, value(JsonNode)}
+        }
+
+        // 6) build modèle
+        EnabledWhenJson ew = new EnabledWhenJson();
+        ew.setOp(op);
+        ew.setFieldId(fieldId);
+        ew.setValues(values);
+        return ew;
+    }
+
+    private Long extractFieldId(CustomFieldSeederSpec spec) {
+        var field = fieldSeeder.findFieldOrThrow(spec);
+        return field.getId();
+    }
+
+    private EnabledWhenJson.ValueJson toValueJson(CustomFieldAnswerDTO dto) {
+        EnabledWhenJson.ValueJson v = new EnabledWhenJson.ValueJson();
+        v.setAnswerClass(dto.answerClass().getName());
+
+        //
+        if (dto.valueAsConcept() != null) {
+            ObjectNode obj = OM.createObjectNode()
+                    .put("vocabularyExtId", dto.valueAsConcept().vocabularyExtId())
+                    .put("conceptExtId", dto.valueAsConcept().conceptExtId());
+            v.setValue(obj);
+            return v;
+        }
+
+        // A ajouter si besoin d'autres type de réponse: liste de concept, nombre, texte ...
+        // Pour l'instant nous n'avons besoin que du concept
+
+        // fallback: null
+        v.setValue(NullNode.getInstance());
+        return v;
+    }
 
     private List<CustomFormPanel> convertLayoutFromDto(List<CustomFormPanelDTO> panelDtos) {
         if (panelDtos == null || panelDtos.isEmpty()) return List.of();
@@ -34,7 +117,7 @@ public class CustomFormSeeder {
         if (dto == null) return null;
 
         CustomFormPanel panel = new CustomFormPanel.Builder()
-                .isSystemPanel(Boolean.TRUE.equals(dto.isSystemPanel())) // or dto.isSystemPanel()
+                .isSystemPanel(dto.isSystemPanel())
                 .name(dto.name())
                 .className(dto.className())
                 .build();
@@ -69,7 +152,11 @@ public class CustomFormSeeder {
         col.setRequired(colDto.isRequired());
         col.setClassName(colDto.className());
 
-        // Resolve/create field by natural key (code) from your earlier design
+        if(colDto.enabledWhen() != null) {
+            col.setEnabledWhenSpec(toEnabledWhenJson(colDto.enabledWhen()));
+        }
+
+        // Resolve/create field by natural key 
         CustomField field = fieldSeeder.findFieldOrThrow(colDto.field());
         col.setField(field);
 

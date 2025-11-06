@@ -22,11 +22,9 @@
             <p:row id="row-#{prefix}-#{statusIndex}-#{rowStatus.index}">
 
                 <c:forEach items="#{row.columns}" var="col" varStatus="colStatus">
-
-
                     <p:column styleClass="#{col.className}"
                               id="col-#{prefix}-#{statusIndex}-#{rowStatus.index}-#{colStatus.index}">
-                        <p:outputPanel id="field-#{prefix}-#{statusIndex}-#{rowStatus.index}-#{colStatus.index}">
+                        <p:outputPanel rendered="#{bean.isColumnEnabled(col.field) }" id="field-#{prefix}-#{statusIndex}-#{rowStatus.index}-#{colStatus.index}">
                             <sharedInput:panelField
                                     id="panelField-#{prefix}-#{statusIndex}-#{rowStatus.index}-#{colStatus.index}"
                                     required="#{col.required}"
@@ -90,14 +88,7 @@
 
                                 <!-- Select one concept from field parent concept children -->
 
-                                <siaInplace:childConcept
-                                        rendered="#{col.field['class'].simpleName eq 'CustomFieldSelectOneConceptFromChildrenOfConcept'}"
-                                        hasBeenModified="#{bean.formResponse.answers.get(col.field).hasBeenModified}"
-                                        field="#{col.field}"
-                                        mode="#{col.readOnly ? 'output' : flowBean.getInPlaceFieldMode()}"
-                                        panelModel="#{bean}"
-                                        updateTargetsOnBlur="#{root}:field-#{prefix}-#{statusIndex}-#{rowStatus.index}-#{colStatus.index} panelHeader"
-                                        answer="#{bean.formResponse.answers.get(col.field)}"/>
+
 
 
                                 <!-- Select one action -->
@@ -187,5 +178,9 @@
             </p:row>
         </c:forEach>
     </p:panelGrid>
+
+    <ui:fragment rendered="#{empty customFormPanel.rows}">
+        <i>Aucun champ</i>
+    </ui:fragment>
 
 </ui:fragment>

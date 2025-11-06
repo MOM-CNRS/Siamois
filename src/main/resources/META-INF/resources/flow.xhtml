@@ -205,6 +205,16 @@
                                 onstart="PF('buiContent').show()" oncomplete="PF('buiContent').hide()"/>
                     </p:selectOneButton>
                 </h:form>
+                <h:form id="fieldDesktopSwitchForm">
+                    <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
+                    <p:selectOneButton value="#{flowBean.fieldOfficeMode}" var="ic" id="fieldOfficeSwitchButton">
+                        <f:selectItem icon="" itemLabel="Bureau" itemValue="OFFICE"/>
+                        <f:selectItem itemLabel="Terrain" itemValue="FIELD"/>
+
+                        <p:ajax event="change" listener="#{flowBean.changeFieldOfficeMode()}" update="flow"
+                                onstart="PF('buiContent').show()" oncomplete="PF('buiContent').hide()"/>
+                    </p:selectOneButton>
+                </h:form>
                 <ui:include src="/dialog/unsavedUpdates/unsavedUpdatesDialog.xhtml">
                     <ui:param name="saveAllAction" value="#{flowBean.saveAllPanels()}"/>
                     <ui:param name="deleteAllAction" value="#{flowBean.undoChangesOnAllPanels()}"/>

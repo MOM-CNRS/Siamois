@@ -76,6 +76,18 @@
 
       // tabs
       .ui-tabs {
+
+        &.fieldmode-tabview {
+          .ui-tabs-nav {
+            background: transparent;
+
+
+            li.ui-tabs-header a {
+              color: var(--text-main);
+            }
+          }
+        }
+
         &.ui-tabs-top > .ui-tabs-nav,
         .ui-tabs-nav {
           li.ui-tabs-header.ui-state-active {

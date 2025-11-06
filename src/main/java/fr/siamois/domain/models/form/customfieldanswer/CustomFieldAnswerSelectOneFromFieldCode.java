@@ -4,12 +4,16 @@ import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.models.vocabulary.label.ConceptLabel;
 import jakarta.persistence.*;
 import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.experimental.SuperBuilder;
 
 import java.util.Objects;
 
 
 @Data
 @Entity
+@SuperBuilder    // <-- indispensable ici aussi
+@NoArgsConstructor
 @DiscriminatorValue("SELECT_ONE_FROM_FIELD_CODE")
 @Table(name = "custom_field_answer")
 public class CustomFieldAnswerSelectOneFromFieldCode extends CustomFieldAnswer {
