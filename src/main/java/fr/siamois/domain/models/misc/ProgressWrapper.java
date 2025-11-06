@@ -3,9 +3,11 @@ package fr.siamois.domain.models.misc;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.io.Serializable;
+
 @NoArgsConstructor
 @Data
-public class ProgressWrapper {
+public class ProgressWrapper implements Serializable {
 
     private int currentStepNumber = 0;
     private int totalSteps = 0;
