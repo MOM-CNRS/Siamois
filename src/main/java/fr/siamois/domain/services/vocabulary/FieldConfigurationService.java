@@ -62,8 +62,8 @@ public class FieldConfigurationService {
      * @throws NotSiamoisThesaurusException      if the vocabulary is not a Siamois thesaurus
      * @throws ErrorProcessingExpansionException if there is an error processing the vocabulary expansion
      */
-    public Optional<FeedbackFieldConfig> setupFieldConfigurationForInstitution(UserInfo info, Vocabulary vocabulary) throws NotSiamoisThesaurusException, ErrorProcessingExpansionException {
-        return setupFieldConfigurationForInstitution(info.getInstitution(), vocabulary);
+    public Optional<FeedbackFieldConfig> setupFieldConfigurationForInstitution(UserInfo info, Vocabulary vocabulary, ProgressWrapper progressWrapper) throws NotSiamoisThesaurusException, ErrorProcessingExpansionException {
+        return setupFieldConfigurationForInstitution(info.getInstitution(), vocabulary, progressWrapper);
     }
 
     /**
@@ -75,6 +75,10 @@ public class FieldConfigurationService {
      * @throws NotSiamoisThesaurusException      if the vocabulary is not a Siamois thesaurus
      * @throws ErrorProcessingExpansionException if there is an error processing the vocabulary expansion
      */
+    public Optional<FeedbackFieldConfig> setupFieldConfigurationForInstitution(Institution institution, Vocabulary vocabulary, ProgressWrapper progressWrapper) throws NotSiamoisThesaurusException, ErrorProcessingExpansionException {
+        return setupFieldConfiguration(institution, null, vocabulary, progressWrapper);
+    }
+
     public Optional<FeedbackFieldConfig> setupFieldConfigurationForInstitution(Institution institution, Vocabulary vocabulary) throws NotSiamoisThesaurusException, ErrorProcessingExpansionException {
         return setupFieldConfiguration(institution, null, vocabulary, new ProgressWrapper());
     }
