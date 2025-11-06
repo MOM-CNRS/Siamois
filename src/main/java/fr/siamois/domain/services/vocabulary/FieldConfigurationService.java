@@ -124,7 +124,7 @@ public class FieldConfigurationService {
             if (user == null) {
                 optConfig = conceptFieldConfigRepository.findByFieldCodeForInstitution(institution.getId(), fieldCode);
             } else {
-                optConfig = conceptFieldConfigRepository.findByFieldCodeForUser(user.getId(), fieldCode);
+                optConfig = conceptFieldConfigRepository.findByFieldCodeForUser(user.getId(), institution.getId(), fieldCode);
             }
 
             if (optConfig.isEmpty()) {
@@ -195,15 +195,15 @@ public class FieldConfigurationService {
     }
 
     public ConceptFieldConfig findConfigurationForFieldCode(UserInfo info, String fieldCode) throws NoConfigForFieldException {
-        Optional<ConceptFieldConfig> institutionConfig = conceptFieldConfigRepository.findByFieldCodeForInstitution(info.getInstitution().getId(), fieldCode);
-        if (institutionConfig.isEmpty()) {
-            Optional<ConceptFieldConfig> personConfig = conceptFieldConfigRepository.findByFieldCodeForUser(info.getUser().getId(),  fieldCode);
-            if (personConfig.isEmpty()) {
+        Optional<ConceptFieldConfig> personConfig = conceptFieldConfigRepository.findByFieldCodeForUser(info.getUser().getId(),  info.getInstitution().getId(), fieldCode);
+        if (personConfig.isEmpty()) {
+            Optional<ConceptFieldConfig> institutionConfig = conceptFieldConfigRepository.findByFieldCodeForInstitution(info.getInstitution().getId(), fieldCode);
+            if (institutionConfig.isEmpty()) {
                 throw new NoConfigForFieldException(fieldCode);
             }
-            return personConfig.get();
+            return institutionConfig.get();
         }
-        return institutionConfig.get();
+        return personConfig.get();
     }
 
     public List<ConceptLabel> fetchAutocomplete(UserInfo info, String fieldCode, String input) throws NoConfigForFieldException {
