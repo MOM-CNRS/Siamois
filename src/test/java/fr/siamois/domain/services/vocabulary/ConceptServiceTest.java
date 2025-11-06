@@ -28,8 +28,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -698,6 +697,50 @@ class ConceptServiceTest {
         assertThat(results)
                 .hasSize(1)
                 .containsAnyOf(concept6, concept3);
+    }
+
+
+
+    @Test
+    void testGetLocalizedConceptDataByConceptAndLangCode_Found() {
+        // given
+        LocalizedConceptData localizedConceptData;
+
+        localizedConceptData = new LocalizedConceptData();
+        localizedConceptData.setLangCode("en");
+        localizedConceptData.setConcept(concept);
+        when(localizedConceptDataRepository.findByConceptAndLangCode(concept.getId(), "en"))
+                .thenReturn(Optional.of(localizedConceptData));
+
+        // when
+        LocalizedConceptData result = conceptService.getLocalizedConceptDataByConceptAndLangCode(concept, "en");
+
+        // then
+        assertNotNull(result);
+        assertEquals("en", result.getLangCode());
+        assertEquals(concept, result.getConcept());
+        verify(localizedConceptDataRepository, times(1))
+                .findByConceptAndLangCode(concept.getId(), "en");
+    }
+
+    @Test
+    void testGetLocalizedConceptDataByConceptAndLangCode_NotFound() {
+        // given
+        LocalizedConceptData localizedConceptData;
+
+        localizedConceptData = new LocalizedConceptData();
+        localizedConceptData.setLangCode("en");
+        localizedConceptData.setConcept(concept);
+        when(localizedConceptDataRepository.findByConceptAndLangCode(concept.getId(), "fr"))
+                .thenReturn(Optional.empty());
+
+        // when
+        LocalizedConceptData result = conceptService.getLocalizedConceptDataByConceptAndLangCode(concept, "fr");
+
+        // then
+        assertNull(result);
+        verify(localizedConceptDataRepository, times(1))
+                .findByConceptAndLangCode(concept.getId(), "fr");
     }
 
 }

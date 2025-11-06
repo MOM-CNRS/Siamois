@@ -5,6 +5,7 @@ import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.exceptions.vocabulary.NoConfigForFieldException;
 import fr.siamois.domain.models.settings.ConceptFieldConfig;
 import fr.siamois.domain.models.vocabulary.Concept;
+import fr.siamois.domain.models.vocabulary.LocalizedConceptData;
 import fr.siamois.domain.models.vocabulary.label.ConceptAltLabel;
 import fr.siamois.domain.models.vocabulary.label.ConceptLabel;
 import fr.siamois.domain.models.vocabulary.label.ConceptPrefLabel;
@@ -39,6 +40,7 @@ public class LabelBean implements Serializable {
     private final Map<String, Map<Concept, String>> prefLabelCache = new HashMap<>();
     private final Map<Long, ConceptLabel> idToLabelCache = new HashMap<>();
     private final Map<HierarchyCallParams, String> hierarchyLabelCache = new HashMap<>();
+    private final LangBean langBean;
 
     @EventListener(ConceptChangeEvent.class)
     public void resetCache() {
@@ -88,6 +90,39 @@ public class LabelBean implements Serializable {
 
         return concept.getExternalId();
 
+    }
+
+    /**
+     * Displays all the alt label for a given concept in the current language
+     *
+     * @param concept the concept to find the alt labels for
+     * @return all the alt labels for this concept in the current language, separated by commas
+     */
+    public String findAllAltLabelsOfConcept(Concept concept) {
+        Set<ConceptAltLabel> labels = labelService.findAllAltLabelOf(concept, sessionSettingsBean.getUserInfo().getLang());
+        return labels.stream()
+                .map(ConceptAltLabel::getLabel)
+                .collect(Collectors.joining(", "));
+    }
+
+    /**
+     * Find description for a given concept in the current language
+     *
+     * @param concept the concept to find the description for
+     * @return The description or null if not found
+     */
+    public String findDescriptionOfConcept(Concept concept) {
+        LocalizedConceptData conceptDataOrNull = conceptService.getLocalizedConceptDataByConceptAndLangCode(
+                concept,
+                sessionSettingsBean.getUserInfo().getLang()
+        );
+        if(conceptDataOrNull == null) return "";
+        return truncate(conceptDataOrNull.getDefinition());
+    }
+
+    private String truncate(String text) {
+        if (text == null) return "";
+        return text.length() > 200 ? text.substring(0, 200) + "..." : text;
     }
 
     public String findVocabularyLabelOf(Concept concept) {

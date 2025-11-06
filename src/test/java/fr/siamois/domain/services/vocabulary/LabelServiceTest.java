@@ -17,6 +17,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
@@ -122,7 +123,6 @@ class LabelServiceTest {
     }
 
 
-
     @Test
     void findLabelOfConcept_shouldReturnExternalCodeWhenNoFallbackMatch_whenNotPresent() {
         // Given
@@ -135,7 +135,7 @@ class LabelServiceTest {
 
         // Then
         assertNotNull(result);
-        assertEquals("[212]",  result.getLabel());
+        assertEquals("[212]", result.getLabel());
         assertEquals("fr", result.getLangCode());
     }
 
@@ -350,5 +350,67 @@ class LabelServiceTest {
         ConceptPrefLabel saved = captor.getValue();
         assertNotNull(saved);
         assertNull(saved.getParentConcept());
+    }
+
+    @Test
+    void testFindAllAltLabelOf_Found() {
+        // given
+        Concept concept;
+        ConceptAltLabel altLabel1;
+        ConceptAltLabel altLabel2;
+        concept = new Concept();
+        concept.setId(1L);
+
+        altLabel1 = new ConceptAltLabel();
+        altLabel1.setLabel("Synonym A");
+        altLabel1.setLangCode("en");
+
+        altLabel2 = new ConceptAltLabel();
+        altLabel2.setLabel("Synonym B");
+        altLabel2.setLangCode("en");
+
+        when(conceptLabelRepository.findAllAltLabelsByLangCodeAndConcept("en", concept))
+                .thenReturn(Set.of(altLabel1, altLabel2));
+
+        // when
+        Set<ConceptAltLabel> result = labelService.findAllAltLabelOf(concept, "en");
+
+        // then
+        assertNotNull(result);
+        assertEquals(2, result.size());
+        assertTrue(result.contains(altLabel1));
+        assertTrue(result.contains(altLabel2));
+
+        verify(conceptLabelRepository, times(1))
+                .findAllAltLabelsByLangCodeAndConcept("en", concept);
+    }
+
+    @Test
+    void testFindAllAltLabelOf_Empty() {
+        // given
+        Concept concept;
+        ConceptAltLabel altLabel1;
+        ConceptAltLabel altLabel2;
+        concept = new Concept();
+        concept.setId(1L);
+
+        altLabel1 = new ConceptAltLabel();
+        altLabel1.setLabel("Synonym A");
+        altLabel1.setLangCode("en");
+
+        altLabel2 = new ConceptAltLabel();
+        altLabel2.setLabel("Synonym B");
+        altLabel2.setLangCode("en");
+        when(conceptLabelRepository.findAllAltLabelsByLangCodeAndConcept("fr", concept))
+                .thenReturn(Set.of());
+
+        // when
+        Set<ConceptAltLabel> result = labelService.findAllAltLabelOf(concept, "fr");
+
+        // then
+        assertNotNull(result);
+        assertTrue(result.isEmpty());
+        verify(conceptLabelRepository, times(1))
+                .findAllAltLabelsByLangCodeAndConcept("fr", concept);
     }
 }
