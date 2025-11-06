@@ -142,6 +142,16 @@ public class ConceptService {
     }
 
     /**
+     * Find LocalizedConceptData for given concept for a given language
+     * @param concept the concept
+     * @param lang  the lang code
+     * @return the concept data or null if not found
+     */
+    public LocalizedConceptData getLocalizedConceptDataByConceptAndLangCode(Concept concept, String lang) {
+        return localizedConceptDataRepository.findByConceptAndLangCode(concept.getId(), lang).orElse(null);
+    }
+
+    /**
      * Updates all definitions of a saved concept from FullInfoDTO
      * @param savedConcept the concept to update
      * @param conceptDto  the FullInfoDTO containing definition information

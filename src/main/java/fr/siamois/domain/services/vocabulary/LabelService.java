@@ -170,4 +170,15 @@ public class LabelService {
         return fallbackLabel;
     }
 
+    /**
+     * Finds all altLabels for a concept in a given language
+     *
+     * @param concept       The concept
+     * @param langCode      The language code
+     * @return List of the alt labels found
+     */
+    public Set<ConceptAltLabel> findAllAltLabelOf(@NonNull Concept concept, @NonNull String langCode) {
+        return conceptLabelRepository.findAllAltLabelsByLangCodeAndConcept(langCode, concept);
+    }
+
 }
