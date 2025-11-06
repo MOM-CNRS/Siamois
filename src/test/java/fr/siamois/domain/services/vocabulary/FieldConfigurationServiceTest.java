@@ -6,6 +6,7 @@ import fr.siamois.domain.models.exceptions.ErrorProcessingExpansionException;
 import fr.siamois.domain.models.exceptions.api.NotSiamoisThesaurusException;
 import fr.siamois.domain.models.exceptions.vocabulary.NoConfigForFieldException;
 import fr.siamois.domain.models.institution.Institution;
+import fr.siamois.domain.models.misc.ProgressWrapper;
 import fr.siamois.domain.models.settings.ConceptFieldConfig;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
@@ -115,7 +116,7 @@ class FieldConfigurationServiceTest {
 
         assertThat(result).isEmpty();
         verify(conceptFieldConfigRepository, times(2)).save(any(ConceptFieldConfig.class));
-        verify(conceptService, times(2)).saveAllSubConceptOfIfUpdated(any(ConceptFieldConfig.class));
+        verify(conceptService, times(2)).saveAllSubConceptOfIfUpdated(any(ConceptFieldConfig.class), any(ProgressWrapper.class));
     }
 
     @Test
@@ -159,7 +160,7 @@ class FieldConfigurationServiceTest {
 
         assertThat(result).isEmpty();
         verify(conceptFieldConfigRepository, times(2)).save(any(ConceptFieldConfig.class));
-        verify(conceptService, times(2)).saveAllSubConceptOfIfUpdated(any(ConceptFieldConfig.class));
+        verify(conceptService, times(2)).saveAllSubConceptOfIfUpdated(any(ConceptFieldConfig.class), any(ProgressWrapper.class));
     }
 
     @Test

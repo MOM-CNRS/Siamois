@@ -3,6 +3,7 @@ package fr.siamois.domain.services.vocabulary;
 import fr.siamois.domain.events.publisher.ConceptChangeEventPublisher;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.institution.Institution;
+import fr.siamois.domain.models.misc.ProgressWrapper;
 import fr.siamois.domain.models.settings.ConceptFieldConfig;
 import fr.siamois.domain.models.vocabulary.*;
 import fr.siamois.domain.models.vocabulary.label.ConceptAltLabel;
@@ -365,7 +366,7 @@ class ConceptServiceTest {
         when(conceptApi.fetchDownExpansion(config)).thenReturn(null);
 
         // When
-        conceptService.saveAllSubConceptOfIfUpdated(config);
+        conceptService.saveAllSubConceptOfIfUpdated(config, new ProgressWrapper());
 
         // Then
         verify(conceptChangeEventPublisher, never()).publishEvent(anyString());

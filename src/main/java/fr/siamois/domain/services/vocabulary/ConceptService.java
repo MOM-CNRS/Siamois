@@ -3,6 +3,7 @@ package fr.siamois.domain.services.vocabulary;
 import fr.siamois.domain.events.publisher.ConceptChangeEventPublisher;
 import fr.siamois.domain.models.exceptions.ErrorProcessingExpansionException;
 import fr.siamois.domain.models.institution.Institution;
+import fr.siamois.domain.models.misc.ProgressWrapper;
 import fr.siamois.domain.models.settings.ConceptFieldConfig;
 import fr.siamois.domain.models.vocabulary.*;
 import fr.siamois.domain.models.vocabulary.label.ConceptLabel;
@@ -15,7 +16,6 @@ import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRelated
 import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.LocalizedConceptDataRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.label.ConceptLabelRepository;
-import fr.siamois.domain.models.misc.ProgressWrapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -163,6 +163,10 @@ public class ConceptService {
                 updateDefinition(savedConcept, definition.getLang(), definition.getValue());
             }
         }
+    }
+
+    public void saveAllSubConceptOfIfUpdated(ConceptFieldConfig config) throws ErrorProcessingExpansionException {
+        saveAllSubConceptOfIfUpdated(config, new ProgressWrapper());
     }
 
     public void saveAllSubConceptOfIfUpdated(ConceptFieldConfig config, ProgressWrapper progressWrapper) throws ErrorProcessingExpansionException {

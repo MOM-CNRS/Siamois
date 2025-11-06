@@ -6,6 +6,7 @@ import fr.siamois.domain.models.exceptions.ErrorProcessingExpansionException;
 import fr.siamois.domain.models.exceptions.api.NotSiamoisThesaurusException;
 import fr.siamois.domain.models.exceptions.vocabulary.NoConfigForFieldException;
 import fr.siamois.domain.models.institution.Institution;
+import fr.siamois.domain.models.misc.ProgressWrapper;
 import fr.siamois.domain.models.settings.ConceptFieldConfig;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
@@ -17,7 +18,6 @@ import fr.siamois.infrastructure.api.dto.ConceptBranchDTO;
 import fr.siamois.infrastructure.api.dto.FullInfoDTO;
 import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptFieldConfigRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRepository;
-import fr.siamois.domain.models.misc.ProgressWrapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.Hibernate;
@@ -77,6 +77,10 @@ public class FieldConfigurationService {
      */
     public Optional<FeedbackFieldConfig> setupFieldConfigurationForInstitution(Institution institution, Vocabulary vocabulary, ProgressWrapper progressWrapper) throws NotSiamoisThesaurusException, ErrorProcessingExpansionException {
         return setupFieldConfiguration(institution, null, vocabulary, progressWrapper);
+    }
+
+    public Optional<FeedbackFieldConfig> setupFieldConfigurationForInstitution(UserInfo info, Vocabulary vocabulary) throws NotSiamoisThesaurusException, ErrorProcessingExpansionException {
+        return setupFieldConfigurationForInstitution(info.getInstitution(), vocabulary, new ProgressWrapper());
     }
 
     public Optional<FeedbackFieldConfig> setupFieldConfigurationForInstitution(Institution institution, Vocabulary vocabulary) throws NotSiamoisThesaurusException, ErrorProcessingExpansionException {
