@@ -124,7 +124,7 @@ public class FieldConfigurationService {
             if (user == null) {
                 optConfig = conceptFieldConfigRepository.findOneByFieldCodeForInstitution(institution.getId(), fieldCode);
             } else {
-                optConfig = conceptFieldConfigRepository.findByFieldCodeForUser(user.getId(), institution.getId(), fieldCode);
+                optConfig = conceptFieldConfigRepository.findOneByFieldCodeForUser(user.getId(), institution.getId(), fieldCode);
             }
 
             if (optConfig.isEmpty()) {
@@ -195,9 +195,9 @@ public class FieldConfigurationService {
     }
 
     public ConceptFieldConfig findConfigurationForFieldCode(UserInfo info, String fieldCode) throws NoConfigForFieldException {
-        Optional<ConceptFieldConfig> personConfig = conceptFieldConfigRepository.findByFieldCodeForUser(info.getUser().getId(),  info.getInstitution().getId(), fieldCode);
+        Optional<ConceptFieldConfig> personConfig = conceptFieldConfigRepository.findOneByFieldCodeForUser(info.getUser().getId(),  info.getInstitution().getId(), fieldCode);
         if (personConfig.isEmpty()) {
-            Optional<ConceptFieldConfig> institutionConfig = conceptFieldConfigRepository.findByFieldCodeForInstitution(info.getInstitution().getId(), fieldCode);
+            Optional<ConceptFieldConfig> institutionConfig = conceptFieldConfigRepository.findOneByFieldCodeForInstitution(info.getInstitution().getId(), fieldCode);
             if (institutionConfig.isEmpty()) {
                 throw new NoConfigForFieldException(fieldCode);
             }

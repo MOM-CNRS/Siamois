@@ -232,7 +232,7 @@ public class ConceptService {
         }
     }
 
-    private void createRelationBetweenConcepts(Map.Entry<String, FullInfoDTO> entry, Map<String, Concept> concepts, Map<Concept, Concept> childAndParentMap, Concept parentSavedConcept) {
+    private void createRelationBetweenConcepts(Map.Entry<String, FullInfoDTO> entry, Map<String, Concept> concepts, Map<Concept, Concept> childToParentMap, Concept parentSavedConcept) {
         for (PurlInfoDTO narrower : entry.getValue().getNarrower()) {
             Concept parent = concepts.get(entry.getKey());
             if (parent == null) {
@@ -243,15 +243,14 @@ public class ConceptService {
                 throw new IllegalStateException("No concept found in cache map for URL " + narrower.getValue());
             }
 
-            if (parent.equals(parentSavedConcept))
-                continue;
-
-            if (!childAndParentMap.containsKey(child)) {
-                ConceptHierarchy relation = new ConceptHierarchy(parent,child, parentSavedConcept);
-                conceptHierarchyRepository.save(relation);
-                childAndParentMap.put(child, parent);
-            } else {
-                log.debug("Concept {} already has a parent concept, skipping relation creation for {}.", child.getExternalId(), parent.getExternalId());
+            if (!parent.equals(parentSavedConcept)) {
+                if (!childToParentMap.containsKey(child)) {
+                    ConceptHierarchy relation = new ConceptHierarchy(parent,child, parentSavedConcept);
+                    conceptHierarchyRepository.save(relation);
+                    childToParentMap.put(child, parent);
+                } else {
+                    log.debug("Concept {} already has a parent concept, skipping relation creation for {}.", child.getExternalId(), parent.getExternalId());
+                }
             }
         }
     }

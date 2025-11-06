@@ -152,7 +152,7 @@ class FieldConfigurationServiceTest {
             concept.setExternalId(dto.getIdentifier()[0].getValue());
             return concept;
         }).when(conceptService).saveOrGetConceptFromFullDTO(any(Vocabulary.class), any(FullInfoDTO.class), eq(null));
-        when(conceptFieldConfigRepository.findByFieldCodeForUser(eq(userInfo.getUser().getId()), eq(userInfo.getInstitution().getId()),anyString())).thenReturn(Optional.empty());
+        when(conceptFieldConfigRepository.findOneByFieldCodeForUser(eq(userInfo.getUser().getId()), eq(userInfo.getInstitution().getId()),anyString())).thenReturn(Optional.empty());
         when(conceptFieldConfigRepository.save(any(ConceptFieldConfig.class))).thenAnswer(i -> i.getArgument(0));
 
         Optional<FeedbackFieldConfig> result = service.setupFieldConfigurationForUser(userInfo, vocabulary);
