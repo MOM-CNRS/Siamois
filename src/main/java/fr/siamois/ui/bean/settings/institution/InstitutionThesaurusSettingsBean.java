@@ -11,7 +11,6 @@ import fr.siamois.domain.services.vocabulary.FieldConfigurationService;
 import fr.siamois.domain.services.vocabulary.VocabularyService;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
-import fr.siamois.ui.bean.settings.components.ProgressWrapper;
 import fr.siamois.utils.MessageUtils;
 import lombok.Getter;
 import lombok.Setter;

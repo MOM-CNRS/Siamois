@@ -15,7 +15,7 @@ import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRelated
 import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.LocalizedConceptDataRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.label.ConceptLabelRepository;
-import fr.siamois.ui.bean.settings.components.ProgressWrapper;
+import fr.siamois.domain.models.misc.ProgressWrapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;

@@ -1,4 +1,4 @@
-package fr.siamois.ui.bean.settings.components;
+package fr.siamois.domain.models.misc;
 
 import lombok.Data;
 import lombok.NoArgsConstructor;
