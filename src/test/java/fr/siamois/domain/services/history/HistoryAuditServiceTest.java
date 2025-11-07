@@ -90,7 +90,7 @@ class HistoryAuditServiceTest {
         when(queryCreator.forRevisionsOfEntity(any(), anyBoolean(), anyBoolean())).thenReturn(query);
         when(query.add(any())).thenReturn(query);
 
-        Object[] row = new Object[] { "last-entity", mock(fr.siamois.domain.models.history.InfoRevisionEntity.class), RevisionType.DEL };
+        Object[] row = new Object[] { "last-entity", mock(InfoRevisionEntity.class), RevisionType.DEL };
         when(query.getSingleResult()).thenReturn(row);
 
         Object result = service.findLastRevisionForEntity(String.class, 1L);
@@ -143,6 +143,33 @@ class HistoryAuditServiceTest {
         public String auditedField = "original";
         @NotAudited
         public String notAuditedField = "originalNotAudited";
+    }
+
+    @Test
+    void findAllContributorsFor_basic() {
+        AuditQueryCreator queryCreator = mock(AuditQueryCreator.class);
+        AuditQuery query = mock(AuditQuery.class);
+        when(reader.createQuery()).thenReturn(queryCreator);
+        when(queryCreator.forRevisionsOfEntity(any(), anyBoolean(), anyBoolean())).thenReturn(query);
+        when(query.addProjection(any())).thenReturn(query);
+        when(query.add(any())).thenReturn(query);
+
+        Person e1 = new Person();
+        e1.setUsername("1"); e1.setPassword("1"); e1.setName("1"); e1.setLastname("1");
+        Person e2 = new Person();
+        e2.setUsername("2"); e2.setPassword("2"); e2.setName("2"); e2.setLastname("2");
+        Person e1Duplicate = new Person();
+        e1Duplicate.setUsername("1"); e1Duplicate.setPassword("1"); e1Duplicate.setName("1"); e1Duplicate.setLastname("1");
+        
+        when(query.getResultList()).thenReturn(Arrays.asList(e1, e2, null, e1Duplicate));
+
+        List<Person> results = service.findAllContributorsFor(String.class, 1L);
+
+        assertEquals(2, results.size());
+        assertTrue(results.containsAll(Arrays.asList(e1, e2)));
+        verify(reader).createQuery();
+        verify(queryCreator).forRevisionsOfEntity(String.class,false, false);
+        verify(query).getResultList();
     }
 
 }

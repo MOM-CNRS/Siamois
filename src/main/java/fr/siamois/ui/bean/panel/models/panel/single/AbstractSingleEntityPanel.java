@@ -229,7 +229,7 @@ public abstract class AbstractSingleEntityPanel<T> extends AbstractSingleEntity<
      * @return the list of contributors as a string
      */
     public String allUpdaters() {
-        return historyAuditService.findContributors(unit.getClass(), idunit)
+        return historyAuditService.findAllContributorsFor(unit.getClass(), idunit)
                 .stream()
                 .map(Person::displayName)
                 .filter(Objects::nonNull)

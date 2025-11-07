@@ -18,7 +18,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.SortedSet;
 import java.util.TreeSet;
-import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -101,8 +100,14 @@ public class HistoryAuditService {
         return revision.entity();
     }
 
+    /**
+     * Find all the contributors to an entity with the given ID
+     * @param entityClass The class of the entity
+     * @param entityId The ID of the entity
+     * @return The list of contributors
+     */
     @SuppressWarnings("unchecked")
-    public List<Person> findContributors(Class<?> entityClass, Object entityId) {
+    public List<Person> findAllContributorsFor(Class<?> entityClass, Object entityId) {
         List<Person> contributors = auditReader.createQuery()
                 .forRevisionsOfEntity(entityClass, false, false)
                 .add(AuditEntity.id().eq(entityId))
