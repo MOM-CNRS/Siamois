@@ -47,7 +47,7 @@ public class RecordingUnitHandler implements INewUnitHandler<RecordingUnit> {
         return new RecordingUnit();
     }
     @Override public RecordingUnit save(UserInfo u, RecordingUnit unit) throws EntityAlreadyExistsException {
-        return recordingUnitService.save(unit, unit.getType(), null, null, null); }
+        return recordingUnitService.save(unit); }
     @Override public String dialogWidgetVar() { return "newUnitDiag"; }
 
     @Override public void initFromContext(GenericNewUnitDialogBean<?> bean) throws CannotInitializeNewUnitDialogException {

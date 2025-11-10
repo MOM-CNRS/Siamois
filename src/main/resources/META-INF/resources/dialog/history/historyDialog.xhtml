@@ -1,0 +1,80 @@
+<ui:fragment xmlns="http://www.w3.org/1999/xhtml"
+             xmlns:ui="http://java.sun.com/jsf/facelets"
+             xmlns:h="http://xmlns.jcp.org/jsf/html"
+             xmlns:p="http://primefaces.org/ui"
+             xmlns:f="http://java.sun.com/jsf/core"
+
+>
+    <h:form id="historyForm">
+        <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
+        <p:dialog widgetVar="historyDiag" id="historyDiag" showEffect="fade" closeOnEscape="true"
+                  fitViewport="true"
+                  width="60vw"
+                  minWidth="400"
+                  maxWidth="90vw"
+                  style="max-height:80vh;"
+                  appendToBody="true" modal="true" >
+
+            <f:facet name="header">
+                <div class="sia-flow-panel-title ui-panel-titlebar">
+                    <i class="pi pi-history" />
+                    <span style="padding-left:.5em;">Historique</span>
+                </div>
+            </f:facet>
+
+            <p:outputPanel id="historyDialogContent">
+                <p:dataTable value="#{historyDialogBean.history}" var="r"
+                             paginator="true" rows="10" lazy="false"
+                             emptyMessage="Aucune révision trouvée."
+                             reflow="true" styleClass="p-datatable-sm">
+
+                    <!-- Adapte les expressions EL aux getters de ta classe RevisionWithInfo -->
+                    <p:column headerText="Date" >
+                        <h:outputText value="#{historyDialogBean.revisionDate(r)}">
+
+                        </h:outputText>
+                    </p:column>
+
+                    <p:column headerText="Action" >
+                        <h:outputText value="#{historyDialogBean.revisionType(r)}" />
+                    </p:column>
+
+                    <p:column headerText="Auteur" >
+                        <h:outputText value="#{historyDialogBean.revisionAuthor(r)}" />
+                    </p:column>
+
+                    <p:column headerText="Actions" style="width:8rem; text-align:center;">
+                        <p:commandButton value="Restaurer"
+                                         icon="pi pi-history"
+                                         styleClass="ui-button-warning"
+                                         process="@this"
+                                         update="historyForm:confirmRestoreDiag"
+                                         actionListener="#{historyDialogBean.confirmRestore(r)}"
+                                         oncomplete="PF('confirmRestoreDiag').show()"/>
+                    </p:column>
+
+                </p:dataTable>
+            </p:outputPanel>
+
+        </p:dialog>
+        <p:dialog widgetVar="confirmRestoreDiag" id="confirmRestoreDiag" modal="true" header="Confirmer la restauration"
+                  resizable="false" draggable="false" width="420">
+            <h:panelGroup id="confirmRestoreContent">
+                <p>Voulez-vous vraiment restaurer l’entité à cette révision ?</p>
+                <p style="margin:.5rem 0;">
+                    <b>Action :</b> #{historyDialogBean.pendingRevision != null ? historyDialogBean.revisionType(historyDialogBean.pendingRevision) : ''}
+                    <br/>
+                    <b>Date :</b> #{historyDialogBean.pendingRevision != null ? historyDialogBean.revisionDate(historyDialogBean.pendingRevision) : ''}
+                </p>
+            </h:panelGroup>
+            <f:facet name="footer">
+                <p:commandButton value="Annuler" icon="pi pi-times" type="button"
+                                 onclick="PF('confirmRestoreDiag').hide()" />
+                <p:commandButton value="Restaurer" icon="pi pi-check"
+                                 process="@this"
+                                 actionListener="#{historyDialogBean.restorePending()}"
+                                 onclick="PF('confirmRestoreDiag').hide()" />
+            </f:facet>
+        </p:dialog>
+    </h:form>
+</ui:fragment>

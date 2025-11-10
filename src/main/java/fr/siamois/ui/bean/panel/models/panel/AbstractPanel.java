@@ -1,14 +1,13 @@
 package fr.siamois.ui.bean.panel.models.panel;
 
 import fr.siamois.ui.bean.panel.models.PanelBreadcrumb;
+import fr.siamois.utils.DateUtils;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
 
 import java.io.Serializable;
 import java.time.OffsetDateTime;
-import java.time.ZoneOffset;
-import java.time.format.DateTimeFormatter;
 import java.util.Objects;
 
 /**
@@ -40,13 +39,7 @@ public abstract class AbstractPanel implements Serializable {
      * @return the formatted date string, or an empty string if dateTime is null
      */
     public String formatUtcDateTime(OffsetDateTime dateTime, boolean showTime) {
-        if (dateTime == null) return "";
-        String pattern = "dd/MM/yyyy HH:mm";
-        if(!showTime) {
-            pattern = "dd/MM/yyyy";
-        }
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern(pattern).withZone(ZoneOffset.UTC);
-        return formatter.format(dateTime);
+        return DateUtils.formatUtcDateTime(dateTime, showTime);
     }
 
     /**
@@ -56,7 +49,7 @@ public abstract class AbstractPanel implements Serializable {
      * @return the formatted date string, or an empty string if dateTime is null
      */
     public String formatUtcDateTime(OffsetDateTime dateTime) {
-        return formatUtcDateTime(dateTime, false);
+        return DateUtils.formatUtcDateTime(dateTime, false);
     }
 
     protected AbstractPanel(String titleCodeOrTitle, String icon, String panelClass) {

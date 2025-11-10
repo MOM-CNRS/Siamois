@@ -25,6 +25,7 @@ public record RevisionWithInfo<T>(T entity, InfoRevisionEntity revisionEntity,
         return Long.compare(revisionEntity.getRevId(), o.revisionEntity.getRevId()) * -1;
     }
 
+
     @Override
     public boolean equals(Object o) {
         if (!(o instanceof RevisionWithInfo<?> that)) return false;

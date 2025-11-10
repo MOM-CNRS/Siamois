@@ -14,6 +14,7 @@ import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.domain.services.vocabulary.FieldService;
 import fr.siamois.ui.bean.dialog.document.DocumentCreationBean;
 import fr.siamois.ui.bean.panel.models.panel.single.tab.*;
+import fr.siamois.utils.DateUtils;
 import io.micrometer.common.lang.Nullable;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -212,7 +213,7 @@ public abstract class AbstractSingleEntityPanel<T> extends AbstractSingleEntity<
 
     public String lastUpdateDate() {
         bufferedLastRevision = findLastRevisionForEntity();
-        return this.formatUtcDateTime(bufferedLastRevision.getDate());
+        return DateUtils.formatUtcDateTime(bufferedLastRevision.getDate());
     }
 
     public String lastUpdater() {

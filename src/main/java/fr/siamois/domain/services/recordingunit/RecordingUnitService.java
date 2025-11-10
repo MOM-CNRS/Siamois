@@ -90,20 +90,13 @@ public class RecordingUnitService implements ArkEntityService {
     }
 
     /**
-     * Save a recording unit with its associated concept and related units.
+     * Save a recording unit
      *
      * @param recordingUnit    The recording unit to save.
-     * @param concept          The concept associated with the recording unit.
-     * @param anteriorUnits    List of recording units that are considered as "anterior" to the current one.
-     * @param synchronousUnits List of recording units that are considered as "synchronous" to the current one.
-     * @param posteriorUnits   List of recording units that are considered as "posterior" to the current one.
      * @return The saved RecordingUnit instance.
      */
     @Transactional
-    public RecordingUnit save(RecordingUnit recordingUnit, Concept concept,
-                              List<RecordingUnit> anteriorUnits,
-                              List<RecordingUnit> synchronousUnits,
-                              List<RecordingUnit> posteriorUnits) {
+    public RecordingUnit save(RecordingUnit recordingUnit) {
 
         try {
 
@@ -129,7 +122,7 @@ public class RecordingUnitService implements ArkEntityService {
 
 
             // Add concept
-            Concept type = conceptService.saveOrGetConcept(concept);
+            Concept type = conceptService.saveOrGetConcept(recordingUnit.getType());
             managedRecordingUnit.setType(type);
 
             // Spatial Unit

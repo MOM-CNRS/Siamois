@@ -291,6 +291,8 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
         initEnabledRulesFromForms();
     }
 
+
+
     @Override
     public void cancelChanges() {
         unit.setSpatialUnit(backupClone.getSpatialUnit());
@@ -352,8 +354,6 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
         return "recording-unit-autocomplete";
     }
 
-
-
     @Override
     public boolean save(Boolean validated) {
 
@@ -369,7 +369,7 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
         }
 
         try {
-            recordingUnitService.save(unit, unit.getType(), List.of(), List.of(), List.of());
+            recordingUnitService.save(unit);
         } catch (FailedRecordingUnitSaveException e) {
             MessageUtils.displayErrorMessage(langBean, "common.entity.recordingUnits.updateFailed", unit.getFullIdentifier());
             return false;

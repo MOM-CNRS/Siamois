@@ -111,7 +111,7 @@ public class RecordingUnitListPanel extends AbstractListPanel<RecordingUnit>  im
         RecordingUnit toSave = event.getObject();
 
         try {
-            recordingUnitService.save(toSave, toSave.getType(), List.of(),  List.of(),  List.of());
+            recordingUnitService.save(toSave);
         }
         catch(FailedRecordingUnitSaveException e) {
             MessageUtils.displayErrorMessage(langBean, "common.entity.recordingUnits.updateFailed", toSave.getFullIdentifier());
@@ -140,7 +140,7 @@ public class RecordingUnitListPanel extends AbstractListPanel<RecordingUnit>  im
         newRec.setIdentifier(recordingUnitService.generateNextIdentifier(newRec));
 
         // Save it
-        newRec = recordingUnitService.save(newRec, newRec.getType(), List.of(), List.of(), List.of());
+        newRec = recordingUnitService.save(newRec);
 
         // Add it to the model
         lazyDataModel.addRowToModel(newRec);

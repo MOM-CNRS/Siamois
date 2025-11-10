@@ -14,10 +14,7 @@ import org.hibernate.envers.query.AuditQuery;
 import org.springframework.stereotype.Service;
 
 import java.lang.reflect.Field;
-import java.util.List;
-import java.util.Objects;
-import java.util.SortedSet;
-import java.util.TreeSet;
+import java.util.*;
 
 @Slf4j
 @Service
@@ -75,6 +72,14 @@ public class HistoryAuditService {
 
     }
 
+    private static List<Field> getAllFields(Class<?> type) {
+        List<Field> fields = new ArrayList<>();
+        for (Class<?> c = type; c != null; c = c.getSuperclass()) {
+            fields.addAll(Arrays.asList(c.getDeclaredFields()));
+        }
+        return fields;
+    }
+
     /**
      * Restores the non-audited fields of a revision entity by copying their values from the original entity.
      * This method only updates the in-memory state of the revision entity and does not persist it to the database.
@@ -84,9 +89,8 @@ public class HistoryAuditService {
      * @param <T>        The type of the entity to restore
      * @return The revision entity with non-audited fields set to the values of the original entity
      */
-
     public <T> T restoreEntity(RevisionWithInfo<T> revision, T baseEntity) {
-        for (Field field : baseEntity.getClass().getFields()) {
+        for (Field field : getAllFields(baseEntity.getClass())) {
             try {
                 if (field.isAnnotationPresent(NotAudited.class)) {
                     field.setAccessible(true);
@@ -95,7 +99,6 @@ public class HistoryAuditService {
             } catch (IllegalAccessException e) {
                 log.warn("Could not set field {}", field.getName(), e);
             }
-
         }
         return revision.entity();
     }

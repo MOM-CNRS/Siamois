@@ -275,7 +275,6 @@ public abstract class AbstractSingleEntity<T> extends AbstractPanel implements S
 
     public abstract void initForms(boolean forceInit);
 
-
     public List<SpatialUnit> getSpatialUnitOptions() {
         // Implement in child classes if necessary
         return List.of();

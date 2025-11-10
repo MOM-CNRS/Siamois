@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 
 /**
@@ -34,6 +35,35 @@ public class DateUtils {
         LocalDateTime dateTime = offsetDateTime.atZoneSameInstant(ZoneId.systemDefault()).toLocalDateTime();
         return formatter.format(dateTime);
     }
+
+    /**
+     * Formats the given OffsetDateTime to a string in UTC timezone.
+     *
+     * @param dateTime the OffsetDateTime to format
+     * @param showTime do we show the time?
+     * @return the formatted date string, or an empty string if dateTime is null
+     */
+    public static String formatUtcDateTime(OffsetDateTime dateTime, boolean showTime) {
+        if (dateTime == null) return "";
+        String pattern = "dd/MM/yyyy HH:mm";
+        if(!showTime) {
+            pattern = "dd/MM/yyyy";
+        }
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern(pattern).withZone(ZoneOffset.UTC);
+        return formatter.format(dateTime);
+    }
+
+    /**
+     * Formats the given OffsetDateTime to a string in UTC timezone.
+     *
+     * @param dateTime the OffsetDateTime to format
+     * @return the formatted date string, or an empty string if dateTime is null
+     */
+    public static String formatUtcDateTime(OffsetDateTime dateTime) {
+        return formatUtcDateTime(dateTime, false);
+    }
+
+
 
     /**
      * offsetDateTime to {@link String} representation with format `YYYY-MM-DD HH:MM` with the specified time zone.

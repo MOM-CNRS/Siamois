@@ -154,8 +154,11 @@
 
                         </div>
                         <div>
-                            <p:commandButton disabled="true" icon="bi bi-clock-history">
-
+                            <p:commandButton icon="bi bi-clock-history"
+                                process="@this"
+                                actionListener="#{historyDialogBean.open(panelModel.unit)}"
+                                update=":historyForm:historyDialogContent"
+                                oncomplete="PF('historyDiag').show()">
                             </p:commandButton>
                         </div>
                     </div>
