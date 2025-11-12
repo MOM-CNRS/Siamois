@@ -15,6 +15,7 @@ import fr.siamois.domain.services.vocabulary.LabelService;
 import fr.siamois.infrastructure.database.repositories.vocabulary.label.ConceptLabelRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.event.EventListener;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Component;
 
 import javax.faces.bean.SessionScoped;
@@ -40,7 +41,6 @@ public class LabelBean implements Serializable {
     private final Map<String, Map<Concept, String>> prefLabelCache = new HashMap<>();
     private final Map<Long, ConceptLabel> idToLabelCache = new HashMap<>();
     private final Map<HierarchyCallParams, String> hierarchyLabelCache = new HashMap<>();
-    private final LangBean langBean;
 
     @EventListener(ConceptChangeEvent.class)
     public void resetCache() {
@@ -77,7 +77,8 @@ public class LabelBean implements Serializable {
      * @param concept the concept to find the label for
      * @return the best matching label, or the concept's external ID if no label is found
      */
-    public String findLabelOf(Concept concept) {
+    @Nullable
+    public String findLabelOf(@Nullable Concept concept) {
         if (concept == null) return null;
         UserInfo userInfo = sessionSettingsBean.getUserInfo();
         List<ConceptPrefLabel> labels = new ArrayList<>();

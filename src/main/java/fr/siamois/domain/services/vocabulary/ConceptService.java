@@ -18,6 +18,8 @@ import fr.siamois.infrastructure.database.repositories.vocabulary.LocalizedConce
 import fr.siamois.infrastructure.database.repositories.vocabulary.label.ConceptLabelRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.lang.NonNull;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -36,7 +38,7 @@ public class ConceptService {
     private final ConceptApi conceptApi;
     private final LabelService labelService;
     private final ConceptRelatedLinkRepository conceptRelatedLinkRepository;
-    private final LocalizedConceptDataRepository  localizedConceptDataRepository;
+    private final LocalizedConceptDataRepository localizedConceptDataRepository;
     private final ConceptChangeEventPublisher conceptChangeEventPublisher;
     private final ConceptLabelRepository conceptLabelRepository;
     private final ConceptHierarchyRepository conceptHierarchyRepository;
@@ -47,7 +49,8 @@ public class ConceptService {
      * @param concept the concept to save or retrieve
      * @return the saved or existing concept
      */
-    public Concept saveOrGetConcept(Concept concept) {
+    @NonNull
+    public Concept saveOrGetConcept(@NonNull Concept concept) {
         Vocabulary vocabulary = concept.getVocabulary();
         Optional<Concept> optConcept = conceptRepository.findConceptByExternalIdIgnoreCase(vocabulary.getExternalVocabularyId(), concept.getExternalId());
         return optConcept.orElseGet(() -> conceptRepository.save(concept));
@@ -59,7 +62,8 @@ public class ConceptService {
      * @param institution the institution for which to find concepts
      * @return a list of concepts associated with spatial units of the institution
      */
-    public List<Concept> findAllBySpatialUnitOfInstitution(Institution institution) {
+    @NonNull
+    public List<Concept> findAllBySpatialUnitOfInstitution(@NonNull Institution institution) {
         return conceptRepository.findAllBySpatialUnitOfInstitution(institution.getId());
     }
 
@@ -69,18 +73,21 @@ public class ConceptService {
      * @param institution the institution for which to find concepts
      * @return a list of concepts associated with action units of the institution
      */
-    public List<Concept> findAllByActionUnitOfInstitution(Institution institution) {
+    @NonNull
+    public List<Concept> findAllByActionUnitOfInstitution(@NonNull Institution institution) {
         return conceptRepository.findAllByActionUnitOfInstitution(institution.getId());
     }
 
     /**
-     * Saves a concept from a FullInfoDTO, or retrieves it if it already exists.
+     * Saves or retrieves a concept based on the provided FullInfoDTO.
      *
-     * @param vocabulary the vocabulary to which the concept belongs
-     * @param conceptDTO the FullInfoDTO containing concept information
+     * @param vocabulary         The vocabulary to which the concept belongs
+     * @param conceptDTO         The FullInfoDTO containing concept information
+     * @param fieldParentConcept The parent concept in the field context, if applicable
      * @return the saved or existing concept
      */
-    public Concept saveOrGetConceptFromFullDTO(Vocabulary vocabulary, FullInfoDTO conceptDTO, Concept fieldParentConcept) {
+    @NonNull
+    public Concept saveOrGetConceptFromFullDTO(@NonNull Vocabulary vocabulary, @NonNull FullInfoDTO conceptDTO, @Nullable Concept fieldParentConcept) {
         Optional<Concept> optConcept = conceptRepository
                 .findConceptByExternalIdIgnoreCase(
                         vocabulary.getExternalVocabularyId(),
@@ -107,12 +114,13 @@ public class ConceptService {
     }
 
     /**
-     * Updates all labels of a saved concept from a FullInfoDTO.
+     * Updates all labels of a saved concept from FullInfoDTO
      *
-     * @param savedConcept the concept to update
-     * @param conceptDto   the FullInfoDTO containing label information
+     * @param savedConcept       the concept to update
+     * @param conceptDto         the FullInfoDTO containing label information
+     * @param fieldParentConcept The parent concept in the field context, if applicable
      */
-    public void updateAllLabelsFromDTO(Concept savedConcept, FullInfoDTO conceptDto, Concept fieldParentConcept) {
+    public void updateAllLabelsFromDTO(@NonNull Concept savedConcept, @NonNull FullInfoDTO conceptDto, @Nullable Concept fieldParentConcept) {
         if (conceptDto.getPrefLabel() != null) {
             for (PurlInfoDTO label : conceptDto.getPrefLabel()) {
                 labelService.updateLabel(savedConcept, label.getLang(), label.getValue(), fieldParentConcept);
@@ -125,7 +133,6 @@ public class ConceptService {
             }
         }
     }
-
 
 
     private void updateDefinition(Concept savedConcept, String lang, String definition) {
@@ -143,21 +150,24 @@ public class ConceptService {
     }
 
     /**
-     * Find LocalizedConceptData for given concept for a given language
+     * Gets localized concept data by concept and language code.
+     *
      * @param concept the concept
-     * @param lang  the lang code
-     * @return the concept data or null if not found
+     * @param lang    the language code
+     * @return the localized concept data, or null if not found
      */
-    public LocalizedConceptData getLocalizedConceptDataByConceptAndLangCode(Concept concept, String lang) {
+    @Nullable
+    public LocalizedConceptData getLocalizedConceptDataByConceptAndLangCode(@NonNull Concept concept, @NonNull String lang) {
         return localizedConceptDataRepository.findByConceptAndLangCode(concept.getId(), lang).orElse(null);
     }
 
     /**
      * Updates all definitions of a saved concept from FullInfoDTO
+     *
      * @param savedConcept the concept to update
-     * @param conceptDto  the FullInfoDTO containing definition information
+     * @param conceptDto   the FullInfoDTO containing definition information
      */
-    public void updateAllDefinitionsFromDTO(Concept savedConcept, FullInfoDTO conceptDto) {
+    public void updateAllDefinitionsFromDTO(@NonNull Concept savedConcept, @NonNull FullInfoDTO conceptDto) {
         if (conceptDto.getDefinition() != null) {
             for (PurlInfoDTO definition : conceptDto.getDefinition()) {
                 updateDefinition(savedConcept, definition.getLang(), definition.getValue());
@@ -165,11 +175,24 @@ public class ConceptService {
         }
     }
 
-    public void saveAllSubConceptOfIfUpdated(ConceptFieldConfig config) throws ErrorProcessingExpansionException {
+    /**
+     * Wrapper method to use {@link #saveAllSubConceptOfIfUpdated(ConceptFieldConfig, ProgressWrapper)} without progress tracking.
+     *
+     * @param config the concept field configuration
+     * @throws ErrorProcessingExpansionException if an error occurs during processing
+     */
+    public void saveAllSubConceptOfIfUpdated(@NonNull ConceptFieldConfig config) throws ErrorProcessingExpansionException {
         saveAllSubConceptOfIfUpdated(config, new ProgressWrapper());
     }
 
-    public void saveAllSubConceptOfIfUpdated(ConceptFieldConfig config, ProgressWrapper progressWrapper) throws ErrorProcessingExpansionException {
+    /**
+     * Saves all sub-concepts data and relations if there are updates in the down expansion of the concept field config.
+     *
+     * @param config          the concept field configuration
+     * @param progressWrapper the progress wrapper to track progress
+     * @throws ErrorProcessingExpansionException if an error occurs during processing
+     */
+    public void saveAllSubConceptOfIfUpdated(@NonNull ConceptFieldConfig config, @NonNull ProgressWrapper progressWrapper) throws ErrorProcessingExpansionException {
         log.trace("API call to fetch down expansion for concept FieldCode : {}", config.getFieldCode());
         try {
             Concept parentSavedConcept = config.getConcept();
@@ -253,14 +276,14 @@ public class ConceptService {
             if (parent == null) {
                 throw new IllegalStateException("No concept found in cache map for URL " + entry.getKey());
             }
-            Concept child =  concepts.get(narrower.getValue());
+            Concept child = concepts.get(narrower.getValue());
             if (child == null) {
                 throw new IllegalStateException("No concept found in cache map for URL " + narrower.getValue());
             }
 
             if (!parent.equals(parentSavedConcept)) {
                 if (!childToParentMap.containsKey(child)) {
-                    ConceptHierarchy relation = new ConceptHierarchy(parent,child, parentSavedConcept);
+                    ConceptHierarchy relation = new ConceptHierarchy(parent, child, parentSavedConcept);
                     conceptHierarchyRepository.save(relation);
                     childToParentMap.put(child, parent);
                 } else {
@@ -294,21 +317,24 @@ public class ConceptService {
     }
 
     /**
-     * Finds all concepts by their IDs.
-     *
-     * @param conceptIds the list of concept IDs to find
-     * @return a list of concepts corresponding to the provided IDs
+     * Finds a concept by its ID.
+     * @param id the ID of the concept
+     * @return an Optional containing the concept if found, or empty if not found
      */
-    public Object findAllById(List<Long> conceptIds) {
-        return conceptRepository.findAllById(conceptIds);
-    }
-
-
-    public Optional<Concept> findById(Long id) {
+    @NonNull
+    public Optional<Concept> findById(long id) {
         return conceptRepository.findById(id);
     }
 
-    public List<Concept> findParentsOfConceptInField(Concept concept, Concept parentFieldConcept) {
+    /**
+     * Finds all parent concepts of a given concept within the context of a specified parent field concept.
+     *
+     * @param concept             the concept whose parents are to be found
+     * @param parentFieldConcept  the parent field concept defining the context
+     * @return a list of parent concepts, ordered from the highest level to the immediate parent
+     */
+    @NonNull
+    public List<Concept> findParentsOfConceptInField(@NonNull Concept concept, @NonNull Concept parentFieldConcept) {
         List<Concept> result = new ArrayList<>();
         List<ConceptHierarchy> parents = conceptHierarchyRepository.findAllByChildAndParentFieldContext(concept, parentFieldConcept);
         while (!parents.isEmpty()) {
