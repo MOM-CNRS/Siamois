@@ -4,6 +4,7 @@ import fr.siamois.domain.models.FieldCode;
 import lombok.extern.slf4j.Slf4j;
 import org.reflections.Reflections;
 import org.reflections.scanners.Scanners;
+import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -51,11 +52,13 @@ public class FieldService {
      *
      * @return a list of field codes
      */
+    @NonNull
     public List<String> searchAllFieldCodes() {
         return new ArrayList<>(FIELD_CODES);
     }
 
-    public <T> List<String> findFieldCodesOf(Class<T> entityClass) {
+    @NonNull
+    public <T> List<String> findFieldCodesOf(@NonNull Class<T> entityClass) {
         List<String> fieldCodes = new ArrayList<>();
         Field[] fields = entityClass.getDeclaredFields();
         for (Field field : fields) {
