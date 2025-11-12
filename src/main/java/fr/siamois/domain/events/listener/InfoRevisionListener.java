@@ -8,6 +8,7 @@ import fr.siamois.infrastructure.database.repositories.institution.InstitutionRe
 import fr.siamois.infrastructure.database.repositories.person.PersonRepository;
 import fr.siamois.ui.bean.SessionSettingsBean;
 import jakarta.persistence.PrePersist;
+import jakarta.validation.constraints.NotNull;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 
@@ -27,8 +28,13 @@ public class InfoRevisionListener {
         this.applicationContext = applicationContext;
     }
 
+    /**
+     * Method called before persisting an InfoRevisionEntity.
+     * Is it used to set the updatedBy and updatedFrom fields in the revision information.
+     * @param entity the InfoRevisionEntity being persisted
+     */
     @PrePersist
-    private void onPersist(InfoRevisionEntity entity) {
+    private void onPersist(@NotNull InfoRevisionEntity entity) {
         if (sessionSettingsBean == null) {
             sessionSettingsBean = applicationContext.getBean(SessionSettingsBean.class);
         }
