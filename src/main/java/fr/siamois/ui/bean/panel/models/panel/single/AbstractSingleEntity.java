@@ -191,9 +191,18 @@ public abstract class AbstractSingleEntity<T> extends AbstractPanel implements S
     public String getConceptFieldsUpdateTargetsOnBlur(int panelIndex) {
         // If new unit panel form, update only header when concept is selected, otherwise @form
         if (this.getClass() == GenericNewUnitDialogBean.class) {
-            return "panel-"+panelIndex+"-header";
+            return "";
         } else {
             return "@form panel-"+panelIndex+"-header";
+        }
+    }
+
+    public String getPanelHeaderUpdateId(int panelIndex) {
+        // If new unit panel form
+        if (this.getClass() == GenericNewUnitDialogBean.class) {
+            return "";
+        } else {
+            return "panel-"+panelIndex+"-header";
         }
     }
 

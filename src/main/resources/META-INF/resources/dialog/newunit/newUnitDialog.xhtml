@@ -13,15 +13,15 @@
                   minWidth="400"
                   maxWidth="90vw"
                   style="max-height:80vh;"
-                  appendToBody="true" modal="true" styleClass="sia-new-unit-dialog ui-panel siamois-panel #{genericNewUnitDialogBean.handler.styleClassName()}">
+                  appendToBody="true" modal="true"
+                  styleClass="sia-new-unit-dialog ui-panel siamois-panel #{genericNewUnitDialogBean.handler.styleClassName()}">
 
             <f:facet name="header">
-                <div >
-                    <div class="sia-flow-panel-title ui-panel-titlebar">
+                    <p:outputPanel style="display: flex;gap: 0.5em; align-items: center;
+                            float:left;color: var(--main-color);">
                         <i class="#{genericNewUnitDialogBean.handler.getIcon()}"/>
                         <span style="padding-right:0.5em;">#{genericNewUnitDialogBean.handler.getTitle()}</span>
-                    </div>
-                </div>
+                    </p:outputPanel>
             </f:facet>
             <p:outputPanel id="newUnitFormContent">
                 <ui:include src="/pages/shared/form/customForm.xhtml">
@@ -36,7 +36,7 @@
 
             <!-- Save/Cancel Toolbar -->
             <f:facet name="footer">
-                <div >
+                <div>
                     <p:toolbar class="panel-footer">
                         <p:toolbarGroup align="right">
                             <p:commandLink value='#{langBean.msg("common.action.cancel")}'
