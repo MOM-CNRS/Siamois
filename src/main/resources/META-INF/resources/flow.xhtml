@@ -10,17 +10,8 @@
 
     <ui:define name="head">
 
-
         <script>
-            function scrollToPanel(index) {
-                // TODO: implement the scroll; no time to test it now before atelier utilisateur
-                // const el = document.getElementById("panel-" + index);
-                // if (el) {
-                //     el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                //     el.classList.add("panel-highlight");
-                //     setTimeout(() => el.classList.remove("panel-highlight"), 1500);
-                // }
-            }
+
 
             function handleScrollToTop() {
 
@@ -197,19 +188,19 @@
             text-align:center; background: var(--siamois-green-light-100);padding: 0.5em}">
                 <h:form id="readWriteSwitchForm">
                     <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
-                    <p:selectOneButton value="#{flowBean.readWriteMode}" var="ic" id="readWriteSwitchButton">
-                        <f:selectItem icon="" itemLabel="Lecture" itemValue="READ"/>
-                        <f:selectItem itemLabel="Edition" itemValue="WRITE"/>
-
-                        <p:ajax event="change" listener="#{flowBean.changeReadWriteMode()}" update="@form"
+                    <p:selectOneButton styleClass="bootstrap-icon-select-one-button"
+                    value="#{flowBean.readWriteMode}" >
+                        <f:selectItem itemValue="READ" itemLabel="&#xF343;"/>
+                        <f:selectItem itemValue="WRITE" itemLabel="&#xF4C8;"/>
+                        <p:ajax event="change" listener="#{flowBean.changeReadWriteMode()}" update="flow"
                                 onstart="PF('buiContent').show()" oncomplete="PF('buiContent').hide()"/>
                     </p:selectOneButton>
                 </h:form>
                 <h:form id="fieldDesktopSwitchForm">
-                    <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
-                    <p:selectOneButton value="#{flowBean.fieldOfficeMode}" var="ic" id="fieldOfficeSwitchButton">
-                        <f:selectItem icon="" itemLabel="Bureau" itemValue="OFFICE"/>
-                        <f:selectItem itemLabel="Terrain" itemValue="FIELD"/>
+                    <input type="hidden"  name="${_csrf.parameterName}" value="${_csrf.token}"/>
+                    <p:selectOneButton styleClass="bootstrap-icon-select-one-button" unselectable="false"  value="#{flowBean.fieldOfficeMode}" var="ic" id="fieldOfficeSwitchButton">
+                        <f:selectItem  itemLabel="&#xF6A5;" itemValue="OFFICE"/>
+                        <f:selectItem itemLabel="&#xF5AE;" itemValue="FIELD"/>
 
                         <p:ajax event="change" listener="#{flowBean.changeFieldOfficeMode()}" update="flow"
                                 onstart="PF('buiContent').show()" oncomplete="PF('buiContent').hide()"/>

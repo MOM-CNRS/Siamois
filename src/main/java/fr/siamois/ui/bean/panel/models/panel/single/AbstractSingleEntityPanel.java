@@ -29,10 +29,8 @@ import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.Serializable;
 import java.time.OffsetDateTime;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @EqualsAndHashCode(callSuper = true, onlyExplicitlyIncluded = true)
 @Getter
@@ -214,7 +212,7 @@ public abstract class AbstractSingleEntityPanel<T> extends AbstractSingleEntity<
 
     public String lastUpdateDate() {
         bufferedLastRevision = findLastRevisionForEntity();
-        return bufferedLastRevision.getDate().toString();
+        return this.formatUtcDateTime(bufferedLastRevision.getDate());
     }
 
     public String lastUpdater() {
@@ -224,5 +222,18 @@ public abstract class AbstractSingleEntityPanel<T> extends AbstractSingleEntity<
         String result = bufferedLastRevision.revisionEntity().getUpdatedBy().displayName();
         bufferedLastRevision = null;
         return result;
+    }
+
+    /**
+     * Returns all the persons contributing to the unit
+     * @return the list of contributors as a string
+     */
+    public String allUpdaters() {
+        return historyAuditService.findAllContributorsFor(unit.getClass(), idunit)
+                .stream()
+                .map(Person::displayName)
+                .filter(Objects::nonNull)
+                .distinct()
+                .collect(Collectors.joining(", "));
     }
 }

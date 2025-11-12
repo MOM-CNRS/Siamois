@@ -38,7 +38,8 @@
                         <ui:include src="/panel/tab/overviewTab.xhtml">
                             <ui:param name="panelModel" value="#{panelModel}"/>
                             <ui:param name="panelIndex" value="#{panelIndex}"/>
-                            <ui:param name="root" value="singlePanelUnitForm-#{panelIndex}:singlePanelUnitTabs:#{panelModel.getIndexOfTab(tabItem)}"/>
+                            <ui:param name="root"
+                                      value="singlePanelUnitForm-#{panelIndex}:singlePanelUnitTabs:#{panelModel.getIndexOfTab(tabItem)}"/>
                         </ui:include>
                     </ui:fragment>
 
@@ -46,7 +47,8 @@
                         <ui:include src="/panel/tab/detailsTab.xhtml">
                             <ui:param name="panelModel" value="#{panelModel}"/>
                             <ui:param name="panelIndex" value="#{panelIndex}"/>
-                            <ui:param name="root" value="singlePanelUnitForm-#{panelIndex}:singlePanelUnitTabs:#{panelModel.getIndexOfTab(tabItem)}"/>
+                            <ui:param name="root"
+                                      value="singlePanelUnitForm-#{panelIndex}:singlePanelUnitTabs:#{panelModel.getIndexOfTab(tabItem)}"/>
                         </ui:include>
                     </ui:fragment>
 
@@ -96,9 +98,68 @@
             </p:tabView>
 
             <!-- Save/Cancel Toolbar -->
-            <p:toolbar class="panel-footer" >
+            <p:toolbar class="panel-footer">
                 <p:toolbarGroup align="left">
-                    Dernière modification le #{panelModel.lastUpdateDate()} par #{panelModel.lastUpdater()}
+                    <div style="flex-direction: row; display: flex; gap: 1em; align-items: center;">
+                        <div style="display: flex; flex-direction: column">
+                            <div style="display: flex; flex-direction: row; gap:1em">
+                                <small>
+                                    <i>
+                                        Créé le
+                                        <span class="panel-history-colored-span">
+                                      #{panelModel.formatUtcDateTime(panelModel.unit.creationTime, false)}
+                                    </span>
+                                        par
+                                        <span class="panel-history-colored-span">
+                                      #{panelModel.unit.createdBy.displayName()}
+                                    </span>
+                                    </i>
+                                </small>
+                                <small>
+                                    <i>
+                                        Modifié le
+                                        <span class="panel-history-colored-span">
+                                      #{panelModel.lastUpdateDate()}
+                                    </span>
+                                        par
+                                        <span class="panel-history-colored-span">
+                                      #{panelModel.lastUpdater()}
+                                    </span>
+                                    </i>
+                                </small>
+                                <h:panelGroup rendered="#{panelModel.unit.validated}">
+                                    <small>
+                                        <i>
+                                            Validé le
+                                            <span class="panel-history-colored-span">
+                                      #{panelModel.formatUtcDateTime(panelModel.unit.validatedAt, false)}
+                                    </span>
+                                            par
+                                            <span class="panel-history-colored-span">
+                                      #{panelModel.unit.createdBy.displayName()}
+                                    </span>
+                                        </i>
+                                    </small>
+                                </h:panelGroup>
+                            </div>
+
+                            <small>
+                                <i>
+                                    Contributeurs:
+                                    <span class="panel-history-colored-span">
+                                      #{panelModel.allUpdaters()}
+                                    </span>
+                                </i>
+                            </small>
+
+                        </div>
+                        <div>
+                            <p:commandButton disabled="true" icon="bi bi-clock-history">
+
+                            </p:commandButton>
+                        </div>
+                    </div>
+
                 </p:toolbarGroup>
                 <p:toolbarGroup align="right" rendered="#{flowBean.readWriteMode == 'WRITE'}">
                     <p:commandLink value='#{langBean.msg("common.action.cancel")}'
