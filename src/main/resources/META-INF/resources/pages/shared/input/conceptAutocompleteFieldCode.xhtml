@@ -37,6 +37,7 @@
                         converter="#{conceptLabelConverter}"
                         forceSelection="true"
                         scrollHeight="300"
+                        onchange="this.input[0].classList.add('sia-modified-field')"
                         dropdown="true"
                         placeholder="#{langBean.msg('common.action.chooseConcept')}"
                         showEmptyMessage="false"

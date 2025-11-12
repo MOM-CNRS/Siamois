@@ -39,12 +39,13 @@
                 </h:panelGroup>
             </f:facet>
             <f:facet name="input">
-                <h:panelGroup id="input" rendered="true">
+                <h:panelGroup id="inputGroup" rendered="true">
                     <h:panelGroup rendered="#{cc.attrs.field.isTextArea}">
                         <p:inputTextarea value="#{cc.attrs.answer.value}"
                                          style="width: 100%"
                                          styleClass="#{cc.attrs.answer.hasBeenModified ? 'track-change sia-modified-field': 'track-change'}"
                                          label="#{cc.attrs.label}"
+                                         onkeyup="this.classList.add('sia-modified-field')"
                                          required="#{cc.attrs.required}"
                         >
                             <p:ajax event="keyup" delay="1000" update="#{cc.attrs.updateTargetsOnBlur}"
@@ -65,9 +66,11 @@
                         <p:inputText value="#{cc.attrs.answer.value}"
                                      styleClass="#{cc.attrs.answer.hasBeenModified ? 'track-change sia-modified-field': 'track-change'}"
                                      label="#{cc.attrs.label}"
+                                     id="input"
                                      required="#{cc.attrs.required}"
                         >
                             <p:ajax event="keyup" delay="1000" update="#{cc.attrs.updateTargetsOnBlur}"
+                                    onstart="$(PrimeFaces.escapeClientId('#{cc.clientId}:input')).addClass('sia-modified-field')"
                                     process="@this"
                                     listener="#{cc.attrs.panelModel.setFieldAnswerHasBeenModified(cc.attrs.field)}"/>
                         </p:inputText>

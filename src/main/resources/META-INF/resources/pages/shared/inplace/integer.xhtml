@@ -6,8 +6,10 @@
 >
 
     <cc:interface>
-        <cc:attribute name="answer" type="fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerInteger" required="true"/>
-        <cc:attribute name="panelModel" type="fr.siamois.ui.bean.panel.models.panel.single.AbstractSingleEntity" required="true"/>
+        <cc:attribute name="answer" type="fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerInteger"
+                      required="true"/>
+        <cc:attribute name="panelModel" type="fr.siamois.ui.bean.panel.models.panel.single.AbstractSingleEntity"
+                      required="true"/>
         <cc:attribute name="hasBeenModified" type="Boolean" required="false" default="false"/>
         <cc:attribute name="field" type="fr.siamois.domain.models.form.customfield.CustomFieldInteger"
                       required="true"/>
@@ -29,15 +31,17 @@
             <f:facet name="input">
                 <p:inputNumber value="#{cc.attrs.answer.value}"
                                inputStyle="width: 100%"
-                             inputStyleClass="#{cc.attrs.answer.hasBeenModified ? 'track-change sia-modified-field': 'track-change'}"
-                             label="#{cc.attrs.label}"
-                             minValue="#{cc.attrs.field.minValue}"
-                             maxValue="#{cc.attrs.field.maxValue}"
-                             required="#{cc.attrs.required}"
-                             id="input">
+                               inputStyleClass="#{cc.attrs.answer.hasBeenModified ? 'track-change sia-modified-field': 'track-change'}"
+                               label="#{cc.attrs.label}"
+                               minValue="#{cc.attrs.field.minValue}"
+                               maxValue="#{cc.attrs.field.maxValue}"
+                               required="#{cc.attrs.required}"
+
+                               id="input">
                     <p:ajax event="keyup" delay="500" update="#{cc.attrs.updateTargetsOnBlur}"
                             process="@this"
-                            listener="#{cc.attrs.panelModel.setFieldAnswerHasBeenModified(cc.attrs.field)}" />
+                            onstart="$(PrimeFaces.escapeClientId('#{cc.clientId}:input_input')).addClass('sia-modified-field')"
+                            listener="#{cc.attrs.panelModel.setFieldAnswerHasBeenModified(cc.attrs.field)}"/>
                 </p:inputNumber>
             </f:facet>
         </p:inplace>
