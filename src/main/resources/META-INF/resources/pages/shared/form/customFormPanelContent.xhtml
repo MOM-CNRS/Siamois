@@ -43,7 +43,7 @@
                                         hasBeenModified="#{bean.formResponse.answers.get(col.field).hasBeenModified}"
                                         answer="#{bean.formResponse.answers.get(col.field)}"
                                         mode="#{col.readOnly ? 'output' : flowBean.getInPlaceFieldMode()}"
-                                        updateTargetsOnBlur="#{root}:field-#{prefix}-#{statusIndex}-#{rowStatus.index}-#{colStatus.index} panelHeader"
+                                        updateTargetsOnBlur="panel-${panelIndex}-header"
                                 />
 
                                 <siaInplace:integer
@@ -55,7 +55,7 @@
                                         hasBeenModified="#{bean.formResponse.answers.get(col.field).hasBeenModified}"
                                         answer="#{bean.formResponse.answers.get(col.field)}"
                                         mode="#{col.readOnly ? 'output' : flowBean.getInPlaceFieldMode()}"
-                                        updateTargetsOnBlur="#{root}:field-#{prefix}-#{statusIndex}-#{rowStatus.index}-#{colStatus.index} panelHeader"
+                                        updateTargetsOnBlur="panel-${panelIndex}-header"
                                 />
 
 
@@ -82,7 +82,7 @@
                                         label="#{spatialUnitFieldBean.resolveCustomFieldLabel(col.field)}"
                                         mode="#{col.readOnly ? 'output' : flowBean.getInPlaceFieldMode()}"
                                         panelModel="#{bean}"
-                                        updateTargetsOnBlur="#{bean.getConceptFieldsUpdateTargetsOnBlur()}"
+                                        updateTargetsOnBlur="#{bean.getConceptFieldsUpdateTargetsOnBlur(panelIndex)}"
                                         answer="#{bean.getFieldAnswer(col.field)}"/>
 
 
@@ -125,7 +125,7 @@
                                         panelModel="#{bean}"
                                         required="#{col.required}"
                                         label="#{spatialUnitFieldBean.resolveCustomFieldLabel(col.field)}"
-                                        updateTargetsOnBlur="#{root}:field-#{prefix}-#{statusIndex}-#{rowStatus.index}-#{colStatus.index} panelHeader"
+                                        updateTargetsOnBlur="panel-${panelIndex}-header"
                                         answer="#{bean.formResponse.answers.get(col.field)}"/>
 
 
@@ -139,7 +139,7 @@
                                         label="#{spatialUnitFieldBean.resolveCustomFieldLabel(col.field)}"
                                         mode="#{col.readOnly ? 'output' : flowBean.getInPlaceFieldMode()}"
                                         panelModel="#{bean}"
-                                        updateTargetsOnBlur="#{root}:field-#{prefix}-#{statusIndex}-#{rowStatus.index}-#{colStatus.index} panelHeader"
+                                        updateTargetsOnBlur="panel-${panelIndex}-header"
                                         answer="#{bean.formResponse.answers.get(col.field)}"/>
 
 

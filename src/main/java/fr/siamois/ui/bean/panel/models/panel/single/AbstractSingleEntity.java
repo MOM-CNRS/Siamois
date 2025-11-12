@@ -188,12 +188,12 @@ public abstract class AbstractSingleEntity<T> extends AbstractPanel implements S
         return String.valueOf(currentYear);
     }
 
-    public String getConceptFieldsUpdateTargetsOnBlur() {
-        // If new unit panel form, update @this when concept is selected, otherwise @form
+    public String getConceptFieldsUpdateTargetsOnBlur(int panelIndex) {
+        // If new unit panel form, update only header when concept is selected, otherwise @form
         if (this.getClass() == GenericNewUnitDialogBean.class) {
-            return "@this panelHeader";
+            return "panel-"+panelIndex+"-header";
         } else {
-            return "@form panelHeader";
+            return "@form panel-"+panelIndex+"-header";
         }
     }
 
