@@ -23,6 +23,7 @@ import fr.siamois.domain.services.form.FormService;
 import fr.siamois.domain.services.person.PersonService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.specimen.SpecimenService;
+import fr.siamois.infrastructure.database.repositories.SpatialUnitRepository;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.RedirectBean;
 import fr.siamois.ui.bean.panel.models.PanelBreadcrumb;
@@ -105,16 +106,17 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
         return "/panel/header/recordingUnitPanelHeader.xhtml";
     }
 
+    /**
+     * Returns all the spatial units a recording unit can be attached to
+     * @return The list of spatial unit
+     */
     @Override
     public List<SpatialUnit> getSpatialUnitOptions() {
 
-        // Return the spatial context of the parent action
-        if(unit.getActionUnit() != null) {
-            return new ArrayList<>(unit.getActionUnit().getSpatialContext());
-        }
-
-        return List.of();
+        if(unit == null) return Collections.emptyList();
+        return spatialUnitService.getSpatialUnitOptionsFor(unit);
     }
+
 
     @Override
     protected String getFormScopePropertyName() {
@@ -176,10 +178,6 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
         }
 
 
-    }
-
-    public OffsetDateTime localDateToOffsetDateTime(LocalDate localDate) {
-        return localDate.atTime(LocalTime.NOON).atOffset(ZoneOffset.UTC);
     }
 
     public void refreshUnit() {

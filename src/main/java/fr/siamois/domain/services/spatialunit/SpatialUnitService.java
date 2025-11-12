@@ -8,6 +8,7 @@ import fr.siamois.domain.models.exceptions.spatialunit.SpatialUnitAlreadyExistsE
 import fr.siamois.domain.models.exceptions.spatialunit.SpatialUnitNotFoundException;
 import fr.siamois.domain.models.history.RevisionWithInfo;
 import fr.siamois.domain.models.institution.Institution;
+import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.settings.InstitutionSettings;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
@@ -27,10 +28,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Service to manage SpatialUnit
@@ -368,5 +366,32 @@ public class SpatialUnitService implements ArkEntityService {
     public boolean hasCreatePermission(UserInfo user) {
         return permissionService.isInstitutionManager(user)
                 || permissionService.isActionManager(user);
+    }
+
+    /**
+     * Returns all the spatial units a recording unit can be attached to
+     * @param unit The recording unit
+     * @return The list of spatial unit
+     */
+    public List<SpatialUnit> getSpatialUnitOptionsFor(RecordingUnit unit) {
+        if (unit.getActionUnit() == null) return List.of();
+
+        // Roots from the action’s spatial context
+        List<SpatialUnit> roots = new ArrayList<>(unit.getActionUnit().getSpatialContext());
+        List<Long> rootIds = roots.stream()
+                .map(SpatialUnit::getId)
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
+
+        List<SpatialUnit> descendants = rootIds.isEmpty()
+                ? List.of()
+                : spatialUnitRepository.findDescendantsUpToDepth(rootIds.toArray(Long[]::new), 10);
+
+
+        LinkedHashMap<Long, SpatialUnit> byId = new LinkedHashMap<>();
+        roots.forEach(su -> byId.put(su.getId(), su));
+        descendants.forEach(su -> byId.putIfAbsent(su.getId(), su));
+        return new ArrayList<>(byId.values());
     }
 }
