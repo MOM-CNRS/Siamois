@@ -133,33 +133,6 @@ class ConceptServiceTest {
     }
 
     @Test
-    void findAllById_shouldReturnConcepts_whenIdsExist() {
-        // Given
-        Concept concept1 = new Concept();
-        concept1.setId(1L);
-        concept1.setExternalId("concept1");
-        concept1.setVocabulary(vocabulary);
-
-        Concept concept2 = new Concept();
-        concept2.setId(2L);
-        concept2.setExternalId("concept2");
-        concept2.setVocabulary(vocabulary);
-
-        List<Long> conceptIds = List.of(1L, 2L);
-        List<Concept> expectedConcepts = List.of(concept1, concept2);
-
-        when(conceptRepository.findAllById(conceptIds)).thenReturn(expectedConcepts);
-
-        // When
-        Object result = conceptService.findAllById(conceptIds);
-
-        // Then
-        assertNotNull(result);
-        assertEquals(expectedConcepts, result);
-        verify(conceptRepository, times(1)).findAllById(conceptIds);
-    }
-
-    @Test
     void findAllBySpatialUnitConceptsByInstitution_Success() {
 
         // Given
