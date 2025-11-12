@@ -1,38 +1,51 @@
 package fr.siamois.ui.bean.converter;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import fr.siamois.domain.models.institution.Institution;
+import fr.siamois.domain.services.InstitutionService; // or your repo/service layer
 import jakarta.faces.component.UIComponent;
 import jakarta.faces.context.FacesContext;
 import jakarta.faces.convert.Converter;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.io.Serializable;
 
 @Slf4j
-@Component
+@Component("institutionConverter") // make sure this name matches your XHTML
 public class InstitutionConverter implements Converter<Institution>, Serializable {
 
-    private final ObjectMapper  mapper = new ObjectMapper();
+    private transient final InstitutionService institutionService;
+
+    @Autowired
+    public InstitutionConverter(InstitutionService institutionService) {
+        this.institutionService = institutionService;
+    }
 
     @Override
-    public Institution getAsObject(FacesContext facesContext, UIComponent uiComponent, String s) {
+    public Institution getAsObject(FacesContext context, UIComponent component, String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
         try {
-            return mapper.readValue(s, Institution.class);
+            Long id = Long.valueOf(value);
+            return institutionService.findById(id);
         } catch (Exception e) {
-            log.error("Error while converting string institution to object", e);
+            log.error("Error converting Institution id '{}' to object", value, e);
             return null;
         }
     }
 
     @Override
-    public String getAsString(FacesContext facesContext, UIComponent uiComponent, Institution institution) {
+    public String getAsString(FacesContext context, UIComponent component, Institution institution) {
+        if (institution == null || institution.getId() == null) {
+            return "";
+        }
         try {
-            return mapper.writeValueAsString(institution);
+            return String.valueOf(institution.getId());
         } catch (Exception e) {
-            log.error("Error while converting institution to string", e);
-            return null;
+            log.error("Error converting Institution to string", e);
+            return "";
         }
     }
 }

@@ -90,20 +90,33 @@
                             <h:panelGroup id="iconInstit" styleClass="ui-inputgroup-addon">
                                 <i class="bi bi-buildings"/>
                             </h:panelGroup>
-                            <p:outputLabel
-                                    style="background: #fff;
-                                        padding: .5rem .5rem;
-                                        border: 1px  solid #ced4da;
-                                        border-left: 0px;
-                                        outline: 0 none;
-                                        font-size: 1rem;
-                                        transition: background-color .2s,color .2s,border-color .2s,box-shadow .2s,opacity .2s;
-                                        -webkit-appearance: none;
-                                        appearance: none;"
-                                    value="#{navBean.selectedInstitution.name}"
+                            <p:selectOneMenu
+                                    id="selectOneMenuInstitution"
+                                    value="#{flowBean.selectedInstitution}"
+                                    filter="true"
+                                    converter="#{institutionConverter}"
+                                    filterMatchMode="startsWith"
+                                    filterNormalize="true"
+                                    var="inst"
                             >
+                                <f:selectItems value="#{flowBean.institutions}"
+                                               var="item"
+                                               itemValue="#{item}"
+                                               itemLabel="#{item.name}"
+                                />
 
-                            </p:outputLabel>
+                                <p:column>
+                                    <h:outputText value="#{inst.name}"/>
+                                </p:column>
+
+                                <p:ajax event="change"
+                                        process="@this"
+                                        onstart="PF('buiContent').show()"
+                                        oncomplete="PF('buiContent').hide();handleScrollToTop();"
+                                        listener="#{flowBean.onInstitutionChange}"
+                                        />
+
+                            </p:selectOneMenu>
                         </h:panelGroup>
                         <h:panelGroup styleClass="ui-inputgroup">
                             <h:panelGroup id="iconSU" styleClass="ui-inputgroup-addon">

@@ -1,5 +1,6 @@
 package fr.siamois.ui.bean.panel;
 
+import fr.siamois.domain.events.publisher.InstitutionChangeEventPublisher;
 import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.events.InstitutionChangeEvent;
@@ -8,6 +9,7 @@ import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.specimen.Specimen;
+import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.authorization.PermissionService;
 import fr.siamois.domain.services.person.PersonService;
@@ -18,6 +20,7 @@ import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.domain.services.vocabulary.FieldConfigurationService;
 import fr.siamois.domain.services.vocabulary.FieldService;
 import fr.siamois.ui.bean.LangBean;
+import fr.siamois.ui.bean.RedirectBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
 import fr.siamois.ui.bean.panel.models.PanelBreadcrumb;
 import fr.siamois.ui.bean.panel.models.panel.AbstractPanel;
@@ -26,6 +29,8 @@ import fr.siamois.ui.bean.panel.models.panel.single.*;
 import fr.siamois.utils.MessageUtils;
 import jakarta.el.MethodExpression;
 import jakarta.faces.context.FacesContext;
+import jakarta.faces.event.AjaxBehaviorEvent;
+import jakarta.faces.event.ValueChangeEvent;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -67,11 +72,14 @@ public class FlowBean implements Serializable {
     private final transient ConceptService conceptService;
     private final transient StratigraphicRelationshipService stratigraphicRelationshipService;
     private final transient PermissionService permissionService;
+    private final transient InstitutionService institutionService;
+    private final transient InstitutionChangeEventPublisher institutionChangeEventPublisher;
 
     public static final String READ_MODE = "READ";
     public static final String WRITE_MODE = "WRITE";
     public static final String FIELD_MODE = "FIELD";
     public static final String OFFICE_MODE = "OFFICE";
+    private final RedirectBean redirectBean;
 
     // locals
     private transient DashboardModel responsiveModel;
@@ -82,9 +90,11 @@ public class FlowBean implements Serializable {
 
     // Search bar
     private List<SpatialUnit> fSpatialUnits = List.of();
+    private List<Institution> institutions = List.of();
     private List<ActionUnit> fActionUnits = List.of();
     private SpatialUnit fSelectedSpatialUnit;
     private ActionUnit fSelectedActionUnit;
+    private Institution selectedInstitution;
 
     @Getter
     private transient List<AbstractPanel> panels = new ArrayList<>();
@@ -106,12 +116,17 @@ public class FlowBean implements Serializable {
         );
     }
 
+
     public void init() {
         fullscreenPanelIndex = -1;
         panels = new ArrayList<>();
         addWelcomePanel();
         Institution institution = sessionSettings.getSelectedInstitution();
+        UserInfo info = sessionSettings.getUserInfo();
+        institutions = new ArrayList<>();
+        institutions.addAll(institutionService.findInstitutionsOfPerson(info.getUser()));
         fSpatialUnits = spatialUnitService.findAllOfInstitution(institution);
+        selectedInstitution = institution;
     }
 
     @EventListener(InstitutionChangeEvent.class)
@@ -450,5 +465,19 @@ public class FlowBean implements Serializable {
      */
     public boolean isActionUnitCreateAllowed() {
         return actionUnitService.hasCreatePermission(sessionSettings.getUserInfo());
+    }
+
+    /**
+     * When institution changes
+     *
+     * @return
+     */
+    public void onInstitutionChange() {
+        if (selectedInstitution != null) {
+            // Maybe double check that the user has access?
+            sessionSettings.setSelectedInstitution(selectedInstitution);
+            redirectBean.redirectTo("/dashboard");
+            institutionChangeEventPublisher.publishInstitutionChangeEvent();
+        }
     }
 }
