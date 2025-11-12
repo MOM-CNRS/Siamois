@@ -1,8 +1,8 @@
-DROP FUNCTION IF EXISTS concept_autocomplete(BIGINT, VARCHAR, TEXT, INT);
-DROP FUNCTION IF EXISTS concept_autocomplete_get_definition(BIGINT, VARCHAR);
-DROP FUNCTION IF EXISTS concept_autocomplete_get_hierarchy(BIGINT, BIGINT);
-DROP FUNCTION IF EXISTS concept_autocomplete_get_alt_labels(BIGINT, BIGINT, VARCHAR);
-DROP FUNCTION IF EXISTS concept_get_label(BIGINT, BIGINT, VARCHAR);
+DROP FUNCTION IF EXISTS concept_autocomplete;
+DROP FUNCTION IF EXISTS concept_autocomplete_get_definition;
+DROP FUNCTION IF EXISTS concept_autocomplete_get_hierarchy;
+DROP FUNCTION IF EXISTS concept_autocomplete_get_alt_labels;
+DROP FUNCTION IF EXISTS concept_get_label;
 DROP TYPE IF EXISTS concept_autocomplete_record;
 
 CREATE TYPE concept_autocomplete_record AS
@@ -10,12 +10,18 @@ CREATE TYPE concept_autocomplete_record AS
     concept_id                 BIGINT,
     concept_external_id        TEXT,
 
+    parent_concept_id          BIGINT,
+    parent_concept_external_id TEXT,
+
     vocabulary_id              BIGINT,
     vocabulary_base_uri        VARCHAR(255),
     vocabulary_external_id     VARCHAR(255),
 
-    vocabylary_type_id         BIGINT,
+    vocabulary_type_id         BIGINT,
     vocabulary_type_label      TEXT,
+
+    concept_label_id           BIGINT,
+    concept_label_label        citext,
 
     data_aggregated_alt_labels TEXT,
     data_definition            TEXT,
@@ -83,7 +89,7 @@ DECLARE
     v_alt_labels TEXT;
 BEGIN
 
-    SELECT string_agg(cl.label, ',')
+    SELECT string_agg(cl.label, ';#')
     INTO v_alt_labels
     FROM concept_label cl
     WHERE cl.fk_concept_id = p_concept_id
@@ -137,14 +143,14 @@ BEGIN
 
     WHILE v_result_record IS NOT NULL
         LOOP
-        v_parent_label = concept_get_label(v_result_record.fk_parent_concept_id, p_field_concept_id, p_langcode);
-        v_parents := array_prepend(v_parent_label, v_parents);
+            v_parent_label = concept_get_label(v_result_record.fk_parent_concept_id, p_field_concept_id, p_langcode);
+            v_parents := array_prepend(v_parent_label, v_parents);
 
-        SELECT ch.*
-        INTO v_result_record
-        FROM concept_hierarchy ch
-        WHERE ch.fk_child_concept_id = v_result_record.fk_parent_concept_id
-          AND ch.fk_parent_field_context_id = p_field_concept_id;
+            SELECT ch.*
+            INTO v_result_record
+            FROM concept_hierarchy ch
+            WHERE ch.fk_child_concept_id = v_result_record.fk_parent_concept_id
+              AND ch.fk_parent_field_context_id = p_field_concept_id;
         END LOOP;
 
     RETURN array_to_string(v_parents, ' > ');
@@ -166,16 +172,26 @@ BEGIN
     RETURN QUERY
         SELECT c.concept_id,
                c.external_id,
+
+               c2.concept_id,
+               c2.external_id,
+
                v.vocabulary_id,
                v.base_uri,
                v.external_id,
+
                vt.vocabulary_type_id,
                vt.label,
+
+               cl.concept_label_id,
+               cl.label,
+
                concept_autocomplete_get_alt_labels(c.concept_id, p_field_concept_id, p_langcode),
                concept_autocomplete_get_definition(c.concept_id, p_langcode),
                concept_autocomplete_get_hierarchy(c.concept_id, p_field_concept_id, p_langcode)
         FROM concept_label cl
                  JOIN concept c ON cl.fk_concept_id = c.concept_id
+                 JOIN concept c2 ON c2.concept_id = p_field_concept_id
                  JOIN vocabulary v ON c.fk_vocabulary_id = v.vocabulary_id
                  JOIN vocabulary_type vt ON v.fk_type_id = vt.vocabulary_type_id
         WHERE cl.fk_field_parent_concept_id = p_field_concept_id
@@ -187,16 +203,26 @@ BEGIN
     RETURN QUERY
         SELECT c.concept_id,
                c.external_id,
+
+               c2.concept_id,
+               c2.external_id,
+
                v.vocabulary_id,
                v.base_uri,
                v.external_id,
+
                vt.vocabulary_type_id,
                vt.label,
+
+               cl.concept_label_id,
+               cl.label,
+
                concept_autocomplete_get_alt_labels(c.concept_id, p_field_concept_id, p_langcode),
                concept_autocomplete_get_definition(c.concept_id, p_langcode),
                concept_autocomplete_get_hierarchy(c.concept_id, p_field_concept_id, p_langcode)
         FROM concept_label cl
                  JOIN concept c ON cl.fk_concept_id = c.concept_id
+                 JOIN concept c2 ON c2.concept_id = p_field_concept_id
                  JOIN vocabulary v ON c.fk_vocabulary_id = v.vocabulary_id
                  JOIN vocabulary_type vt ON v.fk_type_id = vt.vocabulary_type_id
         WHERE cl.fk_field_parent_concept_id = p_field_concept_id
