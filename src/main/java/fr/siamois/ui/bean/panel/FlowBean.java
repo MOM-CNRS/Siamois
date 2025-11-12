@@ -1,6 +1,7 @@
 package fr.siamois.ui.bean.panel;
 
 import fr.siamois.domain.events.publisher.InstitutionChangeEventPublisher;
+import fr.siamois.domain.events.publisher.LoginEventPublisher;
 import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.events.InstitutionChangeEvent;
@@ -80,6 +81,7 @@ public class FlowBean implements Serializable {
     public static final String FIELD_MODE = "FIELD";
     public static final String OFFICE_MODE = "OFFICE";
     private final RedirectBean redirectBean;
+    private final transient LoginEventPublisher loginEventPublisher;
 
     // locals
     private transient DashboardModel responsiveModel;
@@ -185,7 +187,7 @@ public class FlowBean implements Serializable {
         }
 
         //if fullscreen set this new panel as the active one
-        if(fullscreenPanelIndex >= 0) {
+        if (fullscreenPanelIndex >= 0) {
             fullscreenPanelIndex = 0;
         }
 
@@ -198,7 +200,6 @@ public class FlowBean implements Serializable {
         addPanel(panelFactory.createWelcomePanel());
 
     }
-
 
 
     public void addActionUnitPanel(Long actionUnitId) {
@@ -227,43 +228,42 @@ public class FlowBean implements Serializable {
     }
 
 
-
-    public void  goToRecordingUnitByIdCurrentPanel(Long id, Integer currentPanelIndex) {
+    public void goToRecordingUnitByIdCurrentPanel(Long id, Integer currentPanelIndex) {
 
         RecordingUnitPanel newPanel = panelFactory.createRecordingUnitPanel(id, panels.get(currentPanelIndex).getBreadcrumb());
         panels.set(currentPanelIndex, newPanel);
 
     }
 
-    public void  goToRecordingUnitByIdNewPanel(Long id, Integer currentPanelIndex) {
+    public void goToRecordingUnitByIdNewPanel(Long id, Integer currentPanelIndex) {
 
         RecordingUnitPanel newPanel = panelFactory.createRecordingUnitPanel(id, panels.get(currentPanelIndex).getBreadcrumb());
         addPanel(newPanel);
 
     }
 
-    public void  goToRecordingUnitByIdNewPanel(Long id, Integer currentPanelIndex, Integer tabIndex) {
+    public void goToRecordingUnitByIdNewPanel(Long id, Integer currentPanelIndex, Integer tabIndex) {
 
         RecordingUnitPanel newPanel = panelFactory.createRecordingUnitPanel(id, panels.get(currentPanelIndex).getBreadcrumb(), tabIndex);
         addPanel(newPanel);
 
     }
 
-    public void  goToRecordingUnitByIdNewPanel(Long id, AbstractPanel panel) {
+    public void goToRecordingUnitByIdNewPanel(Long id, AbstractPanel panel) {
 
         RecordingUnitPanel newPanel = panelFactory.createRecordingUnitPanel(id, panel.getBreadcrumb());
         addPanel(newPanel);
 
     }
 
-    public void  goToSpecimenByIdNewPanel(Long id, AbstractPanel currentPanel) {
+    public void goToSpecimenByIdNewPanel(Long id, AbstractPanel currentPanel) {
 
         SpecimenPanel newPanel = panelFactory.createSpecimenPanel(id, currentPanel.getBreadcrumb());
         addPanel(newPanel);
 
     }
 
-    public void  goToSpecimenByIdNewPanel(Long id, Integer currentPanelIndex) {
+    public void goToSpecimenByIdNewPanel(Long id, Integer currentPanelIndex) {
 
         SpecimenPanel newPanel = panelFactory.createSpecimenPanel(id, panels.get(currentPanelIndex).getBreadcrumb());
         addPanel(newPanel);
@@ -323,8 +323,7 @@ public class FlowBean implements Serializable {
         addPanel(panelFactory.createSpatialUnitPanel(id));
     }
 
-    public void handleToggleOfPanelAtIndex(int idx)
-    {
+    public void handleToggleOfPanelAtIndex(int idx) {
         AbstractPanel panel = panels.get(idx);
         panel.setCollapsed(!panel.getCollapsed());
     }
@@ -347,8 +346,8 @@ public class FlowBean implements Serializable {
         }
 
         // If fullscreen, update the whole flow and check that the index is valid
-        if(fullscreenPanelIndex > 0) {
-            if(fullscreenPanelIndex > panels.size() - 1) {
+        if (fullscreenPanelIndex > 0) {
+            if (fullscreenPanelIndex > panels.size() - 1) {
                 fullscreenPanelIndex = 0;
             }
             PrimeFaces.current().ajax().update("flow");
@@ -473,11 +472,16 @@ public class FlowBean implements Serializable {
      * @return
      */
     public void onInstitutionChange() {
-        if (selectedInstitution != null) {
-            // Maybe double check that the user has access?
+        if (selectedInstitution != null
+                && (institutionService.personIsInInstitution(sessionSettings.getUserInfo().getUser(), selectedInstitution)
+        || institutionService.isManagerOf(selectedInstitution, sessionSettings.getUserInfo().getUser()))) {
             sessionSettings.setSelectedInstitution(selectedInstitution);
-            redirectBean.redirectTo("/dashboard");
+            PrimeFaces.current().ajax().update("navBar","flow");
             institutionChangeEventPublisher.publishInstitutionChangeEvent();
+            loginEventPublisher.publishLoginEvent();
+        }
+        else {
+            selectedInstitution = sessionSettings.getSelectedInstitution();
         }
     }
 }
