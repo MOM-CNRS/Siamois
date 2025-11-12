@@ -129,7 +129,8 @@
 /* dialogs */
 
 .sia-new-unit-dialog.ui-dialog .ui-dialog-titlebar {
-  padding: 0;
+  padding: 1em;
+  background: var(--light-color-100);
 }
 
 .sia-new-unit-dialog.ui-dialog .ui-dialog-footer {

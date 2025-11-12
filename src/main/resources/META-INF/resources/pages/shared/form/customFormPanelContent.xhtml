@@ -43,7 +43,7 @@
                                         hasBeenModified="#{bean.formResponse.answers.get(col.field).hasBeenModified}"
                                         answer="#{bean.formResponse.answers.get(col.field)}"
                                         mode="#{col.readOnly ? 'output' : flowBean.getInPlaceFieldMode()}"
-                                        updateTargetsOnBlur="panel-${panelIndex}-header"
+                                        updateTargetsOnBlur="#{bean.getPanelHeaderUpdateId(panelIndex)}"
                                 />
 
                                 <siaInplace:integer
@@ -55,7 +55,7 @@
                                         hasBeenModified="#{bean.formResponse.answers.get(col.field).hasBeenModified}"
                                         answer="#{bean.formResponse.answers.get(col.field)}"
                                         mode="#{col.readOnly ? 'output' : flowBean.getInPlaceFieldMode()}"
-                                        updateTargetsOnBlur="panel-${panelIndex}-header"
+                                        updateTargetsOnBlur="#{bean.getPanelHeaderUpdateId(panelIndex)}"
                                 />
 
 
@@ -68,7 +68,7 @@
                                         hasBeenModified="#{bean.formResponse.answers.get(col.field).hasBeenModified}"
                                         answer="#{bean.formResponse.answers.get(col.field)}"
                                         mode="#{col.readOnly ? 'output' : flowBean.getInPlaceFieldMode()}"
-                                        updateTargetsOnBlur="#{root}:field-#{prefix}-#{statusIndex}-#{rowStatus.index}-#{colStatus.index} panelHeader"
+                                        updateTargetsOnBlur="#{root}:field-#{prefix}-#{statusIndex}-#{rowStatus.index}-#{colStatus.index} #{bean.getPanelHeaderUpdateId(panelIndex)}"
                                 >
 
                                 </siaInplace:datePicker>
@@ -100,7 +100,7 @@
                                         panelModel="#{bean}"
                                         required="#{col.required}"
                                         label="#{spatialUnitFieldBean.resolveCustomFieldLabel(col.field)}"
-                                        updateTargetsOnBlur="#{root}:field-#{prefix}-#{statusIndex}-#{rowStatus.index}-#{colStatus.index} panelHeader"
+                                        updateTargetsOnBlur="#{root}:field-#{prefix}-#{statusIndex}-#{rowStatus.index}-#{colStatus.index} #{bean.getPanelHeaderUpdateId(panelIndex)}}"
                                         answer="#{bean.formResponse.answers.get(col.field)}"/>
 
 
@@ -112,7 +112,7 @@
                                         panelModel="#{bean}"
                                         required="#{col.required}"
                                         label="#{spatialUnitFieldBean.resolveCustomFieldLabel(col.field)}"
-                                        updateTargetsOnBlur="#{root}:field-#{prefix}-#{statusIndex}-#{rowStatus.index}-#{colStatus.index} panelHeader"
+                                        updateTargetsOnBlur="#{root}:field-#{prefix}-#{statusIndex}-#{rowStatus.index}-#{colStatus.index} #{bean.getPanelHeaderUpdateId(panelIndex)}"
                                         answer="#{bean.formResponse.answers.get(col.field)}"/>
 
 
@@ -125,7 +125,7 @@
                                         panelModel="#{bean}"
                                         required="#{col.required}"
                                         label="#{spatialUnitFieldBean.resolveCustomFieldLabel(col.field)}"
-                                        updateTargetsOnBlur="panel-${panelIndex}-header"
+                                        updateTargetsOnBlur="#{bean.getPanelHeaderUpdateId(panelIndex)}"
                                         answer="#{bean.formResponse.answers.get(col.field)}"/>
 
 
@@ -139,7 +139,7 @@
                                         label="#{spatialUnitFieldBean.resolveCustomFieldLabel(col.field)}"
                                         mode="#{col.readOnly ? 'output' : flowBean.getInPlaceFieldMode()}"
                                         panelModel="#{bean}"
-                                        updateTargetsOnBlur="panel-${panelIndex}-header"
+                                        updateTargetsOnBlur="#{bean.getPanelHeaderUpdateId(panelIndex)}"
                                         answer="#{bean.formResponse.answers.get(col.field)}"/>
 
 
@@ -150,7 +150,7 @@
                                         field="#{col.field}"
                                         mode="#{col.readOnly ? 'output' : flowBean.getInPlaceFieldMode()}"
                                         panelModel="#{bean}"
-                                        updateTargetsOnBlur="#{root}:field-#{prefix}-#{statusIndex}-#{rowStatus.index}-#{colStatus.index} panelHeader"
+                                        updateTargetsOnBlur="#{root}:field-#{prefix}-#{statusIndex}-#{rowStatus.index}-#{colStatus.index} #{bean.getPanelHeaderUpdateId(panelIndex)}"
                                         answer="#{bean.formResponse.answers.get(col.field)}"/>
 
                                 <!-- Select one code OA -->
@@ -163,7 +163,7 @@
                                         hasBeenModified="#{bean.formResponse.answers.get(col.field).hasBeenModified}"
                                         answer="#{bean.formResponse.answers.get(col.field)}"
                                         mode="#{col.readOnly ? 'output' : flowBean.getInPlaceFieldMode()}"
-                                        updateTargetsOnBlur="#{root}:field-#{prefix}-#{statusIndex}-#{rowStatus.index}-#{colStatus.index} panelHeader"
+                                        updateTargetsOnBlur="#{root}:field-#{prefix}-#{statusIndex}-#{rowStatus.index}-#{colStatus.index} #{bean.getPanelHeaderUpdateId(panelIndex)}"
                                 />
 
 
