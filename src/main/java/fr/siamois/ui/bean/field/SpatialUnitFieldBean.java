@@ -142,6 +142,9 @@ public class SpatialUnitFieldBean implements Serializable {
 
 
     public String resolvePanelLabel(CustomFormPanel p) {
+        if(p == null) {
+            return langBean.msg("common.panel.title.undefined");
+        }
         if(Boolean.TRUE.equals(p.getIsSystemPanel())) {
             return langBean.msg(p.getName());
         }
