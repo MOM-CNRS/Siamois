@@ -23,7 +23,6 @@ import fr.siamois.domain.services.form.FormService;
 import fr.siamois.domain.services.person.PersonService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.specimen.SpecimenService;
-import fr.siamois.infrastructure.database.repositories.SpatialUnitRepository;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.RedirectBean;
 import fr.siamois.ui.bean.panel.models.PanelBreadcrumb;
@@ -44,7 +43,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 
 import java.io.Serializable;
-import java.time.*;
+import java.time.LocalDateTime;
+import java.time.Month;
+import java.time.OffsetDateTime;
 import java.util.*;
 
 @Slf4j
