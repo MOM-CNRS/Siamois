@@ -18,11 +18,33 @@
     </ui:define>
 
     <ui:define name="content">
+
+        <script>
+            function startProgressBar() {
+                const bars = document.getElementsByClassName('thesaurus-progress-bar');
+                for (const bar of bars) {
+                    bar.style.visibility = 'visible';
+                }
+                PF('pbAjaxUserLoadWidget').start();
+            }
+
+            function endProgressBar() {
+                const bars = document.getElementsByClassName('thesaurus-progress-bar');
+                for (const bar of bars) {
+                    bar.style.visibility = 'collapse';
+                }
+                PF('pbAjaxUserLoadWidget').cancel();
+            }
+        </script>
+
         <main>
             <settingscomp:fieldValue
                     title="#{langBean.msg('nav.myThesaurus')}"
                     formId="thesaurusForm"
                     saveMethod="#{profileSettingsBean.saveThesaurusUserConfig()}"
+                    update="pbAjaxUserLoad"
+                    onstart="startProgressBar()"
+                    oncomplete="endProgressBar()"
             >
                 <div>
                     <p style="font-style: italic">
@@ -35,6 +57,16 @@
                 <settingscomp:fieldValueRow label="#{langBean.msg('myThesaurus.url')}" inputId="profile-thesaurus">
                     <p:inputText id="profile-thesaurus" value="#{profileSettingsBean.FThesaurusUrl}"/>
                 </settingscomp:fieldValueRow>
+                <p:progressBar widgetVar="pbAjaxUserLoadWidget"
+                               id="pbAjaxUserLoad"
+                               ajax="true"
+                               value="#{profileSettingsBean.progressWrapper.progressPercentage}"
+                               labelTemplate="{value}%"
+                               styleClass="mt-3 thesaurus-progress-bar"
+                               global="true"
+                               interval="500"
+                               style="visibility: collapse"
+                />
             </settingscomp:fieldValue>
         </main>
     </ui:define>

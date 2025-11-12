@@ -12,6 +12,25 @@
     </ui:define>
 
     <ui:define name="content">
+
+        <script>
+            function startProgressBar() {
+                const bars = document.getElementsByClassName('thesaurus-progress-bar');
+                for (const bar of bars) {
+                    bar.style.visibility = 'visible';
+                }
+                PF('pbAjaxThesaurusLoadWidget').start();
+            }
+
+            function endProgressBar() {
+                const bars = document.getElementsByClassName('thesaurus-progress-bar');
+                for (const bar of bars) {
+                    bar.style.visibility = 'collapse';
+                }
+                PF('pbAjaxThesaurusLoadWidget').cancel();
+            }
+        </script>
+
         <main>
             <form:csrfform formId="breadCrumbForm" styleClass="breadCrumpForm">
                 <p:breadCrumb homeDisplay="false">
@@ -26,6 +45,9 @@
                     formId="thesaurusForm"
                     saveMethod="#{institutionThesaurusSettingsBean.saveConfig()}"
                     cancelMethod="#{institutionDetailsBean.backToInstitutionSettings()}"
+                    update="pbAjaxThesaurusLoad"
+                    onstart="startProgressBar()"
+                    oncomplete="endProgressBar()"
             >
                 <p:messages showDetail="true" autoUpdate="true" closable="true" id="messages"/>
 
@@ -40,6 +62,18 @@
                 <settingscomp:fieldValueRow label="#{langBean.msg('myThesaurus.url')}" inputId="profile-thesaurus" >
                     <p:inputText id="profile-thesaurus" value="#{institutionThesaurusSettingsBean.thesaurusUrl}"/>
                 </settingscomp:fieldValueRow>
+
+                <p:progressBar widgetVar="pbAjaxThesaurusLoadWidget"
+                               id="pbAjaxThesaurusLoad"
+                               ajax="true"
+                               value="#{institutionThesaurusSettingsBean.progressWrapper.progressPercentage}"
+                               labelTemplate="{value}%"
+                               styleClass="mt-3 thesaurus-progress-bar"
+                               global="true"
+                               interval="500"
+                               style="visibility: collapse"
+                />
+
             </settingscomp:fieldValue>
         </main>
     </ui:define>

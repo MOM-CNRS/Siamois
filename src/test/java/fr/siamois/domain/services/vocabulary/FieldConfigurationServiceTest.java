@@ -6,6 +6,7 @@ import fr.siamois.domain.models.exceptions.ErrorProcessingExpansionException;
 import fr.siamois.domain.models.exceptions.api.NotSiamoisThesaurusException;
 import fr.siamois.domain.models.exceptions.vocabulary.NoConfigForFieldException;
 import fr.siamois.domain.models.institution.Institution;
+import fr.siamois.domain.models.misc.ProgressWrapper;
 import fr.siamois.domain.models.settings.ConceptFieldConfig;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
@@ -108,14 +109,14 @@ class FieldConfigurationServiceTest {
             concept.setExternalId(dto.getIdentifier()[0].getValue());
             return concept;
         }).when(conceptService).saveOrGetConceptFromFullDTO(any(Vocabulary.class), any(FullInfoDTO.class), eq(null));
-        when(conceptFieldConfigRepository.findByFieldCodeForInstitution(eq(userInfo.getInstitution().getId()), anyString())).thenReturn(Optional.empty());
+        when(conceptFieldConfigRepository.findOneByFieldCodeForInstitution(eq(userInfo.getInstitution().getId()), anyString())).thenReturn(Optional.empty());
         when(conceptFieldConfigRepository.save(any(ConceptFieldConfig.class))).thenAnswer(i -> i.getArgument(0));
 
         Optional<FeedbackFieldConfig> result = service.setupFieldConfigurationForInstitution(userInfo, vocabulary);
 
         assertThat(result).isEmpty();
         verify(conceptFieldConfigRepository, times(2)).save(any(ConceptFieldConfig.class));
-        verify(conceptService, times(2)).saveAllSubConceptOfIfUpdated(any(ConceptFieldConfig.class));
+        verify(conceptService, times(2)).saveAllSubConceptOfIfUpdated(any(ConceptFieldConfig.class), any(ProgressWrapper.class));
     }
 
     @Test
@@ -152,14 +153,14 @@ class FieldConfigurationServiceTest {
             concept.setExternalId(dto.getIdentifier()[0].getValue());
             return concept;
         }).when(conceptService).saveOrGetConceptFromFullDTO(any(Vocabulary.class), any(FullInfoDTO.class), eq(null));
-        when(conceptFieldConfigRepository.findByFieldCodeForUser(eq(userInfo.getUser().getId()), eq(userInfo.getInstitution().getId()),anyString())).thenReturn(Optional.empty());
+        when(conceptFieldConfigRepository.findOneByFieldCodeForUser(eq(userInfo.getUser().getId()), eq(userInfo.getInstitution().getId()),anyString())).thenReturn(Optional.empty());
         when(conceptFieldConfigRepository.save(any(ConceptFieldConfig.class))).thenAnswer(i -> i.getArgument(0));
 
         Optional<FeedbackFieldConfig> result = service.setupFieldConfigurationForUser(userInfo, vocabulary);
 
         assertThat(result).isEmpty();
         verify(conceptFieldConfigRepository, times(2)).save(any(ConceptFieldConfig.class));
-        verify(conceptService, times(2)).saveAllSubConceptOfIfUpdated(any(ConceptFieldConfig.class));
+        verify(conceptService, times(2)).saveAllSubConceptOfIfUpdated(any(ConceptFieldConfig.class), any(ProgressWrapper.class));
     }
 
     @Test
@@ -207,7 +208,7 @@ class FieldConfigurationServiceTest {
         cfc.setConcept(concept);
         cfc.setFieldCode(SpatialUnit.CATEGORY_FIELD_CODE);
 
-        when(conceptFieldConfigRepository.findByFieldCodeForInstitution(userInfo.getInstitution().getId(), SpatialUnit.CATEGORY_FIELD_CODE))
+        when(conceptFieldConfigRepository.findOneByFieldCodeForInstitution(userInfo.getInstitution().getId(), SpatialUnit.CATEGORY_FIELD_CODE))
                 .thenReturn(Optional.of(cfc));
 
         Concept result = service.findParentConceptForFieldcode(userInfo, SpatialUnit.CATEGORY_FIELD_CODE);
@@ -242,7 +243,7 @@ class FieldConfigurationServiceTest {
         cfc.setConcept(concept);
         cfc.setFieldCode(SpatialUnit.CATEGORY_FIELD_CODE);
 
-        when(conceptFieldConfigRepository.findByFieldCodeForInstitution(userInfo.getInstitution().getId(), SpatialUnit.CATEGORY_FIELD_CODE))
+        when(conceptFieldConfigRepository.findOneByFieldCodeForInstitution(userInfo.getInstitution().getId(), SpatialUnit.CATEGORY_FIELD_CODE))
                 .thenReturn(Optional.of(cfc));
 
         String result = service.getUrlForFieldCode(userInfo, SpatialUnit.CATEGORY_FIELD_CODE);
@@ -266,7 +267,7 @@ class FieldConfigurationServiceTest {
         cfc.setConcept(concept);
         cfc.setFieldCode(SpatialUnit.CATEGORY_FIELD_CODE);
 
-        when(conceptFieldConfigRepository.findByFieldCodeForInstitution(userInfo.getInstitution().getId(), SpatialUnit.CATEGORY_FIELD_CODE))
+        when(conceptFieldConfigRepository.findOneByFieldCodeForInstitution(userInfo.getInstitution().getId(), SpatialUnit.CATEGORY_FIELD_CODE))
                 .thenReturn(Optional.of(cfc));
 
         ConceptFieldConfig result = service.findConfigurationForFieldCode(userInfo, SpatialUnit.CATEGORY_FIELD_CODE);
