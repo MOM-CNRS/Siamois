@@ -83,7 +83,7 @@ public class AutocompleteRepository {
                                                                @NonNull String lang,
                                                                @Nullable String input,
                                                                int limit) {
-        Set<ConceptAutocompleteDTO> results = new HashSet<>();
+        List<ConceptAutocompleteDTO> results = new ArrayList<>();
 
         try (Connection connection = dataSource.getConnection();
              PreparedStatement statement = connection.prepareStatement("SELECT * FROM concept_autocomplete(?, ?, ?, ?)");) {
@@ -99,7 +99,7 @@ public class AutocompleteRepository {
                     addAllAltLabelsToResults(lang, dto, results);
                     results.add(dto);
                 }
-                return new ArrayList<>(results);
+                return results;
             } catch (Exception e) {
                 log.error("Error while processing result set for concept autocomplete for concept id {}: {}", concept.getId(), e.getMessage(), e);
                 return List.of();
@@ -111,7 +111,7 @@ public class AutocompleteRepository {
 
     }
 
-    private static void addAllAltLabelsToResults(String lang, ConceptAutocompleteDTO dto, Set<ConceptAutocompleteDTO> results) {
+    private static void addAllAltLabelsToResults(String lang, ConceptAutocompleteDTO dto, List<ConceptAutocompleteDTO> results) {
         Concept currentConcept = dto.getConceptLabelToDisplay().getConcept();
         for (String altLabel : dto.getAltLabels()) {
             ConceptAltLabel unsavedAltLabel = new ConceptAltLabel();
