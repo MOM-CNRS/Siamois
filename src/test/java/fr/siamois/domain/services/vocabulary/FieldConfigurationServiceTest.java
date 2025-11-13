@@ -16,8 +16,10 @@ import fr.siamois.domain.models.vocabulary.VocabularyType;
 import fr.siamois.infrastructure.api.ConceptApi;
 import fr.siamois.infrastructure.api.dto.ConceptBranchDTO;
 import fr.siamois.infrastructure.api.dto.FullInfoDTO;
+import fr.siamois.infrastructure.database.repositories.vocabulary.AutocompleteRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptFieldConfigRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRepository;
+import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -47,6 +49,10 @@ class FieldConfigurationServiceTest {
 
     @Mock
     private LabelService labelService;
+
+    @Mock
+    private AutocompleteRepository autocompleteRepository;
+
     @Mock
     private ConceptFieldConfigRepository conceptFieldConfigRepository;
 
@@ -287,6 +293,37 @@ class FieldConfigurationServiceTest {
         String query = "test query";
 
         assertThrows(NoConfigForFieldException.class, () -> service.fetchAutocomplete(userInfo, fieldCode, query));
+    }
+
+    @Test
+    void fetchAutocomplete_shouldReturnResults_whenConfigExists() throws NoConfigForFieldException {
+        String fieldCode = "TESTFIELD";
+        String query = "test query";
+
+        ConceptFieldConfig cfc = new ConceptFieldConfig();
+        Concept concept = new Concept();
+        concept.setVocabulary(vocabulary);
+        concept.setExternalId("12");
+        cfc.setConcept(concept);
+        cfc.setFieldCode(fieldCode);
+
+        when(conceptFieldConfigRepository.findOneByFieldCodeForInstitution(userInfo.getInstitution().getId(), fieldCode))
+                .thenReturn(Optional.of(cfc));
+
+        List<ConceptAutocompleteDTO> expectedResults = List.of(
+                new ConceptAutocompleteDTO(new Concept(), "Concept 100", "100"),
+                new ConceptAutocompleteDTO(new Concept(), "Concept 101", "101")
+        );
+        when(autocompleteRepository.findMatchingConceptsFor(cfc.getConcept(), "fr",query, 200)).thenReturn(expectedResults);
+
+        List<ConceptAutocompleteDTO> results = service.fetchAutocomplete(userInfo, fieldCode, query);
+
+        assertThat(results).isEqualTo(expectedResults);
+    }
+
+    @Test
+    void resultLimit_shoudReturnCurrentResultLimit() {
+        assertThat(service.resultLimit()).isEqualTo(FieldConfigurationService.LIMIT_RESULTS);
     }
 
 }

@@ -7,9 +7,7 @@ import fr.siamois.domain.models.document.DocumentParent;
 import fr.siamois.domain.models.events.LoginEvent;
 import fr.siamois.domain.models.exceptions.InvalidFileSizeException;
 import fr.siamois.domain.models.exceptions.InvalidFileTypeException;
-import fr.siamois.domain.models.exceptions.vocabulary.NoConfigForFieldException;
 import fr.siamois.domain.models.vocabulary.Concept;
-import fr.siamois.domain.models.vocabulary.label.ConceptLabel;
 import fr.siamois.domain.services.ark.ArkService;
 import fr.siamois.domain.services.document.DocumentService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
@@ -86,15 +84,8 @@ public class DocumentCreationBean implements Serializable {
 
     public List<Concept> autocomplete(String fieldCode, String input) {
         log.trace("Autocomplete order received");
-
-        try {
-            return fieldConfigurationService.fetchAutocomplete(
-                    sessionSettingsBean.getUserInfo(),
-                    fieldCode,
-                    input).stream().map(ConceptLabel::getConcept).toList();
-        } catch (NoConfigForFieldException e) {
-            return List.of();
-        }
+        log.trace("Autocomplete is ignored for the moment, returning empty list for {} and input {}", fieldCode, input);
+        return List.of();
     }
 
     public List<Concept> autocompleteNature(String input) {
