@@ -86,29 +86,33 @@ public class AutocompleteRepository {
         List<ConceptAutocompleteDTO> results = new ArrayList<>();
 
         try (Connection connection = dataSource.getConnection();
-             PreparedStatement statement = connection.prepareStatement("SELECT * FROM concept_autocomplete(?, ?, ?, ?)");) {
+             PreparedStatement statement = connection.prepareStatement("SELECT ca.* FROM concept_autocomplete(?, ?, ?, ?) ca");) {
             log.trace("Executing concept autocomplete with concept id {}, lang {}, input '{}', limit {}", concept.getId(), lang, input, limit);
             statement.setLong(1, concept.getId());
             statement.setString(2, lang);
             statement.setString(3, input != null ? input : "");
             statement.setInt(4, limit);
 
-            try (ResultSet resultSet = statement.executeQuery()) {
-                while (resultSet.next()) {
-                    ConceptAutocompleteDTO dto = rowToDTO(resultSet, lang);
-                    addAllAltLabelsToResults(lang, dto, results);
-                    results.add(dto);
-                }
-                return results;
-            } catch (Exception e) {
-                log.error("Error while processing result set for concept autocomplete for concept id {}: {}", concept.getId(), e.getMessage(), e);
-                return List.of();
-            }
+            return processResultSet(concept, lang, statement, results);
         } catch (SQLException e) {
             log.error("Error while fetching autocomplete results for concept id {}: {}", concept.getId(), e.getMessage(), e);
             return List.of();
         }
 
+    }
+
+    private List<ConceptAutocompleteDTO> processResultSet(Concept concept, String lang, PreparedStatement statement, List<ConceptAutocompleteDTO> results) {
+        try (ResultSet resultSet = statement.executeQuery()) {
+            while (resultSet.next()) {
+                ConceptAutocompleteDTO dto = rowToDTO(resultSet, lang);
+                addAllAltLabelsToResults(lang, dto, results);
+                results.add(dto);
+            }
+            return results;
+        } catch (Exception e) {
+            log.error("Error while processing result set for concept autocomplete for concept id {}: {}", concept.getId(), e.getMessage(), e);
+            return List.of();
+        }
     }
 
     private static void addAllAltLabelsToResults(String lang, ConceptAutocompleteDTO dto, List<ConceptAutocompleteDTO> results) {
