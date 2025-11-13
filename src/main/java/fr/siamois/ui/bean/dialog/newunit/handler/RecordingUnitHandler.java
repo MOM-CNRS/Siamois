@@ -44,7 +44,9 @@ public class RecordingUnitHandler implements INewUnitHandler<RecordingUnit> {
 
     @Override public UnitKind kind() { return UnitKind.RECORDING; }
     @Override public RecordingUnit newEmpty() {
-        return new RecordingUnit();
+        RecordingUnit recordingUnit = new RecordingUnit();
+        recordingUnit.setOpeningDate(OffsetDateTime.now());
+        return recordingUnit;
     }
     @Override public RecordingUnit save(UserInfo u, RecordingUnit unit) throws EntityAlreadyExistsException {
         return recordingUnitService.save(unit, unit.getType(), null, null, null); }
