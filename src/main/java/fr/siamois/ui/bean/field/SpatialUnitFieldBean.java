@@ -11,6 +11,7 @@ import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.domain.services.vocabulary.FieldConfigurationService;
 import fr.siamois.domain.services.vocabulary.FieldService;
+import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
 import fr.siamois.ui.bean.LabelBean;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.RedirectBean;
@@ -29,6 +30,7 @@ import javax.faces.bean.SessionScoped;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 import static fr.siamois.utils.MessageUtils.displayErrorMessage;
 
@@ -112,7 +114,7 @@ public class SpatialUnitFieldBean implements Serializable {
      * @param input the input of the user
      * @return the list of concepts that match the input to display in the autocomplete
      */
-    public List<ConceptLabel> completeWithFieldCode(String input) {
+    public List<ConceptAutocompleteDTO> completeWithFieldCode(String input) {
         String fieldCode = "Undefined";
         try {
             FacesContext context = FacesContext.getCurrentInstance();

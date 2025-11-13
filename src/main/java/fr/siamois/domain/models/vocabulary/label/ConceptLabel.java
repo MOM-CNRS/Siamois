@@ -5,6 +5,7 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.io.Serializable;
 import java.util.Objects;
 
 /**
@@ -21,7 +22,7 @@ import java.util.Objects;
 })
 @Inheritance(strategy = InheritanceType.SINGLE_TABLE)
 @DiscriminatorColumn(name = "label_type", discriminatorType = DiscriminatorType.INTEGER)
-public abstract class ConceptLabel {
+public abstract class ConceptLabel implements Serializable {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

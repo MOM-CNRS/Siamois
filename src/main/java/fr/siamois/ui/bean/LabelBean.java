@@ -106,26 +106,6 @@ public class LabelBean implements Serializable {
                 .collect(Collectors.joining(", "));
     }
 
-    /**
-     * Find description for a given concept in the current language
-     *
-     * @param concept the concept to find the description for
-     * @return The description or null if not found
-     */
-    public String findDescriptionOfConcept(Concept concept) {
-        LocalizedConceptData conceptDataOrNull = conceptService.getLocalizedConceptDataByConceptAndLangCode(
-                concept,
-                sessionSettingsBean.getUserInfo().getLang()
-        );
-        if(conceptDataOrNull == null) return "";
-        return truncate(conceptDataOrNull.getDefinition());
-    }
-
-    private String truncate(String text) {
-        if (text == null) return "";
-        return text.length() > 200 ? text.substring(0, 200) + "..." : text;
-    }
-
     public String findVocabularyLabelOf(Concept concept) {
         if (concept == null) return null;
         UserInfo info = sessionSettingsBean.getUserInfo();
@@ -186,6 +166,10 @@ public class LabelBean implements Serializable {
         public int hashCode() {
             return Objects.hash(label, fieldCode);
         }
+    }
+
+    public String getCurrentUserLang() {
+        return sessionSettingsBean.getUserInfo().getLang();
     }
 
 }

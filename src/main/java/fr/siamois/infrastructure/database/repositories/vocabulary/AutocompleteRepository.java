@@ -29,7 +29,9 @@ public class AutocompleteRepository {
 
     private final HikariDataSource dataSource;
 
-    private ConceptAutocompleteDTO rowToDTO(ResultSet resultSet) throws SQLException {
+    public static final int DESCRIPTION_TRUNCATE_LENGTH = 200;
+
+    private ConceptAutocompleteDTO rowToDTO(ResultSet resultSet, String langcode) throws SQLException {
         VocabularyType type = new VocabularyType();
         type.setId(resultSet.getLong("vocabulary_type_id"));
         type.setLabel(resultSet.getString("vocabulary_type_label"));
@@ -57,20 +59,27 @@ public class AutocompleteRepository {
         prefLabel.setConcept(concept);
         prefLabel.setLabel(resultSet.getString("concept_label_label"));
         prefLabel.setParentConcept(parentConcept);
+        prefLabel.setLangCode(langcode);
 
-        List<String> altLabels = List.of(resultSet.getString("data_aggregated_alt_labels").split(";#"));
+        String altLabelsStr = resultSet.getString("data_aggregated_alt_labels");
+        List<String> altLabels;
+        if (altLabelsStr != null) {
+            altLabels = List.of(altLabelsStr.split(";#"));
+        } else {
+            altLabels = List.of();
+        }
 
         return new ConceptAutocompleteDTO(
                 prefLabel,
                 prefLabel.getLabel(),
                 altLabels,
-                resultSet.getString("data_definition"),
+                truncate(resultSet.getString("data_definition")),
                 resultSet.getString("data_hierarchy_str")
         );
     }
 
     @NonNull
-    public Set<ConceptAutocompleteDTO> findMatchingConceptsFor(@NonNull Concept concept,
+    public List<ConceptAutocompleteDTO> findMatchingConceptsFor(@NonNull Concept concept,
                                                                @NonNull String lang,
                                                                @Nullable String input,
                                                                int limit) {
@@ -78,7 +87,7 @@ public class AutocompleteRepository {
 
         try (Connection connection = dataSource.getConnection();
              PreparedStatement statement = connection.prepareStatement("SELECT * FROM concept_autocomplete(?, ?, ?, ?)");) {
-
+            log.trace("Executing concept autocomplete with concept id {}, lang {}, input '{}', limit {}", concept.getId(), lang, input, limit);
             statement.setLong(1, concept.getId());
             statement.setString(2, lang);
             statement.setString(3, input != null ? input : "");
@@ -86,22 +95,25 @@ public class AutocompleteRepository {
 
             try (ResultSet resultSet = statement.executeQuery()) {
                 while (resultSet.next()) {
-                    ConceptAutocompleteDTO dto = rowToDTO(resultSet);
+                    ConceptAutocompleteDTO dto = rowToDTO(resultSet, lang);
                     addAllAltLabelsToResults(lang, dto, results);
                     results.add(dto);
                 }
+                return new ArrayList<>(results);
+            } catch (Exception e) {
+                log.error("Error while processing result set for concept autocomplete for concept id {}: {}", concept.getId(), e.getMessage(), e);
+                return List.of();
             }
-            return results;
         } catch (SQLException e) {
             log.error("Error while fetching autocomplete results for concept id {}: {}", concept.getId(), e.getMessage(), e);
-            return Set.of();
+            return List.of();
         }
 
     }
 
     private static void addAllAltLabelsToResults(String lang, ConceptAutocompleteDTO dto, Set<ConceptAutocompleteDTO> results) {
-        Concept currentConcept = dto.conceptLabelToDisplay().getConcept();
-        for (String altLabel : dto.altLabels()) {
+        Concept currentConcept = dto.getConceptLabelToDisplay().getConcept();
+        for (String altLabel : dto.getAltLabels()) {
             ConceptAltLabel unsavedAltLabel = new ConceptAltLabel();
             unsavedAltLabel.setLabel(altLabel);
             unsavedAltLabel.setLangCode(lang);
@@ -109,14 +121,19 @@ public class AutocompleteRepository {
 
             ConceptAutocompleteDTO altLabelDto = ConceptAutocompleteDTO.builder()
                     .conceptLabelToDisplay(unsavedAltLabel)
-                    .originalPrefLabel(dto.originalPrefLabel())
-                    .altLabels(dto.altLabels())
-                    .definition(dto.definition())
-                    .hierarchyPrefLabel(dto.hierarchyPrefLabel())
+                    .originalPrefLabel(dto.getOriginalPrefLabel())
+                    .altLabels(dto.getAltLabels())
+                    .definition(dto.getDefinition())
+                    .hierarchyPrefLabels(dto.getHierarchyPrefLabels())
                     .build();
 
             results.add(altLabelDto);
         }
+    }
+
+    private String truncate(String text) {
+        if (text == null) return "";
+        return text.length() > DESCRIPTION_TRUNCATE_LENGTH ? text.substring(0, DESCRIPTION_TRUNCATE_LENGTH) + "..." : text;
     }
 
 }

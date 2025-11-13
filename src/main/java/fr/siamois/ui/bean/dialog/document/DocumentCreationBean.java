@@ -86,15 +86,15 @@ public class DocumentCreationBean implements Serializable {
 
     public List<Concept> autocomplete(String fieldCode, String input) {
         log.trace("Autocomplete order received");
-
-        try {
-            return fieldConfigurationService.fetchAutocomplete(
-                    sessionSettingsBean.getUserInfo(),
-                    fieldCode,
-                    input).stream().map(ConceptLabel::getConcept).toList();
-        } catch (NoConfigForFieldException e) {
-            return List.of();
-        }
+        log.trace("Autocomplete is ignored for the moment, returning empty list");
+        return List.of();
+//        try {
+//            return fieldConfigurationService.fetchAutocomplete(
+//                    sessionSettingsBean.getUserInfo(),
+//                    fieldCode,
+//                    input).stream().map(ConceptLabel::getConcept).toList();
+//        } catch (NoConfigForFieldException e) {
+//            return List.of();
     }
 
     public List<Concept> autocompleteNature(String input) {

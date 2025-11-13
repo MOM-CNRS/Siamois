@@ -94,7 +94,8 @@ BEGIN
     FROM concept_label cl
     WHERE cl.fk_concept_id = p_concept_id
       AND cl.fk_field_parent_concept_id = p_field_concept_id
-      AND cl.lang_code = p_langcode;
+      AND cl.lang_code = p_langcode
+      AND cl.label_type = 1;
 
     RETURN v_alt_labels;
 END;
@@ -102,7 +103,6 @@ $$ LANGUAGE plpgsql;
 
 
 -- Returns the definition of a concept in the specified language
--- Fonction de récupération de la définition d'un concept
 CREATE OR REPLACE FUNCTION concept_autocomplete_get_definition(
     p_concept_id BIGINT,
     p_langcode VARCHAR(3)
@@ -150,7 +150,8 @@ BEGIN
             INTO v_result_record
             FROM concept_hierarchy ch
             WHERE ch.fk_child_concept_id = v_result_record.fk_parent_concept_id
-              AND ch.fk_parent_field_context_id = p_field_concept_id;
+              AND ch.fk_parent_field_context_id = p_field_concept_id
+            LIMIT 1;
         END LOOP;
 
     RETURN array_to_string(v_parents, ' > ');
@@ -168,36 +169,40 @@ CREATE OR REPLACE FUNCTION concept_autocomplete(
 $$
 DECLARE
 BEGIN
-    -- Cas quand input est NULL ou vide
-    RETURN QUERY
-        SELECT c.concept_id,
-               c.external_id,
 
-               c2.concept_id,
-               c2.external_id,
+    if p_input IS NULL OR trim(p_input) = '' THEN
+        -- Cas quand input est NULL ou vide
+        RETURN QUERY
+            SELECT c.concept_id,
+                   c.external_id,
 
-               v.vocabulary_id,
-               v.base_uri,
-               v.external_id,
+                   c2.concept_id,
+                   c2.external_id,
 
-               vt.vocabulary_type_id,
-               vt.label,
+                   v.vocabulary_id,
+                   v.base_uri,
+                   v.external_id,
 
-               cl.concept_label_id,
-               cl.label,
+                   vt.vocabulary_type_id,
+                   vt.label,
 
-               concept_autocomplete_get_alt_labels(c.concept_id, p_field_concept_id, p_langcode),
-               concept_autocomplete_get_definition(c.concept_id, p_langcode),
-               concept_autocomplete_get_hierarchy(c.concept_id, p_field_concept_id, p_langcode)
-        FROM concept_label cl
-                 JOIN concept c ON cl.fk_concept_id = c.concept_id
-                 JOIN concept c2 ON c2.concept_id = p_field_concept_id
-                 JOIN vocabulary v ON c.fk_vocabulary_id = v.vocabulary_id
-                 JOIN vocabulary_type vt ON v.fk_type_id = vt.vocabulary_type_id
-        WHERE cl.fk_field_parent_concept_id = p_field_concept_id
-          AND cl.lang_code = p_langcode
-          AND NOT c.is_deleted
-        LIMIT p_limit;
+                   cl.concept_label_id,
+                   cl.label,
+
+                   concept_autocomplete_get_alt_labels(c.concept_id, p_field_concept_id, p_langcode),
+                   concept_autocomplete_get_definition(c.concept_id, p_langcode),
+                   concept_autocomplete_get_hierarchy(c.concept_id, p_field_concept_id, p_langcode)
+            FROM concept_label cl
+                     JOIN concept c ON cl.fk_concept_id = c.concept_id
+                     JOIN concept c2 ON c2.concept_id = p_field_concept_id
+                     JOIN vocabulary v ON c.fk_vocabulary_id = v.vocabulary_id
+                     JOIN vocabulary_type vt ON v.fk_type_id = vt.vocabulary_type_id
+            WHERE cl.fk_field_parent_concept_id = p_field_concept_id
+              AND cl.lang_code = p_langcode
+              AND NOT c.is_deleted
+              AND cl.label_type = 0
+            LIMIT p_limit;
+    end if;
 
     -- Cas quand input n'est pas vide
     RETURN QUERY
@@ -229,6 +234,7 @@ BEGIN
           AND cl.lang_code = p_langcode
           AND NOT c.is_deleted
           AND unaccent(cl.label) ILIKE unaccent('%' || p_input || '%')
+          AND cl.label_type = 0
         LIMIT p_limit;
 
 
