@@ -12,7 +12,6 @@ import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.models.vocabulary.FeedbackFieldConfig;
 import fr.siamois.domain.models.vocabulary.Vocabulary;
-import fr.siamois.domain.models.vocabulary.label.ConceptLabel;
 import fr.siamois.infrastructure.api.ConceptApi;
 import fr.siamois.infrastructure.api.dto.ConceptBranchDTO;
 import fr.siamois.infrastructure.api.dto.FullInfoDTO;
@@ -29,7 +28,6 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 
 /**
  * Service for managing field configurations of the vocabulary.
@@ -48,7 +46,6 @@ public class FieldConfigurationService {
     private final ConceptRepository conceptRepository;
     private final ConceptService conceptService;
 
-    private final LabelService labelService;
     private final ConceptFieldConfigRepository conceptFieldConfigRepository;
     private final AutocompleteRepository autocompleteRepository;
 

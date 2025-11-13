@@ -5,7 +5,6 @@ import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.exceptions.vocabulary.NoConfigForFieldException;
 import fr.siamois.domain.models.settings.ConceptFieldConfig;
 import fr.siamois.domain.models.vocabulary.Concept;
-import fr.siamois.domain.models.vocabulary.LocalizedConceptData;
 import fr.siamois.domain.models.vocabulary.label.ConceptAltLabel;
 import fr.siamois.domain.models.vocabulary.label.ConceptLabel;
 import fr.siamois.domain.models.vocabulary.label.ConceptPrefLabel;
@@ -67,10 +66,6 @@ public class LabelBean implements Serializable {
         prefLabelCache.computeIfAbsent(lang, k -> new HashMap<>()).put(concept, label);
     }
 
-    public String findConceptLabelOf(ConceptAltLabel altLabel) {
-        return findLabelOf(altLabel.getConcept());
-    }
-
     /**
      * Find the best matching pref label for the given concept based on the user's preferred language
      *
@@ -93,29 +88,10 @@ public class LabelBean implements Serializable {
 
     }
 
-    /**
-     * Displays all the alt label for a given concept in the current language
-     *
-     * @param concept the concept to find the alt labels for
-     * @return all the alt labels for this concept in the current language, separated by commas
-     */
-    public String findAllAltLabelsOfConcept(Concept concept) {
-        Set<ConceptAltLabel> labels = labelService.findAllAltLabelOf(concept, sessionSettingsBean.getUserInfo().getLang());
-        return labels.stream()
-                .map(ConceptAltLabel::getLabel)
-                .collect(Collectors.joining(", "));
-    }
-
     public String findVocabularyLabelOf(Concept concept) {
         if (concept == null) return null;
         UserInfo info = sessionSettingsBean.getUserInfo();
         return labelService.findLabelOf(concept.getVocabulary(), info.getLang()).getValue();
-    }
-
-    public ConceptLabel findConceptLabelOf(Concept concept) {
-        if (concept == null) return null;
-        UserInfo info = sessionSettingsBean.getUserInfo();
-        return labelService.findLabelOf(concept, info.getLang());
     }
 
     public Optional<ConceptLabel> findById(Long id) {
@@ -125,33 +101,6 @@ public class LabelBean implements Serializable {
         Optional<ConceptLabel> label = conceptLabelRepository.findById(id);
         label.ifPresent(l -> idToLabelCache.put(id, l));
         return label;
-    }
-
-    public String hierarchyStr(ConceptLabel label, String fieldCode) {
-        if (label == null || fieldCode == null) return "";
-
-        HierarchyCallParams params = new HierarchyCallParams(label, fieldCode);
-        if (hierarchyLabelCache.containsKey(params)) {
-            return hierarchyLabelCache.get(params);
-        }
-
-        try {
-            UserInfo userInfo = sessionSettingsBean.getUserInfo();
-            ConceptFieldConfig cfg = fieldConfigurationService.findConfigurationForFieldCode(userInfo, fieldCode);
-            List<Concept> parents = conceptService.findParentsOfConceptInField(label.getConcept(), cfg.getConcept());
-            if (parents.isEmpty()) return "";
-
-            String result = parents
-                    .stream()
-                    .map(this::findLabelOf)
-                    .collect(Collectors.joining(" > "));
-
-            hierarchyLabelCache.put(new HierarchyCallParams(label, fieldCode), result);
-
-            return result;
-        } catch (NoConfigForFieldException e) {
-            return "";
-        }
     }
 
     private record HierarchyCallParams(ConceptLabel label, String fieldCode) {
