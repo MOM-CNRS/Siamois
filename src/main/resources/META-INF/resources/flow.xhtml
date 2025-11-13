@@ -84,26 +84,38 @@
 
         <div style="display: flex; flex-direction: row; flex-shrink: 0">
             <div id="search-bar" style="flex:4">
-                <form:csrfform formId="searchBarForm">
+                <form:csrfform formId="searchBarForm" id="searchBarCsrfForm">
                     <article>
                         <h:panelGroup styleClass="ui-inputgroup">
                             <h:panelGroup id="iconInstit" styleClass="ui-inputgroup-addon">
                                 <i class="bi bi-buildings"/>
                             </h:panelGroup>
-                            <p:outputLabel
-                                    style="background: #fff;
-                                        padding: .5rem .5rem;
-                                        border: 1px  solid #ced4da;
-                                        border-left: 0px;
-                                        outline: 0 none;
-                                        font-size: 1rem;
-                                        transition: background-color .2s,color .2s,border-color .2s,box-shadow .2s,opacity .2s;
-                                        -webkit-appearance: none;
-                                        appearance: none;"
-                                    value="#{navBean.selectedInstitution.name}"
+                            <p:selectOneMenu
+                                    id="selectOneMenuInstitution"
+                                    value="#{flowBean.selectedInstitution}"
+                                    filter="true"
+                                    converter="#{institutionConverter}"
+                                    filterMatchMode="startsWith"
+                                    filterNormalize="true"
+                                    var="inst"
                             >
+                                <f:selectItems value="#{flowBean.institutions}"
+                                               var="item"
+                                               itemValue="#{item}"
+                                               itemLabel="#{item.name}"
+                                />
 
-                            </p:outputLabel>
+                                <p:column>
+                                    <h:outputText value="#{inst.name}"/>
+                                </p:column>
+
+                                <p:ajax event="change"
+                                        process="@this"
+                                        listener="#{flowBean.onInstitutionChange}"
+                                        />
+
+                            </p:selectOneMenu>
+
                         </h:panelGroup>
                         <h:panelGroup styleClass="ui-inputgroup">
                             <h:panelGroup id="iconSU" styleClass="ui-inputgroup-addon">
@@ -206,10 +218,7 @@
                                 onstart="PF('buiContent').show()" oncomplete="PF('buiContent').hide()"/>
                     </p:selectOneButton>
                 </h:form>
-                <ui:include src="/dialog/unsavedUpdates/unsavedUpdatesDialog.xhtml">
-                    <ui:param name="saveAllAction" value="#{flowBean.saveAllPanels()}"/>
-                    <ui:param name="deleteAllAction" value="#{flowBean.undoChangesOnAllPanels()}"/>
-                </ui:include>
+                <ui:include src="/dialog/unsavedUpdates/unsavedUpdatesDialog.xhtml"/>
             </div>
         </div>
 
@@ -281,6 +290,7 @@
 
         <ui:include src="/dialog/document/newDocument.xhtml"/>
         <ui:include src="/dialog/newunit/newUnitDialog.xhtml"/>
+        <ui:include src="/dialog/unsavedUpdates/unsavedUpdatesOnInstitutionChangeDialog.xhtml"/>
 
     </ui:define>
 

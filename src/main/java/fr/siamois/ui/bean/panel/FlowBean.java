@@ -1,5 +1,7 @@
 package fr.siamois.ui.bean.panel;
 
+import fr.siamois.domain.events.publisher.InstitutionChangeEventPublisher;
+import fr.siamois.domain.events.publisher.LoginEventPublisher;
 import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.events.InstitutionChangeEvent;
@@ -8,6 +10,7 @@ import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.specimen.Specimen;
+import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.authorization.PermissionService;
 import fr.siamois.domain.services.person.PersonService;
@@ -18,6 +21,7 @@ import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.domain.services.vocabulary.FieldConfigurationService;
 import fr.siamois.domain.services.vocabulary.FieldService;
 import fr.siamois.ui.bean.LangBean;
+import fr.siamois.ui.bean.RedirectBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
 import fr.siamois.ui.bean.panel.models.PanelBreadcrumb;
 import fr.siamois.ui.bean.panel.models.panel.AbstractPanel;
@@ -26,6 +30,8 @@ import fr.siamois.ui.bean.panel.models.panel.single.*;
 import fr.siamois.utils.MessageUtils;
 import jakarta.el.MethodExpression;
 import jakarta.faces.context.FacesContext;
+import jakarta.faces.event.AjaxBehaviorEvent;
+import jakarta.faces.event.ValueChangeEvent;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -67,30 +73,38 @@ public class FlowBean implements Serializable {
     private final transient ConceptService conceptService;
     private final transient StratigraphicRelationshipService stratigraphicRelationshipService;
     private final transient PermissionService permissionService;
+    private final transient InstitutionService institutionService;
+    private final transient InstitutionChangeEventPublisher institutionChangeEventPublisher;
 
     public static final String READ_MODE = "READ";
     public static final String WRITE_MODE = "WRITE";
     public static final String FIELD_MODE = "FIELD";
     public static final String OFFICE_MODE = "OFFICE";
+    private final RedirectBean redirectBean;
+    private final transient LoginEventPublisher loginEventPublisher;
 
     // locals
     private transient DashboardModel responsiveModel;
     private static final String RESPONSIVE_CLASS = "col-12 lg:col-6 xl:col-6";
-    private String readWriteMode = READ_MODE;
+    private String readWriteMode = WRITE_MODE;
     private String fieldOfficeMode = OFFICE_MODE;
     private static final int MAX_NUMBER_OF_PANEL = 10;
 
     // Search bar
     private List<SpatialUnit> fSpatialUnits = List.of();
+    private List<Institution> institutions = List.of();
     private List<ActionUnit> fActionUnits = List.of();
     private SpatialUnit fSelectedSpatialUnit;
     private ActionUnit fSelectedActionUnit;
+    private Institution selectedInstitution;
 
     @Getter
     private transient List<AbstractPanel> panels = new ArrayList<>();
     private transient int fullscreenPanelIndex = -1;
 
     private transient Set<AbstractSingleEntityPanel<?>> unsavedPanels = new HashSet<>();
+
+
 
     @Getter
     @AllArgsConstructor
@@ -106,12 +120,17 @@ public class FlowBean implements Serializable {
         );
     }
 
+
     public void init() {
         fullscreenPanelIndex = -1;
         panels = new ArrayList<>();
         addWelcomePanel();
         Institution institution = sessionSettings.getSelectedInstitution();
+        UserInfo info = sessionSettings.getUserInfo();
+        institutions = new ArrayList<>();
+        institutions.addAll(institutionService.findInstitutionsOfPerson(info.getUser()));
         fSpatialUnits = spatialUnitService.findAllOfInstitution(institution);
+        selectedInstitution = institution;
     }
 
     @EventListener(InstitutionChangeEvent.class)
@@ -170,7 +189,7 @@ public class FlowBean implements Serializable {
         }
 
         //if fullscreen set this new panel as the active one
-        if(fullscreenPanelIndex >= 0) {
+        if (fullscreenPanelIndex >= 0) {
             fullscreenPanelIndex = 0;
         }
 
@@ -183,7 +202,6 @@ public class FlowBean implements Serializable {
         addPanel(panelFactory.createWelcomePanel());
 
     }
-
 
 
     public void addActionUnitPanel(Long actionUnitId) {
@@ -212,43 +230,42 @@ public class FlowBean implements Serializable {
     }
 
 
-
-    public void  goToRecordingUnitByIdCurrentPanel(Long id, Integer currentPanelIndex) {
+    public void goToRecordingUnitByIdCurrentPanel(Long id, Integer currentPanelIndex) {
 
         RecordingUnitPanel newPanel = panelFactory.createRecordingUnitPanel(id, panels.get(currentPanelIndex).getBreadcrumb());
         panels.set(currentPanelIndex, newPanel);
 
     }
 
-    public void  goToRecordingUnitByIdNewPanel(Long id, Integer currentPanelIndex) {
+    public void goToRecordingUnitByIdNewPanel(Long id, Integer currentPanelIndex) {
 
         RecordingUnitPanel newPanel = panelFactory.createRecordingUnitPanel(id, panels.get(currentPanelIndex).getBreadcrumb());
         addPanel(newPanel);
 
     }
 
-    public void  goToRecordingUnitByIdNewPanel(Long id, Integer currentPanelIndex, Integer tabIndex) {
+    public void goToRecordingUnitByIdNewPanel(Long id, Integer currentPanelIndex, Integer tabIndex) {
 
         RecordingUnitPanel newPanel = panelFactory.createRecordingUnitPanel(id, panels.get(currentPanelIndex).getBreadcrumb(), tabIndex);
         addPanel(newPanel);
 
     }
 
-    public void  goToRecordingUnitByIdNewPanel(Long id, AbstractPanel panel) {
+    public void goToRecordingUnitByIdNewPanel(Long id, AbstractPanel panel) {
 
         RecordingUnitPanel newPanel = panelFactory.createRecordingUnitPanel(id, panel.getBreadcrumb());
         addPanel(newPanel);
 
     }
 
-    public void  goToSpecimenByIdNewPanel(Long id, AbstractPanel currentPanel) {
+    public void goToSpecimenByIdNewPanel(Long id, AbstractPanel currentPanel) {
 
         SpecimenPanel newPanel = panelFactory.createSpecimenPanel(id, currentPanel.getBreadcrumb());
         addPanel(newPanel);
 
     }
 
-    public void  goToSpecimenByIdNewPanel(Long id, Integer currentPanelIndex) {
+    public void goToSpecimenByIdNewPanel(Long id, Integer currentPanelIndex) {
 
         SpecimenPanel newPanel = panelFactory.createSpecimenPanel(id, panels.get(currentPanelIndex).getBreadcrumb());
         addPanel(newPanel);
@@ -308,8 +325,7 @@ public class FlowBean implements Serializable {
         addPanel(panelFactory.createSpatialUnitPanel(id));
     }
 
-    public void handleToggleOfPanelAtIndex(int idx)
-    {
+    public void handleToggleOfPanelAtIndex(int idx) {
         AbstractPanel panel = panels.get(idx);
         panel.setCollapsed(!panel.getCollapsed());
     }
@@ -332,8 +348,8 @@ public class FlowBean implements Serializable {
         }
 
         // If fullscreen, update the whole flow and check that the index is valid
-        if(fullscreenPanelIndex > 0) {
-            if(fullscreenPanelIndex > panels.size() - 1) {
+        if (fullscreenPanelIndex > 0) {
+            if (fullscreenPanelIndex > panels.size() - 1) {
                 fullscreenPanelIndex = 0;
             }
             PrimeFaces.current().ajax().update("flow");
@@ -375,16 +391,25 @@ public class FlowBean implements Serializable {
         // Listener called when the FieldOffice mode variable is flipped.
     }
 
-    public void saveAllPanels() {
+    /**
+     * Save all open panels and return true if succeeded
+     */
+    public boolean saveAllPanelsMethod() {
         for (AbstractSingleEntityPanel<?> panel : unsavedPanels) {
             boolean entityHasBeenSaved = panel.save(true);
             if (!entityHasBeenSaved) {
                 String title = findMatchingTitle(panel);
                 MessageUtils.displayErrorMessage(langBean, "dialog.unsaved.error", title);
-                return;
+                return false;
             }
         }
-        readWriteMode = READ_MODE;
+        return true;
+    }
+
+    public void saveAllPanels() {
+        if(saveAllPanelsMethod()) {
+            readWriteMode = READ_MODE;
+        }
     }
 
     private static String findMatchingTitle(AbstractSingleEntityPanel<?> panel) {
@@ -450,5 +475,52 @@ public class FlowBean implements Serializable {
      */
     public boolean isActionUnitCreateAllowed() {
         return actionUnitService.hasCreatePermission(sessionSettings.getUserInfo());
+    }
+
+    /**
+     * Do change institution
+     *
+     */
+    public void changeInstitution(boolean withSave) {
+        if(withSave && !saveAllPanelsMethod()) {
+            selectedInstitution = sessionSettings.getSelectedInstitution();
+            return;
+        }
+
+        if (selectedInstitution != null
+                && (institutionService.personIsInInstitution(sessionSettings.getUserInfo().getUser(), selectedInstitution)
+                || institutionService.isManagerOf(selectedInstitution, sessionSettings.getUserInfo().getUser()))) {
+            sessionSettings.setSelectedInstitution(selectedInstitution);
+            PrimeFaces.current().ajax().update("navBar", "flow");
+            institutionChangeEventPublisher.publishInstitutionChangeEvent();
+            loginEventPublisher.publishLoginEvent();
+        } else {
+            selectedInstitution = sessionSettings.getSelectedInstitution();
+        }
+    }
+
+    /**
+     * On institution select change
+     *
+     */
+    public void onInstitutionChange() {
+        fillAllUnsavedPanel();
+        if (unsavedPanels.isEmpty()) {
+            changeInstitution(false);
+            return;
+        }
+        PrimeFaces.current().executeScript("PF('confirmUnsavedOnInstitutionDialog').show();");
+        PrimeFaces.current().ajax().update("unsavedUpdatesOnInstitutionChangeForm");
+    }
+
+    /**
+     * cancel changing institution
+     *
+     */
+    public void cancelInstitutionChange(
+
+    ) {
+        selectedInstitution = sessionSettings.getSelectedInstitution();
+        PrimeFaces.current().ajax().update("searchBarCsrfForm:searchBarForm");
     }
 }
