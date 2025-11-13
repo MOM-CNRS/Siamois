@@ -15,7 +15,7 @@ import java.io.Serializable;
 @Component("institutionConverter") // make sure this name matches your XHTML
 public class InstitutionConverter implements Converter<Institution>, Serializable {
 
-    private transient final InstitutionService institutionService;
+    private final transient InstitutionService institutionService;
 
     @Autowired
     public InstitutionConverter(InstitutionService institutionService) {
