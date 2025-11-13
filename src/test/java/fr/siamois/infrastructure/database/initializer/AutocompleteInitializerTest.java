@@ -17,7 +17,8 @@ import java.nio.file.Files;
 import java.sql.Connection;
 import java.sql.Statement;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
@@ -60,7 +61,7 @@ class AutocompleteInitializerTest {
     }
 
     @Test
-    void initialize_throwsDatabaseDataInitException_whenFileNotFound() throws Exception {
+    void initialize_throwsDatabaseDataInitException_whenFileNotFound() {
         // Arrange
         try (MockedStatic<ResourceUtils> utilities = Mockito.mockStatic(ResourceUtils.class)) {
             utilities.when(() -> ResourceUtils.getFile(anyString()))

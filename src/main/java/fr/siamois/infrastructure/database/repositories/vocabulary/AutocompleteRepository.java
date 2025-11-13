@@ -18,9 +18,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 @Slf4j
 @Repository
@@ -86,7 +84,7 @@ public class AutocompleteRepository {
         List<ConceptAutocompleteDTO> results = new ArrayList<>();
 
         try (Connection connection = dataSource.getConnection();
-             PreparedStatement statement = connection.prepareStatement("SELECT ca.* FROM concept_autocomplete(?, ?, ?, ?) ca");) {
+             PreparedStatement statement = connection.prepareStatement("SELECT ca.* FROM concept_autocomplete(?, ?, ?, ?) ca")) {
             log.trace("Executing concept autocomplete with concept id {}, lang {}, input '{}', limit {}", concept.getId(), lang, input, limit);
             statement.setLong(1, concept.getId());
             statement.setString(2, lang);
