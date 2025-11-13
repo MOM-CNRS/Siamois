@@ -1,0 +1,18 @@
+<ui:fragment xmlns="http://www.w3.org/1999/xhtml"
+             xmlns:ui="http://java.sun.com/jsf/facelets"
+             xmlns:h="http://xmlns.jcp.org/jsf/html"
+             xmlns:p="http://primefaces.org/ui"
+
+>
+
+    <h:form id="unsavedUpdatesOnInstitutionChangeForm">
+        <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
+        <p:confirmDialog message="#{langBean.msg('dialog.unsaved.message')}" header="#{langBean.msg('dialog.unsaved.title')}" severity="danger" widgetVar="confirmUnsavedOnInstitutionDialog">
+            <p:commandButton value="#{langBean.msg('dialog.unsaved.discard')}" action="#{flowBean.changeInstitution(false)}"
+                             oncomplete="PF('confirmUnsavedOnInstitutionDialog').hide()" styleClass="ui-button-danger" icon="pi pi-times"/>
+            <p:commandButton value="#{langBean.msg('dialog.unsaved.save')}" action="#{flowBean.changeInstitution(true)}"
+                             oncomplete="PF('confirmUnsavedOnInstitutionDialog').hide()" icon="pi pi-save"/>
+            <p:commandButton value="#{langBean.msg('dialog.unsaved.cancelInstitutionSwitch')}" onclick="PF('confirmUnsavedOnInstitutionDialog').hide();" action="#{flowBean.cancelInstitutionChange()}" styleClass="ui-button-warning"/>
+        </p:confirmDialog>
+    </h:form>
+</ui:fragment>

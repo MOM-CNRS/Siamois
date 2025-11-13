@@ -84,7 +84,7 @@
 
         <div style="display: flex; flex-direction: row; flex-shrink: 0">
             <div id="search-bar" style="flex:4">
-                <form:csrfform formId="searchBarForm">
+                <form:csrfform formId="searchBarForm" id="searchBarCsrfForm">
                     <article>
                         <h:panelGroup styleClass="ui-inputgroup">
                             <h:panelGroup id="iconInstit" styleClass="ui-inputgroup-addon">
@@ -111,12 +111,11 @@
 
                                 <p:ajax event="change"
                                         process="@this"
-                                        onstart="PF('buiContent').show()"
-                                        oncomplete="PF('buiContent').hide();handleScrollToTop();"
                                         listener="#{flowBean.onInstitutionChange}"
                                         />
 
                             </p:selectOneMenu>
+
                         </h:panelGroup>
                         <h:panelGroup styleClass="ui-inputgroup">
                             <h:panelGroup id="iconSU" styleClass="ui-inputgroup-addon">
@@ -219,10 +218,7 @@
                                 onstart="PF('buiContent').show()" oncomplete="PF('buiContent').hide()"/>
                     </p:selectOneButton>
                 </h:form>
-                <ui:include src="/dialog/unsavedUpdates/unsavedUpdatesDialog.xhtml">
-                    <ui:param name="saveAllAction" value="#{flowBean.saveAllPanels()}"/>
-                    <ui:param name="deleteAllAction" value="#{flowBean.undoChangesOnAllPanels()}"/>
-                </ui:include>
+                <ui:include src="/dialog/unsavedUpdates/unsavedUpdatesDialog.xhtml"/>
             </div>
         </div>
 
@@ -294,6 +290,7 @@
 
         <ui:include src="/dialog/document/newDocument.xhtml"/>
         <ui:include src="/dialog/newunit/newUnitDialog.xhtml"/>
+        <ui:include src="/dialog/unsavedUpdates/unsavedUpdatesOnInstitutionChangeDialog.xhtml"/>
 
     </ui:define>
 

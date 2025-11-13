@@ -86,7 +86,7 @@ public class FlowBean implements Serializable {
     // locals
     private transient DashboardModel responsiveModel;
     private static final String RESPONSIVE_CLASS = "col-12 lg:col-6 xl:col-6";
-    private String readWriteMode = READ_MODE;
+    private String readWriteMode = WRITE_MODE;
     private String fieldOfficeMode = OFFICE_MODE;
     private static final int MAX_NUMBER_OF_PANEL = 10;
 
@@ -103,6 +103,8 @@ public class FlowBean implements Serializable {
     private transient int fullscreenPanelIndex = -1;
 
     private transient Set<AbstractSingleEntityPanel<?>> unsavedPanels = new HashSet<>();
+
+
 
     @Getter
     @AllArgsConstructor
@@ -389,16 +391,25 @@ public class FlowBean implements Serializable {
         // Listener called when the FieldOffice mode variable is flipped.
     }
 
-    public void saveAllPanels() {
+    /**
+     * Save all open panels and return true if succeeded
+     */
+    public boolean saveAllPanelsMethod() {
         for (AbstractSingleEntityPanel<?> panel : unsavedPanels) {
             boolean entityHasBeenSaved = panel.save(true);
             if (!entityHasBeenSaved) {
                 String title = findMatchingTitle(panel);
                 MessageUtils.displayErrorMessage(langBean, "dialog.unsaved.error", title);
-                return;
+                return false;
             }
         }
-        readWriteMode = READ_MODE;
+        return true;
+    }
+
+    public void saveAllPanels() {
+        if(saveAllPanelsMethod()) {
+            readWriteMode = READ_MODE;
+        }
     }
 
     private static String findMatchingTitle(AbstractSingleEntityPanel<?> panel) {
@@ -467,21 +478,49 @@ public class FlowBean implements Serializable {
     }
 
     /**
-     * When institution changes
+     * Do change institution
      *
-     * @return
      */
-    public void onInstitutionChange() {
+    public void changeInstitution(boolean withSave) {
+        if(withSave && !saveAllPanelsMethod()) {
+            selectedInstitution = sessionSettings.getSelectedInstitution();
+            return;
+        }
+
         if (selectedInstitution != null
                 && (institutionService.personIsInInstitution(sessionSettings.getUserInfo().getUser(), selectedInstitution)
-        || institutionService.isManagerOf(selectedInstitution, sessionSettings.getUserInfo().getUser()))) {
+                || institutionService.isManagerOf(selectedInstitution, sessionSettings.getUserInfo().getUser()))) {
             sessionSettings.setSelectedInstitution(selectedInstitution);
-            PrimeFaces.current().ajax().update("navBar","flow");
+            PrimeFaces.current().ajax().update("navBar", "flow");
             institutionChangeEventPublisher.publishInstitutionChangeEvent();
             loginEventPublisher.publishLoginEvent();
-        }
-        else {
+        } else {
             selectedInstitution = sessionSettings.getSelectedInstitution();
         }
+    }
+
+    /**
+     * On institution select change
+     *
+     */
+    public void onInstitutionChange() {
+        fillAllUnsavedPanel();
+        if (unsavedPanels.isEmpty()) {
+            changeInstitution(false);
+            return;
+        }
+        PrimeFaces.current().executeScript("PF('confirmUnsavedOnInstitutionDialog').show();");
+        PrimeFaces.current().ajax().update("unsavedUpdatesOnInstitutionChangeForm");
+    }
+
+    /**
+     * cancel changing institution
+     *
+     */
+    public void cancelInstitutionChange(
+
+    ) {
+        selectedInstitution = sessionSettings.getSelectedInstitution();
+        PrimeFaces.current().ajax().update("searchBarCsrfForm:searchBarForm");
     }
 }
