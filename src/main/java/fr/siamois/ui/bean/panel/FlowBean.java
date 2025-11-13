@@ -509,7 +509,11 @@ public class FlowBean implements Serializable {
         return WRITE_MODE;
     }
 
-    public boolean getReadModeVal() {
-        return READ_MODE;
+    public boolean getOfficeModeVal() {
+        return OFFICE_MODE;
+    }
+
+    public boolean getFieldModeVal() {
+        return FIELD_MODE;
     }
 }
