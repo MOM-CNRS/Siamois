@@ -14,6 +14,7 @@ public class ConceptChangeEventPublisher {
 
     /**
      * Publishes a ConceptChangeEvent.
+     *
      * @param fieldCode The field code related to the concept change.
      */
     public void publishEvent(@NonNull String fieldCode) {

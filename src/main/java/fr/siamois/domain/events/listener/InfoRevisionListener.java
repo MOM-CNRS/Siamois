@@ -31,6 +31,7 @@ public class InfoRevisionListener {
     /**
      * Method called before persisting an InfoRevisionEntity.
      * Is it used to set the updatedBy and updatedFrom fields in the revision information.
+     *
      * @param entity the InfoRevisionEntity being persisted
      */
     @PrePersist
