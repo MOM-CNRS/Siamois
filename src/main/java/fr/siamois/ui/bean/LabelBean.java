@@ -2,15 +2,9 @@ package fr.siamois.ui.bean;
 
 import fr.siamois.domain.events.ConceptChangeEvent;
 import fr.siamois.domain.models.UserInfo;
-import fr.siamois.domain.models.exceptions.vocabulary.NoConfigForFieldException;
-import fr.siamois.domain.models.settings.ConceptFieldConfig;
 import fr.siamois.domain.models.vocabulary.Concept;
-import fr.siamois.domain.models.vocabulary.LocalizedConceptData;
-import fr.siamois.domain.models.vocabulary.label.ConceptAltLabel;
 import fr.siamois.domain.models.vocabulary.label.ConceptLabel;
 import fr.siamois.domain.models.vocabulary.label.ConceptPrefLabel;
-import fr.siamois.domain.services.vocabulary.ConceptService;
-import fr.siamois.domain.services.vocabulary.FieldConfigurationService;
 import fr.siamois.domain.services.vocabulary.LabelService;
 import fr.siamois.infrastructure.database.repositories.vocabulary.label.ConceptLabelRepository;
 import lombok.RequiredArgsConstructor;
@@ -21,7 +15,6 @@ import org.springframework.stereotype.Component;
 import javax.faces.bean.SessionScoped;
 import java.io.Serializable;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Component
 @SessionScoped
@@ -31,8 +24,6 @@ public class LabelBean implements Serializable {
     private final transient LabelService labelService;
     private final SessionSettingsBean sessionSettingsBean;
     private final transient ConceptLabelRepository conceptLabelRepository;
-    private final transient FieldConfigurationService fieldConfigurationService;
-    private final transient ConceptService conceptService;
 
 
     // This caching mechanism is a simple in-memory cache to avoid repeated database calls during a user session.
@@ -40,13 +31,11 @@ public class LabelBean implements Serializable {
     // Can't do it right now because of the JSF managed bean session scope.
     private final Map<String, Map<Concept, String>> prefLabelCache = new HashMap<>();
     private final Map<Long, ConceptLabel> idToLabelCache = new HashMap<>();
-    private final Map<HierarchyCallParams, String> hierarchyLabelCache = new HashMap<>();
 
     @EventListener(ConceptChangeEvent.class)
     public void resetCache() {
         prefLabelCache.clear();
         idToLabelCache.clear();
-        hierarchyLabelCache.clear();
     }
 
     private Optional<String> searchMatchingLangAndPrefLabel(String lang, Concept concept, List<ConceptPrefLabel> existingLabels) {
@@ -65,10 +54,6 @@ public class LabelBean implements Serializable {
 
     private void addToCache(String lang, Concept concept, String label) {
         prefLabelCache.computeIfAbsent(lang, k -> new HashMap<>()).put(concept, label);
-    }
-
-    public String findConceptLabelOf(ConceptAltLabel altLabel) {
-        return findLabelOf(altLabel.getConcept());
     }
 
     /**
@@ -93,49 +78,10 @@ public class LabelBean implements Serializable {
 
     }
 
-    /**
-     * Displays all the alt label for a given concept in the current language
-     *
-     * @param concept the concept to find the alt labels for
-     * @return all the alt labels for this concept in the current language, separated by commas
-     */
-    public String findAllAltLabelsOfConcept(Concept concept) {
-        Set<ConceptAltLabel> labels = labelService.findAllAltLabelOf(concept, sessionSettingsBean.getUserInfo().getLang());
-        return labels.stream()
-                .map(ConceptAltLabel::getLabel)
-                .collect(Collectors.joining(", "));
-    }
-
-    /**
-     * Find description for a given concept in the current language
-     *
-     * @param concept the concept to find the description for
-     * @return The description or null if not found
-     */
-    public String findDescriptionOfConcept(Concept concept) {
-        LocalizedConceptData conceptDataOrNull = conceptService.getLocalizedConceptDataByConceptAndLangCode(
-                concept,
-                sessionSettingsBean.getUserInfo().getLang()
-        );
-        if(conceptDataOrNull == null) return "";
-        return truncate(conceptDataOrNull.getDefinition());
-    }
-
-    private String truncate(String text) {
-        if (text == null) return "";
-        return text.length() > 200 ? text.substring(0, 200) + "..." : text;
-    }
-
     public String findVocabularyLabelOf(Concept concept) {
         if (concept == null) return null;
         UserInfo info = sessionSettingsBean.getUserInfo();
         return labelService.findLabelOf(concept.getVocabulary(), info.getLang()).getValue();
-    }
-
-    public ConceptLabel findConceptLabelOf(Concept concept) {
-        if (concept == null) return null;
-        UserInfo info = sessionSettingsBean.getUserInfo();
-        return labelService.findLabelOf(concept, info.getLang());
     }
 
     public Optional<ConceptLabel> findById(Long id) {
@@ -147,45 +93,8 @@ public class LabelBean implements Serializable {
         return label;
     }
 
-    public String hierarchyStr(ConceptLabel label, String fieldCode) {
-        if (label == null || fieldCode == null) return "";
-
-        HierarchyCallParams params = new HierarchyCallParams(label, fieldCode);
-        if (hierarchyLabelCache.containsKey(params)) {
-            return hierarchyLabelCache.get(params);
-        }
-
-        try {
-            UserInfo userInfo = sessionSettingsBean.getUserInfo();
-            ConceptFieldConfig cfg = fieldConfigurationService.findConfigurationForFieldCode(userInfo, fieldCode);
-            List<Concept> parents = conceptService.findParentsOfConceptInField(label.getConcept(), cfg.getConcept());
-            if (parents.isEmpty()) return "";
-
-            String result = parents
-                    .stream()
-                    .map(this::findLabelOf)
-                    .collect(Collectors.joining(" > "));
-
-            hierarchyLabelCache.put(new HierarchyCallParams(label, fieldCode), result);
-
-            return result;
-        } catch (NoConfigForFieldException e) {
-            return "";
-        }
-    }
-
-    private record HierarchyCallParams(ConceptLabel label, String fieldCode) {
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (!(o instanceof HierarchyCallParams that)) return false;
-            return Objects.equals(label, that.label) && Objects.equals(fieldCode, that.fieldCode);
-        }
-
-        @Override
-        public int hashCode() {
-            return Objects.hash(label, fieldCode);
-        }
+    public String getCurrentUserLang() {
+        return sessionSettingsBean.getUserInfo().getLang();
     }
 
 }
