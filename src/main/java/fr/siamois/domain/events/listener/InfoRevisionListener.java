@@ -24,6 +24,8 @@ public class InfoRevisionListener {
     private InstitutionRepository institutionRepository;
     private PersonRepository personRepository;
 
+    // If the beans are initialized in the constructor, it causes circular dependencies issues.
+    // So we initialize them lazily in the onPersist method.
     public InfoRevisionListener(ApplicationContext applicationContext) {
         this.applicationContext = applicationContext;
     }
