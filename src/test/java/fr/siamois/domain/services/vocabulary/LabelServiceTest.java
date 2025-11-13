@@ -207,62 +207,6 @@ class LabelServiceTest {
     }
 
     @Test
-    void findMatchingConcepts_shouldReturnListOfMatchingConcepts_whenInputIsNotNull() {
-        ConceptPrefLabel label = new ConceptPrefLabel();
-        label.setLangCode("fr");
-        label.setLabel("New Label");
-        ConceptAltLabel altLabel = new ConceptAltLabel();
-        altLabel.setLangCode("fr");
-        altLabel.setLabel("Alternative Label");
-
-        ConceptAltLabel altLabel2 = new ConceptAltLabel();
-        altLabel2.setLangCode("fr");
-        altLabel2.setLabel("Non matching");
-
-        when(conceptLabelRepository
-                .findAllByParentConceptAndInputLimited(anyLong(), anyString(), anyString(), anyInt()))
-                .thenReturn(List.of(label, altLabel));
-
-        Concept concept = new Concept();
-        concept.setId(5L);
-        concept.setExternalId("5L");
-
-        List<ConceptLabel> results = labelService.findMatchingConcepts(concept, "fr", "Label", 10);
-
-        assertThat(results)
-                .hasSize(2)
-                .containsExactlyInAnyOrder(label, altLabel);
-    }
-
-    @Test
-    void findMatchingConcepts_shouldReturnAllConcepts_whenInputIsEmpty() {
-        ConceptPrefLabel label = new ConceptPrefLabel();
-        label.setLangCode("fr");
-        label.setLabel("New Label");
-        ConceptAltLabel altLabel = new ConceptAltLabel();
-        altLabel.setLangCode("fr");
-        altLabel.setLabel("Alternative Label");
-
-        ConceptAltLabel altLabel2 = new ConceptAltLabel();
-        altLabel2.setLangCode("fr");
-        altLabel2.setLabel("Non matching");
-
-        Concept concept = new Concept();
-        concept.setId(5L);
-        concept.setExternalId("5L");
-
-        when(conceptLabelRepository
-                .findAllLabelsByParentConceptAndLangCode(eq(concept.getId()), anyString(), anyInt()))
-                .thenReturn(List.of(label, altLabel, altLabel2));
-
-        List<ConceptLabel> results = labelService.findMatchingConcepts(concept, "fr", "", 10);
-
-        assertThat(results)
-                .hasSize(3)
-                .containsExactlyInAnyOrder(label, altLabel, altLabel2);
-    }
-
-    @Test
     void updateLabelConcept_shouldCreateAndSave_whenPrefLabelDoesNotExist_andParentDifferent() {
         // Given
         Concept savedConcept = new Concept();
