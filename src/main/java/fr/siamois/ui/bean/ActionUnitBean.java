@@ -25,7 +25,7 @@ public class ActionUnitBean {
 
     public boolean showCreateRecordingUnitButton(TraceableEntity context) {
         if(context.getClass() == ActionUnit.class) {
-            return Objects.equals(flowBean.getReadWriteMode(), "WRITE") &&
+            return Objects.equals(flowBean.getReadWriteMode(), FlowBean.WRITE_MODE) &&
                     service.canCreateRecordingUnit(sessionSettingsBean.getUserInfo(), (ActionUnit) context) ;
         }
         else {

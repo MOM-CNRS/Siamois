@@ -30,9 +30,6 @@ import fr.siamois.ui.bean.panel.models.panel.single.*;
 import fr.siamois.utils.MessageUtils;
 import jakarta.el.MethodExpression;
 import jakarta.faces.context.FacesContext;
-import jakarta.faces.event.AjaxBehaviorEvent;
-import jakarta.faces.event.ValueChangeEvent;
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
@@ -76,18 +73,18 @@ public class FlowBean implements Serializable {
     private final transient InstitutionService institutionService;
     private final transient InstitutionChangeEventPublisher institutionChangeEventPublisher;
 
-    public static final String READ_MODE = "READ";
-    public static final String WRITE_MODE = "WRITE";
-    public static final String FIELD_MODE = "FIELD";
-    public static final String OFFICE_MODE = "OFFICE";
+    public static final boolean READ_MODE = false;
+    public static final boolean WRITE_MODE = true;
+    public static final boolean FIELD_MODE = true;
+    public static final boolean OFFICE_MODE = false;
     private final RedirectBean redirectBean;
     private final transient LoginEventPublisher loginEventPublisher;
 
     // locals
     private transient DashboardModel responsiveModel;
     private static final String RESPONSIVE_CLASS = "col-12 lg:col-6 xl:col-6";
-    private String readWriteMode = WRITE_MODE;
-    private String fieldOfficeMode = OFFICE_MODE;
+    private Boolean readWriteMode = WRITE_MODE;
+    private Boolean fieldOfficeMode = OFFICE_MODE;
     private static final int MAX_NUMBER_OF_PANEL = 10;
 
     // Search bar
@@ -103,22 +100,6 @@ public class FlowBean implements Serializable {
     private transient int fullscreenPanelIndex = -1;
 
     private transient Set<AbstractSingleEntityPanel<?>> unsavedPanels = new HashSet<>();
-
-
-
-    @Getter
-    @AllArgsConstructor
-    public class IconItem {
-        private String icon;
-        private String value;
-    }
-
-    public List<IconItem> getReadWriteChoices() {
-        return Arrays.asList(
-                new IconItem("bi bi-eyeglass", READ_MODE),
-                new IconItem("User", WRITE_MODE)
-        );
-    }
 
 
     public void init() {
@@ -522,5 +503,13 @@ public class FlowBean implements Serializable {
     ) {
         selectedInstitution = sessionSettings.getSelectedInstitution();
         PrimeFaces.current().ajax().update("searchBarCsrfForm:searchBarForm");
+    }
+
+    public boolean getWriteModeVal() {
+        return WRITE_MODE;
+    }
+
+    public boolean getReadModeVal() {
+        return READ_MODE;
     }
 }

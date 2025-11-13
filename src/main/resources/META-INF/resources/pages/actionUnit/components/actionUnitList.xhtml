@@ -253,7 +253,7 @@
                     </p:commandLink>
                     <p:commandButton value="Ajouter" icon="bi bi-plus-square"
                                      disabled="true"
-                                     rendered="#{flowBean.readWriteMode == 'WRITE'}"
+                                     rendered="#{flowBean.readWriteMode == flowBean.writeModeVal}"
                                      style="margin-right: .5rem">
                     </p:commandButton>
                 </p:column>
