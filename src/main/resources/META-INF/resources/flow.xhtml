@@ -200,17 +200,19 @@
             text-align:center; background: var(--siamois-green-light-100);padding: 0.5em;gap:0.5em; align-items: center; flex-wrap: wrap;">
                 <h:form id="readWriteSwitchForm">
                     <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
-                    <p:selectBooleanButton value="#{flowBean.readWriteMode}" offIcon="bi bi-eyeglasses" onIcon="bi bi-pen">
-                        <p:ajax event="valueChange" listener="#{flowBean.changeReadWriteMode()}" update="flow"
+                    <p:selectBooleanButton id="readWriteSwitchButton" value="#{flowBean.readWriteMode}" offIcon="bi bi-eyeglasses" onIcon="bi bi-pen">
+                        <p:ajax event="valueChange" listener="#{flowBean.changeReadWriteMode()}" update="flow readWriteSwitchForm"
                                 onstart="PF('buiContent').show()" oncomplete="PF('buiContent').hide()"/>
                     </p:selectBooleanButton>
+                    <p:tooltip for="readWriteSwitchButton" value="#{flowBean.readWriteSwitchTooltip}" position="bottom"/>
                 </h:form>
                 <h:form id="fieldDesktopSwitchForm">
                     <input type="hidden"  name="${_csrf.parameterName}" value="${_csrf.token}"/>
                     <p:selectBooleanButton value="#{flowBean.fieldOfficeMode}" offIcon="bi bi-pc-display" onIcon="bi bi-phone" id="fieldOfficeSwitchButton">
-                        <p:ajax event="valueChange" listener="#{flowBean.changeFieldOfficeMode()}" update="flow"
+                        <p:ajax event="valueChange" listener="#{flowBean.changeFieldOfficeMode()}" update="flow fieldDesktopSwitchForm"
                                 onstart="PF('buiContent').show()" oncomplete="PF('buiContent').hide()"/>
                     </p:selectBooleanButton>
+                    <p:tooltip for="fieldOfficeSwitchButton" value="#{flowBean.fieldOfficeSwitchTooltip}" position="bottom"/>
                 </h:form>
                 <ui:include src="/dialog/unsavedUpdates/unsavedUpdatesDialog.xhtml"/>
             </div>

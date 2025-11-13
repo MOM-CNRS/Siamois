@@ -390,6 +390,7 @@ public class FlowBean implements Serializable {
     public void saveAllPanels() {
         if(saveAllPanelsMethod()) {
             readWriteMode = READ_MODE;
+            PrimeFaces.current().ajax().update("readWriteSwitchForm");
         }
     }
 
@@ -412,6 +413,7 @@ public class FlowBean implements Serializable {
             panel.cancelChanges();
         }
         readWriteMode = READ_MODE;
+        PrimeFaces.current().ajax().update("readWriteSwitchForm");
     }
 
     public String getInPlaceFieldMode() {
@@ -515,5 +517,23 @@ public class FlowBean implements Serializable {
 
     public boolean getFieldModeVal() {
         return FIELD_MODE;
+    }
+
+    public String getFieldOfficeSwitchTooltip() {
+        if(Boolean.TRUE.equals(fieldOfficeMode)) {
+            return langBean.msg("common.label.switchToOfficeMode");
+        }
+        else {
+            return langBean.msg("common.label.switchToFieldMode");
+        }
+    }
+
+    public String getReadWriteSwitchTooltip() {
+        if(Boolean.TRUE.equals(readWriteMode)) {
+            return langBean.msg("common.label.switchToReadMode");
+        }
+        else {
+            return langBean.msg("common.label.switchToWriteMode");
+        }
     }
 }
