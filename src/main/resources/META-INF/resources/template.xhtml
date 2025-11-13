@@ -62,7 +62,6 @@
     </script>
 
 
-
     <ui:insert name="head"/>
 
 </h:head>
@@ -75,7 +74,7 @@
 
     <div class="d-flex" style="height:100vh">
         <!-- Barre latérale -->
-        <h:panelGroup id="navBar" rendered="#{navBean.siamoisMode}" layout="none">
+        <h:panelGroup  id="navBar" rendered="#{navBean.siamoisMode}" layout="none">
             <nav id="siamoisNav" class="sidebar collapsed" aria-label="General sidebar">
                 <ul class="nav flex-column">
                     <li class="nav-item">
@@ -153,7 +152,8 @@
                 </div>
             </nav>
         </h:panelGroup>
-        <h:panelGroup rendered="#{navBean.settingsMode}" layout="none">
+
+        <h:panelGroup  rendered="#{navBean.settingsMode}" layout="none">
             <nav id="sidebarSettings" class="sidebar" aria-label="Settings sidebar">
                 <form:csrfform formId="settingsNavForm">
                     <ul class="nav flex-column">
@@ -210,17 +210,25 @@
                     </div>
                 </form:csrfform>
             </nav>
+
         </h:panelGroup>
 
 
         <!-- Contenu principal -->
         <div class="content" id="content">
             <form:csrfform formId="templateForm" id="templateFormCC">
-
                 <p:growl closable="true" id="templateGrowl" showDetail="true" showSummary="true">
                     <p:autoUpdate/>
                 </p:growl>
             </form:csrfform>
+            <h:panelGroup styleClass="show-small-screen" rendered="#{navBean.settingsMode}" layout="none">
+                <!-- Floating toggle button to open navbar -->
+                <h:panelGroup id="floatingSidebarToggle" class="floating-toggle show-small-screen" rendered="#{navBean.settingsMode}" >
+                    <form:csrfform formId="floatingToggleForm" id="floatingToggleCsrfForm">
+                        <p:commandButton icon="bi bi-list" onclick="toggleSiamoisSettingsSidebar();" />
+                    </form:csrfform>
+                </h:panelGroup>
+            </h:panelGroup>
             <ui:insert description="The main content" name="content"/>
         </div>
 

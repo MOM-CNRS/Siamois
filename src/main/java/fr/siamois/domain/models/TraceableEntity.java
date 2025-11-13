@@ -53,4 +53,5 @@ public abstract class TraceableEntity implements Serializable {
     protected Person validatedBy ;
 
     public abstract Long getId();
+
 }

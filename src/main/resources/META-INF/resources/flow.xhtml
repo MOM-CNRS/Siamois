@@ -83,7 +83,7 @@
     <ui:define name="content">
 
         <div style="display: flex; flex-direction: row; flex-shrink: 0">
-            <div id="search-bar" style="flex:4">
+            <div id="search-bar" class="hide-small-screen" style="flex:4">
                 <form:csrfform formId="searchBarForm" id="searchBarCsrfForm">
                     <article>
                         <h:panelGroup styleClass="ui-inputgroup">
@@ -196,8 +196,16 @@
                     </article>
                 </form:csrfform>
             </div>
+            <div id="smallScreenToolbar" class="show-small-screen" style="align-content: center; flex:1;
+            text-align:left; background: var(--siamois-green-light-100);padding: 0.5em">
+                <form:csrfform formId="toggleButtonSidebarPanelForm" id="toggleButtonSidebarPanelCsrfForm">
+                    <p:commandButton  icon="bi bi-list" onclick="toggleSiamoisSidebar()">
+
+                    </p:commandButton>
+                </form:csrfform>
+            </div>
             <div id="read-write-switch" style="align-content: center; flex:1;
-            text-align:center; background: var(--siamois-green-light-100);padding: 0.5em}">
+            text-align:right; background: var(--siamois-green-light-100);padding: 0.5em">
                 <h:form id="readWriteSwitchForm">
                     <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
                     <p:selectOneButton styleClass="bootstrap-icon-select-one-button"
