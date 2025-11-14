@@ -23,7 +23,7 @@
                              actionListener="#{genericNewUnitDialogBean.selectKind('ACTION',lazyDataModel)}"
                              oncomplete="PF('newUnitDiag').show();"
                              update="newUnitForm"
-                             rendered="#{flowBean.readWriteMode == flowBean.writeModeVal and flowBean.isActionUnitCreateAllowed()}"
+                             rendered="#{flowBean.isWriteMode == true and flowBean.isActionUnitCreateAllowed()}"
                              style="margin-right: .5rem">
             </p:commandButton>
         </f:facet>

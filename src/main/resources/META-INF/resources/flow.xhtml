@@ -200,7 +200,7 @@
             text-align:center; background: var(--siamois-green-light-100);padding: 0.5em;gap:0.5em; align-items: center; flex-wrap: wrap;">
                 <h:form id="readWriteSwitchForm">
                     <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
-                    <p:selectBooleanButton id="readWriteSwitchButton" value="#{flowBean.readWriteMode}" offIcon="bi bi-eyeglasses" onIcon="bi bi-pen">
+                    <p:selectBooleanButton id="readWriteSwitchButton" value="#{flowBean.isWriteMode}" offIcon="bi bi-eyeglasses" onIcon="bi bi-pen">
                         <p:ajax event="valueChange" listener="#{flowBean.changeReadWriteMode()}" update="flow readWriteSwitchForm"
                                 onstart="PF('buiContent').show()" oncomplete="PF('buiContent').hide()"/>
                     </p:selectBooleanButton>
@@ -208,7 +208,7 @@
                 </h:form>
                 <h:form id="fieldDesktopSwitchForm">
                     <input type="hidden"  name="${_csrf.parameterName}" value="${_csrf.token}"/>
-                    <p:selectBooleanButton value="#{flowBean.fieldOfficeMode}" offIcon="bi bi-pc-display" onIcon="bi bi-phone" id="fieldOfficeSwitchButton">
+                    <p:selectBooleanButton value="#{flowBean.isFieldMode}" offIcon="bi bi-pc-display" onIcon="bi bi-phone" id="fieldOfficeSwitchButton">
                         <p:ajax event="valueChange" listener="#{flowBean.changeFieldOfficeMode()}" update="flow fieldDesktopSwitchForm"
                                 onstart="PF('buiContent').show()" oncomplete="PF('buiContent').hide()"/>
                     </p:selectBooleanButton>

@@ -25,7 +25,7 @@
             <f:facet name="rightToolbar">
                 <p:commandButton value="#{langBean.msg('common.action.create')}" icon="bi bi-plus-square"
                                  actionListener="#{genericNewUnitDialogBean.selectKind('ACTION', panelModel.lazyDataModel)}"
-                                 rendered="#{flowBean.readWriteMode == flowBean.writeModeVal and flowBean.isActionUnitCreateAllowed()}"
+                                 rendered="#{flowBean.isWriteMode == true and flowBean.isActionUnitCreateAllowed()}"
                                  oncomplete="PF('newUnitDiag').show();"
                                  update="newUnitForm"
                                  style="margin-right: .5rem">

@@ -73,18 +73,14 @@ public class FlowBean implements Serializable {
     private final transient InstitutionService institutionService;
     private final transient InstitutionChangeEventPublisher institutionChangeEventPublisher;
 
-    public static final boolean READ_MODE = false;
-    public static final boolean WRITE_MODE = true;
-    public static final boolean FIELD_MODE = true;
-    public static final boolean OFFICE_MODE = false;
     private final RedirectBean redirectBean;
     private final transient LoginEventPublisher loginEventPublisher;
 
     // locals
     private transient DashboardModel responsiveModel;
     private static final String RESPONSIVE_CLASS = "col-12 lg:col-6 xl:col-6";
-    private Boolean readWriteMode = WRITE_MODE;
-    private Boolean fieldOfficeMode = OFFICE_MODE;
+    private Boolean isWriteMode = true;
+    private Boolean isFieldMode = true;
     private static final int MAX_NUMBER_OF_PANEL = 10;
 
     // Search bar
@@ -351,14 +347,14 @@ public class FlowBean implements Serializable {
      * Listener called when the ReadWrite mode variable is flipped.
      */
     public void changeReadWriteMode() {
-        if (readWriteMode.equals(READ_MODE)) {
+        if (isWriteMode.equals(false)) {
             fillAllUnsavedPanel();
             if (unsavedPanels.isEmpty()) {
                 PrimeFaces.current().ajax().update("flow");
                 return;
             }
 
-            readWriteMode = WRITE_MODE;
+            isWriteMode = true;
             PrimeFaces.current().executeScript("PF('confirmUnsavedDialog').show();");
         } else {
             PrimeFaces.current().ajax().update("flow");
@@ -389,7 +385,7 @@ public class FlowBean implements Serializable {
 
     public void saveAllPanels() {
         if(saveAllPanelsMethod()) {
-            readWriteMode = READ_MODE;
+            isWriteMode = false;
             PrimeFaces.current().ajax().update("readWriteSwitchForm");
         }
     }
@@ -412,12 +408,12 @@ public class FlowBean implements Serializable {
         for (AbstractSingleEntityPanel<?> panel : unsavedPanels) {
             panel.cancelChanges();
         }
-        readWriteMode = READ_MODE;
+        isWriteMode = false;
         PrimeFaces.current().ajax().update("readWriteSwitchForm");
     }
 
     public String getInPlaceFieldMode() {
-        if (readWriteMode.equals(WRITE_MODE)) {
+        if (isWriteMode.equals(true)) {
             return "input";
         }
         return "output";
@@ -507,20 +503,9 @@ public class FlowBean implements Serializable {
         PrimeFaces.current().ajax().update("searchBarCsrfForm:searchBarForm");
     }
 
-    public boolean getWriteModeVal() {
-        return WRITE_MODE;
-    }
-
-    public boolean getOfficeModeVal() {
-        return OFFICE_MODE;
-    }
-
-    public boolean getFieldModeVal() {
-        return FIELD_MODE;
-    }
 
     public String getFieldOfficeSwitchTooltip() {
-        if(Boolean.TRUE.equals(fieldOfficeMode)) {
+        if(Boolean.TRUE.equals(isFieldMode)) {
             return langBean.msg("common.label.switchToOfficeMode");
         }
         else {
@@ -529,7 +514,7 @@ public class FlowBean implements Serializable {
     }
 
     public String getReadWriteSwitchTooltip() {
-        if(Boolean.TRUE.equals(readWriteMode)) {
+        if(Boolean.TRUE.equals(isWriteMode)) {
             return langBean.msg("common.label.switchToReadMode");
         }
         else {

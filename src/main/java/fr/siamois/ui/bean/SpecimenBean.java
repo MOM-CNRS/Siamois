@@ -26,7 +26,7 @@ public class SpecimenBean {
 
     public boolean showCreateSpecimenButton(TraceableEntity context) {
         if(context.getClass() == RecordingUnit.class) {
-            return Objects.equals(flowBean.getReadWriteMode(), FlowBean.WRITE_MODE) &&
+            return Objects.equals(flowBean.getIsWriteMode(), true) &&
                     service.canCreateSpecimen(sessionSettingsBean.getUserInfo(), (RecordingUnit) context) ;
         }
         else {
