@@ -13,7 +13,7 @@
 
 
     <!-- show panel view -->
-    <h:panelGroup rendered="#{flowBean.fieldOfficeMode == 'OFFICE'}">
+    <h:panelGroup rendered="#{flowBean.isFieldMode}">
         <c:forEach items="#{layout}" var="customFormPanel" varStatus="status">
             <p:panel
                     toggleableHeader="true"
@@ -35,7 +35,7 @@
     </h:panelGroup>
 
     <!-- show tab view -->
-    <h:panelGroup rendered="#{flowBean.fieldOfficeMode == 'FIELD'}">
+    <h:panelGroup rendered="#{flowBean.isFieldMode}">
         <p:tabView id="customTabView-#{prefix}" dynamic="true" styleClass="fieldmode-tabview">
             <c:forEach items="#{layout}" var="customFormPanel" varStatus="status">
                 <p:tab title="#{spatialUnitFieldBean.resolvePanelLabel(customFormPanel)}"

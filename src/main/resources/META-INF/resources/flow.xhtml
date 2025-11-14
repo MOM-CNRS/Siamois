@@ -83,7 +83,7 @@
     <ui:define name="content">
 
         <div style="display: flex; flex-direction: row; flex-shrink: 0">
-            <div id="search-bar" class="hide-small-screen" style="flex:4">
+            <div id="search-bar" class="hide-small-screen" style="flex:8">
                 <form:csrfform formId="searchBarForm" id="searchBarCsrfForm">
                     <article>
                         <h:panelGroup styleClass="ui-inputgroup">
@@ -238,26 +238,22 @@
                 </form:csrfform>
             </div>
             <div id="read-write-switch" style="align-content: center; flex:1;
-            text-align:right; background: var(--siamois-green-light-100);padding: 0.5em">
+            text-align:right; background: var(--siamois-green-light-100);padding: 0.5em; gap:0.5em; display: flex; flex-direction: row-reverse;">
                 <h:form id="readWriteSwitchForm">
                     <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
-                    <p:selectOneButton styleClass="bootstrap-icon-select-one-button"
-                    value="#{flowBean.readWriteMode}" >
-                        <f:selectItem itemValue="READ" itemLabel="&#xF343;"/>
-                        <f:selectItem itemValue="WRITE" itemLabel="&#xF4C8;"/>
-                        <p:ajax event="change" listener="#{flowBean.changeReadWriteMode()}" update="flow"
+                    <p:selectBooleanButton id="readWriteSwitchButton" value="#{flowBean.isWriteMode}" offIcon="bi bi-eyeglasses" onIcon="bi bi-pen">
+                        <p:ajax event="valueChange" listener="#{flowBean.changeReadWriteMode()}" update="flow readWriteSwitchForm"
                                 onstart="PF('buiContent').show()" oncomplete="PF('buiContent').hide()"/>
-                    </p:selectOneButton>
+                    </p:selectBooleanButton>
+                    <p:tooltip for="readWriteSwitchButton" value="#{flowBean.readWriteSwitchTooltip}" position="bottom"/>
                 </h:form>
                 <h:form id="fieldDesktopSwitchForm">
                     <input type="hidden"  name="${_csrf.parameterName}" value="${_csrf.token}"/>
-                    <p:selectOneButton styleClass="bootstrap-icon-select-one-button" unselectable="false"  value="#{flowBean.fieldOfficeMode}" var="ic" id="fieldOfficeSwitchButton">
-                        <f:selectItem  itemLabel="&#xF6A5;" itemValue="OFFICE"/>
-                        <f:selectItem itemLabel="&#xF5AE;" itemValue="FIELD"/>
-
-                        <p:ajax event="change" listener="#{flowBean.changeFieldOfficeMode()}" update="flow"
+                    <p:selectBooleanButton value="#{flowBean.isFieldMode}" offIcon="bi bi-pc-display" onIcon="bi bi-phone" id="fieldOfficeSwitchButton">
+                        <p:ajax event="valueChange" listener="#{flowBean.changeFieldOfficeMode()}" update="flow fieldDesktopSwitchForm"
                                 onstart="PF('buiContent').show()" oncomplete="PF('buiContent').hide()"/>
-                    </p:selectOneButton>
+                    </p:selectBooleanButton>
+                    <p:tooltip for="fieldOfficeSwitchButton" value="#{flowBean.fieldOfficeSwitchTooltip}" position="bottom"/>
                 </h:form>
                 <ui:include src="/dialog/unsavedUpdates/unsavedUpdatesDialog.xhtml"/>
             </div>

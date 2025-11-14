@@ -30,9 +30,6 @@ import fr.siamois.ui.bean.panel.models.panel.single.*;
 import fr.siamois.utils.MessageUtils;
 import jakarta.el.MethodExpression;
 import jakarta.faces.context.FacesContext;
-import jakarta.faces.event.AjaxBehaviorEvent;
-import jakarta.faces.event.ValueChangeEvent;
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
@@ -76,18 +73,14 @@ public class FlowBean implements Serializable {
     private final transient InstitutionService institutionService;
     private final transient InstitutionChangeEventPublisher institutionChangeEventPublisher;
 
-    public static final String READ_MODE = "READ";
-    public static final String WRITE_MODE = "WRITE";
-    public static final String FIELD_MODE = "FIELD";
-    public static final String OFFICE_MODE = "OFFICE";
     private final RedirectBean redirectBean;
     private final transient LoginEventPublisher loginEventPublisher;
 
     // locals
     private transient DashboardModel responsiveModel;
     private static final String RESPONSIVE_CLASS = "col-12 lg:col-6 xl:col-6";
-    private String readWriteMode = WRITE_MODE;
-    private String fieldOfficeMode = OFFICE_MODE;
+    private Boolean isWriteMode = true;
+    private Boolean isFieldMode = false;
     private static final int MAX_NUMBER_OF_PANEL = 10;
 
     // Search bar
@@ -103,22 +96,6 @@ public class FlowBean implements Serializable {
     private transient int fullscreenPanelIndex = -1;
 
     private transient Set<AbstractSingleEntityPanel<?>> unsavedPanels = new HashSet<>();
-
-
-
-    @Getter
-    @AllArgsConstructor
-    public class IconItem {
-        private String icon;
-        private String value;
-    }
-
-    public List<IconItem> getReadWriteChoices() {
-        return Arrays.asList(
-                new IconItem("bi bi-eyeglass", READ_MODE),
-                new IconItem("User", WRITE_MODE)
-        );
-    }
 
 
     public void init() {
@@ -370,14 +347,14 @@ public class FlowBean implements Serializable {
      * Listener called when the ReadWrite mode variable is flipped.
      */
     public void changeReadWriteMode() {
-        if (readWriteMode.equals(READ_MODE)) {
+        if (Boolean.FALSE.equals(isWriteMode)) {
             fillAllUnsavedPanel();
             if (unsavedPanels.isEmpty()) {
                 PrimeFaces.current().ajax().update("flow");
                 return;
             }
 
-            readWriteMode = WRITE_MODE;
+            isWriteMode = true;
             PrimeFaces.current().executeScript("PF('confirmUnsavedDialog').show();");
         } else {
             PrimeFaces.current().ajax().update("flow");
@@ -408,7 +385,8 @@ public class FlowBean implements Serializable {
 
     public void saveAllPanels() {
         if(saveAllPanelsMethod()) {
-            readWriteMode = READ_MODE;
+            isWriteMode = false;
+            PrimeFaces.current().ajax().update("readWriteSwitchForm");
         }
     }
 
@@ -430,11 +408,12 @@ public class FlowBean implements Serializable {
         for (AbstractSingleEntityPanel<?> panel : unsavedPanels) {
             panel.cancelChanges();
         }
-        readWriteMode = READ_MODE;
+        isWriteMode = false;
+        PrimeFaces.current().ajax().update("readWriteSwitchForm");
     }
 
     public String getInPlaceFieldMode() {
-        if (readWriteMode.equals(WRITE_MODE)) {
+        if (Boolean.TRUE.equals(isWriteMode)) {
             return "input";
         }
         return "output";
@@ -522,5 +501,24 @@ public class FlowBean implements Serializable {
     ) {
         selectedInstitution = sessionSettings.getSelectedInstitution();
         PrimeFaces.current().ajax().update("searchBarCsrfForm:searchBarForm", "toggleButtonSidebarPanelCsrfForm");
+    }
+
+
+    public String getFieldOfficeSwitchTooltip() {
+        if(Boolean.TRUE.equals(isFieldMode)) {
+            return langBean.msg("common.label.switchToOfficeMode");
+        }
+        else {
+            return langBean.msg("common.label.switchToFieldMode");
+        }
+    }
+
+    public String getReadWriteSwitchTooltip() {
+        if(Boolean.TRUE.equals(isWriteMode)) {
+            return langBean.msg("common.label.switchToReadMode");
+        }
+        else {
+            return langBean.msg("common.label.switchToWriteMode");
+        }
     }
 }

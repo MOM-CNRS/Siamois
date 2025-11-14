@@ -42,7 +42,7 @@
                                      action="#{cc.attrs.btnAction}" disabled="#{empty cc.attrs.btnAction}" update="flow"/>
                     <p:commandButton value='#{langBean.msg("common.action.create")}' icon="bi bi-plus-square" styleClass="#{cc.attrs.btnStyleClass}"
                                      actionListener="#{cc.attrs.btnNewAction}"
-                                     rendered="#{not empty cc.attrs.btnNewAction and flowBean.readWriteMode == 'WRITE' and cc.attrs.isCreateAllowed}"
+                                     rendered="#{not empty cc.attrs.btnNewAction and flowBean.isWriteMode and cc.attrs.isCreateAllowed}"
                                      update="#{cc.attrs.btnNewActionUpdate}"
                                      onstart="#{cc.attrs.btnNewActionOnStart}"
                                      oncomplete="#{cc.attrs.btnNewActionOnComplete}"
