@@ -205,7 +205,7 @@
                                      actionListener="#{genericNewUnitDialogBean.selectKind('SPATIAL', item.parents, null, item)}"
                                      oncomplete="PF('newUnitDiag').show()"
                                      update="newUnitForm"
-                                     rendered="#{flowBean.isWriteMode == true}"
+                                     rendered="#{flowBean.isWriteMode}"
                                      style="margin-right: .5rem">
                     </p:commandButton>
                 </div>
@@ -235,7 +235,7 @@
                                      actionListener="#{genericNewUnitDialogBean.selectKind('SPATIAL', item.children, item, null)}"
                                      oncomplete="PF('newUnitDiag').show()"
                                      update="newUnitForm"
-                                     rendered="#{flowBean.isWriteMode == true}"
+                                     rendered="#{flowBean.isWriteMode}"
                                      style="margin-right: .5rem">
                     </p:commandButton>
                 </div>
@@ -264,7 +264,7 @@
                     <p:commandButton icon="bi bi-plus-square"
                                      actionListener="#{genericNewUnitDialogBean.selectKind('ACTION',item.relatedActionUnitList, item)}"
                                      oncomplete="PF('newUnitDiag').show()"
-                                     rendered="#{flowBean.isWriteMode == flowBean.isWriteMode and flowBean.isActionUnitCreateAllowed()}"
+                                     rendered="#{flowBean.isWriteMode and flowBean.isActionUnitCreateAllowed()}"
                                      update="newUnitForm"
                                      style="margin-right: .5rem">
                     </p:commandButton>

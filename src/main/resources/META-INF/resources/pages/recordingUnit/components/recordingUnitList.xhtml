@@ -93,7 +93,7 @@
                                     </p:columnToggler>
                                 </div>
                                 <p:outputPanel id="bulkEditPanel"
-                                               rendered="#{cc.attrs.lazyDataModel.selectedUnits.size() >0 and flowBean.isWriteMode == true}"
+                                               rendered="#{cc.attrs.lazyDataModel.selectedUnits.size() >0 and flowBean.isWriteMode}"
                                                style="display:flex; flex-direction: row; gap:0.5em;">
                                     <span>Edition du type en lot (les autres colonnes viendront plus tard) :</span>
                                     <sharedInput:conceptAutocompleteFieldCode id="bulkTypeComponent"
@@ -302,7 +302,7 @@
                             'bi bi-bookmark-x-fill' : 'bi bi-bookmark-plus' }" styleClass="sia-icon-btn"
                                          action="#{navBean.toggleRecordingUnitBookmark(item)}"
                                          update="bookmarkToggleButton navBarCsrfForm:siamoisNavForm:bookmarkGroup"/>
-                        <p:commandButton rendered="#{flowBean.isWriteMode == true}" icon="bi bi-copy"
+                        <p:commandButton rendered="#{flowBean.isWriteMode}" icon="bi bi-copy"
                                          action="#{cc.attrs.lazyDataModel.duplicateRow()}"
                                          update=":#{cc.clientId}:recordingUnitDataTable"
                                          styleClass="sia-icon-btn"/>

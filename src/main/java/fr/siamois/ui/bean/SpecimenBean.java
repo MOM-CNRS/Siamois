@@ -7,7 +7,6 @@ import fr.siamois.ui.bean.panel.FlowBean;
 import org.springframework.stereotype.Component;
 import org.springframework.web.context.annotation.SessionScope;
 
-import java.util.Objects;
 
 @Component
 @SessionScope
@@ -26,7 +25,7 @@ public class SpecimenBean {
 
     public boolean showCreateSpecimenButton(TraceableEntity context) {
         if(context.getClass() == RecordingUnit.class) {
-            return Objects.equals(flowBean.getIsWriteMode(), true) &&
+            return flowBean.getIsWriteMode() &&
                     service.canCreateSpecimen(sessionSettingsBean.getUserInfo(), (RecordingUnit) context) ;
         }
         else {

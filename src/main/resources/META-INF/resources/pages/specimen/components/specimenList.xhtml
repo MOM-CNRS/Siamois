@@ -89,7 +89,7 @@
                                             <p:ajax event="toggle" listener="#{cc.attrs.panelModel.onToggle}"/>
                                         </p:columnToggler>
                                     </div>
-                                    <p:outputPanel id="bulkEditPanel" rendered="#{cc.attrs.lazyDataModel.selectedUnits.size() >0 and flowBean.isWriteMode == true}" style="display:flex; flex-direction: row; gap:0.5em;">
+                                    <p:outputPanel id="bulkEditPanel" rendered="#{cc.attrs.lazyDataModel.selectedUnits.size() >0 and flowBean.isWriteMode}" style="display:flex; flex-direction: row; gap:0.5em;">
                                         <span>Edition du type en lot (les autres colonnes viendront plus tard) :</span>
                                         <sharedInput:conceptAutocompleteFieldCode id="bulkTypeComponent"
                                                                                   panelStyleClass="recording-unit-autocomplete"
@@ -270,7 +270,7 @@
                             'bi bi-bookmark-x-fill' : 'bi bi-bookmark-plus' }" styleClass="sia-icon-btn"
                             action="#{navBean.toggleSpecimenBookmark(item.fullIdentifier)}"
                             update="bookmarkToggleButton navBarCsrfForm:siamoisNavForm:bookmarkGroup"/>
-                            <p:commandButton rendered="#{flowBean.isWriteMode == true}" icon="bi bi-copy"
+                            <p:commandButton rendered="#{flowBean.isWriteMode}" icon="bi bi-copy"
                                              action="#{cc.attrs.lazyDataModel.duplicateRow()}"
                                              update=":#{cc.clientId}:specimenDataTable"
                                              styleClass="sia-icon-btn"/>
@@ -279,7 +279,7 @@
                 </p:column>
 
                 <!-- Edit toolbar -->
-                <p:column responsivePriority="1" rendered="#{flowBean.isWriteMode == true}" exportable="false" toggleable="false">
+                <p:column responsivePriority="1" rendered="#{flowBean.isWriteMode}" exportable="false" toggleable="false">
                     <p:rowEditor editTitle="Edit Row" cancelTitle="Cancel Edit" saveTitle="Save Row"/>
                 </p:column>
 

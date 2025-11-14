@@ -80,7 +80,7 @@ public class FlowBean implements Serializable {
     private transient DashboardModel responsiveModel;
     private static final String RESPONSIVE_CLASS = "col-12 lg:col-6 xl:col-6";
     private Boolean isWriteMode = true;
-    private Boolean isFieldMode = true;
+    private Boolean isFieldMode = false;
     private static final int MAX_NUMBER_OF_PANEL = 10;
 
     // Search bar
@@ -347,7 +347,7 @@ public class FlowBean implements Serializable {
      * Listener called when the ReadWrite mode variable is flipped.
      */
     public void changeReadWriteMode() {
-        if (isWriteMode.equals(false)) {
+        if (Boolean.FALSE.equals(isWriteMode)) {
             fillAllUnsavedPanel();
             if (unsavedPanels.isEmpty()) {
                 PrimeFaces.current().ajax().update("flow");
@@ -413,7 +413,7 @@ public class FlowBean implements Serializable {
     }
 
     public String getInPlaceFieldMode() {
-        if (isWriteMode.equals(true)) {
+        if (Boolean.TRUE.equals(isWriteMode)) {
             return "input";
         }
         return "output";

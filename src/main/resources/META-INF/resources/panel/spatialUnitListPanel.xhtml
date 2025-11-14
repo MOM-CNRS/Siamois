@@ -23,7 +23,7 @@
             <f:facet name="rightToolbar">
                 <p:commandButton value="#{langBean.msg('common.action.create')}" icon="bi bi-plus-square"
                                  actionListener="#{genericNewUnitDialogBean.selectKind('SPATIAL', panelModel.lazyDataModel)}"
-                                 rendered="#{flowBean.isWriteMode == true and spatialUnitFieldBean.isCreateAllowed()}"
+                                 rendered="#{flowBean.isWriteMode and spatialUnitFieldBean.isCreateAllowed()}"
                                  oncomplete="PF('newUnitDiag').show();"
                                  update="newUnitForm"
                                  style="margin-right: .5rem">

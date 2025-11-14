@@ -161,7 +161,7 @@
                     </div>
 
                 </p:toolbarGroup>
-                <p:toolbarGroup align="right" rendered="#{flowBean.isWriteMode == true}">
+                <p:toolbarGroup align="right" rendered="#{flowBean.isWriteMode}">
                     <p:commandLink value='#{langBean.msg("common.action.cancel")}'
                                    update="panel-#{panelIndex}"
                                    id="cancelButton"

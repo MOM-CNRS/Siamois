@@ -60,7 +60,7 @@
                                  actionListener="#{newSpatialUnitDialogBean.init(panelModel.lazyDataModelParents)}"
                                  oncomplete="PF('newUnitDiag').show()"
                                  update="newUnitForm"
-                                 rendered="#{flowBean.isWriteMode == true}"
+                                 rendered="#{flowBean.isWriteMode}"
                                  style="margin-right: .5rem">
                 </p:commandButton>
             </f:facet>
