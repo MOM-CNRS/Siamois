@@ -1,6 +1,7 @@
 package fr.siamois.domain.events.publisher;
 
 import fr.siamois.domain.models.events.LoginEvent;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
@@ -9,13 +10,10 @@ import org.springframework.stereotype.Service;
  * This service is responsible for publishing events related to user login actions.
  */
 @Service
+@RequiredArgsConstructor
 public class LoginEventPublisher {
 
     private final ApplicationEventPublisher applicationEventPublisher;
-
-    public LoginEventPublisher(ApplicationEventPublisher applicationEventPublisher) {
-        this.applicationEventPublisher = applicationEventPublisher;
-    }
 
     /**
      * Publishes a LoginEvent.

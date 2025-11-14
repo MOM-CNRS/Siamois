@@ -18,6 +18,7 @@ public class MessageUtils {
     private static final Map<FacesMessage.Severity, String> titlesCodes = new HashMap<>();
 
     private MessageUtils() {
+        throw new UnsupportedOperationException("MessageUtils is a utility class and cannot be instantiated");
     }
 
     static {

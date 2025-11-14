@@ -116,28 +116,6 @@ public class LabelService {
     }
 
     /**
-     * Finds concepts matching the input label under the specified parent concept and language.
-     * When the input is null or empty, it returns all concepts under the parent concept in the specified language.
-     * Search is done by exact match and by similarity.
-     * If no results are found, it falls back to searching without language restriction.
-     * The results contain one concept per language, prioritizing the preferred language.
-     *
-     * @param parentConcept the parent concept to search under
-     * @param langCode      the language code to filter labels
-     * @param input         the input label to match
-     * @param limit         the maximum number of results to return
-     * @return list of matching concept labels
-     */
-    @NonNull
-    public List<ConceptLabel> findMatchingConcepts(@NonNull Concept parentConcept, @NonNull String langCode, @Nullable String input, int limit) {
-        if (input == null || input.isEmpty()) {
-            return conceptLabelRepository.findAllLabelsByParentConceptAndLangCode(parentConcept.getId(), langCode, limit);
-        } else {
-            return conceptLabelRepository.findAllByParentConceptAndInputLimited(parentConcept.getId(), langCode, input, limit);
-        }
-    }
-
-    /**
      * Updates or creates an alternative label for a concept in the specified language.
      *
      * @param savedConcept       the concept to update the alt label for

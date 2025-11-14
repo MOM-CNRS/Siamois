@@ -20,6 +20,9 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Repository for fetching autocomplete suggestions for concepts.
+ */
 @Slf4j
 @Repository
 @RequiredArgsConstructor
@@ -29,7 +32,7 @@ public class AutocompleteRepository {
 
     public static final int DESCRIPTION_TRUNCATE_LENGTH = 200;
 
-    private ConceptAutocompleteDTO rowToDTO(ResultSet resultSet, String langcode) throws SQLException {
+    private ConceptAutocompleteDTO rowToDTO(@NonNull ResultSet resultSet, @NonNull String langcode) throws SQLException {
         VocabularyType type = new VocabularyType();
         type.setId(resultSet.getLong("vocabulary_type_id"));
         type.setLabel(resultSet.getString("vocabulary_type_label"));
@@ -76,11 +79,21 @@ public class AutocompleteRepository {
         );
     }
 
+    /**
+     * Find matching concepts for the given concept in the specified language, input string, and limit.
+     * This method calls the database function concept_autocomplete.
+     *
+     * @param concept The field concept to find matches for
+     * @param lang    The language code to filter results
+     * @param input   The input string to match against concept labels
+     * @param limit   The maximum number of results to return
+     * @return A list of ConceptAutocompleteDTO containing matching concepts
+     */
     @NonNull
     public List<ConceptAutocompleteDTO> findMatchingConceptsFor(@NonNull Concept concept,
-                                                               @NonNull String lang,
-                                                               @Nullable String input,
-                                                               int limit) {
+                                                                @NonNull String lang,
+                                                                @Nullable String input,
+                                                                int limit) {
         List<ConceptAutocompleteDTO> results = new ArrayList<>();
 
         try (Connection connection = dataSource.getConnection();
@@ -99,7 +112,7 @@ public class AutocompleteRepository {
 
     }
 
-    private List<ConceptAutocompleteDTO> processResultSet(Concept concept, String lang, PreparedStatement statement, List<ConceptAutocompleteDTO> results) {
+    private List<ConceptAutocompleteDTO> processResultSet(@NonNull Concept concept, @NonNull String lang, PreparedStatement statement, List<ConceptAutocompleteDTO> results) {
         try (ResultSet resultSet = statement.executeQuery()) {
             while (resultSet.next()) {
                 ConceptAutocompleteDTO dto = rowToDTO(resultSet, lang);
