@@ -290,5 +290,33 @@ public interface SpatialUnitRepository extends JpaRepository<SpatialUnit, Long>,
                     "WHERE sh.fk_child_id = :spatialUnitId"
     )
     Set<SpatialUnit> findParentsOf(Long spatialUnitId);
+
+    @Query(value = """
+        WITH RECURSIVE tree (id, depth, path) AS (
+            -- Seed with children of the roots (depth = 1)
+            SELECT c.spatial_unit_id, 1, ARRAY[c.spatial_unit_id]
+            FROM spatial_hierarchy h
+            JOIN spatial_unit c ON c.spatial_unit_id = h.fk_child_id
+            WHERE h.fk_parent_id = ANY(:rootIds)
+
+            UNION ALL
+
+            -- Walk down using the hierarchy table
+            SELECT c.spatial_unit_id, t.depth + 1, t.path || c.spatial_unit_id
+            FROM spatial_hierarchy h
+            JOIN tree t ON h.fk_parent_id = t.id
+            JOIN spatial_unit c ON c.spatial_unit_id = h.fk_child_id
+            WHERE t.depth < :maxDepth -- stop at :maxDepth
+              AND NOT c.spatial_unit_id = ANY(t.path)
+        )
+        -- Descendants only; DISTINCT handles nodes reachable via multiple paths
+        SELECT DISTINCT su.*
+        FROM spatial_unit su
+        JOIN tree t ON su.spatial_unit_id = t.id
+        ORDER BY su.spatial_unit_id
+        """,
+            nativeQuery = true)
+    List<SpatialUnit> findDescendantsUpToDepth(@Param("rootIds") Long[] rootIds,
+                                               @Param("maxDepth") int maxDepth);
 }
 

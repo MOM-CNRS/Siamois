@@ -246,7 +246,7 @@ public class RecordingUnit extends RecordingUnitParent implements ArkEntity, Ref
     private static CustomFieldDateTime openingDateField = new CustomFieldDateTime.Builder()
             .label("recordingunit.field.openingDate")
             .isSystemField(true)
-            .valueBinding("startDate")
+            .valueBinding("openingDate")
             .showTime(false)
             .concept(openingDateConcept)
             .build();

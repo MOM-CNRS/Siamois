@@ -2,6 +2,7 @@ package fr.siamois.domain.models.form.customfieldanswer;
 
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.models.vocabulary.label.ConceptLabel;
+import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -23,7 +24,7 @@ public class CustomFieldAnswerSelectOneFromFieldCode extends CustomFieldAnswer {
     private Concept value;
 
     @Transient
-    private transient ConceptLabel uiVal;
+    private transient ConceptAutocompleteDTO uiVal;
 
     public void setValue(ConceptLabel conceptLabel) {
         this.value = conceptLabel.getConcept();

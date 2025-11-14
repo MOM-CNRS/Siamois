@@ -2,12 +2,14 @@ package fr.siamois.domain.services.spatialunit;
 
 import fr.siamois.domain.models.ArkEntity;
 import fr.siamois.domain.models.UserInfo;
+import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.ark.Ark;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.exceptions.spatialunit.SpatialUnitAlreadyExistsException;
 import fr.siamois.domain.models.exceptions.spatialunit.SpatialUnitNotFoundException;
 import fr.siamois.domain.models.history.RevisionWithInfo;
 import fr.siamois.domain.models.institution.Institution;
+import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.settings.InstitutionSettings;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
@@ -599,6 +601,7 @@ class SpatialUnitServiceTest {
         verifyNoMoreInteractions(spatialUnitRepository);
     }
 
+    @SuppressWarnings("unchecked")
     @Test
     void restore_shouldSaveRevisionFromHistory() {
         // GIVEN
@@ -615,6 +618,54 @@ class SpatialUnitServiceTest {
 
         // Vérifie que c’est bien le spatialUnit récupéré du history
         assert(captor.getValue() == spatialUnit);
+    }
+
+    private static SpatialUnit su(long id) {
+        SpatialUnit su = mock(SpatialUnit.class);
+        when(su.getId()).thenReturn(id);
+        return su;
+    }
+
+    @Test
+    void whenNoActionUnit_thenReturnsEmpty() {
+        // given
+        RecordingUnit unit = mock(RecordingUnit.class);
+        when(unit.getActionUnit()).thenReturn(null);
+
+        // when
+        List<SpatialUnit> result = spatialUnitService.getSpatialUnitOptionsFor(unit);
+
+        // then
+        assertThat(result).isEmpty();
+        verifyNoInteractions(spatialUnitRepository);
+    }
+
+    @Test
+    void whenActionUnitExists_thenReturnsRootsAndDescendants() {
+        // given
+        SpatialUnit root1 = su(1L);
+        SpatialUnit root2 = su(2L);
+        SpatialUnit desc1 = su(3L);
+        SpatialUnit desc2 = su(4L);
+
+        ActionUnit actionUnit = mock(ActionUnit.class);
+        when(actionUnit.getSpatialContext()).thenReturn(new HashSet<>(Set.of(root1, root2)));
+
+        RecordingUnit unit = mock(RecordingUnit.class);
+        when(unit.getActionUnit()).thenReturn(actionUnit);
+
+        when(spatialUnitRepository.findDescendantsUpToDepth(any(), anyInt()))
+                .thenReturn(List.of(desc1, desc2));
+
+        // when
+        List<SpatialUnit> result = spatialUnitService.getSpatialUnitOptionsFor(unit);
+
+        // then
+        assertThat(result)
+                .containsExactlyInAnyOrder(root1, root2, desc1, desc2); // order irrelevant
+
+        verify(spatialUnitRepository)
+                .findDescendantsUpToDepth(any(Long[].class), eq(10));
     }
 
 }

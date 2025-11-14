@@ -129,7 +129,8 @@
 /* dialogs */
 
 .sia-new-unit-dialog.ui-dialog .ui-dialog-titlebar {
-  padding: 0;
+  padding: 1em;
+  background: var(--light-color-100);
 }
 
 .sia-new-unit-dialog.ui-dialog .ui-dialog-footer {
@@ -163,6 +164,8 @@ body {
 body .ui-datepicker .ui-datepicker-calendar td>a.ui-state-active, body .ui-datepicker .ui-datepicker-calendar td>span.ui-state-active {
   background-color: var(--main-color);
 }
+
+
 
 
 

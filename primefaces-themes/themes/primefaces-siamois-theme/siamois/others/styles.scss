@@ -118,10 +118,6 @@ html, body {
 }
 
 
-.edit-type-chip:hover {
-    background: #2196f3;
-    color: white;
-}
 
 .stratigraphy-neighborhood .ui-chronoline-event-opposite {
     display: none !important; /* Hides the opposite side */
@@ -131,4 +127,27 @@ html, body {
 i#user-icon {
     width: 40px;
     height: 40px;
+}
+
+.bootstrap-icon-select-one-button .ui-button.ui-widget.ui-state-default.ui-button-text-only {
+  font-family: 'bootstrap-icons', serif;
+}
+
+.panel-history-colored-span {
+  color: var(--main-color)
+}
+
+body .ui-datatable .ui-datatable-data>tr.ui-state-highlight {
+  background: var(--light-color-200);
+}
+
+.floating-toggle {
+  position: fixed;
+  top: 0.75rem;
+  left: 0.75rem;
+  z-index: 2000;
+  background: var(--siamois-green-light-100);
+  padding: 0.3rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
 }

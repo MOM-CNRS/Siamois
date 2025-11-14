@@ -6,11 +6,11 @@ import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.customform.CustomFormPanel;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
-import fr.siamois.domain.models.vocabulary.label.ConceptLabel;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.domain.services.vocabulary.FieldConfigurationService;
 import fr.siamois.domain.services.vocabulary.FieldService;
+import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
 import fr.siamois.ui.bean.LabelBean;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.RedirectBean;
@@ -112,7 +112,7 @@ public class SpatialUnitFieldBean implements Serializable {
      * @param input the input of the user
      * @return the list of concepts that match the input to display in the autocomplete
      */
-    public List<ConceptLabel> completeWithFieldCode(String input) {
+    public List<ConceptAutocompleteDTO> completeWithFieldCode(String input) {
         String fieldCode = "Undefined";
         try {
             FacesContext context = FacesContext.getCurrentInstance();
@@ -142,6 +142,9 @@ public class SpatialUnitFieldBean implements Serializable {
 
 
     public String resolvePanelLabel(CustomFormPanel p) {
+        if(p == null) {
+            return langBean.msg("common.panel.title.undefined");
+        }
         if(Boolean.TRUE.equals(p.getIsSystemPanel())) {
             return langBean.msg(p.getName());
         }

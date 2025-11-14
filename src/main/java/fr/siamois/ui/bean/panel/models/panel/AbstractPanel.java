@@ -36,12 +36,27 @@ public abstract class AbstractPanel implements Serializable {
      * Formats the given OffsetDateTime to a string in UTC timezone.
      *
      * @param dateTime the OffsetDateTime to format
+     * @param showTime do we show the time?
+     * @return the formatted date string, or an empty string if dateTime is null
+     */
+    public String formatUtcDateTime(OffsetDateTime dateTime, boolean showTime) {
+        if (dateTime == null) return "";
+        String pattern = "dd/MM/yyyy HH:mm";
+        if(!showTime) {
+            pattern = "dd/MM/yyyy";
+        }
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern(pattern).withZone(ZoneOffset.UTC);
+        return formatter.format(dateTime);
+    }
+
+    /**
+     * Formats the given OffsetDateTime to a string in UTC timezone.
+     *
+     * @param dateTime the OffsetDateTime to format
      * @return the formatted date string, or an empty string if dateTime is null
      */
     public String formatUtcDateTime(OffsetDateTime dateTime) {
-        if (dateTime == null) return "";
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm").withZone(ZoneOffset.UTC);
-        return formatter.format(dateTime);
+        return formatUtcDateTime(dateTime, false);
     }
 
     protected AbstractPanel(String titleCodeOrTitle, String icon, String panelClass) {

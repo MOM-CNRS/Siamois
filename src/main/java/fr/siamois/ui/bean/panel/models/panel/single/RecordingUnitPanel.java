@@ -43,7 +43,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 
 import java.io.Serializable;
-import java.time.*;
+import java.time.LocalDateTime;
+import java.time.Month;
+import java.time.OffsetDateTime;
 import java.util.*;
 
 @Slf4j
@@ -92,9 +94,6 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
     }
 
 
-
-
-
     @Override
     public String ressourceUri() {
         return "/recording-unit/" + idunit;
@@ -105,16 +104,17 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
         return "/panel/header/recordingUnitPanelHeader.xhtml";
     }
 
+    /**
+     * Returns all the spatial units a recording unit can be attached to
+     * @return The list of spatial unit
+     */
     @Override
     public List<SpatialUnit> getSpatialUnitOptions() {
 
-        // Return the spatial context of the parent action
-        if(unit.getActionUnit() != null) {
-            return new ArrayList<>(unit.getActionUnit().getSpatialContext());
-        }
-
-        return List.of();
+        if(unit == null) return Collections.emptyList();
+        return spatialUnitService.getSpatialUnitOptionsFor(unit);
     }
+
 
     @Override
     protected String getFormScopePropertyName() {
@@ -176,10 +176,6 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
         }
 
 
-    }
-
-    public OffsetDateTime localDateToOffsetDateTime(LocalDate localDate) {
-        return localDate.atTime(LocalTime.NOON).atOffset(ZoneOffset.UTC);
     }
 
     public void refreshUnit() {

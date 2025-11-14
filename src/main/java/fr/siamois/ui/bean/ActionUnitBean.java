@@ -7,7 +7,6 @@ import fr.siamois.ui.bean.panel.FlowBean;
 import org.springframework.stereotype.Component;
 import org.springframework.web.context.annotation.SessionScope;
 
-import java.util.Objects;
 
 @Component
 @SessionScope
@@ -25,7 +24,7 @@ public class ActionUnitBean {
 
     public boolean showCreateRecordingUnitButton(TraceableEntity context) {
         if(context.getClass() == ActionUnit.class) {
-            return Objects.equals(flowBean.getReadWriteMode(), "WRITE") &&
+            return flowBean.getIsWriteMode() &&
                     service.canCreateRecordingUnit(sessionSettingsBean.getUserInfo(), (ActionUnit) context) ;
         }
         else {

@@ -5,6 +5,7 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.io.Serializable;
 import java.util.Objects;
 
 /**
@@ -21,7 +22,7 @@ import java.util.Objects;
 })
 @Inheritance(strategy = InheritanceType.SINGLE_TABLE)
 @DiscriminatorColumn(name = "label_type", discriminatorType = DiscriminatorType.INTEGER)
-public abstract class ConceptLabel {
+public abstract class ConceptLabel implements Serializable {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -59,11 +60,13 @@ public abstract class ConceptLabel {
     @Override
     public boolean equals(Object o) {
         if (!(o instanceof ConceptLabel that)) return false;
-        return Objects.equals(concept, that.concept) && Objects.equals(label, that.label);
+        return Objects.equals(concept, that.concept)
+                && Objects.equals(label, that.label)
+                && Objects.equals(langCode, that.langCode);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(concept, label);
+        return Objects.hash(concept, label, langCode);
     }
 }

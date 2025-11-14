@@ -11,6 +11,10 @@
         <cc:attribute name="saveMethod" method-signature="java.lang.Void f()" required="false"/>
         <cc:attribute name="cancelMethod" method-signature="java.lang.String f()" required="false"/>
         <cc:attribute name="displaySaveButton" type="boolean" default="true"/>
+        <cc:attribute name="update" type="java.lang.String" required="false"/>
+        <!-- Ajout d'attributs pour démarrer/arrêter des scripts côté client autour de l'appel save -->
+        <cc:attribute name="onstart" type="java.lang.String" required="false"/>
+        <cc:attribute name="oncomplete" type="java.lang.String" required="false"/>
     </cc:interface>
 
     <cc:implementation>
@@ -25,7 +29,11 @@
                                      value="#{langBean.msg('common.action.cancel')}"  />
                     <p:commandButton
                             value="#{langBean.msg('common.action.save')}"
-                            action="#{cc.attrs.saveMethod}"/>
+                            action="#{cc.attrs.saveMethod}"
+                            update="#{cc.attrs.update}"
+                            onstart="#{cc.attrs.onstart}"
+                            oncomplete="#{cc.attrs.oncomplete}"
+                    />
                 </p:outputPanel>
             </div>
         </shared:csrfform>

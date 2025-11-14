@@ -28,7 +28,7 @@
                                  actionListener="#{newSpatialUnitDialogBean.init(panelModel.lazyDataModelChildren)}"
                                  oncomplete="PF('newUnitDiag').show()"
                                  update="newUnitForm"
-                                 rendered="#{flowBean.readWriteMode == 'WRITE'}"
+                                 rendered="#{flowBean.isWriteMode== true}"
                                  style="margin-right: .5rem">
                 </p:commandButton>
             </f:facet>
@@ -60,7 +60,7 @@
                                  actionListener="#{newSpatialUnitDialogBean.init(panelModel.lazyDataModelParents)}"
                                  oncomplete="PF('newUnitDiag').show()"
                                  update="newUnitForm"
-                                 rendered="#{flowBean.readWriteMode == 'WRITE'}"
+                                 rendered="#{flowBean.isWriteMode}"
                                  style="margin-right: .5rem">
                 </p:commandButton>
             </f:facet>

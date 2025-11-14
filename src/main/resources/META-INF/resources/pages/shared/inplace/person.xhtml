@@ -42,6 +42,7 @@
                                 forceSelection="true"
                                 label="#{cc.attrs.label}"
                                 required="#{cc.attrs.required}"
+                                onchange="this.input[0].classList.add('sia-modified-field')"
                                 scrollHeight="300"
                                 var="person" itemLabel="#{person.displayName()}"
                                 itemValue="#{person}"

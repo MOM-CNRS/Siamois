@@ -146,7 +146,7 @@ public class RecordingUnitService implements ArkEntityService {
             managedRecordingUnit.setAltitude(recordingUnit.getAltitude());
             managedRecordingUnit.setArk(recordingUnit.getArk());
             managedRecordingUnit.setDescription(recordingUnit.getDescription());
-            managedRecordingUnit.setCreatedBy(recordingUnit.getCreatedBy());
+
             managedRecordingUnit.setAuthor(recordingUnit.getAuthor());
             managedRecordingUnit.setClosingDate(recordingUnit.getClosingDate());
             managedRecordingUnit.setOpeningDate(recordingUnit.getOpeningDate());
@@ -165,9 +165,15 @@ public class RecordingUnitService implements ArkEntityService {
             managedRecordingUnit.setErosionProfile(recordingUnit.getErosionProfile());
             managedRecordingUnit.setErosionShape(recordingUnit.getErosionShape());
 
+            if(managedRecordingUnit.getCreatedBy() == null) {
+                managedRecordingUnit.setCreatedBy(recordingUnit.getCreatedBy());
+            }
+
             managedRecordingUnit.setChronologicalPhase(recordingUnit.getChronologicalPhase());
             managedRecordingUnit.setGeomorphologicalAgent(recordingUnit.getGeomorphologicalAgent());
 
+
+            // Additional answers
             CustomFormResponse managedFormResponse;
 
 

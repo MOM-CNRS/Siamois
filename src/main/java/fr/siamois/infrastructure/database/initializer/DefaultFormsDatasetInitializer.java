@@ -589,17 +589,16 @@ public class DefaultFormsDatasetInitializer implements DatabaseInitializer {
                                                             fields.get(15),
                                                             UI_G_12_UI_MD_6_UI_LG_3
                                                     ),
-
                                                     new CustomColDTO(
                                                             false,
                                                             false,
-                                                            fields.get(16),
+                                                            fields.get(17),
                                                             UI_G_12_UI_MD_6_UI_LG_3
                                                     ),
                                                     new CustomColDTO(
                                                             false,
                                                             false,
-                                                            fields.get(17),
+                                                            fields.get(16),
                                                             UI_G_12_UI_MD_6_UI_LG_3
                                                     )
                                             )

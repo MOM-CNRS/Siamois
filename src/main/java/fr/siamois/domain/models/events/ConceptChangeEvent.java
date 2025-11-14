@@ -1,4 +1,4 @@
-package fr.siamois.domain.events;
+package fr.siamois.domain.models.events;
 
 import lombok.Getter;
 import org.springframework.context.ApplicationEvent;

@@ -13,6 +13,7 @@ import fr.siamois.domain.models.exceptions.auth.InvalidUserInformationException;
 import fr.siamois.domain.models.exceptions.auth.UserAlreadyExistException;
 import fr.siamois.domain.models.exceptions.vocabulary.NoConfigForFieldException;
 import fr.siamois.domain.models.institution.Institution;
+import fr.siamois.domain.models.misc.ProgressWrapper;
 import fr.siamois.domain.models.settings.PersonSettings;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
@@ -71,6 +72,8 @@ public class ProfileSettingsBean implements Serializable {
 
     private String fThesaurusUrl;
     private Long fDefaultInstitutionId;
+
+    private ProgressWrapper progressWrapper = new ProgressWrapper();
 
     @EventListener(InstitutionChangeEvent.class)
     public void init() {
@@ -160,14 +163,20 @@ public class ProfileSettingsBean implements Serializable {
         UserInfo info = sessionSettingsBean.getUserInfo();
         try {
             Vocabulary vocabulary = vocabularyService.findOrCreateVocabularyOfUri(fThesaurusUrl);
-            fieldConfigurationService.setupFieldConfigurationForUser(info, vocabulary);
+            fieldConfigurationService.setupFieldConfigurationForUser(info, vocabulary, progressWrapper);
             MessageUtils.displayMessage(langBean, FacesMessage.SEVERITY_INFO, "myProfile.thesaurus.message.success");
+            refConfigConcept = fieldConfigurationService.findParentConceptForFieldcode(info, SpatialUnit.CATEGORY_FIELD_CODE);
         } catch (InvalidEndpointException e) {
             MessageUtils.displayMessage(langBean, FacesMessage.SEVERITY_ERROR, "myProfile.thesaurus.uri.invalid");
         } catch (NotSiamoisThesaurusException e) {
             MessageUtils.displayMessage(langBean, FacesMessage.SEVERITY_ERROR, "myProfile.thesaurus.siamois.invalid");
         } catch (ErrorProcessingExpansionException e) {
             displayErrorMessage(langBean, "thesaurus.error.processingExpansion");
+        } catch (NoConfigForFieldException e) {
+            log.error("Unexpected error after setting up thesaurus for user", e);
+            displayErrorMessage(langBean, "common.error.internal");
+        } finally {
+            progressWrapper.reset();
         }
     }
 
@@ -230,6 +239,6 @@ public class ProfileSettingsBean implements Serializable {
         personSettings = null;
         refConfigConcept = null;
         refInstitutions = null;
+        progressWrapper = new ProgressWrapper();
     }
-
 }

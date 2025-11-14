@@ -18,6 +18,7 @@ import fr.siamois.domain.services.document.DocumentService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitTreeService;
 import fr.siamois.domain.services.vocabulary.FieldConfigurationService;
+import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
 import fr.siamois.ui.bean.LabelBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
 import fr.siamois.ui.bean.dialog.newunit.GenericNewUnitDialogBean;
@@ -188,12 +189,21 @@ public abstract class AbstractSingleEntity<T> extends AbstractPanel implements S
         return String.valueOf(currentYear);
     }
 
-    public String getConceptFieldsUpdateTargetsOnBlur() {
-        // If new unit panel form, update @this when concept is selected, otherwise @form
+    public String getConceptFieldsUpdateTargetsOnBlur(int panelIndex) {
+        // If new unit panel form, update only header when concept is selected, otherwise @form
         if (this.getClass() == GenericNewUnitDialogBean.class) {
-            return "@this panelHeader";
+            return "";
         } else {
-            return "@form panelHeader";
+            return "@form panel-"+panelIndex+"-header";
+        }
+    }
+
+    public String getPanelHeaderUpdateId(int panelIndex) {
+        // If new unit panel form
+        if (this.getClass() == GenericNewUnitDialogBean.class) {
+            return "";
+        } else {
+            return "panel-"+panelIndex+"-header";
         }
     }
 
@@ -508,7 +518,7 @@ public abstract class AbstractSingleEntity<T> extends AbstractPanel implements S
         } else if (value instanceof Concept c) {
             if (answer instanceof CustomFieldAnswerSelectOneFromFieldCode codeAnswer) {
                 codeAnswer.setValue(c);
-                codeAnswer.setUiVal(labelBean.findConceptLabelOf(c));
+                codeAnswer.setUiVal(new ConceptAutocompleteDTO(c, labelBean.findLabelOf(c), labelBean.getCurrentUserLang()));
             }
         } else if (value instanceof ActionUnit a && answer instanceof CustomFieldAnswerSelectOneActionUnit actionUnitAnswer) {
             actionUnitAnswer.setValue(a);
@@ -564,7 +574,7 @@ public abstract class AbstractSingleEntity<T> extends AbstractPanel implements S
             return a.getValue();
         } else if (answer instanceof CustomFieldAnswerSelectOneFromFieldCode a) {
             try {
-                return a.getUiVal().getConcept();
+                return a.getUiVal().concept();
             } catch(NullPointerException e) {
                 return null;
             }

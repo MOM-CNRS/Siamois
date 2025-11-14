@@ -6,6 +6,7 @@ import fr.siamois.domain.models.exceptions.ErrorProcessingExpansionException;
 import fr.siamois.domain.models.exceptions.api.InvalidEndpointException;
 import fr.siamois.domain.models.exceptions.api.NotSiamoisThesaurusException;
 import fr.siamois.domain.models.institution.Institution;
+import fr.siamois.domain.models.misc.ProgressWrapper;
 import fr.siamois.domain.models.vocabulary.Vocabulary;
 import fr.siamois.domain.services.vocabulary.FieldConfigurationService;
 import fr.siamois.domain.services.vocabulary.VocabularyService;
@@ -39,6 +40,8 @@ public class InstitutionThesaurusSettingsBean implements Serializable {
     private String thesaurusUrl;
     private Institution institution;
 
+    private ProgressWrapper progressWrapper = new ProgressWrapper();
+
     public InstitutionThesaurusSettingsBean(FieldConfigurationService fieldConfigurationService, SessionSettingsBean sessionSettingsBean, VocabularyService vocabularyService, LangBean langBean) {
         this.fieldConfigurationService = fieldConfigurationService;
         this.sessionSettingsBean = sessionSettingsBean;
@@ -50,6 +53,7 @@ public class InstitutionThesaurusSettingsBean implements Serializable {
     public void reset() {
         thesaurusUrl = null;
         institution = null;
+        progressWrapper.reset();
     }
 
     public void init(Institution institution) {
@@ -57,7 +61,7 @@ public class InstitutionThesaurusSettingsBean implements Serializable {
         this.institution = institution;
         Optional<String> optVocab = fieldConfigurationService.findVocabularyUrlOfInstitution(institution);
         optVocab.ifPresent(s -> thesaurusUrl = s);
-
+        progressWrapper.reset();
     }
 
     public void saveConfig() {
@@ -67,7 +71,7 @@ public class InstitutionThesaurusSettingsBean implements Serializable {
 
         try {
             Vocabulary vocabulary = vocabularyService.findOrCreateVocabularyOfUri(thesaurusUrl);
-            fieldConfigurationService.setupFieldConfigurationForInstitution(userInfo, vocabulary);
+            fieldConfigurationService.setupFieldConfigurationForInstitution(userInfo, vocabulary, progressWrapper);
             MessageUtils.displayInfoMessage(langBean, "myProfile.thesaurus.message.success");
         } catch (InvalidEndpointException e) {
             displayErrorMessage(langBean, "myProfile.thesaurus.uri.invalid");
@@ -75,6 +79,8 @@ public class InstitutionThesaurusSettingsBean implements Serializable {
             displayErrorMessage(langBean, "myProfile.thesaurus.siamois.invalid");
         } catch (ErrorProcessingExpansionException e) {
             displayErrorMessage(langBean, "thesaurus.error.processingExpansion");
+        } finally {
+            progressWrapper.reset();
         }
 
 
