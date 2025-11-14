@@ -4,29 +4,24 @@ const logoutForm = document.getElementById("logout-form");
 
 
 function isMobile() {
-    return window.matchMedia("(max-width: 768px)").matches;
+    return globalThis.matchMedia("(max-width: 768px)").matches;
 }
 
-if (toggleBtn && sidebar) {
-    document.addEventListener("DOMContentLoaded", function () {
-        const sidebar   = document.getElementsByClassName("sidebar")[0];
-        const toggleBtn = document.getElementById("toggle-btn");
-        // const logoutForm = document.getElementById("logout-form"); // pas utilisé ici
 
-        if (toggleBtn && sidebar) {
-            toggleBtn.addEventListener("click", function () {
-                if (isMobile()) {
-                    // En mobile : collapse + cacher
-                    sidebar.classList.add("collapsed");
-                    sidebar.classList.remove("open");
-                } else {
-                    // En desktop : juste collapse/uncollapse
-                    sidebar.classList.toggle("collapsed");
-                }
-            });
+function toggleCollapseSidebar() {
+    const sidebar = document.getElementsByClassName("sidebar")[0];
+    const toggleBtn = document.getElementById("toggle-btn");
+
+    if (toggleBtn && sidebar) {
+        if (isMobile()) {
+            // En mobile : collapse + cacher
+            sidebar.classList.add("collapsed");
+            sidebar.classList.remove("open");
+        } else {
+            // En desktop : juste collapse/uncollapse
+            sidebar.classList.toggle("collapsed");
         }
-    });
-
+    }
 }
 
 function toggleSiamoisSidebar() {

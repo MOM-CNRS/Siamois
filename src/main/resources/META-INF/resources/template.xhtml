@@ -81,7 +81,8 @@
                         <h:graphicImage library="img" name="siamois_logo.png" styleClass="logo"/>
                     </li>
                 </ul>
-                <button id="toggle-btn" class="btn btn-outline-light">☰</button>
+                <button id="toggle-btn" type="button"
+                          class="btn btn-outline-light" onclick="toggleCollapseSidebar();"><i class="bi bi-list"/></button>
                 <form:csrfform id="navBarCsrfForm" formId="siamoisNavForm">
                     <ul class="nav flex-column">
                         <li class="nav-item">

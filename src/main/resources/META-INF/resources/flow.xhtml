@@ -199,9 +199,42 @@
             <div id="smallScreenToolbar" class="show-small-screen" style="align-content: center; flex:1;
             text-align:left; background: var(--siamois-green-light-100);padding: 0.5em">
                 <form:csrfform formId="toggleButtonSidebarPanelForm" id="toggleButtonSidebarPanelCsrfForm">
-                    <p:commandButton  icon="bi bi-list" onclick="toggleSiamoisSidebar()">
+                    <div style="display:flex;gap:1em;">
+                        <p:commandButton  icon="bi bi-list" onclick="toggleSiamoisSidebar()">
 
-                    </p:commandButton>
+                        </p:commandButton>
+                        <h:panelGroup styleClass="ui-inputgroup">
+                            <h:panelGroup id="iconInstitSmallScreen" styleClass="ui-inputgroup-addon">
+                                <i class="bi bi-buildings"/>
+                            </h:panelGroup>
+                            <p:selectOneMenu
+                                    id="selectOneMenuInstitutionSmallScreen"
+                                    value="#{flowBean.selectedInstitution}"
+                                    filter="true"
+                                    style="max-width: 10em; text-overflow: ellipsis"
+                                    converter="#{institutionConverter}"
+                                    filterMatchMode="startsWith"
+                                    filterNormalize="true"
+                                    var="inst"
+                            >
+                                <f:selectItems value="#{flowBean.institutions}"
+                                               var="item"
+                                               itemValue="#{item}"
+                                               itemLabel="#{item.name}"
+                                />
+
+                                <p:column>
+                                    <h:outputText value="#{inst.name}"/>
+                                </p:column>
+
+                                <p:ajax event="change"
+                                        process="@this"
+                                        listener="#{flowBean.onInstitutionChange}"
+                                />
+                            </p:selectOneMenu>
+                        </h:panelGroup>
+                    </div>
+
                 </form:csrfform>
             </div>
             <div id="read-write-switch" style="align-content: center; flex:1;
