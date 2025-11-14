@@ -13,7 +13,7 @@
 
 
     <!-- show panel view -->
-    <h:panelGroup rendered="#{flowBean.isFieldMode}">
+    <h:panelGroup rendered="#{not flowBean.isFieldMode}">
         <c:forEach items="#{layout}" var="customFormPanel" varStatus="status">
             <p:panel
                     toggleableHeader="true"

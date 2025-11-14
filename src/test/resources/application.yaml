@@ -9,7 +9,7 @@ server:
     session:
       timeout: 125m
   error:
-    path: /errorPages/error500.xhtml
+    path: /error/500
     whitelabel:
       enabled: false
 
