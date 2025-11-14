@@ -19,6 +19,7 @@ public class DateUtils {
     private static final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
 
     private DateUtils() {
+        throw new UnsupportedOperationException("Date Utils is a utility class and cannot be instantiated");
     }
 
     /**

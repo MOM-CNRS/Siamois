@@ -1,6 +1,6 @@
 package fr.siamois.domain.events.publisher;
 
-import fr.siamois.domain.events.ConceptChangeEvent;
+import fr.siamois.domain.models.events.ConceptChangeEvent;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.lang.NonNull;
@@ -14,6 +14,7 @@ public class ConceptChangeEventPublisher {
 
     /**
      * Publishes a ConceptChangeEvent.
+     *
      * @param fieldCode The field code related to the concept change.
      */
     public void publishEvent(@NonNull String fieldCode) {

@@ -500,7 +500,7 @@ public class FlowBean implements Serializable {
 
     ) {
         selectedInstitution = sessionSettings.getSelectedInstitution();
-        PrimeFaces.current().ajax().update("searchBarCsrfForm:searchBarForm");
+        PrimeFaces.current().ajax().update("searchBarCsrfForm:searchBarForm", "toggleButtonSidebarPanelCsrfForm");
     }
 
 
