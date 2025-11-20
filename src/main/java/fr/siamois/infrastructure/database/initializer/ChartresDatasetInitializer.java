@@ -4,6 +4,7 @@ import fr.siamois.domain.models.exceptions.database.DatabaseDataInitException;
 import fr.siamois.domain.models.vocabulary.Vocabulary;
 import fr.siamois.infrastructure.database.initializer.seeder.*;
 import fr.siamois.infrastructure.database.initializer.seeder.ConceptSeeder.ConceptSpec;
+import fr.siamois.infrastructure.dataimport.OOXMLImportService;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -12,6 +13,8 @@ import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
@@ -39,7 +42,6 @@ public class ChartresDatasetInitializer implements DatabaseInitializer {
     public static final String VOCABULARY_ID = "th240";
 
 
-
     List<ConceptSpec> concepts = List.of(
             new ConceptSpec(VOCABULARY_ID, "4287534", "Fouille préventive", "fr"),
             new ConceptSpec(VOCABULARY_ID, "4287533", "Diagnostic archéologique", "fr"),
@@ -62,11 +64,6 @@ public class ChartresDatasetInitializer implements DatabaseInitializer {
             new ThesaurusSeeder.ThesaurusSpec("https://thesaurus.mom.fr", VOCABULARY_ID)
     );
 
-    List<PersonSeeder.PersonSpec> persons = List.of(
-            new PersonSeeder.PersonSpec("anais.pinhede@siamois.fr", "Anaïs", "Pinhède", "anais.pinhede"),
-            new PersonSeeder.PersonSpec(PASCAL_GIBUT_SIAMOIS_FR, "Pascal", "Gibut", "pascal.gibut"),
-            new PersonSeeder.PersonSpec("duflos.franck@siamois.fr", "Duflos", "Franck", "duflos.franck")
-    );
     
     List<SpatialUnitSeeder.SpatialUnitSpecs> spUnits = List.of(
             new SpatialUnitSeeder.SpatialUnitSpecs(PARCELLE_DA_154, VOCABULARY_ID, PARCELLE,
@@ -86,10 +83,6 @@ public class ChartresDatasetInitializer implements DatabaseInitializer {
             ))
     );
 
-    List<ActionCodeSeeder.ActionCodeSpec> actionCodes = List.of(
-            new ActionCodeSeeder.ActionCodeSpec("069260", OA_EXT_ID, VOCABULARY_ID),
-            new ActionCodeSeeder.ActionCodeSpec("0610216", OA_EXT_ID, VOCABULARY_ID)
-    );
 
 
     List<ActionUnitSeeder.ActionUnitSpecs> actions = List.of(
@@ -182,6 +175,7 @@ public class ChartresDatasetInitializer implements DatabaseInitializer {
     private final RecordingUnitSeeder recordingUnitSeeder;
     private final SpecimenSeeder specimenSeeder;
     private final InstitutionSeeder institutionSeeder;
+    private final OOXMLImportService ooxmlImportService;
 
 
     @Value("${siamois.admin.username}")
@@ -190,7 +184,7 @@ public class ChartresDatasetInitializer implements DatabaseInitializer {
     public ChartresDatasetInitializer(
             PersonSeeder personSeeder, ActionCodeSeeder actionCodeSeeder,
             ConceptSeeder conceptSeeder, ThesaurusSeeder thesaurusSeeder, SpatialUnitSeeder spatialUnitSeeder, ActionUnitSeeder actionUnitSeeder,
-            RecordingUnitSeeder recordingUnitSeeder, SpecimenSeeder specimenSeeder, InstitutionSeeder institutionSeeder) {
+            RecordingUnitSeeder recordingUnitSeeder, SpecimenSeeder specimenSeeder, InstitutionSeeder institutionSeeder, OOXMLImportService ooxmlImportService) {
 
 
 
@@ -203,6 +197,7 @@ public class ChartresDatasetInitializer implements DatabaseInitializer {
         this.recordingUnitSeeder = recordingUnitSeeder;
         this.specimenSeeder = specimenSeeder;
         this.institutionSeeder = institutionSeeder;
+        this.ooxmlImportService = ooxmlImportService;
     }
 
     /**
@@ -211,24 +206,35 @@ public class ChartresDatasetInitializer implements DatabaseInitializer {
     @Override
     @Transactional
     public void initialize() throws DatabaseDataInitException {
-        List<InstitutionSeeder.InstitutionSpec> institutions = List.of(
-                new InstitutionSeeder.InstitutionSpec(
-                        "Chartres (Test équipe dev)",
-                        "Insertion du jeu de donnée fourni par Anaïs Pinhède",
-                        CHARTRES,
-                        List.of(adminEmail),
-                        "https://thesaurus.mom.fr", VOCABULARY_ID
-                )
-        );
-        Map<String, Vocabulary> result = thesaurusSeeder.seed(thesauri);
-        institutionSeeder.seed(institutions);
+
+        ImportSpecs specs;
+
+        try {
+            InputStream is = getClass().getResourceAsStream("/datasets/Import_Chartres.xlsx");
+            if (is == null) {
+                throw new IllegalStateException("Impossible de trouver Import Chartres.xlsx");
+            }
+            specs = ooxmlImportService.importFromExcel(is);
+        } catch (IOException e) {
+            throw new DatabaseDataInitException(e.getMessage(), e);
+        }
+
+        personSeeder.seed(specs.getPersons());
+        institutionSeeder.seed(specs.getInstitutions());
+        spatialUnitSeeder.seed(specs.getSpatialUnits());
+        actionCodeSeeder.seed(specs.getActionCodes());
+        actionUnitSeeder.seed(specs.getActionUnits());
+
+/*        Map<String, Vocabulary> result = thesaurusSeeder.seed(thesauri);
         conceptSeeder.seed(result.get(VOCABULARY_ID), concepts);
-        personSeeder.seed(persons);
-        spatialUnitSeeder.seed(spUnits);
-        actionCodeSeeder.seed(actionCodes);
+
+
+
         actionUnitSeeder.seed(actions);
         recordingUnitSeeder.seed(recUnits);
-        specimenSeeder.seed(specimens);
+        specimenSeeder.seed(specimens);*/
+
+
     }
 
 
