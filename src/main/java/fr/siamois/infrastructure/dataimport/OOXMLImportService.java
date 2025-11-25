@@ -1,9 +1,9 @@
 package fr.siamois.infrastructure.dataimport;
 
+import fr.siamois.infrastructure.database.initializer.DefaultFormsDatasetInitializer;
 import fr.siamois.infrastructure.database.initializer.seeder.*;
 import org.apache.poi.ss.usermodel.*;
 import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -21,6 +21,13 @@ import java.util.stream.Collectors;
 @Service
 public class OOXMLImportService {
 
+    public static final String IDENTIFIANT = "identifiant";
+    public static final String PERSON = "person";
+
+    public OOXMLImportService() {
+
+    }
+
     private Map<String, String> readSheetMetadata(Workbook workbook) {
         Sheet metaSheet = workbook.getSheet("sheet_metadata");
         Map<String, String> map = new HashMap<>();
@@ -31,8 +38,8 @@ public class OOXMLImportService {
                 String nameNorm = normalize(s.getSheetName());
                 if (nameNorm.contains("institution")) {
                     map.put("institution", s.getSheetName());
-                } else if (nameNorm.contains("person")) {
-                    map.put("person", s.getSheetName());
+                } else if (nameNorm.contains(PERSON)) {
+                    map.put(PERSON, s.getSheetName());
                 } else if (nameNorm.contains("unite") && nameNorm.contains("spatiale")) {
                     map.put("spatial_unit", s.getSheetName());
                 } else if (nameNorm.contains("unite") && nameNorm.contains("action")) {
@@ -69,18 +76,22 @@ public class OOXMLImportService {
             Map<String, String> sheetIdToName = readSheetMetadata(workbook);
 
             Sheet institutionSheet = workbook.getSheet(sheetIdToName.getOrDefault("institution", "Institution"));
-            Sheet personSheet      = workbook.getSheet(sheetIdToName.getOrDefault("person", "Personne"));
+            Sheet personSheet      = workbook.getSheet(sheetIdToName.getOrDefault(PERSON, "Personne"));
             Sheet spatialSheet     = workbook.getSheet(sheetIdToName.getOrDefault("spatial_unit", "Unité spatiale"));
             Sheet codeSheet        = workbook.getSheet(sheetIdToName.getOrDefault("code", "Code"));
             Sheet actionUnitSheet  = workbook.getSheet(sheetIdToName.getOrDefault("action_unit", "Unite action"));
+            Sheet recordingUnitSheet  = workbook.getSheet(sheetIdToName.getOrDefault("recording_unit", "Unite action"));
+            Sheet specimenSheet  = workbook.getSheet(sheetIdToName.getOrDefault("specimen", "Prelev."));
 
             List<InstitutionSeeder.InstitutionSpec> institutions = parseInstitutions(institutionSheet);
             List<PersonSeeder.PersonSpec> persons = parsePersons(personSheet);
             List<SpatialUnitSeeder.SpatialUnitSpecs> spatialUnits = parseSpatialUnits(spatialSheet);
             List<ActionCodeSeeder.ActionCodeSpec> actionCodes = parseActionCodes(codeSheet);
             List<ActionUnitSeeder.ActionUnitSpecs> actionUnits = parseActionUnits(actionUnitSheet);
+            List<RecordingUnitSeeder.RecordingUnitSpecs> recordingUnits = parseRecordingUnits(recordingUnitSheet);
+            List<SpecimenSeeder.SpecimenSpecs> specimenSpecs = parseSpecimens(specimenSheet);
 
-            return new ImportSpecs(institutions, persons, spatialUnits, actionCodes, actionUnits);
+            return new ImportSpecs(institutions, persons, spatialUnits, actionCodes, actionUnits, recordingUnits, specimenSpecs);
         }
     }
 
@@ -90,7 +101,7 @@ public class OOXMLImportService {
 
         Integer colName        = cols.get("nom");
         Integer colDescription = cols.get("description");
-        Integer colIdentifier  = cols.get("identifiant");
+        Integer colIdentifier  = cols.get(IDENTIFIANT);
         Integer colAdmins      = cols.get("email admins");
         Integer colThesaurus   = cols.get("thesaurus");
 
@@ -143,7 +154,7 @@ public class OOXMLImportService {
         Integer colEmail       = cols.get("email");
         Integer colNom         = cols.get("nom");       // → firstName dans ton seeder
         Integer colPrenom      = cols.get("prénom");    // → lastName dans ton seeder (oui inversé par rapport au FR)
-        Integer colIdentifiant = cols.get("identifiant");
+        Integer colIdentifiant = cols.get(IDENTIFIANT);
 
         List<PersonSeeder.PersonSpec> result = new ArrayList<>();
 
@@ -304,7 +315,7 @@ public class OOXMLImportService {
         Map<String, Integer> cols = indexColumns(header);
 
         Integer colNom           = cols.get("nom");
-        Integer colIdentifiant   = cols.get("identifiant");
+        Integer colIdentifiant   = cols.get(IDENTIFIANT);
         Integer colCode          = cols.get("code");
         Integer colTypeUri       = cols.get("type uri");
         Integer colCreateur      = cols.get("createur");
@@ -367,6 +378,232 @@ public class OOXMLImportService {
         return result;
     }
 
+    private List<RecordingUnitSeeder.RecordingUnitSpecs> parseRecordingUnits(Sheet sheet) {
+        if (sheet == null) {
+            return List.of();
+        }
+
+        Row header = sheet.getRow(0);
+        if (header == null) {
+            return List.of();
+        }
+
+        Map<String, Integer> cols = indexColumns(header);
+
+        Integer colIdentifiant       = cols.get(IDENTIFIANT);
+        Integer colDescription       = cols.get("description");
+        Integer colTypeUri           = cols.get("type uri");
+        Integer colCycleUri          = cols.get("cycle uri");
+        Integer colAgentUri          = cols.get("agent uri");
+        Integer colInterpretationUri = cols.get("interpretation uri");
+        Integer colAuthorEmail       = cols.get("author email");
+        Integer colInstitution       = cols.get("institution");
+        Integer colContribEmails     = cols.get("contributeurs email");
+        Integer colDateOuverture     = cols.get("date d'ouverture");
+        Integer colDateFermeture     = cols.get("date de fermeture");
+        Integer colUniteSpatiale     = cols.get("unite spatiale");
+        Integer colUniteAction       = cols.get("unite d'action");
+
+        List<RecordingUnitSeeder.RecordingUnitSpecs> result = new ArrayList<>();
+
+        for (int r = 1; r <= sheet.getLastRowNum(); r++) {
+            Row row = sheet.getRow(r);
+            if (row == null) continue;
+
+            String identStr = colIdentifiant != null ? getStringCell(row, colIdentifiant) : null;
+            String description = colDescription != null ? getStringCell(row, colDescription) : null;
+
+            if ((identStr == null || identStr.isBlank()) &&
+                    (description == null || description.isBlank())) {
+                continue;
+            }
+
+            Integer identifier = null;
+            if (identStr != null && !identStr.isBlank()) {
+                try {
+                    identifier = Integer.valueOf(identStr.trim());
+                } catch (NumberFormatException ignored) {}
+            }
+
+            // ---- CONCEPT KEYS ----
+            ConceptSeeder.ConceptKey type =
+                    conceptKeyFromUri(colTypeUri != null ? getStringCell(row, colTypeUri) : null);
+
+            ConceptSeeder.ConceptKey geomorphCycle =
+                    conceptKeyFromUri(colCycleUri != null ? getStringCell(row, colCycleUri) : null);
+
+            ConceptSeeder.ConceptKey geomorphAgent =
+                    conceptKeyFromUri(colAgentUri != null ? getStringCell(row, colAgentUri) : null);
+
+            ConceptSeeder.ConceptKey interpretation =
+                    conceptKeyFromUri(colInterpretationUri != null ? getStringCell(row, colInterpretationUri) : null);
+
+
+            // ---- EMAILS ----
+            String authorEmail = colAuthorEmail != null ? getStringCell(row, colAuthorEmail) : null;
+            String institutionId = colInstitution != null ? getStringCell(row, colInstitution) : null;
+
+            List<String> excavators =
+                    parseEmailList(colContribEmails != null ? getStringCell(row, colContribEmails) : null);
+
+
+            // ---- DATES ----
+            OffsetDateTime beginDate = colDateOuverture != null
+                    ? parseOffsetDateTime(row.getCell(colDateOuverture))
+                    : null;
+
+            OffsetDateTime endDate = colDateFermeture != null
+                    ? parseOffsetDateTime(row.getCell(colDateFermeture))
+                    : null;
+
+            // ---- CREATION TIME (NOuVELLE RÈGLE) ----
+            OffsetDateTime creationTime = OffsetDateTime.now();  // système
+
+            // ---- createdBy (NOUVELLE RÈGLE) ----
+            String createdBy = "system@siamois.fr";
+
+
+            // ---- SPATIAL UNIT ----
+            String usName = colUniteSpatiale != null ? getStringCell(row, colUniteSpatiale) : null;
+            SpatialUnitSeeder.SpatialUnitKey spatialKey =
+                    (usName == null || usName.isBlank())
+                            ? null
+                            : new SpatialUnitSeeder.SpatialUnitKey(usName.trim());
+
+            // ---- ACTION UNIT ----
+            String uaIdent = colUniteAction != null ? getStringCell(row, colUniteAction) : null;
+            ActionUnitSeeder.ActionUnitKey actionKey =
+                    (uaIdent == null || uaIdent.isBlank())
+                            ? null
+                            : new ActionUnitSeeder.ActionUnitKey(uaIdent.trim());
+
+
+            String fullIdentifier = identStr;
+
+            RecordingUnitSeeder.RecordingUnitSpecs spec = new RecordingUnitSeeder.RecordingUnitSpecs(
+                    fullIdentifier,
+                    identifier,
+                    type,
+                    geomorphCycle,
+                    geomorphAgent,
+                    interpretation,
+                    authorEmail,
+                    institutionId,
+                    authorEmail,     // author = authorEmail
+                    createdBy,       // <- FIX : createdBy = systeme@siamois.fr
+                    excavators,
+                    creationTime,    // <- FIX : maintenant
+                    beginDate,
+                    endDate,
+                    spatialKey,
+                    actionKey,
+                    description
+            );
+
+            result.add(spec);
+        }
+
+        return result;
+    }
+
+    private List<SpecimenSeeder.SpecimenSpecs> parseSpecimens(Sheet sheet) {
+        if (sheet == null) {
+            return List.of();
+        }
+
+        Row header = sheet.getRow(0);
+        if (header == null) {
+            return List.of();
+        }
+
+        Map<String, Integer> cols = indexColumns(header);
+
+        Integer colIdentifiant      = cols.get(IDENTIFIANT);
+        Integer colCategorie        = cols.get("categorie");
+        Integer colMatiere          = cols.get("matiere");
+        Integer colDesignation      = cols.get("designation");           // non utilisée pour l’instant
+        Integer colInstitution      = cols.get("institution");
+        Integer colAuteurFicheEmail = cols.get("auteur fiche email");
+        Integer colCollecteurs      = cols.get("collecteurs emails");
+        Integer colUniteEnreg       = cols.get("unite d'enregistrement");
+
+        List<SpecimenSeeder.SpecimenSpecs> result = new ArrayList<>();
+
+        for (int r = 1; r <= sheet.getLastRowNum(); r++) {
+            Row row = sheet.getRow(r);
+            if (row == null) continue;
+
+            String identStr = colIdentifiant != null ? getStringCell(row, colIdentifiant) : null;
+            if (identStr == null || identStr.isBlank()) {
+                // On considère la ligne comme vide si pas d’identifiant
+                continue;
+            }
+
+            // Identifiant numérique
+            Integer identifier = null;
+            try {
+                identifier = Integer.valueOf(identStr.trim());
+            } catch (NumberFormatException ignored) {
+                // ignored
+            }
+
+            String fullIdentifier = identStr;
+
+            // URIs -> ConceptKey
+            String matiereUri   = colMatiere   != null ? getStringCell(row, colMatiere)   : null;
+            String categorieUri = colCategorie != null ? getStringCell(row, colCategorie) : null;
+            String designationUri = colDesignation != null ? getStringCell(row, colDesignation) : null;
+
+            ConceptSeeder.ConceptKey typeKey     = conceptKeyFromUri(matiereUri);   // Matiere -> type
+            ConceptSeeder.ConceptKey categoryKey = conceptKeyFromUri(categorieUri); // Catégorie -> category
+            ConceptSeeder.ConceptKey designationKey = conceptKeyFromUri(designationUri);
+
+            // Institution
+            String institutionId = colInstitution != null ? getStringCell(row, colInstitution) : null;
+
+            // Auteur fiche email -> liste d'auteurs
+            String auteurFiche = colAuteurFicheEmail != null ? getStringCell(row, colAuteurFicheEmail) : null;
+            List<String> authors = (auteurFiche == null || auteurFiche.isBlank())
+                    ? List.of()
+                    : List.of(auteurFiche.trim());
+
+            // Collecteurs emails -> liste
+            String collectorsRaw = colCollecteurs != null ? getStringCell(row, colCollecteurs) : null;
+            List<String> collectors = parseEmailList(collectorsRaw);
+
+            // Recording unit key
+            String ruStr = colUniteEnreg != null ? getStringCell(row, colUniteEnreg) : null;
+            RecordingUnitSeeder.RecordingUnitKey recordingUnitKey =
+                    (ruStr == null || ruStr.isBlank())
+                            ? null
+                            : new RecordingUnitSeeder.RecordingUnitKey(ruStr);
+
+            // Champs système
+            String authorEmail = "system@siamois.fr";
+            OffsetDateTime creationTime = OffsetDateTime.now();
+
+            SpecimenSeeder.SpecimenSpecs spec = new SpecimenSeeder.SpecimenSpecs(
+                    fullIdentifier,
+                    identifier,
+                    typeKey,
+                    categoryKey,
+                    designationKey,
+                    authorEmail,
+                    institutionId,
+                    authors,
+                    collectors,
+                    creationTime,
+                    recordingUnitKey
+            );
+
+            result.add(spec);
+        }
+
+        return result;
+    }
+
+
+
 
 
     private Optional<String> extractIdtFromUri(String uri) {
@@ -387,6 +624,21 @@ public class OOXMLImportService {
         int amp = sub.indexOf('&');
         if (amp >= 0) sub = sub.substring(0, amp);
         return Optional.of(URLDecoder.decode(sub, StandardCharsets.UTF_8));
+    }
+
+    private ConceptSeeder.ConceptKey conceptKeyFromUri(String uri) {
+        if (uri == null || uri.isBlank()) {
+            return null;
+        }
+
+        String conceptId = extractIdcFromUri(uri).orElse(null);
+        String vocabId   = extractIdtFromUri(uri).orElse(null);
+
+        if (conceptId == null && vocabId == null) {
+            return null; // pas une URI valide
+        }
+
+        return new ConceptSeeder.ConceptKey(vocabId, conceptId);
     }
 
 

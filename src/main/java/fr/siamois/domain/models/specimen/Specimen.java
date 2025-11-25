@@ -87,6 +87,12 @@ public class Specimen extends SpecimenParent implements ArkEntity {
     @FieldCode
     public static final String CAT_FIELD = "SIAS.CAT"; // lot, individu, echantillon
 
+    @FieldCode
+    public static final String MATIERE_FIELD = "SIAS.MATIERE";
+
+    @FieldCode
+    public static final String INTERPRETATION_FIELD = "SIAS.INTERPRETATION";
+
     @Transient
     @JsonIgnore
     public static List<String> getBindableFieldNames() {

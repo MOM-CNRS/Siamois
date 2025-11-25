@@ -29,6 +29,7 @@ public class SpecimenSeeder {
     public record SpecimenSpecs(String fullIdentifier, Integer identifier,
                                      ConceptSeeder.ConceptKey type,
                                      ConceptSeeder.ConceptKey category,
+                                     ConceptSeeder.ConceptKey interpretation,
                                      String authorEmail,
                                      String institutionIdentifier,
                                      List<String> authors,
