@@ -23,7 +23,6 @@
     <p:outputPanel rendered="#{bean.isColumnEnabled(col.field)}"
                    id="field-#{prefix}-#{statusIndex}-#{rowIndex}-#{colIndex}">
 
-        #{onModified}
 
         <sharedInput:panelField
                 id="panelField-#{prefix}-#{statusIndex}-#{rowIndex}-#{colIndex}"
@@ -44,7 +43,7 @@
                     answer="#{answer}"
                     mode="#{col.readOnly ? 'output' : flowBean.getInPlaceFieldMode()}"
                     updateTargetsOnBlur="#{bean.getPanelHeaderUpdateId(panelIndex)}"
-                    onModified="#{onModified}"
+                    onModified="#{bean.setFieldAnswerHasBeenModified(col.field)}"
             />
 
             <!-- INTEGER -->
