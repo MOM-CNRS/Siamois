@@ -22,13 +22,14 @@
     <cc:implementation>
 
 
-
+        #{cc.attrs.panelModel}
         <!-- datatable property partialUpdate=false because otherwise the paginator template is reset after sort or filter actions-->
         <p:dataTable paginator="true"
                      editable="true"
                      cellNavigation="true"
                      id="recordingUnitDataTable"
                      varStatus="status"
+                     size="small"
                      paginatorPosition="bottom" var="item"
                      selectionPageOnly="false" selectionRowMode="none"
                      selection="#{cc.attrs.lazyDataModel.selectedUnits}"
@@ -44,6 +45,7 @@
                      emptyMessage="#{langBean.msg('recordingUnitList.empty')}"
                      paginatorTemplate="Rows per page: {RowsPerPageDropdown} {RowReport} {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink}"
                      rowsPerPageTemplate="5,10,15,20,25"
+                     rowIndexVar="rowIndex"
                      value="#{cc.attrs.lazyDataModel}" class="recording-unit-datatable">
 
             <p:ajax event="rowEdit" listener="#{cc.attrs.lazyDataModel.handleRowEdit}"/>
@@ -122,6 +124,15 @@
                 </p:toolbar>
 
             </f:facet>
+
+<!--            <p:columns value="#{cc.attrs.panelModel.columns}"-->
+<!--                       var="column"-->
+<!--                       varStatus="colStatus"-->
+<!--                       >-->
+
+
+<!--            </p:columns>-->
+
             <p:column selectionBox="true" style="width:16px;text-align:center"/>
 
             <p:column toggleable="false"

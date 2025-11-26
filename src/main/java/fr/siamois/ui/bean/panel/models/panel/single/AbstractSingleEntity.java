@@ -82,7 +82,6 @@ public abstract class AbstractSingleEntity<T> extends AbstractPanel implements S
 
     public static final String COLUMN_CLASS_NAME = "ui-g-12 ui-md-6 ui-lg-4";
 
-
     public boolean isColumnEnabled(CustomField field) {
         return colEnabledByFieldId.getOrDefault(field.getId(), true);
     }

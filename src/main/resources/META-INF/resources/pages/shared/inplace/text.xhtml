@@ -17,6 +17,10 @@
         <cc:attribute name="label" type="String" required="false"/>
         <cc:attribute name="required" type="java.lang.Boolean" required="true"/>
         <cc:attribute name="updateTargetsOnBlur" type="String" required="false" default="@this"/>
+        <!-- Callback appelé quand le champ est modifié -->
+        <cc:attribute name="onModified"
+                      method-signature="void f(fr.siamois.domain.models.form.customfield.CustomField)"
+                      required="false"/>
     </cc:interface>
 
     <cc:implementation>
@@ -50,7 +54,8 @@
                         >
                             <p:ajax event="keyup" delay="1000" update="#{cc.attrs.updateTargetsOnBlur}"
                                     process="@this"
-                                    listener="#{cc.attrs.panelModel.setFieldAnswerHasBeenModified(cc.attrs.field)}"/>
+
+                                    listener="#{cc.attrs.onModified}"/>
                         </p:inputTextarea>
                     </h:panelGroup>
                     <h:panelGroup rendered="#{not cc.attrs.field.isTextArea}">
@@ -72,7 +77,8 @@
                             <p:ajax event="keyup" delay="1000" update="#{cc.attrs.updateTargetsOnBlur}"
                                     onstart="$(PrimeFaces.escapeClientId('#{cc.clientId}:input')).addClass('sia-modified-field')"
                                     process="@this"
-                                    listener="#{cc.attrs.panelModel.setFieldAnswerHasBeenModified(cc.attrs.field)}"/>
+
+                            listener="#{cc.attrs.onModified}"/>
                         </p:inputText>
                     </h:panelGroup>
                 </h:panelGroup>
