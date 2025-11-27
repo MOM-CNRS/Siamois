@@ -35,7 +35,10 @@
                                     <ui:param name="root" value="#{root}" />
                                     <ui:param name="panelIndex" value="#{panelIndex}" />
                                     <ui:param name="answer" value="#{bean.formResponse.answers.get(col.field)}"/>
-                                    <ui:param name="onModified" value="#{bean.setFieldAnswerHasBeenModified(col.field)}"/>
+                                    <ui:param name="onModified" value="#{bean.onFieldAnswerModifiedListener}"/>
+                                    <ui:param name="panelHeaderUpdateId" value="#{bean.getPanelHeaderUpdateId(panelIndex)}"/>
+                                    <ui:param name="onGenerateValue" value="#{bean.generateValueForField}"/>
+                                    <ui:param name="hasAutoGenerationFunction" value="#{bean.hasAutoGenerationFunction(col.field)}"/>
                                 </ui:include>
                     </p:column>
 

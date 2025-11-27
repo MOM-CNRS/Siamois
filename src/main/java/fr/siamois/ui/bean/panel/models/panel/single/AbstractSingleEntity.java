@@ -28,6 +28,7 @@ import fr.siamois.ui.form.rules.*;
 import fr.siamois.ui.viewmodel.TreeUiStateViewModel;
 import fr.siamois.utils.DateUtils;
 import jakarta.faces.component.UIComponent;
+import jakarta.faces.event.AjaxBehaviorEvent;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
@@ -304,6 +305,11 @@ public abstract class AbstractSingleEntity<T> extends AbstractPanel implements S
     public void setFieldAnswerHasBeenModified(CustomField field) {
         formResponse.getAnswers().get(field).setHasBeenModified(true);
         hasUnsavedModifications = true;
+    }
+
+    public void onFieldAnswerModifiedListener(AjaxBehaviorEvent event) {
+        CustomField field = (CustomField) event.getComponent().getAttributes().get("field");
+        setFieldAnswerHasBeenModified(field);
     }
 
     public void setFieldConceptAnswerHasBeenModified(SelectEvent<ConceptLabel> event) {
