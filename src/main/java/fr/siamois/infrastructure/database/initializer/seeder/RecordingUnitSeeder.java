@@ -118,6 +118,7 @@ public class RecordingUnitSeeder {
 
             RecordingUnit toGetOrCreate = new RecordingUnit();
             toGetOrCreate.setCreatedByInstitution(institution);
+            toGetOrCreate.setDescription(s.description);
             toGetOrCreate.setIdentifier(s.identifier);
             toGetOrCreate.setFullIdentifier(s.fullIdentifier);
             toGetOrCreate.setType(type);

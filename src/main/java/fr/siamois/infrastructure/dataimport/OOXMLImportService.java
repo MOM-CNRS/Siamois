@@ -152,8 +152,8 @@ public class OOXMLImportService {
         Map<String, Integer> cols = indexColumns(header);
 
         Integer colEmail       = cols.get("email");
-        Integer colNom         = cols.get("nom");       // → firstName dans ton seeder
-        Integer colPrenom      = cols.get("prénom");    // → lastName dans ton seeder (oui inversé par rapport au FR)
+        Integer colNom         = cols.get("nom");
+        Integer colPrenom      = cols.get("prenom");
         Integer colIdentifiant = cols.get(IDENTIFIANT);
 
         List<PersonSeeder.PersonSpec> result = new ArrayList<>();

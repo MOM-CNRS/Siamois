@@ -83,7 +83,7 @@
                                     <p:commandButton
                                             rendered="#{cc.attrs.displayColumnToggler}"
                                             style="margin-left: 1em;" id="toggler" type="button"
-                                                     value="#{langBean.msg('table.columnvisibility')}"
+                                                     value="Gerer l'ffichage des colonnes"
                                                      icon="pi pi-align-justify"/>
                                     <p:columnToggler
                                             rendered="#{cc.attrs.displayColumnToggler}"
@@ -182,6 +182,20 @@
 
             </p:column>
 
+            <!-- cycle geomorphologiq -->
+            <p:column responsivePriority="2" headerText="Cycle géomorphologique">
+
+                <chip:conceptChip  concept="#{item.geomorphologicalCycle}" styleClass="mr-2 recording-unit-type-chip"/>
+
+            </p:column>
+
+            <!-- Creation time -->
+            <p:column responsivePriority="4" headerText="Date d'ouverture"
+
+            >
+                <h:outputText value="#{panelModel.formatUtcDateTime(item.openingDate)}"/>
+            </p:column>
+
 
             <!-- Creation time -->
             <p:column responsivePriority="4" headerText="#{langBean.msg('table.spatialunit.column.creationdate')}"
@@ -267,30 +281,34 @@
             </p:column>
 
 
-            <!-- Prelevements -->
+
             <p:column responsivePriority="3">
                 <f:facet name="header">
                     <cellheader:withIcon icon="bi bi-bucket"
                                          text="#{langBean.msg('common.entity.specimen')}"/>
                 </f:facet>
-                <div style="display: flex; flex-direction: row; gap: 2em;">
-                    <p:commandLink
-                            action="#{flowBean.goToRecordingUnitByIdNewPanel(item.id,cc.attrs.panelIndex,3)}"
-                            onstart="PF('buiContent').show()"
-                            oncomplete="PF('buiContent').hide();handleScrollToTop();"
-                            process="@form"
-                            update="flow"
-                    >
-                        <h:outputText value="#{item.specimenList.size()} (voir)"/>
-                    </p:commandLink>
-                    <p:commandButton value="#{langBean.msg('common.action.create')}" icon="bi bi-plus-square"
+
+                <div style="display: flex; gap: 1em;">
+                    <span> #{item.specimenList.size()} </span>
+
+                    <p:commandButton icon="bi bi-eye"
+                                     action="#{flowBean.goToRecordingUnitByIdNewPanel(item.id,cc.attrs.panelIndex,3)}"
+                                     onstart="PF('buiContent').show()"
+                                     oncomplete="PF('buiContent').hide();handleScrollToTop();"
+                                     process="@form"
+                                     update="flow">
+                    </p:commandButton>
+                    <p:commandButton icon="bi bi-plus-square"
+                                     id="newSpatialUnitChildrenButton"
                                      actionListener="#{genericNewUnitDialogBean.selectKind('SPECIMEN',item.specimenList, item)}"
-                                     oncomplete="PF('newUnitDiag').show();"
-                                     rendered="#{specimenBean.showCreateSpecimenButton(item)}"
+                                     oncomplete="PF('newUnitDiag').show()"
                                      update="newUnitForm"
+                                     rendered="#{flowBean.isWriteMode}"
                                      style="margin-right: .5rem">
                     </p:commandButton>
                 </div>
+
+
             </p:column>
 
 
