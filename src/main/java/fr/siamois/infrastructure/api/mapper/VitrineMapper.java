@@ -23,7 +23,7 @@ public final class VitrineMapper {
         CartelDTO mockupCartel = new CartelDTO(
                 0L,
                 "Mockup cartel content",
-                1L
+                3L
         );
 
         Set<Document> mockupDocuments = new HashSet<>();

@@ -15,23 +15,30 @@ public class ChronologyController {
           {
             "id": 0,
             "niveau": 1,
-            "intitule": "Paléolithique",
-            "tpq": -3000000,
-            "taq": -9600
+            "intitule": "Protohistoire",
+            "tpq": -2300,
+            "taq": -50
           },
           {
             "id": 1,
             "niveau": 2,
-            "intitule": "Paléolithique Ancien",
-            "tpq": -3000000,
-            "taq": -300000
+            "intitule": "Âge du Fer",
+            "tpq": -800,
+            "taq": -50
           },
           {
             "id": 2,
-            "niveau": 2,
-            "intitule": "Paléolithique Moyen",
-            "tpq": -300000,
-            "taq": -38000
+            "niveau": 3,
+            "intitule": "Hallstatt",
+            "tpq": -800,
+            "taq": -450
+          },
+          {
+            "id": 3,
+            "niveau": 3,
+            "intitule": "La tène",
+            "tpq": -450,
+            "taq": -50
           }
         ]
         """;

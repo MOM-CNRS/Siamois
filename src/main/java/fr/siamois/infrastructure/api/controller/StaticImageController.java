@@ -16,7 +16,7 @@ import java.nio.file.Path;
 public class StaticImageController {
 
     // ⚠️ Chemin absolu sur ton poste (à adapter)
-    private static final String BASE_PATH = "C:/Users/admin/Pictures/uploads/";
+    private static final String BASE_PATH = "/Users/gregorybliault/Documents/image/";
 
     @GetMapping("/{filename:.+}")
     public ResponseEntity<Resource> getImage(@PathVariable String filename) {
