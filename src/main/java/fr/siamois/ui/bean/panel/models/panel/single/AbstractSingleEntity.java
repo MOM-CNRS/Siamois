@@ -28,6 +28,7 @@ import fr.siamois.ui.form.rules.*;
 import fr.siamois.ui.viewmodel.TreeUiStateViewModel;
 import fr.siamois.utils.DateUtils;
 import jakarta.faces.component.UIComponent;
+import jakarta.faces.event.ActionEvent;
 import jakarta.faces.event.AjaxBehaviorEvent;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -51,6 +52,7 @@ import java.util.stream.Collectors;
 @Slf4j
 public abstract class AbstractSingleEntity<T> extends AbstractPanel implements Serializable {
 
+    public static final String FIELD = "field";
     // Deps
     protected final transient SessionSettingsBean sessionSettingsBean;
     protected final transient FieldConfigurationService fieldConfigurationService;
@@ -238,7 +240,9 @@ public abstract class AbstractSingleEntity<T> extends AbstractPanel implements S
         return field != null && field.getAutoGenerationFunction() != null;
     }
 
-    public void generateValueForField(CustomFieldText field, CustomFieldAnswerText answer) {
+    public void generateValueForField(ActionEvent event) {
+        CustomFieldText field = (CustomFieldText) event.getComponent().getAttributes().get(FIELD);
+        CustomFieldAnswerText answer = (CustomFieldAnswerText) event.getComponent().getAttributes().get("answer");
         if (field != null && field.getAutoGenerationFunction() != null) {
             String generatedValue = field.generateAutoValue();
             answer.setValue(generatedValue);
@@ -308,13 +312,13 @@ public abstract class AbstractSingleEntity<T> extends AbstractPanel implements S
     }
 
     public void onFieldAnswerModifiedListener(AjaxBehaviorEvent event) {
-        CustomField field = (CustomField) event.getComponent().getAttributes().get("field");
+        CustomField field = (CustomField) event.getComponent().getAttributes().get(FIELD);
         setFieldAnswerHasBeenModified(field);
     }
 
     public void setFieldConceptAnswerHasBeenModified(SelectEvent<ConceptLabel> event) {
         UIComponent component = event.getComponent();
-        CustomField field = (CustomField) component.getAttributes().get("field");
+        CustomField field = (CustomField) component.getAttributes().get(FIELD);
 
         formResponse.getAnswers().get(field).setHasBeenModified(true);
         hasUnsavedModifications = true;

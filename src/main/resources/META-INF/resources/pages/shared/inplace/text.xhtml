@@ -20,7 +20,7 @@
                       method-signature="void setFieldAnswerHasBeenModified(javax.faces.event.AjaxBehaviorEvent)"
                       required="false"/>
         <cc:attribute name="onGenerateValue"
-                      method-signature="void f(fr.siamois.domain.models.form.customfield.CustomFieldText,fr.siamois.domain.models.form.customfield.CustomFieldAnswerText)"
+                      method-signature="void f(javax.faces.event.ActionEvent)"
                       required="false"/>
         <cc:attribute name="hasAutoGenerationFunction" type="java.lang.Boolean" required="false" default="false"/>
     </cc:interface>
@@ -70,7 +70,10 @@
                                 process="@this"
                                 actionListener="#{cc.attrs.onGenerateValue}"
                                 update="#{cc.attrs.updateTargetsOnBlur}"
-                        />
+                        >
+                            <f:attribute name="field" value="#{cc.attrs.field}" />
+                            <f:attribute name="answer" value="#{cc.attrs.answer}" />
+                        </p:commandButton>
                         <p:inputText value="#{cc.attrs.answer.value}"
                                      styleClass="#{cc.attrs.answer.hasBeenModified ? 'track-change sia-modified-field': 'track-change'}"
                                      label="#{cc.attrs.label}"
