@@ -56,6 +56,7 @@ class RecordingUnitSeederTest {
                         new ConceptSeeder.ConceptKey(VOCABULARY_ID, "123456"),
                         new ConceptSeeder.ConceptKey(VOCABULARY_ID, "4287539"),
                         new ConceptSeeder.ConceptKey(VOCABULARY_ID, "4287541"),
+                        new ConceptSeeder.ConceptKey(VOCABULARY_ID, "4287541"),
                         "author@siamois.fr",
                         "chartres",
                         "author@siamois.fr",
@@ -65,7 +66,11 @@ class RecordingUnitSeederTest {
                         null,
                         null,
                         new SpatialUnitSeeder.SpatialUnitKey("Spatial"),
-                        new ActionUnitSeeder.ActionUnitKey("action-01")
+                        new ActionUnitSeeder.ActionUnitKey("action-01"),
+                        "",
+                        "",
+                        "",
+                        ""
                 )
         );
 
@@ -93,6 +98,7 @@ class RecordingUnitSeederTest {
                         new ConceptSeeder.ConceptKey(VOCABULARY_ID, "123456"),
                         new ConceptSeeder.ConceptKey(VOCABULARY_ID, "4287539"),
                         new ConceptSeeder.ConceptKey(VOCABULARY_ID, "4287541"),
+                        new ConceptSeeder.ConceptKey(VOCABULARY_ID, "4287541"),
                         "author@siamois.fr",
                         "chartres",
                         "author@siamois.fr",
@@ -102,7 +108,11 @@ class RecordingUnitSeederTest {
                         null,
                         null,
                         new SpatialUnitSeeder.SpatialUnitKey("Spatial"),
-                        new ActionUnitSeeder.ActionUnitKey("action-01")
+                        new ActionUnitSeeder.ActionUnitKey("action-01"),
+                        "",
+                        "",
+                        "",
+                        ""
                 )
         );
 
@@ -130,6 +140,7 @@ class RecordingUnitSeederTest {
                         new ConceptSeeder.ConceptKey(VOCABULARY_ID, "123456"),
                         new ConceptSeeder.ConceptKey(VOCABULARY_ID, "4287539"),
                         new ConceptSeeder.ConceptKey(VOCABULARY_ID, "4287541"),
+                        new ConceptSeeder.ConceptKey(VOCABULARY_ID, "4287541"),
                         "author@siamois.fr",
                         "chartres",
                         "author@siamois.fr",
@@ -139,7 +150,11 @@ class RecordingUnitSeederTest {
                         null,
                         null,
                         new SpatialUnitSeeder.SpatialUnitKey("Spatial"),
-                        new ActionUnitSeeder.ActionUnitKey("action-01")
+                        new ActionUnitSeeder.ActionUnitKey("action-01"),
+                        "",
+                        "",
+                        "",
+                        ""
                 )
         );
 
@@ -171,6 +186,7 @@ class RecordingUnitSeederTest {
                         new ConceptSeeder.ConceptKey(VOCABULARY_ID, "123456"),
                         new ConceptSeeder.ConceptKey(VOCABULARY_ID, "4287539"),
                         new ConceptSeeder.ConceptKey(VOCABULARY_ID, "4287541"),
+                        new ConceptSeeder.ConceptKey(VOCABULARY_ID, "4287541"),
                         "author@siamois.fr",
                         "chartres",
                         "author@siamois.fr",
@@ -180,7 +196,11 @@ class RecordingUnitSeederTest {
                         null,
                         null,
                         new SpatialUnitSeeder.SpatialUnitKey("Spatial"),
-                        new ActionUnitSeeder.ActionUnitKey("action-01")
+                        new ActionUnitSeeder.ActionUnitKey("action-01"),
+                        "",
+                        "",
+                        "",
+                        ""
                 )
         );
 
@@ -211,6 +231,7 @@ class RecordingUnitSeederTest {
                         new ConceptSeeder.ConceptKey(VOCABULARY_ID, "123456"),
                         new ConceptSeeder.ConceptKey(VOCABULARY_ID, "4287539"),
                         new ConceptSeeder.ConceptKey(VOCABULARY_ID, "4287541"),
+                        new ConceptSeeder.ConceptKey(VOCABULARY_ID, "4287541"),
                         "author@siamois.fr",
                         "chartres",
                         "author@siamois.fr",
@@ -220,7 +241,11 @@ class RecordingUnitSeederTest {
                         null,
                         null,
                         new SpatialUnitSeeder.SpatialUnitKey("Spatial"),
-                        new ActionUnitSeeder.ActionUnitKey("action-01")
+                        new ActionUnitSeeder.ActionUnitKey("action-01"),
+                        "",
+                        "",
+                        "",
+                        ""
                 )
         );
 
@@ -254,6 +279,7 @@ class RecordingUnitSeederTest {
                         new ConceptSeeder.ConceptKey(VOCABULARY_ID, "123456"),
                         new ConceptSeeder.ConceptKey(VOCABULARY_ID, "4287539"),
                         new ConceptSeeder.ConceptKey(VOCABULARY_ID, "4287541"),
+                        new ConceptSeeder.ConceptKey(VOCABULARY_ID, "4287541"),
                         "author@siamois.fr",
                         "chartres",
                         "author@siamois.fr",
@@ -263,7 +289,11 @@ class RecordingUnitSeederTest {
                         null,
                         null,
                         new SpatialUnitSeeder.SpatialUnitKey("Spatial"),
-                        new ActionUnitSeeder.ActionUnitKey("action-01")
+                        new ActionUnitSeeder.ActionUnitKey("action-01"),
+                        "",
+                        "",
+                        "",
+                        ""
                 )
         );
 
@@ -297,6 +327,7 @@ class RecordingUnitSeederTest {
                         new ConceptSeeder.ConceptKey(VOCABULARY_ID, "123456"),
                         new ConceptSeeder.ConceptKey(VOCABULARY_ID, "4287539"),
                         new ConceptSeeder.ConceptKey(VOCABULARY_ID, "4287541"),
+                        new ConceptSeeder.ConceptKey(VOCABULARY_ID, "4287541"),
                         "author@siamois.fr",
                         "chartres",
                         "author@siamois.fr",
@@ -306,7 +337,11 @@ class RecordingUnitSeederTest {
                         null,
                         null,
                         new SpatialUnitSeeder.SpatialUnitKey("Spatial"),
-                        new ActionUnitSeeder.ActionUnitKey("action-01")
+                        new ActionUnitSeeder.ActionUnitKey("action-01"),
+                        "",
+                        "",
+                        "",
+                        ""
                 )
         );
 

@@ -394,6 +394,9 @@ public class OOXMLImportService {
         Integer colDescription       = cols.get("description");
         Integer colTypeUri           = cols.get("type uri");
         Integer colCycleUri          = cols.get("cycle uri");
+        Integer colMatrixColor          = cols.get("couleur de la matrice");
+        Integer colMatrixTexture          = cols.get("texture de la matrice");
+        Integer colMatrixComp         = cols.get("composition de la matrice");
         Integer colAgentUri          = cols.get("agent uri");
         Integer colInterpretationUri = cols.get("interpretation uri");
         Integer colAuthorEmail       = cols.get("author email");
@@ -411,6 +414,9 @@ public class OOXMLImportService {
             if (row == null) continue;
 
             String identStr = colIdentifiant != null ? getStringCell(row, colIdentifiant) : null;
+            String matrixColor = colMatrixColor != null ? getStringCell(row, colMatrixColor) : null;
+            String matrixTexture = colMatrixTexture != null ? getStringCell(row, colMatrixTexture) : null;
+            String matrixComp = colMatrixComp != null ? getStringCell(row, colMatrixComp) : null;
             String description = colDescription != null ? getStringCell(row, colDescription) : null;
 
             if ((identStr == null || identStr.isBlank()) &&
@@ -497,7 +503,10 @@ public class OOXMLImportService {
                     endDate,
                     spatialKey,
                     actionKey,
-                    description
+                    description,
+                    matrixColor,
+                    matrixComp,
+                    matrixTexture
             );
 
             result.add(spec);

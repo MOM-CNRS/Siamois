@@ -45,7 +45,10 @@ public class RecordingUnitSeeder {
                                      OffsetDateTime endDate,
                                      SpatialUnitSeeder.SpatialUnitKey spatialUnitName,
                                      ActionUnitSeeder.ActionUnitKey actionUnitIdentifier,
-                                     String description) {
+                                     String description,
+                                     String matrixColor,
+                                     String matrixComposition,
+                                     String matrixTexture) {
 
     }
 
@@ -96,7 +99,7 @@ public class RecordingUnitSeeder {
 
             // Find Institution
             Institution institution = institutionSeeder.findInstitutionOrReturnNull(s.institutionIdentifier);
-            if(institution == null ) {
+            if (institution == null) {
                 throw new IllegalStateException("Institution introuvable");
             }
 
@@ -119,6 +122,9 @@ public class RecordingUnitSeeder {
             RecordingUnit toGetOrCreate = new RecordingUnit();
             toGetOrCreate.setCreatedByInstitution(institution);
             toGetOrCreate.setDescription(s.description);
+            toGetOrCreate.setMatrixTexture(s.matrixTexture);
+            toGetOrCreate.setMatrixComposition(s.matrixComposition);
+            toGetOrCreate.setMatrixColor(s.matrixColor);
             toGetOrCreate.setIdentifier(s.identifier);
             toGetOrCreate.setFullIdentifier(s.fullIdentifier);
             toGetOrCreate.setType(type);
