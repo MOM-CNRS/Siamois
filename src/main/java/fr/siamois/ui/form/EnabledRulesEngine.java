@@ -51,7 +51,7 @@ public final class EnabledRulesEngine {
     }
 
     private CustomFieldAnswer buildConceptOverride(CustomField field, Concept concept) {
-        CustomFieldAnswer answer = AbstractSingleEntity.instantiateAnswerForField(field);
+        CustomFieldAnswer answer = CustomFieldAnswerFactory.instantiateAnswerForField(field);
         CustomFieldAnswerId id = new CustomFieldAnswerId();
         id.setField(field);
         answer.setPk(id);

@@ -112,7 +112,7 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnit> imple
     public void refreshUnit() {
 
         // reinit
-        hasUnsavedModifications = false;
+        formContext.setHasUnsavedModifications(false);
         errorMessage = null;
         unit = null;
         newCode = new ActionCode();
@@ -218,7 +218,7 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnit> imple
         overviewForm = ActionUnit.OVERVIEW_FORM;
         detailsForm = ActionUnit.DETAILS_FORM;
         // Init system form answers
-        formResponse = initializeFormResponse(detailsForm, unit, forceInit);
+        initFormContext(forceInit);
 
     }
 
@@ -238,7 +238,7 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnit> imple
         unit.setName(backupClone.getName());
         unit.setValidated(backupClone.getValidated());
         unit.setType(backupClone.getType());
-        hasUnsavedModifications = false;
+        formContext.setHasUnsavedModifications(false);
         initForms(true);
     }
 
@@ -255,7 +255,7 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnit> imple
     @Override
     public boolean save(Boolean validated) {
 
-        updateJpaEntityFromFormResponse(formResponse, unit);
+        formContext.flushBackToEntity();
         unit.setValidated(validated);
         try {
             actionUnitService.save(unit);

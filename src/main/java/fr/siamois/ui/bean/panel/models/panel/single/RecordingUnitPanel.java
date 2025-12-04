@@ -181,7 +181,6 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
     public void refreshUnit() {
 
         // reinit
-        hasUnsavedModifications = false;
         errorMessage = null;
         unit = null;
 
@@ -282,9 +281,9 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
     public void initForms(boolean forceInit) {
         overviewForm = RecordingUnit.OVERVIEW_FORM;
         detailsForm = formService.findCustomFormByRecordingUnitTypeAndInstitutionId(unit.getType(), sessionSettingsBean.getSelectedInstitution());
+        configureSystemFieldsBeforeInit();
         // Init system form answers
-        formResponse = initializeFormResponse(detailsForm, unit, forceInit);
-        initEnabledRulesFromForms();
+        initFormContext(forceInit);
     }
 
     @Override
@@ -302,31 +301,33 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
         unit.setContributors(backupClone.getContributors());
         unit.setGeomorphologicalCycle(backupClone.getGeomorphologicalCycle());
         unit.setNormalizedInterpretation(backupClone.getNormalizedInterpretation());
-        hasUnsavedModifications = false;
+        formContext.setHasUnsavedModifications(false);
         initForms(true);
     }
 
     @Override
-    protected void initializeSystemField(CustomFieldAnswer answer, CustomField field) {
+    protected void configureSystemFieldsBeforeInit() {
 
-        // Recording unit identifier
-        if(Objects.equals(field.getValueBinding(), "identifier") && field.getClass().equals(CustomFieldInteger.class)) {
-            ((CustomFieldInteger) field).setMaxValue(unit.getActionUnit().getMaxRecordingUnitCode());
-            ((CustomFieldInteger) field).setMinValue(unit.getActionUnit().getMinRecordingUnitCode());
-        }
-        // Min and max datetime
-        if(field.getClass().equals(CustomFieldDateTime.class)) {
-            if(Objects.equals(field.getValueBinding(), "openingDate") && unit.getClosingDate() != null) {
-                ((CustomFieldDateTime) field).setMax(unit.getClosingDate().toLocalDateTime());
-                ((CustomFieldDateTime) field).setMin(LocalDateTime.of(1000,Month.JANUARY,1, 1, 1));
-            }
-            if(Objects.equals(field.getValueBinding(), "closingDate") && unit.getOpeningDate() != null) {
-                ((CustomFieldDateTime) field).setMin(unit.getOpeningDate().toLocalDateTime());
-                ((CustomFieldDateTime) field).setMax(LocalDateTime.of(9999,Month.DECEMBER,31, 23, 59));
-            }
-        }
+        for (CustomField field : getAllFieldsFrom(overviewForm, detailsForm)) {
 
+            if ("identifier".equals(field.getValueBinding()) && field instanceof CustomFieldInteger cfi) {
+                cfi.setMaxValue(unit.getActionUnit().getMaxRecordingUnitCode());
+                cfi.setMinValue(unit.getActionUnit().getMinRecordingUnitCode());
+            }
+
+            if (field instanceof CustomFieldDateTime dt) {
+                if ("openingDate".equals(field.getValueBinding()) && unit.getClosingDate() != null) {
+                    dt.setMax(unit.getClosingDate().toLocalDateTime());
+                    dt.setMin(LocalDateTime.of(1000, 1, 1, 1, 1));
+                }
+                if ("closingDate".equals(field.getValueBinding()) && unit.getOpeningDate() != null) {
+                    dt.setMin(unit.getOpeningDate().toLocalDateTime());
+                    dt.setMax(LocalDateTime.of(9999, 12, 31, 23, 59));
+                }
+            }
+        }
     }
+
 
     @Override
     public void visualise(RevisionWithInfo<RecordingUnit> history) {
@@ -353,7 +354,7 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
     @Override
     public boolean save(Boolean validated) {
 
-        updateJpaEntityFromFormResponse(formResponse, unit);
+        formContext.flushBackToEntity();
         unit.setValidated(validated);
         if(Boolean.TRUE.equals(validated)) {
             unit.setValidatedBy(sessionSettingsBean.getAuthenticatedUser());

@@ -155,18 +155,18 @@ public class GenericNewUnitDialogBean<T extends TraceableEntity>
     public void setFieldConceptAnswerHasBeenModified(SelectEvent<ConceptLabel> event) {
         UIComponent component = event.getComponent();
         CustomField field = (CustomField) component.getAttributes().get("field");
-        formResponse.getAnswers().get(field).setHasBeenModified(true);
+        formContext.markFieldModified(field);
     }
 
     @Override
     public void initForms(boolean forceInit) {
         detailsForm = handler.formLayout();
-        formResponse = initializeFormResponse(detailsForm, unit, forceInit);
+        initFormContext(forceInit);
     }
 
     protected void reset() {
         unit = null;
-        formResponse = null;
+        formContext.setFormResponse(null);
     }
 
     public void init() throws CannotInitializeNewUnitDialogException {
@@ -244,7 +244,7 @@ public class GenericNewUnitDialogBean<T extends TraceableEntity>
     }
 
     protected void createUnit() throws EntityAlreadyExistsException {
-        updateJpaEntityFromFormResponse(formResponse, unit); // Update Unit based on form response
+        formContext.flushBackToEntity();
         unit.setValidated(false);
         unit = handler.save(sessionSettingsBean.getUserInfo(), unit);
         updateCollections();

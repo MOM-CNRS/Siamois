@@ -170,7 +170,7 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
         overviewForm = SpatialUnit.OVERVIEW_FORM;
         detailsForm = SpatialUnit.DETAILS_FORM;
         // Init system form answers
-        formResponse = initializeFormResponse(detailsForm, unit, forceInit);
+        initFormContext(forceInit);
     }
 
     @Override
@@ -185,7 +185,7 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
 
     public void refreshUnit() {
 
-        hasUnsavedModifications = false;
+        formContext.setHasUnsavedModifications(false);
         unit = null;
         spatialUnitHelperService.reinitialize(
                 unit -> this.unit = unit,
@@ -264,7 +264,7 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
         unit.setValidated(backupClone.getValidated());
         unit.setArk(backupClone.getArk());
         unit.setCategory(backupClone.getCategory());
-        hasUnsavedModifications = false;
+        formContext.setHasUnsavedModifications(false);
         initForms(true);
     }
 
@@ -365,7 +365,7 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
         // Recupération des champs systeme
 
         // Name
-        updateJpaEntityFromFormResponse(formResponse, unit);
+        formContext.flushBackToEntity();
 
         unit.setValidated(validated);
         try {

@@ -192,7 +192,7 @@ public class SpecimenPanel extends AbstractSingleEntityPanel<Specimen>  implemen
     public void refreshUnit() {
 
         // reinit
-        hasUnsavedModifications = false;
+        formContext.setHasUnsavedModifications(false);
         errorMessage = null;
         unit = null;
 
@@ -342,7 +342,7 @@ public class SpecimenPanel extends AbstractSingleEntityPanel<Specimen>  implemen
     public void initForms(boolean forceInit) {
 
         // Init system form answers
-        formResponse = initializeFormResponse(detailsForm, unit, forceInit);
+        initFormContext(forceInit);
 
     }
 
@@ -388,7 +388,7 @@ public class SpecimenPanel extends AbstractSingleEntityPanel<Specimen>  implemen
     @Override
     public boolean save(Boolean validated) {
 
-        updateJpaEntityFromFormResponse(formResponse, unit);
+        formContext.flushBackToEntity();
         unit.setValidated(validated);
         if (Boolean.TRUE.equals(validated)) {
             unit.setValidatedBy(sessionSettingsBean.getAuthenticatedUser());
