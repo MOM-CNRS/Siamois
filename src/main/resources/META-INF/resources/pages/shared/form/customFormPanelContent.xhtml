@@ -24,7 +24,7 @@
                 <c:forEach items="#{row.columns}" var="col" varStatus="colStatus">
                     <p:column styleClass="#{col.className}"
                               id="col-#{prefix}-#{statusIndex}-#{rowStatus.index}-#{colStatus.index}">
-                                <ui:include src="/pages/shared/form/customFormFieldContent.xhtml">
+                                <ui:include src="/pages/shared/form/customFormFieldContentForPanel.xhtml">
                                     <ui:param name="bean" value="#{bean}" />
                                     <ui:param name="col" value="#{col}" />
                                     <ui:param name="hasBeenModified" value="#{bean.formResponse.answers.get(col.field).hasBeenModified}"/>

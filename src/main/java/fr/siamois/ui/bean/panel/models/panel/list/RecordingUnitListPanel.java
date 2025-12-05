@@ -2,6 +2,7 @@ package fr.siamois.ui.bean.panel.models.panel.list;
 
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.exceptions.recordingunit.FailedRecordingUnitSaveException;
+import fr.siamois.domain.models.form.customfield.CustomFieldText;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.form.FormService;
@@ -28,6 +29,8 @@ import org.springframework.stereotype.Component;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
+
+import static fr.siamois.ui.bean.panel.models.panel.single.AbstractSingleEntity.SYSTEM_THESO;
 
 @EqualsAndHashCode(callSuper = true, onlyExplicitlyIncluded = true)
 @Getter
@@ -140,17 +143,27 @@ public class RecordingUnitListPanel extends AbstractListPanel<RecordingUnit> imp
      * À toi de remplir la définition des colonnes.
      */
     protected void configureTableColumns() {
-        // Exemple simple (à adapter avec tes vrais CustomField) :
-        // tableModel.getTableDefinition().addColumn(
-        //     TableColumn.builder()
-        //         .id("identifier")
-        //         .headerKey("recordingUnit.identifier")
-        //         .field(... CustomField correspondant ...)
-        //         .sortable(true)
-        //         .visible(true)
-        //         .required(true)
-        //         .build()
-        // );
+        Concept NAME_CONCEPT = new Concept.Builder()
+                .vocabulary(SYSTEM_THESO)
+                .externalId("4285848")
+                .build();
+        CustomFieldText NAME_FIELD = new CustomFieldText.Builder()
+                .label("common.label.name")
+                .isSystemField(true)
+                .valueBinding("description")
+                .concept(NAME_CONCEPT)
+                .build();
+         NAME_FIELD.setId(1L);
+         tableModel.getTableDefinition().addColumn(
+             TableColumn.builder()
+                 .id("identifier")
+                 .headerKey("common.label.name")
+                 .field(NAME_FIELD)
+                 .sortable(true)
+                 .visible(true)
+                 .required(true)
+                 .build()
+         );
     }
 
     @Override

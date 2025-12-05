@@ -1,0 +1,154 @@
+<!-- /pages/shared/field/fieldCore.xhtml -->
+<ui:fragment xmlns="http://www.w3.org/1999/xhtml"
+             xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
+             xmlns:p="http://primefaces.org/ui"
+             xmlns:sharedInput="http://xmlns.jcp.org/jsf/composite/pages/shared/input"
+             xmlns:siaInplace="http://xmlns.jcp.org/jsf/composite/pages/shared/inplace">
+
+    <!-- Expected @elvariable parameters -->
+    <!--@elvariable id="bean" type="fr.siamois.ui.form.EntityFormContext"-->
+    <!--@elvariable id="col" type="fr.siamois.ui.table.TableColumn"-->
+    <!--@elvariable id="prefix" type="java.lang.String"-->
+    <!--@elvariable id="statusIndex" type="java.lang.Integer"-->
+    <!--@elvariable id="rowIndex" type="java.lang.Integer"-->
+    <!--@elvariable id="colIndex" type="java.lang.Integer"-->
+    <!--@elvariable id="root" type="java.lang.String"-->
+    <!--@elvariable id="panelIndex" type="java.lang.Integer"-->
+    <!--@elvariable id="hasBeenModified" type="java.lang.Boolean"-->
+    <!--@elvariable id="answer" type="fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswer" required="true"-->
+    <!--@elvariable id="onModified" type="javax.el.MethodExpression"-->
+    <!--@elvariable id="panelHeaderUpdateId" type="java.lang.String"-->
+    <!--@elvariable id="hasAutoGenerationFunction" type="java.lang.Boolean"-->
+    <!--@elvariable id="onGenerateValue" type="javax.el.MethodExpression"-->
+
+    <!-- TEXT -->
+    <siaInplace:text
+            rendered="#{col.field['class'].simpleName eq 'CustomFieldText'}"
+            id="#{prefix}-#{statusIndex}-#{rowIndex}-#{colIndex}"
+            field="#{col.field}"
+            required="#{col.required}"
+            label="#{spatialUnitFieldBean.resolveCustomFieldLabel(col.field)}"
+            hasBeenModified="#{hasBeenModified}"
+            answer="#{answer}"
+            mode="#{col.readOnly ? 'output' : flowBean.getInPlaceFieldMode()}"
+            updateTargetsOnBlur="#{panelHeaderUpdateId}"
+            onModified="#{bean.onFieldAnswerModifiedListener}"
+            hasAutoGenerationFunction="#{hasAutoGenerationFunction}"
+            onGenerateValue="#{onGenerateValue}"
+    />
+
+    <!-- INTEGER -->
+    <siaInplace:integer
+            rendered="#{col.field['class'].simpleName eq 'CustomFieldInteger'}"
+            panelModel="#{bean}"
+            field="#{col.field}"
+            required="#{col.required}"
+            label="#{spatialUnitFieldBean.resolveCustomFieldLabel(col.field)}"
+            hasBeenModified="#{hasBeenModified}"
+            answer="#{answer}"
+            mode="#{col.readOnly ? 'output' : flowBean.getInPlaceFieldMode()}"
+            updateTargetsOnBlur="#{panelHeaderUpdateId}"
+    />
+
+    <!-- DATETIME -->
+    <siaInplace:datePicker
+            required="#{col.required}"
+            panelModel="#{bean}"
+            label="#{spatialUnitFieldBean.resolveCustomFieldLabel(col.field)}"
+            rendered="#{col.field['class'].simpleName eq 'CustomFieldDateTime'}"
+            field="#{col.field}"
+            hasBeenModified="#{hasBeenModified}"
+            answer="#{answer}"
+            mode="#{col.readOnly ? 'output' : flowBean.getInPlaceFieldMode()}"
+            updateTargetsOnBlur="#{root}:field-#{prefix}-#{statusIndex}-#{rowIndex}-#{colIndex} #{bean.getPanelHeaderUpdateId(panelIndex)}"
+    />
+
+    <!-- CONCEPT -->
+    <siaInplace:concept
+            rendered="#{col.field['class'].simpleName eq 'CustomFieldSelectOneFromFieldCode'}"
+            hasBeenModified="#{hasBeenModified}"
+            field="#{col.field}"
+            required="#{col.required}"
+            label="#{spatialUnitFieldBean.resolveCustomFieldLabel(col.field)}"
+            mode="#{col.readOnly ? 'output' : flowBean.getInPlaceFieldMode()}"
+            panelModel="#{bean}"
+            updateTargetsOnBlur="#{bean.getConceptFieldsUpdateTargetsOnBlur(panelIndex)}"
+            answer="#{answer}"
+    />
+
+    <!-- Select one action -->
+    <siaInplace:action
+            rendered="#{col.field['class'].simpleName eq 'CustomFieldSelectOneActionUnit'}"
+            hasBeenModified="#{hasBeenModified}"
+            field="#{col.field}"
+            mode="#{col.readOnly ? 'output' : flowBean.getInPlaceFieldMode()}"
+            panelModel="#{bean}"
+            required="#{col.required}"
+            label="#{spatialUnitFieldBean.resolveCustomFieldLabel(col.field)}"
+            updateTargetsOnBlur="#{root}:field-#{prefix}-#{statusIndex}-#{rowStatus.index}-#{colStatus.index} #{bean.getPanelHeaderUpdateId(panelIndex)}}"
+            answer="#{answer}"/>
+
+
+    <siaInplace:spatial
+            rendered="#{col.field['class'].simpleName eq 'CustomFieldSelectOneSpatialUnit'}"
+            hasBeenModified="#{hasBeenModified}"
+            field="#{col.field}"
+            mode="#{col.readOnly ? 'output' : flowBean.getInPlaceFieldMode()}"
+            panelModel="#{bean}"
+            required="#{col.required}"
+            label="#{spatialUnitFieldBean.resolveCustomFieldLabel(col.field)}"
+            updateTargetsOnBlur="#{root}:field-#{prefix}-#{statusIndex}-#{rowStatus.index}-#{colStatus.index} #{bean.getPanelHeaderUpdateId(panelIndex)}"
+            answer="#{answer}"/>
+
+
+    <!-- Select one from person -->
+    <siaInplace:person
+            rendered="#{col.field['class'].simpleName eq 'CustomFieldSelectOnePerson'}"
+            hasBeenModified="#{hasBeenModified}"
+            field="#{col.field}"
+            mode="#{col.readOnly ? 'output' : flowBean.getInPlaceFieldMode()}"
+            panelModel="#{bean}"
+            required="#{col.required}"
+            label="#{spatialUnitFieldBean.resolveCustomFieldLabel(col.field)}"
+            updateTargetsOnBlur="#{bean.getPanelHeaderUpdateId(panelIndex)}"
+            answer="#{answer}"/>
+
+
+    <!-- Select multiple from person -->
+    <siaInplace:person
+            rendered="#{col.field['class'].simpleName eq 'CustomFieldSelectMultiplePerson'}"
+            hasBeenModified="#{hasBeenModified}"
+            field="#{col.field}"
+            multiple="true"
+            required="#{col.required}"
+            label="#{spatialUnitFieldBean.resolveCustomFieldLabel(col.field)}"
+            mode="#{col.readOnly ? 'output' : flowBean.getInPlaceFieldMode()}"
+            panelModel="#{bean}"
+            updateTargetsOnBlur="#{bean.getPanelHeaderUpdateId(panelIndex)}"
+            answer="#{answer}"/>
+
+
+    <!-- Select spatial unit from tree -->
+    <siaInplace:spatialUnitTree
+            rendered="#{col.field['class'].simpleName eq 'CustomFieldSelectMultipleSpatialUnitTree'}"
+            hasBeenModified="#{hasBeenModified}"
+            field="#{col.field}"
+            mode="#{col.readOnly ? 'output' : flowBean.getInPlaceFieldMode()}"
+            panelModel="#{bean}"
+            updateTargetsOnBlur="#{root}:field-#{prefix}-#{statusIndex}-#{rowStatus.index}-#{colStatus.index} #{bean.getPanelHeaderUpdateId(panelIndex)}"
+            answer="#{answer}"/>
+
+    <!-- Select one code OA -->
+    <siaInplace:actionCode
+            rendered="#{col.field['class'].simpleName eq 'CustomFieldSelectOneActionCode'}"
+            panelModel="#{bean}"
+            field="#{col.field}"
+            required="#{col.required}"
+            label="#{spatialUnitFieldBean.resolveCustomFieldLabel(col.field)}"
+            hasBeenModified="#{hasBeenModified}"
+            answer="#{answer}"
+            mode="#{col.readOnly ? 'output' : flowBean.getInPlaceFieldMode()}"
+            updateTargetsOnBlur="#{root}:field-#{prefix}-#{statusIndex}-#{rowStatus.index}-#{colStatus.index} #{bean.getPanelHeaderUpdateId(panelIndex)}"
+    />
+
+</ui:fragment>

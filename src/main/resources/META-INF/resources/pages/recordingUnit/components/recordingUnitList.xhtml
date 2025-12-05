@@ -37,6 +37,7 @@
                      lazy="true"
                      globalFilter="#{cc.attrs.lazyDataModel.globalFilter}"
                      allowUnsorting="true"
+                     scrollable="true" scrollWidth="100%"
                      sortBy="#{cc.attrs.lazyDataModel.sortBy}"
                      rows="#{cc.attrs.lazyDataModel.pageSizeState}"
                      first="#{cc.attrs.lazyDataModel.first}"
@@ -68,7 +69,9 @@
                     <p:toolbarGroup>
                         <p:toolbarGroup align="left">
                             <div style="display:flex; flex-direction: column; gap:0.2em">
+
                                 <div>
+                                    <p:selectBooleanButton onIcon="bi bi-list-nested" offIcon="bi bi-list"  />
                                     <!-- Global search -->
                                     <span class="filter-container ui-input-icon-left">
                                             <i class="bi bi-search"/>
@@ -126,6 +129,8 @@
 
             </f:facet>
 
+            <p:column selectionBox="true" style="width:16px;text-align:center"/>
+
             <!-- 2) Colonnes dynamiques, basées sur tableDefinition -->
             <p:columns value="#{panelModel.columns}"
                        var="column"
@@ -138,15 +143,15 @@
 
                 <!-- Contexte de formulaire pour cette ligne -->
                 <ui:param name="rowContext"
-                          value="#{panelModel.tableModel.rowContext(item)}"/>
+                          value="#{panelModel.tableModel.getRowContext(item)}"/>
 
                 <!-- Ici, 'column.field' est ton CustomField -->
                 <!-- Si tu as aussi une CustomCol, tu peux la stocker dans TableColumn et l’utiliser ici -->
 
                 <!-- Réutilisation du fragment de champ, mais en lui passant le bon 'bean' + 'answer' -->
-                <ui:include src="/pages/shared/field/fieldFragment.xhtml">
+                <ui:include src="/pages/shared/form/customFormFieldContentForTable.xhtml">
                     <ui:param name="bean" value="#{rowContext}"/>
-                    <ui:param name="col" value="#{column.customCol}"/>
+                    <ui:param name="col" value="#{column}"/>
                     <ui:param name="prefix" value="table"/>
                     <ui:param name="statusIndex" value="#{status.index}"/>
                     <ui:param name="rowIndex" value="#{rowIndex}"/>
@@ -156,14 +161,14 @@
 
                     <!-- answer = réponse du EntityFormContext pour ce champ -->
                     <ui:param name="answer"
-                              value="#{rowContext.fieldAnswer(column.field)}"/>
+                              value="#{rowContext.getFieldAnswer(column.field)}"/>
 
                     <ui:param name="hasBeenModified"
                               value="#{answer != null and answer.hasBeenModified}"/>
 
                     <!-- génération auto : idem que dans les panels, si tu veux -->
                     <ui:param name="hasAutoGenerationFunction"
-                              value="#{column.field['class'].simpleName eq 'CustomFieldText' and rowContext.unit ne null}"/>
+                              value="false"/>
                     <ui:param name="onGenerateValue"
                               value="#{null}"/>
 
@@ -174,7 +179,7 @@
 
             </p:columns>
 
-            <p:column selectionBox="true" style="width:16px;text-align:center"/>
+
 
             <p:column toggleable="false"
                       headerText="#{langBean.msg('table.recordingunit.column.identifier')}"
