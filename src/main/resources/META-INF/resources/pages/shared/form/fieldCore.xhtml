@@ -20,6 +20,9 @@
     <!--@elvariable id="panelHeaderUpdateId" type="java.lang.String"-->
     <!--@elvariable id="hasAutoGenerationFunction" type="java.lang.Boolean"-->
     <!--@elvariable id="onGenerateValue" type="javax.el.MethodExpression"-->
+    <!--@elvariable id="panelStyleClass" type="java.lang.String"-->
+    <!-- @elvariable id="conceptFieldsUpdateTargetsOnBlur" type="java.lang.String" -->
+    <!-- @elvariable id="updateTargetsOnBlur" type="java.lang.String" -->
 
     <!-- TEXT -->
     <siaInplace:text
@@ -53,14 +56,15 @@
     <!-- DATETIME -->
     <siaInplace:datePicker
             required="#{col.required}"
-            panelModel="#{bean}"
             label="#{spatialUnitFieldBean.resolveCustomFieldLabel(col.field)}"
             rendered="#{col.field['class'].simpleName eq 'CustomFieldDateTime'}"
             field="#{col.field}"
             hasBeenModified="#{hasBeenModified}"
             answer="#{answer}"
             mode="#{col.readOnly ? 'output' : flowBean.getInPlaceFieldMode()}"
-            updateTargetsOnBlur="#{root}:field-#{prefix}-#{statusIndex}-#{rowIndex}-#{colIndex} #{bean.getPanelHeaderUpdateId(panelIndex)}"
+            updateTargetsOnBlur="#{updateTargetsOnBlur}"
+            onModified="#{bean.onFieldAnswerModifiedListener}"
+            panelStyleClass="#{panelStyleClass}"
     />
 
     <!-- CONCEPT -->
@@ -72,8 +76,10 @@
             label="#{spatialUnitFieldBean.resolveCustomFieldLabel(col.field)}"
             mode="#{col.readOnly ? 'output' : flowBean.getInPlaceFieldMode()}"
             panelModel="#{bean}"
-            updateTargetsOnBlur="#{bean.getConceptFieldsUpdateTargetsOnBlur(panelIndex)}"
+            updateTargetsOnBlur="#{conceptFieldsUpdateTargetsOnBlur}"
             answer="#{answer}"
+            panelStyleClass="#{panelStyleClass}"
+            onConceptChanged="#{bean.setFieldConceptAnswerHasBeenModified}"
     />
 
     <!-- Select one action -->
@@ -85,7 +91,7 @@
             panelModel="#{bean}"
             required="#{col.required}"
             label="#{spatialUnitFieldBean.resolveCustomFieldLabel(col.field)}"
-            updateTargetsOnBlur="#{root}:field-#{prefix}-#{statusIndex}-#{rowStatus.index}-#{colStatus.index} #{bean.getPanelHeaderUpdateId(panelIndex)}}"
+            updateTargetsOnBlur="#{updateTargetsOnBlur}"
             answer="#{answer}"/>
 
 
@@ -97,7 +103,7 @@
             panelModel="#{bean}"
             required="#{col.required}"
             label="#{spatialUnitFieldBean.resolveCustomFieldLabel(col.field)}"
-            updateTargetsOnBlur="#{root}:field-#{prefix}-#{statusIndex}-#{rowStatus.index}-#{colStatus.index} #{bean.getPanelHeaderUpdateId(panelIndex)}"
+            updateTargetsOnBlur="#{updateTargetsOnBlur}"
             answer="#{answer}"/>
 
 
@@ -110,7 +116,7 @@
             panelModel="#{bean}"
             required="#{col.required}"
             label="#{spatialUnitFieldBean.resolveCustomFieldLabel(col.field)}"
-            updateTargetsOnBlur="#{bean.getPanelHeaderUpdateId(panelIndex)}"
+            updateTargetsOnBlur="#{updateTargetsOnBlur}"
             answer="#{answer}"/>
 
 
@@ -124,7 +130,7 @@
             label="#{spatialUnitFieldBean.resolveCustomFieldLabel(col.field)}"
             mode="#{col.readOnly ? 'output' : flowBean.getInPlaceFieldMode()}"
             panelModel="#{bean}"
-            updateTargetsOnBlur="#{bean.getPanelHeaderUpdateId(panelIndex)}"
+            updateTargetsOnBlur="#{updateTargetsOnBlur}"
             answer="#{answer}"/>
 
 
@@ -135,7 +141,7 @@
             field="#{col.field}"
             mode="#{col.readOnly ? 'output' : flowBean.getInPlaceFieldMode()}"
             panelModel="#{bean}"
-            updateTargetsOnBlur="#{root}:field-#{prefix}-#{statusIndex}-#{rowStatus.index}-#{colStatus.index} #{bean.getPanelHeaderUpdateId(panelIndex)}"
+            updateTargetsOnBlur="#{updateTargetsOnBlur}"
             answer="#{answer}"/>
 
     <!-- Select one code OA -->
@@ -148,7 +154,7 @@
             hasBeenModified="#{hasBeenModified}"
             answer="#{answer}"
             mode="#{col.readOnly ? 'output' : flowBean.getInPlaceFieldMode()}"
-            updateTargetsOnBlur="#{root}:field-#{prefix}-#{statusIndex}-#{rowStatus.index}-#{colStatus.index} #{bean.getPanelHeaderUpdateId(panelIndex)}"
+            updateTargetsOnBlur="#{updateTargetsOnBlur}"
     />
 
 </ui:fragment>

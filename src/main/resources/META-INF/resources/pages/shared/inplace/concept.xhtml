@@ -11,8 +11,6 @@
         <cc:attribute name="answer"
                       type="fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerSelectOneFromFieldCode"
                       required="true"/>
-        <cc:attribute name="panelModel" type="fr.siamois.ui.bean.panel.models.panel.single.AbstractSingleEntity"
-                      required="true"/>
         <cc:attribute name="hasBeenModified" type="Boolean" required="false" default="false"/>
         <cc:attribute name="field" type="fr.siamois.domain.models.form.customfield.CustomFieldSelectOneFromFieldCode"
                       required="true"/>
@@ -20,6 +18,11 @@
         <cc:attribute name="mode" type="String" required="false" default="READ"/>
         <cc:attribute name="updateTargetsOnBlur" type="String" required="false" default="@this"/>
         <cc:attribute name="required" type="java.lang.Boolean" required="false" default="false"/>
+
+        <cc:attribute name="onConceptChanged"
+                      method-signature="void listener(org.primefaces.event.SelectEvent)"
+                      required="false"/>
+        <cc:attribute name="panelStyleClass" type="String" required="false" default=""/>
     </cc:interface>
 
 
@@ -31,13 +34,13 @@
             <f:facet name="input">
                 <sharedInput:conceptAutocompleteFieldCode id="typeComponent" rendered="#{not empty cc.attrs.answer}"
                                                           inputStyleClass="#{cc.attrs.answer.hasBeenModified ? 'track-change sia-modified-field': 'track-change'}"
-                                                          panelStyleClass="#{cc.attrs.panelModel.autocompleteClass}"
+                                                          panelStyleClass="#{cc.attrs.panelStyleClass}"
                                                           selectedConcept="#{cc.attrs.answer.uiVal}"
                                                           field="#{cc.attrs.field}"
                                                           label="#{cc.attrs.label}"
                                                           ajaxUpdateTargets="#{cc.attrs.updateTargetsOnBlur}"
                                                           required="#{cc.attrs.required}"
-                                                          itemSelectListener="#{cc.attrs.panelModel.setFieldConceptAnswerHasBeenModified}"
+                                                          itemSelectListener="#{cc.attrs.onConceptChanged}"
                                                           editConceptUrl="#{spatialUnitFieldBean.getUrlForFieldCode(cc.attrs.field.fieldCode)}"/>
             </f:facet>
         </p:inplace>

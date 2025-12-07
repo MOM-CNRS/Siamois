@@ -97,7 +97,9 @@ public class RecordingUnitTableViewModel {
                     fs,
                     formService,
                     spatialUnitTreeService,
-                    spatialUnitService
+                    spatialUnitService,
+                    null,
+                    "type"
             );
             ctx.init(false);
             return ctx;

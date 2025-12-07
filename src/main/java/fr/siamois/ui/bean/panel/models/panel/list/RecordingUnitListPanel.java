@@ -2,6 +2,8 @@ package fr.siamois.ui.bean.panel.models.panel.list;
 
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.exceptions.recordingunit.FailedRecordingUnitSaveException;
+import fr.siamois.domain.models.form.customfield.CustomFieldDateTime;
+import fr.siamois.domain.models.form.customfield.CustomFieldSelectOneFromFieldCode;
 import fr.siamois.domain.models.form.customfield.CustomFieldText;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
@@ -143,27 +145,50 @@ public class RecordingUnitListPanel extends AbstractListPanel<RecordingUnit> imp
      * À toi de remplir la définition des colonnes.
      */
     protected void configureTableColumns() {
-        Concept NAME_CONCEPT = new Concept.Builder()
+        Concept TYPE_CONCEPT = new Concept.Builder()
                 .vocabulary(SYSTEM_THESO)
-                .externalId("4285848")
+                .externalId("4287605")
                 .build();
-        CustomFieldText NAME_FIELD = new CustomFieldText.Builder()
-                .label("common.label.name")
+        Concept OPENINGDATE_CONCEPT = new Concept.Builder()
+                .vocabulary(SYSTEM_THESO)
+                .externalId("4286198")
+                .build();
+        CustomFieldSelectOneFromFieldCode TYPE_FIELD = new CustomFieldSelectOneFromFieldCode.Builder()
+                .label("recordingunit.property.type")
                 .isSystemField(true)
-                .valueBinding("description")
-                .concept(NAME_CONCEPT)
+                .valueBinding("type")
+                .concept(TYPE_CONCEPT)
+                .fieldCode("SIARU.TYPE")
+                .styleClass("mr-2 recording-unit-type-chip")
                 .build();
-         NAME_FIELD.setId(1L);
+        CustomFieldDateTime DATE_FIELD = new CustomFieldDateTime.Builder()
+                .label("recordingunit.field.openingDate")
+                .isSystemField(true)
+                .valueBinding("openingDate")
+                .concept(OPENINGDATE_CONCEPT)
+                .showTime(false)
+                .build();
+        TYPE_FIELD.setId(1L);
          tableModel.getTableDefinition().addColumn(
              TableColumn.builder()
-                 .id("identifier")
-                 .headerKey("common.label.name")
-                 .field(NAME_FIELD)
+                 .id("type")
+                 .headerKey("recordingunit.property.type")
+                 .field(TYPE_FIELD)
                  .sortable(true)
                  .visible(true)
                  .required(true)
                  .build()
          );
+        tableModel.getTableDefinition().addColumn(
+                TableColumn.builder()
+                        .id("openingDate")
+                        .headerKey("recordingunit.field.openingDate")
+                        .field(DATE_FIELD)
+                        .sortable(true)
+                        .visible(true)
+                        .required(true)
+                        .build()
+        );
     }
 
     @Override

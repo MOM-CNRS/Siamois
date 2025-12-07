@@ -51,6 +51,9 @@
                 <ui:param name="onGenerateValue" value="#{onGenerateValue}"/>
                 <ui:param name="rowStatus" value="#{rowStatus}"/>
                 <ui:param name="colStatus" value="#{colStatus}"/>
+                <ui:param name="panelStyleClass" value="#{bean.getAutocompleteClass()}"/>
+                <ui:param name="conceptFieldsUpdateTargetsOnBlur" value="#{bean.getConceptFieldsUpdateTargetsOnBlur(panelIndex)}"/>
+                <ui:param name="updateTargetsOnBlur" value="#{root}:field-#{prefix}-#{statusIndex}-#{rowIndex}-#{colIndex} #{bean.getPanelHeaderUpdateId(panelIndex)}"/>
             </ui:include>
 
         </sharedInput:panelField>

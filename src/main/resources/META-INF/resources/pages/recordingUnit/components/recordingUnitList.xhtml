@@ -37,7 +37,6 @@
                      lazy="true"
                      globalFilter="#{cc.attrs.lazyDataModel.globalFilter}"
                      allowUnsorting="true"
-                     scrollable="true" scrollWidth="100%"
                      sortBy="#{cc.attrs.lazyDataModel.sortBy}"
                      rows="#{cc.attrs.lazyDataModel.pageSizeState}"
                      first="#{cc.attrs.lazyDataModel.first}"
@@ -47,7 +46,8 @@
                      paginatorTemplate="Rows per page: {RowsPerPageDropdown} {RowReport} {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink}"
                      rowsPerPageTemplate="5,10,15,20,25"
                      rowIndexVar="rowIndex"
-                     value="#{panelModel.tableModel.lazyDataModel}"
+                     tableStyle="width:auto"
+                     value="#{cc.attrs.lazyDataModel}"
                      class="recording-unit-datatable">
 
             <p:ajax event="rowEdit" listener="#{cc.attrs.lazyDataModel.handleRowEdit}"/>
@@ -131,6 +131,26 @@
 
             <p:column selectionBox="true" style="width:16px;text-align:center"/>
 
+            <!-- full identifier -->
+            <p:column toggleable="false"
+                      headerText="#{langBean.msg('table.recordingunit.column.identifier')}"
+                      sortable="true"
+                      filterValue="#{cc.attrs.lazyDataModel.nameFilter}"
+                      filterable="true"
+                      field="full_identifier"
+                      id="identifierCol">
+
+                <p:commandLink
+                        action="#{flowBean.goToRecordingUnitByIdNewPanel(item.id,cc.attrs.panelIndex)}"
+                        onstart="PF('buiContent').show()"
+                        oncomplete="PF('buiContent').hide();handleScrollToTop();"
+                        process="@form"
+                        update="flow"
+                >
+                    <h:outputText value="#{item.displayFullIdentifier()}"/>
+                </p:commandLink>
+            </p:column>
+
             <!-- 2) Colonnes dynamiques, basées sur tableDefinition -->
             <p:columns value="#{panelModel.columns}"
                        var="column"
@@ -181,24 +201,6 @@
 
 
 
-            <p:column toggleable="false"
-                      headerText="#{langBean.msg('table.recordingunit.column.identifier')}"
-                      sortable="true"
-                      filterValue="#{cc.attrs.lazyDataModel.nameFilter}"
-                      filterable="true"
-                      field="full_identifier"
-                      id="identifierCol">
-
-                <p:commandLink
-                        action="#{flowBean.goToRecordingUnitByIdNewPanel(item.id,cc.attrs.panelIndex)}"
-                        onstart="PF('buiContent').show()"
-                        oncomplete="PF('buiContent').hide();handleScrollToTop();"
-                        process="@form"
-                        update="flow"
-                >
-                    <h:outputText value="#{item.displayFullIdentifier()}"/>
-                </p:commandLink>
-            </p:column>
 
 
             <!-- type column -->

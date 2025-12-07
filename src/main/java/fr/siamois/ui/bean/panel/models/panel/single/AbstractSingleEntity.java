@@ -153,8 +153,7 @@ public abstract class AbstractSingleEntity<T> extends AbstractPanel implements S
     }
 
     public String getAutocompleteClass() {
-        // Default implementation
-        return "";
+        return formContext != null ? formContext.getAutocompleteClass() : "";
     }
 
     // -------------------- Abstract methods ----------------
@@ -197,7 +196,11 @@ public abstract class AbstractSingleEntity<T> extends AbstractPanel implements S
                     fieldSource,
                     formService,
                     spatialUnitTreeService,
-                    spatialUnitService
+                    spatialUnitService,
+                    // callback appelé quand le champ de scope change
+                    (field, concept) -> onFormScopeChanged(concept),
+                    // nom de la propriété qui porte le scope (ex: "type")
+                    getFormScopePropertyName()
             );
         }
         formContext.init(forceInit);
@@ -260,13 +263,7 @@ public abstract class AbstractSingleEntity<T> extends AbstractPanel implements S
         Concept newValue = event.getObject().getConcept();
 
         if (formContext != null) {
-            formContext.markFieldModified(field);
-            formContext.onConceptChanged(field, newValue);
-        }
-
-        if (Boolean.TRUE.equals(field.getIsSystemField())
-                && Objects.equals(field.getValueBinding(), getFormScopePropertyName())) {
-            onFormScopeChanged(newValue);
+            formContext.handleConceptChange(field, newValue);
         }
     }
 

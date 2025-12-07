@@ -18,7 +18,7 @@
         <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
         <recordingUnit:recordingUnitList
                 displayColumnToggler="true"
-                lazyDataModel="#{panelModel.lazyDataModel}"
+                lazyDataModel="#{panelModel.tableModel.lazyDataModel}"
                 panelModel="#{panelModel}"
                 panelIndex="#{panelIndex}"
                 id="recordingUnitList"

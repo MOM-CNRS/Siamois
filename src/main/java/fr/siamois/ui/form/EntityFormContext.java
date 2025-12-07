@@ -5,6 +5,7 @@ import fr.siamois.domain.models.form.customfield.CustomFieldSelectMultipleSpatia
 import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswer;
 import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerSelectMultipleSpatialUnitTree;
 import fr.siamois.domain.models.form.customformresponse.CustomFormResponse;
+import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.form.FormService;
@@ -17,6 +18,10 @@ import fr.siamois.ui.viewmodel.TreeUiStateViewModel;
 import lombok.Data;
 import lombok.Getter;
 import org.primefaces.model.TreeNode;
+import java.util.function.BiConsumer;
+
+import fr.siamois.domain.models.form.customfield.CustomField;
+import fr.siamois.domain.models.vocabulary.Concept;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -52,6 +57,9 @@ public class EntityFormContext<T> {
 
     private EnabledRulesEngine enabledEngine;
 
+    private final BiConsumer<CustomField, Concept> formScopeChangeCallback;
+    private final String formScopeValueBinding;
+
     // Column enabled state; if key missing, considered enabled
     private final Map<Long, Boolean> colEnabledByFieldId = new HashMap<>();
 
@@ -68,12 +76,16 @@ public class EntityFormContext<T> {
                              FieldSource fieldSource,
                              FormService formService,
                              SpatialUnitTreeService spatialUnitTreeService,
-                             SpatialUnitService spatialUnitService) {
+                             SpatialUnitService spatialUnitService,
+                             BiConsumer<CustomField, Concept> formScopeChangeCallback,
+                             String formScopeValueBinding) {
         this.unit = unit;
         this.fieldSource = fieldSource;
         this.formService = formService;
         this.spatialUnitTreeService = spatialUnitTreeService;
         this.spatialUnitService = spatialUnitService;
+        this.formScopeChangeCallback = formScopeChangeCallback;
+        this.formScopeValueBinding = formScopeValueBinding;
     }
 
     // -------------------------------------------------------------------------
@@ -267,5 +279,31 @@ public class EntityFormContext<T> {
             }
         }
         return res;
+    }
+
+    public void handleConceptChange(CustomField field, Concept newValue) {
+        // 1) Marquer comme modifié
+        markFieldModified(field);
+
+        // 2) Appliquer la logique actuelle de changement de concept
+        onConceptChanged(field, newValue);
+
+        // 3) Si c'est le champ de scope de formulaire → callback
+        if (isFormScopeField(field) && formScopeChangeCallback != null) {
+            formScopeChangeCallback.accept(field, newValue);
+        }
+    }
+
+    private boolean isFormScopeField(CustomField field) {
+        return field != null
+                && Boolean.TRUE.equals(field.getIsSystemField())
+                && formScopeValueBinding != null
+                && formScopeValueBinding.equals(field.getValueBinding());
+    }
+
+    public String getAutocompleteClass() {
+        if (unit instanceof RecordingUnit) return "recording-unit-autocomplete";
+        if (unit instanceof SpatialUnit)   return "spatial-unit-autocomplete";
+        return "";
     }
 }
