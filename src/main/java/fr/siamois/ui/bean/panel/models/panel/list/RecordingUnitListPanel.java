@@ -2,15 +2,15 @@ package fr.siamois.ui.bean.panel.models.panel.list;
 
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.exceptions.recordingunit.FailedRecordingUnitSaveException;
-import fr.siamois.domain.models.form.customfield.CustomFieldDateTime;
-import fr.siamois.domain.models.form.customfield.CustomFieldSelectOneFromFieldCode;
-import fr.siamois.domain.models.form.customfield.CustomFieldText;
+import fr.siamois.domain.models.form.customfield.*;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.form.FormService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitTreeService;
+import fr.siamois.infrastructure.database.initializer.seeder.ConceptSeeder;
+import fr.siamois.infrastructure.database.initializer.seeder.customfield.CustomFieldSeederSpec;
 import fr.siamois.ui.bean.panel.models.PanelBreadcrumb;
 import fr.siamois.ui.lazydatamodel.BaseLazyDataModel;
 import fr.siamois.ui.lazydatamodel.BaseRecordingUnitLazyDataModel;
@@ -153,6 +153,14 @@ public class RecordingUnitListPanel extends AbstractListPanel<RecordingUnit> imp
                 .vocabulary(SYSTEM_THESO)
                 .externalId("4286198")
                 .build();
+        Concept AUTHOR_CONCEPT = new Concept.Builder()
+                .vocabulary(SYSTEM_THESO)
+                .externalId("4286195")
+                .build();
+        Concept CONTRIBUTORS_CONCEPT = new Concept.Builder()
+                .vocabulary(SYSTEM_THESO)
+                .externalId("4286195")
+                .build();
         CustomFieldSelectOneFromFieldCode TYPE_FIELD = new CustomFieldSelectOneFromFieldCode.Builder()
                 .label("recordingunit.property.type")
                 .isSystemField(true)
@@ -168,7 +176,24 @@ public class RecordingUnitListPanel extends AbstractListPanel<RecordingUnit> imp
                 .concept(OPENINGDATE_CONCEPT)
                 .showTime(false)
                 .build();
+        CustomFieldSelectOnePerson AUTHOR_FIELD = new CustomFieldSelectOnePerson.Builder()
+                .label("recordingunit.field.author")
+                .isSystemField(true)
+                .valueBinding("author")
+                .concept(AUTHOR_CONCEPT)
+                .build();
+        CustomFieldSelectMultiplePerson CONTRIBUTORS_FIELD = new CustomFieldSelectMultiplePerson.Builder()
+                .label("recordingunit.field.contributors")
+                .isSystemField(true)
+                .valueBinding("contributors")
+                .concept(CONTRIBUTORS_CONCEPT)
+                .build();
+
+        DATE_FIELD.setId(2L);
         TYPE_FIELD.setId(1L);
+        AUTHOR_FIELD.setId(3L);
+        CONTRIBUTORS_FIELD.setId(4L);
+
          tableModel.getTableDefinition().addColumn(
              TableColumn.builder()
                  .id("type")
@@ -189,6 +214,26 @@ public class RecordingUnitListPanel extends AbstractListPanel<RecordingUnit> imp
                         .required(true)
                         .build()
         );
+        tableModel.getTableDefinition().addColumn(
+                TableColumn.builder()
+                        .id("author")
+                        .headerKey("recordingunit.field.author")
+                        .field(AUTHOR_FIELD)
+                        .sortable(true)
+                        .visible(true)
+                        .required(true)
+                        .build()
+        );
+        tableModel.getTableDefinition().addColumn(
+                TableColumn.builder()
+                        .id("contributors")
+                        .headerKey("recordingunit.field.contributors")
+                            .field(CONTRIBUTORS_FIELD)
+                        .sortable(true)
+                        .visible(true)
+                        .required(true)
+                        .build()
+        );
     }
 
     @Override
@@ -204,7 +249,7 @@ public class RecordingUnitListPanel extends AbstractListPanel<RecordingUnit> imp
     public void handleRowEdit(RowEditEvent<RecordingUnit> event) {
         RecordingUnit toSave = event.getObject();
 
-        // un jour : refléter le contexte si tu passes par EntityFormContext
+        // todo : refléter le contexte si tu passes par EntityFormContext
         // var ctx = tableModel.getRowContext(toSave);
         // if (ctx != null) ctx.flushBackToEntity();
 

@@ -113,7 +113,8 @@
             hasBeenModified="#{hasBeenModified}"
             field="#{col.field}"
             mode="#{col.readOnly ? 'output' : flowBean.getInPlaceFieldMode()}"
-            panelModel="#{bean}"
+            onModified="#{bean.onFieldAnswerModifiedListener}"
+            panelStyleClass="#{panelStyleClass}"
             required="#{col.required}"
             label="#{spatialUnitFieldBean.resolveCustomFieldLabel(col.field)}"
             updateTargetsOnBlur="#{updateTargetsOnBlur}"
@@ -129,7 +130,8 @@
             required="#{col.required}"
             label="#{spatialUnitFieldBean.resolveCustomFieldLabel(col.field)}"
             mode="#{col.readOnly ? 'output' : flowBean.getInPlaceFieldMode()}"
-            panelModel="#{bean}"
+            onModified="#{bean.onFieldAnswerModifiedListener}"
+            panelStyleClass="#{panelStyleClass}"
             updateTargetsOnBlur="#{updateTargetsOnBlur}"
             answer="#{answer}"/>
 

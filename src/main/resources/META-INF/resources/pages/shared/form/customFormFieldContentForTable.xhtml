@@ -25,7 +25,6 @@
 
     <p:outputPanel rendered="#{bean.isColumnEnabled(col.field)}" styleClass="ui-fluid"
                    id="field-#{prefix}-#{rowIndex}-#{colIndex}">
-
         <ui:include src="/pages/shared/form/fieldCore.xhtml">
             <ui:param name="bean" value="#{bean}"/>
             <ui:param name="col" value="#{col}"/>
