@@ -201,39 +201,6 @@
 
 
 
-
-
-            <!-- type column -->
-            <p:column headerText="#{langBean.msg('table.spatialunit.column.type')}"
-                      sortable="true"
-                      filterable="true"
-                      field="category"
-                      id="categoryCol"
-                      filterMatchMode="exact">
-                <f:facet name="filter">
-
-                    <p:selectCheckboxMenu
-
-                            label="#{langBean.msg('table.spatialunit.column.type.filter')}"
-                            filter="true"
-                            value="#{cc.attrs.lazyDataModel.selectedTypes}"
-                            updateLabel="true"
-                            filterMatchMode="contains"
-                            onchange="PF('#{cc.clientId}_recordingUnitListTable').filter()"
-                            converter="#{conceptLabelConverter}">
-
-                        <f:selectItems
-                                var="cat"
-                                itemValue="#{cat}"
-                                itemLabel="#{cat.getLabel()}"
-                        />
-                    </p:selectCheckboxMenu>
-
-                </f:facet>
-                <chip:conceptChip  concept="#{item.type}" styleClass="mr-2 recording-unit-type-chip"/>
-
-            </p:column>
-
             <!-- interpretation normalisée -->
             <p:column responsivePriority="2" headerText="#{langBean.msg('recordingunit.property.interpretation')}">
 
@@ -242,55 +209,6 @@
             </p:column>
 
 
-            <!-- Creation time -->
-            <p:column responsivePriority="4" headerText="#{langBean.msg('table.spatialunit.column.creationdate')}"
-                      sortable="true"
-                      filterable="false"
-                      field="creationTime"
-                      id="creationTimeCol"
-            >
-                <h:outputText value="#{panelModel.formatUtcDateTime(item.creationTime)}"/>
-            </p:column>
-
-            <!-- Crée par -->
-            <p:column responsivePriority="4" headerText="#{langBean.msg('common.field.createdBy')}"
-                      sortable="false"
-                      filterable="false"
-                      field="author"
-                      id="authorCol"
-                      filterMatchMode="exact"
-            >
-                <f:facet name="filter">
-                    <p:selectCheckboxMenu
-                            label="#{langBean.msg('table.spatialunit.column.author.filter')}"
-                            filter="true"
-                            updateLabel="true"
-                            value="#{cc.attrs.lazyDataModel.selectedAuthors}"
-                            filterMatchMode="contains"
-                            onchange="PF('#{cc.clientId}_recordingUnitListTable').filter()"
-                            converter="#{personConverter}">
-                        <f:selectItems
-                                var="person"
-                                itemValue="#{person}"
-                                itemLabel="#{person.displayName()}"
-                        />
-                    </p:selectCheckboxMenu>
-                </f:facet>
-                #{item.createdBy.displayName()}
-            </p:column>
-
-            <!-- Redacteurs -->
-            <p:column responsivePriority="2" headerText="#{langBean.msg('recordingunit.field.author')}"
-            >
-                #{item.author.displayName()}
-            </p:column>
-
-
-            <!-- Contributeurs -->
-            <p:column responsivePriority="2" headerText="#{langBean.msg('recordingunit.field.contributors')}"
-            >
-                <cellbody:cellBodyMultiplePersons persons="#{item.contributors}"/>
-            </p:column>
 
             <!-- parents -->
             <p:column responsivePriority="6">

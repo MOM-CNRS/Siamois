@@ -228,7 +228,7 @@ public class RecordingUnitListPanel extends AbstractListPanel<RecordingUnit> imp
                 TableColumn.builder()
                         .id("contributors")
                         .headerKey("recordingunit.field.contributors")
-                            .field(CONTRIBUTORS_FIELD)
+                        .field(CONTRIBUTORS_FIELD)
                         .sortable(true)
                         .visible(true)
                         .required(true)
