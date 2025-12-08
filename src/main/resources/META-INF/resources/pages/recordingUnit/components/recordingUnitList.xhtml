@@ -208,8 +208,6 @@
 
             </p:column>
 
-
-
             <!-- parents -->
             <p:column responsivePriority="6">
                 <f:facet name="header">
@@ -219,7 +217,6 @@
                 <cellbody:cellBodyThreeItems set="#{item.parents}" displayAttribute="fullIdentifier" />
             </p:column>
 
-
             <!-- Children -->
             <p:column responsivePriority="6">
                 <f:facet name="header">
@@ -227,20 +224,6 @@
                                          text="#{langBean.msg('table.spatialunit.column.children')}"/>
                 </f:facet>
                 <cellbody:cellBodyThreeItems set="#{item.children}" displayAttribute="fullIdentifier"/>
-            </p:column>
-
-            <!-- Action parent -->
-            <p:column responsivePriority="6" headerText="#{langBean.msg('recordingunit.field.actionUnit')}">
-                <h:outputLink value="#{request.contextPath}/action-unit/#{item.actionUnit.id}">
-                    #{item.actionUnit.name}
-                </h:outputLink>
-            </p:column>
-
-            <!-- Spatial parent -->
-            <p:column responsivePriority="6" headerText="#{langBean.msg('recordingunit.field.spatialUnit')}">
-                <h:outputLink value="#{request.contextPath}/spatial-unit/#{item.spatialUnit.id}">
-                    #{item.spatialUnit.name}
-                </h:outputLink>
             </p:column>
 
 

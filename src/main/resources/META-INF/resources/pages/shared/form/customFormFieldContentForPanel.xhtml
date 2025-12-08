@@ -54,6 +54,7 @@
                 <ui:param name="panelStyleClass" value="#{bean.getAutocompleteClass()}"/>
                 <ui:param name="conceptFieldsUpdateTargetsOnBlur" value="#{bean.getConceptFieldsUpdateTargetsOnBlur(panelIndex)}"/>
                 <ui:param name="updateTargetsOnBlur" value="#{root}:field-#{prefix}-#{statusIndex}-#{rowIndex}-#{colIndex} #{bean.getPanelHeaderUpdateId(panelIndex)}"/>
+                <ui:param name="spatialUnitOptions" value="#{bean.getSpatialUnitOptions()}" />
             </ui:include>
 
         </sharedInput:panelField>

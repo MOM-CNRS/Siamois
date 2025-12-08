@@ -23,6 +23,7 @@
     <!--@elvariable id="panelStyleClass" type="java.lang.String"-->
     <!-- @elvariable id="conceptFieldsUpdateTargetsOnBlur" type="java.lang.String" -->
     <!-- @elvariable id="updateTargetsOnBlur" type="java.lang.String" -->
+    <!-- @elvariable id="spatialUnitOptions" type="java.util.List" -->
 
     <!-- TEXT -->
     <siaInplace:text
@@ -75,7 +76,6 @@
             required="#{col.required}"
             label="#{spatialUnitFieldBean.resolveCustomFieldLabel(col.field)}"
             mode="#{col.readOnly ? 'output' : flowBean.getInPlaceFieldMode()}"
-            panelModel="#{bean}"
             updateTargetsOnBlur="#{conceptFieldsUpdateTargetsOnBlur}"
             answer="#{answer}"
             panelStyleClass="#{panelStyleClass}"
@@ -88,7 +88,6 @@
             hasBeenModified="#{hasBeenModified}"
             field="#{col.field}"
             mode="#{col.readOnly ? 'output' : flowBean.getInPlaceFieldMode()}"
-            panelModel="#{bean}"
             required="#{col.required}"
             label="#{spatialUnitFieldBean.resolveCustomFieldLabel(col.field)}"
             updateTargetsOnBlur="#{updateTargetsOnBlur}"
@@ -100,10 +99,10 @@
             hasBeenModified="#{hasBeenModified}"
             field="#{col.field}"
             mode="#{col.readOnly ? 'output' : flowBean.getInPlaceFieldMode()}"
-            panelModel="#{bean}"
             required="#{col.required}"
             label="#{spatialUnitFieldBean.resolveCustomFieldLabel(col.field)}"
             updateTargetsOnBlur="#{updateTargetsOnBlur}"
+            spatialUnitOptions="#{spatialUnitOptions}"
             answer="#{answer}"/>
 
 

@@ -17,6 +17,9 @@
                       required="true"/>
         <cc:attribute name="mode" type="String" required="false" default="READ"/>
         <cc:attribute name="updateTargetsOnBlur" type="String" required="false" default="@this"/>
+        <cc:attribute name="onModified"
+                      method-signature="void setFieldAnswerHasBeenModified(javax.faces.event.AjaxBehaviorEvent)"
+                      required="false"/>
     </cc:interface>
 
     <cc:implementation>

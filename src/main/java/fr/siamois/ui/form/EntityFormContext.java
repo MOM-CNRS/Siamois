@@ -306,4 +306,17 @@ public class EntityFormContext<T> {
         if (unit instanceof SpatialUnit)   return "spatial-unit-autocomplete";
         return "";
     }
+
+    /**
+     * Returns all the spatial units a recording unit can be attached to
+     * @return The list of spatial unit
+     */
+    public List<SpatialUnit> getSpatialUnitOptions() {
+
+        if (!(unit instanceof RecordingUnit ru)) {
+            return Collections.emptyList();
+        }
+
+        return spatialUnitService.getSpatialUnitOptionsFor(ru);
+    }
 }

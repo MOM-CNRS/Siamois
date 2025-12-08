@@ -161,6 +161,14 @@ public class RecordingUnitListPanel extends AbstractListPanel<RecordingUnit> imp
                 .vocabulary(SYSTEM_THESO)
                 .externalId("4286195")
                 .build();
+        Concept ACTION_CONCEPT = new Concept.Builder()
+                .vocabulary(SYSTEM_THESO)
+                .externalId("4286244")
+                .build();
+        Concept SPATIAL_CONCEPT = new Concept.Builder()
+                .vocabulary(SYSTEM_THESO)
+                .externalId("4286245")
+                .build();
         CustomFieldSelectOneFromFieldCode TYPE_FIELD = new CustomFieldSelectOneFromFieldCode.Builder()
                 .label("recordingunit.property.type")
                 .isSystemField(true)
@@ -188,11 +196,25 @@ public class RecordingUnitListPanel extends AbstractListPanel<RecordingUnit> imp
                 .valueBinding("contributors")
                 .concept(CONTRIBUTORS_CONCEPT)
                 .build();
+        CustomFieldSelectOneActionUnit ACTION_FIELD = new CustomFieldSelectOneActionUnit.Builder()
+                .label("recordingunit.field.actionUnit")
+                .isSystemField(true)
+                .valueBinding("actionUnit")
+                .concept(ACTION_CONCEPT)
+                .build();
+        CustomFieldSelectOneSpatialUnit SPATIAL_FIELD = new CustomFieldSelectOneSpatialUnit.Builder()
+                .label("recordingunit.field.spatialUnit")
+                .isSystemField(true)
+                .valueBinding("spatialUnit")
+                .concept(SPATIAL_CONCEPT)
+                .build();
 
         DATE_FIELD.setId(2L);
         TYPE_FIELD.setId(1L);
         AUTHOR_FIELD.setId(3L);
         CONTRIBUTORS_FIELD.setId(4L);
+        ACTION_FIELD.setId(5L);
+        SPATIAL_FIELD.setId(6L);
 
          tableModel.getTableDefinition().addColumn(
              TableColumn.builder()
@@ -234,6 +256,30 @@ public class RecordingUnitListPanel extends AbstractListPanel<RecordingUnit> imp
                         .required(true)
                         .build()
         );
+        tableModel.getTableDefinition().addColumn(
+                TableColumn.builder()
+                        .id("action")
+                        .headerKey("recordingunit.field.actionUnit")
+                        .field(ACTION_FIELD)
+                        .sortable(true)
+                        .visible(true)
+                        .readOnly(true)
+                        .required(true)
+                        .build()
+        );
+        tableModel.getTableDefinition().addColumn(
+                TableColumn.builder()
+                        .id("spatial")
+                        .headerKey("recordingunit.field.spatialUnit")
+                        .field(SPATIAL_FIELD)
+                        .sortable(true)
+                        .visible(true)
+                        .readOnly(false)
+                        .required(true)
+                        .build()
+        );
+
+
     }
 
     @Override
