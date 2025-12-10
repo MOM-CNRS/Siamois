@@ -2,6 +2,8 @@
              xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
              xmlns:p="http://primefaces.org/ui"
              xmlns:recordingUnit="http://xmlns.jcp.org/jsf/composite/pages/recordingUnit/components"
+             xmlns:table="http://xmlns.jcp.org/jsf/composite/pages/shared/table"
+             xmlns:f="http://java.sun.com/jsf/core"
              xmlns:h="http://java.sun.com/jsf/html"
 
 >
@@ -16,13 +18,35 @@
 
     >
         <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
-        <recordingUnit:recordingUnitList
+        <table:entityTable
                 displayColumnToggler="true"
-                lazyDataModel="#{panelModel.tableModel.lazyDataModel}"
-                panelModel="#{panelModel}"
+                tableModel="#{panelModel.tableModel}"
                 panelIndex="#{panelIndex}"
                 id="recordingUnitList"
-        />
+        >
+            <f:facet name="beforeColumns">
+                <p:column selectionBox="true" style="width:16px;text-align:center"/>
+                <p:column toggleable="false"
+                          headerText="#{langBean.msg('table.recordingunit.column.identifier')}"
+                          sortable="true"
+                          filterValue="#{cc.attrs.tableModel.lazyDataModel.nameFilter}"
+                          filterable="true"
+                          field="full_identifier"
+                          id="identifierCol">
+
+                    <p:commandLink
+                            action="#{flowBean.goToRecordingUnitByIdNewPanel(item.id,cc.attrs.panelIndex)}"
+                            onstart="PF('buiContent').show()"
+                            oncomplete="PF('buiContent').hide();handleScrollToTop();"
+                            process="@form"
+                            update="flow"
+                    >
+                        <h:outputText value="#{item.displayFullIdentifier()}"/>
+                    </p:commandLink>
+                </p:column>
+
+            </f:facet>
+        </table:entityTable>
     </h:form>
 
 

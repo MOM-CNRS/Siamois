@@ -68,14 +68,7 @@ public abstract class AbstractListPanel<T> extends AbstractPanel  implements Ser
         fieldConfigurationService = null;
     }
 
-    public void onToggle(ColumnToggleEvent e) {
-        Integer index = (Integer) e.getData();
-        UIColumn column = e.getColumn();
-        Visibility visibility = e.getVisibility();
-        String header = column.getAriaHeaderText() != null ? column.getAriaHeaderText() : column.getHeaderText();
-        FacesMessage msg = new FacesMessage(FacesMessage.SEVERITY_INFO, "Column " + index + " toggled: " + header + " " + visibility, null);
-        FacesContext.getCurrentInstance().addMessage(null, msg);
-    }
+
 
     protected AbstractListPanel(
             String titleKey,

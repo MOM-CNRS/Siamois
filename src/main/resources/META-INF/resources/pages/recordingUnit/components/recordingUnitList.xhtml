@@ -11,18 +11,13 @@
 >
     <cc:interface>
         <!-- Attributes to pass the bean's list and optional additional parameters -->
-        <cc:attribute name="lazyDataModel" required="true"
-                      type="fr.siamois.ui.lazydatamodel.BaseRecordingUnitLazyDataModel"/>
-        <cc:attribute name="panelModel" required="true" type="fr.siamois.ui.bean.panel.models.panel.AbstractPanel"/>
+        <cc:attribute name="tableModel" required="true" type="fr.siamois.ui.table.EntityTableViewModel"/>
         <cc:attribute name="panelIndex" required="true" type="java.lang.Integer"/>
-        <cc:attribute name="disableAddBtn" required="false" default="false" type="java.lang.Boolean"/>
         <cc:attribute name="displayColumnToggler" required="false" default="false" type="java.lang.Boolean"/>
 
     </cc:interface>
     <cc:implementation>
 
-
-        #{cc.attrs.panelModel}
         <!-- datatable property partialUpdate=false because otherwise the paginator template is reset after sort or filter actions-->
         <p:dataTable paginator="true"
                      editable="true"
@@ -32,14 +27,14 @@
                      size="small"
                      paginatorPosition="bottom" var="item"
                      selectionPageOnly="false" selectionRowMode="none"
-                     selection="#{cc.attrs.lazyDataModel.selectedUnits}"
+                     selection="#{cc.attrs.tableModel.lazyDataModel.selectedUnits}"
                      widgetVar="#{cc.clientId}_recordingUnitListTable"
                      lazy="true"
                      globalFilter="#{cc.attrs.lazyDataModel.globalFilter}"
                      allowUnsorting="true"
-                     sortBy="#{cc.attrs.lazyDataModel.sortBy}"
-                     rows="#{cc.attrs.lazyDataModel.pageSizeState}"
-                     first="#{cc.attrs.lazyDataModel.first}"
+                     sortBy="#{cc.attrs.tableModel.lazyDataModel.sortBy}"
+                     rows="#{cc.attrs.tableModel.lazyDataModel.pageSizeState}"
+                     first="#{cc.attrs.tableModel.lazyDataModel.first}"
                      sortMode="multiple"
                      partialUpdate="false"
                      emptyMessage="#{langBean.msg('recordingUnitList.empty')}"
@@ -47,21 +42,21 @@
                      rowsPerPageTemplate="5,10,15,20,25"
                      rowIndexVar="rowIndex"
                      tableStyle="width:auto"
-                     value="#{cc.attrs.lazyDataModel}"
+                     value="#{cc.attrs.tableModel.lazyDataModel}"
                      class="recording-unit-datatable">
 
-            <p:ajax event="rowEdit" listener="#{cc.attrs.lazyDataModel.handleRowEdit}"/>
+            <p:ajax event="rowEdit" listener="#{cc.attrs.tableModel.lazyDataModel.handleRowEdit}"/>
             <p:ajax event="rowEditCancel"/>
-            <p:ajax event="rowSelect" listener="#{cc.attrs.lazyDataModel.handleRowSelect}" immediate="true" process=""
+            <p:ajax event="rowSelect" listener="#{cc.attrs.tableModel.lazyDataModel.handleRowSelect}" immediate="true" process=""
                     update=":#{cc.clientId}:recordingUnitDataTable:tableToolbar"/>
-            <p:ajax event="rowUnselect" listener="#{cc.attrs.lazyDataModel.handleRowUnselect}" immediate="true"
+            <p:ajax event="rowUnselect" listener="#{cc.attrs.tableModel.lazyDataModel.handleRowUnselect}" immediate="true"
                     update=":#{cc.clientId}:recordingUnitDataTable:tableToolbar"/>
 
 
             <f:facet name="{RowReport}">
 
-                        <span class="ui-paginator-current">#{cc.attrs.lazyDataModel.getFirstIndexOnPage()}-#{cc.attrs.lazyDataModel.getLastIndexOnPage()}
-                            of #{cc.attrs.lazyDataModel.rowCount}</span>
+                        <span class="ui-paginator-current">#{cc.attrs.tableModel.lazyDataModel.getFirstIndexOnPage()}-#{cc.attrs.tableModel.lazyDataModel.getLastIndexOnPage()}
+                            of #{cc.attrs.tableModel.lazyDataModel.rowCount}</span>
             </f:facet>
 
             <f:facet name="header">
@@ -77,7 +72,7 @@
                                             <i class="bi bi-search"/>
 
                                                         <p:inputText id="globalFilter"
-                                                                     value="#{cc.attrs.lazyDataModel.globalFilter}"
+                                                                     value="#{cc.attrs.tableModel.lazyDataModel.globalFilter}"
                                                                      onkeyup="PF('#{cc.clientId}_recordingUnitListTable').filter()"
                                                                      placeholder="#{langBean.msg('common.action.search')}">
 
@@ -95,21 +90,21 @@
                                             rendered="#{cc.attrs.displayColumnToggler}"
                                             datasource=":#{cc.clientId}:recordingUnitDataTable"
                                             trigger=":#{cc.clientId}:recordingUnitDataTable:toggler">
-                                        <p:ajax event="toggle" listener="#{cc.attrs.panelModel.onToggle}"/>
+                                        <p:ajax event="toggle" listener="#{cc.attrs.tableModel.onToggle}"/>
                                     </p:columnToggler>
                                 </div>
                                 <p:outputPanel id="bulkEditPanel"
-                                               rendered="#{cc.attrs.lazyDataModel.selectedUnits.size() >0 and flowBean.isWriteMode}"
+                                               rendered="#{cc.attrs.tableModel.lazyDataModel.selectedUnits.size() >0 and flowBean.isWriteMode}"
                                                style="display:flex; flex-direction: row; gap:0.5em;">
                                     <span>Edition du type en lot (les autres colonnes viendront plus tard) :</span>
                                     <sharedInput:conceptAutocompleteFieldCode id="bulkTypeComponent"
                                                                               panelStyleClass="recording-unit-autocomplete"
-                                                                              selectedConcept="#{cc.attrs.lazyDataModel.bulkEditTypeValue}"
-                                                                              field="#{cc.attrs.lazyDataModel.typeField}"
+                                                                              selectedConcept="#{cc.attrs.tableModel.lazyDataModel.bulkEditTypeValue}"
+                                                                              field="#{cc.attrs.tableModel.lazyDataModel.typeField}"
                                                                               editConceptUrl="#{spatialUnitFieldBean.getUrlForFieldCode('SIARU.TYPE')}"/>
                                     <p:commandButton value="Enregistrer"
                                                      update=":#{cc.clientId}:recordingUnitDataTable"
-                                                     action="#{cc.attrs.lazyDataModel.saveFieldBulk()}"
+                                                     action="#{cc.attrs.tableModel.lazyDataModel.saveFieldBulk()}"
                                     />
                                 </p:outputPanel>
 
@@ -135,7 +130,7 @@
             <p:column toggleable="false"
                       headerText="#{langBean.msg('table.recordingunit.column.identifier')}"
                       sortable="true"
-                      filterValue="#{cc.attrs.lazyDataModel.nameFilter}"
+                      filterValue="#{cc.attrs.tableModel.lazyDataModel.nameFilter}"
                       filterable="true"
                       field="full_identifier"
                       id="identifierCol">
@@ -152,7 +147,7 @@
             </p:column>
 
             <!-- 2) Colonnes dynamiques, basées sur tableDefinition -->
-            <p:columns value="#{panelModel.columns}"
+            <p:columns value="#{cc.attrs.tableModel.getColumns()}"
                        var="column"
                        varStatus="colStatus">
 
@@ -163,7 +158,7 @@
 
                 <!-- Contexte de formulaire pour cette ligne -->
                 <ui:param name="rowContext"
-                          value="#{panelModel.tableModel.getRowContext(item)}"/>
+                          value="#{cc.attrs.tableModel.getRowContext(item)}"/>
 
                 <!-- Ici, 'column.field' est ton CustomField -->
                 <!-- Si tu as aussi une CustomCol, tu peux la stocker dans TableColumn et l’utiliser ici -->
@@ -263,7 +258,7 @@
                                          action="#{navBean.toggleRecordingUnitBookmark(item)}"
                                          update="bookmarkToggleButton navBarCsrfForm:siamoisNavForm:bookmarkGroup"/>
                         <p:commandButton rendered="#{flowBean.isWriteMode}" icon="bi bi-copy"
-                                         action="#{cc.attrs.lazyDataModel.duplicateRow()}"
+                                         action="#{cc.attrs.tableModel.lazyDataModel.duplicateRow()}"
                                          update=":#{cc.clientId}:recordingUnitDataTable"
                                          styleClass="sia-icon-btn"/>
                     </p:toolbarGroup>

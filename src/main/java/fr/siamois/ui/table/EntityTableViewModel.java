@@ -12,7 +12,12 @@ import fr.siamois.ui.form.EntityFormContext;
 import fr.siamois.ui.form.FieldSource;
 import fr.siamois.ui.form.TableRowFieldSource;
 import fr.siamois.ui.lazydatamodel.BaseLazyDataModel;
+import jakarta.faces.application.FacesMessage;
+import jakarta.faces.context.FacesContext;
 import lombok.Getter;
+import org.primefaces.component.api.UIColumn;
+import org.primefaces.event.ColumnToggleEvent;
+import org.primefaces.model.Visibility;
 
 import java.util.*;
 import java.util.function.Function;
@@ -165,5 +170,14 @@ public abstract class EntityTableViewModel<T, ID> {
         }
 
         return new ArrayList<>(fields);
+    }
+
+    public void onToggle(ColumnToggleEvent e) {
+        Integer index = (Integer) e.getData();
+        UIColumn column = e.getColumn();
+        Visibility visibility = e.getVisibility();
+        String header = column.getAriaHeaderText() != null ? column.getAriaHeaderText() : column.getHeaderText();
+        FacesMessage msg = new FacesMessage(FacesMessage.SEVERITY_INFO, "Column " + index + " toggled: " + header + " " + visibility, null);
+        FacesContext.getCurrentInstance().addMessage(null, msg);
     }
 }
