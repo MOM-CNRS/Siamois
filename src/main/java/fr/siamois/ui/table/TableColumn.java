@@ -1,89 +1,43 @@
 package fr.siamois.ui.table;
 
-import fr.siamois.domain.models.form.customfield.CustomField;
-import fr.siamois.ui.form.FieldColumn;
-import lombok.Builder;
 import lombok.Data;
+import lombok.experimental.SuperBuilder;
 
 /**
- * Colonne d'un tableau de RecordingUnit (ou autre entité).
- * Peut être liée à un CustomField pour réutiliser les mêmes
- * composants d'édition que dans les panels.
+ * Base abstraction for all table columns.
+ * Pure table/UI metadata, no form-field semantics.
  */
 @Data
-@Builder
-public class TableColumn implements FieldColumn {
+@SuperBuilder
+public abstract class TableColumn {
 
-    /**
-     * Identifiant technique de la colonne (utilisé pour la vue, tri, etc.).
-     */
+    /** Technical column id (used for toggling, sorting, etc.) */
     private String id;
 
-    /**
-     * Code i18n du header (ex: "common.entity.recordingunit.identifier").
-     */
+    /** i18n key for header label */
     private String headerKey;
 
-    /**
-     * Champ métier associé à cette colonne.
-     * Peut être null pour des colonnes purement UI (actions, etc.).
-     */
-    private CustomField field;
-
-    /**
-     * Colonne requise pour la saisie (vision UI de la table).
-     */
-    private boolean required;
-
-    /**
-     * Colonne en lecture seule dans la table.
-     */
-    private boolean readOnly;
-
-    /**
-     * Colonne triable ?
-     */
-    private boolean sortable;
-
-    /**
-     * Colonne filtrable ?
-     */
-    private boolean filterable;
-
-    /**
-     * Type de filtre (texte, date, select, ...).
-     */
-    private String filterType;
-
-    /**
-     * Classe CSS optionnelle.
-     */
-    private String styleClass;
-
-    /**
-     * Largeur CSS optionnelle (ex: "150px").
-     */
-    private String width;
-
-    /**
-     * Colonne visible par défaut ?
-     */
+    /** Is column visible by default */
     private boolean visible;
 
-    // Implémentation FieldColumn
+    /** Is column sortable */
+    private boolean sortable;
 
-    @Override
-    public CustomField getField() {
-        return field;
-    }
+    /** Sort field key used by LazyDataModel */
+    private String sortField;
 
-    @Override
-    public boolean isRequired() {
-        return required;
-    }
+    /** Is column filterable (handled later) */
+    private boolean filterable;
 
-    @Override
-    public boolean isReadOnly() {
-        return readOnly;
-    }
+    /** Is column toggleable in column toggler */
+    private boolean toggleable;
+
+    /** Optional CSS class */
+    private String styleClass;
+
+    /** Optional CSS width (e.g. "150px") */
+    private String width;
+
+    /** Column kind discriminator */
+    public abstract TableColumnType getType();
 }

@@ -3,6 +3,8 @@
                 xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
                 xmlns:p="http://primefaces.org/ui"
                 xmlns:f="http://java.sun.com/jsf/core"
+                xmlns:h="http://java.sun.com/jsf/html"
+                xmlns:cellheader="http://java.sun.com/jsf/composite/pages/shared/cellheader"
                 xmlns:cc="http://xmlns.jcp.org/jsf/composite">
 
     <cc:interface>
@@ -68,8 +70,8 @@
             <!-- Colonnes "custom" AVANT -->
             <cc:renderFacet name="beforeColumns"/>
 
-            <!-- Colonnes dynamiques, basées sur tableDefinition -->
-            <p:columns value="#{cc.attrs.tableModel.getColumns()}"
+            <!-- 2) Colonnes dynamiques, basées sur tableDefinition -->
+            <p:columns value="#{cc.attrs.tableModel.columns}"
                        var="column"
                        varStatus="colStatus">
 
@@ -82,39 +84,107 @@
                 <ui:param name="rowContext"
                           value="#{cc.attrs.tableModel.getRowContext(item)}"/>
 
-                <!-- Ici, 'column.field' est ton CustomField -->
-                <!-- Si tu as aussi une CustomCol, tu peux la stocker dans TableColumn et l’utiliser ici -->
+                <!-- ========================= -->
+                <!-- 1) FORM FIELD COLUMN PATH -->
+                <!-- ========================= -->
+                <ui:fragment rendered="#{column.type eq 'FORM_FIELD'}">
 
-                <!-- Réutilisation du fragment de champ, mais en lui passant le bon 'bean' + 'answer' -->
-                <ui:include src="/pages/shared/form/customFormFieldContentForTable.xhtml">
-                    <ui:param name="bean" value="#{rowContext}"/>
-                    <ui:param name="col" value="#{column}"/>
-                    <ui:param name="prefix" value="table"/>
-                    <ui:param name="statusIndex" value="#{status.index}"/>
-                    <ui:param name="rowIndex" value="#{rowIndex}"/>
-                    <ui:param name="colIndex" value="#{colStatus.index}"/>
-                    <ui:param name="root" value="#{component.clientId}"/>
-                    <ui:param name="panelIndex" value="0"/>
+                    <ui:include src="/pages/shared/form/customFormFieldContentForTable.xhtml">
+                        <ui:param name="bean" value="#{rowContext}"/>
+                        <ui:param name="col" value="#{column}"/>
+                        <ui:param name="prefix" value="table"/>
+                        <ui:param name="statusIndex" value="#{status.index}"/>
+                        <ui:param name="rowIndex" value="#{rowIndex}"/>
+                        <ui:param name="colIndex" value="#{colStatus.index}"/>
+                        <ui:param name="root" value="#{component.clientId}"/>
+                        <ui:param name="panelIndex" value="0"/>
 
-                    <!-- answer = réponse du EntityFormContext pour ce champ -->
-                    <ui:param name="answer"
-                              value="#{rowContext.getFieldAnswer(column.field)}"/>
+                        <ui:param name="answer"
+                                  value="#{rowContext.getFieldAnswer(column.field)}"/>
 
-                    <ui:param name="hasBeenModified"
-                              value="#{answer != null and answer.hasBeenModified}"/>
+                        <ui:param name="hasBeenModified"
+                                  value="#{answer != null and answer.hasBeenModified}"/>
 
-                    <!-- génération auto : idem que dans les panels, si tu veux -->
-                    <ui:param name="hasAutoGenerationFunction"
-                              value="false"/>
-                    <ui:param name="onGenerateValue"
-                              value="#{null}"/>
+                        <ui:param name="hasAutoGenerationFunction" value="false"/>
+                        <ui:param name="onGenerateValue" value="#{null}"/>
+                        <ui:param name="onModified" value="#{null}"/>
+                    </ui:include>
 
-                    <!-- callback onModified : ici tu peux pointer vers une méthode du lazyDataModel si besoin -->
-                    <ui:param name="onModified"
-                              value="#{null}"/>
-                </ui:include>
+                </ui:fragment>
+
+                <!-- ========================= -->
+                <!-- 2) COMMAND LINK COLUMN    -->
+                <!-- ========================= -->
+                <ui:fragment rendered="#{column.type eq 'COMMAND_LINK'}">
+
+                    <p:commandLink
+                            action="#{cc.attrs.tableModel.handleAction(column, item, cc.attrs.panelIndex)}"
+                            onstart="#{column.onstartJs}"
+                            oncomplete="#{column.oncompleteJs}"
+                            process="#{column.processExpr}"
+                            update="#{column.updateExpr}">
+
+                        <h:outputText value="#{cc.attrs.tableModel.resolveText(column, item)}"/>
+                    </p:commandLink>
+
+                </ui:fragment>
+
+                <!-- ========================= -->
+                <!-- 3) RELATION COLUMN        -->
+                <!-- ========================= -->
+                <ui:fragment rendered="#{column.type eq 'RELATION'}">
+
+                    <!-- Header with icon -->
+                    <f:facet name="header">
+                        <cellheader:withIcon
+                                icon="#{column.headerIcon}"
+                                text="#{langBean.msg(column.headerKey)}"/>
+                    </f:facet>
+
+                    <div style="display:flex; gap:1em; align-items:center;">
+
+                        <!-- Count -->
+                        <span>
+                            #{cc.attrs.tableModel.resolveCount(column, item)}
+                        </span>
+
+                        <!-- VIEW button -->
+                        <p:commandButton
+                                icon="#{column.viewIcon}"
+                                action="#{cc.attrs.tableModel.handleRelationAction(
+                            column,
+                            item,
+                            cc.attrs.panelIndex,
+                            'VIEW_RELATION')}"
+                                process="#{column.processExpr}"
+                                update="#{column.updateExpr}"
+                                onstart="#{column.onstartJs}"
+                                oncomplete="#{column.oncompleteJs}"/>
+
+                        <!-- ADD button (optional) -->
+                        <p:commandButton
+                                rendered="#{column.addEnabled
+                            and cc.attrs.tableModel.isRendered(
+                                column,
+                                column.addRenderedKey,
+                                item,
+                                cc.attrs.panelIndex)}"
+                                icon="#{column.addIcon}"
+                                action="#{cc.attrs.tableModel.handleRelationAction(
+                            column,
+                            item,
+                            cc.attrs.panelIndex,
+                            'ADD_RELATION')}"
+                                oncomplete="PF('newUnitDiag').show()"
+                                update="newUnitForm"
+                                style="margin-right:.5rem"/>
+                    </div>
+
+                </ui:fragment>
+
 
             </p:columns>
+
 
             <!-- Colonnes "custom" APRÈS -->
             <cc:renderFacet name="afterColumns"/>

@@ -5,18 +5,20 @@ import fr.siamois.domain.models.exceptions.recordingunit.FailedRecordingUnitSave
 import fr.siamois.domain.models.form.customfield.*;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
+import fr.siamois.domain.services.authorization.writeverifier.RecordingUnitWriteVerifier;
 import fr.siamois.domain.services.form.FormService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitTreeService;
 import fr.siamois.infrastructure.database.initializer.seeder.ConceptSeeder;
 import fr.siamois.infrastructure.database.initializer.seeder.customfield.CustomFieldSeederSpec;
+import fr.siamois.ui.bean.dialog.newunit.GenericNewUnitDialogBean;
+import fr.siamois.ui.bean.panel.FlowBean;
 import fr.siamois.ui.bean.panel.models.PanelBreadcrumb;
 import fr.siamois.ui.lazydatamodel.BaseLazyDataModel;
 import fr.siamois.ui.lazydatamodel.BaseRecordingUnitLazyDataModel;
 import fr.siamois.ui.lazydatamodel.RecordingUnitLazyDataModel;
-import fr.siamois.ui.table.RecordingUnitTableViewModel;
-import fr.siamois.ui.table.TableColumn;
+import fr.siamois.ui.table.*;
 import fr.siamois.utils.MessageUtils;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -45,6 +47,9 @@ public class RecordingUnitListPanel extends AbstractListPanel<RecordingUnit> imp
     private final transient FormService formService;
     private final transient SpatialUnitTreeService spatialUnitTreeService;
     private final transient SpatialUnitService spatialUnitService;
+    private final transient FlowBean flowBean;
+    private final transient GenericNewUnitDialogBean genericNewUnitDialogBean;
+    private final transient RecordingUnitWriteVerifier recordingUnitWriteVerifier;
 
     // locals
     private String actionUnitListErrorMessage;
@@ -59,7 +64,7 @@ public class RecordingUnitListPanel extends AbstractListPanel<RecordingUnit> imp
      */
     private RecordingUnitTableViewModel tableModel;
 
-    public RecordingUnitListPanel(ApplicationContext context) {
+    public RecordingUnitListPanel(ApplicationContext context, GenericNewUnitDialogBean genericNewUnitDialogBean, RecordingUnitWriteVerifier recordingUnitWriteVerifier) {
         super("panel.title.allrecordingunit",
                 "bi bi-pencil-square",
                 "siamois-panel recording-unit-panel list-panel",
@@ -69,6 +74,9 @@ public class RecordingUnitListPanel extends AbstractListPanel<RecordingUnit> imp
         this.formService = context.getBean(FormService.class);
         this.spatialUnitTreeService = context.getBean(SpatialUnitTreeService.class);
         this.spatialUnitService = context.getBean(SpatialUnitService.class);
+        this.flowBean = context.getBean(FlowBean.class);
+        this.genericNewUnitDialogBean = context.getBean(GenericNewUnitDialogBean.class);
+        this.recordingUnitWriteVerifier = context.getBean(RecordingUnitWriteVerifier.class);
     }
 
     @Override
@@ -92,7 +100,10 @@ public class RecordingUnitListPanel extends AbstractListPanel<RecordingUnit> imp
                 formService,
                 sessionSettingsBean,
                 spatialUnitTreeService,
-                spatialUnitService
+                spatialUnitService,
+                flowBean,
+                genericNewUnitDialogBean,
+                recordingUnitWriteVerifier
         );
 
         return lazy; // l'abstraite en a besoin, mais ce panel ne s'en sert plus ensuite
@@ -215,9 +226,32 @@ public class RecordingUnitListPanel extends AbstractListPanel<RecordingUnit> imp
         CONTRIBUTORS_FIELD.setId(4L);
         ACTION_FIELD.setId(5L);
         SPATIAL_FIELD.setId(6L);
+        tableModel.getTableDefinition().addColumn(
+                CommandLinkColumn.builder()
+                        .id("identifierCol")
+                        .headerKey("table.recordingunit.column.identifier")
+                        .visible(true)
 
+                        // PrimeFaces metadata equivalents
+                        .toggleable(false)
+                        .sortable(true)
+                        .sortField("full_identifier")
+
+                        // What to display inside <h:outputText>
+                        .valueKey("fullIdentifier")
+
+                        // What to do on click (Pattern A key)
+                        .action(TableColumnAction.GO_TO_RECORDING_UNIT)
+
+                        // CommandLink behavior
+                        .processExpr("@this")
+                        .updateExpr("flow")
+                        .onstartJs("PF('buiContent').show()")
+                        .oncompleteJs("PF('buiContent').hide();handleScrollToTop();")
+                        .build()
+        );
          tableModel.getTableDefinition().addColumn(
-             TableColumn.builder()
+                 FormFieldColumn.builder()
                  .id("type")
                  .headerKey("recordingunit.property.type")
                  .field(TYPE_FIELD)
@@ -227,7 +261,7 @@ public class RecordingUnitListPanel extends AbstractListPanel<RecordingUnit> imp
                  .build()
          );
         tableModel.getTableDefinition().addColumn(
-                TableColumn.builder()
+                FormFieldColumn.builder()
                         .id("openingDate")
                         .headerKey("recordingunit.field.openingDate")
                         .field(DATE_FIELD)
@@ -237,7 +271,7 @@ public class RecordingUnitListPanel extends AbstractListPanel<RecordingUnit> imp
                         .build()
         );
         tableModel.getTableDefinition().addColumn(
-                TableColumn.builder()
+                FormFieldColumn.builder()
                         .id("author")
                         .headerKey("recordingunit.field.author")
                         .field(AUTHOR_FIELD)
@@ -247,7 +281,7 @@ public class RecordingUnitListPanel extends AbstractListPanel<RecordingUnit> imp
                         .build()
         );
         tableModel.getTableDefinition().addColumn(
-                TableColumn.builder()
+                FormFieldColumn.builder()
                         .id("contributors")
                         .headerKey("recordingunit.field.contributors")
                         .field(CONTRIBUTORS_FIELD)
@@ -257,7 +291,7 @@ public class RecordingUnitListPanel extends AbstractListPanel<RecordingUnit> imp
                         .build()
         );
         tableModel.getTableDefinition().addColumn(
-                TableColumn.builder()
+                FormFieldColumn.builder()
                         .id("action")
                         .headerKey("recordingunit.field.actionUnit")
                         .field(ACTION_FIELD)
@@ -268,7 +302,7 @@ public class RecordingUnitListPanel extends AbstractListPanel<RecordingUnit> imp
                         .build()
         );
         tableModel.getTableDefinition().addColumn(
-                TableColumn.builder()
+                FormFieldColumn.builder()
                         .id("spatial")
                         .headerKey("recordingunit.field.spatialUnit")
                         .field(SPATIAL_FIELD)
@@ -276,6 +310,84 @@ public class RecordingUnitListPanel extends AbstractListPanel<RecordingUnit> imp
                         .visible(true)
                         .readOnly(false)
                         .required(true)
+                        .build()
+        );
+        tableModel.getTableDefinition().addColumn(
+                RelationColumn.builder()
+                        .id("parents")
+                        .headerKey("table.spatialunit.column.parents")
+                        .headerIcon("bi bi-pencil-square")
+                        .visible(true)
+                        .toggleable(true)
+
+                        .countKey("parents")
+
+                        .viewIcon("bi bi-eye")
+                        .viewAction(TableColumnAction.VIEW_RELATION)
+                        .viewTargetIndex(0)
+
+                        .addEnabled(true)
+                        .addIcon("bi bi-plus-square")
+                        .addAction(TableColumnAction.ADD_RELATION)
+                        .addRenderedKey("recordingUnitCreateAllowed")
+
+                        .processExpr("@this")
+                        .updateExpr("flow")
+                        .onstartJs("PF('buiContent').show()")
+                        .oncompleteJs("PF('buiContent').hide();handleScrollToTop();")
+                        .build()
+        );
+
+        tableModel.getTableDefinition().addColumn(
+                RelationColumn.builder()
+                        .id("childre,")
+                        .headerKey("table.spatialunit.column.children")
+                        .headerIcon("bi bi-pencil-square")
+                        .visible(true)
+                        .toggleable(true)
+
+                        .countKey("children")
+
+                        .viewIcon("bi bi-eye")
+                        .viewAction(TableColumnAction.VIEW_RELATION)
+                        .viewTargetIndex(0)
+
+                        .addEnabled(true)
+                        .addIcon("bi bi-plus-square")
+                        .addAction(TableColumnAction.ADD_RELATION)
+                        .addRenderedKey("recordingUnitCreateAllowed")
+
+                        .processExpr("@this")
+                        .updateExpr("flow")
+                        .onstartJs("PF('buiContent').show()")
+                        .oncompleteJs("PF('buiContent').hide();handleScrollToTop();")
+                        .build()
+        );
+
+
+        tableModel.getTableDefinition().addColumn(
+                RelationColumn.builder()
+                        .id("specimen")
+                        .headerKey("common.entity.specimen")
+                        .headerIcon("bi bi-bucket")
+                        .visible(true)
+                        .toggleable(true)
+
+                        .countKey("specimenList")
+
+                        .viewIcon("bi bi-eye")
+                        .viewAction(TableColumnAction.VIEW_RELATION)
+                        .viewTargetIndex(0)
+
+                        .addEnabled(true)
+                        .addIcon("bi bi-plus-square")
+                        .addAction(TableColumnAction.ADD_RELATION)
+                        .addRenderedKey("specimenCreateAllowed")
+
+                        .processExpr("@this")
+                        .updateExpr("flow")
+                        .onstartJs("PF('buiContent').show()")
+                        .oncompleteJs("PF('buiContent').hide();handleScrollToTop();")
                         .build()
         );
 

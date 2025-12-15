@@ -13,6 +13,7 @@ import fr.siamois.domain.models.specimen.Specimen;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.authorization.PermissionService;
+import fr.siamois.domain.services.authorization.PermissionServiceImpl;
 import fr.siamois.domain.services.person.PersonService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.recordingunit.StratigraphicRelationshipService;
@@ -453,7 +454,8 @@ public class FlowBean implements Serializable {
      * @return true if creation is allowed
      */
     public boolean isActionUnitCreateAllowed() {
-        return actionUnitService.hasCreatePermission(sessionSettings.getUserInfo());
+        return permissionService.isInstitutionManager(sessionSettings.getUserInfo())
+                || permissionService.isActionManager(sessionSettings.getUserInfo());
     }
 
     /**

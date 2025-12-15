@@ -33,13 +33,16 @@ public class TableDefinition {
                 .collect(Collectors.toList());
     }
 
-    /**
-     * Retourne tous les CustomField associés aux colonnes qui en ont un.
-     */
-    public List<CustomField> getAllFields() {
+    public List<FormFieldColumn> getFieldColumns() {
         return columns.stream()
-                .map(TableColumn::getField)
-                .filter(Objects::nonNull)
+                .filter(c -> c instanceof FormFieldColumn)
+                .map(c -> (FormFieldColumn) c)
+                .collect(Collectors.toList());
+    }
+
+    public List<CustomField> getAllFields() {
+        return getFieldColumns().stream()
+                .map(FormFieldColumn::getField)
                 .collect(Collectors.toList());
     }
 
@@ -51,7 +54,8 @@ public class TableDefinition {
 
     public Optional<TableColumn> findColumnByField(CustomField field) {
         return columns.stream()
-                .filter(c -> Objects.equals(c.getField(), field))
+                .filter(c -> c instanceof FormFieldColumn f
+                        && Objects.equals(f.getField(), field))
                 .findFirst();
     }
 }

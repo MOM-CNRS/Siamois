@@ -15,7 +15,6 @@ import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.ArkEntityService;
 import fr.siamois.domain.services.InstitutionService;
-import fr.siamois.domain.services.authorization.PermissionServiceImpl;
 import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.infrastructure.database.repositories.actionunit.ActionCodeRepository;
 import fr.siamois.infrastructure.database.repositories.actionunit.ActionUnitRepository;
@@ -45,7 +44,6 @@ public class ActionUnitService implements ArkEntityService {
     private final ActionUnitRepository actionUnitRepository;
     private final ConceptService conceptService;
     private final ActionCodeRepository actionCodeRepository;
-    private final PermissionServiceImpl permissionService;
     private final TeamMemberRepository teamMemberRepository;
     private final InstitutionService institutionService;
 
@@ -344,16 +342,6 @@ public class ActionUnitService implements ArkEntityService {
         return actionUnitRepository.findByCreatedByInstitution(institution);
     }
 
-    /**
-     * Verify if the user has the permission to create action units in the current institution
-     *
-     * @param user The user to check the permission on
-     * @return True if the user has sufficient permissions
-     */
-    public boolean hasCreatePermission(UserInfo user) {
-        return permissionService.isInstitutionManager(user)
-                || permissionService.isActionManager(user);
-    }
 
     /**
      * Verify if the action is still active

@@ -6,6 +6,7 @@ import fr.siamois.domain.models.form.customform.CustomForm;
 import fr.siamois.domain.models.form.customform.CustomFormPanel;
 import fr.siamois.domain.models.form.customform.CustomRow;
 import fr.siamois.domain.models.form.customform.EnabledWhenJson;
+import fr.siamois.ui.table.FormFieldColumn;
 import fr.siamois.ui.table.TableColumn;
 import fr.siamois.ui.table.TableDefinition;
 
@@ -50,12 +51,15 @@ public class TableRowFieldSource implements FieldSource {
 
     private void indexFromTableDefinition() {
         for (TableColumn col : tableDefinition.getColumns()) {
-            CustomField f = col.getField();
-            if (f != null && f.getId() != null) {
-                byId.put(f.getId(), f);
+            if (col instanceof FormFieldColumn fCol) {
+                CustomField f = fCol.getField();
+                if (f != null && f.getId() != null) {
+                    byId.put(f.getId(), f);
+                }
             }
         }
     }
+
 
     private void indexEnabledWhenFromForm(CustomForm form) {
         if (form.getLayout() == null) return;

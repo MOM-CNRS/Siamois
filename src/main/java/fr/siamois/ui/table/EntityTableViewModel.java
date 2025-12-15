@@ -180,4 +180,35 @@ public abstract class EntityTableViewModel<T, ID> {
         FacesMessage msg = new FacesMessage(FacesMessage.SEVERITY_INFO, "Column " + index + " toggled: " + header + " " + visibility, null);
         FacesContext.getCurrentInstance().addMessage(null, msg);
     }
+
+
+    public String resolveText(TableColumn column, T item) {
+        return "";
+    }
+
+    public Integer resolveCount(TableColumn column, T item) {
+        return 0;
+    }
+
+    public boolean isRendered(TableColumn column, String key, T item, Integer panelIndex) {
+        return true;
+    }
+
+    public void handleAction(TableColumn column, T item, Integer panelIndex) {
+        if (column instanceof CommandLinkColumn linkColumn) {
+            handleCommandLink(linkColumn, item, panelIndex);
+        } else if (column instanceof RelationColumn relColumn) {
+            handleRelationAction(relColumn, item, panelIndex, relColumn.getViewAction());
+        }
+    }
+
+    public void handleRelationAction(RelationColumn column, T item, Integer panelIndex, TableColumnAction action) {
+        // default no-op
+    }
+
+    protected void handleCommandLink(CommandLinkColumn column, T item, Integer panelIndex) {
+        // default no-op
+    }
+
+
 }
