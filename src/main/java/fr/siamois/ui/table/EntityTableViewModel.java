@@ -8,13 +8,17 @@ import fr.siamois.domain.models.form.customform.CustomRow;
 import fr.siamois.domain.services.form.FormService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitTreeService;
+import fr.siamois.ui.bean.NavBean;
 import fr.siamois.ui.form.EntityFormContext;
 import fr.siamois.ui.form.FieldSource;
 import fr.siamois.ui.form.TableRowFieldSource;
 import fr.siamois.ui.lazydatamodel.BaseLazyDataModel;
+import fr.siamois.ui.lazydatamodel.tree.BaseTreeTableLazyModel;
+import fr.siamois.ui.lazydatamodel.tree.RecordingUnitTreeTableLazyModel;
 import jakarta.faces.application.FacesMessage;
 import jakarta.faces.context.FacesContext;
 import lombok.Getter;
+import lombok.Setter;
 import org.primefaces.component.api.UIColumn;
 import org.primefaces.event.ColumnToggleEvent;
 import org.primefaces.model.Visibility;
@@ -40,12 +44,13 @@ import java.util.function.Function;
 public abstract class EntityTableViewModel<T, ID> {
 
     /** Lazy model "pur data" (chargement, tri, filtres, sélection, etc.) */
-    private final BaseLazyDataModel<T> lazyDataModel;
+    protected final BaseLazyDataModel<T> lazyDataModel;
 
     /** Services nécessaires pour la logique formulaire de ligne */
     protected final FormService formService;
     protected final SpatialUnitTreeService spatialUnitTreeService;
     protected final SpatialUnitService spatialUnitService;
+    protected final NavBean navBean;
 
     /** Fournit l'identifiant unique d'une entité T (ex: RecordingUnit::getId) */
     private final Function<T, ID> idExtractor;
@@ -62,16 +67,21 @@ public abstract class EntityTableViewModel<T, ID> {
     /** Contexte de formulaire par ligne (clé = ID de l'entité) */
     private final Map<ID, EntityFormContext<T>> rowContexts = new HashMap<>();
 
+    @Getter
+    @Setter
+    private boolean treeMode = false; // false = table, true = tree
+
     protected EntityTableViewModel(BaseLazyDataModel<T> lazyDataModel,
                                    FormService formService,
                                    SpatialUnitTreeService spatialUnitTreeService,
-                                   SpatialUnitService spatialUnitService,
+                                   SpatialUnitService spatialUnitService, NavBean navBean,
                                    Function<T, ID> idExtractor,
                                    String formScopeValueBinding) {
         this.lazyDataModel = lazyDataModel;
         this.formService = formService;
         this.spatialUnitTreeService = spatialUnitTreeService;
         this.spatialUnitService = spatialUnitService;
+        this.navBean = navBean;
         this.idExtractor = idExtractor;
         this.formScopeValueBinding = formScopeValueBinding;
     }
@@ -210,5 +220,16 @@ public abstract class EntityTableViewModel<T, ID> {
         // default no-op
     }
 
+    public List<RowAction> getRowActions() {
+        return List.of(); // par défaut aucune action
+    }
+
+    public Object getTreeRoot() {
+        return null; // subclasses override if they support TREE mode
+    }
+
+    public boolean isTreeViewSupported() {
+        return false;
+    }
 
 }

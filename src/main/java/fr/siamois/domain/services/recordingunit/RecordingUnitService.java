@@ -404,6 +404,43 @@ public class RecordingUnitService implements ArkEntityService {
     public Integer countByActionContext(ActionUnit actionUnit) {
         return recordingUnitRepository.countByActionContext(actionUnit.getId());
     }
+
+    /**
+     * Get all the roots recording unit in the institution
+     *
+     * @param institutionId the institution id
+     * @return The list of RecordingUnit associated with the institution
+     */
+    public List<RecordingUnit> findAllWithoutParentsByInstitution(Long institutionId) {
+        List<RecordingUnit> res = recordingUnitRepository.findRootsByInstitution(institutionId);
+
+        // load related entities
+        res.forEach(actionUnit -> {
+            Hibernate.initialize(actionUnit.getParents());
+            Hibernate.initialize(actionUnit.getChildren());
+        });
+
+        return res;
+    }
+
+    /**
+     * Get all recording unit in the institution that are the children of a given parent
+     *
+     * @param parentId the parent id
+     * @param institutionId the institution id
+     * @return The list of RecordingUnit associated with the institution and that are the children of a given parent
+     */
+    public List<RecordingUnit> findChildrenByParentAndInstitution(Long parentId, Long institutionId ) {
+        List<RecordingUnit> res = recordingUnitRepository.findChildrenByParentAndInstitution(parentId, institutionId);
+
+        // load related entities
+        res.forEach(actionUnit -> {
+            Hibernate.initialize(actionUnit.getParents());
+            Hibernate.initialize(actionUnit.getChildren());
+        });
+
+        return res;
+    }
 }
 
 

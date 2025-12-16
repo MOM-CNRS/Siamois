@@ -9,19 +9,24 @@ import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.authorization.writeverifier.RecordingUnitWriteVerifier;
 import fr.siamois.domain.services.form.FormService;
+import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitTreeService;
+import fr.siamois.ui.bean.NavBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
 import fr.siamois.ui.bean.dialog.newunit.GenericNewUnitDialogBean;
 import fr.siamois.ui.bean.dialog.newunit.UnitKind;
 import fr.siamois.ui.bean.panel.FlowBean;
 import fr.siamois.ui.exceptions.CannotInitializeNewUnitDialogException;
 import fr.siamois.ui.lazydatamodel.BaseRecordingUnitLazyDataModel;
+import fr.siamois.ui.lazydatamodel.tree.RecordingUnitTreeTableLazyModel;
 import lombok.Getter;
+import org.primefaces.model.TreeNode;
 
 import java.time.LocalDateTime;
 import java.time.Month;
 import java.util.Collection;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -42,19 +47,24 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
     private final RecordingUnitWriteVerifier recordingUnitWriteVerifier;
 
     private final SessionSettingsBean sessionSettingsBean;
+    private final RecordingUnitTreeTableLazyModel treeLazyModel;
 
     public RecordingUnitTableViewModel(BaseRecordingUnitLazyDataModel lazyDataModel,
                                        FormService formService,
                                        SessionSettingsBean sessionSettingsBean,
                                        SpatialUnitTreeService spatialUnitTreeService,
                                        SpatialUnitService spatialUnitService,
-                                       FlowBean flowBean, GenericNewUnitDialogBean<?> genericNewUnitDialogBean, RecordingUnitWriteVerifier recordingUnitWriteVerifier) {
+                                       NavBean navBean,
+                                       FlowBean flowBean, GenericNewUnitDialogBean<?> genericNewUnitDialogBean,
+                                       RecordingUnitWriteVerifier recordingUnitWriteVerifier,
+                                       RecordingUnitTreeTableLazyModel treeLazyModel) {
 
         super(
                 lazyDataModel,
                 formService,
                 spatialUnitTreeService,
                 spatialUnitService,
+                navBean,
                 RecordingUnit::getId,   // idExtractor
                 "type"                  // formScopeValueBinding
         );
@@ -63,6 +73,8 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
         this.flowBean = flowBean;
         this.genericNewUnitDialogBean = genericNewUnitDialogBean;
         this.recordingUnitWriteVerifier = recordingUnitWriteVerifier;
+
+        this.treeLazyModel = treeLazyModel;
     }
 
     @Override
@@ -205,6 +217,30 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
     }
 
     @Override
+    public List<RowAction> getRowActions() {
+        return List.of(
+
+                // Bookmark toggle
+                RowAction.builder()
+                        .action(TableColumnAction.TOGGLE_BOOKMARK)
+                        .processExpr("@this")
+                        .updateExpr("bookmarkToggleButton navBarCsrfForm:siamoisNavForm:bookmarkGroup")
+                        .updateSelfTable(false)
+                        .styleClass("sia-icon-btn")
+                        .build(),
+
+                // Duplicate row (RecordingUnit only)
+                RowAction.builder()
+                        .action(TableColumnAction.DUPLICATE_ROW)
+                        .processExpr("@this")
+                        .updateSelfTable(true) // <-- mettra à jour :#{cc.clientId}:entityDatatable
+                        .styleClass("sia-icon-btn")
+                        .build()
+        );
+    }
+
+
+    @Override
     public void handleRelationAction(RelationColumn col, RecordingUnit ru, Integer panelIndex, TableColumnAction action) {
         switch (action) {
 
@@ -243,5 +279,41 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
         }
     }
 
+    public boolean isRendered(RowAction action, RecordingUnit ru) {
+        return switch (action.getAction()) {
+            case DUPLICATE_ROW -> flowBean.getIsWriteMode();
+            case TOGGLE_BOOKMARK -> true;
+            default -> true;
+        };
+    }
+
+
+    public String resolveIcon(RowAction action, RecordingUnit ru) {
+        return switch (action.getAction()) {
+            case TOGGLE_BOOKMARK ->
+                    navBean.isRecordingUnitBookmarkedByUser(ru.getFullIdentifier())
+                            ? "bi bi-bookmark-x-fill"
+                            : "bi bi-bookmark-plus";
+            case DUPLICATE_ROW -> "bi bi-copy";
+            default -> "";
+        };
+    }
+    public void handleRowAction(RowAction action, RecordingUnit ru) {
+        switch (action.getAction()) {
+            case TOGGLE_BOOKMARK -> navBean.toggleRecordingUnitBookmark(ru);
+            case DUPLICATE_ROW -> recordingUnitLazyDataModel.duplicateRow();
+            default -> throw new IllegalStateException("Unhandled action: " + action.getAction());
+        }
+    }
+
+    @Override
+    public boolean isTreeViewSupported() {
+        return true;
+    }
+
+    @Override
+    public TreeNode<RecordingUnit> getTreeRoot() {
+        return treeLazyModel.getRoot();
+    }
 
 }

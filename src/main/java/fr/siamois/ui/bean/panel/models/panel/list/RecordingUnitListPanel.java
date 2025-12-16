@@ -12,12 +12,14 @@ import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitTreeService;
 import fr.siamois.infrastructure.database.initializer.seeder.ConceptSeeder;
 import fr.siamois.infrastructure.database.initializer.seeder.customfield.CustomFieldSeederSpec;
+import fr.siamois.ui.bean.NavBean;
 import fr.siamois.ui.bean.dialog.newunit.GenericNewUnitDialogBean;
 import fr.siamois.ui.bean.panel.FlowBean;
 import fr.siamois.ui.bean.panel.models.PanelBreadcrumb;
 import fr.siamois.ui.lazydatamodel.BaseLazyDataModel;
 import fr.siamois.ui.lazydatamodel.BaseRecordingUnitLazyDataModel;
 import fr.siamois.ui.lazydatamodel.RecordingUnitLazyDataModel;
+import fr.siamois.ui.lazydatamodel.tree.RecordingUnitTreeTableLazyModel;
 import fr.siamois.ui.table.*;
 import fr.siamois.utils.MessageUtils;
 import lombok.EqualsAndHashCode;
@@ -50,6 +52,7 @@ public class RecordingUnitListPanel extends AbstractListPanel<RecordingUnit> imp
     private final transient FlowBean flowBean;
     private final transient GenericNewUnitDialogBean genericNewUnitDialogBean;
     private final transient RecordingUnitWriteVerifier recordingUnitWriteVerifier;
+    private final transient NavBean navBean;
 
     // locals
     private String actionUnitListErrorMessage;
@@ -64,7 +67,7 @@ public class RecordingUnitListPanel extends AbstractListPanel<RecordingUnit> imp
      */
     private RecordingUnitTableViewModel tableModel;
 
-    public RecordingUnitListPanel(ApplicationContext context, GenericNewUnitDialogBean genericNewUnitDialogBean, RecordingUnitWriteVerifier recordingUnitWriteVerifier) {
+    public RecordingUnitListPanel(ApplicationContext context) {
         super("panel.title.allrecordingunit",
                 "bi bi-pencil-square",
                 "siamois-panel recording-unit-panel list-panel",
@@ -77,6 +80,7 @@ public class RecordingUnitListPanel extends AbstractListPanel<RecordingUnit> imp
         this.flowBean = context.getBean(FlowBean.class);
         this.genericNewUnitDialogBean = context.getBean(GenericNewUnitDialogBean.class);
         this.recordingUnitWriteVerifier = context.getBean(RecordingUnitWriteVerifier.class);
+        this.navBean = context.getBean(NavBean.class);
     }
 
     @Override
@@ -93,6 +97,7 @@ public class RecordingUnitListPanel extends AbstractListPanel<RecordingUnit> imp
     protected BaseLazyDataModel<RecordingUnit> createLazyDataModel() {
         BaseRecordingUnitLazyDataModel lazy =
                 new RecordingUnitLazyDataModel(recordingUnitService, sessionSettingsBean, langBean);
+        RecordingUnitTreeTableLazyModel lazyTree = new RecordingUnitTreeTableLazyModel(recordingUnitService, sessionSettingsBean.getSelectedInstitution().getId());
 
         // construction de la vue de table autour du lazy
         tableModel = new RecordingUnitTableViewModel(
@@ -101,9 +106,11 @@ public class RecordingUnitListPanel extends AbstractListPanel<RecordingUnit> imp
                 sessionSettingsBean,
                 spatialUnitTreeService,
                 spatialUnitService,
+                navBean,
                 flowBean,
                 genericNewUnitDialogBean,
-                recordingUnitWriteVerifier
+                recordingUnitWriteVerifier,
+                lazyTree
         );
 
         return lazy; // l'abstraite en a besoin, mais ce panel ne s'en sert plus ensuite

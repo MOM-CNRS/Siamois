@@ -6,5 +6,7 @@ package fr.siamois.ui.table;
 public enum TableColumnAction {
     GO_TO_RECORDING_UNIT,
     VIEW_RELATION,
-    ADD_RELATION
+    ADD_RELATION,
+    TOGGLE_BOOKMARK,
+    DUPLICATE_ROW,
 }
