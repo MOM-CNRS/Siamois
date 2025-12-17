@@ -11,6 +11,7 @@ import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitTreeService;
 import fr.siamois.ui.bean.NavBean;
 import fr.siamois.ui.bean.dialog.newunit.GenericNewUnitDialogBean;
+import fr.siamois.ui.bean.dialog.newunit.NewUnitCreationContext;
 import fr.siamois.ui.bean.dialog.newunit.UnitKind;
 import fr.siamois.ui.exceptions.CannotInitializeNewUnitDialogException;
 import fr.siamois.ui.form.EntityFormContext;
@@ -23,6 +24,7 @@ import jakarta.faces.application.FacesMessage;
 import jakarta.faces.context.FacesContext;
 import lombok.Getter;
 import lombok.Setter;
+import org.primefaces.PrimeFaces;
 import org.primefaces.component.api.UIColumn;
 import org.primefaces.event.ColumnToggleEvent;
 import org.primefaces.model.Visibility;
@@ -49,6 +51,7 @@ public abstract class EntityTableViewModel<T extends TraceableEntity, ID> {
 
     /** Lazy model "pur data" (chargement, tri, filtres, sélection, etc.) */
     protected final BaseLazyDataModel<T> lazyDataModel;
+    protected final BaseTreeTableLazyModel<T, ID> treeLazyModel;
 
     /** Services nécessaires pour la logique formulaire de ligne */
     protected final FormService formService;
@@ -77,6 +80,7 @@ public abstract class EntityTableViewModel<T extends TraceableEntity, ID> {
     private boolean treeMode = false; // false = table, true = tree
 
     protected EntityTableViewModel(BaseLazyDataModel<T> lazyDataModel,
+                                   BaseTreeTableLazyModel<T, ID> treeLazyModel,
                                    GenericNewUnitDialogBean<T> genericNewUnitDialogBean,
                                    FormService formService,
                                    SpatialUnitTreeService spatialUnitTreeService,
@@ -84,6 +88,7 @@ public abstract class EntityTableViewModel<T extends TraceableEntity, ID> {
                                    Function<T, ID> idExtractor,
                                    String formScopeValueBinding) {
         this.lazyDataModel = lazyDataModel;
+        this.treeLazyModel = treeLazyModel;
         this.formService = formService;
         this.genericNewUnitDialogBean = genericNewUnitDialogBean;
         this.spatialUnitTreeService = spatialUnitTreeService;
@@ -239,37 +244,145 @@ public abstract class EntityTableViewModel<T extends TraceableEntity, ID> {
         return false;
     }
 
-    protected void trySelectKind(
+    // ==========================
+//  Central method (private)
+// ==========================
+    private <X extends TraceableEntity> void doTrySelectKind(
             UnitKind kind,
-            Set<?> relatedUnits,
+            BaseLazyDataModel<X> lazyContext,
+            Set<X> setContext,
             TraceableEntity parent,
-            TraceableEntity child
+            X multiHierarchyParent,
+            X multiHierarchyChild,
+            NewUnitCreationContext<?> creationContext
     ) {
         try {
+            // 1) init dialog kind + bind the "source table model" + insertion context
             genericNewUnitDialogBean.selectKind(
                     kind,
-                    relatedUnits,
-                    parent,
-                    child
+                    this,              // 👈 source table model / owner of insertion logic
+                    creationContext
             );
+
+            // 2) provide "what to update" context
+            genericNewUnitDialogBean.setLazyDataModel(lazyContext);
+            genericNewUnitDialogBean.setSetToUpdate(setContext);
+
+            // 3) creation context (your existing logic)
+            genericNewUnitDialogBean.setParent(parent);
+            genericNewUnitDialogBean.setMultiHierarchyParent(multiHierarchyParent);
+            genericNewUnitDialogBean.setMultiHierarchyChild(multiHierarchyChild);
+
+            // 4) open dialog
+            PrimeFaces.current().ajax().update("newUnitForm");
+            PrimeFaces.current().executeScript("PF('newUnitDiag').show()");
+
         } catch (CannotInitializeNewUnitDialogException e) {
-            // intentionally ignored
+            // keep same behavior as before (silent fail)
         }
     }
+// =======================================
+//  Existing overloads (keep them working)
+// =======================================
 
-    protected void trySelectKind(
+    /**
+     * Old: selectKind(kind)
+     */
+    protected void trySelectKind(UnitKind kind) {
+        doTrySelectKind(kind, null, null, null, null, null, null);
+    }
+
+    /**
+     * Old: selectKind(kind, BaseLazyDataModel context)
+     */
+    protected <X extends TraceableEntity> void trySelectKind(UnitKind kind, BaseLazyDataModel<X> lazyContext) {
+        doTrySelectKind(kind, lazyContext, null, null, null, null, null);
+    }
+
+    /**
+     * Old: selectKind(kind, Set context, TraceableEntity parent)
+     */
+    protected <X extends TraceableEntity> void trySelectKind(UnitKind kind, Set<X> setContext, TraceableEntity parent) {
+        doTrySelectKind(kind, null, setContext, parent, null, null, null);
+    }
+
+    /**
+     * Old: selectKind(kind, Set context, parent, child) (multi hierarchy)
+     */
+    protected <X extends TraceableEntity> void trySelectKind(UnitKind kind, Set<X> setContext, X parent, X child) {
+        doTrySelectKind(kind, null, setContext, null, parent, child, null);
+    }
+
+// =======================================
+//  New overloads WITH NewUnitCreationContext
+// =======================================
+
+    /**
+     * New: same as trySelectKind(kind) but with insertion context
+     */
+    protected void trySelectKind(UnitKind kind, NewUnitCreationContext<?> ctx) {
+        doTrySelectKind(kind, null, null, null, null, null, ctx);
+    }
+
+    /**
+     * New: same as trySelectKind(kind, lazyContext) but with insertion context
+     */
+    protected <X extends TraceableEntity> void trySelectKind(
             UnitKind kind,
-            Set<?> relatedUnits,
-            TraceableEntity parent
+            BaseLazyDataModel<X> lazyContext,
+            NewUnitCreationContext<?> ctx
     ) {
+        doTrySelectKind(kind, lazyContext, null, null, null, null, ctx);
+    }
+
+    /**
+     * New: same as trySelectKind(kind, setContext, parentEntity) but with insertion context
+     */
+    protected <X extends TraceableEntity> void trySelectKind(
+            UnitKind kind,
+            Set<X> setContext,
+            TraceableEntity parent,
+            NewUnitCreationContext<?> ctx
+    ) {
+        doTrySelectKind(kind, null, setContext, parent, null, null, ctx);
+    }
+
+    /**
+     * New: same as trySelectKind(kind, setContext, mhParent, mhChild) but with insertion context
+     */
+    protected <X extends TraceableEntity> void trySelectKind(
+            UnitKind kind,
+            Set<X> setContext,
+            X multiHierarchyParent,
+            X multiHierarchyChild,
+            NewUnitCreationContext<?> ctx
+    ) {
+        doTrySelectKind(kind, null, setContext, null, multiHierarchyParent, multiHierarchyChild, ctx);
+    }
+
+
+    public void onAnyEntityCreated(TraceableEntity created, NewUnitCreationContext<?> ctx) {
+        if (created == null) return;
+
         try {
-            genericNewUnitDialogBean.selectKind(
-                    kind,
-                    relatedUnits,
-                    parent
-            );
-        } catch (CannotInitializeNewUnitDialogException e) {
-            // intentionally ignored
+            @SuppressWarnings("unchecked")
+            T casted = (T) created;
+            ID id = (ID) ctx.getClickedId();
+
+            if (lazyDataModel != null) {
+                lazyDataModel.addRowToModel(casted);
+            }
+            if (treeLazyModel != null && ctx != null) {
+                switch (ctx.getInsertMode()) {
+                    case TREE_CHILD_FIRST ->
+                            treeLazyModel.insertChildFirst(id, casted);
+                    case TREE_PARENT_AT_ROOT ->
+                            treeLazyModel.insertParentAtRoot(id, casted);
+                    default -> {}
+                }
+            }
+        } catch (ClassCastException e) {
+            // pas le bon type -> ignore
         }
     }
 

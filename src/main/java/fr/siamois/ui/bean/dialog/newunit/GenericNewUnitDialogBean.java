@@ -16,6 +16,7 @@ import fr.siamois.ui.bean.panel.FlowBean;
 import fr.siamois.ui.bean.panel.models.panel.single.AbstractSingleEntity;
 import fr.siamois.ui.exceptions.CannotInitializeNewUnitDialogException;
 import fr.siamois.ui.lazydatamodel.BaseLazyDataModel;
+import fr.siamois.ui.table.EntityTableViewModel;
 import fr.siamois.utils.MessageUtils;
 import jakarta.faces.component.UIComponent;
 import lombok.EqualsAndHashCode;
@@ -66,6 +67,11 @@ public class GenericNewUnitDialogBean<T extends TraceableEntity>
     private transient Map<UnitKind, INewUnitHandler<? extends TraceableEntity>> handlers;
     private UnitKind kind;
     private transient INewUnitHandler<T> handler;
+
+    // creation  callback + contexte ====
+    private transient EntityTableViewModel<?, ?> tableModel;
+    private transient NewUnitCreationContext<?> creationContext;
+
 
 
     public GenericNewUnitDialogBean(ApplicationContext context,
@@ -126,6 +132,19 @@ public class GenericNewUnitDialogBean<T extends TraceableEntity>
         this.multiHierarchyParent = parent;
         init();
     }
+
+    public void selectKind(UnitKind kind,
+                           EntityTableViewModel<?, ?> tableModel,
+                           NewUnitCreationContext<?> ctx)
+            throws CannotInitializeNewUnitDialogException {
+
+        this.kind = kind;
+        this.handler = (INewUnitHandler<T>) handlers.get(kind);
+        this.tableModel = tableModel;
+        this.creationContext = ctx;
+        init();
+    }
+
 
     // ==== méthodes utilitaires (ex-abstracts supprimées) ====
 
@@ -247,19 +266,11 @@ public class GenericNewUnitDialogBean<T extends TraceableEntity>
         formContext.flushBackToEntity();
         unit.setValidated(false);
         unit = handler.save(sessionSettingsBean.getUserInfo(), unit);
-        updateCollections();
+
+        if (tableModel != null) {
+            tableModel.onAnyEntityCreated(unit, creationContext);
+
+        }
     }
 
-    private void updateCollections() {
-        if (lazyDataModel != null) {
-            lazyDataModel.addRowToModel(unit);
-        }
-        if (setToUpdate != null) {
-            LinkedHashSet<T> newSet = new LinkedHashSet<>();
-            newSet.add(unit);
-            newSet.addAll(setToUpdate);
-            setToUpdate.clear();
-            setToUpdate.addAll(newSet);
-        }
-    }
 }

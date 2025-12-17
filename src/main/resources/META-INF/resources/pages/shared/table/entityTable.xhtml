@@ -285,6 +285,31 @@
                          value="#{cc.attrs.tableModel.treeRoot}"
                          var="item"
                          widgetVar="#{cc.clientId}_entityTreeTable"
+
+                         cellNavigation="true"
+                        selectionMode="checkbox"
+                         varStatus="status"
+                         size="small"
+                         paginatorPosition="bottom"
+                         selectionRowMode="none"
+                         propagateSelectionUp="false"
+                         propagateSelectionDown="false"
+                         lazy="true"
+                         globalFilter="#{cc.attrs.tableModel.lazyDataModel.globalFilter}"
+                         allowUnsorting="true"
+                         sortBy="#{cc.attrs.tableModel.lazyDataModel.sortBy}"
+                         rows="#{cc.attrs.tableModel.lazyDataModel.pageSizeState}"
+                         first="#{cc.attrs.tableModel.lazyDataModel.first}"
+                         sortMode="multiple"
+                         partialUpdate="false"
+                         emptyMessage="#{langBean.msg('recordingUnitList.empty')}"
+                         paginatorTemplate="Rows per page: {RowsPerPageDropdown} {RowReport} {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink}"
+                         rowsPerPageTemplate="5,10,15,20,25"
+                         rowIndexVar="rowIndex"
+                         tableStyle="width:auto"
+
+                         class="#{cc.attrs.tableClass}"
+
                          styleClass="#{cc.attrs.tableClass}">
                 <f:facet name="{RowReport}">
                         <span class="ui-paginator-current">#{cc.attrs.tableModel.lazyDataModel.getFirstIndexOnPage()}-#{cc.attrs.tableModel.lazyDataModel.getLastIndexOnPage()}

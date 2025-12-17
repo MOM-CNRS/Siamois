@@ -230,7 +230,7 @@ public class RecordingUnit extends RecordingUnitParent implements ArkEntity, Ref
     public static final String BI_BI_PENCIL_SQUARE = "bi bi-pencil-square";
     @Transient
     @JsonIgnore
-    private static CustomFieldSelectOneFromFieldCode recordingUnitTypeField = new CustomFieldSelectOneFromFieldCode.Builder()
+    private static CustomFieldSelectOneFromFieldCode recordingUnitTypeField = CustomFieldSelectOneFromFieldCode.builder()
             .label("recordingunit.property.type")
             .isSystemField(true)
             .valueBinding("type")

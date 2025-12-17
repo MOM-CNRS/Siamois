@@ -190,7 +190,7 @@ public class ActionUnit extends ActionUnitParent implements ArkEntity {
     // --------------- Fields
     @Transient
     @JsonIgnore
-    public static final CustomFieldSelectOneFromFieldCode ACTION_UNIT_TYPE_FIELD = new CustomFieldSelectOneFromFieldCode.Builder()
+    public static final CustomFieldSelectOneFromFieldCode ACTION_UNIT_TYPE_FIELD = CustomFieldSelectOneFromFieldCode.builder()
             .label("specimen.field.category")
             .isSystemField(true)
             .valueBinding("type")
@@ -250,7 +250,7 @@ public class ActionUnit extends ActionUnitParent implements ArkEntity {
 
     @Transient
     @JsonIgnore
-    private static final CustomFieldSelectOneActionCode ACTION_CODE_FIELD = new CustomFieldSelectOneActionCode.Builder()
+    private static final CustomFieldSelectOneActionCode ACTION_CODE_FIELD = CustomFieldSelectOneActionCode.builder()
             .label("actionunit.field.actionCode")
             .isSystemField(true)
             .valueBinding("primaryActionCode")

@@ -156,7 +156,7 @@ public class Specimen extends SpecimenParent implements ArkEntity {
 
     @Transient
     @JsonIgnore
-    private static CustomFieldSelectOneFromFieldCode specimenTypeField = new CustomFieldSelectOneFromFieldCode.Builder()
+    private static CustomFieldSelectOneFromFieldCode specimenTypeField =  CustomFieldSelectOneFromFieldCode.builder()
             .label("specimen.field.type")
             .isSystemField(true)
             .valueBinding("type")
@@ -168,7 +168,7 @@ public class Specimen extends SpecimenParent implements ArkEntity {
 
     @Transient
     @JsonIgnore
-    private static CustomFieldSelectOneFromFieldCode specimenCategoryField = new CustomFieldSelectOneFromFieldCode.Builder()
+    private static CustomFieldSelectOneFromFieldCode specimenCategoryField =  CustomFieldSelectOneFromFieldCode.builder()
             .label("specimen.field.category")
             .isSystemField(true)
             .valueBinding("category")

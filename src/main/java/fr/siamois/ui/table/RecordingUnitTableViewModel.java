@@ -47,7 +47,6 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
     private final RecordingUnitWriteVerifier recordingUnitWriteVerifier;
 
     private final SessionSettingsBean sessionSettingsBean;
-    private final RecordingUnitTreeTableLazyModel treeLazyModel;
 
     public RecordingUnitTableViewModel(BaseRecordingUnitLazyDataModel lazyDataModel,
                                        FormService formService,
@@ -61,6 +60,7 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
 
         super(
                 lazyDataModel,
+                treeLazyModel,
                 genericNewUnitDialogBean,
                 formService,
                 spatialUnitTreeService,
@@ -75,7 +75,6 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
 
         this.recordingUnitWriteVerifier = recordingUnitWriteVerifier;
 
-        this.treeLazyModel = treeLazyModel;
     }
 
     @Override
@@ -232,7 +231,7 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
                                     UnitKind.RECORDING,
                                     ru.getChildren(),
                                     ru,
-                                    null
+                                    (RecordingUnit) null
                             );
 
                     case "specimen" ->

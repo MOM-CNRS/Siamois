@@ -1,6 +1,7 @@
 package fr.siamois.ui.lazydatamodel.tree;
 
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
+import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import lombok.Getter;
 import lombok.Setter;
@@ -13,12 +14,13 @@ import java.util.Set;
 
 @Getter
 @Setter
-public class RecordingUnitTreeTableLazyModel extends BaseTreeTableLazyModel<RecordingUnit> {
+public class RecordingUnitTreeTableLazyModel extends BaseTreeTableLazyModel<RecordingUnit, Long> {
 
     private final RecordingUnitService recordingUnitService;
     private final Long institutionId;
 
     public RecordingUnitTreeTableLazyModel(RecordingUnitService recordingUnitService, Long institutionId) {
+        super(RecordingUnit::getId);
         this.recordingUnitService = recordingUnitService;
         this.institutionId = institutionId;
     }

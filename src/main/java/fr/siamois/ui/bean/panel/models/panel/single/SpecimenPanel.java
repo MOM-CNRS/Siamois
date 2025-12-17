@@ -135,7 +135,7 @@ public class SpecimenPanel extends AbstractSingleEntityPanel<Specimen>  implemen
             .concept(collectorsConcept)
             .build();
 
-    private CustomFieldSelectOneFromFieldCode specimenTypeField = new CustomFieldSelectOneFromFieldCode.Builder()
+    private CustomFieldSelectOneFromFieldCode specimenTypeField =  CustomFieldSelectOneFromFieldCode.builder()
             .label("specimen.field.type")
             .isSystemField(true)
             .valueBinding("type")
@@ -154,7 +154,7 @@ public class SpecimenPanel extends AbstractSingleEntityPanel<Specimen>  implemen
             .concept(collectionDateConcept)
             .build();
 
-    private CustomFieldSelectOneFromFieldCode specimenCategoryField = new CustomFieldSelectOneFromFieldCode.Builder()
+    private CustomFieldSelectOneFromFieldCode specimenCategoryField =  CustomFieldSelectOneFromFieldCode.builder()
             .label("specimen.field.category")
             .isSystemField(true)
             .valueBinding("category")

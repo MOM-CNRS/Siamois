@@ -15,6 +15,8 @@ import fr.siamois.domain.services.spatialunit.SpatialUnitTreeService;
 import fr.siamois.ui.bean.NavBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
 import fr.siamois.ui.bean.dialog.newunit.GenericNewUnitDialogBean;
+import fr.siamois.ui.bean.dialog.newunit.NewUnitCreationContext;
+import fr.siamois.ui.bean.dialog.newunit.NewUnitInsertMode;
 import fr.siamois.ui.bean.dialog.newunit.UnitKind;
 import fr.siamois.ui.bean.panel.FlowBean;
 import fr.siamois.ui.lazydatamodel.BaseRecordingUnitLazyDataModel;
@@ -46,7 +48,7 @@ public class SpatialUnitTableViewModel extends EntityTableViewModel<SpatialUnit,
     private final SpatialUnitWriteVerifier spatialUnitWriteVerifier;
 
     private final SessionSettingsBean sessionSettingsBean;
-    private final SpatialUnitTreeTableLazyModel treeLazyModel;
+
 
     public SpatialUnitTableViewModel(BaseSpatialUnitLazyDataModel lazyDataModel,
                                      FormService formService,
@@ -60,6 +62,7 @@ public class SpatialUnitTableViewModel extends EntityTableViewModel<SpatialUnit,
 
         super(
                 lazyDataModel,
+                treeLazyModel,
                 genericNewUnitDialogBean,
                 formService,
                 spatialUnitTreeService,
@@ -74,7 +77,6 @@ public class SpatialUnitTableViewModel extends EntityTableViewModel<SpatialUnit,
 
         this.spatialUnitWriteVerifier = writeVerifier;
 
-        this.treeLazyModel = treeLazyModel;
     }
 
     @Override
@@ -195,7 +197,11 @@ public class SpatialUnitTableViewModel extends EntityTableViewModel<SpatialUnit,
                                     UnitKind.SPATIAL,
                                     su.getParents(),
                                     null,
-                                    su
+                                    su,
+                                    NewUnitCreationContext.<Long>builder()
+                                            .insertMode(NewUnitInsertMode.TREE_PARENT_AT_ROOT)
+                                            .clickedId(su.getId())
+                                            .build()
                             );
 
                     case "children" ->
@@ -203,15 +209,25 @@ public class SpatialUnitTableViewModel extends EntityTableViewModel<SpatialUnit,
                                     UnitKind.SPATIAL,
                                     su.getChildren(),
                                     su,
-                                    null
+                                    null,
+                                    NewUnitCreationContext.<Long>builder()
+                                            .insertMode(NewUnitInsertMode.TREE_CHILD_FIRST)
+                                            .clickedId(su.getId())
+                                            .build()
                             );
+
 
                     case "action" ->
                             trySelectKind(
                                     UnitKind.ACTION,
                                     su.getRelatedActionUnitList(),
-                                    su
+                                    su,
+                                    NewUnitCreationContext.<Long>builder()
+                                            .insertMode(NewUnitInsertMode.NONE)
+                                            .clickedId(su.getId())
+                                            .build()
                             );
+
                 }
             }
 

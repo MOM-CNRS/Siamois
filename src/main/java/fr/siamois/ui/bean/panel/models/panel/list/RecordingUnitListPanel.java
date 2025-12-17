@@ -175,7 +175,7 @@ public class RecordingUnitListPanel extends AbstractListPanel<RecordingUnit> imp
                 .vocabulary(SYSTEM_THESO)
                 .externalId("4286245")
                 .build();
-        CustomFieldSelectOneFromFieldCode TYPE_FIELD = new CustomFieldSelectOneFromFieldCode.Builder()
+        CustomFieldSelectOneFromFieldCode TYPE_FIELD =  CustomFieldSelectOneFromFieldCode.builder()
                 .label("recordingunit.property.type")
                 .isSystemField(true)
                 .valueBinding("type")

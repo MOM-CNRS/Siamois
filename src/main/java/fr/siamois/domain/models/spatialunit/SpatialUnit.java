@@ -134,8 +134,9 @@ public class SpatialUnit extends SpatialUnitGeneric implements ArkEntity {
 
     @Transient
     @JsonIgnore
-    public static final CustomFieldSelectOneFromFieldCode SPATIAL_UNIT_TYPE_FIELD = new CustomFieldSelectOneFromFieldCode.Builder()
+    public static final CustomFieldSelectOneFromFieldCode SPATIAL_UNIT_TYPE_FIELD = CustomFieldSelectOneFromFieldCode.builder()
             .label("specimen.field.category")
+            .id(1L)
             .isSystemField(true)
             .valueBinding("category")
             .styleClass("mr-2 spatial-unit-type-chip")

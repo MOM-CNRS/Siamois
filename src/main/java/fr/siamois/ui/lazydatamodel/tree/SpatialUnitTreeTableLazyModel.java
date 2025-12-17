@@ -15,12 +15,13 @@ import java.util.Set;
 
 @Getter
 @Setter
-public class SpatialUnitTreeTableLazyModel extends BaseTreeTableLazyModel<SpatialUnit> {
+public class SpatialUnitTreeTableLazyModel extends BaseTreeTableLazyModel<SpatialUnit, Long> {
 
     private final SpatialUnitService spatialUnitService;
     private final Long institutionId;
 
     public SpatialUnitTreeTableLazyModel(SpatialUnitService spatialUnitService, Long institutionId) {
+        super(SpatialUnit::getId);
         this.spatialUnitService = spatialUnitService;
         this.institutionId = institutionId;
     }
