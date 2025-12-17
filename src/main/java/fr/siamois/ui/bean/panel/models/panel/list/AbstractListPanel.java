@@ -1,5 +1,6 @@
 package fr.siamois.ui.bean.panel.models.panel.list;
 
+import fr.siamois.domain.models.TraceableEntity;
 import fr.siamois.domain.services.BookmarkService;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.person.PersonService;
@@ -12,6 +13,9 @@ import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
 import fr.siamois.ui.bean.panel.models.panel.AbstractPanel;
 import fr.siamois.ui.lazydatamodel.BaseLazyDataModel;
+import fr.siamois.ui.table.EntityTableViewModel;
+import fr.siamois.ui.table.RecordingUnitTableViewModel;
+import fr.siamois.ui.table.TableColumn;
 import fr.siamois.utils.MessageUtils;
 import jakarta.faces.application.FacesMessage;
 import jakarta.faces.context.FacesContext;
@@ -29,13 +33,14 @@ import org.springframework.context.ApplicationContext;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 
 @Getter
 @Setter
 @NoArgsConstructor(force = true)
 @EqualsAndHashCode(callSuper = true, onlyExplicitlyIncluded = true)
 @Slf4j
-public abstract class AbstractListPanel<T> extends AbstractPanel  implements Serializable {
+public abstract class AbstractListPanel<T extends TraceableEntity> extends AbstractPanel  implements Serializable {
 
     // deps
     protected final transient SpatialUnitService spatialUnitService;
@@ -53,6 +58,15 @@ public abstract class AbstractListPanel<T> extends AbstractPanel  implements Ser
     protected BaseLazyDataModel<T> lazyDataModel;
     protected long totalNumberOfUnits;
     protected String errorMessage;
+
+    /**
+     * Modèle de vue pour la table :
+     * - encapsule le LazyDataModel "pur data"
+     * - expose les colonnes
+     * - gère les EntityFormContext par ligne
+     * - expose les opérations dont le panel a besoin (selectedUnits, rowData, addRow...)
+     */
+    protected transient EntityTableViewModel<T,Long> tableModel;
 
     protected AbstractListPanel(BookmarkService bookmarkService) {
         this.bookmarkService = bookmarkService;
@@ -143,4 +157,11 @@ public abstract class AbstractListPanel<T> extends AbstractPanel  implements Ser
 
     @Override
     public abstract String displayHeader();
+
+    /**
+     * Exposé pour la vue JSF, utilisé dans <p:columns value="#{panelModel.columns}">
+     */
+    public List<TableColumn> getColumns() {
+        return tableModel != null ? tableModel.getColumns() : List.of();
+    }
 }

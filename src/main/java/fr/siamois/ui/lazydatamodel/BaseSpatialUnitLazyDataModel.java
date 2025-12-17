@@ -1,6 +1,7 @@
 package fr.siamois.ui.lazydatamodel;
 
 
+import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import lombok.Getter;
 import lombok.Setter;
@@ -38,6 +39,11 @@ public abstract class BaseSpatialUnitLazyDataModel extends BaseLazyDataModel<Spa
     @Override
     protected Page<SpatialUnit> loadData(String name, Long[] categoryIds, Long[] personIds, String globalFilter, Pageable pageable) {
         return loadSpatialUnits(name, categoryIds, personIds, globalFilter, pageable);
+    }
+
+    @Override
+    public String getRowKey(SpatialUnit spatialUnit) {
+        return spatialUnit != null ? Long.toString(spatialUnit.getId()) : null;
     }
 
     protected abstract Page<SpatialUnit> loadSpatialUnits(String nameFilter, Long[] categoryIds, Long[] personIds, String globalFilter, Pageable pageable);

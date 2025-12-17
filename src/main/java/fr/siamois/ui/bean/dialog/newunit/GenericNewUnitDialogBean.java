@@ -166,7 +166,7 @@ public class GenericNewUnitDialogBean<T extends TraceableEntity>
 
     protected void reset() {
         unit = null;
-        formContext.setFormResponse(null);
+        formContext = null;
     }
 
     public void init() throws CannotInitializeNewUnitDialogException {

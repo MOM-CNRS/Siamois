@@ -1,5 +1,6 @@
 package fr.siamois.ui.table;
 
+import fr.siamois.domain.models.TraceableEntity;
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.customform.CustomCol;
 import fr.siamois.domain.models.form.customform.CustomForm;
@@ -9,6 +10,9 @@ import fr.siamois.domain.services.form.FormService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitTreeService;
 import fr.siamois.ui.bean.NavBean;
+import fr.siamois.ui.bean.dialog.newunit.GenericNewUnitDialogBean;
+import fr.siamois.ui.bean.dialog.newunit.UnitKind;
+import fr.siamois.ui.exceptions.CannotInitializeNewUnitDialogException;
 import fr.siamois.ui.form.EntityFormContext;
 import fr.siamois.ui.form.FieldSource;
 import fr.siamois.ui.form.TableRowFieldSource;
@@ -41,7 +45,7 @@ import java.util.function.Function;
  *  - configureRowSystemFields(T entity, CustomForm form)
  */
 @Getter
-public abstract class EntityTableViewModel<T, ID> {
+public abstract class EntityTableViewModel<T extends TraceableEntity, ID> {
 
     /** Lazy model "pur data" (chargement, tri, filtres, sélection, etc.) */
     protected final BaseLazyDataModel<T> lazyDataModel;
@@ -51,6 +55,7 @@ public abstract class EntityTableViewModel<T, ID> {
     protected final SpatialUnitTreeService spatialUnitTreeService;
     protected final SpatialUnitService spatialUnitService;
     protected final NavBean navBean;
+    protected final GenericNewUnitDialogBean genericNewUnitDialogBean;
 
     /** Fournit l'identifiant unique d'une entité T (ex: RecordingUnit::getId) */
     private final Function<T, ID> idExtractor;
@@ -72,6 +77,7 @@ public abstract class EntityTableViewModel<T, ID> {
     private boolean treeMode = false; // false = table, true = tree
 
     protected EntityTableViewModel(BaseLazyDataModel<T> lazyDataModel,
+                                   GenericNewUnitDialogBean<T> genericNewUnitDialogBean,
                                    FormService formService,
                                    SpatialUnitTreeService spatialUnitTreeService,
                                    SpatialUnitService spatialUnitService, NavBean navBean,
@@ -79,6 +85,7 @@ public abstract class EntityTableViewModel<T, ID> {
                                    String formScopeValueBinding) {
         this.lazyDataModel = lazyDataModel;
         this.formService = formService;
+        this.genericNewUnitDialogBean = genericNewUnitDialogBean;
         this.spatialUnitTreeService = spatialUnitTreeService;
         this.spatialUnitService = spatialUnitService;
         this.navBean = navBean;
@@ -230,6 +237,40 @@ public abstract class EntityTableViewModel<T, ID> {
 
     public boolean isTreeViewSupported() {
         return false;
+    }
+
+    protected void trySelectKind(
+            UnitKind kind,
+            Set<?> relatedUnits,
+            TraceableEntity parent,
+            TraceableEntity child
+    ) {
+        try {
+            genericNewUnitDialogBean.selectKind(
+                    kind,
+                    relatedUnits,
+                    parent,
+                    child
+            );
+        } catch (CannotInitializeNewUnitDialogException e) {
+            // intentionally ignored
+        }
+    }
+
+    protected void trySelectKind(
+            UnitKind kind,
+            Set<?> relatedUnits,
+            TraceableEntity parent
+    ) {
+        try {
+            genericNewUnitDialogBean.selectKind(
+                    kind,
+                    relatedUnits,
+                    parent
+            );
+        } catch (CannotInitializeNewUnitDialogException e) {
+            // intentionally ignored
+        }
     }
 
 }

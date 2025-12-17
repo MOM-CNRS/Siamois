@@ -1,6 +1,7 @@
 <ui:fragment xmlns="http://www.w3.org/1999/xhtml"
              xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
              xmlns:p="http://primefaces.org/ui"
+             xmlns:table="http://xmlns.jcp.org/jsf/composite/pages/shared/table"
              xmlns:spatialUnit="http://xmlns.jcp.org/jsf/composite/pages/spatialUnit/components"
              xmlns:f="http://java.sun.com/jsf/core" xmlns:h="http://java.sun.com/jsf/html"
 >
@@ -13,10 +14,9 @@
 
     <h:form id="spatialUnitListPanelForm">
         <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
-        <spatialUnit:spatialUnitList
+        <table:entityTable
                 displayColumnToggler="true"
-                lazyDataModel="#{panelModel.lazyDataModel}"
-                panelModel="#{panelModel}"
+                tableModel="#{panelModel.tableModel}"
                 panelIndex="#{panelIndex}"
                 id="spatialUnitList"
         >
@@ -29,7 +29,7 @@
                                  style="margin-right: .5rem">
                 </p:commandButton>
             </f:facet>
-        </spatialUnit:spatialUnitList>
+        </table:entityTable>
     </h:form>
 
 

@@ -43,7 +43,7 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
     /** Lazy model spécifique RecordingUnit (accès à selectedUnits, etc.) */
     private final BaseRecordingUnitLazyDataModel recordingUnitLazyDataModel;
     private final FlowBean flowBean;
-    private final GenericNewUnitDialogBean genericNewUnitDialogBean;
+
     private final RecordingUnitWriteVerifier recordingUnitWriteVerifier;
 
     private final SessionSettingsBean sessionSettingsBean;
@@ -55,12 +55,13 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
                                        SpatialUnitTreeService spatialUnitTreeService,
                                        SpatialUnitService spatialUnitService,
                                        NavBean navBean,
-                                       FlowBean flowBean, GenericNewUnitDialogBean<?> genericNewUnitDialogBean,
+                                       FlowBean flowBean, GenericNewUnitDialogBean<RecordingUnit> genericNewUnitDialogBean,
                                        RecordingUnitWriteVerifier recordingUnitWriteVerifier,
                                        RecordingUnitTreeTableLazyModel treeLazyModel) {
 
         super(
                 lazyDataModel,
+                genericNewUnitDialogBean,
                 formService,
                 spatialUnitTreeService,
                 spatialUnitService,
@@ -71,7 +72,7 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
         this.recordingUnitLazyDataModel = lazyDataModel;
         this.sessionSettingsBean = sessionSettingsBean;
         this.flowBean = flowBean;
-        this.genericNewUnitDialogBean = genericNewUnitDialogBean;
+
         this.recordingUnitWriteVerifier = recordingUnitWriteVerifier;
 
         this.treeLazyModel = treeLazyModel;
@@ -182,39 +183,7 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
         };
     }
 
-    private void trySelectKind(
-            UnitKind kind,
-            Set<?> relatedUnits,
-            TraceableEntity parent,
-            TraceableEntity child
-    ) {
-        try {
-            genericNewUnitDialogBean.selectKind(
-                    kind,
-                    relatedUnits,
-                    parent,
-                    child
-            );
-        } catch (CannotInitializeNewUnitDialogException e) {
-            // intentionally ignored
-        }
-    }
 
-    private void trySelectKind(
-            UnitKind kind,
-            Set<?> relatedUnits,
-            TraceableEntity parent
-    ) {
-        try {
-            genericNewUnitDialogBean.selectKind(
-                    kind,
-                    relatedUnits,
-                    parent
-            );
-        } catch (CannotInitializeNewUnitDialogException e) {
-            // intentionally ignored
-        }
-    }
 
     @Override
     public List<RowAction> getRowActions() {

@@ -23,6 +23,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.hibernate.Hibernate;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -394,4 +396,47 @@ public class SpatialUnitService implements ArkEntityService {
         descendants.forEach(su -> byId.putIfAbsent(su.getId(), su));
         return new ArrayList<>(byId.values());
     }
+
+    /**
+     * Get all the roots SpatialUnit in the institution
+     *
+     * @param institutionId the institution id
+     * @return The list of SpatialUnit associated with the institution
+     */
+    public List<SpatialUnit> findAllWithoutParentsByInstitution(Long institutionId) {
+        List<SpatialUnit> res = spatialUnitRepository.findRootsByInstitution(institutionId);
+
+        // load related entities
+        res.forEach(su -> {
+            Hibernate.initialize(su.getParents());
+            Hibernate.initialize(su.getChildren());
+            Hibernate.initialize(su.getRelatedActionUnitList());
+            Hibernate.initialize(su.getRecordingUnitList());
+        });
+
+        return res;
+    }
+
+    /**
+     * Get all SpatialUnit in the institution that are the children of a given parent
+     *
+     * @param parentId the parent id
+     * @param institutionId the institution id
+     * @return The list of SpatialUnit associated with the institution and that are the children of a given parent
+     */
+    public List<SpatialUnit> findChildrenByParentAndInstitution(Long parentId, Long institutionId ) {
+        List<SpatialUnit> res = spatialUnitRepository.findChildrenByParentAndInstitution(parentId, institutionId);
+
+        // load related entities
+        res.forEach(su -> {
+            Hibernate.initialize(su.getParents());
+            Hibernate.initialize(su.getChildren());
+            Hibernate.initialize(su.getRelatedActionUnitList());
+            Hibernate.initialize(su.getRecordingUnitList());
+        });
+
+        return res;
+    }
+
+
 }

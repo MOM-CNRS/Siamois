@@ -207,6 +207,13 @@ public class FlowBean implements Serializable {
         addPanel(newPanel);
     }
 
+    public void goToSpatialUnitByIdNewPanel(Long id, Integer currentPanelIndex) {
+
+        SpatialUnitPanel newPanel = panelFactory.createSpatialUnitPanel(id, panels.get(currentPanelIndex).getBreadcrumb());
+        addPanel(newPanel);
+
+    }
+
 
     public void goToRecordingUnitByIdCurrentPanel(Long id, Integer currentPanelIndex) {
 

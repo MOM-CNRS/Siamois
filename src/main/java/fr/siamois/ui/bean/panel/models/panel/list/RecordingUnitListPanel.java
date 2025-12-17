@@ -58,14 +58,7 @@ public class RecordingUnitListPanel extends AbstractListPanel<RecordingUnit> imp
     private String actionUnitListErrorMessage;
     private Concept bulkEditTypeValue;
 
-    /**
-     * Modèle de vue pour la table :
-     * - encapsule le LazyDataModel "pur data"
-     * - expose les colonnes
-     * - gère les EntityFormContext par ligne
-     * - expose les opérations dont le panel a besoin (selectedUnits, rowData, addRow...)
-     */
-    private RecordingUnitTableViewModel tableModel;
+
 
     public RecordingUnitListPanel(ApplicationContext context) {
         super("panel.title.allrecordingunit",
@@ -152,15 +145,10 @@ public class RecordingUnitListPanel extends AbstractListPanel<RecordingUnit> imp
         configureTableColumns();
     }
 
-    /**
-     * Exposé pour la vue JSF, utilisé dans <p:columns value="#{panelModel.columns}">
-     */
-    public List<TableColumn> getColumns() {
-        return tableModel != null ? tableModel.getColumns() : List.of();
-    }
+
 
     /**
-     * À toi de remplir la définition des colonnes.
+     *Definition des colonnes de la table
      */
     protected void configureTableColumns() {
         Concept TYPE_CONCEPT = new Concept.Builder()
