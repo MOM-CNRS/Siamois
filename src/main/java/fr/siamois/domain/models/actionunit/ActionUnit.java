@@ -193,6 +193,7 @@ public class ActionUnit extends ActionUnitParent implements ArkEntity {
     public static final CustomFieldSelectOneFromFieldCode ACTION_UNIT_TYPE_FIELD = CustomFieldSelectOneFromFieldCode.builder()
             .label("specimen.field.category")
             .isSystemField(true)
+            .id(4L)
             .valueBinding("type")
             .styleClass("mr-2 action-unit-type-chip")
             .iconClass("bi bi-bucket")
@@ -202,17 +203,19 @@ public class ActionUnit extends ActionUnitParent implements ArkEntity {
 
     @Transient
     @JsonIgnore
-    public static final CustomFieldText NAME_FIELD = new CustomFieldText.Builder()
+    public static final CustomFieldText NAME_FIELD = CustomFieldText.builder()
             .label("common.label.name")
             .isSystemField(true)
+            .id(2L)
             .valueBinding("name")
             .concept(NAME_CONCEPT)
             .build();
 
     @Transient
     @JsonIgnore
-    public static final CustomFieldText IDENTIFIER_FIELD = new CustomFieldText.Builder()
+    public static final CustomFieldText IDENTIFIER_FIELD = CustomFieldText.builder()
             .label("common.label.identifier")
+            .id(1L)
             .isSystemField(true)
             .autoGenerationFunction(AbstractSingleEntity::generateRandomActionUnitIdentifier)
             .valueBinding("identifier")
@@ -221,9 +224,10 @@ public class ActionUnit extends ActionUnitParent implements ArkEntity {
 
     @Transient
     @JsonIgnore
-    public static final CustomFieldSelectMultipleSpatialUnitTree SPATIAL_CONTEXT_FIELD = new CustomFieldSelectMultipleSpatialUnitTree.Builder()
+    public static final CustomFieldSelectMultipleSpatialUnitTree SPATIAL_CONTEXT_FIELD = CustomFieldSelectMultipleSpatialUnitTree.builder()
             .label(SPATIAL_UNIT_CONTEXT_LABEL_CODE)
             .isSystemField(true)
+            .id(3L)
             .valueBinding("spatialContext")
             .concept(SPATIAL_CONTEXT_CONCEPT)
             .build();

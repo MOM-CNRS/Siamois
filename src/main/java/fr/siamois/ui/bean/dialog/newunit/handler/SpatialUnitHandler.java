@@ -3,6 +3,8 @@ import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.exceptions.EntityAlreadyExistsException;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
+import fr.siamois.ui.bean.LabelBean;
+import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.dialog.newunit.GenericNewUnitDialogBean;
 import fr.siamois.ui.bean.dialog.newunit.NewUnitContext;
 import fr.siamois.ui.bean.dialog.newunit.UnitKind;
@@ -14,9 +16,13 @@ import java.util.List;
 public class SpatialUnitHandler implements INewUnitHandler<SpatialUnit> {
 
     private final SpatialUnitService spatialUnitService;
+    private final LangBean langBean;
 
-    public SpatialUnitHandler(SpatialUnitService spatialUnitService) {
+    public SpatialUnitHandler(SpatialUnitService spatialUnitService, LangBean langBean
+    ) {
         this.spatialUnitService = spatialUnitService;
+
+        this.langBean = langBean;
     }
 
     @Override public UnitKind kind() { return UnitKind.SPATIAL; }
@@ -40,9 +46,8 @@ public class SpatialUnitHandler implements INewUnitHandler<SpatialUnit> {
             Long clickedId = trigger.getClickedId();
             String key = trigger.getColumnKey();
 
-            // ⚠️ il faut récupérer l'entité cliquée (on a juste son id)
+            // We find the entity clicked
             SpatialUnit clicked = spatialUnitService.findById(clickedId);
-            // -> adapte selon ton service (Optional, getById, etc.)
 
             if (clicked != null) {
                 switch (key) {
@@ -87,8 +92,8 @@ public class SpatialUnitHandler implements INewUnitHandler<SpatialUnit> {
         String name = (clicked != null) ? clicked.getName() : ("#" + clickedId);
 
         return switch (columnKey) {
-            case "parents"  -> "Nouvelle unité spatiale parente de " + name;
-            case "children" -> "Nouvelle unité spatiale enfant de " + name;
+            case "parents"  -> langBean.msg("dialog.label.title.spatial.parent") + name;
+            case "children" -> langBean.msg("dialog.label.title.spatial.child") + name;
             default         -> INewUnitHandler.super.getTitle(ctx);
         };
     }

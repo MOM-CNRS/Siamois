@@ -215,11 +215,11 @@ public class SpatialUnitService implements ArkEntityService {
         spatialUnit = spatialUnitRepository.save(spatialUnit);
 
         for (SpatialUnit parent : parents) {
-            spatialUnitRepository.addParentToSpatialUnit(spatialUnit.getId(), parent.getId());
+            spatialUnit.getParents().add(parent);
         }
 
         for (SpatialUnit child : children) {
-            spatialUnitRepository.addParentToSpatialUnit(child.getId(), spatialUnit.getId());
+            spatialUnit.getChildren().add(child);
         }
 
         return spatialUnit;

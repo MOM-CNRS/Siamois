@@ -4,9 +4,12 @@ import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.customfield.CustomFieldDateTime;
 import fr.siamois.domain.models.form.customfield.CustomFieldInteger;
 import fr.siamois.domain.models.form.customform.CustomForm;
+import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
+import fr.siamois.domain.services.InstitutionService;
+import fr.siamois.domain.services.authorization.writeverifier.ActionUnitWriteVerifier;
 import fr.siamois.domain.services.authorization.writeverifier.RecordingUnitWriteVerifier;
 import fr.siamois.domain.services.authorization.writeverifier.SpatialUnitWriteVerifier;
 import fr.siamois.domain.services.form.FormService;
@@ -46,6 +49,7 @@ public class SpatialUnitTableViewModel extends EntityTableViewModel<SpatialUnit,
     private final FlowBean flowBean;
 
     private final SpatialUnitWriteVerifier spatialUnitWriteVerifier;
+    private final InstitutionService institutionService;
 
     private final SessionSettingsBean sessionSettingsBean;
 
@@ -58,7 +62,8 @@ public class SpatialUnitTableViewModel extends EntityTableViewModel<SpatialUnit,
                                      NavBean navBean,
                                      FlowBean flowBean, GenericNewUnitDialogBean<SpatialUnit> genericNewUnitDialogBean,
                                      SpatialUnitWriteVerifier writeVerifier,
-                                     SpatialUnitTreeTableLazyModel treeLazyModel) {
+                                     SpatialUnitTreeTableLazyModel treeLazyModel,
+                                     InstitutionService institutionService) {
 
         super(
                 lazyDataModel,
@@ -76,7 +81,7 @@ public class SpatialUnitTableViewModel extends EntityTableViewModel<SpatialUnit,
         this.flowBean = flowBean;
 
         this.spatialUnitWriteVerifier = writeVerifier;
-
+        this.institutionService = institutionService;
     }
 
     @Override
@@ -152,6 +157,9 @@ public class SpatialUnitTableViewModel extends EntityTableViewModel<SpatialUnit,
         return switch (key) {
             case "writeMode" -> flowBean.getIsWriteMode();
             case "spatialUnitCreateAllowed" -> spatialUnitWriteVerifier.hasSpecificWritePermission(flowBean.getSessionSettings().getUserInfo(), su);
+            case "actionUnitCreateAllowed" -> institutionService.personIsInstitutionManagerOrActionManager(
+                    flowBean.getSessionSettings().getUserInfo().getUser(),
+                    flowBean.getSessionSettings().getSelectedInstitution());
             default -> false;
         };
     }
@@ -211,6 +219,15 @@ public class SpatialUnitTableViewModel extends EntityTableViewModel<SpatialUnit,
                                 .insertPolicy(NewUnitContext.UiInsertPolicy.builder()
                                         .treeInsert(NewUnitContext.TreeInsert.CHILD_FIRST)
                                         .build())
+                                .build();
+
+                        openCreateDialog(ctx, genericNewUnitDialogBean);
+                    }
+
+                    case "actions" -> {
+                        NewUnitContext ctx = NewUnitContext.builder()
+                                .kindToCreate(UnitKind.ACTION)
+                                .trigger(NewUnitContext.Trigger.cell(su.getId(), "actions"))
                                 .build();
 
                         openCreateDialog(ctx, genericNewUnitDialogBean);

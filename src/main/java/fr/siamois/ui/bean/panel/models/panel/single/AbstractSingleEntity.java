@@ -279,31 +279,6 @@ public abstract class AbstractSingleEntity<T> extends AbstractPanel implements S
         initForms(false);
     }
 
-    // -------------------- Spatial unit tree delegates -----
-
-    /**
-     * Returns the root for a given spatial-unit-tree answer, via the context.
-     */
-    public TreeNode<SpatialUnit> getRoot(CustomFieldAnswerSelectMultipleSpatialUnitTree answer) {
-        return formContext != null ? formContext.getRoot(answer) : null;
-    }
-
-    public List<SpatialUnit> getNormalizedSpatialUnits(CustomFieldAnswerSelectMultipleSpatialUnitTree answer) {
-        return formContext != null ? formContext.getNormalizedSpatialUnits(answer) : List.of();
-    }
-
-    public void addSUToSelection(CustomFieldAnswerSelectMultipleSpatialUnitTree answer, SpatialUnit su) {
-        if (formContext != null) {
-            formContext.addSUToSelection(answer, su);
-        }
-    }
-
-    public boolean removeSpatialUnit(CustomFieldAnswerSelectMultipleSpatialUnitTree answer, SpatialUnit su) {
-        if (formContext != null) {
-            return formContext.removeSpatialUnit(answer, su);
-        }
-        return false;
-    }
 
     // -------------------- Convenience: system concept binding --------
     // If you still use populateSystemFieldValue for Concepts in lists etc.,

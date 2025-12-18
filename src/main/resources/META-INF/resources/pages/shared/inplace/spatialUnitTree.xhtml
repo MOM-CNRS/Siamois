@@ -9,7 +9,7 @@
         <cc:attribute name="answer"
                       type="fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerSelectMultipleSpatialUnitTree"
                       required="true"/>
-        <cc:attribute name="panelModel" type="fr.siamois.ui.bean.panel.models.panel.single.AbstractSingleEntity"
+        <cc:attribute name="formCtx" type="fr.siamois.ui.form.EntityFormContext"
                       required="true"/>
         <cc:attribute name="hasBeenModified" type="Boolean" required="false" default="false"/>
         <cc:attribute name="field"
@@ -27,15 +27,15 @@
             <f:facet name="output">
                 <!-- Affichage de la liste normalisé des USp séléctionnées -->
                 <h:panelGroup
-                        rendered="#{not empty cc.attrs.panelModel.getNormalizedSpatialUnits(cc.attrs.answer)}">
-                    <ui:repeat value="#{cc.attrs.panelModel.getNormalizedSpatialUnits(cc.attrs.answer)}" var="su">
+                        rendered="#{not empty cc.attrs.formCtx.getNormalizedSpatialUnits(cc.attrs.answer)}">
+                    <ui:repeat value="#{cc.attrs.formCtx.getNormalizedSpatialUnits(cc.attrs.answer)}" var="su">
                             <span>
                                 <p:chip label="#{su.name}" styleClass="mr-2 mb-2" removable="false">
                                 </p:chip>
                             </span>
                     </ui:repeat>
                 </h:panelGroup>
-                <h:panelGroup rendered="#{empty cc.attrs.panelModel.getNormalizedSpatialUnits(cc.attrs.answer)}">
+                <h:panelGroup rendered="#{empty cc.attrs.formCtx.getNormalizedSpatialUnits(cc.attrs.answer)}">
                     <em>Aucune USp sélectionnée.</em>
                 </h:panelGroup>
             </f:facet>
@@ -43,23 +43,23 @@
                 <!-- Affichage de la liste normalisé des USp séléctionnées -->
                 <p:panel id="selectedSpatialUnitPanel" header="USp sélectionnées:" style="margin-top:1rem">
                     <h:panelGroup
-                            rendered="#{not empty cc.attrs.panelModel.getNormalizedSpatialUnits(cc.attrs.answer)}">
-                        <ui:repeat value="#{cc.attrs.panelModel.getNormalizedSpatialUnits(cc.attrs.answer)}" var="su">
+                            rendered="#{not empty cc.attrs.formCtx.getNormalizedSpatialUnits(cc.attrs.answer)}">
+                        <ui:repeat value="#{cc.attrs.formCtx.getNormalizedSpatialUnits(cc.attrs.answer)}" var="su">
                             <span>
                                 <p:chip label="#{su.name}" styleClass="mr-2 mb-2" removable="true">
                                     <p:ajax event="close"
-                                            listener="#{cc.attrs.panelModel.removeSpatialUnit(cc.attrs.answer,su)}"
+                                            listener="#{cc.attrs.formCtx.removeSpatialUnit(cc.attrs.answer,su)}"
                                             update="#{cc.attrs.updateTargetsOnBlur}"/>
                                 </p:chip>
                             </span>
                         </ui:repeat>
                     </h:panelGroup>
-                    <h:panelGroup rendered="#{empty cc.attrs.panelModel.getNormalizedSpatialUnits(cc.attrs.answer)}">
+                    <h:panelGroup rendered="#{empty cc.attrs.formCtx.getNormalizedSpatialUnits(cc.attrs.answer)}">
                         <em>Aucune USp sélectionnée.</em>
                     </h:panelGroup>
                 </p:panel>
                 <!-- Séléction des USp dans un treenode -->
-                <p:treeTable value="#{cc.attrs.panelModel.getRoot(cc.attrs.answer)}"
+                <p:treeTable value="#{cc.attrs.formCtx.getRoot(cc.attrs.answer)}"
                              widgetVar="spatialUnitTreeTable"
                              rows="5"
                              propagateSelectionUp="false"
@@ -74,8 +74,8 @@
 
                         <p:outputLabel value="#{su.getName()}" style="margin-right:1em"/>
                         <p:commandButton value="Ajouter"
-                                         rendered="#{!cc.attrs.panelModel.treeStates.get(cc.attrs.answer).selection.contains(su)}"
-                                         actionListener="#{cc.attrs.panelModel.addSUToSelection(cc.attrs.answer,su)}"
+                                         rendered="#{!cc.attrs.formCtx.treeStates.get(cc.attrs.answer).selection.contains(su)}"
+                                         actionListener="#{cc.attrs.formCtx.addSUToSelection(cc.attrs.answer,su)}"
                                          update="#{cc.attrs.updateTargetsOnBlur} selectedSpatialUnitPanel"
                                          immediate="true"/>
 

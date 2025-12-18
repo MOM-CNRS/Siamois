@@ -36,6 +36,7 @@
 
             <ui:include src="/pages/shared/form/fieldCore.xhtml">
                 <ui:param name="bean" value="#{bean}"/>
+                <ui:param name="formCtx" value="#{bean.formContext}"/>
                 <ui:param name="col" value="#{col}"/>
                 <ui:param name="prefix" value="#{prefix}"/>
                 <ui:param name="statusIndex" value="#{statusIndex}"/>

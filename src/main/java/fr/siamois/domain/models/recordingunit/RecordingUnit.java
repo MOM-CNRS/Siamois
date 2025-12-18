@@ -311,7 +311,7 @@ public class RecordingUnit extends RecordingUnitParent implements ArkEntity, Ref
     // Fields
     @Transient
     @JsonIgnore
-    private static CustomFieldText recordingUnitIdField = new CustomFieldText.Builder()
+    private static CustomFieldText recordingUnitIdField =  CustomFieldText.builder()
             .label("recordingunit.field.identifier")
             .isSystemField(true)
             .valueBinding("fullIdentifier")

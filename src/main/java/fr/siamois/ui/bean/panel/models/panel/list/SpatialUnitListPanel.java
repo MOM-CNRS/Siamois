@@ -6,6 +6,8 @@ import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.models.vocabulary.label.ConceptLabel;
+import fr.siamois.domain.services.InstitutionService;
+import fr.siamois.domain.services.authorization.writeverifier.ActionUnitWriteVerifier;
 import fr.siamois.domain.services.authorization.writeverifier.RecordingUnitWriteVerifier;
 import fr.siamois.domain.services.authorization.writeverifier.SpatialUnitWriteVerifier;
 import fr.siamois.domain.services.form.FormService;
@@ -48,7 +50,7 @@ public class SpatialUnitListPanel extends AbstractListPanel<SpatialUnit>  implem
     private final transient GenericNewUnitDialogBean genericNewUnitDialogBean;
     private final transient SpatialUnitWriteVerifier spatialUnitWriteVerifier;
     private final transient NavBean navBean;
-
+    private final transient InstitutionService institutionService;
 
     // locals
     private String spatialUnitListErrorMessage;
@@ -58,7 +60,7 @@ public class SpatialUnitListPanel extends AbstractListPanel<SpatialUnit>  implem
                                 SpatialUnitTreeService spatialUnitTreeService,
                                 SpatialUnitService spatialUnitService,
                                 FlowBean flowBean, GenericNewUnitDialogBean genericNewUnitDialogBean,
-                                SpatialUnitWriteVerifier spatialUnitWriteVerifier, NavBean navBean) {
+                                SpatialUnitWriteVerifier spatialUnitWriteVerifier, NavBean navBean, ActionUnitWriteVerifier actionUnitWriteVerifier, InstitutionService institutionService) {
         super("panel.title.allspatialunit",
                 "bi bi-geo-alt",
                 "siamois-panel spatial-unit-panel list-panel",
@@ -70,6 +72,7 @@ public class SpatialUnitListPanel extends AbstractListPanel<SpatialUnit>  implem
         this.genericNewUnitDialogBean = genericNewUnitDialogBean;
         this.spatialUnitWriteVerifier = spatialUnitWriteVerifier;
         this.navBean = navBean;
+        this.institutionService = institutionService;
     }
 
     @Override
@@ -111,7 +114,8 @@ public class SpatialUnitListPanel extends AbstractListPanel<SpatialUnit>  implem
                 flowBean,
                 genericNewUnitDialogBean,
                 spatialUnitWriteVerifier,
-                lazyTree
+                lazyTree,
+                institutionService
         );
 
         return lazy; // l'abstraite en a besoin, mais ce panel ne s'en sert plus ensuite
@@ -237,7 +241,7 @@ public class SpatialUnitListPanel extends AbstractListPanel<SpatialUnit>  implem
 
         tableModel.getTableDefinition().addColumn(
                 RelationColumn.builder()
-                        .id("childre,")
+                        .id("children")
                         .headerKey("table.spatialunit.column.children")
                         .headerIcon("bi bi-pencil-square")
                         .visible(true)
@@ -253,6 +257,32 @@ public class SpatialUnitListPanel extends AbstractListPanel<SpatialUnit>  implem
                         .addIcon("bi bi-plus-square")
                         .addAction(TableColumnAction.ADD_RELATION)
                         .addRenderedKey("spatialUnitCreateAllowed")
+
+                        .processExpr("@this")
+                        .updateExpr("flow")
+                        .onstartJs("PF('buiContent').show()")
+                        .oncompleteJs("PF('buiContent').hide();handleScrollToTop();")
+                        .build()
+        );
+
+        tableModel.getTableDefinition().addColumn(
+                RelationColumn.builder()
+                        .id("action")
+                        .headerKey("table.spatialunit.column.actions")
+                        .headerIcon("bi bi-arrow-down-square")
+                        .visible(true)
+                        .toggleable(true)
+
+                        .countKey("actions")
+
+                        .viewIcon("bi bi-eye")
+                        .viewAction(TableColumnAction.VIEW_RELATION)
+                        .viewTargetIndex(0)
+
+                        .addEnabled(true)
+                        .addIcon("bi bi-plus-square")
+                        .addAction(TableColumnAction.ADD_RELATION)
+                        .addRenderedKey("actionUnitCreateAllowed")
 
                         .processExpr("@this")
                         .updateExpr("flow")

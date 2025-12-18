@@ -114,7 +114,7 @@ public class SpecimenPanel extends AbstractSingleEntityPanel<Specimen>  implemen
     // --------------- Fields
 
     // Fields
-    private CustomFieldText specimenIdField = new CustomFieldText.Builder()
+    private CustomFieldText specimenIdField = CustomFieldText.builder()
             .label("recordingunit.field.identifier")
             .isSystemField(true)
             .valueBinding("fullIdentifier")

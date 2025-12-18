@@ -7,6 +7,7 @@
 
     <!-- Expected @elvariable parameters -->
     <!--@elvariable id="bean" type="fr.siamois.ui.form.EntityFormContext"-->
+    <!--@elvariable id="formCtx" type="fr.siamois.ui.form.EntityFormContext"-->
     <!--@elvariable id="col" type="fr.siamois.ui.table.TableColumn"-->
     <!--@elvariable id="prefix" type="java.lang.String"-->
     <!--@elvariable id="statusIndex" type="java.lang.Integer"-->
@@ -141,7 +142,7 @@
             hasBeenModified="#{hasBeenModified}"
             field="#{col.field}"
             mode="#{col.readOnly ? 'output' : flowBean.getInPlaceFieldMode()}"
-            panelModel="#{bean}"
+            formCtx="#{formCtx}"
             updateTargetsOnBlur="#{updateTargetsOnBlur}"
             answer="#{answer}"/>
 

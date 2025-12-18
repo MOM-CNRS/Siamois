@@ -147,7 +147,7 @@ public class SpatialUnit extends SpatialUnitGeneric implements ArkEntity {
 
     @Transient
     @JsonIgnore
-    public static final CustomFieldText NAME_FIELD = new CustomFieldText.Builder()
+    public static final CustomFieldText NAME_FIELD =  CustomFieldText.builder()
             .label("common.label.name")
             .isSystemField(true)
             .valueBinding("name")
