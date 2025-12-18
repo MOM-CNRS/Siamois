@@ -15,7 +15,7 @@ import fr.siamois.domain.services.spatialunit.SpatialUnitTreeService;
 import fr.siamois.ui.bean.NavBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
 import fr.siamois.ui.bean.dialog.newunit.GenericNewUnitDialogBean;
-import fr.siamois.ui.bean.dialog.newunit.NewUnitCreationContext;
+import fr.siamois.ui.bean.dialog.newunit.NewUnitContext;
 import fr.siamois.ui.bean.dialog.newunit.NewUnitInsertMode;
 import fr.siamois.ui.bean.dialog.newunit.UnitKind;
 import fr.siamois.ui.bean.panel.FlowBean;
@@ -192,41 +192,29 @@ public class SpatialUnitTableViewModel extends EntityTableViewModel<SpatialUnit,
             case ADD_RELATION -> {
                 // Dispatch based on column.countKey (or add a dedicated "relationKey")
                 switch (col.getCountKey()) {
-                    case "parents" ->
-                            trySelectKind(
-                                    UnitKind.SPATIAL,
-                                    su.getParents(),
-                                    null,
-                                    su,
-                                    NewUnitCreationContext.<Long>builder()
-                                            .insertMode(NewUnitInsertMode.TREE_PARENT_AT_ROOT)
-                                            .clickedId(su.getId())
-                                            .build()
-                            );
+                    case "parents" -> {
+                        NewUnitContext ctx = NewUnitContext.builder()
+                                .kindToCreate(UnitKind.SPATIAL)
+                                .trigger(NewUnitContext.Trigger.cell(su.getId(), "parents"))
+                                .insertPolicy(NewUnitContext.UiInsertPolicy.builder()
+                                        .treeInsert(NewUnitContext.TreeInsert.PARENT_AT_ROOT)
+                                        .build())
+                                .build();
 
-                    case "children" ->
-                            trySelectKind(
-                                    UnitKind.SPATIAL,
-                                    su.getChildren(),
-                                    su,
-                                    null,
-                                    NewUnitCreationContext.<Long>builder()
-                                            .insertMode(NewUnitInsertMode.TREE_CHILD_FIRST)
-                                            .clickedId(su.getId())
-                                            .build()
-                            );
+                        openCreateDialog(ctx, genericNewUnitDialogBean);
+                    }
 
+                    case "children" -> {
+                        NewUnitContext ctx = NewUnitContext.builder()
+                                .kindToCreate(UnitKind.SPATIAL)
+                                .trigger(NewUnitContext.Trigger.cell(su.getId(), "children"))
+                                .insertPolicy(NewUnitContext.UiInsertPolicy.builder()
+                                        .treeInsert(NewUnitContext.TreeInsert.CHILD_FIRST)
+                                        .build())
+                                .build();
 
-                    case "action" ->
-                            trySelectKind(
-                                    UnitKind.ACTION,
-                                    su.getRelatedActionUnitList(),
-                                    su,
-                                    NewUnitCreationContext.<Long>builder()
-                                            .insertMode(NewUnitInsertMode.NONE)
-                                            .clickedId(su.getId())
-                                            .build()
-                            );
+                        openCreateDialog(ctx, genericNewUnitDialogBean);
+                    }
 
                 }
             }

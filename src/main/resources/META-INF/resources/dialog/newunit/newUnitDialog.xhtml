@@ -20,7 +20,7 @@
                     <p:outputPanel style="display: flex;gap: 0.5em; align-items: center;
                             float:left;color: var(--main-color);">
                         <i class="#{genericNewUnitDialogBean.handler.getIcon()}"/>
-                        <span style="padding-right:0.5em;">#{genericNewUnitDialogBean.handler.getTitle()}</span>
+                        <span style="padding-right:0.5em;">#{genericNewUnitDialogBean.handler.getTitle(genericNewUnitDialogBean.newUnitContext)}</span>
                     </p:outputPanel>
             </f:facet>
             <p:outputPanel id="newUnitFormContent">

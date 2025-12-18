@@ -84,7 +84,7 @@ public abstract class BaseTreeTableLazyModel<T, ID> implements Serializable {
 
     /** Insert new node as FIRST child of clicked/parent node */
     public void insertChildFirst(ID parentId, T created) {
-        TreeNode<T> parent = findNodeById(parentId);
+        TreeNode<T> parent = (parentId == null) ? getRoot() : findNodeById(parentId);
 
         if (parent == null) {
             // fallback: add under root

@@ -69,8 +69,8 @@ public class GenericNewUnitDialogBean<T extends TraceableEntity>
     private transient INewUnitHandler<T> handler;
 
     // creation  callback + contexte ====
-    private transient EntityTableViewModel<?, ?> tableModel;
-    private transient NewUnitCreationContext<?> creationContext;
+    private transient fr.siamois.ui.table.EntityTableViewModel<?, ?> sourceTableModel;
+    private transient NewUnitContext newUnitContext;
 
 
 
@@ -121,27 +121,25 @@ public class GenericNewUnitDialogBean<T extends TraceableEntity>
         init();
     }
 
+    // Unique selectKind
     @SuppressWarnings("unchecked")
-    public void selectKind(UnitKind kind, Set<T> context, T parent, T child) throws CannotInitializeNewUnitDialogException {
-        this.kind = kind;
-        this.handler = (INewUnitHandler<T>) handlers.get(kind);
-        this.lazyDataModel = null;
-        this.setToUpdate = context;
-        this.parent = null;
-        this.multiHierarchyChild = child;
-        this.multiHierarchyParent = parent;
-        init();
-    }
-
-    public void selectKind(UnitKind kind,
-                           EntityTableViewModel<?, ?> tableModel,
-                           NewUnitCreationContext<?> ctx)
+    public void selectKind(NewUnitContext ctx,
+                           fr.siamois.ui.table.EntityTableViewModel<?, ?> sourceTableModel)
             throws CannotInitializeNewUnitDialogException {
 
-        this.kind = kind;
-        this.handler = (INewUnitHandler<T>) handlers.get(kind);
-        this.tableModel = tableModel;
-        this.creationContext = ctx;
+        this.kind = ctx.getKindToCreate();
+        this.handler = (INewUnitHandler<T>) handlers.get(this.kind);
+
+        this.sourceTableModel = sourceTableModel;
+        this.newUnitContext = ctx;
+
+        // reset context legacy
+        this.lazyDataModel = null;
+        this.setToUpdate = null;
+        this.parent = null;
+        this.multiHierarchyChild = null;
+        this.multiHierarchyParent = null;
+
         init();
     }
 
@@ -267,9 +265,9 @@ public class GenericNewUnitDialogBean<T extends TraceableEntity>
         unit.setValidated(false);
         unit = handler.save(sessionSettingsBean.getUserInfo(), unit);
 
-        if (tableModel != null) {
-            tableModel.onAnyEntityCreated(unit, creationContext);
-
+        // Post-create: laisse la table décider quoi faire (liste/tree) selon ctx
+        if (sourceTableModel != null && newUnitContext != null) {
+            sourceTableModel.onAnyEntityCreated(unit, newUnitContext);
         }
     }
 

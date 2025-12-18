@@ -11,7 +11,7 @@ import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitTreeService;
 import fr.siamois.ui.bean.NavBean;
 import fr.siamois.ui.bean.dialog.newunit.GenericNewUnitDialogBean;
-import fr.siamois.ui.bean.dialog.newunit.NewUnitCreationContext;
+import fr.siamois.ui.bean.dialog.newunit.NewUnitContext;
 import fr.siamois.ui.bean.dialog.newunit.UnitKind;
 import fr.siamois.ui.exceptions.CannotInitializeNewUnitDialogException;
 import fr.siamois.ui.form.EntityFormContext;
@@ -244,146 +244,67 @@ public abstract class EntityTableViewModel<T extends TraceableEntity, ID> {
         return false;
     }
 
-    // ==========================
-//  Central method (private)
-// ==========================
-    private <X extends TraceableEntity> void doTrySelectKind(
-            UnitKind kind,
-            BaseLazyDataModel<X> lazyContext,
-            Set<X> setContext,
-            TraceableEntity parent,
-            X multiHierarchyParent,
-            X multiHierarchyChild,
-            NewUnitCreationContext<?> creationContext
-    ) {
+    public void openCreateDialog(NewUnitContext ctx,
+                                 fr.siamois.ui.bean.dialog.newunit.GenericNewUnitDialogBean<?> dialogBean) {
         try {
-            // 1) init dialog kind + bind the "source table model" + insertion context
-            genericNewUnitDialogBean.selectKind(
-                    kind,
-                    this,              // 👈 source table model / owner of insertion logic
-                    creationContext
-            );
-
-            // 2) provide "what to update" context
-            genericNewUnitDialogBean.setLazyDataModel(lazyContext);
-            genericNewUnitDialogBean.setSetToUpdate(setContext);
-
-            // 3) creation context (your existing logic)
-            genericNewUnitDialogBean.setParent(parent);
-            genericNewUnitDialogBean.setMultiHierarchyParent(multiHierarchyParent);
-            genericNewUnitDialogBean.setMultiHierarchyChild(multiHierarchyChild);
-
-            // 4) open dialog
-            PrimeFaces.current().ajax().update("newUnitForm");
-            PrimeFaces.current().executeScript("PF('newUnitDiag').show()");
-
-        } catch (CannotInitializeNewUnitDialogException e) {
-            // keep same behavior as before (silent fail)
+            dialogBean.selectKind(ctx, this);
+            org.primefaces.PrimeFaces.current().ajax().update("newUnitForm");
+            org.primefaces.PrimeFaces.current().executeScript("PF('newUnitDiag').show()");
+        } catch (fr.siamois.ui.exceptions.CannotInitializeNewUnitDialogException e) {
+            // silent fail, same behavior as before
         }
     }
-// =======================================
-//  Existing overloads (keep them working)
-// =======================================
-
-    /**
-     * Old: selectKind(kind)
-     */
-    protected void trySelectKind(UnitKind kind) {
-        doTrySelectKind(kind, null, null, null, null, null, null);
-    }
-
-    /**
-     * Old: selectKind(kind, BaseLazyDataModel context)
-     */
-    protected <X extends TraceableEntity> void trySelectKind(UnitKind kind, BaseLazyDataModel<X> lazyContext) {
-        doTrySelectKind(kind, lazyContext, null, null, null, null, null);
-    }
-
-    /**
-     * Old: selectKind(kind, Set context, TraceableEntity parent)
-     */
-    protected <X extends TraceableEntity> void trySelectKind(UnitKind kind, Set<X> setContext, TraceableEntity parent) {
-        doTrySelectKind(kind, null, setContext, parent, null, null, null);
-    }
-
-    /**
-     * Old: selectKind(kind, Set context, parent, child) (multi hierarchy)
-     */
-    protected <X extends TraceableEntity> void trySelectKind(UnitKind kind, Set<X> setContext, X parent, X child) {
-        doTrySelectKind(kind, null, setContext, null, parent, child, null);
-    }
-
-// =======================================
-//  New overloads WITH NewUnitCreationContext
-// =======================================
-
-    /**
-     * New: same as trySelectKind(kind) but with insertion context
-     */
-    protected void trySelectKind(UnitKind kind, NewUnitCreationContext<?> ctx) {
-        doTrySelectKind(kind, null, null, null, null, null, ctx);
-    }
-
-    /**
-     * New: same as trySelectKind(kind, lazyContext) but with insertion context
-     */
-    protected <X extends TraceableEntity> void trySelectKind(
-            UnitKind kind,
-            BaseLazyDataModel<X> lazyContext,
-            NewUnitCreationContext<?> ctx
-    ) {
-        doTrySelectKind(kind, lazyContext, null, null, null, null, ctx);
-    }
-
-    /**
-     * New: same as trySelectKind(kind, setContext, parentEntity) but with insertion context
-     */
-    protected <X extends TraceableEntity> void trySelectKind(
-            UnitKind kind,
-            Set<X> setContext,
-            TraceableEntity parent,
-            NewUnitCreationContext<?> ctx
-    ) {
-        doTrySelectKind(kind, null, setContext, parent, null, null, ctx);
-    }
-
-    /**
-     * New: same as trySelectKind(kind, setContext, mhParent, mhChild) but with insertion context
-     */
-    protected <X extends TraceableEntity> void trySelectKind(
-            UnitKind kind,
-            Set<X> setContext,
-            X multiHierarchyParent,
-            X multiHierarchyChild,
-            NewUnitCreationContext<?> ctx
-    ) {
-        doTrySelectKind(kind, null, setContext, null, multiHierarchyParent, multiHierarchyChild, ctx);
-    }
 
 
-    public void onAnyEntityCreated(TraceableEntity created, NewUnitCreationContext<?> ctx) {
+    public void onAnyEntityCreated(fr.siamois.domain.models.TraceableEntity created, NewUnitContext ctx) {
         if (created == null) return;
 
+        // ⚠️ cast “best effort” sans entityClass
+        final T casted;
         try {
             @SuppressWarnings("unchecked")
-            T casted = (T) created;
-            ID id = (ID) ctx.getClickedId();
-
-            if (lazyDataModel != null) {
-                lazyDataModel.addRowToModel(casted);
-            }
-            if (treeLazyModel != null && ctx != null) {
-                switch (ctx.getInsertMode()) {
-                    case TREE_CHILD_FIRST ->
-                            treeLazyModel.insertChildFirst(id, casted);
-                    case TREE_PARENT_AT_ROOT ->
-                            treeLazyModel.insertParentAtRoot(id, casted);
-                    default -> {}
-                }
-            }
+            T tmp = (T) created;
+            casted = tmp;
         } catch (ClassCastException e) {
-            // pas le bon type -> ignore
+            return; // pas gérable par cette table -> no-op
+        }
+
+        // 1) List view: insert at top
+        if (lazyDataModel != null) {
+            lazyDataModel.addRowToModel(casted);
+        }
+
+        // 2) Tree view: manual insertion (si treeLazyModel présent)
+        if (treeLazyModel != null && ctx != null) {
+            applyTreeInsertion(casted, ctx);
         }
     }
+
+    protected void applyTreeInsertion(T created, NewUnitContext ctx) {
+        // si pas de clickedId => bouton global => root
+        ID clickedId = (ctx.getTrigger() != null) ? (ID) ctx.getTrigger().getClickedId() : null;
+
+        switch (ctx.getInsertPolicy().getTreeInsert()) {
+            case ROOT -> {
+                // insertion root = ajouter un node direct sous root
+                treeLazyModel.insertChildFirst(null, created); // ou méthode dédiée (voir note ci-dessous)
+            }
+            case CHILD_FIRST -> {
+                if (clickedId != null) {
+                    treeLazyModel.insertChildFirst(clickedId, created);
+                } else {
+                    treeLazyModel.insertChildFirst(null, created);
+                }
+            }
+            case PARENT_AT_ROOT -> {
+                if (clickedId != null) {
+                    treeLazyModel.insertParentAtRoot(clickedId, created);
+                } else {
+                    treeLazyModel.insertChildFirst(null, created);
+                }
+            }
+        }
+    }
+
 
 }

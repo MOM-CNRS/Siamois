@@ -218,28 +218,7 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
             case ADD_RELATION -> {
                 // Dispatch based on column.countKey (or add a dedicated "relationKey")
                 switch (col.getCountKey()) {
-                    case "parents" ->
-                            trySelectKind(
-                                    UnitKind.RECORDING,
-                                    ru.getParents(),
-                                    null,
-                                    ru
-                            );
 
-                    case "children" ->
-                            trySelectKind(
-                                    UnitKind.RECORDING,
-                                    ru.getChildren(),
-                                    ru,
-                                    (RecordingUnit) null
-                            );
-
-                    case "specimen" ->
-                            trySelectKind(
-                                    UnitKind.SPECIMEN,
-                                    ru.getSpecimenList(),
-                                    ru
-                            );
                 }
             }
 
