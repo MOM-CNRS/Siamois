@@ -1,16 +1,9 @@
 package fr.siamois.ui.table;
 
-import fr.siamois.domain.models.form.customfield.CustomField;
-import fr.siamois.domain.models.form.customfield.CustomFieldDateTime;
-import fr.siamois.domain.models.form.customfield.CustomFieldInteger;
+import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.form.customform.CustomForm;
-import fr.siamois.domain.models.institution.Institution;
-import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
-import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.InstitutionService;
-import fr.siamois.domain.services.authorization.writeverifier.ActionUnitWriteVerifier;
-import fr.siamois.domain.services.authorization.writeverifier.RecordingUnitWriteVerifier;
 import fr.siamois.domain.services.authorization.writeverifier.SpatialUnitWriteVerifier;
 import fr.siamois.domain.services.form.FormService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
@@ -19,79 +12,72 @@ import fr.siamois.ui.bean.NavBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
 import fr.siamois.ui.bean.dialog.newunit.GenericNewUnitDialogBean;
 import fr.siamois.ui.bean.dialog.newunit.NewUnitContext;
-import fr.siamois.ui.bean.dialog.newunit.NewUnitInsertMode;
 import fr.siamois.ui.bean.dialog.newunit.UnitKind;
 import fr.siamois.ui.bean.panel.FlowBean;
-import fr.siamois.ui.lazydatamodel.BaseRecordingUnitLazyDataModel;
+import fr.siamois.ui.lazydatamodel.BaseActionUnitLazyDataModel;
 import fr.siamois.ui.lazydatamodel.BaseSpatialUnitLazyDataModel;
-import fr.siamois.ui.lazydatamodel.tree.RecordingUnitTreeTableLazyModel;
+import fr.siamois.ui.lazydatamodel.tree.ActionUnitTreeTableLazyModel;
 import fr.siamois.ui.lazydatamodel.tree.SpatialUnitTreeTableLazyModel;
 import lombok.Getter;
 import org.primefaces.model.TreeNode;
 
-import java.time.LocalDateTime;
-import java.time.Month;
 import java.util.List;
 
 /**
- * View model spécifique pour les tableaux de SpatialUnit.
+ * View model spécifique pour les tableaux de ActionUnit.
  *
- * - spécialise EntityTableViewModel pour T = SpatialUnit, ID = Long
+ * - spécialise EntityTableViewModel pour T = ActionUnit, ID = Long
  * - implémente :
  *      - resolveRowFormFor
  *      - configureRowSystemFields
  */
 @Getter
-public class SpatialUnitTableViewModel extends EntityTableViewModel<SpatialUnit, Long> {
+public class ActionUnitTableViewModel extends EntityTableViewModel<ActionUnit, Long> {
 
     /** Lazy model spécifique RecordingUnit (accès à selectedUnits, etc.) */
-    private final BaseSpatialUnitLazyDataModel spatialUnitLazyDataModel;
+    private final BaseActionUnitLazyDataModel actionUnitLazyDataModel;
     private final FlowBean flowBean;
 
-    private final SpatialUnitWriteVerifier spatialUnitWriteVerifier;
     private final InstitutionService institutionService;
 
     private final SessionSettingsBean sessionSettingsBean;
 
 
-    public SpatialUnitTableViewModel(BaseSpatialUnitLazyDataModel lazyDataModel,
-                                     FormService formService,
-                                     SessionSettingsBean sessionSettingsBean,
-                                     SpatialUnitTreeService spatialUnitTreeService,
-                                     SpatialUnitService spatialUnitService,
-                                     NavBean navBean,
-                                     FlowBean flowBean, GenericNewUnitDialogBean<SpatialUnit> genericNewUnitDialogBean,
-                                     SpatialUnitWriteVerifier writeVerifier,
-                                     SpatialUnitTreeTableLazyModel treeLazyModel,
-                                     InstitutionService institutionService) {
+    public ActionUnitTableViewModel(BaseActionUnitLazyDataModel actionUnitLazyDataModel,
+                                    FormService formService,
+                                    SessionSettingsBean sessionSettingsBean,
+                                    SpatialUnitTreeService spatialUnitTreeService,
+                                    SpatialUnitService spatialUnitService,
+                                    NavBean navBean,
+                                    FlowBean flowBean, GenericNewUnitDialogBean<ActionUnit> genericNewUnitDialogBean,
+                                    ActionUnitTreeTableLazyModel treeLazyModel,
+                                    InstitutionService institutionService) {
 
         super(
-                lazyDataModel,
+                actionUnitLazyDataModel,
                 treeLazyModel,
                 genericNewUnitDialogBean,
                 formService,
                 spatialUnitTreeService,
                 spatialUnitService,
                 navBean,
-                SpatialUnit::getId,   // idExtractor
+                ActionUnit::getId,   // idExtractor
                 "type"                  // formScopeValueBinding
         );
-        this.spatialUnitLazyDataModel = lazyDataModel;
+        this.actionUnitLazyDataModel = actionUnitLazyDataModel;
         this.sessionSettingsBean = sessionSettingsBean;
         this.flowBean = flowBean;
-
-        this.spatialUnitWriteVerifier = writeVerifier;
         this.institutionService = institutionService;
     }
 
     @Override
-    protected CustomForm resolveRowFormFor(SpatialUnit su) {
+    protected CustomForm resolveRowFormFor(ActionUnit au) {
         return null;
         // todo
     }
 
     @Override
-    protected void configureRowSystemFields(SpatialUnit su, CustomForm rowForm) {
+    protected void configureRowSystemFields(ActionUnit au, CustomForm rowForm) {
         if (rowForm == null || rowForm.getLayout() == null) {
             return;
         }
@@ -100,14 +86,14 @@ public class SpatialUnitTableViewModel extends EntityTableViewModel<SpatialUnit,
 
     @Override
     protected void handleCommandLink(CommandLinkColumn column,
-                                     SpatialUnit su,
+                                     ActionUnit au,
                                      Integer panelIndex) {
 
         switch (column.getAction()) {
 
-            case GO_TO_SPATIAL_UNIT ->
-                    flowBean.goToSpatialUnitByIdNewPanel(
-                            su.getId(),
+            case GO_TO_ACTION_UNIT ->
+                    flowBean.goToActionUnitByIdNewPanel(
+                            au.getId(),
                             panelIndex
                     );
 
@@ -119,14 +105,14 @@ public class SpatialUnitTableViewModel extends EntityTableViewModel<SpatialUnit,
 
     // resolving cell text based on value key
     @Override
-    public String resolveText(TableColumn column, SpatialUnit su) {
+    public String resolveText(TableColumn column, ActionUnit au) {
 
         if (column instanceof CommandLinkColumn linkColumn) {
 
             switch (linkColumn.getValueKey()) {
 
-                case "name":
-                    return su.getName();
+                case "identifier":
+                    return au.getIdentifier();
 
                 default:
                     throw new IllegalStateException(
@@ -139,13 +125,12 @@ public class SpatialUnitTableViewModel extends EntityTableViewModel<SpatialUnit,
     }
 
     @Override
-    public Integer resolveCount(TableColumn column, SpatialUnit su) {
+    public Integer resolveCount(TableColumn column, ActionUnit au) {
         if (column instanceof RelationColumn rel) {
             return switch (rel.getCountKey()) {
-                case "parents" -> su.getParents() == null ? 0 : su.getParents().size();
-                case "children" -> su.getChildren() == null ? 0 : su.getChildren().size();
-                case "action" -> su.getRelatedActionUnitList() == null ? 0 : su.getRelatedActionUnitList().size();
-                case "recordingUnit" -> su.getRecordingUnitList() == null ? 0 : su.getRecordingUnitList().size();
+                case "parents" -> au.getParents() == null ? 0 : au.getParents().size();
+                case "children" -> au.getChildren() == null ? 0 : au.getChildren().size();
+                case "recordingUnit" -> au.getRecordingUnitList() == null ? 0 : au.getRecordingUnitList().size();
                 default -> 0;
             };
         }
@@ -153,10 +138,9 @@ public class SpatialUnitTableViewModel extends EntityTableViewModel<SpatialUnit,
     }
 
     @Override
-    public boolean isRendered(TableColumn column, String key, SpatialUnit su, Integer panelIndex) {
+    public boolean isRendered(TableColumn column, String key, ActionUnit au, Integer panelIndex) {
         return switch (key) {
             case "writeMode" -> flowBean.getIsWriteMode();
-            case "spatialUnitCreateAllowed" -> spatialUnitWriteVerifier.hasSpecificWritePermission(flowBean.getSessionSettings().getUserInfo(), su);
             case "actionUnitCreateAllowed" -> institutionService.personIsInstitutionManagerOrActionManager(
                     flowBean.getSessionSettings().getUserInfo().getUser(),
                     flowBean.getSessionSettings().getSelectedInstitution());
@@ -191,19 +175,19 @@ public class SpatialUnitTableViewModel extends EntityTableViewModel<SpatialUnit,
 
 
     @Override
-    public void handleRelationAction(RelationColumn col, SpatialUnit su, Integer panelIndex, TableColumnAction action) {
+    public void handleRelationAction(RelationColumn col, ActionUnit au, Integer panelIndex, TableColumnAction action) {
         switch (action) {
 
             case VIEW_RELATION ->
-                    flowBean.goToRecordingUnitByIdNewPanel(su.getId(), panelIndex, col.getViewTargetIndex());
+                    flowBean.goToRecordingUnitByIdNewPanel(au.getId(), panelIndex, col.getViewTargetIndex());
 
             case ADD_RELATION -> {
                 // Dispatch based on column.countKey (or add a dedicated "relationKey")
                 switch (col.getCountKey()) {
                     case "parents" -> {
                         NewUnitContext ctx = NewUnitContext.builder()
-                                .kindToCreate(UnitKind.SPATIAL)
-                                .trigger(NewUnitContext.Trigger.cell(UnitKind.SPATIAL, su.getId(), "parents"))
+                                .kindToCreate(UnitKind.ACTION)
+                                .trigger(NewUnitContext.Trigger.cell(UnitKind.ACTION, au.getId(), "parents"))
                                 .insertPolicy(NewUnitContext.UiInsertPolicy.builder()
                                         .listInsert(NewUnitContext.ListInsert.TOP)
                                         .treeInsert(NewUnitContext.TreeInsert.PARENT_AT_ROOT)
@@ -215,22 +199,12 @@ public class SpatialUnitTableViewModel extends EntityTableViewModel<SpatialUnit,
 
                     case "children" -> {
                         NewUnitContext ctx = NewUnitContext.builder()
-                                .kindToCreate(UnitKind.SPATIAL)
-                                .trigger(NewUnitContext.Trigger.cell(UnitKind.SPATIAL, su.getId(), "children"))
+                                .kindToCreate(UnitKind.ACTION)
+                                .trigger(NewUnitContext.Trigger.cell(UnitKind.ACTION, au.getId(), "children"))
                                 .insertPolicy(NewUnitContext.UiInsertPolicy.builder()
                                         .listInsert(NewUnitContext.ListInsert.TOP)
                                         .treeInsert(NewUnitContext.TreeInsert.CHILD_FIRST)
                                         .build())
-                                .build();
-
-                        openCreateDialog(ctx, genericNewUnitDialogBean);
-                    }
-
-                    case "actions" -> {
-                        NewUnitContext ctx = NewUnitContext.builder()
-                                .kindToCreate(UnitKind.ACTION)
-                                .trigger(NewUnitContext.Trigger.cell(UnitKind.SPATIAL, su.getId(), "related_actions"))
-                                .insertPolicy(null)
                                 .build();
 
                         openCreateDialog(ctx, genericNewUnitDialogBean);
@@ -243,7 +217,7 @@ public class SpatialUnitTableViewModel extends EntityTableViewModel<SpatialUnit,
         }
     }
 
-    public boolean isRendered(RowAction action, SpatialUnit su) {
+    public boolean isRendered(RowAction action, ActionUnit au) {
         return switch (action.getAction()) {
             case DUPLICATE_ROW -> false;
             case TOGGLE_BOOKMARK -> false;
@@ -252,12 +226,12 @@ public class SpatialUnitTableViewModel extends EntityTableViewModel<SpatialUnit,
     }
 
 
-    public String resolveIcon(RowAction action, SpatialUnit su) {
+    public String resolveIcon(RowAction action, ActionUnit au) {
         return switch (action.getAction()) {
             default -> "";
         };
     }
-    public void handleRowAction(RowAction action, SpatialUnit su) {
+    public void handleRowAction(RowAction action, ActionUnit au) {
         switch (action.getAction()) {
             default -> throw new IllegalStateException("Unhandled action: " + action.getAction());
         }
@@ -269,7 +243,7 @@ public class SpatialUnitTableViewModel extends EntityTableViewModel<SpatialUnit,
     }
 
     @Override
-    public TreeNode<SpatialUnit> getTreeRoot() {
+    public TreeNode<ActionUnit> getTreeRoot() {
         return treeLazyModel.getRoot();
     }
 

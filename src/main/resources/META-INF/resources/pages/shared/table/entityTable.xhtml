@@ -15,10 +15,6 @@
         <cc:attribute name="displayColumnToggler" required="false" default="false" type="java.lang.Boolean"/>
         <cc:attribute name="tableClass" required="false" default="siamois-unit-table" type="java.lang.String"/>
 
-        <!-- Facettes de colonnes -->
-
-        <cc:facet name="afterColumns"/>
-
         <!-- Facette toolbar droite, si besoin -->
         <cc:facet name="rightToolbar"/>
     </cc:interface>
@@ -94,12 +90,7 @@
                                                 style="margin-left: 1em;" id="toggler" type="button"
                                                 value="#{langBean.msg('table.columnvisibility')}"
                                                 icon="pi pi-align-justify"/>
-                                        <p:columnToggler
-                                                rendered="#{cc.attrs.displayColumnToggler}"
-                                                datasource=":#{cc.clientId}:entityDatatable"
-                                                trigger=":#{cc.clientId}:entityDatatable:toggler">
-                                            <p:ajax event="toggle" listener="#{cc.attrs.tableModel.onToggle}"/>
-                                        </p:columnToggler>
+
                                     </div>
                                     <p:outputPanel id="bulkEditPanel"
                                                    rendered="#{cc.attrs.tableModel.lazyDataModel.selectedUnits.size() >0 and flowBean.isWriteMode}"
@@ -352,12 +343,7 @@
                                                 style="margin-left: 1em;" id="toggler" type="button"
                                                 value="#{langBean.msg('table.columnvisibility')}"
                                                 icon="pi pi-align-justify"/>
-                                        <p:columnToggler
-                                                rendered="#{cc.attrs.displayColumnToggler}"
-                                                datasource=":#{cc.clientId}:entityTreeTable"
-                                                trigger=":#{cc.clientId}:entityTreeTable:toggler">
-                                            <p:ajax event="toggle" listener="#{cc.attrs.tableModel.onToggle}"/>
-                                        </p:columnToggler>
+
                                     </div>
 
 
@@ -369,7 +355,13 @@
 
                         </p:toolbarGroup>
                         <p:toolbarGroup align="right">
-                            <cc:renderFacet name="rightToolbar"/>
+                            <p:commandButton value="#{langBean.msg('common.action.create')}" icon="bi bi-plus-square"
+                                             actionListener="#{genericNewUnitDialogBean.selectKind('SPATIAL', panelModel.lazyDataModel)}"
+                                             rendered="#{flowBean.isWriteMode and spatialUnitFieldBean.isCreateAllowed()}"
+                                             oncomplete="PF('newUnitDiag').show();"
+                                             update="newUnitForm"
+                                             style="margin-right: .5rem">
+                            </p:commandButton>
                         </p:toolbarGroup>
                     </p:toolbar>
                 </f:facet>

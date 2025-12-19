@@ -1,5 +1,6 @@
 package fr.siamois.ui.bean.panel.models.panel.single;
 
+import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.document.Document;
 import fr.siamois.domain.models.exceptions.recordingunit.FailedRecordingUnitSaveException;
@@ -7,19 +8,28 @@ import fr.siamois.domain.models.history.RevisionWithInfo;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.models.vocabulary.label.ConceptLabel;
+import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.form.CustomFieldService;
 import fr.siamois.domain.services.person.PersonService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.specimen.SpecimenService;
 import fr.siamois.domain.services.vocabulary.LabelService;
 import fr.siamois.ui.bean.LangBean;
+import fr.siamois.ui.bean.NavBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
+import fr.siamois.ui.bean.dialog.newunit.GenericNewUnitDialogBean;
+import fr.siamois.ui.bean.dialog.newunit.NewUnitContext;
+import fr.siamois.ui.bean.dialog.newunit.UnitKind;
+import fr.siamois.ui.bean.panel.FlowBean;
 import fr.siamois.ui.bean.panel.models.PanelBreadcrumb;
 import fr.siamois.ui.bean.panel.models.panel.single.tab.ActionTab;
 import fr.siamois.ui.bean.panel.models.panel.single.tab.RecordingTab;
 import fr.siamois.ui.bean.panel.models.panel.single.tab.SpecimenTab;
 import fr.siamois.ui.bean.panel.utils.SpatialUnitHelperService;
 import fr.siamois.ui.lazydatamodel.*;
+import fr.siamois.ui.lazydatamodel.tree.ActionUnitTreeTableLazyModel;
+import fr.siamois.ui.lazydatamodel.tree.SpatialUnitTreeTableLazyModel;
+import fr.siamois.ui.table.*;
 import fr.siamois.utils.MessageUtils;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -45,6 +55,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static fr.siamois.ui.lazydatamodel.ActionUnitScope.Type.LINKED_TO_SPATIAL_UNIT;
+
 /**
  * <p>This bean handles the spatial unit page</p>
  *
@@ -67,6 +79,11 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
     private final transient LabelService labelService;
     private final transient LangBean langBean;
     private final transient PersonService personService;
+    private final transient NavBean navBean;
+    private final transient FlowBean flowBean;
+    private final transient GenericNewUnitDialogBean<?> genericNewUnitDialogBean;
+    private final transient InstitutionService institutionService;
+
 
     private String spatialUnitErrorMessage;
     private transient List<SpatialUnit> spatialUnitList;
@@ -78,8 +95,8 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
     private SpatialUnitChildrenLazyDataModel lazyDataModelChildren ;
     // lazy model for parents
     private SpatialUnitParentsLazyDataModel lazyDataModelParents ;
-    // Lazy model for actions in the spatial unit
-    private ActionUnitInSpatialUnitLazyDataModel actionLazyDataModel;
+    // Lazy  for actions in the spatial unit
+    private ActionUnitTableViewModel actionTabTableModel;
     private Integer totalActionUnitCount;
     // Lazy model for recording unit in the spatial unit
     private RecordingUnitInSpatialUnitLazyDataModel recordingLazyDataModel;
@@ -93,7 +110,9 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
 
 
     @Autowired
-    private SpatialUnitPanel(ApplicationContext context) {
+    private SpatialUnitPanel(ApplicationContext context, FlowBean flowBean,
+                             GenericNewUnitDialogBean<?> genericNewUnitDialogBean,
+                             InstitutionService institutionService) {
 
         super("common.entity.spatialUnit", "bi bi-geo-alt", "siamois-panel spatial-unit-panel single-panel", context);
         this.recordingUnitService = context.getBean(RecordingUnitService.class);
@@ -104,6 +123,10 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
         this.langBean = context.getBean(LangBean.class);
         this.personService = context.getBean(PersonService.class);
         this.specimenService = context.getBean(SpecimenService.class);
+        this.navBean = context.getBean(NavBean.class);
+        this.flowBean = context.getBean(FlowBean.class);
+        this.genericNewUnitDialogBean = context.getBean(GenericNewUnitDialogBean.class);
+        this.institutionService = context.getBean(InstitutionService.class);
     }
 
 
@@ -185,7 +208,6 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
 
     public void refreshUnit() {
 
-        formContext.setHasUnsavedModifications(false);
         unit = null;
         spatialUnitHelperService.reinitialize(
                 unit -> this.unit = unit,
@@ -223,14 +245,9 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
             );
             totalParentsCount = spatialUnitService.countParentsByChild(unit);
 
-            // Action in spatial unit lazy model
-            actionLazyDataModel = new ActionUnitInSpatialUnitLazyDataModel(
-                    actionUnitService,
-                    sessionSettings,
-                    langBean,
-                    unit
-            );
-            totalActionUnitCount = actionUnitService.countBySpatialContext(unit);
+            // ---------  Action Tab
+            initActionTab();
+
 
             // recording in spatial unit lazy model
             recordingLazyDataModel = new RecordingUnitInSpatialUnitLazyDataModel(
@@ -286,9 +303,8 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
                 "common.entity.actionUnits",
                 "bi bi-arrow-down-square",
                 "actionTab",
-
-                actionLazyDataModel,
-                totalActionUnitCount);
+                totalActionUnitCount,
+                actionTabTableModel);
 
         tabs.add(actionTab);
 
@@ -409,6 +425,124 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
             spatialUnitPanel.init();
             return spatialUnitPanel;
         }
+    }
+
+    public void initActionTab() {
+        ActionUnitInSpatialUnitLazyDataModel actionLazyDataModel = new ActionUnitInSpatialUnitLazyDataModel(
+                actionUnitService,
+                sessionSettings,
+                langBean,
+                unit
+        );
+        totalActionUnitCount = actionUnitService.countBySpatialContext(unit);
+        ActionUnitTreeTableLazyModel actionLazyTree = new ActionUnitTreeTableLazyModel(
+                actionUnitService, ActionUnitScope.builder()
+                .spatialUnitId(unit.getId())
+                .type(LINKED_TO_SPATIAL_UNIT)
+                .build()
+        );
+
+        actionTabTableModel = new ActionUnitTableViewModel(
+                actionLazyDataModel,
+                formService,
+                sessionSettingsBean,
+                spatialUnitTreeService,
+                spatialUnitService,
+                navBean,
+                flowBean,
+                (GenericNewUnitDialogBean<ActionUnit>) genericNewUnitDialogBean,
+                actionLazyTree,
+                institutionService
+        );
+
+        actionTabTableModel.getTableDefinition().addColumn(
+                CommandLinkColumn.builder()
+                        .id("identifierCol")
+                        .headerKey("table.spatialunit.column.name")
+                        .visible(true)
+
+                        // PrimeFaces metadata equivalents
+                        .toggleable(false)
+                        .sortable(true)
+                        .sortField("name")
+
+                        // What to display inside <h:outputText>
+                        .valueKey("identifier")
+
+                        // What to do on click (Pattern A key)
+                        .action(TableColumnAction.GO_TO_ACTION_UNIT)
+
+                        // CommandLink behavior
+                        .processExpr("@this")
+                        .updateExpr("flow")
+                        .onstartJs("PF('buiContent').show()")
+                        .oncompleteJs("PF('buiContent').hide();handleScrollToTop();")
+                        .build()
+        );
+        actionTabTableModel.getTableDefinition().addColumn(
+                RelationColumn.builder()
+                        .id("parents")
+                        .headerKey("table.spatialunit.column.parents")
+                        .headerIcon("bi bi-pencil-square")
+                        .visible(true)
+                        .toggleable(true)
+
+                        .countKey("parents")
+
+                        .viewIcon("bi bi-eye")
+                        .viewAction(TableColumnAction.VIEW_RELATION)
+                        .viewTargetIndex(0)
+
+                        .addEnabled(true)
+                        .addIcon("bi bi-plus-square")
+                        .addAction(TableColumnAction.ADD_RELATION)
+                        .addRenderedKey("spatialUnitCreateAllowed")
+
+                        .processExpr("@this")
+                        .updateExpr("flow")
+                        .onstartJs("PF('buiContent').show()")
+                        .oncompleteJs("PF('buiContent').hide();handleScrollToTop();")
+                        .build()
+        );
+
+        actionTabTableModel.getTableDefinition().addColumn(
+                RelationColumn.builder()
+                        .id("children")
+                        .headerKey("table.spatialunit.column.children")
+                        .headerIcon("bi bi-pencil-square")
+                        .visible(true)
+                        .toggleable(true)
+
+                        .countKey("children")
+
+                        .viewIcon("bi bi-eye")
+                        .viewAction(TableColumnAction.VIEW_RELATION)
+                        .viewTargetIndex(0)
+
+                        .addEnabled(true)
+                        .addIcon("bi bi-plus-square")
+                        .addAction(TableColumnAction.ADD_RELATION)
+                        .addRenderedKey("spatialUnitCreateAllowed")
+
+                        .processExpr("@this")
+                        .updateExpr("flow")
+                        .onstartJs("PF('buiContent').show()")
+                        .oncompleteJs("PF('buiContent').hide();handleScrollToTop();")
+                        .build()
+        );
+
+        // configuration du bouton creer
+        actionTabTableModel.setToolbarCreateConfig(
+                ToolbarCreateConfig.builder()
+                        .kindToCreate(UnitKind.ACTION)
+                        .scopeSupplier(() ->
+                                NewUnitContext.Scope.builder()
+                                        .key("SPATIAL")
+                                        .entityId(unit.getId())
+                                        .build()
+                        )
+                        .build()
+        );
     }
 
 }

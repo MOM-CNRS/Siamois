@@ -393,4 +393,65 @@ public class ActionUnitService implements ArkEntityService {
         return Objects.equals(action.getCreatedBy().getId(), person.getId());
     }
 
+    /**
+     * Get all the roots ActionUnit in the institution
+     *
+     * @param institutionId the institution id
+     * @return The list of ActionUnit associated with the institution
+     */
+    public List<ActionUnit> findAllWithoutParentsByInstitution(Long institutionId) {
+        List<ActionUnit> res = actionUnitRepository.findRootsByInstitution(institutionId);
+
+        // load related entities
+        res.forEach(au -> {
+            Hibernate.initialize(au.getParents());
+            Hibernate.initialize(au.getChildren());
+            Hibernate.initialize(au.getRecordingUnitList());
+        });
+
+        return res;
+    }
+
+    /**
+     * Get all ActionUnit in the institution that are the children of a given parent
+     *
+     * @param parentId the parent id
+     * @param institutionId the institution id
+     * @return The list of ActionUnit associated with the institution and that are the children of a given parent
+     */
+    public List<ActionUnit> findChildrenByParentAndInstitution(Long parentId, Long institutionId ) {
+        List<ActionUnit> res = actionUnitRepository.findChildrenByParentAndInstitution(parentId, institutionId);
+
+        // load related entities
+        res.forEach(au -> {
+            Hibernate.initialize(au.getParents());
+            Hibernate.initialize(au.getChildren());
+            Hibernate.initialize(au.getRecordingUnitList());
+        });
+
+        return res;
+    }
+
+    /**
+     * Get all ActionUnit in the institution that are linked to a spatial unit
+     *
+     * @param spatialId the spatial unit id
+     * @param institutionId the institution id
+     * @return The list of ActionUnit
+     */
+    public List<ActionUnit> findBySpatialContextAndInstitution(Long spatialId, Long institutionId ) {
+        List<ActionUnit> res = actionUnitRepository.findBySpatialContextAndInstitution(spatialId, institutionId);
+
+        // load related entities
+        res.forEach(au -> {
+            Hibernate.initialize(au.getParents());
+            Hibernate.initialize(au.getChildren());
+            Hibernate.initialize(au.getRecordingUnitList());
+        });
+
+        return res;
+    }
+
+
+
 }

@@ -25,26 +25,6 @@ public class NewUnitContext implements Serializable {
     @Builder.Default
     private final UiInsertPolicy insertPolicy = UiInsertPolicy.defaultRoot();
 
-    // --------- helpers factory ---------
-
-    public static NewUnitContext toolbar(UnitKind kind) {
-        return NewUnitContext.builder()
-                .kindToCreate(kind)
-                .trigger(Trigger.toolbar())
-                .insertPolicy(UiInsertPolicy.defaultRoot())
-                .scope(Scope.none())
-                .build();
-    }
-
-    public static NewUnitContext cell(UnitKind kind, Long clickedId, String columnKey, UiInsertPolicy insertPolicy) {
-        return NewUnitContext.builder()
-                .kindToCreate(kind)
-                .trigger(Trigger.cell(clickedId, columnKey))
-                .insertPolicy(insertPolicy)
-                .scope(Scope.none())
-                .build();
-    }
-
     // ======================
     // Scope
     // ======================
@@ -71,21 +51,24 @@ public class NewUnitContext implements Serializable {
     @Builder
     public static class Trigger implements Serializable {
         private final TriggerType type;
-        private final Long clickedId;       // null si toolbar
-        private final String columnKey;     // ex: "parents", "children", "action"
+        private final UnitKind clickedKind;
+        private final Long clickedId;
+        private final String columnKey;
 
         public static Trigger toolbar() {
             return Trigger.builder().type(TriggerType.TOOLBAR).build();
         }
 
-        public static Trigger cell(Long clickedId, String columnKey) {
+        public static Trigger cell(UnitKind clickedKind, Long clickedId, String columnKey) {
             return Trigger.builder()
                     .type(TriggerType.CELL)
+                    .clickedKind(clickedKind)
                     .clickedId(clickedId)
                     .columnKey(columnKey)
                     .build();
         }
     }
+
 
     public enum TriggerType { TOOLBAR, CELL }
 
@@ -115,9 +98,10 @@ public class NewUnitContext implements Serializable {
         }
     }
 
-    public enum ListInsert { TOP }
+    public enum ListInsert { NONE, TOP }
 
     public enum TreeInsert {
+        NONE, // pas d'insertion
         ROOT,              // bouton global -> racine
         CHILD_FIRST,       // ajouter un enfant en 1ère position sous clickedId
         PARENT_AT_ROOT     // ajouter un parent à la racine et re-parent le clickedId dessous

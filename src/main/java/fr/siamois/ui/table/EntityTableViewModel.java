@@ -77,6 +77,11 @@ public abstract class EntityTableViewModel<T extends TraceableEntity, ID> {
 
     @Getter
     @Setter
+    private ToolbarCreateConfig toolbarCreateConfig;
+
+
+    @Getter
+    @Setter
     private boolean treeMode = false; // false = table, true = tree
 
     protected EntityTableViewModel(BaseLazyDataModel<T> lazyDataModel,
@@ -259,6 +264,11 @@ public abstract class EntityTableViewModel<T extends TraceableEntity, ID> {
     public void onAnyEntityCreated(fr.siamois.domain.models.TraceableEntity created, NewUnitContext ctx) {
         if (created == null) return;
 
+        NewUnitContext.UiInsertPolicy policy = ctx.getInsertPolicy();
+        if (policy == null) { // if insert policy is null
+            return;
+        }
+
         // ⚠️ cast “best effort” sans entityClass
         final T casted;
         try {
@@ -270,12 +280,12 @@ public abstract class EntityTableViewModel<T extends TraceableEntity, ID> {
         }
 
         // 1) List view: insert at top
-        if (lazyDataModel != null) {
+        if (lazyDataModel != null && policy.getListInsert() != NewUnitContext.ListInsert.NONE) {
             lazyDataModel.addRowToModel(casted);
         }
 
         // 2) Tree view: manual insertion (si treeLazyModel présent)
-        if (treeLazyModel != null && ctx != null) {
+        if (treeLazyModel != null && ctx != null && policy.getTreeInsert() != NewUnitContext.TreeInsert.NONE) {
             applyTreeInsertion(casted, ctx);
         }
     }
@@ -305,6 +315,34 @@ public abstract class EntityTableViewModel<T extends TraceableEntity, ID> {
             }
         }
     }
+
+    // Handler when clicking on the create button on top of the table
+    public void openCreateFromToolbar(fr.siamois.ui.bean.dialog.newunit.GenericNewUnitDialogBean<?> dialogBean) {
+        if (toolbarCreateConfig == null) {
+            return; // pas de bouton configuré
+        }
+
+        NewUnitContext.UiInsertPolicy policy = toolbarCreateConfig.getInsertPolicySupplier() != null
+                ? toolbarCreateConfig.getInsertPolicySupplier().get()
+                : NewUnitContext.UiInsertPolicy.builder()
+                .listInsert(NewUnitContext.ListInsert.TOP)
+                .treeInsert(NewUnitContext.TreeInsert.ROOT)
+                .build();
+
+        NewUnitContext ctx = NewUnitContext.builder()
+                .kindToCreate(toolbarCreateConfig.getKindToCreate())
+                .trigger(toolbarCreateConfig.getTriggerSupplier().get()) // toolbar()
+                .scope(toolbarCreateConfig.getScopeSupplier().get())
+                .insertPolicy(policy)
+                .build();
+
+        try {
+            dialogBean.selectKind(ctx, this);
+        } catch (fr.siamois.ui.exceptions.CannotInitializeNewUnitDialogException e) {
+            // comportement silencieux comme avant
+        }
+    }
+
 
 
 }

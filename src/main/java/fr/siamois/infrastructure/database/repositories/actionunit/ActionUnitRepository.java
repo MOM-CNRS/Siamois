@@ -3,6 +3,7 @@ package fr.siamois.infrastructure.database.repositories.actionunit;
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.ark.Ark;
 import fr.siamois.domain.models.institution.Institution;
+import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import jakarta.validation.constraints.NotNull;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -191,4 +192,38 @@ public interface ActionUnitRepository extends CrudRepository<ActionUnit, Long>, 
     Set<ActionUnit> findByCreatedByInstitution(Institution createdByInstitution);
     Optional<ActionUnit> findByNameAndCreatedByInstitution(String name, Institution institution);
     Optional<ActionUnit> findByIdentifierAndCreatedByInstitution(String identifier, Institution institution);
+
+    @Query(value = """
+    SELECT su.*
+    FROM action_unit su
+    WHERE su.fk_institution_id = :institutionId
+      AND NOT EXISTS (
+          SELECT 1
+          FROM action_hierarchy h
+          WHERE h.fk_child_id = su.action_unit_id
+      )
+    """, nativeQuery = true)
+    List<ActionUnit> findRootsByInstitution(@Param("institutionId") Long institutionId);
+
+    @Query(value = """
+    SELECT su.*
+    FROM action_unit su
+    JOIN action_hierarchy h
+      ON h.fk_child_id = su.action_unit_id
+    WHERE su.fk_institution_id = :institutionId
+      AND h.fk_parent_id = :parentId
+    """, nativeQuery = true)
+    List<ActionUnit> findChildrenByParentAndInstitution(@Param("parentId") Long parentId,
+                                                         @Param("institutionId") Long institutionId);
+
+    @Query(value = """
+    SELECT su.*
+    FROM action_unit su
+    JOIN action_unit_spatial_context h
+      ON h.fk_action_unit_id = su.action_unit_id
+    WHERE su.fk_institution_id = :institutionId
+      AND h.fk_spatial_unit_id = :spatialId
+    """, nativeQuery = true)
+    List<ActionUnit> findBySpatialContextAndInstitution(@Param("spatialId") Long spatialId,
+                                                        @Param("institutionId") Long institutionId);
 }

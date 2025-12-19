@@ -21,12 +21,14 @@
                 id="spatialUnitList"
         >
             <f:facet name="rightToolbar">
-                <p:commandButton value="#{langBean.msg('common.action.create')}" icon="bi bi-plus-square"
-                                 actionListener="#{genericNewUnitDialogBean.selectKind('SPATIAL', panelModel.lazyDataModel)}"
-                                 rendered="#{flowBean.isWriteMode and spatialUnitFieldBean.isCreateAllowed()}"
+                <p:commandButton
+                                 rendered="#{panelModel.tableModel.toolbarCreateConfig ne null and flowBean.isWriteMode and spatialUnitFieldBean.isCreateAllowed()}"
+                                 value="#{langBean.msg('common.action.create')}"
+                                 icon="bi bi-plus-square"
+                                 actionListener="#{cc.attrs.tableModel.openCreateFromToolbar(genericNewUnitDialogBean)}"
                                  oncomplete="PF('newUnitDiag').show();"
                                  update="newUnitForm"
-                                 style="margin-right: .5rem">
+                                 style="margin-right:.5rem">
                 </p:commandButton>
             </f:facet>
         </table:entityTable>

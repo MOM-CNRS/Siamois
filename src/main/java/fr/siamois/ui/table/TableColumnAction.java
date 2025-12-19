@@ -9,5 +9,6 @@ public enum TableColumnAction {
     ADD_RELATION,
     TOGGLE_BOOKMARK,
     DUPLICATE_ROW,
-    GO_TO_SPATIAL_UNIT
+    GO_TO_SPATIAL_UNIT,
+    GO_TO_ACTION_UNIT
 }

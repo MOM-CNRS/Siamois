@@ -15,6 +15,8 @@ import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitTreeService;
 import fr.siamois.ui.bean.NavBean;
 import fr.siamois.ui.bean.dialog.newunit.GenericNewUnitDialogBean;
+import fr.siamois.ui.bean.dialog.newunit.NewUnitContext;
+import fr.siamois.ui.bean.dialog.newunit.UnitKind;
 import fr.siamois.ui.bean.panel.FlowBean;
 import fr.siamois.ui.bean.panel.models.PanelBreadcrumb;
 import fr.siamois.ui.lazydatamodel.*;
@@ -288,6 +290,18 @@ public class SpatialUnitListPanel extends AbstractListPanel<SpatialUnit>  implem
                         .updateExpr("flow")
                         .onstartJs("PF('buiContent').show()")
                         .oncompleteJs("PF('buiContent').hide();handleScrollToTop();")
+                        .build()
+        );
+
+        // configuration du bouton creer
+        tableModel.setToolbarCreateConfig(
+                ToolbarCreateConfig.builder()
+                        .kindToCreate(UnitKind.SPATIAL)
+                        .scopeSupplier(NewUnitContext.Scope::none) // ou linkedTo(...)
+                        .insertPolicySupplier(() -> NewUnitContext.UiInsertPolicy.builder()
+                                .listInsert(NewUnitContext.ListInsert.TOP)
+                                .treeInsert(NewUnitContext.TreeInsert.ROOT)
+                                .build())
                         .build()
         );
     }

@@ -143,6 +143,17 @@ public class GenericNewUnitDialogBean<T extends TraceableEntity>
         init();
     }
 
+    // Reset kind
+    public void resetKind()
+            throws CannotInitializeNewUnitDialogException {
+
+        this.kind = null;
+        this.handler = null;
+        this.sourceTableModel = null;
+        this.newUnitContext = null;
+        reset();
+    }
+
 
     // ==== méthodes utilitaires (ex-abstracts supprimées) ====
 
