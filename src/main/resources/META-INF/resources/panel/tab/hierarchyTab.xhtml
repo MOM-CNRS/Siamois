@@ -4,77 +4,60 @@
              xmlns:spatialUnit="http://xmlns.jcp.org/jsf/composite/pages/spatialUnit/components"
              xmlns:recordingUnit="http://xmlns.jcp.org/jsf/composite/pages/recordingUnit/components"
              xmlns:f="http://java.sun.com/jsf/core"
+             xmlns:table="http://xmlns.jcp.org/jsf/composite/pages/shared/table"
 
 >
 
-    <!--@elvariable id="panelModel" type="fr.siamois.ui.bean.panel.models.panel.single.AbstractSingleMultiHierarchicalEntityPanel" -->
+    <!--@elvariable id="tableModelParents" type="fr.siamois.ui.table.EntityUnitTableModel"-->
+    <!--@elvariable id="tableModelChildren" type="fr.siamois.ui.table.EntityUnitTableModel"-->
     <!--@elvariable id="panelIndex" type="java.lang.Integer" -->
-    🚧 En cours (manque bouteau nouveau enfant et parent from existing ou nouveau). Lien dans les tables à réparer
 
-    <p:panel id="childrenPanel" class="sia-form-panel" header="Contient"
+    <p:panel id="parentsPanel" class="sia-form-panel" header="Parents"
              toggleable="true"
              collapsed="false">
 
-        <spatialUnit:spatialUnitList
-                rendered="#{panelModel['class'].simpleName eq 'SpatialUnitPanel'}"
-                lazyDataModel="#{panelModel.lazyDataModelChildren}"
-                panelModel="#{panelModel}"
+        <table:entityTable
+                displayColumnToggler="true"
+                tableModel="#{tableModelParents}"
                 panelIndex="#{panelIndex}"
-                id="spatialUnitChildrenList"
+                id="parentList"
         >
             <f:facet name="rightToolbar">
-                <p:commandButton value="#{langBean.msg('common.action.create')}" icon="bi bi-plus-square"
-                                 id="newSpatialUnitChildrenButton"
-                                 actionListener="#{newSpatialUnitDialogBean.init(panelModel.lazyDataModelChildren)}"
-                                 oncomplete="PF('newUnitDiag').show()"
-                                 update="newUnitForm"
-                                 rendered="#{flowBean.isWriteMode== true}"
-                                 style="margin-right: .5rem">
+                <p:commandButton
+                        rendered="#{tableModelParents.toolbarCreateConfig ne null and flowBean.isWriteMode and spatialUnitFieldBean.isCreateAllowed()}"
+                        value="#{langBean.msg('common.action.create')}"
+                        icon="bi bi-plus-square"
+                        actionListener="#{tableModelParents.openCreateFromToolbar(genericNewUnitDialogBean)}"
+                        oncomplete="PF('newUnitDiag').show();"
+                        update="newUnitForm"
+                        style="margin-right:.5rem">
                 </p:commandButton>
             </f:facet>
-        </spatialUnit:spatialUnitList>
-
-        <recordingUnit:recordingUnitList
-                rendered="#{panelModel['class'].simpleName eq 'RecordingUnitPanel'}"
-                lazyDataModel="#{panelModel.lazyDataModelChildren}"
-                panelModel="#{panelModel}"
-                panelIndex="#{panelIndex}"
-                id="recordingUnitChildrenList"
-        >
-        </recordingUnit:recordingUnitList>
+        </table:entityTable>
 
     </p:panel>
-    <p:panel id="parentsPanel" class="sia-form-panel"
-             header="Fait partie de" toggleable="true"
+
+    <p:panel id="childrenPanel" class="sia-form-panel"
+             header="Enfants" toggleable="true"
              collapsed="false">
-        <spatialUnit:spatialUnitList
-                rendered="#{panelModel['class'].simpleName eq 'SpatialUnitPanel'}"
-                lazyDataModel="#{panelModel.lazyDataModelParents}"
-                panelModel="#{panelModel}"
+        <table:entityTable
+                displayColumnToggler="true"
+                tableModel="#{tableModelChildren}"
                 panelIndex="#{panelIndex}"
-                id="spatialUnitParentsList"
+                id="childList"
         >
             <f:facet name="rightToolbar">
-                <p:commandButton value="#{langBean.msg('common.action.create')}" icon="bi bi-plus-square"
-                                 id="newSpatialUnitParentButton"
-                                 actionListener="#{newSpatialUnitDialogBean.init(panelModel.lazyDataModelParents)}"
-                                 oncomplete="PF('newUnitDiag').show()"
-                                 update="newUnitForm"
-                                 rendered="#{flowBean.isWriteMode}"
-                                 style="margin-right: .5rem">
+                <p:commandButton
+                        rendered="#{tableModelChildren.toolbarCreateConfig ne null and flowBean.isWriteMode and spatialUnitFieldBean.isCreateAllowed()}"
+                        value="#{langBean.msg('common.action.create')}"
+                        icon="bi bi-plus-square"
+                        actionListener="#{tableModelChildren.openCreateFromToolbar(genericNewUnitDialogBean)}"
+                        oncomplete="PF('newUnitDiag').show();"
+                        update="newUnitForm"
+                        style="margin-right:.5rem">
                 </p:commandButton>
             </f:facet>
-        </spatialUnit:spatialUnitList>
-
-        <recordingUnit:recordingUnitList
-                rendered="#{panelModel['class'].simpleName eq 'RecordingUnitPanel'}"
-                lazyDataModel="#{panelModel.lazyDataModelParents}"
-                panelModel="#{panelModel}"
-                panelIndex="#{panelIndex}"
-                id="recordingUnitParentList"
-        >
-
-        </recordingUnit:recordingUnitList>
+        </table:entityTable>
 
     </p:panel>
 

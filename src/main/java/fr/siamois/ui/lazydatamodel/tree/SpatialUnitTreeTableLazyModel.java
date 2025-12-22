@@ -1,9 +1,12 @@
 package fr.siamois.ui.lazydatamodel.tree;
 
+import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
+import fr.siamois.ui.lazydatamodel.ActionUnitScope;
+import fr.siamois.ui.lazydatamodel.SpatialUnitScope;
 import lombok.Getter;
 import lombok.Setter;
 import org.primefaces.model.DefaultTreeNode;
@@ -18,21 +21,26 @@ import java.util.Set;
 public class SpatialUnitTreeTableLazyModel extends BaseTreeTableLazyModel<SpatialUnit, Long> {
 
     private final SpatialUnitService spatialUnitService;
-    private final Long institutionId;
+    private SpatialUnitScope scope;
 
-    public SpatialUnitTreeTableLazyModel(SpatialUnitService spatialUnitService, Long institutionId) {
+    public SpatialUnitTreeTableLazyModel(SpatialUnitService spatialUnitService, SpatialUnitScope scope) {
         super(SpatialUnit::getId);
         this.spatialUnitService = spatialUnitService;
-        this.institutionId = institutionId;
+        this.scope = scope;
     }
 
     @Override
     protected TreeNode<SpatialUnit> buildTree() {
         TreeNode<SpatialUnit> rootNode = new DefaultTreeNode<>(null, null);
 
-        // For now: load whole structure (service should ideally avoid N+1)
-        // Option A: get roots then fetch children per node (easy but can be N+1)
-        List<SpatialUnit> roots = spatialUnitService.findAllWithoutParentsByInstitution(institutionId);
+        List<SpatialUnit> roots = switch (scope.getType()) {
+            case INSTITUTION ->
+                    spatialUnitService.findAllWithoutParentsByInstitution(scope.getInstitutionId());
+            case PARENTS_OF_SPATIAL_UNIT ->
+                    spatialUnitService.findAllWithoutParentsByInstitution(scope.getInstitutionId());
+            case CHILDREN_OF_SPATIAL_UNIT ->
+                    spatialUnitService.findAllWithoutParentsByInstitution(scope.getInstitutionId());
+        };
 
         Set<Long> path = new HashSet<>();
         for (SpatialUnit root : roots) {
@@ -50,8 +58,8 @@ public class SpatialUnitTreeTableLazyModel extends BaseTreeTableLazyModel<Spatia
                                SpatialUnit parentUnit,
                                Set<Long> path) {
 
-        // Option A: service fetch children by parent id
-        List<SpatialUnit> children = spatialUnitService.findChildrenByParentAndInstitution(parentUnit.getId(), institutionId);
+        // service fetch children by parent id
+        List<SpatialUnit> children = spatialUnitService.findChildrenByParentAndInstitution(parentUnit.getId(), scope.getInstitutionId());
 
         for (SpatialUnit child : children) {
             if (child == null || child.getId() == null) continue;

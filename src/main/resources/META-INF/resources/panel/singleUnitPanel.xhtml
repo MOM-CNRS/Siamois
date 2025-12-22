@@ -44,7 +44,7 @@
                         </ui:include>
                     </ui:fragment>
 
-                    <ui:fragment rendered="#{tabItem['class'].simpleName eq 'ActionTab'}">-->
+                    <ui:fragment rendered="#{tabItem['class'].simpleName eq 'ActionTab'}">
                         <!--@elvariable id="tabItem" type="fr.siamois.ui.bean.panel.models.panel.single.tab.ActionTab"-->
                         <ui:include src="/panel/tab/actionTab.xhtml">
                             <ui:param name="tableModel" value="#{tabItem.tableModel}"/>
@@ -52,6 +52,13 @@
                         </ui:include>
                     </ui:fragment>
 
+                    <ui:fragment rendered="#{tabItem['class'].simpleName eq 'MultiHierarchyTab'}">
+                        <ui:include src="/panel/tab/hierarchyTab.xhtml">
+                            <ui:param name="tableModelParents" value="#{panelModel.parentTableModel}"/>
+                            <ui:param name="tableModelChildren" value="#{panelModel.childTableModel}"/>
+                            <ui:param name="panelIndex" value="#{panelIndex}"/>
+                        </ui:include>
+                    </ui:fragment>
 
 
                 </p:tab>

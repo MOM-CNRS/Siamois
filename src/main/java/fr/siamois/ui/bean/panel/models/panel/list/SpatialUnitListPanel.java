@@ -33,9 +33,12 @@ import org.springframework.stereotype.Component;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import fr.siamois.ui.table.definitions.SpatialUnitTableDefinitionFactory;
 import java.util.List;
 
 import static fr.siamois.ui.bean.panel.models.panel.single.AbstractSingleEntity.SYSTEM_THESO;
+import static fr.siamois.ui.lazydatamodel.SpatialUnitScope.Type.INSTITUTION;
+import static fr.siamois.ui.lazydatamodel.SpatialUnitScope.Type.PARENTS_OF_SPATIAL_UNIT;
 
 @EqualsAndHashCode(callSuper = true, onlyExplicitlyIncluded = true)
 @Data
@@ -103,7 +106,11 @@ public class SpatialUnitListPanel extends AbstractListPanel<SpatialUnit>  implem
     @Override
     protected BaseLazyDataModel<SpatialUnit> createLazyDataModel() {
         SpatialUnitLazyDataModel lazy = new SpatialUnitLazyDataModel(spatialUnitService, sessionSettingsBean, langBean);
-        SpatialUnitTreeTableLazyModel lazyTree = new SpatialUnitTreeTableLazyModel(spatialUnitService, sessionSettingsBean.getSelectedInstitution().getId());
+        SpatialUnitTreeTableLazyModel lazyTree = new SpatialUnitTreeTableLazyModel(spatialUnitService,
+                SpatialUnitScope.builder()
+                        .institutionId(sessionSettingsBean.getSelectedInstitution().getId())
+                        .type(INSTITUTION)
+                        .build());
 
         // construction de la vue de table autour du lazy
         tableModel = new SpatialUnitTableViewModel(
@@ -191,113 +198,13 @@ public class SpatialUnitListPanel extends AbstractListPanel<SpatialUnit>  implem
      * À toi de remplir la définition des colonnes.
      */
     protected void configureTableColumns() {
-        tableModel.getTableDefinition().addColumn(
-                CommandLinkColumn.builder()
-                        .id("identifierCol")
-                        .headerKey("table.spatialunit.column.name")
-                        .visible(true)
-
-                        // PrimeFaces metadata equivalents
-                        .toggleable(false)
-                        .sortable(true)
-                        .sortField("name")
-
-                        // What to display inside <h:outputText>
-                        .valueKey("name")
-
-                        // What to do on click (Pattern A key)
-                        .action(TableColumnAction.GO_TO_SPATIAL_UNIT)
-
-                        // CommandLink behavior
-                        .processExpr("@this")
-                        .updateExpr("flow")
-                        .onstartJs("PF('buiContent').show()")
-                        .oncompleteJs("PF('buiContent').hide();handleScrollToTop();")
-                        .build()
-        );
-        tableModel.getTableDefinition().addColumn(
-                RelationColumn.builder()
-                        .id("parents")
-                        .headerKey("table.spatialunit.column.parents")
-                        .headerIcon("bi bi-pencil-square")
-                        .visible(true)
-                        .toggleable(true)
-
-                        .countKey("parents")
-
-                        .viewIcon("bi bi-eye")
-                        .viewAction(TableColumnAction.VIEW_RELATION)
-                        .viewTargetIndex(0)
-
-                        .addEnabled(true)
-                        .addIcon("bi bi-plus-square")
-                        .addAction(TableColumnAction.ADD_RELATION)
-                        .addRenderedKey("spatialUnitCreateAllowed")
-
-                        .processExpr("@this")
-                        .updateExpr("flow")
-                        .onstartJs("PF('buiContent').show()")
-                        .oncompleteJs("PF('buiContent').hide();handleScrollToTop();")
-                        .build()
-        );
-
-        tableModel.getTableDefinition().addColumn(
-                RelationColumn.builder()
-                        .id("children")
-                        .headerKey("table.spatialunit.column.children")
-                        .headerIcon("bi bi-pencil-square")
-                        .visible(true)
-                        .toggleable(true)
-
-                        .countKey("children")
-
-                        .viewIcon("bi bi-eye")
-                        .viewAction(TableColumnAction.VIEW_RELATION)
-                        .viewTargetIndex(0)
-
-                        .addEnabled(true)
-                        .addIcon("bi bi-plus-square")
-                        .addAction(TableColumnAction.ADD_RELATION)
-                        .addRenderedKey("spatialUnitCreateAllowed")
-
-                        .processExpr("@this")
-                        .updateExpr("flow")
-                        .onstartJs("PF('buiContent').show()")
-                        .oncompleteJs("PF('buiContent').hide();handleScrollToTop();")
-                        .build()
-        );
-
-        tableModel.getTableDefinition().addColumn(
-                RelationColumn.builder()
-                        .id("action")
-                        .headerKey("table.spatialunit.column.actions")
-                        .headerIcon("bi bi-arrow-down-square")
-                        .visible(true)
-                        .toggleable(true)
-
-                        .countKey("actions")
-
-                        .viewIcon("bi bi-eye")
-                        .viewAction(TableColumnAction.VIEW_RELATION)
-                        .viewTargetIndex(0)
-
-                        .addEnabled(true)
-                        .addIcon("bi bi-plus-square")
-                        .addAction(TableColumnAction.ADD_RELATION)
-                        .addRenderedKey("actionUnitCreateAllowed")
-
-                        .processExpr("@this")
-                        .updateExpr("flow")
-                        .onstartJs("PF('buiContent').show()")
-                        .oncompleteJs("PF('buiContent').hide();handleScrollToTop();")
-                        .build()
-        );
+        SpatialUnitTableDefinitionFactory.applyTo(tableModel);
 
         // configuration du bouton creer
         tableModel.setToolbarCreateConfig(
                 ToolbarCreateConfig.builder()
                         .kindToCreate(UnitKind.SPATIAL)
-                        .scopeSupplier(NewUnitContext.Scope::none) // ou linkedTo(...)
+                        .scopeSupplier(NewUnitContext.Scope::none)
                         .insertPolicySupplier(() -> NewUnitContext.UiInsertPolicy.builder()
                                 .listInsert(NewUnitContext.ListInsert.TOP)
                                 .treeInsert(NewUnitContext.TreeInsert.ROOT)

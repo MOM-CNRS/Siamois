@@ -9,6 +9,7 @@ import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.models.vocabulary.label.ConceptLabel;
 import fr.siamois.domain.services.InstitutionService;
+import fr.siamois.domain.services.authorization.writeverifier.SpatialUnitWriteVerifier;
 import fr.siamois.domain.services.form.CustomFieldService;
 import fr.siamois.domain.services.person.PersonService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
@@ -30,6 +31,7 @@ import fr.siamois.ui.lazydatamodel.*;
 import fr.siamois.ui.lazydatamodel.tree.ActionUnitTreeTableLazyModel;
 import fr.siamois.ui.lazydatamodel.tree.SpatialUnitTreeTableLazyModel;
 import fr.siamois.ui.table.*;
+import fr.siamois.ui.table.definitions.SpatialUnitTableDefinitionFactory;
 import fr.siamois.utils.MessageUtils;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -56,6 +58,8 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import static fr.siamois.ui.lazydatamodel.ActionUnitScope.Type.LINKED_TO_SPATIAL_UNIT;
+import static fr.siamois.ui.lazydatamodel.SpatialUnitScope.Type.CHILDREN_OF_SPATIAL_UNIT;
+import static fr.siamois.ui.lazydatamodel.SpatialUnitScope.Type.PARENTS_OF_SPATIAL_UNIT;
 
 /**
  * <p>This bean handles the spatial unit page</p>
@@ -83,6 +87,7 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
     private final transient FlowBean flowBean;
     private final transient GenericNewUnitDialogBean<?> genericNewUnitDialogBean;
     private final transient InstitutionService institutionService;
+    private final transient SpatialUnitWriteVerifier spatialUnitWriteVerifier;
 
 
     private String spatialUnitErrorMessage;
@@ -92,11 +97,13 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
     private String spatialUnitParentsListErrorMessage;
 
     // lazy model for children
-    private SpatialUnitChildrenLazyDataModel lazyDataModelChildren ;
+    private transient SpatialUnitTableViewModel parentTableModel;
     // lazy model for parents
-    private SpatialUnitParentsLazyDataModel lazyDataModelParents ;
+    private transient SpatialUnitTableViewModel childTableModel;
+
+
     // Lazy  for actions in the spatial unit
-    private ActionUnitTableViewModel actionTabTableModel;
+    private transient ActionUnitTableViewModel actionTabTableModel;
     private Integer totalActionUnitCount;
     // Lazy model for recording unit in the spatial unit
     private RecordingUnitInSpatialUnitLazyDataModel recordingLazyDataModel;
@@ -110,9 +117,7 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
 
 
     @Autowired
-    private SpatialUnitPanel(ApplicationContext context, FlowBean flowBean,
-                             GenericNewUnitDialogBean<?> genericNewUnitDialogBean,
-                             InstitutionService institutionService) {
+    private SpatialUnitPanel(ApplicationContext context) {
 
         super("common.entity.spatialUnit", "bi bi-geo-alt", "siamois-panel spatial-unit-panel single-panel", context);
         this.recordingUnitService = context.getBean(RecordingUnitService.class);
@@ -127,6 +132,7 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
         this.flowBean = context.getBean(FlowBean.class);
         this.genericNewUnitDialogBean = context.getBean(GenericNewUnitDialogBean.class);
         this.institutionService = context.getBean(InstitutionService.class);
+        this.spatialUnitWriteVerifier = context.getBean(SpatialUnitWriteVerifier.class);
     }
 
 
@@ -227,43 +233,14 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
 
             initForms(true);
 
-            // Get all the CHILDREN of the spatial unit
-            selectedCategoriesChildren = new ArrayList<>();
-            lazyDataModelChildren= new SpatialUnitChildrenLazyDataModel(
-                    spatialUnitService,
-                    langBean,
-                    unit
-            );
-            totalChildrenCount = spatialUnitService.countChildrenByParent(unit);
-
-            // Get all the Parents of the spatial unit
-            selectedCategoriesParents = new ArrayList<>();
-            lazyDataModelParents = new SpatialUnitParentsLazyDataModel(
-                    spatialUnitService,
-                    langBean,
-                    unit
-            );
-            totalParentsCount = spatialUnitService.countParentsByChild(unit);
 
             // ---------  Action Tab
             initActionTab();
 
+            // hierarchy tabs
+            initChildTableForHierarchyTab();
+            initParentTableForHierarchyTab();
 
-            // recording in spatial unit lazy model
-            recordingLazyDataModel = new RecordingUnitInSpatialUnitLazyDataModel(
-                    recordingUnitService,
-                    langBean,
-                    unit
-            );
-            totalRecordingUnitCount = recordingUnitService.countBySpatialContext(unit);
-
-            // specimen in spatial unit lazy model
-            specimenLazyDataModel = new SpecimenInSpatialUnitLazyDataModel(
-                    specimenService,
-                    langBean,
-                    unit
-            );
-            totalSpecimenCount = specimenService.countBySpatialContext(unit);
 
         } catch (RuntimeException e) {
             this.spatialUnitErrorMessage = "Failed to load spatial unit: " + e.getMessage();
@@ -307,26 +284,6 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
                 actionTabTableModel);
 
         tabs.add(actionTab);
-
-        RecordingTab recordingTab = new RecordingTab(
-                "common.entity.recordingUnits",
-                "bi bi-pencil-square",
-                "recordingTab",
-
-                recordingLazyDataModel,
-                totalRecordingUnitCount);
-
-        tabs.add(recordingTab);
-
-        SpecimenTab specimenTab = new SpecimenTab(
-                "common.entity.specimens",
-                "bi bi-bucket",
-                "specimenTab",
-
-                specimenLazyDataModel,
-                totalSpecimenCount);
-
-        tabs.add(specimenTab);
 
     }
 
@@ -543,6 +500,108 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
                         )
                         .build()
         );
+    }
+
+    public void initParentTableForHierarchyTab() {
+
+        selectedCategoriesChildren = new ArrayList<>();
+        SpatialUnitParentsLazyDataModel lazyDataModelParents= new SpatialUnitParentsLazyDataModel(
+                spatialUnitService,
+                langBean,
+                unit
+        );
+        SpatialUnitTreeTableLazyModel parentLazyTree = new SpatialUnitTreeTableLazyModel(
+                spatialUnitService, SpatialUnitScope.builder()
+                .spatialUnitId(unit.getId())
+                .type(PARENTS_OF_SPATIAL_UNIT)
+                .build()
+        );
+        totalChildrenCount = spatialUnitService.countChildrenByParent(unit);
+        parentTableModel = new SpatialUnitTableViewModel(
+                lazyDataModelParents,
+                formService,
+                sessionSettingsBean,
+                spatialUnitTreeService,
+                spatialUnitService,
+                navBean,
+                flowBean,
+                (GenericNewUnitDialogBean<SpatialUnit>) genericNewUnitDialogBean,
+                spatialUnitWriteVerifier,
+                parentLazyTree,
+                institutionService
+        );
+        SpatialUnitTableDefinitionFactory.applyTo(parentTableModel);
+
+        // configuration du bouton creer
+        parentTableModel.setToolbarCreateConfig(
+                ToolbarCreateConfig.builder()
+                        .kindToCreate(UnitKind.SPATIAL)
+                        .scopeSupplier(() ->
+                                NewUnitContext.Scope.builder()
+                                        .key("SPATIAL")
+                                        .entityId(unit.getId())
+                                        .extra("PARENTS")
+                                        .build()
+                        )
+                        .insertPolicySupplier(() -> NewUnitContext.UiInsertPolicy.builder()
+                                .listInsert(NewUnitContext.ListInsert.TOP)
+                                .treeInsert(NewUnitContext.TreeInsert.ROOT)
+                                .build())
+                        .build()
+        );
+
+
+    }
+
+    public void initChildTableForHierarchyTab() {
+
+        SpatialUnitChildrenLazyDataModel lazyDataModelChildren= new SpatialUnitChildrenLazyDataModel(
+                spatialUnitService,
+                langBean,
+                unit
+        );
+
+        SpatialUnitTreeTableLazyModel childLazyTree = new SpatialUnitTreeTableLazyModel(
+                spatialUnitService, SpatialUnitScope.builder()
+                .spatialUnitId(unit.getId())
+                .type(CHILDREN_OF_SPATIAL_UNIT)
+                .build()
+        );
+        totalParentsCount = spatialUnitService.countParentsByChild(unit);
+        childTableModel = new SpatialUnitTableViewModel(
+                lazyDataModelChildren,
+                formService,
+                sessionSettingsBean,
+                spatialUnitTreeService,
+                spatialUnitService,
+                navBean,
+                flowBean,
+                (GenericNewUnitDialogBean<SpatialUnit>) genericNewUnitDialogBean,
+                spatialUnitWriteVerifier,
+                childLazyTree,
+                institutionService
+        );
+        SpatialUnitTableDefinitionFactory.applyTo(childTableModel);
+
+        // configuration du bouton creer
+        childTableModel.setToolbarCreateConfig(
+                ToolbarCreateConfig.builder()
+                        .kindToCreate(UnitKind.SPATIAL)
+                        .scopeSupplier(() ->
+                                NewUnitContext.Scope.builder()
+                                        .key("SPATIAL")
+                                        .entityId(unit.getId())
+                                        .extra("CHILDREN")
+                                        .build()
+                        )
+                        .insertPolicySupplier(() -> NewUnitContext.UiInsertPolicy.builder()
+                                .listInsert(NewUnitContext.ListInsert.TOP)
+                                .treeInsert(NewUnitContext.TreeInsert.ROOT)
+                                .build())
+                        .build()
+        );
+
+
     }
 
 }

@@ -30,6 +30,8 @@ import fr.siamois.ui.bean.panel.models.panel.single.tab.SpecimenTab;
 import fr.siamois.ui.lazydatamodel.RecordingUnitChildrenLazyDataModel;
 import fr.siamois.ui.lazydatamodel.RecordingUnitParentsLazyDataModel;
 import fr.siamois.ui.lazydatamodel.SpecimenInRecordingUnitLazyDataModel;
+import fr.siamois.ui.table.RecordingUnitTableViewModel;
+import fr.siamois.ui.table.SpatialUnitTableViewModel;
 import fr.siamois.utils.MessageUtils;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -78,6 +80,11 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
     private RecordingUnitChildrenLazyDataModel lazyDataModelChildren ;
     // lazy model for parents
     private RecordingUnitParentsLazyDataModel lazyDataModelParents ;
+
+    // lazy model for children
+    private transient RecordingUnitTableViewModel parentTableModel;
+    // lazy model for parents
+    private transient RecordingUnitTableViewModel childTableModel;
 
     protected RecordingUnitPanel(ApplicationContext context)  {
 
