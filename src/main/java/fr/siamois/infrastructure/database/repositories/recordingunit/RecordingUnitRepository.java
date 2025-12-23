@@ -441,6 +441,19 @@ public interface RecordingUnitRepository extends CrudRepository<RecordingUnit, L
                                                            @Param("institutionId") Long institutionId);
 
 
+    @Query(value = """
+    SELECT ru.*
+    FROM recording_unit ru
+    WHERE ru.fk_action_unit_id = :actionId
+      AND NOT EXISTS (
+          SELECT 1
+          FROM recording_unit_hierarchy h
+          WHERE h.fk_child_id = ru.recording_unit_id
+      )
+    """, nativeQuery = true)
+    List<RecordingUnit> findRootsByAction(@Param("actionId") Long actionId);
+
+
 
 
 

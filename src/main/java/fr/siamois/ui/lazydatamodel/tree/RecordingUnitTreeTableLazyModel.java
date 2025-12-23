@@ -31,7 +31,12 @@ public class RecordingUnitTreeTableLazyModel extends BaseTreeTableLazyModel<Reco
 
         // For now: load whole structure (service should ideally avoid N+1)
         // get roots then fetch children per node (easy but can be N+1)
-        List<RecordingUnit> roots = recordingUnitService.findAllWithoutParentsByInstitution(scope.getInstitutionId());
+        List<RecordingUnit> roots =  switch (scope.getType()) {
+            case RU_IN_INSTITUTION ->
+                    recordingUnitService.findAllWithoutParentsByInstitution(scope.getInstitutionId());
+            case ACTION ->
+                    recordingUnitService.findAllWithoutParentsByAction(scope.getActionId());
+        };
 
         Set<Long> path = new HashSet<>();
         for (RecordingUnit root : roots) {

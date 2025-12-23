@@ -441,6 +441,19 @@ public class RecordingUnitService implements ArkEntityService {
 
         return res;
     }
+
+    public List<RecordingUnit> findAllWithoutParentsByAction(Long actionId) {
+        List<RecordingUnit> res = recordingUnitRepository.findRootsByAction(actionId);
+
+        // load related entities
+        res.forEach(actionUnit -> {
+            Hibernate.initialize(actionUnit.getParents());
+            Hibernate.initialize(actionUnit.getChildren());
+        });
+
+        return res;
+    }
+
 }
 
 
