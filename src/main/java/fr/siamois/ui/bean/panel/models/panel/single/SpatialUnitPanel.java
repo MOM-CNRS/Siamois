@@ -119,7 +119,6 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
 
     @Autowired
     private SpatialUnitPanel(ApplicationContext context) {
-
         super("common.entity.spatialUnit", "bi bi-geo-alt", "siamois-panel spatial-unit-panel single-panel", context);
         this.recordingUnitService = context.getBean(RecordingUnitService.class);
         this.sessionSettings = context.getBean(SessionSettingsBean.class);

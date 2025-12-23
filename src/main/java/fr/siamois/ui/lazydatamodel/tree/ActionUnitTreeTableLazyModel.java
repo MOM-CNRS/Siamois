@@ -19,7 +19,7 @@ import java.util.Set;
 public class ActionUnitTreeTableLazyModel extends BaseTreeTableLazyModel<ActionUnit, Long> {
 
     private final transient ActionUnitService actionUnitService;
-    private ActionUnitScope scope;
+    private transient ActionUnitScope scope;
 
     public ActionUnitTreeTableLazyModel(ActionUnitService actionUnitService, ActionUnitScope scope) {
         super(ActionUnit::getId);

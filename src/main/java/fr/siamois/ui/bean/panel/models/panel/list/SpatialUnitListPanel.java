@@ -2,13 +2,11 @@ package fr.siamois.ui.bean.panel.models.panel.list;
 
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.form.customfield.*;
-import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.models.vocabulary.label.ConceptLabel;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.authorization.writeverifier.ActionUnitWriteVerifier;
-import fr.siamois.domain.services.authorization.writeverifier.RecordingUnitWriteVerifier;
 import fr.siamois.domain.services.authorization.writeverifier.SpatialUnitWriteVerifier;
 import fr.siamois.domain.services.form.FormService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
@@ -20,7 +18,6 @@ import fr.siamois.ui.bean.dialog.newunit.UnitKind;
 import fr.siamois.ui.bean.panel.FlowBean;
 import fr.siamois.ui.bean.panel.models.PanelBreadcrumb;
 import fr.siamois.ui.lazydatamodel.*;
-import fr.siamois.ui.lazydatamodel.tree.RecordingUnitTreeTableLazyModel;
 import fr.siamois.ui.lazydatamodel.tree.SpatialUnitTreeTableLazyModel;
 import fr.siamois.ui.table.*;
 import lombok.Data;
@@ -36,9 +33,7 @@ import java.util.ArrayList;
 import fr.siamois.ui.table.definitions.SpatialUnitTableDefinitionFactory;
 import java.util.List;
 
-import static fr.siamois.ui.bean.panel.models.panel.single.AbstractSingleEntity.SYSTEM_THESO;
 import static fr.siamois.ui.lazydatamodel.SpatialUnitScope.Type.INSTITUTION;
-import static fr.siamois.ui.lazydatamodel.SpatialUnitScope.Type.PARENTS_OF_SPATIAL_UNIT;
 
 @EqualsAndHashCode(callSuper = true, onlyExplicitlyIncluded = true)
 @Data
@@ -52,7 +47,7 @@ public class SpatialUnitListPanel extends AbstractListPanel<SpatialUnit>  implem
     private final transient SpatialUnitTreeService spatialUnitTreeService;
     private final transient SpatialUnitService spatialUnitService;
     private final transient FlowBean flowBean;
-    private final transient GenericNewUnitDialogBean genericNewUnitDialogBean;
+    private final transient GenericNewUnitDialogBean<SpatialUnit> genericNewUnitDialogBean;
     private final transient SpatialUnitWriteVerifier spatialUnitWriteVerifier;
     private final transient NavBean navBean;
     private final transient InstitutionService institutionService;
@@ -60,24 +55,19 @@ public class SpatialUnitListPanel extends AbstractListPanel<SpatialUnit>  implem
     // locals
     private String spatialUnitListErrorMessage;
 
-    public SpatialUnitListPanel(ApplicationContext context,
-                                FormService formService,
-                                SpatialUnitTreeService spatialUnitTreeService,
-                                SpatialUnitService spatialUnitService,
-                                FlowBean flowBean, GenericNewUnitDialogBean genericNewUnitDialogBean,
-                                SpatialUnitWriteVerifier spatialUnitWriteVerifier, NavBean navBean, ActionUnitWriteVerifier actionUnitWriteVerifier, InstitutionService institutionService) {
+    public SpatialUnitListPanel(ApplicationContext context) {
         super("panel.title.allspatialunit",
                 "bi bi-geo-alt",
                 "siamois-panel spatial-unit-panel list-panel",
                 context);
-        this.formService = formService;
-        this.spatialUnitTreeService = spatialUnitTreeService;
-        this.spatialUnitService = spatialUnitService;
-        this.flowBean = flowBean;
-        this.genericNewUnitDialogBean = genericNewUnitDialogBean;
-        this.spatialUnitWriteVerifier = spatialUnitWriteVerifier;
-        this.navBean = navBean;
-        this.institutionService = institutionService;
+        this.formService = context.getBean(FormService.class);
+        this.spatialUnitTreeService = context.getBean(SpatialUnitTreeService.class);
+        this.spatialUnitService = context.getBean(SpatialUnitService.class);
+        this.flowBean = context.getBean(FlowBean.class);
+        this.genericNewUnitDialogBean = context.getBean(GenericNewUnitDialogBean.class);
+        this.spatialUnitWriteVerifier = context.getBean(SpatialUnitWriteVerifier.class);
+        this.navBean = context.getBean(NavBean.class);
+        this.institutionService = context.getBean(InstitutionService.class);
     }
 
     @Override
