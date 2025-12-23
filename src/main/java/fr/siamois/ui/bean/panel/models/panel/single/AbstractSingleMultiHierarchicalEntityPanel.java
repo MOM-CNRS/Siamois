@@ -2,15 +2,15 @@ package fr.siamois.ui.bean.panel.models.panel.single;
 
 import fr.siamois.domain.models.TraceableEntity;
 import fr.siamois.ui.bean.panel.models.panel.single.tab.MultiHierarchyTab;
-import fr.siamois.ui.lazydatamodel.BaseLazyDataModel;
 import fr.siamois.ui.table.EntityTableViewModel;
-import fr.siamois.ui.table.SpatialUnitTableViewModel;
 import org.springframework.context.ApplicationContext;
 
 import java.io.Serializable;
 
 public abstract class AbstractSingleMultiHierarchicalEntityPanel<T extends TraceableEntity>
         extends AbstractSingleEntityPanel<T> implements Serializable {
+
+
 
     protected AbstractSingleMultiHierarchicalEntityPanel(
             String titleCodeOrTitle,
@@ -30,7 +30,9 @@ public abstract class AbstractSingleMultiHierarchicalEntityPanel<T extends Trace
         MultiHierarchyTab multiHierTab = new MultiHierarchyTab(
                 "panel.tab.hierarchy",
                 this.getIcon(),
-                "hierarchyTab");
+                "hierarchyTab",
+                getParentTableModel(),
+                getChildTableModel());
 
         tabs.add(2, multiHierTab);
     }

@@ -122,6 +122,11 @@ public class SpecimenListPanel extends AbstractListPanel<Specimen>  implements S
         }
     }
 
+    @Override
+    void configureTableColumns() {
+        // empty now to implement
+    }
+
 
 
 

@@ -3,10 +3,11 @@
              xmlns:p="http://primefaces.org/ui"
              xmlns:h="http://xmlns.jcp.org/jsf/html"
              xmlns:f="http://xmlns.jcp.org/jsf/core"
+             xmlns:c="http://java.sun.com/jstl/core"
 >
 
     <!--@elvariable id="panelIndex" type="Integer"-->
-    <!--@elvariable id="panelModel" type="fr.siamois.ui.bean.panel.models.panel.single.RecordingUnitPanel"-->
+    <!--@elvariable id="panelModel" type="fr.siamois.ui.bean.panel.models.panel.single.AbstractSingleEntity"-->
 
     <!-- Content -->
     <p:staticMessage severity="error" summary="Error" closable="false"
@@ -26,6 +27,7 @@
                 <!-- Overview tab -->
                 <p:tab>
                     <f:facet name="title">
+
                         <ui:include src="/pages/shared/tab/tabTitle.xhtml">
                             <ui:param name="title" value='#{langBean.msg(tabItem.titleCode)}'/>
                             <ui:param name="icon" value="#{tabItem.icon}"/>
@@ -52,27 +54,36 @@
                         </ui:include>
                     </ui:fragment>
 
-                    <ui:fragment rendered="#{tabItem['class'].simpleName eq 'MultiHierarchyTab'}">
-                        <ui:include src="/panel/tab/hierarchyTab.xhtml">
-                            <ui:param name="tableModelParents" value="#{panelModel.parentTableModel}"/>
-                            <ui:param name="tableModelChildren" value="#{panelModel.childTableModel}"/>
+                    <ui:fragment rendered="#{tabItem['class'].simpleName eq 'RecordingTab'}">
+                        <!--@elvariable id="tabItem" type="fr.siamois.ui.bean.panel.models.panel.single.tab.RecordingTab"-->
+                        <ui:include src="/panel/tab/recordingUnitsTab.xhtml">
+                            <ui:param name="tableModel" value="#{tabItem.tableModel}"/>
                             <ui:param name="panelIndex" value="#{panelIndex}"/>
                         </ui:include>
                     </ui:fragment>
 
-            <ui:fragment rendered="#{tabItem['class'].simpleName eq 'DocumentTab'}">
-                                    <ui:include src="/panel/tab/documentsTab.xhtml">
-                                        <ui:param name="panelModel" value="#{panelModel}"/>
-                                    </ui:include>
-                                </ui:fragment>
+                    <ui:fragment rendered="#{tabItem['class'].simpleName eq 'MultiHierarchyTab'}">
+                        <ui:include src="/panel/tab/hierarchyTab.xhtml">
+                            <ui:param name="tableModelParents" value="#{panelModel.parentTableModelOf(tabItem)}"/>
+                            <ui:param name="tableModelChildren" value="#{panelModel.childTableModelOf(tabItem)}"/>
+                            <ui:param name="panelIndex" value="#{panelIndex}"/>
+                        </ui:include>
+                    </ui:fragment>
 
 
-                            </p:tab>
+                    <ui:fragment rendered="#{tabItem['class'].simpleName eq 'DocumentTab'}">
+                        <ui:include src="/panel/tab/documentsTab.xhtml">
+                            <ui:param name="panelModel" value="#{panelModel}"/>
+                        </ui:include>
+                    </ui:fragment>
 
 
-                        </p:tabView>
+                </p:tab>
 
-                        <!-- Save/Cancel Toolbar -->
+
+            </p:tabView>
+
+            <!-- Save/Cancel Toolbar -->
             <p:toolbar class="panel-footer">
                 <p:toolbarGroup align="left">
                     <div style="flex-direction: row; display: flex; gap: 1em; align-items: center;">

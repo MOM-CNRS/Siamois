@@ -106,15 +106,7 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
     // Lazy  for actions in the spatial unit
     private transient ActionUnitTableViewModel actionTabTableModel;
     private Integer totalActionUnitCount;
-    // Lazy model for recording unit in the spatial unit
-    private RecordingUnitInSpatialUnitLazyDataModel recordingLazyDataModel;
-    private Integer totalRecordingUnitCount;
-    // Lazy model for recording unit in the spatial unit
-    private SpecimenInSpatialUnitLazyDataModel specimenLazyDataModel;
-    private Integer totalSpecimenCount;
 
-
-    private String barModel;
 
 
     @Autowired
@@ -164,27 +156,6 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
 
 
 
-    public void createBarModel() {
-        barModel = new BarChart()
-                .setData(new BarData()
-                        .addDataset(new BarDataset()
-                                .setData(65, 59, 80)
-                                .setBackgroundColor(List.of(new RGBAColor(255, 99, 132, 0.5),new RGBAColor(12, 99, 132, 0.5),new RGBAColor(255, 17, 51, 0.5)))
-                                .setBorderColor(new RGBAColor(255, 99, 132,1))
-                                .setBorderWidth(1))
-                        .setLabels("Hors contexte", "Unité stratigraphique", "Unité construite"))
-                .setOptions(new BarOptions()
-                        .setResponsive(true)
-                        .setMaintainAspectRatio(false)
-                        .setPlugins(new Plugins()
-                                .setTooltip(new Tooltip().setMode("index"))
-                                .setTitle(new Title()
-                                        .setDisplay(true)
-                                        .setText("Unités d'enregistrement (mockup)")
-                                )
-                        )
-                ).toJson();
-    }
 
     @Override
     public List<Person> authorsAvailable() {
@@ -263,8 +234,6 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
 
     @Override
     public void init() {
-
-        createBarModel();
 
         if (idunit == null) {
             this.spatialUnitErrorMessage = "The ID of the spatial unit must be defined";

@@ -3,6 +3,8 @@ package fr.siamois.ui.lazydatamodel.tree;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
+import fr.siamois.ui.lazydatamodel.ActionUnitScope;
+import fr.siamois.ui.lazydatamodel.RecordingUnitScope;
 import lombok.Getter;
 import lombok.Setter;
 import org.primefaces.model.DefaultTreeNode;
@@ -16,13 +18,13 @@ import java.util.Set;
 @Setter
 public class RecordingUnitTreeTableLazyModel extends BaseTreeTableLazyModel<RecordingUnit, Long> {
 
-    private final RecordingUnitService recordingUnitService;
-    private final Long institutionId;
+    private final transient RecordingUnitService recordingUnitService;
+    private transient RecordingUnitScope scope;
 
-    public RecordingUnitTreeTableLazyModel(RecordingUnitService recordingUnitService, Long institutionId) {
+    public RecordingUnitTreeTableLazyModel(RecordingUnitService recordingUnitService, RecordingUnitScope scope) {
         super(RecordingUnit::getId);
         this.recordingUnitService = recordingUnitService;
-        this.institutionId = institutionId;
+        this.scope = scope;
     }
 
     @Override
@@ -30,8 +32,8 @@ public class RecordingUnitTreeTableLazyModel extends BaseTreeTableLazyModel<Reco
         TreeNode<RecordingUnit> rootNode = new DefaultTreeNode<>(null, null);
 
         // For now: load whole structure (service should ideally avoid N+1)
-        // Option A: get roots then fetch children per node (easy but can be N+1)
-        List<RecordingUnit> roots = recordingUnitService.findAllWithoutParentsByInstitution(institutionId);
+        // get roots then fetch children per node (easy but can be N+1)
+        List<RecordingUnit> roots = recordingUnitService.findAllWithoutParentsByInstitution(scope.getInstitutionId());
 
         Set<Long> path = new HashSet<>();
         for (RecordingUnit root : roots) {
@@ -50,7 +52,7 @@ public class RecordingUnitTreeTableLazyModel extends BaseTreeTableLazyModel<Reco
                                Set<Long> path) {
 
         // Option A: service fetch children by parent id
-        List<RecordingUnit> children = recordingUnitService.findChildrenByParentAndInstitution(parentUnit.getId(), institutionId);
+        List<RecordingUnit> children = recordingUnitService.findChildrenByParentAndInstitution(parentUnit.getId(), scope.getInstitutionId());
 
         for (RecordingUnit child : children) {
             if (child == null || child.getId() == null) continue;

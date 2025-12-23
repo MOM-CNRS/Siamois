@@ -149,6 +149,7 @@ public abstract class AbstractListPanel<T extends TraceableEntity> extends Abstr
         lazyDataModel = createLazyDataModel();
         configureLazyDataModel(lazyDataModel);
 
+        configureTableColumns();
     }
 
     protected abstract String getBreadcrumbKey();
@@ -164,4 +165,6 @@ public abstract class AbstractListPanel<T extends TraceableEntity> extends Abstr
     public List<TableColumn> getColumns() {
         return tableModel != null ? tableModel.getColumns() : List.of();
     }
+
+    abstract void configureTableColumns();
 }

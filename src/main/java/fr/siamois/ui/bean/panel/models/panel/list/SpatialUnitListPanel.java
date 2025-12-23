@@ -180,14 +180,10 @@ public class SpatialUnitListPanel extends AbstractListPanel<SpatialUnit>  implem
         // initialiser la sélection via l'API du tableModel (pas accès direct au lazy)
         tableModel.getLazyDataModel().setSelectedUnits(new ArrayList<>());
 
-        // Configurer les colonnes de la table
-        configureTableColumns();
     }
 
-    /**
-     * À toi de remplir la définition des colonnes.
-     */
-    protected void configureTableColumns() {
+    @Override
+    void configureTableColumns() {
         SpatialUnitTableDefinitionFactory.applyTo(tableModel);
 
         // configuration du bouton creer

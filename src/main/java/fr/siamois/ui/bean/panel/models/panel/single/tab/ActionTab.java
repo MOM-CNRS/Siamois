@@ -8,8 +8,6 @@ import lombok.Data;
 @Data
 public class ActionTab extends EntityListTab<ActionUnit> {
 
-
-
     public ActionTab(String titleCode, String icon, String id,
                      Integer count, ActionUnitTableViewModel tableModel) {
         super(titleCode, icon, id, null, count, tableModel);

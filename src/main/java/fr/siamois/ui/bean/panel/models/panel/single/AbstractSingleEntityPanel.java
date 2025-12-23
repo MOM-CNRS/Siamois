@@ -236,4 +236,27 @@ public abstract class AbstractSingleEntityPanel<T> extends AbstractSingleEntity<
                 .distinct()
                 .collect(Collectors.joining(", "));
     }
+
+    /**
+     * Returns multi hierarchy tab parent table
+     * @return parent table
+     */
+    public Object parentTableModelOf(Object tabItem) {
+        if (tabItem instanceof MultiHierarchyTab t) {
+            return t.getParentTableModel();
+        }
+        return null;
+    }
+
+    /**
+     * Returns multi hierarchy tab childen table
+     * @return child table
+     */
+    public Object childTableModelOf(Object tabItem) {
+        if (tabItem instanceof MultiHierarchyTab t) {
+            return t.getChildTableModel();
+        }
+        return null;
+    }
+
 }
