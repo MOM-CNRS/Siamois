@@ -170,11 +170,11 @@ public class SpatialUnitService implements ArkEntityService {
     /**
      * Find all spatial units of a given institution
      *
-     * @param institution The institution to filter by
+     * @param id The institution id to filter by
      * @return A list of SpatialUnit belonging to the given institution
      */
-    public List<SpatialUnit> findAllOfInstitution(Institution institution) {
-        return spatialUnitRepository.findAllOfInstitution(institution.getId());
+    public List<SpatialUnit> findAllOfInstitution(Long id) {
+        return spatialUnitRepository.findAllOfInstitution(id);
     }
 
     /**
@@ -325,12 +325,12 @@ public class SpatialUnitService implements ArkEntityService {
     /**
      * Find all root SpatialUnits of a given institution
      *
-     * @param institution The institution to filter by
+     * @param id The institution id to filter by
      * @return A list of root SpatialUnit that have no parents
      */
-    public List<SpatialUnit> findRootsOf(Institution institution) {
+    public List<SpatialUnit> findRootsOf(Long id) {
         List<SpatialUnit> result = new ArrayList<>();
-        for (SpatialUnit spatialUnit : findAllOfInstitution(institution)) {
+        for (SpatialUnit spatialUnit : findAllOfInstitution(id)) {
             if (countParentsByChild(spatialUnit) == 0) {
                 result.add(spatialUnit);
             }
@@ -341,11 +341,11 @@ public class SpatialUnitService implements ArkEntityService {
     /**
      * Find all direct children of a given SpatialUnit
      *
-     * @param spatialUnit The SpatialUnit to find children for
+     * @param id The id SpatialUnit to find children for
      * @return A list of direct children SpatialUnit of the given SpatialUnit
      */
-    public List<SpatialUnit> findDirectChildrensOf(SpatialUnit spatialUnit) {
-        return spatialUnitRepository.findChildrensOf(spatialUnit.getId()).stream().toList();
+    public List<SpatialUnit> findDirectChildrensOf(Long id) {
+        return spatialUnitRepository.findChildrensOf(id).stream().toList();
     }
 
     /**
@@ -397,46 +397,6 @@ public class SpatialUnitService implements ArkEntityService {
         return new ArrayList<>(byId.values());
     }
 
-    /**
-     * Get all the roots SpatialUnit in the institution
-     *
-     * @param institutionId the institution id
-     * @return The list of SpatialUnit associated with the institution
-     */
-    public List<SpatialUnit> findAllWithoutParentsByInstitution(Long institutionId) {
-        List<SpatialUnit> res = spatialUnitRepository.findRootsByInstitution(institutionId);
-
-        // load related entities
-        res.forEach(su -> {
-            Hibernate.initialize(su.getParents());
-            Hibernate.initialize(su.getChildren());
-            Hibernate.initialize(su.getRelatedActionUnitList());
-            Hibernate.initialize(su.getRecordingUnitList());
-        });
-
-        return res;
-    }
-
-    /**
-     * Get all SpatialUnit in the institution that are the children of a given parent
-     *
-     * @param parentId the parent id
-     * @param institutionId the institution id
-     * @return The list of SpatialUnit associated with the institution and that are the children of a given parent
-     */
-    public List<SpatialUnit> findChildrenByParentAndInstitution(Long parentId, Long institutionId ) {
-        List<SpatialUnit> res = spatialUnitRepository.findChildrenByParentAndInstitution(parentId, institutionId);
-
-        // load related entities
-        res.forEach(su -> {
-            Hibernate.initialize(su.getParents());
-            Hibernate.initialize(su.getChildren());
-            Hibernate.initialize(su.getRelatedActionUnitList());
-            Hibernate.initialize(su.getRecordingUnitList());
-        });
-
-        return res;
-    }
 
 
 }

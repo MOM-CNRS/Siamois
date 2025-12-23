@@ -37,7 +37,7 @@ public class RelationColumn extends TableColumn {
      */
     private String addRenderedKey;
 
-    /** PrimeFaces behaviors (apply to view and/or add; keep simple for now) */
+    /** PrimeFaces behaviors */
     private String processExpr;
     private String updateExpr;
     private String onstartJs;

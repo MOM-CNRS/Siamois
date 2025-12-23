@@ -319,27 +319,6 @@ public interface SpatialUnitRepository extends JpaRepository<SpatialUnit, Long>,
     List<SpatialUnit> findDescendantsUpToDepth(@Param("rootIds") Long[] rootIds,
                                                @Param("maxDepth") int maxDepth);
 
-    @Query(value = """
-    SELECT su.*
-    FROM spatial_unit su
-    WHERE su.fk_institution_id = :institutionId
-      AND NOT EXISTS (
-          SELECT 1
-          FROM spatial_hierarchy h
-          WHERE h.fk_child_id = su.spatial_unit_id
-      )
-    """, nativeQuery = true)
-    List<SpatialUnit> findRootsByInstitution(@Param("institutionId") Long institutionId);
 
-    @Query(value = """
-    SELECT su.*
-    FROM spatial_unit su
-    JOIN spatial_hierarchy h
-      ON h.fk_child_id = su.spatial_unit_id
-    WHERE su.fk_institution_id = :institutionId
-      AND h.fk_parent_id = :parentId
-    """, nativeQuery = true)
-    List<SpatialUnit> findChildrenByParentAndInstitution(@Param("parentId") Long parentId,
-                                                         @Param("institutionId") Long institutionId);
 }
 

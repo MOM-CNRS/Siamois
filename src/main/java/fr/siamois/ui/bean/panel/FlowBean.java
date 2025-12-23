@@ -107,7 +107,7 @@ public class FlowBean implements Serializable {
         UserInfo info = sessionSettings.getUserInfo();
         institutions = new ArrayList<>();
         institutions.addAll(institutionService.findInstitutionsOfPerson(info.getUser()));
-        fSpatialUnits = spatialUnitService.findAllOfInstitution(institution);
+        fSpatialUnits = spatialUnitService.findAllOfInstitution(institution.getId());
         selectedInstitution = institution;
     }
 

@@ -1,4 +1,5 @@
 package fr.siamois.ui.bean.dialog.newunit.handler;
+
 import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.exceptions.EntityAlreadyExistsException;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
@@ -25,10 +26,25 @@ public class SpatialUnitHandler implements INewUnitHandler<SpatialUnit> {
         this.langBean = langBean;
     }
 
-    @Override public UnitKind kind() { return UnitKind.SPATIAL; }
-    @Override public SpatialUnit newEmpty() { return new SpatialUnit(); }
-    @Override public SpatialUnit save(UserInfo u, SpatialUnit unit) throws EntityAlreadyExistsException { return spatialUnitService.save(u, unit); }
-    @Override public String dialogWidgetVar() { return "newUnitDiag"; }
+    @Override
+    public UnitKind kind() {
+        return UnitKind.SPATIAL;
+    }
+
+    @Override
+    public SpatialUnit newEmpty() {
+        return new SpatialUnit();
+    }
+
+    @Override
+    public SpatialUnit save(UserInfo u, SpatialUnit unit) throws EntityAlreadyExistsException {
+        return spatialUnitService.save(u, unit);
+    }
+
+    @Override
+    public String dialogWidgetVar() {
+        return "newUnitDiag";
+    }
 
     @Override
     public void initFromContext(GenericNewUnitDialogBean<?> bean) {
@@ -68,35 +84,89 @@ public class SpatialUnitHandler implements INewUnitHandler<SpatialUnit> {
 
         // 2) Scope "table" : appliqué quoi qu'il arrive (toolbar ou ligne)
         NewUnitContext.Scope scope = ctx.getScope();
-        if (scope != null && scope.getEntityId() != null) {
-            // exemple si un jour tu as : table "SpatialUnits liées à X"
-            // switch (scope.getKey()) { ... }
+        if (scope != null
+                && "SPATIAL".equals(scope.getKey())
+                && scope.getEntityId() != null) {
+
+            SpatialUnit ref = spatialUnitService.findById(scope.getEntityId()); // adapte si Optional
+            if (ref != null) {
+                String extra = scope.getExtra();
+
+                if ("PARENTS".equals(extra)) {
+                    // La table représente "les parents de ref"
+                    // => créer un nouveau parent : new.children += ref
+                    unit.getChildren().add(ref);
+
+                } else if ("CHILDREN".equals(extra)) {
+                    // La table représente "les enfants de ref"
+                    // => créer un nouvel enfant : new.parents += ref
+                    unit.getParents().add(ref);
+
+                } else {
+                    // Scope spatial sans extra reconnu : no-op (ou logique par défaut)
+                }
+            }
         }
     }
 
     @Override
     public String getTitle(NewUnitContext ctx) {
-        if (ctx == null || ctx.getTrigger() == null) {
+        if (ctx == null) {
             return INewUnitHandler.super.getTitle(ctx);
         }
 
-        var trigger = ctx.getTrigger();
-        Long clickedId = trigger.getClickedId();
-        String columnKey = trigger.getColumnKey();
+        // =========================
+        // 1) CELL trigger (clic sur colonne)
+        // =========================
+        NewUnitContext.Trigger trigger = ctx.getTrigger();
+        if (trigger != null
+                && trigger.getType() == NewUnitContext.TriggerType.CELL
+                && trigger.getClickedKind() == UnitKind.SPATIAL
+                && trigger.getClickedId() != null
+                && trigger.getColumnKey() != null) {
 
-        if (clickedId == null || columnKey == null) {
-            return INewUnitHandler.super.getTitle(ctx);
+            SpatialUnit clicked = spatialUnitService.findById(trigger.getClickedId());
+            String name = clicked != null
+                    ? clicked.getName()
+                    : ("#" + trigger.getClickedId());
+
+            return switch (trigger.getColumnKey()) {
+                case "parents"  ->
+                        langBean.msg("dialog.label.title.spatial.parent") + " " + name;
+                case "children" ->
+                        langBean.msg("dialog.label.title.spatial.child") + " " + name;
+                default ->
+                        INewUnitHandler.super.getTitle(ctx);
+            };
         }
 
-        SpatialUnit clicked = spatialUnitService.findById(clickedId);
-        String name = (clicked != null) ? clicked.getName() : ("#" + clickedId);
+        // =========================
+        // 2) TOOLBAR trigger (scope table)
+        // =========================
+        NewUnitContext.Scope scope = ctx.getScope();
+        if (scope != null
+                && "SPATIAL".equals(scope.getKey())
+                && scope.getEntityId() != null) {
 
-        return switch (columnKey) {
-            case "parents"  -> langBean.msg("dialog.label.title.spatial.parent") + name;
-            case "children" -> langBean.msg("dialog.label.title.spatial.child") + name;
-            default         -> INewUnitHandler.super.getTitle(ctx);
-        };
+            SpatialUnit ref = spatialUnitService.findById(scope.getEntityId());
+            String name = ref != null
+                    ? ref.getName()
+                    : ("#" + scope.getEntityId());
+
+            if ("PARENTS".equals(scope.getExtra())) {
+                return langBean.msg("dialog.label.title.spatial.parent") + " " + name;
+            }
+            if ("CHILDREN".equals(scope.getExtra())) {
+                return langBean.msg("dialog.label.title.spatial.child") + " " + name;
+            }
+        }
+
+        // =========================
+        // 3) Default fallback
+        // =========================
+        return INewUnitHandler.super.getTitle(ctx);
     }
+
 
     @Override
     public List<SpatialUnit> getSpatialUnitOptions(SpatialUnit unit) {

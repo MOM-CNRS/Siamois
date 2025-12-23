@@ -60,13 +60,19 @@
                         </ui:include>
                     </ui:fragment>
 
+            <ui:fragment rendered="#{tabItem['class'].simpleName eq 'DocumentTab'}">
+                                    <ui:include src="/panel/tab/documentsTab.xhtml">
+                                        <ui:param name="panelModel" value="#{panelModel}"/>
+                                    </ui:include>
+                                </ui:fragment>
 
-                </p:tab>
+
+                            </p:tab>
 
 
-            </p:tabView>
+                        </p:tabView>
 
-            <!-- Save/Cancel Toolbar -->
+                        <!-- Save/Cancel Toolbar -->
             <p:toolbar class="panel-footer">
                 <p:toolbarGroup align="left">
                     <div style="flex-direction: row; display: flex; gap: 1em; align-items: center;">

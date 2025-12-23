@@ -31,6 +31,7 @@ import fr.siamois.ui.lazydatamodel.*;
 import fr.siamois.ui.lazydatamodel.tree.ActionUnitTreeTableLazyModel;
 import fr.siamois.ui.lazydatamodel.tree.SpatialUnitTreeTableLazyModel;
 import fr.siamois.ui.table.*;
+import fr.siamois.ui.table.definitions.ActionUnitTableDefinitionFactory;
 import fr.siamois.ui.table.definitions.SpatialUnitTableDefinitionFactory;
 import fr.siamois.utils.MessageUtils;
 import lombok.EqualsAndHashCode;
@@ -233,7 +234,6 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
 
             initForms(true);
 
-
             // ---------  Action Tab
             initActionTab();
 
@@ -412,81 +412,7 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
                 institutionService
         );
 
-        actionTabTableModel.getTableDefinition().addColumn(
-                CommandLinkColumn.builder()
-                        .id("identifierCol")
-                        .headerKey("table.spatialunit.column.name")
-                        .visible(true)
-
-                        // PrimeFaces metadata equivalents
-                        .toggleable(false)
-                        .sortable(true)
-                        .sortField("name")
-
-                        // What to display inside <h:outputText>
-                        .valueKey("identifier")
-
-                        // What to do on click (Pattern A key)
-                        .action(TableColumnAction.GO_TO_ACTION_UNIT)
-
-                        // CommandLink behavior
-                        .processExpr("@this")
-                        .updateExpr("flow")
-                        .onstartJs("PF('buiContent').show()")
-                        .oncompleteJs("PF('buiContent').hide();handleScrollToTop();")
-                        .build()
-        );
-        actionTabTableModel.getTableDefinition().addColumn(
-                RelationColumn.builder()
-                        .id("parents")
-                        .headerKey("table.spatialunit.column.parents")
-                        .headerIcon("bi bi-pencil-square")
-                        .visible(true)
-                        .toggleable(true)
-
-                        .countKey("parents")
-
-                        .viewIcon("bi bi-eye")
-                        .viewAction(TableColumnAction.VIEW_RELATION)
-                        .viewTargetIndex(0)
-
-                        .addEnabled(true)
-                        .addIcon("bi bi-plus-square")
-                        .addAction(TableColumnAction.ADD_RELATION)
-                        .addRenderedKey("spatialUnitCreateAllowed")
-
-                        .processExpr("@this")
-                        .updateExpr("flow")
-                        .onstartJs("PF('buiContent').show()")
-                        .oncompleteJs("PF('buiContent').hide();handleScrollToTop();")
-                        .build()
-        );
-
-        actionTabTableModel.getTableDefinition().addColumn(
-                RelationColumn.builder()
-                        .id("children")
-                        .headerKey("table.spatialunit.column.children")
-                        .headerIcon("bi bi-pencil-square")
-                        .visible(true)
-                        .toggleable(true)
-
-                        .countKey("children")
-
-                        .viewIcon("bi bi-eye")
-                        .viewAction(TableColumnAction.VIEW_RELATION)
-                        .viewTargetIndex(0)
-
-                        .addEnabled(true)
-                        .addIcon("bi bi-plus-square")
-                        .addAction(TableColumnAction.ADD_RELATION)
-                        .addRenderedKey("spatialUnitCreateAllowed")
-
-                        .processExpr("@this")
-                        .updateExpr("flow")
-                        .onstartJs("PF('buiContent').show()")
-                        .oncompleteJs("PF('buiContent').hide();handleScrollToTop();")
-                        .build()
-        );
+        ActionUnitTableDefinitionFactory.applyTo(actionTabTableModel);
 
         // configuration du bouton creer
         actionTabTableModel.setToolbarCreateConfig(
@@ -513,6 +439,7 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
         SpatialUnitTreeTableLazyModel parentLazyTree = new SpatialUnitTreeTableLazyModel(
                 spatialUnitService, SpatialUnitScope.builder()
                 .spatialUnitId(unit.getId())
+                .institutionId(sessionSettingsBean.getSelectedInstitution().getId())
                 .type(PARENTS_OF_SPATIAL_UNIT)
                 .build()
         );
@@ -564,6 +491,7 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
         SpatialUnitTreeTableLazyModel childLazyTree = new SpatialUnitTreeTableLazyModel(
                 spatialUnitService, SpatialUnitScope.builder()
                 .spatialUnitId(unit.getId())
+                .institutionId(sessionSettingsBean.getSelectedInstitution().getId())
                 .type(CHILDREN_OF_SPATIAL_UNIT)
                 .build()
         );

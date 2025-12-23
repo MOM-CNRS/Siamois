@@ -35,11 +35,11 @@ public class SpatialUnitTreeTableLazyModel extends BaseTreeTableLazyModel<Spatia
 
         List<SpatialUnit> roots = switch (scope.getType()) {
             case INSTITUTION ->
-                    spatialUnitService.findAllWithoutParentsByInstitution(scope.getInstitutionId());
-            case PARENTS_OF_SPATIAL_UNIT ->
-                    spatialUnitService.findAllWithoutParentsByInstitution(scope.getInstitutionId());
+                    spatialUnitService.findRootsOf(scope.getInstitutionId());
             case CHILDREN_OF_SPATIAL_UNIT ->
-                    spatialUnitService.findAllWithoutParentsByInstitution(scope.getInstitutionId());
+                    spatialUnitService.findDirectChildrensOf(scope.getSpatialUnitId());
+            case PARENTS_OF_SPATIAL_UNIT ->
+                    spatialUnitService.findDirectParentsOf(scope.getSpatialUnitId());
         };
 
         Set<Long> path = new HashSet<>();
@@ -59,7 +59,7 @@ public class SpatialUnitTreeTableLazyModel extends BaseTreeTableLazyModel<Spatia
                                Set<Long> path) {
 
         // service fetch children by parent id
-        List<SpatialUnit> children = spatialUnitService.findChildrenByParentAndInstitution(parentUnit.getId(), scope.getInstitutionId());
+        List<SpatialUnit> children = spatialUnitService.findDirectChildrensOf(parentUnit.getId());
 
         for (SpatialUnit child : children) {
             if (child == null || child.getId() == null) continue;

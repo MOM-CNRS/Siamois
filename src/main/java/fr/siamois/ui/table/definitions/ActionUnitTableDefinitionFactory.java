@@ -1,28 +1,30 @@
 package fr.siamois.ui.table.definitions;
 
+import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
-import fr.siamois.ui.table.*;
 import fr.siamois.ui.table.CommandLinkColumn;
+import fr.siamois.ui.table.EntityTableViewModel;
 import fr.siamois.ui.table.RelationColumn;
+import fr.siamois.ui.table.TableColumnAction;
 
 
 /**
  * factory that "applies" a reusable column set + toolbar config onto an existing tableModel.
  * Put this in a shared package and call it from panels, tabs, etc.
  */
-public final class SpatialUnitTableDefinitionFactory {
+public final class ActionUnitTableDefinitionFactory {
 
-    private SpatialUnitTableDefinitionFactory() {}
+    private ActionUnitTableDefinitionFactory() {}
 
     /**
-     * Applies the standard SpatialUnit columns + toolbar create config to the given tableModel.
+     * Applies the standard ActionUnit columns + toolbar create config to the given tableModel.
      *
      * Notes:
      * - Does not call any UI beans (FlowBean, etc.)
      * - Only sets column metadata + generic toolbar create policy.
      * - If you want per-screen overrides, call them AFTER this method.
      */
-    public static void applyTo(EntityTableViewModel<SpatialUnit, ?> tableModel) {
+    public static void applyTo(EntityTableViewModel<ActionUnit, ?> tableModel) {
         if (tableModel == null) {
             return;
         }
@@ -36,23 +38,24 @@ public final class SpatialUnitTableDefinitionFactory {
                         .headerKey("table.spatialunit.column.name")
                         .visible(true)
 
+                        // PrimeFaces metadata equivalents
                         .toggleable(false)
                         .sortable(true)
                         .sortField("name")
 
-                        .valueKey("name")
-                        .action(TableColumnAction.GO_TO_SPATIAL_UNIT)
+                        // What to display inside <h:outputText>
+                        .valueKey("identifier")
 
+                        // What to do on click (Pattern A key)
+                        .action(TableColumnAction.GO_TO_ACTION_UNIT)
+
+                        // CommandLink behavior
                         .processExpr("@this")
                         .updateExpr("flow")
                         .onstartJs("PF('buiContent').show()")
                         .oncompleteJs("PF('buiContent').hide();handleScrollToTop();")
                         .build()
         );
-
-        // --------
-        // Parents
-        // --------
         tableModel.getTableDefinition().addColumn(
                 RelationColumn.builder()
                         .id("parents")
@@ -79,9 +82,6 @@ public final class SpatialUnitTableDefinitionFactory {
                         .build()
         );
 
-        // ---------
-        // Children
-        // ---------
         tableModel.getTableDefinition().addColumn(
                 RelationColumn.builder()
                         .id("children")
@@ -100,35 +100,6 @@ public final class SpatialUnitTableDefinitionFactory {
                         .addIcon("bi bi-plus-square")
                         .addAction(TableColumnAction.ADD_RELATION)
                         .addRenderedKey("spatialUnitCreateAllowed")
-
-                        .processExpr("@this")
-                        .updateExpr("flow")
-                        .onstartJs("PF('buiContent').show()")
-                        .oncompleteJs("PF('buiContent').hide();handleScrollToTop();")
-                        .build()
-        );
-
-        // -------
-        // Actions
-        // -------
-        tableModel.getTableDefinition().addColumn(
-                RelationColumn.builder()
-                        .id("action")
-                        .headerKey("table.spatialunit.column.actions")
-                        .headerIcon("bi bi-arrow-down-square")
-                        .visible(true)
-                        .toggleable(true)
-
-                        .countKey("actions")
-
-                        .viewIcon("bi bi-eye")
-                        .viewAction(TableColumnAction.VIEW_RELATION)
-                        .viewTargetIndex(0)
-
-                        .addEnabled(true)
-                        .addIcon("bi bi-plus-square")
-                        .addAction(TableColumnAction.ADD_RELATION)
-                        .addRenderedKey("actionUnitCreateAllowed")
 
                         .processExpr("@this")
                         .updateExpr("flow")
