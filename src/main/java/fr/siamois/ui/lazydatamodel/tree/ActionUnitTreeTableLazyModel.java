@@ -1,9 +1,7 @@
 package fr.siamois.ui.lazydatamodel.tree;
 
 import fr.siamois.domain.models.actionunit.ActionUnit;
-import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
-import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.ui.lazydatamodel.ActionUnitScope;
 import lombok.Getter;
 import lombok.Setter;

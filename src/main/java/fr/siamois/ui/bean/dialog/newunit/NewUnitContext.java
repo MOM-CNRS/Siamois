@@ -1,6 +1,5 @@
 package fr.siamois.ui.bean.dialog.newunit;
 
-import fr.siamois.domain.models.TraceableEntity;
 import lombok.Builder;
 import lombok.Getter;
 

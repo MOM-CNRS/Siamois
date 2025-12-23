@@ -1,7 +1,6 @@
 package fr.siamois.ui.lazydatamodel;
 
 import fr.siamois.domain.models.actionunit.ActionUnit;
-import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.data.domain.Page;

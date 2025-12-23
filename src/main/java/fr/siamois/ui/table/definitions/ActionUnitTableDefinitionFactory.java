@@ -1,7 +1,6 @@
 package fr.siamois.ui.table.definitions;
 
 import fr.siamois.domain.models.actionunit.ActionUnit;
-import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.ui.table.CommandLinkColumn;
 import fr.siamois.ui.table.EntityTableViewModel;
 import fr.siamois.ui.table.RelationColumn;

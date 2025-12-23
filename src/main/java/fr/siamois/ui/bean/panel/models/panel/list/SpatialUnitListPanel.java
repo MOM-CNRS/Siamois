@@ -1,12 +1,10 @@
 package fr.siamois.ui.bean.panel.models.panel.list;
 
 import fr.siamois.domain.models.auth.Person;
-import fr.siamois.domain.models.form.customfield.*;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.models.vocabulary.label.ConceptLabel;
 import fr.siamois.domain.services.InstitutionService;
-import fr.siamois.domain.services.authorization.writeverifier.ActionUnitWriteVerifier;
 import fr.siamois.domain.services.authorization.writeverifier.SpatialUnitWriteVerifier;
 import fr.siamois.domain.services.form.FormService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
@@ -17,9 +15,13 @@ import fr.siamois.ui.bean.dialog.newunit.NewUnitContext;
 import fr.siamois.ui.bean.dialog.newunit.UnitKind;
 import fr.siamois.ui.bean.panel.FlowBean;
 import fr.siamois.ui.bean.panel.models.PanelBreadcrumb;
-import fr.siamois.ui.lazydatamodel.*;
+import fr.siamois.ui.lazydatamodel.BaseLazyDataModel;
+import fr.siamois.ui.lazydatamodel.SpatialUnitLazyDataModel;
+import fr.siamois.ui.lazydatamodel.SpatialUnitScope;
 import fr.siamois.ui.lazydatamodel.tree.SpatialUnitTreeTableLazyModel;
-import fr.siamois.ui.table.*;
+import fr.siamois.ui.table.SpatialUnitTableViewModel;
+import fr.siamois.ui.table.ToolbarCreateConfig;
+import fr.siamois.ui.table.definitions.SpatialUnitTableDefinitionFactory;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.springframework.beans.factory.ObjectProvider;
@@ -30,7 +32,6 @@ import org.springframework.stereotype.Component;
 
 import java.io.Serializable;
 import java.util.ArrayList;
-import fr.siamois.ui.table.definitions.SpatialUnitTableDefinitionFactory;
 import java.util.List;
 
 import static fr.siamois.ui.lazydatamodel.SpatialUnitScope.Type.INSTITUTION;

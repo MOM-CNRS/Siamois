@@ -1,7 +1,6 @@
 package fr.siamois.ui.form;
 
 import fr.siamois.domain.models.form.customfield.CustomField;
-import fr.siamois.domain.models.form.customfield.CustomFieldSelectMultipleSpatialUnitTree;
 import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswer;
 import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerSelectMultipleSpatialUnitTree;
 import fr.siamois.domain.models.form.customformresponse.CustomFormResponse;
@@ -12,18 +11,14 @@ import fr.siamois.domain.services.form.FormService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitTreeService;
 import fr.siamois.ui.form.rules.ColumnApplier;
-import fr.siamois.ui.form.EnabledRulesEngine;
 import fr.siamois.ui.form.rules.ValueProvider;
 import fr.siamois.ui.viewmodel.TreeUiStateViewModel;
 import lombok.Data;
 import lombok.Getter;
 import org.primefaces.model.TreeNode;
-import java.util.function.BiConsumer;
-
-import fr.siamois.domain.models.form.customfield.CustomField;
-import fr.siamois.domain.models.vocabulary.Concept;
 
 import java.util.*;
+import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
 /**

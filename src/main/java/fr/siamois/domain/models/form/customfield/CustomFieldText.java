@@ -1,6 +1,5 @@
 package fr.siamois.domain.models.form.customfield;
 
-import fr.siamois.domain.models.vocabulary.Concept;
 import jakarta.persistence.Column;
 import jakarta.persistence.DiscriminatorValue;
 import jakarta.persistence.Entity;

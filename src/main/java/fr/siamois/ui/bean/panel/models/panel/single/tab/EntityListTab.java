@@ -2,7 +2,6 @@ package fr.siamois.ui.bean.panel.models.panel.single.tab;
 
 import fr.siamois.domain.models.TraceableEntity;
 import fr.siamois.ui.lazydatamodel.BaseLazyDataModel;
-import fr.siamois.ui.table.ActionUnitTableViewModel;
 import fr.siamois.ui.table.EntityTableViewModel;
 import lombok.Data;
 

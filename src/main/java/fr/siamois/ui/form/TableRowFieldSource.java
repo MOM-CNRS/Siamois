@@ -1,16 +1,14 @@
 package fr.siamois.ui.form;
 
 import fr.siamois.domain.models.form.customfield.CustomField;
-import fr.siamois.domain.models.form.customform.CustomCol;
-import fr.siamois.domain.models.form.customform.CustomForm;
-import fr.siamois.domain.models.form.customform.CustomFormPanel;
-import fr.siamois.domain.models.form.customform.CustomRow;
-import fr.siamois.domain.models.form.customform.EnabledWhenJson;
+import fr.siamois.domain.models.form.customform.*;
 import fr.siamois.ui.table.FormFieldColumn;
 import fr.siamois.ui.table.TableColumn;
 import fr.siamois.ui.table.TableDefinition;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * FieldSource pour une ligne de tableau.

@@ -1,7 +1,6 @@
 package fr.siamois.ui.bean.panel.models.panel.single.tab;
 
 import fr.siamois.domain.models.actionunit.ActionUnit;
-import fr.siamois.ui.lazydatamodel.BaseActionUnitLazyDataModel;
 import fr.siamois.ui.table.ActionUnitTableViewModel;
 import lombok.Data;
 

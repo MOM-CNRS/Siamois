@@ -10,11 +10,8 @@ import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.dialog.newunit.GenericNewUnitDialogBean;
 import fr.siamois.ui.bean.dialog.newunit.NewUnitContext;
 import fr.siamois.ui.bean.dialog.newunit.UnitKind;
-import fr.siamois.ui.exceptions.CannotInitializeNewUnitDialogException;
-import fr.siamois.ui.lazydatamodel.ActionUnitInSpatialUnitLazyDataModel;
 import org.springframework.stereotype.Component;
 
-import java.time.OffsetDateTime;
 import java.util.List;
 
 @Component

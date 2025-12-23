@@ -3,8 +3,8 @@ package fr.siamois.ui.lazydatamodel.tree;
 
 import lombok.Getter;
 import lombok.Setter;
-import org.primefaces.model.TreeNode;
 import org.primefaces.model.DefaultTreeNode;
+import org.primefaces.model.TreeNode;
 
 import java.io.Serializable;
 import java.util.HashMap;
