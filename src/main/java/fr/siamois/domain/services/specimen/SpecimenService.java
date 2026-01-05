@@ -72,6 +72,7 @@ public class SpecimenService implements ArkEntityService {
      * @param id the ID of the specimen to find
      * @return the specimen if found, or null if not found
      */
+    @Transactional
     public Specimen findById(Long id) {
         return specimenRepository.findById(id).orElse(null);
     }

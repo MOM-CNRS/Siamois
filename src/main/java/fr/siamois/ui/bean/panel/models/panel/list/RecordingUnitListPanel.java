@@ -169,7 +169,7 @@ public class RecordingUnitListPanel extends AbstractListPanel<RecordingUnit> imp
     public void handleRowEdit(RowEditEvent<RecordingUnit> event) {
         RecordingUnit toSave = event.getObject();
 
-        // todo : refléter le contexte si tu passes par EntityFormContext
+        // todo : flush back here?
         // var ctx = tableModel.getRowContext(toSave);
         // if (ctx != null) ctx.flushBackToEntity();
 

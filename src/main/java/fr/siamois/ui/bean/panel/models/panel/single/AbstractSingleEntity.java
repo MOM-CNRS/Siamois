@@ -72,7 +72,6 @@ public abstract class AbstractSingleEntity<T> extends AbstractPanel implements S
     protected transient T unit;
 
     protected CustomForm detailsForm;
-    protected CustomForm overviewForm;
 
     /**
      * Per-entity form context. Holds answers, enabled rules, spatial tree state, etc.
@@ -157,7 +156,7 @@ public abstract class AbstractSingleEntity<T> extends AbstractPanel implements S
     // -------------------- Abstract methods ----------------
 
     /**
-     * Initialize overviewForm, detailsForm, unit etc., then call initFormContext(forceInit).
+     * Initialize detailsForm, unit etc., then call initFormContext(forceInit).
      */
     public abstract void initForms(boolean forceInit);
 
@@ -179,7 +178,7 @@ public abstract class AbstractSingleEntity<T> extends AbstractPanel implements S
     // -------------------- Form context helpers ------------
 
     /**
-     * Helper for children: once unit + overviewForm/detailsForm are set,
+     * Helper for children: once unit + detailsForm are set,
      * call this to initialize the EntityFormContext.
      */
     protected void initFormContext(boolean forceInit) {
@@ -187,7 +186,7 @@ public abstract class AbstractSingleEntity<T> extends AbstractPanel implements S
             log.warn("initFormContext called with null unit");
             return;
         }
-        PanelFieldSource fieldSource = new PanelFieldSource(overviewForm, detailsForm);
+        PanelFieldSource fieldSource = new PanelFieldSource(detailsForm);
         if (formContext == null || forceInit) {
             formContext = new EntityFormContext<>(
                     unit,

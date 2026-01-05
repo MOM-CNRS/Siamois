@@ -232,7 +232,6 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnit> imple
     @Override
     public void initForms(boolean forceInit) {
 
-        overviewForm = ActionUnit.OVERVIEW_FORM;
         detailsForm = ActionUnit.DETAILS_FORM;
         // Init system form answers
         initFormContext(forceInit);

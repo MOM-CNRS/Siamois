@@ -182,27 +182,6 @@ public class SpatialUnit extends SpatialUnitGeneric implements ArkEntity {
             )
             .build();
 
-    @Transient
-    @JsonIgnore
-    public static final CustomForm OVERVIEW_FORM = new CustomForm.Builder()
-            .name("Details tab form")
-            .description("Contains the main form")
-            .addPanel(
-                    new CustomFormPanel.Builder()
-                            .name("common.header.general")
-                            .isSystemPanel(true)
-                            .addRow(
-                                    new CustomRow.Builder()
-                                            .addColumn(new CustomCol.Builder()
-                                                    .readOnly(true)
-                                                    .isRequired(false)
-                                                    .className(COLUMN_CLASS_NAME)
-                                                    .field(SPATIAL_UNIT_TYPE_FIELD)
-                                                    .build())
-                                            .build()
-                            ).build()
-            )
-            .build();
 
     @Transient
     @JsonIgnore

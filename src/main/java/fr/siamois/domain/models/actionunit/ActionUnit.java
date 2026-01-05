@@ -234,7 +234,7 @@ public class ActionUnit extends ActionUnitParent implements ArkEntity {
 
     @Transient
     @JsonIgnore
-    private static final CustomFieldDateTime BEGIN_DATE_FIELD = new CustomFieldDateTime.Builder()
+    private static final CustomFieldDateTime BEGIN_DATE_FIELD =  CustomFieldDateTime.builder()
             .label("common.field.beginDate")
             .isSystemField(true)
             .valueBinding("beginDate")
@@ -244,7 +244,7 @@ public class ActionUnit extends ActionUnitParent implements ArkEntity {
 
     @Transient
     @JsonIgnore
-    private static final CustomFieldDateTime END_DATE_FIELD = new CustomFieldDateTime.Builder()
+    private static final CustomFieldDateTime END_DATE_FIELD =  CustomFieldDateTime.builder()
             .label("common.field.endDate")
             .isSystemField(true)
             .valueBinding("endDate")
@@ -309,26 +309,6 @@ public class ActionUnit extends ActionUnitParent implements ArkEntity {
             )
             .build();
 
-    @Transient
-    @JsonIgnore
-    public static final CustomForm OVERVIEW_FORM = new CustomForm.Builder()
-            .name(DETAIL_TAB_NAME)
-            .description("")
-            .addPanel(
-                    new CustomFormPanel.Builder()
-                            .name(GENERAL_LABEL_CODE)
-                            .isSystemPanel(true)
-                            .addRow(
-                                    new CustomRow.Builder()
-                                            .addColumn(new CustomCol.Builder()
-                                                    .readOnly(false)
-                                                    .className(COLUMN_CLASS_NAME)
-                                                    .field(ACTION_UNIT_TYPE_FIELD)
-                                                    .build())
-                                            .build()
-                            ).build()
-            )
-            .build();
 
     @Transient
     @JsonIgnore

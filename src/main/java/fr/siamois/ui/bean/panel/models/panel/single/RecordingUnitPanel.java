@@ -283,7 +283,6 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
 
     @Override
     public void initForms(boolean forceInit) {
-        overviewForm = RecordingUnit.OVERVIEW_FORM;
         detailsForm = formService.findCustomFormByRecordingUnitTypeAndInstitutionId(unit.getType(), sessionSettingsBean.getSelectedInstitution());
         configureSystemFieldsBeforeInit();
         // Init system form answers
@@ -312,7 +311,7 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
     @Override
     protected void configureSystemFieldsBeforeInit() {
 
-        for (CustomField field : getAllFieldsFrom(overviewForm, detailsForm)) {
+        for (CustomField field : getAllFieldsFrom(detailsForm)) {
 
             if ("identifier".equals(field.getValueBinding()) && field instanceof CustomFieldInteger cfi) {
                 cfi.setMaxValue(unit.getActionUnit().getMaxRecordingUnitCode());

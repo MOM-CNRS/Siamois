@@ -211,7 +211,7 @@ public class RecordingUnit extends RecordingUnitParent implements ArkEntity, Ref
 
     @Transient
     @JsonIgnore
-    private static CustomFieldSelectOnePerson authorField = new CustomFieldSelectOnePerson.Builder()
+    private static CustomFieldSelectOnePerson authorField =  CustomFieldSelectOnePerson.builder()
             .label("recordingunit.field.mainAuthor")
             .isSystemField(true)
             .valueBinding("author")
@@ -220,7 +220,7 @@ public class RecordingUnit extends RecordingUnitParent implements ArkEntity, Ref
 
     @Transient
     @JsonIgnore
-    private static CustomFieldSelectMultiplePerson excavatorsField = new CustomFieldSelectMultiplePerson.Builder()
+    private static CustomFieldSelectMultiplePerson excavatorsField =  CustomFieldSelectMultiplePerson.builder()
             .label("recordingunit.field.excavators")
             .isSystemField(true)
             .valueBinding("excavators")
@@ -243,7 +243,7 @@ public class RecordingUnit extends RecordingUnitParent implements ArkEntity, Ref
 
     @Transient
     @JsonIgnore
-    private static CustomFieldDateTime openingDateField = new CustomFieldDateTime.Builder()
+    private static CustomFieldDateTime openingDateField = CustomFieldDateTime.builder()
             .label("recordingunit.field.openingDate")
             .isSystemField(true)
             .valueBinding("openingDate")
@@ -325,7 +325,7 @@ public class RecordingUnit extends RecordingUnitParent implements ArkEntity, Ref
 
     @Transient
     @JsonIgnore
-    private static CustomFieldDateTime creationDateField = new CustomFieldDateTime.Builder()
+    private static CustomFieldDateTime creationDateField = CustomFieldDateTime.builder()
             .label("recordingunit.field.creationDate")
             .isSystemField(true)
             .showTime(true)
@@ -336,7 +336,7 @@ public class RecordingUnit extends RecordingUnitParent implements ArkEntity, Ref
 
     @Transient
     @JsonIgnore
-    private static CustomFieldDateTime closingDateField = new CustomFieldDateTime.Builder()
+    private static CustomFieldDateTime closingDateField = CustomFieldDateTime.builder()
             .label("recordingunit.field.closingDate")
             .isSystemField(true)
             .valueBinding("endDate")
@@ -394,28 +394,7 @@ public class RecordingUnit extends RecordingUnitParent implements ArkEntity, Ref
 
 
 
-    // Details form
-    @Transient
-    @JsonIgnore
-    public static final CustomForm OVERVIEW_FORM = new CustomForm.Builder()
-            .name("Overview tab form")
-            .description("Contains the overview")
-            .addPanel(
-                    new CustomFormPanel.Builder()
-                            .name(COMMON_HEADER_GENERAL)
-                            .isSystemPanel(true)
-                            .addRow(
-                                    new CustomRow.Builder()
-                                            .addColumn(new CustomCol.Builder()
-                                                    .readOnly(true)
-                                                    .className(COLUMN_CLASS_NAME)
-                                                    .field(recordingUnitTypeField)
-                                                    .build())
-                                            .build()
-                            )
-                            .build()
-            )
-            .build();
+
 
     @Override
     public boolean equals(Object obj) {

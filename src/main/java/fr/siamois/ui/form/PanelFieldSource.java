@@ -9,16 +9,13 @@ import java.util.Map;
 
 public class PanelFieldSource implements FieldSource {
 
-    private final CustomForm overviewForm;
     private final CustomForm detailsForm;
 
     private final Map<Long, CustomField> byId = new HashMap<>();
     private final Map<CustomField, EnabledWhenJson> enabledByField = new HashMap<>();
 
-    public PanelFieldSource(CustomForm overviewForm, CustomForm detailsForm) {
-        this.overviewForm = overviewForm;
+    public PanelFieldSource(CustomForm detailsForm) {
         this.detailsForm = detailsForm;
-        index(overviewForm);
         index(detailsForm);
     }
 

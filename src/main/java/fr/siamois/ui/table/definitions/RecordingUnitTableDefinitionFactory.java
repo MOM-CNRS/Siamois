@@ -61,20 +61,20 @@ public final class RecordingUnitTableDefinitionFactory {
                 .fieldCode("SIARU.TYPE")
                 .styleClass("mr-2 recording-unit-type-chip")
                 .build();
-        CustomFieldDateTime DATE_FIELD = new CustomFieldDateTime.Builder()
+        CustomFieldDateTime DATE_FIELD =  CustomFieldDateTime.builder()
                 .label("recordingunit.field.openingDate")
                 .isSystemField(true)
                 .valueBinding("openingDate")
                 .concept(OPENINGDATE_CONCEPT)
                 .showTime(false)
                 .build();
-        CustomFieldSelectOnePerson AUTHOR_FIELD = new CustomFieldSelectOnePerson.Builder()
+        CustomFieldSelectOnePerson AUTHOR_FIELD =  CustomFieldSelectOnePerson.builder()
                 .label("recordingunit.field.author")
                 .isSystemField(true)
                 .valueBinding("author")
                 .concept(AUTHOR_CONCEPT)
                 .build();
-        CustomFieldSelectMultiplePerson CONTRIBUTORS_FIELD = new CustomFieldSelectMultiplePerson.Builder()
+        CustomFieldSelectMultiplePerson CONTRIBUTORS_FIELD =  CustomFieldSelectMultiplePerson.builder()
                 .label("recordingunit.field.contributors")
                 .isSystemField(true)
                 .valueBinding("contributors")

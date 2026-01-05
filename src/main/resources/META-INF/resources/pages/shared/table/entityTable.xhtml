@@ -64,6 +64,7 @@
                                     <div>
                                         <p:toggleSwitch
                                                 value="#{cc.attrs.tableModel.treeMode}"
+                                                rendered="#{cc.attrs.tableModel.isTreeViewSupported()}"
                                                 onIcon="bi bi-list-nested"
                                                 offIcon="bi bi-list">
 

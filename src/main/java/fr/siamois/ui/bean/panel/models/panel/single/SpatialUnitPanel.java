@@ -159,7 +159,6 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
     @Override
     public void initForms(boolean forceInit) {
 
-        overviewForm = SpatialUnit.OVERVIEW_FORM;
         detailsForm = SpatialUnit.DETAILS_FORM;
         // Init system form answers
         initFormContext(forceInit);

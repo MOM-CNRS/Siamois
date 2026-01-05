@@ -20,7 +20,6 @@ public abstract class AbstractSingleMultiHierarchicalEntityPanel<T extends Trace
         super(titleCodeOrTitle, icon, panelClass, context);
     }
 
-
     public abstract EntityTableViewModel<T, Long> getParentTableModel();
     public abstract EntityTableViewModel<T, Long> getChildTableModel();
 
