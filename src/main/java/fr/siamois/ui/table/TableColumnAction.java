@@ -10,5 +10,6 @@ public enum TableColumnAction {
     TOGGLE_BOOKMARK,
     DUPLICATE_ROW,
     GO_TO_SPATIAL_UNIT,
-    GO_TO_ACTION_UNIT
+    GO_TO_ACTION_UNIT,
+    GO_TO_SPECIMEN
 }
