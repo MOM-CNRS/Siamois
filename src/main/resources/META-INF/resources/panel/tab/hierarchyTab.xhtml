@@ -8,8 +8,7 @@
 
 >
 
-    <!--@elvariable id="tableModelParents" type="fr.siamois.ui.table.EntityUnitTableModel"-->
-    <!--@elvariable id="tableModelChildren" type="fr.siamois.ui.table.EntityUnitTableModel"-->
+    <!--@elvariable id="tabModel" type="fr.siamois.ui.panel.models.panel.single.tab.RecordingTab"-->
     <!--@elvariable id="panelIndex" type="java.lang.Integer" -->
 
     <p:panel id="parentsPanel" class="sia-form-panel" header="Parents"
@@ -18,16 +17,16 @@
 
         <table:entityTable
                 displayColumnToggler="true"
-                tableModel="#{tableModelParents}"
+                tableModel="#{tabModel.parentTableModel}"
                 panelIndex="#{panelIndex}"
                 id="parentList"
         >
             <f:facet name="rightToolbar">
                 <p:commandButton
-                        rendered="#{tableModelParents.toolbarCreateConfig ne null and flowBean.isWriteMode and spatialUnitFieldBean.isCreateAllowed()}"
+                        rendered="#{tabModel.parentTableModel.toolbarCreateConfig ne null and flowBean.isWriteMode and spatialUnitFieldBean.isCreateAllowed()}"
                         value="#{langBean.msg('common.action.create')}"
                         icon="bi bi-plus-square"
-                        actionListener="#{tableModelParents.openCreateFromToolbar(genericNewUnitDialogBean)}"
+                        actionListener="#{tabModel.parentTableModel.openCreateFromToolbar(genericNewUnitDialogBean)}"
                         oncomplete="PF('newUnitDiag').show();"
                         update="newUnitForm"
                         style="margin-right:.5rem">
@@ -42,16 +41,16 @@
              collapsed="false">
         <table:entityTable
                 displayColumnToggler="true"
-                tableModel="#{tableModelChildren}"
+                tableModel="#{tabModel.childTableModel}"
                 panelIndex="#{panelIndex}"
                 id="childList"
         >
             <f:facet name="rightToolbar">
                 <p:commandButton
-                        rendered="#{tableModelChildren.toolbarCreateConfig ne null and flowBean.isWriteMode and spatialUnitFieldBean.isCreateAllowed()}"
+                        rendered="#{tabModel.childTableModel.toolbarCreateConfig ne null and flowBean.isWriteMode and spatialUnitFieldBean.isCreateAllowed()}"
                         value="#{langBean.msg('common.action.create')}"
                         icon="bi bi-plus-square"
-                        actionListener="#{tableModelChildren.openCreateFromToolbar(genericNewUnitDialogBean)}"
+                        actionListener="#{tabModel.childTableModel.openCreateFromToolbar(genericNewUnitDialogBean)}"
                         oncomplete="PF('newUnitDiag').show();"
                         update="newUnitForm"
                         style="margin-right:.5rem">

@@ -3,6 +3,9 @@ package fr.siamois.ui.bean.panel.models.panel.single.tab;
 import fr.siamois.ui.table.EntityTableViewModel;
 import lombok.Getter;
 
+import java.util.HashMap;
+import java.util.Map;
+
 public class MultiHierarchyTab extends PanelTab {
 
     // lazy model for children
@@ -18,5 +21,13 @@ public class MultiHierarchyTab extends PanelTab {
         this.parentTableModel = parentTableModel;
         this.childTableModel = childTableModel;
     }
+
+    @Override
+    public String getViewName() {
+        return "/panel/tab/hierarchyTab.xhtml";
+    }
+
+
+
 
 }

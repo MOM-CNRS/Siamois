@@ -7,22 +7,22 @@
 
 >
 
-    <!--@elvariable id="tableModel" type="fr.siamois.ui.table.ActionUnitTableModel"-->
+    <!--@elvariable id="tabModel" type="fr.siamois.ui.panel.models.panel.single.tab.RecordingTab"-->
     <!--@elvariable id="panelIndex" type="java.lang.Integer"-->
 
     <div class="recording-unit-panel">
         <table:entityTable
                 displayColumnToggler="true"
-                tableModel="#{tableModel}"
+                tableModel="#{tabModel.tableModel}"
                 panelIndex="#{panelIndex}"
                 id="recordingList"
         >
             <f:facet name="rightToolbar">
                 <p:commandButton
-                        rendered="#{tableModel.toolbarCreateConfig ne null and flowBean.isWriteMode}"
+                        rendered="#{tabModel.tableModel.toolbarCreateConfig ne null and flowBean.isWriteMode}"
                         value="#{langBean.msg('common.action.create')}"
                         icon="bi bi-plus-square"
-                        actionListener="#{tableModel.openCreateFromToolbar(genericNewUnitDialogBean)}"
+                        actionListener="#{tabModel.tableModel.openCreateFromToolbar(genericNewUnitDialogBean)}"
                         oncomplete="PF('newUnitDiag').show();"
                         update="newUnitForm"
                         style="margin-right:.5rem">

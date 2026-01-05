@@ -6,13 +6,12 @@
 
 >
 
-    <!--@elvariable id="panelModel" type="fr.siamois.ui.bean.panel.models.panel.single.RecordingUnitPanel"-->
-    <!--@elvariable id="panelIndex" type="java.lang.Integer"-->
-    <!--@elvariable id="lazyDataModel"  type="fr.siamois.ui.lazydatamodel.BaseLazyDataModel"-->
+    <!--@elvariable id="tabModel" type="fr.siamois.ui.panel.models.panel.single.tab.RecordingTab"-->
+
 
     <div class="specimen-panel">
         <specimen:specimenList
-                lazyDataModel="#{lazyDataModel}"
+                lazyDataModel="#{tabModel.lazyDataModel}"
                 displayColumnToggler="false"
                 panelModel="#{panelModel}"
                 panelIndex="#{panelIndex}"
@@ -21,7 +20,7 @@
             <f:facet name="rightToolbar">
                 <p:commandButton value="#{langBean.msg('common.action.create')}" icon="bi bi-plus-square"
                                  id="newSpecimenButton"
-                                 actionListener="#{genericNewUnitDialogBean.selectKind('SPECIMEN',panelModel.specimenListLazyDataModel)}"
+                                 actionListener="#{genericNewUnitDialogBean.selectKind('SPECIMEN',tabModel.lazyDataModel)}"
                                  oncomplete="PF('newUnitDiag').show();"
                                  update="newUnitForm"
                                  rendered="#{specimenBean.showCreateSpecimenButton(panelModel.unit)}"
