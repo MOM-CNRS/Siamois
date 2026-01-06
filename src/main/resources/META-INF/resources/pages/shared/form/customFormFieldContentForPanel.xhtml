@@ -31,6 +31,8 @@
                 required="#{col.required}"
                 title="#{spatialUnitFieldBean.resolveCustomFieldLabel(col.field)}"
                 forId="#{prefix}-#{statusIndex}-#{rowIndex}-#{colIndex}:input"
+                fluid="#{answer['class'].simpleName ne 'CustomFieldAnswerSelectMultipleSpatialUnitTree'}"
+
         >
 
             <ui:include src="/pages/shared/form/fieldCore.xhtml">

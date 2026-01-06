@@ -9,10 +9,13 @@
         <cc:attribute name="isTheso" type="java.lang.Boolean" required="false" default="false"/>
         <cc:attribute name="forId" type="java.lang.String" required="false"/>
         <cc:attribute name="required" type="java.lang.Boolean" required="false" default="false"/>
+        <cc:attribute name="fluid" type="java.lang.Boolean" required="false" default="true"/>
     </cc:interface>
 
     <cc:implementation>
-        <div class="field-value-group ui-fluid" id="fieldValueGroup">
+        <div
+             class="field-value-group #{cc.attrs.fluid ? 'field-value-group ui-fluid' : 'field-value-group'}"
+             id="fieldValueGroup">
             <div>
                 <p:outputLabel
                         for="#{cc.attrs.forId}"

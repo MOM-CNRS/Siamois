@@ -21,7 +21,8 @@
     <!--@elvariable id="hasAutoGenerationFunction" type="java.lang.Boolean" -->
     <!--@elvariable id="onGenerateValue" type="javax.el.MethodExpression" -->
 
-    <p:outputPanel rendered="#{bean.isColumnEnabled(col.field)}" styleClass="ui-fluid"
+    <p:outputPanel rendered="#{bean.isColumnEnabled(col.field)}"
+                   styleClass="#{answer['class'].simpleName ne 'CustomFieldAnswerSelectMultipleSpatialUnitTree' ? 'ui-fluid' : ''}"
                    id="field-#{prefix}-#{rowIndex}-#{colIndex}">
         <ui:include src="/pages/shared/form/fieldCore.xhtml">
             <ui:param name="bean" value="#{bean}"/>
