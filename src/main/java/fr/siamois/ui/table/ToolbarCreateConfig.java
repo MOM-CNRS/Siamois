@@ -20,19 +20,19 @@ public class ToolbarCreateConfig implements Serializable {
      * ex: linkedTo("ACTION", actionId)
      */
     @Builder.Default
-    private final Supplier<NewUnitContext.Scope> scopeSupplier = NewUnitContext.Scope::none;
+    private final transient Supplier<NewUnitContext.Scope> scopeSupplier = NewUnitContext.Scope::none;
 
     /**
      * Insert policy toolbar (optionnel).
      * Si null: on utilisera (list=TOP, tree=ROOT).
      */
-    private final Supplier<NewUnitContext.UiInsertPolicy> insertPolicySupplier;
+    private transient Supplier<NewUnitContext.UiInsertPolicy> insertPolicySupplier;
 
     /**
      * Permet de surcharger le trigger toolbar si un jour tu veux.
      * Sinon toolbar par défaut.
      */
     @Builder.Default
-    private final Supplier<NewUnitContext.Trigger> triggerSupplier = NewUnitContext.Trigger::toolbar;
+    private final transient Supplier<NewUnitContext.Trigger> triggerSupplier = NewUnitContext.Trigger::toolbar;
 }
 

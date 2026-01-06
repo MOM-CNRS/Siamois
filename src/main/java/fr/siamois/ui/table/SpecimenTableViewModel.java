@@ -68,7 +68,7 @@ public class SpecimenTableViewModel extends EntityTableViewModel<Specimen, Long>
 
     @Override
     protected void configureRowSystemFields(Specimen s, CustomForm rowForm) {
-
+        // no specific configs
     }
 
     @Override

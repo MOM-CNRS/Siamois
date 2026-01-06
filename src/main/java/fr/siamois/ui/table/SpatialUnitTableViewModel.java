@@ -31,6 +31,8 @@ import java.util.List;
 @Getter
 public class SpatialUnitTableViewModel extends EntityTableViewModel<SpatialUnit, Long> {
 
+    public static final String PARENTS = "parents";
+    public static final String CHILDREN = "children";
     /** Lazy model spécifique RecordingUnit (accès à selectedUnits, etc.) */
     private final BaseSpatialUnitLazyDataModel spatialUnitLazyDataModel;
     private final FlowBean flowBean;
@@ -129,8 +131,8 @@ public class SpatialUnitTableViewModel extends EntityTableViewModel<SpatialUnit,
     public Integer resolveCount(TableColumn column, SpatialUnit su) {
         if (column instanceof RelationColumn rel) {
             return switch (rel.getCountKey()) {
-                case "parents" -> su.getParents() == null ? 0 : su.getParents().size();
-                case "children" -> su.getChildren() == null ? 0 : su.getChildren().size();
+                case PARENTS -> su.getParents() == null ? 0 : su.getParents().size();
+                case CHILDREN -> su.getChildren() == null ? 0 : su.getChildren().size();
                 case "action" -> su.getRelatedActionUnitList() == null ? 0 : su.getRelatedActionUnitList().size();
                 case "recordingUnit" -> su.getRecordingUnitList() == null ? 0 : su.getRecordingUnitList().size();
                 default -> 0;
@@ -186,10 +188,10 @@ public class SpatialUnitTableViewModel extends EntityTableViewModel<SpatialUnit,
             case ADD_RELATION -> {
                 // Dispatch based on column.countKey (or add a dedicated "relationKey")
                 switch (col.getCountKey()) {
-                    case "parents" -> {
+                    case PARENTS -> {
                         NewUnitContext ctx = NewUnitContext.builder()
                                 .kindToCreate(UnitKind.SPATIAL)
-                                .trigger(NewUnitContext.Trigger.cell(UnitKind.SPATIAL, su.getId(), "parents"))
+                                .trigger(NewUnitContext.Trigger.cell(UnitKind.SPATIAL, su.getId(), PARENTS))
                                 .insertPolicy(NewUnitContext.UiInsertPolicy.builder()
                                         .listInsert(NewUnitContext.ListInsert.TOP)
                                         .treeInsert(NewUnitContext.TreeInsert.PARENT_AT_ROOT)
@@ -199,10 +201,10 @@ public class SpatialUnitTableViewModel extends EntityTableViewModel<SpatialUnit,
                         openCreateDialog(ctx, genericNewUnitDialogBean);
                     }
 
-                    case "children" -> {
+                    case CHILDREN -> {
                         NewUnitContext ctx = NewUnitContext.builder()
                                 .kindToCreate(UnitKind.SPATIAL)
-                                .trigger(NewUnitContext.Trigger.cell(UnitKind.SPATIAL, su.getId(), "children"))
+                                .trigger(NewUnitContext.Trigger.cell(UnitKind.SPATIAL, su.getId(), CHILDREN))
                                 .insertPolicy(NewUnitContext.UiInsertPolicy.builder()
                                         .listInsert(NewUnitContext.ListInsert.TOP)
                                         .treeInsert(NewUnitContext.TreeInsert.CHILD_FIRST)

@@ -13,6 +13,12 @@ import fr.siamois.ui.table.TableColumnAction;
  */
 public final class SpatialUnitTableDefinitionFactory {
 
+    public static final String BI_BI_PLUS_SQUARE = "bi bi-plus-square";
+    public static final String BI_BI_EYE = "bi bi-eye";
+    public static final String THIS = "@this";
+    public static final String PF_BUI_CONTENT_SHOW = "PF('buiContent').show()";
+    public static final String PF_BUI_CONTENT_HIDE_HANDLE_SCROLL_TO_TOP = "PF('buiContent').hide();handleScrollToTop();";
+
     private SpatialUnitTableDefinitionFactory() {
     }
 
@@ -45,10 +51,10 @@ public final class SpatialUnitTableDefinitionFactory {
                         .valueKey("name")
                         .action(TableColumnAction.GO_TO_SPATIAL_UNIT)
 
-                        .processExpr("@this")
+                        .processExpr(THIS)
                         .updateExpr("flow")
-                        .onstartJs("PF('buiContent').show()")
-                        .oncompleteJs("PF('buiContent').hide();handleScrollToTop();")
+                        .onstartJs(PF_BUI_CONTENT_SHOW)
+                        .oncompleteJs(PF_BUI_CONTENT_HIDE_HANDLE_SCROLL_TO_TOP)
                         .build()
         );
 
@@ -65,19 +71,19 @@ public final class SpatialUnitTableDefinitionFactory {
 
                         .countKey("parents")
 
-                        .viewIcon("bi bi-eye")
+                        .viewIcon(BI_BI_EYE)
                         .viewAction(TableColumnAction.VIEW_RELATION)
                         .viewTargetIndex(2)
 
                         .addEnabled(true)
-                        .addIcon("bi bi-plus-square")
+                        .addIcon(BI_BI_PLUS_SQUARE)
                         .addAction(TableColumnAction.ADD_RELATION)
                         .addRenderedKey("spatialUnitCreateAllowed")
 
-                        .processExpr("@this")
+                        .processExpr(THIS)
                         .updateExpr("flow")
-                        .onstartJs("PF('buiContent').show()")
-                        .oncompleteJs("PF('buiContent').hide();handleScrollToTop();")
+                        .onstartJs(PF_BUI_CONTENT_SHOW)
+                        .oncompleteJs(PF_BUI_CONTENT_HIDE_HANDLE_SCROLL_TO_TOP)
                         .build()
         );
 
@@ -94,19 +100,19 @@ public final class SpatialUnitTableDefinitionFactory {
 
                         .countKey("children")
 
-                        .viewIcon("bi bi-eye")
+                        .viewIcon(BI_BI_EYE)
                         .viewAction(TableColumnAction.VIEW_RELATION)
                         .viewTargetIndex(2)
 
                         .addEnabled(true)
-                        .addIcon("bi bi-plus-square")
+                        .addIcon(BI_BI_PLUS_SQUARE)
                         .addAction(TableColumnAction.ADD_RELATION)
                         .addRenderedKey("spatialUnitCreateAllowed")
 
-                        .processExpr("@this")
+                        .processExpr(THIS)
                         .updateExpr("flow")
-                        .onstartJs("PF('buiContent').show()")
-                        .oncompleteJs("PF('buiContent').hide();handleScrollToTop();")
+                        .onstartJs(PF_BUI_CONTENT_SHOW)
+                        .oncompleteJs(PF_BUI_CONTENT_HIDE_HANDLE_SCROLL_TO_TOP)
                         .build()
         );
 
@@ -123,19 +129,19 @@ public final class SpatialUnitTableDefinitionFactory {
 
                         .countKey("actions")
 
-                        .viewIcon("bi bi-eye")
+                        .viewIcon(BI_BI_EYE)
                         .viewAction(TableColumnAction.VIEW_RELATION)
                         .viewTargetIndex(3)
 
                         .addEnabled(true)
-                        .addIcon("bi bi-plus-square")
+                        .addIcon(BI_BI_PLUS_SQUARE)
                         .addAction(TableColumnAction.ADD_RELATION)
                         .addRenderedKey("actionUnitCreateAllowed")
 
-                        .processExpr("@this")
+                        .processExpr(THIS)
                         .updateExpr("flow")
-                        .onstartJs("PF('buiContent').show()")
-                        .oncompleteJs("PF('buiContent').hide();handleScrollToTop();")
+                        .onstartJs(PF_BUI_CONTENT_SHOW)
+                        .oncompleteJs(PF_BUI_CONTENT_HIDE_HANDLE_SCROLL_TO_TOP)
                         .build()
         );
 

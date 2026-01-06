@@ -14,6 +14,12 @@ import static fr.siamois.ui.bean.panel.models.panel.single.AbstractSingleEntity.
  */
 public final class RecordingUnitTableDefinitionFactory {
 
+    public static final String THIS = "@this";
+    public static final String PF_BUI_CONTENT_SHOW = "PF('buiContent').show()";
+    public static final String PF_BUI_CONTENT_HIDE_HANDLE_SCROLL_TO_TOP = "PF('buiContent').hide();handleScrollToTop();";
+    public static final String BI_BI_EYE = "bi bi-eye";
+    public static final String BI_BI_PLUS_SQUARE = "bi bi-plus-square";
+
     private RecordingUnitTableDefinitionFactory() {}
 
     /**
@@ -123,10 +129,10 @@ public final class RecordingUnitTableDefinitionFactory {
                         .action(TableColumnAction.GO_TO_RECORDING_UNIT)
 
                         // CommandLink behavior
-                        .processExpr("@this")
+                        .processExpr(THIS)
                         .updateExpr("flow")
-                        .onstartJs("PF('buiContent').show()")
-                        .oncompleteJs("PF('buiContent').hide();handleScrollToTop();")
+                        .onstartJs(PF_BUI_CONTENT_SHOW)
+                        .oncompleteJs(PF_BUI_CONTENT_HIDE_HANDLE_SCROLL_TO_TOP)
                         .build()
         );
         tableModel.getTableDefinition().addColumn(
@@ -201,19 +207,19 @@ public final class RecordingUnitTableDefinitionFactory {
 
                         .countKey("parents")
 
-                        .viewIcon("bi bi-eye")
+                        .viewIcon(BI_BI_EYE)
                         .viewAction(TableColumnAction.VIEW_RELATION)
                         .viewTargetIndex(2)
 
                         .addEnabled(true)
-                        .addIcon("bi bi-plus-square")
+                        .addIcon(BI_BI_PLUS_SQUARE)
                         .addAction(TableColumnAction.ADD_RELATION)
                         .addRenderedKey("recordingUnitCreateAllowed")
 
-                        .processExpr("@this")
+                        .processExpr(THIS)
                         .updateExpr("flow")
-                        .onstartJs("PF('buiContent').show()")
-                        .oncompleteJs("PF('buiContent').hide();handleScrollToTop();")
+                        .onstartJs(PF_BUI_CONTENT_SHOW)
+                        .oncompleteJs(PF_BUI_CONTENT_HIDE_HANDLE_SCROLL_TO_TOP)
                         .build()
         );
 
@@ -227,19 +233,19 @@ public final class RecordingUnitTableDefinitionFactory {
 
                         .countKey("children")
 
-                        .viewIcon("bi bi-eye")
+                        .viewIcon(BI_BI_EYE)
                         .viewAction(TableColumnAction.VIEW_RELATION)
                         .viewTargetIndex(2)
 
                         .addEnabled(true)
-                        .addIcon("bi bi-plus-square")
+                        .addIcon(BI_BI_PLUS_SQUARE)
                         .addAction(TableColumnAction.ADD_RELATION)
                         .addRenderedKey("recordingUnitCreateAllowed")
 
-                        .processExpr("@this")
+                        .processExpr(THIS)
                         .updateExpr("flow")
-                        .onstartJs("PF('buiContent').show()")
-                        .oncompleteJs("PF('buiContent').hide();handleScrollToTop();")
+                        .onstartJs(PF_BUI_CONTENT_SHOW)
+                        .oncompleteJs(PF_BUI_CONTENT_HIDE_HANDLE_SCROLL_TO_TOP)
                         .build()
         );
 
@@ -254,19 +260,19 @@ public final class RecordingUnitTableDefinitionFactory {
 
                         .countKey("specimenList")
 
-                        .viewIcon("bi bi-eye")
+                        .viewIcon(BI_BI_EYE)
                         .viewAction(TableColumnAction.VIEW_RELATION)
                         .viewTargetIndex(3)
 
                         .addEnabled(true)
-                        .addIcon("bi bi-plus-square")
+                        .addIcon(BI_BI_PLUS_SQUARE)
                         .addAction(TableColumnAction.ADD_RELATION)
                         .addRenderedKey("specimenCreateAllowed")
 
-                        .processExpr("@this")
+                        .processExpr(THIS)
                         .updateExpr("flow")
-                        .onstartJs("PF('buiContent').show()")
-                        .oncompleteJs("PF('buiContent').hide();handleScrollToTop();")
+                        .onstartJs(PF_BUI_CONTENT_SHOW)
+                        .oncompleteJs(PF_BUI_CONTENT_HIDE_HANDLE_SCROLL_TO_TOP)
                         .build()
         );
 
