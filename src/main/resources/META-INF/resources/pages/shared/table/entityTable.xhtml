@@ -22,6 +22,7 @@
     <cc:implementation>
 
         <p:outputPanel id="tableContainer">
+
             <p:dataTable paginator="true"
                          rendered="#{not cc.attrs.tableModel.treeMode}"
                          editable="true"
@@ -310,7 +311,7 @@
 
                 <!-- Toolbar générique, globalFilter, toggler, bulk etc. -->
                 <f:facet name="header">
-                    <p:toolbar id="tableToolbar">
+                    <p:toolbar id="tableToolbarTree">
                         <p:toolbarGroup>
                             <p:toolbarGroup align="left">
                                 <div style="display:flex; flex-direction: column; gap:0.2em">
@@ -329,7 +330,7 @@
                                         <span class="filter-container ui-input-icon-left">
                                             <i class="bi bi-search"/>
 
-                                                        <p:inputText id="globalFilter"
+                                                        <p:inputText id="globalFilterTree"
                                                                      value="#{cc.attrs.tableModel.lazyDataModel.globalFilter}"
                                                                      onkeyup="PF('#{cc.clientId}_entityTreeTable').filter()"
                                                                      placeholder="#{langBean.msg('common.action.search')}">
@@ -341,7 +342,7 @@
                                         <!-- Column toggler -->
                                         <p:commandButton
                                                 rendered="#{cc.attrs.displayColumnToggler}"
-                                                style="margin-left: 1em;" id="toggler" type="button"
+                                                style="margin-left: 1em;" id="togglerTree" type="button"
                                                 value="#{langBean.msg('table.columnvisibility')}"
                                                 icon="pi pi-align-justify"/>
 
