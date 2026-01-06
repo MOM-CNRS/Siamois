@@ -19,6 +19,7 @@ import fr.siamois.domain.services.authorization.PermissionServiceImpl;
 import fr.siamois.domain.services.person.PersonService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.infrastructure.database.repositories.SpatialUnitRepository;
+import jakarta.validation.OverridesAttribute;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.Hibernate;
 import org.springframework.data.domain.Page;
@@ -342,6 +343,7 @@ public class SpatialUnitService implements ArkEntityService {
      * @param id The id SpatialUnit to find children for
      * @return A list of direct children SpatialUnit of the given SpatialUnit
      */
+    @Transactional
     public List<SpatialUnit> findDirectChildrensOf(Long id) {
         return spatialUnitRepository.findChildrensOf(id).stream().toList();
     }

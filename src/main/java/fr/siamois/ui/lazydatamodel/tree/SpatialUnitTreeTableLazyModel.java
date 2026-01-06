@@ -5,6 +5,7 @@ import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.ui.lazydatamodel.SpatialUnitScope;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.Hibernate;
 import org.primefaces.model.DefaultTreeNode;
 import org.primefaces.model.TreeNode;
 
@@ -64,6 +65,10 @@ public class SpatialUnitTreeTableLazyModel extends BaseTreeTableLazyModel<Spatia
             if (path.contains(child.getId())) {
                 continue;
             }
+
+            Hibernate.initialize(child.getChildren());
+            Hibernate.initialize(child.getParents());
+            Hibernate.initialize(child.getRelatedActionUnitList());
 
             TreeNode<SpatialUnit> childNode = new DefaultTreeNode<>(child, parentNode);
 
