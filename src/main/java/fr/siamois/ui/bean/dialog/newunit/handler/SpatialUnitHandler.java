@@ -47,66 +47,60 @@ public class SpatialUnitHandler implements INewUnitHandler<SpatialUnit> {
 
     @Override
     public void initFromContext(GenericNewUnitDialogBean<?> bean) {
-
         SpatialUnit unit = (SpatialUnit) bean.getUnit();
         NewUnitContext ctx = bean.getNewUnitContext();
         if (ctx == null) {
             return;
         }
 
-        // 1) Contexte "cellule" : on sait sur quel node on a cliqué + quelle colonne
+        // Handle "cell" context: clicked node + column
+        handleCellContext(ctx, unit);
+
+        // Handle "table" scope: toolbar or row
+        handleTableScope(ctx, unit);
+    }
+
+    private void handleCellContext(NewUnitContext ctx, SpatialUnit unit) {
         NewUnitContext.Trigger trigger = ctx.getTrigger();
-        if (trigger != null && trigger.getClickedId() != null && trigger.getColumnKey() != null) {
-
-            Long clickedId = trigger.getClickedId();
-            String key = trigger.getColumnKey();
-
-            // We find the entity clicked
-            SpatialUnit clicked = spatialUnitService.findById(clickedId);
-
-            if (clicked != null) {
-                switch (key) {
-                    case "parents" -> {
-                        // Tu crées un "parent" de clicked => relation : newUnit.children += clicked
-                        unit.getChildren().add(clicked);
-                    }
-                    case "children" -> {
-                        // Tu crées un "enfant" de clicked => relation : newUnit.parents += clicked
-                        unit.getParents().add(clicked);
-                    }
-                    default -> {
-                        // rien
-                    }
-                }
-            }
+        if (trigger == null || trigger.getClickedId() == null || trigger.getColumnKey() == null) {
+            return;
         }
 
-        // 2) Scope "table" : appliqué quoi qu'il arrive (toolbar ou ligne)
-        NewUnitContext.Scope scope = ctx.getScope();
-        if (scope != null
-                && "SPATIAL".equals(scope.getKey())
-                && scope.getEntityId() != null) {
+        Long clickedId = trigger.getClickedId();
+        String key = trigger.getColumnKey();
+        SpatialUnit clicked = spatialUnitService.findById(clickedId);
 
-            SpatialUnit ref = spatialUnitService.findById(scope.getEntityId()); // adapte si Optional
-            if (ref != null) {
-                String extra = scope.getExtra();
+        if (clicked == null) {
+            return;
+        }
 
-                if ("PARENTS".equals(extra)) {
-                    // La table représente "les parents de ref"
-                    // => créer un nouveau parent : new.children += ref
-                    unit.getChildren().add(ref);
-
-                } else if ("CHILDREN".equals(extra)) {
-                    // La table représente "les enfants de ref"
-                    // => créer un nouvel enfant : new.parents += ref
-                    unit.getParents().add(ref);
-
-                } else {
-                    // Scope spatial sans extra reconnu : no-op (ou logique par défaut)
-                }
-            }
+        switch (key) {
+            case "parents" -> unit.getChildren().add(clicked);
+            case "children" -> unit.getParents().add(clicked);
+            default -> { /* no-op */ }
         }
     }
+
+    private void handleTableScope(NewUnitContext ctx, SpatialUnit unit) {
+        NewUnitContext.Scope scope = ctx.getScope();
+        if (scope == null || !"SPATIAL".equals(scope.getKey()) || scope.getEntityId() == null) {
+            return;
+        }
+
+        SpatialUnit ref = spatialUnitService.findById(scope.getEntityId());
+        if (ref == null) {
+            return;
+        }
+
+        String extra = scope.getExtra();
+        if ("PARENTS".equals(extra)) {
+            unit.getChildren().add(ref);
+        } else if ("CHILDREN".equals(extra)) {
+            unit.getParents().add(ref);
+        }
+        // else: no-op
+    }
+
 
     @Override
     public String getTitle(NewUnitContext ctx) {

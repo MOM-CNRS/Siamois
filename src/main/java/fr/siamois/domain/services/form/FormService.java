@@ -30,6 +30,7 @@ import java.lang.reflect.Method;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.*;
+import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 
 /**
@@ -302,52 +303,104 @@ public class FormService {
                 && bindableFields.contains(field.getValueBinding())) {
 
             Object value = getFieldValue(jpaEntity, field.getValueBinding());
-            populateSystemFieldValue(answer, field, value);
+            populateSystemFieldValue(answer, value);
         }
     }
 
-    /**
-     * Initialization for system fields from the entity value.
-     * This is basically your previous populateSystemFieldValue,
-     * but without any UI-specific state (no treeStates here).
-     */
+
+
+
+    private void populateSystemFieldValue(CustomFieldAnswer answer, Object value) {
+
+        Map<Class<?>, BiConsumer<CustomFieldAnswer, Object>> handlers = new HashMap<>();
+        handlers.put(OffsetDateTime.class, this::handleDateTime);
+        handlers.put(String.class, this::handleString);
+        handlers.put(Person.class, this::handlePerson);
+        handlers.put(List.class, this::handlePersonList);
+        handlers.put(Concept.class, this::handleConcept);
+        handlers.put(ActionUnit.class, this::handleActionUnit);
+        handlers.put(SpatialUnit.class, this::handleSpatialUnit);
+        handlers.put(ActionCode.class, this::handleActionCode);
+        handlers.put(Integer.class, this::handleInteger);
+        handlers.put(Set.class, this::handleSpatialUnitSet);
+
+        // Execute appropriate handler
+        handlers.entrySet().stream()
+                .filter(entry -> entry.getKey().isInstance(value))
+                .findFirst()
+                .ifPresent(entry -> entry.getValue().accept(answer, value));
+    }
+
+    // Méthodes dédiées pour chaque type de 'value'
+    private void handleDateTime(CustomFieldAnswer answer, Object value) {
+        if (answer instanceof CustomFieldAnswerDateTime dateTimeAnswer) {
+            dateTimeAnswer.setValue(((OffsetDateTime) value).toLocalDateTime());
+        }
+    }
+
+    private void handleString(CustomFieldAnswer answer, Object value) {
+        if (answer instanceof CustomFieldAnswerText textAnswer) {
+            textAnswer.setValue((String) value);
+        }
+    }
+
+    private void handlePerson(CustomFieldAnswer answer, Object value) {
+        if (answer instanceof CustomFieldAnswerSelectOnePerson singlePersonAnswer) {
+            singlePersonAnswer.setValue((Person) value);
+        }
+    }
     @SuppressWarnings("unchecked")
-    private void populateSystemFieldValue(CustomFieldAnswer answer,
-                                          CustomField field,
-                                          Object value) {
-
-        if (value instanceof OffsetDateTime odt && answer instanceof CustomFieldAnswerDateTime dateTimeAnswer) {
-            dateTimeAnswer.setValue(odt.toLocalDateTime());
-        } else if (value instanceof String str && answer instanceof CustomFieldAnswerText textAnswer) {
-            textAnswer.setValue(str);
-        } else if (value instanceof Person p && answer instanceof CustomFieldAnswerSelectOnePerson singlePersonAnswer) {
-            singlePersonAnswer.setValue(p);
-        } else if (value instanceof List<?> list
-                && answer instanceof CustomFieldAnswerSelectMultiplePerson multiplePersonAnswer
-                && list.stream().allMatch(Person.class::isInstance)) {
-            multiplePersonAnswer.setValue((List<Person>) list);
-        } else if (value instanceof Concept c) {
-            if (answer instanceof CustomFieldAnswerSelectOneFromFieldCode codeAnswer) {
-                codeAnswer.setValue(c);
-                codeAnswer.setUiVal(new ConceptAutocompleteDTO(
-                        c,
-                        labelBean.findLabelOf(c),
-                        labelBean.getCurrentUserLang()
-                ));
+    private void handlePersonList(CustomFieldAnswer answer, Object value) {
+        if (answer instanceof CustomFieldAnswerSelectMultiplePerson multiplePersonAnswer) {
+            List<?> list = (List<?>) value;
+            if (list.stream().allMatch(Person.class::isInstance)) {
+                multiplePersonAnswer.setValue((List<Person>) list);
             }
-        } else if (value instanceof ActionUnit a && answer instanceof CustomFieldAnswerSelectOneActionUnit actionUnitAnswer) {
-            actionUnitAnswer.setValue(a);
-        } else if (value instanceof SpatialUnit s && answer instanceof CustomFieldAnswerSelectOneSpatialUnit spatialUnitAnswer) {
-            spatialUnitAnswer.setValue(s);
-        } else if (value instanceof ActionCode code && answer instanceof CustomFieldAnswerSelectOneActionCode actionCodeAnswer) {
-            actionCodeAnswer.setValue(code);
-        } else if (value instanceof Integer val && answer instanceof CustomFieldAnswerInteger integerAnswer) {
-            integerAnswer.setValue(val);
-        } else if (value instanceof Set<?> set && answer instanceof CustomFieldAnswerSelectMultipleSpatialUnitTree treeAnswer) {
-            treeAnswer.setValue((Set<SpatialUnit>) set);
-            // NOTE: UI (TreeUiStateViewModel) should be built in the bean/context, not here.
         }
     }
+
+    private void handleConcept(CustomFieldAnswer answer, Object value) {
+        if (answer instanceof CustomFieldAnswerSelectOneFromFieldCode codeAnswer) {
+            Concept c = (Concept) value;
+            codeAnswer.setValue(c);
+            codeAnswer.setUiVal(new ConceptAutocompleteDTO(
+                    c,
+                    labelBean.findLabelOf(c),
+                    labelBean.getCurrentUserLang()
+            ));
+        }
+    }
+
+    private void handleActionUnit(CustomFieldAnswer answer, Object value) {
+        if (answer instanceof CustomFieldAnswerSelectOneActionUnit actionUnitAnswer) {
+            actionUnitAnswer.setValue((ActionUnit) value);
+        }
+    }
+
+    private void handleSpatialUnit(CustomFieldAnswer answer, Object value) {
+        if (answer instanceof CustomFieldAnswerSelectOneSpatialUnit spatialUnitAnswer) {
+            spatialUnitAnswer.setValue((SpatialUnit) value);
+        }
+    }
+
+    private void handleActionCode(CustomFieldAnswer answer, Object value) {
+        if (answer instanceof CustomFieldAnswerSelectOneActionCode actionCodeAnswer) {
+            actionCodeAnswer.setValue((ActionCode) value);
+        }
+    }
+
+    private void handleInteger(CustomFieldAnswer answer, Object value) {
+        if (answer instanceof CustomFieldAnswerInteger integerAnswer) {
+            integerAnswer.setValue((Integer) value);
+        }
+    }
+    @SuppressWarnings("unchecked")
+    private void handleSpatialUnitSet(CustomFieldAnswer answer, Object value) {
+        if (answer instanceof CustomFieldAnswerSelectMultipleSpatialUnitTree treeAnswer) {
+            treeAnswer.setValue((Set<SpatialUnit>) value);
+        }
+    }
+
 
     @SuppressWarnings("unchecked")
     private static List<String> getBindableFieldNames(Object entity) {

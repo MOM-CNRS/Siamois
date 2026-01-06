@@ -5,6 +5,7 @@ import fr.siamois.domain.models.form.customform.*;
 
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class PanelFieldSource implements FieldSource {
@@ -20,23 +21,44 @@ public class PanelFieldSource implements FieldSource {
     }
 
     private void index(CustomForm form) {
-        if (form == null || form.getLayout() == null) return;
+        if (form == null || form.getLayout() == null) {
+            return;
+        }
+        processPanels(form.getLayout());
+    }
 
-        for (CustomFormPanel p : form.getLayout()) {
-            if (p.getRows() == null) continue;
-            for (CustomRow r : p.getRows()) {
-                if (r.getColumns() == null) continue;
-                for (CustomCol c : r.getColumns()) {
-                    CustomField f = c.getField();
-                    if (f == null) continue;
-                    byId.put(f.getId(), f);
-                    if (c.getEnabledWhenSpec() != null) {
-                        enabledByField.put(f, c.getEnabledWhenSpec());
-                    }
-                }
+    private void processPanels(List<CustomFormPanel> panels) {
+        for (CustomFormPanel panel : panels) {
+            if (panel.getRows() != null) {
+                processRows(panel.getRows());
             }
         }
     }
+
+    private void processRows(List<CustomRow> rows) {
+        for (CustomRow row : rows) {
+            if (row.getColumns() != null) {
+                processColumns(row.getColumns());
+            }
+        }
+    }
+
+    private void processColumns(List<CustomCol> columns) {
+        for (CustomCol column : columns) {
+            CustomField field = column.getField();
+            if (field != null) {
+                indexField(field, column);
+            }
+        }
+    }
+
+    private void indexField(CustomField field, CustomCol column) {
+        byId.put(field.getId(), field);
+        if (column.getEnabledWhenSpec() != null) {
+            enabledByField.put(field, column.getEnabledWhenSpec());
+        }
+    }
+
 
     @Override
     public Collection<CustomField> getAllFields() {

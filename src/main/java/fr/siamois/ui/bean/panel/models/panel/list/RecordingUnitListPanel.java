@@ -45,7 +45,6 @@ public class RecordingUnitListPanel extends AbstractListPanel<RecordingUnit> imp
     private final transient RecordingUnitService recordingUnitService;
     private final transient FormService formService;
     private final transient SpatialUnitTreeService spatialUnitTreeService;
-    private final transient SpatialUnitService spatialUnitService;
     private final transient FlowBean flowBean;
     private final transient GenericNewUnitDialogBean genericNewUnitDialogBean;
     private final transient RecordingUnitWriteVerifier recordingUnitWriteVerifier;
@@ -66,7 +65,6 @@ public class RecordingUnitListPanel extends AbstractListPanel<RecordingUnit> imp
         this.recordingUnitService = context.getBean(RecordingUnitService.class);
         this.formService = context.getBean(FormService.class);
         this.spatialUnitTreeService = context.getBean(SpatialUnitTreeService.class);
-        this.spatialUnitService = context.getBean(SpatialUnitService.class);
         this.flowBean = context.getBean(FlowBean.class);
         this.genericNewUnitDialogBean = context.getBean(GenericNewUnitDialogBean.class);
         this.recordingUnitWriteVerifier = context.getBean(RecordingUnitWriteVerifier.class);

@@ -27,6 +27,7 @@ import org.primefaces.model.Visibility;
 
 import java.util.*;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * View model générique pour une table d'entités avec formulaires dynamiques.
@@ -177,23 +178,16 @@ public abstract class EntityTableViewModel<T extends TraceableEntity, ID> {
             return List.of();
         }
 
-        Set<CustomField> fields = new LinkedHashSet<>();
-
-        for (CustomFormPanel panel : form.getLayout()) {
-            if (panel.getRows() == null) continue;
-            for (CustomRow row : panel.getRows()) {
-                if (row.getColumns() == null) continue;
-                for (CustomCol col : row.getColumns()) {
-                    CustomField field = col.getField();
-                    if (field != null) {
-                        fields.add(field);
-                    }
-                }
-            }
-        }
-
-        return new ArrayList<>(fields);
+        return form.getLayout().stream()
+                .filter(panel -> panel.getRows() != null)
+                .flatMap(panel -> panel.getRows().stream())
+                .filter(row -> row.getColumns() != null)
+                .flatMap(row -> row.getColumns().stream())
+                .map(CustomCol::getField)
+                .filter(Objects::nonNull)
+                .toList();
     }
+
 
     public void onToggle(ColumnToggleEvent e) {
         Integer index = (Integer) e.getData();
@@ -309,6 +303,8 @@ public abstract class EntityTableViewModel<T extends TraceableEntity, ID> {
                     treeLazyModel.insertChildFirst(null, created);
                 }
             }
+            default -> { // no op
+                 }
         }
     }
 

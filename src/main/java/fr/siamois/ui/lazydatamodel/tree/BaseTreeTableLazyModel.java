@@ -29,7 +29,7 @@ public abstract class BaseTreeTableLazyModel<T, ID> implements Serializable {
     private boolean initialized = false;
 
     /** Extract ID from entity */
-    private final Function<T, ID> idExtractor;
+    private final transient Function<T, ID> idExtractor;
 
     private transient Map<ID, TreeNode<T>> nodeById = new HashMap<>();
 

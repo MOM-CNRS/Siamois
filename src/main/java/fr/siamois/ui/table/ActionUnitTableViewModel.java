@@ -32,6 +32,8 @@ import static fr.siamois.ui.table.TableColumnAction.GO_TO_ACTION_UNIT;
 @Getter
 public class ActionUnitTableViewModel extends EntityTableViewModel<ActionUnit, Long> {
 
+    public static final String PARENTS = "parents";
+    public static final String CHILDREN = "children";
     /** Lazy model spécifique RecordingUnit (accès à selectedUnits, etc.) */
     private final BaseActionUnitLazyDataModel actionUnitLazyDataModel;
     private final FlowBean flowBean;
@@ -121,8 +123,8 @@ public class ActionUnitTableViewModel extends EntityTableViewModel<ActionUnit, L
     public Integer resolveCount(TableColumn column, ActionUnit au) {
         if (column instanceof RelationColumn rel) {
             return switch (rel.getCountKey()) {
-                case "parents" -> au.getParents() == null ? 0 : au.getParents().size();
-                case "children" -> au.getChildren() == null ? 0 : au.getChildren().size();
+                case PARENTS -> au.getParents() == null ? 0 : au.getParents().size();
+                case CHILDREN -> au.getChildren() == null ? 0 : au.getChildren().size();
                 case "recordingUnit" -> au.getRecordingUnitList() == null ? 0 : au.getRecordingUnitList().size();
                 default -> 0;
             };
@@ -178,11 +180,11 @@ public class ActionUnitTableViewModel extends EntityTableViewModel<ActionUnit, L
                 // Dispatch based on column.countKey (or add a dedicated "relationKey")
                 String countKey = col.getCountKey();
 
-                if ("parents".equals(countKey)) {
+                if (PARENTS.equals(countKey)) {
 
                     NewUnitContext ctx = NewUnitContext.builder()
                             .kindToCreate(UnitKind.ACTION)
-                            .trigger(NewUnitContext.Trigger.cell(UnitKind.ACTION, au.getId(), "parents"))
+                            .trigger(NewUnitContext.Trigger.cell(UnitKind.ACTION, au.getId(), PARENTS))
                             .insertPolicy(NewUnitContext.UiInsertPolicy.builder()
                                     .listInsert(NewUnitContext.ListInsert.TOP)
                                     .treeInsert(NewUnitContext.TreeInsert.PARENT_AT_ROOT)
@@ -191,11 +193,11 @@ public class ActionUnitTableViewModel extends EntityTableViewModel<ActionUnit, L
 
                     openCreateDialog(ctx, genericNewUnitDialogBean);
 
-                } else if ("children".equals(countKey)) {
+                } else if (CHILDREN.equals(countKey)) {
 
                     NewUnitContext ctx = NewUnitContext.builder()
                             .kindToCreate(UnitKind.ACTION)
-                            .trigger(NewUnitContext.Trigger.cell(UnitKind.ACTION, au.getId(), "children"))
+                            .trigger(NewUnitContext.Trigger.cell(UnitKind.ACTION, au.getId(), CHILDREN))
                             .insertPolicy(NewUnitContext.UiInsertPolicy.builder()
                                     .listInsert(NewUnitContext.ListInsert.TOP)
                                     .treeInsert(NewUnitContext.TreeInsert.CHILD_FIRST)

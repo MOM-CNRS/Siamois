@@ -90,28 +90,35 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
         }
 
         for (CustomField field : getAllFieldsFromForm(rowForm)) {
-
-            // Recording unit identifier
-            if ("identifier".equals(field.getValueBinding()) && field instanceof CustomFieldInteger cfi) {
-                if (ru.getActionUnit() != null) {
-                    cfi.setMaxValue(ru.getActionUnit().getMaxRecordingUnitCode());
-                    cfi.setMinValue(ru.getActionUnit().getMinRecordingUnitCode());
-                }
-            }
-
-            // Min and max datetime
-            if (field instanceof CustomFieldDateTime dt) {
-                if ("openingDate".equals(field.getValueBinding()) && ru.getClosingDate() != null) {
-                    dt.setMax(ru.getClosingDate().toLocalDateTime());
-                    dt.setMin(LocalDateTime.of(1000, Month.JANUARY, 1, 1, 1));
-                }
-                if ("closingDate".equals(field.getValueBinding()) && ru.getOpeningDate() != null) {
-                    dt.setMin(ru.getOpeningDate().toLocalDateTime());
-                    dt.setMax(LocalDateTime.of(9999, Month.DECEMBER, 31, 23, 59));
-                }
-            }
+            configureIdentifierField(ru, field);
+            configureDateTimeField(ru, field);
         }
     }
+
+    private void configureIdentifierField(RecordingUnit ru, CustomField field) {
+        if (!"identifier".equals(field.getValueBinding()) || !(field instanceof CustomFieldInteger cfi)) {
+            return;
+        }
+        if (ru.getActionUnit() != null) {
+            cfi.setMaxValue(ru.getActionUnit().getMaxRecordingUnitCode());
+            cfi.setMinValue(ru.getActionUnit().getMinRecordingUnitCode());
+        }
+    }
+
+    private void configureDateTimeField(RecordingUnit ru, CustomField field) {
+        if (!(field instanceof CustomFieldDateTime dt)) {
+            return;
+        }
+
+        if ("openingDate".equals(field.getValueBinding()) && ru.getClosingDate() != null) {
+            dt.setMax(ru.getClosingDate().toLocalDateTime());
+            dt.setMin(LocalDateTime.of(1000, Month.JANUARY, 1, 1, 1));
+        } else if ("closingDate".equals(field.getValueBinding()) && ru.getOpeningDate() != null) {
+            dt.setMin(ru.getOpeningDate().toLocalDateTime());
+            dt.setMax(LocalDateTime.of(9999, Month.DECEMBER, 31, 23, 59));
+        }
+    }
+
 
     @Override
     protected void handleCommandLink(CommandLinkColumn column,

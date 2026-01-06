@@ -7,7 +7,6 @@ import fr.siamois.domain.models.vocabulary.label.ConceptLabel;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.authorization.writeverifier.SpatialUnitWriteVerifier;
 import fr.siamois.domain.services.form.FormService;
-import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitTreeService;
 import fr.siamois.ui.bean.NavBean;
 import fr.siamois.ui.bean.dialog.newunit.GenericNewUnitDialogBean;
@@ -46,7 +45,6 @@ public class SpatialUnitListPanel extends AbstractListPanel<SpatialUnit>  implem
     //deps
     private final transient FormService formService;
     private final transient SpatialUnitTreeService spatialUnitTreeService;
-    private final transient SpatialUnitService spatialUnitService;
     private final transient FlowBean flowBean;
     private final transient GenericNewUnitDialogBean<SpatialUnit> genericNewUnitDialogBean;
     private final transient SpatialUnitWriteVerifier spatialUnitWriteVerifier;
@@ -63,7 +61,6 @@ public class SpatialUnitListPanel extends AbstractListPanel<SpatialUnit>  implem
                 context);
         this.formService = context.getBean(FormService.class);
         this.spatialUnitTreeService = context.getBean(SpatialUnitTreeService.class);
-        this.spatialUnitService = context.getBean(SpatialUnitService.class);
         this.flowBean = context.getBean(FlowBean.class);
         this.genericNewUnitDialogBean = context.getBean(GenericNewUnitDialogBean.class);
         this.spatialUnitWriteVerifier = context.getBean(SpatialUnitWriteVerifier.class);

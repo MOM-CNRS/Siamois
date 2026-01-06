@@ -17,8 +17,8 @@ import java.util.Set;
 @Setter
 public class SpatialUnitTreeTableLazyModel extends BaseTreeTableLazyModel<SpatialUnit, Long> {
 
-    private final SpatialUnitService spatialUnitService;
-    private SpatialUnitScope scope;
+    private final transient SpatialUnitService spatialUnitService;
+    private transient SpatialUnitScope scope;
 
     public SpatialUnitTreeTableLazyModel(SpatialUnitService spatialUnitService, SpatialUnitScope scope) {
         super(SpatialUnit::getId);
