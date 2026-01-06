@@ -57,22 +57,22 @@ public final class ActionUnitTableDefinitionFactory {
         );
         tableModel.getTableDefinition().addColumn(
                 RelationColumn.builder()
-                        .id("parents")
-                        .headerKey("table.spatialunit.column.parents")
+                        .id("recording")
+                        .headerKey("table.spatialunit.column.recordings")
                         .headerIcon("bi bi-pencil-square")
                         .visible(true)
                         .toggleable(true)
 
-                        .countKey("parents")
+                        .countKey("recordingUnit")
 
                         .viewIcon("bi bi-eye")
                         .viewAction(TableColumnAction.VIEW_RELATION)
-                        .viewTargetIndex(0)
+                        .viewTargetIndex(2)
 
                         .addEnabled(true)
                         .addIcon("bi bi-plus-square")
                         .addAction(TableColumnAction.ADD_RELATION)
-                        .addRenderedKey("spatialUnitCreateAllowed")
+                        .addRenderedKey("recordingUnitCreateAllowed")
 
                         .processExpr("@this")
                         .updateExpr("flow")
@@ -81,31 +81,7 @@ public final class ActionUnitTableDefinitionFactory {
                         .build()
         );
 
-        tableModel.getTableDefinition().addColumn(
-                RelationColumn.builder()
-                        .id("children")
-                        .headerKey("table.spatialunit.column.children")
-                        .headerIcon("bi bi-pencil-square")
-                        .visible(true)
-                        .toggleable(true)
 
-                        .countKey("children")
-
-                        .viewIcon("bi bi-eye")
-                        .viewAction(TableColumnAction.VIEW_RELATION)
-                        .viewTargetIndex(0)
-
-                        .addEnabled(true)
-                        .addIcon("bi bi-plus-square")
-                        .addAction(TableColumnAction.ADD_RELATION)
-                        .addRenderedKey("spatialUnitCreateAllowed")
-
-                        .processExpr("@this")
-                        .updateExpr("flow")
-                        .onstartJs("PF('buiContent').show()")
-                        .oncompleteJs("PF('buiContent').hide();handleScrollToTop();")
-                        .build()
-        );
 
     }
 }

@@ -56,6 +56,7 @@ public final class RecordingUnitTableDefinitionFactory {
         CustomFieldSelectOneFromFieldCode TYPE_FIELD =  CustomFieldSelectOneFromFieldCode.builder()
                 .label("recordingunit.property.type")
                 .isSystemField(true)
+                .id(1L)
                 .valueBinding("type")
                 .concept(TYPE_CONCEPT)
                 .fieldCode("SIARU.TYPE")
@@ -64,6 +65,7 @@ public final class RecordingUnitTableDefinitionFactory {
         CustomFieldDateTime DATE_FIELD =  CustomFieldDateTime.builder()
                 .label("recordingunit.field.openingDate")
                 .isSystemField(true)
+                .id(2L)
                 .valueBinding("openingDate")
                 .concept(OPENINGDATE_CONCEPT)
                 .showTime(false)
@@ -71,24 +73,28 @@ public final class RecordingUnitTableDefinitionFactory {
         CustomFieldSelectOnePerson AUTHOR_FIELD =  CustomFieldSelectOnePerson.builder()
                 .label("recordingunit.field.author")
                 .isSystemField(true)
+                .id(3L)
                 .valueBinding("author")
                 .concept(AUTHOR_CONCEPT)
                 .build();
         CustomFieldSelectMultiplePerson CONTRIBUTORS_FIELD =  CustomFieldSelectMultiplePerson.builder()
                 .label("recordingunit.field.contributors")
                 .isSystemField(true)
+                .id(4L)
                 .valueBinding("contributors")
                 .concept(CONTRIBUTORS_CONCEPT)
                 .build();
-        CustomFieldSelectOneActionUnit ACTION_FIELD = new CustomFieldSelectOneActionUnit.Builder()
+        CustomFieldSelectOneActionUnit ACTION_FIELD = CustomFieldSelectOneActionUnit.builder()
                 .label("recordingunit.field.actionUnit")
                 .isSystemField(true)
+                .id(5L)
                 .valueBinding("actionUnit")
                 .concept(ACTION_CONCEPT)
                 .build();
-        CustomFieldSelectOneSpatialUnit SPATIAL_FIELD = new CustomFieldSelectOneSpatialUnit.Builder()
+        CustomFieldSelectOneSpatialUnit SPATIAL_FIELD = CustomFieldSelectOneSpatialUnit.builder()
                 .label("recordingunit.field.spatialUnit")
                 .isSystemField(true)
+                .id(6L)
                 .valueBinding("spatialUnit")
                 .concept(SPATIAL_CONCEPT)
                 .build();
@@ -197,7 +203,7 @@ public final class RecordingUnitTableDefinitionFactory {
 
                         .viewIcon("bi bi-eye")
                         .viewAction(TableColumnAction.VIEW_RELATION)
-                        .viewTargetIndex(0)
+                        .viewTargetIndex(2)
 
                         .addEnabled(true)
                         .addIcon("bi bi-plus-square")
@@ -223,7 +229,7 @@ public final class RecordingUnitTableDefinitionFactory {
 
                         .viewIcon("bi bi-eye")
                         .viewAction(TableColumnAction.VIEW_RELATION)
-                        .viewTargetIndex(0)
+                        .viewTargetIndex(2)
 
                         .addEnabled(true)
                         .addIcon("bi bi-plus-square")
@@ -250,7 +256,7 @@ public final class RecordingUnitTableDefinitionFactory {
 
                         .viewIcon("bi bi-eye")
                         .viewAction(TableColumnAction.VIEW_RELATION)
-                        .viewTargetIndex(0)
+                        .viewTargetIndex(3)
 
                         .addEnabled(true)
                         .addIcon("bi bi-plus-square")

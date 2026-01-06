@@ -13,11 +13,12 @@ import fr.siamois.ui.table.TableColumnAction;
  */
 public final class SpatialUnitTableDefinitionFactory {
 
-    private SpatialUnitTableDefinitionFactory() {}
+    private SpatialUnitTableDefinitionFactory() {
+    }
 
     /**
      * Applies the standard SpatialUnit columns + toolbar create config to the given tableModel.
-     *
+     * <p>
      * Notes:
      * - Does not call any UI beans (FlowBean, etc.)
      * - Only sets column metadata + generic toolbar create policy.
@@ -66,7 +67,7 @@ public final class SpatialUnitTableDefinitionFactory {
 
                         .viewIcon("bi bi-eye")
                         .viewAction(TableColumnAction.VIEW_RELATION)
-                        .viewTargetIndex(0)
+                        .viewTargetIndex(2)
 
                         .addEnabled(true)
                         .addIcon("bi bi-plus-square")
@@ -95,7 +96,7 @@ public final class SpatialUnitTableDefinitionFactory {
 
                         .viewIcon("bi bi-eye")
                         .viewAction(TableColumnAction.VIEW_RELATION)
-                        .viewTargetIndex(0)
+                        .viewTargetIndex(2)
 
                         .addEnabled(true)
                         .addIcon("bi bi-plus-square")
@@ -124,7 +125,7 @@ public final class SpatialUnitTableDefinitionFactory {
 
                         .viewIcon("bi bi-eye")
                         .viewAction(TableColumnAction.VIEW_RELATION)
-                        .viewTargetIndex(0)
+                        .viewTargetIndex(3)
 
                         .addEnabled(true)
                         .addIcon("bi bi-plus-square")

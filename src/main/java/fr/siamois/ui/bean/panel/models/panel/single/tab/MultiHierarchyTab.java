@@ -3,9 +3,6 @@ package fr.siamois.ui.bean.panel.models.panel.single.tab;
 import fr.siamois.ui.table.EntityTableViewModel;
 import lombok.Getter;
 
-import java.util.HashMap;
-import java.util.Map;
-
 public class MultiHierarchyTab extends PanelTab {
 
     // lazy model for children

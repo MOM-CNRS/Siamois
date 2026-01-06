@@ -4,8 +4,6 @@ import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.ui.table.RecordingUnitTableViewModel;
 import lombok.Data;
 
-import java.util.Map;
-
 @Data
 public class RecordingTab extends EntityListTab<RecordingUnit> {
 

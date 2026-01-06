@@ -181,8 +181,7 @@ public class SpatialUnitTableViewModel extends EntityTableViewModel<SpatialUnit,
     public void handleRelationAction(RelationColumn col, SpatialUnit su, Integer panelIndex, TableColumnAction action) {
         switch (action) {
 
-            case VIEW_RELATION ->
-                    flowBean.goToRecordingUnitByIdNewPanel(su.getId(), panelIndex, col.getViewTargetIndex());
+            case VIEW_RELATION -> flowBean.goToSpatialUnitByIdNewPanel(su.getId(), panelIndex, col.getViewTargetIndex());
 
             case ADD_RELATION -> {
                 // Dispatch based on column.countKey (or add a dedicated "relationKey")

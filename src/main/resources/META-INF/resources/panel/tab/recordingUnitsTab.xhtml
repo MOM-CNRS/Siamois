@@ -1,7 +1,6 @@
 <ui:fragment xmlns="http://www.w3.org/1999/xhtml"
              xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
              xmlns:p="http://primefaces.org/ui"
-             xmlns:recordingUnit="http://xmlns.jcp.org/jsf/composite/pages/recordingUnit/components"
              xmlns:table="http://xmlns.jcp.org/jsf/composite/pages/shared/table"
              xmlns:f="http://java.sun.com/jsf/core"
 
@@ -22,6 +21,7 @@
                         rendered="#{tabModel.tableModel.toolbarCreateConfig ne null and flowBean.isWriteMode}"
                         value="#{langBean.msg('common.action.create')}"
                         icon="bi bi-plus-square"
+                        process="@this"
                         actionListener="#{tabModel.tableModel.openCreateFromToolbar(genericNewUnitDialogBean)}"
                         oncomplete="PF('newUnitDiag').show();"
                         update="newUnitForm"

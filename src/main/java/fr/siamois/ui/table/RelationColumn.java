@@ -24,7 +24,7 @@ public class RelationColumn extends TableColumn {
     /** View control (button or link) */
     private String viewIcon;              // e.g. "bi bi-eye"
     private TableColumnAction viewAction; // usually VIEW_RELATION
-    private Integer viewTargetIndex;      // e.g. 0/2/3 depending on tab/panel
+    private Integer viewTargetIndex;      // e.g. 0/2/3 depending on tab/panel. when opening the new panel, which tab index to go
 
     /** Optional add control */
     private boolean addEnabled;

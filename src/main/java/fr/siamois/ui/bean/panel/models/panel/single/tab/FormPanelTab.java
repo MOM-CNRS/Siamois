@@ -1,9 +1,5 @@
 package fr.siamois.ui.bean.panel.models.panel.single.tab;
 
-import lombok.Data;
-
-
-
 public abstract class FormPanelTab extends PanelTab {
 
     protected FormPanelTab(String titleCode, String icon, String id) {

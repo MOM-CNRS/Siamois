@@ -214,6 +214,7 @@ public class RecordingUnit extends RecordingUnitParent implements ArkEntity, Ref
     private static CustomFieldSelectOnePerson authorField =  CustomFieldSelectOnePerson.builder()
             .label("recordingunit.field.mainAuthor")
             .isSystemField(true)
+            .id(1L)
             .valueBinding("author")
             .concept(authorsConcept)
             .build();
@@ -223,6 +224,7 @@ public class RecordingUnit extends RecordingUnitParent implements ArkEntity, Ref
     private static CustomFieldSelectMultiplePerson excavatorsField =  CustomFieldSelectMultiplePerson.builder()
             .label("recordingunit.field.excavators")
             .isSystemField(true)
+            .id(2L)
             .valueBinding("excavators")
             .concept(excavatorsConcept)
             .build();
@@ -234,6 +236,7 @@ public class RecordingUnit extends RecordingUnitParent implements ArkEntity, Ref
             .label("recordingunit.property.type")
             .isSystemField(true)
             .valueBinding("type")
+            .id(3L)
             .styleClass(MR_2_RECORDING_UNIT_TYPE_CHIP)
             .iconClass(BI_BI_PENCIL_SQUARE)
             .fieldCode(RecordingUnit.TYPE_FIELD_CODE)
@@ -247,25 +250,28 @@ public class RecordingUnit extends RecordingUnitParent implements ArkEntity, Ref
             .label("recordingunit.field.openingDate")
             .isSystemField(true)
             .valueBinding("openingDate")
+            .id(4L)
             .showTime(false)
             .concept(openingDateConcept)
             .build();
 
     @Transient
     @JsonIgnore
-    private static CustomFieldSelectOneSpatialUnit spatialUnitField = new CustomFieldSelectOneSpatialUnit.Builder()
+    private static CustomFieldSelectOneSpatialUnit spatialUnitField = CustomFieldSelectOneSpatialUnit.builder()
             .label("recordingunit.field.spatialUnit")
             .isSystemField(true)
             .valueBinding("spatialUnit")
+            .id(5L)
             .concept(spatialUnitConcept)
             .build();
 
     @Transient
     @JsonIgnore
-    private static CustomFieldSelectOneActionUnit actionUnitField = new CustomFieldSelectOneActionUnit.Builder()
+    private static CustomFieldSelectOneActionUnit actionUnitField = CustomFieldSelectOneActionUnit.builder()
             .label("recordingunit.field.actionUnit")
             .isSystemField(true)
             .valueBinding("actionUnit")
+            .id(6L)
             .concept(actionUnitConcept)
             .build();
 
@@ -314,6 +320,7 @@ public class RecordingUnit extends RecordingUnitParent implements ArkEntity, Ref
     private static CustomFieldText recordingUnitIdField =  CustomFieldText.builder()
             .label("recordingunit.field.identifier")
             .isSystemField(true)
+            .id(7L)
             .valueBinding("fullIdentifier")
             .concept(recordingUnitIdConcept)
             .build();
@@ -329,6 +336,7 @@ public class RecordingUnit extends RecordingUnitParent implements ArkEntity, Ref
             .label("recordingunit.field.creationDate")
             .isSystemField(true)
             .showTime(true)
+            .id(8L)
             .valueBinding("creationTime")
             .concept(creationDateConcept)
             .build();
@@ -340,6 +348,7 @@ public class RecordingUnit extends RecordingUnitParent implements ArkEntity, Ref
             .label("recordingunit.field.closingDate")
             .isSystemField(true)
             .valueBinding("endDate")
+            .id(9L)
             .showTime(false)
             .concept(closingDateConcept)
             .build();

@@ -1,7 +1,5 @@
 package fr.siamois.ui.bean.panel.models.panel.single.tab;
 
-import java.util.Map;
-
 public class DetailsFormTab extends FormPanelTab {
     public DetailsFormTab(String titleCode, String icon, String id) {
         super(titleCode, icon, id);

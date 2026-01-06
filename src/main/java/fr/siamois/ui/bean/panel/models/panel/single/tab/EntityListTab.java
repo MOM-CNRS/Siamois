@@ -3,11 +3,7 @@ package fr.siamois.ui.bean.panel.models.panel.single.tab;
 import fr.siamois.domain.models.TraceableEntity;
 import fr.siamois.ui.lazydatamodel.BaseLazyDataModel;
 import fr.siamois.ui.table.EntityTableViewModel;
-import lombok.Data;
 import lombok.Getter;
-
-import java.util.HashMap;
-import java.util.Map;
 
 @Getter
 public abstract class EntityListTab<T extends TraceableEntity> extends PanelTab {

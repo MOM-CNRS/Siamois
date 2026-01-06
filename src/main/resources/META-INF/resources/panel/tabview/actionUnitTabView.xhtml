@@ -1,7 +1,6 @@
 <ui:fragment xmlns="http://www.w3.org/1999/xhtml"
              xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
              xmlns:p="http://primefaces.org/ui"
-             xmlns:h="http://xmlns.jcp.org/jsf/html"
              xmlns:f="http://xmlns.jcp.org/jsf/core"
 
 >
@@ -58,7 +57,7 @@
 
         </p:tab>
 
-        <!-- hierarchy tab -->
+        <!-- rec unit-->
         <p:tab>
 
             <f:facet name="title">
@@ -79,26 +78,7 @@
 
         </p:tab>
 
-        <!-- recording unit tab -->
-        <p:tab>
 
-            <f:facet name="title">
-
-                <ui:include src="/pages/shared/tab/tabTitle.xhtml">
-                    <ui:param name="title" value='#{langBean.msg(panelModel.tabs[3].titleCode)}'/>
-                    <ui:param name="icon" value="#{panelModel.tabs[3].icon}"/>
-                    <ui:param name="emptyTab" value="#{panelModel.emptyTabFor(panelModel.tabs[3])}"/>
-                    <ui:param name="validated" value="#{panelModel.unit.validated}"/>
-                </ui:include>
-            </f:facet>
-
-            <ui:include src="#{panelModel.tabs[3].getViewName()}">
-                <ui:param name="panelModel" value="#{panelModel}"/>
-                <ui:param name="panelIndex" value="#{panelIndex}"/>
-                <ui:param name="tabModel" value="#{panelModel.tabs[3]}"/>
-            </ui:include>
-
-        </p:tab>
 
 
 
