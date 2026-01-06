@@ -65,6 +65,7 @@
             **/ui/bean/dialog/newunit/**,
             **/ui/form/rules/**,
             **/ui/lazydatamodel/scope/**,
+            **/ui/lazydatamodel/tree/**,
             **/ui/table/**,
             **/ui/form/**,
             **/*ViewModel.*,
