@@ -64,6 +64,8 @@
             **/*DatasetInitializer.*,
             **/ui/bean/dialog/newunit/**,
             **/ui/form/rules/**,
+            **/ui/table/**,
+            **/ui/form/**,
             **/*ViewModel.*,
             **/*Converter.*,
             **/*Builder.*,

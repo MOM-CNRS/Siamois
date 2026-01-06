@@ -96,12 +96,12 @@ public class SpatialUnit extends SpatialUnitGeneric implements ArkEntity {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         SpatialUnit that = (SpatialUnit) o;
-        return Objects.equals(id, that.id);  // Compare based on RecordingUnit
+        return Objects.equals(id, that.id);  // Compare based on id
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id);  // Hash based on RecordingUnit
+        return Objects.hash(id);  // Hash based on id
     }
 
     @Transient
