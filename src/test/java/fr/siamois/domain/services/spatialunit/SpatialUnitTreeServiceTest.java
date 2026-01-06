@@ -48,6 +48,7 @@ class SpatialUnitTreeServiceTest {
 
         // Institution mock
         Institution mockInstitution = new Institution();
+        mockInstitution.setId(1L);
         when(sessionSettingsBean.getSelectedInstitution()).thenReturn(mockInstitution);
             when(spatialUnitService.findRootsOf(any(Long.class))).thenReturn(List.of(root));
         when(spatialUnitService.findDirectChildrensOf(root.getId())).thenReturn(List.of(child1, child2));
@@ -91,6 +92,7 @@ class SpatialUnitTreeServiceTest {
 
         // Institution mock
         Institution mockInstitution = new Institution();
+        mockInstitution.setId(1L);
         when(sessionSettingsBean.getSelectedInstitution()).thenReturn(mockInstitution);
         when(spatialUnitService.findRootsOf(any(Long.class))).thenReturn(List.of(root1, root2));
 

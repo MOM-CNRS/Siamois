@@ -47,7 +47,7 @@ public class ActionUnitListPanel extends AbstractListPanel<ActionUnit> implement
     private final transient FormService formService;
     private final transient SpatialUnitTreeService spatialUnitTreeService;
     private final transient FlowBean flowBean;
-    private final transient GenericNewUnitDialogBean genericNewUnitDialogBean;
+    private final transient GenericNewUnitDialogBean<ActionUnit> genericNewUnitDialogBean;
     private final transient SpatialUnitWriteVerifier spatialUnitWriteVerifier;
     private final transient NavBean navBean;
     private final transient InstitutionService institutionService;

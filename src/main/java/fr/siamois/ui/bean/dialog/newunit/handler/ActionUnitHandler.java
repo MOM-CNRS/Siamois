@@ -69,19 +69,13 @@ public class ActionUnitHandler implements INewUnitHandler<ActionUnit> {
 
         if (clickedId == null || key == null || clickedKind == null) return;
 
-        switch (key) {
-            case "related_actions" -> {
-                if (clickedKind == UnitKind.SPATIAL) {
-                    SpatialUnit clickedSpatial = spatialUnitService.findById(clickedId); // adapt Optional
-                    if (clickedSpatial != null) {
-                        unit.getSpatialContext().add(clickedSpatial);
-                    }
-                }
-            }
-            default -> {
-                // better to no-op than crash
+        if ("related_actions".equals(key) && clickedKind == UnitKind.SPATIAL) {
+            SpatialUnit clickedSpatial = spatialUnitService.findById(clickedId); // adapt Optional
+            if (clickedSpatial != null) {
+                unit.getSpatialContext().add(clickedSpatial);
             }
         }
+
     }
 
     private void applyScope(ActionUnit unit, NewUnitContext ctx) {
@@ -99,7 +93,7 @@ public class ActionUnitHandler implements INewUnitHandler<ActionUnit> {
         }
     }
 
-    
+
     @Override
     public List<SpatialUnit> getSpatialUnitOptions(ActionUnit unit) {
         return List.of();
@@ -116,44 +110,49 @@ public class ActionUnitHandler implements INewUnitHandler<ActionUnit> {
             return INewUnitHandler.super.getTitle(ctx);
         }
 
-        // ======================
-        // 1) CELL-triggered creation
-        // ======================
-        NewUnitContext.Trigger trigger = ctx.getTrigger();
-        if (trigger != null && trigger.getType() == NewUnitContext.TriggerType.CELL) {
-
-            Long clickedId = trigger.getClickedId();
-            String columnKey = trigger.getColumnKey();
-            UnitKind clickedKind = trigger.getClickedKind();
-
-            if (clickedId != null && columnKey != null && clickedKind == UnitKind.SPATIAL) {
-                SpatialUnit clicked = spatialUnitService.findById(clickedId);
-                String name = clicked != null ? clicked.getName() : ("#" + clickedId);
-
-                if ("related_actions".equals(columnKey)) {
-                    return langBean.msg("dialog.label.title.action.spatialContext") + " " + name;
-                }
-            }
+        String title = getSpatialContextTitleFromCellTrigger(ctx);
+        if (title != null) {
+            return title;
         }
 
-        // ======================
-        // 2) TOOLBAR-triggered creation (use scope)
-        // ======================
-        NewUnitContext.Scope scope = ctx.getScope();
-        if (scope != null && "SPATIAL".equals(scope.getKey()) && scope.getEntityId() != null) {
-
-            SpatialUnit scoped = spatialUnitService.findById(scope.getEntityId());
-            String name = scoped != null ? scoped.getName() : ("#" + scope.getEntityId());
-
-            return langBean.msg("dialog.label.title.action.spatialContext") + " " + name;
+        title = getSpatialContextTitleFromScope(ctx);
+        if (title != null) {
+            return title;
         }
 
-        // ======================
-        // 3) Default fallback
-        // ======================
         return INewUnitHandler.super.getTitle(ctx);
     }
 
+    private String getSpatialContextTitleFromCellTrigger(NewUnitContext ctx) {
+        NewUnitContext.Trigger trigger = ctx.getTrigger();
+        if (trigger == null || trigger.getType() != NewUnitContext.TriggerType.CELL) {
+            return null;
+        }
+
+        if (trigger.getClickedId() == null
+                || trigger.getColumnKey() == null
+                || trigger.getClickedKind() != UnitKind.SPATIAL
+                || !"related_actions".equals(trigger.getColumnKey())) {
+            return null;
+        }
+
+        return buildSpatialContextTitle(trigger.getClickedId());
+    }
+
+    private String getSpatialContextTitleFromScope(NewUnitContext ctx) {
+        NewUnitContext.Scope scope = ctx.getScope();
+        if (scope == null || scope.getEntityId() == null || !"SPATIAL".equals(scope.getKey())) {
+            return null;
+        }
+
+        return buildSpatialContextTitle(scope.getEntityId());
+    }
+
+    private String buildSpatialContextTitle(Long spatialUnitId) {
+        SpatialUnit unit = spatialUnitService.findById(spatialUnitId);
+        String name = (unit != null) ? unit.getName() : ("#" + spatialUnitId);
+        return langBean.msg("dialog.label.title.action.spatialContext") + " " + name;
+    }
 
 
 }

@@ -295,42 +295,77 @@ public abstract class AbstractSingleEntity<T> extends AbstractPanel implements S
     }
 
     protected List<CustomField> getAllFieldsFrom(CustomForm... forms) {
-        if (forms == null || forms.length == 0) {
+        if (isEmpty(forms)) {
             return List.of();
         }
 
-        // On évite les doublons au cas où le même champ apparaitrait plusieurs fois
         Set<CustomField> fields = new LinkedHashSet<>();
-
         for (CustomForm form : forms) {
-            if (form == null || form.getLayout() == null) {
-                continue;
-            }
-
-            for (CustomFormPanel panel : form.getLayout()) {
-                if (panel.getRows() == null) {
-                    continue;
-                }
-
-                for (CustomRow row : panel.getRows()) {
-                    if (row.getColumns() == null) {
-                        continue;
-                    }
-
-                    for (CustomCol col : row.getColumns()) {
-                        CustomField field = col.getField();
-                        if (field != null) {
-                            fields.add(field);
-                        }
-                    }
-                }
-            }
+            addFieldsFromForm(fields, form);
         }
-
         return new ArrayList<>(fields);
     }
 
+    private boolean isEmpty(CustomForm[] forms) {
+        return forms == null || forms.length == 0;
+    }
 
+    private void addFieldsFromForm(Set<CustomField> fields, CustomForm form) {
+        if (form == null) {
+            return;
+        }
+        addFieldsFromLayout(fields, form.getLayout());
+    }
 
+    private void addFieldsFromLayout(Set<CustomField> fields, List<CustomFormPanel> layout) {
+        if (layout == null) {
+            return;
+        }
+        for (CustomFormPanel panel : layout) {
+            addFieldsFromPanel(fields, panel);
+        }
+    }
+
+    private void addFieldsFromPanel(Set<CustomField> fields, CustomFormPanel panel) {
+        if (panel == null) {
+            return;
+        }
+        addFieldsFromRows(fields, panel.getRows());
+    }
+
+    private void addFieldsFromRows(Set<CustomField> fields, List<CustomRow> rows) {
+        if (rows == null) {
+            return;
+        }
+        for (CustomRow row : rows) {
+            addFieldsFromRow(fields, row);
+        }
+    }
+
+    private void addFieldsFromRow(Set<CustomField> fields, CustomRow row) {
+        if (row == null) {
+            return;
+        }
+        addFieldsFromColumns(fields, row.getColumns());
+    }
+
+    private void addFieldsFromColumns(Set<CustomField> fields, List<CustomCol> columns) {
+        if (columns == null) {
+            return;
+        }
+        for (CustomCol col : columns) {
+            addFieldFromColumn(fields, col);
+        }
+    }
+
+    private void addFieldFromColumn(Set<CustomField> fields, CustomCol col) {
+        if (col == null) {
+            return;
+        }
+        CustomField field = col.getField();
+        if (field != null) {
+            fields.add(field);
+        }
+    }
 
 }

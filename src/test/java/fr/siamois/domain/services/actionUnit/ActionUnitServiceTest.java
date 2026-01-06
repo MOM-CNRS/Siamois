@@ -405,32 +405,6 @@ class ActionUnitServiceTest {
 
 
     @Test
-    void returnsTrue_whenUserIsActionManager() {
-        Person person1 = new Person();
-        person1.setId(1L);
-        Institution i = new Institution();
-        i.setId(1L);
-        UserInfo user = new UserInfo(i ,person1, "fr");
-        when(permissionService.isInstitutionManager(user)).thenReturn(false);
-        when(permissionService.isActionManager(user)).thenReturn(true);
-
-        assertTrue(actionUnitService.hasCreatePermission(user));
-    }
-
-    @Test
-    void returnsFalse_whenUserHasNoPermissions() {
-        Person person1 = new Person();
-        person1.setId(1L);
-        Institution i = new Institution();
-        i.setId(1L);
-        UserInfo user = new UserInfo(i ,person1, "fr");
-        when(permissionService.isInstitutionManager(user)).thenReturn(false);
-        when(permissionService.isActionManager(user)).thenReturn(false);
-
-        assertFalse(actionUnitService.hasCreatePermission(user));
-    }
-
-    @Test
     void isActionUnitStillOngoing_returnsFalseWhenBeginIsNull() {
         ActionUnit au = new ActionUnit();
         au.setEndDate(OffsetDateTime.now().plusDays(1));

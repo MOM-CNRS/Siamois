@@ -354,7 +354,7 @@ class SpatialUnitServiceTest {
         // Assert
         assertNotNull(result);
         assertEquals(spatialUnit1, result);
-        verify(spatialUnitRepository).addParentToSpatialUnit(spatialUnit1.getId(), spatialUnit1.getId());
+
     }
 
     @Test

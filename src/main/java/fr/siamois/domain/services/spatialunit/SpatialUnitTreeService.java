@@ -43,7 +43,10 @@ public class SpatialUnitTreeService {
     }
 
 
-
+    /**
+     * Returns the tree node of all the spatial units in the active institution
+     * @return The tree node
+     */
     public TreeNode<SpatialUnit> buildTree() {
 
         TreeNode<SpatialUnit> root = new CheckboxTreeNode<>(new SpatialUnit(), null);
@@ -52,7 +55,7 @@ public class SpatialUnitTreeService {
         for (SpatialUnit r : racines) {
             TreeNode<SpatialUnit> rNode = new CheckboxTreeNode<>("SpatialUnit", r, root);
             rNode.setExpanded(false);
-            // on mémorise le chemin (ids vus) pour éviter les cycles
+            // we memorize path to avoid cycles
             Set<Long> path = new HashSet<>();
             path.add(r.getId());
             buildChildren(rNode, r, path);

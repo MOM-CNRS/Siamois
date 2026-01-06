@@ -19,6 +19,8 @@ import org.primefaces.model.TreeNode;
 
 import java.util.List;
 
+import static fr.siamois.ui.table.TableColumnAction.GO_TO_ACTION_UNIT;
+
 /**
  * View model spécifique pour les tableaux de ActionUnit.
  *
@@ -74,10 +76,7 @@ public class ActionUnitTableViewModel extends EntityTableViewModel<ActionUnit, L
 
     @Override
     protected void configureRowSystemFields(ActionUnit au, CustomForm rowForm) {
-        if (rowForm == null || rowForm.getLayout() == null) {
-            return;
-        }
-
+        // no system field to init
     }
 
     @Override
@@ -85,15 +84,15 @@ public class ActionUnitTableViewModel extends EntityTableViewModel<ActionUnit, L
                                      ActionUnit au,
                                      Integer panelIndex) {
 
-        switch (column.getAction()) {
+        if (column.getAction() == GO_TO_ACTION_UNIT) {
 
-            case GO_TO_ACTION_UNIT ->
-                    flowBean.goToActionUnitByIdNewPanel(
-                            au.getId(),
-                            panelIndex
-                    );
+            flowBean.goToActionUnitByIdNewPanel(
+                    au.getId(),
+                    panelIndex
+            );
 
-            default -> throw new IllegalStateException(
+        } else {
+            throw new IllegalStateException(
                     "Unhandled action: " + column.getAction()
             );
         }
@@ -105,17 +104,15 @@ public class ActionUnitTableViewModel extends EntityTableViewModel<ActionUnit, L
 
         if (column instanceof CommandLinkColumn linkColumn) {
 
-            switch (linkColumn.getValueKey()) {
+            String valueKey = linkColumn.getValueKey();
 
-                case "identifier":
-                    return au.getIdentifier();
-
-                default:
-                    throw new IllegalStateException(
-                            "Unknown valueKey: " + linkColumn.getValueKey()
-                    );
+            if ("identifier".equals(valueKey)) {
+                return au.getIdentifier();
             }
+
+            throw new IllegalStateException("Unknown valueKey: " + valueKey);
         }
+
 
         return "";
     }
@@ -179,34 +176,35 @@ public class ActionUnitTableViewModel extends EntityTableViewModel<ActionUnit, L
 
             case ADD_RELATION -> {
                 // Dispatch based on column.countKey (or add a dedicated "relationKey")
-                switch (col.getCountKey()) {
-                    case "parents" -> {
-                        NewUnitContext ctx = NewUnitContext.builder()
-                                .kindToCreate(UnitKind.ACTION)
-                                .trigger(NewUnitContext.Trigger.cell(UnitKind.ACTION, au.getId(), "parents"))
-                                .insertPolicy(NewUnitContext.UiInsertPolicy.builder()
-                                        .listInsert(NewUnitContext.ListInsert.TOP)
-                                        .treeInsert(NewUnitContext.TreeInsert.PARENT_AT_ROOT)
-                                        .build())
-                                .build();
+                String countKey = col.getCountKey();
 
-                        openCreateDialog(ctx, genericNewUnitDialogBean);
-                    }
+                if ("parents".equals(countKey)) {
 
-                    case "children" -> {
-                        NewUnitContext ctx = NewUnitContext.builder()
-                                .kindToCreate(UnitKind.ACTION)
-                                .trigger(NewUnitContext.Trigger.cell(UnitKind.ACTION, au.getId(), "children"))
-                                .insertPolicy(NewUnitContext.UiInsertPolicy.builder()
-                                        .listInsert(NewUnitContext.ListInsert.TOP)
-                                        .treeInsert(NewUnitContext.TreeInsert.CHILD_FIRST)
-                                        .build())
-                                .build();
+                    NewUnitContext ctx = NewUnitContext.builder()
+                            .kindToCreate(UnitKind.ACTION)
+                            .trigger(NewUnitContext.Trigger.cell(UnitKind.ACTION, au.getId(), "parents"))
+                            .insertPolicy(NewUnitContext.UiInsertPolicy.builder()
+                                    .listInsert(NewUnitContext.ListInsert.TOP)
+                                    .treeInsert(NewUnitContext.TreeInsert.PARENT_AT_ROOT)
+                                    .build())
+                            .build();
 
-                        openCreateDialog(ctx, genericNewUnitDialogBean);
-                    }
+                    openCreateDialog(ctx, genericNewUnitDialogBean);
 
+                } else if ("children".equals(countKey)) {
+
+                    NewUnitContext ctx = NewUnitContext.builder()
+                            .kindToCreate(UnitKind.ACTION)
+                            .trigger(NewUnitContext.Trigger.cell(UnitKind.ACTION, au.getId(), "children"))
+                            .insertPolicy(NewUnitContext.UiInsertPolicy.builder()
+                                    .listInsert(NewUnitContext.ListInsert.TOP)
+                                    .treeInsert(NewUnitContext.TreeInsert.CHILD_FIRST)
+                                    .build())
+                            .build();
+
+                    openCreateDialog(ctx, genericNewUnitDialogBean);
                 }
+
             }
 
             default -> throw new IllegalStateException("Unhandled relation action: " + action);
@@ -222,15 +220,19 @@ public class ActionUnitTableViewModel extends EntityTableViewModel<ActionUnit, L
     }
 
 
-    public String resolveIcon(RowAction action, ActionUnit au) {
+    public String resolveIcon(RowAction action,
+                              ActionUnit au) {
         return switch (action.getAction()) {
             default -> "";
         };
     }
+
     public void handleRowAction(RowAction action, ActionUnit au) {
-        switch (action.getAction()) {
-            default -> throw new IllegalStateException("Unhandled action: " + action.getAction());
+        if (action == null || action.getAction() == null) {
+            throw new IllegalStateException("Unhandled action: null");
         }
+
+        throw new IllegalStateException("Unhandled action: " + action.getAction());
     }
 
     @Override

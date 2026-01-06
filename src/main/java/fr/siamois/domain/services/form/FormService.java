@@ -17,6 +17,7 @@ import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.infrastructure.database.repositories.form.FormRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
 import fr.siamois.ui.bean.LabelBean;
+import fr.siamois.ui.form.CustomFieldAnswerFactory;
 import fr.siamois.ui.form.EnabledRulesEngine;
 import fr.siamois.ui.form.FieldSource;
 import fr.siamois.ui.form.rules.*;
@@ -126,7 +127,7 @@ public class FormService {
                 continue;
             }
 
-            CustomFieldAnswer answer = instantiateAnswerForField(field);
+            CustomFieldAnswer answer = CustomFieldAnswerFactory.instantiateAnswerForField(field);
             if (answer == null) continue;
 
             initializeAnswer(answer, field, jpaEntity, bindableFields);
@@ -346,14 +347,6 @@ public class FormService {
             treeAnswer.setValue((Set<SpatialUnit>) set);
             // NOTE: UI (TreeUiStateViewModel) should be built in the bean/context, not here.
         }
-    }
-
-    private static CustomFieldAnswer instantiateAnswerForField(CustomField field) {
-        Supplier<? extends CustomFieldAnswer> creator = ANSWER_CREATORS.get(field.getClass());
-        if (creator != null) {
-            return creator.get();
-        }
-        throw new IllegalArgumentException("Unsupported CustomField type: " + field.getClass().getName());
     }
 
     @SuppressWarnings("unchecked")
