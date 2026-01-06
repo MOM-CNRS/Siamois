@@ -1,19 +1,21 @@
 package fr.siamois.ui.lazydatamodel.tree;
 
-
 import lombok.Getter;
 import lombok.Setter;
 import org.primefaces.model.DefaultTreeNode;
 import org.primefaces.model.TreeNode;
 
 import java.io.Serializable;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Function;
 
 /**
  * "Lazy" TreeTable model (for now loads the entire tree).
  * Later we can switch to real lazy node loading.
+ *
+ * Multi-hierarchy support:
+ * - one entity ID can appear in multiple TreeNodes (DAG)
+ * - therefore index is: ID -> Collection<TreeNode<T>>
  */
 @Getter
 @Setter
@@ -31,7 +33,8 @@ public abstract class BaseTreeTableLazyModel<T, ID> implements Serializable {
     /** Extract ID from entity */
     private final transient Function<T, ID> idExtractor;
 
-    private transient Map<ID, TreeNode<T>> nodeById = new HashMap<>();
+    /** Multi-hierarchy index: entity id -> all nodes representing it */
+    private transient Map<ID, List<TreeNode<T>>> nodesById = new HashMap<>();
 
     protected BaseTreeTableLazyModel(Function<T, ID> idExtractor) {
         this.idExtractor = idExtractor;
@@ -42,6 +45,9 @@ public abstract class BaseTreeTableLazyModel<T, ID> implements Serializable {
      */
     public TreeNode<T> getRoot() {
         if (!initialized || root == null) {
+            // rebuild index along with the tree
+            nodesById = new HashMap<>();
+
             root = buildTree();
             if (root == null) {
                 // never return null to the component
@@ -58,76 +64,105 @@ public abstract class BaseTreeTableLazyModel<T, ID> implements Serializable {
     public void reset() {
         this.root = null;
         this.initialized = false;
+        if (nodesById != null) {
+            nodesById.clear();
+        }
     }
 
     /**
      * Subclasses build the full tree (services call, mapping, etc.).
+     * IMPORTANT: during build, call registerNode(entity, node) for every created node.
      */
     protected abstract TreeNode<T> buildTree();
 
-    /** Lookup node for a given entity id */
-    public TreeNode<T> findNodeById(ID id) {
-        if (id == null) return null;
+    /** Lookup ALL nodes for a given entity id (multi-hierarchy) */
+    public List<TreeNode<T>> findNodesById(ID id) {
+        if (id == null) return List.of();
         // ensure initialized
         getRoot();
-        return nodeById.get(id);
+        List<TreeNode<T>> nodes = nodesById.get(id);
+        return (nodes == null) ? List.of() : Collections.unmodifiableList(nodes);
     }
 
-    /** Register node in the index (call during build) */
+    /**
+     * Convenience: returns the first node if you don't care which occurrence you get.
+     * Prefer using findNodesById(...) when ambiguity matters.
+     */
+    public TreeNode<T> findAnyNodeById(ID id) {
+        List<TreeNode<T>> nodes = findNodesById(id);
+        return nodes.isEmpty() ? null : nodes.get(0);
+    }
+
+    /** Register node in the index (call during build and during inserts) */
     protected void registerNode(T entity, TreeNode<T> node) {
         if (entity == null || node == null) return;
         ID id = idExtractor.apply(entity);
-        if (id != null) {
-            nodeById.put(id, node);
-        }
+        if (id == null) return;
+
+        nodesById.computeIfAbsent(id, k -> new ArrayList<>(1)).add(node);
     }
 
-    /** Insert new node as FIRST child of clicked/parent node */
+    /** Insert new node as FIRST child of ALL matching parent nodes (multi-hierarchy) */
     public void insertChildFirst(ID parentId, T created) {
-        TreeNode<T> parent = (parentId == null) ? getRoot() : findNodeById(parentId);
 
-        if (parent == null) {
+        // Determine all parent occurrences
+        final List<TreeNode<T>> parents;
+        if (parentId == null) {
+            parents = List.of(getRoot());
+        } else {
+            parents = findNodesById(parentId);
+        }
+
+        if (parents == null || parents.isEmpty()) {
             // fallback: add under root
             TreeNode<T> n = new DefaultTreeNode<>(created, getRoot());
             registerNode(created, n);
             return;
         }
 
-        TreeNode<T> newNode = new DefaultTreeNode<>(created, null);
-        newNode.setParent(parent);
-        parent.getChildren().add(0, newNode);
-        parent.setExpanded(true);
+        // Insert under every occurrence of the parent entity
+        for (TreeNode<T> parent : parents) {
+            if (parent == null) continue;
 
-        registerNode(created, newNode);
+            TreeNode<T> newNode = new DefaultTreeNode<>(created, null);
+            newNode.setParent(parent);
+            parent.getChildren().add(0, newNode);
+            parent.setExpanded(true);
+
+            registerNode(created, newNode);
+        }
     }
+
 
     /**
      * Insert new parent at ROOT and move clicked node as ONLY child of new parent.
-     * (your chosen simplified parent-insertion policy)
+     * Note: if clickedId exists in multiple places, this method uses one arbitrary occurrence (first).
+     * Prefer passing the clicked TreeNode directly in your UI flow when you need precision.
      */
     public void insertParentAtRoot(ID clickedId, T createdParent) {
-        TreeNode<T> clicked = findNodeById(clickedId);
 
         // 1) create new parent under root
-        TreeNode<T> newParentNode = new DefaultTreeNode<>(createdParent, getRoot());
+        TreeNode<T> newParentNode = new DefaultTreeNode<>(createdParent, null);
+        newParentNode.setParent(root);
+        root.getChildren().add(0, newParentNode);
         registerNode(createdParent, newParentNode);
 
-        if (clicked == null) {
-            // nothing to reattach
+        // 2) pick a source occurrence to duplicate (any)
+        TreeNode<T> source = findAnyNodeById(clickedId);
+        if (source == null) {
+            newParentNode.setExpanded(true);
             return;
         }
 
-        // 2) detach clicked from old parent
-        TreeNode<T> oldParent = clicked.getParent();
-        if (oldParent != null) {
-            oldParent.getChildren().remove(clicked);
-        }
+        // 3) duplicate: create a NEW node pointing to the SAME entity data
+        T clickedEntity = source.getData();
+        TreeNode<T> duplicate = new DefaultTreeNode<>(clickedEntity, newParentNode);
 
-        // 3) attach clicked as only child
-        clicked.setParent(newParentNode);
-        newParentNode.getChildren().clear();
-        newParentNode.getChildren().add(clicked);
+        // 4) index the duplicate occurrence
+        registerNode(clickedEntity, duplicate);
+
         newParentNode.setExpanded(true);
     }
-}
 
+
+}

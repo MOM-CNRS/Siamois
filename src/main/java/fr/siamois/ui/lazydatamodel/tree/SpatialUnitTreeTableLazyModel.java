@@ -42,7 +42,10 @@ public class SpatialUnitTreeTableLazyModel extends BaseTreeTableLazyModel<Spatia
         Set<Long> path = new HashSet<>();
         for (SpatialUnit root : roots) {
             if (root == null || root.getId() == null) continue;
+
             TreeNode<SpatialUnit> node = new DefaultTreeNode<>(root, rootNode);
+            registerNode(root, node); // IMPORTANT: index it
+
             path.clear();
             path.add(root.getId());
             buildChildren(node, root, path);
@@ -55,7 +58,6 @@ public class SpatialUnitTreeTableLazyModel extends BaseTreeTableLazyModel<Spatia
                                SpatialUnit parentUnit,
                                Set<Long> path) {
 
-        // service fetch children by parent id
         List<SpatialUnit> children = spatialUnitService.findDirectChildrensOf(parentUnit.getId());
 
         for (SpatialUnit child : children) {
@@ -71,6 +73,7 @@ public class SpatialUnitTreeTableLazyModel extends BaseTreeTableLazyModel<Spatia
             Hibernate.initialize(child.getRelatedActionUnitList());
 
             TreeNode<SpatialUnit> childNode = new DefaultTreeNode<>(child, parentNode);
+            registerNode(child, childNode);
 
             path.add(child.getId());
             buildChildren(childNode, child, path);
