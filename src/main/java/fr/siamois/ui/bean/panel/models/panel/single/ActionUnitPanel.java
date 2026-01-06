@@ -260,7 +260,7 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnit> imple
 
     @Override
     public void visualise(RevisionWithInfo<ActionUnit> history) {
-        // TODO: implement
+        // button is deactivated
     }
 
     @Override
@@ -411,6 +411,11 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnit> imple
                         )
                         .build()
         );
+    }
+
+    @Override
+    public String getTabView() {
+        return "/panel/tabview/actionUnitTabView.xhtml";
     }
 
 }

@@ -20,78 +20,7 @@
             <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
 
             <!-- Tabs -->
-            <p:tabView id="singlePanelUnitTabs" activeIndex="#{panelModel.activeTabIndex}"
-                       value="#{panelModel.tabs}" var="tabItem">
-                <p:ajax event="tabChange" listener="#{panelModel.onTabChange}"/>
-
-                <!-- Overview tab -->
-                <p:tab>
-
-
-                    <f:facet name="title">
-                        <ui:include src="/pages/shared/tab/tabTitle.xhtml">
-                            <ui:param name="title" value='#{langBean.msg(tabItem.titleCode)}'/>
-                            <ui:param name="icon" value="#{tabItem.icon}"/>
-                            <ui:param name="emptyTab" value="#{panelModel.emptyTabFor(tabItem)}"/>
-                            <ui:param name="validated" value="#{panelModel.unit.validated}"/>
-                        </ui:include>
-                    </f:facet>
-
-                    <ui:fragment rendered="#{tabItem.getViewName() eq '/panel/tab/actionTab.xhtml'}">
-                        <ui:include src="/panel/tab/actionTab.xhtml">
-                            <ui:param name="panelModel" value="#{panelModel}"/>
-                            <ui:param name="panelIndex" value="#{panelIndex}"/>
-                            <ui:param name="tabModel" value="#{tabItem}"/>
-                            <ui:param name="root"
-                                      value="singlePanelUnitForm-#{panelIndex}:singlePanelUnitTabs:#{panelModel.getIndexOfTab(tabItem)}"/>
-
-                        </ui:include>
-                    </ui:fragment>
-
-
-                    <ui:fragment rendered="#{tabItem.getViewName() eq '/panel/tab/recordingUnitsTab.xhtml'}">
-                        <ui:include src="/panel/tab/recordingUnitsTab.xhtml">
-                            <ui:param name="panelModel" value="#{panelModel}"/>
-                            <ui:param name="panelIndex" value="#{panelIndex}"/>
-                            <ui:param name="tabModel" value="#{tabItem}"/>
-                            <ui:param name="root"
-                                      value="singlePanelUnitForm-#{panelIndex}:singlePanelUnitTabs:#{panelModel.getIndexOfTab(tabItem)}"/>
-
-                        </ui:include>
-                    </ui:fragment>
-
-                    <ui:fragment rendered="#{tabItem.getViewName() eq '/panel/tab/detailsTab.xhtml'}">
-                        <ui:include src="/panel/tab/detailsTab.xhtml">
-                            <ui:param name="panelModel" value="#{panelModel}"/>
-                            <ui:param name="panelIndex" value="#{panelIndex}"/>
-                            <ui:param name="root"
-                                      value="singlePanelUnitForm-#{panelIndex}:singlePanelUnitTabs:#{panelModel.getIndexOfTab(tabItem)}"/>
-
-                        </ui:include>
-                    </ui:fragment>
-
-                    <ui:fragment rendered="#{tabItem.getViewName() eq '/panel/tab/documentsTab.xhtml'}">
-                        <ui:include src="/panel/tab/documentsTab.xhtml">
-                            <ui:param name="panelModel" value="#{panelModel}"/>
-
-                        </ui:include>
-                    </ui:fragment>
-
-                    <ui:fragment rendered="#{tabItem.getViewName() eq '/panel/tab/hierarchyTab.xhtml'}">
-                        <ui:include src="/panel/tab/hierarchyTab.xhtml">
-                            <ui:param name="panelModel" value="#{panelModel}"/>
-                            <ui:param name="panelIndex" value="#{panelIndex}"/>
-                            <ui:param name="tabModel" value="#{tabItem}"/>
-                            <ui:param name="root"
-                                      value="singlePanelUnitForm-#{panelIndex}:singlePanelUnitTabs:#{panelModel.getIndexOfTab(tabItem)}"/>
-
-                        </ui:include>
-                    </ui:fragment>
-
-
-                </p:tab>
-
-            </p:tabView>
+            <ui:include src="#{panelModel.getTabView()}" />
 
             <!-- Save/Cancel Toolbar -->
             <p:toolbar class="panel-footer">

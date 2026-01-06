@@ -3,6 +3,7 @@
              xmlns:p="http://primefaces.org/ui"
              xmlns:specimen="http://xmlns.jcp.org/jsf/composite/pages/specimen/components"
              xmlns:f="http://java.sun.com/jsf/core"
+             xmlns:table="http://xmlns.jcp.org/jsf/composite/pages/shared/table"
 
 >
 
@@ -10,24 +11,24 @@
 
 
     <div class="specimen-panel">
-        <specimen:specimenList
-                lazyDataModel="#{tabModel.lazyDataModel}"
-                displayColumnToggler="false"
-                panelModel="#{panelModel}"
+        <table:entityTable
+                displayColumnToggler="true"
+                tableModel="#{tabModel.tableModel}"
                 panelIndex="#{panelIndex}"
                 id="specimenList"
         >
             <f:facet name="rightToolbar">
-                <p:commandButton value="#{langBean.msg('common.action.create')}" icon="bi bi-plus-square"
-                                 id="newSpecimenButton"
-                                 actionListener="#{genericNewUnitDialogBean.selectKind('SPECIMEN',tabModel.lazyDataModel)}"
-                                 oncomplete="PF('newUnitDiag').show();"
-                                 update="newUnitForm"
-                                 rendered="#{specimenBean.showCreateSpecimenButton(panelModel.unit)}"
-                                 style="margin-right: .5rem">
+                <p:commandButton
+                        rendered="#{tabModel.tableModel.toolbarCreateConfig ne null and flowBean.isWriteMode}"
+                        value="#{langBean.msg('common.action.create')}"
+                        icon="bi bi-plus-square"
+                        actionListener="#{tabModel.tableModel.openCreateFromToolbar(genericNewUnitDialogBean)}"
+                        oncomplete="PF('newUnitDiag').show();"
+                        update="newUnitForm"
+                        style="margin-right:.5rem">
                 </p:commandButton>
             </f:facet>
-        </specimen:specimenList>
+        </table:entityTable>
     </div>
 
 

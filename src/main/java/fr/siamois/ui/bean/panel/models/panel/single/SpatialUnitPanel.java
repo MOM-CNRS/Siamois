@@ -67,6 +67,7 @@ import static fr.siamois.ui.lazydatamodel.SpatialUnitScope.Type.PARENTS_OF_SPATI
 @Scope(BeanDefinition.SCOPE_PROTOTYPE)
 public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel<SpatialUnit> implements Serializable {
 
+    public static final String SPATIAL = "SPATIAL";
     // Dependencies
     private final transient RecordingUnitService recordingUnitService;
     private final transient SpecimenService specimenService;
@@ -248,7 +249,7 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
 
     @Override
     public void visualise(RevisionWithInfo<SpatialUnit> history) {
-        // spatialUnitHelperService.visualise(history, hist -> this.revisionToDisplay = hist);
+        // button is deactivated
     }
 
     public void restore(RevisionWithInfo<SpatialUnit> history) {
@@ -288,8 +289,10 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
         documentService.addToSpatialUnit(doc, unit);
     }
 
-
-
+    @Override
+    public String getTabView() {
+        return "/panel/tabview/spatialUnitTabView.xhtml";
+    }
 
     @Override
     public boolean save(Boolean validated) {
@@ -379,7 +382,7 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
                         .kindToCreate(UnitKind.ACTION)
                         .scopeSupplier(() ->
                                 NewUnitContext.Scope.builder()
-                                        .key("SPATIAL")
+                                        .key(SPATIAL)
                                         .entityId(unit.getId())
                                         .build()
                         )
@@ -424,7 +427,7 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
                         .kindToCreate(UnitKind.SPATIAL)
                         .scopeSupplier(() ->
                                 NewUnitContext.Scope.builder()
-                                        .key("SPATIAL")
+                                        .key(SPATIAL)
                                         .entityId(unit.getId())
                                         .extra("PARENTS")
                                         .build()
@@ -476,7 +479,7 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
                         .kindToCreate(UnitKind.SPATIAL)
                         .scopeSupplier(() ->
                                 NewUnitContext.Scope.builder()
-                                        .key("SPATIAL")
+                                        .key(SPATIAL)
                                         .entityId(unit.getId())
                                         .extra("CHILDREN")
                                         .build()

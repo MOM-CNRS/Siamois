@@ -190,7 +190,7 @@ public class SpecimenPanel extends AbstractSingleEntityPanel<Specimen>  implemen
 
     @Override
     public void visualise(RevisionWithInfo<Specimen> history) {
-        // todo: implement
+        // button is deactivated
     }
 
     @Override
@@ -252,6 +252,11 @@ public class SpecimenPanel extends AbstractSingleEntityPanel<Specimen>  implemen
             specimenPanel.init();
             return specimenPanel;
         }
+    }
+
+    @Override
+    public String getTabView() {
+        return "/panel/tabview/specimenTabView.xhtml";
     }
 
 

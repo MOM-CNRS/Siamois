@@ -259,4 +259,7 @@ public abstract class AbstractSingleEntityPanel<T> extends AbstractSingleEntity<
         return null;
     }
 
+    // Get the tabview view name for this panel
+    public abstract String getTabView() ;
+
 }

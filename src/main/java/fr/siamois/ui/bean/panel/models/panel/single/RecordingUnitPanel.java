@@ -61,7 +61,6 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
     protected final transient PersonService personService;
     private final transient RedirectBean redirectBean;
     private final transient SpecimenService specimenService;
-    private final transient FormService formService;
 
     // ---------- Locals
     // RU
@@ -94,7 +93,6 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
         this.personService = context.getBean(PersonService.class);
         this.redirectBean = context.getBean(RedirectBean.class);
         this.specimenService = context.getBean(SpecimenService.class);
-        this.formService = context.getBean(FormService.class);
     }
 
 
@@ -410,6 +408,11 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
             recordingUnitPanel.init();
             return recordingUnitPanel;
         }
+    }
+
+    @Override
+    public String getTabView() {
+        return "/panel/tabview/spatialUnitTabView.xhtml";
     }
 
 
