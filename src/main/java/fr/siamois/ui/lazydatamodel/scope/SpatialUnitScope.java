@@ -1,4 +1,4 @@
-package fr.siamois.ui.lazydatamodel;
+package fr.siamois.ui.lazydatamodel.scope;
 import lombok.Builder;
 import lombok.Getter;
 

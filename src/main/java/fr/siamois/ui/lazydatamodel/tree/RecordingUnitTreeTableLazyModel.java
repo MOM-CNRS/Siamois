@@ -2,7 +2,7 @@ package fr.siamois.ui.lazydatamodel.tree;
 
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
-import fr.siamois.ui.lazydatamodel.RecordingUnitScope;
+import fr.siamois.ui.lazydatamodel.scope.RecordingUnitScope;
 import lombok.Getter;
 import lombok.Setter;
 import org.primefaces.model.DefaultTreeNode;

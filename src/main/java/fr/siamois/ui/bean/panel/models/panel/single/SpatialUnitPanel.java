@@ -26,6 +26,8 @@ import fr.siamois.ui.bean.panel.models.PanelBreadcrumb;
 import fr.siamois.ui.bean.panel.models.panel.single.tab.ActionTab;
 import fr.siamois.ui.bean.panel.utils.SpatialUnitHelperService;
 import fr.siamois.ui.lazydatamodel.*;
+import fr.siamois.ui.lazydatamodel.scope.ActionUnitScope;
+import fr.siamois.ui.lazydatamodel.scope.SpatialUnitScope;
 import fr.siamois.ui.lazydatamodel.tree.ActionUnitTreeTableLazyModel;
 import fr.siamois.ui.lazydatamodel.tree.SpatialUnitTreeTableLazyModel;
 import fr.siamois.ui.table.ActionUnitTableViewModel;
@@ -50,9 +52,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static fr.siamois.ui.lazydatamodel.ActionUnitScope.Type.LINKED_TO_SPATIAL_UNIT;
-import static fr.siamois.ui.lazydatamodel.SpatialUnitScope.Type.CHILDREN_OF_SPATIAL_UNIT;
-import static fr.siamois.ui.lazydatamodel.SpatialUnitScope.Type.PARENTS_OF_SPATIAL_UNIT;
+import static fr.siamois.ui.lazydatamodel.scope.ActionUnitScope.Type.LINKED_TO_SPATIAL_UNIT;
+import static fr.siamois.ui.lazydatamodel.scope.SpatialUnitScope.Type.CHILDREN_OF_SPATIAL_UNIT;
+import static fr.siamois.ui.lazydatamodel.scope.SpatialUnitScope.Type.PARENTS_OF_SPATIAL_UNIT;
 
 /**
  * <p>This bean handles the spatial unit page</p>

@@ -13,7 +13,7 @@ import fr.siamois.ui.bean.dialog.newunit.UnitKind;
 import fr.siamois.ui.bean.panel.FlowBean;
 import fr.siamois.ui.bean.panel.models.PanelBreadcrumb;
 import fr.siamois.ui.lazydatamodel.ActionUnitLazyDataModel;
-import fr.siamois.ui.lazydatamodel.ActionUnitScope;
+import fr.siamois.ui.lazydatamodel.scope.ActionUnitScope;
 import fr.siamois.ui.lazydatamodel.BaseLazyDataModel;
 import fr.siamois.ui.lazydatamodel.tree.ActionUnitTreeTableLazyModel;
 import fr.siamois.ui.table.ActionUnitTableViewModel;
@@ -32,7 +32,7 @@ import org.springframework.stereotype.Component;
 import java.io.Serializable;
 import java.util.List;
 
-import static fr.siamois.ui.lazydatamodel.ActionUnitScope.Type.INSTITUTION;
+import static fr.siamois.ui.lazydatamodel.scope.ActionUnitScope.Type.INSTITUTION;
 
 
 @Slf4j

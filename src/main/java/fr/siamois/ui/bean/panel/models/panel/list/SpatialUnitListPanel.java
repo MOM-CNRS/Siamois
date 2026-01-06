@@ -16,7 +16,7 @@ import fr.siamois.ui.bean.panel.FlowBean;
 import fr.siamois.ui.bean.panel.models.PanelBreadcrumb;
 import fr.siamois.ui.lazydatamodel.BaseLazyDataModel;
 import fr.siamois.ui.lazydatamodel.SpatialUnitLazyDataModel;
-import fr.siamois.ui.lazydatamodel.SpatialUnitScope;
+import fr.siamois.ui.lazydatamodel.scope.SpatialUnitScope;
 import fr.siamois.ui.lazydatamodel.tree.SpatialUnitTreeTableLazyModel;
 import fr.siamois.ui.table.SpatialUnitTableViewModel;
 import fr.siamois.ui.table.ToolbarCreateConfig;
@@ -33,7 +33,7 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
-import static fr.siamois.ui.lazydatamodel.SpatialUnitScope.Type.INSTITUTION;
+import static fr.siamois.ui.lazydatamodel.scope.SpatialUnitScope.Type.INSTITUTION;
 
 @EqualsAndHashCode(callSuper = true, onlyExplicitlyIncluded = true)
 @Data

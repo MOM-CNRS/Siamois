@@ -2,7 +2,7 @@ package fr.siamois.ui.lazydatamodel.tree;
 
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
-import fr.siamois.ui.lazydatamodel.SpatialUnitScope;
+import fr.siamois.ui.lazydatamodel.scope.SpatialUnitScope;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.Hibernate;
