@@ -1,15 +1,10 @@
 package fr.siamois.domain.services.form;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.form.customfield.CustomField;
-import fr.siamois.domain.models.form.customfield.CustomFieldDateTime;
-import fr.siamois.domain.models.form.customfield.CustomFieldInteger;
-import fr.siamois.domain.models.form.customfield.CustomFieldSelectOneFromFieldCode;
-import fr.siamois.domain.models.form.customfield.CustomFieldText;
 import fr.siamois.domain.models.form.customfieldanswer.*;
 import fr.siamois.domain.models.form.customform.CustomForm;
+import fr.siamois.domain.models.form.customform.EnabledWhenJson;
 import fr.siamois.domain.models.form.customformresponse.CustomFormResponse;
 import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.vocabulary.Concept;
@@ -17,6 +12,7 @@ import fr.siamois.infrastructure.database.repositories.form.FormRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
 import fr.siamois.ui.bean.LabelBean;
 import fr.siamois.ui.form.CustomFieldAnswerFactory;
+import fr.siamois.ui.form.EnabledRulesEngine;
 import fr.siamois.ui.form.FieldSource;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -28,7 +24,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -357,6 +356,59 @@ class FormServiceTest {
     }
 
     @Test
+    void updateJpaEntityFromResponse_setsAllBindableSystemFields() {
+        // Arrange: Create a dummy JPA entity
+        DummyEntity entity = new DummyEntity();
+
+        // Mock fields and answers for all supported types
+        CustomField titleField = mockSystemField(1L, true, "title");
+        CustomField countField = mockSystemField(2L, true, "count");
+        CustomField createdAtField = mockSystemField(3L, true, "createdAt");
+        CustomField conceptField = mockSystemField(4L, true, "typeConcept");
+
+        // Mock answers for all supported types
+        CustomFieldAnswerText titleAnswer = new CustomFieldAnswerText();
+        titleAnswer.setValue("Updated Title");
+
+        CustomFieldAnswerInteger countAnswer = new CustomFieldAnswerInteger();
+        countAnswer.setValue(42);
+
+        CustomFieldAnswerDateTime createdAtAnswer = new CustomFieldAnswerDateTime();
+        createdAtAnswer.setValue(LocalDateTime.of(2023, 1, 1, 12, 0));
+
+        // Create a ConceptAutocompleteDTO and set it as uiVal
+        Concept concept = mock(Concept.class);
+        ConceptAutocompleteDTO conceptAutocompleteDTO = new ConceptAutocompleteDTO(
+                concept,
+                "Test Label",
+                "fr"
+        );
+
+        CustomFieldAnswerSelectOneFromFieldCode conceptAnswer = new CustomFieldAnswerSelectOneFromFieldCode();
+        conceptAnswer.setUiVal(conceptAutocompleteDTO);
+
+        // Create a response with all answers
+        CustomFormResponse response = new CustomFormResponse();
+        Map<CustomField, CustomFieldAnswer> answers = new HashMap<>();
+        answers.put(titleField, titleAnswer);
+        answers.put(countField, countAnswer);
+        answers.put(createdAtField, createdAtAnswer);
+        answers.put(conceptField, conceptAnswer);
+        response.setAnswers(answers);
+
+        // Act: Update the JPA entity from the response
+        formService.updateJpaEntityFromResponse(response, entity);
+
+        // Assert: Verify all fields were set correctly
+        assertEquals("Updated Title", entity.getTitle());
+        assertEquals(42, entity.getCount());
+        assertEquals(OffsetDateTime.of(2023, 1, 1, 12, 0, 0, 0, ZoneOffset.UTC), entity.getCreatedAt());
+        assertEquals(concept, entity.getTypeConcept());
+    }
+
+
+
+    @Test
     void updateJpaEntityFromResponse_ignoresNonSystemOrNonBindableOrNull() {
         // arrange
         DummyEntity entity = new DummyEntity();
@@ -395,4 +447,50 @@ class FormServiceTest {
         // assert
         assertEquals("initial", entity.getTitle(), "Title must remain unchanged");
     }
+
+    @Test
+    void buildEnabledEngine_createsEngineWithCorrectRulesAndDependencies() {
+        // Arrange
+        FieldSource fieldSource = mock(FieldSource.class);
+        CustomField field1 = mock(CustomField.class);
+        CustomField field2 = mock(CustomField.class);
+        CustomField field3 = mock(CustomField.class);
+
+        // Mock EnabledWhenJson for field2 (depends on field1)
+        EnabledWhenJson specForField2 = new EnabledWhenJson();
+        specForField2.setFieldId(1L);
+        specForField2.setOp(EnabledWhenJson.Op.EQ);
+        EnabledWhenJson.ValueJson valueJson = new EnabledWhenJson.ValueJson();
+        valueJson.setAnswerClass("fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerText");
+        valueJson.setValue(new ObjectMapper().createObjectNode().put("value", "test"));
+        specForField2.setValues(List.of(valueJson));
+
+        // Mock EnabledWhenJson for field3 (depends on field2)
+        EnabledWhenJson specForField3 = new EnabledWhenJson();
+        specForField3.setFieldId(2L);
+        specForField3.setOp(EnabledWhenJson.Op.NEQ);
+        specForField3.setValues(List.of(valueJson));
+
+        // Setup mocks
+        when(fieldSource.getAllFields()).thenReturn(List.of(field1, field2, field3));
+        when(fieldSource.getEnabledSpec(field1)).thenReturn(null); // No spec for field1
+        when(fieldSource.getEnabledSpec(field2)).thenReturn(specForField2);
+        when(fieldSource.getEnabledSpec(field3)).thenReturn(specForField3);
+        when(fieldSource.findFieldById(1L)).thenReturn(field1);
+        when(fieldSource.findFieldById(2L)).thenReturn(field2);
+
+        // Act
+        EnabledRulesEngine engine = formService.buildEnabledEngine(fieldSource);
+
+        // Assert
+        assertNotNull(engine, "Engine should not be null");
+
+
+    }
+
+
+
+
+
+
 }
