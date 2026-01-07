@@ -73,7 +73,6 @@ public class ActionUnitTableViewModel extends EntityTableViewModel<ActionUnit, L
     @Override
     protected CustomForm resolveRowFormFor(ActionUnit au) {
         return null;
-        // todo
     }
 
     @Override
