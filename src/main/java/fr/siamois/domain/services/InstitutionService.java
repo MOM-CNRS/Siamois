@@ -13,11 +13,13 @@ import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.models.vocabulary.Vocabulary;
 import fr.siamois.domain.services.vocabulary.FieldConfigurationService;
 import fr.siamois.domain.services.vocabulary.VocabularyService;
+import fr.siamois.infrastructure.database.repositories.actionunit.ActionUnitRepository;
 import fr.siamois.infrastructure.database.repositories.institution.InstitutionRepository;
 import fr.siamois.infrastructure.database.repositories.person.PersonRepository;
 import fr.siamois.infrastructure.database.repositories.settings.InstitutionSettingsRepository;
 import fr.siamois.infrastructure.database.repositories.team.ActionManagerRepository;
 import fr.siamois.infrastructure.database.repositories.team.TeamMemberRepository;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,6 +34,7 @@ import java.util.stream.Collectors;
  */
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class InstitutionService {
 
     private final InstitutionRepository institutionRepository;
@@ -41,19 +44,7 @@ public class InstitutionService {
     private final ActionManagerRepository actionManagerRepository;
     private final VocabularyService vocabularyService;
     private final FieldConfigurationService fieldConfigurationService;
-
-
-    public InstitutionService(InstitutionRepository institutionRepository,
-                              PersonRepository personRepository,
-                              InstitutionSettingsRepository institutionSettingsRepository, TeamMemberRepository teamMemberRepository, ActionManagerRepository actionManagerRepository, VocabularyService vocabularyService, FieldConfigurationService fieldConfigurationService) {
-        this.institutionRepository = institutionRepository;
-        this.personRepository = personRepository;
-        this.institutionSettingsRepository = institutionSettingsRepository;
-        this.teamMemberRepository = teamMemberRepository;
-        this.actionManagerRepository = actionManagerRepository;
-        this.vocabularyService = vocabularyService;
-        this.fieldConfigurationService = fieldConfigurationService;
-    }
+    private final ActionUnitRepository actionUnitRepository;
 
     /**
      * Finds an institution by its identifier.
@@ -127,9 +118,12 @@ public class InstitutionService {
      * @param actionUnit the action unit whose relations to find
      * @return a set of team member relations associated with the action unit, including the author
      */
+    @Transactional
     public Set<TeamMemberRelation> findRelationsOf(ActionUnit actionUnit) {
         Set<TeamMemberRelation> result = teamMemberRepository.findAllByActionUnit(actionUnit);
-        result.add(new TeamMemberRelation(actionUnit, actionUnit.getCreatedBy()));
+        ActionUnit actionUnitSaved = actionUnitRepository.findById(actionUnit.getId()).orElse(new ActionUnit());
+        Person creator = actionUnitSaved.getCreatedBy();
+        result.add(new TeamMemberRelation(actionUnitSaved, creator));
         return result;
     }
 
@@ -139,6 +133,7 @@ public class InstitutionService {
      * @param actionUnit the action unit whose members to find
      * @return a set of persons who are members of the action unit
      */
+    @Transactional
     public Set<Person> findMembersOf(ActionUnit actionUnit) {
         return findRelationsOf(actionUnit)
                 .stream()

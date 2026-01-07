@@ -9,6 +9,7 @@ import lombok.*;
 
 import java.io.Serializable;
 import java.time.OffsetDateTime;
+import java.util.Objects;
 
 @Entity
 @Table(name = "team_member")
@@ -41,6 +42,17 @@ public class TeamMemberRelation implements Serializable{
         this.id = new TeamMemberId(actionUnit.getId(), person.getId());
         this.actionUnit = actionUnit;
         this.person = person;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (!(o instanceof TeamMemberRelation that)) return false;
+        return Objects.equals(actionUnit, that.actionUnit) && Objects.equals(person, that.person) && Objects.equals(role, that.role);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(actionUnit, person, role);
     }
 
     @Embeddable
