@@ -215,9 +215,7 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
 
             case ADD_RELATION -> {
                 // Dispatch based on column.countKey (or add a dedicated "relationKey")
-                switch (col.getCountKey()) {
-                    // handle adding parent, children or specimen
-                }
+                // handle adding parent, children or specimen
             }
 
             default -> throw new IllegalStateException("Unhandled relation action: " + action);
@@ -235,8 +233,7 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
 
     public String resolveIcon(RowAction action, RecordingUnit ru) {
         return switch (action.getAction()) {
-            case TOGGLE_BOOKMARK ->
-                    navBean.isRecordingUnitBookmarkedByUser(ru.getFullIdentifier())
+            case TOGGLE_BOOKMARK -> Boolean.TRUE.equals(navBean.isRecordingUnitBookmarkedByUser(ru.getFullIdentifier()))
                             ? "bi bi-bookmark-x-fill"
                             : "bi bi-bookmark-plus";
             case DUPLICATE_ROW -> "bi bi-copy";

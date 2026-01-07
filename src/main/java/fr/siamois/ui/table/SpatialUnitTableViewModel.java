@@ -20,6 +20,8 @@ import org.primefaces.model.TreeNode;
 
 import java.util.List;
 
+import static fr.siamois.ui.table.TableColumnAction.GO_TO_SPATIAL_UNIT;
+
 /**
  * View model spécifique pour les tableaux de SpatialUnit.
  *
@@ -76,15 +78,11 @@ public class SpatialUnitTableViewModel extends EntityTableViewModel<SpatialUnit,
     @Override
     protected CustomForm resolveRowFormFor(SpatialUnit su) {
         return null;
-        // todo
     }
 
     @Override
     protected void configureRowSystemFields(SpatialUnit su, CustomForm rowForm) {
-        if (rowForm == null || rowForm.getLayout() == null) {
-            return;
-        }
-
+       // no system field to configure
     }
 
     @Override
@@ -92,18 +90,12 @@ public class SpatialUnitTableViewModel extends EntityTableViewModel<SpatialUnit,
                                      SpatialUnit su,
                                      Integer panelIndex) {
 
-        switch (column.getAction()) {
-
-            case GO_TO_SPATIAL_UNIT ->
-                    flowBean.goToSpatialUnitByIdNewPanel(
-                            su.getId(),
-                            panelIndex
-                    );
-
-            default -> throw new IllegalStateException(
-                    "Unhandled action: " + column.getAction()
-            );
+        if (column.getAction() == GO_TO_SPATIAL_UNIT) {
+            flowBean.goToSpatialUnitByIdNewPanel(su.getId(), panelIndex);
+        } else {
+            throw new IllegalStateException("Unhandled action: " + column.getAction());
         }
+
     }
 
     // resolving cell text based on value key
@@ -112,16 +104,12 @@ public class SpatialUnitTableViewModel extends EntityTableViewModel<SpatialUnit,
 
         if (column instanceof CommandLinkColumn linkColumn) {
 
-            switch (linkColumn.getValueKey()) {
-
-                case "name":
-                    return su.getName();
-
-                default:
-                    throw new IllegalStateException(
-                            "Unknown valueKey: " + linkColumn.getValueKey()
-                    );
+            if ("name".equals(linkColumn.getValueKey())) {
+                return su.getName();
+            } else {
+                throw new IllegalStateException("Unknown valueKey: " + linkColumn.getValueKey());
             }
+
         }
 
         return "";
@@ -245,14 +233,10 @@ public class SpatialUnitTableViewModel extends EntityTableViewModel<SpatialUnit,
 
 
     public String resolveIcon(RowAction action, SpatialUnit su) {
-        return switch (action.getAction()) {
-            default -> "";
-        };
+        return "";
     }
     public void handleRowAction(RowAction action, SpatialUnit su) {
-        switch (action.getAction()) {
-            default -> throw new IllegalStateException("Unhandled action: " + action.getAction());
-        }
+        throw new IllegalStateException("Unhandled action: " + action.getAction());
     }
 
     @Override
