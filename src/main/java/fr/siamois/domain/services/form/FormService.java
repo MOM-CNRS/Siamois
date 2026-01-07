@@ -207,7 +207,6 @@ public class FormService {
                             return CustomFieldAnswerSelectOneFromFieldCode.class;
                         }
                     };
-            // other cases can be added as you support more types
             default -> new ValueMatcher() {
                 @Override
                 public boolean matches(CustomFieldAnswer cur) {

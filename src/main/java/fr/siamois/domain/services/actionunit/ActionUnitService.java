@@ -401,14 +401,7 @@ public class ActionUnitService implements ArkEntityService {
      */
     public List<ActionUnit> findAllWithoutParentsByInstitution(Long institutionId) {
         List<ActionUnit> res = actionUnitRepository.findRootsByInstitution(institutionId);
-
-        // load related entities
-        res.forEach(au -> {
-            Hibernate.initialize(au.getParents());
-            Hibernate.initialize(au.getChildren());
-            Hibernate.initialize(au.getRecordingUnitList());
-        });
-
+        initializeActionUnitCollections(res);
         return res;
     }
 
@@ -419,16 +412,9 @@ public class ActionUnitService implements ArkEntityService {
      * @param institutionId the institution id
      * @return The list of ActionUnit associated with the institution and that are the children of a given parent
      */
-    public List<ActionUnit> findChildrenByParentAndInstitution(Long parentId, Long institutionId ) {
+    public List<ActionUnit> findChildrenByParentAndInstitution(Long parentId, Long institutionId) {
         List<ActionUnit> res = actionUnitRepository.findChildrenByParentAndInstitution(parentId, institutionId);
-
-        // load related entities
-        res.forEach(au -> {
-            Hibernate.initialize(au.getParents());
-            Hibernate.initialize(au.getChildren());
-            Hibernate.initialize(au.getRecordingUnitList());
-        });
-
+        initializeActionUnitCollections(res);
         return res;
     }
 
@@ -439,18 +425,21 @@ public class ActionUnitService implements ArkEntityService {
      * @param institutionId the institution id
      * @return The list of ActionUnit
      */
-    public List<ActionUnit> findBySpatialContextAndInstitution(Long spatialId, Long institutionId ) {
+    public List<ActionUnit> findBySpatialContextAndInstitution(Long spatialId, Long institutionId) {
         List<ActionUnit> res = actionUnitRepository.findBySpatialContextAndInstitution(spatialId, institutionId);
+        initializeActionUnitCollections(res);
+        return res;
+    }
 
-        // load related entities
-        res.forEach(au -> {
+    // Reusable method to initialize collections
+    private void initializeActionUnitCollections(List<ActionUnit> actionUnits) {
+        actionUnits.forEach(au -> {
             Hibernate.initialize(au.getParents());
             Hibernate.initialize(au.getChildren());
             Hibernate.initialize(au.getRecordingUnitList());
         });
-
-        return res;
     }
+
 
 
 

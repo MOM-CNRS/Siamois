@@ -1,12 +1,16 @@
 package fr.siamois.domain.services.form;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import fr.siamois.domain.models.actionunit.ActionCode;
+import fr.siamois.domain.models.actionunit.ActionUnit;
+import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.customfieldanswer.*;
 import fr.siamois.domain.models.form.customform.CustomForm;
 import fr.siamois.domain.models.form.customform.EnabledWhenJson;
 import fr.siamois.domain.models.form.customformresponse.CustomFormResponse;
 import fr.siamois.domain.models.institution.Institution;
+import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.infrastructure.database.repositories.form.FormRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
@@ -24,10 +28,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -139,11 +140,22 @@ class FormServiceTest {
         private Integer count;
         private OffsetDateTime createdAt;
         private Concept typeConcept;
+        private ActionUnit actionUnit;
+        private SpatialUnit spatialUnit;
+        private ActionCode actionCode;
+        private Person person;
+        private List<Person> personList;
+        private Set<SpatialUnit> spatialUnitSet;
 
         public List<String> getBindableFieldNames() {
-            return List.of("title", "count", "createdAt", "typeConcept");
+            return List.of(
+                    "title", "count", "createdAt", "typeConcept",
+                    "actionUnit", "spatialUnit", "actionCode",
+                    "person", "personList", "spatialUnitSet"
+            );
         }
 
+        // Getters and Setters
         public String getTitle() {
             return title;
         }
@@ -174,6 +186,54 @@ class FormServiceTest {
 
         public void setTypeConcept(Concept typeConcept) {
             this.typeConcept = typeConcept;
+        }
+
+        public ActionUnit getActionUnit() {
+            return actionUnit;
+        }
+
+        public void setActionUnit(ActionUnit actionUnit) {
+            this.actionUnit = actionUnit;
+        }
+
+        public SpatialUnit getSpatialUnit() {
+            return spatialUnit;
+        }
+
+        public void setSpatialUnit(SpatialUnit spatialUnit) {
+            this.spatialUnit = spatialUnit;
+        }
+
+        public ActionCode getActionCode() {
+            return actionCode;
+        }
+
+        public void setActionCode(ActionCode actionCode) {
+            this.actionCode = actionCode;
+        }
+
+        public Person getPerson() {
+            return person;
+        }
+
+        public void setPerson(Person person) {
+            this.person = person;
+        }
+
+        public List<Person> getPersonList() {
+            return personList;
+        }
+
+        public void setPersonList(List<Person> personList) {
+            this.personList = personList;
+        }
+
+        public Set<SpatialUnit> getSpatialUnitSet() {
+            return spatialUnitSet;
+        }
+
+        public void setSpatialUnitSet(Set<SpatialUnit> spatialUnitSet) {
+            this.spatialUnitSet = spatialUnitSet;
         }
     }
 
@@ -355,16 +415,23 @@ class FormServiceTest {
         assertEquals(OffsetDateTime.of(2022, 5, 6, 7, 8, 9, 0, ZoneOffset.UTC), entity.getCreatedAt());
     }
 
+
     @Test
     void updateJpaEntityFromResponse_setsAllBindableSystemFields() {
-        // Arrange: Create a dummy JPA entity
+        // Arrange: Create a dummy JPA entity with all bindable fields
         DummyEntity entity = new DummyEntity();
 
-        // Mock fields and answers for all supported types
+        // Mock fields for all supported answer types
         CustomField titleField = mockSystemField(1L, true, "title");
         CustomField countField = mockSystemField(2L, true, "count");
         CustomField createdAtField = mockSystemField(3L, true, "createdAt");
         CustomField conceptField = mockSystemField(4L, true, "typeConcept");
+        CustomField actionUnitField = mockSystemField(5L, true, "actionUnit");
+        CustomField spatialUnitField = mockSystemField(6L, true, "spatialUnit");
+        CustomField actionCodeField = mockSystemField(7L, true, "actionCode");
+        CustomField personField = mockSystemField(8L, true, "person");
+        CustomField personListField = mockSystemField(9L, true, "personList");
+        CustomField spatialUnitSetField = mockSystemField(10L, true, "spatialUnitSet");
 
         // Mock answers for all supported types
         CustomFieldAnswerText titleAnswer = new CustomFieldAnswerText();
@@ -376,16 +443,35 @@ class FormServiceTest {
         CustomFieldAnswerDateTime createdAtAnswer = new CustomFieldAnswerDateTime();
         createdAtAnswer.setValue(LocalDateTime.of(2023, 1, 1, 12, 0));
 
-        // Create a ConceptAutocompleteDTO and set it as uiVal
+        // CustomFieldAnswerSelectOneFromFieldCode: Use uiVal to set the concept
         Concept concept = mock(Concept.class);
-        ConceptAutocompleteDTO conceptAutocompleteDTO = new ConceptAutocompleteDTO(
-                concept,
-                "Test Label",
-                "fr"
-        );
-
+        ConceptAutocompleteDTO conceptAutocompleteDTO = new ConceptAutocompleteDTO(concept, "Test Label", "fr");
         CustomFieldAnswerSelectOneFromFieldCode conceptAnswer = new CustomFieldAnswerSelectOneFromFieldCode();
         conceptAnswer.setUiVal(conceptAutocompleteDTO);
+
+        ActionUnit actionUnit = mock(ActionUnit.class);
+        CustomFieldAnswerSelectOneActionUnit actionUnitAnswer = new CustomFieldAnswerSelectOneActionUnit();
+        actionUnitAnswer.setValue(actionUnit);
+
+        SpatialUnit spatialUnit = mock(SpatialUnit.class);
+        CustomFieldAnswerSelectOneSpatialUnit spatialUnitAnswer = new CustomFieldAnswerSelectOneSpatialUnit();
+        spatialUnitAnswer.setValue(spatialUnit);
+
+        ActionCode actionCode = mock(ActionCode.class);
+        CustomFieldAnswerSelectOneActionCode actionCodeAnswer = new CustomFieldAnswerSelectOneActionCode();
+        actionCodeAnswer.setValue(actionCode);
+
+        Person person = mock(Person.class);
+        CustomFieldAnswerSelectOnePerson personAnswer = new CustomFieldAnswerSelectOnePerson();
+        personAnswer.setValue(person);
+
+        List<Person> personList = List.of(mock(Person.class), mock(Person.class));
+        CustomFieldAnswerSelectMultiplePerson personListAnswer = new CustomFieldAnswerSelectMultiplePerson();
+        personListAnswer.setValue(personList);
+
+        Set<SpatialUnit> spatialUnitSet = Set.of(mock(SpatialUnit.class), mock(SpatialUnit.class));
+        CustomFieldAnswerSelectMultipleSpatialUnitTree spatialUnitSetAnswer = new CustomFieldAnswerSelectMultipleSpatialUnitTree();
+        spatialUnitSetAnswer.setValue(spatialUnitSet);
 
         // Create a response with all answers
         CustomFormResponse response = new CustomFormResponse();
@@ -394,6 +480,12 @@ class FormServiceTest {
         answers.put(countField, countAnswer);
         answers.put(createdAtField, createdAtAnswer);
         answers.put(conceptField, conceptAnswer);
+        answers.put(actionUnitField, actionUnitAnswer);
+        answers.put(spatialUnitField, spatialUnitAnswer);
+        answers.put(actionCodeField, actionCodeAnswer);
+        answers.put(personField, personAnswer);
+        answers.put(personListField, personListAnswer);
+        answers.put(spatialUnitSetField, spatialUnitSetAnswer);
         response.setAnswers(answers);
 
         // Act: Update the JPA entity from the response
@@ -404,7 +496,14 @@ class FormServiceTest {
         assertEquals(42, entity.getCount());
         assertEquals(OffsetDateTime.of(2023, 1, 1, 12, 0, 0, 0, ZoneOffset.UTC), entity.getCreatedAt());
         assertEquals(concept, entity.getTypeConcept());
+        assertEquals(actionUnit, entity.getActionUnit());
+        assertEquals(spatialUnit, entity.getSpatialUnit());
+        assertEquals(actionCode, entity.getActionCode());
+        assertEquals(person, entity.getPerson());
+        assertEquals(personList, entity.getPersonList());
+        assertEquals(spatialUnitSet, entity.getSpatialUnitSet());
     }
+
 
 
 
