@@ -338,6 +338,9 @@ class SpatialUnitServiceTest {
         unit.setCategory(type);
         unit.setParents(new HashSet<>(parents));
 
+        List<SpatialUnit> children = List.of(spatialUnit2);
+        unit.setChildren(new HashSet<>(children));
+
 
 
 
