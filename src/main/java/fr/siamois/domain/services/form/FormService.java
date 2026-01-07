@@ -1,7 +1,6 @@
 package fr.siamois.domain.services.form;
 
 
-import com.fasterxml.jackson.databind.JsonNode;
 import fr.siamois.domain.models.actionunit.ActionCode;
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.auth.Person;
@@ -123,18 +122,21 @@ public class FormService {
         List<String> bindableFields = getBindableFieldNames(jpaEntity);
 
         for (CustomField field : fieldSource.getAllFields()) {
-            if (field == null) continue;
 
-            if (onlyInitMissing && answers.containsKey(field)) {
+            if (field == null ||
+                    (onlyInitMissing && answers.containsKey(field))) {
                 continue;
             }
 
-            CustomFieldAnswer answer = CustomFieldAnswerFactory.instantiateAnswerForField(field);
-            if (answer == null) continue;
+            CustomFieldAnswer answer =
+                    CustomFieldAnswerFactory.instantiateAnswerForField(field);
 
-            initializeAnswer(answer, field, jpaEntity, bindableFields);
-            answers.put(field, answer);
+            if (answer != null) {
+                initializeAnswer(answer, field, jpaEntity, bindableFields);
+                answers.put(field, answer);
+            }
         }
+
 
         response.setAnswers(answers);
         return response;
