@@ -10,13 +10,10 @@ import java.util.Map;
 
 public class PanelFieldSource implements FieldSource {
 
-    private final CustomForm detailsForm;
-
     private final Map<Long, CustomField> byId = new HashMap<>();
     private final Map<CustomField, EnabledWhenJson> enabledByField = new HashMap<>();
 
     public PanelFieldSource(CustomForm detailsForm) {
-        this.detailsForm = detailsForm;
         index(detailsForm);
     }
 

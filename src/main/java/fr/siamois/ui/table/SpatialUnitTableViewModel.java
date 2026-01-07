@@ -224,6 +224,10 @@ public class SpatialUnitTableViewModel extends EntityTableViewModel<SpatialUnit,
                         openCreateDialog(ctx, genericNewUnitDialogBean);
                     }
 
+                    default -> {
+                        // no op
+                    }
+
                 }
             }
 

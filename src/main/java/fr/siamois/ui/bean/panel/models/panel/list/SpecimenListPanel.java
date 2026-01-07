@@ -40,7 +40,7 @@ public class SpecimenListPanel extends AbstractListPanel<Specimen>  implements S
     private final transient FormService formService;
     private final transient SpatialUnitTreeService spatialUnitTreeService;
     private final transient FlowBean flowBean;
-    private final transient GenericNewUnitDialogBean genericNewUnitDialogBean;
+    private final transient GenericNewUnitDialogBean<Specimen> genericNewUnitDialogBean;
     private final transient RecordingUnitWriteVerifier recordingUnitWriteVerifier;
     private final transient NavBean navBean;
 

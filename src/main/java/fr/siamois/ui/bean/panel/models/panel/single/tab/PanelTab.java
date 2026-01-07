@@ -16,7 +16,7 @@ public abstract class PanelTab {
         return ROOT;
     }
 
-    public PanelTab(String titleCode, String icon, String id) {
+    protected PanelTab(String titleCode, String icon, String id) {
         this.titleCode = titleCode;
         this.icon = icon;
         this.id = id;

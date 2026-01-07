@@ -55,7 +55,7 @@ public abstract class EntityTableViewModel<T extends TraceableEntity, ID> {
     protected final SpatialUnitTreeService spatialUnitTreeService;
     protected final SpatialUnitService spatialUnitService;
     protected final NavBean navBean;
-    protected final GenericNewUnitDialogBean genericNewUnitDialogBean;
+    protected final GenericNewUnitDialogBean<T> genericNewUnitDialogBean;
 
     /** Fournit l'identifiant unique d'une entité T (ex: RecordingUnit::getId) */
     private final Function<T, ID> idExtractor;
@@ -199,17 +199,11 @@ public abstract class EntityTableViewModel<T extends TraceableEntity, ID> {
     }
 
 
-    public String resolveText(TableColumn column, T item) {
-        return "";
-    }
+    public abstract String resolveText(TableColumn column, T item);
 
-    public Integer resolveCount(TableColumn column, T item) {
-        return 0;
-    }
+    public abstract Integer resolveCount(TableColumn column, T item);
 
-    public boolean isRendered(TableColumn column, String key, T item, Integer panelIndex) {
-        return true;
-    }
+    public abstract boolean isRendered(TableColumn column, String key, T item, Integer panelIndex);
 
     public void handleAction(TableColumn column, T item, Integer panelIndex) {
         if (column instanceof CommandLinkColumn linkColumn) {
@@ -275,7 +269,7 @@ public abstract class EntityTableViewModel<T extends TraceableEntity, ID> {
         }
 
         // 2) Tree view: manual insertion (si treeLazyModel présent)
-        if (treeLazyModel != null && ctx != null && policy.getTreeInsert() != NewUnitContext.TreeInsert.NONE) {
+        if (treeLazyModel != null  && policy.getTreeInsert() != NewUnitContext.TreeInsert.NONE) {
             applyTreeInsertion(casted, ctx);
         }
     }

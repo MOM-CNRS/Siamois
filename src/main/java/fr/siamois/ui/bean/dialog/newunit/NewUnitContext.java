@@ -88,13 +88,6 @@ public class NewUnitContext implements Serializable {
             return UiInsertPolicy.builder().listInsert(ListInsert.TOP).treeInsert(TreeInsert.ROOT).build();
         }
 
-        public static UiInsertPolicy childFirst(Long clickedId) {
-            return UiInsertPolicy.builder().listInsert(ListInsert.TOP).treeInsert(TreeInsert.CHILD_FIRST).build();
-        }
-
-        public static UiInsertPolicy parentAtRoot(Long clickedId) {
-            return UiInsertPolicy.builder().listInsert(ListInsert.TOP).treeInsert(TreeInsert.PARENT_AT_ROOT).build();
-        }
     }
 
     public enum ListInsert { NONE, TOP }

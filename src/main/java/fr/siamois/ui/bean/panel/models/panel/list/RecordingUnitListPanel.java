@@ -45,7 +45,7 @@ public class RecordingUnitListPanel extends AbstractListPanel<RecordingUnit> imp
     private final transient FormService formService;
     private final transient SpatialUnitTreeService spatialUnitTreeService;
     private final transient FlowBean flowBean;
-    private final transient GenericNewUnitDialogBean genericNewUnitDialogBean;
+    private final transient GenericNewUnitDialogBean<RecordingUnit> genericNewUnitDialogBean;
     private final transient RecordingUnitWriteVerifier recordingUnitWriteVerifier;
     private final transient NavBean navBean;
 
@@ -165,10 +165,6 @@ public class RecordingUnitListPanel extends AbstractListPanel<RecordingUnit> imp
 
     public void handleRowEdit(RowEditEvent<RecordingUnit> event) {
         RecordingUnit toSave = event.getObject();
-
-        // todo : flush back here?
-        // var ctx = tableModel.getRowContext(toSave);
-        // if (ctx != null) ctx.flushBackToEntity();
 
         try {
             recordingUnitService.save(toSave, toSave.getType(), List.of(), List.of(), List.of());
