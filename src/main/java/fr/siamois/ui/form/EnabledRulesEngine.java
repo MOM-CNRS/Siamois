@@ -6,7 +6,6 @@ import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswer;
 import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerId;
 import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerSelectOneFromFieldCode;
 import fr.siamois.domain.models.vocabulary.Concept;
-import fr.siamois.ui.bean.panel.models.panel.single.AbstractSingleEntity;
 import fr.siamois.ui.form.rules.ColumnApplier;
 import fr.siamois.ui.form.rules.ColumnRule;
 import fr.siamois.ui.form.rules.Condition;
@@ -51,7 +50,7 @@ public final class EnabledRulesEngine {
     }
 
     private CustomFieldAnswer buildConceptOverride(CustomField field, Concept concept) {
-        CustomFieldAnswer answer = AbstractSingleEntity.instantiateAnswerForField(field);
+        CustomFieldAnswer answer = CustomFieldAnswerFactory.instantiateAnswerForField(field);
         CustomFieldAnswerId id = new CustomFieldAnswerId();
         id.setField(field);
         answer.setPk(id);

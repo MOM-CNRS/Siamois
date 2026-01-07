@@ -1,0 +1,252 @@
+package fr.siamois.ui.table;
+
+import fr.siamois.domain.models.form.customform.CustomForm;
+import fr.siamois.domain.models.spatialunit.SpatialUnit;
+import fr.siamois.domain.services.InstitutionService;
+import fr.siamois.domain.services.authorization.writeverifier.SpatialUnitWriteVerifier;
+import fr.siamois.domain.services.form.FormService;
+import fr.siamois.domain.services.spatialunit.SpatialUnitService;
+import fr.siamois.domain.services.spatialunit.SpatialUnitTreeService;
+import fr.siamois.ui.bean.NavBean;
+import fr.siamois.ui.bean.SessionSettingsBean;
+import fr.siamois.ui.bean.dialog.newunit.GenericNewUnitDialogBean;
+import fr.siamois.ui.bean.dialog.newunit.NewUnitContext;
+import fr.siamois.ui.bean.dialog.newunit.UnitKind;
+import fr.siamois.ui.bean.panel.FlowBean;
+import fr.siamois.ui.lazydatamodel.BaseSpatialUnitLazyDataModel;
+import fr.siamois.ui.lazydatamodel.tree.SpatialUnitTreeTableLazyModel;
+import lombok.Getter;
+import org.primefaces.model.TreeNode;
+
+import java.util.List;
+
+import static fr.siamois.ui.table.TableColumnAction.GO_TO_SPATIAL_UNIT;
+
+/**
+ * View model spécifique pour les tableaux de SpatialUnit.
+ *
+ * - spécialise EntityTableViewModel pour T = SpatialUnit, ID = Long
+ * - implémente :
+ *      - resolveRowFormFor
+ *      - configureRowSystemFields
+ */
+@Getter
+public class SpatialUnitTableViewModel extends EntityTableViewModel<SpatialUnit, Long> {
+
+    public static final String PARENTS = "parents";
+    public static final String CHILDREN = "children";
+    /** Lazy model spécifique RecordingUnit (accès à selectedUnits, etc.) */
+    private final BaseSpatialUnitLazyDataModel spatialUnitLazyDataModel;
+    private final FlowBean flowBean;
+
+    private final SpatialUnitWriteVerifier spatialUnitWriteVerifier;
+    private final InstitutionService institutionService;
+
+    private final SessionSettingsBean sessionSettingsBean;
+
+
+    public SpatialUnitTableViewModel(BaseSpatialUnitLazyDataModel lazyDataModel,
+                                     FormService formService,
+                                     SessionSettingsBean sessionSettingsBean,
+                                     SpatialUnitTreeService spatialUnitTreeService,
+                                     SpatialUnitService spatialUnitService,
+                                     NavBean navBean,
+                                     FlowBean flowBean, GenericNewUnitDialogBean<SpatialUnit> genericNewUnitDialogBean,
+                                     SpatialUnitWriteVerifier writeVerifier,
+                                     SpatialUnitTreeTableLazyModel treeLazyModel,
+                                     InstitutionService institutionService) {
+
+        super(
+                lazyDataModel,
+                treeLazyModel,
+                genericNewUnitDialogBean,
+                formService,
+                spatialUnitTreeService,
+                spatialUnitService,
+                navBean,
+                SpatialUnit::getId,   // idExtractor
+                "type"                  // formScopeValueBinding
+        );
+        this.spatialUnitLazyDataModel = lazyDataModel;
+        this.sessionSettingsBean = sessionSettingsBean;
+        this.flowBean = flowBean;
+
+        this.spatialUnitWriteVerifier = writeVerifier;
+        this.institutionService = institutionService;
+    }
+
+    @Override
+    protected CustomForm resolveRowFormFor(SpatialUnit su) {
+        return null;
+    }
+
+    @Override
+    protected void configureRowSystemFields(SpatialUnit su, CustomForm rowForm) {
+       // no system field to configure
+    }
+
+    @Override
+    protected void handleCommandLink(CommandLinkColumn column,
+                                     SpatialUnit su,
+                                     Integer panelIndex) {
+
+        if (column.getAction() == GO_TO_SPATIAL_UNIT) {
+            flowBean.goToSpatialUnitByIdNewPanel(su.getId(), panelIndex);
+        } else {
+            throw new IllegalStateException("Unhandled action: " + column.getAction());
+        }
+
+    }
+
+    // resolving cell text based on value key
+    @Override
+    public String resolveText(TableColumn column, SpatialUnit su) {
+
+        if (column instanceof CommandLinkColumn linkColumn) {
+
+            if ("name".equals(linkColumn.getValueKey())) {
+                return su.getName();
+            } else {
+                throw new IllegalStateException("Unknown valueKey: " + linkColumn.getValueKey());
+            }
+
+        }
+
+        return "";
+    }
+
+    @Override
+    public Integer resolveCount(TableColumn column, SpatialUnit su) {
+        if (column instanceof RelationColumn rel) {
+            return switch (rel.getCountKey()) {
+                case PARENTS -> su.getParents() == null ? 0 : su.getParents().size();
+                case CHILDREN -> su.getChildren() == null ? 0 : su.getChildren().size();
+                case "action" -> su.getRelatedActionUnitList() == null ? 0 : su.getRelatedActionUnitList().size();
+                case "recordingUnit" -> su.getRecordingUnitList() == null ? 0 : su.getRecordingUnitList().size();
+                default -> 0;
+            };
+        }
+        return 0;
+    }
+
+    @Override
+    public boolean isRendered(TableColumn column, String key, SpatialUnit su, Integer panelIndex) {
+        return switch (key) {
+            case "writeMode" -> flowBean.getIsWriteMode();
+            case "spatialUnitCreateAllowed" -> spatialUnitWriteVerifier.hasSpecificWritePermission(flowBean.getSessionSettings().getUserInfo(), su);
+            case "actionUnitCreateAllowed" -> institutionService.personIsInstitutionManagerOrActionManager(
+                    flowBean.getSessionSettings().getUserInfo().getUser(),
+                    flowBean.getSessionSettings().getSelectedInstitution());
+            default -> false;
+        };
+    }
+
+
+
+    @Override
+    public List<RowAction> getRowActions() {
+        return List.of(
+
+                // Bookmark toggle
+                RowAction.builder()
+                        .action(TableColumnAction.TOGGLE_BOOKMARK)
+                        .processExpr("@this")
+                        .updateExpr("bookmarkToggleButton navBarCsrfForm:siamoisNavForm:bookmarkGroup")
+                        .updateSelfTable(false)
+                        .styleClass("sia-icon-btn")
+                        .build(),
+
+                // Duplicate row (SpatialUnit only)
+                RowAction.builder()
+                        .action(TableColumnAction.DUPLICATE_ROW)
+                        .processExpr("@this")
+                        .updateSelfTable(true) // <-- mettra à jour :#{cc.clientId}:entityDatatable
+                        .styleClass("sia-icon-btn")
+                        .build()
+        );
+    }
+
+
+    @Override
+    public void handleRelationAction(RelationColumn col, SpatialUnit su, Integer panelIndex, TableColumnAction action) {
+        switch (action) {
+
+            case VIEW_RELATION -> flowBean.goToSpatialUnitByIdNewPanel(su.getId(), panelIndex, col.getViewTargetIndex());
+
+            case ADD_RELATION -> {
+                // Dispatch based on column.countKey (or add a dedicated "relationKey")
+                switch (col.getCountKey()) {
+                    case PARENTS -> {
+                        NewUnitContext ctx = NewUnitContext.builder()
+                                .kindToCreate(UnitKind.SPATIAL)
+                                .trigger(NewUnitContext.Trigger.cell(UnitKind.SPATIAL, su.getId(), PARENTS))
+                                .insertPolicy(NewUnitContext.UiInsertPolicy.builder()
+                                        .listInsert(NewUnitContext.ListInsert.TOP)
+                                        .treeInsert(NewUnitContext.TreeInsert.PARENT_AT_ROOT)
+                                        .build())
+                                .build();
+
+                        openCreateDialog(ctx, genericNewUnitDialogBean);
+                    }
+
+                    case CHILDREN -> {
+                        NewUnitContext ctx = NewUnitContext.builder()
+                                .kindToCreate(UnitKind.SPATIAL)
+                                .trigger(NewUnitContext.Trigger.cell(UnitKind.SPATIAL, su.getId(), CHILDREN))
+                                .insertPolicy(NewUnitContext.UiInsertPolicy.builder()
+                                        .listInsert(NewUnitContext.ListInsert.TOP)
+                                        .treeInsert(NewUnitContext.TreeInsert.CHILD_FIRST)
+                                        .build())
+                                .build();
+
+                        openCreateDialog(ctx, genericNewUnitDialogBean);
+                    }
+
+                    case "actions" -> {
+                        NewUnitContext ctx = NewUnitContext.builder()
+                                .kindToCreate(UnitKind.ACTION)
+                                .trigger(NewUnitContext.Trigger.cell(UnitKind.SPATIAL, su.getId(), "related_actions"))
+                                .insertPolicy(null)
+                                .build();
+
+                        openCreateDialog(ctx, genericNewUnitDialogBean);
+                    }
+
+                    default -> {
+                        // no op
+                    }
+
+                }
+            }
+
+            default -> throw new IllegalStateException("Unhandled relation action: " + action);
+        }
+    }
+
+    public boolean isRendered(RowAction action, SpatialUnit su) {
+        return switch (action.getAction()) {
+            case DUPLICATE_ROW -> false;
+            case TOGGLE_BOOKMARK -> false;
+            default -> true;
+        };
+    }
+
+
+    public String resolveIcon(RowAction action, SpatialUnit su) {
+        return "";
+    }
+    public void handleRowAction(RowAction action, SpatialUnit su) {
+        throw new IllegalStateException("Unhandled action: " + action.getAction());
+    }
+
+    @Override
+    public boolean isTreeViewSupported() {
+        return true;
+    }
+
+    @Override
+    public TreeNode<SpatialUnit> getTreeRoot() {
+        return treeLazyModel.getRoot();
+    }
+
+}

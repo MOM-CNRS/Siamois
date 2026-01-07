@@ -1,7 +1,7 @@
 package fr.siamois.ui.bean;
 
-import fr.siamois.domain.models.events.ConceptChangeEvent;
 import fr.siamois.domain.models.UserInfo;
+import fr.siamois.domain.models.events.ConceptChangeEvent;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.models.vocabulary.label.ConceptLabel;
 import fr.siamois.domain.models.vocabulary.label.ConceptPrefLabel;

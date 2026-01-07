@@ -404,6 +404,53 @@ public class RecordingUnitService implements ArkEntityService {
     public Integer countByActionContext(ActionUnit actionUnit) {
         return recordingUnitRepository.countByActionContext(actionUnit.getId());
     }
+
+    /**
+     * Get all the roots recording unit in the institution
+     *
+     * @param institutionId the institution id
+     * @return The list of RecordingUnit associated with the institution
+     */
+    public List<RecordingUnit> findAllWithoutParentsByInstitution(Long institutionId) {
+        List<RecordingUnit> res = recordingUnitRepository.findRootsByInstitution(institutionId);
+        initializeRecordingUnitCollections(res);
+        return res;
+    }
+
+    /**
+     * Get all recording unit in the institution that are the children of a given parent
+     *
+     * @param parentId the parent id
+     * @param institutionId the institution id
+     * @return The list of RecordingUnit associated with the institution and that are the children of a given parent
+     */
+    public List<RecordingUnit> findChildrenByParentAndInstitution(Long parentId, Long institutionId) {
+        List<RecordingUnit> res = recordingUnitRepository.findChildrenByParentAndInstitution(parentId, institutionId);
+        initializeRecordingUnitCollections(res);
+        return res;
+    }
+
+    /**
+     * Get all recording unit that are the roots for a given action
+     *
+     * @param actionId the action id
+     * @return The list of RecordingUnit that are the roots for a given action
+     */
+    public List<RecordingUnit> findAllWithoutParentsByAction(Long actionId) {
+        List<RecordingUnit> res = recordingUnitRepository.findRootsByAction(actionId);
+        initializeRecordingUnitCollections(res);
+        return res;
+    }
+
+    // Reusable method to initialize collections
+    private void initializeRecordingUnitCollections(List<RecordingUnit> recordingUnits) {
+        recordingUnits.forEach(ru -> {
+            Hibernate.initialize(ru.getParents());
+            Hibernate.initialize(ru.getChildren());
+        });
+    }
+
+
 }
 
 

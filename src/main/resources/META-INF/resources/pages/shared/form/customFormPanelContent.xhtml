@@ -1,8 +1,6 @@
 <ui:fragment xmlns="http://www.w3.org/1999/xhtml"
              xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
-             xmlns:sharedInput="http://xmlns.jcp.org/jsf/composite/pages/shared/input"
              xmlns:p="http://primefaces.org/ui"
-             xmlns:siaInplace="http://xmlns.jcp.org/jsf/composite/pages/shared/inplace"
              xmlns:c="http://java.sun.com/jsp/jstl/core"
 >
 
@@ -24,153 +22,22 @@
                 <c:forEach items="#{row.columns}" var="col" varStatus="colStatus">
                     <p:column styleClass="#{col.className}"
                               id="col-#{prefix}-#{statusIndex}-#{rowStatus.index}-#{colStatus.index}">
-                        <p:outputPanel rendered="#{bean.isColumnEnabled(col.field) }" id="field-#{prefix}-#{statusIndex}-#{rowStatus.index}-#{colStatus.index}">
-                            <sharedInput:panelField
-                                    id="panelField-#{prefix}-#{statusIndex}-#{rowStatus.index}-#{colStatus.index}"
-                                    required="#{col.required}"
-                                    title="#{spatialUnitFieldBean.resolveCustomFieldLabel(col.field)}"
-                                    forId="#{prefix}-#{statusIndex}-#{rowStatus.index}-#{colStatus.index}:input"
-                            >
-
-
-                                <siaInplace:text
-                                        rendered="#{col.field['class'].simpleName eq 'CustomFieldText'}"
-                                        id="#{prefix}-#{statusIndex}-#{rowStatus.index}-#{colStatus.index}"
-                                        panelModel="#{bean}"
-                                        field="#{col.field}"
-                                        required="#{col.required}"
-                                        label="#{spatialUnitFieldBean.resolveCustomFieldLabel(col.field)}"
-                                        hasBeenModified="#{bean.formResponse.answers.get(col.field).hasBeenModified}"
-                                        answer="#{bean.formResponse.answers.get(col.field)}"
-                                        mode="#{col.readOnly ? 'output' : flowBean.getInPlaceFieldMode()}"
-                                        updateTargetsOnBlur="#{bean.getPanelHeaderUpdateId(panelIndex)}"
-                                />
-
-                                <siaInplace:integer
-                                        rendered="#{col.field['class'].simpleName eq 'CustomFieldInteger'}"
-                                        panelModel="#{bean}"
-                                        field="#{col.field}"
-                                        required="#{col.required}"
-                                        label="#{spatialUnitFieldBean.resolveCustomFieldLabel(col.field)}"
-                                        hasBeenModified="#{bean.formResponse.answers.get(col.field).hasBeenModified}"
-                                        answer="#{bean.formResponse.answers.get(col.field)}"
-                                        mode="#{col.readOnly ? 'output' : flowBean.getInPlaceFieldMode()}"
-                                        updateTargetsOnBlur="#{bean.getPanelHeaderUpdateId(panelIndex)}"
-                                />
-
-
-                                <siaInplace:datePicker
-                                        required="#{col.required}"
-                                        panelModel="#{bean}"
-                                        label="#{spatialUnitFieldBean.resolveCustomFieldLabel(col.field)}"
-                                        rendered="#{col.field['class'].simpleName eq 'CustomFieldDateTime'}"
-                                        field="#{col.field}"
-                                        hasBeenModified="#{bean.formResponse.answers.get(col.field).hasBeenModified}"
-                                        answer="#{bean.formResponse.answers.get(col.field)}"
-                                        mode="#{col.readOnly ? 'output' : flowBean.getInPlaceFieldMode()}"
-                                        updateTargetsOnBlur="#{root}:field-#{prefix}-#{statusIndex}-#{rowStatus.index}-#{colStatus.index} #{bean.getPanelHeaderUpdateId(panelIndex)}"
-                                >
-
-                                </siaInplace:datePicker>
-
-
-                                <siaInplace:concept
-                                        rendered="#{col.field['class'].simpleName eq 'CustomFieldSelectOneFromFieldCode'}"
-                                        hasBeenModified="#{bean.formResponse.answers.get(col.field).hasBeenModified}"
-                                        field="#{col.field}"
-                                        required="#{col.required}"
-                                        label="#{spatialUnitFieldBean.resolveCustomFieldLabel(col.field)}"
-                                        mode="#{col.readOnly ? 'output' : flowBean.getInPlaceFieldMode()}"
-                                        panelModel="#{bean}"
-                                        updateTargetsOnBlur="#{bean.getConceptFieldsUpdateTargetsOnBlur(panelIndex)}"
-                                        answer="#{bean.getFieldAnswer(col.field)}"/>
-
-
-                                <!-- Select one concept from field parent concept children -->
-
-
-
-
-                                <!-- Select one action -->
-                                <siaInplace:action
-                                        rendered="#{col.field['class'].simpleName eq 'CustomFieldSelectOneActionUnit'}"
-                                        hasBeenModified="#{bean.formResponse.answers.get(col.field).hasBeenModified}"
-                                        field="#{col.field}"
-                                        mode="#{col.readOnly ? 'output' : flowBean.getInPlaceFieldMode()}"
-                                        panelModel="#{bean}"
-                                        required="#{col.required}"
-                                        label="#{spatialUnitFieldBean.resolveCustomFieldLabel(col.field)}"
-                                        updateTargetsOnBlur="#{root}:field-#{prefix}-#{statusIndex}-#{rowStatus.index}-#{colStatus.index} #{bean.getPanelHeaderUpdateId(panelIndex)}}"
-                                        answer="#{bean.formResponse.answers.get(col.field)}"/>
-
-
-                                <siaInplace:spatial
-                                        rendered="#{col.field['class'].simpleName eq 'CustomFieldSelectOneSpatialUnit'}"
-                                        hasBeenModified="#{bean.formResponse.answers.get(col.field).hasBeenModified}"
-                                        field="#{col.field}"
-                                        mode="#{col.readOnly ? 'output' : flowBean.getInPlaceFieldMode()}"
-                                        panelModel="#{bean}"
-                                        required="#{col.required}"
-                                        label="#{spatialUnitFieldBean.resolveCustomFieldLabel(col.field)}"
-                                        updateTargetsOnBlur="#{root}:field-#{prefix}-#{statusIndex}-#{rowStatus.index}-#{colStatus.index} #{bean.getPanelHeaderUpdateId(panelIndex)}"
-                                        answer="#{bean.formResponse.answers.get(col.field)}"/>
-
-
-                                <!-- Select one from person -->
-                                <siaInplace:person
-                                        rendered="#{col.field['class'].simpleName eq 'CustomFieldSelectOnePerson'}"
-                                        hasBeenModified="#{bean.formResponse.answers.get(col.field).hasBeenModified}"
-                                        field="#{col.field}"
-                                        mode="#{col.readOnly ? 'output' : flowBean.getInPlaceFieldMode()}"
-                                        panelModel="#{bean}"
-                                        required="#{col.required}"
-                                        label="#{spatialUnitFieldBean.resolveCustomFieldLabel(col.field)}"
-                                        updateTargetsOnBlur="#{bean.getPanelHeaderUpdateId(panelIndex)}"
-                                        answer="#{bean.formResponse.answers.get(col.field)}"/>
-
-
-                                <!-- Select multiple from person -->
-                                <siaInplace:person
-                                        rendered="#{col.field['class'].simpleName eq 'CustomFieldSelectMultiplePerson'}"
-                                        hasBeenModified="#{bean.formResponse.answers.get(col.field).hasBeenModified}"
-                                        field="#{col.field}"
-                                        multiple="true"
-                                        required="#{col.required}"
-                                        label="#{spatialUnitFieldBean.resolveCustomFieldLabel(col.field)}"
-                                        mode="#{col.readOnly ? 'output' : flowBean.getInPlaceFieldMode()}"
-                                        panelModel="#{bean}"
-                                        updateTargetsOnBlur="#{bean.getPanelHeaderUpdateId(panelIndex)}"
-                                        answer="#{bean.formResponse.answers.get(col.field)}"/>
-
-
-                                <!-- Select spatial unit from tree -->
-                                <siaInplace:spatialUnitTree
-                                        rendered="#{col.field['class'].simpleName eq 'CustomFieldSelectMultipleSpatialUnitTree'}"
-                                        hasBeenModified="#{bean.formResponse.answers.get(col.field).hasBeenModified}"
-                                        field="#{col.field}"
-                                        mode="#{col.readOnly ? 'output' : flowBean.getInPlaceFieldMode()}"
-                                        panelModel="#{bean}"
-                                        updateTargetsOnBlur="#{root}:field-#{prefix}-#{statusIndex}-#{rowStatus.index}-#{colStatus.index} #{bean.getPanelHeaderUpdateId(panelIndex)}"
-                                        answer="#{bean.formResponse.answers.get(col.field)}"/>
-
-                                <!-- Select one code OA -->
-                                <siaInplace:actionCode
-                                        rendered="#{col.field['class'].simpleName eq 'CustomFieldSelectOneActionCode'}"
-                                        panelModel="#{bean}"
-                                        field="#{col.field}"
-                                        required="#{col.required}"
-                                        label="#{spatialUnitFieldBean.resolveCustomFieldLabel(col.field)}"
-                                        hasBeenModified="#{bean.formResponse.answers.get(col.field).hasBeenModified}"
-                                        answer="#{bean.formResponse.answers.get(col.field)}"
-                                        mode="#{col.readOnly ? 'output' : flowBean.getInPlaceFieldMode()}"
-                                        updateTargetsOnBlur="#{root}:field-#{prefix}-#{statusIndex}-#{rowStatus.index}-#{colStatus.index} #{bean.getPanelHeaderUpdateId(panelIndex)}"
-                                />
-
-
-                            </sharedInput:panelField>
-
-                            <!-- Select one code OA -->
-                        </p:outputPanel>
+                                <ui:include src="/pages/shared/form/customFormFieldContentForPanel.xhtml">
+                                    <ui:param name="bean" value="#{bean}" />
+                                    <ui:param name="col" value="#{col}" />
+                                    <ui:param name="hasBeenModified" value="#{bean.formResponse.answers.get(col.field).hasBeenModified}"/>
+                                    <ui:param name="prefix" value="#{prefix}" />
+                                    <ui:param name="statusIndex" value="#{statusIndex}" />
+                                    <ui:param name="rowIndex" value="#{rowStatus.index}" />
+                                    <ui:param name="colIndex" value="#{colStatus.index}" />
+                                    <ui:param name="root" value="#{root}" />
+                                    <ui:param name="panelIndex" value="#{panelIndex}" />
+                                    <ui:param name="answer" value="#{bean.formResponse.answers.get(col.field)}"/>
+                                    <ui:param name="onModified" value="#{bean.onFieldAnswerModifiedListener}"/>
+                                    <ui:param name="panelHeaderUpdateId" value="#{bean.getPanelHeaderUpdateId(panelIndex)}"/>
+                                    <ui:param name="onGenerateValue" value="#{bean.generateValueForField}"/>
+                                    <ui:param name="hasAutoGenerationFunction" value="#{bean.hasAutoGenerationFunction(col.field)}"/>
+                                </ui:include>
                     </p:column>
 
 

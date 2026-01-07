@@ -8,7 +8,7 @@ import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerId;
 import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerSelectOneFromFieldCode;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.models.vocabulary.Vocabulary;
-import fr.siamois.ui.bean.panel.models.panel.single.AbstractSingleEntity;
+import fr.siamois.ui.form.CustomFieldAnswerFactory;
 import fr.siamois.ui.form.EnabledRulesEngine;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -227,7 +227,7 @@ class EnabledRulesEngineTest {
     void instantiateAnswerForField_usedByOverride_canHandleConceptFields() {
         // This test ensures the override path can actually build the temporary answer
         // using AbstractSingleEntity.instantiateAnswerForField and set a Concept.
-        CustomFieldAnswer tmp = AbstractSingleEntity.instantiateAnswerForField(driverField);
+        CustomFieldAnswer tmp = CustomFieldAnswerFactory.instantiateAnswerForField(driverField);
         assertTrue(tmp instanceof CustomFieldAnswerSelectOneFromFieldCode);
 
         // emulate the same steps as engine.buildConceptOverride(...)

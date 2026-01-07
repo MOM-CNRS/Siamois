@@ -6,7 +6,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>fr.siamois</groupId>
     <artifactId>siamois</artifactId>
-    <version>0.1.4-DEV</version>
+    <version>0.2.0-dev-1</version>
     <packaging>jar</packaging>
     <name>siamois</name>
 
@@ -28,7 +28,7 @@
         <lombok.version>1.18.24</lombok.version>
         <joinfaces.version>5.5.4</joinfaces.version>
         <commons-validator.version>1.9.0</commons-validator.version>
-        <jakarta.websocket-api.version>2.2.0</jakarta.websocket-api.version>
+        <jakarta.websocket-api.version>2.0.0</jakarta.websocket-api.version>
         <springdoc-openapi-ui.version>1.8.0</springdoc-openapi-ui.version>
         <springfox-boot-starter.version>3.0.0</springfox-boot-starter.version>
         <springdoc-openapi-starter-webmvc-ui.version>2.6.0</springdoc-openapi-starter-webmvc-ui.version>
@@ -64,6 +64,10 @@
             **/*DatasetInitializer.*,
             **/ui/bean/dialog/newunit/**,
             **/ui/form/rules/**,
+            **/ui/lazydatamodel/scope/**,
+            **/ui/lazydatamodel/tree/**,
+            **/ui/table/**,
+            **/ui/form/**,
             **/*ViewModel.*,
             **/*Converter.*,
             **/*Builder.*,

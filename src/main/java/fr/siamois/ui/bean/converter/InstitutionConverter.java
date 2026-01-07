@@ -1,7 +1,7 @@
 package fr.siamois.ui.bean.converter;
 
 import fr.siamois.domain.models.institution.Institution;
-import fr.siamois.domain.services.InstitutionService; // or your repo/service layer
+import fr.siamois.domain.services.InstitutionService;
 import jakarta.faces.component.UIComponent;
 import jakarta.faces.context.FacesContext;
 import jakarta.faces.convert.Converter;

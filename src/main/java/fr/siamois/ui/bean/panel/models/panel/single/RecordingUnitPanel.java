@@ -9,7 +9,6 @@ import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.customfield.CustomFieldDateTime;
 import fr.siamois.domain.models.form.customfield.CustomFieldInteger;
 import fr.siamois.domain.models.form.customfield.CustomFieldSelectMultiple;
-import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswer;
 import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerInteger;
 import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerSelectMultiple;
 import fr.siamois.domain.models.form.customform.CustomCol;
@@ -19,7 +18,6 @@ import fr.siamois.domain.models.history.RevisionWithInfo;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
-import fr.siamois.domain.services.form.FormService;
 import fr.siamois.domain.services.person.PersonService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.specimen.SpecimenService;
@@ -30,6 +28,7 @@ import fr.siamois.ui.bean.panel.models.panel.single.tab.SpecimenTab;
 import fr.siamois.ui.lazydatamodel.RecordingUnitChildrenLazyDataModel;
 import fr.siamois.ui.lazydatamodel.RecordingUnitParentsLazyDataModel;
 import fr.siamois.ui.lazydatamodel.SpecimenInRecordingUnitLazyDataModel;
+import fr.siamois.ui.table.RecordingUnitTableViewModel;
 import fr.siamois.utils.MessageUtils;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -44,7 +43,6 @@ import org.springframework.stereotype.Component;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
-import java.time.Month;
 import java.time.OffsetDateTime;
 import java.util.*;
 
@@ -62,7 +60,6 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
     protected final transient PersonService personService;
     private final transient RedirectBean redirectBean;
     private final transient SpecimenService specimenService;
-    private final transient FormService formService;
 
     // ---------- Locals
     // RU
@@ -79,6 +76,11 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
     // lazy model for parents
     private RecordingUnitParentsLazyDataModel lazyDataModelParents ;
 
+    // lazy model for children
+    private transient RecordingUnitTableViewModel parentTableModel;
+    // lazy model for parents
+    private transient RecordingUnitTableViewModel childTableModel;
+
     protected RecordingUnitPanel(ApplicationContext context)  {
 
         super("common.entity.recordingunit",
@@ -90,7 +92,6 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
         this.personService = context.getBean(PersonService.class);
         this.redirectBean = context.getBean(RedirectBean.class);
         this.specimenService = context.getBean(SpecimenService.class);
-        this.formService = context.getBean(FormService.class);
     }
 
 
@@ -181,7 +182,6 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
     public void refreshUnit() {
 
         // reinit
-        hasUnsavedModifications = false;
         errorMessage = null;
         unit = null;
 
@@ -280,11 +280,10 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
 
     @Override
     public void initForms(boolean forceInit) {
-        overviewForm = RecordingUnit.OVERVIEW_FORM;
         detailsForm = formService.findCustomFormByRecordingUnitTypeAndInstitutionId(unit.getType(), sessionSettingsBean.getSelectedInstitution());
+        configureSystemFieldsBeforeInit();
         // Init system form answers
-        formResponse = initializeFormResponse(detailsForm, unit, forceInit);
-        initEnabledRulesFromForms();
+        initFormContext(forceInit);
     }
 
     @Override
@@ -302,31 +301,33 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
         unit.setContributors(backupClone.getContributors());
         unit.setGeomorphologicalCycle(backupClone.getGeomorphologicalCycle());
         unit.setNormalizedInterpretation(backupClone.getNormalizedInterpretation());
-        hasUnsavedModifications = false;
+        formContext.setHasUnsavedModifications(false);
         initForms(true);
     }
 
     @Override
-    protected void initializeSystemField(CustomFieldAnswer answer, CustomField field) {
+    protected void configureSystemFieldsBeforeInit() {
 
-        // Recording unit identifier
-        if(Objects.equals(field.getValueBinding(), "identifier") && field.getClass().equals(CustomFieldInteger.class)) {
-            ((CustomFieldInteger) field).setMaxValue(unit.getActionUnit().getMaxRecordingUnitCode());
-            ((CustomFieldInteger) field).setMinValue(unit.getActionUnit().getMinRecordingUnitCode());
-        }
-        // Min and max datetime
-        if(field.getClass().equals(CustomFieldDateTime.class)) {
-            if(Objects.equals(field.getValueBinding(), "openingDate") && unit.getClosingDate() != null) {
-                ((CustomFieldDateTime) field).setMax(unit.getClosingDate().toLocalDateTime());
-                ((CustomFieldDateTime) field).setMin(LocalDateTime.of(1000,Month.JANUARY,1, 1, 1));
-            }
-            if(Objects.equals(field.getValueBinding(), "closingDate") && unit.getOpeningDate() != null) {
-                ((CustomFieldDateTime) field).setMin(unit.getOpeningDate().toLocalDateTime());
-                ((CustomFieldDateTime) field).setMax(LocalDateTime.of(9999,Month.DECEMBER,31, 23, 59));
-            }
-        }
+        for (CustomField field : getAllFieldsFrom(detailsForm)) {
 
+            if ("identifier".equals(field.getValueBinding()) && field instanceof CustomFieldInteger cfi) {
+                cfi.setMaxValue(unit.getActionUnit().getMaxRecordingUnitCode());
+                cfi.setMinValue(unit.getActionUnit().getMinRecordingUnitCode());
+            }
+
+            if (field instanceof CustomFieldDateTime dt) {
+                if ("openingDate".equals(field.getValueBinding()) && unit.getClosingDate() != null) {
+                    dt.setMax(unit.getClosingDate().toLocalDateTime());
+                    dt.setMin(LocalDateTime.of(1000, 1, 1, 1, 1));
+                }
+                if ("closingDate".equals(field.getValueBinding()) && unit.getOpeningDate() != null) {
+                    dt.setMin(unit.getOpeningDate().toLocalDateTime());
+                    dt.setMax(LocalDateTime.of(9999, 12, 31, 23, 59));
+                }
+            }
+        }
     }
+
 
     @Override
     public void visualise(RevisionWithInfo<RecordingUnit> history) {
@@ -353,7 +354,7 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
     @Override
     public boolean save(Boolean validated) {
 
-        updateJpaEntityFromFormResponse(formResponse, unit);
+        formContext.flushBackToEntity();
         unit.setValidated(validated);
         if(Boolean.TRUE.equals(validated)) {
             unit.setValidatedBy(sessionSettingsBean.getAuthenticatedUser());
@@ -406,6 +407,11 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
             recordingUnitPanel.init();
             return recordingUnitPanel;
         }
+    }
+
+    @Override
+    public String getTabView() {
+        return "/panel/tabview/spatialUnitTabView.xhtml";
     }
 
 

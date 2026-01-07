@@ -43,6 +43,11 @@ public abstract class BaseActionUnitLazyDataModel extends BaseLazyDataModel<Acti
         return FIELD_MAPPING;
     }
 
+    @Override
+    public String getRowKey(ActionUnit actionUnit) {
+        return actionUnit != null ? Long.toString(actionUnit.getId()) : null;
+    }
+
 
 
 }

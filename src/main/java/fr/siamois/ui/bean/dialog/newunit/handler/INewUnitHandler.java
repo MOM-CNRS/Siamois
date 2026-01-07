@@ -6,6 +6,7 @@ import fr.siamois.domain.models.exceptions.EntityAlreadyExistsException;
 import fr.siamois.domain.models.form.customform.CustomForm;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.ui.bean.dialog.newunit.GenericNewUnitDialogBean;
+import fr.siamois.ui.bean.dialog.newunit.NewUnitContext;
 import fr.siamois.ui.bean.dialog.newunit.UnitKind;
 import fr.siamois.ui.exceptions.CannotInitializeNewUnitDialogException;
 
@@ -24,6 +25,9 @@ public interface INewUnitHandler<T extends TraceableEntity> {
     // shared UI defaults (pull from UnitKind)
     default String getResourceUri()     { return kind().getConfig().resourceUri(); }
     default String getTitle()           { return kind().getConfig().title(); }
+    default String getTitle(NewUnitContext ctx) {
+        return kind().getConfig().title();
+    }
     default String styleClassName()     { return kind().getConfig().styleClass(); }
     default String getIcon()            { return kind().getConfig().icon(); }
     default String getAutocompleteClass(){ return kind().getConfig().autocompleteClass(); }

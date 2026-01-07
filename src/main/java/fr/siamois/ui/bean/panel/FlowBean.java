@@ -42,7 +42,10 @@ import org.springframework.stereotype.Component;
 
 import javax.faces.bean.SessionScoped;
 import java.io.Serializable;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 /**
  * <p>This ui.bean handles the home page</p>
@@ -106,7 +109,7 @@ public class FlowBean implements Serializable {
         UserInfo info = sessionSettings.getUserInfo();
         institutions = new ArrayList<>();
         institutions.addAll(institutionService.findInstitutionsOfPerson(info.getUser()));
-        fSpatialUnits = spatialUnitService.findAllOfInstitution(institution);
+        fSpatialUnits = spatialUnitService.findAllOfInstitution(institution.getId());
         selectedInstitution = institution;
     }
 
@@ -206,6 +209,20 @@ public class FlowBean implements Serializable {
         addPanel(newPanel);
     }
 
+    public void goToSpatialUnitByIdNewPanel(Long id, Integer currentPanelIndex) {
+
+        SpatialUnitPanel newPanel = panelFactory.createSpatialUnitPanel(id, panels.get(currentPanelIndex).getBreadcrumb());
+        addPanel(newPanel);
+
+    }
+
+    public void goToSpatialUnitByIdNewPanel(Long id, Integer currentPanelIndex, Integer activeIndex) {
+
+        SpatialUnitPanel newPanel = panelFactory.createSpatialUnitPanel(id, panels.get(currentPanelIndex).getBreadcrumb(), activeIndex);
+        addPanel(newPanel);
+
+    }
+
 
     public void goToRecordingUnitByIdCurrentPanel(Long id, Integer currentPanelIndex) {
 
@@ -250,8 +267,12 @@ public class FlowBean implements Serializable {
     }
 
     public void goToActionUnitByIdNewPanel(Long id, Integer currentPanelIndex) {
+        goToActionUnitByIdNewPanel(id, currentPanelIndex, 0);
+    }
+
+    public void goToActionUnitByIdNewPanel(Long id, Integer currentPanelIndex, Integer activeTabIndex) {
         // Create new panel type and add items to its breadcrumb
-        ActionUnitPanel newPanel = panelFactory.createActionUnitPanel(id, panels.get(currentPanelIndex).getBreadcrumb());
+        ActionUnitPanel newPanel = panelFactory.createActionUnitPanel(id, panels.get(currentPanelIndex).getBreadcrumb(), activeTabIndex);
         addPanel(newPanel);
     }
 
@@ -453,7 +474,8 @@ public class FlowBean implements Serializable {
      * @return true if creation is allowed
      */
     public boolean isActionUnitCreateAllowed() {
-        return actionUnitService.hasCreatePermission(sessionSettings.getUserInfo());
+        return permissionService.isInstitutionManager(sessionSettings.getUserInfo())
+                || permissionService.isActionManager(sessionSettings.getUserInfo());
     }
 
     /**
