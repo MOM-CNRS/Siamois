@@ -61,10 +61,9 @@ public class SpatialUnitTreeTableLazyModel extends BaseTreeTableLazyModel<Spatia
         List<SpatialUnit> children = spatialUnitService.findDirectChildrensOf(parentUnit.getId());
 
         for (SpatialUnit child : children) {
-            if (child == null || child.getId() == null) continue;
+            Long id = (child == null) ? null : child.getId();
 
-            // Cycle guard (just in case data is dirty)
-            if (path.contains(child.getId())) {
+            if (id == null || path.contains(id)) {
                 continue;
             }
 
@@ -75,9 +74,10 @@ public class SpatialUnitTreeTableLazyModel extends BaseTreeTableLazyModel<Spatia
             TreeNode<SpatialUnit> childNode = new DefaultTreeNode<>(child, parentNode);
             registerNode(child, childNode);
 
-            path.add(child.getId());
+            path.add(id);
             buildChildren(childNode, child, path);
-            path.remove(child.getId());
+            path.remove(id);
         }
+
     }
 }

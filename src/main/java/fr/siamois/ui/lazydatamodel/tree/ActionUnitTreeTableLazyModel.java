@@ -60,10 +60,9 @@ public class ActionUnitTreeTableLazyModel extends BaseTreeTableLazyModel<ActionU
                 scope.getInstitutionId());
 
         for (ActionUnit child : children) {
-            if (child == null || child.getId() == null) continue;
-
-            // Cycle guard (just in case data is dirty)
-            if (path.contains(child.getId())) {
+            if (child == null ||
+                    child.getId() == null ||
+                    path.contains(child.getId())) {
                 continue;
             }
 
@@ -73,5 +72,6 @@ public class ActionUnitTreeTableLazyModel extends BaseTreeTableLazyModel<ActionU
             buildChildren(childNode, child, path);
             path.remove(child.getId());
         }
+
     }
 }

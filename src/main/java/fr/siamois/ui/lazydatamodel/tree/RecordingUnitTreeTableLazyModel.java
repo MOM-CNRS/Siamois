@@ -58,10 +58,9 @@ public class RecordingUnitTreeTableLazyModel extends BaseTreeTableLazyModel<Reco
         List<RecordingUnit> children = recordingUnitService.findChildrenByParentAndInstitution(parentUnit.getId(), scope.getInstitutionId());
 
         for (RecordingUnit child : children) {
-            if (child == null || child.getId() == null) continue;
-
-            // Cycle guard (just in case data is dirty)
-            if (path.contains(child.getId())) {
+            if (child == null ||
+                    child.getId() == null ||
+                    path.contains(child.getId())) {
                 continue;
             }
 
@@ -71,5 +70,6 @@ public class RecordingUnitTreeTableLazyModel extends BaseTreeTableLazyModel<Reco
             buildChildren(childNode, child, path);
             path.remove(child.getId());
         }
+
     }
 }

@@ -29,6 +29,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
 
+import static fr.siamois.ui.bean.dialog.newunit.NewUnitContext.TreeInsert.ROOT;
+
 /**
  * View model générique pour une table d'entités avec formulaires dynamiques.
  *
@@ -278,27 +280,20 @@ public abstract class EntityTableViewModel<T extends TraceableEntity, ID> {
         // si pas de clickedId => bouton global => root
         ID clickedId = (ctx.getTrigger() != null) ? (ID) ctx.getTrigger().getClickedId() : null;
 
-        switch (ctx.getInsertPolicy().getTreeInsert()) {
-            case ROOT -> {
-                // insertion root = ajouter un node direct sous root
-                treeLazyModel.insertChildFirst(null, created); // ou méthode dédiée (voir note ci-dessous)
-            }
-            case CHILD_FIRST -> {
-                if (clickedId != null) {
-                    treeLazyModel.insertChildFirst(clickedId, created);
-                } else {
-                    treeLazyModel.insertChildFirst(null, created);
+        var treeInsert = ctx.getInsertPolicy().getTreeInsert();
+
+        if (clickedId == null || treeInsert == ROOT) {
+            treeLazyModel.insertChildFirst(null, created);
+        } else {
+            switch (treeInsert) {
+                case CHILD_FIRST ->
+                        treeLazyModel.insertChildFirst(clickedId, created);
+                case PARENT_AT_ROOT ->
+                        treeLazyModel.insertParentAtRoot(clickedId, created);
+                default -> {
+                    // no op
                 }
             }
-            case PARENT_AT_ROOT -> {
-                if (clickedId != null) {
-                    treeLazyModel.insertParentAtRoot(clickedId, created);
-                } else {
-                    treeLazyModel.insertChildFirst(null, created);
-                }
-            }
-            default -> { // no op
-                 }
         }
     }
 
@@ -312,7 +307,7 @@ public abstract class EntityTableViewModel<T extends TraceableEntity, ID> {
                 ? toolbarCreateConfig.getInsertPolicySupplier().get()
                 : NewUnitContext.UiInsertPolicy.builder()
                 .listInsert(NewUnitContext.ListInsert.TOP)
-                .treeInsert(NewUnitContext.TreeInsert.ROOT)
+                .treeInsert(ROOT)
                 .build();
 
         NewUnitContext ctx = NewUnitContext.builder()

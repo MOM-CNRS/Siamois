@@ -16,6 +16,8 @@ import org.primefaces.model.TreeNode;
 
 import java.util.List;
 
+import static fr.siamois.ui.table.TableColumnAction.GO_TO_SPECIMEN;
+
 /**
  * View model spécifique pour les tableaux de RecordingUnit.
  *
@@ -76,18 +78,17 @@ public class SpecimenTableViewModel extends EntityTableViewModel<Specimen, Long>
                                      Specimen s,
                                      Integer panelIndex) {
 
-        switch (column.getAction()) {
-
-            case GO_TO_SPECIMEN ->
-                    flowBean.goToSpecimenByIdNewPanel(
-                            s.getId(),
-                            panelIndex
-                    );
-
-            default -> throw new IllegalStateException(
+        if (column.getAction() == GO_TO_SPECIMEN) {
+            flowBean.goToSpecimenByIdNewPanel(
+                    s.getId(),
+                    panelIndex
+            );
+        } else {
+            throw new IllegalStateException(
                     "Unhandled action: " + column.getAction()
             );
         }
+
     }
 
     // resolving cell text based on value key
@@ -96,16 +97,13 @@ public class SpecimenTableViewModel extends EntityTableViewModel<Specimen, Long>
 
         if (column instanceof CommandLinkColumn linkColumn) {
 
-            switch (linkColumn.getValueKey()) {
-
-                case "fullIdentifier":
-                    return s.displayFullIdentifier();
-
-                default:
-                    throw new IllegalStateException(
-                            "Unknown valueKey: " + linkColumn.getValueKey()
-                    );
+            if ("fullIdentifier".equals(linkColumn.getValueKey())) {
+                return s.displayFullIdentifier();
             }
+
+            throw new IllegalStateException(
+                    "Unknown valueKey: " + linkColumn.getValueKey()
+            );
         }
 
         return "";
@@ -152,10 +150,10 @@ public class SpecimenTableViewModel extends EntityTableViewModel<Specimen, Long>
 
     @Override
     public void handleRelationAction(RelationColumn col, Specimen s, Integer panelIndex, TableColumnAction action) {
-        switch (action) {
+        throw new IllegalStateException(
+                "Unhandled relation action: " + action
+        );
 
-            default -> throw new IllegalStateException("Unhandled relation action: " + action);
-        }
     }
 
     public boolean isRendered(RowAction action, Specimen s) {

@@ -68,15 +68,16 @@ public class TableRowFieldSource implements FieldSource {
                 if (r.getColumns() == null) continue;
                 for (CustomCol c : r.getColumns()) {
                     CustomField f = c.getField();
-                    if (f == null || f.getId() == null) continue;
-                    if (!byId.containsKey(f.getId())) {
-                        // ce champ n'est pas une colonne de la table : on peut l'ignorer ou le rajouter si tu veux.
+
+                    if (f == null || f.getId() == null || !byId.containsKey(f.getId())) {
                         continue;
                     }
+
                     if (c.getEnabledWhenSpec() != null) {
                         enabledByField.put(f, c.getEnabledWhenSpec());
                     }
                 }
+
             }
         }
     }
