@@ -35,82 +35,82 @@ public final class RecordingUnitTableDefinitionFactory {
             return;
         }
 
-        Concept TYPE_CONCEPT = new Concept.Builder()
+        Concept typeConcept = new Concept.Builder()
                 .vocabulary(SYSTEM_THESO)
                 .externalId("4287605")
                 .build();
-        Concept OPENINGDATE_CONCEPT = new Concept.Builder()
+        Concept openingdateConcept = new Concept.Builder()
                 .vocabulary(SYSTEM_THESO)
                 .externalId("4286198")
                 .build();
-        Concept AUTHOR_CONCEPT = new Concept.Builder()
+        Concept authorConcept = new Concept.Builder()
                 .vocabulary(SYSTEM_THESO)
                 .externalId("4286195")
                 .build();
-        Concept CONTRIBUTORS_CONCEPT = new Concept.Builder()
+        Concept contributorsConcept = new Concept.Builder()
                 .vocabulary(SYSTEM_THESO)
                 .externalId("4286195")
                 .build();
-        Concept ACTION_CONCEPT = new Concept.Builder()
+        Concept actionConcept = new Concept.Builder()
                 .vocabulary(SYSTEM_THESO)
                 .externalId("4286244")
                 .build();
-        Concept SPATIAL_CONCEPT = new Concept.Builder()
+        Concept spatialConcept = new Concept.Builder()
                 .vocabulary(SYSTEM_THESO)
                 .externalId("4286245")
                 .build();
-        CustomFieldSelectOneFromFieldCode TYPE_FIELD =  CustomFieldSelectOneFromFieldCode.builder()
+        CustomFieldSelectOneFromFieldCode typeField =  CustomFieldSelectOneFromFieldCode.builder()
                 .label("recordingunit.property.type")
                 .isSystemField(true)
                 .id(1L)
                 .valueBinding("type")
-                .concept(TYPE_CONCEPT)
+                .concept(typeConcept)
                 .fieldCode("SIARU.TYPE")
                 .styleClass("mr-2 recording-unit-type-chip")
                 .build();
-        CustomFieldDateTime DATE_FIELD =  CustomFieldDateTime.builder()
+        CustomFieldDateTime dateField =  CustomFieldDateTime.builder()
                 .label("recordingunit.field.openingDate")
                 .isSystemField(true)
                 .id(2L)
                 .valueBinding("openingDate")
-                .concept(OPENINGDATE_CONCEPT)
+                .concept(openingdateConcept)
                 .showTime(false)
                 .build();
-        CustomFieldSelectOnePerson AUTHOR_FIELD =  CustomFieldSelectOnePerson.builder()
+        CustomFieldSelectOnePerson authorField =  CustomFieldSelectOnePerson.builder()
                 .label("recordingunit.field.author")
                 .isSystemField(true)
                 .id(3L)
                 .valueBinding("author")
-                .concept(AUTHOR_CONCEPT)
+                .concept(authorConcept)
                 .build();
-        CustomFieldSelectMultiplePerson CONTRIBUTORS_FIELD =  CustomFieldSelectMultiplePerson.builder()
+        CustomFieldSelectMultiplePerson contributorsField =  CustomFieldSelectMultiplePerson.builder()
                 .label("recordingunit.field.contributors")
                 .isSystemField(true)
                 .id(4L)
                 .valueBinding("contributors")
-                .concept(CONTRIBUTORS_CONCEPT)
+                .concept(contributorsConcept)
                 .build();
-        CustomFieldSelectOneActionUnit ACTION_FIELD = CustomFieldSelectOneActionUnit.builder()
+        CustomFieldSelectOneActionUnit actionField = CustomFieldSelectOneActionUnit.builder()
                 .label("recordingunit.field.actionUnit")
                 .isSystemField(true)
                 .id(5L)
                 .valueBinding("actionUnit")
-                .concept(ACTION_CONCEPT)
+                .concept(actionConcept)
                 .build();
-        CustomFieldSelectOneSpatialUnit SPATIAL_FIELD = CustomFieldSelectOneSpatialUnit.builder()
+        CustomFieldSelectOneSpatialUnit spatialField = CustomFieldSelectOneSpatialUnit.builder()
                 .label("recordingunit.field.spatialUnit")
                 .isSystemField(true)
                 .id(6L)
                 .valueBinding("spatialUnit")
-                .concept(SPATIAL_CONCEPT)
+                .concept(spatialConcept)
                 .build();
 
-        DATE_FIELD.setId(2L);
-        TYPE_FIELD.setId(1L);
-        AUTHOR_FIELD.setId(3L);
-        CONTRIBUTORS_FIELD.setId(4L);
-        ACTION_FIELD.setId(5L);
-        SPATIAL_FIELD.setId(6L);
+        dateField.setId(2L);
+        typeField.setId(1L);
+        authorField.setId(3L);
+        contributorsField.setId(4L);
+        actionField.setId(5L);
+        spatialField.setId(6L);
         tableModel.getTableDefinition().addColumn(
                 CommandLinkColumn.builder()
                         .id("identifierCol")
@@ -139,7 +139,7 @@ public final class RecordingUnitTableDefinitionFactory {
                 FormFieldColumn.builder()
                         .id("type")
                         .headerKey("recordingunit.property.type")
-                        .field(TYPE_FIELD)
+                        .field(typeField)
                         .sortable(true)
                         .visible(true)
                         .required(true)
@@ -149,7 +149,7 @@ public final class RecordingUnitTableDefinitionFactory {
                 FormFieldColumn.builder()
                         .id("openingDate")
                         .headerKey("recordingunit.field.openingDate")
-                        .field(DATE_FIELD)
+                        .field(dateField)
                         .sortable(true)
                         .visible(true)
                         .required(true)
@@ -159,7 +159,7 @@ public final class RecordingUnitTableDefinitionFactory {
                 FormFieldColumn.builder()
                         .id("author")
                         .headerKey("recordingunit.field.author")
-                        .field(AUTHOR_FIELD)
+                        .field(authorField)
                         .sortable(true)
                         .visible(true)
                         .required(true)
@@ -169,7 +169,7 @@ public final class RecordingUnitTableDefinitionFactory {
                 FormFieldColumn.builder()
                         .id("contributors")
                         .headerKey("recordingunit.field.contributors")
-                        .field(CONTRIBUTORS_FIELD)
+                        .field(contributorsField)
                         .sortable(true)
                         .visible(true)
                         .required(true)
@@ -179,7 +179,7 @@ public final class RecordingUnitTableDefinitionFactory {
                 FormFieldColumn.builder()
                         .id("action")
                         .headerKey("recordingunit.field.actionUnit")
-                        .field(ACTION_FIELD)
+                        .field(actionField)
                         .sortable(true)
                         .visible(true)
                         .readOnly(true)
@@ -190,7 +190,7 @@ public final class RecordingUnitTableDefinitionFactory {
                 FormFieldColumn.builder()
                         .id("spatial")
                         .headerKey("recordingunit.field.spatialUnit")
-                        .field(SPATIAL_FIELD)
+                        .field(spatialField)
                         .sortable(true)
                         .visible(true)
                         .readOnly(false)

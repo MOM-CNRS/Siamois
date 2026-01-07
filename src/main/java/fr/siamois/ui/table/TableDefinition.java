@@ -8,7 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.stream.Collectors;
+
 
 /**
  * Décrit la configuration globale d'un tableau :
@@ -38,7 +38,7 @@ public class TableDefinition {
 
     public List<FormFieldColumn> getFieldColumns() {
         return columns.stream()
-                .filter(c -> c instanceof FormFieldColumn)
+                .filter(FormFieldColumn.class::isInstance)
                 .map(c -> (FormFieldColumn) c)
                 .toList();
     }

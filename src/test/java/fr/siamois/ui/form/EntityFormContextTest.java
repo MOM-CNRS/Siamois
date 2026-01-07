@@ -192,7 +192,7 @@ class EntityFormContextTest {
 
         ctx.flushBackToEntity();
 
-        verify(formService).updateJpaEntityFromResponse(eq(response), eq(unit));
+        verify(formService).updateJpaEntityFromResponse(response, unit);
     }
 
     @Test
@@ -310,7 +310,7 @@ class EntityFormContextTest {
         verify(ans).setHasBeenModified(true);
         assertTrue(ctx.isHasUnsavedModifications());
         verify(enabledRulesEngine).onAnswerChange(eq(scopeField), eq(newValue), any(), any());
-        verify(scopeCallback).accept(eq(scopeField), eq(newValue));
+        verify(scopeCallback).accept(scopeField, newValue);
     }
 
     @Test
