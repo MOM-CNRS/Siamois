@@ -33,20 +33,20 @@ public class TableDefinition {
     public List<TableColumn> getVisibleColumns() {
         return columns.stream()
                 .filter(TableColumn::isVisible)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     public List<FormFieldColumn> getFieldColumns() {
         return columns.stream()
                 .filter(c -> c instanceof FormFieldColumn)
                 .map(c -> (FormFieldColumn) c)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     public List<CustomField> getAllFields() {
         return getFieldColumns().stream()
                 .map(FormFieldColumn::getField)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     public Optional<TableColumn> findColumnById(String id) {

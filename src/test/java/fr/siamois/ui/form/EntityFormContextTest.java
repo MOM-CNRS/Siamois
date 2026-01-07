@@ -44,13 +44,6 @@ class EntityFormContextTest {
         scopeCallback = mock(BiConsumer.class);
     }
 
-    private static CustomField mockField(long id, boolean isSystem, String binding) {
-        CustomField f = mock(CustomField.class);
-        when(f.getId()).thenReturn(id);
-        when(f.getIsSystemField()).thenReturn(isSystem);
-        when(f.getValueBinding()).thenReturn(binding);
-        return f;
-    }
 
     private static SpatialUnit su(long id, String name) {
         SpatialUnit su = mock(SpatialUnit.class);
@@ -96,17 +89,6 @@ class EntityFormContextTest {
         assertSame(root, ctx.getRoot(treeAnswer));
     }
 
-    /**
-     * Helper to access TreeUiStateViewModel indirectly by calling getRoot()
-     * and verifying selection by exercising getNormalizedSpatialUnits().
-     */
-    private static Object getPrivateTreeUi(EntityFormContext<?> ctx, CustomFieldAnswerSelectMultipleSpatialUnitTree a) {
-        // We cannot access the private map; instead we force an operation that requires it.
-        // Here, if UI exists, getRoot() is non-null; selection is checked via getNormalizedSpatialUnits.
-        // This method only exists to keep assertions readable.
-        assertNotNull(ctx.getRoot(a));
-        return new Object(); // not used outside assertion in init test
-    }
 
     @Test
     void getFieldAnswer_returnsNull_whenNoResponseOrAnswers() {

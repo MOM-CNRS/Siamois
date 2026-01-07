@@ -219,7 +219,7 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
             case ADD_RELATION -> {
                 // Dispatch based on column.countKey (or add a dedicated "relationKey")
                 switch (col.getCountKey()) {
-
+                    // handle adding parent, children or specimen
                 }
             }
 

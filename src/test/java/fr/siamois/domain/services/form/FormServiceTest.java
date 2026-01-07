@@ -8,7 +8,6 @@ import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.customfieldanswer.*;
 import fr.siamois.domain.models.form.customform.CustomForm;
 import fr.siamois.domain.models.form.customform.EnabledWhenJson;
-import fr.siamois.domain.models.form.customform.ValueMatcher;
 import fr.siamois.domain.models.form.customformresponse.CustomFormResponse;
 import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
@@ -238,7 +237,7 @@ class FormServiceTest {
         }
     }
 
-    private static CustomField mockSystemField(long id, boolean isSystem, String binding) {
+    private static CustomField mockSystemField(boolean isSystem, String binding) {
         CustomField field = mock(CustomField.class);
         when(field.getIsSystemField()).thenReturn(isSystem);
         when(field.getValueBinding()).thenReturn(binding);
@@ -277,7 +276,7 @@ class FormServiceTest {
     void initOrReuseResponse_forceInit_rebuildsAnswer() {
         // arrange
         FieldSource fieldSource = mock(FieldSource.class);
-        CustomField field1 = mockSystemField(1L, true, "title");
+        CustomField field1 = mockSystemField(true, "title");
         when(fieldSource.getAllFields()).thenReturn(List.of(field1));
 
         CustomFormResponse existing = new CustomFormResponse();
@@ -311,9 +310,9 @@ class FormServiceTest {
         // arrange
         FieldSource fieldSource = mock(FieldSource.class);
 
-        CustomField titleField = mockSystemField(1L, true, "title");
-        CustomField countField = mockSystemField(2L, true, "count");
-        CustomField createdAtField = mockSystemField(3L, true, "createdAt");
+        CustomField titleField = mockSystemField(true, "title");
+        CustomField countField = mockSystemField(true, "count");
+        CustomField createdAtField = mockSystemField(true, "createdAt");
 
         when(fieldSource.getAllFields()).thenReturn(List.of(titleField, countField, createdAtField));
 
@@ -351,7 +350,7 @@ class FormServiceTest {
     void initOrReuseResponse_populatesConceptSystemField_andUiVal() {
         // arrange
         FieldSource fieldSource = mock(FieldSource.class);
-        CustomField conceptField = mockSystemField(10L, true, "typeConcept");
+        CustomField conceptField = mockSystemField(true, "typeConcept");
         when(fieldSource.getAllFields()).thenReturn(List.of(conceptField));
 
         DummyEntity entity = new DummyEntity();
@@ -387,9 +386,9 @@ class FormServiceTest {
         // arrange
         DummyEntity entity = new DummyEntity();
 
-        CustomField titleField = mockSystemField(1L, true, "title");
-        CustomField countField = mockSystemField(2L, true, "count");
-        CustomField createdAtField = mockSystemField(3L, true, "createdAt");
+        CustomField titleField = mockSystemField(true, "title");
+        CustomField countField = mockSystemField(true, "count");
+        CustomField createdAtField = mockSystemField(true, "createdAt");
 
         CustomFieldAnswerText titleAnswer = new CustomFieldAnswerText();
         titleAnswer.setValue("Updated");
@@ -423,16 +422,16 @@ class FormServiceTest {
         DummyEntity entity = new DummyEntity();
 
         // Mock fields for all supported answer types
-        CustomField titleField = mockSystemField(1L, true, "title");
-        CustomField countField = mockSystemField(2L, true, "count");
-        CustomField createdAtField = mockSystemField(3L, true, "createdAt");
-        CustomField conceptField = mockSystemField(4L, true, "typeConcept");
-        CustomField actionUnitField = mockSystemField(5L, true, "actionUnit");
-        CustomField spatialUnitField = mockSystemField(6L, true, "spatialUnit");
-        CustomField actionCodeField = mockSystemField(7L, true, "actionCode");
-        CustomField personField = mockSystemField(8L, true, "person");
-        CustomField personListField = mockSystemField(9L, true, "personList");
-        CustomField spatialUnitSetField = mockSystemField(10L, true, "spatialUnitSet");
+        CustomField titleField = mockSystemField(true, "title");
+        CustomField countField = mockSystemField(true, "count");
+        CustomField createdAtField = mockSystemField(true, "createdAt");
+        CustomField conceptField = mockSystemField(true, "typeConcept");
+        CustomField actionUnitField = mockSystemField(true, "actionUnit");
+        CustomField spatialUnitField = mockSystemField(true, "spatialUnit");
+        CustomField actionCodeField = mockSystemField(true, "actionCode");
+        CustomField personField = mockSystemField(true, "person");
+        CustomField personListField = mockSystemField(true, "personList");
+        CustomField spatialUnitSetField = mockSystemField(true, "spatialUnitSet");
 
         // Mock answers for all supported types
         CustomFieldAnswerText titleAnswer = new CustomFieldAnswerText();
@@ -530,7 +529,7 @@ class FormServiceTest {
         wrongBindingAnswer.setValue("shouldNotApply");
 
         // null value -> should not overwrite
-        CustomField nullValueField = mockSystemField(3L, true, "title");
+        CustomField nullValueField = mockSystemField(true, "title");
         CustomFieldAnswerText nullValueAnswer = new CustomFieldAnswerText();
         nullValueAnswer.setValue(null);
 
@@ -594,16 +593,16 @@ class FormServiceTest {
         FieldSource fieldSource = mock(FieldSource.class);
 
         // Mock fields for all supported types
-        CustomField titleField = mockSystemField(1L, true, "title");
-        CustomField countField = mockSystemField(2L, true, "count");
-        CustomField createdAtField = mockSystemField(3L, true, "createdAt");
-        CustomField conceptField = mockSystemField(4L, true, "typeConcept");
-        CustomField actionUnitField = mockSystemField(5L, true, "actionUnit");
-        CustomField spatialUnitField = mockSystemField(6L, true, "spatialUnit");
-        CustomField actionCodeField = mockSystemField(7L, true, "actionCode");
-        CustomField personField = mockSystemField(8L, true, "person");
-        CustomField personListField = mockSystemField(9L, true, "personList");
-        CustomField spatialUnitSetField = mockSystemField(10L, true, "spatialUnitSet");
+        CustomField titleField = mockSystemField(true, "title");
+        CustomField countField = mockSystemField(true, "count");
+        CustomField createdAtField = mockSystemField(true, "createdAt");
+        CustomField conceptField = mockSystemField(true, "typeConcept");
+        CustomField actionUnitField = mockSystemField(true, "actionUnit");
+        CustomField spatialUnitField = mockSystemField(true, "spatialUnit");
+        CustomField actionCodeField = mockSystemField(true, "actionCode");
+        CustomField personField = mockSystemField(true, "person");
+        CustomField personListField = mockSystemField(true, "personList");
+        CustomField spatialUnitSetField = mockSystemField(true, "spatialUnitSet");
 
         // Setup mocks for fieldSource
         when(fieldSource.getAllFields()).thenReturn(
