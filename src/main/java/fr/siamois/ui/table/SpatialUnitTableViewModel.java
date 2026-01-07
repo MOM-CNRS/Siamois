@@ -1,6 +1,7 @@
 package fr.siamois.ui.table;
 
 import fr.siamois.domain.models.form.customform.CustomForm;
+import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.authorization.writeverifier.SpatialUnitWriteVerifier;
@@ -160,7 +161,31 @@ public class SpatialUnitTableViewModel extends EntityTableViewModel<SpatialUnit,
                 RowAction.builder()
                         .action(TableColumnAction.DUPLICATE_ROW)
                         .processExpr("@this")
-                        .updateSelfTable(true) // <-- mettra à jour :#{cc.clientId}:entityDatatable
+                        .updateSelfTable(true)
+                        .styleClass("sia-icon-btn")
+                        .build(),
+
+                // See entity (open it)
+                RowAction.builder()
+                        .action(TableColumnAction.OPEN_ENTITY)
+                        .processExpr("@this")
+                        .updateSelfTable(false)
+                        .styleClass("sia-icon-btn")
+                        .build(),
+
+                // Add children
+                RowAction.builder()
+                        .action(TableColumnAction.NEW_CHILDREN)
+                        .processExpr("@this")
+                        .updateSelfTable(true)
+                        .styleClass("sia-icon-btn")
+                        .build(),
+
+                // New action
+                RowAction.builder()
+                        .action(TableColumnAction.NEW_ACTION)
+                        .processExpr("@this")
+                        .updateSelfTable(false)
                         .styleClass("sia-icon-btn")
                         .build()
         );
@@ -224,16 +249,28 @@ public class SpatialUnitTableViewModel extends EntityTableViewModel<SpatialUnit,
     }
 
     public boolean isRendered(RowAction action, SpatialUnit su) {
+        // todo: display based on permissions
         return switch (action.getAction()) {
-            case DUPLICATE_ROW -> false;
-            case TOGGLE_BOOKMARK -> false;
+            case DUPLICATE_ROW -> true;
+            case TOGGLE_BOOKMARK -> true;
+            case OPEN_ENTITY -> true;
+            case NEW_ACTION -> true;
+            case NEW_CHILDREN -> true;
             default -> true;
         };
     }
 
 
     public String resolveIcon(RowAction action, SpatialUnit su) {
-        return "";
+            return switch (action.getAction()) {
+                case TOGGLE_BOOKMARK -> "bi bi-bookmark-plus";
+                case DUPLICATE_ROW -> "bi bi-copy";
+                case OPEN_ENTITY -> "bi bi-eye";
+                case NEW_ACTION -> "bi bi-arrow-down-square";
+                case NEW_CHILDREN -> "bi bi-node-plus-fill rotate-90";
+                default -> "";
+            };
+
     }
     public void handleRowAction(RowAction action, SpatialUnit su) {
         throw new IllegalStateException("Unhandled action: " + action.getAction());
