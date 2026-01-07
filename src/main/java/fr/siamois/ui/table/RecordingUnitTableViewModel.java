@@ -23,6 +23,8 @@ import java.time.LocalDateTime;
 import java.time.Month;
 import java.util.List;
 
+import static fr.siamois.ui.table.TableColumnAction.GO_TO_RECORDING_UNIT;
+
 /**
  * View model spécifique pour les tableaux de RecordingUnit.
  *
@@ -125,18 +127,17 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
                                      RecordingUnit ru,
                                      Integer panelIndex) {
 
-        switch (column.getAction()) {
-
-            case GO_TO_RECORDING_UNIT ->
-                    flowBean.goToRecordingUnitByIdNewPanel(
-                            ru.getId(),
-                            panelIndex
-                    );
-
-            default -> throw new IllegalStateException(
+        if (column.getAction() == GO_TO_RECORDING_UNIT) {
+            flowBean.goToRecordingUnitByIdNewPanel(
+                    ru.getId(),
+                    panelIndex
+            );
+        } else {
+            throw new IllegalStateException(
                     "Unhandled action: " + column.getAction()
             );
         }
+
     }
 
     // resolving cell text based on value key
@@ -144,16 +145,12 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
     public String resolveText(TableColumn column, RecordingUnit ru) {
 
         if (column instanceof CommandLinkColumn linkColumn) {
-
-            switch (linkColumn.getValueKey()) {
-
-                case "fullIdentifier":
-                    return ru.displayFullIdentifier();
-
-                default:
-                    throw new IllegalStateException(
-                            "Unknown valueKey: " + linkColumn.getValueKey()
-                    );
+            if ("fullIdentifier".equals(linkColumn.getValueKey())) {
+                return ru.displayFullIdentifier();
+            } else {
+                throw new IllegalStateException(
+                        "Unknown valueKey: " + linkColumn.getValueKey()
+                );
             }
         }
 

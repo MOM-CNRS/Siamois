@@ -86,34 +86,11 @@ public class GenericNewUnitDialogBean<T extends TraceableEntity>
     }
 
     @SuppressWarnings("unchecked")
+    // DO NOT DELETE, USED BY XHTML FILE
     public void selectKind(UnitKind kind) throws CannotInitializeNewUnitDialogException {
         this.kind = kind;
         this.handler = (INewUnitHandler<T>) handlers.get(kind);
         this.lazyDataModel = null;
-        this.multiHierarchyChild = null;
-        this.multiHierarchyParent = null;
-        init();
-    }
-
-    @SuppressWarnings("unchecked")
-    public void selectKind(UnitKind kind, BaseLazyDataModel<T> context) throws CannotInitializeNewUnitDialogException {
-        this.kind = kind;
-        this.handler = (INewUnitHandler<T>) handlers.get(kind);
-        this.lazyDataModel = context;
-        this.setToUpdate = null;
-        this.parent = null;
-        this.multiHierarchyChild = null;
-        this.multiHierarchyParent = null;
-        init();
-    }
-
-    @SuppressWarnings("unchecked")
-    public void selectKind(UnitKind kind, Set<T> context, TraceableEntity parent) throws CannotInitializeNewUnitDialogException {
-        this.kind = kind;
-        this.handler = (INewUnitHandler<T>) handlers.get(kind);
-        this.lazyDataModel = null;
-        this.setToUpdate = context;
-        this.parent = parent;
         this.multiHierarchyChild = null;
         this.multiHierarchyParent = null;
         init();
@@ -139,17 +116,6 @@ public class GenericNewUnitDialogBean<T extends TraceableEntity>
         this.multiHierarchyParent = null;
 
         init();
-    }
-
-    // Reset kind
-    public void resetKind()
-            throws CannotInitializeNewUnitDialogException {
-
-        this.kind = null;
-        this.handler = null;
-        this.sourceTableModel = null;
-        this.newUnitContext = null;
-        reset();
     }
 
 

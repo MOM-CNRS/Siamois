@@ -4,12 +4,13 @@ import fr.siamois.domain.models.TraceableEntity;
 import fr.siamois.ui.lazydatamodel.BaseLazyDataModel;
 import fr.siamois.ui.table.EntityTableViewModel;
 import lombok.Getter;
+import lombok.Setter;
 
 @Getter
 public abstract class EntityListTab<T extends TraceableEntity> extends PanelTab {
 
-
-    private BaseLazyDataModel<T> lazyDataModel ;
+    private final BaseLazyDataModel<T> lazyDataModel ;
+    @Setter
     private Integer totalCount;
     private final EntityTableViewModel<T, Long> tableModel;
 
@@ -29,6 +30,16 @@ public abstract class EntityListTab<T extends TraceableEntity> extends PanelTab 
         this.lazyDataModel = lazyDataModel;
         this.totalCount = totalCount;
         this.tableModel = null;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        return super.equals(o);
+    }
+
+    @Override
+    public int hashCode() {
+        return super.hashCode();
     }
 
 }

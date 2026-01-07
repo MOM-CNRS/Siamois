@@ -24,7 +24,14 @@ public class MultiHierarchyTab extends PanelTab {
         return "/panel/tab/hierarchyTab.xhtml";
     }
 
+    @Override
+    public boolean equals(Object o) {
+        return super.equals(o);
+    }
 
-
+    @Override
+    public int hashCode() {
+        return super.hashCode();
+    }
 
 }
