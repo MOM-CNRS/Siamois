@@ -587,6 +587,103 @@ class FormServiceTest {
 
     }
 
+    @Test
+    void initOrReuseResponse_populatesSystemFields_fromEntity_allHandlers() {
+        // Arrange
+        FieldSource fieldSource = mock(FieldSource.class);
+
+        // Mock fields for all supported types
+        CustomField titleField = mockSystemField(1L, true, "title");
+        CustomField countField = mockSystemField(2L, true, "count");
+        CustomField createdAtField = mockSystemField(3L, true, "createdAt");
+        CustomField conceptField = mockSystemField(4L, true, "typeConcept");
+        CustomField actionUnitField = mockSystemField(5L, true, "actionUnit");
+        CustomField spatialUnitField = mockSystemField(6L, true, "spatialUnit");
+        CustomField actionCodeField = mockSystemField(7L, true, "actionCode");
+        CustomField personField = mockSystemField(8L, true, "person");
+        CustomField personListField = mockSystemField(9L, true, "personList");
+        CustomField spatialUnitSetField = mockSystemField(10L, true, "spatialUnitSet");
+
+        // Setup mocks for fieldSource
+        when(fieldSource.getAllFields()).thenReturn(
+                List.of(titleField, countField, createdAtField, conceptField, actionUnitField,
+                        spatialUnitField, actionCodeField, personField, personListField, spatialUnitSetField)
+        );
+
+        // Create a dummy entity with all types of values
+        DummyEntity entity = new DummyEntity();
+        entity.setTitle("Hello");
+        entity.setCount(7);
+        entity.setCreatedAt(OffsetDateTime.of(2020, 1, 2, 3, 4, 5, 0, ZoneOffset.UTC));
+
+        Concept concept = mock(Concept.class);
+        entity.setTypeConcept(concept);
+
+        ActionUnit actionUnit = mock(ActionUnit.class);
+        entity.setActionUnit(actionUnit);
+
+        SpatialUnit spatialUnit = mock(SpatialUnit.class);
+        entity.setSpatialUnit(spatialUnit);
+
+        ActionCode actionCode = mock(ActionCode.class);
+        entity.setActionCode(actionCode);
+
+        Person person = mock(Person.class);
+        entity.setPerson(person);
+
+        List<Person> personList = List.of(mock(Person.class), mock(Person.class));
+        entity.setPersonList(personList);
+
+        Set<SpatialUnit> spatialUnitSet = Set.of(mock(SpatialUnit.class), mock(SpatialUnit.class));
+        entity.setSpatialUnitSet(spatialUnitSet);
+
+        // Mock answers for all supported types
+        CustomFieldAnswerText titleAnswer = new CustomFieldAnswerText();
+        CustomFieldAnswerInteger countAnswer = new CustomFieldAnswerInteger();
+        CustomFieldAnswerDateTime createdAtAnswer = new CustomFieldAnswerDateTime();
+        CustomFieldAnswerSelectOneFromFieldCode conceptAnswer = new CustomFieldAnswerSelectOneFromFieldCode();
+        CustomFieldAnswerSelectOneActionUnit actionUnitAnswer = new CustomFieldAnswerSelectOneActionUnit();
+        CustomFieldAnswerSelectOneSpatialUnit spatialUnitAnswer = new CustomFieldAnswerSelectOneSpatialUnit();
+        CustomFieldAnswerSelectOneActionCode actionCodeAnswer = new CustomFieldAnswerSelectOneActionCode();
+        CustomFieldAnswerSelectOnePerson personAnswer = new CustomFieldAnswerSelectOnePerson();
+        CustomFieldAnswerSelectMultiplePerson personListAnswer = new CustomFieldAnswerSelectMultiplePerson();
+        CustomFieldAnswerSelectMultipleSpatialUnitTree spatialUnitSetAnswer = new CustomFieldAnswerSelectMultipleSpatialUnitTree();
+
+        // Mock the factory to return the answers
+        try (MockedStatic<CustomFieldAnswerFactory> mockedFactory = mockStatic(CustomFieldAnswerFactory.class)) {
+            mockedFactory.when(() -> CustomFieldAnswerFactory.instantiateAnswerForField(titleField)).thenReturn(titleAnswer);
+            mockedFactory.when(() -> CustomFieldAnswerFactory.instantiateAnswerForField(countField)).thenReturn(countAnswer);
+            mockedFactory.when(() -> CustomFieldAnswerFactory.instantiateAnswerForField(createdAtField)).thenReturn(createdAtAnswer);
+            mockedFactory.when(() -> CustomFieldAnswerFactory.instantiateAnswerForField(conceptField)).thenReturn(conceptAnswer);
+            mockedFactory.when(() -> CustomFieldAnswerFactory.instantiateAnswerForField(actionUnitField)).thenReturn(actionUnitAnswer);
+            mockedFactory.when(() -> CustomFieldAnswerFactory.instantiateAnswerForField(spatialUnitField)).thenReturn(spatialUnitAnswer);
+            mockedFactory.when(() -> CustomFieldAnswerFactory.instantiateAnswerForField(actionCodeField)).thenReturn(actionCodeAnswer);
+            mockedFactory.when(() -> CustomFieldAnswerFactory.instantiateAnswerForField(personField)).thenReturn(personAnswer);
+            mockedFactory.when(() -> CustomFieldAnswerFactory.instantiateAnswerForField(personListField)).thenReturn(personListAnswer);
+            mockedFactory.when(() -> CustomFieldAnswerFactory.instantiateAnswerForField(spatialUnitSetField)).thenReturn(spatialUnitSetAnswer);
+
+            // Act: Initialize or reuse the response
+            CustomFormResponse response = formService.initOrReuseResponse(null, entity, fieldSource, false);
+
+            // Assert: Verify all answers were populated correctly
+            assertEquals("Hello", ((CustomFieldAnswerText) response.getAnswers().get(titleField)).getValue());
+            assertEquals(7, ((CustomFieldAnswerInteger) response.getAnswers().get(countField)).getValue());
+            assertEquals(entity.getCreatedAt().toLocalDateTime(), ((CustomFieldAnswerDateTime) response.getAnswers().get(createdAtField)).getValue());
+            assertEquals(concept, ((CustomFieldAnswerSelectOneFromFieldCode) response.getAnswers().get(conceptField)).getValue());
+            assertEquals(actionUnit, ((CustomFieldAnswerSelectOneActionUnit) response.getAnswers().get(actionUnitField)).getValue());
+            assertEquals(spatialUnit, ((CustomFieldAnswerSelectOneSpatialUnit) response.getAnswers().get(spatialUnitField)).getValue());
+            assertEquals(actionCode, ((CustomFieldAnswerSelectOneActionCode) response.getAnswers().get(actionCodeField)).getValue());
+            assertEquals(person, ((CustomFieldAnswerSelectOnePerson) response.getAnswers().get(personField)).getValue());
+            assertEquals(personList, ((CustomFieldAnswerSelectMultiplePerson) response.getAnswers().get(personListField)).getValue());
+            assertEquals(spatialUnitSet, ((CustomFieldAnswerSelectMultipleSpatialUnitTree) response.getAnswers().get(spatialUnitSetField)).getValue());
+
+            // Also ensure pk set + hasBeenModified false
+            assertNotNull(response.getAnswers().get(titleField).getPk());
+            assertFalse(response.getAnswers().get(titleField).getHasBeenModified());
+        }
+    }
+
+
 
 
 
