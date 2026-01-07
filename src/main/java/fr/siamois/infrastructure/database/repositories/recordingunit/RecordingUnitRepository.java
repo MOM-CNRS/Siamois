@@ -417,5 +417,44 @@ public interface RecordingUnitRepository extends CrudRepository<RecordingUnit, L
     )
     Integer countByActionContext(@Param("actionUnitId") Long actionUnitId);
 
+    @Query(value = """
+    SELECT ru.*
+    FROM recording_unit ru
+    WHERE ru.fk_institution_id = :institutionId
+      AND NOT EXISTS (
+          SELECT 1
+          FROM recording_unit_hierarchy h
+          WHERE h.fk_child_id = ru.recording_unit_id
+      )
+    """, nativeQuery = true)
+    List<RecordingUnit> findRootsByInstitution(@Param("institutionId") Long institutionId);
+
+    @Query(value = """
+    SELECT ru.*
+    FROM recording_unit ru
+    JOIN recording_unit_hierarchy h
+      ON h.fk_child_id = ru.recording_unit_id
+    WHERE ru.fk_institution_id = :institutionId
+      AND h.fk_parent_id = :parentId
+    """, nativeQuery = true)
+    List<RecordingUnit> findChildrenByParentAndInstitution(@Param("parentId") Long parentId,
+                                                           @Param("institutionId") Long institutionId);
+
+
+    @Query(value = """
+    SELECT ru.*
+    FROM recording_unit ru
+    WHERE ru.fk_action_unit_id = :actionId
+      AND NOT EXISTS (
+          SELECT 1
+          FROM recording_unit_hierarchy h
+          WHERE h.fk_child_id = ru.recording_unit_id
+      )
+    """, nativeQuery = true)
+    List<RecordingUnit> findRootsByAction(@Param("actionId") Long actionId);
+
+
+
+
 
 }

@@ -7,18 +7,31 @@ import fr.siamois.domain.models.document.Document;
 import fr.siamois.domain.models.exceptions.actionunit.ActionUnitNotFoundException;
 import fr.siamois.domain.models.exceptions.actionunit.FailedActionUnitSaveException;
 import fr.siamois.domain.models.history.RevisionWithInfo;
+import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
+import fr.siamois.domain.services.InstitutionService;
+import fr.siamois.domain.services.authorization.writeverifier.RecordingUnitWriteVerifier;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.specimen.SpecimenService;
 import fr.siamois.domain.services.vocabulary.LabelService;
 import fr.siamois.ui.bean.LangBean;
+import fr.siamois.ui.bean.NavBean;
 import fr.siamois.ui.bean.RedirectBean;
+import fr.siamois.ui.bean.dialog.newunit.GenericNewUnitDialogBean;
+import fr.siamois.ui.bean.dialog.newunit.NewUnitContext;
+import fr.siamois.ui.bean.dialog.newunit.UnitKind;
+import fr.siamois.ui.bean.panel.FlowBean;
 import fr.siamois.ui.bean.panel.models.PanelBreadcrumb;
 import fr.siamois.ui.bean.panel.models.panel.single.tab.RecordingTab;
 import fr.siamois.ui.bean.panel.models.panel.single.tab.SpecimenTab;
 import fr.siamois.ui.bean.settings.team.TeamMembersBean;
 import fr.siamois.ui.lazydatamodel.RecordingUnitInActionUnitLazyDataModel;
 import fr.siamois.ui.lazydatamodel.SpecimenInActionUnitLazyDataModel;
+import fr.siamois.ui.lazydatamodel.scope.RecordingUnitScope;
+import fr.siamois.ui.lazydatamodel.tree.RecordingUnitTreeTableLazyModel;
+import fr.siamois.ui.table.RecordingUnitTableViewModel;
+import fr.siamois.ui.table.ToolbarCreateConfig;
+import fr.siamois.ui.table.definitions.RecordingUnitTableDefinitionFactory;
 import fr.siamois.utils.MessageUtils;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -58,6 +71,11 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnit> imple
     private final TeamMembersBean teamMembersBean;
     private final transient RecordingUnitService recordingUnitService;
     private final transient SpecimenService specimenService;
+    private final transient NavBean navBean;
+    private final transient FlowBean flowBean;
+    private final transient GenericNewUnitDialogBean<?> genericNewUnitDialogBean;
+    private final transient InstitutionService institutionService;
+    private final transient RecordingUnitWriteVerifier recordingUnitWriteVerifier;
 
     // For entering new code
     private ActionCode newCode;
@@ -67,6 +85,8 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnit> imple
     // Field related
     private Boolean editType;
     private Concept fType;
+
+    private transient RecordingUnitTableViewModel recordingTabTableModel;
 
     @Override
     protected boolean documentExistsInUnitByHash(ActionUnit unit, String hash) {
@@ -99,6 +119,11 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnit> imple
         this.teamMembersBean = context.getBean(TeamMembersBean.class);
         this.recordingUnitService = context.getBean(RecordingUnitService.class);
         this.specimenService = context.getBean(SpecimenService.class);
+        this.navBean = context.getBean(NavBean.class);
+        this.flowBean = context.getBean(FlowBean.class);
+        this.genericNewUnitDialogBean = context.getBean(GenericNewUnitDialogBean.class);
+        this.institutionService = context.getBean(InstitutionService.class);
+        this.recordingUnitWriteVerifier = context.getBean(RecordingUnitWriteVerifier.class);
     }
 
 
@@ -112,7 +137,6 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnit> imple
     public void refreshUnit() {
 
         // reinit
-        hasUnsavedModifications = false;
         errorMessage = null;
         unit = null;
         newCode = new ActionCode();
@@ -163,14 +187,7 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnit> imple
                 errorMessage = "The Action Unit page should not be accessed without ID or by direct page path";
             }
 
-            recordingUnitListLazyDataModel = new RecordingUnitInActionUnitLazyDataModel(
-                    recordingUnitService,
-                    sessionSettingsBean,
-                    langBean,
-                    unit
-            );
-            recordingUnitListLazyDataModel.setSelectedUnits(new ArrayList<>());
-
+            initRecordingTab();
 
             specimenLazyDataModel = new SpecimenInActionUnitLazyDataModel(
                     specimenService,
@@ -180,12 +197,12 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnit> imple
             specimenLazyDataModel.setSelectedUnits(new ArrayList<>());
 
             totalSpecimenCount = specimenService.countByActionContext(unit);
-            totalRecordingUnitCount = recordingUnitService.countByActionContext(unit);
+
             RecordingTab recordingTab = new RecordingTab(
                     "common.entity.recordingUnits",
                     "bi bi-pencil-square",
                     "recordingTab",
-                    recordingUnitListLazyDataModel,
+                    recordingTabTableModel,
                     totalRecordingUnitCount);
             SpecimenTab specimenTab = new SpecimenTab(
                     "common.entity.specimens",
@@ -215,10 +232,9 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnit> imple
     @Override
     public void initForms(boolean forceInit) {
 
-        overviewForm = ActionUnit.OVERVIEW_FORM;
         detailsForm = ActionUnit.DETAILS_FORM;
         // Init system form answers
-        formResponse = initializeFormResponse(detailsForm, unit, forceInit);
+        initFormContext(forceInit);
 
     }
 
@@ -238,13 +254,13 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnit> imple
         unit.setName(backupClone.getName());
         unit.setValidated(backupClone.getValidated());
         unit.setType(backupClone.getType());
-        hasUnsavedModifications = false;
+        formContext.setHasUnsavedModifications(false);
         initForms(true);
     }
 
     @Override
     public void visualise(RevisionWithInfo<ActionUnit> history) {
-        // TODO: implement
+        // button is deactivated
     }
 
     @Override
@@ -255,7 +271,7 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnit> imple
     @Override
     public boolean save(Boolean validated) {
 
-        updateJpaEntityFromFormResponse(formResponse, unit);
+        formContext.flushBackToEntity();
         unit.setValidated(validated);
         try {
             actionUnitService.save(unit);
@@ -269,9 +285,6 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnit> imple
         return true;
     }
     
-
-
-
 
     @Override
     public String displayHeader() {
@@ -353,6 +366,56 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnit> imple
 
     public void goToMemberList() {
         redirectBean.redirectTo(String.format("/settings/organisation/actionunit/%s/members", unit.getId()));
+    }
+
+    public void initRecordingTab() {
+        RecordingUnitInActionUnitLazyDataModel actionLazyDataModel = new RecordingUnitInActionUnitLazyDataModel(
+                recordingUnitService,
+                sessionSettingsBean,
+                langBean,
+                unit
+        );
+
+        totalRecordingUnitCount = recordingUnitService.countByActionContext(unit);
+        RecordingUnitTreeTableLazyModel rLazyTree = new RecordingUnitTreeTableLazyModel(
+                recordingUnitService, RecordingUnitScope.builder()
+                .actionId(unit.getId())
+                .type(RecordingUnitScope.Type.ACTION)
+                .build()
+        );
+
+        recordingTabTableModel = new RecordingUnitTableViewModel(
+                actionLazyDataModel,
+                formService,
+                sessionSettingsBean,
+                spatialUnitTreeService,
+                spatialUnitService,
+                navBean,
+                flowBean,
+                (GenericNewUnitDialogBean<RecordingUnit>) genericNewUnitDialogBean,
+                recordingUnitWriteVerifier,
+                rLazyTree
+        );
+
+        RecordingUnitTableDefinitionFactory.applyTo(recordingTabTableModel);
+
+        // configuration du bouton creer
+        recordingTabTableModel.setToolbarCreateConfig(
+                ToolbarCreateConfig.builder()
+                        .kindToCreate(UnitKind.RECORDING)
+                        .scopeSupplier(() ->
+                                NewUnitContext.Scope.builder()
+                                        .key("ACTION")
+                                        .entityId(unit.getId())
+                                        .build()
+                        )
+                        .build()
+        );
+    }
+
+    @Override
+    public String getTabView() {
+        return "/panel/tabview/actionUnitTabView.xhtml";
     }
 
 }

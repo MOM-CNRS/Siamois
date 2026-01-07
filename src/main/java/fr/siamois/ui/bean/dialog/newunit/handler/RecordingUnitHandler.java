@@ -7,11 +7,12 @@ import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
+import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
 import fr.siamois.ui.bean.dialog.newunit.GenericNewUnitDialogBean;
+import fr.siamois.ui.bean.dialog.newunit.NewUnitContext;
 import fr.siamois.ui.bean.dialog.newunit.UnitKind;
 import fr.siamois.ui.exceptions.CannotInitializeNewUnitDialogException;
-import fr.siamois.ui.lazydatamodel.RecordingUnitInActionUnitLazyDataModel;
 import org.springframework.stereotype.Component;
 
 import java.time.OffsetDateTime;
@@ -24,11 +25,13 @@ public class RecordingUnitHandler implements INewUnitHandler<RecordingUnit> {
     private final RecordingUnitService recordingUnitService;
     private final ActionUnitService actionUnitService;
     private final SessionSettingsBean sessionSettingsBean;
+    private final LangBean langBean;
 
-    public RecordingUnitHandler(RecordingUnitService recordingUnitService, ActionUnitService actionUnitService, SessionSettingsBean sessionSettingsBean) {
+    public RecordingUnitHandler(RecordingUnitService recordingUnitService, ActionUnitService actionUnitService, SessionSettingsBean sessionSettingsBean, LangBean langBean) {
         this.recordingUnitService = recordingUnitService;
         this.actionUnitService = actionUnitService;
         this.sessionSettingsBean = sessionSettingsBean;
+        this.langBean = langBean;
     }
 
     @Override
@@ -53,22 +56,68 @@ public class RecordingUnitHandler implements INewUnitHandler<RecordingUnit> {
     @Override public String dialogWidgetVar() { return "newUnitDiag"; }
 
     @Override public void initFromContext(GenericNewUnitDialogBean<?> bean) throws CannotInitializeNewUnitDialogException {
+
         RecordingUnit unit = (RecordingUnit) bean.getUnit();
-        ActionUnit actionUnit ;
-        if (bean.getLazyDataModel() instanceof RecordingUnitInActionUnitLazyDataModel typedModel) {
-            actionUnit = actionUnitService.findById(typedModel.getActionUnit().getId());
+        NewUnitContext ctx = bean.getNewUnitContext();
+        if (ctx == null) throw new CannotInitializeNewUnitDialogException("Recording unit cannot be created without a context");
+
+        // 1) If creation comes from toolbar: use SCOPE
+        NewUnitContext.Trigger trigger = ctx.getTrigger();
+        if (trigger != null && trigger.getType() == NewUnitContext.TriggerType.TOOLBAR) {
+            applyScope(unit, ctx);
+            return;
         }
-        else if(bean.getParent() instanceof ActionUnit) {
-            actionUnit = (ActionUnit) bean.getParent();
-        }
-        else {
+
+        throw new CannotInitializeNewUnitDialogException("Recording unit cannot be created without a context");
+
+    }
+
+    private void applyScope(RecordingUnit unit, NewUnitContext ctx) throws CannotInitializeNewUnitDialogException {
+        NewUnitContext.Scope scope = ctx.getScope();
+        if (scope == null || scope.getKey() == null || scope.getEntityId() == null) {
             throw new CannotInitializeNewUnitDialogException("Recording unit cannot be created without a context");
         }
-        unit.setCreatedByInstitution(actionUnit.getCreatedByInstitution());
-        unit.setActionUnit(actionUnit);
-        unit.setAuthor(sessionSettingsBean.getAuthenticatedUser());
-        unit.setContributors(List.of(sessionSettingsBean.getAuthenticatedUser()));
-        unit.setOpeningDate(OffsetDateTime.now());
+
+
+        if ("ACTION".equals(scope.getKey())) {
+            ActionUnit au = actionUnitService.findById(scope.getEntityId()); // adapt Optional
+            if (au != null) {
+                unit.setCreatedByInstitution(au.getCreatedByInstitution());
+                unit.setActionUnit(au);
+                unit.setAuthor(sessionSettingsBean.getAuthenticatedUser());
+                unit.setContributors(List.of(sessionSettingsBean.getAuthenticatedUser()));
+                unit.setOpeningDate(OffsetDateTime.now());
+                return ;
+            }
+        }
+
+        throw new CannotInitializeNewUnitDialogException("Recording unit cannot be created without a context");
+    }
+
+
+    @Override
+    public String getTitle(NewUnitContext ctx) {
+        if (ctx == null) {
+            return INewUnitHandler.super.getTitle(ctx);
+        }
+
+
+        // =========================
+        // 2) TOOLBAR trigger (scope table)
+        // =========================
+        NewUnitContext.Scope scope = ctx.getScope();
+        if (scope != null && "ACTION".equals(scope.getKey()) && scope.getEntityId() != null) {
+
+            ActionUnit scoped = actionUnitService.findById(scope.getEntityId());
+            String name = scoped != null ? scoped.getName() : ("#" + scope.getEntityId());
+
+            return langBean.msg("dialog.label.title.recording.actionContext",name);
+        }
+
+        // =========================
+        // 3) Default fallback
+        // =========================
+        return INewUnitHandler.super.getTitle(ctx);
     }
 
     @Override

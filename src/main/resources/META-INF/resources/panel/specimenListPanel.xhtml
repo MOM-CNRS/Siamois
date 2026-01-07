@@ -1,7 +1,7 @@
 <ui:fragment xmlns="http://www.w3.org/1999/xhtml"
              xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
              xmlns:p="http://primefaces.org/ui"
-             xmlns:specimen="http://xmlns.jcp.org/jsf/composite/pages/specimen/components"
+             xmlns:table="http://xmlns.jcp.org/jsf/composite/pages/shared/table"
              xmlns:h="http://java.sun.com/jsf/html"
 >
     <!--@elvariable id="panelIndex" type="Integer"-->
@@ -15,12 +15,13 @@
 
     >
         <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
-        <specimen:specimenList
-                lazyDataModel="#{panelModel.lazyDataModel}"
-                panelModel="#{panelModel}"
+        <table:entityTable
+                displayColumnToggler="true"
+                tableModel="#{panelModel.tableModel}"
                 panelIndex="#{panelIndex}"
                 id="specimentList"
-        />
+        >
+        </table:entityTable>
     </h:form>
 
 

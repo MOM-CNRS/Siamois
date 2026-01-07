@@ -1,0 +1,110 @@
+<ui:fragment xmlns="http://www.w3.org/1999/xhtml"
+             xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
+             xmlns:p="http://primefaces.org/ui"
+             xmlns:f="http://xmlns.jcp.org/jsf/core"
+
+>
+
+    <!--@elvariable id="panelModel" type="fr.siamois.ui.bean.panel.models.panel.single.AbstractSingleEntityPanel"-->
+    <!--@elvariable id="panelIndex" type="Integer"-->
+
+    <!-- Tabs -->
+    <p:tabView id="singlePanelUnitTabs" activeIndex="#{panelModel.activeTabIndex}">
+        <p:ajax event="tabChange" listener="#{panelModel.onTabChange}"/>
+
+
+            <!-- details tab -->
+            <p:tab>
+
+                <f:facet name="title">
+
+                    <ui:include src="/pages/shared/tab/tabTitle.xhtml">
+                        <ui:param name="title" value='#{langBean.msg(panelModel.tabs[0].titleCode)}'/>
+                        <ui:param name="icon" value="#{panelModel.tabs[0].icon}"/>
+                        <ui:param name="emptyTab" value="#{panelModel.emptyTabFor(panelModel.tabs[0])}"/>
+                        <ui:param name="validated" value="#{panelModel.unit.validated}"/>
+                    </ui:include>
+                </f:facet>
+
+                <ui:include src="#{panelModel.tabs[0].getViewName()}">
+                    <ui:param name="panelModel" value="#{panelModel}"/>
+                    <ui:param name="panelIndex" value="#{panelIndex}"/>
+                    <ui:param name="tabModel" value="#{panelModel.tabs[0]}"/>
+                    <ui:param name="root"
+                              value="singlePanelUnitForm-#{panelIndex}:singlePanelUnitTabs:#{panelModel.getIndexOfTab(panelModel.tabs[0])}"/>
+                </ui:include>
+
+            </p:tab>
+
+        <!-- document tab -->
+        <p:tab>
+
+            <f:facet name="title">
+
+                <ui:include src="/pages/shared/tab/tabTitle.xhtml">
+                    <ui:param name="title" value='#{langBean.msg(panelModel.tabs[1].titleCode)}'/>
+                    <ui:param name="icon" value="#{panelModel.tabs[1].icon}"/>
+                    <ui:param name="emptyTab" value="#{panelModel.emptyTabFor(panelModel.tabs[1])}"/>
+                    <ui:param name="validated" value="#{panelModel.unit.validated}"/>
+                </ui:include>
+            </f:facet>
+
+            <ui:include src="#{panelModel.tabs[1].getViewName()}">
+                <ui:param name="panelModel" value="#{panelModel}"/>
+                <ui:param name="panelIndex" value="#{panelIndex}"/>
+                <ui:param name="tabModel" value="#{panelModel.tabs[1]}"/>
+            </ui:include>
+
+        </p:tab>
+
+        <!-- hierarchy tab -->
+        <p:tab>
+
+            <f:facet name="title">
+
+                <ui:include src="/pages/shared/tab/tabTitle.xhtml">
+                    <ui:param name="title" value='#{langBean.msg(panelModel.tabs[2].titleCode)}'/>
+                    <ui:param name="icon" value="#{panelModel.tabs[2].icon}"/>
+                    <ui:param name="emptyTab" value="#{panelModel.emptyTabFor(panelModel.tabs[2])}"/>
+                    <ui:param name="validated" value="#{panelModel.unit.validated}"/>
+                </ui:include>
+            </f:facet>
+
+            <ui:include src="#{panelModel.tabs[2].getViewName()}">
+                <ui:param name="panelModel" value="#{panelModel}"/>
+                <ui:param name="panelIndex" value="#{panelIndex}"/>
+                <ui:param name="tabModel" value="#{panelModel.tabs[2]}"/>
+            </ui:include>
+
+        </p:tab>
+
+        <!-- action tab -->
+        <p:tab>
+
+            <f:facet name="title">
+
+                <ui:include src="/pages/shared/tab/tabTitle.xhtml">
+                    <ui:param name="title" value='#{langBean.msg(panelModel.tabs[3].titleCode)}'/>
+                    <ui:param name="icon" value="#{panelModel.tabs[3].icon}"/>
+                    <ui:param name="emptyTab" value="#{panelModel.emptyTabFor(panelModel.tabs[3])}"/>
+                    <ui:param name="validated" value="#{panelModel.unit.validated}"/>
+                </ui:include>
+            </f:facet>
+
+            <ui:include src="#{panelModel.tabs[3].getViewName()}">
+                <ui:param name="panelModel" value="#{panelModel}"/>
+                <ui:param name="panelIndex" value="#{panelIndex}"/>
+                <ui:param name="tabModel" value="#{panelModel.tabs[3]}"/>
+            </ui:include>
+
+        </p:tab>
+
+
+
+
+
+    </p:tabView>
+
+
+
+</ui:fragment>

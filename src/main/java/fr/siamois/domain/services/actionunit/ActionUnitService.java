@@ -15,7 +15,6 @@ import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.ArkEntityService;
 import fr.siamois.domain.services.InstitutionService;
-import fr.siamois.domain.services.authorization.PermissionServiceImpl;
 import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.infrastructure.database.repositories.actionunit.ActionCodeRepository;
 import fr.siamois.infrastructure.database.repositories.actionunit.ActionUnitRepository;
@@ -45,7 +44,6 @@ public class ActionUnitService implements ArkEntityService {
     private final ActionUnitRepository actionUnitRepository;
     private final ConceptService conceptService;
     private final ActionCodeRepository actionCodeRepository;
-    private final PermissionServiceImpl permissionService;
     private final TeamMemberRepository teamMemberRepository;
     private final InstitutionService institutionService;
 
@@ -344,16 +342,6 @@ public class ActionUnitService implements ArkEntityService {
         return actionUnitRepository.findByCreatedByInstitution(institution);
     }
 
-    /**
-     * Verify if the user has the permission to create action units in the current institution
-     *
-     * @param user The user to check the permission on
-     * @return True if the user has sufficient permissions
-     */
-    public boolean hasCreatePermission(UserInfo user) {
-        return permissionService.isInstitutionManager(user)
-                || permissionService.isActionManager(user);
-    }
 
     /**
      * Verify if the action is still active
@@ -404,5 +392,55 @@ public class ActionUnitService implements ArkEntityService {
         // For now only the author is the manager, but we might need to extend it.
         return Objects.equals(action.getCreatedBy().getId(), person.getId());
     }
+
+    /**
+     * Get all the roots ActionUnit in the institution
+     *
+     * @param institutionId the institution id
+     * @return The list of ActionUnit associated with the institution
+     */
+    public List<ActionUnit> findAllWithoutParentsByInstitution(Long institutionId) {
+        List<ActionUnit> res = actionUnitRepository.findRootsByInstitution(institutionId);
+        initializeActionUnitCollections(res);
+        return res;
+    }
+
+    /**
+     * Get all ActionUnit in the institution that are the children of a given parent
+     *
+     * @param parentId the parent id
+     * @param institutionId the institution id
+     * @return The list of ActionUnit associated with the institution and that are the children of a given parent
+     */
+    public List<ActionUnit> findChildrenByParentAndInstitution(Long parentId, Long institutionId) {
+        List<ActionUnit> res = actionUnitRepository.findChildrenByParentAndInstitution(parentId, institutionId);
+        initializeActionUnitCollections(res);
+        return res;
+    }
+
+    /**
+     * Get all ActionUnit in the institution that are linked to a spatial unit
+     *
+     * @param spatialId the spatial unit id
+     * @param institutionId the institution id
+     * @return The list of ActionUnit
+     */
+    public List<ActionUnit> findBySpatialContextAndInstitution(Long spatialId, Long institutionId) {
+        List<ActionUnit> res = actionUnitRepository.findBySpatialContextAndInstitution(spatialId, institutionId);
+        initializeActionUnitCollections(res);
+        return res;
+    }
+
+    // Reusable method to initialize collections
+    private void initializeActionUnitCollections(List<ActionUnit> actionUnits) {
+        actionUnits.forEach(au -> {
+            Hibernate.initialize(au.getParents());
+            Hibernate.initialize(au.getChildren());
+            Hibernate.initialize(au.getRecordingUnitList());
+        });
+    }
+
+
+
 
 }

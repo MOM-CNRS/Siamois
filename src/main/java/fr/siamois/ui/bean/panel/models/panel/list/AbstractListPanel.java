@@ -1,5 +1,6 @@
 package fr.siamois.ui.bean.panel.models.panel.list;
 
+import fr.siamois.domain.models.TraceableEntity;
 import fr.siamois.domain.services.BookmarkService;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.person.PersonService;
@@ -12,30 +13,28 @@ import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
 import fr.siamois.ui.bean.panel.models.panel.AbstractPanel;
 import fr.siamois.ui.lazydatamodel.BaseLazyDataModel;
+import fr.siamois.ui.table.EntityTableViewModel;
+import fr.siamois.ui.table.TableColumn;
 import fr.siamois.utils.MessageUtils;
-import jakarta.faces.application.FacesMessage;
-import jakarta.faces.context.FacesContext;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import org.primefaces.component.api.UIColumn;
-import org.primefaces.event.ColumnToggleEvent;
-import org.primefaces.model.Visibility;
 import org.primefaces.model.menu.DefaultMenuItem;
 import org.springframework.context.ApplicationContext;
 
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 
 @Getter
 @Setter
 @NoArgsConstructor(force = true)
 @EqualsAndHashCode(callSuper = true, onlyExplicitlyIncluded = true)
 @Slf4j
-public abstract class AbstractListPanel<T> extends AbstractPanel  implements Serializable {
+public abstract class AbstractListPanel<T extends TraceableEntity> extends AbstractPanel  implements Serializable {
 
     // deps
     protected final transient SpatialUnitService spatialUnitService;
@@ -54,6 +53,15 @@ public abstract class AbstractListPanel<T> extends AbstractPanel  implements Ser
     protected long totalNumberOfUnits;
     protected String errorMessage;
 
+    /**
+     * Modèle de vue pour la table :
+     * - encapsule le LazyDataModel "pur data"
+     * - expose les colonnes
+     * - gère les EntityFormContext par ligne
+     * - expose les opérations dont le panel a besoin (selectedUnits, rowData, addRow...)
+     */
+    protected transient EntityTableViewModel<T,Long> tableModel;
+
     protected AbstractListPanel(BookmarkService bookmarkService) {
         this.bookmarkService = bookmarkService;
 
@@ -68,14 +76,7 @@ public abstract class AbstractListPanel<T> extends AbstractPanel  implements Ser
         fieldConfigurationService = null;
     }
 
-    public void onToggle(ColumnToggleEvent e) {
-        Integer index = (Integer) e.getData();
-        UIColumn column = e.getColumn();
-        Visibility visibility = e.getVisibility();
-        String header = column.getAriaHeaderText() != null ? column.getAriaHeaderText() : column.getHeaderText();
-        FacesMessage msg = new FacesMessage(FacesMessage.SEVERITY_INFO, "Column " + index + " toggled: " + header + " " + visibility, null);
-        FacesContext.getCurrentInstance().addMessage(null, msg);
-    }
+
 
     protected AbstractListPanel(
             String titleKey,
@@ -142,6 +143,7 @@ public abstract class AbstractListPanel<T> extends AbstractPanel  implements Ser
         lazyDataModel = createLazyDataModel();
         configureLazyDataModel(lazyDataModel);
 
+        configureTableColumns();
     }
 
     protected abstract String getBreadcrumbKey();
@@ -150,4 +152,13 @@ public abstract class AbstractListPanel<T> extends AbstractPanel  implements Ser
 
     @Override
     public abstract String displayHeader();
+
+    /**
+     * Exposé pour la vue JSF, utilisé dans <p:columns value="#{panelModel.columns}">
+     */
+    public List<TableColumn> getColumns() {
+        return tableModel != null ? tableModel.getColumns() : List.of();
+    }
+
+    abstract void configureTableColumns();
 }

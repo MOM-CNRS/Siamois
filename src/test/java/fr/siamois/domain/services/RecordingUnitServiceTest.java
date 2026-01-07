@@ -466,4 +466,51 @@ class RecordingUnitServiceTest {
         verify(recordingUnitRepository, times(1)).countByActionContext(2L);
     }
 
+    @Test
+    void findAllWithoutParentsByInstitution_returnsInitializedRecordingUnits() {
+        // Arrange
+        Long institutionId = 1L;
+        List<RecordingUnit> mockRecordingUnits = List.of(mock(RecordingUnit.class), mock(RecordingUnit.class));
+        when(recordingUnitRepository.findRootsByInstitution(institutionId)).thenReturn(mockRecordingUnits);
+
+        // Act
+        List<RecordingUnit> result = recordingUnitService.findAllWithoutParentsByInstitution(institutionId);
+
+        // Assert
+        assertEquals(2, result.size());
+        verify(recordingUnitRepository).findRootsByInstitution(institutionId);
+    }
+
+    @Test
+    void findChildrenByParentAndInstitution_returnsInitializedRecordingUnits() {
+        // Arrange
+        Long parentId = 1L;
+        Long institutionId = 1L;
+        List<RecordingUnit> mockRecordingUnits = List.of(mock(RecordingUnit.class), mock(RecordingUnit.class));
+        when(recordingUnitRepository.findChildrenByParentAndInstitution(parentId, institutionId)).thenReturn(mockRecordingUnits);
+
+        // Act
+        List<RecordingUnit> result = recordingUnitService.findChildrenByParentAndInstitution(parentId, institutionId);
+
+        // Assert
+        assertEquals(2, result.size());
+        verify(recordingUnitRepository).findChildrenByParentAndInstitution(parentId, institutionId);
+    }
+
+    @Test
+    void findAllWithoutParentsByAction_returnsInitializedRecordingUnits() {
+        // Arrange
+        Long actionId = 1L;
+        List<RecordingUnit> mockRecordingUnits = List.of(mock(RecordingUnit.class), mock(RecordingUnit.class));
+        when(recordingUnitRepository.findRootsByAction(actionId)).thenReturn(mockRecordingUnits);
+
+        // Act
+        List<RecordingUnit> result = recordingUnitService.findAllWithoutParentsByAction(actionId);
+
+        // Assert
+        assertEquals(2, result.size());
+        verify(recordingUnitRepository).findRootsByAction(actionId);
+    }
+
+
 }

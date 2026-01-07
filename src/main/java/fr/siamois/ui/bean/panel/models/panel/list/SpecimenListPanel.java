@@ -3,10 +3,18 @@ package fr.siamois.ui.bean.panel.models.panel.list;
 
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.specimen.Specimen;
+import fr.siamois.domain.services.authorization.writeverifier.RecordingUnitWriteVerifier;
+import fr.siamois.domain.services.form.FormService;
+import fr.siamois.domain.services.spatialunit.SpatialUnitTreeService;
 import fr.siamois.domain.services.specimen.SpecimenService;
+import fr.siamois.ui.bean.NavBean;
+import fr.siamois.ui.bean.dialog.newunit.GenericNewUnitDialogBean;
+import fr.siamois.ui.bean.panel.FlowBean;
 import fr.siamois.ui.bean.panel.models.PanelBreadcrumb;
 import fr.siamois.ui.lazydatamodel.BaseLazyDataModel;
 import fr.siamois.ui.lazydatamodel.SpecimenLazyDataModel;
+import fr.siamois.ui.table.SpecimenTableViewModel;
+import fr.siamois.ui.table.definitions.SpecimenTableDefinitionFactory;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
@@ -29,6 +37,12 @@ import java.util.List;
 public class SpecimenListPanel extends AbstractListPanel<Specimen>  implements Serializable {
 
     private final transient SpecimenService specimenService;
+    private final transient FormService formService;
+    private final transient SpatialUnitTreeService spatialUnitTreeService;
+    private final transient FlowBean flowBean;
+    private final transient GenericNewUnitDialogBean<Specimen> genericNewUnitDialogBean;
+    private final transient RecordingUnitWriteVerifier recordingUnitWriteVerifier;
+    private final transient NavBean navBean;
 
     // locals
     private String actionUnitListErrorMessage;
@@ -42,7 +56,21 @@ public class SpecimenListPanel extends AbstractListPanel<Specimen>  implements S
 
     @Override
     protected BaseLazyDataModel<Specimen> createLazyDataModel() {
-        return new SpecimenLazyDataModel(specimenService, sessionSettingsBean, langBean);
+        SpecimenLazyDataModel lazyModel = new SpecimenLazyDataModel(specimenService, sessionSettingsBean, langBean);
+
+        // instanciate table model
+        tableModel = new SpecimenTableViewModel(
+                lazyModel,
+                formService,
+                sessionSettingsBean,
+                spatialUnitTreeService,
+                spatialUnitService,
+                navBean,
+                flowBean,
+                genericNewUnitDialogBean
+        );
+
+        return lazyModel;
     }
 
     @Override
@@ -59,6 +87,12 @@ public class SpecimenListPanel extends AbstractListPanel<Specimen>  implements S
                 "siamois-panel specimen-panel list-panel",
                 context);
         specimenService = context.getBean(SpecimenService.class);
+        this.formService = context.getBean(FormService.class);
+        this.spatialUnitTreeService = context.getBean(SpatialUnitTreeService.class);
+        this.flowBean = context.getBean(FlowBean.class);
+        this.genericNewUnitDialogBean = context.getBean(GenericNewUnitDialogBean.class);
+        this.recordingUnitWriteVerifier = context.getBean(RecordingUnitWriteVerifier.class);
+        this.navBean = context.getBean(NavBean.class);
     }
 
     @Override
@@ -120,6 +154,12 @@ public class SpecimenListPanel extends AbstractListPanel<Specimen>  implements S
             specimenListPanel.init();
             return specimenListPanel;
         }
+    }
+
+    @Override
+    void configureTableColumns() {
+        SpecimenTableDefinitionFactory.applyTo(tableModel);
+        // no toolbar button in institution context
     }
 
 

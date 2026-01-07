@@ -8,7 +8,6 @@
 
     <cc:interface>
         <cc:attribute name="answer" type="fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerSelectPerson" required="true"/>
-        <cc:attribute name="panelModel" type="fr.siamois.ui.bean.panel.models.panel.single.AbstractSingleEntity" required="true"/>
         <cc:attribute name="hasBeenModified" type="Boolean" required="false" default="false"/>
         <cc:attribute name="field" type="fr.siamois.domain.models.form.customfield.CustomFieldSelectPerson"
                       required="true"/>
@@ -17,6 +16,10 @@
         <cc:attribute name="mode" type="String" required="false" default="READ"/>
         <cc:attribute name="updateTargetsOnBlur" type="String" required="false" default="@this"/>
         <cc:attribute name="multiple" type="Boolean" required="false" default="false"/>
+        <cc:attribute name="panelStyleClass" type="String" required="false" default=""/>
+        <cc:attribute name="onModified"
+                      method-signature="void setFieldAnswerHasBeenModified(javax.faces.event.AjaxBehaviorEvent)"
+                      required="false"/>
     </cc:interface>
 
     <cc:implementation>
@@ -33,7 +36,7 @@
             </f:facet>
             <f:facet name="input">
                 <p:autoComplete id="auto-complete-author"
-                                panelStyleClass="#{cc.attrs.panelModel.autocompleteClass}"
+                                panelStyleClass="#{panelStyleClass}"
                                 inputStyle="width: 100%"
                                 multiple="#{cc.attrs.multiple}"
                                 inputStyleClass="#{cc.attrs.answer.hasBeenModified ? 'track-change sia-modified-field': 'track-change'}"
@@ -49,7 +52,7 @@
                                 converter="#{personConverter}"
                                 dropdown="false">
                     <p:ajax update="#{cc.attrs.updateTargetsOnBlur}"
-                            listener="#{cc.attrs.panelModel.setFieldAnswerHasBeenModified(cc.attrs.field)}" />
+                            listener="#{cc.attrs.onModified}" />
                 </p:autoComplete>
             </f:facet>
         </p:inplace>

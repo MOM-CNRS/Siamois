@@ -1,7 +1,7 @@
 <ui:fragment xmlns="http://www.w3.org/1999/xhtml"
              xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
              xmlns:p="http://primefaces.org/ui"
-             xmlns:spatialUnit="http://xmlns.jcp.org/jsf/composite/pages/spatialUnit/components"
+             xmlns:table="http://xmlns.jcp.org/jsf/composite/pages/shared/table"
              xmlns:f="http://java.sun.com/jsf/core" xmlns:h="http://java.sun.com/jsf/html"
 >
     <!--@elvariable id="panelIndex" type="Integer"-->
@@ -13,23 +13,24 @@
 
     <h:form id="spatialUnitListPanelForm">
         <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
-        <spatialUnit:spatialUnitList
+        <table:entityTable
                 displayColumnToggler="true"
-                lazyDataModel="#{panelModel.lazyDataModel}"
-                panelModel="#{panelModel}"
+                tableModel="#{panelModel.tableModel}"
                 panelIndex="#{panelIndex}"
                 id="spatialUnitList"
         >
             <f:facet name="rightToolbar">
-                <p:commandButton value="#{langBean.msg('common.action.create')}" icon="bi bi-plus-square"
-                                 actionListener="#{genericNewUnitDialogBean.selectKind('SPATIAL', panelModel.lazyDataModel)}"
-                                 rendered="#{flowBean.isWriteMode and spatialUnitFieldBean.isCreateAllowed()}"
+                <p:commandButton
+                                 rendered="#{panelModel.tableModel.toolbarCreateConfig ne null and flowBean.isWriteMode and spatialUnitFieldBean.isCreateAllowed()}"
+                                 value="#{langBean.msg('common.action.create')}"
+                                 icon="bi bi-plus-square"
+                                 actionListener="#{cc.attrs.tableModel.openCreateFromToolbar(genericNewUnitDialogBean)}"
                                  oncomplete="PF('newUnitDiag').show();"
                                  update="newUnitForm"
-                                 style="margin-right: .5rem">
+                                 style="margin-right:.5rem">
                 </p:commandButton>
             </f:facet>
-        </spatialUnit:spatialUnitList>
+        </table:entityTable>
     </h:form>
 
 

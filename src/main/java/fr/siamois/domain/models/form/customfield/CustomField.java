@@ -3,8 +3,11 @@ package fr.siamois.domain.models.form.customfield;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.vocabulary.Concept;
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.experimental.SuperBuilder;
 
 import java.io.Serializable;
 import java.util.Objects;
@@ -13,9 +16,12 @@ import java.util.Objects;
 @Getter
 @Setter
 @Entity
+@SuperBuilder
 @Table(name = "custom_field")
 @Inheritance(strategy = InheritanceType.SINGLE_TABLE)
 @DiscriminatorColumn(name = "answer_type", discriminatorType = DiscriminatorType.STRING)
+@NoArgsConstructor
+@AllArgsConstructor
 public abstract class CustomField implements Serializable {
 
     @Id
@@ -62,37 +68,6 @@ public abstract class CustomField implements Serializable {
     @Override
     public int hashCode() {
         return Objects.hash(concept);
-    }
-
-    @SuppressWarnings("unchecked")
-    public abstract static class Builder<T extends Builder<T, F>, F extends CustomField> {
-        protected F field;
-
-        protected abstract T self();
-
-        public T label(String label) {
-            field.setLabel(label);
-            return self();
-        }
-
-        public T isSystemField(Boolean isSystemField) {
-            field.setIsSystemField(isSystemField);
-            return self();
-        }
-
-        public T concept(Concept concept) {
-            field.setConcept(concept);
-            return self();
-        }
-
-        public T valueBinding(String valueBinding) {
-            field.setValueBinding(valueBinding);
-            return self();
-        }
-
-        public F build() {
-            return field;
-        }
     }
 
 }

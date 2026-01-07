@@ -405,32 +405,6 @@ class ActionUnitServiceTest {
 
 
     @Test
-    void returnsTrue_whenUserIsActionManager() {
-        Person person1 = new Person();
-        person1.setId(1L);
-        Institution i = new Institution();
-        i.setId(1L);
-        UserInfo user = new UserInfo(i ,person1, "fr");
-        when(permissionService.isInstitutionManager(user)).thenReturn(false);
-        when(permissionService.isActionManager(user)).thenReturn(true);
-
-        assertTrue(actionUnitService.hasCreatePermission(user));
-    }
-
-    @Test
-    void returnsFalse_whenUserHasNoPermissions() {
-        Person person1 = new Person();
-        person1.setId(1L);
-        Institution i = new Institution();
-        i.setId(1L);
-        UserInfo user = new UserInfo(i ,person1, "fr");
-        when(permissionService.isInstitutionManager(user)).thenReturn(false);
-        when(permissionService.isActionManager(user)).thenReturn(false);
-
-        assertFalse(actionUnitService.hasCreatePermission(user));
-    }
-
-    @Test
     void isActionUnitStillOngoing_returnsFalseWhenBeginIsNull() {
         ActionUnit au = new ActionUnit();
         au.setEndDate(OffsetDateTime.now().plusDays(1));
@@ -535,5 +509,58 @@ class ActionUnitServiceTest {
         assertFalse(actionUnitService.canCreateRecordingUnit(userInfo, action));
         verify(actionUnitService, never()).isActionUnitStillOngoing(any());
     }
+
+    @Test
+    void findChildrenByParentAndInstitution_returnsInitializedActionUnits() {
+        // Arrange
+        Long parentId = 1L;
+        Long institutionId = 1L;
+        List<ActionUnit> mockActionUnits = List.of(mock(ActionUnit.class), mock(ActionUnit.class));
+        when(actionUnitRepository.findChildrenByParentAndInstitution(parentId, institutionId)).thenReturn(mockActionUnits);
+
+        // Act
+        List<ActionUnit> result = actionUnitService.findChildrenByParentAndInstitution(parentId, institutionId);
+
+        // Assert
+        assertEquals(2, result.size());
+        verify(actionUnitRepository).findChildrenByParentAndInstitution(parentId, institutionId);
+    }
+
+    @Test
+    void findAllWithoutParentsByInstitution_returnsInitializedActionUnits() {
+        // Arrange
+        Long institutionId = 1L;
+        List<ActionUnit> mockActionUnits = List.of(mock(ActionUnit.class), mock(ActionUnit.class));
+        when(actionUnitRepository.findRootsByInstitution(institutionId)).thenReturn(mockActionUnits);
+
+        // Act
+        List<ActionUnit> result = actionUnitService.findAllWithoutParentsByInstitution(institutionId);
+
+        // Assert
+        assertEquals(2, result.size());
+        verify(actionUnitRepository).findRootsByInstitution(institutionId);
+    }
+
+    @Test
+    void findBySpatialContextAndInstitution_returnsInitializedActionUnits() {
+        // Arrange
+        Long spatialId = 1L;
+        Long institutionId = 1L;
+        List<ActionUnit> mockActionUnits = List.of(mock(ActionUnit.class), mock(ActionUnit.class));
+        when(actionUnitRepository.findBySpatialContextAndInstitution(spatialId, institutionId)).thenReturn(mockActionUnits);
+
+        // Act
+        List<ActionUnit> result = actionUnitService.findBySpatialContextAndInstitution(spatialId, institutionId);
+
+        // Assert
+        assertEquals(2, result.size());
+        verify(actionUnitRepository).findBySpatialContextAndInstitution(spatialId, institutionId);
+    }
+
+
+
+
+
+
 
 }

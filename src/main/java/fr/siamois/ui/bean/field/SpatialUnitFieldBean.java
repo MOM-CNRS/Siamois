@@ -80,7 +80,7 @@ public class SpatialUnitFieldBean implements Serializable {
      */
     public void init() {
         init(new ArrayList<>(), new ArrayList<>());
-        refSpatialUnits = spatialUnitService.findAllOfInstitution(sessionSettingsBean.getSelectedInstitution());
+        refSpatialUnits = spatialUnitService.findAllOfInstitution(sessionSettingsBean.getSelectedInstitution().getId());
         labels = refSpatialUnits.stream()
                 .map(SpatialUnit::getName)
                 .toList();
@@ -91,7 +91,7 @@ public class SpatialUnitFieldBean implements Serializable {
     }
 
     public void init(List<SpatialUnit> parents, List<SpatialUnit> children) {
-        refSpatialUnits = spatialUnitService.findAllOfInstitution(sessionSettingsBean.getSelectedInstitution());
+        refSpatialUnits = spatialUnitService.findAllOfInstitution(sessionSettingsBean.getSelectedInstitution().getId());
         labels = refSpatialUnits.stream()
                 .map(SpatialUnit::getName)
                 .toList();

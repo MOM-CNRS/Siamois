@@ -2,13 +2,16 @@ package fr.siamois.domain.models.form.customfield;
 
 import jakarta.persistence.Entity;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
-
+import lombok.experimental.SuperBuilder;
 
 
 @Getter
 @Setter
 @Entity
+@NoArgsConstructor
+@SuperBuilder
 public class CustomFieldSelectPerson extends CustomField {
 
     @Override

@@ -5,7 +5,7 @@ import lombok.Data;
 import java.util.Objects;
 
 @Data
-public class PanelTab {
+public abstract class PanelTab {
 
     private String titleCode;
     private String icon;
@@ -16,7 +16,7 @@ public class PanelTab {
         return ROOT;
     }
 
-    public PanelTab(String titleCode, String icon, String id) {
+    protected PanelTab(String titleCode, String icon, String id) {
         this.titleCode = titleCode;
         this.icon = icon;
         this.id = id;
@@ -35,4 +35,8 @@ public class PanelTab {
     public int hashCode() {
         return Objects.hash(titleCode, icon);
     }
+
+    // Get the xhtml file name
+    public abstract String getViewName();
+
 }
