@@ -8,6 +8,7 @@ import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.customfieldanswer.*;
 import fr.siamois.domain.models.form.customform.CustomForm;
 import fr.siamois.domain.models.form.customform.EnabledWhenJson;
+import fr.siamois.domain.models.form.customform.ValueMatcher;
 import fr.siamois.domain.models.form.customformresponse.CustomFormResponse;
 import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
@@ -682,9 +683,6 @@ class FormServiceTest {
             assertFalse(response.getAnswers().get(titleField).getHasBeenModified());
         }
     }
-
-
-
 
 
 

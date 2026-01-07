@@ -413,13 +413,7 @@ public class RecordingUnitService implements ArkEntityService {
      */
     public List<RecordingUnit> findAllWithoutParentsByInstitution(Long institutionId) {
         List<RecordingUnit> res = recordingUnitRepository.findRootsByInstitution(institutionId);
-
-        // load related entities
-        res.forEach(actionUnit -> {
-            Hibernate.initialize(actionUnit.getParents());
-            Hibernate.initialize(actionUnit.getChildren());
-        });
-
+        initializeRecordingUnitCollections(res);
         return res;
     }
 
@@ -430,29 +424,32 @@ public class RecordingUnitService implements ArkEntityService {
      * @param institutionId the institution id
      * @return The list of RecordingUnit associated with the institution and that are the children of a given parent
      */
-    public List<RecordingUnit> findChildrenByParentAndInstitution(Long parentId, Long institutionId ) {
+    public List<RecordingUnit> findChildrenByParentAndInstitution(Long parentId, Long institutionId) {
         List<RecordingUnit> res = recordingUnitRepository.findChildrenByParentAndInstitution(parentId, institutionId);
-
-        // load related entities
-        res.forEach(actionUnit -> {
-            Hibernate.initialize(actionUnit.getParents());
-            Hibernate.initialize(actionUnit.getChildren());
-        });
-
+        initializeRecordingUnitCollections(res);
         return res;
     }
 
+    /**
+     * Get all recording unit that are the roots for a given action
+     *
+     * @param actionId the action id
+     * @return The list of RecordingUnit that are the roots for a given action
+     */
     public List<RecordingUnit> findAllWithoutParentsByAction(Long actionId) {
         List<RecordingUnit> res = recordingUnitRepository.findRootsByAction(actionId);
-
-        // load related entities
-        res.forEach(actionUnit -> {
-            Hibernate.initialize(actionUnit.getParents());
-            Hibernate.initialize(actionUnit.getChildren());
-        });
-
+        initializeRecordingUnitCollections(res);
         return res;
     }
+
+    // Reusable method to initialize collections
+    private void initializeRecordingUnitCollections(List<RecordingUnit> recordingUnits) {
+        recordingUnits.forEach(ru -> {
+            Hibernate.initialize(ru.getParents());
+            Hibernate.initialize(ru.getChildren());
+        });
+    }
+
 
 }
 
