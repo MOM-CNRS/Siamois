@@ -20,6 +20,7 @@ import fr.siamois.ui.bean.LabelBean;
 import fr.siamois.ui.form.CustomFieldAnswerFactory;
 import fr.siamois.ui.form.EnabledRulesEngine;
 import fr.siamois.ui.form.FieldSource;
+import fr.siamois.ui.form.ValueMatcherFactory;
 import fr.siamois.ui.form.rules.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -180,46 +181,13 @@ public class FormService {
 
     private ValueMatcher toMatcher(EnabledWhenJson.ValueJson vj) {
         String className = vj.getAnswerClass();
-        JsonNode node = vj.getValue();
-
         return switch (className) {
             case "fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerSelectOneFromFieldCode" ->
-                    new ValueMatcher() {
-                        @Override
-                        public boolean matches(CustomFieldAnswer cur) {
-                            if (!(cur instanceof CustomFieldAnswerSelectOneFromFieldCode a)) return false;
-                            // compare by external ids (vocabularyExtId + conceptExtId) in node
-                            String ev = node != null && node.has("vocabularyExtId")
-                                    ? node.get("vocabularyExtId").asText(null) : null;
-                            String ec = node != null && node.has("conceptExtId")
-                                    ? node.get("conceptExtId").asText(null) : null;
-
-                            Concept val = a.getValue();
-                            if (val == null) {
-                                return ev == null && ec == null;
-                            }
-                            return Objects.equals(val.getVocabulary().getExternalVocabularyId(), ev)
-                                    && Objects.equals(val.getExternalId(), ec);
-                        }
-
-                        @Override
-                        public Class<?> expectedAnswerClass() {
-                            return CustomFieldAnswerSelectOneFromFieldCode.class;
-                        }
-                    };
-            default -> new ValueMatcher() {
-                @Override
-                public boolean matches(CustomFieldAnswer cur) {
-                    return false; // unknown -> never equal
-                }
-
-                @Override
-                public Class<?> expectedAnswerClass() {
-                    return Object.class;
-                }
-            };
+                    ValueMatcherFactory.forSelectOneFromFieldCode(vj);
+            default -> ValueMatcherFactory.defaultMatcher();
         };
     }
+
 
     // -------------- Entity <-> answer binding
 
