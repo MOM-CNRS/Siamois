@@ -93,7 +93,6 @@ public class InstitutionService {
      * @throws InstitutionAlreadyExistException if an institution with the same identifier already exists
      * @throws FailedInstitutionSaveException   if there is an error while saving the institution
      */
-    @Transactional
     public Institution createInstitution(Institution institution, String thesaurusUrl) throws InstitutionAlreadyExistException, FailedInstitutionSaveException, InvalidEndpointException {
         Optional<Institution> existing = institutionRepository.findInstitutionByIdentifier(institution.getIdentifier());
         if (existing.isPresent())
@@ -119,7 +118,6 @@ public class InstitutionService {
      * @param actionUnit the action unit whose relations to find
      * @return a set of team member relations associated with the action unit, including the author
      */
-    @Transactional
     public Set<TeamMemberRelation> findRelationsOf(ActionUnit actionUnit) {
         Set<TeamMemberRelation> result = teamMemberRepository.findAllByActionUnit(actionUnit);
         ActionUnit actionUnitSaved = actionUnitRepository.findById(actionUnit.getId()).orElse(new ActionUnit());
