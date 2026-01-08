@@ -120,10 +120,9 @@ public class InstitutionService {
      */
     public Set<TeamMemberRelation> findRelationsOf(ActionUnit actionUnit) {
         Set<TeamMemberRelation> result = teamMemberRepository.findAllByActionUnit(actionUnit);
-        ActionUnit actionUnitSaved = actionUnitRepository.findById(actionUnit.getId()).orElse(new ActionUnit());
-        Person creator = actionUnitSaved.getCreatedBy();
+        Person creator = actionUnit.getCreatedBy();
         Hibernate.unproxy(creator);
-        result.add(new TeamMemberRelation(actionUnitSaved, creator));
+        result.add(new TeamMemberRelation(actionUnit, creator));
 
         for (TeamMemberRelation relation : result) {
             relation.setPerson(Hibernate.unproxy(relation.getPerson(), Person.class));
