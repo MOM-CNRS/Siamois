@@ -116,53 +116,61 @@
   }
 
   // Datatable
-  .ui-datatable thead th {
-    background: var(--light-color-100);
+/* Combine selectors for datatable and treetable */
+.ui-datatable thead th,
+.ui-treetable thead th {
+  background: var(--light-color-100);
 
-    &.ui-state-active {
-      color: var(--main-color);
-      background: var(--light-color-200);
-
-      &.ui-state-hover {
-        color: var(--main-color);
-        background: var(--light-color-50);
-      }
-
-      .ui-column-title {
-        color: var(--main-color);
-      }
-
-      .ui-sortable-column-icon.ui-icon-carat-2-n-s {
-        color: var(--main-color);
-      }
-    }
+  &.ui-state-active {
+    color: var(--main-color);
+    background: var(--light-color-200);
 
     &.ui-state-hover {
+      color: var(--main-color);
       background: var(--light-color-50);
-
-      .ui-column-title,
-      .ui-sortable-column-icon.ui-icon-carat-2-n-s {
-        color: var(--main-color);
-      }
-
     }
 
-    &.ui-sortable-column.ui-state-focus {
-      outline: 0;
-      outline-offset: 0;
-      box-shadow: inset 0 0 0 .2rem var(--main-color);
+    .ui-column-title {
+      color: var(--main-color);
     }
 
-    .ui-sortable-column-badge {
-      background: var(--main-color);
+    .ui-sortable-column-icon.ui-icon-carat-2-n-s {
+      color: var(--main-color);
     }
   }
 
-  .ui-datatable-data td[role="gridcell"]:focus, .ui-datatable-data td[role="gridcell"] *:focus, .ui-datatable-data td[role="grid"] [tabindex="0"]:focus {
-    outline: var(--main-color);
-    outline-style: solid;
-    outline-width: 2px;
+  &.ui-state-hover {
+    background: var(--light-color-50);
+
+    .ui-column-title,
+    .ui-sortable-column-icon.ui-icon-carat-2-n-s {
+      color: var(--main-color);
+    }
   }
+
+  &.ui-sortable-column.ui-state-focus {
+    outline: 0;
+    outline-offset: 0;
+    box-shadow: inset 0 0 0 .2rem var(--main-color);
+  }
+
+  .ui-sortable-column-badge {
+    background: var(--main-color);
+  }
+}
+
+/* Combine selectors for focus styles */
+.ui-datatable-data td[role="gridcell"]:focus,
+.ui-datatable-data td[role="gridcell"] *:focus,
+.ui-datatable-data td[role="grid"] [tabindex="0"]:focus,
+.ui-treetable-data td[role="gridcell"]:focus,
+.ui-treetable-data td[role="gridcell"] *:focus,
+.ui-treetable-data td[role="grid"] [tabindex="0"]:focus {
+  outline: var(--main-color);
+  outline-style: solid;
+  outline-width: 2px;
+}
+
 
   // Paginator
   .ui-paginator {

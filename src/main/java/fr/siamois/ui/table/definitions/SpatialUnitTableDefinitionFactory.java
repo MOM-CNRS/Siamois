@@ -1,10 +1,12 @@
 package fr.siamois.ui.table.definitions;
 
+import fr.siamois.domain.models.form.customfield.CustomFieldSelectOneFromFieldCode;
+import fr.siamois.domain.models.form.customfield.CustomFieldText;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
-import fr.siamois.ui.table.CommandLinkColumn;
-import fr.siamois.ui.table.EntityTableViewModel;
-import fr.siamois.ui.table.RelationColumn;
-import fr.siamois.ui.table.TableColumnAction;
+import fr.siamois.domain.models.vocabulary.Concept;
+import fr.siamois.ui.table.*;;
+
+import static fr.siamois.ui.bean.panel.models.panel.single.AbstractSingleEntity.SYSTEM_THESO;
 
 
 /**
@@ -35,6 +37,39 @@ public final class SpatialUnitTableDefinitionFactory {
             return;
         }
 
+        // uni category
+        Concept SPATIAL_UNIT_TYPE_CONCEPT = new Concept.Builder()
+                .vocabulary(SYSTEM_THESO)
+                .externalId("4282365")
+                .build();
+        // unit name
+        Concept NAME_CONCEPT = new Concept.Builder()
+                .vocabulary(SYSTEM_THESO)
+                .externalId("4285848")
+                .build();
+
+
+        // --------------- Fields
+        CustomFieldSelectOneFromFieldCode SPATIAL_UNIT_TYPE_FIELD = CustomFieldSelectOneFromFieldCode.builder()
+                .label("specimen.field.category")
+                .id(1L)
+                .isSystemField(true)
+                .valueBinding("category")
+                .styleClass("mr-2 spatial-unit-type-chip")
+                .iconClass("bi bi-geo-alt")
+                .fieldCode(SpatialUnit.CATEGORY_FIELD_CODE)
+                .concept(SPATIAL_UNIT_TYPE_CONCEPT)
+                .build();
+
+        CustomFieldText NAME_FIELD =  CustomFieldText.builder()
+                .label("common.label.name")
+                .id(2L)
+                .isSystemField(true)
+                .valueBinding("name")
+                .concept(NAME_CONCEPT)
+                .build();
+
+
         // -------------------------
         // Name / identifier link col
         // -------------------------
@@ -58,63 +93,27 @@ public final class SpatialUnitTableDefinitionFactory {
                         .build()
         );
 
-        // --------
-        // Parents
-        // --------
         tableModel.getTableDefinition().addColumn(
-                RelationColumn.builder()
-                        .id("parents")
-                        .headerKey("table.spatialunit.column.parents")
-                        .headerIcon("bi bi-pencil-square")
+                FormFieldColumn.builder()
+                        .id("name")
+                        .headerKey("spatialunit.field.name")
+                        .field(NAME_FIELD)
+                        .sortable(true)
                         .visible(true)
-                        .toggleable(true)
-
-                        .countKey("parents")
-
-                        .viewIcon(BI_BI_EYE)
-                        .viewAction(TableColumnAction.VIEW_RELATION)
-                        .viewTargetIndex(2)
-
-                        .addEnabled(true)
-                        .addIcon(BI_BI_PLUS_SQUARE)
-                        .addAction(TableColumnAction.ADD_RELATION)
-                        .addRenderedKey("spatialUnitCreateAllowed")
-
-                        .processExpr(THIS)
-                        .updateExpr("flow")
-                        .onstartJs(PF_BUI_CONTENT_SHOW)
-                        .oncompleteJs(PF_BUI_CONTENT_HIDE_HANDLE_SCROLL_TO_TOP)
+                        .required(true)
+                        .build()
+        );
+        tableModel.getTableDefinition().addColumn(
+                FormFieldColumn.builder()
+                        .id("type")
+                        .headerKey("spatialunit.field.type")
+                        .field(SPATIAL_UNIT_TYPE_FIELD)
+                        .sortable(true)
+                        .visible(true)
+                        .required(true)
                         .build()
         );
 
-        // ---------
-        // Children
-        // ---------
-        tableModel.getTableDefinition().addColumn(
-                RelationColumn.builder()
-                        .id("children")
-                        .headerKey("table.spatialunit.column.children")
-                        .headerIcon("bi bi-pencil-square")
-                        .visible(true)
-                        .toggleable(true)
-
-                        .countKey("children")
-
-                        .viewIcon(BI_BI_EYE)
-                        .viewAction(TableColumnAction.VIEW_RELATION)
-                        .viewTargetIndex(2)
-
-                        .addEnabled(true)
-                        .addIcon(BI_BI_PLUS_SQUARE)
-                        .addAction(TableColumnAction.ADD_RELATION)
-                        .addRenderedKey("spatialUnitCreateAllowed")
-
-                        .processExpr(THIS)
-                        .updateExpr("flow")
-                        .onstartJs(PF_BUI_CONTENT_SHOW)
-                        .oncompleteJs(PF_BUI_CONTENT_HIDE_HANDLE_SCROLL_TO_TOP)
-                        .build()
-        );
 
         // -------
         // Actions
@@ -126,14 +125,13 @@ public final class SpatialUnitTableDefinitionFactory {
                         .headerIcon("bi bi-arrow-down-square")
                         .visible(true)
                         .toggleable(true)
-
                         .countKey("actions")
 
                         .viewIcon(BI_BI_EYE)
                         .viewAction(TableColumnAction.VIEW_RELATION)
                         .viewTargetIndex(3)
 
-                        .addEnabled(true)
+                        .addEnabled(false)
                         .addIcon(BI_BI_PLUS_SQUARE)
                         .addAction(TableColumnAction.ADD_RELATION)
                         .addRenderedKey("actionUnitCreateAllowed")

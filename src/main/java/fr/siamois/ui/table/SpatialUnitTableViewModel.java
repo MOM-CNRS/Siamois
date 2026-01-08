@@ -1,7 +1,6 @@
 package fr.siamois.ui.table;
 
 import fr.siamois.domain.models.form.customform.CustomForm;
-import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.authorization.writeverifier.SpatialUnitWriteVerifier;
@@ -36,6 +35,8 @@ public class SpatialUnitTableViewModel extends EntityTableViewModel<SpatialUnit,
 
     public static final String PARENTS = "parents";
     public static final String CHILDREN = "children";
+    public static final String THIS = "@this";
+    public static final String SIA_ICON_BTN = "sia-icon-btn";
     /** Lazy model spécifique RecordingUnit (accès à selectedUnits, etc.) */
     private final BaseSpatialUnitLazyDataModel spatialUnitLazyDataModel;
     private final FlowBean flowBean;
@@ -151,42 +152,34 @@ public class SpatialUnitTableViewModel extends EntityTableViewModel<SpatialUnit,
                 // Bookmark toggle
                 RowAction.builder()
                         .action(TableColumnAction.TOGGLE_BOOKMARK)
-                        .processExpr("@this")
+                        .processExpr(THIS)
                         .updateExpr("bookmarkToggleButton navBarCsrfForm:siamoisNavForm:bookmarkGroup")
                         .updateSelfTable(false)
-                        .styleClass("sia-icon-btn")
+                        .styleClass(SIA_ICON_BTN)
                         .build(),
 
                 // Duplicate row (SpatialUnit only)
                 RowAction.builder()
                         .action(TableColumnAction.DUPLICATE_ROW)
-                        .processExpr("@this")
+                        .processExpr(THIS)
                         .updateSelfTable(true)
-                        .styleClass("sia-icon-btn")
-                        .build(),
-
-                // See entity (open it)
-                RowAction.builder()
-                        .action(TableColumnAction.OPEN_ENTITY)
-                        .processExpr("@this")
-                        .updateSelfTable(false)
-                        .styleClass("sia-icon-btn")
+                        .styleClass(SIA_ICON_BTN)
                         .build(),
 
                 // Add children
                 RowAction.builder()
                         .action(TableColumnAction.NEW_CHILDREN)
-                        .processExpr("@this")
+                        .processExpr(THIS)
                         .updateSelfTable(true)
-                        .styleClass("sia-icon-btn")
+                        .styleClass(SIA_ICON_BTN)
                         .build(),
 
                 // New action
                 RowAction.builder()
                         .action(TableColumnAction.NEW_ACTION)
-                        .processExpr("@this")
+                        .processExpr(THIS)
                         .updateSelfTable(false)
-                        .styleClass("sia-icon-btn")
+                        .styleClass(SIA_ICON_BTN)
                         .build()
         );
     }
@@ -214,18 +207,6 @@ public class SpatialUnitTableViewModel extends EntityTableViewModel<SpatialUnit,
                         openCreateDialog(ctx, genericNewUnitDialogBean);
                     }
 
-                    case CHILDREN -> {
-                        NewUnitContext ctx = NewUnitContext.builder()
-                                .kindToCreate(UnitKind.SPATIAL)
-                                .trigger(NewUnitContext.Trigger.cell(UnitKind.SPATIAL, su.getId(), CHILDREN))
-                                .insertPolicy(NewUnitContext.UiInsertPolicy.builder()
-                                        .listInsert(NewUnitContext.ListInsert.TOP)
-                                        .treeInsert(NewUnitContext.TreeInsert.CHILD_FIRST)
-                                        .build())
-                                .build();
-
-                        openCreateDialog(ctx, genericNewUnitDialogBean);
-                    }
 
                     case "actions" -> {
                         NewUnitContext ctx = NewUnitContext.builder()
@@ -253,7 +234,6 @@ public class SpatialUnitTableViewModel extends EntityTableViewModel<SpatialUnit,
         return switch (action.getAction()) {
             case DUPLICATE_ROW -> true;
             case TOGGLE_BOOKMARK -> true;
-            case OPEN_ENTITY -> true;
             case NEW_ACTION -> true;
             case NEW_CHILDREN -> true;
             default -> true;
@@ -265,7 +245,6 @@ public class SpatialUnitTableViewModel extends EntityTableViewModel<SpatialUnit,
             return switch (action.getAction()) {
                 case TOGGLE_BOOKMARK -> "bi bi-bookmark-plus";
                 case DUPLICATE_ROW -> "bi bi-copy";
-                case OPEN_ENTITY -> "bi bi-eye";
                 case NEW_ACTION -> "bi bi-arrow-down-square";
                 case NEW_CHILDREN -> "bi bi-node-plus-fill rotate-90";
                 default -> "";
@@ -273,7 +252,26 @@ public class SpatialUnitTableViewModel extends EntityTableViewModel<SpatialUnit,
 
     }
     public void handleRowAction(RowAction action, SpatialUnit su) {
-        throw new IllegalStateException("Unhandled action: " + action.getAction());
+        switch (action.getAction()) {
+            case NEW_CHILDREN -> {
+                // Open new spatial unit dialog
+                // The new spatial unit will be children of the current su
+                NewUnitContext ctx = NewUnitContext.builder()
+                        .kindToCreate(UnitKind.SPATIAL)
+                        .trigger(NewUnitContext.Trigger.cell(UnitKind.SPATIAL, su.getId(), CHILDREN))
+                        .insertPolicy(NewUnitContext.UiInsertPolicy.builder()
+                                .listInsert(NewUnitContext.ListInsert.TOP)
+                                .treeInsert(NewUnitContext.TreeInsert.CHILD_FIRST)
+                                .build())
+                        .build();
+
+                openCreateDialog(ctx, genericNewUnitDialogBean);
+            }
+
+            default -> {
+                // no op
+            }
+        }
     }
 
     @Override

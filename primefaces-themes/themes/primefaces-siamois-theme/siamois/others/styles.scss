@@ -155,3 +155,7 @@ body .ui-datatable .ui-datatable-data>tr.ui-state-highlight {
 .rotate-90 {
     transform: rotate(90deg);
 }
+
+body .ui-toggleswitch.ui-toggleswitch-checked .ui-toggleswitch-slider {
+    background: var(--light-color-200);
+}
