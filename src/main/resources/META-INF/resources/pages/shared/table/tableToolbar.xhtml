@@ -1,0 +1,52 @@
+<!-- /resources/components/tableToolbar.xhtml -->
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
+                xmlns:p="http://primefaces.org/ui"
+                xmlns:f="http://java.sun.com/jsf/core"
+                xmlns:cc="http://xmlns.jcp.org/jsf/composite">
+
+    <p:toolbar id="tableToolbar">
+        <p:toolbarGroup>
+            <p:toolbarGroup align="left">
+                <div style="display: flex; flex-direction: row; flex-wrap: wrap; gap: 1em; align-items: center;">
+                    <!-- Toggle Switch -->
+                    <p:toggleSwitch
+                            value="#{tableModel.treeMode}"
+                            onIcon="bi bi-list-nested"
+                            offIcon="bi bi-list">
+                        <p:ajax process="@this" update=":#{cc.clientId}:tableContainer"/>
+                    </p:toggleSwitch>
+
+                    <!-- Global Search -->
+                    <span class="filter-container ui-input-icon-left">
+                        <i class="bi bi-search"/>
+                        <p:inputText id="globalFilter"
+                                     value="#{tableModel.lazyDataModel.globalFilter}"
+                                     onkeyup="PF('#{cc.clientId}_entityDatatable').filter()"
+                                     placeholder="#{langBean.msg('common.action.search')}"/>
+                    </span>
+
+                    <!-- Column Toggler -->
+                    <p:commandButton
+                            id="toggler" type="button"
+                            value="#{langBean.msg('table.columnvisibility')}"
+                            icon="pi pi-align-justify"/>
+
+                    <!-- Save and Cancel Buttons -->
+                    <p:commandButton id="saveButton" value="Sauvegarder" />
+                    <p:commandLink value="Annuler les modifications" id="cancelButton" />
+                </div>
+            </p:toolbarGroup>
+        </p:toolbarGroup>
+        <p:toolbarGroup align="right">
+            <!-- todo : add rendered attribute in commandbutton using a method from the table model -->
+            <p:commandButton
+                    value="#{langBean.msg('common.action.create')}"
+                    icon="bi bi-plus-square"
+                    actionListener="#{tableModel.openCreateFromToolbar(genericNewUnitDialogBean)}"
+                    oncomplete="PF('newUnitDiag').show();"
+                    update="newUnitForm">
+            </p:commandButton>
+        </p:toolbarGroup>
+    </p:toolbar>
+</ui:composition>

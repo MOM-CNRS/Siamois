@@ -81,7 +81,7 @@ public abstract class EntityTableViewModel<T extends TraceableEntity, ID> {
 
     @Getter
     @Setter
-    private boolean treeMode = false; // false = table, true = tree
+    private boolean treeMode = true; // false = table, true = tree
 
     protected EntityTableViewModel(BaseLazyDataModel<T> lazyDataModel,
                                    BaseTreeTableLazyModel<T, ID> treeLazyModel,

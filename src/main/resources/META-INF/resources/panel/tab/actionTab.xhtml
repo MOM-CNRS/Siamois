@@ -10,23 +10,10 @@
     <!--@elvariable id="panelIndex" type="java.lang.Integer"-->
 
     <table:entityTable
-            displayColumnToggler="true"
             tableModel="#{tabModel.tableModel}"
             panelIndex="#{panelIndex}"
             id="actionList"
-    >
-        <f:facet name="rightToolbar">
-            <p:commandButton
-                    rendered="#{tabModel.tableModel.toolbarCreateConfig ne null and flowBean.isWriteMode and spatialUnitFieldBean.isCreateAllowed()}"
-                    value="#{langBean.msg('common.action.create')}"
-                    icon="bi bi-plus-square"
-                    actionListener="#{tabModel.tableModel.openCreateFromToolbar(genericNewUnitDialogBean)}"
-                    oncomplete="PF('newUnitDiag').show();"
-                    update="newUnitForm"
-                    style="margin-right:.5rem">
-            </p:commandButton>
-        </f:facet>
-    </table:entityTable>
+    />
 
 
 
