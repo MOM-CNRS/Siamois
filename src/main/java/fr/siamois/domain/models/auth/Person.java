@@ -31,7 +31,7 @@ public class Person implements UserDetails {
     public static final int USERNAME_MAX_LENGTH = 32;
 
     // https://www.rfc-editor.org/errata/eid1003
-    // RFC 3696 applies a limit 320 characters from email adresses.
+    // RFC 3696 applies a limit 320 characters from email address.
     // 64 chars for the local part and 255 chars for the domain part
     public static final int LOCAL_MAIL_MAX_LENGTH = 64;
     public static final int DOMAIN_MAIL_MAX_LENGTH = 255;
@@ -109,7 +109,7 @@ public class Person implements UserDetails {
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         List<SystemRole> roles = new ArrayList<>();
-        if (!this.isSuperAdmin)
+        if (this.isSuperAdmin)
             roles.add(new SystemRole("SUPER_ADMIN"));
         return roles;
     }

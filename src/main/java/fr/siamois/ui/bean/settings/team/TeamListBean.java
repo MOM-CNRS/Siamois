@@ -1,13 +1,16 @@
 package fr.siamois.ui.bean.settings.team;
 
 import fr.siamois.domain.models.actionunit.ActionUnit;
+import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.ui.bean.dialog.institution.UserDialogBean;
 import fr.siamois.ui.bean.settings.SettingsDatatableBean;
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import lombok.Setter;
+import org.hibernate.Hibernate;
 import org.springframework.stereotype.Component;
 
 import javax.faces.bean.SessionScoped;
@@ -19,6 +22,7 @@ import java.util.Set;
 @Setter
 @Component
 @SessionScoped
+@RequiredArgsConstructor
 public class TeamListBean implements SettingsDatatableBean {
 
     private final transient ActionUnitService actionUnitService;
@@ -31,13 +35,6 @@ public class TeamListBean implements SettingsDatatableBean {
 
     private Set<ActionUnit> actionUnits;
     private List<ActionUnit> filteredActionUnits;
-
-    public TeamListBean(InstitutionService institutionService, ActionUnitService actionUnitService, TeamMembersBean teamMembersBean, UserDialogBean userDialogBean) {
-        this.institutionService = institutionService;
-        this.actionUnitService = actionUnitService;
-        this.teamMembersBean = teamMembersBean;
-        this.userDialogBean = userDialogBean;
-    }
 
     @Override
     public void add() {
@@ -73,6 +70,11 @@ public class TeamListBean implements SettingsDatatableBean {
         reset();
         this.institution = institution;
         this.actionUnits = actionUnitService.findAllByInstitution(institution);
+
+        for (ActionUnit actionUnit : actionUnits) {
+            actionUnit.setCreatedBy(Hibernate.unproxy(actionUnit.getCreatedBy(), Person.class));
+        }
+
         this.filteredActionUnits = new ArrayList<>(actionUnits);
     }
 

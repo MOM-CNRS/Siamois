@@ -13,12 +13,15 @@ import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.models.vocabulary.Vocabulary;
 import fr.siamois.domain.services.vocabulary.FieldConfigurationService;
 import fr.siamois.domain.services.vocabulary.VocabularyService;
+import fr.siamois.infrastructure.database.repositories.actionunit.ActionUnitRepository;
 import fr.siamois.infrastructure.database.repositories.institution.InstitutionRepository;
 import fr.siamois.infrastructure.database.repositories.person.PersonRepository;
 import fr.siamois.infrastructure.database.repositories.settings.InstitutionSettingsRepository;
 import fr.siamois.infrastructure.database.repositories.team.ActionManagerRepository;
 import fr.siamois.infrastructure.database.repositories.team.TeamMemberRepository;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.hibernate.Hibernate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -32,6 +35,7 @@ import java.util.stream.Collectors;
  */
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class InstitutionService {
 
     private final InstitutionRepository institutionRepository;
@@ -41,19 +45,7 @@ public class InstitutionService {
     private final ActionManagerRepository actionManagerRepository;
     private final VocabularyService vocabularyService;
     private final FieldConfigurationService fieldConfigurationService;
-
-
-    public InstitutionService(InstitutionRepository institutionRepository,
-                              PersonRepository personRepository,
-                              InstitutionSettingsRepository institutionSettingsRepository, TeamMemberRepository teamMemberRepository, ActionManagerRepository actionManagerRepository, VocabularyService vocabularyService, FieldConfigurationService fieldConfigurationService) {
-        this.institutionRepository = institutionRepository;
-        this.personRepository = personRepository;
-        this.institutionSettingsRepository = institutionSettingsRepository;
-        this.teamMemberRepository = teamMemberRepository;
-        this.actionManagerRepository = actionManagerRepository;
-        this.vocabularyService = vocabularyService;
-        this.fieldConfigurationService = fieldConfigurationService;
-    }
+    private final ActionUnitRepository actionUnitRepository;
 
     /**
      * Finds an institution by its identifier.
@@ -101,7 +93,6 @@ public class InstitutionService {
      * @throws InstitutionAlreadyExistException if an institution with the same identifier already exists
      * @throws FailedInstitutionSaveException   if there is an error while saving the institution
      */
-    @Transactional
     public Institution createInstitution(Institution institution, String thesaurusUrl) throws InstitutionAlreadyExistException, FailedInstitutionSaveException, InvalidEndpointException {
         Optional<Institution> existing = institutionRepository.findInstitutionByIdentifier(institution.getIdentifier());
         if (existing.isPresent())
@@ -129,7 +120,14 @@ public class InstitutionService {
      */
     public Set<TeamMemberRelation> findRelationsOf(ActionUnit actionUnit) {
         Set<TeamMemberRelation> result = teamMemberRepository.findAllByActionUnit(actionUnit);
-        result.add(new TeamMemberRelation(actionUnit, actionUnit.getCreatedBy()));
+        Person creator = actionUnit.getCreatedBy();
+        Hibernate.unproxy(creator);
+        result.add(new TeamMemberRelation(actionUnit, creator));
+
+        for (TeamMemberRelation relation : result) {
+            relation.setPerson(Hibernate.unproxy(relation.getPerson(), Person.class));
+        }
+
         return result;
     }
 
@@ -139,6 +137,7 @@ public class InstitutionService {
      * @param actionUnit the action unit whose members to find
      * @return a set of persons who are members of the action unit
      */
+    @Transactional
     public Set<Person> findMembersOf(ActionUnit actionUnit) {
         return findRelationsOf(actionUnit)
                 .stream()
