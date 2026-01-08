@@ -16,6 +16,7 @@ import fr.siamois.domain.models.vocabulary.FeedbackFieldConfig;
 import fr.siamois.domain.models.vocabulary.Vocabulary;
 import fr.siamois.domain.services.vocabulary.FieldConfigurationService;
 import fr.siamois.domain.services.vocabulary.VocabularyService;
+import fr.siamois.infrastructure.database.repositories.actionunit.ActionUnitRepository;
 import fr.siamois.infrastructure.database.repositories.institution.InstitutionRepository;
 import fr.siamois.infrastructure.database.repositories.person.PersonRepository;
 import fr.siamois.infrastructure.database.repositories.settings.InstitutionSettingsRepository;
@@ -51,6 +52,8 @@ class InstitutionServiceTest {
     private VocabularyService vocabularyService;
     @Mock
     private FieldConfigurationService fieldConfigurationService;
+    @Mock
+    private ActionUnitRepository actionUnitRepository;
 
     @InjectMocks
     private InstitutionService institutionService;
@@ -250,6 +253,7 @@ class InstitutionServiceTest {
         TeamMemberRelation relation = new TeamMemberRelation(actionUnit, manager);
 
         when(teamMemberRepository.findAllByActionUnit(actionUnit)).thenReturn(new HashSet<>(Set.of(relation)));
+        when(actionUnitRepository.findById(actionUnit.getId())).thenReturn(Optional.of(actionUnit));
 
         Set<TeamMemberRelation> result = institutionService.findRelationsOf(actionUnit);
 
@@ -271,6 +275,7 @@ class InstitutionServiceTest {
         TeamMemberRelation relation = new TeamMemberRelation(actionUnit, manager);
 
         when(teamMemberRepository.findAllByActionUnit(actionUnit)).thenReturn(new HashSet<>(Set.of(relation)));
+        when(actionUnitRepository.findById(actionUnit.getId())).thenReturn(Optional.of(actionUnit));
 
         Set<Person> result = institutionService.findMembersOf(actionUnit);
 
