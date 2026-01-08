@@ -16,7 +16,6 @@ import fr.siamois.domain.models.vocabulary.FeedbackFieldConfig;
 import fr.siamois.domain.models.vocabulary.Vocabulary;
 import fr.siamois.domain.services.vocabulary.FieldConfigurationService;
 import fr.siamois.domain.services.vocabulary.VocabularyService;
-import fr.siamois.infrastructure.database.repositories.actionunit.ActionUnitRepository;
 import fr.siamois.infrastructure.database.repositories.institution.InstitutionRepository;
 import fr.siamois.infrastructure.database.repositories.person.PersonRepository;
 import fr.siamois.infrastructure.database.repositories.settings.InstitutionSettingsRepository;
