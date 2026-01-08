@@ -21,6 +21,7 @@ import fr.siamois.infrastructure.database.repositories.team.ActionManagerReposit
 import fr.siamois.infrastructure.database.repositories.team.TeamMemberRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.hibernate.Hibernate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -123,7 +124,13 @@ public class InstitutionService {
         Set<TeamMemberRelation> result = teamMemberRepository.findAllByActionUnit(actionUnit);
         ActionUnit actionUnitSaved = actionUnitRepository.findById(actionUnit.getId()).orElse(new ActionUnit());
         Person creator = actionUnitSaved.getCreatedBy();
+        Hibernate.unproxy(creator);
         result.add(new TeamMemberRelation(actionUnitSaved, creator));
+
+        for (TeamMemberRelation relation : result) {
+            relation.setPerson(Hibernate.unproxy(relation.getPerson(), Person.class));
+        }
+
         return result;
     }
 
