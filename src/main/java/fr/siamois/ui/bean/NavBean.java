@@ -6,6 +6,7 @@ import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.events.LoginEvent;
 import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
+import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.specimen.Specimen;
 import fr.siamois.domain.services.BookmarkService;
 import fr.siamois.domain.services.InstitutionService;
@@ -58,6 +59,7 @@ public class NavBean implements Serializable {
 
     private static final String RECORDING_UNIT_BASE_URI = "/recording-unit/";
     private static final String SPECIMEN_BASE_URI = "/specimen/";
+    private static final String SPATIAL_UNIT_BASE_URI = "/spatial-unit/";
 
     public NavBean(SessionSettingsBean sessionSettingsBean,
                    InstitutionChangeEventPublisher institutionChangeEventPublisher,
@@ -130,23 +132,27 @@ public class NavBean implements Serializable {
         redirectBean.redirectTo("/");
     }
 
-    public void bookmarkRecordingUnit(RecordingUnit recordingUnit) {
+    public void bookmarkUnit(Long id, String titleCodeOrTitle, String RESSOURCE_BASE_URI) {
 
-        // Maybe check that ressource exists and user has access to it?
         bookmarkService.save(
                 sessionSettingsBean.getUserInfo(),
-                RECORDING_UNIT_BASE_URI+ recordingUnit.getId(),
-                recordingUnit.getFullIdentifier()
+                RESSOURCE_BASE_URI+ id,
+                titleCodeOrTitle
         );
         MessageUtils.displayInfoMessage(langBean, "common.bookmark.saved");
     }
 
+
+    public void bookmarkRecordingUnit(RecordingUnit recordingUnit) {
+
+        bookmarkUnit(recordingUnit.getId(),recordingUnit.getFullIdentifier(),RECORDING_UNIT_BASE_URI);
+
+    }
+
     public void unBookmarkRecordingUnit(RecordingUnit recordingUnit) {
-        bookmarkService.deleteBookmark(
-                sessionSettingsBean.getUserInfo(),
-                RECORDING_UNIT_BASE_URI + recordingUnit.getId()
-        );
-        MessageUtils.displayInfoMessage(langBean, "common.bookmark.unsaved");
+
+        unBookmark(RECORDING_UNIT_BASE_URI+recordingUnit.getId());
+
     }
 
     public void bookmark(Specimen specimen) {
@@ -156,6 +162,16 @@ public class NavBean implements Serializable {
                 sessionSettingsBean.getUserInfo(),
                 SPECIMEN_BASE_URI + specimen.getId(),
                 specimen.getFullIdentifier()
+        );
+        MessageUtils.displayInfoMessage(langBean, "common.bookmark.saved");
+    }
+
+    public void bookmark(SpatialUnit su) {
+
+        bookmarkService.save(
+                sessionSettingsBean.getUserInfo(),
+                SPATIAL_UNIT_BASE_URI+ su.getId(),
+                su.getName()
         );
         MessageUtils.displayInfoMessage(langBean, "common.bookmark.saved");
     }
@@ -182,6 +198,17 @@ public class NavBean implements Serializable {
         reloadBookmarkedPanels();
     }
 
+    public void toggleSpatialUnitBookmark(SpatialUnit su) {
+        final String uri = SPATIAL_UNIT_BASE_URI + su.getId();
+        if(Boolean.TRUE.equals(isRessourceBookmarkedByUser(uri))) {
+            unBookmark(uri);
+        }
+        else {
+            bookmark(su);
+        }
+        reloadBookmarkedPanels();
+    }
+
     public void toggleSpecimenBookmark(Specimen specimen) {
         if(Boolean.TRUE.equals(isRessourceBookmarkedByUser(SPECIMEN_BASE_URI + specimen.getId()))) {
             unBookmark(SPECIMEN_BASE_URI + specimen.getId());
@@ -194,6 +221,10 @@ public class NavBean implements Serializable {
 
     public Boolean isRecordingUnitBookmarkedByUser(String fullIdentifier) {
         return isRessourceBookmarkedByUser(RECORDING_UNIT_BASE_URI+fullIdentifier);
+    }
+
+    public Boolean isSpatialUnitBookmarkedByUser(Long id) {
+        return isRessourceBookmarkedByUser(SPATIAL_UNIT_BASE_URI+id);
     }
 
     public Boolean isSpecimenBookmarkedByUser(String fullIdentifier) {

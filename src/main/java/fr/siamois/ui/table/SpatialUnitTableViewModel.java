@@ -153,7 +153,7 @@ public class SpatialUnitTableViewModel extends EntityTableViewModel<SpatialUnit,
                 RowAction.builder()
                         .action(TableColumnAction.TOGGLE_BOOKMARK)
                         .processExpr(THIS)
-                        .updateExpr("bookmarkToggleButton navBarCsrfForm:siamoisNavForm:bookmarkGroup")
+                        .updateExpr("@this navBarCsrfForm:siamoisNavForm:bookmarkGroup")
                         .updateSelfTable(false)
                         .styleClass(SIA_ICON_BTN)
                         .build(),
@@ -232,10 +232,12 @@ public class SpatialUnitTableViewModel extends EntityTableViewModel<SpatialUnit,
     public boolean isRendered(RowAction action, SpatialUnit su) {
         // todo: display based on permissions
         return switch (action.getAction()) {
-            case DUPLICATE_ROW -> true;
-            case TOGGLE_BOOKMARK -> true;
-            case NEW_ACTION -> true;
-            case NEW_CHILDREN -> true;
+            case DUPLICATE_ROW, NEW_CHILDREN -> flowBean.getIsWriteMode() && // perm to create spatial unit in orga and app is in write mode
+                    spatialUnitService.hasCreatePermission(sessionSettingsBean.getUserInfo());
+            case TOGGLE_BOOKMARK -> true; // Anyone can add to fav
+            case NEW_ACTION -> flowBean.getIsWriteMode() && // perm to create action unit in orga and app is in write mode
+                    institutionService.personIsInstitutionManagerOrActionManager(sessionSettingsBean.getUserInfo().getUser(),
+                            sessionSettingsBean.getSelectedInstitution());
             default -> true;
         };
     }
@@ -243,16 +245,21 @@ public class SpatialUnitTableViewModel extends EntityTableViewModel<SpatialUnit,
 
     public String resolveIcon(RowAction action, SpatialUnit su) {
             return switch (action.getAction()) {
-                case TOGGLE_BOOKMARK -> "bi bi-bookmark-plus";
+                case TOGGLE_BOOKMARK -> Boolean.TRUE.equals(navBean.isSpatialUnitBookmarkedByUser(su.getId()))
+                        ? "bi bi-bookmark-x-fill"
+                        : "bi bi-bookmark-plus";
                 case DUPLICATE_ROW -> "bi bi-copy";
                 case NEW_ACTION -> "bi bi-arrow-down-square";
                 case NEW_CHILDREN -> "bi bi-node-plus-fill rotate-90";
                 default -> "";
             };
-
     }
+
     public void handleRowAction(RowAction action, SpatialUnit su) {
         switch (action.getAction()) {
+
+            case TOGGLE_BOOKMARK -> navBean.toggleSpatialUnitBookmark(su);
+
             case NEW_CHILDREN -> {
                 // Open new spatial unit dialog
                 // The new spatial unit will be children of the current su
@@ -263,6 +270,18 @@ public class SpatialUnitTableViewModel extends EntityTableViewModel<SpatialUnit,
                                 .listInsert(NewUnitContext.ListInsert.TOP)
                                 .treeInsert(NewUnitContext.TreeInsert.CHILD_FIRST)
                                 .build())
+                        .build();
+
+                openCreateDialog(ctx, genericNewUnitDialogBean);
+            }
+
+            case NEW_ACTION -> {
+                // Open new action unit dialog
+                // The new action unit will have the current unit as spatial context
+                NewUnitContext ctx = NewUnitContext.builder()
+                        .kindToCreate(UnitKind.ACTION)
+                        .trigger(NewUnitContext.Trigger.cell(UnitKind.SPATIAL, su.getId(), "related_actions"))
+                        .insertPolicy(null)
                         .build();
 
                 openCreateDialog(ctx, genericNewUnitDialogBean);

@@ -30,7 +30,7 @@
                  paginatorTemplate="Rows per page: {RowsPerPageDropdown} {RowReport} {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink}"
                  rowsPerPageTemplate="5,10,15,20,25"
                  rowIndexVar="rowIndex"
-                 tableStyle="width:auto;min-width: 100%;"
+                 tableStyle="width:auto;max-width:100%"
                  class="#{tableClass}">
 
         <f:facet name="{RowReport}">
@@ -45,7 +45,7 @@
             </ui:include>
         </f:facet>
 
-        <p:column selectionBox="true"/>
+        <p:column selectionBox="true" width="fit-content"/>
 
         <!-- Dynamic Columns -->
         <p:columns value="#{tableModel.columns}" var="column" varStatus="colStatus">

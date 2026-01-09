@@ -41,7 +41,7 @@
             </f:facet>
             <f:facet name="input">
                 <!-- Affichage de la liste normalisé des USp séléctionnées -->
-                <p:panel id="selectedSpatialUnitPanel" header="USp sélectionnées:" style="margin-top:1rem">
+                <p:outputPanel id="selectedSpatialUnitPanel" style="margin-top:1rem">
                     <h:panelGroup
                             rendered="#{not empty cc.attrs.formCtx.getNormalizedSpatialUnits(cc.attrs.answer)}">
                         <ui:repeat value="#{cc.attrs.formCtx.getNormalizedSpatialUnits(cc.attrs.answer)}" var="su">
@@ -57,8 +57,9 @@
                     <h:panelGroup rendered="#{empty cc.attrs.formCtx.getNormalizedSpatialUnits(cc.attrs.answer)}">
                         <em>Aucune USp sélectionnée.</em>
                     </h:panelGroup>
-                </p:panel>
+                </p:outputPanel>
                 <!-- Séléction des USp dans un treenode -->
+                <p:panel header="Table de sélection du contexte spatiale" toggleable="true" collapsed="true">
                 <p:treeTable value="#{cc.attrs.formCtx.getRoot(cc.attrs.answer)}"
                              widgetVar="spatialUnitTreeTable"
                              rows="5"
@@ -84,6 +85,7 @@
                     </p:column>
 
                 </p:treeTable>
+                </p:panel>
             </f:facet>
         </p:inplace>
 
