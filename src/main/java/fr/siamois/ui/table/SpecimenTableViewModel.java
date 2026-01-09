@@ -2,6 +2,7 @@ package fr.siamois.ui.table;
 
 import fr.siamois.domain.models.form.customform.CustomForm;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
+import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.specimen.Specimen;
 import fr.siamois.domain.services.form.FormService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
@@ -174,9 +175,10 @@ public class SpecimenTableViewModel extends EntityTableViewModel<Specimen, Long>
             default -> "";
         };
     }
-    public void handleRowAction(RowAction action, RecordingUnit ru) {
+
+    public void handleRowAction(RowAction action, TreeNode<Specimen> node) {
+        Specimen s = node.getData();
         switch (action.getAction()) {
-            case TOGGLE_BOOKMARK -> navBean.toggleRecordingUnitBookmark(ru);
             case DUPLICATE_ROW -> specimenLazyDataModel.duplicateRow();
             default -> throw new IllegalStateException("Unhandled action: " + action.getAction());
         }

@@ -231,7 +231,8 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
     }
 
 
-    public String resolveIcon(RowAction action, RecordingUnit ru) {
+    public String resolveIcon(RowAction action,RecordingUnit ru) {
+
         return switch (action.getAction()) {
             case TOGGLE_BOOKMARK -> Boolean.TRUE.equals(navBean.isRecordingUnitBookmarkedByUser(ru.getFullIdentifier()))
                             ? "bi bi-bookmark-x-fill"
@@ -240,7 +241,8 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
             default -> "";
         };
     }
-    public void handleRowAction(RowAction action, RecordingUnit ru) {
+    public void handleRowAction(RowAction action,  TreeNode<RecordingUnit> node) {
+        RecordingUnit ru = node.getData();
         switch (action.getAction()) {
             case TOGGLE_BOOKMARK -> navBean.toggleRecordingUnitBookmark(ru);
             case DUPLICATE_ROW -> recordingUnitLazyDataModel.duplicateRow();

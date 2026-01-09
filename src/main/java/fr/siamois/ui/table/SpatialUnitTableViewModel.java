@@ -1,6 +1,8 @@
 package fr.siamois.ui.table;
 
+import fr.siamois.domain.models.exceptions.spatialunit.SpatialUnitAlreadyExistsException;
 import fr.siamois.domain.models.form.customform.CustomForm;
+import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.authorization.writeverifier.SpatialUnitWriteVerifier;
@@ -15,11 +17,14 @@ import fr.siamois.ui.bean.dialog.newunit.UnitKind;
 import fr.siamois.ui.bean.panel.FlowBean;
 import fr.siamois.ui.lazydatamodel.BaseSpatialUnitLazyDataModel;
 import fr.siamois.ui.lazydatamodel.tree.SpatialUnitTreeTableLazyModel;
+import fr.siamois.utils.MessageUtils;
 import lombok.Getter;
 import org.primefaces.model.TreeNode;
 
 import java.util.List;
+import java.util.Objects;
 
+import static fr.siamois.ui.bean.dialog.newunit.NewUnitContext.TreeInsert.ROOT;
 import static fr.siamois.ui.table.TableColumnAction.GO_TO_SPATIAL_UNIT;
 
 /**
@@ -256,9 +261,12 @@ public class SpatialUnitTableViewModel extends EntityTableViewModel<SpatialUnit,
     }
 
     public void handleRowAction(RowAction action, SpatialUnit su) {
+
         switch (action.getAction()) {
 
             case TOGGLE_BOOKMARK -> navBean.toggleSpatialUnitBookmark(su);
+
+            case DUPLICATE_ROW -> this.duplicateRow(su, null);
 
             case NEW_CHILDREN -> {
                 // Open new spatial unit dialog
@@ -293,6 +301,25 @@ public class SpatialUnitTableViewModel extends EntityTableViewModel<SpatialUnit,
         }
     }
 
+    // actions specific to treetable
+    public void handleRowAction(RowAction action, TreeNode<SpatialUnit> node) {
+        SpatialUnit su = node.getData();
+
+        switch (action.getAction()) {
+
+            case DUPLICATE_ROW -> {
+                if(!Objects.equals(node.getParent().getRowKey(), "root")) {
+                    this.duplicateRow(node.getData(), node.getParent().getData());
+                    return;
+                }
+                this.duplicateRow(node.getData(), null);
+            }
+
+            default -> handleRowAction(action, su);
+
+        }
+    }
+
     @Override
     public boolean isTreeViewSupported() {
         return true;
@@ -301,6 +328,71 @@ public class SpatialUnitTableViewModel extends EntityTableViewModel<SpatialUnit,
     @Override
     public TreeNode<SpatialUnit> getTreeRoot() {
         return treeLazyModel.getRoot();
+    }
+
+    // Duplique une unité spatiale
+    // Le place au même niveau dans la hierarchie mais ne copie pas les enfants
+    private void duplicateRow(SpatialUnit toDuplicate, SpatialUnit parent) {
+
+        // Create a copy from selected row
+        SpatialUnit newUnit = new SpatialUnit(toDuplicate);
+
+        if(parent != null) {
+            newUnit.getParents().add(parent);
+        }
+
+        String baseName = toDuplicate.getName();
+
+        int maxAttempts = 5;
+
+        for (int i = 1; i <= maxAttempts; i++) {
+            String candidateName = baseName + " (" + i + ")";
+            newUnit.setName(candidateName);
+
+            if (parent != null) {
+                newUnit.getParents().add(parent);
+            }
+
+            try {
+                newUnit = spatialUnitService.save(
+                        sessionSettingsBean.getUserInfo(),
+                        newUnit
+                );
+                break;
+            } catch (SpatialUnitAlreadyExistsException e) {
+                if (i == maxAttempts) {
+                    MessageUtils.displayErrorMessage(
+                            sessionSettingsBean.getLangBean(),
+                            "common.entity.spatialUnits.updateFailed",
+                            candidateName
+                    );
+                    return;
+                }
+                // sinon on continue
+            }
+        }
+
+        // Build the creation context (as child of the parent of the duplicated row, or root if no parent)
+        NewUnitContext ctx = NewUnitContext.builder()
+                .kindToCreate(UnitKind.SPATIAL)
+                .trigger(
+                        parent == null
+                                ? null
+                                : NewUnitContext.Trigger.cell(
+                                UnitKind.SPATIAL,
+                                parent.getId(),
+                                PARENTS
+                        )
+                )
+                .insertPolicy(NewUnitContext.UiInsertPolicy.builder()
+                        .listInsert(NewUnitContext.ListInsert.TOP)
+                        .treeInsert(parent == null ? ROOT : NewUnitContext.TreeInsert.CHILD_FIRST)
+                        .build())
+                .build();
+
+
+        onAnyEntityCreated(newUnit, ctx) ;
+        MessageUtils.displayInfoMessage(sessionSettingsBean.getLangBean(), "common.action.duplicateEntity", toDuplicate.getName());
     }
 
 }

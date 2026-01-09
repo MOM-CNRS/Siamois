@@ -37,10 +37,9 @@ public class SpatialUnit extends SpatialUnitGeneric implements ArkEntity {
     @SuppressWarnings("CopyConstructorMissesField")
     public SpatialUnit (SpatialUnit spatialUnit) {
         name = spatialUnit.getName();
-        ark = spatialUnit.getArk();
         category = spatialUnit.getCategory();
         geom = spatialUnit.getGeom();
-        validated = spatialUnit.getValidated();
+        validated = false;
     }
 
     @Id

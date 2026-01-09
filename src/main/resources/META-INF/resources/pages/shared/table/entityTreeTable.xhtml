@@ -9,6 +9,7 @@
                  rendered="#{tableModel.treeMode}"
                  value="#{tableModel.treeRoot}"
                  var="item"
+                 nodeVar="node"
                  widgetVar="#{cc.clientId}_entityTreeTable"
                  cellNavigation="true"
                  selectionMode="checkbox"
@@ -67,9 +68,9 @@
                         <p:commandButton
                                 rendered="#{tableModel.isRendered(action, item)}"
                                 icon="#{tableModel.resolveIcon(action, item)}"
-                                action="#{tableModel.handleRowAction(action, item)}"
+                                action="#{tableModel.handleRowAction(action, node)}"
                                 process="#{empty action.processExpr ? '@this' : action.processExpr}"
-                                update="#{action.updateSelfTable ? (':'.concat(cc.clientId).concat(':entityDatatable')) : action.updateExpr}"
+                                update="#{action.updateSelfTable ? (':'.concat(cc.clientId).concat(':entityTreeTable')) : action.updateExpr}"
                                 styleClass="#{action.styleClass}"/>
                     </ui:repeat>
                 </p:toolbarGroup>
