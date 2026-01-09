@@ -187,7 +187,6 @@ public class SpatialUnitService implements ArkEntityService {
     public SpatialUnit save(UserInfo info, SpatialUnit su) throws SpatialUnitAlreadyExistsException {
         String name = su.getName();
         Concept type = su.getCategory();
-        Set<SpatialUnit> parents = su.getParents();
         Set<SpatialUnit> children = su.getChildren();
 
         Optional<SpatialUnit> optSpatialUnit = spatialUnitRepository.findByNameAndInstitution(name, info.getInstitution().getId());
@@ -210,15 +209,20 @@ public class SpatialUnitService implements ArkEntityService {
             spatialUnit.setArk(ark);
         }
 
-        spatialUnit = spatialUnitRepository.save(spatialUnit);
+        // Reattach parents
+        for (SpatialUnit parentRef : su.getParents()) {
+            SpatialUnit parent = spatialUnitRepository.findById(parentRef.getId())
+                    .orElseThrow(() -> new IllegalArgumentException("Parent not found: " + parentRef.getId()));
 
-        for (SpatialUnit parent : parents) {
+            parent.getChildren().add(spatialUnit);
             spatialUnit.getParents().add(parent);
         }
 
         for (SpatialUnit child : children) {
             spatialUnit.getChildren().add(child);
         }
+
+        spatialUnit = spatialUnitRepository.save(spatialUnit);
 
         return spatialUnit;
     }
