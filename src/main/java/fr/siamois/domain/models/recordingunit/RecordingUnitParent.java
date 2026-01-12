@@ -134,6 +134,12 @@ public abstract class RecordingUnitParent extends TraceableEntity {
     @JoinColumn(name="fk_spatial_unit_id")
     protected SpatialUnit spatialUnit;
 
+    /**
+     * Represents the code associated with the identifier generated as specified by the format in the {@link fr.siamois.domain.models.actionunit.ActionUnitParent} class
+     */
+    @Column(name = "local_identifier_code")
+    protected int localIdentifierCode;
+
     @Override
     public boolean equals(Object o) {
         if (!(o instanceof RecordingUnitParent that)) return false;
