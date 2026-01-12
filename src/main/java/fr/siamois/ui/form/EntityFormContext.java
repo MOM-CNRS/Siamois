@@ -7,14 +7,19 @@ import fr.siamois.domain.models.form.customformresponse.CustomFormResponse;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
+import fr.siamois.domain.models.vocabulary.label.ConceptLabel;
 import fr.siamois.domain.services.form.FormService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitTreeService;
+import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
 import fr.siamois.ui.form.rules.ColumnApplier;
 import fr.siamois.ui.form.rules.ValueProvider;
 import fr.siamois.ui.viewmodel.TreeUiStateViewModel;
+import jakarta.faces.component.UIComponent;
+import jakarta.faces.event.AjaxBehaviorEvent;
 import lombok.Data;
 import lombok.Getter;
+import org.primefaces.event.SelectEvent;
 import org.primefaces.model.TreeNode;
 
 import java.util.*;
@@ -31,7 +36,6 @@ import java.util.stream.Collectors;
  *  - column enabled state map
  *  - spatial unit tree UI state
  *
- * This is UI-agnostic: no JSF events, only domain/UI-model state.
  */
 @Data
 public class EntityFormContext<T> {
@@ -313,5 +317,23 @@ public class EntityFormContext<T> {
         }
 
         return spatialUnitService.getSpatialUnitOptionsFor(ru);
+    }
+
+    public void setFieldAnswerHasBeenModified(CustomField field) {
+        markFieldModified(field);
+
+    }
+
+    public void onFieldAnswerModifiedListener(AjaxBehaviorEvent event) {
+        CustomField field = (CustomField) event.getComponent().getAttributes().get("field");
+        setFieldAnswerHasBeenModified(field);
+    }
+
+    public void setFieldConceptAnswerHasBeenModified(SelectEvent<ConceptAutocompleteDTO> event) {
+        UIComponent component = event.getComponent();
+        CustomField field = (CustomField) component.getAttributes().get("field");
+        Concept newValue = event.getObject().getConceptLabelToDisplay().getConcept();
+
+        handleConceptChange(field, newValue);
     }
 }

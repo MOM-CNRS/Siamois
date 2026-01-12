@@ -33,8 +33,9 @@
                             icon="pi pi-align-justify"/>
 
                     <!-- Save and Cancel Buttons -->
-                    <p:commandButton id="saveButton" value="Sauvegarder" />
-                    <p:commandLink value="Annuler les modifications" id="cancelButton" />
+                    <p:commandButton id="saveButton" value="Sauvegarder" rendered="#{tableModel.hasUnsavedModifications()}" actionListener="#{tableModel.save()}"
+                    update="#{updateTableString}"/>
+                    <p:commandLink value="Annuler les modifications" id="cancelButton" rendered="#{tableModel.hasUnsavedModifications()}" />
                 </div>
             </p:toolbarGroup>
         </p:toolbarGroup>

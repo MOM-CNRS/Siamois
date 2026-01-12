@@ -21,12 +21,12 @@ import lombok.Getter;
 import lombok.Setter;
 import org.primefaces.component.api.UIColumn;
 import org.primefaces.event.ColumnToggleEvent;
+import org.primefaces.model.TreeNode;
+import org.primefaces.model.TreeNodeChildren;
 import org.primefaces.model.Visibility;
+import org.springframework.beans.factory.annotation.Autowired;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.function.Function;
 
 import static fr.siamois.ui.bean.dialog.newunit.NewUnitContext.TreeInsert.ROOT;
@@ -72,7 +72,14 @@ public abstract class EntityTableViewModel<T extends TraceableEntity, ID> {
     private final TableDefinition tableDefinition = new TableDefinition();
 
     /** Contexte de formulaire par ligne (clé = ID de l'entité) */
-    private final Map<ID, EntityFormContext<T>> rowContexts = new HashMap<>();
+    protected final Map<ID, EntityFormContext<T>> rowContexts = new HashMap<>();
+
+    // tree mode selection
+    @Setter
+    @Getter
+    private List<TreeNode<T>> checkboxSelectedTreeNodes;
+
+
 
     @Getter
     @Setter
@@ -81,7 +88,7 @@ public abstract class EntityTableViewModel<T extends TraceableEntity, ID> {
 
     @Getter
     @Setter
-    private boolean treeMode = true; // false = table, true = tree
+    protected boolean treeMode = true; // false = table, true = tree
 
     protected EntityTableViewModel(BaseLazyDataModel<T> lazyDataModel,
                                    BaseTreeTableLazyModel<T, ID> treeLazyModel,
@@ -323,6 +330,17 @@ public abstract class EntityTableViewModel<T extends TraceableEntity, ID> {
             // comportement silencieux comme avant
         }
     }
+
+    public boolean hasUnsavedModifications() {
+        return rowContexts.values().stream()
+                .anyMatch(EntityFormContext::isHasUnsavedModifications);
+    }
+
+    /**
+     * Save all the entities of the table
+     */
+    public abstract void save();
+
 
 
 

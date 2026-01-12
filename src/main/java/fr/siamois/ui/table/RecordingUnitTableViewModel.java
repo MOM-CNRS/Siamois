@@ -256,6 +256,11 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
     }
 
     @Override
+    public void save() {
+
+    }
+
+    @Override
     public TreeNode<RecordingUnit> getTreeRoot() {
         return treeLazyModel.getRoot();
     }

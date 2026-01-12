@@ -189,4 +189,9 @@ public class SpecimenTableViewModel extends EntityTableViewModel<Specimen, Long>
         return null;
     }
 
+    @Override
+    public void save() {
+
+    }
+
 }

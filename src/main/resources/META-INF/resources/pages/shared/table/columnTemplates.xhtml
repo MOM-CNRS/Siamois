@@ -27,6 +27,7 @@
             <ui:param name="colIndex" value="#{colStatus.index}"/>
             <ui:param name="root" value="#{component.clientId}"/>
             <ui:param name="panelIndex" value="0"/>
+            <ui:param name="onModified" value="#{rowContext.onFieldAnswerModifiedListener}"/>
             <ui:param name="answer" value="#{rowContext.getFieldAnswer(column.field)}"/>
             <ui:param name="hasBeenModified" value="#{answer != null and answer.hasBeenModified}"/>
             <ui:param name="hasAutoGenerationFunction" value="false"/>

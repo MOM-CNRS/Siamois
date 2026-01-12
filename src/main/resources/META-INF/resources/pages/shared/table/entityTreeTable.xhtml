@@ -13,6 +13,7 @@
                  widgetVar="#{cc.clientId}_entityTreeTable"
                  cellNavigation="true"
                  selectionMode="checkbox"
+                 selection="#{tableModel.checkboxSelectedTreeNodes}"
                  varStatus="status"
                  size="small"
                  paginatorPosition="bottom"
@@ -43,6 +44,7 @@
         <f:facet name="header">
             <ui:include src="/pages/shared/table/tableToolbar.xhtml">
                 <ui:param name="tableModel" value="#{tableModel}" />
+                <ui:param name="updateTableString" value="#{cc.clientId}:entityTreeTable" />
             </ui:include>
         </f:facet>
 

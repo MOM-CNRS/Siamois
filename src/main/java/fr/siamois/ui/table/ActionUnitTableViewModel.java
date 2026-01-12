@@ -244,6 +244,11 @@ public class ActionUnitTableViewModel extends EntityTableViewModel<ActionUnit, L
     }
 
     @Override
+    public void save() {
+
+    }
+
+    @Override
     public TreeNode<ActionUnit> getTreeRoot() {
         return treeLazyModel.getRoot();
     }

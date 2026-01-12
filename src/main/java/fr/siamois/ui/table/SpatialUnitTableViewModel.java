@@ -1,5 +1,6 @@
 package fr.siamois.ui.table;
 
+import fr.siamois.domain.models.exceptions.recordingunit.FailedRecordingUnitSaveException;
 import fr.siamois.domain.models.exceptions.spatialunit.SpatialUnitAlreadyExistsException;
 import fr.siamois.domain.models.form.customform.CustomForm;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
@@ -15,14 +16,14 @@ import fr.siamois.ui.bean.dialog.newunit.GenericNewUnitDialogBean;
 import fr.siamois.ui.bean.dialog.newunit.NewUnitContext;
 import fr.siamois.ui.bean.dialog.newunit.UnitKind;
 import fr.siamois.ui.bean.panel.FlowBean;
+import fr.siamois.ui.form.EntityFormContext;
 import fr.siamois.ui.lazydatamodel.BaseSpatialUnitLazyDataModel;
 import fr.siamois.ui.lazydatamodel.tree.SpatialUnitTreeTableLazyModel;
 import fr.siamois.utils.MessageUtils;
 import lombok.Getter;
 import org.primefaces.model.TreeNode;
 
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 import static fr.siamois.ui.bean.dialog.newunit.NewUnitContext.TreeInsert.ROOT;
 import static fr.siamois.ui.table.TableColumnAction.GO_TO_SPATIAL_UNIT;
@@ -323,6 +324,41 @@ public class SpatialUnitTableViewModel extends EntityTableViewModel<SpatialUnit,
     @Override
     public boolean isTreeViewSupported() {
         return true;
+    }
+
+    @Override
+    public void save() {
+        // Determine the source of entities based on treeMode
+        Set<SpatialUnit> entities;
+        if (treeMode) {
+            entities = treeLazyModel.getAllEntitiesFromTree();
+        } else {
+            entities = new HashSet<>(lazyDataModel.getQueryResult());
+        }
+
+        // Iterate over all entities
+        for (SpatialUnit entity : entities) {
+            Long entityId = entity.getId();
+            EntityFormContext<SpatialUnit> context = rowContexts.get(entityId);
+
+            // Check if the entity has been modified
+            if (context != null && context.isHasUnsavedModifications()) {
+                try {
+                    // Save the entity
+                    context.flushBackToEntity();
+
+                    // todo : IF the user doesnt have right to validate the unit, it will be unvalidated.
+
+                    spatialUnitService.save(entity);
+
+                    context.init(true);
+
+                } catch (FailedRecordingUnitSaveException e) {
+                    // Display error message
+                    MessageUtils.displayErrorMessage(sessionSettingsBean.getLangBean(), "common.entity.spatialUnits.updateFailed", entity.getName());
+                }
+            }
+        }
     }
 
     @Override
