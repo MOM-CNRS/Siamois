@@ -225,4 +225,16 @@ public interface ActionUnitRepository extends CrudRepository<ActionUnit, Long>, 
     """, nativeQuery = true)
     List<ActionUnit> findBySpatialContextAndInstitution(@Param("spatialId") Long spatialId,
                                                         @Param("institutionId") Long institutionId);
+
+    /**
+     * Increments recording_unit_next_code attribute from the specified action unit by one returns the last available
+     * code.
+     * @param actionUnitId Action unit
+     * @return The available code.
+     */
+    @Query(
+            nativeQuery = true,
+            value = "SELECT recording_unit_nextval(:actionUnitId)"
+    )
+    int incrementRecordingUnitCodeNextValue(@Param("actionUnitId")  Long actionUnitId);
 }
