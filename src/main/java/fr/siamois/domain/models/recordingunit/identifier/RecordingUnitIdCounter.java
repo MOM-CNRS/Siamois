@@ -1,5 +1,6 @@
 package fr.siamois.domain.models.recordingunit.identifier;
 
+import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
 import jakarta.persistence.*;
@@ -20,6 +21,11 @@ public class RecordingUnitIdCounter {
     @Column(name = "ru_counter_id", nullable = false)
     @NonNull
     private Long id;
+
+    @JoinColumn(name = "fk_action_unit_id")
+    @ManyToOne(fetch = FetchType.LAZY)
+    @NonNull
+    private ActionUnit configActionUnit;
 
     @JoinColumn(name = "fk_recording_unit_id")
     @ManyToOne(fetch = FetchType.EAGER)
