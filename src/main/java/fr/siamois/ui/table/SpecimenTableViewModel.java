@@ -16,6 +16,7 @@ import org.primefaces.model.TreeNode;
 
 import java.util.List;
 
+import static fr.siamois.ui.table.TableColumnAction.DUPLICATE_ROW;
 import static fr.siamois.ui.table.TableColumnAction.GO_TO_SPECIMEN;
 
 /**
@@ -139,7 +140,7 @@ public class SpecimenTableViewModel extends EntityTableViewModel<Specimen, Long>
 
                 // Duplicate row (RecordingUnit only)
                 RowAction.builder()
-                        .action(TableColumnAction.DUPLICATE_ROW)
+                        .action(DUPLICATE_ROW)
                         .processExpr("@this")
                         .updateSelfTable(true) // <-- mettra à jour :#{cc.clientId}:entityDatatable
                         .styleClass("sia-icon-btn")
@@ -176,9 +177,10 @@ public class SpecimenTableViewModel extends EntityTableViewModel<Specimen, Long>
     }
 
     public void handleRowAction(RowAction action, Specimen s) {
-        switch (action.getAction()) {
-            case DUPLICATE_ROW -> specimenLazyDataModel.duplicateRow();
-            default -> throw new IllegalStateException("Unhandled action: " + action.getAction());
+        if (action.getAction() == DUPLICATE_ROW) {
+            specimenLazyDataModel.duplicateRow();
+        } else {
+            throw new IllegalStateException("Unhandled action: " + action.getAction());
         }
     }
 
