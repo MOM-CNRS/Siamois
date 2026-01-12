@@ -37,7 +37,7 @@
             answer="#{answer}"
             mode="#{col.readOnly ? 'output' : flowBean.getInPlaceFieldMode()}"
             updateTargetsOnBlur="#{panelHeaderUpdateId} #{updateTargetsOnBlur}"
-            onModified="#{bean.onFieldAnswerModifiedListener}"
+            onModified="#{formCtx.onFieldAnswerModifiedListener}"
             hasAutoGenerationFunction="#{hasAutoGenerationFunction}"
             onGenerateValue="#{onGenerateValue}"
     />
@@ -65,7 +65,7 @@
             answer="#{answer}"
             mode="#{col.readOnly ? 'output' : flowBean.getInPlaceFieldMode()}"
             updateTargetsOnBlur="#{updateTargetsOnBlur}"
-            onModified="#{bean.onFieldAnswerModifiedListener}"
+            onModified="#{formCtx.onFieldAnswerModifiedListener}"
             panelStyleClass="#{panelStyleClass}"
     />
 
@@ -80,7 +80,7 @@
             updateTargetsOnBlur="#{conceptFieldsUpdateTargetsOnBlur} #{updateTargetsOnBlur}"
             answer="#{answer}"
             panelStyleClass="#{panelStyleClass}"
-            onConceptChanged="#{bean.setFieldConceptAnswerHasBeenModified}"
+            onConceptChanged="#{formCtx.setFieldConceptAnswerHasBeenModified}"
     />
 
     <!-- Select one action -->
@@ -99,6 +99,7 @@
             rendered="#{col.field['class'].simpleName eq 'CustomFieldSelectOneSpatialUnit'}"
             hasBeenModified="#{hasBeenModified}"
             field="#{col.field}"
+            onModified="#{formCtx.onFieldAnswerModifiedListener}"
             mode="#{col.readOnly ? 'output' : flowBean.getInPlaceFieldMode()}"
             required="#{col.required}"
             label="#{spatialUnitFieldBean.resolveCustomFieldLabel(col.field)}"
@@ -113,7 +114,7 @@
             hasBeenModified="#{hasBeenModified}"
             field="#{col.field}"
             mode="#{col.readOnly ? 'output' : flowBean.getInPlaceFieldMode()}"
-            onModified="#{bean.onFieldAnswerModifiedListener}"
+            onModified="#{formCtx.onFieldAnswerModifiedListener}"
             panelStyleClass="#{panelStyleClass}"
             required="#{col.required}"
             label="#{spatialUnitFieldBean.resolveCustomFieldLabel(col.field)}"
@@ -130,7 +131,7 @@
             required="#{col.required}"
             label="#{spatialUnitFieldBean.resolveCustomFieldLabel(col.field)}"
             mode="#{col.readOnly ? 'output' : flowBean.getInPlaceFieldMode()}"
-            onModified="#{bean.onFieldAnswerModifiedListener}"
+            onModified="#{formCtx.onFieldAnswerModifiedListener}"
             panelStyleClass="#{panelStyleClass}"
             updateTargetsOnBlur="#{updateTargetsOnBlur}"
             answer="#{answer}"/>

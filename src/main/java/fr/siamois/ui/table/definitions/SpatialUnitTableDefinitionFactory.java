@@ -49,6 +49,7 @@ public final class SpatialUnitTableDefinitionFactory {
                 .build();
 
 
+
         // --------------- Fields
         CustomFieldSelectOneFromFieldCode SPATIAL_UNIT_TYPE_FIELD = CustomFieldSelectOneFromFieldCode.builder()
                 .label("specimen.field.category")

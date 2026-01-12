@@ -35,15 +35,17 @@
                     <!-- Save and Cancel Buttons -->
                     <p:commandButton id="saveButton" value="Sauvegarder" rendered="#{tableModel.hasUnsavedModifications()}" actionListener="#{tableModel.save()}"
                     update="#{updateTableString}"/>
-                    <p:commandLink value="Annuler les modifications" id="cancelButton" rendered="#{tableModel.hasUnsavedModifications()}" />
+                    <!-- TODO : implement cancel -->
+                    <p:commandLink value="Annuler les modifications" id="cancelButton" rendered="false" />
                 </div>
             </p:toolbarGroup>
         </p:toolbarGroup>
         <p:toolbarGroup align="right">
-            <!-- todo : add rendered attribute in commandbutton using a method from the table model -->
             <p:commandButton
                     value="#{langBean.msg('common.action.create')}"
+                    rendered="#{not empty tableModel.toolbarCreateConfig}"
                     icon="bi bi-plus-square"
+                    immediate="true"
                     actionListener="#{tableModel.openCreateFromToolbar(genericNewUnitDialogBean)}"
                     oncomplete="PF('newUnitDiag').show();"
                     update="newUnitForm">

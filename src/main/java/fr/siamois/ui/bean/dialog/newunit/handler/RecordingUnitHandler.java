@@ -68,8 +68,38 @@ public class RecordingUnitHandler implements INewUnitHandler<RecordingUnit> {
             return;
         }
 
-        throw new CannotInitializeNewUnitDialogException("Recording unit cannot be created without a context");
+        handleCellContext(ctx, unit);
 
+    }
+
+    private void handleCellContext(NewUnitContext ctx, RecordingUnit unit) throws CannotInitializeNewUnitDialogException {
+        NewUnitContext.Trigger trigger = ctx.getTrigger();
+        if (trigger == null || trigger.getClickedId() == null || trigger.getColumnKey() == null) {
+            return;
+        }
+
+        Long clickedId = trigger.getClickedId();
+        String key = trigger.getColumnKey();
+        RecordingUnit clicked = recordingUnitService.findById(clickedId);
+
+        if (clicked == null) {
+            return;
+        }
+
+        if(key.equals("parents") || key.equals("children")) {
+            unit.setCreatedByInstitution(clicked.getCreatedByInstitution());
+            unit.setActionUnit(clicked.getActionUnit());
+            unit.setAuthor(sessionSettingsBean.getAuthenticatedUser());
+            unit.setContributors(List.of(sessionSettingsBean.getAuthenticatedUser()));
+            unit.setOpeningDate(OffsetDateTime.now());
+            unit.setSpatialUnit(clicked.getSpatialUnit());
+        }
+
+        switch (key) {
+            case "parents" -> unit.getChildren().add(clicked);
+            case "children" -> unit.getParents().add(clicked);
+            default -> { /* no-op */ }
+        }
     }
 
     private void applyScope(RecordingUnit unit, NewUnitContext ctx) throws CannotInitializeNewUnitDialogException {
@@ -99,6 +129,31 @@ public class RecordingUnitHandler implements INewUnitHandler<RecordingUnit> {
     public String getTitle(NewUnitContext ctx) {
         if (ctx == null) {
             return INewUnitHandler.super.getTitle(ctx);
+        }
+
+        // =========================
+        // 1) CELL trigger (clic sur colonne)
+        // =========================
+        NewUnitContext.Trigger trigger = ctx.getTrigger();
+        if (trigger != null
+                && trigger.getType() == NewUnitContext.TriggerType.CELL
+                && trigger.getClickedKind() == UnitKind.RECORDING
+                && trigger.getClickedId() != null
+                && trigger.getColumnKey() != null) {
+
+            RecordingUnit clicked = recordingUnitService.findById(trigger.getClickedId());
+            String name = clicked != null
+                    ? clicked.getFullIdentifier()
+                    : ("#" + trigger.getClickedId());
+
+            return switch (trigger.getColumnKey()) {
+                case "parents"  ->
+                        langBean.msg("dialog.label.title.recording.parent") + " " + name;
+                case "children" ->
+                        langBean.msg("dialog.label.title.recording.child") + " " + name;
+                default ->
+                        INewUnitHandler.super.getTitle(ctx);
+            };
         }
 
 

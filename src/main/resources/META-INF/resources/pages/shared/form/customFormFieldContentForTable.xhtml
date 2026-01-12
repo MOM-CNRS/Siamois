@@ -34,7 +34,6 @@
             <ui:param name="panelIndex" value="0"/>
             <ui:param name="hasBeenModified" value="#{answer != null and answer.hasBeenModified}"/>
             <ui:param name="answer" value="#{answer}"/>
-
             <ui:param name="onModified" value="#{onModified}"/>
             <ui:param name="panelHeaderUpdateId" value=""/>
             <ui:param name="hasAutoGenerationFunction" value="false"/>
@@ -45,7 +44,7 @@
             <ui:param name="conceptFieldsUpdateTargetsOnBlur" value="@this"/>
             <ui:param name="spatialUnitOptions" value="#{bean.getSpatialUnitOptions()}" />
             <ui:param name="updateTargetsOnBlur" value="#{updateTargetsOnBlur}"/>
-
+            <ui:param name="formCtx" value="#{bean}"/>
 
         </ui:include>
 
