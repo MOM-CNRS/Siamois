@@ -22,6 +22,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.envers.Audited;
 import org.springframework.lang.NonNull;
+import org.springframework.lang.Nullable;
 
 import java.util.HashSet;
 import java.util.List;
@@ -91,8 +92,8 @@ public class ActionUnit extends ActionUnitParent implements ArkEntity {
     )
     private Set<SpatialUnit> spatialContext = new HashSet<>();
 
-    @NonNull
-    @Column(name = "recording_unit_identifier_format", nullable = false)
+    @Nullable
+    @Column(name = "recording_unit_identifier_format")
     private String recordingUnitIdentifierFormat = "{NUM_UE}";
 
     @FieldCode
