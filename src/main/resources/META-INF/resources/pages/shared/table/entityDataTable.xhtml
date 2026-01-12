@@ -59,7 +59,7 @@
                 <ui:param name="rowIndex" value="#{rowIndex}" />
                 <ui:param name="colStatus" value="#{colStatus}" />
                 <ui:param name="updateTableString" value="@this #{updateTableString}"/>
-                <ui:param name="canUserEditRow" value="#{tableModel.canUserEditRow()}"/>
+                <ui:param name="canUserEditRow" value="#{tableModel.canUserEditRow(item)}"/>
             </ui:include>
         </p:columns>
 

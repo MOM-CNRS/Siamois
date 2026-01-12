@@ -6,7 +6,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>fr.siamois</groupId>
     <artifactId>siamois</artifactId>
-    <version>0.2.0-dev-1</version>
+    <version>0.2.1-dev-1</version>
     <packaging>jar</packaging>
     <name>siamois</name>
 
