@@ -157,9 +157,7 @@ class IdentifierFormatServiceTest {
         when(actionUnitRepository.incrementRecordingUnitCodeNextValue(any())).thenReturn(10);
         when(labelService.findLabelOf(any(Concept.class), anyString())).thenReturn(new ConceptPrefLabel("AB", "en"));
 
-        assertThrows(StringIndexOutOfBoundsException.class, () -> {
-            service.generateIdentifier(recordingUnit);
-        });
+        assertThrows(StringIndexOutOfBoundsException.class, () -> service.generateIdentifier(recordingUnit));
     }
 
     @Test
@@ -168,9 +166,7 @@ class IdentifierFormatServiceTest {
         when(actionUnitRepository.incrementRecordingUnitCodeNextValue(any())).thenReturn(10);
         when(labelService.findLabelOf(any(Concept.class), anyString())).thenReturn(new ConceptPrefLabel("[Unlabeled]", "en"));
 
-        assertThrows(StringIndexOutOfBoundsException.class, () -> {
-            service.generateIdentifier(recordingUnit);
-        });
+        assertThrows(StringIndexOutOfBoundsException.class, () -> service.generateIdentifier(recordingUnit));
     }
 
     @Test
