@@ -5,6 +5,7 @@ import fr.siamois.domain.models.ark.Ark;
 import fr.siamois.domain.models.vocabulary.Concept;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
+import jakarta.ws.rs.DefaultValue;
 import lombok.Data;
 import org.hibernate.envers.Audited;
 
@@ -60,6 +61,16 @@ public abstract class ActionUnitParent extends TraceableEntity {
     @NotNull
     @Column(name="min_recording_unit_code")
     protected Integer minRecordingUnitCode;
+
+    @DefaultValue("{NUM_UE}")
+    @Column(name = "recording_unit_format_id")
+    protected String recordingUnitFormatId = "{NUM_UE}";
+
+    /**
+     * Represents the next available value for the Recording Unit generated identifier.
+     */
+    @Column(name = "recording_unit_next_code")
+    protected int nextValue = 1;
 
     @Override
     public boolean equals(Object o) {
