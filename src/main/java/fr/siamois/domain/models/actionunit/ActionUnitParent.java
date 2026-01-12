@@ -69,8 +69,9 @@ public abstract class ActionUnitParent extends TraceableEntity {
     /**
      * Represents the next available value for the Recording Unit generated identifier.
      */
+    @DefaultValue("1")
     @Column(name = "recording_unit_next_code")
-    protected int nextValue = 1;
+    protected Integer nextValue = 1;
 
     @Override
     public boolean equals(Object o) {

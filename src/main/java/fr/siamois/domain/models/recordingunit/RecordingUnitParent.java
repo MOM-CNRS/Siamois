@@ -138,7 +138,7 @@ public abstract class RecordingUnitParent extends TraceableEntity {
      * Represents the code associated with the identifier generated as specified by the format in the {@link fr.siamois.domain.models.actionunit.ActionUnitParent} class
      */
     @Column(name = "local_identifier_code")
-    protected int localIdentifierCode;
+    protected Integer localIdentifierCode;
 
     @Override
     public boolean equals(Object o) {
