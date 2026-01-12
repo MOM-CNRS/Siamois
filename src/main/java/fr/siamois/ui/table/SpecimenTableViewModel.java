@@ -175,12 +175,15 @@ public class SpecimenTableViewModel extends EntityTableViewModel<Specimen, Long>
         };
     }
 
-    public void handleRowAction(RowAction action, TreeNode<Specimen> node) {
-        Specimen s = node.getData();
+    public void handleRowAction(RowAction action, Specimen s) {
         switch (action.getAction()) {
             case DUPLICATE_ROW -> specimenLazyDataModel.duplicateRow();
             default -> throw new IllegalStateException("Unhandled action: " + action.getAction());
         }
+    }
+
+    public void handleRowAction(RowAction action, TreeNode<Specimen> node) {
+        handleRowAction(action, node.getData());
     }
 
     @Override
@@ -190,7 +193,7 @@ public class SpecimenTableViewModel extends EntityTableViewModel<Specimen, Long>
 
     @Override
     public void save() {
-
+// will be implemented when working on specimen table
     }
 
 }

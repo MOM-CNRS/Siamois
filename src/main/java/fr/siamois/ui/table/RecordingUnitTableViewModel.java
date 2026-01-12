@@ -293,7 +293,7 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
 
     @Override
     public void save() {
-
+// will be implemented when working on recording unit table
     }
 
     @Override
