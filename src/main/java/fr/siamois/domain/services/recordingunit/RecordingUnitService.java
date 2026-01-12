@@ -17,6 +17,7 @@ import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.form.CustomFormResponseService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
+import fr.siamois.infrastructure.database.repositories.actionunit.ActionUnitRepository;
 import fr.siamois.infrastructure.database.repositories.person.PersonRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitRepository;
 import fr.siamois.infrastructure.database.repositories.team.TeamMemberRepository;
@@ -48,6 +49,7 @@ public class RecordingUnitService implements ArkEntityService {
     private final InstitutionService institutionService;
     private final ActionUnitService actionUnitService;
     private final TeamMemberRepository teamMemberRepository;
+    private final ActionUnitRepository actionUnitRepository;
 
     /**
      * Generate the next identifier for a recording unit.

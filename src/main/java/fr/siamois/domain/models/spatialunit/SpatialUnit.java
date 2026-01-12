@@ -84,7 +84,7 @@ public class SpatialUnit extends SpatialUnitGeneric implements ArkEntity {
     private Set<ActionUnit> relatedActionUnitList = new HashSet<>();
 
     public SpatialUnit() {
-
+        id = 0L;
     }
 
     @Override

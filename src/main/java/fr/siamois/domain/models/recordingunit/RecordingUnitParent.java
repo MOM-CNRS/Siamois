@@ -140,6 +140,9 @@ public abstract class RecordingUnitParent extends TraceableEntity {
     @Column(name = "local_identifier_code")
     protected Integer localIdentifierCode;
 
+    @Column(name = "local_identifier_lang")
+    protected String localIdentifierLang;
+
     @Override
     public boolean equals(Object o) {
         if (!(o instanceof RecordingUnitParent that)) return false;

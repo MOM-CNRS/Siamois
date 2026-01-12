@@ -35,8 +35,7 @@ public class ActionUnit extends ActionUnitParent implements ArkEntity {
     private static final String GENERAL_LABEL_CODE = "common.header.general";
     private static final String DETAIL_TAB_NAME = "\"Details tab form\"";
 
-    public ActionUnit() {
-    }
+    public ActionUnit() {}
 
     public ActionUnit(ActionUnit unit) {
         this.setName(unit.getName());

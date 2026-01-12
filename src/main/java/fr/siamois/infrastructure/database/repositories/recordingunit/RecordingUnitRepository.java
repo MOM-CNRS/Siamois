@@ -453,8 +453,13 @@ public interface RecordingUnitRepository extends CrudRepository<RecordingUnit, L
     """, nativeQuery = true)
     List<RecordingUnit> findRootsByAction(@Param("actionId") Long actionId);
 
-
-
-
+    @Query(
+            nativeQuery = true,
+            value = "SELECT ru.*" +
+                    "FROM recording_unit ru " +
+                    "JOIN recording_unit_hierarchy rh ON ru.recording_unit_id = rh.fk_child_id " +
+                    "WHERE ru.recording_unit_id = :ruChildId"
+    )
+    List<RecordingUnit> findDirectParentsOf(@Param("ruChildId") Long recordingUnitId);
 
 }
