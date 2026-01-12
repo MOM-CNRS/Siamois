@@ -44,7 +44,7 @@
         <f:facet name="header">
             <ui:include src="/pages/shared/table/tableToolbar.xhtml">
                 <ui:param name="tableModel" value="#{tableModel}" />
-                <ui:param name="updateTableString" value="#{cc.clientId}:entityTreeTable" />
+                <ui:param name="updateTableString" value="#{updateTableString}" />
             </ui:include>
         </f:facet>
 
@@ -59,6 +59,7 @@
                 <ui:param name="status" value="#{status}" />
                 <ui:param name="rowIndex" value="#{rowIndex}" />
                 <ui:param name="colStatus" value="#{colStatus}" />
+                <ui:param name="updateTableString" value="@this #{updateTableString}"/>
             </ui:include>
         </p:columns>
 

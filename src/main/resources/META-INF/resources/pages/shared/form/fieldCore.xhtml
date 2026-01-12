@@ -25,6 +25,8 @@
     <!-- @elvariable id="spatialUnitOptions" type="java.util.List" -->
 
     <!-- TEXT -->
+
+
     <siaInplace:text
             rendered="#{col.field['class'].simpleName eq 'CustomFieldText'}"
             id="#{prefix}-#{statusIndex}-#{rowIndex}-#{colIndex}"
@@ -34,7 +36,7 @@
             hasBeenModified="#{hasBeenModified}"
             answer="#{answer}"
             mode="#{col.readOnly ? 'output' : flowBean.getInPlaceFieldMode()}"
-            updateTargetsOnBlur="#{panelHeaderUpdateId}"
+            updateTargetsOnBlur="#{panelHeaderUpdateId} #{updateTargetsOnBlur}"
             onModified="#{bean.onFieldAnswerModifiedListener}"
             hasAutoGenerationFunction="#{hasAutoGenerationFunction}"
             onGenerateValue="#{onGenerateValue}"
@@ -50,7 +52,7 @@
             hasBeenModified="#{hasBeenModified}"
             answer="#{answer}"
             mode="#{col.readOnly ? 'output' : flowBean.getInPlaceFieldMode()}"
-            updateTargetsOnBlur="#{panelHeaderUpdateId}"
+            updateTargetsOnBlur="#{panelHeaderUpdateId} #{updateTargetsOnBlur}"
     />
 
     <!-- DATETIME -->
@@ -75,7 +77,7 @@
             required="#{col.required}"
             label="#{spatialUnitFieldBean.resolveCustomFieldLabel(col.field)}"
             mode="#{col.readOnly ? 'output' : flowBean.getInPlaceFieldMode()}"
-            updateTargetsOnBlur="#{conceptFieldsUpdateTargetsOnBlur}"
+            updateTargetsOnBlur="#{conceptFieldsUpdateTargetsOnBlur} #{updateTargetsOnBlur}"
             answer="#{answer}"
             panelStyleClass="#{panelStyleClass}"
             onConceptChanged="#{bean.setFieldConceptAnswerHasBeenModified}"

@@ -16,7 +16,6 @@
     <!-- Row Context -->
     <ui:param name="rowContext" value="#{tableModel.getRowContext(item)}"/>
 
-    <!-- FORM_FIELD Column -->
     <ui:fragment rendered="#{column.type eq 'FORM_FIELD'}">
         <ui:include src="/pages/shared/form/customFormFieldContentForTable.xhtml">
             <ui:param name="bean" value="#{rowContext}"/>
@@ -32,7 +31,7 @@
             <ui:param name="hasBeenModified" value="#{answer != null and answer.hasBeenModified}"/>
             <ui:param name="hasAutoGenerationFunction" value="false"/>
             <ui:param name="onGenerateValue" value="#{null}"/>
-            <ui:param name="onModified" value="#{null}"/>
+            <ui:param name="updateTargetsOnBlur" value="#{updateTableString}" />
         </ui:include>
     </ui:fragment>
 

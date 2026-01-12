@@ -20,7 +20,6 @@
     <!--@elvariable id="panelHeaderUpdateId" type="java.lang.String" required="false" -->
     <!--@elvariable id="hasAutoGenerationFunction" type="java.lang.Boolean" -->
     <!--@elvariable id="onGenerateValue" type="javax.el.MethodExpression" -->
-
     <p:outputPanel rendered="#{bean.isColumnEnabled(col.field)}"
                    styleClass="#{answer['class'].simpleName ne 'CustomFieldAnswerSelectMultipleSpatialUnitTree' ? 'ui-fluid' : ''}"
                    id="field-#{prefix}-#{rowIndex}-#{colIndex}">
@@ -45,7 +44,7 @@
             <ui:param name="panelStyleClass" value="#{bean.getAutocompleteClass()}"/>
             <ui:param name="conceptFieldsUpdateTargetsOnBlur" value="@this"/>
             <ui:param name="spatialUnitOptions" value="#{bean.getSpatialUnitOptions()}" />
-            <ui:param name="updateTargetsOnBlur" value="@this tableToolbar"/>
+            <ui:param name="updateTargetsOnBlur" value="#{updateTargetsOnBlur}"/>
 
 
         </ui:include>

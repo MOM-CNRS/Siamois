@@ -20,6 +20,7 @@
                 <ui:param name="tableModel" value="#{cc.attrs.tableModel}" />
                 <ui:param name="panelIndex" value="#{cc.attrs.panelIndex}" />
                 <ui:param name="tableClass" value="#{cc.attrs.tableClass}" />
+                <ui:param name="updateTableString" value="#{cc.clientId}:entityDatatable" />
             </ui:include>
 
             <!-- TreeTable -->
@@ -27,6 +28,7 @@
                 <ui:param name="tableModel" value="#{cc.attrs.tableModel}" />
                 <ui:param name="panelIndex" value="#{cc.attrs.panelIndex}" />
                 <ui:param name="tableClass" value="#{cc.attrs.tableClass}" />
+                <ui:param name="updateTableString" value="#{cc.clientId}:entityTreeTable" />
             </ui:include>
         </p:outputPanel>
     </cc:implementation>
