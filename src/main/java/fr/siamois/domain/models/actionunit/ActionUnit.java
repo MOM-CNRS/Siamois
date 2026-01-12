@@ -7,25 +7,15 @@ import fr.siamois.domain.models.actionunit.form.ActionNewUnitForm;
 import fr.siamois.domain.models.actionunit.form.ActionUnitDetailsForm;
 import fr.siamois.domain.models.document.Document;
 import fr.siamois.domain.models.exceptions.institution.NullInstitutionIdentifier;
-import fr.siamois.domain.models.form.customfield.*;
-import fr.siamois.domain.models.form.customform.CustomCol;
 import fr.siamois.domain.models.form.customform.CustomForm;
-import fr.siamois.domain.models.form.customform.CustomFormPanel;
-import fr.siamois.domain.models.form.customform.CustomRow;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
-import fr.siamois.domain.models.vocabulary.Concept;
-import fr.siamois.ui.bean.panel.models.panel.single.AbstractSingleEntity;
 import jakarta.persistence.*;
 import lombok.Data;
 import org.hibernate.envers.Audited;
 
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
-
-import static fr.siamois.ui.bean.panel.models.panel.single.AbstractSingleEntity.COLUMN_CLASS_NAME;
-import static fr.siamois.ui.bean.panel.models.panel.single.AbstractSingleEntity.SYSTEM_THESO;
 
 @Data
 @Entity

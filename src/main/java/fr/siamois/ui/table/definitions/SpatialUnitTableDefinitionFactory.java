@@ -4,9 +4,11 @@ import fr.siamois.domain.models.form.customfield.CustomFieldSelectOneFromFieldCo
 import fr.siamois.domain.models.form.customfield.CustomFieldText;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
-import fr.siamois.ui.table.*;;
+import fr.siamois.ui.table.*;
 
 import static fr.siamois.ui.bean.panel.models.panel.single.AbstractSingleEntity.SYSTEM_THESO;
+
+;
 
 
 /**

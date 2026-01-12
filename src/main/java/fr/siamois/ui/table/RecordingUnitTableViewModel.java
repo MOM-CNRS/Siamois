@@ -5,7 +5,6 @@ import fr.siamois.domain.models.form.customfield.CustomFieldDateTime;
 import fr.siamois.domain.models.form.customfield.CustomFieldInteger;
 import fr.siamois.domain.models.form.customform.CustomForm;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
-import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.authorization.writeverifier.RecordingUnitWriteVerifier;
 import fr.siamois.domain.services.form.FormService;
@@ -25,9 +24,7 @@ import org.primefaces.model.TreeNode;
 import java.time.LocalDateTime;
 import java.time.Month;
 import java.util.List;
-import java.util.Objects;
 
-import static fr.siamois.ui.table.SpatialUnitTableViewModel.SIA_ICON_BTN;
 import static fr.siamois.ui.table.TableColumnAction.GO_TO_RECORDING_UNIT;
 
 /**

@@ -4,7 +4,6 @@ import fr.siamois.domain.models.form.customform.CustomCol;
 import fr.siamois.domain.models.form.customform.CustomForm;
 import fr.siamois.domain.models.form.customform.CustomFormPanel;
 import fr.siamois.domain.models.form.customform.CustomRow;
-import org.springframework.lang.NonNull;
 
 import static fr.siamois.ui.bean.panel.models.panel.single.AbstractSingleEntity.COLUMN_CLASS_NAME;
 
