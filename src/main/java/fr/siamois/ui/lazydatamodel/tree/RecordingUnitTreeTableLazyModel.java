@@ -5,6 +5,7 @@ import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.ui.lazydatamodel.scope.RecordingUnitScope;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.Hibernate;
 import org.primefaces.model.DefaultTreeNode;
 import org.primefaces.model.TreeNode;
 
@@ -42,6 +43,7 @@ public class RecordingUnitTreeTableLazyModel extends BaseTreeTableLazyModel<Reco
         for (RecordingUnit root : roots) {
             if (root == null || root.getId() == null) continue;
             TreeNode<RecordingUnit> node = new DefaultTreeNode<>(root, rootNode);
+            registerNode(root, node);
             path.clear();
             path.add(root.getId());
             buildChildren(node, root, path);
@@ -64,7 +66,12 @@ public class RecordingUnitTreeTableLazyModel extends BaseTreeTableLazyModel<Reco
                 continue;
             }
 
+            Hibernate.initialize(child.getChildren());
+            Hibernate.initialize(child.getParents());
+            Hibernate.initialize(child.getSpecimenList());
+
             TreeNode<RecordingUnit> childNode = new DefaultTreeNode<>(child, parentNode);
+            registerNode(child, childNode);
 
             path.add(child.getId());
             buildChildren(childNode, child, path);

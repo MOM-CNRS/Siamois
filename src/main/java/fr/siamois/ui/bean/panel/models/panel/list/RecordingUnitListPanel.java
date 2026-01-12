@@ -101,7 +101,9 @@ public class RecordingUnitListPanel extends AbstractListPanel<RecordingUnit> imp
                 flowBean,
                 genericNewUnitDialogBean,
                 recordingUnitWriteVerifier,
+                recordingUnitService,
                 lazyTree
+
         );
 
         return lazy; // l'abstraite en a besoin, mais ce panel ne s'en sert plus ensuite
