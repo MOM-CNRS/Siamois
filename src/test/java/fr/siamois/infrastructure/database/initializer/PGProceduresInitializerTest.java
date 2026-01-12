@@ -22,13 +22,13 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-class AutocompleteInitializerTest {
+class PGProceduresInitializerTest {
 
     @Mock
     private HikariDataSource dataSource;
 
     @InjectMocks
-    private AutocompleteInitializer autocompleteInitializer;
+    private PGProceduresInitializer PGProceduresInitializer;
 
     @Mock
     private Connection connection;
@@ -57,7 +57,7 @@ class AutocompleteInitializerTest {
             when(statement.executeLargeUpdate(sql)).thenReturn(1L);
 
             // Act
-            assertDoesNotThrow(() -> autocompleteInitializer.initialize());
+            assertDoesNotThrow(() -> PGProceduresInitializer.initialize());
 
             // Assert
             verify(statement, times(1)).executeLargeUpdate(sql);
@@ -76,7 +76,7 @@ class AutocompleteInitializerTest {
                              })) {
 
             // Act & Assert
-            assertThrows(DatabaseDataInitException.class, () -> autocompleteInitializer.initialize());
+            assertThrows(DatabaseDataInitException.class, () -> PGProceduresInitializer.initialize());
 
             // On vérifie bien que la DB n’est jamais touchée si on ne peut pas lire la ressource
             verifyNoInteractions(dataSource);
