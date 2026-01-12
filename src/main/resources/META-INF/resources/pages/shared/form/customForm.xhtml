@@ -10,6 +10,7 @@
     <!--@elvariable id="prefix" type="String" -->
     <!--@elvariable id="root" type="String" -->
     <!--@elvariable id="panelId" type="String" -->
+    <!--@elvariable id="ctx" type="package fr.siamois.ui.form.EntityFormContext" -->
 
 
     <!-- show panel view -->
@@ -29,6 +30,7 @@
                     <ui:param name="root" value="#{root}" />
                     <ui:param name="updateTargetsOnBlur" value="#{panelId}" />
                     <ui:param name="statusIndex" value="#{status.index}" />
+                    <ui:param name="ctx" value="#{ctx}" />
                 </ui:include>
             </p:panel>
         </c:forEach>
@@ -48,6 +50,7 @@
                         <ui:param name="root" value="#{root}:customTabView-#{prefix}" />
                         <ui:param name="updateTargetsOnBlur" value="#{panelId}" />
                         <ui:param name="statusIndex" value="#{status.index}" />
+                        <ui:param name="ctx" value="#{ctx}" />
                     </ui:include>
                 </p:tab>
             </c:forEach>

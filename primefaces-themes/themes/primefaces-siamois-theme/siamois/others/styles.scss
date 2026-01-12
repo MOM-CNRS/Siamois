@@ -151,3 +151,11 @@ body .ui-datatable .ui-datatable-data>tr.ui-state-highlight {
   border-radius: 8px;
   box-shadow: 0 2px 6px rgba(0,0,0,0.15);
 }
+
+.rotate-90 {
+    transform: rotate(90deg);
+}
+
+body .ui-toggleswitch.ui-toggleswitch-checked .ui-toggleswitch-slider {
+    background: var(--light-color-200);
+}

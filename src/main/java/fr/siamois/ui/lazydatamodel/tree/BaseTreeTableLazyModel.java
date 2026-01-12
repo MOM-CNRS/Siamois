@@ -4,6 +4,7 @@ import lombok.Getter;
 import lombok.Setter;
 import org.primefaces.model.DefaultTreeNode;
 import org.primefaces.model.TreeNode;
+import org.primefaces.model.TreeNodeChildren;
 
 import java.io.Serializable;
 import java.util.*;
@@ -162,6 +163,30 @@ public abstract class BaseTreeTableLazyModel<T, ID> implements Serializable {
         registerNode(clickedEntity, duplicate);
 
         newParentNode.setExpanded(true);
+    }
+
+    // Get all the entities in the tree
+    public Set<T> getAllEntitiesFromTree() {
+        Set<T> allEntities = new HashSet<>();
+        if (root != null) {
+            collectEntitiesRecursively(root, allEntities);
+        }
+        return allEntities;
+    }
+
+    private void collectEntitiesRecursively(TreeNode<T> node, Set<T> entities) {
+
+        if(node.getData() != null)  {
+            entities.add(node.getData());
+        }
+
+        // Assuming treeLazyModel has a method to get children of a node
+        TreeNodeChildren<T> children = node.getChildren();
+        if (children != null) {
+            for (TreeNode<T> child : children) {
+                collectEntitiesRecursively(child, entities);
+            }
+        }
     }
 
 

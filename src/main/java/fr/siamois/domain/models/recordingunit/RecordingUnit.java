@@ -154,7 +154,7 @@ public class RecordingUnit extends RecordingUnitParent implements ArkEntity, Ref
                 "contributors", "type", "secondaryType", "thirdType", "actionUnit", "spatialUnit",
                 "geomorphologicalCycle", "normalizedInterpretation", "author", "geomorphologicalAgent",
                 "matrixComposition", "matrixColor", "matrixTexture", "erosionShape", "erosionOrientation",
-                "erosionProfile", "taq", "tpq", "chronologicalPhase");
+                "erosionProfile", "taq", "tpq", "chronologicalPhase", "fullIdentifier");
     }
 
     // ----------- Concepts for system fields

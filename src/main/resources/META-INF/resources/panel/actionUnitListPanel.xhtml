@@ -16,23 +16,10 @@
     >
         <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
         <table:entityTable
-                displayColumnToggler="true"
                 tableModel="#{panelModel.tableModel}"
                 panelIndex="#{panelIndex}"
                 id="actionUnitList"
-        >
-            <f:facet name="rightToolbar">
-                <p:commandButton
-                        rendered="#{panelModel.tableModel.toolbarCreateConfig ne null and flowBean.isWriteMode and spatialUnitFieldBean.isCreateAllowed()}"
-                        value="#{langBean.msg('common.action.create')}"
-                        icon="bi bi-plus-square"
-                        actionListener="#{cc.attrs.tableModel.openCreateFromToolbar(genericNewUnitDialogBean)}"
-                        oncomplete="PF('newUnitDiag').show();"
-                        update="newUnitForm"
-                        style="margin-right:.5rem">
-                </p:commandButton>
-            </f:facet>
-        </table:entityTable>
+        />
     </h:form>
 
 

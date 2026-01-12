@@ -25,6 +25,8 @@
     <!-- @elvariable id="spatialUnitOptions" type="java.util.List" -->
 
     <!-- TEXT -->
+
+
     <siaInplace:text
             rendered="#{col.field['class'].simpleName eq 'CustomFieldText'}"
             id="#{prefix}-#{statusIndex}-#{rowIndex}-#{colIndex}"
@@ -34,8 +36,8 @@
             hasBeenModified="#{hasBeenModified}"
             answer="#{answer}"
             mode="#{col.readOnly ? 'output' : flowBean.getInPlaceFieldMode()}"
-            updateTargetsOnBlur="#{panelHeaderUpdateId}"
-            onModified="#{bean.onFieldAnswerModifiedListener}"
+            updateTargetsOnBlur="#{panelHeaderUpdateId} #{updateTargetsOnBlur}"
+            onModified="#{formCtx.onFieldAnswerModifiedListener}"
             hasAutoGenerationFunction="#{hasAutoGenerationFunction}"
             onGenerateValue="#{onGenerateValue}"
     />
@@ -50,7 +52,7 @@
             hasBeenModified="#{hasBeenModified}"
             answer="#{answer}"
             mode="#{col.readOnly ? 'output' : flowBean.getInPlaceFieldMode()}"
-            updateTargetsOnBlur="#{panelHeaderUpdateId}"
+            updateTargetsOnBlur="#{panelHeaderUpdateId} #{updateTargetsOnBlur}"
     />
 
     <!-- DATETIME -->
@@ -63,7 +65,7 @@
             answer="#{answer}"
             mode="#{col.readOnly ? 'output' : flowBean.getInPlaceFieldMode()}"
             updateTargetsOnBlur="#{updateTargetsOnBlur}"
-            onModified="#{bean.onFieldAnswerModifiedListener}"
+            onModified="#{formCtx.onFieldAnswerModifiedListener}"
             panelStyleClass="#{panelStyleClass}"
     />
 
@@ -75,10 +77,10 @@
             required="#{col.required}"
             label="#{spatialUnitFieldBean.resolveCustomFieldLabel(col.field)}"
             mode="#{col.readOnly ? 'output' : flowBean.getInPlaceFieldMode()}"
-            updateTargetsOnBlur="#{conceptFieldsUpdateTargetsOnBlur}"
+            updateTargetsOnBlur="#{conceptFieldsUpdateTargetsOnBlur} #{updateTargetsOnBlur}"
             answer="#{answer}"
             panelStyleClass="#{panelStyleClass}"
-            onConceptChanged="#{bean.setFieldConceptAnswerHasBeenModified}"
+            onConceptChanged="#{formCtx.setFieldConceptAnswerHasBeenModified}"
     />
 
     <!-- Select one action -->
@@ -97,6 +99,7 @@
             rendered="#{col.field['class'].simpleName eq 'CustomFieldSelectOneSpatialUnit'}"
             hasBeenModified="#{hasBeenModified}"
             field="#{col.field}"
+            onModified="#{formCtx.onFieldAnswerModifiedListener}"
             mode="#{col.readOnly ? 'output' : flowBean.getInPlaceFieldMode()}"
             required="#{col.required}"
             label="#{spatialUnitFieldBean.resolveCustomFieldLabel(col.field)}"
@@ -111,7 +114,7 @@
             hasBeenModified="#{hasBeenModified}"
             field="#{col.field}"
             mode="#{col.readOnly ? 'output' : flowBean.getInPlaceFieldMode()}"
-            onModified="#{bean.onFieldAnswerModifiedListener}"
+            onModified="#{formCtx.onFieldAnswerModifiedListener}"
             panelStyleClass="#{panelStyleClass}"
             required="#{col.required}"
             label="#{spatialUnitFieldBean.resolveCustomFieldLabel(col.field)}"
@@ -128,7 +131,7 @@
             required="#{col.required}"
             label="#{spatialUnitFieldBean.resolveCustomFieldLabel(col.field)}"
             mode="#{col.readOnly ? 'output' : flowBean.getInPlaceFieldMode()}"
-            onModified="#{bean.onFieldAnswerModifiedListener}"
+            onModified="#{formCtx.onFieldAnswerModifiedListener}"
             panelStyleClass="#{panelStyleClass}"
             updateTargetsOnBlur="#{updateTargetsOnBlur}"
             answer="#{answer}"/>

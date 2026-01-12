@@ -37,10 +37,9 @@ public class SpatialUnit extends SpatialUnitGeneric implements ArkEntity {
     @SuppressWarnings("CopyConstructorMissesField")
     public SpatialUnit (SpatialUnit spatialUnit) {
         name = spatialUnit.getName();
-        ark = spatialUnit.getArk();
         category = spatialUnit.getCategory();
         geom = spatialUnit.getGeom();
-        validated = spatialUnit.getValidated();
+        validated = false;
     }
 
     @Id
@@ -70,13 +69,15 @@ public class SpatialUnit extends SpatialUnitGeneric implements ArkEntity {
     @NotAudited
     private Set<SpatialUnit> children = new HashSet<>();
 
+    @ManyToMany(mappedBy = "children", fetch = FetchType.LAZY)
+    @JsonIgnore
+    private Set<SpatialUnit> parents = new HashSet<>();
+
     @OneToMany(mappedBy="spatialUnit")
     @JsonIgnore
     private Set<RecordingUnit> recordingUnitList;
 
-    @ManyToMany(mappedBy = "children", fetch = FetchType.LAZY)
-    @JsonIgnore
-    private Set<SpatialUnit> parents = new HashSet<>();
+
 
     @ManyToMany(mappedBy = "spatialContext")
     @JsonIgnore

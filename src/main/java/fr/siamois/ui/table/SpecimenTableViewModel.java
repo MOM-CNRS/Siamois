@@ -16,6 +16,7 @@ import org.primefaces.model.TreeNode;
 
 import java.util.List;
 
+import static fr.siamois.ui.table.TableColumnAction.DUPLICATE_ROW;
 import static fr.siamois.ui.table.TableColumnAction.GO_TO_SPECIMEN;
 
 /**
@@ -139,7 +140,7 @@ public class SpecimenTableViewModel extends EntityTableViewModel<Specimen, Long>
 
                 // Duplicate row (RecordingUnit only)
                 RowAction.builder()
-                        .action(TableColumnAction.DUPLICATE_ROW)
+                        .action(DUPLICATE_ROW)
                         .processExpr("@this")
                         .updateSelfTable(true) // <-- mettra à jour :#{cc.clientId}:entityDatatable
                         .styleClass("sia-icon-btn")
@@ -174,17 +175,27 @@ public class SpecimenTableViewModel extends EntityTableViewModel<Specimen, Long>
             default -> "";
         };
     }
-    public void handleRowAction(RowAction action, RecordingUnit ru) {
-        switch (action.getAction()) {
-            case TOGGLE_BOOKMARK -> navBean.toggleRecordingUnitBookmark(ru);
-            case DUPLICATE_ROW -> specimenLazyDataModel.duplicateRow();
-            default -> throw new IllegalStateException("Unhandled action: " + action.getAction());
+
+    public void handleRowAction(RowAction action, Specimen s) {
+        if (action.getAction() == DUPLICATE_ROW) {
+            specimenLazyDataModel.duplicateRow();
+        } else {
+            throw new IllegalStateException("Unhandled action: " + action.getAction());
         }
+    }
+
+    public void handleRowAction(RowAction action, TreeNode<Specimen> node) {
+        handleRowAction(action, node.getData());
     }
 
     @Override
     public TreeNode<RecordingUnit> getTreeRoot() {
         return null;
+    }
+
+    @Override
+    public void save() {
+// will be implemented when working on specimen table
     }
 
 }
