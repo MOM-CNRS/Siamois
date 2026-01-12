@@ -359,6 +359,13 @@ public class SpatialUnitTableViewModel extends EntityTableViewModel<SpatialUnit,
     }
 
     @Override
+    public boolean canUserEditRow(SpatialUnit unit) {
+        return flowBean.getIsWriteMode() && // perm to create action unit in orga and app is in write mode
+                institutionService.personIsInstitutionManagerOrActionManager(sessionSettingsBean.getUserInfo().getUser(),
+                        sessionSettingsBean.getSelectedInstitution());
+    }
+
+    @Override
     public TreeNode<SpatialUnit> getTreeRoot() {
         return treeLazyModel.getRoot();
     }

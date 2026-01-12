@@ -45,6 +45,7 @@
             <ui:param name="spatialUnitOptions" value="#{bean.getSpatialUnitOptions()}" />
             <ui:param name="updateTargetsOnBlur" value="#{updateTargetsOnBlur}"/>
             <ui:param name="formCtx" value="#{bean}"/>
+            <ui:param name="mode" value="#{(col.readOnly or not canUserEditRow) ? 'output' : flowBean.getInPlaceFieldMode()}"/>
 
         </ui:include>
 

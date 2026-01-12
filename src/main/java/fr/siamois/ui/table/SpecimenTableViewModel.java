@@ -198,4 +198,9 @@ public class SpecimenTableViewModel extends EntityTableViewModel<Specimen, Long>
         // will be implemented when working on specimen table
     }
 
+    @Override
+    public boolean canUserEditRow(Specimen unit) {
+        return true; // todo: implement permission
+    }
+
 }

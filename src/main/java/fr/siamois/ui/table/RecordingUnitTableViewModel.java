@@ -312,6 +312,11 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
     }
 
     @Override
+    public boolean canUserEditRow(RecordingUnit unit) {
+        return true; // todo: implement permission
+    }
+
+    @Override
     public TreeNode<RecordingUnit> getTreeRoot() {
         return treeLazyModel.getRoot();
     }

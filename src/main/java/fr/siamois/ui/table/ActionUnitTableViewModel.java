@@ -254,6 +254,11 @@ public class ActionUnitTableViewModel extends EntityTableViewModel<ActionUnit, L
     }
 
     @Override
+    public boolean canUserEditRow(ActionUnit unit) {
+        return true; // todo: implement permission
+    }
+
+    @Override
     public TreeNode<ActionUnit> getTreeRoot() {
         return treeLazyModel.getRoot();
     }

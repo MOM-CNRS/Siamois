@@ -341,6 +341,11 @@ public abstract class EntityTableViewModel<T extends TraceableEntity, ID> {
      */
     public abstract void save();
 
+    /*
+    * Check if user has permission to edit the row data
+     */
+    public abstract boolean canUserEditRow(T unit);
+
 
 
 
