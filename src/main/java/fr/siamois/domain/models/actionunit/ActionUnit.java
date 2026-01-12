@@ -15,6 +15,7 @@ import lombok.Data;
 import org.hibernate.envers.Audited;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 @Data
@@ -106,6 +107,12 @@ public class ActionUnit extends ActionUnitParent implements ArkEntity {
     @Override
     public String toString() {
         return String.format("Action Unit %s", displayFullIdentifier());
+    }
+
+    @Transient
+    @JsonIgnore
+    public List<String> getBindableFieldNames() {
+        return List.of("type", "name", "identifier", "spatialContext", "beginDate", "endDate", "primaryActionCode");
     }
 
     @Transient

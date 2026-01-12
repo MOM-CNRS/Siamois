@@ -17,12 +17,6 @@ public abstract class ActionUnitForm {
     protected static final String GENERAL_LABEL_CODE = "common.header.general";
     protected static final String DETAIL_TAB_NAME = "\"Details tab form\"";
 
-    @Transient
-    @JsonIgnore
-    public List<String> getBindableFieldNames() {
-        return List.of("type", "name", "identifier", "spatialContext", "beginDate", "endDate", "primaryActionCode");
-    }
-
 // ----------- Concepts for system fields
 
 
