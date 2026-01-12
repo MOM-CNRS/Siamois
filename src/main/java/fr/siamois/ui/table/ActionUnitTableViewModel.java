@@ -2,6 +2,7 @@ package fr.siamois.ui.table;
 
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.form.customform.CustomForm;
+import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.form.FormService;
@@ -229,13 +230,17 @@ public class ActionUnitTableViewModel extends EntityTableViewModel<ActionUnit, L
         };
     }
 
-    public void handleRowAction(RowAction action, TreeNode<ActionUnit> node) {
-        ActionUnit au = node.getData();
+    public void handleRowAction(RowAction action,  ActionUnit au) {
         if (action == null || action.getAction() == null) {
             throw new IllegalStateException("Unhandled action: null");
         }
 
         throw new IllegalStateException("Unhandled action: " + action.getAction());
+    }
+
+    public void handleRowAction(RowAction action, TreeNode<ActionUnit> node) {
+        ActionUnit au = node.getData();
+        handleRowAction(action, au);
     }
 
     @Override

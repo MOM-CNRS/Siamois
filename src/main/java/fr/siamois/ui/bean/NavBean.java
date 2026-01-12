@@ -42,6 +42,7 @@ import java.util.List;
 @SessionScoped
 public class NavBean implements Serializable {
 
+    public static final String COMMON_BOOKMARK_SAVED = "common.bookmark.saved";
     private final SessionSettingsBean sessionSettingsBean;
     private final transient InstitutionChangeEventPublisher institutionChangeEventPublisher;
     private final transient InstitutionConverter converter;
@@ -132,14 +133,14 @@ public class NavBean implements Serializable {
         redirectBean.redirectTo("/");
     }
 
-    public void bookmarkUnit(Long id, String titleCodeOrTitle, String RESSOURCE_BASE_URI) {
+    public void bookmarkUnit(Long id, String titleCodeOrTitle, String ressourceBaseUri) {
 
         bookmarkService.save(
                 sessionSettingsBean.getUserInfo(),
-                RESSOURCE_BASE_URI+ id,
+                ressourceBaseUri+ id,
                 titleCodeOrTitle
         );
-        MessageUtils.displayInfoMessage(langBean, "common.bookmark.saved");
+        MessageUtils.displayInfoMessage(langBean, COMMON_BOOKMARK_SAVED);
     }
 
 
@@ -163,7 +164,7 @@ public class NavBean implements Serializable {
                 SPECIMEN_BASE_URI + specimen.getId(),
                 specimen.getFullIdentifier()
         );
-        MessageUtils.displayInfoMessage(langBean, "common.bookmark.saved");
+        MessageUtils.displayInfoMessage(langBean, COMMON_BOOKMARK_SAVED);
     }
 
     public void bookmark(SpatialUnit su) {
@@ -173,7 +174,7 @@ public class NavBean implements Serializable {
                 SPATIAL_UNIT_BASE_URI+ su.getId(),
                 su.getName()
         );
-        MessageUtils.displayInfoMessage(langBean, "common.bookmark.saved");
+        MessageUtils.displayInfoMessage(langBean, COMMON_BOOKMARK_SAVED);
     }
 
     public void unBookmark(String uri) {

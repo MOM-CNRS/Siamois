@@ -41,6 +41,8 @@ import static fr.siamois.ui.table.TableColumnAction.GO_TO_RECORDING_UNIT;
 @Getter
 public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingUnit, Long> {
 
+    public static final String THIS = "@this";
+    public static final String SIA_ICON_BTN = "sia-icon-btn";
     /** Lazy model spécifique RecordingUnit (accès à selectedUnits, etc.) */
     private final BaseRecordingUnitLazyDataModel recordingUnitLazyDataModel;
     private final FlowBean flowBean;
@@ -194,26 +196,26 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
                 // Bookmark toggle
                 RowAction.builder()
                         .action(TableColumnAction.TOGGLE_BOOKMARK)
-                        .processExpr("@this")
+                        .processExpr(THIS)
                         .updateExpr("bookmarkToggleButton navBarCsrfForm:siamoisNavForm:bookmarkGroup")
                         .updateSelfTable(false)
-                        .styleClass("sia-icon-btn")
+                        .styleClass(SIA_ICON_BTN)
                         .build(),
 
                 // Duplicate row (RecordingUnit only)
                 RowAction.builder()
                         .action(TableColumnAction.DUPLICATE_ROW)
-                        .processExpr("@this")
+                        .processExpr(THIS)
                         .updateSelfTable(true) // <-- mettra à jour :#{cc.clientId}:entityDatatable
-                        .styleClass("sia-icon-btn")
+                        .styleClass(SIA_ICON_BTN)
                         .build(),
 
                 // Add children
                 RowAction.builder()
                         .action(TableColumnAction.NEW_CHILDREN)
-                        .processExpr("@this")
+                        .processExpr(THIS)
                         .updateSelfTable(true)
-                        .styleClass("sia-icon-btn")
+                        .styleClass(SIA_ICON_BTN)
                         .build()
         );
     }
@@ -281,12 +283,7 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
     // actions specific to treetable
     public void handleRowAction(RowAction action, TreeNode<RecordingUnit> node) {
         RecordingUnit ru = node.getData();
-
-        switch (action.getAction()) {
-
-            default -> handleRowAction(action, ru);
-
-        }
+        handleRowAction(action, ru);
     }
 
     @Override

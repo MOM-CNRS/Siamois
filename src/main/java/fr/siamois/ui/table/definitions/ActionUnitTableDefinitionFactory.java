@@ -29,16 +29,16 @@ public final class ActionUnitTableDefinitionFactory {
             return;
         }
 
-        Concept NAME_CONCEPT = new Concept.Builder()
+        Concept nameConcept = new Concept.Builder()
                 .vocabulary(SYSTEM_THESO)
                 .externalId("4285848")
                 .build();
-        CustomFieldText NAME_FIELD =  CustomFieldText.builder()
+        CustomFieldText nameField =  CustomFieldText.builder()
                 .label("common.label.name")
                 .id(2L)
                 .isSystemField(true)
                 .valueBinding("name")
-                .concept(NAME_CONCEPT)
+                .concept(nameConcept)
                 .build();
 
         // -------------------------
@@ -73,7 +73,7 @@ public final class ActionUnitTableDefinitionFactory {
                 FormFieldColumn.builder()
                         .id("name")
                         .headerKey("spatialunit.field.name")
-                        .field(NAME_FIELD)
+                        .field(nameField)
                         .sortable(true)
                         .visible(true)
                         .required(true)

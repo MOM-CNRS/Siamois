@@ -26,6 +26,7 @@ import org.primefaces.model.TreeNode;
 import java.util.*;
 
 import static fr.siamois.ui.bean.dialog.newunit.NewUnitContext.TreeInsert.ROOT;
+import static fr.siamois.ui.table.TableColumnAction.DUPLICATE_ROW;
 import static fr.siamois.ui.table.TableColumnAction.GO_TO_SPATIAL_UNIT;
 
 /**
@@ -166,7 +167,7 @@ public class SpatialUnitTableViewModel extends EntityTableViewModel<SpatialUnit,
 
                 // Duplicate row (SpatialUnit only)
                 RowAction.builder()
-                        .action(TableColumnAction.DUPLICATE_ROW)
+                        .action(DUPLICATE_ROW)
                         .processExpr(THIS)
                         .updateSelfTable(true)
                         .styleClass(SIA_ICON_BTN)
@@ -306,18 +307,14 @@ public class SpatialUnitTableViewModel extends EntityTableViewModel<SpatialUnit,
     public void handleRowAction(RowAction action, TreeNode<SpatialUnit> node) {
         SpatialUnit su = node.getData();
 
-        switch (action.getAction()) {
-
-            case DUPLICATE_ROW -> {
-                if(!Objects.equals(node.getParent().getRowKey(), "root")) {
-                    this.duplicateRow(node.getData(), node.getParent().getData());
-                    return;
-                }
-                this.duplicateRow(node.getData(), null);
+        if (action.getAction() == DUPLICATE_ROW) {
+            if (!Objects.equals(node.getParent().getRowKey(), "root")) {
+                this.duplicateRow(node.getData(), node.getParent().getData());
+                return;
             }
-
-            default -> handleRowAction(action, su);
-
+            this.duplicateRow(node.getData(), null);
+        } else {
+            handleRowAction(action, su);
         }
     }
 

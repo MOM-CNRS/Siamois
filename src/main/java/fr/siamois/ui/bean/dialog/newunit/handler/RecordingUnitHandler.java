@@ -22,6 +22,8 @@ import java.util.List;
 @Component
 public class RecordingUnitHandler implements INewUnitHandler<RecordingUnit> {
 
+    public static final String CHILDREN = "children";
+    public static final String PARENTS = "parents";
     private final RecordingUnitService recordingUnitService;
     private final ActionUnitService actionUnitService;
     private final SessionSettingsBean sessionSettingsBean;
@@ -86,7 +88,7 @@ public class RecordingUnitHandler implements INewUnitHandler<RecordingUnit> {
             return;
         }
 
-        if(key.equals("parents") || key.equals("children")) {
+        if(key.equals(PARENTS) || key.equals(CHILDREN)) {
             unit.setCreatedByInstitution(clicked.getCreatedByInstitution());
             unit.setActionUnit(clicked.getActionUnit());
             unit.setAuthor(sessionSettingsBean.getAuthenticatedUser());
@@ -96,8 +98,8 @@ public class RecordingUnitHandler implements INewUnitHandler<RecordingUnit> {
         }
 
         switch (key) {
-            case "parents" -> unit.getChildren().add(clicked);
-            case "children" -> unit.getParents().add(clicked);
+            case PARENTS -> unit.getChildren().add(clicked);
+            case CHILDREN -> unit.getParents().add(clicked);
             default -> { /* no-op */ }
         }
     }
@@ -147,9 +149,9 @@ public class RecordingUnitHandler implements INewUnitHandler<RecordingUnit> {
                     : ("#" + trigger.getClickedId());
 
             return switch (trigger.getColumnKey()) {
-                case "parents"  ->
+                case PARENTS ->
                         langBean.msg("dialog.label.title.recording.parent") + " " + name;
-                case "children" ->
+                case CHILDREN ->
                         langBean.msg("dialog.label.title.recording.child") + " " + name;
                 default ->
                         INewUnitHandler.super.getTitle(ctx);
