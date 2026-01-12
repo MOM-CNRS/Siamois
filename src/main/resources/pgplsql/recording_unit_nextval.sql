@@ -11,6 +11,10 @@ BEGIN
     FROM action_unit
     WHERE action_unit_id = p_action_unit_id;
 
+    IF v_old_value IS NULL THEN
+        v_old_value := 1;
+    end if;
+
     UPDATE action_unit
     SET recording_unit_next_code = v_old_value + 1
     WHERE action_unit_id = p_action_unit_id;
