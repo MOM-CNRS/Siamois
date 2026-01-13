@@ -303,6 +303,22 @@ public class SpatialUnitTableViewModel extends EntityTableViewModel<SpatialUnit,
         }
     }
 
+    public String getRowActionTooltipCode(RowAction action, SpatialUnit su) {
+
+        return switch (action.getAction()) {
+
+            case TOGGLE_BOOKMARK ->  "common.action.bookmark" ;
+
+            case DUPLICATE_ROW -> null;
+
+            case NEW_CHILDREN -> null;
+
+            case NEW_ACTION -> null;
+
+            default -> null;
+        };
+    }
+
     // actions specific to treetable
     public void handleRowAction(RowAction action, TreeNode<SpatialUnit> node) {
         SpatialUnit su = node.getData();

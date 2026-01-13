@@ -68,14 +68,17 @@
         <p:column exportable="false" toggleable="false">
             <p:toolbar>
                 <p:toolbarGroup>
-                    <ui:repeat value="#{tableModel.rowActions}" var="action">
+                    <ui:repeat value="#{tableModel.rowActions}" var="action" varStatus="status">
                         <p:commandButton
+                                id="btn_#{status.index}"
                                 rendered="#{tableModel.isRendered(action, item)}"
                                 icon="#{tableModel.resolveIcon(action, item)}"
                                 action="#{tableModel.handleRowAction(action, node)}"
                                 process="#{empty action.processExpr ? '@this' : action.processExpr}"
                                 update="#{action.updateSelfTable ? (':'.concat(cc.clientId).concat(':entityTreeTable')) : action.updateExpr}"
                                 styleClass="#{action.styleClass}"/>
+                        <p:tooltip autoHide="false" value="#{tableModel.getRowActionTooltipCode(action,item)}" for="btn_#{status.index}"
+                        />
                     </ui:repeat>
                 </p:toolbarGroup>
             </p:toolbar>
