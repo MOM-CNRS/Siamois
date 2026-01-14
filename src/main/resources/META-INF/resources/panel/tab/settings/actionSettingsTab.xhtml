@@ -11,20 +11,17 @@
 
     <p:panel
             toggleableHeader="true"
-            header="Identifiants"
+            header="#{langBean.msg('actionUnit.settings.title.identifierGeneration')}"
             id="customFormPanel-#{panelIndex}"
             class="sia-form-panel"
             toggleable="true">
 
-        <!-- Le h:form a été supprimé pour éviter l'imbrication.
-             La soumission partielle est gérée par le p:commandButton avec process="@parent".
-             Le champ caché CSRF a aussi été retiré ; il doit être géré par le formulaire principal. -->
         <p:row id="row-#{panelIndex}-1">
             <p:column styleClass="ui-g-12" id="col-#{panelIndex}-1-0">
                 <sharedInput:panelField
                         id="panelField-#{panelIndex}-1-0"
                         required="true"
-                        title="Première numérotation"
+                        title="#{langBean.msg('actionUnit.settings.label.firstNumber')}"
                         forId="input-min-value-#{panelIndex}"
                         fluid="false"
 
@@ -43,7 +40,7 @@
                 <sharedInput:panelField
                         id="panelField-#{panelIndex}-1-1"
                         required="true"
-                        title="Numérotation max"
+                        title="#{langBean.msg('actionUnit.settings.label.lastNumber')}"
                         forId="input-max-value-#{panelIndex}"
                         fluid="false"
 
@@ -64,7 +61,7 @@
                 <sharedInput:panelField
                         id="panelField-#{panelIndex}-2-0"
                         required="true"
-                        title="Format"
+                        title="#{langBean.msg('actionUnit.settings.label.format')}"
                         forId="input-format-#{panelIndex}"
                         fluid="false"
 
@@ -78,7 +75,7 @@
             </p:column>
         </p:row>
         <p:commandButton
-                value="Sauvegarder les paramètres"
+                value="#{langBean.msg('actionUnit.settings.button.save')}"
                 icon="bi bi-gear"
                 action="#{panelModel.saveSettings()}"
                 process="@parent"
