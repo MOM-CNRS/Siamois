@@ -463,7 +463,7 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnit> imple
                 String[] parts = placeholderContent.split(":", 2);
                 String placeholderName = parts[0];
 
-                if (!List.of("NUM_UE", "TYPE_UE", "NUM_PARENT", "TYPE_PARENT", "NUM_USPATIAL", "ID_UA").contains(placeholderName)) {
+                if (!RecordingUnit.IDENTIFIERS_CODE.contains(placeholderName)) {
                     MessageUtils.displayErrorMessage(langBean, "actionUnit.settings.error.invalidIdentifierFormat");
                     return;
                 }

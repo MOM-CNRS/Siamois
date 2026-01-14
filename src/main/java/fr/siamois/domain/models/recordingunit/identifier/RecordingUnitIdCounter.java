@@ -10,6 +10,14 @@ import lombok.NoArgsConstructor;
 import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
 
+/**
+ * <p>Each row in this table represents a counter. A counter is associated with an ActionUnit that holds its configuration.</p>
+ *
+ * A counter is associated with a RecordingUnit. In this case, the counter stores the numbering for its direct children
+ * of the type defined by the associated Concept. The RecordingUnit can be null, in which case it refers to
+ * RecordingUnits that do not have a parent. The Concept can be null, in which case it refers to units that do not have a type
+ * as it's a technical limit.
+ */
 @Data
 @Entity
 @Table(name = "identifier_ru_counter")
@@ -32,8 +40,11 @@ public class RecordingUnitIdCounter {
     @Nullable
     private RecordingUnit recordingUnit;
 
-    @JoinColumn(name = "fk_concept_type_id", nullable = false)
-    @ManyToOne(fetch = FetchType.EAGER, optional = false)
+    /**
+     * When the recording unit type is NULL.
+     */
+    @JoinColumn(name = "fk_concept_type_id")
+    @ManyToOne(fetch = FetchType.EAGER)
     @NonNull
     private Concept recordingUnitType;
 
@@ -42,9 +53,5 @@ public class RecordingUnitIdCounter {
      */
     @DefaultValue("1")
     private int counter = 1;
-
-    @Nullable
-    @Column(name = "format_length")
-    private Integer formatLength = null;
 
 }

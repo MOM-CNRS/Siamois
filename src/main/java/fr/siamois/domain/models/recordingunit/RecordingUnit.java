@@ -96,6 +96,9 @@ public class RecordingUnit extends RecordingUnitParent implements ArkEntity, Ref
     )
     private Set<Document> documents = new HashSet<>();
 
+    public static final List<String> IDENTIFIERS_CODE = List.of("NUM_UE", "TYPE_UE", "NUM_PARENT", "TYPE_PARENT", "NUM_USPATIAL", "ID_UA");
+    public static final int DEFAULT_NUMBER_OF_CHAS = 3;
+
     @FieldCode
     public static final String TYPE_FIELD_CODE = "SIARU.TYPE";
 

@@ -18,8 +18,10 @@ import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.form.CustomFormResponseService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.infrastructure.database.repositories.person.PersonRepository;
+import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitIdCounterRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitRepository;
 import fr.siamois.infrastructure.database.repositories.team.TeamMemberRepository;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.Hibernate;
 import org.springframework.data.domain.Page;
@@ -27,8 +29,12 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Service to manage RecordingUnit
@@ -37,6 +43,7 @@ import java.util.Optional;
  */
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class RecordingUnitService implements ArkEntityService {
 
     private final RecordingUnitRepository recordingUnitRepository;
@@ -46,20 +53,6 @@ public class RecordingUnitService implements ArkEntityService {
     private final InstitutionService institutionService;
     private final ActionUnitService actionUnitService;
     private final TeamMemberRepository teamMemberRepository;
-
-
-    public RecordingUnitService(RecordingUnitRepository recordingUnitRepository,
-                                ConceptService conceptService,
-                                CustomFormResponseService customFormResponseService,
-                                PersonRepository personRepository, InstitutionService institutionService, ActionUnitService actionUnitService, TeamMemberRepository teamMemberRepository) {
-        this.recordingUnitRepository = recordingUnitRepository;
-        this.conceptService = conceptService;
-        this.customFormResponseService = customFormResponseService;
-        this.personRepository = personRepository;
-        this.institutionService = institutionService;
-        this.actionUnitService = actionUnitService;
-        this.teamMemberRepository = teamMemberRepository;
-    }
 
     /**
      * Generate the next identifier for a recording unit.
