@@ -4,6 +4,7 @@ import fr.siamois.domain.models.TraceableEntity;
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.customform.CustomCol;
 import fr.siamois.domain.models.form.customform.CustomForm;
+import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.services.form.FormService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitTreeService;
@@ -236,6 +237,10 @@ public abstract class EntityTableViewModel<T extends TraceableEntity, ID> {
 
     public Object getTreeRoot() {
         return null; // subclasses override if they support TREE mode
+    }
+
+    public String getRowActionTooltipCode(RowAction action, T unit) {
+        return null; // no tooltip by default
     }
 
     public boolean isTreeViewSupported() {

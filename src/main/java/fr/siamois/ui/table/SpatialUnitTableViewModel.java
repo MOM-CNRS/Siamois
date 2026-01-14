@@ -3,7 +3,6 @@ package fr.siamois.ui.table;
 import fr.siamois.domain.models.exceptions.recordingunit.FailedRecordingUnitSaveException;
 import fr.siamois.domain.models.exceptions.spatialunit.SpatialUnitAlreadyExistsException;
 import fr.siamois.domain.models.form.customform.CustomForm;
-import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.authorization.writeverifier.SpatialUnitWriteVerifier;
@@ -303,17 +302,20 @@ public class SpatialUnitTableViewModel extends EntityTableViewModel<SpatialUnit,
         }
     }
 
-    public String getRowActionTooltipCode(RowAction action, SpatialUnit su) {
+    @Override
+    public String getRowActionTooltipCode(RowAction action, SpatialUnit unit) {
 
         return switch (action.getAction()) {
 
-            case TOGGLE_BOOKMARK ->  "common.action.bookmark" ;
+            case TOGGLE_BOOKMARK ->  Boolean.TRUE.equals(navBean.isSpatialUnitBookmarkedByUser(unit.getId()))
+                    ? sessionSettingsBean.getLangBean().msg("common.action.unbookmark")
+                    : sessionSettingsBean.getLangBean().msg("common.action.bookmark") ;
 
-            case DUPLICATE_ROW -> null;
+            case DUPLICATE_ROW -> sessionSettingsBean.getLangBean().msg("common.action.duplicate") ;
 
-            case NEW_CHILDREN -> null;
+            case NEW_CHILDREN -> sessionSettingsBean.getLangBean().msg("common.action.createChildren") ;
 
-            case NEW_ACTION -> null;
+            case NEW_ACTION -> sessionSettingsBean.getLangBean().msg("common.action.createAction") ;
 
             default -> null;
         };
