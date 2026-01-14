@@ -22,6 +22,7 @@ import fr.siamois.ui.bean.dialog.newunit.NewUnitContext;
 import fr.siamois.ui.bean.dialog.newunit.UnitKind;
 import fr.siamois.ui.bean.panel.FlowBean;
 import fr.siamois.ui.bean.panel.models.PanelBreadcrumb;
+import fr.siamois.ui.bean.panel.models.panel.single.tab.ActionSettingsTab;
 import fr.siamois.ui.bean.panel.models.panel.single.tab.RecordingTab;
 import fr.siamois.ui.bean.panel.models.panel.single.tab.SpecimenTab;
 import fr.siamois.ui.bean.settings.team.TeamMembersBean;
@@ -210,7 +211,15 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnit> imple
                     "specimenTab",
                     specimenLazyDataModel,
                     totalSpecimenCount);
+
+            ActionSettingsTab settingsTab = new ActionSettingsTab(
+                    "nav.settings",
+                    "bi bi-gear",
+                    "settingsTab"
+            );
+
             tabs.add(recordingTab);
+            tabs.add(settingsTab);
             tabs.add(specimenTab);
 
         } catch (
