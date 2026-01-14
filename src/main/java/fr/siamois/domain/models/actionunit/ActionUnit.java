@@ -17,9 +17,11 @@ import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.ui.bean.panel.models.panel.single.AbstractSingleEntity;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.envers.Audited;
+import org.springframework.lang.NonNull;
 
 import java.util.HashSet;
 import java.util.List;
@@ -88,6 +90,10 @@ public class ActionUnit extends ActionUnitParent implements ArkEntity {
             inverseJoinColumns = {@JoinColumn(name = "fk_spatial_unit_id")}
     )
     private Set<SpatialUnit> spatialContext = new HashSet<>();
+
+    @NonNull
+    @Column(name = "recording_unit_identifier_format", nullable = false)
+    private String recordingUnitIdentifierFormat = "{NUM_UE}";
 
     @FieldCode
     public static final String TYPE_FIELD_CODE = "SIAAU.TYPE";
