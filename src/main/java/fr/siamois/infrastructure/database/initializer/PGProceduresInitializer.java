@@ -4,7 +4,6 @@ import com.zaxxer.hikari.HikariDataSource;
 import fr.siamois.domain.models.exceptions.database.DatabaseDataInitException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.stereotype.Component;
