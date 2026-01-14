@@ -24,7 +24,7 @@
                         <i class="bi bi-search"/>
                         <p:inputText id="globalFilter"
                                      value="#{tableModel.lazyDataModel.globalFilter}"
-                                     onkeyup="PF('#{cc.clientId}_entityDatatable').filter()"
+                                     onkeyup="PF('#{cc.clientId}_#{tableId}').filter()"
                                      placeholder="#{langBean.msg('common.action.search')}"/>
                     </span>
 
