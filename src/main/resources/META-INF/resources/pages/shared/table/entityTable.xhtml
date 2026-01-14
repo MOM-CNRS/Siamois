@@ -31,5 +31,9 @@
                 <ui:param name="updateTableString" value="#{cc.clientId}:entityTreeTable" />
             </ui:include>
         </p:outputPanel>
+
+        <p:blockUI block="tableContainer" widgetVar="#{cc.clientId}_buiTables">
+            <i class="pi pi-spin pi-spinner" style="font-size: 3rem"></i>
+        </p:blockUI>
     </cc:implementation>
 </ui:composition>

@@ -14,7 +14,9 @@
                             value="#{tableModel.treeMode}"
                             onIcon="bi bi-list-nested"
                             offIcon="bi bi-list">
-                        <p:ajax process="@this" update=":#{cc.clientId}:tableContainer"/>
+                        <p:ajax process="@this" update=":#{cc.clientId}:tableContainer" onstart="PF('#{cc.clientId}_buiTables').show()"
+                                oncomplete="PF('#{cc.clientId}_buiTables').hide()"/>
+
                     </p:toggleSwitch>
 
                     <!-- Global Search -->
