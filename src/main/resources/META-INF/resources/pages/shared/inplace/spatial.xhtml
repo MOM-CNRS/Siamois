@@ -24,6 +24,7 @@
                       type="java.util.List"
                       required="true"
                       shortDescription="List of SpatialUnit to display in the dropdown"/>
+        <cc:attribute name="displayType" type="java.lang.Boolean" required="false" default="false"/>
     </cc:interface>
 
     <cc:implementation>
@@ -35,7 +36,7 @@
                         <h:outputLink value="#{request.contextPath}/spatial-unit/#{cc.attrs.answer.value.id}">
                             #{cc.attrs.answer.value.name}
                         </h:outputLink>
-                        <p:chip
+                        <p:chip rendered="#{cc.attrs.displayType}"
                                 label="#{labelBean.findLabelOf(cc.attrs.answer.value.category)}"
                                 styleClass="mr-2 spatial-unit-type-chip"/>
                     </div>

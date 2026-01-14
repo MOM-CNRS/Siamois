@@ -30,7 +30,7 @@
                  paginatorTemplate="Rows per page: {RowsPerPageDropdown} {RowReport} {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink}"
                  rowsPerPageTemplate="5,10,15,20,25"
                  rowIndexVar="rowIndex"
-                 tableStyle="width:auto;min-width: 100%;"
+                 tableStyle="table-layout: auto;"
                  value="#{tableModel.lazyDataModel}"
                  class="#{tableClass}">
 
@@ -47,10 +47,10 @@
             </ui:include>
         </f:facet>
 
-        <p:column selectionBox="true" style="width:16px;text-align:center"/>
+        <p:column selectionBox="true" style="min-width: 100px;width:16px;text-align:center"/>
 
         <!-- Dynamic Columns -->
-        <p:columns value="#{tableModel.columns}" var="column" varStatus="colStatus">
+        <p:columns style="min-width: #{column.type != 'COMMAND_LINK' ? '10em' : '100px'};"  value="#{tableModel.columns}" var="column" varStatus="colStatus">
             <ui:include src="/pages/shared/table/columnTemplates.xhtml">
                 <ui:param name="tableModel" value="#{tableModel}" />
                 <ui:param name="column" value="#{column}" />
@@ -64,7 +64,7 @@
         </p:columns>
 
         <!-- Actions Column -->
-        <p:column exportable="false" toggleable="false">
+        <p:column exportable="false" toggleable="false" style="min-width: 100px;">
             <p:toolbar>
                 <p:toolbarGroup>
                     <ui:repeat value="#{tableModel.rowActions}" var="action">

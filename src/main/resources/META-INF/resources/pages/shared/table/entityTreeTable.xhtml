@@ -5,6 +5,7 @@
                 xmlns:f="http://java.sun.com/jsf/core"
                 xmlns:cc="http://xmlns.jcp.org/jsf/composite">
 
+
     <p:treeTable id="entityTreeTable"
                  rendered="#{tableModel.treeMode}"
                  value="#{tableModel.treeRoot}"
@@ -32,7 +33,8 @@
                  paginatorTemplate="Rows per page: {RowsPerPageDropdown} {RowReport} {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink}"
                  rowsPerPageTemplate="5,10,15,20,25"
                  rowIndexVar="rowIndex"
-                 tableStyle="width:auto;max-width:100%"
+                 style="overflow-x: scroll;"
+                 tableStyle="table-layout: auto;"
                  class="#{tableClass}">
 
         <f:facet name="{RowReport}">
@@ -48,10 +50,10 @@
             </ui:include>
         </f:facet>
 
-        <p:column selectionBox="true" width="fit-content"/>
+        <p:column style="min-width: 10px;" selectionBox="true" width="fit-content"/>
 
         <!-- Dynamic Columns -->
-        <p:columns value="#{tableModel.columns}" var="column" varStatus="colStatus">
+        <p:columns style="min-width: #{column.type != 'COMMAND_LINK' ? '10em' : ''};"  value="#{tableModel.columns}" var="column" varStatus="colStatus">
             <ui:include src="/pages/shared/table/columnTemplates.xhtml">
                 <ui:param name="tableModel" value="#{tableModel}" />
                 <ui:param name="column" value="#{column}" />
@@ -65,7 +67,7 @@
         </p:columns>
 
         <!-- Actions Column -->
-        <p:column exportable="false" toggleable="false">
+        <p:column exportable="false" toggleable="false" style="min-width: 100px;">
             <p:toolbar id="actionButtonToolbar">
                 <p:toolbarGroup >
                     <ui:repeat value="#{tableModel.rowActions}" var="action" varStatus="status">
@@ -84,4 +86,5 @@
             </p:toolbar>
         </p:column>
     </p:treeTable>
+
 </ui:composition>

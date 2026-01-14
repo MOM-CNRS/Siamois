@@ -159,3 +159,13 @@ body .ui-datatable .ui-datatable-data>tr.ui-state-highlight {
 body .ui-toggleswitch.ui-toggleswitch-checked .ui-toggleswitch-slider {
     background: var(--light-color-200);
 }
+
+/* below is fixing horizontal scrolling for treetable */
+/* For some reason PrimeFaces does not provides a wrapper for the treetable <table> */
+body .ui-treetable-header {
+        display: inline-block;
+        position: sticky;
+        left: 0;
+        background: white;
+        z-index: 1;
+    }
