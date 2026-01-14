@@ -89,6 +89,14 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnit> imple
 
     private transient RecordingUnitTableViewModel recordingTabTableModel;
 
+
+    // Settings tab
+    private Integer minNumber;
+    private boolean minHasBeenModified = false;
+    private Integer maxNumber;
+    private boolean maxHasBeenModified = false;
+    private String format;
+
     @Override
     protected boolean documentExistsInUnitByHash(ActionUnit unit, String hash) {
         return documentService.existInActionUnitByHash(unit, hash);
@@ -231,6 +239,10 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnit> imple
             this.errorMessage = "Failed to load action unit: " + e.getMessage();
             redirectBean.redirectTo(HttpStatus.INTERNAL_SERVER_ERROR);
         }
+
+        minNumber = unit.getMinRecordingUnitCode();
+        maxNumber = unit.getMaxRecordingUnitCode();
+        format = unit.getRecordingUnitIdentifierFormat();
     }
 
     @Override
@@ -426,6 +438,15 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnit> imple
     @Override
     public String getTabView() {
         return "/panel/tabview/actionUnitTabView.xhtml";
+    }
+
+
+    public void saveSettings() {
+        unit.setMinRecordingUnitCode(minNumber);
+        unit.setMaxRecordingUnitCode(maxNumber);
+        unit.setRecordingUnitIdentifierFormat(format);
+        actionUnitService.save(unit);
+        log.trace("Action unit saved with values : {} {} {}", unit.getMinRecordingUnitCode(), unit.getMaxRecordingUnitCode(), unit.getRecordingUnitIdentifierFormat());
     }
 
 }

@@ -1,11 +1,89 @@
 <ui:fragment xmlns="http://www.w3.org/1999/xhtml"
              xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
-             xmlns:table="http://xmlns.jcp.org/jsf/composite/pages/shared/table"
-
+             xmlns:p="http://primefaces.org/ui"
+             xmlns:sharedInput="http://xmlns.jcp.org/jsf/composite/pages/shared/input"
+             xmlns:f="http://xmlns.jcp.org/jsf/core"
+             xmlns:h="http://xmlns.jcp.org/jsf/html"
 >
 
-    <!--@elvariable id="tabModel" type="fr.siamois.ui.panel.models.panel.single.tab.ActionTab"-->
+    <!--@elvariable id="panelModel" type="fr.siamois.ui.bean.panel.models.panel.single.ActionUnitPanel"-->
     <!--@elvariable id="panelIndex" type="java.lang.Integer"-->
 
+    <p:panel
+            toggleableHeader="true"
+            header="Identifiants"
+            id="customFormPanel-#{panelIndex}"
+            class="sia-form-panel"
+            toggleable="true">
+
+        <!-- Le h:form a été supprimé pour éviter l'imbrication.
+             La soumission partielle est gérée par le p:commandButton avec process="@parent".
+             Le champ caché CSRF a aussi été retiré ; il doit être géré par le formulaire principal. -->
+        <p:row id="row-#{panelIndex}-1">
+            <p:column styleClass="ui-g-12" id="col-#{panelIndex}-1-0">
+                <sharedInput:panelField
+                        id="panelField-#{panelIndex}-1-0"
+                        required="true"
+                        title="Première numérotation"
+                        forId="input-min-value-#{panelIndex}"
+                        fluid="false"
+
+                >
+                    <p:inputNumber value="#{panelModel.minNumber}"
+                                   id="input-min-value-#{panelIndex}"
+                                   inputStyle="width: 100%"
+                                   inputStyleClass="#{panelModel.minHasBeenModified ? 'track-change sia-modified-field': 'track-change'}"
+                                   minValue="1"
+                                   maxValue="99998"
+                                   required="true">
+                    </p:inputNumber>
+                </sharedInput:panelField>
+            </p:column>
+            <p:column styleClass="ui-g-12" id="col-#{panelIndex}-1-1">
+                <sharedInput:panelField
+                        id="panelField-#{panelIndex}-1-1"
+                        required="true"
+                        title="Numérotation max"
+                        forId="input-max-value-#{panelIndex}"
+                        fluid="false"
+
+                >
+                    <p:inputNumber value="#{panelModel.maxNumber}"
+                                   id="input-max-value-#{panelIndex}"
+                                   inputStyle="width: 100%"
+                                   inputStyleClass="#{panelModel.maxHasBeenModified ? 'track-change sia-modified-field': 'track-change'}"
+                                   minValue="2"
+                                   maxValue="99999"
+                                   required="true">
+                    </p:inputNumber>
+                </sharedInput:panelField>
+            </p:column>
+        </p:row>
+        <p:row>
+            <p:column styleClass="ui-g-12" id="col-#{panelIndex}-2-0">
+                <sharedInput:panelField
+                        id="panelField-#{panelIndex}-2-0"
+                        required="true"
+                        title="Format"
+                        forId="input-format-#{panelIndex}"
+                        fluid="false"
+
+                >
+                    <p:inputText value="#{panelModel.format}"
+                                 id="input-format-#{panelIndex}"
+                                 style="width: 100%"
+                                 required="true">
+                    </p:inputText>
+                </sharedInput:panelField>
+            </p:column>
+        </p:row>
+        <p:commandButton
+                value="Sauvegarder les paramètres"
+                icon="bi bi-gear"
+                action="#{panelModel.saveSettings()}"
+                process="@parent"
+                update="@parent"
+        />
+    </p:panel>
 
 </ui:fragment>
