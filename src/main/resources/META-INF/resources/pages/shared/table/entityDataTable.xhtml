@@ -48,10 +48,10 @@
             </ui:include>
         </f:facet>
 
-        <p:column selectionBox="true" style="min-width: 100px;width:16px;text-align:center"/>
+        <p:column selectionBox="true" style="min-width: 100px;width:16px;text-align:center" toggleable="false"/>
 
         <!-- Dynamic Columns -->
-        <p:columns style="min-width: #{column.type != 'COMMAND_LINK' ? '10em' : '100px'};"  value="#{tableModel.columns}" var="column" varStatus="colStatus">
+        <p:columns style="min-width: #{column.type != 'COMMAND_LINK' ? '10em' : '100px'};"  toggleable="#{column.type != 'COMMAND_LINK' ? 'true' : 'false'}" value="#{tableModel.columns}" var="column" varStatus="colStatus">
             <ui:include src="/pages/shared/table/columnTemplates.xhtml">
                 <ui:param name="tableModel" value="#{tableModel}" />
                 <ui:param name="column" value="#{column}" />
