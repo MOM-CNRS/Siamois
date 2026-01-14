@@ -48,6 +48,8 @@ import org.springframework.stereotype.Component;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
@@ -441,11 +443,64 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnit> imple
 
 
     public void saveSettings() {
+        boolean containsNumRu = false;
+
+        if (format != null && !format.isEmpty()) {
+            String placeholderPattern = "\\{([^}]+)\\}";
+            Pattern pattern = Pattern.compile(placeholderPattern);
+            Matcher matcher = pattern.matcher(format);
+
+
+            String strippedFormat = format.replaceAll(placeholderPattern, "");
+            if (strippedFormat.matches(".*\\{.*") || strippedFormat.matches(".*\\}.*")) {
+                MessageUtils.displayErrorMessage(langBean, "actionUnit.settings.error.invalidIdentifierFormat");
+                return;
+            }
+
+            while (matcher.find()) {
+                String placeholderContent = matcher.group(1);
+                String[] parts = placeholderContent.split(":", 2);
+                String placeholderName = parts[0];
+
+                if (!List.of("NUM_UE", "TYPE_UE", "NUM_PARENT", "TYPE_PARENT", "NUM_USPATIAL", "ID_UA").contains(placeholderName)) {
+                    MessageUtils.displayErrorMessage(langBean, "actionUnit.settings.error.invalidIdentifierFormat");
+                    return;
+                }
+                containsNumRu = containsNumRu || placeholderName.equals("NUM_UE");
+
+                if (parts.length > 1) {
+                    String formatSpecifier = parts[1];
+                    if (!formatSpecifier.matches("[0X]+")) {
+                        MessageUtils.displayErrorMessage(langBean, "actionUnit.settings.error.invalidIdentifierFormat");
+                        return;
+                    }
+
+                    if (List.of("NUM_UE", "NUM_PARENT", "NUM_USPATIAL").contains(placeholderName)) {
+                        long zeroCount = formatSpecifier.chars().filter(ch -> ch == '0').count();
+                        if (zeroCount > 0 && maxNumber != null && String.valueOf(maxNumber).length() > zeroCount) {
+                            MessageUtils.displayErrorMessage(langBean, "actionUnit.settings.error.insufficientDigits", placeholderName);
+                            return;
+                        }
+                    }
+                }
+            }
+        }
+
+        if (!containsNumRu) {
+            MessageUtils.displayErrorMessage(langBean, "actionUnit.settings.error.missingNumUe");
+            return;
+        }
+
         unit.setMinRecordingUnitCode(minNumber);
         unit.setMaxRecordingUnitCode(maxNumber);
         unit.setRecordingUnitIdentifierFormat(format);
+
+
+
         actionUnitService.save(unit);
         log.trace("Action unit saved with values : {} {} {}", unit.getMinRecordingUnitCode(), unit.getMaxRecordingUnitCode(), unit.getRecordingUnitIdentifierFormat());
+
+        MessageUtils.displayInfoMessage(langBean, "actionUnit.settings.success.identifierConfigSaved");
     }
 
 }
