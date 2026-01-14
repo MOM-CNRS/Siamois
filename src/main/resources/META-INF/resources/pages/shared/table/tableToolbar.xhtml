@@ -33,6 +33,11 @@
                             id="toggler" type="button"
                             value="#{langBean.msg('table.columnvisibility')}"
                             icon="pi pi-align-justify"/>
+                    <p:columnToggler
+                            datasource=":#{cc.clientId}:#{tableId}"
+                            trigger=":#{cc.clientId}:#{tableId}:toggler">
+                        <p:ajax event="toggle" listener="#{cc.attrs.tableModel.onToggle}"/>
+                    </p:columnToggler>
 
                     <!-- Save and Cancel Buttons -->
                     <p:commandButton id="saveButton" value="Sauvegarder" rendered="#{tableModel.hasUnsavedModifications()}" actionListener="#{tableModel.save()}"
