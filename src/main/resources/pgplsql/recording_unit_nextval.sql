@@ -3,8 +3,7 @@ DROP FUNCTION IF EXISTS recording_unit_nextval_au;
 
 CREATE OR REPLACE FUNCTION recording_unit_nextval(
     p_parent_recording_unit_id BIGINT,
-    p_concept_type_id BIGINT,
-    p_length INT
+    p_concept_type_id BIGINT
 ) RETURNS INT AS
 $$
 DECLARE
@@ -38,7 +37,7 @@ BEGIN
         INSERT INTO identifier_ru_counter(counter, format_length, fk_recording_unit_id, fk_concept_type_id,
                                           fk_action_unit_id)
         VALUES (v_old_value + 1,
-                p_length,
+                NULL,
                 p_parent_recording_unit_id,
                 p_concept_type_id,
                 v_action_unit_id);
@@ -55,8 +54,7 @@ $$ language plpgsql;
 
 CREATE OR REPLACE FUNCTION recording_unit_nextval_au(
     p_action_unit_id BIGINT,
-    p_concept_type_id BIGINT,
-    p_length INT
+    p_concept_type_id BIGINT
 ) RETURNS INT AS
 $$
 DECLARE
@@ -82,7 +80,7 @@ BEGIN
         INSERT INTO identifier_ru_counter(counter, format_length, fk_recording_unit_id, fk_concept_type_id,
                                           fk_action_unit_id)
         VALUES (v_old_value + 1,
-                p_length,
+                NULL,
                 NULL,
                 p_concept_type_id,
                 p_action_unit_id);

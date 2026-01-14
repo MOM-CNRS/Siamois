@@ -11,6 +11,8 @@ import fr.siamois.domain.models.exceptions.actionunit.ActionUnitNotFoundExceptio
 import fr.siamois.domain.models.exceptions.actionunit.FailedActionUnitSaveException;
 import fr.siamois.domain.models.exceptions.actionunit.NullActionUnitIdentifierException;
 import fr.siamois.domain.models.institution.Institution;
+import fr.siamois.domain.models.recordingunit.RecordingUnit;
+import fr.siamois.domain.models.recordingunit.identifier.RecordingUnitIdCounter;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.ArkEntityService;
@@ -18,6 +20,7 @@ import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.infrastructure.database.repositories.actionunit.ActionCodeRepository;
 import fr.siamois.infrastructure.database.repositories.actionunit.ActionUnitRepository;
+import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitIdCounterRepository;
 import fr.siamois.infrastructure.database.repositories.team.TeamMemberRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -25,6 +28,8 @@ import org.hibernate.Hibernate;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.lang.NonNull;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -46,6 +51,7 @@ public class ActionUnitService implements ArkEntityService {
     private final ActionCodeRepository actionCodeRepository;
     private final TeamMemberRepository teamMemberRepository;
     private final InstitutionService institutionService;
+    private final RecordingUnitIdCounterRepository recordingUnitIdCounterRepository;
 
     /**
      * Find all Action Units by institution, name, categories, persons, and global search.
@@ -296,6 +302,22 @@ public class ActionUnitService implements ArkEntityService {
         return actionUnitRepository.findAllByArkIsNullAndCreatedByInstitution(institution);
     }
 
+
+
+    private void createCounterIfNotExists(@NonNull ActionUnit actionUnit, @NonNull Concept recordingUnitType) {
+        Optional<RecordingUnitIdCounter> opt = recordingUnitIdCounterRepository.findByConfigActionUnitAndRecordingUnitTypeAndRecordingUnit(actionUnit, recordingUnitType, null);
+        RecordingUnitIdCounter counter;
+        if (opt.isPresent()) {
+            return;
+        }
+        counter = new RecordingUnitIdCounter();
+        counter.setCounter(actionUnit.getMinRecordingUnitCode());
+        counter.setConfigActionUnit(actionUnit);
+        counter.setRecordingUnit(null);
+        counter.setRecordingUnitType(recordingUnitType);
+        recordingUnitIdCounterRepository.save(counter);
+    }
+
     /**
      * Save an ActionUnit.
      *
@@ -305,8 +327,9 @@ public class ActionUnitService implements ArkEntityService {
     @Override
     public ArkEntity save(ArkEntity toSave) {
         try {
-            ActionUnit unit = (ActionUnit) toSave;
-            return actionUnitRepository.save(unit);
+            ActionUnit unit = actionUnitRepository.save((ActionUnit) toSave);
+            createCounterIfNotExists(unit, unit.getType());
+            return unit;
         } catch (DataIntegrityViolationException e) {
             throw new FailedActionUnitSaveException(e.getMessage());
         }
