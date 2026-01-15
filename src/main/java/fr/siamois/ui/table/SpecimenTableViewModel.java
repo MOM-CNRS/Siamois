@@ -48,7 +48,6 @@ public class SpecimenTableViewModel extends EntityTableViewModel<Specimen, Long>
 
         super(
                 lazyDataModel,
-                null,
                 genericNewUnitDialogBean,
                 formService,
                 spatialUnitTreeService,

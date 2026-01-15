@@ -94,14 +94,40 @@ public abstract class EntityTableViewModel<T extends TraceableEntity, ID> {
     @Setter
     protected boolean treeMode = true; // false = table, true = tree
 
-    protected EntityTableViewModel(BaseLazyDataModel<T> lazyDataModel,
-                                   BaseTreeTableLazyModel<T, ID> treeLazyModel,
-                                   GenericNewUnitDialogBean<T> genericNewUnitDialogBean,
-                                   FormService formService,
-                                   SpatialUnitTreeService spatialUnitTreeService,
-                                   SpatialUnitService spatialUnitService, NavBean navBean,
-                                   Function<T, ID> idExtractor,
-                                   String formScopeValueBinding) {
+    protected EntityTableViewModel(
+            BaseLazyDataModel<T> lazyDataModel,
+            GenericNewUnitDialogBean<T> genericNewUnitDialogBean,
+            FormService formService,
+            SpatialUnitTreeService spatialUnitTreeService,
+            SpatialUnitService spatialUnitService,
+            NavBean navBean,
+            Function<T, ID> idExtractor,
+            String formScopeValueBinding
+    ) {
+        this(
+                lazyDataModel,
+                null, // treeLazyModel is not used in this constructor
+                genericNewUnitDialogBean,
+                formService,
+                spatialUnitTreeService,
+                spatialUnitService,
+                navBean,
+                idExtractor,
+                formScopeValueBinding
+        );
+    }
+
+    protected EntityTableViewModel(
+            BaseLazyDataModel<T> lazyDataModel,
+            BaseTreeTableLazyModel<T, ID> treeLazyModel,
+            GenericNewUnitDialogBean<T> genericNewUnitDialogBean,
+            FormService formService,
+            SpatialUnitTreeService spatialUnitTreeService,
+            SpatialUnitService spatialUnitService,
+            NavBean navBean,
+            Function<T, ID> idExtractor,
+            String formScopeValueBinding
+    ) {
         this.lazyDataModel = lazyDataModel;
         this.treeLazyModel = treeLazyModel;
         this.formService = formService;
@@ -111,9 +137,16 @@ public abstract class EntityTableViewModel<T extends TraceableEntity, ID> {
         this.navBean = navBean;
         this.idExtractor = idExtractor;
         this.formScopeValueBinding = formScopeValueBinding;
-        this.lazyDataModel.setGlobalFilter(globalFilter);
-        this.treeLazyModel.setGlobalFilter(globalFilter);
+
+        // Set global filter for both models if they exist
+        if (this.lazyDataModel != null) {
+            this.lazyDataModel.setGlobalFilter(globalFilter);
+        }
+        if (this.treeLazyModel != null) {
+            this.treeLazyModel.setGlobalFilter(globalFilter);
+        }
     }
+
 
     /**
      * Colonnes visibles (pour <p:columns>).
