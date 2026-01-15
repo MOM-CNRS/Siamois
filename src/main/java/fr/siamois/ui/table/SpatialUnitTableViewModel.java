@@ -362,8 +362,6 @@ public class SpatialUnitTableViewModel extends EntityTableViewModel<SpatialUnit,
                     // Save the entity
                     context.flushBackToEntity();
 
-                    // todo : IF the user doesnt have right to validate the unit, it will be unvalidated.
-
                     spatialUnitService.save(entity);
 
                     context.init(true);
@@ -375,6 +373,8 @@ public class SpatialUnitTableViewModel extends EntityTableViewModel<SpatialUnit,
             }
         }
     }
+
+
 
     @Override
     public boolean canUserEditRow(SpatialUnit unit) {

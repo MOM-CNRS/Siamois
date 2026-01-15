@@ -52,7 +52,8 @@ public final class ActionUnitTableDefinitionFactory {
 
                         // PrimeFaces metadata equivalents
                         .toggleable(false)
-                        .sortable(true)
+                        .sortable(false)
+                        .filterable(false)
                         .sortField("name")
 
                         // What to display inside <h:outputText>

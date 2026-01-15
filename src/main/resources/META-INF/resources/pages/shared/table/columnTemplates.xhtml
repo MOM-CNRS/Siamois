@@ -11,6 +11,9 @@
         <p:outputPanel rendered="#{column.type ne 'COMMAND_LINK'}">
             #{langBean.msg(column.headerKey)}
         </p:outputPanel>
+        <p:outputPanel rendered="#{column.type eq 'COMMAND_LINK'}">
+
+        </p:outputPanel>
     </f:facet>
 
     <!-- Row Context -->
@@ -39,6 +42,7 @@
     <!-- COMMAND_LINK Column -->
     <ui:fragment rendered="#{column.type eq 'COMMAND_LINK'}">
         <p:commandButton
+                styleClass="hidden-column"
                 action="#{tableModel.handleAction(column, item, panelIndex)}"
                 onstart="#{column.onstartJs}"
                 icon="bi bi-box-arrow-up-right"

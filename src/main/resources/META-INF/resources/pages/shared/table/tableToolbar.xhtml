@@ -23,8 +23,8 @@
                     <span class="filter-container ui-input-icon-left">
                         <i class="bi bi-search"/>
                         <p:inputText id="globalFilter"
-                                     value="#{tableModel.lazyDataModel.globalFilter}"
-                                     onkeyup="PF('#{cc.clientId}_#{tableId}').filter()"
+                                     value="#{tableModel.globalFilter}"
+                                     onkeyup="PrimeFaces.debounce(() => PF('#{cc.clientId}_#{tableId}').filter())"
                                      placeholder="#{langBean.msg('common.action.search')}"/>
                     </span>
 
@@ -40,10 +40,16 @@
                     </p:columnToggler>
 
                     <!-- Save and Cancel Buttons -->
-                    <p:commandButton id="saveButton" value="Sauvegarder" rendered="#{tableModel.hasUnsavedModifications()}" actionListener="#{tableModel.save()}"
-                    update="#{updateTableString}"/>
-                    <!-- TODO : implement cancel -->
-                    <p:commandLink value="Annuler les modifications" id="cancelButton" rendered="false" />
+                    <p:commandButton id="saveButton"
+                                     value="Sauvegarder"
+                                     rendered="#{tableModel.hasUnsavedModifications()}"
+                                     actionListener="#{tableModel.save()}"
+                                     update="#{updateTableString}"/>
+                    <p:commandLink value="Annuler les modifications" id="cancelButton"
+                                   rendered="#{tableModel.hasUnsavedModifications()}"
+                                   immediate="true"
+                                   action="#{tableModel.cancelModifications()}"
+                                   update="#{updateTableString}"/>
                 </div>
             </p:toolbarGroup>
         </p:toolbarGroup>

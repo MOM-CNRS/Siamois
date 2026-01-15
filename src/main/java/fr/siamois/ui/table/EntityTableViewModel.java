@@ -49,6 +49,9 @@ import static fr.siamois.ui.bean.dialog.newunit.NewUnitContext.TreeInsert.ROOT;
 @Getter
 public abstract class EntityTableViewModel<T extends TraceableEntity, ID> {
 
+    @Setter
+    protected String globalFilter;
+
     /** Lazy model "pur data" (chargement, tri, filtres, sélection, etc.) */
     protected final BaseLazyDataModel<T> lazyDataModel;
     protected final BaseTreeTableLazyModel<T, ID> treeLazyModel;
@@ -108,6 +111,8 @@ public abstract class EntityTableViewModel<T extends TraceableEntity, ID> {
         this.navBean = navBean;
         this.idExtractor = idExtractor;
         this.formScopeValueBinding = formScopeValueBinding;
+        this.lazyDataModel.setGlobalFilter(globalFilter);
+        this.treeLazyModel.setGlobalFilter(globalFilter);
     }
 
     /**
@@ -345,6 +350,16 @@ public abstract class EntityTableViewModel<T extends TraceableEntity, ID> {
      * Save all the entities of the table
      */
     public abstract void save();
+
+    /**
+     * Cancel any modifs
+     */
+    public void cancelModifications() {
+        rowContexts.values().forEach(ctx -> {
+            ctx.init(true);
+            ctx.setHasUnsavedModifications(false);
+        });
+    }
 
     /*
     * Check if user has permission to edit the row data

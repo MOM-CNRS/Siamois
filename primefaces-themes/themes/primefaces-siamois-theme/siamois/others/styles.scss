@@ -170,3 +170,18 @@ body .ui-treetable-header {
         z-index: 1;
         width: 100%;
     }
+
+/* Apply only on devices that support hover (mouse, trackpad) */
+@media (hover: hover) and (pointer: fine) {
+    .hidden-column {
+        visibility: hidden;
+        opacity: 0;
+        transition: visibility 0s, opacity 0.3s;
+    }
+}
+
+/* Show the column when the row is hovered */
+.datatable-hoverable-table tbody tr.ui-state-hover .hidden-column {
+    visibility: visible;
+    opacity: 1;
+}

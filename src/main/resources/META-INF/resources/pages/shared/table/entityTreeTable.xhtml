@@ -22,11 +22,11 @@
                  propagateSelectionUp="false"
                  propagateSelectionDown="false"
                  lazy="true"
-                 globalFilter="#{tableModel.lazyDataModel.globalFilter}"
+                 globalFilter="#{tableModel.globalFilter}"
                  allowUnsorting="true"
-                 sortBy="#{tableModel.lazyDataModel.sortBy}"
-                 rows="#{tableModel.lazyDataModel.pageSizeState}"
-                 first="#{tableModel.lazyDataModel.first}"
+                 sortBy="#{tableModel.treeLazyModel.sortBy}"
+                 rows="#{tableModel.treeLazyModel.pageSizeState}"
+                 first="#{tableModel.treeLazyModel.first}"
                  sortMode="multiple"
                  partialUpdate="false"
                  emptyMessage="#{langBean.msg('recordingUnitList.empty')}"
@@ -34,12 +34,13 @@
                  rowsPerPageTemplate="5,10,15,20,25"
                  rowIndexVar="rowIndex"
                  style="overflow-x: auto;"
+                 tableStyleClass="datatable-hoverable-table"
                  tableStyle="table-layout: auto;"
                  class="#{tableClass}">
 
         <f:facet name="{RowReport}">
             <span class="ui-paginator-current">
-                #{tableModel.lazyDataModel.getFirstIndexOnPage()}-#{tableModel.lazyDataModel.getLastIndexOnPage()} of #{tableModel.lazyDataModel.rowCount}
+                #{tableModel.treeLazyModel.getFirstIndexOnPage()}-#{tableModel.treeLazyModel.getLastIndexOnPage()} of #{tableModel.treeLazyModel.rowCount}
             </span>
         </f:facet>
 
@@ -54,7 +55,12 @@
         <p:column style="min-width: 10px;" selectionBox="true" width="fit-content" toggleable="false"/>
 
         <!-- Dynamic Columns -->
-        <p:columns style="min-width: #{column.type != 'COMMAND_LINK' ? '10em' : ''};"  toggleable="#{column.type != 'COMMAND_LINK' ? 'true' : 'false'}" value="#{tableModel.columns}" var="column" varStatus="colStatus">
+        <p:columns style="min-width: #{column.type != 'COMMAND_LINK' ? '10em' : ''};"
+                   sortable="#{column.sortable}"
+                   field="#{column.id}"
+                   filterable="#{column.filterable}"
+                   toggleable="#{column.type != 'COMMAND_LINK' ? 'true' : 'false'}"
+                   value="#{tableModel.columns}" var="column" varStatus="colStatus">
             <ui:include src="/pages/shared/table/columnTemplates.xhtml">
                 <ui:param name="tableModel" value="#{tableModel}" />
                 <ui:param name="column" value="#{column}" />

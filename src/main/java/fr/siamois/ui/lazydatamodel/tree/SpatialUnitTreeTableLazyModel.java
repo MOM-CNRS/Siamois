@@ -27,57 +27,24 @@ public class SpatialUnitTreeTableLazyModel extends BaseTreeTableLazyModel<Spatia
     }
 
     @Override
-    protected TreeNode<SpatialUnit> buildTree() {
-        TreeNode<SpatialUnit> rootNode = new DefaultTreeNode<>(null, null);
-
-        List<SpatialUnit> roots = switch (scope.getType()) {
-            case INSTITUTION ->
-                    spatialUnitService.findRootsOf(scope.getInstitutionId());
-            case CHILDREN_OF_SPATIAL_UNIT ->
-                    spatialUnitService.findDirectChildrensOf(scope.getSpatialUnitId());
-            case PARENTS_OF_SPATIAL_UNIT ->
-                    spatialUnitService.findDirectParentsOf(scope.getSpatialUnitId());
+    protected List<SpatialUnit> fetchRoots() {
+        return switch (scope.getType()) {
+            case INSTITUTION -> spatialUnitService.findRootsOf(scope.getInstitutionId());
+            case CHILDREN_OF_SPATIAL_UNIT -> spatialUnitService.findDirectChildrensOf(scope.getSpatialUnitId());
+            case PARENTS_OF_SPATIAL_UNIT -> spatialUnitService.findDirectParentsOf(scope.getSpatialUnitId());
         };
-
-        Set<Long> path = new HashSet<>();
-        for (SpatialUnit root : roots) {
-            if (root == null || root.getId() == null) continue;
-
-            TreeNode<SpatialUnit> node = new DefaultTreeNode<>(root, rootNode);
-            registerNode(root, node); // IMPORTANT: index it
-
-            path.clear();
-            path.add(root.getId());
-            buildChildren(node, root, path);
-        }
-
-        return rootNode;
     }
 
-    private void buildChildren(TreeNode<SpatialUnit> parentNode,
-                               SpatialUnit parentUnit,
-                               Set<Long> path) {
-
-        List<SpatialUnit> children = spatialUnitService.findDirectChildrensOf(parentUnit.getId());
-
-        for (SpatialUnit child : children) {
-            Long id = (child == null) ? null : child.getId();
-
-            if (id == null || path.contains(id)) {
-                continue;
-            }
-
-            Hibernate.initialize(child.getChildren());
-            Hibernate.initialize(child.getParents());
-            Hibernate.initialize(child.getRelatedActionUnitList());
-
-            TreeNode<SpatialUnit> childNode = new DefaultTreeNode<>(child, parentNode);
-            registerNode(child, childNode);
-
-            path.add(id);
-            buildChildren(childNode, child, path);
-            path.remove(id);
-        }
-
+    @Override
+    protected List<SpatialUnit> fetchChildren(SpatialUnit parentUnit) {
+        return spatialUnitService.findDirectChildrensOf(parentUnit.getId());
     }
+
+    @Override
+    protected void initializeAssociations(SpatialUnit child) {
+        Hibernate.initialize(child.getChildren());
+        Hibernate.initialize(child.getParents());
+        Hibernate.initialize(child.getRelatedActionUnitList());
+    }
+
 }

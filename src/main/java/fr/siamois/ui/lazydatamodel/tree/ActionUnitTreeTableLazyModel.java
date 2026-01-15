@@ -1,10 +1,12 @@
 package fr.siamois.ui.lazydatamodel.tree;
 
 import fr.siamois.domain.models.actionunit.ActionUnit;
+import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.ui.lazydatamodel.scope.ActionUnitScope;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.Hibernate;
 import org.primefaces.model.DefaultTreeNode;
 import org.primefaces.model.TreeNode;
 
@@ -25,12 +27,11 @@ public class ActionUnitTreeTableLazyModel extends BaseTreeTableLazyModel<ActionU
         this.scope = scope;
     }
 
-    @Override
-        protected TreeNode<ActionUnit> buildTree() {
-        TreeNode<ActionUnit> rootNode = new DefaultTreeNode<>(null, null);
 
-        // For now: load whole structure (service should ideally avoid N+1)
-        List<ActionUnit> roots = switch (scope.getType()) {
+
+    @Override
+    protected List<ActionUnit> fetchRoots() {
+        return switch (scope.getType()) {
             case INSTITUTION ->
                     actionUnitService.findAllWithoutParentsByInstitution(scope.getInstitutionId());
             case LINKED_TO_SPATIAL_UNIT ->
@@ -38,40 +39,12 @@ public class ActionUnitTreeTableLazyModel extends BaseTreeTableLazyModel<ActionU
                             scope.getSpatialUnitId(),
                             scope.getInstitutionId());
         };
-
-        Set<Long> path = new HashSet<>();
-        for (ActionUnit root : roots) {
-            if (root == null || root.getId() == null) continue;
-            TreeNode<ActionUnit> node = new DefaultTreeNode<>(root, rootNode);
-            path.clear();
-            path.add(root.getId());
-            buildChildren(node, root, path);
-        }
-
-        return rootNode;
     }
 
-    private void buildChildren(TreeNode<ActionUnit> parentNode,
-                               ActionUnit parentUnit,
-                               Set<Long> path) {
-
-        // Option A: service fetch children by parent id
-        List<ActionUnit> children = actionUnitService.findChildrenByParentAndInstitution(parentUnit.getId(),
+    @Override
+    protected List<ActionUnit> fetchChildren(ActionUnit parentUnit) {
+        return actionUnitService.findChildrenByParentAndInstitution(parentUnit.getId(),
                 scope.getInstitutionId());
-
-        for (ActionUnit child : children) {
-            if (child == null ||
-                    child.getId() == null ||
-                    path.contains(child.getId())) {
-                continue;
-            }
-
-            TreeNode<ActionUnit> childNode = new DefaultTreeNode<>(child, parentNode);
-
-            path.add(child.getId());
-            buildChildren(childNode, child, path);
-            path.remove(child.getId());
-        }
-
     }
+
 }

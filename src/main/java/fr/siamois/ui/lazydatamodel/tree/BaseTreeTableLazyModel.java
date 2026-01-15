@@ -1,8 +1,12 @@
 package fr.siamois.ui.lazydatamodel.tree;
 
+import fr.siamois.domain.models.TraceableEntity;
+import fr.siamois.ui.lazydatamodel.LazyModel;
 import lombok.Getter;
 import lombok.Setter;
+import org.aspectj.weaver.tools.Trace;
 import org.primefaces.model.DefaultTreeNode;
+import org.primefaces.model.SortMeta;
 import org.primefaces.model.TreeNode;
 import org.primefaces.model.TreeNodeChildren;
 
@@ -20,13 +24,17 @@ import java.util.function.Function;
  */
 @Getter
 @Setter
-public abstract class BaseTreeTableLazyModel<T, ID> implements Serializable {
+public abstract class BaseTreeTableLazyModel<T extends TraceableEntity, ID> implements Serializable, LazyModel {
 
     /** Filters (for later) */
     private String globalFilter;
 
     /** Cached root node */
     private transient TreeNode<T> root;
+
+    protected int first = 0;
+    protected int pageSizeState = 10;
+    protected transient Set<SortMeta> sortBy = new HashSet<>();
 
     /** Whether the cached tree is valid */
     private boolean initialized = false;
@@ -70,11 +78,6 @@ public abstract class BaseTreeTableLazyModel<T, ID> implements Serializable {
         }
     }
 
-    /**
-     * Subclasses build the full tree (services call, mapping, etc.).
-     * IMPORTANT: during build, call registerNode(entity, node) for every created node.
-     */
-    protected abstract TreeNode<T> buildTree();
 
     /** Lookup ALL nodes for a given entity id (multi-hierarchy) */
     public List<TreeNode<T>> findNodesById(ID id) {
@@ -186,6 +189,65 @@ public abstract class BaseTreeTableLazyModel<T, ID> implements Serializable {
             for (TreeNode<T> child : children) {
                 collectEntitiesRecursively(child, entities);
             }
+        }
+    }
+
+    public int getFirstIndexOnPage() {
+        return first + 1; // Adding 1 because indexes are zero-based
+    }
+
+    public int getLastIndexOnPage() {
+        int last = first + pageSizeState;
+        int total = getRowCount();
+        return Math.min(last, total); // Ensure it doesn’t exceed total records
+    }
+
+    public int getRowCount() {
+        return getRoot().getChildren().size();
+    }
+
+    protected abstract List<T> fetchRoots();
+    protected abstract List<T> fetchChildren(T parentUnit);
+    protected void initializeAssociations(T child) {
+        // empty default
+    }
+
+    protected TreeNode<T> buildTree() {
+        TreeNode<T> rootNode = new DefaultTreeNode<>(null, null);
+        List<T> roots = fetchRoots();
+
+        Set<Long> path = new HashSet<>();
+        for (T r : roots) {
+            if (r == null || r.getId() == null) continue;
+
+            TreeNode<T> node = new DefaultTreeNode<>(r, rootNode);
+            registerNode(r, node);
+
+            path.clear();
+            path.add(r.getId());
+            buildChildren(node, r, path);
+        }
+
+        return rootNode;
+    }
+
+    protected void buildChildren(TreeNode<T> parentNode, T parentUnit, Set<Long> path) {
+        List<T> children = fetchChildren(parentUnit);
+
+        for (T child : children) {
+            Long id = child.getId();
+            if (id == null || path.contains(id)) {
+                continue;
+            }
+
+            initializeAssociations(child);
+
+            TreeNode<T> childNode = new DefaultTreeNode<>(child, parentNode);
+            registerNode(child, childNode);
+
+            path.add(id);
+            buildChildren(childNode, child, path);
+            path.remove(id);
         }
     }
 

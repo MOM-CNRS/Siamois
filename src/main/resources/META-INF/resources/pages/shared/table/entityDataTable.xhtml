@@ -12,6 +12,7 @@
                  id="entityDatatable"
                  varStatus="status"
                  size="small"
+                 rowHover="true"
                  paginatorPosition="bottom"
                  var="item"
                  selectionPageOnly="false"
@@ -19,7 +20,7 @@
                  selection="#{tableModel.lazyDataModel.selectedUnits}"
                  widgetVar="#{cc.clientId}_entityDatatable"
                  lazy="true"
-                 globalFilter="#{tableModel.lazyDataModel.globalFilter}"
+                 globalFilter="#{tableModel.globalFilter}"
                  allowUnsorting="true"
                  sortBy="#{tableModel.lazyDataModel.sortBy}"
                  rows="#{tableModel.lazyDataModel.pageSizeState}"
@@ -31,6 +32,7 @@
                  rowsPerPageTemplate="5,10,15,20,25"
                  rowIndexVar="rowIndex"
                  tableStyle="table-layout: auto;"
+                 tableStyleClass="datatable-hoverable-table"
                  value="#{tableModel.lazyDataModel}"
                  class="#{tableClass}">
 
@@ -48,10 +50,15 @@
             </ui:include>
         </f:facet>
 
-        <p:column selectionBox="true" style="min-width: 100px;width:16px;text-align:center" toggleable="false"/>
+        <p:column selectionBox="true" style="width:16px;text-align:center" toggleable="false"/>
 
         <!-- Dynamic Columns -->
-        <p:columns style="min-width: #{column.type != 'COMMAND_LINK' ? '10em' : '100px'};"  toggleable="#{column.type != 'COMMAND_LINK' ? 'true' : 'false'}" value="#{tableModel.columns}" var="column" varStatus="colStatus">
+        <p:columns style="min-width: #{column.type != 'COMMAND_LINK' ? '10em' : ''};"
+                   field="#{column.id}"
+                   sortable="#{column.sortable}"
+                   filterable="#{column.filterable}"
+                   toggleable="#{column.type != 'COMMAND_LINK' ? 'true' : 'false'}" value="#{tableModel.columns}"
+                   var="column" varStatus="colStatus">
             <ui:include src="/pages/shared/table/columnTemplates.xhtml">
                 <ui:param name="tableModel" value="#{tableModel}" />
                 <ui:param name="column" value="#{column}" />
