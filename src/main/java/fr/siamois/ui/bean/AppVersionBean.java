@@ -1,7 +1,6 @@
 package fr.siamois.ui.bean;
 
 import lombok.Getter;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.info.BuildProperties;
 import org.springframework.stereotype.Component;
 
