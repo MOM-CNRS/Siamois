@@ -303,9 +303,12 @@ public class ActionUnitService implements ArkEntityService {
     }
 
 
-
-    private void createCounterIfNotExists(@NonNull ActionUnit actionUnit, @NonNull Concept recordingUnitType) {
-        Optional<RecordingUnitIdCounter> opt = recordingUnitIdCounterRepository.findByConfigActionUnitAndRecordingUnitTypeAndRecordingUnit(actionUnit, recordingUnitType, null);
+    /**
+     * Create the base counter for cases in which no type is specified, and it's a root recording unit parent.
+     * @param actionUnit The action unit with the counter settings
+     */
+    private void createCounterIfNotExists(@NonNull ActionUnit actionUnit) {
+        Optional<RecordingUnitIdCounter> opt = recordingUnitIdCounterRepository.findByConfigActionUnitAndRecordingUnitTypeAndRecordingUnit(actionUnit, null, null);
         RecordingUnitIdCounter counter;
         if (opt.isPresent()) {
             return;
@@ -314,7 +317,7 @@ public class ActionUnitService implements ArkEntityService {
         counter.setCounter(actionUnit.getMinRecordingUnitCode());
         counter.setConfigActionUnit(actionUnit);
         counter.setRecordingUnit(null);
-        counter.setRecordingUnitType(recordingUnitType);
+        counter.setRecordingUnitType(null);
         recordingUnitIdCounterRepository.save(counter);
     }
 
@@ -328,7 +331,7 @@ public class ActionUnitService implements ArkEntityService {
     public ArkEntity save(ArkEntity toSave) {
         try {
             ActionUnit unit = actionUnitRepository.save((ActionUnit) toSave);
-            createCounterIfNotExists(unit, unit.getType());
+            createCounterIfNotExists(unit);
             return unit;
         } catch (DataIntegrityViolationException e) {
             throw new FailedActionUnitSaveException(e.getMessage());
