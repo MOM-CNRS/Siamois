@@ -4,7 +4,6 @@ import fr.siamois.domain.models.TraceableEntity;
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.customform.CustomCol;
 import fr.siamois.domain.models.form.customform.CustomForm;
-import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.services.form.FormService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitTreeService;
@@ -23,11 +22,12 @@ import lombok.Setter;
 import org.primefaces.component.api.UIColumn;
 import org.primefaces.event.ColumnToggleEvent;
 import org.primefaces.model.TreeNode;
-import org.primefaces.model.TreeNodeChildren;
 import org.primefaces.model.Visibility;
-import org.springframework.beans.factory.annotation.Autowired;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.function.Function;
 
 import static fr.siamois.ui.bean.dialog.newunit.NewUnitContext.TreeInsert.ROOT;

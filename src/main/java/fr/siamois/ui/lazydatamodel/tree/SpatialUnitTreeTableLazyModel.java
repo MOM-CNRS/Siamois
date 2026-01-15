@@ -6,12 +6,8 @@ import fr.siamois.ui.lazydatamodel.scope.SpatialUnitScope;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.Hibernate;
-import org.primefaces.model.DefaultTreeNode;
-import org.primefaces.model.TreeNode;
 
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 @Getter
 @Setter

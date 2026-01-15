@@ -1,18 +1,13 @@
 package fr.siamois.ui.lazydatamodel.tree;
 
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
-import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.ui.lazydatamodel.scope.RecordingUnitScope;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.Hibernate;
-import org.primefaces.model.DefaultTreeNode;
-import org.primefaces.model.TreeNode;
 
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 @Getter
 @Setter

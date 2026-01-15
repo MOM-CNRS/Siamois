@@ -4,7 +4,6 @@ import fr.siamois.domain.models.TraceableEntity;
 import fr.siamois.ui.lazydatamodel.LazyModel;
 import lombok.Getter;
 import lombok.Setter;
-import org.aspectj.weaver.tools.Trace;
 import org.primefaces.model.DefaultTreeNode;
 import org.primefaces.model.SortMeta;
 import org.primefaces.model.TreeNode;
