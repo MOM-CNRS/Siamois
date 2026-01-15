@@ -215,10 +215,7 @@ public class RecordingUnitService implements ArkEntityService {
 
             //  Gestion des enfants
             for (RecordingUnit child : recordingUnit.getChildren()) {
-                RecordingUnit managedChild = recordingUnitRepository.save(child);
-                managedRecordingUnit.getChildren().add(managedChild);
-                managedChild.getParents().add(managedRecordingUnit);
-                recordingUnitRepository.save(managedChild);
+                managedRecordingUnit.getChildren().add(child);
             }
 
             return managedRecordingUnit;

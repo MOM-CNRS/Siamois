@@ -333,7 +333,6 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
         }
 
         newUnit.setIdentifier(recordingUnitService.generateNextIdentifier(newUnit));
-        newUnit.getChildren().add(newUnit);
 
         newUnit = recordingUnitService.save(newUnit, newUnit.getType(), List.of(),  List.of(),  List.of());
 
