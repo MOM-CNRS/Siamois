@@ -8,7 +8,7 @@ import fr.siamois.ui.table.*;
 
 import static fr.siamois.ui.bean.panel.models.panel.single.AbstractSingleEntity.SYSTEM_THESO;
 
-;
+
 
 
 /**
@@ -40,12 +40,12 @@ public final class SpatialUnitTableDefinitionFactory {
         }
 
         // uni category
-        Concept SPATIAL_UNIT_TYPE_CONCEPT = new Concept.Builder()
+        final Concept SPATIAL_UNIT_TYPE_CONCEPT = new Concept.Builder()
                 .vocabulary(SYSTEM_THESO)
                 .externalId("4282365")
                 .build();
         // unit name
-        Concept NAME_CONCEPT = new Concept.Builder()
+        final Concept NAME_CONCEPT = new Concept.Builder()
                 .vocabulary(SYSTEM_THESO)
                 .externalId("4285848")
                 .build();
