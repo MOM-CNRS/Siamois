@@ -45,7 +45,7 @@ public class RecordingUnitIdCounter {
      */
     @JoinColumn(name = "fk_concept_type_id")
     @ManyToOne(fetch = FetchType.EAGER)
-    @NonNull
+    @Nullable
     private Concept recordingUnitType;
 
     /**
