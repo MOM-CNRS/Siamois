@@ -363,7 +363,22 @@
     </dependencies>
 
     <build>
+
+
         <plugins>
+
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>build-info</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
             <!-- Compile SCSS to CSS -->
             <plugin>
                 <groupId>io.github.cleydyr</groupId>
@@ -434,6 +449,7 @@
             </plugin>
 
             <plugin>
+
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <configuration>

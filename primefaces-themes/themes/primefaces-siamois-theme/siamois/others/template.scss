@@ -9,15 +9,15 @@
     height: 100vh;
     background-color: #FFFFFF;
     transition: width 0.3s;
-    padding-top: 15px;
     border-right: 1px solid #E0E0E0;
+    display: flex;
+    flex-direction: column;
 }
 
 .sidebar .nav-link {
     color: #2A2C30;
     display: flex;
     align-items: center;
-    padding: 10px;
     transition: background 0.3s, border-radius 0.3s, padding 0.3s;
     border-radius: 8px;
     margin: 2px 8px;
@@ -74,8 +74,12 @@
     background: transparent;
     border: none;
     font-size: 1.6rem;
-    text-align: center;
+    text-align: left;
     transition: color 0.3s;
+}
+
+.collapsed #toggle-btn {
+    text-align: center;
 }
 
 #toggle-btn:hover {
@@ -130,13 +134,14 @@ hr {
 }
 
 hr.sidebar-divider {
-    margin-left: 10%;
+    margin: 16px 0;
+    color: var(--siamois-green-light-350);
     width: 80%;
 }
 
 .sidebar-footer {
-    position: absolute;
-    bottom: 0;
+    margin-top: auto;
+    justify-items: center;
 }
 
 .logo {
@@ -166,8 +171,6 @@ hr.sidebar-divider {
 .logout-button {
     background-color: white !important;
     border-color: white !important;
-    margin-bottom: 1vh !important;
-    width: 100% !important;
 }
 
 .logout-button:hover {
@@ -185,4 +188,10 @@ hr.sidebar-divider {
 
 .sidebar.collapsed .logout-button .ui-button-text {
     display: none;
+}
+
+.version-number {
+    text-align: center;
+    font-size: 14;
+    color: var(--text-light);
 }
