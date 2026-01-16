@@ -4,12 +4,15 @@
                 xmlns:p="http://primefaces.org/ui"
                 xmlns:f="http://java.sun.com/jsf/core"
                 xmlns:cellheader="http://java.sun.com/jsf/composite/pages/shared/cellheader"
-                xmlns:cc="http://xmlns.jcp.org/jsf/composite">
+>
 
     <!-- Header -->
     <f:facet name="header">
         <p:outputPanel rendered="#{column.type ne 'COMMAND_LINK'}">
             #{langBean.msg(column.headerKey)}
+        </p:outputPanel>
+        <p:outputPanel rendered="#{column.type eq 'COMMAND_LINK'}">
+
         </p:outputPanel>
     </f:facet>
 
@@ -32,12 +35,14 @@
             <ui:param name="hasAutoGenerationFunction" value="false"/>
             <ui:param name="onGenerateValue" value="#{null}"/>
             <ui:param name="updateTargetsOnBlur" value="#{updateTableString}" />
+            <ui:param name="allowEdit" value="#{canUserEditRow}"/>
         </ui:include>
     </ui:fragment>
 
     <!-- COMMAND_LINK Column -->
     <ui:fragment rendered="#{column.type eq 'COMMAND_LINK'}">
         <p:commandButton
+                styleClass="hidden-column"
                 action="#{tableModel.handleAction(column, item, panelIndex)}"
                 onstart="#{column.onstartJs}"
                 icon="bi bi-box-arrow-up-right"

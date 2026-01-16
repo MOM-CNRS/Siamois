@@ -2,8 +2,7 @@
 <ui:composition xmlns="http://www.w3.org/1999/xhtml"
                 xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
                 xmlns:p="http://primefaces.org/ui"
-                xmlns:f="http://java.sun.com/jsf/core"
-                xmlns:cc="http://xmlns.jcp.org/jsf/composite">
+>
 
     <p:toolbar id="tableToolbar">
         <p:toolbarGroup>
@@ -14,15 +13,17 @@
                             value="#{tableModel.treeMode}"
                             onIcon="bi bi-list-nested"
                             offIcon="bi bi-list">
-                        <p:ajax process="@this" update=":#{cc.clientId}:tableContainer"/>
+                        <p:ajax process="@this" update=":#{cc.clientId}:tableContainer" onstart="PF('#{cc.clientId}_buiTables').show()"
+                                oncomplete="PF('#{cc.clientId}_buiTables').hide()"/>
+
                     </p:toggleSwitch>
 
                     <!-- Global Search -->
                     <span class="filter-container ui-input-icon-left">
                         <i class="bi bi-search"/>
                         <p:inputText id="globalFilter"
-                                     value="#{tableModel.lazyDataModel.globalFilter}"
-                                     onkeyup="PF('#{cc.clientId}_entityDatatable').filter()"
+                                     value="#{tableModel.globalFilter}"
+                                     onkeyup="PrimeFaces.debounce(() => PF('#{cc.clientId}_#{tableId}').filter())"
                                      placeholder="#{langBean.msg('common.action.search')}"/>
                     </span>
 
@@ -31,12 +32,23 @@
                             id="toggler" type="button"
                             value="#{langBean.msg('table.columnvisibility')}"
                             icon="pi pi-align-justify"/>
+                    <p:columnToggler
+                            datasource=":#{cc.clientId}:#{tableId}"
+                            trigger=":#{cc.clientId}:#{tableId}:toggler">
+                        <p:ajax event="toggle" listener="#{cc.attrs.tableModel.onToggle}"/>
+                    </p:columnToggler>
 
                     <!-- Save and Cancel Buttons -->
-                    <p:commandButton id="saveButton" value="Sauvegarder" rendered="#{tableModel.hasUnsavedModifications()}" actionListener="#{tableModel.save()}"
-                    update="#{updateTableString}"/>
-                    <!-- TODO : implement cancel -->
-                    <p:commandLink value="Annuler les modifications" id="cancelButton" rendered="false" />
+                    <p:commandButton id="saveButton"
+                                     value="Sauvegarder"
+                                     rendered="#{tableModel.hasUnsavedModifications()}"
+                                     actionListener="#{tableModel.save()}"
+                                     update="#{updateTableString}"/>
+                    <p:commandLink value="Annuler les modifications" id="cancelButton"
+                                   rendered="#{tableModel.hasUnsavedModifications()}"
+                                   immediate="true"
+                                   action="#{tableModel.cancelModifications()}"
+                                   update="#{updateTableString}"/>
                 </div>
             </p:toolbarGroup>
         </p:toolbarGroup>

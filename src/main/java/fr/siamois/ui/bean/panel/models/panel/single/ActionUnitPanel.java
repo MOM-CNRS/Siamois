@@ -394,6 +394,7 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnit> imple
                 flowBean,
                 (GenericNewUnitDialogBean<RecordingUnit>) genericNewUnitDialogBean,
                 recordingUnitWriteVerifier,
+                recordingUnitService,
                 rLazyTree
         );
 

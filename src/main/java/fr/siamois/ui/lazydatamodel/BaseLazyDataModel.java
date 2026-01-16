@@ -26,7 +26,7 @@ import java.util.*;
 
 @Getter
 @Setter
-public abstract class BaseLazyDataModel<T> extends LazyDataModel<T> {
+public abstract class BaseLazyDataModel<T> extends LazyDataModel<T> implements LazyModel {
 
 
 

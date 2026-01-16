@@ -4,9 +4,11 @@ import fr.siamois.domain.models.form.customfield.CustomFieldSelectOneFromFieldCo
 import fr.siamois.domain.models.form.customfield.CustomFieldText;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
-import fr.siamois.ui.table.*;;
+import fr.siamois.ui.table.*;
 
 import static fr.siamois.ui.bean.panel.models.panel.single.AbstractSingleEntity.SYSTEM_THESO;
+
+
 
 
 /**
@@ -38,12 +40,12 @@ public final class SpatialUnitTableDefinitionFactory {
         }
 
         // uni category
-        Concept SPATIAL_UNIT_TYPE_CONCEPT = new Concept.Builder()
+        final Concept spatialUnitTypeConcept = new Concept.Builder()
                 .vocabulary(SYSTEM_THESO)
                 .externalId("4282365")
                 .build();
         // unit name
-        Concept NAME_CONCEPT = new Concept.Builder()
+        final Concept nameConcept = new Concept.Builder()
                 .vocabulary(SYSTEM_THESO)
                 .externalId("4285848")
                 .build();
@@ -51,7 +53,7 @@ public final class SpatialUnitTableDefinitionFactory {
 
 
         // --------------- Fields
-        CustomFieldSelectOneFromFieldCode SPATIAL_UNIT_TYPE_FIELD = CustomFieldSelectOneFromFieldCode.builder()
+        CustomFieldSelectOneFromFieldCode spatialUnitTypeField = CustomFieldSelectOneFromFieldCode.builder()
                 .label("specimen.field.category")
                 .id(1L)
                 .isSystemField(true)
@@ -59,15 +61,15 @@ public final class SpatialUnitTableDefinitionFactory {
                 .styleClass("mr-2 spatial-unit-type-chip")
                 .iconClass("bi bi-geo-alt")
                 .fieldCode(SpatialUnit.CATEGORY_FIELD_CODE)
-                .concept(SPATIAL_UNIT_TYPE_CONCEPT)
+                .concept(spatialUnitTypeConcept)
                 .build();
 
-        CustomFieldText NAME_FIELD =  CustomFieldText.builder()
+        CustomFieldText nameField =  CustomFieldText.builder()
                 .label("common.label.name")
                 .id(2L)
                 .isSystemField(true)
                 .valueBinding("name")
-                .concept(NAME_CONCEPT)
+                .concept(nameConcept)
                 .build();
 
 
@@ -81,7 +83,8 @@ public final class SpatialUnitTableDefinitionFactory {
                         .visible(true)
 
                         .toggleable(false)
-                        .sortable(true)
+                        .sortable(false)
+                        .filterable(false)
                         .sortField("name")
 
                         .valueKey("name")
@@ -98,8 +101,9 @@ public final class SpatialUnitTableDefinitionFactory {
                 FormFieldColumn.builder()
                         .id("name")
                         .headerKey("spatialunit.field.name")
-                        .field(NAME_FIELD)
+                        .field(nameField)
                         .sortable(true)
+                        .filterable(true)
                         .visible(true)
                         .required(true)
                         .build()
@@ -108,8 +112,9 @@ public final class SpatialUnitTableDefinitionFactory {
                 FormFieldColumn.builder()
                         .id("type")
                         .headerKey("spatialunit.field.type")
-                        .field(SPATIAL_UNIT_TYPE_FIELD)
-                        .sortable(true)
+                        .field(spatialUnitTypeField)
+                        .sortable(false)
+                        .filterable(false)
                         .visible(true)
                         .required(true)
                         .build()

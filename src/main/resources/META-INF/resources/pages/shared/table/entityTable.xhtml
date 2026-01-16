@@ -2,7 +2,6 @@
 <ui:composition xmlns="http://www.w3.org/1999/xhtml"
                 xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
                 xmlns:p="http://primefaces.org/ui"
-                xmlns:f="http://java.sun.com/jsf/core"
                 xmlns:cc="http://xmlns.jcp.org/jsf/composite">
 
     <cc:interface>
@@ -31,5 +30,9 @@
                 <ui:param name="updateTableString" value="#{cc.clientId}:entityTreeTable" />
             </ui:include>
         </p:outputPanel>
+
+        <p:blockUI block="tableContainer" widgetVar="#{cc.clientId}_buiTables">
+            <i class="pi pi-spin pi-spinner" style="font-size: 3rem"></i>
+        </p:blockUI>
     </cc:implementation>
 </ui:composition>

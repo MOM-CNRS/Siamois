@@ -23,4 +23,6 @@ public class RowAction {
 
     /** CSS optionnelle (ex: "sia-icon-btn") */
     private String styleClass;
+
+
 }

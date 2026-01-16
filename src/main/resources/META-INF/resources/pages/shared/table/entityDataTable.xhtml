@@ -3,7 +3,7 @@
                 xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
                 xmlns:p="http://primefaces.org/ui"
                 xmlns:f="http://java.sun.com/jsf/core"
-                xmlns:cc="http://xmlns.jcp.org/jsf/composite">
+>
 
     <p:dataTable paginator="true"
                  rendered="#{not tableModel.treeMode}"
@@ -12,6 +12,7 @@
                  id="entityDatatable"
                  varStatus="status"
                  size="small"
+                 rowHover="true"
                  paginatorPosition="bottom"
                  var="item"
                  selectionPageOnly="false"
@@ -19,7 +20,7 @@
                  selection="#{tableModel.lazyDataModel.selectedUnits}"
                  widgetVar="#{cc.clientId}_entityDatatable"
                  lazy="true"
-                 globalFilter="#{tableModel.lazyDataModel.globalFilter}"
+                 globalFilter="#{tableModel.globalFilter}"
                  allowUnsorting="true"
                  sortBy="#{tableModel.lazyDataModel.sortBy}"
                  rows="#{tableModel.lazyDataModel.pageSizeState}"
@@ -30,7 +31,8 @@
                  paginatorTemplate="Rows per page: {RowsPerPageDropdown} {RowReport} {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink}"
                  rowsPerPageTemplate="5,10,15,20,25"
                  rowIndexVar="rowIndex"
-                 tableStyle="width:auto;min-width: 100%;"
+                 tableStyle="table-layout: auto;"
+                 tableStyleClass="datatable-hoverable-table"
                  value="#{tableModel.lazyDataModel}"
                  class="#{tableClass}">
 
@@ -44,13 +46,19 @@
             <ui:include src="/pages/shared/table/tableToolbar.xhtml">
                 <ui:param name="tableModel" value="#{tableModel}" />
                 <ui:param name="updateTableString" value="#{updateTableString}" />
+                <ui:param name="tableId" value="entityDatatable"/>
             </ui:include>
         </f:facet>
 
-        <p:column selectionBox="true" style="width:16px;text-align:center"/>
+        <p:column selectionBox="true" style="width:16px;text-align:center" toggleable="false"/>
 
         <!-- Dynamic Columns -->
-        <p:columns value="#{tableModel.columns}" var="column" varStatus="colStatus">
+        <p:columns style="min-width: #{column.type != 'COMMAND_LINK' ? '10em' : ''};"
+                   field="#{column.id}"
+                   sortable="#{column.sortable}"
+                   filterable="#{column.filterable}"
+                   toggleable="#{column.type != 'COMMAND_LINK' ? 'true' : 'false'}" value="#{tableModel.columns}"
+                   var="column" varStatus="colStatus">
             <ui:include src="/pages/shared/table/columnTemplates.xhtml">
                 <ui:param name="tableModel" value="#{tableModel}" />
                 <ui:param name="column" value="#{column}" />
@@ -59,11 +67,12 @@
                 <ui:param name="rowIndex" value="#{rowIndex}" />
                 <ui:param name="colStatus" value="#{colStatus}" />
                 <ui:param name="updateTableString" value="@this #{updateTableString}"/>
+                <ui:param name="canUserEditRow" value="#{tableModel.canUserEditRow(item)}"/>
             </ui:include>
         </p:columns>
 
         <!-- Actions Column -->
-        <p:column exportable="false" toggleable="false">
+        <p:column exportable="false" toggleable="false" style="min-width: 100px;">
             <p:toolbar>
                 <p:toolbarGroup>
                     <ui:repeat value="#{tableModel.rowActions}" var="action">

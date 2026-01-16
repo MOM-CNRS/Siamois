@@ -3,7 +3,6 @@ package fr.siamois.ui.table;
 import fr.siamois.domain.models.exceptions.recordingunit.FailedRecordingUnitSaveException;
 import fr.siamois.domain.models.exceptions.spatialunit.SpatialUnitAlreadyExistsException;
 import fr.siamois.domain.models.form.customform.CustomForm;
-import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.authorization.writeverifier.SpatialUnitWriteVerifier;
@@ -23,7 +22,10 @@ import fr.siamois.utils.MessageUtils;
 import lombok.Getter;
 import org.primefaces.model.TreeNode;
 
-import java.util.*;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
 
 import static fr.siamois.ui.bean.dialog.newunit.NewUnitContext.TreeInsert.ROOT;
 import static fr.siamois.ui.table.TableColumnAction.DUPLICATE_ROW;
@@ -303,6 +305,25 @@ public class SpatialUnitTableViewModel extends EntityTableViewModel<SpatialUnit,
         }
     }
 
+    @Override
+    public String getRowActionTooltipCode(RowAction action, SpatialUnit unit) {
+
+        return switch (action.getAction()) {
+
+            case TOGGLE_BOOKMARK ->  Boolean.TRUE.equals(navBean.isSpatialUnitBookmarkedByUser(unit.getId()))
+                    ? sessionSettingsBean.getLangBean().msg("common.action.unbookmark")
+                    : sessionSettingsBean.getLangBean().msg("common.action.bookmark") ;
+
+            case DUPLICATE_ROW -> sessionSettingsBean.getLangBean().msg("common.action.duplicate") ;
+
+            case NEW_CHILDREN -> sessionSettingsBean.getLangBean().msg("common.action.createChildren") ;
+
+            case NEW_ACTION -> sessionSettingsBean.getLangBean().msg("common.action.createAction") ;
+
+            default -> null;
+        };
+    }
+
     // actions specific to treetable
     public void handleRowAction(RowAction action, TreeNode<SpatialUnit> node) {
         SpatialUnit su = node.getData();
@@ -344,8 +365,6 @@ public class SpatialUnitTableViewModel extends EntityTableViewModel<SpatialUnit,
                     // Save the entity
                     context.flushBackToEntity();
 
-                    // todo : IF the user doesnt have right to validate the unit, it will be unvalidated.
-
                     spatialUnitService.save(entity);
 
                     context.init(true);
@@ -356,6 +375,15 @@ public class SpatialUnitTableViewModel extends EntityTableViewModel<SpatialUnit,
                 }
             }
         }
+    }
+
+
+
+    @Override
+    public boolean canUserEditRow(SpatialUnit unit) {
+        return flowBean.getIsWriteMode() && // perm to create action unit in orga and app is in write mode
+                institutionService.personIsInstitutionManagerOrActionManager(sessionSettingsBean.getUserInfo().getUser(),
+                        sessionSettingsBean.getSelectedInstitution());
     }
 
     @Override

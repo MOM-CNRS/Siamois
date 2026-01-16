@@ -48,7 +48,6 @@ public class SpecimenTableViewModel extends EntityTableViewModel<Specimen, Long>
 
         super(
                 lazyDataModel,
-                null,
                 genericNewUnitDialogBean,
                 formService,
                 spatialUnitTreeService,
@@ -195,7 +194,12 @@ public class SpecimenTableViewModel extends EntityTableViewModel<Specimen, Long>
 
     @Override
     public void save() {
-// will be implemented when working on specimen table
+        // will be implemented when working on specimen table
+    }
+
+    @Override
+    public boolean canUserEditRow(Specimen unit) {
+        return true; // todo: implement permission
     }
 
 }

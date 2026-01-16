@@ -2,8 +2,6 @@ package fr.siamois.ui.table;
 
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.form.customform.CustomForm;
-import fr.siamois.domain.models.recordingunit.RecordingUnit;
-import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.form.FormService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
@@ -251,6 +249,11 @@ public class ActionUnitTableViewModel extends EntityTableViewModel<ActionUnit, L
     @Override
     public void save() {
     // will be implemented when working on action unit table
+    }
+
+    @Override
+    public boolean canUserEditRow(ActionUnit unit) {
+        return true; // todo: implement permission
     }
 
     @Override

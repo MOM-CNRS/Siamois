@@ -158,6 +158,18 @@ class RecordingUnitServiceTest {
         RecordingUnit posteriorUnit = new RecordingUnit();
         posteriorUnit.setId(3L);
 
+        // add a parent
+        RecordingUnit parent1Unit = new RecordingUnit();
+        parent1Unit.setId(10L);
+        parent1Unit.setFullIdentifier("p1");
+        recordingUnitToSave.getParents().add(parent1Unit);
+
+        // add a children
+        RecordingUnit child1Unit = new RecordingUnit();
+        child1Unit.setId(20L);
+        child1Unit.setFullIdentifier("c1");
+        recordingUnitToSave.getChildren().add(child1Unit);
+
         StratigraphicRelationship antRelationship = new StratigraphicRelationship();
         antRelationship.setUnit1(recordingUnitToSave);
         antRelationship.setUnit2(anteriorUnit);
@@ -183,6 +195,8 @@ class RecordingUnitServiceTest {
 
         when(personRepository.findAllById(anyList())).thenReturn(List.of(p));
 
+        when(recordingUnitRepository.findById(10L)).thenReturn(Optional.of(parent1Unit));
+
 
         RecordingUnit result = recordingUnitService.save(recordingUnitToSave,c,
                 List.of(anteriorUnit),
@@ -194,6 +208,7 @@ class RecordingUnitServiceTest {
         assertNotNull(result);
         assertNull(result.getFormResponse());
         assertEquals("MOM-2025-5", result.getFullIdentifier());
+        verify(recordingUnitRepository, times(2)).save(any(RecordingUnit.class));
 
 
 

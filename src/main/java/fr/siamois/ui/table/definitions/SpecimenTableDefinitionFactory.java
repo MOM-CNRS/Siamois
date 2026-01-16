@@ -36,7 +36,8 @@ public final class SpecimenTableDefinitionFactory {
 
                         // PrimeFaces metadata equivalents
                         .toggleable(false)
-                        .sortable(true)
+                        .sortable(false)
+                        .filterable(false)
                         .sortField("full_identifier")
 
                         // What to display inside <h:outputText>
