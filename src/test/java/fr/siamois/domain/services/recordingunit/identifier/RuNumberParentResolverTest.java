@@ -81,7 +81,7 @@ class RuNumberParentResolverTest {
             parentInfo.setRuNumber(42);
 
             when(ruInfo.getParent()).thenReturn(parentRecordingUnit);
-            when(recordingUnitIdInfoRepository.findById(parentRecordingUnit)).thenReturn(Optional.of(parentInfo));
+            when(recordingUnitIdInfoRepository.findById(parentRecordingUnit.getId())).thenReturn(Optional.of(parentInfo));
 
             // When
             String result = ruNumberParentResolver.resolve(format, ruInfo);
@@ -110,7 +110,7 @@ class RuNumberParentResolverTest {
             // Given
             String format = "ID-{NUM_PARENT}-END";
             when(ruInfo.getParent()).thenReturn(parentRecordingUnit);
-            when(recordingUnitIdInfoRepository.findById(parentRecordingUnit)).thenReturn(Optional.empty());
+            when(recordingUnitIdInfoRepository.findById(parentRecordingUnit.getId())).thenReturn(Optional.empty());
 
             // When
             String result = ruNumberParentResolver.resolve(format, ruInfo);

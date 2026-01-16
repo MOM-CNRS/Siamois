@@ -6,5 +6,5 @@ import org.springframework.data.repository.CrudRepository;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public interface RecordingUnitIdInfoRepository extends CrudRepository<RecordingUnitIdInfo, RecordingUnit> {
+public interface RecordingUnitIdInfoRepository extends CrudRepository<RecordingUnitIdInfo, Long> {
 }

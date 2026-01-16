@@ -10,6 +10,7 @@ import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
 
 import static jakarta.persistence.FetchType.EAGER;
+import static jakarta.persistence.FetchType.LAZY;
 
 /**
  * This class stores the raw information pertaining to the identifier format of a {@link RecordingUnit}.
@@ -22,9 +23,15 @@ import static jakarta.persistence.FetchType.EAGER;
 @NoArgsConstructor
 public class RecordingUnitIdInfo {
 
+    // L'annotation @Id est déplacée sur un champ dédié.
+    // Sa valeur sera copiée depuis l'ID de l'entité RecordingUnit associée.
+    // J'ai supposé que l'ID de RecordingUnit est de type Long. Adaptez ce type si nécessaire (ex: UUID, Integer...).
     @Id
-    @JoinColumn(name = "fk_recording_unit_id", nullable = false)
-    @OneToOne(cascade = CascadeType.ALL, fetch = EAGER)
+    private Long recordingUnitId;
+
+    @OneToOne(fetch = EAGER)
+    @MapsId("recordingUnitId") // Indique à JPA que le champ 'id' est mappé par la relation 'recordingUnit'.
+    @JoinColumn(name = "fk_recording_unit_id")
     private RecordingUnit recordingUnit;
 
     private int ruNumber = 0;

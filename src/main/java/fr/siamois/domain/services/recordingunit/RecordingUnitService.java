@@ -481,7 +481,7 @@ public class RecordingUnitService implements ArkEntityService {
     }
 
     public RecordingUnitIdInfo createOrGetInfoOf(RecordingUnit recordingUnit) {
-        Optional<RecordingUnitIdInfo> opt = recordingUnitIdInfoRepository.findById(recordingUnit);
+        Optional<RecordingUnitIdInfo> opt = recordingUnitIdInfoRepository.findById(recordingUnit.getId());
         if (opt.isPresent()) return opt.get();
         RecordingUnitIdInfo info = new RecordingUnitIdInfo();
         info.setRecordingUnit(recordingUnit);
