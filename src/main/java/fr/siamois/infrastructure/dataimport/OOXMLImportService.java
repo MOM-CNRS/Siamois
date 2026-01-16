@@ -82,6 +82,7 @@ public class OOXMLImportService {
             Sheet actionUnitSheet  = workbook.getSheet(sheetIdToName.getOrDefault("action_unit", "Unite action"));
             Sheet recordingUnitSheet  = workbook.getSheet(sheetIdToName.getOrDefault("recording_unit", "Unite action"));
             Sheet specimenSheet  = workbook.getSheet(sheetIdToName.getOrDefault("specimen", "Prelev."));
+            Sheet recordingRelSheet  = workbook.getSheet(sheetIdToName.getOrDefault("recordingRel", "UE_rel"));
 
             List<InstitutionSeeder.InstitutionSpec> institutions = parseInstitutions(institutionSheet);
             List<PersonSeeder.PersonSpec> persons = parsePersons(personSheet);
@@ -90,8 +91,10 @@ public class OOXMLImportService {
             List<ActionUnitSeeder.ActionUnitSpecs> actionUnits = parseActionUnits(actionUnitSheet);
             List<RecordingUnitSeeder.RecordingUnitSpecs> recordingUnits = parseRecordingUnits(recordingUnitSheet);
             List<SpecimenSeeder.SpecimenSpecs> specimenSpecs = parseSpecimens(specimenSheet);
+            List<RecordingUnitRelSeeder.RecordingUnitDTO> recordingUnitDTOS = parseRecordingRels(recordingRelSheet);
 
-            return new ImportSpecs(institutions, persons, spatialUnits, actionCodes, actionUnits, recordingUnits, specimenSpecs);
+            return new ImportSpecs(institutions, persons, spatialUnits, actionCodes, actionUnits,
+                    recordingUnits, specimenSpecs, recordingUnitDTOS);
         }
     }
 
@@ -259,6 +262,44 @@ public class OOXMLImportService {
         }
 
         return new ArrayList<>(specsByName.values());
+    }
+
+    private List<RecordingUnitRelSeeder.RecordingUnitDTO> parseRecordingRels(Sheet sheet) {
+        if (sheet == null) {
+            return List.of();
+        }
+
+        Row header = sheet.getRow(0);
+        if (header == null) {
+            return List.of();
+        }
+
+        Map<String, Integer> cols = indexColumns(header);
+
+        Integer parentNum    = cols.get("parent");
+        Integer childNum = cols.get("enfant");
+
+        if (parentNum == null || childNum == null) {
+            // tu peux logger un warning ici
+            return List.of();
+        }
+
+        List<RecordingUnitRelSeeder.RecordingUnitDTO> specs = new ArrayList<>();
+
+        for (int r = 1; r <= sheet.getLastRowNum(); r++) {
+            Row row = sheet.getRow(r);
+            if (row == null) continue;
+
+            String parent = getStringCell(row, parentNum);
+            String child = getStringCell(row, childNum);
+
+            if (parent == null || parent.isBlank() ||
+                    child == null || child.isBlank()) continue;
+
+            specs.add(new RecordingUnitRelSeeder.RecordingUnitDTO(parent, child));
+        }
+
+        return specs;
     }
 
 

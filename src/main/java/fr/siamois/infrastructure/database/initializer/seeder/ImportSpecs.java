@@ -14,12 +14,14 @@ public class ImportSpecs {
     private final List<ActionUnitSeeder.ActionUnitSpecs> actionUnits;
     private final List<RecordingUnitSeeder.RecordingUnitSpecs> recordingUnits;
     private final List<SpecimenSeeder.SpecimenSpecs> specimenSpecs;
+    private final List<RecordingUnitRelSeeder.RecordingUnitDTO> recordingUnitRelSpecs;
 
     public ImportSpecs(List<InstitutionSeeder.InstitutionSpec> institutions,
                        List<PersonSeeder.PersonSpec> persons,
                        List<SpatialUnitSeeder.SpatialUnitSpecs> spatialUnits,
                        List<ActionCodeSeeder.ActionCodeSpec> actionCodes, List<ActionUnitSeeder.ActionUnitSpecs> actionUnits, List<RecordingUnitSeeder.RecordingUnitSpecs> recordingUnits,
-                       List<SpecimenSeeder.SpecimenSpecs> specimenSpecs) {
+                       List<SpecimenSeeder.SpecimenSpecs> specimenSpecs,
+                       List<RecordingUnitRelSeeder.RecordingUnitDTO> recordingUnitSpecs) {
         this.institutions = institutions;
         this.persons = persons;
         this.spatialUnits = spatialUnits;
@@ -27,6 +29,7 @@ public class ImportSpecs {
         this.actionUnits = actionUnits;
         this.recordingUnits = recordingUnits;
         this.specimenSpecs = specimenSpecs;
+        this.recordingUnitRelSpecs = recordingUnitSpecs;
     }
 
 }

@@ -4,6 +4,7 @@ import fr.siamois.domain.models.exceptions.database.DatabaseDataInitException;
 import fr.siamois.infrastructure.database.initializer.seeder.*;
 import fr.siamois.infrastructure.dataimport.OOXMLImportService;
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -20,11 +21,9 @@ import java.util.List;
 @Getter
 @Setter
 @Order
+@RequiredArgsConstructor
 public class ChartresDatasetInitializer implements DatabaseInitializer {
 
-    public static final String CHARTRES = "chartres";
-    public static final String PASCAL_GIBUT_SIAMOIS_FR = "pascal.gibut@siamois.fr";
-    public static final String CHARTRES_C_309_01_1015 = "chartres-C309_01-1015";
 
     public static final String VOCABULARY_ID = "th240";
 
@@ -49,29 +48,12 @@ public class ChartresDatasetInitializer implements DatabaseInitializer {
     private final SpecimenSeeder specimenSeeder;
     private final InstitutionSeeder institutionSeeder;
     private final OOXMLImportService ooxmlImportService;
+    private final RecordingUnitRelSeeder recordingUnitRelSeeder;
 
 
     @Value("${siamois.admin.username}")
     private String adminUsername;
 
-    public ChartresDatasetInitializer(
-            PersonSeeder personSeeder, ActionCodeSeeder actionCodeSeeder,
-            ConceptSeeder conceptSeeder, ThesaurusSeeder thesaurusSeeder, SpatialUnitSeeder spatialUnitSeeder, ActionUnitSeeder actionUnitSeeder,
-            RecordingUnitSeeder recordingUnitSeeder, SpecimenSeeder specimenSeeder, InstitutionSeeder institutionSeeder, OOXMLImportService ooxmlImportService) {
-
-
-
-        this.personSeeder = personSeeder;
-        this.actionCodeSeeder = actionCodeSeeder;
-        this.conceptSeeder = conceptSeeder;
-        this.thesaurusSeeder = thesaurusSeeder;
-        this.spatialUnitSeeder = spatialUnitSeeder;
-        this.actionUnitSeeder = actionUnitSeeder;
-        this.recordingUnitSeeder = recordingUnitSeeder;
-        this.specimenSeeder = specimenSeeder;
-        this.institutionSeeder = institutionSeeder;
-        this.ooxmlImportService = ooxmlImportService;
-    }
 
     /**
      * Insert chartres test dataset into DB
@@ -103,6 +85,9 @@ public class ChartresDatasetInitializer implements DatabaseInitializer {
         actionUnitSeeder.seed(specs.getActionUnits());
         recordingUnitSeeder.seed(specs.getRecordingUnits());
         specimenSeeder.seed(specs.getSpecimenSpecs());
+        recordingUnitSeeder.seed(specs.getRecordingUnits());
+        recordingUnitRelSeeder.seed(specs.getRecordingUnitRelSpecs());
+
 
     }
 

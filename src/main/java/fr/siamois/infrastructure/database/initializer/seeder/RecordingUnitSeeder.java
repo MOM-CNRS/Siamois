@@ -3,6 +3,7 @@ package fr.siamois.infrastructure.database.initializer.seeder;
 
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.auth.Person;
+import fr.siamois.domain.models.exceptions.recordingunit.RecordingUnitNotFoundException;
 import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
@@ -62,6 +63,7 @@ public class RecordingUnitSeeder {
             recordingUnitRepository.save(recordingUnit);
         }
     }
+
 
 
     public ActionUnit getActionUnitFromKey(ActionUnitSeeder.ActionUnitKey key) {
