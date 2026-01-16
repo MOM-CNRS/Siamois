@@ -85,6 +85,10 @@ public class ActionUnit extends ActionUnitParent implements ArkEntity {
     @Column(name = "recording_unit_identifier_format")
     private String recordingUnitIdentifierFormat = "{NUM_UE}";
 
+    @Nullable
+    @Column(name = "recording_unit_identifier_lang")
+    private String recordingUnitIdentifierLang;
+
     @FieldCode
     public static final String TYPE_FIELD_CODE = "SIAAU.TYPE";
 

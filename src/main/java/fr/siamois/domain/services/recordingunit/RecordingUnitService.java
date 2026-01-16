@@ -507,6 +507,8 @@ public class RecordingUnitService implements ArkEntityService {
             return String.valueOf(numericalId);
         }
 
+        info.setRuType(recordingUnit.getType());
+
         for (RuIdentifierResolver resolver : findAllIdentifierResolver().values()) {
             if (resolver.formatUsesThisResolver(format)) {
                 format = resolver.resolve(format, info);
