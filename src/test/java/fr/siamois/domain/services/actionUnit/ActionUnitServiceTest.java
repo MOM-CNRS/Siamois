@@ -19,6 +19,7 @@ import fr.siamois.domain.services.authorization.PermissionServiceImpl;
 import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.infrastructure.database.repositories.actionunit.ActionCodeRepository;
 import fr.siamois.infrastructure.database.repositories.actionunit.ActionUnitRepository;
+import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitIdCounterRepository;
 import fr.siamois.infrastructure.database.repositories.team.TeamMemberRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -52,6 +53,7 @@ class ActionUnitServiceTest {
     private PermissionServiceImpl permissionService;
     @Mock private InstitutionService institutionService;
     @Mock private TeamMemberRepository teamMemberRepository;
+    @Mock private RecordingUnitIdCounterRepository recordingUnitIdCounterRepository;
 
 
     @Spy

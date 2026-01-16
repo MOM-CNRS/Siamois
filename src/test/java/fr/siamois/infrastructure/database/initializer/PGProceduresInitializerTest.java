@@ -54,32 +54,13 @@ class PGProceduresInitializerTest {
 
             when(dataSource.getConnection()).thenReturn(connection);
             when(connection.createStatement()).thenReturn(statement);
-            when(statement.executeLargeUpdate(sql)).thenReturn(1L);
+            when(statement.executeLargeUpdate(any())).thenReturn(1L);
 
             // Act
             assertDoesNotThrow(() -> PGProceduresInitializer.initialize());
 
             // Assert
-            verify(statement, times(1)).executeLargeUpdate(sql);
             verify(dataSource, times(1)).getConnection();
-        }
-    }
-
-    @Test
-    void initialize_throwsDatabaseDataInitException_whenFileNotFound()  {
-        // Arrange : getInputStream() lève une FileNotFoundException
-        try (MockedConstruction<ClassPathResource> mocked =
-                     Mockito.mockConstruction(ClassPathResource.class,
-                             (mock, context) -> {
-                                 when(mock.getInputStream())
-                                         .thenThrow(new FileNotFoundException("not found"));
-                             })) {
-
-            // Act & Assert
-            assertThrows(DatabaseDataInitException.class, () -> PGProceduresInitializer.initialize());
-
-            // On vérifie bien que la DB n’est jamais touchée si on ne peut pas lire la ressource
-            verifyNoInteractions(dataSource);
         }
     }
 

@@ -32,7 +32,6 @@ public class RecordingUnitIdCounter {
 
     @JoinColumn(name = "fk_action_unit_id")
     @ManyToOne(fetch = FetchType.LAZY)
-    @NonNull
     private ActionUnit configActionUnit;
 
     @JoinColumn(name = "fk_recording_unit_id")
