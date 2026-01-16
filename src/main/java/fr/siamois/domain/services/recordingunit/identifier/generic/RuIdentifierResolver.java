@@ -1,4 +1,4 @@
-package fr.siamois.domain.services.recordingunit.identifier;
+package fr.siamois.domain.services.recordingunit.identifier.generic;
 
 import fr.siamois.domain.models.recordingunit.identifier.RecordingUnitIdInfo;
 import org.springframework.lang.NonNull;
@@ -39,4 +39,5 @@ public interface RuIdentifierResolver {
 
     @NonNull
     String resolve(@NonNull String baseFormatString, @NonNull RecordingUnitIdInfo ruInfo);
+
 }

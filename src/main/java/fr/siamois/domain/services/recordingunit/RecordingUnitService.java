@@ -17,7 +17,7 @@ import fr.siamois.domain.services.ArkEntityService;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.form.CustomFormResponseService;
-import fr.siamois.domain.services.recordingunit.identifier.RuIdentifierResolver;
+import fr.siamois.domain.services.recordingunit.identifier.generic.RuIdentifierResolver;
 import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.infrastructure.database.repositories.person.PersonRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitIdCounterRepository;

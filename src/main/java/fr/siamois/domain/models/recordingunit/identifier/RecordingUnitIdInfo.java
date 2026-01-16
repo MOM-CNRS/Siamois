@@ -9,6 +9,8 @@ import lombok.NoArgsConstructor;
 import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
 
+import static jakarta.persistence.FetchType.EAGER;
+
 /**
  * This class stores the raw information pertaining to the identifier format of a {@link RecordingUnit}.
  * Not all fields are necessarily displayed in the final identifier, but they are preserved
@@ -22,22 +24,22 @@ public class RecordingUnitIdInfo {
 
     @Id
     @JoinColumn(name = "fk_recording_unit_id", nullable = false)
-    @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    @OneToOne(cascade = CascadeType.ALL, fetch = EAGER)
     private RecordingUnit recordingUnit;
 
     private int ruNumber = 0;
 
     @JoinColumn(name = "fk_concept_type_id")
-    @ManyToOne(fetch = FetchType.EAGER)
+    @ManyToOne(fetch = EAGER)
     @Nullable
     private Concept ruType = null;
 
     @Nullable
-    @Column(name = "parent_ru_number")
-    private Integer parentRuNumber;
+    @ManyToOne(fetch = EAGER)
+    private RecordingUnit parent = null;
 
     @JoinColumn(name = "fk_parent_concept_type_id")
-    @ManyToOne(fetch = FetchType.EAGER)
+    @ManyToOne(fetch = EAGER)
     @Nullable
     private Concept ruParentType = null;
 
@@ -47,7 +49,7 @@ public class RecordingUnitIdInfo {
 
     @NonNull
     @JoinColumn(name = "fk_action_unit_id", nullable = false)
-    @ManyToOne(fetch =  FetchType.EAGER, optional = false)
+    @ManyToOne(fetch =  EAGER, optional = false)
     private ActionUnit actionUnit;
 
 }
