@@ -126,10 +126,6 @@ public class RecordingUnitService implements ArkEntityService {
             if (managedRecordingUnit.getIdentifier() == null) {
                 managedRecordingUnit.setIdentifier(generateNextIdentifier(managedRecordingUnit));
             }
-            // Set full identifier
-            managedRecordingUnit.setFullIdentifier(null); // reseting so that displayFullIdentifier updates it
-            managedRecordingUnit.setFullIdentifier(managedRecordingUnit.displayFullIdentifier());
-
 
             // Add concept
             Concept type = conceptService.saveOrGetConcept(concept);
@@ -174,6 +170,9 @@ public class RecordingUnitService implements ArkEntityService {
 
             managedRecordingUnit.setChronologicalPhase(recordingUnit.getChronologicalPhase());
             managedRecordingUnit.setGeomorphologicalAgent(recordingUnit.getGeomorphologicalAgent());
+
+            managedRecordingUnit = recordingUnitRepository.save(managedRecordingUnit);
+            managedRecordingUnit.setFullIdentifier(generateFullIdentifier(managedRecordingUnit.getActionUnit(), managedRecordingUnit));
 
             // Additional answers
             CustomFormResponse managedFormResponse;
@@ -462,6 +461,7 @@ public class RecordingUnitService implements ArkEntityService {
         Optional<RecordingUnitIdInfo> opt = recordingUnitIdInfoRepository.findByRecordingUnit(recordingUnit);
         if (opt.isPresent()) return opt.get();
         RecordingUnitIdInfo info = new RecordingUnitIdInfo();
+        info.setRecordingUnitId(recordingUnit.getId());
         info.setRecordingUnit(recordingUnit);
         return recordingUnitIdInfoRepository.save(info);
     }
