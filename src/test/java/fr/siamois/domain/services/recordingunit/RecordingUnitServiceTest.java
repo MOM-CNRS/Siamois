@@ -61,4 +61,8 @@ class RecordingUnitServiceTest {
         when(recordingUnitRepository.countByCreatedByInstitution(any(Institution.class))).thenReturn(3L);
         assertEquals(3,recordingUnitService.countByInstitution(new Institution()));
     }
+
+    @Test
+    void generateFullIdentifier() {
+    }
 }

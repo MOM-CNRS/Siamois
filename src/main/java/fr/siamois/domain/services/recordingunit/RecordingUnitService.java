@@ -10,26 +10,35 @@ import fr.siamois.domain.models.exceptions.recordingunit.RecordingUnitNotFoundEx
 import fr.siamois.domain.models.form.customformresponse.CustomFormResponse;
 import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
+import fr.siamois.domain.models.recordingunit.identifier.RecordingUnitIdInfo;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.ArkEntityService;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.form.CustomFormResponseService;
+import fr.siamois.domain.services.recordingunit.identifier.RuIdentifierResolver;
 import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.infrastructure.database.repositories.person.PersonRepository;
+import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitIdCounterRepository;
+import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitIdInfoRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitRepository;
 import fr.siamois.infrastructure.database.repositories.team.TeamMemberRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.Hibernate;
+import org.reflections.Reflections;
+import org.springframework.beans.BeansException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.lang.NonNull;
+import org.springframework.context.ApplicationContext;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-import java.util.Optional;
+import java.lang.reflect.InvocationTargetException;
+import java.util.*;
 
 /**
  * Service to manage RecordingUnit
@@ -48,13 +57,19 @@ public class RecordingUnitService implements ArkEntityService {
     private final InstitutionService institutionService;
     private final ActionUnitService actionUnitService;
     private final TeamMemberRepository teamMemberRepository;
+    private final RecordingUnitIdCounterRepository recordingUnitIdCounterRepository;
+    private final RecordingUnitIdInfoRepository recordingUnitIdInfoRepository;
+    private final ApplicationContext applicationContext;
 
     /**
      * Generate the next identifier for a recording unit.
      *
      * @param recordingUnit The recording unit for which to generate the next identifier.
      * @return The next identifier for the recording unit.
+     * @deprecated This method has been replaced by {@link #generatedNextIdentifier(ActionUnit, Concept)} because it uses
+     * the old system to generated identifiers by incrementing it by 1.
      */
+    @Deprecated(forRemoval = true, since = "0.2.0-dev-1")
     public int generateNextIdentifier(RecordingUnit recordingUnit) {
         // Generate next identifier
         Integer currentMaxIdentifier = recordingUnitRepository.findMaxUsedIdentifierByAction(recordingUnit.getActionUnit().getId());
@@ -153,7 +168,7 @@ public class RecordingUnitService implements ArkEntityService {
             managedRecordingUnit.setErosionProfile(recordingUnit.getErosionProfile());
             managedRecordingUnit.setErosionShape(recordingUnit.getErosionShape());
 
-            if(managedRecordingUnit.getCreatedBy() == null) {
+            if (managedRecordingUnit.getCreatedBy() == null) {
                 managedRecordingUnit.setCreatedBy(recordingUnit.getCreatedBy());
             }
 
@@ -165,7 +180,6 @@ public class RecordingUnitService implements ArkEntityService {
 
             // ---------- Additional answers
             CustomFormResponse managedFormResponse;
-
 
             if (recordingUnit.getFormResponse() != null && recordingUnit.getFormResponse().getForm() != null) {
                 // Save the form response if there is one
@@ -330,7 +344,7 @@ public class RecordingUnitService implements ArkEntityService {
      */
     public boolean canCreateSpecimen(UserInfo user, RecordingUnit ru) {
         ActionUnit action = ru.getActionUnit();
-        return institutionService.isManagerOf(action.getCreatedByInstitution(),user.getUser()) ||
+        return institutionService.isManagerOf(action.getCreatedByInstitution(), user.getUser()) ||
                 actionUnitService.isManagerOf(action, user.getUser()) ||
                 (teamMemberRepository.existsByActionUnitAndPerson(action, user.getUser()) && actionUnitService.isActionUnitStillOngoing(action));
     }
@@ -430,7 +444,7 @@ public class RecordingUnitService implements ArkEntityService {
     /**
      * Get all recording unit in the institution that are the children of a given parent
      *
-     * @param parentId the parent id
+     * @param parentId      the parent id
      * @param institutionId the institution id
      * @return The list of RecordingUnit associated with the institution and that are the children of a given parent
      */
@@ -460,7 +474,82 @@ public class RecordingUnitService implements ArkEntityService {
         });
     }
 
+    public int generatedNextIdentifier(@NonNull ActionUnit actionUnit, @Nullable Concept unitType) {
+        if (unitType == null) {
+            return recordingUnitIdCounterRepository.nextIdAndIncrementActionUnit(actionUnit.getId(), null);
+        }
+        return recordingUnitIdCounterRepository.nextIdAndIncrementActionUnit(actionUnit.getId(), unitType.getId());
+    }
+
+    public RecordingUnitIdInfo createOrGetInfoOf(RecordingUnit recordingUnit) {
+        Optional<RecordingUnitIdInfo> opt = recordingUnitIdInfoRepository.findById(recordingUnit);
+        if (opt.isPresent()) return opt.get();
+        RecordingUnitIdInfo info = new RecordingUnitIdInfo();
+        info.setRecordingUnit(recordingUnit);
+        return recordingUnitIdInfoRepository.save(info);
+    }
+
+    /**
+     * Génère l'identifiant d'une unité d'enregistrement qui n'a pas de parent.
+     * Ses paramètres de création se réfèrent donc directement à l'unité d'action
+     *
+     * @param actionUnit L'unité d'action contenant la configuration de l'identifiant
+     * @return L'identifiant généré
+     */
+    public String generateFullIdentifier(@NonNull ActionUnit actionUnit, @NonNull RecordingUnit recordingUnit) {
+        String format = actionUnit.getRecordingUnitIdentifierFormat();
+        int numericalId = generatedNextIdentifier(actionUnit, recordingUnit.getType());
+        RecordingUnitIdInfo info = createOrGetInfoOf(recordingUnit);
+
+        info.setRuNumber(numericalId);
+
+        if (format == null) {
+            recordingUnitIdInfoRepository.save(info);
+            return String.valueOf(numericalId);
+        }
+
+        for (RuIdentifierResolver resolver : findAllIdentifierResolver().values()) {
+            if (resolver.formatUsesThisResolver(format)) {
+                format = resolver.resolve(format, info);
+            }
+        }
+
+        return format;
+    }
+
+    private static final Map<String, RuIdentifierResolver> IDENTIFIER_RESOLVERS = new HashMap<>();
+
+    public Map<String, RuIdentifierResolver> findAllIdentifierResolver() {
+        if (!IDENTIFIER_RESOLVERS.isEmpty())
+            return IDENTIFIER_RESOLVERS;
+
+        Reflections reflections = new Reflections("fr.siamois.domain.services.recordingunit.identifier");
+        Set<Class<? extends RuIdentifierResolver>> classes = reflections.getSubTypesOf(RuIdentifierResolver.class);
+
+        for (Class<? extends RuIdentifierResolver> clazz : classes) {
+            try {
+                RuIdentifierResolver resolver = applicationContext.getBean(clazz);
+                IDENTIFIER_RESOLVERS.put(resolver.getCode(), resolver);
+            } catch (BeansException e) {
+                log.error("Error while scanning identifiers resolver of RecordingUnits");
+                log.error(e.getMessage(), e);
+            }
+        }
+
+        return IDENTIFIER_RESOLVERS;
+    }
+
+    /**
+     * Returns all available codes for recording units identifiers
+     *
+     * @return The list of available codes
+     */
+    public List<String> findAllIdentifiersCode() {
+        return findAllIdentifierResolver()
+                .keySet()
+                .stream()
+                .toList();
+    }
+
 
 }
-
-

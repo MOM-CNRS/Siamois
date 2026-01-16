@@ -19,5 +19,11 @@ public interface RecordingUnitIdCounterRepository extends CrudRepository<Recordi
     )
     int nextIdAndIncrement(Long parentRecordingUnitId, Long conceptTypeId);
 
+    @Query(
+            nativeQuery = true,
+            value = "SELECT recording_unit_nextval_au(:actionUnitId, :conceptTypeId)"
+    )
+    int nextIdAndIncrementActionUnit(Long actionUnitId, Long conceptTypeId);
+
     Optional<RecordingUnitIdCounter> findByConfigActionUnitAndRecordingUnitTypeAndRecordingUnit(ActionUnit configActionUnit, Concept recordingUnitType, RecordingUnit recordingUnit);
 }
