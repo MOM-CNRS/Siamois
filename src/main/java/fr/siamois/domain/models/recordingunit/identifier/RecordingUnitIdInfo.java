@@ -1,10 +1,12 @@
 package fr.siamois.domain.models.recordingunit.identifier;
 
+import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
 
 /**
@@ -43,8 +45,9 @@ public class RecordingUnitIdInfo {
     @Column(name = "parent_su_number")
     private Integer spatialUnitNumber = null;
 
-    @Nullable
-    @Column(name = "action_unit_identifier")
-    private String actionUnitIdentifier = null;
+    @NonNull
+    @JoinColumn(name = "fk_action_unit_id", nullable = false)
+    @ManyToOne(fetch =  FetchType.EAGER, optional = false)
+    private ActionUnit actionUnit;
 
 }
