@@ -11,5 +11,8 @@ public enum TableColumnAction {
     DUPLICATE_ROW,
     GO_TO_SPATIAL_UNIT,
     GO_TO_ACTION_UNIT,
-    GO_TO_SPECIMEN
+    GO_TO_SPECIMEN,
+    NEW_ACTION,
+    NEW_CHILDREN,
+    OPEN_ENTITY
 }

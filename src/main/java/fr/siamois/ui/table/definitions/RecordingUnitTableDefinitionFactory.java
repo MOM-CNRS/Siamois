@@ -59,6 +59,18 @@ public final class RecordingUnitTableDefinitionFactory {
                 .vocabulary(SYSTEM_THESO)
                 .externalId("4286245")
                 .build();
+        Concept recordingUnitIdConcept = new Concept.Builder()
+                .vocabulary(SYSTEM_THESO)
+                .externalId("4286193")
+                .build();
+
+        CustomFieldText recordingUnitIdField =  CustomFieldText.builder()
+                .label("recordingunit.field.identifier")
+                .isSystemField(true)
+                .id(8L)
+                .valueBinding("fullIdentifier")
+                .concept(recordingUnitIdConcept)
+                .build();
         CustomFieldSelectOneFromFieldCode typeField =  CustomFieldSelectOneFromFieldCode.builder()
                 .label("recordingunit.property.type")
                 .isSystemField(true)
@@ -119,7 +131,8 @@ public final class RecordingUnitTableDefinitionFactory {
 
                         // PrimeFaces metadata equivalents
                         .toggleable(false)
-                        .sortable(true)
+                        .sortable(false)
+                        .filterable(false)
                         .sortField("full_identifier")
 
                         // What to display inside <h:outputText>
@@ -137,10 +150,21 @@ public final class RecordingUnitTableDefinitionFactory {
         );
         tableModel.getTableDefinition().addColumn(
                 FormFieldColumn.builder()
+                        .id("identifier")
+                        .headerKey("recordingunit.field.identifier")
+                        .field(recordingUnitIdField)
+                        .sortable(true)
+                        .visible(true)
+                        .required(true)
+                        .build()
+        );
+        tableModel.getTableDefinition().addColumn(
+                FormFieldColumn.builder()
                         .id("type")
                         .headerKey("recordingunit.property.type")
                         .field(typeField)
-                        .sortable(true)
+                        .sortable(false)
+                        .filterable(false)
                         .visible(true)
                         .required(true)
                         .build()
@@ -150,7 +174,8 @@ public final class RecordingUnitTableDefinitionFactory {
                         .id("openingDate")
                         .headerKey("recordingunit.field.openingDate")
                         .field(dateField)
-                        .sortable(true)
+                        .sortable(false)
+                        .filterable(false)
                         .visible(true)
                         .required(true)
                         .build()
@@ -160,7 +185,8 @@ public final class RecordingUnitTableDefinitionFactory {
                         .id("author")
                         .headerKey("recordingunit.field.author")
                         .field(authorField)
-                        .sortable(true)
+                        .sortable(false)
+                        .filterable(false)
                         .visible(true)
                         .required(true)
                         .build()
@@ -170,7 +196,8 @@ public final class RecordingUnitTableDefinitionFactory {
                         .id("contributors")
                         .headerKey("recordingunit.field.contributors")
                         .field(contributorsField)
-                        .sortable(true)
+                        .sortable(false)
+                        .filterable(false)
                         .visible(true)
                         .required(true)
                         .build()
@@ -180,7 +207,8 @@ public final class RecordingUnitTableDefinitionFactory {
                         .id("action")
                         .headerKey("recordingunit.field.actionUnit")
                         .field(actionField)
-                        .sortable(true)
+                        .sortable(false)
+                        .filterable(false)
                         .visible(true)
                         .readOnly(true)
                         .required(true)
@@ -191,63 +219,14 @@ public final class RecordingUnitTableDefinitionFactory {
                         .id("spatial")
                         .headerKey("recordingunit.field.spatialUnit")
                         .field(spatialField)
-                        .sortable(true)
+                        .sortable(false)
+                        .filterable(false)
                         .visible(true)
                         .readOnly(false)
                         .required(true)
                         .build()
         );
-        tableModel.getTableDefinition().addColumn(
-                RelationColumn.builder()
-                        .id("parents")
-                        .headerKey("table.spatialunit.column.parents")
-                        .headerIcon("bi bi-pencil-square")
-                        .visible(true)
-                        .toggleable(true)
 
-                        .countKey("parents")
-
-                        .viewIcon(BI_BI_EYE)
-                        .viewAction(TableColumnAction.VIEW_RELATION)
-                        .viewTargetIndex(2)
-
-                        .addEnabled(true)
-                        .addIcon(BI_BI_PLUS_SQUARE)
-                        .addAction(TableColumnAction.ADD_RELATION)
-                        .addRenderedKey("recordingUnitCreateAllowed")
-
-                        .processExpr(THIS)
-                        .updateExpr("flow")
-                        .onstartJs(PF_BUI_CONTENT_SHOW)
-                        .oncompleteJs(PF_BUI_CONTENT_HIDE_HANDLE_SCROLL_TO_TOP)
-                        .build()
-        );
-
-        tableModel.getTableDefinition().addColumn(
-                RelationColumn.builder()
-                        .id("childre,")
-                        .headerKey("table.spatialunit.column.children")
-                        .headerIcon("bi bi-pencil-square")
-                        .visible(true)
-                        .toggleable(true)
-
-                        .countKey("children")
-
-                        .viewIcon(BI_BI_EYE)
-                        .viewAction(TableColumnAction.VIEW_RELATION)
-                        .viewTargetIndex(2)
-
-                        .addEnabled(true)
-                        .addIcon(BI_BI_PLUS_SQUARE)
-                        .addAction(TableColumnAction.ADD_RELATION)
-                        .addRenderedKey("recordingUnitCreateAllowed")
-
-                        .processExpr(THIS)
-                        .updateExpr("flow")
-                        .onstartJs(PF_BUI_CONTENT_SHOW)
-                        .oncompleteJs(PF_BUI_CONTENT_HIDE_HANDLE_SCROLL_TO_TOP)
-                        .build()
-        );
 
 
         tableModel.getTableDefinition().addColumn(

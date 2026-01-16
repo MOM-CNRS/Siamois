@@ -76,58 +76,67 @@
         <!-- Barre latérale -->
         <h:panelGroup  id="navBar" rendered="#{navBean.siamoisMode}" layout="none">
             <nav id="siamoisNav" class="sidebar collapsed" aria-label="General sidebar">
-                <ul class="nav flex-column">
-                    <li class="nav-item">
-                        <h:graphicImage library="img" name="siamois_logo.png" styleClass="logo"/>
-                    </li>
-                </ul>
-                <button id="toggle-btn" type="button"
-                          class="btn btn-outline-light" onclick="toggleCollapseSidebar();"><i class="bi bi-list"/></button>
-                <form:csrfform id="navBarCsrfForm" formId="siamoisNavForm">
+                <div>
+                    <button id="toggle-btn" type="button"
+                            class="btn btn-outline-light" onclick="toggleCollapseSidebar();"><i class="bi bi-list"/></button>
+
                     <ul class="nav flex-column">
                         <li class="nav-item">
-                            <h:commandLink action="#{flowBean.addWelcomePanel}" styleClass="nav-link"
-                                           update="flow" id="homeLink">
-                                <i class="bi bi-house-door-fill"/>
-                                <span class="menu-text">#{langBean.msg('nav.home')} - #{navBean.selectedInstitution.name}</span>
-                                <p:tooltip for="homeLink" value="#{langBean.msg('nav.home.hint')}"/>
-                            </h:commandLink>
+                            <h:graphicImage width="50px" style="padding-bottom:32px;"
+                                            library="img" name="siamois_logo.png" styleClass="logo"/>
                         </li>
-                        <li class="nav-item">
-                            <h:commandLink action="#{redirectBean.redirectTo('/settings')}" styleClass="nav-link"
-                                           id="settingsLink">
-                                <i class="bi bi-gear-fill"/>
-                                <span class="menu-text">#{langBean.msg('nav.settings')}</span>
-                                <p:tooltip for="settingsLink" value="#{langBean.msg('nav.settings.hint')}"/>
-                            </h:commandLink>
-                        </li>
-                        <p:divider/>
-                        <h:panelGroup id="bookmarkGroup" layout="none"
-                                      rendered="#{navBean.bookmarkedPanels.size() > 0}">
-                            <li class="nav-header">
-                                #{langBean.msg('nav.header.bookmark')}
-                            </li>
-                            <ui:repeat value="#{navBean.bookmarkedPanels}" var="bookmark">
-                                <p:autoUpdate/>
-                                <li class="nav-item">
-                                    <h:commandLink id="bookmarkLink"
-                                                   action="#{redirectBean.redirectTo(bookmark.getResourceUri())}"
-                                                   styleClass="nav-link">
-                                        <i class="#{bookmark.getBookmarkIcon()}"
-                                           style="color: #{bookmark.getBookmarkColor()}"/>
-                                        <span class="menu-text">#{navBean.bookmarkTitle(bookmark)}</span>
-                                    </h:commandLink>
-                                    <p:tooltip for="bookmarkLink" value="#{navBean.bookmarkTitle(bookmark)}"/>
-                                </li>
-                            </ui:repeat>
-                        </h:panelGroup>
                     </ul>
-                </form:csrfform>
+
+                    <form:csrfform id="navBarCsrfForm" formId="siamoisNavForm">
+                        <ul class="nav flex-column">
+                            <li class="nav-item">
+                                <h:commandLink action="#{flowBean.addWelcomePanel}" styleClass="nav-link"
+                                               update="flow" id="homeLink">
+                                    <i class="bi bi-house-door-fill"/>
+                                    <span class="menu-text">#{langBean.msg('nav.home')} - #{navBean.selectedInstitution.name}</span>
+                                    <p:tooltip for="homeLink" value="#{langBean.msg('nav.home.hint')}"/>
+                                </h:commandLink>
+                            </li>
+                            <li class="nav-item">
+                                <h:commandLink action="#{redirectBean.redirectTo('/settings')}" styleClass="nav-link"
+                                               id="settingsLink">
+                                    <i class="bi bi-gear-fill"/>
+                                    <span class="menu-text">#{langBean.msg('nav.settings')}</span>
+                                    <p:tooltip for="settingsLink" value="#{langBean.msg('nav.settings.hint')}"/>
+                                </h:commandLink>
+                            </li>
+                            <p:divider/>
+                            <h:panelGroup id="bookmarkGroup" layout="none"
+                                          rendered="#{navBean.bookmarkedPanels.size() > 0}">
+                                <li class="nav-header">
+                                    #{langBean.msg('nav.header.bookmark')}
+                                </li>
+                                <ui:repeat value="#{navBean.bookmarkedPanels}" var="bookmark">
+                                    <p:autoUpdate/>
+                                    <li class="nav-item">
+                                        <h:commandLink id="bookmarkLink"
+                                                       action="#{redirectBean.redirectTo(bookmark.getResourceUri())}"
+                                                       styleClass="nav-link">
+                                            <i class="#{bookmark.getBookmarkIcon()}"
+                                               style="color: #{bookmark.getBookmarkColor()}"/>
+                                            <span class="menu-text">#{navBean.bookmarkTitle(bookmark)}</span>
+                                        </h:commandLink>
+                                        <p:tooltip for="bookmarkLink" value="#{navBean.bookmarkTitle(bookmark)}"/>
+                                    </li>
+                                </ui:repeat>
+                            </h:panelGroup>
+                        </ul>
+                    </form:csrfform>
+                </div>
+
                 <div class="sidebar-footer">
+                    <p:outputPanel class="version-number">
+                        #{appVersionBean.getVersion()}
+                    </p:outputPanel>
                     <hr class="sidebar-divider"/>
                     <form:csrfform formId="logoutForm">
                         <div style="
-                                padding-left:1em;
+                                padding: 12px 24px 12px 24px;
                                 width: 100%;
                                 display: flex;
                                 justify-content: center;

@@ -57,6 +57,7 @@
                 <ui:param name="conceptFieldsUpdateTargetsOnBlur" value="#{bean.getConceptFieldsUpdateTargetsOnBlur(panelIndex)}"/>
                 <ui:param name="updateTargetsOnBlur" value="#{root}:field-#{prefix}-#{statusIndex}-#{rowIndex}-#{colIndex} #{bean.getPanelHeaderUpdateId(panelIndex)}"/>
                 <ui:param name="spatialUnitOptions" value="#{bean.getSpatialUnitOptions()}" />
+                <ui:param name="mode" value="#{(col.readOnly) ? 'output' : flowBean.getInPlaceFieldMode()}"/>
             </ui:include>
 
         </sharedInput:panelField>

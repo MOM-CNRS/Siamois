@@ -8,21 +8,28 @@ import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.authorization.writeverifier.RecordingUnitWriteVerifier;
 import fr.siamois.domain.services.form.FormService;
+import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitTreeService;
 import fr.siamois.ui.bean.NavBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
 import fr.siamois.ui.bean.dialog.newunit.GenericNewUnitDialogBean;
+import fr.siamois.ui.bean.dialog.newunit.NewUnitContext;
+import fr.siamois.ui.bean.dialog.newunit.UnitKind;
 import fr.siamois.ui.bean.panel.FlowBean;
 import fr.siamois.ui.lazydatamodel.BaseRecordingUnitLazyDataModel;
 import fr.siamois.ui.lazydatamodel.tree.RecordingUnitTreeTableLazyModel;
+import fr.siamois.utils.MessageUtils;
 import lombok.Getter;
 import org.primefaces.model.TreeNode;
 
 import java.time.LocalDateTime;
 import java.time.Month;
 import java.util.List;
+import java.util.Objects;
 
+import static fr.siamois.ui.bean.dialog.newunit.NewUnitContext.TreeInsert.ROOT;
+import static fr.siamois.ui.table.TableColumnAction.DUPLICATE_ROW;
 import static fr.siamois.ui.table.TableColumnAction.GO_TO_RECORDING_UNIT;
 
 /**
@@ -36,9 +43,12 @@ import static fr.siamois.ui.table.TableColumnAction.GO_TO_RECORDING_UNIT;
 @Getter
 public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingUnit, Long> {
 
+    public static final String THIS = "@this";
+    public static final String SIA_ICON_BTN = "sia-icon-btn";
     /** Lazy model spécifique RecordingUnit (accès à selectedUnits, etc.) */
     private final BaseRecordingUnitLazyDataModel recordingUnitLazyDataModel;
     private final FlowBean flowBean;
+    private final RecordingUnitService recordingUnitService;
 
     private final RecordingUnitWriteVerifier recordingUnitWriteVerifier;
 
@@ -52,6 +62,7 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
                                        NavBean navBean,
                                        FlowBean flowBean, GenericNewUnitDialogBean<RecordingUnit> genericNewUnitDialogBean,
                                        RecordingUnitWriteVerifier recordingUnitWriteVerifier,
+                                       RecordingUnitService recordingUnitService,
                                        RecordingUnitTreeTableLazyModel treeLazyModel) {
 
         super(
@@ -68,7 +79,7 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
         this.recordingUnitLazyDataModel = lazyDataModel;
         this.sessionSettingsBean = sessionSettingsBean;
         this.flowBean = flowBean;
-
+        this.recordingUnitService = recordingUnitService;
         this.recordingUnitWriteVerifier = recordingUnitWriteVerifier;
 
     }
@@ -189,18 +200,26 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
                 // Bookmark toggle
                 RowAction.builder()
                         .action(TableColumnAction.TOGGLE_BOOKMARK)
-                        .processExpr("@this")
+                        .processExpr(THIS)
                         .updateExpr("bookmarkToggleButton navBarCsrfForm:siamoisNavForm:bookmarkGroup")
                         .updateSelfTable(false)
-                        .styleClass("sia-icon-btn")
+                        .styleClass(SIA_ICON_BTN)
                         .build(),
 
                 // Duplicate row (RecordingUnit only)
                 RowAction.builder()
                         .action(TableColumnAction.DUPLICATE_ROW)
-                        .processExpr("@this")
+                        .processExpr(THIS)
                         .updateSelfTable(true) // <-- mettra à jour :#{cc.clientId}:entityDatatable
-                        .styleClass("sia-icon-btn")
+                        .styleClass(SIA_ICON_BTN)
+                        .build(),
+
+                // Add children
+                RowAction.builder()
+                        .action(TableColumnAction.NEW_CHILDREN)
+                        .processExpr(THIS)
+                        .updateSelfTable(true)
+                        .styleClass(SIA_ICON_BTN)
                         .build()
         );
     }
@@ -226,25 +245,56 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
         return switch (action.getAction()) {
             case DUPLICATE_ROW -> flowBean.getIsWriteMode();
             case TOGGLE_BOOKMARK -> true;
+            case NEW_ACTION -> flowBean.getIsWriteMode();
             default -> true;
         };
     }
 
 
-    public String resolveIcon(RowAction action, RecordingUnit ru) {
+    public String resolveIcon(RowAction action,RecordingUnit ru) {
+
         return switch (action.getAction()) {
             case TOGGLE_BOOKMARK -> Boolean.TRUE.equals(navBean.isRecordingUnitBookmarkedByUser(ru.getFullIdentifier()))
                             ? "bi bi-bookmark-x-fill"
                             : "bi bi-bookmark-plus";
             case DUPLICATE_ROW -> "bi bi-copy";
+            case NEW_CHILDREN -> "bi bi-node-plus-fill rotate-90";
             default -> "";
         };
     }
-    public void handleRowAction(RowAction action, RecordingUnit ru) {
+    public void handleRowAction(RowAction action,  RecordingUnit ru) {
         switch (action.getAction()) {
             case TOGGLE_BOOKMARK -> navBean.toggleRecordingUnitBookmark(ru);
-            case DUPLICATE_ROW -> recordingUnitLazyDataModel.duplicateRow();
+            case DUPLICATE_ROW -> this.duplicateRow(ru, null);
+            case NEW_CHILDREN -> {
+                // Open new rec unit dialog
+                // The new spatial rec will be children of the current ru
+                NewUnitContext ctx = NewUnitContext.builder()
+                        .kindToCreate(UnitKind.RECORDING)
+                        .trigger(NewUnitContext.Trigger.cell(UnitKind.RECORDING, ru.getId(), "children"))
+                        .insertPolicy(NewUnitContext.UiInsertPolicy.builder()
+                                .listInsert(NewUnitContext.ListInsert.TOP)
+                                .treeInsert(NewUnitContext.TreeInsert.CHILD_FIRST)
+                                .build())
+                        .build();
+
+                openCreateDialog(ctx, genericNewUnitDialogBean);
+            }
             default -> throw new IllegalStateException("Unhandled action: " + action.getAction());
+        }
+    }
+
+    // actions specific to treetable
+    public void handleRowAction(RowAction action, TreeNode<RecordingUnit> node) {
+        RecordingUnit ru = node.getData();
+        if (action.getAction() == DUPLICATE_ROW) {
+            if (!Objects.equals(node.getParent().getRowKey(), "root")) {
+                this.duplicateRow(node.getData(), node.getParent().getData());
+                return;
+            }
+            this.duplicateRow(node.getData(), null);
+        } else {
+            handleRowAction(action, ru);
         }
     }
 
@@ -254,8 +304,56 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
     }
 
     @Override
+    public void save() {
+// will be implemented when working on recording unit table
+    }
+
+    @Override
+    public boolean canUserEditRow(RecordingUnit unit) {
+        return true; // todo: implement permission
+    }
+
+    @Override
     public TreeNode<RecordingUnit> getTreeRoot() {
         return treeLazyModel.getRoot();
+    }
+
+    // Duplique une unité d'enregistrement
+    // Le place au même niveau dans la hierarchie mais ne copie pas les enfants
+    private void duplicateRow(RecordingUnit toDuplicate, RecordingUnit parent) {
+
+        // Create a copy from selected row
+        RecordingUnit newUnit = new RecordingUnit(toDuplicate);
+
+        if(parent != null) {
+            newUnit.getParents().add(parent);
+        }
+
+        newUnit.setIdentifier(recordingUnitService.generateNextIdentifier(newUnit));
+
+        newUnit = recordingUnitService.save(newUnit, newUnit.getType(), List.of(),  List.of(),  List.of());
+
+        // Build the creation context (as child of the parent of the duplicated row, or root if no parent)
+        NewUnitContext ctx = NewUnitContext.builder()
+                .kindToCreate(UnitKind.RECORDING)
+                .trigger(
+                        parent == null
+                                ? null
+                                : NewUnitContext.Trigger.cell(
+                                UnitKind.RECORDING,
+                                parent.getId(),
+                                "parents"
+                        )
+                )
+                .insertPolicy(NewUnitContext.UiInsertPolicy.builder()
+                        .listInsert(NewUnitContext.ListInsert.TOP)
+                        .treeInsert(parent == null ? ROOT : NewUnitContext.TreeInsert.CHILD_FIRST)
+                        .build())
+                .build();
+
+
+        onAnyEntityCreated(newUnit, ctx) ;
+        MessageUtils.displayInfoMessage(sessionSettingsBean.getLangBean(), "common.action.duplicateEntity", toDuplicate.getFullIdentifier());
     }
 
 }

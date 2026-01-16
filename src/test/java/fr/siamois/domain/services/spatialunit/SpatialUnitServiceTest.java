@@ -350,6 +350,7 @@ class SpatialUnitServiceTest {
         when(spatialUnitRepository.save(any(SpatialUnit.class))).thenReturn(spatialUnit1);
         when(institutionService.findById(anyLong())).thenReturn(i);
         when(personService.findById(anyLong())).thenReturn(person);
+        when(spatialUnitRepository.findById(anyLong())).thenReturn(Optional.of(spatialUnit1));
 
         // Act
         SpatialUnit result = spatialUnitService.save(userInfo, unit);

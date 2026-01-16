@@ -1,10 +1,11 @@
 package fr.siamois.ui.table.definitions;
 
 import fr.siamois.domain.models.actionunit.ActionUnit;
-import fr.siamois.ui.table.CommandLinkColumn;
-import fr.siamois.ui.table.EntityTableViewModel;
-import fr.siamois.ui.table.RelationColumn;
-import fr.siamois.ui.table.TableColumnAction;
+import fr.siamois.domain.models.form.customfield.CustomFieldText;
+import fr.siamois.domain.models.vocabulary.Concept;
+import fr.siamois.ui.table.*;
+
+import static fr.siamois.ui.bean.panel.models.panel.single.AbstractSingleEntity.SYSTEM_THESO;
 
 
 /**
@@ -28,6 +29,18 @@ public final class ActionUnitTableDefinitionFactory {
             return;
         }
 
+        Concept nameConcept = new Concept.Builder()
+                .vocabulary(SYSTEM_THESO)
+                .externalId("4285848")
+                .build();
+        CustomFieldText nameField =  CustomFieldText.builder()
+                .label("common.label.name")
+                .id(2L)
+                .isSystemField(true)
+                .valueBinding("name")
+                .concept(nameConcept)
+                .build();
+
         // -------------------------
         // Name / identifier link col
         // -------------------------
@@ -39,7 +52,8 @@ public final class ActionUnitTableDefinitionFactory {
 
                         // PrimeFaces metadata equivalents
                         .toggleable(false)
-                        .sortable(true)
+                        .sortable(false)
+                        .filterable(false)
                         .sortField("name")
 
                         // What to display inside <h:outputText>
@@ -55,6 +69,18 @@ public final class ActionUnitTableDefinitionFactory {
                         .oncompleteJs("PF('buiContent').hide();handleScrollToTop();")
                         .build()
         );
+
+        tableModel.getTableDefinition().addColumn(
+                FormFieldColumn.builder()
+                        .id("name")
+                        .headerKey("spatialunit.field.name")
+                        .field(nameField)
+                        .sortable(true)
+                        .visible(true)
+                        .required(true)
+                        .build()
+        );
+
         tableModel.getTableDefinition().addColumn(
                 RelationColumn.builder()
                         .id("recording")

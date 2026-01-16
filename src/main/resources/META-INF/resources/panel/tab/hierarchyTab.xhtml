@@ -1,7 +1,6 @@
 <ui:fragment xmlns="http://www.w3.org/1999/xhtml"
              xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
              xmlns:p="http://primefaces.org/ui"
-             xmlns:f="http://java.sun.com/jsf/core"
              xmlns:table="http://xmlns.jcp.org/jsf/composite/pages/shared/table"
 
 >
@@ -14,23 +13,10 @@
              collapsed="false">
 
         <table:entityTable
-                displayColumnToggler="true"
                 tableModel="#{tabModel.parentTableModel}"
                 panelIndex="#{panelIndex}"
                 id="parentList"
-        >
-            <f:facet name="rightToolbar">
-                <p:commandButton
-                        rendered="#{tabModel.parentTableModel.toolbarCreateConfig ne null and flowBean.isWriteMode and spatialUnitFieldBean.isCreateAllowed()}"
-                        value="#{langBean.msg('common.action.create')}"
-                        icon="bi bi-plus-square"
-                        actionListener="#{tabModel.parentTableModel.openCreateFromToolbar(genericNewUnitDialogBean)}"
-                        oncomplete="PF('newUnitDiag').show();"
-                        update="newUnitForm"
-                        style="margin-right:.5rem">
-                </p:commandButton>
-            </f:facet>
-        </table:entityTable>
+        />
 
     </p:panel>
 
@@ -38,23 +24,10 @@
              header="Enfants" toggleable="true"
              collapsed="false">
         <table:entityTable
-                displayColumnToggler="true"
                 tableModel="#{tabModel.childTableModel}"
                 panelIndex="#{panelIndex}"
                 id="childList"
-        >
-            <f:facet name="rightToolbar">
-                <p:commandButton
-                        rendered="#{tabModel.childTableModel.toolbarCreateConfig ne null and flowBean.isWriteMode and spatialUnitFieldBean.isCreateAllowed()}"
-                        value="#{langBean.msg('common.action.create')}"
-                        icon="bi bi-plus-square"
-                        actionListener="#{tabModel.childTableModel.openCreateFromToolbar(genericNewUnitDialogBean)}"
-                        oncomplete="PF('newUnitDiag').show();"
-                        update="newUnitForm"
-                        style="margin-right:.5rem">
-                </p:commandButton>
-            </f:facet>
-        </table:entityTable>
+        />
 
     </p:panel>
 

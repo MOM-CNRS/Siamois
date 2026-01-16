@@ -151,3 +151,37 @@ body .ui-datatable .ui-datatable-data>tr.ui-state-highlight {
   border-radius: 8px;
   box-shadow: 0 2px 6px rgba(0,0,0,0.15);
 }
+
+.rotate-90 {
+    transform: rotate(90deg);
+}
+
+body .ui-toggleswitch.ui-toggleswitch-checked .ui-toggleswitch-slider {
+    background: var(--light-color-200);
+}
+
+/* below is fixing horizontal scrolling for treetable */
+/* For some reason PrimeFaces does not provides a wrapper for the treetable <table> */
+body .ui-treetable-header {
+        display: inline-block;
+        position: sticky;
+        left: 0;
+        background: white;
+        z-index: 1;
+        width: 100%;
+    }
+
+/* Apply only on devices that support hover (mouse, trackpad) */
+@media (hover: hover) and (pointer: fine) {
+    .hidden-column {
+        visibility: hidden;
+        opacity: 0;
+        transition: visibility 0s, opacity 0.3s;
+    }
+}
+
+/* Show the column when the row is hovered */
+.datatable-hoverable-table tbody tr.ui-state-hover .hidden-column {
+    visibility: visible;
+    opacity: 1;
+}

@@ -21,6 +21,7 @@ import lombok.Getter;
 import lombok.Setter;
 import org.primefaces.component.api.UIColumn;
 import org.primefaces.event.ColumnToggleEvent;
+import org.primefaces.model.TreeNode;
 import org.primefaces.model.Visibility;
 
 import java.util.HashMap;
@@ -48,6 +49,9 @@ import static fr.siamois.ui.bean.dialog.newunit.NewUnitContext.TreeInsert.ROOT;
 @Getter
 public abstract class EntityTableViewModel<T extends TraceableEntity, ID> {
 
+    @Setter
+    protected String globalFilter;
+
     /** Lazy model "pur data" (chargement, tri, filtres, sélection, etc.) */
     protected final BaseLazyDataModel<T> lazyDataModel;
     protected final BaseTreeTableLazyModel<T, ID> treeLazyModel;
@@ -72,7 +76,14 @@ public abstract class EntityTableViewModel<T extends TraceableEntity, ID> {
     private final TableDefinition tableDefinition = new TableDefinition();
 
     /** Contexte de formulaire par ligne (clé = ID de l'entité) */
-    private final Map<ID, EntityFormContext<T>> rowContexts = new HashMap<>();
+    protected final Map<ID, EntityFormContext<T>> rowContexts = new HashMap<>();
+
+    // tree mode selection
+    @Setter
+    @Getter
+    private List<TreeNode<T>> checkboxSelectedTreeNodes;
+
+
 
     @Getter
     @Setter
@@ -81,16 +92,42 @@ public abstract class EntityTableViewModel<T extends TraceableEntity, ID> {
 
     @Getter
     @Setter
-    private boolean treeMode = false; // false = table, true = tree
+    protected boolean treeMode = true; // false = table, true = tree
 
-    protected EntityTableViewModel(BaseLazyDataModel<T> lazyDataModel,
-                                   BaseTreeTableLazyModel<T, ID> treeLazyModel,
-                                   GenericNewUnitDialogBean<T> genericNewUnitDialogBean,
-                                   FormService formService,
-                                   SpatialUnitTreeService spatialUnitTreeService,
-                                   SpatialUnitService spatialUnitService, NavBean navBean,
-                                   Function<T, ID> idExtractor,
-                                   String formScopeValueBinding) {
+    protected EntityTableViewModel(
+            BaseLazyDataModel<T> lazyDataModel,
+            GenericNewUnitDialogBean<T> genericNewUnitDialogBean,
+            FormService formService,
+            SpatialUnitTreeService spatialUnitTreeService,
+            SpatialUnitService spatialUnitService,
+            NavBean navBean,
+            Function<T, ID> idExtractor,
+            String formScopeValueBinding
+    ) {
+        this(
+                lazyDataModel,
+                null, // treeLazyModel is not used in this constructor
+                genericNewUnitDialogBean,
+                formService,
+                spatialUnitTreeService,
+                spatialUnitService,
+                navBean,
+                idExtractor,
+                formScopeValueBinding
+        );
+    }
+
+    protected EntityTableViewModel(
+            BaseLazyDataModel<T> lazyDataModel,
+            BaseTreeTableLazyModel<T, ID> treeLazyModel,
+            GenericNewUnitDialogBean<T> genericNewUnitDialogBean,
+            FormService formService,
+            SpatialUnitTreeService spatialUnitTreeService,
+            SpatialUnitService spatialUnitService,
+            NavBean navBean,
+            Function<T, ID> idExtractor,
+            String formScopeValueBinding
+    ) {
         this.lazyDataModel = lazyDataModel;
         this.treeLazyModel = treeLazyModel;
         this.formService = formService;
@@ -100,7 +137,16 @@ public abstract class EntityTableViewModel<T extends TraceableEntity, ID> {
         this.navBean = navBean;
         this.idExtractor = idExtractor;
         this.formScopeValueBinding = formScopeValueBinding;
+
+        // Set global filter for both models if they exist
+        if (this.lazyDataModel != null) {
+            this.lazyDataModel.setGlobalFilter(globalFilter);
+        }
+        if (this.treeLazyModel != null) {
+            this.treeLazyModel.setGlobalFilter(globalFilter);
+        }
     }
+
 
     /**
      * Colonnes visibles (pour <p:columns>).
@@ -231,6 +277,10 @@ public abstract class EntityTableViewModel<T extends TraceableEntity, ID> {
         return null; // subclasses override if they support TREE mode
     }
 
+    public String getRowActionTooltipCode(RowAction action, T unit) {
+        return null; // no tooltip by default
+    }
+
     public boolean isTreeViewSupported() {
         return false;
     }
@@ -323,6 +373,32 @@ public abstract class EntityTableViewModel<T extends TraceableEntity, ID> {
             // comportement silencieux comme avant
         }
     }
+
+    public boolean hasUnsavedModifications() {
+        return rowContexts.values().stream()
+                .anyMatch(EntityFormContext::isHasUnsavedModifications);
+    }
+
+    /**
+     * Save all the entities of the table
+     */
+    public abstract void save();
+
+    /**
+     * Cancel any modifs
+     */
+    public void cancelModifications() {
+        rowContexts.values().forEach(ctx -> {
+            ctx.init(true);
+            ctx.setHasUnsavedModifications(false);
+        });
+    }
+
+    /*
+    * Check if user has permission to edit the row data
+     */
+    public abstract boolean canUserEditRow(T unit);
+
 
 
 

@@ -14,6 +14,7 @@ import fr.siamois.ui.bean.dialog.institution.UserDialogBean;
 import fr.siamois.ui.bean.settings.SettingsDatatableBean;
 import fr.siamois.utils.DateUtils;
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.primefaces.PrimeFaces;
@@ -29,6 +30,7 @@ import java.util.Set;
 @Setter
 @Component
 @SessionScoped
+@RequiredArgsConstructor
 public class TeamMembersBean implements SettingsDatatableBean {
 
     private final LabelBean labelBean;
@@ -45,23 +47,6 @@ public class TeamMembersBean implements SettingsDatatableBean {
 
     private Set<TeamMemberRelation> memberRelations;
     private List<TeamMemberRelation> filteredMemberRelations;
-
-    public TeamMembersBean(LabelBean labelBean,
-                           InstitutionService institutionService,
-                           UserDialogBean userDialogBean,
-                           PersonService personService,
-                           PendingPersonService pendingPersonService,
-                           SessionSettingsBean sessionSettingsBean,
-                           RedirectBean redirectBean, LangBean langBean) {
-        this.labelBean = labelBean;
-        this.institutionService = institutionService;
-        this.userDialogBean = userDialogBean;
-        this.personService = personService;
-        this.pendingPersonService = pendingPersonService;
-        this.sessionSettingsBean = sessionSettingsBean;
-        this.redirectBean = redirectBean;
-        this.langBean = langBean;
-    }
 
     public void reset() {
         this.actionUnit = null;

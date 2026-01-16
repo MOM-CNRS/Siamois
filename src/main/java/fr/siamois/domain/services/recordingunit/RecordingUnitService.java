@@ -173,7 +173,9 @@ public class RecordingUnitService implements ArkEntityService {
             managedRecordingUnit.setGeomorphologicalAgent(recordingUnit.getGeomorphologicalAgent());
 
 
-            // Additional answers
+
+
+            // ---------- Additional answers
             CustomFormResponse managedFormResponse;
 
 
@@ -196,7 +198,27 @@ public class RecordingUnitService implements ArkEntityService {
             }
 
 
-            return recordingUnitRepository.save(managedRecordingUnit);
+            managedRecordingUnit = recordingUnitRepository.save(managedRecordingUnit);
+
+         // Gestion des parents
+            for (RecordingUnit parentRef : recordingUnit.getParents()) {
+                RecordingUnit parent = recordingUnitRepository.findById(parentRef.getId())
+                        .orElseThrow(() -> new IllegalArgumentException("Parent not found: " + parentRef.getId()));
+
+                // Ajout bidirectionnel
+                parent.getChildren().add(managedRecordingUnit);
+                managedRecordingUnit.getParents().add(parent);
+
+                // Sauvegarde du parent
+                recordingUnitRepository.save(parent);
+            }
+
+            //  Gestion des enfants
+            for (RecordingUnit child : recordingUnit.getChildren()) {
+                managedRecordingUnit.getChildren().add(child);
+            }
+
+            return managedRecordingUnit;
 
         } catch (RuntimeException e) {
             throw new FailedRecordingUnitSaveException(e.getMessage());

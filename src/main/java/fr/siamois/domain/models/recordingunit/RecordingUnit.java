@@ -63,7 +63,8 @@ public class RecordingUnit extends RecordingUnitParent implements ArkEntity, Ref
     @OneToMany(mappedBy = "unit2", fetch = FetchType.LAZY)
     private transient Set<StratigraphicRelationship> relationshipsAsUnit2 = new HashSet<>();
 
-    @ManyToMany
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JsonIgnore
     @JoinTable(
             name = "recording_unit_hierarchy",
             joinColumns = {@JoinColumn(name = "fk_parent_id")},
@@ -71,7 +72,8 @@ public class RecordingUnit extends RecordingUnitParent implements ArkEntity, Ref
     )
     private Set<RecordingUnit> children = new HashSet<>();
 
-    @ManyToMany(mappedBy = "children")
+    @ManyToMany(mappedBy = "children",fetch = FetchType.LAZY)
+    @JsonIgnore
     private Set<RecordingUnit> parents = new HashSet<>();
 
 
@@ -154,7 +156,7 @@ public class RecordingUnit extends RecordingUnitParent implements ArkEntity, Ref
                 "contributors", "type", "secondaryType", "thirdType", "actionUnit", "spatialUnit",
                 "geomorphologicalCycle", "normalizedInterpretation", "author", "geomorphologicalAgent",
                 "matrixComposition", "matrixColor", "matrixTexture", "erosionShape", "erosionOrientation",
-                "erosionProfile", "taq", "tpq", "chronologicalPhase");
+                "erosionProfile", "taq", "tpq", "chronologicalPhase", "fullIdentifier");
     }
 
     // ----------- Concepts for system fields

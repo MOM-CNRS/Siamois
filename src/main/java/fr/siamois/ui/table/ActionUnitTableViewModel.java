@@ -228,7 +228,7 @@ public class ActionUnitTableViewModel extends EntityTableViewModel<ActionUnit, L
         };
     }
 
-    public void handleRowAction(RowAction action, ActionUnit au) {
+    public void handleRowAction(RowAction action,  ActionUnit au) {
         if (action == null || action.getAction() == null) {
             throw new IllegalStateException("Unhandled action: null");
         }
@@ -236,9 +236,24 @@ public class ActionUnitTableViewModel extends EntityTableViewModel<ActionUnit, L
         throw new IllegalStateException("Unhandled action: " + action.getAction());
     }
 
+    public void handleRowAction(RowAction action, TreeNode<ActionUnit> node) {
+        ActionUnit au = node.getData();
+        handleRowAction(action, au);
+    }
+
     @Override
     public boolean isTreeViewSupported() {
         return true;
+    }
+
+    @Override
+    public void save() {
+    // will be implemented when working on action unit table
+    }
+
+    @Override
+    public boolean canUserEditRow(ActionUnit unit) {
+        return true; // todo: implement permission
     }
 
     @Override
