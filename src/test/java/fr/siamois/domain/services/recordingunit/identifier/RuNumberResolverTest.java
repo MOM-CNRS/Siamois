@@ -7,8 +7,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.*;
 
 @ExtendWith(MockitoExtension.class)
 class RuNumberResolverTest {
@@ -27,6 +26,26 @@ class RuNumberResolverTest {
     @Test
     void testGetCode() {
         assertEquals("NUM_UE", ruNumberResolver.getCode());
+    }
+
+    @Test
+    void testformatUsesThisResolver_valid() {
+        assertTrue(ruNumberResolver.formatUsesThisResolver("{NUM_UE}-Test"));
+    }
+
+    @Test
+    void testformatUsesThisResolver_valid_withDigits() {
+        assertTrue(ruNumberResolver.formatUsesThisResolver("{NUM_UE:000}-Test"));
+    }
+
+    @Test
+    void testformatUsesThisResolver_invalid_withDigits() {
+        assertFalse(ruNumberResolver.formatUsesThisResolver("{NUM_UA:000}-Test"));
+    }
+
+    @Test
+    void testformatUsesThisResolver_invalid() {
+        assertFalse(ruNumberResolver.formatUsesThisResolver("{NUM_UA}-Test"));
     }
 
     @Test
@@ -89,9 +108,13 @@ class RuNumberResolverTest {
 
     @Test
     void testResolve_multiplePlaceholders() {
-        // The current implementation only replaces the first instance.
         String format = "{NUM_UE}-{NUM_UE}";
         String result = ruNumberResolver.resolve(format, ruInfo);
         assertEquals("12-12", result);
+    }
+
+    @Test
+    void testDescriptionIsNotNull() {
+        assertNotNull(ruNumberResolver.getDescriptionLanguageCode());
     }
 }
