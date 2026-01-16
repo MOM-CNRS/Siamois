@@ -37,6 +37,7 @@ import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.lang.reflect.Modifier;
 import java.util.*;
 
 /**
@@ -458,7 +459,7 @@ public class RecordingUnitService implements ArkEntityService {
     }
 
     public RecordingUnitIdInfo createOrGetInfoOf(RecordingUnit recordingUnit) {
-        Optional<RecordingUnitIdInfo> opt = recordingUnitIdInfoRepository.findById(recordingUnit);
+        Optional<RecordingUnitIdInfo> opt = recordingUnitIdInfoRepository.findByRecordingUnit(recordingUnit);
         if (opt.isPresent()) return opt.get();
         RecordingUnitIdInfo info = new RecordingUnitIdInfo();
         info.setRecordingUnit(recordingUnit);
@@ -505,12 +506,14 @@ public class RecordingUnitService implements ArkEntityService {
         Set<Class<? extends RuIdentifierResolver>> classes = reflections.getSubTypesOf(RuIdentifierResolver.class);
 
         for (Class<? extends RuIdentifierResolver> clazz : classes) {
-            try {
-                RuIdentifierResolver resolver = applicationContext.getBean(clazz);
-                IDENTIFIER_RESOLVERS.put(resolver.getCode(), resolver);
-            } catch (BeansException e) {
-                log.error("Error while scanning identifiers resolver of RecordingUnits");
-                log.error(e.getMessage(), e);
+            if (!clazz.isInterface() && !Modifier.isAbstract(clazz.getModifiers())) {
+                try {
+                    RuIdentifierResolver resolver = applicationContext.getBean(clazz);
+                    IDENTIFIER_RESOLVERS.put(resolver.getCode(), resolver);
+                } catch (BeansException e) {
+                    log.error("Error while scanning identifiers resolver of RecordingUnits");
+                    log.error(e.getMessage(), e);
+                }
             }
         }
 

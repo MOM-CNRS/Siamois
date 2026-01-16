@@ -23,6 +23,9 @@ import static jakarta.persistence.FetchType.EAGER;
 public class RecordingUnitIdInfo {
 
     @Id
+    private Long recordingUnitId;
+
+    @MapsId("recordingUnitId")
     @JoinColumn(name = "fk_recording_unit_id", nullable = false)
     @OneToOne(cascade = CascadeType.ALL, fetch = EAGER)
     private RecordingUnit recordingUnit;

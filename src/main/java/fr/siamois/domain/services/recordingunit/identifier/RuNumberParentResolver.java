@@ -33,7 +33,7 @@ public class RuNumberParentResolver extends RuNumericalIdentifierResolver {
         if (info.getParent() == null) {
             return 0;
         }
-        Optional<RecordingUnitIdInfo> opt = recordingUnitIdInfoRepository.findById(info.getParent());
+        Optional<RecordingUnitIdInfo> opt = recordingUnitIdInfoRepository.findByRecordingUnit(info.getParent());
         return opt.map(RecordingUnitIdInfo::getRuNumber).orElse(0);
     }
 }
