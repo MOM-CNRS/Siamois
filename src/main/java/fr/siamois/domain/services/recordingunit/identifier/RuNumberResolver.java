@@ -1,9 +1,6 @@
 package fr.siamois.domain.services.recordingunit.identifier;
 
-import fr.siamois.domain.models.actionunit.ActionUnit;
-import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.recordingunit.identifier.RecordingUnitIdInfo;
-import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
@@ -51,6 +48,7 @@ public class RuNumberResolver implements RuIdentifierResolver {
             }
             matcher.appendReplacement(result, Matcher.quoteReplacement(replacement));
         }
+
         matcher.appendTail(result);
 
         return result.toString();
