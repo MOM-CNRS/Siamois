@@ -26,6 +26,7 @@ import org.primefaces.model.TreeNode;
 import java.time.LocalDateTime;
 import java.time.Month;
 import java.util.List;
+import java.util.Objects;
 
 import static fr.siamois.ui.bean.dialog.newunit.NewUnitContext.TreeInsert.ROOT;
 import static fr.siamois.ui.table.TableColumnAction.DUPLICATE_ROW;

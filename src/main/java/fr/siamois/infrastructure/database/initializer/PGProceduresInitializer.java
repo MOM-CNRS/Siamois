@@ -8,6 +8,7 @@ import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.stereotype.Component;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
@@ -36,6 +37,8 @@ public class PGProceduresInitializer implements DatabaseInitializer {
             for (Resource resource : resources) {
                 try (InputStream is = resource.getInputStream()) {
                     procedures.add(new String(is.readAllBytes(), StandardCharsets.UTF_8));
+                } catch (IOException e) {
+                    throw new DatabaseDataInitException("Failed to open ressource", e);
                 }
             }
 
@@ -49,7 +52,7 @@ public class PGProceduresInitializer implements DatabaseInitializer {
             }
             log.info("Successfully loaded {} procedures", succesCount);
         } catch (Exception e) {
-            throw new DatabaseDataInitException("Failed to initialize autocomplete data", e);
+            throw new DatabaseDataInitException("Failed to initialize PGSQL script", e);
         }
     }
 }
