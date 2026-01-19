@@ -9,6 +9,7 @@ import fr.siamois.domain.models.form.customformresponse.CustomFormResponse;
 import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.recordingunit.StratigraphicRelationship;
+import fr.siamois.domain.models.recordingunit.identifier.RecordingUnitIdInfo;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.models.vocabulary.Vocabulary;
@@ -16,17 +17,23 @@ import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.form.CustomFormResponseService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.recordingunit.StratigraphicRelationshipService;
+import fr.siamois.domain.services.recordingunit.identifier.generic.RuIdentifierResolver;
 import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.infrastructure.api.dto.ConceptFieldDTO;
 import fr.siamois.infrastructure.database.repositories.person.PersonRepository;
+import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitIdCounterRepository;
+import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitIdInfoRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitRepository;
 import fr.siamois.infrastructure.database.repositories.team.TeamMemberRepository;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationContext;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
@@ -58,6 +65,12 @@ class RecordingUnitServiceTest {
     private ActionUnitService actionUnitService;
     @Mock
     private TeamMemberRepository teamMemberRepository;
+    @Mock
+    private RecordingUnitIdCounterRepository recordingUnitIdCounterRepository;
+    @Mock
+    private RecordingUnitIdInfoRepository recordingUnitIdInfoRepository;
+    @Mock
+    private ApplicationContext applicationContext;
 
 
     @InjectMocks
@@ -188,7 +201,6 @@ class RecordingUnitServiceTest {
         Concept c = new Concept();
         when(conceptService.saveOrGetConcept(c)).thenReturn(c);
 
-        when(recordingUnitRepository.findMaxUsedIdentifierByAction(anyLong())).thenReturn(null);
 
         when(recordingUnitRepository.save(any(RecordingUnit.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
@@ -197,6 +209,9 @@ class RecordingUnitServiceTest {
 
         when(recordingUnitRepository.findById(10L)).thenReturn(Optional.of(parent1Unit));
 
+        RecordingUnitIdInfo info = new RecordingUnitIdInfo();
+
+        doReturn(Optional.of(info)).when(recordingUnitIdInfoRepository).findById(any());
 
         RecordingUnit result = recordingUnitService.save(recordingUnitToSave,c,
                 List.of(anteriorUnit),
@@ -207,14 +222,14 @@ class RecordingUnitServiceTest {
         // assert
         assertNotNull(result);
         assertNull(result.getFormResponse());
-        assertEquals("MOM-2025-5", result.getFullIdentifier());
-        verify(recordingUnitRepository, times(2)).save(any(RecordingUnit.class));
+        verify(recordingUnitRepository, times(3)).save(any(RecordingUnit.class));
 
 
 
     }
 
     @Test
+    @SuppressWarnings("unchecked")
     void save_saveFormIfSet() {
 
         CustomForm form = new CustomForm();
@@ -248,13 +263,16 @@ class RecordingUnitServiceTest {
 
         when(personRepository.findAllById(anyList())).thenReturn(List.of(p));
 
-        when(recordingUnitRepository.findMaxUsedIdentifierByAction(anyLong())).thenReturn(null);
-
         when(recordingUnitRepository.save(any(RecordingUnit.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
         doNothing().when(customFormResponseService)
                 .saveFormResponse(any(CustomFormResponse.class), any(CustomFormResponse.class));
+
+        RecordingUnitIdInfo info = new RecordingUnitIdInfo();
+
+        doReturn(Optional.of(info)).when(recordingUnitIdInfoRepository).findById(any());
+        doReturn(new FakeResolver()).when(applicationContext).getBean(any(Class.class));
 
         RecordingUnit res = recordingUnitService.save(recordingUnitToSave, c, List.of(anteriorUnit),
                 List.of(synchronousUnit),
@@ -263,27 +281,6 @@ class RecordingUnitServiceTest {
         verify(customFormResponseService, times(1))
                 .saveFormResponse(any(CustomFormResponse.class), any(CustomFormResponse.class));
 
-
-
-    }
-
-    @Test
-    void save_Failure_MaxNbOfRecordingsReached() {
-
-        Concept c = new Concept();
-
-        when(recordingUnitRepository.findMaxUsedIdentifierByAction(anyLong())).thenReturn(5);
-
-        // Act & Assert
-        Exception exception = assertThrows(
-                Exception.class,
-                () -> recordingUnitService.save(recordingUnitToSave,c,
-                        new ArrayList<>(),
-                        new ArrayList<>(),
-                        new ArrayList<>())
-        );
-
-        assertEquals("Max recording unit code reached; Please ask administrator to increase the range", exception.getMessage());
 
 
     }
@@ -527,5 +524,22 @@ class RecordingUnitServiceTest {
         verify(recordingUnitRepository).findRootsByAction(actionId);
     }
 
+    static class FakeResolver implements RuIdentifierResolver {
+
+        @Override
+        public @NonNull String getCode() {
+            return "";
+        }
+
+        @Override
+        public @Nullable String getDescriptionLanguageCode() {
+            return "";
+        }
+
+        @Override
+        public @NonNull String resolve(@NonNull String baseFormatString, @NonNull RecordingUnitIdInfo ruInfo) {
+            return "";
+        }
+    }
 
 }

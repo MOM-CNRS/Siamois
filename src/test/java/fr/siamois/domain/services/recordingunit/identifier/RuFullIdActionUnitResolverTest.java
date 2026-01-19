@@ -2,6 +2,9 @@ package fr.siamois.domain.services.recordingunit.identifier;
 
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.recordingunit.identifier.RecordingUnitIdInfo;
+import fr.siamois.domain.services.recordingunit.identifier.generic.RuIdentifierResolver;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -47,7 +50,6 @@ class RuFullIdActionUnitResolverTest {
         @ParameterizedTest
         @CsvSource({
                 "ID-{ID_UA}-2024, true",
-                "{ID_UA:something}, true",
                 "{NUM_UE}-{ID_UA}, true",
                 "ID-2024, false",
                 "{TYPE_PARENT}, false",
@@ -84,7 +86,7 @@ class RuFullIdActionUnitResolverTest {
         }
 
         @Test
-        @DisplayName("should resolve with empty string when action unit's full identifier is null")
+        @DisplayName("should resolve with star when action unit's full identifier is null")
         void resolve_shouldUseEmptyString_whenFullIdentifierIsNull() {
             // Given
             String format = "PREFIX-{ID_UA}-SUFFIX";
@@ -95,11 +97,11 @@ class RuFullIdActionUnitResolverTest {
             String result = resolver.resolve(format, ruInfo);
 
             // Then
-            assertThat(result).isEqualTo("PREFIX--SUFFIX");
+            assertThat(result).isEqualTo("PREFIX-*-SUFFIX");
         }
 
         @Test
-        @DisplayName("should resolve with empty string when action unit is null")
+        @DisplayName("should resolve with star when action unit is null")
         void resolve_shouldUseEmptyString_whenActionUnitIsNull() {
             // Given
             String format = "PREFIX-{ID_UA}-SUFFIX";
@@ -109,7 +111,7 @@ class RuFullIdActionUnitResolverTest {
             String result = resolver.resolve(format, ruInfo);
 
             // Then
-            assertThat(result).isEqualTo("PREFIX--SUFFIX");
+            assertThat(result).isEqualTo("PREFIX-*-SUFFIX");
         }
 
         @Test

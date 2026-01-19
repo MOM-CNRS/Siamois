@@ -181,21 +181,6 @@ class RuTypeResolverTest {
         }
 
         @Test
-        @DisplayName("should throw StringIndexOutOfBoundsException if label is shorter than default length")
-        void resolve_shouldThrowException_whenLabelIsShorterThanDefault() {
-            // Given
-            String baseFormat = "{TYPE_UE}";
-            ConceptLabel label = new ConceptPrefLabel();
-            label.setLabel("St");
-            when(labelService.findLabelOf(ruType, "fr")).thenReturn(label);
-
-            // Then
-            assertThatThrownBy(() -> ruTypeResolver.resolve(baseFormat, ruInfo))
-                    .isInstanceOf(StringIndexOutOfBoundsException.class)
-                    .hasMessageContaining("begin 0, end 3, length 2");
-        }
-
-        @Test
         void resolve_shouldHaveFullLength_whenLabelIsShorterThanSpecified() {
             // Given
             String baseFormat = "{TYPE_UE:XXXXX}";

@@ -106,8 +106,8 @@ class RuTypeParentResolverTest {
         }
 
         @Test
-        @DisplayName("should return empty string if language is null")
-        void resolve_shouldReturnEmptyString_whenLangIsNull() {
+        @DisplayName("should return star if language is null")
+        void resolve_shouldReturnStar_whenLangIsNull() {
             // Given
             String baseFormat = "{TYPE_PARENT}";
             when(actionUnit.getRecordingUnitIdentifierLang()).thenReturn(null);
@@ -116,11 +116,11 @@ class RuTypeParentResolverTest {
             String result = ruTypeParentResolver.resolve(baseFormat, ruInfo);
 
             // Then
-            assertThat(result).isEqualTo(baseFormat);
+            assertThat(result).isEqualTo("*");
         }
 
         @Test
-        @DisplayName("should return base string if RU parent type is null")
+        @DisplayName("should replace by star if RU parent type is null")
         void resolve_shouldReturnBaseString_whenRuParentTypeIsNull() {
             // Given
             String baseFormat = "{TYPE_PARENT}";
@@ -130,7 +130,7 @@ class RuTypeParentResolverTest {
             String result = ruTypeParentResolver.resolve(baseFormat, ruInfo);
 
             // Then
-            assertThat(result).isEqualTo(baseFormat);
+            assertThat(result).isEqualTo("*");
         }
 
         @Test

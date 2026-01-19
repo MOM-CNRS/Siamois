@@ -10,6 +10,8 @@ import org.springframework.stereotype.Service;
 @Service
 public class RuFullIdActionUnitResolver implements RuIdentifierResolver {
 
+    private static final String DEFAULT_PATTERN = "*";
+
     @NonNull
     @Override
     public String getCode() {
@@ -31,8 +33,12 @@ public class RuFullIdActionUnitResolver implements RuIdentifierResolver {
     @Override
     public String resolve(@NonNull String baseFormatString, @NonNull RecordingUnitIdInfo ruInfo) {
         if (ruInfo.getActionUnit() == null) {
-            return "";
+            return baseFormatString.replace("{ID_UA}", DEFAULT_PATTERN);
         }
-        return baseFormatString.replace("{ID_UA}", ruInfo.getActionUnit().getFullIdentifier());
+        String replacement = ruInfo.getActionUnit().getFullIdentifier();
+        if (replacement == null || replacement.isEmpty()) {
+            replacement = DEFAULT_PATTERN;
+        }
+        return baseFormatString.replace("{ID_UA}", replacement);
     }
 }
