@@ -13,12 +13,12 @@ public abstract class RuTextIdentifierResolver implements RuIdentifierResolver {
     @NonNull
     protected abstract String textValue(@NonNull RecordingUnitIdInfo info);
 
+    protected abstract boolean infoAreNotValid(@NonNull RecordingUnitIdInfo info);
+
     @NonNull
     @Override
     public String resolve(@NonNull String baseFormatString, @NonNull RecordingUnitIdInfo ruInfo) {
-        if (!baseFormatString.contains("{" + getCode())
-                || ruInfo.getActionUnit().getRecordingUnitIdentifierLang() == null
-                || ruInfo.getRuType() == null) {
+        if (infoAreNotValid(ruInfo)) {
             return baseFormatString;
         }
 
