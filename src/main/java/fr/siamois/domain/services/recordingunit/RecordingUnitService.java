@@ -18,6 +18,7 @@ import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.form.CustomFormResponseService;
 import fr.siamois.domain.services.recordingunit.identifier.generic.RuIdentifierResolver;
+import fr.siamois.domain.services.recordingunit.identifier.generic.RuNumericalIdentifierResolver;
 import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.infrastructure.database.repositories.person.PersonRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitIdCounterRepository;
@@ -594,5 +595,13 @@ public class RecordingUnitService implements ArkEntityService {
                 .toList();
     }
 
+    public List<String> findAllNumericalIdentifiersCode() {
+        return findAllIdentifierResolver()
+                .values()
+                .stream()
+                .filter(r -> RuNumericalIdentifierResolver.class.isAssignableFrom(r.getClass()))
+                .map(RuIdentifierResolver::getCode)
+                .toList();
+    }
 
 }

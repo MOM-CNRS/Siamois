@@ -442,49 +442,30 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnit> imple
         return "/panel/tabview/actionUnitTabView.xhtml";
     }
 
-
     public void saveSettings() {
         boolean containsNumRu = false;
 
-        if (format != null && !format.isEmpty()) {
-            String placeholderPattern = "\\{([^}]+)\\}";
-            Pattern pattern = Pattern.compile(placeholderPattern);
-            Matcher matcher = pattern.matcher(format);
+        if (format == null || format.isEmpty()) return;
 
+        String placeholderPattern = "\\{([^}]+)\\}";
+        Pattern pattern = Pattern.compile(placeholderPattern);
+        Matcher matcher = pattern.matcher(format);
 
-            String strippedFormat = format.replaceAll(placeholderPattern, "");
-            if (strippedFormat.matches(".*\\{.*") || strippedFormat.matches(".*\\}.*")) {
-                MessageUtils.displayErrorMessage(langBean, "actionUnit.settings.error.invalidIdentifierFormat");
-                return;
-            }
+        String strippedFormat = format.replaceAll(placeholderPattern, "");
+        if (strippedFormat.matches(".*\\{.*") || strippedFormat.matches(".*\\}.*")) {
+            MessageUtils.displayErrorMessage(langBean, "actionUnit.settings.error.invalidIdentifierFormat");
+            return;
+        }
 
-            while (matcher.find()) {
-                String placeholderContent = matcher.group(1);
-                String[] parts = placeholderContent.split(":", 2);
-                String placeholderName = parts[0];
+        while (matcher.find()) {
+            String placeholderContent = matcher.group(1);
+            String[] parts = placeholderContent.split(":", 2);
+            String placeholderName = parts[0];
 
-                if (!recordingUnitService.findAllIdentifiersCode().contains(placeholderName)) {
-                    MessageUtils.displayErrorMessage(langBean, "actionUnit.settings.error.invalidIdentifierFormat");
-                    return;
-                }
-                containsNumRu = containsNumRu || placeholderName.equals("NUM_UE");
+            if (formatContainsInvalidCode(placeholderName)) return;
+            containsNumRu = containsNumRu || placeholderName.equals("NUM_UE");
 
-                if (parts.length > 1) {
-                    String formatSpecifier = parts[1];
-                    if (!formatSpecifier.matches("[0X]+")) {
-                        MessageUtils.displayErrorMessage(langBean, "actionUnit.settings.error.invalidIdentifierFormat");
-                        return;
-                    }
-
-                    if (List.of("NUM_UE", "NUM_PARENT", "NUM_USPATIAL").contains(placeholderName)) {
-                        long zeroCount = formatSpecifier.chars().filter(ch -> ch == '0').count();
-                        if (zeroCount > 0 && maxNumber != null && String.valueOf(maxNumber).length() > zeroCount) {
-                            MessageUtils.displayErrorMessage(langBean, "actionUnit.settings.error.insufficientDigits", placeholderName);
-                            return;
-                        }
-                    }
-                }
-            }
+            if (formatOfCodeIsNotValid(parts, placeholderName)) return;
         }
 
         if (!containsNumRu) {
@@ -502,6 +483,42 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnit> imple
         log.trace("Action unit saved with values : {} {} {}", unit.getMinRecordingUnitCode(), unit.getMaxRecordingUnitCode(), unit.getRecordingUnitIdentifierFormat());
 
         MessageUtils.displayInfoMessage(langBean, "actionUnit.settings.success.identifierConfigSaved");
+    }
+
+    private boolean formatContainsInvalidCode(String placeholderName) {
+        if (!recordingUnitService.findAllIdentifiersCode().contains(placeholderName)) {
+            MessageUtils.displayErrorMessage(langBean, "actionUnit.settings.error.invalidIdentifierFormat");
+            return true;
+        }
+        return false;
+    }
+
+    private boolean formatOfCodeIsNotValid(String[] parts, String placeholderName) {
+        if (parts.length > 1) {
+            String formatSpecifier = parts[1];
+            if (formatSpecifierIsNotValid(formatSpecifier)) return true;
+            if (oneNumericalFormatIsNotValid(placeholderName, formatSpecifier)) return true;
+        }
+        return false;
+    }
+
+    private boolean formatSpecifierIsNotValid(String formatSpecifier) {
+        if (!formatSpecifier.matches("[0X]+")) {
+            MessageUtils.displayErrorMessage(langBean, "actionUnit.settings.error.invalidIdentifierFormat");
+            return true;
+        }
+        return false;
+    }
+
+    private boolean oneNumericalFormatIsNotValid(String placeholderName, String formatSpecifier) {
+        if (recordingUnitService.findAllNumericalIdentifiersCode().contains(placeholderName)) {
+            long zeroCount = formatSpecifier.chars().filter(ch -> ch == '0').count();
+            if (zeroCount > 0 && maxNumber != null && String.valueOf(maxNumber).length() > zeroCount) {
+                MessageUtils.displayErrorMessage(langBean, "actionUnit.settings.error.insufficientDigits", placeholderName);
+                return true;
+            }
+        }
+        return false;
     }
 
 }
