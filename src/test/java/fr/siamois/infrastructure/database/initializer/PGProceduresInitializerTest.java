@@ -25,7 +25,7 @@ class PGProceduresInitializerTest {
     private HikariDataSource dataSource;
 
     @InjectMocks
-    private PGProceduresInitializer PGProceduresInitializer;
+    private PGProceduresInitializer pgProceduresInitializer;
 
     @Mock
     private Connection connection;
@@ -54,7 +54,7 @@ class PGProceduresInitializerTest {
             when(statement.executeLargeUpdate(any())).thenReturn(1L);
 
             // Act
-            assertDoesNotThrow(() -> PGProceduresInitializer.initialize());
+            assertDoesNotThrow(() -> pgProceduresInitializer.initialize());
 
             // Assert
             verify(statement, times(1)).executeLargeUpdate(any());
