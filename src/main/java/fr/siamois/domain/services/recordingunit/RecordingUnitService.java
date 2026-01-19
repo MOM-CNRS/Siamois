@@ -114,14 +114,14 @@ public class RecordingUnitService implements ArkEntityService {
 
             managedRecordingUnit = newOrGetRecordingUnit(recordingUnit);
 
-            createUniqueIdentifier(recordingUnit, managedRecordingUnit);
+            setupActionUnitInfo(recordingUnit, managedRecordingUnit);
             setupConcept(concept, managedRecordingUnit);
             setupSpatialUnit(recordingUnit, managedRecordingUnit);
             setupOtherFields(recordingUnit, managedRecordingUnit);
             managedRecordingUnit = setupAdditionalAnswers(recordingUnit, managedRecordingUnit);
             setupParents(recordingUnit, managedRecordingUnit);
             setupChilds(recordingUnit, managedRecordingUnit);
-            managedRecordingUnit = setupIdentifiers(managedRecordingUnit);
+            managedRecordingUnit = setupIdentifier(managedRecordingUnit);
 
             return managedRecordingUnit;
 
@@ -142,7 +142,7 @@ public class RecordingUnitService implements ArkEntityService {
         return managedRecordingUnit;
     }
 
-    private RecordingUnit setupIdentifiers(RecordingUnit managedRecordingUnit) {
+    private RecordingUnit setupIdentifier(RecordingUnit managedRecordingUnit) {
         managedRecordingUnit = recordingUnitRepository.save(managedRecordingUnit);
         // Set full identifier
         managedRecordingUnit.setFullIdentifier(null); // reseting so that displayFullIdentifier updates it
@@ -244,13 +244,9 @@ public class RecordingUnitService implements ArkEntityService {
         managedRecordingUnit.setType(type);
     }
 
-    private void createUniqueIdentifier(RecordingUnit recordingUnit, RecordingUnit managedRecordingUnit) {
-        managedRecordingUnit.setIdentifier(recordingUnit.getIdentifier());
+    private void setupActionUnitInfo(RecordingUnit recordingUnit, RecordingUnit managedRecordingUnit) {
         managedRecordingUnit.setActionUnit(recordingUnit.getActionUnit());
         managedRecordingUnit.setCreatedByInstitution(recordingUnit.getCreatedByInstitution());
-        if (managedRecordingUnit.getIdentifier() == null) {
-            managedRecordingUnit.setIdentifier(generateNextIdentifier(managedRecordingUnit));
-        }
     }
 
     /**

@@ -13,7 +13,7 @@ BEGIN
     SELECT c.counter
     INTO v_old_value
     FROM identifier_ru_counter c
-    WHERE c.fk_recording_unit_id = p_parent_recording_unit_id;
+    WHERE c.fk_recording_unit_id = p_parent_recording_unit_id AND c.fk_concept_type_id = p_concept_type_id;
 
     IF v_old_value IS NULL THEN
         SELECT r.fk_action_unit_id
