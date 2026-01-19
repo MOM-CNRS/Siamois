@@ -35,11 +35,7 @@ public class PGProceduresInitializer implements DatabaseInitializer {
             int succesCount = 0;
 
             for (Resource resource : resources) {
-                try (InputStream is = resource.getInputStream()) {
-                    procedures.add(new String(is.readAllBytes(), StandardCharsets.UTF_8));
-                } catch (IOException e) {
-                    throw new DatabaseDataInitException("Failed to open ressource", e);
-                }
+                addProcedure(resource, procedures);
             }
 
             try (Connection connection = hikariDataSource.getConnection()) {
@@ -53,6 +49,14 @@ public class PGProceduresInitializer implements DatabaseInitializer {
             log.info("Successfully loaded {} procedures", succesCount);
         } catch (Exception e) {
             throw new DatabaseDataInitException("Failed to initialize PGSQL script", e);
+        }
+    }
+
+    private static void addProcedure(Resource resource, List<String> procedures) throws DatabaseDataInitException {
+        try (InputStream is = resource.getInputStream()) {
+            procedures.add(new String(is.readAllBytes(), StandardCharsets.UTF_8));
+        } catch (IOException e) {
+            throw new DatabaseDataInitException("Failed to open ressource", e);
         }
     }
 }
