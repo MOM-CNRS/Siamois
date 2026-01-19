@@ -7,7 +7,7 @@ import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 
 @Service
-public class RuNumberResolver extends RuNumericalIdentifierResolver {
+public class RuNumResolver extends RuNumericalIdentifierResolver {
 
     private static final String CODE = "NUM_UE";
 

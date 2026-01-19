@@ -19,13 +19,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class RuNumberParentResolverTest {
+class RuNumParentResolverTest {
 
     @Mock
     private RecordingUnitIdInfoRepository recordingUnitIdInfoRepository;
 
     @InjectMocks
-    private RuNumberParentResolver ruNumberParentResolver;
+    private RuNumParentResolver ruNumParentResolver;
 
     @Mock
     private RecordingUnitIdInfo ruInfo;
@@ -36,13 +36,13 @@ class RuNumberParentResolverTest {
     @Test
     @DisplayName("getCode() should return 'NUM_PARENT'")
     void getCode_shouldReturnConstant() {
-        assertThat(ruNumberParentResolver.getCode()).isEqualTo("NUM_PARENT");
+        assertThat(ruNumParentResolver.getCode()).isEqualTo("NUM_PARENT");
     }
 
     @Test
     @DisplayName("getDescriptionLanguageCode() should return the correct message key")
     void getDescriptionLanguageCode_shouldReturnKey() {
-        assertThat(ruNumberParentResolver.getDescriptionLanguageCode()).isEqualTo("ru.identifier.description.number_parent");
+        assertThat(ruNumParentResolver.getDescriptionLanguageCode()).isEqualTo("ru.identifier.description.number_parent");
     }
 
     @Nested
@@ -61,7 +61,7 @@ class RuNumberParentResolverTest {
         @DisplayName("should correctly detect if format string contains the code")
         void formatUsesThisResolver_shouldDetectCode(String format, boolean expected) {
             // When
-            boolean result = ruNumberParentResolver.formatUsesThisResolver(format);
+            boolean result = ruNumParentResolver.formatUsesThisResolver(format);
 
             // Then
             assertThat(result).isEqualTo(expected);
@@ -84,7 +84,7 @@ class RuNumberParentResolverTest {
             when(recordingUnitIdInfoRepository.findById(parentRecordingUnit.getId())).thenReturn(Optional.of(parentInfo));
 
             // When
-            String result = ruNumberParentResolver.resolve(format, ruInfo);
+            String result = ruNumParentResolver.resolve(format, ruInfo);
 
             // Then
             assertThat(result).isEqualTo("ID-042-END");
@@ -98,7 +98,7 @@ class RuNumberParentResolverTest {
             when(ruInfo.getParent()).thenReturn(null);
 
             // When
-            String result = ruNumberParentResolver.resolve(format, ruInfo);
+            String result = ruNumParentResolver.resolve(format, ruInfo);
 
             // Then
             assertThat(result).isEqualTo("ID-0000-END");
@@ -113,7 +113,7 @@ class RuNumberParentResolverTest {
             when(recordingUnitIdInfoRepository.findById(parentRecordingUnit.getId())).thenReturn(Optional.empty());
 
             // When
-            String result = ruNumberParentResolver.resolve(format, ruInfo);
+            String result = ruNumParentResolver.resolve(format, ruInfo);
 
             // Then
             assertThat(result).isEqualTo("ID-0-END");

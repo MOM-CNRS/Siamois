@@ -12,7 +12,7 @@ import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
-public class RuNumberParentResolver extends RuNumericalIdentifierResolver {
+public class RuNumParentResolver extends RuNumericalIdentifierResolver {
 
     private final RecordingUnitIdInfoRepository recordingUnitIdInfoRepository;
 
