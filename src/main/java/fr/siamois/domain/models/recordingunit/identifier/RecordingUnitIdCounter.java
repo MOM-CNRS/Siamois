@@ -36,7 +36,7 @@ public class RecordingUnitIdCounter {
     private ActionUnit configActionUnit;
 
     @JoinColumn(name = "fk_recording_unit_id")
-    @ManyToOne(fetch = FetchType.EAGER)
+    @ManyToOne(fetch = FetchType.LAZY)
     @Nullable
     private RecordingUnit recordingUnit;
 
@@ -44,7 +44,7 @@ public class RecordingUnitIdCounter {
      * When the recording unit type is NULL.
      */
     @JoinColumn(name = "fk_concept_type_id")
-    @ManyToOne(fetch = FetchType.EAGER)
+    @ManyToOne(fetch = FetchType.LAZY)
     @Nullable
     private Concept recordingUnitType;
 

@@ -34,10 +34,9 @@ BEGIN
             v_old_value := 1;
         end if;
 
-        INSERT INTO identifier_ru_counter(counter, format_length, fk_recording_unit_id, fk_concept_type_id,
+        INSERT INTO identifier_ru_counter(counter, fk_recording_unit_id, fk_concept_type_id,
                                           fk_action_unit_id)
         VALUES (v_old_value + 1,
-                NULL,
                 p_parent_recording_unit_id,
                 p_concept_type_id,
                 v_action_unit_id);
@@ -77,10 +76,9 @@ BEGIN
             v_old_value := 1;
         end if;
 
-        INSERT INTO identifier_ru_counter(counter, format_length, fk_recording_unit_id, fk_concept_type_id,
+        INSERT INTO identifier_ru_counter(counter, fk_recording_unit_id, fk_concept_type_id,
                                           fk_action_unit_id)
         VALUES (v_old_value + 1,
-                NULL,
                 NULL,
                 p_concept_type_id,
                 p_action_unit_id);

@@ -9,7 +9,7 @@ import lombok.NoArgsConstructor;
 import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
 
-import static jakarta.persistence.FetchType.EAGER;
+import static jakarta.persistence.FetchType.LAZY;
 import static jakarta.persistence.FetchType.LAZY;
 
 /**
@@ -29,7 +29,7 @@ public class RecordingUnitIdInfo {
     @Id
     private Long recordingUnitId;
 
-    @OneToOne(fetch = EAGER)
+    @OneToOne(fetch = LAZY)
     @MapsId("recordingUnitId") // Indique à JPA que le champ 'id' est mappé par la relation 'recordingUnit'.
     @JoinColumn(name = "fk_recording_unit_id")
     private RecordingUnit recordingUnit;
@@ -37,16 +37,16 @@ public class RecordingUnitIdInfo {
     private int ruNumber = 0;
 
     @JoinColumn(name = "fk_concept_type_id")
-    @ManyToOne(fetch = EAGER)
+    @ManyToOne(fetch = LAZY)
     @Nullable
     private Concept ruType = null;
 
     @Nullable
-    @ManyToOne(fetch = EAGER)
+    @ManyToOne(fetch = LAZY)
     private RecordingUnit parent = null;
 
     @JoinColumn(name = "fk_parent_concept_type_id")
-    @ManyToOne(fetch = EAGER)
+    @ManyToOne(fetch = LAZY)
     @Nullable
     private Concept ruParentType = null;
 
@@ -54,9 +54,9 @@ public class RecordingUnitIdInfo {
     @Column(name = "parent_su_number")
     private Integer spatialUnitNumber = null;
 
-    @NonNull
-    @JoinColumn(name = "fk_action_unit_id", nullable = false)
-    @ManyToOne(fetch =  EAGER, optional = false)
+    @Nullable
+    @JoinColumn(name = "fk_action_unit_id")
+    @ManyToOne(fetch =  LAZY)
     private ActionUnit actionUnit;
 
 }

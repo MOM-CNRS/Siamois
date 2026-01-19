@@ -126,10 +126,6 @@ public class RecordingUnitService implements ArkEntityService {
             if (managedRecordingUnit.getIdentifier() == null) {
                 managedRecordingUnit.setIdentifier(generateNextIdentifier(managedRecordingUnit));
             }
-            // Set full identifier
-            managedRecordingUnit.setFullIdentifier(null); // reseting so that displayFullIdentifier updates it
-            managedRecordingUnit.setFullIdentifier(managedRecordingUnit.displayFullIdentifier());
-
 
             // Add concept
             Concept type = conceptService.saveOrGetConcept(concept);
@@ -176,7 +172,10 @@ public class RecordingUnitService implements ArkEntityService {
             managedRecordingUnit.setGeomorphologicalAgent(recordingUnit.getGeomorphologicalAgent());
 
 
-
+            managedRecordingUnit = recordingUnitRepository.save(managedRecordingUnit);
+            // Set full identifier
+            managedRecordingUnit.setFullIdentifier(null); // reseting so that displayFullIdentifier updates it
+            managedRecordingUnit.setFullIdentifier(generateFullIdentifier(managedRecordingUnit.getActionUnit(), managedRecordingUnit));
 
             // ---------- Additional answers
             CustomFormResponse managedFormResponse;
@@ -223,6 +222,7 @@ public class RecordingUnitService implements ArkEntityService {
             return managedRecordingUnit;
 
         } catch (RuntimeException e) {
+            log.error(e.getMessage(), e);
             throw new FailedRecordingUnitSaveException(e.getMessage());
         }
     }
@@ -287,7 +287,6 @@ public class RecordingUnitService implements ArkEntityService {
         Page<RecordingUnit> res = recordingUnitRepository.findAllByInstitutionAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
                 institutionId, fullIdentifier, categoryIds, global, langCode, pageable
         );
-
 
         // load related entities
         res.forEach(actionUnit -> {
@@ -485,6 +484,7 @@ public class RecordingUnitService implements ArkEntityService {
         Optional<RecordingUnitIdInfo> opt = recordingUnitIdInfoRepository.findById(recordingUnit.getId());
         if (opt.isPresent()) return opt.get();
         RecordingUnitIdInfo info = new RecordingUnitIdInfo();
+        info.setRecordingUnitId(recordingUnit.getId());
         info.setRecordingUnit(recordingUnit);
         return recordingUnitIdInfoRepository.save(info);
     }
@@ -497,6 +497,7 @@ public class RecordingUnitService implements ArkEntityService {
      * @return L'identifiant généré
      */
     public String generateFullIdentifier(@NonNull ActionUnit actionUnit, @NonNull RecordingUnit recordingUnit) {
+        log.trace("Generating full identifier for recording unit");
         String format = actionUnit.getRecordingUnitIdentifierFormat();
         int numericalId = generatedNextIdentifier(actionUnit, recordingUnit.getType());
         RecordingUnitIdInfo info = createOrGetInfoOf(recordingUnit);

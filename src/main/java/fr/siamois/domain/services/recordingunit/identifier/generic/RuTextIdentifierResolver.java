@@ -19,7 +19,7 @@ public abstract class RuTextIdentifierResolver implements RuIdentifierResolver {
         if (!baseFormatString.contains("{" + getCode())
                 || ruInfo.getActionUnit().getRecordingUnitIdentifierLang() == null
                 || ruInfo.getRuType() == null) {
-            return "";
+            return baseFormatString;
         }
 
         Pattern pattern = Pattern.compile("\\{" + getCode() + "([^}]*)\\}");
