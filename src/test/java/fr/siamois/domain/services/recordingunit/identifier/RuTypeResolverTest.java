@@ -18,7 +18,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
 
@@ -88,13 +87,31 @@ class RuTypeResolverTest {
             lenient().when(ruInfo.getRuType()).thenReturn(ruType);
         }
 
-        @Test
-        @DisplayName("should return empty string if format does not contain the code")
-        void resolve_shouldReturnBaseString_whenFormatDoesNotContainCode() {
-            // Given
-            String baseFormat = "ID-123";
+        private enum InvalidInputCase {
+            NO_PLACEHOLDER, NULL_LANG, NULL_TYPE
+        }
 
-            when(labelService.findLabelOf(ruType, "fr")).thenReturn(new ConceptPrefLabel());
+        @ParameterizedTest(name = "[{index}] {0}")
+        @CsvSource({
+                "'should return base string when format does not contain code', 'ID-123', NO_PLACEHOLDER",
+                "'should return base string when language is null', '{TYPE_UE}', NULL_LANG",
+                "'should return base string when RU type is null', '{TYPE_UE}', NULL_TYPE"
+        })
+        @DisplayName("should return base string for invalid inputs")
+        void resolve_shouldReturnBaseString_forInvalidInputs(String testName, String baseFormat, InvalidInputCase invalidCase) {
+            // Given
+            switch (invalidCase) {
+                case NULL_LANG:
+                    when(actionUnit.getRecordingUnitIdentifierLang()).thenReturn(null);
+                    break;
+                case NULL_TYPE:
+                    when(ruInfo.getRuType()).thenReturn(null);
+                    break;
+                case NO_PLACEHOLDER:
+                    // This mock is kept for consistency with the original test, even if it might not be called.
+                    when(labelService.findLabelOf(ruType, "fr")).thenReturn(new ConceptPrefLabel());
+                    break;
+            }
 
             // When
             String result = ruTypeResolver.resolve(baseFormat, ruInfo);
@@ -103,91 +120,25 @@ class RuTypeResolverTest {
             assertThat(result).isEqualTo(baseFormat);
         }
 
-        @Test
-        @DisplayName("should return empty string if language is null")
-        void resolve_shouldReturnEmptyString_whenLangIsNull() {
+        @ParameterizedTest(name = "[{index}] {0}")
+        @CsvSource({
+                "'should resolve with default 3 characters when no format is specified', 'ID-{TYPE_UE}-2024', 'Structure', 'ID-STR-2024'",
+                "'should resolve with specified number of characters from format', 'ID-{TYPE_UE:XXXXX}-2024', 'Structure', 'ID-STRUC-2024'",
+                "'should resolve with default 3 characters for invalid format specifier', 'ID-{TYPE_UE:000}-2024', 'Structure', 'ID-STR-2024'",
+                "'should resolve with full length when label is shorter than specified', '{TYPE_UE:XXXXX}', 'Mur', 'MUR'"
+        })
+        @DisplayName("should produce correct output for valid inputs")
+        void resolve_shouldProduceCorrectOutput_forValidInputs(String testName, String baseFormat, String labelText, String expected) {
             // Given
-            String baseFormat = "{TYPE_UE}";
-            when(actionUnit.getRecordingUnitIdentifierLang()).thenReturn(null);
-
-            // When
-            String result = ruTypeResolver.resolve(baseFormat, ruInfo);
-
-            // Then
-            assertThat(result).isEqualTo(baseFormat);
-        }
-
-        @Test
-        @DisplayName("should return empty string if RU type is null")
-        void resolve_shouldReturnEmptyString_whenRuTypeIsNull() {
-            // Given
-            String baseFormat = "{TYPE_UE}";
-            when(ruInfo.getRuType()).thenReturn(null);
-
-            // When
-            String result = ruTypeResolver.resolve(baseFormat, ruInfo);
-
-            // Then
-            assertThat(result).isEqualTo(baseFormat);
-        }
-
-        @Test
-        @DisplayName("should resolve with default 3 characters when no format is specified")
-        void resolve_shouldUseDefaultLength_whenNoFormatSpecified() {
-            // Given
-            String baseFormat = "ID-{TYPE_UE}-2024";
             ConceptLabel label = new ConceptPrefLabel();
-            label.setLabel("Structure");
+            label.setLabel(labelText);
             when(labelService.findLabelOf(ruType, "fr")).thenReturn(label);
 
             // When
             String result = ruTypeResolver.resolve(baseFormat, ruInfo);
 
             // Then
-            assertThat(result).isEqualTo("ID-STR-2024");
-        }
-
-        @Test
-        @DisplayName("should resolve with specified number of characters from format")
-        void resolve_shouldUseSpecifiedLength_whenFormatIsPresent() {
-            // Given
-            String baseFormat = "ID-{TYPE_UE:XXXXX}-2024"; // 5 chars
-            ConceptLabel label = new ConceptPrefLabel();
-            label.setLabel("Structure");
-            when(labelService.findLabelOf(ruType, "fr")).thenReturn(label);
-
-            // When
-            String result = ruTypeResolver.resolve(baseFormat, ruInfo);
-
-            // Then
-            assertThat(result).isEqualTo("ID-STRUC-2024");
-        }
-
-        @Test
-        @DisplayName("should resolve with default 3 characters for invalid format specifier")
-        void resolve_shouldUseDefaultLength_whenFormatIsInvalid() {
-            // Given
-            String baseFormat = "ID-{TYPE_UE:000}-2024"; // Invalid format, expects 'X'
-            ConceptLabel label = new ConceptPrefLabel();
-            label.setLabel("Structure");
-            when(labelService.findLabelOf(ruType, "fr")).thenReturn(label);
-
-            // When
-            String result = ruTypeResolver.resolve(baseFormat, ruInfo);
-
-            // Then
-            assertThat(result).isEqualTo("ID-STR-2024");
-        }
-
-        @Test
-        void resolve_shouldHaveFullLength_whenLabelIsShorterThanSpecified() {
-            // Given
-            String baseFormat = "{TYPE_UE:XXXXX}";
-            ConceptLabel label = new ConceptPrefLabel();
-            label.setLabel("Mur");
-            when(labelService.findLabelOf(ruType, "fr")).thenReturn(label);
-
-            assertEquals("MUR", ruTypeResolver.resolve(baseFormat, ruInfo));
+            assertThat(result).isEqualTo(expected);
         }
     }
 }

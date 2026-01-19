@@ -9,6 +9,10 @@ import static fr.siamois.ui.bean.panel.models.panel.single.AbstractSingleEntity.
 
 public class ActionUnitNewForm extends ActionUnitForm {
 
+    private ActionUnitNewForm() {
+        throw new UnsupportedOperationException();
+    }
+
     public static CustomForm build() {
         return new CustomForm.Builder()
                 .name(DETAIL_TAB_NAME)
