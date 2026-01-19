@@ -15,6 +15,10 @@ public abstract class ActionUnitForm {
     protected static final String SPATIAL_UNIT_CONTEXT_LABEL_CODE = "common.label.spatialContext";
     protected static final String DETAIL_TAB_NAME = "\"Details tab form\"";
 
+    private ActionUnitForm() {
+        throw new UnsupportedOperationException();
+    }
+
     @Transient
     @JsonIgnore
     public static final Concept ACTION_UNIT_TYPE_CONCEPT = new Concept.Builder()
