@@ -112,118 +112,144 @@ public class RecordingUnitService implements ArkEntityService {
 
             RecordingUnit managedRecordingUnit;
 
-            if (recordingUnit.getId() != null) {
-                Optional<RecordingUnit> optRecordingUnit = recordingUnitRepository.findById(recordingUnit.getId());
-                managedRecordingUnit = optRecordingUnit.orElseGet(RecordingUnit::new);
-            } else {
-                managedRecordingUnit = new RecordingUnit();
-            }
+            managedRecordingUnit = newOrGetRecordingUnit(recordingUnit);
 
-            // Generate unique identifier
-            managedRecordingUnit.setIdentifier(recordingUnit.getIdentifier());
-            managedRecordingUnit.setActionUnit(recordingUnit.getActionUnit());
-            managedRecordingUnit.setCreatedByInstitution(recordingUnit.getCreatedByInstitution());
-            if (managedRecordingUnit.getIdentifier() == null) {
-                managedRecordingUnit.setIdentifier(generateNextIdentifier(managedRecordingUnit));
-            }
-
-            // Add concept
-            Concept type = conceptService.saveOrGetConcept(concept);
-            managedRecordingUnit.setType(type);
-
-            // Spatial Unit
-            managedRecordingUnit.setSpatialUnit(recordingUnit.getSpatialUnit());
-
-            managedRecordingUnit.setContributors(personRepository.findAllById(
-                            recordingUnit.getContributors().stream()
-                                    .map(Person::getId)
-                                    .toList()
-                    )
-            );
-
-            // Add other fields
-            managedRecordingUnit.setAltitude(recordingUnit.getAltitude());
-            managedRecordingUnit.setArk(recordingUnit.getArk());
-            managedRecordingUnit.setDescription(recordingUnit.getDescription());
-
-            managedRecordingUnit.setAuthor(recordingUnit.getAuthor());
-            managedRecordingUnit.setClosingDate(recordingUnit.getClosingDate());
-            managedRecordingUnit.setOpeningDate(recordingUnit.getOpeningDate());
-            managedRecordingUnit.setSize(recordingUnit.getSize());
-            managedRecordingUnit.setGeomorphologicalCycle(recordingUnit.getGeomorphologicalCycle());
-            managedRecordingUnit.setNormalizedInterpretation(recordingUnit.getNormalizedInterpretation());
-            managedRecordingUnit.setValidated(recordingUnit.getValidated());
-            managedRecordingUnit.setValidatedAt(recordingUnit.getValidatedAt());
-            managedRecordingUnit.setValidatedBy(recordingUnit.getValidatedBy());
-            managedRecordingUnit.setTaq(recordingUnit.getTaq());
-            managedRecordingUnit.setTpq(recordingUnit.getTpq());
-            managedRecordingUnit.setMatrixColor(recordingUnit.getMatrixColor());
-            managedRecordingUnit.setMatrixComposition(recordingUnit.getMatrixComposition());
-            managedRecordingUnit.setMatrixTexture(recordingUnit.getMatrixTexture());
-            managedRecordingUnit.setErosionOrientation(recordingUnit.getErosionOrientation());
-            managedRecordingUnit.setErosionProfile(recordingUnit.getErosionProfile());
-            managedRecordingUnit.setErosionShape(recordingUnit.getErosionShape());
-
-            if (managedRecordingUnit.getCreatedBy() == null) {
-                managedRecordingUnit.setCreatedBy(recordingUnit.getCreatedBy());
-            }
-
-            managedRecordingUnit.setChronologicalPhase(recordingUnit.getChronologicalPhase());
-            managedRecordingUnit.setGeomorphologicalAgent(recordingUnit.getGeomorphologicalAgent());
-
-
-            managedRecordingUnit = recordingUnitRepository.save(managedRecordingUnit);
-            // Set full identifier
-            managedRecordingUnit.setFullIdentifier(null); // reseting so that displayFullIdentifier updates it
-            managedRecordingUnit.setFullIdentifier(generateFullIdentifier(managedRecordingUnit.getActionUnit(), managedRecordingUnit));
-
-            // ---------- Additional answers
-            CustomFormResponse managedFormResponse;
-
-            if (recordingUnit.getFormResponse() != null && recordingUnit.getFormResponse().getForm() != null) {
-                // Save the form response if there is one
-
-                // Get the existing response or create a new one
-                if (managedRecordingUnit.getFormResponse() == null) {
-                    // Initialize the managed form response
-                    managedFormResponse = new CustomFormResponse();
-                    managedRecordingUnit.setFormResponse(managedFormResponse);
-                } else {
-                    managedFormResponse = managedRecordingUnit.getFormResponse();
-                }
-                // Process form response
-                customFormResponseService
-                        .saveFormResponse(managedFormResponse, recordingUnit.getFormResponse());
-            } else {
-                managedRecordingUnit.setFormResponse(null);
-            }
-
-
-            managedRecordingUnit = recordingUnitRepository.save(managedRecordingUnit);
-
-         // Gestion des parents
-            for (RecordingUnit parentRef : recordingUnit.getParents()) {
-                RecordingUnit parent = recordingUnitRepository.findById(parentRef.getId())
-                        .orElseThrow(() -> new IllegalArgumentException("Parent not found: " + parentRef.getId()));
-
-                // Ajout bidirectionnel
-                parent.getChildren().add(managedRecordingUnit);
-                managedRecordingUnit.getParents().add(parent);
-
-                // Sauvegarde du parent
-                recordingUnitRepository.save(parent);
-            }
-
-            //  Gestion des enfants
-            for (RecordingUnit child : recordingUnit.getChildren()) {
-                managedRecordingUnit.getChildren().add(child);
-            }
+            createUniqueIdentifier(recordingUnit, managedRecordingUnit);
+            setupConcept(concept, managedRecordingUnit);
+            setupSpatialUnit(recordingUnit, managedRecordingUnit);
+            setupOtherFields(recordingUnit, managedRecordingUnit);
+            managedRecordingUnit = setupAdditionalAnswers(recordingUnit, managedRecordingUnit);
+            setupParents(recordingUnit, managedRecordingUnit);
+            setupChilds(recordingUnit, managedRecordingUnit);
+            managedRecordingUnit = setupIdentifiers(managedRecordingUnit);
 
             return managedRecordingUnit;
 
         } catch (RuntimeException e) {
             log.error(e.getMessage(), e);
             throw new FailedRecordingUnitSaveException(e.getMessage());
+        }
+    }
+
+    private RecordingUnit newOrGetRecordingUnit(RecordingUnit recordingUnit) {
+        RecordingUnit managedRecordingUnit;
+        if (recordingUnit.getId() != null) {
+            Optional<RecordingUnit> optRecordingUnit = recordingUnitRepository.findById(recordingUnit.getId());
+            managedRecordingUnit = optRecordingUnit.orElseGet(RecordingUnit::new);
+        } else {
+            managedRecordingUnit = new RecordingUnit();
+        }
+        return managedRecordingUnit;
+    }
+
+    private RecordingUnit setupIdentifiers(RecordingUnit managedRecordingUnit) {
+        managedRecordingUnit = recordingUnitRepository.save(managedRecordingUnit);
+        // Set full identifier
+        managedRecordingUnit.setFullIdentifier(null); // reseting so that displayFullIdentifier updates it
+        managedRecordingUnit.setFullIdentifier(generateFullIdentifier(managedRecordingUnit.getActionUnit(), managedRecordingUnit));
+        return managedRecordingUnit;
+    }
+
+    private static void setupChilds(RecordingUnit recordingUnit, RecordingUnit managedRecordingUnit) {
+        for (RecordingUnit child : recordingUnit.getChildren()) {
+            managedRecordingUnit.getChildren().add(child);
+        }
+    }
+
+    private void setupParents(RecordingUnit recordingUnit, RecordingUnit managedRecordingUnit) {
+        // Gestion des parents
+        for (RecordingUnit parentRef : recordingUnit.getParents()) {
+            RecordingUnit parent = recordingUnitRepository.findById(parentRef.getId())
+                    .orElseThrow(() -> new IllegalArgumentException("Parent not found: " + parentRef.getId()));
+
+            // Ajout bidirectionnel
+            parent.getChildren().add(managedRecordingUnit);
+            managedRecordingUnit.getParents().add(parent);
+
+            // Sauvegarde du parent
+            recordingUnitRepository.save(parent);
+        }
+    }
+
+    private RecordingUnit setupAdditionalAnswers(RecordingUnit recordingUnit, RecordingUnit managedRecordingUnit) {
+        CustomFormResponse managedFormResponse;
+
+        if (recordingUnit.getFormResponse() != null && recordingUnit.getFormResponse().getForm() != null) {
+            // Save the form response if there is one
+
+            // Get the existing response or create a new one
+            if (managedRecordingUnit.getFormResponse() == null) {
+                // Initialize the managed form response
+                managedFormResponse = new CustomFormResponse();
+                managedRecordingUnit.setFormResponse(managedFormResponse);
+            } else {
+                managedFormResponse = managedRecordingUnit.getFormResponse();
+            }
+            // Process form response
+            customFormResponseService
+                    .saveFormResponse(managedFormResponse, recordingUnit.getFormResponse());
+        } else {
+            managedRecordingUnit.setFormResponse(null);
+        }
+
+
+        managedRecordingUnit = recordingUnitRepository.save(managedRecordingUnit);
+        return managedRecordingUnit;
+    }
+
+    private static void setupOtherFields(RecordingUnit recordingUnit, RecordingUnit managedRecordingUnit) {
+        managedRecordingUnit.setAltitude(recordingUnit.getAltitude());
+        managedRecordingUnit.setArk(recordingUnit.getArk());
+        managedRecordingUnit.setDescription(recordingUnit.getDescription());
+
+        managedRecordingUnit.setAuthor(recordingUnit.getAuthor());
+        managedRecordingUnit.setClosingDate(recordingUnit.getClosingDate());
+        managedRecordingUnit.setOpeningDate(recordingUnit.getOpeningDate());
+        managedRecordingUnit.setSize(recordingUnit.getSize());
+        managedRecordingUnit.setGeomorphologicalCycle(recordingUnit.getGeomorphologicalCycle());
+        managedRecordingUnit.setNormalizedInterpretation(recordingUnit.getNormalizedInterpretation());
+        managedRecordingUnit.setValidated(recordingUnit.getValidated());
+        managedRecordingUnit.setValidatedAt(recordingUnit.getValidatedAt());
+        managedRecordingUnit.setValidatedBy(recordingUnit.getValidatedBy());
+        managedRecordingUnit.setTaq(recordingUnit.getTaq());
+        managedRecordingUnit.setTpq(recordingUnit.getTpq());
+        managedRecordingUnit.setMatrixColor(recordingUnit.getMatrixColor());
+        managedRecordingUnit.setMatrixComposition(recordingUnit.getMatrixComposition());
+        managedRecordingUnit.setMatrixTexture(recordingUnit.getMatrixTexture());
+        managedRecordingUnit.setErosionOrientation(recordingUnit.getErosionOrientation());
+        managedRecordingUnit.setErosionProfile(recordingUnit.getErosionProfile());
+        managedRecordingUnit.setErosionShape(recordingUnit.getErosionShape());
+
+        if (managedRecordingUnit.getCreatedBy() == null) {
+            managedRecordingUnit.setCreatedBy(recordingUnit.getCreatedBy());
+        }
+
+        managedRecordingUnit.setChronologicalPhase(recordingUnit.getChronologicalPhase());
+        managedRecordingUnit.setGeomorphologicalAgent(recordingUnit.getGeomorphologicalAgent());
+    }
+
+    private void setupSpatialUnit(RecordingUnit recordingUnit, RecordingUnit managedRecordingUnit) {
+        managedRecordingUnit.setSpatialUnit(recordingUnit.getSpatialUnit());
+
+        managedRecordingUnit.setContributors(personRepository.findAllById(
+                        recordingUnit.getContributors().stream()
+                                .map(Person::getId)
+                                .toList()
+                )
+        );
+    }
+
+    private void setupConcept(Concept concept, RecordingUnit managedRecordingUnit) {
+        Concept type = conceptService.saveOrGetConcept(concept);
+        managedRecordingUnit.setType(type);
+    }
+
+    private void createUniqueIdentifier(RecordingUnit recordingUnit, RecordingUnit managedRecordingUnit) {
+        managedRecordingUnit.setIdentifier(recordingUnit.getIdentifier());
+        managedRecordingUnit.setActionUnit(recordingUnit.getActionUnit());
+        managedRecordingUnit.setCreatedByInstitution(recordingUnit.getCreatedByInstitution());
+        if (managedRecordingUnit.getIdentifier() == null) {
+            managedRecordingUnit.setIdentifier(generateNextIdentifier(managedRecordingUnit));
         }
     }
 
@@ -473,15 +499,13 @@ public class RecordingUnitService implements ArkEntityService {
         });
     }
 
-    public int generatedNextIdentifier(@NonNull ActionUnit actionUnit, @Nullable Concept unitType) {
+    public int generatedNextIdentifier(@NonNull ActionUnit actionUnit, @Nullable Concept unitType, @Nullable RecordingUnit parentRu) {
         if (unitType == null) {
             return recordingUnitIdCounterRepository.nextIdAndIncrementActionUnit(actionUnit.getId(), null);
+        } else if (parentRu == null) {
+            return recordingUnitIdCounterRepository.nextIdAndIncrementActionUnit(actionUnit.getId(), unitType.getId());
         }
-        return recordingUnitIdCounterRepository.nextIdAndIncrementActionUnit(actionUnit.getId(), unitType.getId());
-    }
-
-    public RecordingUnitIdInfo createOrGetInfoOf(@NonNull RecordingUnit recordingUnit) {
-        return createOrGetInfoOf(recordingUnit, null);
+        return recordingUnitIdCounterRepository.nextIdAndIncrement(parentRu.getId(), unitType.getId());
     }
 
     public RecordingUnitIdInfo createOrGetInfoOf(@NonNull RecordingUnit recordingUnit, @Nullable RecordingUnit parentRecordingUnit) {
@@ -510,8 +534,13 @@ public class RecordingUnitService implements ArkEntityService {
     public String generateFullIdentifier(@NonNull ActionUnit actionUnit, @NonNull RecordingUnit recordingUnit) {
         log.trace("Generating full identifier for recording unit");
         String format = actionUnit.getRecordingUnitIdentifierFormat();
-        int numericalId = generatedNextIdentifier(actionUnit, recordingUnit.getType());
-        RecordingUnitIdInfo info = createOrGetInfoOf(recordingUnit);
+        RecordingUnit parent = recordingUnit
+                .getParents()
+                .stream()
+                .findFirst()
+                .orElse(null);
+        int numericalId = generatedNextIdentifier(actionUnit, recordingUnit.getType(), parent);
+        RecordingUnitIdInfo info = createOrGetInfoOf(recordingUnit, parent);
 
         info.setRuNumber(numericalId);
 
