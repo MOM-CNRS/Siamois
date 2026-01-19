@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 public class RuFullIdActionUnitResolver implements RuIdentifierResolver {
 
     private static final String DEFAULT_PATTERN = "*";
+    public static final String ID_UA = "{ID_UA}";
 
     @NonNull
     @Override
@@ -25,19 +26,19 @@ public class RuFullIdActionUnitResolver implements RuIdentifierResolver {
 
     @Override
     public boolean formatUsesThisResolver(@NonNull String baseFormatString) {
-        return baseFormatString.contains("{ID_UA}");
+        return baseFormatString.contains(ID_UA);
     }
 
     @NonNull
     @Override
     public String resolve(@NonNull String baseFormatString, @NonNull RecordingUnitIdInfo ruInfo) {
         if (ruInfo.getActionUnit() == null) {
-            return baseFormatString.replace("{ID_UA}", DEFAULT_PATTERN);
+            return baseFormatString.replace(ID_UA, DEFAULT_PATTERN);
         }
         String replacement = ruInfo.getActionUnit().getFullIdentifier();
         if (replacement == null || replacement.isEmpty()) {
             replacement = DEFAULT_PATTERN;
         }
-        return baseFormatString.replace("{ID_UA}", replacement);
+        return baseFormatString.replace(ID_UA, replacement);
     }
 }
