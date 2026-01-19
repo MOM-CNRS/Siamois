@@ -480,12 +480,22 @@ public class RecordingUnitService implements ArkEntityService {
         return recordingUnitIdCounterRepository.nextIdAndIncrementActionUnit(actionUnit.getId(), unitType.getId());
     }
 
-    public RecordingUnitIdInfo createOrGetInfoOf(RecordingUnit recordingUnit) {
+    public RecordingUnitIdInfo createOrGetInfoOf(@NonNull RecordingUnit recordingUnit) {
+        return createOrGetInfoOf(recordingUnit, null);
+    }
+
+    public RecordingUnitIdInfo createOrGetInfoOf(@NonNull RecordingUnit recordingUnit, @Nullable RecordingUnit parentRecordingUnit) {
         Optional<RecordingUnitIdInfo> opt = recordingUnitIdInfoRepository.findById(recordingUnit.getId());
         if (opt.isPresent()) return opt.get();
         RecordingUnitIdInfo info = new RecordingUnitIdInfo();
         info.setRecordingUnitId(recordingUnit.getId());
         info.setRecordingUnit(recordingUnit);
+        info.setSpatialUnitNumber(Math.toIntExact(recordingUnit.getSpatialUnit().getId()));
+        info.setActionUnit(recordingUnit.getActionUnit());
+        if (parentRecordingUnit != null) {
+            info.setParent(parentRecordingUnit);
+            info.setRuParentType(parentRecordingUnit.getType());
+        }
         return recordingUnitIdInfoRepository.save(info);
     }
 
