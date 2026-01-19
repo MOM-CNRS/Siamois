@@ -64,27 +64,14 @@ class RuNumResolverTest {
                 "'zero padding with larger number', 'Test-{NUM_UE:00}-Test', 123, 'Test-123-Test'",
                 "'placeholder at start', '{NUM_UE}-Test', 12, '12-Test'",
                 "'placeholder at end', 'Test-{NUM_UE}', 12, 'Test-12'",
-                "'multiple placeholders', '{NUM_UE}-{NUM_UE}', 12, '12-12'"
+                "'multiple placeholders', '{NUM_UE}-{NUM_UE}', 12, '12-12'",
+                "'no placeholder', 'Test-NoPlaceholder-Test', 12, '12'",
+                "'empty format', '', 12, '12'"
         })
         @DisplayName("should replace placeholder correctly")
         void resolve_shouldReplacePlaceholder(String name, String format, int number, String expected) {
             when(ruInfo.getRuNumber()).thenReturn(number);
             String result = ruNumResolver.resolve(format, ruInfo);
-            assertThat(result).isEqualTo(expected);
-        }
-
-        @ParameterizedTest(name = "[{index}] {0}")
-        @CsvSource({
-                "'no placeholder', 'Test-NoPlaceholder-Test', 12, '12'",
-                "'empty format', '', 12, '12'"
-        })
-        @DisplayName("should return number as string when no placeholder is present")
-        void resolve_shouldReturnNumber_whenNoPlaceholder(String name, String format, int number, String expected) {
-            // Given
-            when(ruInfo.getRuNumber()).thenReturn(number);
-            // When
-            String result = ruNumResolver.resolve(format, ruInfo);
-            // Then
             assertThat(result).isEqualTo(expected);
         }
     }
