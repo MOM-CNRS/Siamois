@@ -6,10 +6,8 @@ import fr.siamois.domain.models.vocabulary.Concept;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
 
-import static jakarta.persistence.FetchType.LAZY;
 import static jakarta.persistence.FetchType.LAZY;
 
 /**

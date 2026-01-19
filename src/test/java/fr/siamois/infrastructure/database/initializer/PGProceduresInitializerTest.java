@@ -1,7 +1,6 @@
 package fr.siamois.infrastructure.database.initializer;
 
 import com.zaxxer.hikari.HikariDataSource;
-import fr.siamois.domain.models.exceptions.database.DatabaseDataInitException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -12,13 +11,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.core.io.ClassPathResource;
 
 import java.io.ByteArrayInputStream;
-import java.io.FileNotFoundException;
 import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 import java.sql.Statement;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
