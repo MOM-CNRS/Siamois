@@ -46,7 +46,7 @@ public abstract class RuTextIdentifierResolver implements RuIdentifierResolver {
         String replacement = "";
         String formatSpecifierPart = matcher.group(1);
 
-        if (formatSpecifierPart != null && formatSpecifierPart.startsWith(":") && formatSpecifierPart.substring(1).matches("[X]+")) {
+        if (formatSpecifierPart != null && formatSpecifierPart.startsWith(":") && formatSpecifierPart.substring(1).matches("X+")) {
             int width = formatSpecifierPart.length() - 1;
             if (label.length() > width) {
                 replacement = label.substring(0, width);
