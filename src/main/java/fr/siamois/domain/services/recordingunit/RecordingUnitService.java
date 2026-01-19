@@ -490,11 +490,12 @@ public class RecordingUnitService implements ArkEntityService {
     }
 
     /**
-     * Génère l'identifiant d'une unité d'enregistrement qui n'a pas de parent.
-     * Ses paramètres de création se réfèrent donc directement à l'unité d'action
+     * Generates the identifier for a recording unit that has no parent.
+     * Its creation parameters therefore refer directly to the action unit.
      *
-     * @param actionUnit L'unité d'action contenant la configuration de l'identifiant
-     * @return L'identifiant généré
+     * @param actionUnit The action unit containing the identifier configuration.
+     * @param recordingUnit The recording unit to generate the identifier for.
+     * @return The generated identifier.
      */
     public String generateFullIdentifier(@NonNull ActionUnit actionUnit, @NonNull RecordingUnit recordingUnit) {
         log.trace("Generating full identifier for recording unit");
