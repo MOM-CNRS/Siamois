@@ -64,6 +64,7 @@ import java.util.stream.Collectors;
 @Component
 @Scope(BeanDefinition.SCOPE_PROTOTYPE)
 public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnit> implements Serializable {
+    public static final String INVALID_FORMAT_CODE = "actionUnit.settings.error.invalidIdentifierFormat";
 
     // Deps
 
@@ -453,7 +454,7 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnit> imple
 
         String strippedFormat = format.replaceAll(placeholderPattern, "");
         if (strippedFormat.matches(".*\\{.*") || strippedFormat.matches(".*\\}.*")) {
-            MessageUtils.displayErrorMessage(langBean, "actionUnit.settings.error.invalidIdentifierFormat");
+            MessageUtils.displayErrorMessage(langBean, INVALID_FORMAT_CODE);
             return;
         }
 
@@ -487,7 +488,7 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnit> imple
 
     private boolean formatContainsInvalidCode(String placeholderName) {
         if (!recordingUnitService.findAllIdentifiersCode().contains(placeholderName)) {
-            MessageUtils.displayErrorMessage(langBean, "actionUnit.settings.error.invalidIdentifierFormat");
+            MessageUtils.displayErrorMessage(langBean, INVALID_FORMAT_CODE);
             return true;
         }
         return false;
@@ -504,7 +505,7 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnit> imple
 
     private boolean formatSpecifierIsNotValid(String formatSpecifier) {
         if (!formatSpecifier.matches("[0X]+")) {
-            MessageUtils.displayErrorMessage(langBean, "actionUnit.settings.error.invalidIdentifierFormat");
+            MessageUtils.displayErrorMessage(langBean, INVALID_FORMAT_CODE);
             return true;
         }
         return false;
