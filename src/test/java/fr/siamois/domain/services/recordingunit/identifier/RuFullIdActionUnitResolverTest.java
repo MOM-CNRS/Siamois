@@ -66,77 +66,41 @@ class RuFullIdActionUnitResolverTest {
     @Nested
     @DisplayName("resolve() tests")
     class ResolveTest {
+        private enum ResolveCase {VALID, NULL_IDENTIFIER, NULL_ACTION_UNIT, NO_PLACEHOLDER}
 
-        @Test
-        @DisplayName("should resolve placeholder with full identifier when it exists")
-        void resolve_shouldReplacePlaceholderWithFullIdentifier() {
+        @ParameterizedTest(name = "[{index}] {0}")
+        @CsvSource({
+                "'should resolve with full identifier', 'PREFIX-{ID_UA}-SUFFIX', 'ACTION-001', VALID, 'PREFIX-ACTION-001-SUFFIX'",
+                "'should handle multiple placeholders', '{ID_UA}-{ID_UA}', 'ACTION-001', VALID, 'ACTION-001-ACTION-001'",
+                "'should resolve with star when identifier is null', 'PREFIX-{ID_UA}-SUFFIX', '<null>', NULL_IDENTIFIER, 'PREFIX-*-SUFFIX'",
+                "'should resolve with star when action unit is null', 'PREFIX-{ID_UA}-SUFFIX', '<null>', NULL_ACTION_UNIT, 'PREFIX-*-SUFFIX'",
+                "'should return original string when no placeholder', 'PREFIX-NO_PLACEHOLDER-SUFFIX', '<null>', NO_PLACEHOLDER, 'PREFIX-NO_PLACEHOLDER-SUFFIX'"
+        })
+        @DisplayName("should work for all resolve cases")
+        void resolve_shouldWorkForAllCases(String testName, String format, String identifier, ResolveCase testCase, String expected) {
             // Given
-            String format = "PREFIX-{ID_UA}-SUFFIX";
-            when(ruInfo.getActionUnit()).thenReturn(actionUnit);
-            when(actionUnit.getFullIdentifier()).thenReturn("ACTION-001");
+            switch (testCase) {
+                case VALID:
+                    when(ruInfo.getActionUnit()).thenReturn(actionUnit);
+                    when(actionUnit.getFullIdentifier()).thenReturn(identifier);
+                    break;
+                case NULL_IDENTIFIER:
+                    when(ruInfo.getActionUnit()).thenReturn(actionUnit);
+                    when(actionUnit.getFullIdentifier()).thenReturn(null);
+                    break;
+                case NULL_ACTION_UNIT:
+                    when(ruInfo.getActionUnit()).thenReturn(null);
+                    break;
+                case NO_PLACEHOLDER:
+                    // No mock setup needed
+                    break;
+            }
 
             // When
             String result = resolver.resolve(format, ruInfo);
 
             // Then
-            assertThat(result).isEqualTo("PREFIX-ACTION-001-SUFFIX");
-        }
-
-        @Test
-        @DisplayName("should resolve with star when action unit's full identifier is null")
-        void resolve_shouldUseEmptyString_whenFullIdentifierIsNull() {
-            // Given
-            String format = "PREFIX-{ID_UA}-SUFFIX";
-            when(ruInfo.getActionUnit()).thenReturn(actionUnit);
-            when(actionUnit.getFullIdentifier()).thenReturn(null);
-
-            // When
-            String result = resolver.resolve(format, ruInfo);
-
-            // Then
-            assertThat(result).isEqualTo("PREFIX-*-SUFFIX");
-        }
-
-        @Test
-        @DisplayName("should resolve with star when action unit is null")
-        void resolve_shouldUseEmptyString_whenActionUnitIsNull() {
-            // Given
-            String format = "PREFIX-{ID_UA}-SUFFIX";
-            when(ruInfo.getActionUnit()).thenReturn(null);
-
-            // When
-            String result = resolver.resolve(format, ruInfo);
-
-            // Then
-            assertThat(result).isEqualTo("PREFIX-*-SUFFIX");
-        }
-
-        @Test
-        @DisplayName("should return original string when no placeholder is present")
-        void resolve_shouldReturnOriginalString_whenNoPlaceholder() {
-            // Given
-            String format = "PREFIX-NO_PLACEHOLDER-SUFFIX";
-
-            // When
-            String result = resolver.resolve(format, ruInfo);
-
-            // Then
-            assertThat(result).isEqualTo("PREFIX-NO_PLACEHOLDER-SUFFIX");
-        }
-
-        @Test
-        @DisplayName("should handle multiple placeholders")
-        void resolve_shouldHandleMultiplePlaceholders() {
-            // Given
-            String format = "{ID_UA}-{ID_UA}";
-            when(ruInfo.getActionUnit()).thenReturn(actionUnit);
-            when(actionUnit.getFullIdentifier()).thenReturn("ACTION-001");
-
-            // When
-            String result = resolver.resolve(format, ruInfo);
-
-            // Then
-            assertThat(result).isEqualTo("ACTION-001-ACTION-001");
+            assertThat(result).isEqualTo(expected);
         }
     }
 }

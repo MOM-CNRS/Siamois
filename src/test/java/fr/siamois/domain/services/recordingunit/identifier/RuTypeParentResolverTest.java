@@ -18,7 +18,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.lenient;
@@ -90,106 +89,57 @@ class RuTypeParentResolverTest {
             lenient().when(ruInfo.getRuParentType()).thenReturn(ruParentType);
         }
 
-        @Test
-        @DisplayName("should return base string if format does not contain the code")
-        void resolve_shouldReturnBaseString_whenFormatDoesNotContainCode() {
-            // Given
-            String baseFormat = "ID-123";
+        private enum InvalidInputCase {
+            NO_PLACEHOLDER, NULL_LANG, NULL_TYPE
+        }
 
-            when(labelService.findLabelOf(any(Concept.class), eq("fr"))).thenReturn(new ConceptPrefLabel());
+        @ParameterizedTest(name = "[{index}] {0}")
+        @CsvSource({
+                "'should return base string when no placeholder', 'ID-123', NO_PLACEHOLDER, 'ID-123'",
+                "'should return star when language is null', '{TYPE_PARENT}', NULL_LANG, '*'",
+                "'should return star when parent type is null', '{TYPE_PARENT}', NULL_TYPE, '*'"
+        })
+        @DisplayName("should handle invalid inputs correctly")
+        void resolve_shouldHandleInvalidInputs(String testName, String baseFormat, InvalidInputCase invalidCase, String expected) {
+            // Given
+            switch (invalidCase) {
+                case NULL_LANG:
+                    when(actionUnit.getRecordingUnitIdentifierLang()).thenReturn(null);
+                    break;
+                case NULL_TYPE:
+                    when(ruInfo.getRuParentType()).thenReturn(null);
+                    break;
+                case NO_PLACEHOLDER:
+                    when(labelService.findLabelOf(any(Concept.class), eq("fr"))).thenReturn(new ConceptPrefLabel());
+                    break;
+            }
 
             // When
             String result = ruTypeParentResolver.resolve(baseFormat, ruInfo);
 
             // Then
-            assertThat(result).isEqualTo(baseFormat);
+            assertThat(result).isEqualTo(expected);
         }
 
-        @Test
-        @DisplayName("should return star if language is null")
-        void resolve_shouldReturnStar_whenLangIsNull() {
+        @ParameterizedTest(name = "[{index}] {0}")
+        @CsvSource({
+                "'should use default 3 chars', 'ID-{TYPE_PARENT}-2024', 'Structure', 'ID-STR-2024'",
+                "'should use specified length', 'ID-{TYPE_PARENT:XXXXX}-2024', 'Structure', 'ID-STRUC-2024'",
+                "'should use default 3 chars for invalid format', 'ID-{TYPE_PARENT:XXX}-2024', 'Structure', 'ID-STR-2024'",
+                "'should use full length if label is shorter', '{TYPE_PARENT:XXXXX}', 'Mur', 'MUR'"
+        })
+        @DisplayName("should produce correct output for valid inputs")
+        void resolve_shouldProduceCorrectOutput(String testName, String baseFormat, String labelText, String expected) {
             // Given
-            String baseFormat = "{TYPE_PARENT}";
-            when(actionUnit.getRecordingUnitIdentifierLang()).thenReturn(null);
-
-            // When
-            String result = ruTypeParentResolver.resolve(baseFormat, ruInfo);
-
-            // Then
-            assertThat(result).isEqualTo("*");
-        }
-
-        @Test
-        @DisplayName("should replace by star if RU parent type is null")
-        void resolve_shouldReturnBaseString_whenRuParentTypeIsNull() {
-            // Given
-            String baseFormat = "{TYPE_PARENT}";
-            when(ruInfo.getRuParentType()).thenReturn(null);
-
-            // When
-            String result = ruTypeParentResolver.resolve(baseFormat, ruInfo);
-
-            // Then
-            assertThat(result).isEqualTo("*");
-        }
-
-        @Test
-        @DisplayName("should resolve with default 3 characters when no format is specified")
-        void resolve_shouldUseDefaultLength_whenNoFormatSpecified() {
-            // Given
-            String baseFormat = "ID-{TYPE_PARENT}-2024";
             ConceptLabel label = new ConceptPrefLabel();
-            label.setLabel("Structure");
+            label.setLabel(labelText);
             when(labelService.findLabelOf(ruParentType, "fr")).thenReturn(label);
 
             // When
             String result = ruTypeParentResolver.resolve(baseFormat, ruInfo);
 
             // Then
-            assertThat(result).isEqualTo("ID-STR-2024");
-        }
-
-        @Test
-        @DisplayName("should resolve with specified number of characters from format")
-        void resolve_shouldUseSpecifiedLength_whenFormatIsPresent() {
-            // Given
-            String baseFormat = "ID-{TYPE_PARENT:XXXXX}-2024"; // 5 chars
-            ConceptLabel label = new ConceptPrefLabel();
-            label.setLabel("Structure");
-            when(labelService.findLabelOf(ruParentType, "fr")).thenReturn(label);
-
-            // When
-            String result = ruTypeParentResolver.resolve(baseFormat, ruInfo);
-
-            // Then
-            assertThat(result).isEqualTo("ID-STRUC-2024");
-        }
-
-        @Test
-        @DisplayName("should resolve with default 3 characters for invalid format specifier")
-        void resolve_shouldUseDefaultLength_whenFormatIsInvalid() {
-            // Given
-            String baseFormat = "ID-{TYPE_PARENT:XXX}-2024"; // Invalid format, expects 'X'
-            ConceptLabel label = new ConceptPrefLabel();
-            label.setLabel("Structure");
-            when(labelService.findLabelOf(ruParentType, "fr")).thenReturn(label);
-
-            // When
-            String result = ruTypeParentResolver.resolve(baseFormat, ruInfo);
-
-            // Then
-            assertThat(result).isEqualTo("ID-STR-2024");
-        }
-
-        @Test
-        void resolve_shouldHaveFullLength_whenLabelIsShorterThanSpecified() {
-            // Given
-            String baseFormat = "{TYPE_PARENT:XXXXX}";
-            ConceptLabel label = new ConceptPrefLabel();
-            label.setLabel("Mur");
-            when(labelService.findLabelOf(ruParentType, "fr")).thenReturn(label);
-
-            assertEquals("MUR", ruTypeParentResolver.resolve(baseFormat, ruInfo));
+            assertThat(result).isEqualTo(expected);
         }
     }
 }
