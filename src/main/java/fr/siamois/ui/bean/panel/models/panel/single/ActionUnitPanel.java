@@ -496,7 +496,7 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnit> imple
         unit.setMaxRecordingUnitCode(maxNumber);
         unit.setRecordingUnitIdentifierFormat(format);
 
-
+        unit.setRecordingUnitIdentifierLang(sessionSettingsBean.getLanguageCode());
 
         actionUnitService.save(unit);
         log.trace("Action unit saved with values : {} {} {}", unit.getMinRecordingUnitCode(), unit.getMaxRecordingUnitCode(), unit.getRecordingUnitIdentifierFormat());

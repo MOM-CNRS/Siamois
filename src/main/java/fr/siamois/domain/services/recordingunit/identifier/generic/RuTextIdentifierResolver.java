@@ -1,11 +1,13 @@
 package fr.siamois.domain.services.recordingunit.identifier.generic;
 
 import fr.siamois.domain.models.recordingunit.identifier.RecordingUnitIdInfo;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.lang.NonNull;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+@Slf4j
 public abstract class RuTextIdentifierResolver implements RuIdentifierResolver {
 
     private static final int DEFAULT_NUMBER_OF_CHAR = 3;
@@ -19,6 +21,7 @@ public abstract class RuTextIdentifierResolver implements RuIdentifierResolver {
     @Override
     public String resolve(@NonNull String baseFormatString, @NonNull RecordingUnitIdInfo ruInfo) {
         if (infoAreNotValid(ruInfo)) {
+            log.error("Could not resolve identifier for {} with info {}", baseFormatString, ruInfo);
             return baseFormatString;
         }
 
@@ -50,8 +53,10 @@ public abstract class RuTextIdentifierResolver implements RuIdentifierResolver {
             } else {
                 replacement = label;
             }
-        } else {
+        } else if (label.length() > DEFAULT_NUMBER_OF_CHAR){
             replacement = label.substring(0, DEFAULT_NUMBER_OF_CHAR);
+        } else {
+            replacement = label;
         }
         replacement = replacement.toUpperCase();
         return replacement;

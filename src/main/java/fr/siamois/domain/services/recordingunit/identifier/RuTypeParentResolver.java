@@ -32,8 +32,9 @@ public class RuTypeParentResolver extends RuTextIdentifierResolver {
         if (info.getRuParentType() == null
                 || info.getActionUnit() == null
                 || info.getActionUnit().getRecordingUnitIdentifierLang() == null) {
-            return "";
+            return "*";
         }
+
         return labelService
                 .findLabelOf(info.getRuParentType(), info.getActionUnit().getRecordingUnitIdentifierLang())
                 .getLabel();
@@ -41,9 +42,7 @@ public class RuTypeParentResolver extends RuTextIdentifierResolver {
 
     @Override
     protected boolean infoAreNotValid(@NonNull RecordingUnitIdInfo info) {
-        return info.getRuParentType() == null
-                || info.getActionUnit() == null
-                || info.getActionUnit().getRecordingUnitIdentifierLang() == null;
+        return false;
     }
 
 
