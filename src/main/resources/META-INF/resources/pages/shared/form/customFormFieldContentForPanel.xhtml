@@ -1,0 +1,67 @@
+<ui:fragment xmlns="http://www.w3.org/1999/xhtml"
+             xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
+             xmlns:p="http://primefaces.org/ui"
+             xmlns:sharedInput="http://xmlns.jcp.org/jsf/composite/pages/shared/input"
+>
+
+    <!-- Component to display a field. To be reused in single panels and in rows of list panel as well -->
+
+    <!-- Expected variables passed through <ui:param> -->
+    <!--@elvariable id="bean" type="fr.siamois.ui.bean.panel.models.panel.single.AbstractSingleEntity"-->
+    <!--@elvariable id="col" type="fr.siamois.domain.models.form.customform.CustomFormColumn" -->
+    <!--@elvariable id="prefix" type="java.lang.String" -->
+    <!--@elvariable id="statusIndex" type="java.lang.Integer" -->
+    <!--@elvariable id="rowIndex" type="java.lang.Integer" -->
+    <!--@elvariable id="colIndex" type="java.lang.Integer" -->
+    <!--@elvariable id="root" type="java.lang.String" -->
+    <!--@elvariable id="panelIndex" type="java.lang.Integer" -->
+    <!--@elvariable id="hasBeenModified" type="java.lang.Boolean" -->
+    <!--@elvariable id="answer" type="fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswer" required="true" -->
+    <!--@elvariable id="onModified" type="javax.el.MethodExpression" required="false" description="Callback method: void method(javax.faces.event.AjaxBehaviorEvent)" -->
+    <!--@elvariable id="panelHeaderUpdateId" type="java.lang.String" required="false" -->
+    <!--@elvariable id="hasAutoGenerationFunction" type="java.lang.Boolean" -->
+    <!--@elvariable id="onGenerateValue" type="javax.el.MethodExpression" -->
+
+    <p:outputPanel rendered="#{bean.isColumnEnabled(col.field)}"
+                   id="field-#{prefix}-#{statusIndex}-#{rowIndex}-#{colIndex}">
+
+
+        <sharedInput:panelField
+                id="panelField-#{prefix}-#{statusIndex}-#{rowIndex}-#{colIndex}"
+                required="#{col.required}"
+                title="#{spatialUnitFieldBean.resolveCustomFieldLabel(col.field)}"
+                forId="#{prefix}-#{statusIndex}-#{rowIndex}-#{colIndex}:input"
+                fluid="#{answer['class'].simpleName ne 'CustomFieldAnswerSelectMultipleSpatialUnitTree'}"
+
+        >
+
+            <ui:include src="/pages/shared/form/fieldCore.xhtml">
+                <ui:param name="bean" value="#{bean}"/>
+                <ui:param name="formCtx" value="#{bean.formContext}"/>
+                <ui:param name="col" value="#{col}"/>
+                <ui:param name="prefix" value="#{prefix}"/>
+                <ui:param name="statusIndex" value="#{statusIndex}"/>
+                <ui:param name="rowIndex" value="#{rowIndex}"/>
+                <ui:param name="colIndex" value="#{colIndex}"/>
+                <ui:param name="root" value="#{root}"/>
+                <ui:param name="panelIndex" value="#{panelIndex}"/>
+                <ui:param name="hasBeenModified" value="#{hasBeenModified}"/>
+                <ui:param name="answer" value="#{answer}"/>
+                <ui:param name="onModified" value="#{onModified}"/>
+                <ui:param name="panelHeaderUpdateId" value="#{panelHeaderUpdateId}"/>
+                <ui:param name="hasAutoGenerationFunction" value="#{hasAutoGenerationFunction}"/>
+                <ui:param name="onGenerateValue" value="#{onGenerateValue}"/>
+                <ui:param name="rowStatus" value="#{rowStatus}"/>
+                <ui:param name="colStatus" value="#{colStatus}"/>
+                <ui:param name="panelStyleClass" value="#{bean.getAutocompleteClass()}"/>
+                <ui:param name="conceptFieldsUpdateTargetsOnBlur" value="#{bean.getConceptFieldsUpdateTargetsOnBlur(panelIndex)}"/>
+                <ui:param name="updateTargetsOnBlur" value="#{root}:field-#{prefix}-#{statusIndex}-#{rowIndex}-#{colIndex} #{bean.getPanelHeaderUpdateId(panelIndex)}"/>
+                <ui:param name="spatialUnitOptions" value="#{bean.getSpatialUnitOptions()}" />
+                <ui:param name="mode" value="#{(col.readOnly) ? 'output' : flowBean.getInPlaceFieldMode()}"/>
+            </ui:include>
+
+        </sharedInput:panelField>
+
+    </p:outputPanel>
+
+</ui:fragment>

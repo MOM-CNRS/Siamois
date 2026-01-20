@@ -34,6 +34,8 @@
                         disabled="#{cc.attrs.disabled}"
                         inputStyleClass="#{cc.attrs.inputStyleClass}"
                         required="#{cc.attrs.required}"
+                        onmousedown="event.stopPropagation();"
+                        onclick="event.stopPropagation();"
                         converter="#{conceptAutocompleteDTOConverter}"
                         forceSelection="true"
                         scrollHeight="300"

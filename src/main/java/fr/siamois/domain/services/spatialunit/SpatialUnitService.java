@@ -168,11 +168,11 @@ public class SpatialUnitService implements ArkEntityService {
     /**
      * Find all spatial units of a given institution
      *
-     * @param institution The institution to filter by
+     * @param id The institution id to filter by
      * @return A list of SpatialUnit belonging to the given institution
      */
-    public List<SpatialUnit> findAllOfInstitution(Institution institution) {
-        return spatialUnitRepository.findAllOfInstitution(institution.getId());
+    public List<SpatialUnit> findAllOfInstitution(Long id) {
+        return spatialUnitRepository.findAllOfInstitution(id);
     }
 
     /**
@@ -187,7 +187,6 @@ public class SpatialUnitService implements ArkEntityService {
     public SpatialUnit save(UserInfo info, SpatialUnit su) throws SpatialUnitAlreadyExistsException {
         String name = su.getName();
         Concept type = su.getCategory();
-        Set<SpatialUnit> parents = su.getParents();
         Set<SpatialUnit> children = su.getChildren();
 
         Optional<SpatialUnit> optSpatialUnit = spatialUnitRepository.findByNameAndInstitution(name, info.getInstitution().getId());
@@ -210,15 +209,20 @@ public class SpatialUnitService implements ArkEntityService {
             spatialUnit.setArk(ark);
         }
 
-        spatialUnit = spatialUnitRepository.save(spatialUnit);
+        // Reattach parents
+        for (SpatialUnit parentRef : su.getParents()) {
+            SpatialUnit parent = spatialUnitRepository.findById(parentRef.getId())
+                    .orElseThrow(() -> new IllegalArgumentException("Parent not found: " + parentRef.getId()));
 
-        for (SpatialUnit parent : parents) {
-            spatialUnitRepository.addParentToSpatialUnit(spatialUnit.getId(), parent.getId());
+            parent.getChildren().add(spatialUnit);
+            spatialUnit.getParents().add(parent);
         }
 
         for (SpatialUnit child : children) {
-            spatialUnitRepository.addParentToSpatialUnit(child.getId(), spatialUnit.getId());
+            spatialUnit.getChildren().add(child);
         }
+
+        spatialUnit = spatialUnitRepository.save(spatialUnit);
 
         return spatialUnit;
     }
@@ -323,12 +327,12 @@ public class SpatialUnitService implements ArkEntityService {
     /**
      * Find all root SpatialUnits of a given institution
      *
-     * @param institution The institution to filter by
+     * @param id The institution id to filter by
      * @return A list of root SpatialUnit that have no parents
      */
-    public List<SpatialUnit> findRootsOf(Institution institution) {
+    public List<SpatialUnit> findRootsOf(Long id) {
         List<SpatialUnit> result = new ArrayList<>();
-        for (SpatialUnit spatialUnit : findAllOfInstitution(institution)) {
+        for (SpatialUnit spatialUnit : findAllOfInstitution(id)) {
             if (countParentsByChild(spatialUnit) == 0) {
                 result.add(spatialUnit);
             }
@@ -339,11 +343,12 @@ public class SpatialUnitService implements ArkEntityService {
     /**
      * Find all direct children of a given SpatialUnit
      *
-     * @param spatialUnit The SpatialUnit to find children for
+     * @param id The id SpatialUnit to find children for
      * @return A list of direct children SpatialUnit of the given SpatialUnit
      */
-    public List<SpatialUnit> findDirectChildrensOf(SpatialUnit spatialUnit) {
-        return spatialUnitRepository.findChildrensOf(spatialUnit.getId()).stream().toList();
+    @Transactional
+    public List<SpatialUnit> findDirectChildrensOf(Long id) {
+        return spatialUnitRepository.findChildrensOf(id).stream().toList();
     }
 
     /**
@@ -394,4 +399,7 @@ public class SpatialUnitService implements ArkEntityService {
         descendants.forEach(su -> byId.putIfAbsent(su.getId(), su));
         return new ArrayList<>(byId.values());
     }
+
+
+
 }

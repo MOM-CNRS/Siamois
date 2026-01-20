@@ -1,80 +1,33 @@
 <ui:fragment xmlns="http://www.w3.org/1999/xhtml"
              xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
              xmlns:p="http://primefaces.org/ui"
-             xmlns:spatialUnit="http://xmlns.jcp.org/jsf/composite/pages/spatialUnit/components"
-             xmlns:recordingUnit="http://xmlns.jcp.org/jsf/composite/pages/recordingUnit/components"
-             xmlns:f="http://java.sun.com/jsf/core"
+             xmlns:table="http://xmlns.jcp.org/jsf/composite/pages/shared/table"
 
 >
 
-    <!--@elvariable id="panelModel" type="fr.siamois.ui.bean.panel.models.panel.single.AbstractSingleMultiHierarchicalEntityPanel" -->
+    <!--@elvariable id="tabModel" type="fr.siamois.ui.panel.models.panel.single.tab.RecordingTab"-->
     <!--@elvariable id="panelIndex" type="java.lang.Integer" -->
-    🚧 En cours (manque bouteau nouveau enfant et parent from existing ou nouveau). Lien dans les tables à réparer
 
-    <p:panel id="childrenPanel" class="sia-form-panel" header="Contient"
+    <p:panel id="parentsPanel" class="sia-form-panel" header="Parents"
              toggleable="true"
              collapsed="false">
 
-        <spatialUnit:spatialUnitList
-                rendered="#{panelModel['class'].simpleName eq 'SpatialUnitPanel'}"
-                lazyDataModel="#{panelModel.lazyDataModelChildren}"
-                panelModel="#{panelModel}"
+        <table:entityTable
+                tableModel="#{tabModel.parentTableModel}"
                 panelIndex="#{panelIndex}"
-                id="spatialUnitChildrenList"
-        >
-            <f:facet name="rightToolbar">
-                <p:commandButton value="#{langBean.msg('common.action.create')}" icon="bi bi-plus-square"
-                                 id="newSpatialUnitChildrenButton"
-                                 actionListener="#{newSpatialUnitDialogBean.init(panelModel.lazyDataModelChildren)}"
-                                 oncomplete="PF('newUnitDiag').show()"
-                                 update="newUnitForm"
-                                 rendered="#{flowBean.isWriteMode== true}"
-                                 style="margin-right: .5rem">
-                </p:commandButton>
-            </f:facet>
-        </spatialUnit:spatialUnitList>
-
-        <recordingUnit:recordingUnitList
-                rendered="#{panelModel['class'].simpleName eq 'RecordingUnitPanel'}"
-                lazyDataModel="#{panelModel.lazyDataModelChildren}"
-                panelModel="#{panelModel}"
-                panelIndex="#{panelIndex}"
-                id="recordingUnitChildrenList"
-        >
-        </recordingUnit:recordingUnitList>
+                id="parentList"
+        />
 
     </p:panel>
-    <p:panel id="parentsPanel" class="sia-form-panel"
-             header="Fait partie de" toggleable="true"
+
+    <p:panel id="childrenPanel" class="sia-form-panel"
+             header="Enfants" toggleable="true"
              collapsed="false">
-        <spatialUnit:spatialUnitList
-                rendered="#{panelModel['class'].simpleName eq 'SpatialUnitPanel'}"
-                lazyDataModel="#{panelModel.lazyDataModelParents}"
-                panelModel="#{panelModel}"
+        <table:entityTable
+                tableModel="#{tabModel.childTableModel}"
                 panelIndex="#{panelIndex}"
-                id="spatialUnitParentsList"
-        >
-            <f:facet name="rightToolbar">
-                <p:commandButton value="#{langBean.msg('common.action.create')}" icon="bi bi-plus-square"
-                                 id="newSpatialUnitParentButton"
-                                 actionListener="#{newSpatialUnitDialogBean.init(panelModel.lazyDataModelParents)}"
-                                 oncomplete="PF('newUnitDiag').show()"
-                                 update="newUnitForm"
-                                 rendered="#{flowBean.isWriteMode}"
-                                 style="margin-right: .5rem">
-                </p:commandButton>
-            </f:facet>
-        </spatialUnit:spatialUnitList>
-
-        <recordingUnit:recordingUnitList
-                rendered="#{panelModel['class'].simpleName eq 'RecordingUnitPanel'}"
-                lazyDataModel="#{panelModel.lazyDataModelParents}"
-                panelModel="#{panelModel}"
-                panelIndex="#{panelIndex}"
-                id="recordingUnitParentList"
-        >
-
-        </recordingUnit:recordingUnitList>
+                id="childList"
+        />
 
     </p:panel>
 

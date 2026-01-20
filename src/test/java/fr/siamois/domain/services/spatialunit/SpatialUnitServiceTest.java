@@ -300,7 +300,7 @@ class SpatialUnitServiceTest {
         when(spatialUnitRepository.findAllOfInstitution(institution.getId())).thenReturn(List.of(spatialUnit1, spatialUnit2));
 
         // Act
-        List<SpatialUnit> actualResult = spatialUnitService.findAllOfInstitution(institution);
+        List<SpatialUnit> actualResult = spatialUnitService.findAllOfInstitution(institution.getId());
 
         // Assert
         assertEquals(List.of(spatialUnit1, spatialUnit2), actualResult);
@@ -316,7 +316,7 @@ class SpatialUnitServiceTest {
         // Act & Assert
         Exception exception = assertThrows(
                 Exception.class,
-                () -> spatialUnitService.findAllOfInstitution(institution)
+                () -> spatialUnitService.findAllOfInstitution(institution.getId())
         );
 
         assertEquals("Database error", exception.getMessage());
@@ -338,6 +338,9 @@ class SpatialUnitServiceTest {
         unit.setCategory(type);
         unit.setParents(new HashSet<>(parents));
 
+        List<SpatialUnit> children = List.of(spatialUnit2);
+        unit.setChildren(new HashSet<>(children));
+
 
 
 
@@ -347,6 +350,7 @@ class SpatialUnitServiceTest {
         when(spatialUnitRepository.save(any(SpatialUnit.class))).thenReturn(spatialUnit1);
         when(institutionService.findById(anyLong())).thenReturn(i);
         when(personService.findById(anyLong())).thenReturn(person);
+        when(spatialUnitRepository.findById(anyLong())).thenReturn(Optional.of(spatialUnit1));
 
         // Act
         SpatialUnit result = spatialUnitService.save(userInfo, unit);
@@ -354,7 +358,7 @@ class SpatialUnitServiceTest {
         // Assert
         assertNotNull(result);
         assertEquals(spatialUnit1, result);
-        verify(spatialUnitRepository).addParentToSpatialUnit(spatialUnit1.getId(), spatialUnit1.getId());
+
     }
 
     @Test
@@ -498,7 +502,7 @@ class SpatialUnitServiceTest {
         when(spatialUnitRepository.countParentsByChildId(su2.getId())).thenReturn(1L);
         when(spatialUnitRepository.countParentsByChildId(su3.getId())).thenReturn(1L);
 
-        List<SpatialUnit> roots = spatialUnitService.findRootsOf(institution);
+        List<SpatialUnit> roots = spatialUnitService.findRootsOf(institution.getId());
 
         assertThat(roots)
                 .hasSize(1)
@@ -518,7 +522,7 @@ class SpatialUnitServiceTest {
 
         when(spatialUnitRepository.findChildrensOf(su1.getId())).thenReturn(Set.of(su2,su3));
 
-        List<SpatialUnit> result = spatialUnitService.findDirectChildrensOf(su1);
+        List<SpatialUnit> result = spatialUnitService.findDirectChildrensOf(su1.getId());
 
         assertThat(result)
                 .hasSize(2)

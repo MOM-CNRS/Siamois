@@ -1,12 +1,8 @@
 package fr.siamois.ui.bean.panel.models.panel.single.tab;
 
-import lombok.Data;
+public abstract class FormPanelTab extends PanelTab {
 
-
-@Data
-public class FormPanelTab extends PanelTab {
-
-    public FormPanelTab(String titleCode, String icon, String id) {
+    protected FormPanelTab(String titleCode, String icon, String id) {
         super(titleCode, icon, id);
     }
 
@@ -19,4 +15,5 @@ public class FormPanelTab extends PanelTab {
     public int hashCode() {
         return super.hashCode();
     }
+
 }

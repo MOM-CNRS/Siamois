@@ -6,4 +6,11 @@ public class DocumentTab extends PanelTab {
         super(titleCode, icon, id);
     }
 
+    @Override
+    public String getViewName() {
+        return "/panel/tab/documentsTab.xhtml";
+    }
+
+
+
 }

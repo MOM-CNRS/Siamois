@@ -318,5 +318,7 @@ public interface SpatialUnitRepository extends JpaRepository<SpatialUnit, Long>,
             nativeQuery = true)
     List<SpatialUnit> findDescendantsUpToDepth(@Param("rootIds") Long[] rootIds,
                                                @Param("maxDepth") int maxDepth);
+
+
 }
 

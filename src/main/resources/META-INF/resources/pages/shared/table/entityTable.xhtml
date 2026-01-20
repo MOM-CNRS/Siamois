@@ -1,0 +1,38 @@
+<!-- /pages/shared/table/entityTable.xhtml -->
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
+                xmlns:p="http://primefaces.org/ui"
+                xmlns:cc="http://xmlns.jcp.org/jsf/composite">
+
+    <cc:interface>
+        <cc:attribute name="tableModel" required="true" type="fr.siamois.ui.table.EntityTableViewModel"/>
+        <cc:attribute name="panelIndex" required="true" type="java.lang.Integer"/>
+        <cc:attribute name="tableClass" required="false" default="siamois-unit-table" type="java.lang.String"/>
+        <cc:facet name="rightToolbar"/>
+    </cc:interface>
+
+    <cc:implementation>
+        <p:outputPanel id="tableContainer">
+
+            <!-- DataTable -->
+            <ui:include src="/pages/shared/table/entityDataTable.xhtml">
+                <ui:param name="tableModel" value="#{cc.attrs.tableModel}" />
+                <ui:param name="panelIndex" value="#{cc.attrs.panelIndex}" />
+                <ui:param name="tableClass" value="#{cc.attrs.tableClass}" />
+                <ui:param name="updateTableString" value="#{cc.clientId}:entityDatatable" />
+            </ui:include>
+
+            <!-- TreeTable -->
+            <ui:include src="/pages/shared/table/entityTreeTable.xhtml">
+                <ui:param name="tableModel" value="#{cc.attrs.tableModel}" />
+                <ui:param name="panelIndex" value="#{cc.attrs.panelIndex}" />
+                <ui:param name="tableClass" value="#{cc.attrs.tableClass}" />
+                <ui:param name="updateTableString" value="#{cc.clientId}:entityTreeTable" />
+            </ui:include>
+        </p:outputPanel>
+
+        <p:blockUI block="tableContainer" widgetVar="#{cc.clientId}_buiTables">
+            <i class="pi pi-spin pi-spinner" style="font-size: 3rem"></i>
+        </p:blockUI>
+    </cc:implementation>
+</ui:composition>

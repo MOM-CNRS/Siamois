@@ -1,34 +1,18 @@
 <ui:fragment xmlns="http://www.w3.org/1999/xhtml"
              xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
-             xmlns:p="http://primefaces.org/ui"
-             xmlns:recordingUnit="http://xmlns.jcp.org/jsf/composite/pages/recordingUnit/components"
-             xmlns:f="http://java.sun.com/jsf/core"
+             xmlns:table="http://xmlns.jcp.org/jsf/composite/pages/shared/table"
 
 >
 
-    <!--@elvariable id="panelModel" type="fr.siamois.ui.bean.panel.models.panel.single.AbstractSingleEntity"-->
+    <!--@elvariable id="tabModel" type="fr.siamois.ui.panel.models.panel.single.tab.RecordingTab"-->
     <!--@elvariable id="panelIndex" type="java.lang.Integer"-->
-    <!--@elvariable id="lazyDataModel"  type="fr.siamois.ui.lazydatamodel.BaseRecordingUnitLazyDataModel"-->
 
     <div class="recording-unit-panel">
-        <recordingUnit:recordingUnitList
-                displayColumnToggler="false"
-                lazyDataModel="#{lazyDataModel}"
-                panelModel="#{panelModel}"
+        <table:entityTable
+                tableModel="#{tabModel.tableModel}"
                 panelIndex="#{panelIndex}"
                 id="recordingList"
-        >
-            <f:facet name="rightToolbar">
-                <p:commandButton value="#{langBean.msg('common.action.create')}" icon="bi bi-plus-square"
-                                 id="newRecordingUnitButton"
-                                 actionListener="#{genericNewUnitDialogBean.selectKind('RECORDING',lazyDataModel)}"
-                                 oncomplete="PF('newUnitDiag').show();"
-                                 update="newUnitForm"
-                                 rendered="#{actionUnitBean.showCreateRecordingUnitButton(panelModel.unit)}"
-                                 style="margin-right: .5rem">
-                </p:commandButton>
-            </f:facet>
-        </recordingUnit:recordingUnitList>
+        />
     </div>
 
 

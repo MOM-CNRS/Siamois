@@ -1,0 +1,54 @@
+<ui:fragment xmlns="http://www.w3.org/1999/xhtml"
+             xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
+             xmlns:p="http://primefaces.org/ui"
+>
+
+    <!-- Component to display a field. To be reused in single panels and in rows of list panel as well -->
+
+    <!-- Expected variables passed through <ui:param> -->
+    <!--@elvariable id="bean" type="fr.siamois.ui.bean.panel.models.panel.single.AbstractSingleEntity"-->
+    <!--@elvariable id="col" type="fr.siamois.domain.models.form.customform.CustomFormColumn" -->
+    <!--@elvariable id="prefix" type="java.lang.String" -->
+    <!--@elvariable id="statusIndex" type="java.lang.Integer" -->
+    <!--@elvariable id="rowIndex" type="java.lang.Integer" -->
+    <!--@elvariable id="colIndex" type="java.lang.Integer" -->
+    <!--@elvariable id="root" type="java.lang.String" -->
+    <!--@elvariable id="panelIndex" type="java.lang.Integer" -->
+    <!--@elvariable id="hasBeenModified" type="java.lang.Boolean" -->
+    <!--@elvariable id="answer" type="fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswer" required="true" -->
+    <!--@elvariable id="onModified" type="javax.el.MethodExpression" required="false" description="Callback method: void method(javax.faces.event.AjaxBehaviorEvent)" -->
+    <!--@elvariable id="panelHeaderUpdateId" type="java.lang.String" required="false" -->
+    <!--@elvariable id="hasAutoGenerationFunction" type="java.lang.Boolean" -->
+    <!--@elvariable id="onGenerateValue" type="javax.el.MethodExpression" -->
+    <p:outputPanel rendered="#{bean.isColumnEnabled(col.field)}"
+                   styleClass="#{answer['class'].simpleName ne 'CustomFieldAnswerSelectMultipleSpatialUnitTree' ? 'ui-fluid' : ''}"
+                   id="field-#{prefix}-#{rowIndex}-#{colIndex}">
+        <ui:include src="/pages/shared/form/fieldCore.xhtml">
+            <ui:param name="bean" value="#{bean}"/>
+            <ui:param name="col" value="#{col}"/>
+            <ui:param name="prefix" value="#{prefix}"/>
+            <ui:param name="statusIndex" value="#{statusIndex}"/>
+            <ui:param name="rowIndex" value="#{rowIndex}"/>
+            <ui:param name="colIndex" value="#{colIndex}"/>
+            <ui:param name="root" value="#{component.clientId}"/>
+            <ui:param name="panelIndex" value="0"/>
+            <ui:param name="hasBeenModified" value="#{answer != null and answer.hasBeenModified}"/>
+            <ui:param name="answer" value="#{answer}"/>
+            <ui:param name="onModified" value="#{onModified}"/>
+            <ui:param name="panelHeaderUpdateId" value=""/>
+            <ui:param name="hasAutoGenerationFunction" value="false"/>
+            <ui:param name="onGenerateValue" value="#{null}"/>
+            <ui:param name="rowStatus" value="#{null}"/>
+            <ui:param name="colStatus" value="#{null}"/>
+            <ui:param name="panelStyleClass" value="#{bean.getAutocompleteClass()}"/>
+            <ui:param name="conceptFieldsUpdateTargetsOnBlur" value="@this"/>
+            <ui:param name="spatialUnitOptions" value="#{bean.getSpatialUnitOptions()}" />
+            <ui:param name="updateTargetsOnBlur" value="#{updateTargetsOnBlur}"/>
+            <ui:param name="formCtx" value="#{bean}"/>
+            <ui:param name="mode" value="#{(col.readOnly or not canUserEditRow) ? 'output' : flowBean.getInPlaceFieldMode()}"/>
+
+        </ui:include>
+
+    </p:outputPanel>
+
+</ui:fragment>

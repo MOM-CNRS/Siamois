@@ -37,10 +37,9 @@ public class SpatialUnit extends SpatialUnitGeneric implements ArkEntity {
     @SuppressWarnings("CopyConstructorMissesField")
     public SpatialUnit (SpatialUnit spatialUnit) {
         name = spatialUnit.getName();
-        ark = spatialUnit.getArk();
         category = spatialUnit.getCategory();
         geom = spatialUnit.getGeom();
-        validated = spatialUnit.getValidated();
+        validated = false;
     }
 
     @Id
@@ -70,13 +69,15 @@ public class SpatialUnit extends SpatialUnitGeneric implements ArkEntity {
     @NotAudited
     private Set<SpatialUnit> children = new HashSet<>();
 
+    @ManyToMany(mappedBy = "children", fetch = FetchType.LAZY)
+    @JsonIgnore
+    private Set<SpatialUnit> parents = new HashSet<>();
+
     @OneToMany(mappedBy="spatialUnit")
     @JsonIgnore
     private Set<RecordingUnit> recordingUnitList;
 
-    @ManyToMany(mappedBy = "children", fetch = FetchType.LAZY)
-    @JsonIgnore
-    private Set<SpatialUnit> parents = new HashSet<>();
+
 
     @ManyToMany(mappedBy = "spatialContext")
     @JsonIgnore
@@ -96,12 +97,12 @@ public class SpatialUnit extends SpatialUnitGeneric implements ArkEntity {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         SpatialUnit that = (SpatialUnit) o;
-        return Objects.equals(id, that.id);  // Compare based on RecordingUnit
+        return Objects.equals(id, that.id);  // Compare based on id
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id);  // Hash based on RecordingUnit
+        return Objects.hash(id);  // Hash based on id
     }
 
     @Transient
@@ -134,8 +135,9 @@ public class SpatialUnit extends SpatialUnitGeneric implements ArkEntity {
 
     @Transient
     @JsonIgnore
-    public static final CustomFieldSelectOneFromFieldCode SPATIAL_UNIT_TYPE_FIELD = new CustomFieldSelectOneFromFieldCode.Builder()
+    public static final CustomFieldSelectOneFromFieldCode SPATIAL_UNIT_TYPE_FIELD = CustomFieldSelectOneFromFieldCode.builder()
             .label("specimen.field.category")
+            .id(1L)
             .isSystemField(true)
             .valueBinding("category")
             .styleClass("mr-2 spatial-unit-type-chip")
@@ -146,7 +148,7 @@ public class SpatialUnit extends SpatialUnitGeneric implements ArkEntity {
 
     @Transient
     @JsonIgnore
-    public static final CustomFieldText NAME_FIELD = new CustomFieldText.Builder()
+    public static final CustomFieldText NAME_FIELD =  CustomFieldText.builder()
             .label("common.label.name")
             .isSystemField(true)
             .valueBinding("name")
@@ -181,27 +183,6 @@ public class SpatialUnit extends SpatialUnitGeneric implements ArkEntity {
             )
             .build();
 
-    @Transient
-    @JsonIgnore
-    public static final CustomForm OVERVIEW_FORM = new CustomForm.Builder()
-            .name("Details tab form")
-            .description("Contains the main form")
-            .addPanel(
-                    new CustomFormPanel.Builder()
-                            .name("common.header.general")
-                            .isSystemPanel(true)
-                            .addRow(
-                                    new CustomRow.Builder()
-                                            .addColumn(new CustomCol.Builder()
-                                                    .readOnly(true)
-                                                    .isRequired(false)
-                                                    .className(COLUMN_CLASS_NAME)
-                                                    .field(SPATIAL_UNIT_TYPE_FIELD)
-                                                    .build())
-                                            .build()
-                            ).build()
-            )
-            .build();
 
     @Transient
     @JsonIgnore

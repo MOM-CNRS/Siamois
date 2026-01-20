@@ -8,8 +8,6 @@
     <cc:interface>
         <cc:attribute name="answer" type="fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerText"
                       required="true"/>
-        <cc:attribute name="panelModel" type="fr.siamois.ui.bean.panel.models.panel.single.AbstractSingleEntity"
-                      required="true"/>
         <cc:attribute name="hasBeenModified" type="Boolean" required="false" default="false"/>
         <cc:attribute name="field" type="fr.siamois.domain.models.form.customfield.CustomFieldText"
                       required="true"/>
@@ -17,6 +15,14 @@
         <cc:attribute name="label" type="String" required="false"/>
         <cc:attribute name="required" type="java.lang.Boolean" required="true"/>
         <cc:attribute name="updateTargetsOnBlur" type="String" required="false" default="@this"/>
+        <!-- Callback appelé quand le champ est modifié -->
+        <cc:attribute name="onModified"
+                      method-signature="void setFieldAnswerHasBeenModified(javax.faces.event.AjaxBehaviorEvent)"
+                      required="false"/>
+        <cc:attribute name="onGenerateValue"
+                      method-signature="void f(javax.faces.event.ActionEvent)"
+                      required="false"/>
+        <cc:attribute name="hasAutoGenerationFunction" type="java.lang.Boolean" required="false" default="false"/>
     </cc:interface>
 
     <cc:implementation>
@@ -39,6 +45,7 @@
                 </h:panelGroup>
             </f:facet>
             <f:facet name="input">
+
                 <h:panelGroup id="inputGroup" rendered="true">
                     <h:panelGroup rendered="#{cc.attrs.field.isTextArea}">
                         <p:inputTextarea value="#{cc.attrs.answer.value}"
@@ -48,31 +55,38 @@
                                          onkeyup="this.classList.add('sia-modified-field')"
                                          required="#{cc.attrs.required}"
                         >
+                            <f:attribute name="field" value="#{cc.attrs.field}" />
                             <p:ajax event="keyup" delay="1000" update="#{cc.attrs.updateTargetsOnBlur}"
                                     process="@this"
-                                    listener="#{cc.attrs.panelModel.setFieldAnswerHasBeenModified(cc.attrs.field)}"/>
+
+                                    listener="#{cc.attrs.onModified}"/>
                         </p:inputTextarea>
                     </h:panelGroup>
                     <h:panelGroup rendered="#{not cc.attrs.field.isTextArea}">
                         <p:commandButton
-                                rendered="#{cc.attrs.panelModel.hasAutoGenerationFunction(cc.attrs.field)}"
+                                rendered="false"
                                 icon="pi pi-refresh"
                                 styleClass="rounded-button"
                                 immediate="true"
                                 process="@this"
-                                actionListener="#{cc.attrs.panelModel.generateValueForField(cc.attrs.field, cc.attrs.answer)}"
+                                actionListener="#{cc.attrs.onGenerateValue}"
                                 update="#{cc.attrs.updateTargetsOnBlur}"
-                        />
+                        >
+                            <f:attribute name="field" value="#{cc.attrs.field}" />
+                            <f:attribute name="answer" value="#{cc.attrs.answer}" />
+                        </p:commandButton>
                         <p:inputText value="#{cc.attrs.answer.value}"
                                      styleClass="#{cc.attrs.answer.hasBeenModified ? 'track-change sia-modified-field': 'track-change'}"
                                      label="#{cc.attrs.label}"
                                      id="input"
                                      required="#{cc.attrs.required}"
                         >
+                            <f:attribute name="field" value="#{cc.attrs.field}" />
                             <p:ajax event="keyup" delay="1000" update="#{cc.attrs.updateTargetsOnBlur}"
                                     onstart="$(PrimeFaces.escapeClientId('#{cc.clientId}:input')).addClass('sia-modified-field')"
                                     process="@this"
-                                    listener="#{cc.attrs.panelModel.setFieldAnswerHasBeenModified(cc.attrs.field)}"/>
+
+                                    listener="#{cc.attrs.onModified}"/>
                         </p:inputText>
                     </h:panelGroup>
                 </h:panelGroup>

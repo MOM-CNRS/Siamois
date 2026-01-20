@@ -1,0 +1,163 @@
+<!-- /pages/shared/field/fieldCore.xhtml -->
+<ui:fragment xmlns="http://www.w3.org/1999/xhtml"
+             xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
+             xmlns:siaInplace="http://xmlns.jcp.org/jsf/composite/pages/shared/inplace">
+
+    <!-- Expected @elvariable parameters -->
+    <!--@elvariable id="bean" type="fr.siamois.ui.form.EntityFormContext"-->
+    <!--@elvariable id="formCtx" type="fr.siamois.ui.form.EntityFormContext"-->
+    <!--@elvariable id="col" type="fr.siamois.ui.table.TableColumn"-->
+    <!--@elvariable id="prefix" type="java.lang.String"-->
+    <!--@elvariable id="statusIndex" type="java.lang.Integer"-->
+    <!--@elvariable id="rowIndex" type="java.lang.Integer"-->
+    <!--@elvariable id="colIndex" type="java.lang.Integer"-->
+    <!--@elvariable id="root" type="java.lang.String"-->
+    <!--@elvariable id="panelIndex" type="java.lang.Integer"-->
+    <!--@elvariable id="hasBeenModified" type="java.lang.Boolean"-->
+    <!--@elvariable id="answer" type="fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswer" required="true"-->
+    <!--@elvariable id="onModified" type="javax.el.MethodExpression"-->
+    <!--@elvariable id="panelHeaderUpdateId" type="java.lang.String"-->
+    <!--@elvariable id="hasAutoGenerationFunction" type="java.lang.Boolean"-->
+    <!--@elvariable id="onGenerateValue" type="javax.el.MethodExpression"-->
+    <!--@elvariable id="panelStyleClass" type="java.lang.String"-->
+    <!-- @elvariable id="conceptFieldsUpdateTargetsOnBlur" type="java.lang.String" -->
+    <!-- @elvariable id="updateTargetsOnBlur" type="java.lang.String" -->
+    <!-- @elvariable id="spatialUnitOptions" type="java.util.List" -->
+    <!-- @elvariable id="mode" type="java.lang.String" -->
+
+    <!-- TEXT -->
+
+    <siaInplace:text
+            rendered="#{col.field['class'].simpleName eq 'CustomFieldText'}"
+            id="#{prefix}-#{statusIndex}-#{rowIndex}-#{colIndex}"
+            field="#{col.field}"
+            required="#{col.required}"
+            label="#{spatialUnitFieldBean.resolveCustomFieldLabel(col.field)}"
+            hasBeenModified="#{hasBeenModified}"
+            answer="#{answer}"
+            mode="#{mode}"
+            updateTargetsOnBlur="#{panelHeaderUpdateId} #{updateTargetsOnBlur}"
+            onModified="#{formCtx.onFieldAnswerModifiedListener}"
+            hasAutoGenerationFunction="#{hasAutoGenerationFunction}"
+            onGenerateValue="#{onGenerateValue}"
+    />
+
+    <!-- INTEGER -->
+    <siaInplace:integer
+            rendered="#{col.field['class'].simpleName eq 'CustomFieldInteger'}"
+            panelModel="#{bean}"
+            field="#{col.field}"
+            required="#{col.required}"
+            label="#{spatialUnitFieldBean.resolveCustomFieldLabel(col.field)}"
+            hasBeenModified="#{hasBeenModified}"
+            answer="#{answer}"
+            mode="#{mode}"
+            updateTargetsOnBlur="#{panelHeaderUpdateId} #{updateTargetsOnBlur}"
+    />
+
+    <!-- DATETIME -->
+    <siaInplace:datePicker
+            required="#{col.required}"
+            label="#{spatialUnitFieldBean.resolveCustomFieldLabel(col.field)}"
+            rendered="#{col.field['class'].simpleName eq 'CustomFieldDateTime'}"
+            field="#{col.field}"
+            hasBeenModified="#{hasBeenModified}"
+            answer="#{answer}"
+            mode="#{mode}"
+            updateTargetsOnBlur="#{updateTargetsOnBlur}"
+            onModified="#{formCtx.onFieldAnswerModifiedListener}"
+            panelStyleClass="#{panelStyleClass}"
+    />
+
+    <!-- CONCEPT -->
+    <siaInplace:concept
+            rendered="#{col.field['class'].simpleName eq 'CustomFieldSelectOneFromFieldCode'}"
+            hasBeenModified="#{hasBeenModified}"
+            field="#{col.field}"
+            required="#{col.required}"
+            label="#{spatialUnitFieldBean.resolveCustomFieldLabel(col.field)}"
+            mode="#{mode}"
+            updateTargetsOnBlur="#{conceptFieldsUpdateTargetsOnBlur} #{updateTargetsOnBlur}"
+            answer="#{answer}"
+            panelStyleClass="#{panelStyleClass}"
+            onConceptChanged="#{formCtx.setFieldConceptAnswerHasBeenModified}"
+    />
+
+    <!-- Select one action -->
+    <siaInplace:action
+            rendered="#{col.field['class'].simpleName eq 'CustomFieldSelectOneActionUnit'}"
+            hasBeenModified="#{hasBeenModified}"
+            field="#{col.field}"
+            mode="#{mode}"
+            required="#{col.required}"
+            label="#{spatialUnitFieldBean.resolveCustomFieldLabel(col.field)}"
+            updateTargetsOnBlur="#{updateTargetsOnBlur}"
+            answer="#{answer}"/>
+
+
+    <siaInplace:spatial
+            rendered="#{col.field['class'].simpleName eq 'CustomFieldSelectOneSpatialUnit'}"
+            hasBeenModified="#{hasBeenModified}"
+            field="#{col.field}"
+            onModified="#{formCtx.onFieldAnswerModifiedListener}"
+            mode="#{mode}"
+            required="#{col.required}"
+            label="#{spatialUnitFieldBean.resolveCustomFieldLabel(col.field)}"
+            updateTargetsOnBlur="#{updateTargetsOnBlur}"
+            spatialUnitOptions="#{spatialUnitOptions}"
+            answer="#{answer}"/>
+
+
+    <!-- Select one from person -->
+    <siaInplace:person
+            rendered="#{col.field['class'].simpleName eq 'CustomFieldSelectOnePerson'}"
+            hasBeenModified="#{hasBeenModified}"
+            field="#{col.field}"
+            mode="#{mode}"
+            onModified="#{formCtx.onFieldAnswerModifiedListener}"
+            panelStyleClass="#{panelStyleClass}"
+            required="#{col.required}"
+            label="#{spatialUnitFieldBean.resolveCustomFieldLabel(col.field)}"
+            updateTargetsOnBlur="#{updateTargetsOnBlur}"
+            answer="#{answer}"/>
+
+
+    <!-- Select multiple from person -->
+    <siaInplace:person
+            rendered="#{col.field['class'].simpleName eq 'CustomFieldSelectMultiplePerson'}"
+            hasBeenModified="#{hasBeenModified}"
+            field="#{col.field}"
+            multiple="true"
+            required="#{col.required}"
+            label="#{spatialUnitFieldBean.resolveCustomFieldLabel(col.field)}"
+            mode="#{mode}"
+            onModified="#{formCtx.onFieldAnswerModifiedListener}"
+            panelStyleClass="#{panelStyleClass}"
+            updateTargetsOnBlur="#{updateTargetsOnBlur}"
+            answer="#{answer}"/>
+
+
+    <!-- Select spatial unit from tree -->
+    <siaInplace:spatialUnitTree
+            rendered="#{col.field['class'].simpleName eq 'CustomFieldSelectMultipleSpatialUnitTree'}"
+            hasBeenModified="#{hasBeenModified}"
+            field="#{col.field}"
+            mode="#{mode}"
+            formCtx="#{formCtx}"
+            updateTargetsOnBlur="#{updateTargetsOnBlur}"
+            answer="#{answer}"/>
+
+    <!-- Select one code OA -->
+    <siaInplace:actionCode
+            rendered="#{col.field['class'].simpleName eq 'CustomFieldSelectOneActionCode'}"
+            panelModel="#{bean}"
+            field="#{col.field}"
+            required="#{col.required}"
+            label="#{spatialUnitFieldBean.resolveCustomFieldLabel(col.field)}"
+            hasBeenModified="#{hasBeenModified}"
+            answer="#{answer}"
+            mode="#{mode}"
+            updateTargetsOnBlur="#{updateTargetsOnBlur}"
+    />
+
+</ui:fragment>

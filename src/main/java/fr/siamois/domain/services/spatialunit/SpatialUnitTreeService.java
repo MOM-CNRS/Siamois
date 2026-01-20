@@ -23,7 +23,7 @@ public class SpatialUnitTreeService {
 
     /** Récursion avec détection de cycle par "chemin" */
     private void buildChildren(TreeNode<SpatialUnit> parentNode, SpatialUnit parent, Set<Long> pathIds) {
-        List<SpatialUnit> enfants = spatialUnitService.findDirectChildrensOf(parent);
+        List<SpatialUnit> enfants = spatialUnitService.findDirectChildrensOf(parent.getId());
         if (enfants == null || enfants.isEmpty()) {
             return;
         }
@@ -43,16 +43,19 @@ public class SpatialUnitTreeService {
     }
 
 
-
+    /**
+     * Returns the tree node of all the spatial units in the active institution
+     * @return The tree node
+     */
     public TreeNode<SpatialUnit> buildTree() {
 
         TreeNode<SpatialUnit> root = new CheckboxTreeNode<>(new SpatialUnit(), null);
-        List<SpatialUnit> racines = spatialUnitService.findRootsOf(sessionSettingsBean.getSelectedInstitution());
+        List<SpatialUnit> racines = spatialUnitService.findRootsOf(sessionSettingsBean.getSelectedInstitution().getId());
 
         for (SpatialUnit r : racines) {
             TreeNode<SpatialUnit> rNode = new CheckboxTreeNode<>("SpatialUnit", r, root);
             rNode.setExpanded(false);
-            // on mémorise le chemin (ids vus) pour éviter les cycles
+            // we memorize path to avoid cycles
             Set<Long> path = new HashSet<>();
             path.add(r.getId());
             buildChildren(rNode, r, path);

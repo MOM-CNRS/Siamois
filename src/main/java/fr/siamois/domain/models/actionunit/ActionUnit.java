@@ -190,9 +190,10 @@ public class ActionUnit extends ActionUnitParent implements ArkEntity {
     // --------------- Fields
     @Transient
     @JsonIgnore
-    public static final CustomFieldSelectOneFromFieldCode ACTION_UNIT_TYPE_FIELD = new CustomFieldSelectOneFromFieldCode.Builder()
+    public static final CustomFieldSelectOneFromFieldCode ACTION_UNIT_TYPE_FIELD = CustomFieldSelectOneFromFieldCode.builder()
             .label("specimen.field.category")
             .isSystemField(true)
+            .id(4L)
             .valueBinding("type")
             .styleClass("mr-2 action-unit-type-chip")
             .iconClass("bi bi-bucket")
@@ -202,17 +203,19 @@ public class ActionUnit extends ActionUnitParent implements ArkEntity {
 
     @Transient
     @JsonIgnore
-    public static final CustomFieldText NAME_FIELD = new CustomFieldText.Builder()
+    public static final CustomFieldText NAME_FIELD = CustomFieldText.builder()
             .label("common.label.name")
             .isSystemField(true)
+            .id(2L)
             .valueBinding("name")
             .concept(NAME_CONCEPT)
             .build();
 
     @Transient
     @JsonIgnore
-    public static final CustomFieldText IDENTIFIER_FIELD = new CustomFieldText.Builder()
+    public static final CustomFieldText IDENTIFIER_FIELD = CustomFieldText.builder()
             .label("common.label.identifier")
+            .id(1L)
             .isSystemField(true)
             .autoGenerationFunction(AbstractSingleEntity::generateRandomActionUnitIdentifier)
             .valueBinding("identifier")
@@ -221,16 +224,17 @@ public class ActionUnit extends ActionUnitParent implements ArkEntity {
 
     @Transient
     @JsonIgnore
-    public static final CustomFieldSelectMultipleSpatialUnitTree SPATIAL_CONTEXT_FIELD = new CustomFieldSelectMultipleSpatialUnitTree.Builder()
-            .label(SPATIAL_UNIT_CONTEXT_LABEL_CODE)
+    public static final CustomFieldSelectMultipleSpatialUnitTree SPATIAL_CONTEXT_FIELD = CustomFieldSelectMultipleSpatialUnitTree.builder()
+            .label("common.label.selectedSpatialUnits")
             .isSystemField(true)
+            .id(3L)
             .valueBinding("spatialContext")
             .concept(SPATIAL_CONTEXT_CONCEPT)
             .build();
 
     @Transient
     @JsonIgnore
-    private static final CustomFieldDateTime BEGIN_DATE_FIELD = new CustomFieldDateTime.Builder()
+    private static final CustomFieldDateTime BEGIN_DATE_FIELD =  CustomFieldDateTime.builder()
             .label("common.field.beginDate")
             .isSystemField(true)
             .valueBinding("beginDate")
@@ -240,7 +244,7 @@ public class ActionUnit extends ActionUnitParent implements ArkEntity {
 
     @Transient
     @JsonIgnore
-    private static final CustomFieldDateTime END_DATE_FIELD = new CustomFieldDateTime.Builder()
+    private static final CustomFieldDateTime END_DATE_FIELD =  CustomFieldDateTime.builder()
             .label("common.field.endDate")
             .isSystemField(true)
             .valueBinding("endDate")
@@ -250,7 +254,7 @@ public class ActionUnit extends ActionUnitParent implements ArkEntity {
 
     @Transient
     @JsonIgnore
-    private static final CustomFieldSelectOneActionCode ACTION_CODE_FIELD = new CustomFieldSelectOneActionCode.Builder()
+    private static final CustomFieldSelectOneActionCode ACTION_CODE_FIELD = CustomFieldSelectOneActionCode.builder()
             .label("actionunit.field.actionCode")
             .isSystemField(true)
             .valueBinding("primaryActionCode")
@@ -262,33 +266,6 @@ public class ActionUnit extends ActionUnitParent implements ArkEntity {
     public static final CustomForm NEW_UNIT_FORM = new CustomForm.Builder()
             .name(DETAIL_TAB_NAME)
             .description("")
-            .addPanel(
-                    new CustomFormPanel.Builder()
-                            .name(GENERAL_LABEL_CODE)
-                            .isSystemPanel(true)
-                            .addRow(
-                                    new CustomRow.Builder()
-                                            .addColumn(new CustomCol.Builder()
-                                                    .readOnly(false)
-                                                    .className(COLUMN_CLASS_NAME)
-                                                    .field(IDENTIFIER_FIELD)
-                                                    .isRequired(true)
-                                                    .build())
-                                            .addColumn(new CustomCol.Builder()
-                                                    .readOnly(false)
-                                                    .isRequired(true)
-                                                    .className(COLUMN_CLASS_NAME)
-                                                    .field(NAME_FIELD)
-                                                    .build())
-                                            .addColumn(new CustomCol.Builder()
-                                                    .readOnly(false)
-                                                    .isRequired(true)
-                                                    .className(COLUMN_CLASS_NAME)
-                                                    .field(ACTION_UNIT_TYPE_FIELD)
-                                                    .build())
-                                            .build()
-                            ).build()
-            )
             .addPanel(
                     new CustomFormPanel.Builder()
                             .name(SPATIAL_UNIT_CONTEXT_LABEL_CODE)
@@ -303,13 +280,6 @@ public class ActionUnit extends ActionUnitParent implements ArkEntity {
                                             .build()
                             ).build()
             )
-            .build();
-
-    @Transient
-    @JsonIgnore
-    public static final CustomForm OVERVIEW_FORM = new CustomForm.Builder()
-            .name(DETAIL_TAB_NAME)
-            .description("")
             .addPanel(
                     new CustomFormPanel.Builder()
                             .name(GENERAL_LABEL_CODE)
@@ -318,6 +288,19 @@ public class ActionUnit extends ActionUnitParent implements ArkEntity {
                                     new CustomRow.Builder()
                                             .addColumn(new CustomCol.Builder()
                                                     .readOnly(false)
+                                                    .isRequired(true)
+                                                    .className(COLUMN_CLASS_NAME)
+                                                    .field(NAME_FIELD)
+                                                    .build())
+                                            .addColumn(new CustomCol.Builder()
+                                                    .readOnly(false)
+                                                    .className(COLUMN_CLASS_NAME)
+                                                    .field(IDENTIFIER_FIELD)
+                                                    .isRequired(true)
+                                                    .build())
+                                            .addColumn(new CustomCol.Builder()
+                                                    .readOnly(false)
+                                                    .isRequired(true)
                                                     .className(COLUMN_CLASS_NAME)
                                                     .field(ACTION_UNIT_TYPE_FIELD)
                                                     .build())
@@ -325,6 +308,7 @@ public class ActionUnit extends ActionUnitParent implements ArkEntity {
                             ).build()
             )
             .build();
+
 
     @Transient
     @JsonIgnore

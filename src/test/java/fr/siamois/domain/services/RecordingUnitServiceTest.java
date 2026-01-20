@@ -158,6 +158,18 @@ class RecordingUnitServiceTest {
         RecordingUnit posteriorUnit = new RecordingUnit();
         posteriorUnit.setId(3L);
 
+        // add a parent
+        RecordingUnit parent1Unit = new RecordingUnit();
+        parent1Unit.setId(10L);
+        parent1Unit.setFullIdentifier("p1");
+        recordingUnitToSave.getParents().add(parent1Unit);
+
+        // add a children
+        RecordingUnit child1Unit = new RecordingUnit();
+        child1Unit.setId(20L);
+        child1Unit.setFullIdentifier("c1");
+        recordingUnitToSave.getChildren().add(child1Unit);
+
         StratigraphicRelationship antRelationship = new StratigraphicRelationship();
         antRelationship.setUnit1(recordingUnitToSave);
         antRelationship.setUnit2(anteriorUnit);
@@ -183,6 +195,8 @@ class RecordingUnitServiceTest {
 
         when(personRepository.findAllById(anyList())).thenReturn(List.of(p));
 
+        when(recordingUnitRepository.findById(10L)).thenReturn(Optional.of(parent1Unit));
+
 
         RecordingUnit result = recordingUnitService.save(recordingUnitToSave,c,
                 List.of(anteriorUnit),
@@ -194,6 +208,7 @@ class RecordingUnitServiceTest {
         assertNotNull(result);
         assertNull(result.getFormResponse());
         assertEquals("MOM-2025-5", result.getFullIdentifier());
+        verify(recordingUnitRepository, times(2)).save(any(RecordingUnit.class));
 
 
 
@@ -465,5 +480,52 @@ class RecordingUnitServiceTest {
         assertEquals(3, count);
         verify(recordingUnitRepository, times(1)).countByActionContext(2L);
     }
+
+    @Test
+    void findAllWithoutParentsByInstitution_returnsInitializedRecordingUnits() {
+        // Arrange
+        Long institutionId = 1L;
+        List<RecordingUnit> mockRecordingUnits = List.of(mock(RecordingUnit.class), mock(RecordingUnit.class));
+        when(recordingUnitRepository.findRootsByInstitution(institutionId)).thenReturn(mockRecordingUnits);
+
+        // Act
+        List<RecordingUnit> result = recordingUnitService.findAllWithoutParentsByInstitution(institutionId);
+
+        // Assert
+        assertEquals(2, result.size());
+        verify(recordingUnitRepository).findRootsByInstitution(institutionId);
+    }
+
+    @Test
+    void findChildrenByParentAndInstitution_returnsInitializedRecordingUnits() {
+        // Arrange
+        Long parentId = 1L;
+        Long institutionId = 1L;
+        List<RecordingUnit> mockRecordingUnits = List.of(mock(RecordingUnit.class), mock(RecordingUnit.class));
+        when(recordingUnitRepository.findChildrenByParentAndInstitution(parentId, institutionId)).thenReturn(mockRecordingUnits);
+
+        // Act
+        List<RecordingUnit> result = recordingUnitService.findChildrenByParentAndInstitution(parentId, institutionId);
+
+        // Assert
+        assertEquals(2, result.size());
+        verify(recordingUnitRepository).findChildrenByParentAndInstitution(parentId, institutionId);
+    }
+
+    @Test
+    void findAllWithoutParentsByAction_returnsInitializedRecordingUnits() {
+        // Arrange
+        Long actionId = 1L;
+        List<RecordingUnit> mockRecordingUnits = List.of(mock(RecordingUnit.class), mock(RecordingUnit.class));
+        when(recordingUnitRepository.findRootsByAction(actionId)).thenReturn(mockRecordingUnits);
+
+        // Act
+        List<RecordingUnit> result = recordingUnitService.findAllWithoutParentsByAction(actionId);
+
+        // Assert
+        assertEquals(2, result.size());
+        verify(recordingUnitRepository).findRootsByAction(actionId);
+    }
+
 
 }

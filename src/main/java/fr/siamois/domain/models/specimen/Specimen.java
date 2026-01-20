@@ -9,6 +9,7 @@ import fr.siamois.domain.models.document.Document;
 import fr.siamois.domain.models.form.customfield.CustomFieldDateTime;
 import fr.siamois.domain.models.form.customfield.CustomFieldSelectMultiplePerson;
 import fr.siamois.domain.models.form.customfield.CustomFieldSelectOneFromFieldCode;
+import fr.siamois.domain.models.form.customfield.CustomFieldText;
 import fr.siamois.domain.models.form.customform.CustomCol;
 import fr.siamois.domain.models.form.customform.CustomForm;
 import fr.siamois.domain.models.form.customform.CustomFormPanel;
@@ -101,6 +102,13 @@ public class Specimen extends SpecimenParent implements ArkEntity {
     }
 
     // ----------- Concepts for system fields
+
+    // Specimen identifier
+    private static Concept specimenIdConcept = new Concept.Builder()
+            .vocabulary(SYSTEM_THESO)
+            .externalId("4286193")
+            .build();
+
     // Authors
     @Transient
     @JsonIgnore
@@ -142,30 +150,44 @@ public class Specimen extends SpecimenParent implements ArkEntity {
             .build();
 
     // --------------- Fields
+
+    // Fields
+    private static CustomFieldText specimenIdField = CustomFieldText.builder()
+            .label("recordingunit.field.identifier")
+            .isSystemField(true)
+            .id(1L)
+            .valueBinding("fullIdentifier")
+            .concept(specimenIdConcept)
+            .build();
+
+
     @Transient
     @JsonIgnore
-    private static CustomFieldSelectMultiplePerson authorsField = new CustomFieldSelectMultiplePerson.Builder()
+    private static CustomFieldSelectMultiplePerson authorsField =  CustomFieldSelectMultiplePerson.builder()
             .label("specimen.field.authors")
             .isSystemField(true)
+            .id(2L)
             .valueBinding("authors")
             .concept(authorsConcept)
             .build();
 
     @Transient
     @JsonIgnore
-    private static CustomFieldSelectMultiplePerson collectorsField = new CustomFieldSelectMultiplePerson.Builder()
+    private static CustomFieldSelectMultiplePerson collectorsField =  CustomFieldSelectMultiplePerson.builder()
             .label("specimen.field.collectors")
             .isSystemField(true)
+            .id(3L)
             .valueBinding("collectors")
             .concept(collectorsConcept)
             .build();
 
     @Transient
     @JsonIgnore
-    private static CustomFieldSelectOneFromFieldCode specimenTypeField = new CustomFieldSelectOneFromFieldCode.Builder()
+    private static CustomFieldSelectOneFromFieldCode specimenTypeField =  CustomFieldSelectOneFromFieldCode.builder()
             .label("specimen.field.type")
             .isSystemField(true)
             .valueBinding("type")
+            .id(4L)
             .styleClass("mr-2 specimen-type-chip")
             .iconClass("bi bi-bucket")
             .fieldCode(Specimen.CATEGORY_FIELD)
@@ -174,10 +196,11 @@ public class Specimen extends SpecimenParent implements ArkEntity {
 
     @Transient
     @JsonIgnore
-    private static CustomFieldSelectOneFromFieldCode specimenCategoryField = new CustomFieldSelectOneFromFieldCode.Builder()
+    private static CustomFieldSelectOneFromFieldCode specimenCategoryField =  CustomFieldSelectOneFromFieldCode.builder()
             .label("specimen.field.category")
             .isSystemField(true)
             .valueBinding("category")
+            .id(5L)
             .styleClass("mr-2 specimen-type-chip")
             .iconClass("bi bi-bucket")
             .fieldCode(Specimen.CAT_FIELD)
@@ -186,12 +209,60 @@ public class Specimen extends SpecimenParent implements ArkEntity {
 
     @Transient
     @JsonIgnore
-    private static CustomFieldDateTime collectionDateField = new CustomFieldDateTime.Builder()
+    private static CustomFieldDateTime collectionDateField =  CustomFieldDateTime.builder()
             .label("specimen.field.collectionDate")
             .isSystemField(true)
+            .id(6L)
             .valueBinding("collectionDate")
             .showTime(false)
             .concept(collectionDateConcept)
+            .build();
+
+    @Transient
+    @JsonIgnore
+    public static final CustomForm DETAILS_FORM = new CustomForm.Builder()
+            .name("Details tab form")
+            .description("Contains the main form")
+            .addPanel(
+                    new CustomFormPanel.Builder()
+                            .name("common.header.general")
+                            .isSystemPanel(true)
+                            .addRow(
+                                    new CustomRow.Builder()
+                                            .addColumn(new CustomCol.Builder()
+                                                    .readOnly(true)
+                                                    .className(COLUMN_CLASS_NAME)
+                                                    .field(specimenIdField)
+                                                    .build())
+                                            .addColumn(new CustomCol.Builder()
+                                                    .readOnly(false)
+                                                    .className(COLUMN_CLASS_NAME)
+                                                    .field(authorsField)
+                                                    .build())
+                                            .addColumn(new CustomCol.Builder()
+                                                    .readOnly(false)
+                                                    .className(COLUMN_CLASS_NAME)
+                                                    .field(collectorsField)
+                                                    .build())
+                                            .addColumn(new CustomCol.Builder()
+                                                    .readOnly(false)
+                                                    .className(COLUMN_CLASS_NAME)
+                                                    .field(specimenTypeField)
+                                                    .build())
+                                            .addColumn(new CustomCol.Builder()
+                                                    .readOnly(false)
+                                                    .className(COLUMN_CLASS_NAME)
+                                                    .field(specimenCategoryField)
+                                                    .build())
+                                            .addColumn(new CustomCol.Builder()
+                                                    .readOnly(false)
+                                                    .className(COLUMN_CLASS_NAME)
+                                                    .field(collectionDateField)
+                                                    .build())
+                                            .build()
+                            )
+                            .build()
+            )
             .build();
 
     @Transient

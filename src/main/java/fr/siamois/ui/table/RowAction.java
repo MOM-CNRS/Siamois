@@ -1,14 +1,16 @@
 package fr.siamois.ui.table;
 
+import lombok.Builder;
 import lombok.Data;
-import lombok.experimental.SuperBuilder;
 
-@SuperBuilder
 @Data
+@Builder
 public class RowAction {
 
-    /** Action métier */
     private TableColumnAction action;
+
+    /** Optionnel : process PF (ex: "@this") */
+    private String processExpr;
 
     /** Icône (peut être dynamique via clé) */
     private String iconKey;
@@ -16,10 +18,19 @@ public class RowAction {
     /** Condition d’affichage */
     private String renderedKey;
 
-    /** Update / process */
-    private String updateExpr;
-    private String processExpr;
 
-    /** CSS */
+
+    /** Optionnel : update PF statique (ex: "navBar... bookmarkGroup") */
+    private String updateExpr;
+
+    /**
+     * Si true, on force l’update de la dataTable du composite :
+     * update=":#{cc.clientId}:entityDatatable"
+     */
+    private boolean updateSelfTable;
+
+    /** CSS optionnelle (ex: "sia-icon-btn") */
     private String styleClass;
+
+
 }

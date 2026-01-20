@@ -1,0 +1,97 @@
+<!-- /pages/shared/table/entityTreeTable.xhtml -->
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
+                xmlns:p="http://primefaces.org/ui"
+                xmlns:f="http://java.sun.com/jsf/core"
+>
+
+
+    <p:treeTable id="entityTreeTable"
+                 rendered="#{tableModel.treeMode}"
+                 value="#{tableModel.treeRoot}"
+                 var="item"
+                 nodeVar="node"
+                 widgetVar="#{cc.clientId}_entityTreeTable"
+                 cellNavigation="true"
+                 selectionMode="checkbox"
+                 selection="#{tableModel.checkboxSelectedTreeNodes}"
+                 varStatus="status"
+                 size="small"
+                 paginatorPosition="bottom"
+                 selectionRowMode="none"
+                 propagateSelectionUp="false"
+                 propagateSelectionDown="false"
+                 lazy="true"
+                 globalFilter="#{tableModel.globalFilter}"
+                 allowUnsorting="true"
+                 sortBy="#{tableModel.treeLazyModel.sortBy}"
+                 rows="#{tableModel.treeLazyModel.pageSizeState}"
+                 first="#{tableModel.treeLazyModel.first}"
+                 sortMode="multiple"
+                 partialUpdate="false"
+                 emptyMessage="#{langBean.msg('recordingUnitList.empty')}"
+                 paginatorTemplate="Rows per page: {RowsPerPageDropdown} {RowReport} {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink}"
+                 rowsPerPageTemplate="5,10,15,20,25"
+                 rowIndexVar="rowIndex"
+                 style="overflow-x: auto;"
+                 tableStyleClass="datatable-hoverable-table"
+                 tableStyle="table-layout: auto;"
+                 class="#{tableClass}">
+
+        <f:facet name="{RowReport}">
+            <span class="ui-paginator-current">
+                #{tableModel.treeLazyModel.getFirstIndexOnPage()}-#{tableModel.treeLazyModel.getLastIndexOnPage()} of #{tableModel.treeLazyModel.rowCount}
+            </span>
+        </f:facet>
+
+        <f:facet name="header">
+            <ui:include src="/pages/shared/table/tableToolbar.xhtml">
+                <ui:param name="tableModel" value="#{tableModel}" />
+                <ui:param name="updateTableString" value="#{updateTableString}" />
+                <ui:param name="tableId" value="entityTreeTable"/>
+            </ui:include>
+        </f:facet>
+
+        <p:column style="min-width: 10px;" selectionBox="true" width="fit-content" toggleable="false"/>
+
+        <!-- Dynamic Columns -->
+        <p:columns style="min-width: #{column.type != 'COMMAND_LINK' ? '10em' : ''};"
+                   sortable="#{column.sortable}"
+                   field="#{column.id}"
+                   filterable="#{column.filterable}"
+                   toggleable="#{column.type != 'COMMAND_LINK' ? 'true' : 'false'}"
+                   value="#{tableModel.columns}" var="column" varStatus="colStatus">
+            <ui:include src="/pages/shared/table/columnTemplates.xhtml">
+                <ui:param name="tableModel" value="#{tableModel}" />
+                <ui:param name="column" value="#{column}" />
+                <ui:param name="item" value="#{item}" />
+                <ui:param name="status" value="#{status}" />
+                <ui:param name="rowIndex" value="#{rowIndex}" />
+                <ui:param name="colStatus" value="#{colStatus}" />
+                <ui:param name="updateTableString" value="@this #{updateTableString}"/>
+                <ui:param name="canUserEditRow" value="#{tableModel.canUserEditRow(item)}"/>
+            </ui:include>
+        </p:columns>
+
+        <!-- Actions Column -->
+        <p:column exportable="false" toggleable="false" style="min-width: 100px;">
+            <p:toolbar id="actionButtonToolbar">
+                <p:toolbarGroup >
+                    <ui:repeat value="#{tableModel.rowActions}" var="action" varStatus="status">
+                        <p:commandButton
+                                id="btn_#{status.index}"
+                                rendered="#{tableModel.isRendered(action, item)}"
+                                icon="#{tableModel.resolveIcon(action, item)}"
+                                action="#{tableModel.handleRowAction(action, node)}"
+                                process="#{empty action.processExpr ? '@this' : action.processExpr}"
+                                update="#{action.updateSelfTable ? (':'.concat(cc.clientId).concat(':entityTreeTable')) : action.updateExpr}"
+                                styleClass="#{action.styleClass}"/>
+                        <p:tooltip autoHide="false" value="#{tableModel.getRowActionTooltipCode(action,item)}" for="btn_#{status.index}"
+                        />
+                    </ui:repeat>
+                </p:toolbarGroup>
+            </p:toolbar>
+        </p:column>
+    </p:treeTable>
+
+</ui:composition>

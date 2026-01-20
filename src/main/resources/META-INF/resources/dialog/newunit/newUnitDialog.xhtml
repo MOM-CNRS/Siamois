@@ -12,7 +12,7 @@
                   width="60vw"
                   minWidth="400"
                   maxWidth="90vw"
-                  style="max-height:80vh;"
+                  style="max-height:900px;"
                   appendToBody="true" modal="true"
                   styleClass="sia-new-unit-dialog ui-panel siamois-panel #{genericNewUnitDialogBean.handler.styleClassName()}">
 
@@ -20,19 +20,23 @@
                     <p:outputPanel style="display: flex;gap: 0.5em; align-items: center;
                             float:left;color: var(--main-color);">
                         <i class="#{genericNewUnitDialogBean.handler.getIcon()}"/>
-                        <span style="padding-right:0.5em;">#{genericNewUnitDialogBean.handler.getTitle()}</span>
+                        <span style="padding-right:0.5em;">#{genericNewUnitDialogBean.handler.getTitle(genericNewUnitDialogBean.newUnitContext)}</span>
                     </p:outputPanel>
             </f:facet>
-            <p:outputPanel id="newUnitFormContent">
-                <ui:include src="/pages/shared/form/customForm.xhtml">
-                    <ui:param name="panelModel" value="#{genericNewUnitDialogBean}"/>
-                    <ui:param name="layout" value="#{genericNewUnitDialogBean.detailsForm.layout}"/>
-                    <ui:param name="readOnly" value="#{false}"/>
-                    <ui:param name="prefix" value="newUnitForm"/>
-                    <ui:param name="root" value="newUnitForm"/>
-                    <ui:param name="panelId" value="newUnitForm:newUnitFormContent"/>
-                </ui:include>
-            </p:outputPanel>
+
+
+                <p:outputPanel id="newUnitFormContent">
+                    <ui:include src="/pages/shared/form/customForm.xhtml">
+                        <ui:param name="panelModel" value="#{genericNewUnitDialogBean}"/>
+                        <ui:param name="layout" value="#{genericNewUnitDialogBean.detailsForm.layout}"/>
+                        <ui:param name="readOnly" value="#{false}"/>
+                        <ui:param name="prefix" value="newUnitForm"/>
+                        <ui:param name="root" value="newUnitForm"/>
+                        <ui:param name="panelId" value="newUnitForm:newUnitFormContent"/>
+                    </ui:include>
+                </p:outputPanel>
+
+
 
             <!-- Save/Cancel Toolbar -->
             <f:facet name="footer">

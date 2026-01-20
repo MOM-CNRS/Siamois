@@ -29,7 +29,6 @@ import org.springframework.stereotype.Component;
 
 import javax.faces.bean.ViewScoped;
 import java.io.Serializable;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -67,6 +66,11 @@ public class GenericNewUnitDialogBean<T extends TraceableEntity>
     private UnitKind kind;
     private transient INewUnitHandler<T> handler;
 
+    // creation  callback + contexte ====
+    private transient fr.siamois.ui.table.EntityTableViewModel<?, ?> sourceTableModel;
+    private transient NewUnitContext newUnitContext;
+
+
 
     public GenericNewUnitDialogBean(ApplicationContext context,
                                     Set<INewUnitHandler<? extends TraceableEntity>> handlerSet) {
@@ -82,6 +86,7 @@ public class GenericNewUnitDialogBean<T extends TraceableEntity>
     }
 
     @SuppressWarnings("unchecked")
+    // DO NOT DELETE, USED BY XHTML FILE
     public void selectKind(UnitKind kind) throws CannotInitializeNewUnitDialogException {
         this.kind = kind;
         this.handler = (INewUnitHandler<T>) handlers.get(kind);
@@ -91,41 +96,28 @@ public class GenericNewUnitDialogBean<T extends TraceableEntity>
         init();
     }
 
+    // Unique selectKind
     @SuppressWarnings("unchecked")
-    public void selectKind(UnitKind kind, BaseLazyDataModel<T> context) throws CannotInitializeNewUnitDialogException {
-        this.kind = kind;
-        this.handler = (INewUnitHandler<T>) handlers.get(kind);
-        this.lazyDataModel = context;
+    public void selectKind(NewUnitContext ctx,
+                           fr.siamois.ui.table.EntityTableViewModel<?, ?> sourceTableModel)
+            throws CannotInitializeNewUnitDialogException {
+
+        this.kind = ctx.getKindToCreate();
+        this.handler = (INewUnitHandler<T>) handlers.get(this.kind);
+
+        this.sourceTableModel = sourceTableModel;
+        this.newUnitContext = ctx;
+
+        // reset context legacy
+        this.lazyDataModel = null;
         this.setToUpdate = null;
         this.parent = null;
         this.multiHierarchyChild = null;
         this.multiHierarchyParent = null;
+
         init();
     }
 
-    @SuppressWarnings("unchecked")
-    public void selectKind(UnitKind kind, Set<T> context, TraceableEntity parent) throws CannotInitializeNewUnitDialogException {
-        this.kind = kind;
-        this.handler = (INewUnitHandler<T>) handlers.get(kind);
-        this.lazyDataModel = null;
-        this.setToUpdate = context;
-        this.parent = parent;
-        this.multiHierarchyChild = null;
-        this.multiHierarchyParent = null;
-        init();
-    }
-
-    @SuppressWarnings("unchecked")
-    public void selectKind(UnitKind kind, Set<T> context, T parent, T child) throws CannotInitializeNewUnitDialogException {
-        this.kind = kind;
-        this.handler = (INewUnitHandler<T>) handlers.get(kind);
-        this.lazyDataModel = null;
-        this.setToUpdate = context;
-        this.parent = null;
-        this.multiHierarchyChild = child;
-        this.multiHierarchyParent = parent;
-        init();
-    }
 
     // ==== méthodes utilitaires (ex-abstracts supprimées) ====
 
@@ -155,18 +147,18 @@ public class GenericNewUnitDialogBean<T extends TraceableEntity>
     public void setFieldConceptAnswerHasBeenModified(SelectEvent<ConceptLabel> event) {
         UIComponent component = event.getComponent();
         CustomField field = (CustomField) component.getAttributes().get("field");
-        formResponse.getAnswers().get(field).setHasBeenModified(true);
+        formContext.markFieldModified(field);
     }
 
     @Override
     public void initForms(boolean forceInit) {
         detailsForm = handler.formLayout();
-        formResponse = initializeFormResponse(detailsForm, unit, forceInit);
+        initFormContext(forceInit);
     }
 
     protected void reset() {
         unit = null;
-        formResponse = null;
+        formContext = null;
     }
 
     public void init() throws CannotInitializeNewUnitDialogException {
@@ -244,22 +236,14 @@ public class GenericNewUnitDialogBean<T extends TraceableEntity>
     }
 
     protected void createUnit() throws EntityAlreadyExistsException {
-        updateJpaEntityFromFormResponse(formResponse, unit); // Update Unit based on form response
+        formContext.flushBackToEntity();
         unit.setValidated(false);
         unit = handler.save(sessionSettingsBean.getUserInfo(), unit);
-        updateCollections();
+
+        // Post-create: laisse la table décider quoi faire (liste/tree) selon ctx
+        if (sourceTableModel != null && newUnitContext != null) {
+            sourceTableModel.onAnyEntityCreated(unit, newUnitContext);
+        }
     }
 
-    private void updateCollections() {
-        if (lazyDataModel != null) {
-            lazyDataModel.addRowToModel(unit);
-        }
-        if (setToUpdate != null) {
-            LinkedHashSet<T> newSet = new LinkedHashSet<>();
-            newSet.add(unit);
-            newSet.addAll(setToUpdate);
-            setToUpdate.clear();
-            setToUpdate.addAll(newSet);
-        }
-    }
 }

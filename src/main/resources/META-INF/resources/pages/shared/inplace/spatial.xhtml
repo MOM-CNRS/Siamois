@@ -9,8 +9,6 @@
         <cc:attribute name="answer"
                       type="fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerSelectOneSpatialUnit"
                       required="true"/>
-        <cc:attribute name="panelModel" type="fr.siamois.ui.bean.panel.models.panel.single.AbstractSingleEntity"
-                      required="true"/>
         <cc:attribute name="hasBeenModified" type="Boolean" required="false" default="false"/>
         <cc:attribute name="field" type="fr.siamois.domain.models.form.customfield.CustomFieldSelectOneSpatialUnit"
                       required="true"/>
@@ -19,6 +17,14 @@
         <cc:attribute name="mode" type="String" required="false" default="READ"/>
         <cc:attribute name="updateTargetsOnBlur" type="String" required="false" default="@this"/>
         <cc:attribute name="multiple" type="Boolean" required="false" default="false"/>
+        <cc:attribute name="onModified"
+                      method-signature="void setFieldAnswerHasBeenModified(javax.faces.event.AjaxBehaviorEvent)"
+                      required="false"/>
+        <cc:attribute name="spatialUnitOptions"
+                      type="java.util.List"
+                      required="true"
+                      shortDescription="List of SpatialUnit to display in the dropdown"/>
+        <cc:attribute name="displayType" type="java.lang.Boolean" required="false" default="false"/>
     </cc:interface>
 
     <cc:implementation>
@@ -30,7 +36,7 @@
                         <h:outputLink value="#{request.contextPath}/spatial-unit/#{cc.attrs.answer.value.id}">
                             #{cc.attrs.answer.value.name}
                         </h:outputLink>
-                        <p:chip
+                        <p:chip rendered="#{cc.attrs.displayType}"
                                 label="#{labelBean.findLabelOf(cc.attrs.answer.value.category)}"
                                 styleClass="mr-2 spatial-unit-type-chip"/>
                     </div>
@@ -50,7 +56,7 @@
                             var="unit"
                             itemValue="#{unit}"
                             itemLabel="#{unit.name}"
-                            value="#{cc.attrs.panelModel.getSpatialUnitOptions()}"/>
+                            value="#{cc.attrs.spatialUnitOptions}"/>
                     <p:column>
                         <div style="display:flex;gap:0.5em;">
                             <p:outputLabel value="#{su.name}"/>
@@ -61,7 +67,7 @@
                         </div>
                     </p:column>
                     <p:ajax update="#{cc.attrs.updateTargetsOnBlur}"
-                            listener="#{cc.attrs.panelModel.setFieldAnswerHasBeenModified(cc.attrs.field)}"/>
+                            listener="#{cc.attrs.onModified}"/>
                 </p:selectOneMenu>
             </f:facet>
         </p:inplace>
