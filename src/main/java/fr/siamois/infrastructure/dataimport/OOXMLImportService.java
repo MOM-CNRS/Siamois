@@ -343,7 +343,7 @@ public class OOXMLImportService {
         return specs;
     }
 
-    private List<ActionUnitSeeder.ActionUnitSpecs> parseActionUnits(Sheet sheet) {
+    public List<ActionUnitSeeder.ActionUnitSpecs> parseActionUnits(Sheet sheet) {
         if (sheet == null) {
             return List.of();
         }
@@ -419,7 +419,7 @@ public class OOXMLImportService {
         return result;
     }
 
-    private List<RecordingUnitSeeder.RecordingUnitSpecs> parseRecordingUnits(Sheet sheet) {
+    public List<RecordingUnitSeeder.RecordingUnitSpecs> parseRecordingUnits(Sheet sheet) {
         if (sheet == null) {
             return List.of();
         }

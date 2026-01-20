@@ -107,6 +107,37 @@ class OOXMLImportServiceTest {
         );
     }
 
+    @Test
+    void parsePersons_withMetaSheet() {
+        Workbook wb = workbook();
+        Sheet s = sheet(wb, "Personne",
+                "Email",
+                "Nom",
+                "Prenom",
+                "Identifiant"
+        );
+
+        Sheet meta = sheet(wb, "sheet_metadata",
+                "sheet_id",
+                "sheet_name"
+        );
+
+
+
+        row(s, 1, "john@doe.fr", "Doe", "John", "jdoe");
+        row(meta, 1, "peron", "Person");
+
+        List<PersonSeeder.PersonSpec> persons = service.parsePersons(s);
+
+        assertThat(persons).hasSize(1);
+
+        PersonSeeder.PersonSpec p = persons.get(0);
+        assertThat(p.email()).isEqualTo("john@doe.fr");
+        assertThat(p.name()).isEqualTo("Doe");
+        assertThat(p.lastname()).isEqualTo("John");
+        assertThat(p.username()).isEqualTo("jdoe");
+    }
+
     // -------------------------------------------------------------------------
     // Persons
     // -------------------------------------------------------------------------
@@ -236,4 +267,208 @@ class OOXMLImportServiceTest {
 
         assertThat(specs).isNotNull();
     }
+
+    @Test
+    void parseRecordingUnits_fullValidRow() {
+        Workbook wb = new XSSFWorkbook();
+        Sheet s = wb.createSheet("Unite action");
+
+        // Header
+        Row header = s.createRow(0);
+        header.createCell(0).setCellValue("Identifiant");
+        header.createCell(1).setCellValue("Description");
+        header.createCell(2).setCellValue("Type uri");
+        header.createCell(3).setCellValue("Cycle uri");
+        header.createCell(4).setCellValue("Couleur de la matrice");
+        header.createCell(5).setCellValue("Texture de la matrice");
+        header.createCell(6).setCellValue("Composition de la matrice");
+        header.createCell(7).setCellValue("Agent uri");
+        header.createCell(8).setCellValue("Interpretation uri");
+        header.createCell(9).setCellValue("Author email");
+        header.createCell(10).setCellValue("Institution");
+        header.createCell(11).setCellValue("Contributeurs email");
+        header.createCell(12).setCellValue("Date d'ouverture");
+        header.createCell(13).setCellValue("Date de fermeture");
+        header.createCell(14).setCellValue("Unite spatiale");
+        header.createCell(15).setCellValue("Unite d'action");
+
+        // Data row
+        Row row = s.createRow(1);
+        row.createCell(0).setCellValue("123");
+        row.createCell(1).setCellValue("US stratigraphique");
+        row.createCell(2).setCellValue("uri?idt=th1&idc=10");
+        row.createCell(3).setCellValue("uri?idt=th2&idc=20");
+        row.createCell(4).setCellValue("Brun");
+        row.createCell(5).setCellValue("Sableux");
+        row.createCell(6).setCellValue("Argile");
+        row.createCell(7).setCellValue("uri?idt=th3&idc=30");
+        row.createCell(8).setCellValue("uri?idt=th4&idc=40");
+        row.createCell(9).setCellValue("author@site.fr");
+        row.createCell(10).setCellValue("INST");
+        row.createCell(11).setCellValue("a@b.fr; c@d.fr");
+        row.createCell(12).setCellValue("2023-01-10");
+        row.createCell(13).setCellValue("2023-02-20");
+        row.createCell(14).setCellValue("US-01");
+        row.createCell(15).setCellValue("UA-99");
+
+        // Execute
+        List<RecordingUnitSeeder.RecordingUnitSpecs> specs =
+                service.parseRecordingUnits(s);
+
+        // Assert
+        assertThat(specs).hasSize(1);
+
+        RecordingUnitSeeder.RecordingUnitSpecs ru = specs.get(0);
+
+        // Identifiers
+        assertThat(ru.fullIdentifier()).isEqualTo("123");
+        assertThat(ru.identifier()).isEqualTo(123);
+
+        // Concepts
+        assertThat(ru.type()).isEqualTo(new ConceptSeeder.ConceptKey("th1", "10"));
+        assertThat(ru.geomorphologicalCycle()).isEqualTo(new ConceptSeeder.ConceptKey("th2", "20"));
+        assertThat(ru.geomorphologicalAgent()).isEqualTo(new ConceptSeeder.ConceptKey("th3", "30"));
+        assertThat(ru.interpretation()).isEqualTo(new ConceptSeeder.ConceptKey("th4", "40"));
+
+        // Metadata
+        assertThat(ru.authorEmail()).isEqualTo("author@site.fr");
+        assertThat(ru.institutionIdentifier()).isEqualTo("INST");
+        assertThat(ru.excavators()).containsExactly("a@b.fr", "c@d.fr");
+
+        // Dates
+        assertThat(ru.beginDate()).isEqualTo(
+                OffsetDateTime.of(2023, 1, 10, 0, 0, 0, 0, ZoneOffset.UTC)
+        );
+        assertThat(ru.endDate()).isEqualTo(
+                OffsetDateTime.of(2023, 2, 20, 0, 0, 0, 0, ZoneOffset.UTC)
+        );
+
+        // Spatial / action unit
+        assertThat(ru.spatialUnitName().unitName()).isEqualTo("US-01");
+        assertThat(ru.actionUnitIdentifier().fullIdentifier()).isEqualTo("UA-99");
+
+        // Matrix
+        assertThat(ru.matrixColor()).isEqualTo("Brun");
+        assertThat(ru.matrixComposition()).isEqualTo("Argile");
+        assertThat(ru.matrixTexture()).isEqualTo("Sableux");
+
+        // System fields
+        assertThat(ru.createdBy()).isEqualTo("system@siamois.fr");
+        assertThat(ru.creationTime()).isNotNull();
+    }
+
+
+    @Test
+    void parseActionUnits_fullValidRow() {
+        Workbook wb = new XSSFWorkbook();
+        Sheet s = wb.createSheet("Unite action");
+
+        // Header
+        Row header = s.createRow(0);
+        header.createCell(0).setCellValue("Nom");
+        header.createCell(1).setCellValue("Identifiant");
+        header.createCell(2).setCellValue("Code");
+        header.createCell(3).setCellValue("Type uri");
+        header.createCell(4).setCellValue("Createur");
+        header.createCell(5).setCellValue("Institution");
+        header.createCell(6).setCellValue("Date debut");
+        header.createCell(7).setCellValue("Date fin");
+        header.createCell(8).setCellValue("Contexte spatiale");
+
+        // Data row
+        Row row = s.createRow(1);
+        row.createCell(0).setCellValue("Décapage zone nord");
+        row.createCell(1).setCellValue("UA-001");
+        row.createCell(2).setCellValue("FOU");
+        row.createCell(3).setCellValue("uri?idt=th9&idc=99");
+        row.createCell(4).setCellValue("user@site.fr");
+        row.createCell(5).setCellValue("INST");
+        row.createCell(6).setCellValue("2023-03-01");
+        row.createCell(7).setCellValue("2023-03-10");
+        row.createCell(8).setCellValue("US-01&&US-02");
+
+        // Execute
+        List<ActionUnitSeeder.ActionUnitSpecs> specs =
+                service.parseActionUnits(s);
+
+        // Assert
+        assertThat(specs).hasSize(1);
+
+        ActionUnitSeeder.ActionUnitSpecs au = specs.get(0);
+
+        // Identifier logic
+        assertThat(au.fullIdentifier()).isEqualTo("UA-001");
+        assertThat(au.identifier()).isEqualTo("UA-001");
+        assertThat(au.name()).isEqualTo("Décapage zone nord");
+
+        // Code
+        assertThat(au.primaryActionCode()).isEqualTo("FOU");
+
+        // Type (URI)
+        assertThat(au.typeVocabularyExtId()).isEqualTo("th9");
+        assertThat(au.typeConceptExtId()).isEqualTo("99");
+
+        // Creator / institution
+        assertThat(au.authorEmail()).isEqualTo("user@site.fr");
+        assertThat(au.institutionIdentifier()).isEqualTo("INST");
+
+        // Dates
+        assertThat(au.beginDate()).isEqualTo(
+                OffsetDateTime.of(2023, 3, 1, 0, 0, 0, 0, ZoneOffset.UTC)
+        );
+        assertThat(au.endDate()).isEqualTo(
+                OffsetDateTime.of(2023, 3, 10, 0, 0, 0, 0, ZoneOffset.UTC)
+        );
+
+        // Spatial context
+        assertThat(au.spatialContextKeys())
+                .extracting(SpatialUnitSeeder.SpatialUnitKey::unitName)
+                .containsExactly("US-01", "US-02");
+    }
+
+    @Test
+    void parseInstitutions_fullValidRow() {
+        Workbook wb = new XSSFWorkbook();
+        Sheet s = wb.createSheet("Institution");
+
+        // Header
+        Row header = s.createRow(0);
+        header.createCell(0).setCellValue("Nom");
+        header.createCell(1).setCellValue("Description");
+        header.createCell(2).setCellValue("Identifiant");
+        header.createCell(3).setCellValue("Email Admins");
+        header.createCell(4).setCellValue("Thesaurus");
+
+        // Data row
+        Row row = s.createRow(1);
+        row.createCell(0).setCellValue("INRAP");
+        row.createCell(1).setCellValue("Institut national");
+        row.createCell(2).setCellValue("INRAP-ID");
+        row.createCell(3).setCellValue("a@inrap.fr; b@inrap.fr");
+        row.createCell(4).setCellValue("https://thesaurus.fr/api?idt=th230&idc=999");
+
+        // Execute
+        List<InstitutionSeeder.InstitutionSpec> specs =
+                service.parseInstitutions(s);
+
+        // Assert
+        assertThat(specs).hasSize(1);
+
+        InstitutionSeeder.InstitutionSpec inst = specs.get(0);
+
+        assertThat(inst.name()).isEqualTo("INRAP");
+        assertThat(inst.description()).isEqualTo("Institut national");
+        assertThat(inst.identifier()).isEqualTo("INRAP-ID");
+
+        // Email admins
+        assertThat(inst.managerEmails())
+                .containsExactly("a@inrap.fr", "b@inrap.fr");
+
+        // Thesaurus
+        assertThat(inst.externalId()).isEqualTo("th230");
+
+    }
+
+
+
 }
