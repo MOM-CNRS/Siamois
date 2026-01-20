@@ -29,10 +29,12 @@ public class RecordingUnitRelSeeder {
             RecordingUnit child = recordingUnitSeeder.getRecordingUnitFromKey(
                     new RecordingUnitSeeder.RecordingUnitKey(s.child)
             );
+            if(child==null) continue;
             parentToChildren.computeIfAbsent(parentKey, k -> new ArrayList<>()).add(child);
         }
 
         // Step 2: Update parents with their children
+
         for (Map.Entry<String, List<RecordingUnit>> entry : parentToChildren.entrySet()) {
             RecordingUnit parent = recordingUnitSeeder.getRecordingUnitFromKey(
                     new RecordingUnitSeeder.RecordingUnitKey(entry.getKey())
