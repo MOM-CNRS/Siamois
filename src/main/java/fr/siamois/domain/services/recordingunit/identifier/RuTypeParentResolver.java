@@ -33,6 +33,12 @@ public class RuTypeParentResolver extends RuTextIdentifierResolver {
 
     @NonNull
     @Override
+    public String getTitleCode() {
+        return "ru.identifier.title.type_parent";
+    }
+
+    @NonNull
+    @Override
     protected String textValue(@NonNull RecordingUnitIdInfo info) {
         if (info.getRuParentType() == null
                 || info.getActionUnit() == null

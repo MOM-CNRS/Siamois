@@ -24,6 +24,12 @@ public class RuFullIdActionUnitResolver implements RuIdentifierResolver {
         return "ru.identifier.description.id_ua";
     }
 
+    @NonNull
+    @Override
+    public String getTitleCode() {
+        return "ru.identifier.title.id_ua";
+    }
+
     @Override
     public boolean formatUsesThisResolver(@NonNull String baseFormatString) {
         return baseFormatString.contains(ID_UA);

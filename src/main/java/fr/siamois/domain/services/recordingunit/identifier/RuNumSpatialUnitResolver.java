@@ -28,4 +28,10 @@ public class RuNumSpatialUnitResolver extends RuNumericalIdentifierResolver {
     public String getDescriptionLanguageCode() {
         return "ru.identifier.description.num_uspatial";
     }
+
+    @NonNull
+    @Override
+    public String getTitleCode() {
+        return "ru.identifier.title.num_uspatial";
+    }
 }

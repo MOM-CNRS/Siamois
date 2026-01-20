@@ -33,6 +33,12 @@ public class RuTypeResolver extends RuTextIdentifierResolver {
 
     @NonNull
     @Override
+    public String getTitleCode() {
+        return "ru.identifier.title.type";
+    }
+
+    @NonNull
+    @Override
     protected String textValue(@NonNull RecordingUnitIdInfo info) {
         if (info.getRuType() == null
                 || info.getActionUnit() == null
@@ -51,5 +57,9 @@ public class RuTypeResolver extends RuTextIdentifierResolver {
                 || ruInfo.getRuType() == null;
     }
 
-
+    @NonNull
+    @Override
+    public String getButtonStyleClass() {
+        return "rounded-button ui-button-warning";
+    }
 }

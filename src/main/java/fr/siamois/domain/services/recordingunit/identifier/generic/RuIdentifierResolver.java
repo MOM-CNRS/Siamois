@@ -19,6 +19,14 @@ public interface RuIdentifierResolver {
     @Nullable
     String getDescriptionLanguageCode();
 
+    @NonNull
+    String getTitleCode();
+
+    @NonNull
+    default String getButtonStyleClass() {
+        return "rounded-button";
+    }
+
     /**
      * Returns true if the format contains the code of this resolver.
      * @param baseFormatString The format string from the Action Unit

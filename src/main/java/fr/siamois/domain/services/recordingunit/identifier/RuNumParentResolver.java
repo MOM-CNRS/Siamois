@@ -28,6 +28,12 @@ public class RuNumParentResolver extends RuNumericalIdentifierResolver {
         return "ru.identifier.description.number_parent";
     }
 
+    @NonNull
+    @Override
+    public String getTitleCode() {
+        return "ru.identifier.title.number_parent";
+    }
+
     @Override
     protected int numericalValue(@NonNull RecordingUnitIdInfo info) {
         if (info.getParent() == null) {
@@ -35,5 +41,11 @@ public class RuNumParentResolver extends RuNumericalIdentifierResolver {
         }
         Optional<RecordingUnitIdInfo> opt = recordingUnitIdInfoRepository.findById(info.getParent().getId());
         return opt.map(RecordingUnitIdInfo::getRuNumber).orElse(0);
+    }
+
+    @NonNull
+    @Override
+    public String getButtonStyleClass() {
+        return "rounded-button ui-button-warning";
     }
 }

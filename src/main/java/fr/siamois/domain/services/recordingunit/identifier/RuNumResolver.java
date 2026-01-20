@@ -23,6 +23,18 @@ public class RuNumResolver extends RuNumericalIdentifierResolver {
         return "ru.identifier.description.number";
     }
 
+    @NonNull
+    @Override
+    public String getButtonStyleClass() {
+        return "rounded-button ui-button-danger";
+    }
+
+    @NonNull
+    @Override
+    public String getTitleCode() {
+        return "ru.identifier.title.number";
+    }
+
     @Override
     protected int numericalValue(@NonNull RecordingUnitIdInfo info) {
         return info.getRuNumber();
