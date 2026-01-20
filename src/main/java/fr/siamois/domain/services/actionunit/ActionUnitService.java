@@ -49,7 +49,6 @@ public class ActionUnitService implements ArkEntityService {
     private final ActionCodeRepository actionCodeRepository;
     private final TeamMemberRepository teamMemberRepository;
     private final InstitutionService institutionService;
-    private final RecordingUnitIdCounterRepository recordingUnitIdCounterRepository;
 
     /**
      * Find all Action Units by institution, name, categories, persons, and global search.
@@ -300,25 +299,6 @@ public class ActionUnitService implements ArkEntityService {
         return actionUnitRepository.findAllByArkIsNullAndCreatedByInstitution(institution);
     }
 
-
-    /**
-     * Create the base counter for cases in which no type is specified, and it's a root recording unit parent.
-     * @param actionUnit The action unit with the counter settings
-     */
-    private void createCounterIfNotExists(@NonNull ActionUnit actionUnit) {
-        Optional<RecordingUnitIdCounter> opt = recordingUnitIdCounterRepository.findByConfigActionUnitAndRecordingUnitTypeAndRecordingUnit(actionUnit, null, null);
-        RecordingUnitIdCounter counter;
-        if (opt.isPresent()) {
-            return;
-        }
-        counter = new RecordingUnitIdCounter();
-        counter.setCounter(actionUnit.getMinRecordingUnitCode());
-        counter.setConfigActionUnit(actionUnit);
-        counter.setRecordingUnit(null);
-        counter.setRecordingUnitType(null);
-        recordingUnitIdCounterRepository.save(counter);
-    }
-
     /**
      * Save an ActionUnit.
      *
@@ -328,9 +308,7 @@ public class ActionUnitService implements ArkEntityService {
     @Override
     public ArkEntity save(ArkEntity toSave) {
         try {
-            ActionUnit unit = actionUnitRepository.save((ActionUnit) toSave);
-            createCounterIfNotExists(unit);
-            return unit;
+            return actionUnitRepository.save((ActionUnit) toSave);
         } catch (DataIntegrityViolationException e) {
             throw new FailedActionUnitSaveException(e.getMessage());
         }

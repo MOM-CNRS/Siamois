@@ -54,8 +54,6 @@ class ActionUnitServiceTest {
     @Mock private InstitutionService institutionService;
     @Mock private TeamMemberRepository teamMemberRepository;
 
-    @Mock private RecordingUnitIdCounterRepository recordingUnitIdCounterRepository;
-
 
     @Spy
     @InjectMocks
