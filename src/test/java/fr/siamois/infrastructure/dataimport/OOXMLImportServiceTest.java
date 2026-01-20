@@ -117,15 +117,11 @@ class OOXMLImportServiceTest {
                 "Identifiant"
         );
 
-        Sheet meta = sheet(wb, "sheet_metadata",
-                "sheet_id",
-                "sheet_name"
-        );
 
 
 
         row(s, 1, "john@doe.fr", "Doe", "John", "jdoe");
-        row(meta, 1, "peron", "Person");
+
 
         List<PersonSeeder.PersonSpec> persons = service.parsePersons(s);
 
@@ -260,6 +256,35 @@ class OOXMLImportServiceTest {
 
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         wb.write(out);
+
+        Sheet meta = sheet(wb, "sheet_metadata",
+                "sheet_id",
+                "sheet_name"
+        );
+        row(meta, 1, "person", "Person");
+
+        ImportSpecs specs = service.importFromExcel(
+                new ByteArrayInputStream(out.toByteArray())
+        );
+
+        assertThat(specs).isNotNull();
+    }
+
+    @Test
+    void importFromExcel_noMetaSheet() throws Exception {
+        Workbook wb = workbook();
+
+        sheet(wb, "Institution", "Nom");
+        sheet(wb, "Personne", "Email");
+        sheet(wb, "Unité spatiale", "Nom");
+        sheet(wb, "Code", "Code", "Type uri");
+        sheet(wb, "Unite action", "Nom");
+        sheet(wb, "Prelev.", "Identifiant");
+        sheet(wb, "UE_rel", "Parent", "Enfant");
+
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        wb.write(out);
+
 
         ImportSpecs specs = service.importFromExcel(
                 new ByteArrayInputStream(out.toByteArray())
