@@ -65,7 +65,7 @@ public class ActionUnitSeeder {
             // Find action code
             ActionCode actionCode = actionCodeRepository
                     .findById(s.primaryActionCode)
-                    .orElse(null);
+                    .orElseThrow(() -> new IllegalStateException("Action code introuvable"));
             // Find Institution
             Institution institution = institutionRepository.findInstitutionByIdentifier(s.institutionIdentifier)
                     .orElseThrow(() -> new IllegalStateException("Institution introuvable"));
