@@ -453,7 +453,7 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnit> imple
         Matcher matcher = pattern.matcher(format);
 
         String strippedFormat = format.replaceAll(placeholderPattern, "");
-        if (strippedFormat.matches(".*\\{.*") || strippedFormat.matches(".*\\}.*")) {
+        if (strippedFormat.contains("{") || strippedFormat.contains("}")) {
             MessageUtils.displayErrorMessage(langBean, INVALID_FORMAT_CODE);
             return;
         }
