@@ -556,7 +556,7 @@ public class OOXMLImportService {
         return result;
     }
 
-    private List<SpecimenSeeder.SpecimenSpecs> parseSpecimens(Sheet sheet) {
+    public List<SpecimenSeeder.SpecimenSpecs> parseSpecimens(Sheet sheet) {
         if (sheet == null) {
             return List.of();
         }
@@ -780,5 +780,7 @@ public class OOXMLImportService {
                 .map(SpatialUnitSeeder.SpatialUnitKey::new) // 🔥 nom tel quel
                 .collect(Collectors.toCollection(LinkedHashSet::new));
     }
+
+
 
 }

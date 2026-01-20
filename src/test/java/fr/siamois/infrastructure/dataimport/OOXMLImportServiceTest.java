@@ -503,6 +503,61 @@ class OOXMLImportServiceTest {
 
     }
 
+    @Test
+    void parseSpecimens_fullValidRow() {
+        Workbook wb = new XSSFWorkbook();
+        Sheet s = wb.createSheet("Specimen");
+
+        // Header
+        Row header = s.createRow(0);
+
+        header.createCell(0).setCellValue("Identifiant");
+        header.createCell(1).setCellValue("Catégorie");
+        header.createCell(2).setCellValue("Matière");
+        header.createCell(3).setCellValue("Designatation");
+        header.createCell(4).setCellValue("Institution");
+        header.createCell(5).setCellValue("Auteur fiche email");
+        header.createCell(6).setCellValue("Collecteur emails");
+        header.createCell(7).setCellValue("Unité d'enregistrement");
+
+
+        // Data row
+        Row row = s.createRow(1);
+
+        row.createCell(0).setCellValue("SP-001");
+        row.createCell(1).setCellValue("https://thesaurus.fr/api?idt=th12&idc=88");
+        row.createCell(2).setCellValue("https://thesaurus.fr/api?idt=th12&idc=89");
+        row.createCell(3).setCellValue("https://thesaurus.fr/api?idt=th12&idc=90");
+        row.createCell(4).setCellValue("INRAP");
+        row.createCell(5).setCellValue("user@site.fr");
+        row.createCell(6).setCellValue("user@site.fr");
+        row.createCell(7).setCellValue("US-001");
+
+
+        // Execute
+        List<SpecimenSeeder.SpecimenSpecs> specs =
+                service.parseSpecimens(s);
+
+        // Assert
+        assertThat(specs).hasSize(1);
+
+        SpecimenSeeder.SpecimenSpecs sp = specs.get(0);
+
+        assertThat(sp.fullIdentifier()).isEqualTo("SP-001");
+
+        // Type (thesaurus)
+        assertThat(sp.type().vocabularyExtId()).isEqualTo("th12");
+        assertThat(sp.type().conceptExtId()).isEqualTo("89");
+
+        // Relations
+        assertThat(sp.institutionIdentifier()).isEqualTo("INRAP");
+
+        assertThat(sp.recordingUnitKey().fullIdentifier()).isEqualTo("US-001");
+
+
+    }
+
+
 
 
 }
