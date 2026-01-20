@@ -108,7 +108,7 @@ class OOXMLImportServiceTest {
     }
 
     @Test
-    void parsePersons_withMetaSheet() {
+    void parsePersons_basic() {
         Workbook wb = workbook();
         Sheet s = sheet(wb, "Personne",
                 "Email",
@@ -254,14 +254,23 @@ class OOXMLImportServiceTest {
         sheet(wb, "Prelev.", "Identifiant");
         sheet(wb, "UE_rel", "Parent", "Enfant");
 
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-        wb.write(out);
 
         Sheet meta = sheet(wb, "sheet_metadata",
                 "sheet_id",
                 "sheet_name"
         );
-        row(meta, 1, "person", "Person");
+        row(meta, 1, "person", "Personne");
+        row(meta, 2, "institution", "Institution");
+        row(meta, 3, "spatial_unit", "Unité spatiale");
+        row(meta, 4, "code", "Code");
+        row(meta, 5, "action_unit", "Unite action");
+        row(meta, 6, "uniteAction", "Nom");
+        row(meta, 7, "recording_unit", "UE");
+        row(meta, 8, "specimen", "Prelev");
+
+
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        wb.write(out);
 
         ImportSpecs specs = service.importFromExcel(
                 new ByteArrayInputStream(out.toByteArray())
