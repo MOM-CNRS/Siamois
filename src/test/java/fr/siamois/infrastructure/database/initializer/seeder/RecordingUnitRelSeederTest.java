@@ -1,8 +1,6 @@
 package fr.siamois.infrastructure.database.initializer.seeder;
 
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
-import fr.siamois.infrastructure.database.initializer.seeder.RecordingUnitRelSeeder;
-import fr.siamois.infrastructure.database.initializer.seeder.RecordingUnitSeeder;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
