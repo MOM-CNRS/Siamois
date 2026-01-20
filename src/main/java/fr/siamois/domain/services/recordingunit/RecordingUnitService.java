@@ -3,6 +3,7 @@ package fr.siamois.domain.services.recordingunit;
 import fr.siamois.domain.models.ArkEntity;
 import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.actionunit.ActionUnit;
+import fr.siamois.domain.models.actionunit.ActionUnitResolveConfig;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.exceptions.recordingunit.FailedRecordingUnitSaveException;
 import fr.siamois.domain.models.exceptions.recordingunit.MaxRecordingUnitIdentifierReached;
@@ -497,12 +498,33 @@ public class RecordingUnitService implements ArkEntityService {
     }
 
     public int generatedNextIdentifier(@NonNull ActionUnit actionUnit, @Nullable Concept unitType, @Nullable RecordingUnit parentRu) {
-        if (unitType == null) {
-            return recordingUnitIdCounterRepository.nextIdAndIncrementActionUnit(actionUnit.getId(), null);
-        } else if (parentRu == null) {
-            return recordingUnitIdCounterRepository.nextIdAndIncrementActionUnit(actionUnit.getId(), unitType.getId());
+        ActionUnitResolveConfig config = actionUnit.resolveConfig();
+
+        switch (config) {
+            case UNIQUE -> {
+                return recordingUnitIdCounterRepository.ruNextValUnique(actionUnit.getId());
+            }
+            case PARENT -> {
+                if (parentRu == null) {
+                    return recordingUnitIdCounterRepository.ruNextValUnique(actionUnit.getId());
+                }
+                return recordingUnitIdCounterRepository.ruNextValParent(parentRu.getId());
+            }
+            case TYPE_UNIQUE -> {
+                Long unitTypeId = unitType == null ? null : unitType.getId();
+                return recordingUnitIdCounterRepository.ruNextValTypeUnique(actionUnit.getId(), unitTypeId);
+            }
+            case PARENT_TYPE -> {
+                if (parentRu == null) {
+                    return recordingUnitIdCounterRepository.ruNextValUnique(actionUnit.getId());
+                }
+                Long unitTypeId = unitType == null ? null : unitType.getId();
+                return recordingUnitIdCounterRepository.ruNextValTypeParent(parentRu.getId(), unitTypeId);
+            }
+            default -> {
+                return 0;
+            }
         }
-        return recordingUnitIdCounterRepository.nextIdAndIncrement(parentRu.getId(), unitType.getId());
     }
 
     public RecordingUnitIdInfo createOrGetInfoOf(@NonNull RecordingUnit recordingUnit, @Nullable RecordingUnit parentRecordingUnit) {
@@ -538,6 +560,7 @@ public class RecordingUnitService implements ArkEntityService {
                 .stream()
                 .findFirst()
                 .orElse(null);
+
         int numericalId = generatedNextIdentifier(actionUnit, recordingUnit.getType(), parent);
         RecordingUnitIdInfo info = createOrGetInfoOf(recordingUnit, parent);
 

@@ -125,6 +125,28 @@ public class ActionUnit extends ActionUnitParent implements ArkEntity {
         return List.of("type", "name", "identifier", "spatialContext", "beginDate", "endDate", "primaryActionCode");
     }
 
+    @JsonIgnore
+    public ActionUnitResolveConfig resolveConfig() {
+        if (recordingUnitIdentifierFormat == null || recordingUnitIdentifierFormat.isEmpty())
+            return ActionUnitResolveConfig.NONE;
+
+        final boolean containsRuNumber = recordingUnitIdentifierFormat.contains("NUM_UE");
+        final boolean containsRuType = recordingUnitIdentifierFormat.contains("TYPE_UE");
+        final boolean containsParentNumber = recordingUnitIdentifierFormat.contains("NUM_PARENT");
+
+        if (containsRuNumber && containsRuType && containsParentNumber) {
+            return ActionUnitResolveConfig.PARENT_TYPE;
+        } else if (containsRuNumber && containsRuType) {
+            return ActionUnitResolveConfig.TYPE_UNIQUE;
+        } else if (containsRuNumber && containsParentNumber) {
+            return ActionUnitResolveConfig.PARENT;
+        } else if (containsRuNumber) {
+            return ActionUnitResolveConfig.UNIQUE;
+        } else {
+            return ActionUnitResolveConfig.NONE;
+        }
+    }
+
     @Transient
     @JsonIgnore
     public static final CustomForm NEW_UNIT_FORM = ActionUnitNewForm.build();

@@ -15,15 +15,27 @@ public interface RecordingUnitIdCounterRepository extends CrudRepository<Recordi
 
     @Query(
             nativeQuery = true,
-            value = "SELECT recording_unit_nextval(:parentRecordingUnitId, :conceptTypeId)"
+            value = "SELECT r.* FROM ru_nextval_unique(:actionUnitId) r"
     )
-    int nextIdAndIncrement(Long parentRecordingUnitId, Long conceptTypeId);
+    int ruNextValUnique(Long actionUnitId);
 
     @Query(
             nativeQuery = true,
-            value = "SELECT recording_unit_nextval_au(:actionUnitId, :conceptTypeId)"
+            value = "SELECT r.* FROM ru_nextval_parent(:parentRecordingUnitId) r"
     )
-    int nextIdAndIncrementActionUnit(Long actionUnitId, Long conceptTypeId);
+    int ruNextValParent(Long parentRecordingUnitId);
+
+    @Query(
+            nativeQuery = true,
+            value = "SELECT r.* FROM ru_nextval_type_unique(:actionUnitId, :conceptTypeId) r"
+    )
+    int ruNextValTypeUnique(Long actionUnitId, Long conceptTypeId);
+
+    @Query(
+            nativeQuery = true,
+            value = "SELECT r.* FROM ru_nextval_type_parent(:parentRecordingUnitId, :conceptTypeId) r"
+    )
+    int ruNextValTypeParent(Long parentRecordingUnitId, Long conceptTypeId);
 
     Optional<RecordingUnitIdCounter> findByConfigActionUnitAndRecordingUnitTypeAndRecordingUnit(ActionUnit configActionUnit, Concept recordingUnitType, RecordingUnit recordingUnit);
 }
