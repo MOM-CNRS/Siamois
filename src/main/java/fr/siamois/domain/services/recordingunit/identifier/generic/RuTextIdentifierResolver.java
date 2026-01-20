@@ -1,9 +1,12 @@
 package fr.siamois.domain.services.recordingunit.identifier.generic;
 
 import fr.siamois.domain.models.recordingunit.identifier.RecordingUnitIdInfo;
+import fr.siamois.domain.models.recordingunit.identifier.RecordingUnitIdLabel;
+import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitIdLabelRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.lang.NonNull;
 
+import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -11,6 +14,11 @@ import java.util.regex.Pattern;
 public abstract class RuTextIdentifierResolver implements RuIdentifierResolver {
 
     private static final int DEFAULT_NUMBER_OF_CHAR = 3;
+    protected final RecordingUnitIdLabelRepository repository;
+
+    protected RuTextIdentifierResolver(RecordingUnitIdLabelRepository repository) {
+        this.repository = repository;
+    }
 
     @NonNull
     protected abstract String textValue(@NonNull RecordingUnitIdInfo info);
@@ -33,12 +41,39 @@ public abstract class RuTextIdentifierResolver implements RuIdentifierResolver {
 
         while (matcher.find()) {
             String replacement = computeType(matcher, label);
+            replacement = addNumberIfNecessaryAndSaveExisting(ruInfo, replacement);
+
             matcher.appendReplacement(result, Matcher.quoteReplacement(replacement));
         }
 
         matcher.appendTail(result);
 
         return result.toString();
+    }
+
+    private String addNumberIfNecessaryAndSaveExisting(RecordingUnitIdInfo ruInfo, String replacement) {
+        Optional<RecordingUnitIdLabel> existing = repository.findByExistingAndActionUnit(replacement, ruInfo.getActionUnit());
+        if (existing.isPresent() && !existing.get().getType().equals(ruInfo.getRuType())) {
+            int counter = 1;
+            String originalReplacement = replacement;
+            Pattern numberPattern = Pattern.compile("^(.*?)(\\d+)$");
+            Matcher numberMatcher = numberPattern.matcher(replacement);
+            if (numberMatcher.find()) {
+                originalReplacement = numberMatcher.group(1);
+                counter = Integer.parseInt(numberMatcher.group(2)) + 1;
+            }
+
+            do {
+                replacement = originalReplacement + counter;
+                existing = repository.findByExistingAndActionUnit(replacement, ruInfo.getActionUnit());
+                counter++;
+            } while (existing.isPresent() && !existing.get().getType().equals(ruInfo.getRuType()));
+
+            repository.save(new RecordingUnitIdLabel(ruInfo.getRuType(), ruInfo.getActionUnit(), replacement));
+        } else if (existing.isEmpty() && ruInfo.getRuType() != null) {
+            repository.save(new RecordingUnitIdLabel(ruInfo.getRuType(), ruInfo.getActionUnit(), replacement));
+        }
+        return replacement;
     }
 
     @NonNull

@@ -21,14 +21,11 @@ import static jakarta.persistence.FetchType.LAZY;
 @NoArgsConstructor
 public class RecordingUnitIdInfo {
 
-    // L'annotation @Id est déplacée sur un champ dédié.
-    // Sa valeur sera copiée depuis l'ID de l'entité RecordingUnit associée.
-    // J'ai supposé que l'ID de RecordingUnit est de type Long. Adaptez ce type si nécessaire (ex: UUID, Integer...).
     @Id
     private Long recordingUnitId;
 
     @OneToOne(fetch = LAZY)
-    @MapsId("recordingUnitId") // Indique à JPA que le champ 'id' est mappé par la relation 'recordingUnit'.
+    @MapsId("recordingUnitId")
     @JoinColumn(name = "fk_recording_unit_id")
     private RecordingUnit recordingUnit;
 

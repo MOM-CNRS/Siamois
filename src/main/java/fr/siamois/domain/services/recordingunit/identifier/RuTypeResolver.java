@@ -3,16 +3,21 @@ package fr.siamois.domain.services.recordingunit.identifier;
 import fr.siamois.domain.models.recordingunit.identifier.RecordingUnitIdInfo;
 import fr.siamois.domain.services.recordingunit.identifier.generic.RuTextIdentifierResolver;
 import fr.siamois.domain.services.vocabulary.LabelService;
+import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitIdLabelRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 
 @Service
-@RequiredArgsConstructor
 public class RuTypeResolver extends RuTextIdentifierResolver {
 
     private final LabelService labelService;
+
+    public RuTypeResolver(LabelService labelService, RecordingUnitIdLabelRepository repository) {
+        super(repository);
+        this.labelService = labelService;
+    }
 
     @NonNull
     @Override
