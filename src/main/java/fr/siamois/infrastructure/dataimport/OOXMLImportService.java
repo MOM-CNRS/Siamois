@@ -28,7 +28,7 @@ public class OOXMLImportService {
 
     }
 
-    private Map<String, String> readSheetMetadata(Workbook workbook) {
+    public Map<String, String> readSheetMetadata(Workbook workbook) {
         Sheet metaSheet = workbook.getSheet("sheet_metadata");
         Map<String, String> map = new HashMap<>();
 
@@ -98,7 +98,7 @@ public class OOXMLImportService {
         }
     }
 
-    private List<InstitutionSeeder.InstitutionSpec> parseInstitutions(Sheet sheet) {
+    public List<InstitutionSeeder.InstitutionSpec> parseInstitutions(Sheet sheet) {
         Row header = sheet.getRow(0);
         Map<String, Integer> cols = indexColumns(header);
 
@@ -141,7 +141,7 @@ public class OOXMLImportService {
         return result;
     }
 
-    private String extractThesaurusDomain(String thesaurus) {
+    public String extractThesaurusDomain(String thesaurus) {
         if (thesaurus == null) return null;
         int idx = thesaurus.indexOf("?");
         if (idx < 0) {
@@ -150,7 +150,7 @@ public class OOXMLImportService {
         return thesaurus.substring(0, idx-1);
     }
 
-    private List<PersonSeeder.PersonSpec> parsePersons(Sheet sheet) {
+    public List<PersonSeeder.PersonSpec> parsePersons(Sheet sheet) {
         Row header = sheet.getRow(0);
         Map<String, Integer> cols = indexColumns(header);
 
@@ -184,7 +184,7 @@ public class OOXMLImportService {
         return result;
     }
 
-    private List<SpatialUnitSeeder.SpatialUnitSpecs> parseSpatialUnits(Sheet sheet) {
+    public List<SpatialUnitSeeder.SpatialUnitSpecs> parseSpatialUnits(Sheet sheet) {
         Row header = sheet.getRow(0);
         Map<String, Integer> cols = indexColumns(header);
 
@@ -264,7 +264,7 @@ public class OOXMLImportService {
         return new ArrayList<>(specsByName.values());
     }
 
-    private List<RecordingUnitRelSeeder.RecordingUnitDTO> parseRecordingRels(Sheet sheet) {
+    public List<RecordingUnitRelSeeder.RecordingUnitDTO> parseRecordingRels(Sheet sheet) {
         if (sheet == null) {
             return List.of();
         }
@@ -303,7 +303,7 @@ public class OOXMLImportService {
     }
 
 
-    private List<ActionCodeSeeder.ActionCodeSpec> parseActionCodes(Sheet sheet) {
+    public List<ActionCodeSeeder.ActionCodeSpec> parseActionCodes(Sheet sheet) {
         if (sheet == null) {
             return List.of();
         }
@@ -332,7 +332,7 @@ public class OOXMLImportService {
             String code = getStringCell(row, colCode);
             String typeUri = getStringCell(row, colTypeUri);
 
-            if (code == null || code.isBlank()) continue;
+            if (code == null || code.isBlank() ) continue;
 
             String conceptId    = extractIdcFromUri(typeUri).orElse(null);
             String vocabularyId = extractIdtFromUri(typeUri).orElse(null);
@@ -373,7 +373,7 @@ public class OOXMLImportService {
 
             String name        = colNom != null ? getStringCell(row, colNom) : null;
             String identifier  = colIdentifiant != null ? getStringCell(row, colIdentifiant) : null;
-            String code        = colCode != null ? getStringCell(row, colCode) : null;
+            String code        = colCode != null ? ( getStringCell(row, colCode).isBlank() ? null : getStringCell(row, colCode) )  : null;
             String typeUri     = colTypeUri != null ? getStringCell(row, colTypeUri) : null;
             String createur    = colCreateur != null ? getStringCell(row, colCreateur) : null;
             String institution = colInstitution != null ? getStringCell(row, colInstitution) : null;
@@ -656,7 +656,7 @@ public class OOXMLImportService {
 
 
 
-    private Optional<String> extractIdtFromUri(String uri) {
+    public Optional<String> extractIdtFromUri(String uri) {
         if (uri == null) return Optional.empty();
         int idx = uri.indexOf("idt=");
         if (idx < 0) return Optional.empty();
@@ -666,7 +666,7 @@ public class OOXMLImportService {
         return Optional.of(URLDecoder.decode(sub, StandardCharsets.UTF_8));
     }
 
-    private Optional<String> extractIdcFromUri(String uri) {
+    public Optional<String> extractIdcFromUri(String uri) {
         if (uri == null) return Optional.empty();
         int idx = uri.indexOf("idc=");
         if (idx < 0) return Optional.empty();
@@ -676,7 +676,7 @@ public class OOXMLImportService {
         return Optional.of(URLDecoder.decode(sub, StandardCharsets.UTF_8));
     }
 
-    private ConceptSeeder.ConceptKey conceptKeyFromUri(String uri) {
+    public ConceptSeeder.ConceptKey conceptKeyFromUri(String uri) {
         if (uri == null || uri.isBlank()) {
             return null;
         }
@@ -695,7 +695,7 @@ public class OOXMLImportService {
     // -------------------------------------------------------------------------
     // Helpers Excel
     // -------------------------------------------------------------------------
-    private Map<String, Integer> indexColumns(Row header) {
+    public Map<String, Integer> indexColumns(Row header) {
         Map<String, Integer> map = new HashMap<>();
         if (header == null) return map;
 
@@ -710,19 +710,19 @@ public class OOXMLImportService {
         return map;
     }
 
-    private String getStringCell(Row row, int colIndex) {
+    public String getStringCell(Row row, int colIndex) {
         Cell cell = row.getCell(colIndex);
         return getStringCell(cell);
     }
 
-    private String getStringCell(Cell cell) {
+    public String getStringCell(Cell cell) {
         if (cell == null) return null;
         cell.setCellType(CellType.STRING);
         String val = cell.getStringCellValue();
         return val != null ? val.trim() : null;
     }
 
-    private List<String> parseEmailList(String raw) {
+    public List<String> parseEmailList(String raw) {
         if (raw == null || raw.isBlank()) return List.of();
         String[] parts = raw.split("[;,]");
         return Arrays.stream(parts)
@@ -732,7 +732,7 @@ public class OOXMLImportService {
     }
 
     // Normalisation pour matcher les noms de colonnes malgré les accents / espaces
-    private String normalize(String s) {
+    public String normalize(String s) {
         if (s == null) return "";
         String tmp = s.trim().toLowerCase(Locale.ROOT);
         tmp = Normalizer.normalize(tmp, Normalizer.Form.NFD)
@@ -741,7 +741,7 @@ public class OOXMLImportService {
         return tmp;
     }
 
-    private OffsetDateTime parseOffsetDateTime(Cell cell) {
+    public OffsetDateTime parseOffsetDateTime(Cell cell) {
         if (cell == null) return null;
 
         try {
@@ -769,7 +769,7 @@ public class OOXMLImportService {
         }
     }
 
-    private Set<SpatialUnitSeeder.SpatialUnitKey> parseSpatialNames(String raw) {
+    public Set<SpatialUnitSeeder.SpatialUnitKey> parseSpatialNames(String raw) {
         if (raw == null || raw.isBlank()) {
             return Set.of();
         }

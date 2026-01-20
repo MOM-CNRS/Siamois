@@ -3,6 +3,7 @@ package fr.siamois.infrastructure.database.initializer.seeder;
 
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.infrastructure.database.repositories.person.PersonRepository;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
