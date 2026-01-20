@@ -495,12 +495,9 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnit> imple
     }
 
     private boolean formatOfCodeIsNotValid(String[] parts, String placeholderName) {
-        if (parts.length > 1) {
-            String formatSpecifier = parts[1];
-            if (formatSpecifierIsNotValid(formatSpecifier)) return true;
-            if (oneNumericalFormatIsNotValid(placeholderName, formatSpecifier)) return true;
-        }
-        return false;
+        if (parts.length <= 1) return false;
+        String formatSpecifier = parts[1];
+        return formatSpecifierIsNotValid(formatSpecifier) || oneNumericalFormatIsNotValid(placeholderName, formatSpecifier);
     }
 
     private boolean formatSpecifierIsNotValid(String formatSpecifier) {
