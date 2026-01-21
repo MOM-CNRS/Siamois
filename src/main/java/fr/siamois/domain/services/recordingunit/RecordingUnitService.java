@@ -6,7 +6,6 @@ import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.actionunit.ActionUnitResolveConfig;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.exceptions.recordingunit.FailedRecordingUnitSaveException;
-import fr.siamois.domain.models.exceptions.recordingunit.MaxRecordingUnitIdentifierReached;
 import fr.siamois.domain.models.exceptions.recordingunit.RecordingUnitNotFoundException;
 import fr.siamois.domain.models.form.customformresponse.CustomFormResponse;
 import fr.siamois.domain.models.institution.Institution;
@@ -29,7 +28,6 @@ import fr.siamois.infrastructure.database.repositories.team.TeamMemberRepository
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
 import org.hibernate.Hibernate;
 import org.reflections.Reflections;
 import org.springframework.beans.BeansException;

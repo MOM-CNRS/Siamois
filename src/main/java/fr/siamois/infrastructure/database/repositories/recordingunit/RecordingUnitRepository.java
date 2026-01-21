@@ -14,7 +14,6 @@ import org.springframework.data.repository.CrudRepository;
 import org.springframework.data.repository.history.RevisionRepository;
 import org.springframework.data.repository.query.Param;
 import org.springframework.lang.NonNull;
-import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;

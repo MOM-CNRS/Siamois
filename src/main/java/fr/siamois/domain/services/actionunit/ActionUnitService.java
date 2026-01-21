@@ -11,7 +11,6 @@ import fr.siamois.domain.models.exceptions.actionunit.ActionUnitNotFoundExceptio
 import fr.siamois.domain.models.exceptions.actionunit.FailedActionUnitSaveException;
 import fr.siamois.domain.models.exceptions.actionunit.NullActionUnitIdentifierException;
 import fr.siamois.domain.models.institution.Institution;
-import fr.siamois.domain.models.recordingunit.identifier.RecordingUnitIdCounter;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.ArkEntityService;
@@ -19,7 +18,6 @@ import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.infrastructure.database.repositories.actionunit.ActionCodeRepository;
 import fr.siamois.infrastructure.database.repositories.actionunit.ActionUnitRepository;
-import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitIdCounterRepository;
 import fr.siamois.infrastructure.database.repositories.team.TeamMemberRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -27,7 +25,6 @@ import org.hibernate.Hibernate;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 

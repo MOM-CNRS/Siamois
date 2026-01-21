@@ -4,7 +4,6 @@ import fr.siamois.domain.models.recordingunit.identifier.RecordingUnitIdInfo;
 import fr.siamois.domain.services.recordingunit.identifier.generic.RuTextIdentifierResolver;
 import fr.siamois.domain.services.vocabulary.LabelService;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitIdLabelRepository;
-import lombok.RequiredArgsConstructor;
 import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
