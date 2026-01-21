@@ -14,26 +14,8 @@ public class RuTypeResolver extends RuTextIdentifierResolver {
     private final LabelService labelService;
 
     public RuTypeResolver(LabelService labelService, RecordingUnitIdLabelRepository repository) {
-        super(repository);
+        super(repository, "TYPE_UE", "ru.identifier.description.type", "ru.identifier.title.type");
         this.labelService = labelService;
-    }
-
-    @NonNull
-    @Override
-    public String getCode() {
-        return "TYPE_UE";
-    }
-
-    @Nullable
-    @Override
-    public String getDescriptionLanguageCode() {
-        return "ru.identifier.description.type";
-    }
-
-    @NonNull
-    @Override
-    public String getTitleCode() {
-        return "ru.identifier.title.type";
     }
 
     @NonNull

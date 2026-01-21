@@ -2,11 +2,40 @@ package fr.siamois.domain.services.recordingunit.identifier.generic;
 
 import fr.siamois.domain.models.recordingunit.identifier.RecordingUnitIdInfo;
 import org.springframework.lang.NonNull;
+import org.springframework.lang.Nullable;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public abstract class RuNumericalIdentifierResolver implements RuIdentifierResolver {
+
+    protected final String code;
+    protected final String descriptionLanguageCode;
+    protected final String titleCode;
+
+    protected RuNumericalIdentifierResolver(String code, String descriptionLanguageCode, String titleCode) {
+        this.code = code;
+        this.descriptionLanguageCode = descriptionLanguageCode;
+        this.titleCode = titleCode;
+    }
+
+    @NonNull
+    @Override
+    public String getCode() {
+        return code;
+    }
+
+    @Nullable
+    @Override
+    public String getDescriptionLanguageCode() {
+        return descriptionLanguageCode;
+    }
+
+    @NonNull
+    @Override
+    public String getTitleCode() {
+        return titleCode;
+    }
 
     protected abstract int numericalValue(@NonNull RecordingUnitIdInfo info);
 

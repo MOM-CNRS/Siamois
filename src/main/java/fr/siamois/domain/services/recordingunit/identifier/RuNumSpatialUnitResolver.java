@@ -9,29 +9,15 @@ import org.springframework.stereotype.Service;
 @Service
 public class RuNumSpatialUnitResolver extends RuNumericalIdentifierResolver {
 
+    public RuNumSpatialUnitResolver() {
+        super("NUM_USPATIAL", "ru.identifier.description.num_uspatial", "ru.identifier.title.num_uspatial");
+    }
+
     @Override
     protected int numericalValue(@NonNull RecordingUnitIdInfo info) {
         if (info.getSpatialUnitNumber() == null) {
             return 0;
         }
         return info.getSpatialUnitNumber();
-    }
-
-    @NonNull
-    @Override
-    public String getCode() {
-        return "NUM_USPATIAL";
-    }
-
-    @Nullable
-    @Override
-    public String getDescriptionLanguageCode() {
-        return "ru.identifier.description.num_uspatial";
-    }
-
-    @NonNull
-    @Override
-    public String getTitleCode() {
-        return "ru.identifier.title.num_uspatial";
     }
 }

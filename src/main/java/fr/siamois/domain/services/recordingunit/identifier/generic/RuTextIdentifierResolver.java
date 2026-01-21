@@ -5,6 +5,7 @@ import fr.siamois.domain.models.recordingunit.identifier.RecordingUnitIdLabel;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitIdLabelRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.lang.NonNull;
+import org.springframework.lang.Nullable;
 
 import java.util.Optional;
 import java.util.regex.Matcher;
@@ -16,8 +17,34 @@ public abstract class RuTextIdentifierResolver implements RuIdentifierResolver {
     private static final int DEFAULT_NUMBER_OF_CHAR = 3;
     protected final RecordingUnitIdLabelRepository repository;
 
-    protected RuTextIdentifierResolver(RecordingUnitIdLabelRepository repository) {
+    protected final String code;
+    protected final String descriptionLanguageCode;
+    protected final String titleCode;
+
+    protected RuTextIdentifierResolver(RecordingUnitIdLabelRepository repository,
+                                       String code, String descriptionLanguageCode, String titleCode) {
         this.repository = repository;
+        this.code = code;
+        this.descriptionLanguageCode = descriptionLanguageCode;
+        this.titleCode = titleCode;
+    }
+
+    @NonNull
+    @Override
+    public String getCode() {
+        return code;
+    }
+
+    @Nullable
+    @Override
+    public String getDescriptionLanguageCode() {
+        return descriptionLanguageCode;
+    }
+
+    @NonNull
+    @Override
+    public String getTitleCode() {
+        return titleCode;
     }
 
     @NonNull

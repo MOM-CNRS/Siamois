@@ -11,27 +11,13 @@ import org.springframework.stereotype.Service;
 import java.util.Optional;
 
 @Service
-@RequiredArgsConstructor
 public class RuNumParentResolver extends RuNumericalIdentifierResolver {
 
     private final RecordingUnitIdInfoRepository recordingUnitIdInfoRepository;
 
-    @NonNull
-    @Override
-    public String getCode() {
-        return "NUM_PARENT";
-    }
-
-    @Nullable
-    @Override
-    public String getDescriptionLanguageCode() {
-        return "ru.identifier.description.number_parent";
-    }
-
-    @NonNull
-    @Override
-    public String getTitleCode() {
-        return "ru.identifier.title.number_parent";
+    public RuNumParentResolver(RecordingUnitIdInfoRepository recordingUnitIdInfoRepository) {
+        super("NUM_PARENT", "ru.identifier.description.number_parent", "ru.identifier.title.number_parent");
+        this.recordingUnitIdInfoRepository = recordingUnitIdInfoRepository;
     }
 
     @Override

@@ -9,30 +9,14 @@ import org.springframework.stereotype.Service;
 @Service
 public class RuNumResolver extends RuNumericalIdentifierResolver {
 
-    private static final String CODE = "NUM_UE";
-
-    @NonNull
-    @Override
-    public String getCode() {
-        return CODE;
-    }
-
-    @Nullable
-    @Override
-    public String getDescriptionLanguageCode() {
-        return "ru.identifier.description.number";
+    public RuNumResolver() {
+        super("NUM_UE", "ru.identifier.description.number", "ru.identifier.title.number");
     }
 
     @NonNull
     @Override
     public String getButtonStyleClass() {
         return "rounded-button ui-button-danger";
-    }
-
-    @NonNull
-    @Override
-    public String getTitleCode() {
-        return "ru.identifier.title.number";
     }
 
     @Override

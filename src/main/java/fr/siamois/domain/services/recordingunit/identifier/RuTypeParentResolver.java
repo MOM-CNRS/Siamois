@@ -14,26 +14,8 @@ public class RuTypeParentResolver extends RuTextIdentifierResolver {
     private final LabelService labelService;
 
     protected RuTypeParentResolver(RecordingUnitIdLabelRepository repository, LabelService labelService) {
-        super(repository);
+        super(repository, "TYPE_PARENT", "ru.identifier.description.type_parent", "ru.identifier.title.type_parent");
         this.labelService = labelService;
-    }
-
-    @NonNull
-    @Override
-    public String getCode() {
-        return "TYPE_PARENT";
-    }
-
-    @Nullable
-    @Override
-    public String getDescriptionLanguageCode() {
-        return "ru.identifier.description.type_parent";
-    }
-
-    @NonNull
-    @Override
-    public String getTitleCode() {
-        return "ru.identifier.title.type_parent";
     }
 
     @NonNull
