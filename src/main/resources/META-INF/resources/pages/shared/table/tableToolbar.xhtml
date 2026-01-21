@@ -10,6 +10,7 @@
                 <div style="display: flex; flex-direction: row; flex-wrap: wrap; gap: 1em; align-items: center;">
                     <!-- Toggle Switch -->
                     <p:toggleSwitch
+                            rendered="#{tableModel.isSwitchVisible()}"
                             value="#{tableModel.treeMode}"
                             onIcon="bi bi-list-nested"
                             offIcon="bi bi-list">

@@ -127,6 +127,7 @@ public abstract class ActionUnitForm {
             .label("common.field.beginDate")
             .isSystemField(true)
             .valueBinding("beginDate")
+            .id(5L)
             .showTime(false)
             .concept(BEGIN_DATE_CONCEPT)
             .build();
@@ -137,6 +138,7 @@ public abstract class ActionUnitForm {
             .label("common.field.endDate")
             .isSystemField(true)
             .valueBinding("endDate")
+            .id(7L)
             .showTime(false)
             .concept(END_DATE_CONCEPT)
             .build();
@@ -146,6 +148,7 @@ public abstract class ActionUnitForm {
     protected static final CustomFieldSelectOneActionCode ACTION_CODE_FIELD = CustomFieldSelectOneActionCode.builder()
             .label("actionunit.field.actionCode")
             .isSystemField(true)
+            .id(8L)
             .valueBinding("primaryActionCode")
             .concept(ACTION_CODE_CONCEPT)
             .build();
