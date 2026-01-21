@@ -49,6 +49,7 @@ import org.springframework.stereotype.Component;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -447,7 +448,10 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnit> imple
     public void saveSettings() {
         boolean containsNumRu = false;
 
-        if (format == null || format.isEmpty()) return;
+        if (format == null || format.isEmpty()) {
+            MessageUtils.displayErrorMessage(langBean, "actionUnit.settings.error.missingNumUe");
+            return;
+        }
 
         String placeholderPattern = "\\{([^}]+)\\}";
         Pattern pattern = Pattern.compile(placeholderPattern);
@@ -521,42 +525,17 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnit> imple
     }
 
     public List<RuIdentifierResolver> findAllResolvers() {
-        List<RuIdentifierResolver> resolvers = new ArrayList<>(recordingUnitService.findAllIdentifierResolver().values());
-        int i = 0;
-        int posNumUe = -1;
-        int posNumParent = -1;
-        int posType = -1;
-        while (i < resolvers.size() && posNumUe == -1 && posNumParent == -1 && posType == -1) {
-            RuIdentifierResolver resolver = resolvers.get(i);
-            if (resolver.getCode().equals("NUM_UE")) {
-                posNumUe = i;
-            } else if (resolver.getCode().equals("NUM_PARENT")) {
-                posNumParent = i;
-            } else if (resolver.getCode().equals("TYPE_UE")) {
-                posType = i;
+        Map<String, RuIdentifierResolver> resolvers = recordingUnitService.findAllIdentifierResolver();
+        List<RuIdentifierResolver> result = new ArrayList<>();
+        result.add(resolvers.get("NUM_UE"));
+        result.add(resolvers.get("TYPE_UE"));
+        result.add(resolvers.get("NUM_PARENT"));
+        for (RuIdentifierResolver resolver : resolvers.values()) {
+            if (!result.contains(resolver)) {
+                result.add(resolver);
             }
         }
-
-        RuIdentifierResolver tmp;
-        if (posNumUe != -1) {
-            tmp = resolvers.get(posNumUe);
-            resolvers.remove(posNumUe);
-            resolvers.add(0, tmp);
-        }
-
-        if (posNumParent != -1) {
-            tmp = resolvers.get(posNumParent);
-            resolvers.remove(posNumParent);
-            resolvers.add(1, tmp);
-        }
-
-        if (posType != -1) {
-            tmp = resolvers.get(posType);
-            resolvers.remove(posType);
-            resolvers.add(2, tmp);
-        }
-
-        return resolvers;
+        return result;
     }
 
 }
