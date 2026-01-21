@@ -40,6 +40,12 @@ class RuFullIdActionUnitResolverTest {
         assertThat(resolver.getDescriptionLanguageCode()).isEqualTo("ru.identifier.description.id_ua");
     }
 
+    @Test
+    @DisplayName("getTitleCode() should return the correct message key")
+    void getTitleCode_shouldReturnKey() {
+        assertThat(resolver.getTitleCode()).isEqualTo("ru.identifier.title.id_ua");
+    }
+
     @Nested
     @DisplayName("formatUsesThisResolver() tests")
     class FormatUsesThisResolverTest {

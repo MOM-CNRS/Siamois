@@ -6,6 +6,9 @@ import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 @Service
 public class RuFullIdActionUnitResolver implements RuIdentifierResolver {
 
@@ -45,6 +48,14 @@ public class RuFullIdActionUnitResolver implements RuIdentifierResolver {
         if (replacement == null || replacement.isEmpty()) {
             replacement = DEFAULT_PATTERN;
         }
-        return baseFormatString.replace(ID_UA, replacement);
+
+        Pattern pattern = Pattern.compile("\\{ID_UA}");
+        Matcher matcher = pattern.matcher(baseFormatString);
+
+        if (matcher.find()) {
+            baseFormatString = matcher.replaceAll(replacement);
+        }
+
+        return baseFormatString;
     }
 }

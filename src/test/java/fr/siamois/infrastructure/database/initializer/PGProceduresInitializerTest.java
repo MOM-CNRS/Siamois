@@ -1,6 +1,7 @@
 package fr.siamois.infrastructure.database.initializer;
 
 import com.zaxxer.hikari.HikariDataSource;
+import fr.siamois.domain.models.exceptions.database.DatabaseDataInitException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -10,12 +11,14 @@ import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.core.io.ClassPathResource;
 
+import java.io.IOException;
 import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
+import java.sql.SQLException;
 import java.sql.Statement;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -62,4 +65,47 @@ class PGProceduresInitializerTest {
         }
     }
 
+    @Test
+    void initialize_throwsDatabaseDataInitException_whenResourceIsUnreadable() {
+        // Arrange
+        // This mock construction will be activated if the resolver creates ClassPathResource instances.
+        try (MockedConstruction<ClassPathResource> mocked =
+                     Mockito.mockConstruction(ClassPathResource.class,
+                             (mock, context) -> {
+                                 // For any ClassPathResource created, make getInputStream throw an exception.
+                                 when(mock.getInputStream()).thenThrow(new IOException("Cannot read file"));
+                             })) {
+
+            // Act & Assert
+            DatabaseDataInitException exception = assertThrows(
+                    DatabaseDataInitException.class,
+                    () -> pgProceduresInitializer.initialize()
+            );
+        }
+    }
+
+    @Test
+    void initialize_throwsDatabaseDataInitException_whenDbConnectionFails() throws Exception {
+        // Arrange
+        // Mock resource loading to be successful, so we can test the DB part
+        try (MockedConstruction<ClassPathResource> mocked =
+                     Mockito.mockConstruction(ClassPathResource.class,
+                             (mock, context) -> {
+                                 when(mock.getInputStream()).thenReturn(new ByteArrayInputStream("SELECT 1;".getBytes()));
+                             })) {
+
+            // Mock DB connection to fail
+            when(dataSource.getConnection()).thenThrow(new SQLException("Connection failed"));
+
+            // Act & Assert
+            DatabaseDataInitException exception = assertThrows(
+                    DatabaseDataInitException.class,
+                    () -> pgProceduresInitializer.initialize()
+            );
+
+            assertEquals("Failed to initialize PGSQL script", exception.getMessage());
+            assertTrue(exception.getCause() instanceof SQLException);
+            assertEquals("Connection failed", exception.getCause().getMessage());
+        }
+    }
 }

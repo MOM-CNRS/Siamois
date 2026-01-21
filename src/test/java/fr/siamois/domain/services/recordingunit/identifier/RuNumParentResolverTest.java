@@ -45,6 +45,16 @@ class RuNumParentResolverTest {
         assertThat(ruNumParentResolver.getDescriptionLanguageCode()).isEqualTo("ru.identifier.description.number_parent");
     }
 
+    @Test
+    @DisplayName("getButtonStyleClass() should return the correct css class")
+    void getButtonStyleClass_shouldReturnCssClass() {
+        // When
+        String styleClass = ruNumParentResolver.getButtonStyleClass();
+
+        // Then
+        assertThat(styleClass).isEqualTo("rounded-button ui-button-warning");
+    }
+
     @Nested
     @DisplayName("formatUsesThisResolver() tests")
     class FormatUsesThisResolverTest {

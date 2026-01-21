@@ -56,6 +56,29 @@ class RuTypeResolverTest {
         assertThat(ruTypeResolver.getDescriptionLanguageCode()).isEqualTo("ru.identifier.description.type");
     }
 
+    @Test
+    @DisplayName("getButtonStyleClass() should return the correct css class")
+    void getButtonStyleClass_shouldReturnCssClass() {
+        // When
+        String styleClass = ruTypeResolver.getButtonStyleClass();
+
+        // Then
+        assertThat(styleClass).isEqualTo("rounded-button ui-button-warning");
+    }
+
+    @Test
+    @DisplayName("getAssociatedConcept() should return ruType from info")
+    void getAssociatedConcept_shouldReturnRuTypeFromInfo() {
+        // Given
+        when(ruInfo.getRuType()).thenReturn(ruType);
+
+        // When
+        Concept result = ruTypeResolver.getAssociatedConcept(ruInfo);
+
+        // Then
+        assertThat(result).isSameAs(ruType);
+    }
+
     @Nested
     @DisplayName("formatUsesThisResolver() tests")
     class FormatUsesThisResolverTest {
@@ -143,6 +166,52 @@ class RuTypeResolverTest {
 
             // Then
             assertThat(result).isEqualTo(expected);
+        }
+    }
+
+    @Nested
+    @DisplayName("textValue() tests")
+    class TextValueTest {
+
+        @BeforeEach
+        void setUp() {
+            lenient().when(ruInfo.getActionUnit()).thenReturn(actionUnit);
+            lenient().when(ruInfo.getRuType()).thenReturn(ruType);
+            lenient().when(actionUnit.getRecordingUnitIdentifierLang()).thenReturn("fr");
+        }
+
+        @Test
+        @DisplayName("should return empty string when ruType is null")
+        void textValue_shouldReturnEmptyString_whenRuTypeIsNull() {
+            when(ruInfo.getRuType()).thenReturn(null);
+            String result = ruTypeResolver.textValue(ruInfo);
+            assertThat(result).isEmpty();
+        }
+
+        @Test
+        @DisplayName("should return empty string when actionUnit is null")
+        void textValue_shouldReturnEmptyString_whenActionUnitIsNull() {
+            when(ruInfo.getActionUnit()).thenReturn(null);
+            String result = ruTypeResolver.textValue(ruInfo);
+            assertThat(result).isEmpty();
+        }
+
+        @Test
+        @DisplayName("should return empty string when identifier lang is null")
+        void textValue_shouldReturnEmptyString_whenIdentifierLangIsNull() {
+            when(actionUnit.getRecordingUnitIdentifierLang()).thenReturn(null);
+            String result = ruTypeResolver.textValue(ruInfo);
+            assertThat(result).isEmpty();
+        }
+
+        @Test
+        @DisplayName("should return label when inputs are valid")
+        void textValue_shouldReturnLabel_whenInputsAreValid() {
+            ConceptLabel label = new ConceptPrefLabel();
+            label.setLabel("MyLabel");
+            when(labelService.findLabelOf(ruType, "fr")).thenReturn(label);
+            String result = ruTypeResolver.textValue(ruInfo);
+            assertThat(result).isEqualTo("MyLabel");
         }
     }
 }
