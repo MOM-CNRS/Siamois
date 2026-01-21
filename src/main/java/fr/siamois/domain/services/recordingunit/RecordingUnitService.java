@@ -26,8 +26,10 @@ import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUn
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitIdInfoRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitRepository;
 import fr.siamois.infrastructure.database.repositories.team.TeamMemberRepository;
+import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.hibernate.Hibernate;
 import org.reflections.Reflections;
 import org.springframework.beans.BeansException;
@@ -123,9 +125,8 @@ public class RecordingUnitService implements ArkEntityService {
             managedRecordingUnit = setupAdditionalAnswers(recordingUnit, managedRecordingUnit);
             setupParents(recordingUnit, managedRecordingUnit);
             setupChilds(recordingUnit, managedRecordingUnit);
-            managedRecordingUnit = setupIdentifier(managedRecordingUnit);
 
-            return managedRecordingUnit;
+            return recordingUnitRepository.save(managedRecordingUnit);
 
         } catch (RuntimeException e) {
             log.error(e.getMessage(), e);
@@ -141,14 +142,6 @@ public class RecordingUnitService implements ArkEntityService {
         } else {
             managedRecordingUnit = new RecordingUnit();
         }
-        return managedRecordingUnit;
-    }
-
-    private RecordingUnit setupIdentifier(RecordingUnit managedRecordingUnit) {
-        managedRecordingUnit = recordingUnitRepository.save(managedRecordingUnit);
-        // Set full identifier
-        managedRecordingUnit.setFullIdentifier(null); // reseting so that displayFullIdentifier updates it
-        managedRecordingUnit.setFullIdentifier(generateFullIdentifier(managedRecordingUnit.getActionUnit(), managedRecordingUnit));
         return managedRecordingUnit;
     }
 
@@ -627,4 +620,8 @@ public class RecordingUnitService implements ArkEntityService {
                 .toList();
     }
 
+    @NonNull
+    public List<RecordingUnit> findByActionAndFullId(@NotNull ActionUnit actionUnit, @NotNull String fullIdentifier) {
+        return recordingUnitRepository.findByFullIdentifierAndActionUnit(fullIdentifier, actionUnit);
+    }
 }

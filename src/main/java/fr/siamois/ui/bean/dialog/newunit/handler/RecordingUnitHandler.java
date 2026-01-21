@@ -13,11 +13,13 @@ import fr.siamois.ui.bean.dialog.newunit.GenericNewUnitDialogBean;
 import fr.siamois.ui.bean.dialog.newunit.NewUnitContext;
 import fr.siamois.ui.bean.dialog.newunit.UnitKind;
 import fr.siamois.ui.exceptions.CannotInitializeNewUnitDialogException;
+import fr.siamois.utils.MessageUtils;
 import org.springframework.stereotype.Component;
 
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 @Component
 public class RecordingUnitHandler implements INewUnitHandler<RecordingUnit> {
@@ -54,7 +56,25 @@ public class RecordingUnitHandler implements INewUnitHandler<RecordingUnit> {
         return recordingUnit;
     }
     @Override public RecordingUnit save(UserInfo u, RecordingUnit unit) throws EntityAlreadyExistsException {
-        return recordingUnitService.save(unit, unit.getType(), null, null, null); }
+        RecordingUnit created = recordingUnitService.save(unit, unit.getType(), null, null, null);
+        String generatedFullIdentifier = recordingUnitService.generateFullIdentifier(created.getActionUnit(), created);
+        created.setFullIdentifier(generatedFullIdentifier);
+
+        List<RecordingUnit> existing = recordingUnitService.findByActionAndFullId(unit.getActionUnit(), unit.getFullIdentifier());
+        if (fullIdentifierAlreadyExistInAction(existing, created)) {
+            MessageUtils.displayWarnMessage(langBean, "recordingunit.error.identifier.alreadyExists");
+        } else {
+            created = recordingUnitService.save(created, unit.getType(), null, null, null);
+        }
+
+        return created;
+    }
+
+    private static boolean fullIdentifierAlreadyExistInAction(List<RecordingUnit> existing, RecordingUnit created) {
+        return existing.stream()
+                .anyMatch(r -> Objects.equals(r.getFullIdentifier(), created.getFullIdentifier()) && !Objects.equals(r.getId(), created.getId()));
+    }
+
     @Override public String dialogWidgetVar() { return "newUnitDiag"; }
 
     @Override public void initFromContext(GenericNewUnitDialogBean<?> bean) throws CannotInitializeNewUnitDialogException {

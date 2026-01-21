@@ -537,6 +537,11 @@ class RecordingUnitServiceTest {
         }
 
         @Override
+        public @NonNull String getTitleCode() {
+            return "";
+        }
+
+        @Override
         public @NonNull String resolve(@NonNull String baseFormatString, @NonNull RecordingUnitIdInfo ruInfo) {
             return "";
         }

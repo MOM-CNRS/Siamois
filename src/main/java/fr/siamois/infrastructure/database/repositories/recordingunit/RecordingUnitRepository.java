@@ -13,6 +13,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.data.repository.history.RevisionRepository;
 import org.springframework.data.repository.query.Param;
+import org.springframework.lang.NonNull;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -454,7 +456,6 @@ public interface RecordingUnitRepository extends CrudRepository<RecordingUnit, L
     List<RecordingUnit> findRootsByAction(@Param("actionId") Long actionId);
 
 
-
-
-
+    @NonNull
+    List<RecordingUnit> findByFullIdentifierAndActionUnit(String fullIdentifier, ActionUnit actionUnit);
 }

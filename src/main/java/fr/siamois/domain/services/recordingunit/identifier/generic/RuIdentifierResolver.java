@@ -23,6 +23,7 @@ public interface RuIdentifierResolver {
     String getTitleCode();
 
     @NonNull
+    @SuppressWarnings("unused")
     default String getButtonStyleClass() {
         return "rounded-button";
     }
