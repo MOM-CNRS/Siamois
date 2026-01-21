@@ -94,6 +94,10 @@ public abstract class EntityTableViewModel<T extends TraceableEntity, ID> {
     @Setter
     protected boolean treeMode = true; // false = table, true = tree
 
+    @Getter
+    @Setter
+    protected boolean isSwitchVisible = true;
+
     protected EntityTableViewModel(
             BaseLazyDataModel<T> lazyDataModel,
             GenericNewUnitDialogBean<T> genericNewUnitDialogBean,

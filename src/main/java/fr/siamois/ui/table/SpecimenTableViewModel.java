@@ -20,9 +20,9 @@ import static fr.siamois.ui.table.TableColumnAction.DUPLICATE_ROW;
 import static fr.siamois.ui.table.TableColumnAction.GO_TO_SPECIMEN;
 
 /**
- * View model spécifique pour les tableaux de RecordingUnit.
+ * View model spécifique pour les tableaux de Specimen.
  *
- * - spécialise EntityTableViewModel pour T = RecordingUnit, ID = Long
+ * - spécialise EntityTableViewModel pour T = Specimen, ID = Long
  * - implémente :
  *      - resolveRowFormFor
  *      - configureRowSystemFields
@@ -30,10 +30,8 @@ import static fr.siamois.ui.table.TableColumnAction.GO_TO_SPECIMEN;
 @Getter
 public class SpecimenTableViewModel extends EntityTableViewModel<Specimen, Long> {
 
-    /** Lazy model spécifique RecordingUnit (accès à selectedUnits, etc.) */
     private final BaseSpecimenLazyDataModel specimenLazyDataModel;
     private final FlowBean flowBean;
-
 
 
     private final SessionSettingsBean sessionSettingsBean;
@@ -57,6 +55,8 @@ public class SpecimenTableViewModel extends EntityTableViewModel<Specimen, Long>
                 "type"                  // formScopeValueBinding
         );
         this.specimenLazyDataModel = lazyDataModel;
+        this.setTreeMode(false);
+        this.setSwitchVisible(false);
         this.sessionSettingsBean = sessionSettingsBean;
         this.flowBean = flowBean;
 
