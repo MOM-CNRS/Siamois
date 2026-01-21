@@ -46,7 +46,7 @@ public abstract class RuNumericalIdentifierResolver implements RuIdentifierResol
             return String.valueOf(numericalValue(ruInfo));
         }
 
-        Pattern pattern = Pattern.compile("\\{" + getCode() + "([^}]*)\\}");
+        Pattern pattern = Pattern.compile("\\{" + getCode() + "([^}]*)}");
         Matcher matcher = pattern.matcher(baseFormatString);
         StringBuilder result = new StringBuilder();
 
@@ -54,7 +54,7 @@ public abstract class RuNumericalIdentifierResolver implements RuIdentifierResol
             String replacement;
             String formatSpecifierPart = matcher.group(1);
 
-            if (formatSpecifierPart != null && formatSpecifierPart.startsWith(":") && formatSpecifierPart.substring(1).matches("[0]+")) {
+            if (formatSpecifierPart != null && formatSpecifierPart.startsWith(":") && formatSpecifierPart.substring(1).matches("0+")) {
                 int width = formatSpecifierPart.length() - 1;
                 replacement = String.format("%0" + width + "d", numericalValue(ruInfo));
             } else {
