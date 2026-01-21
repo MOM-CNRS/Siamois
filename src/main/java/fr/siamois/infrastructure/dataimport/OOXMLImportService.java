@@ -115,10 +115,10 @@ public class OOXMLImportService {
             String name = colName != null ? getStringCell(row, colName) : null;
             if (name == null || name.isBlank()) return; // ligne vide
 
-            String description = colDescription != null ? getStringCell(row, colDescription) : null;
-            String identifier  = colIdentifier != null ? getStringCell(row, colIdentifier) : null;
-            String adminsRaw   = colAdmins != null ? getStringCell(row, colAdmins) : null;
-            String thesaurus   = colThesaurus != null ? getStringCell(row, colThesaurus) : null;
+            String description = getStringCellOrNull(row, colDescription);
+            String identifier  = getStringCellOrNull(row, colIdentifier);
+            String adminsRaw   = getStringCellOrNull(row, colAdmins);
+            String thesaurus   = getStringCellOrNull(row, colThesaurus);
 
             List<String> adminEmails = parseEmailList(adminsRaw);
 
@@ -163,12 +163,12 @@ public class OOXMLImportService {
         List<PersonSeeder.PersonSpec> result = new ArrayList<>();
 
         forEachDataRow(sheet, row -> {
-            String email = colEmail != null ? getStringCell(row, colEmail) : null;
+            String email =  getStringCellOrNull(row, colEmail);
             if (email == null || email.isBlank()) return;
 
-            String nom    = colNom != null ? getStringCell(row, colNom) : null;
-            String prenom = colPrenom != null ? getStringCell(row, colPrenom) : null;
-            String ident  = colIdentifiant != null ? getStringCell(row, colIdentifiant) : null;
+            String nom    = getStringCellOrNull(row, colNom);
+            String prenom = getStringCellOrNull(row, colPrenom);
+            String ident  = getStringCellOrNull(row, colIdentifiant);
 
             result.add(new PersonSeeder.PersonSpec(
                     email,
@@ -196,13 +196,13 @@ public class OOXMLImportService {
         Map<String, String> childrenStringByName = new HashMap<>();
 
         forEachDataRow(sheet, row -> {
-            String name = colNom != null ? getStringCell(row, colNom) : null;
+            String name = colNom != null ? getStringCell(row, colNom) : null; getStringCellOrNull(row, colNom);
             if (name == null || name.isBlank()) return;
 
-            String uriType      = colUriType != null ? getStringCell(row, colUriType) : null;
-            String creatorEmail = colCreateur != null ? getStringCell(row, colCreateur) : null;
-            String institution  = colInstitution != null ? getStringCell(row, colInstitution) : null;
-            String enfantsRaw   = colEnfants != null ? getStringCell(row, colEnfants) : null;
+            String uriType      = getStringCellOrNull(row, colUriType);
+            String creatorEmail = getStringCellOrNull(row, colCreateur);
+            String institution  = getStringCellOrNull(row, colInstitution);
+            String enfantsRaw   = getStringCellOrNull(row, colEnfants);
 
             // 🔹 idt = vocabularyId, idc = conceptId
             String vocabularyId = extractIdtFromUri(uriType).orElse(null);
@@ -360,8 +360,8 @@ public class OOXMLImportService {
         List<ActionUnitSeeder.ActionUnitSpecs> result = new ArrayList<>();
 
         forEachDataRow(sheet, row -> {
-            String name       = colNom         != null ? getStringCell(row, colNom)         : null;
-            String identifier = colIdentifiant != null ? getStringCell(row, colIdentifiant) : null;
+            String name       = getStringCellOrNull(row, colNom);
+            String identifier = getStringCellOrNull(row, colIdentifiant);
 
             if ((name == null || name.isBlank()) &&
                     (identifier == null || identifier.isBlank())) {
@@ -374,10 +374,10 @@ public class OOXMLImportService {
                 code = (raw == null || raw.isBlank()) ? null : raw;
             }
 
-            String typeUri     = colTypeUri     != null ? getStringCell(row, colTypeUri)     : null;
-            String createur    = colCreateur    != null ? getStringCell(row, colCreateur)    : null;
-            String institution = colInstitution != null ? getStringCell(row, colInstitution) : null;
-            String contexteRaw = colContexteSpat != null ? getStringCell(row, colContexteSpat) : null;
+            String typeUri     = getStringCellOrNull(row, colTypeUri);
+            String createur    = getStringCellOrNull(row, colCreateur);
+            String institution = getStringCellOrNull(row, colInstitution);
+            String contexteRaw = getStringCellOrNull(row, colContexteSpat);
 
             String typeConceptId    = extractIdcFromUri(typeUri).orElse(null);
             String typeVocabularyId = extractIdtFromUri(typeUri).orElse(null);
@@ -444,17 +444,17 @@ public class OOXMLImportService {
         List<RecordingUnitSeeder.RecordingUnitSpecs> result = new ArrayList<>();
 
         forEachDataRow(sheet, row -> {
-            String identStr      = colIdentifiant   != null ? getStringCell(row, colIdentifiant)   : null;
-            String description  = colDescription   != null ? getStringCell(row, colDescription)   : null;
+            String identStr      =  getStringCellOrNull(row, colIdentifiant);
+            String description  = getStringCellOrNull(row, colDescription);
 
             if ((identStr == null || identStr.isBlank()) &&
                     (description == null || description.isBlank())) {
                 return;
             }
 
-            String matrixColor   = colMatrixColor   != null ? getStringCell(row, colMatrixColor)   : null;
-            String matrixTexture = colMatrixTexture != null ? getStringCell(row, colMatrixTexture) : null;
-            String matrixComp    = colMatrixComp    != null ? getStringCell(row, colMatrixComp)    : null;
+            String matrixColor   = getStringCellOrNull(row, colMatrixColor);
+            String matrixTexture = getStringCellOrNull(row, colMatrixTexture);
+            String matrixComp    = getStringCellOrNull(row, colMatrixComp);
 
             Integer identifier = null;
             if (identStr != null && !identStr.isBlank()) {
@@ -466,13 +466,13 @@ public class OOXMLImportService {
 
             // ---- CONCEPT KEYS ----
             ConceptSeeder.ConceptKey type =
-                    conceptKeyFromUri(colTypeUri != null ? getStringCell(row, colTypeUri) : null);
+                    conceptKeyFromUri(getStringCellOrNull(row, colTypeUri));
 
             ConceptSeeder.ConceptKey geomorphCycle =
-                    conceptKeyFromUri(colCycleUri != null ? getStringCell(row, colCycleUri) : null);
+                    conceptKeyFromUri(getStringCellOrNull(row, colCycleUri));
 
             ConceptSeeder.ConceptKey geomorphAgent =
-                    conceptKeyFromUri(colAgentUri != null ? getStringCell(row, colAgentUri) : null);
+                    conceptKeyFromUri(getStringCellOrNull(row, colAgentUri));
 
             ConceptSeeder.ConceptKey interpretation =
                     conceptKeyFromUri(colInterpretationUri != null
@@ -480,13 +480,11 @@ public class OOXMLImportService {
                             : null);
 
             // ---- EMAILS ----
-            String authorEmail   = colAuthorEmail != null ? getStringCell(row, colAuthorEmail) : null;
-            String institutionId = colInstitution != null ? getStringCell(row, colInstitution) : null;
+            String authorEmail   = getStringCellOrNull(row, colAuthorEmail);
+            String institutionId = getStringCellOrNull(row, colInstitution);
 
             List<String> excavators =
-                    parseEmailList(colContribEmails != null
-                            ? getStringCell(row, colContribEmails)
-                            : null);
+                    parseEmailList(getStringCellOrNull(row, colContribEmails));
 
             // ---- DATES ----
             OffsetDateTime beginDate =
@@ -504,14 +502,14 @@ public class OOXMLImportService {
             String createdBy = "system@siamois.fr";
 
             // ---- SPATIAL UNIT ----
-            String usName = colUniteSpatiale != null ? getStringCell(row, colUniteSpatiale) : null;
+            String usName = getStringCellOrNull(row, colUniteSpatiale);
             SpatialUnitSeeder.SpatialUnitKey spatialKey =
                     (usName == null || usName.isBlank())
                             ? null
                             : new SpatialUnitSeeder.SpatialUnitKey(usName.trim());
 
             // ---- ACTION UNIT ----
-            String uaIdent = colUniteAction != null ? getStringCell(row, colUniteAction) : null;
+            String uaIdent = getStringCellOrNull(row, colUniteAction);
             ActionUnitSeeder.ActionUnitKey actionKey =
                     (uaIdent == null || uaIdent.isBlank())
                             ? null
@@ -702,6 +700,12 @@ public class OOXMLImportService {
     public String getStringCell(Row row, int colIndex) {
         Cell cell = row.getCell(colIndex);
         return getStringCell(cell);
+    }
+
+    public String getStringCellOrNull(Row row, Integer colIndex) {
+
+        return colIndex != null ? getStringCell(row, colIndex) : null;
+
     }
 
     public String getStringCell(Cell cell) {
