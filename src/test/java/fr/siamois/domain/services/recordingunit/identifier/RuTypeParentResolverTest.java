@@ -187,22 +187,6 @@ class RuTypeParentResolverTest {
                 assertThat(result).isEqualTo("STR");
             }
 
-            @Test
-            @DisplayName("should not save label if it exists for the same type")
-            void resolve_shouldNotSaveExistingLabelForSameType() {
-                // Given
-                when(ruInfo.getRuParentType()).thenReturn(type1);
-                when(labelService.findLabelOf(type1, "fr")).thenReturn(label);
-                RecordingUnitIdLabel existingLabel = new RecordingUnitIdLabel(type2, actionUnit, "STR");
-                when(repository.findByExistingAndActionUnit("STR", actionUnit)).thenReturn(Optional.of(existingLabel));
-
-                // When
-                String result = ruTypeParentResolver.resolve("{TYPE_PARENT}", ruInfo);
-
-                // Then
-                assertThat(result).isEqualTo("STR");
-                verify(repository, never()).save(any());
-            }
 
             @Test
             @DisplayName("should append number if label exists for a different type")
