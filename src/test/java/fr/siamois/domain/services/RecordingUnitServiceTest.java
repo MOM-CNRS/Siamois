@@ -6,6 +6,7 @@ import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.ark.Ark;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.form.customform.CustomForm;
+import fr.siamois.domain.models.exceptions.recordingunit.FailedRecordingUnitSaveException;
 import fr.siamois.domain.models.form.customformresponse.CustomFormResponse;
 import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
@@ -163,6 +164,22 @@ class RecordingUnitServiceTest {
     }
 
     @Test
+    void bulkUpdateType_shouldCallRepository() {
+        // Arrange
+        List<Long> ids = List.of(1L, 2L, 3L);
+        Concept newType = new Concept();
+        newType.setId(10L);
+        when(recordingUnitRepository.updateTypeByIds(newType.getId(), ids)).thenReturn(ids.size());
+
+        // Act
+        int updatedCount = recordingUnitService.bulkUpdateType(ids, newType);
+
+        // Assert
+        assertEquals(ids.size(), updatedCount);
+        verify(recordingUnitRepository).updateTypeByIds(newType.getId(), ids);
+    }
+
+    @Test
     void save_Success() {
 
         RecordingUnit anteriorUnit = new RecordingUnit();
@@ -275,6 +292,69 @@ class RecordingUnitServiceTest {
     }
 
     @Test
+    void save_shouldUpdateExistingUnit_whenIdIsProvided() {
+        // Arrange
+        long existingId = 42L;
+        recordingUnitToSave.setId(existingId);
+        recordingUnitToSave.setDescription("Updated description");
+
+        RecordingUnit foundUnit = new RecordingUnit();
+        foundUnit.setId(existingId);
+        foundUnit.setDescription("Original description");
+
+        when(recordingUnitRepository.findById(existingId)).thenReturn(Optional.of(foundUnit));
+        when(recordingUnitRepository.save(any(RecordingUnit.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(conceptService.saveOrGetConcept(any(Concept.class))).thenReturn(new Concept());
+        when(personRepository.findAllById(anyList())).thenReturn(List.of());
+
+        // Act
+        RecordingUnit result = recordingUnitService.save(recordingUnitToSave, new Concept(), List.of(), List.of(), List.of());
+
+        // Assert
+        assertEquals(existingId, result.getId());
+        assertEquals("Updated description", result.getDescription());
+        verify(recordingUnitRepository).findById(existingId);
+        // 2 saves: one in setupAdditionalAnswers, one at the end.
+        verify(recordingUnitRepository, times(2)).save(any(RecordingUnit.class));
+    }
+
+    @Test
+    void save_shouldCreateNewUnit_whenIdIsProvidedButNotFound() {
+        // Arrange
+        long nonExistentId = 43L;
+        recordingUnitToSave.setId(nonExistentId);
+        recordingUnitToSave.setDescription("New unit with given ID");
+
+        when(recordingUnitRepository.findById(nonExistentId)).thenReturn(Optional.empty());
+        when(recordingUnitRepository.save(any(RecordingUnit.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(conceptService.saveOrGetConcept(any(Concept.class))).thenReturn(new Concept());
+        when(personRepository.findAllById(anyList())).thenReturn(List.of());
+
+        // Act
+        RecordingUnit result = recordingUnitService.save(recordingUnitToSave, new Concept(), List.of(), List.of(), List.of());
+
+        // Assert
+        assertNull(result.getId());
+        assertEquals("New unit with given ID", result.getDescription());
+        verify(recordingUnitRepository).findById(nonExistentId);
+        verify(recordingUnitRepository, times(2)).save(any(RecordingUnit.class));
+    }
+
+    @Test
+    void save_shouldThrowFailedRecordingUnitSaveException_whenDependencyFails() {
+        // Arrange
+        when(conceptService.saveOrGetConcept(any(Concept.class))).thenThrow(new RuntimeException("Dependency error"));
+
+        // Act & Assert
+        FailedRecordingUnitSaveException exception = assertThrows(
+                FailedRecordingUnitSaveException.class,
+                () -> recordingUnitService.save(recordingUnitToSave, new Concept(), List.of(), List.of(), List.of())
+        );
+
+        assertEquals("Dependency error", exception.getMessage());
+    }
+
+    @Test
     void testFindAllByInstitutionAndByNameContainingAndByCategoriesAndByGlobalContaining_Success() {
 
         when(recordingUnitRepository.findAllByInstitutionAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
@@ -294,6 +374,32 @@ class RecordingUnitServiceTest {
         // Assert
         assertEquals(recordingUnit1, actualResult.getContent().get(0));
         assertEquals(recordingUnit2, actualResult.getContent().get(1));
+    }
+
+    @Test
+    void findAllByInstitutionAndByActionUnitAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining_Success() {
+        // Arrange
+        Long institutionId = 1L;
+        Long actionId = 1L;
+        String fullIdentifier = "test";
+        Long[] categoryIds = {1L, 2L};
+        String global = "global";
+        String langCode = "fr";
+
+        when(recordingUnitRepository.findAllByInstitutionAndByActionUnitAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
+                institutionId, actionId, fullIdentifier, categoryIds, global, langCode, pageable
+        )).thenReturn(page);
+
+        // Act
+        Page<RecordingUnit> result = recordingUnitService.findAllByInstitutionAndByActionUnitAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
+                institutionId, actionId, fullIdentifier, categoryIds, global, langCode, pageable
+        );
+
+        // Assert
+        assertEquals(page, result);
+        verify(recordingUnitRepository).findAllByInstitutionAndByActionUnitAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
+                institutionId, actionId, fullIdentifier, categoryIds, global, langCode, pageable
+        );
     }
 
     @Test
