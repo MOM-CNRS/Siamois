@@ -454,31 +454,7 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnit> imple
             return;
         }
 
-        String placeholderPattern = "\\{([^}]+)\\}";
-        Pattern pattern = Pattern.compile(placeholderPattern);
-        Matcher matcher = pattern.matcher(format);
-
-        String strippedFormat = format.replaceAll(placeholderPattern, "");
-        if (strippedFormat.contains("{") || strippedFormat.contains("}")) {
-            MessageUtils.displayErrorMessage(langBean, INVALID_FORMAT_CODE);
-            return;
-        }
-
-        while (matcher.find()) {
-            String placeholderContent = matcher.group(1);
-            String[] parts = placeholderContent.split(":", 2);
-            String placeholderName = parts[0];
-
-            if (formatContainsInvalidCode(placeholderName)) return;
-            containsNumRu = containsNumRu || placeholderName.equals("NUM_UE");
-
-            if (formatOfCodeIsNotValid(parts, placeholderName)) return;
-        }
-
-        if (!containsNumRu) {
-            MessageUtils.displayErrorMessage(langBean, "actionUnit.settings.error.missingNumUe");
-            return;
-        }
+        if (specifiedRuFullIdentifierFormatIsInvalid(containsNumRu)) return;
 
         unit.setMinRecordingUnitCode(minNumber);
         unit.setMaxRecordingUnitCode(maxNumber);
@@ -492,6 +468,35 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnit> imple
         MessageUtils.displayInfoMessage(langBean, "actionUnit.settings.success.identifierConfigSaved");
     }
 
+    private boolean specifiedRuFullIdentifierFormatIsInvalid(boolean containsNumRu) {
+        String placeholderPattern = "\\{([^}]+)\\}";
+        Pattern pattern = Pattern.compile(placeholderPattern);
+        Matcher matcher = pattern.matcher(format);
+
+        String strippedFormat = format.replaceAll(placeholderPattern, "");
+        if (strippedFormat.contains("{") || strippedFormat.contains("}")) {
+            MessageUtils.displayErrorMessage(langBean, INVALID_FORMAT_CODE);
+            return true;
+        }
+
+        while (matcher.find()) {
+            String placeholderContent = matcher.group(1);
+            String[] parts = placeholderContent.split(":", 2);
+            String placeholderName = parts[0];
+
+            if (formatContainsInvalidCode(placeholderName)) return true;
+            containsNumRu = containsNumRu || placeholderName.equals("NUM_UE");
+
+            if (formatOfCodeIsNotValid(parts, placeholderName)) return true;
+        }
+
+        if (!containsNumRu) {
+            MessageUtils.displayErrorMessage(langBean, "actionUnit.settings.error.missingNumUe");
+            return true;
+        }
+        return false;
+    }
+
     private boolean formatContainsInvalidCode(String placeholderName) {
         if (!recordingUnitService.findAllIdentifiersCode().contains(placeholderName)) {
             MessageUtils.displayErrorMessage(langBean, INVALID_FORMAT_CODE);
@@ -503,12 +508,15 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnit> imple
     private boolean formatOfCodeIsNotValid(String[] parts, String placeholderName) {
         if (parts.length <= 1) return false;
         String formatSpecifier = parts[1];
-        return formatSpecifierIsNotValid(formatSpecifier) || oneNumericalFormatIsNotValid(placeholderName, formatSpecifier);
+        return formatSpecifierIsNotValid(placeholderName, formatSpecifier) || oneNumericalFormatIsNotValid(placeholderName, formatSpecifier);
     }
 
-    private boolean formatSpecifierIsNotValid(String formatSpecifier) {
-        if (!formatSpecifier.matches("[0X]+")) {
-            MessageUtils.displayErrorMessage(langBean, INVALID_FORMAT_CODE);
+    private boolean formatSpecifierIsNotValid(String placeholderName, String formatSpecifier) {
+        if (recordingUnitService.findAllNumericalIdentifiersCode().contains(placeholderName) && !formatSpecifier.matches("0+")) {
+            MessageUtils.displayWarnMessage(langBean, "actionUnit.settings.help.numericalFormat", placeholderName);
+            return true;
+        } else if (!formatSpecifier.matches("X+") || placeholderName.equals("ID_UA")) {
+            MessageUtils.displayWarnMessage(langBean, "actionUnit.settings.help.textualFormat", placeholderName);
             return true;
         }
         return false;
