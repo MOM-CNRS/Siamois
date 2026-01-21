@@ -66,25 +66,6 @@ public class RecordingUnitService implements ArkEntityService {
     private final ApplicationContext applicationContext;
 
     /**
-     * Generate the next identifier for a recording unit.
-     *
-     * @param recordingUnit The recording unit for which to generate the next identifier.
-     * @return The next identifier for the recording unit.
-     * @deprecated This method has been replaced by {@link #generatedNextIdentifier(ActionUnit, Concept)} because it uses
-     * the old system to generated identifiers by incrementing it by 1.
-     */
-    @Deprecated(forRemoval = true, since = "0.2.0-dev-1")
-    public int generateNextIdentifier(RecordingUnit recordingUnit) {
-        // Generate next identifier
-        Integer currentMaxIdentifier = recordingUnitRepository.findMaxUsedIdentifierByAction(recordingUnit.getActionUnit().getId());
-        int nextIdentifier = (currentMaxIdentifier == null) ? recordingUnit.getActionUnit().getMinRecordingUnitCode() : currentMaxIdentifier + 1;
-        if (nextIdentifier > recordingUnit.getActionUnit().getMaxRecordingUnitCode() || nextIdentifier < 0) {
-            throw new MaxRecordingUnitIdentifierReached("Max recording unit code reached; Please ask administrator to increase the range");
-        }
-        return (nextIdentifier);
-    }
-
-    /**
      * Bulk update the type of multiple recording units.
      *
      * @param ids  The list of IDs of the recording units to update.

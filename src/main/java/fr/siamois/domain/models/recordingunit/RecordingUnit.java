@@ -149,6 +149,14 @@ public class RecordingUnit extends RecordingUnitParent implements ArkEntity, Ref
         return String.format("Recording Unit %s", displayFullIdentifier());
     }
 
+    /**
+     * Resets the full identifier to it's base format.
+     */
+    public void resetFullIdentifier() {
+        if (actionUnit == null) return;
+        fullIdentifier = actionUnit.getFullIdentifier();
+    }
+
     @Transient
     @JsonIgnore
     public List<String> getBindableFieldNames() {

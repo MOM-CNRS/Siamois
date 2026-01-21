@@ -122,10 +122,17 @@ public abstract class BaseRecordingUnitLazyDataModel extends BaseLazyDataModel<R
         // Create a copy from selected row
         RecordingUnit original = getRowData();
         RecordingUnit newRec = new RecordingUnit(original);
-        newRec.setIdentifier(recordingUnitService.generateNextIdentifier(newRec));
 
         // Save it
-        newRec= recordingUnitService.save(newRec, newRec.getType(), List.of(),  List.of(),  List.of());
+        newRec = recordingUnitService.save(newRec, newRec.getType(), List.of(),  List.of(),  List.of());
+
+        newRec.setFullIdentifier(recordingUnitService.generateFullIdentifier(newRec.getActionUnit(), newRec));
+        if (recordingUnitService.fullIdentifierAlreadyExistInAction(newRec)) {
+            MessageUtils.displayWarnMessage(langBean, "recordingunit.error.identifier.alreadyExists");
+            newRec.resetFullIdentifier();
+        }
+
+        newRec = recordingUnitService.save(newRec, newRec.getType(), List.of(),  List.of(),  List.of());
 
         // Add it to the model
         addRowToModel(newRec);
