@@ -2,6 +2,7 @@ package fr.siamois.domain.services.recordingunit.identifier.generic;
 
 import fr.siamois.domain.models.recordingunit.identifier.RecordingUnitIdInfo;
 import fr.siamois.domain.models.recordingunit.identifier.RecordingUnitIdLabel;
+import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitIdLabelRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.lang.NonNull;
@@ -78,9 +79,11 @@ public abstract class RuTextIdentifierResolver implements RuIdentifierResolver {
         return result.toString();
     }
 
+    protected abstract Concept getAssociatedConcept(@NonNull RecordingUnitIdInfo info);
+
     private String addNumberIfNecessaryAndSaveExisting(RecordingUnitIdInfo ruInfo, String replacement) {
         Optional<RecordingUnitIdLabel> existing = repository.findByExistingAndActionUnit(replacement, ruInfo.getActionUnit());
-        if (existing.isPresent() && !existing.get().getType().equals(ruInfo.getRuType())) {
+        if (existing.isPresent() && !existing.get().getType().equals(getAssociatedConcept(ruInfo))) {
             int counter = 1;
             String originalReplacement = replacement;
             Pattern numberPattern = Pattern.compile("^([^\\d\\r\\n]+)(\\d+)$");

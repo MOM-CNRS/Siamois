@@ -1,6 +1,7 @@
 package fr.siamois.domain.services.recordingunit.identifier;
 
 import fr.siamois.domain.models.recordingunit.identifier.RecordingUnitIdInfo;
+import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.recordingunit.identifier.generic.RuTextIdentifierResolver;
 import fr.siamois.domain.services.vocabulary.LabelService;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitIdLabelRepository;
@@ -36,5 +37,8 @@ public class RuTypeParentResolver extends RuTextIdentifierResolver {
         return false;
     }
 
-
+    @Override
+    protected Concept getAssociatedConcept(@NonNull RecordingUnitIdInfo info) {
+        return info.getRuParentType();
+    }
 }

@@ -1,6 +1,7 @@
 package fr.siamois.domain.services.recordingunit.identifier;
 
 import fr.siamois.domain.models.actionunit.ActionUnit;
+import fr.siamois.domain.models.recordingunit.identifier.RecordingUnitIdLabel;
 import fr.siamois.domain.models.recordingunit.identifier.RecordingUnitIdInfo;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.models.vocabulary.label.ConceptLabel;
@@ -18,11 +19,11 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.Optional;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.lenient;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("RuTypeParentResolver Unit Tests")
@@ -144,6 +145,99 @@ class RuTypeParentResolverTest {
 
             // Then
             assertThat(result).isEqualTo(expected);
+        }
+
+        @Nested
+        @DisplayName("addNumberIfNecessaryAndSaveExisting logic")
+        class AddNumberIfNecessaryTest {
+            private Concept type1, type2, type3;
+            private ConceptLabel label;
+
+            @BeforeEach
+            void setup() {
+                type1 = new Concept();
+                type1.setId(1L);
+                type1.setExternalId("type1");
+                type2 = new Concept();
+                type2.setId(2L);
+                type2.setExternalId("type2");
+                type3 = new Concept();
+                type3.setId(3L);
+                type3.setExternalId("type3");
+                label = new ConceptPrefLabel();
+                label.setLabel("Structure");
+                label.setConcept(type1);
+                // This mock is already in the parent setUp, but we make it explicit for clarity
+                when(ruInfo.getActionUnit()).thenReturn(actionUnit);
+                when(ruInfo.getRuType()).thenReturn(type3);
+            }
+
+            @Test
+            @DisplayName("should save new label when it does not exist")
+            void resolve_shouldSaveNewLabel() {
+                // Given
+                when(ruInfo.getRuParentType()).thenReturn(type1);
+                when(labelService.findLabelOf(type1, "fr")).thenReturn(label);
+                when(repository.findByExistingAndActionUnit(eq("STR"), any(ActionUnit.class))).thenReturn(Optional.empty());
+
+                // When
+                String result = ruTypeParentResolver.resolve("{TYPE_PARENT}", ruInfo);
+
+                // Then
+                assertThat(result).isEqualTo("STR");
+            }
+
+            @Test
+            @DisplayName("should not save label if it exists for the same type")
+            void resolve_shouldNotSaveExistingLabelForSameType() {
+                // Given
+                when(ruInfo.getRuParentType()).thenReturn(type1);
+                when(labelService.findLabelOf(type1, "fr")).thenReturn(label);
+                RecordingUnitIdLabel existingLabel = new RecordingUnitIdLabel(type2, actionUnit, "STR");
+                when(repository.findByExistingAndActionUnit("STR", actionUnit)).thenReturn(Optional.of(existingLabel));
+
+                // When
+                String result = ruTypeParentResolver.resolve("{TYPE_PARENT}", ruInfo);
+
+                // Then
+                assertThat(result).isEqualTo("STR");
+                verify(repository, never()).save(any());
+            }
+
+            @Test
+            @DisplayName("should append number if label exists for a different type")
+            void resolve_shouldAppendNumberForExistingLabelWithDifferentType() {
+                // Given
+                when(ruInfo.getRuParentType()).thenReturn(type1);
+                when(labelService.findLabelOf(type1, "fr")).thenReturn(label);
+                RecordingUnitIdLabel existingLabel = new RecordingUnitIdLabel(type2, actionUnit, "STR");
+                when(repository.findByExistingAndActionUnit("STR", actionUnit)).thenReturn(Optional.of(existingLabel));
+                when(repository.findByExistingAndActionUnit("STR1", actionUnit)).thenReturn(Optional.empty());
+
+                // When
+                String result = ruTypeParentResolver.resolve("{TYPE_PARENT}", ruInfo);
+
+                // Then
+                assertThat(result).isEqualTo("STR1");
+            }
+
+            @Test
+            @DisplayName("should increment number if numbered label exists for a different type")
+            void resolve_shouldIncrementNumberForExistingLabelWithDifferentType() {
+                // Given
+                when(ruInfo.getRuParentType()).thenReturn(type2);
+                when(labelService.findLabelOf(type2, "fr")).thenReturn(label);
+                RecordingUnitIdLabel existingLabelStr = new RecordingUnitIdLabel(type1, actionUnit, "STR");
+                when(repository.findByExistingAndActionUnit("STR", actionUnit)).thenReturn(Optional.of(existingLabelStr));
+                when(repository.findByExistingAndActionUnit("STR1", actionUnit)).thenReturn(Optional.of(new RecordingUnitIdLabel(type1, actionUnit, "STR1")));
+                when(repository.findByExistingAndActionUnit("STR2", actionUnit)).thenReturn(Optional.empty());
+
+                // When
+                String result = ruTypeParentResolver.resolve("{TYPE_PARENT}", ruInfo);
+
+                // Then
+                assertThat(result).isEqualTo("STR2");
+            }
         }
     }
 }

@@ -1,6 +1,7 @@
 package fr.siamois.domain.services.recordingunit.identifier;
 
 import fr.siamois.domain.models.recordingunit.identifier.RecordingUnitIdInfo;
+import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.recordingunit.identifier.generic.RuTextIdentifierResolver;
 import fr.siamois.domain.services.vocabulary.LabelService;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitIdLabelRepository;
@@ -41,5 +42,10 @@ public class RuTypeResolver extends RuTextIdentifierResolver {
     @Override
     public String getButtonStyleClass() {
         return "rounded-button ui-button-warning";
+    }
+
+    @Override
+    protected Concept getAssociatedConcept(@NonNull RecordingUnitIdInfo info) {
+        return info.getRuType();
     }
 }
