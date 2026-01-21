@@ -1,6 +1,5 @@
 package fr.siamois.infrastructure.dataimport;
 
-import fr.siamois.infrastructure.database.initializer.DefaultFormsDatasetInitializer;
 import fr.siamois.infrastructure.database.initializer.seeder.*;
 import org.apache.poi.ss.usermodel.*;
 import org.springframework.stereotype.Service;
@@ -24,59 +23,66 @@ public class OOXMLImportService {
 
     public static final String IDENTIFIANT = "identifiant";
     public static final String PERSON = "person";
-
-    public OOXMLImportService() {
-
-    }
+    public static final String INSTITUTION = "institution";
+    public static final String TYPE_URI = "type uri";
 
     public Map<String, String> readSheetMetadata(Workbook workbook) {
         Sheet metaSheet = workbook.getSheet("sheet_metadata");
-        Map<String, String> map = new HashMap<>();
-
         if (metaSheet == null) {
-            // fallback simple : noms des feuilles connus
-            for (Sheet s : workbook) {
-                String nameNorm = normalize(s.getSheetName());
-                if (nameNorm.contains("institution")) {
-                    map.put("institution", s.getSheetName());
-                } else if (nameNorm.contains(PERSON)) {
-                    map.put(PERSON, s.getSheetName());
-                } else if (nameNorm.contains("unite") && nameNorm.contains("spatiale")) {
-                    map.put("spatial_unit", s.getSheetName());
-                } else if (nameNorm.contains("unite") && nameNorm.contains("action")) {
-                    map.put("action_unit", s.getSheetName());
-                }
-            }
-            return map;
+            return fallbackSheetMapping(workbook);
         }
+        return readMetadataSheet(metaSheet);
+    }
 
-        Row header = metaSheet.getRow(0);
-        if (header == null) return map;
-
-        Map<String, Integer> colIndex = indexColumns(header);
-
-        Integer sheetIdCol   = colIndex.get("sheet_id");
-        Integer sheetNameCol = colIndex.get("sheet_name");
-        if (sheetIdCol == null || sheetNameCol == null) return map;
-
-        for (int r = 1; r <= metaSheet.getLastRowNum(); r++) {
-            Row row = metaSheet.getRow(r);
-            if (row == null) continue;
-            String id   = getStringCell(row, sheetIdCol);
-            String name = getStringCell(row, sheetNameCol);
-            if (id != null && name != null) {
-                map.put(id.trim(), name.trim());
+    private Map<String, String> fallbackSheetMapping(Workbook workbook) {
+        Map<String, String> map = new HashMap<>();
+        for (Sheet s : workbook) {
+            String nameNorm = normalize(s.getSheetName());
+            if (nameNorm.contains(INSTITUTION)) {
+                map.put(INSTITUTION, s.getSheetName());
+            } else if (nameNorm.contains(PERSON)) {
+                map.put(PERSON, s.getSheetName());
+            } else if (nameNorm.contains("unite") && nameNorm.contains("spatiale")) {
+                map.put("spatial_unit", s.getSheetName());
+            } else if (nameNorm.contains("unite") && nameNorm.contains("action")) {
+                map.put("action_unit", s.getSheetName());
             }
         }
         return map;
     }
+
+    private Map<String, String> readMetadataSheet(Sheet metaSheet) {
+        Map<String, String> map = new HashMap<>();
+        Row header = metaSheet.getRow(0);
+        if (header == null) return map;
+
+        Map<String, Integer> colIndex = indexColumns(header);
+        Integer sheetIdCol = colIndex.get("sheet_id");
+        Integer sheetNameCol = colIndex.get("sheet_name");
+        if (sheetIdCol == null || sheetNameCol == null) return map;
+
+        for (int r = 1; r <= metaSheet.getLastRowNum(); r++) {
+            addRowToMap(metaSheet.getRow(r), sheetIdCol, sheetNameCol, map);
+        }
+        return map;
+    }
+
+    private void addRowToMap(Row row, int sheetIdCol, int sheetNameCol, Map<String, String> map) {
+        if (row == null) return;
+        String id = getStringCell(row, sheetIdCol);
+        String name = getStringCell(row, sheetNameCol);
+        if (id != null && name != null) {
+            map.put(id.trim(), name.trim());
+        }
+    }
+
 
     public ImportSpecs importFromExcel(InputStream is) throws IOException {
         try (Workbook workbook = WorkbookFactory.create(is)) {
 
             Map<String, String> sheetIdToName = readSheetMetadata(workbook);
 
-            Sheet institutionSheet = workbook.getSheet(sheetIdToName.getOrDefault("institution", "Institution"));
+            Sheet institutionSheet = workbook.getSheet(sheetIdToName.getOrDefault(INSTITUTION, "Institution"));
             Sheet personSheet      = workbook.getSheet(sheetIdToName.getOrDefault(PERSON, "Personne"));
             Sheet spatialSheet     = workbook.getSheet(sheetIdToName.getOrDefault("spatial_unit", "Unité spatiale"));
             Sheet codeSheet        = workbook.getSheet(sheetIdToName.getOrDefault("code", "Code"));
@@ -188,7 +194,7 @@ public class OOXMLImportService {
         Integer colNom         = cols.get("nom");
         Integer colUriType     = cols.get("uri type");
         Integer colCreateur    = cols.get("createur");
-        Integer colInstitution = cols.get("institution");
+        Integer colInstitution = cols.get(INSTITUTION);
         Integer colEnfants     = cols.get("enfants");
 
         // Première passe : créer les specs SANS enfants, et indexer par nom
@@ -238,7 +244,6 @@ public class OOXMLImportService {
                     .map(childName -> {
                         SpatialUnitSeeder.SpatialUnitSpecs childSpec = specsByName.get(childName);
                         if (childSpec == null) {
-                            // ici tu peux log.warn("Unité spatiale enfant introuvable : {}", childName);
                             return null;
                         }
                         // on suppose que la clé = key() ou name() de la spec
@@ -306,7 +311,7 @@ public class OOXMLImportService {
         Map<String, Integer> cols = indexColumns(header);
 
         Integer colCode    = cols.get("code");
-        Integer colTypeUri = cols.get("type uri");
+        Integer colTypeUri = cols.get(TYPE_URI);
 
         if (colCode == null || colTypeUri == null) {
             // tu peux logger un warning ici
@@ -336,214 +341,159 @@ public class OOXMLImportService {
     }
 
     public List<ActionUnitSeeder.ActionUnitSpecs> parseActionUnits(Sheet sheet) {
-        if (sheet == null) {
+        if (sheet == null || sheet.getRow(0) == null) {
             return List.of();
         }
 
-        Row header = sheet.getRow(0);
-        if (header == null) {
-            return List.of();
-        }
-
-        Map<String, Integer> cols = indexColumns(header);
-
-        Integer colNom           = cols.get("nom");
-        Integer colIdentifiant   = cols.get(IDENTIFIANT);
-        Integer colCode          = cols.get("code");
-        Integer colTypeUri       = cols.get("type uri");
-        Integer colCreateur      = cols.get("createur");
-        Integer colInstitution   = cols.get("institution");
-        Integer colDateDebut     = cols.get("date debut");
-        Integer colDateFin       = cols.get("date fin");
-        Integer colContexteSpat  = cols.get("contexte spatiale");
+        Map<String, Integer> cols = indexColumns(sheet.getRow(0));
 
         List<ActionUnitSeeder.ActionUnitSpecs> result = new ArrayList<>();
-
-        forEachDataRow(sheet, row -> {
-            String name       = getStringCellOrNull(row, colNom);
-            String identifier = getStringCellOrNull(row, colIdentifiant);
-
-            if ((name == null || name.isBlank()) &&
-                    (identifier == null || identifier.isBlank())) {
-                return;
-            }
-
-            String code = null;
-            if (colCode != null) {
-                String raw = getStringCell(row, colCode);
-                code = (raw == null || raw.isBlank()) ? null : raw;
-            }
-
-            String typeUri     = getStringCellOrNull(row, colTypeUri);
-            String createur    = getStringCellOrNull(row, colCreateur);
-            String institution = getStringCellOrNull(row, colInstitution);
-            String contexteRaw = getStringCellOrNull(row, colContexteSpat);
-
-            String typeConceptId    = extractIdcFromUri(typeUri).orElse(null);
-            String typeVocabularyId = extractIdtFromUri(typeUri).orElse(null);
-
-            OffsetDateTime beginDate =
-                    colDateDebut != null ? parseOffsetDateTime(row.getCell(colDateDebut)) : null;
-            OffsetDateTime endDate   =
-                    colDateFin   != null ? parseOffsetDateTime(row.getCell(colDateFin))   : null;
-
-            // On stocke les noms tels quels (pas de résolution ici)
-            Set<SpatialUnitSeeder.SpatialUnitKey> spatialContextKeys =
-                    parseSpatialNames(contexteRaw);
-
-            String fullIdentifier = identifier != null ? identifier : name;
-
-            result.add(new ActionUnitSeeder.ActionUnitSpecs(
-                    fullIdentifier,
-                    name,
-                    identifier,
-                    code,
-                    typeVocabularyId,
-                    typeConceptId,
-                    createur,
-                    institution,
-                    beginDate,
-                    endDate,
-                    spatialContextKeys
-            ));
-        });
-
+        forEachDataRow(sheet, row ->
+            parseRowToActionUnit(row, cols).ifPresent(result::add)
+        );
 
         return result;
     }
+
+    private Optional<ActionUnitSeeder.ActionUnitSpecs> parseRowToActionUnit(Row row, Map<String, Integer> cols) {
+        String name       = getStringCellOrNull(row, cols.get("nom"));
+        String identifier = getStringCellOrNull(row, cols.get(IDENTIFIANT));
+
+        if ((name == null || name.isBlank()) && (identifier == null || identifier.isBlank())) {
+            return Optional.empty();
+        }
+
+        String code          = getOptionalCell(row, cols.get("code"));
+        String typeUri       = getStringCellOrNull(row, cols.get(TYPE_URI));
+        String createur      = getStringCellOrNull(row, cols.get("createur"));
+        String institution   = getStringCellOrNull(row, cols.get(INSTITUTION));
+        String contexteRaw   = getStringCellOrNull(row, cols.get("contexte spatiale"));
+
+        String typeConceptId    = extractIdcFromUri(typeUri).orElse(null);
+        String typeVocabularyId = extractIdtFromUri(typeUri).orElse(null);
+
+        OffsetDateTime beginDate = parseOptionalDate(row, cols.get("date debut"));
+        OffsetDateTime endDate   = parseOptionalDate(row, cols.get("date fin"));
+
+        Set<SpatialUnitSeeder.SpatialUnitKey> spatialContextKeys = parseSpatialNames(contexteRaw);
+
+        String fullIdentifier = identifier != null ? identifier : name;
+
+        return Optional.of(new ActionUnitSeeder.ActionUnitSpecs(
+                fullIdentifier,
+                name,
+                identifier,
+                code,
+                typeVocabularyId,
+                typeConceptId,
+                createur,
+                institution,
+                beginDate,
+                endDate,
+                spatialContextKeys
+        ));
+    }
+
+    private String getOptionalCell(Row row, Integer col) {
+        if (col == null) return null;
+        String val = getStringCell(row, col);
+        return (val == null || val.isBlank()) ? null : val;
+    }
+
+    private OffsetDateTime parseOptionalDate(Row row, Integer col) {
+        return (col != null) ? parseOffsetDateTime(row.getCell(col)) : null;
+    }
+
 
     public List<RecordingUnitSeeder.RecordingUnitSpecs> parseRecordingUnits(Sheet sheet) {
-        if (sheet == null) {
+        if (sheet == null || sheet.getRow(0) == null) {
             return List.of();
         }
 
-        Row header = sheet.getRow(0);
-        if (header == null) {
-            return List.of();
-        }
-
-        Map<String, Integer> cols = indexColumns(header);
-
-        Integer colIdentifiant       = cols.get(IDENTIFIANT);
-        Integer colDescription       = cols.get("description");
-        Integer colTypeUri           = cols.get("type uri");
-        Integer colCycleUri          = cols.get("cycle uri");
-        Integer colMatrixColor          = cols.get("couleur de la matrice");
-        Integer colMatrixTexture          = cols.get("texture de la matrice");
-        Integer colMatrixComp         = cols.get("composition de la matrice");
-        Integer colAgentUri          = cols.get("agent uri");
-        Integer colInterpretationUri = cols.get("interpretation uri");
-        Integer colAuthorEmail       = cols.get("author email");
-        Integer colInstitution       = cols.get("institution");
-        Integer colContribEmails     = cols.get("contributeurs email");
-        Integer colDateOuverture     = cols.get("date d'ouverture");
-        Integer colDateFermeture     = cols.get("date de fermeture");
-        Integer colUniteSpatiale     = cols.get("unite spatiale");
-        Integer colUniteAction       = cols.get("unite d'action");
+        Map<String, Integer> cols = indexColumns(sheet.getRow(0));
 
         List<RecordingUnitSeeder.RecordingUnitSpecs> result = new ArrayList<>();
-
-        forEachDataRow(sheet, row -> {
-            String identStr      =  getStringCellOrNull(row, colIdentifiant);
-            String description  = getStringCellOrNull(row, colDescription);
-
-            if ((identStr == null || identStr.isBlank()) &&
-                    (description == null || description.isBlank())) {
-                return;
-            }
-
-            String matrixColor   = getStringCellOrNull(row, colMatrixColor);
-            String matrixTexture = getStringCellOrNull(row, colMatrixTexture);
-            String matrixComp    = getStringCellOrNull(row, colMatrixComp);
-
-            Integer identifier = null;
-            if (identStr != null && !identStr.isBlank()) {
-                try {
-                    identifier = Integer.valueOf(identStr.trim());
-                } catch (NumberFormatException ignored) {
-                }
-            }
-
-            // ---- CONCEPT KEYS ----
-            ConceptSeeder.ConceptKey type =
-                    conceptKeyFromUri(getStringCellOrNull(row, colTypeUri));
-
-            ConceptSeeder.ConceptKey geomorphCycle =
-                    conceptKeyFromUri(getStringCellOrNull(row, colCycleUri));
-
-            ConceptSeeder.ConceptKey geomorphAgent =
-                    conceptKeyFromUri(getStringCellOrNull(row, colAgentUri));
-
-            ConceptSeeder.ConceptKey interpretation =
-                    conceptKeyFromUri(colInterpretationUri != null
-                            ? getStringCell(row, colInterpretationUri)
-                            : null);
-
-            // ---- EMAILS ----
-            String authorEmail   = getStringCellOrNull(row, colAuthorEmail);
-            String institutionId = getStringCellOrNull(row, colInstitution);
-
-            List<String> excavators =
-                    parseEmailList(getStringCellOrNull(row, colContribEmails));
-
-            // ---- DATES ----
-            OffsetDateTime beginDate =
-                    colDateOuverture != null
-                            ? parseOffsetDateTime(row.getCell(colDateOuverture))
-                            : null;
-
-            OffsetDateTime endDate =
-                    colDateFermeture != null
-                            ? parseOffsetDateTime(row.getCell(colDateFermeture))
-                            : null;
-
-            // ---- SYSTEM FIELDS ----
-            OffsetDateTime creationTime = OffsetDateTime.now();
-            String createdBy = "system@siamois.fr";
-
-            // ---- SPATIAL UNIT ----
-            String usName = getStringCellOrNull(row, colUniteSpatiale);
-            SpatialUnitSeeder.SpatialUnitKey spatialKey =
-                    (usName == null || usName.isBlank())
-                            ? null
-                            : new SpatialUnitSeeder.SpatialUnitKey(usName.trim());
-
-            // ---- ACTION UNIT ----
-            String uaIdent = getStringCellOrNull(row, colUniteAction);
-            ActionUnitSeeder.ActionUnitKey actionKey =
-                    (uaIdent == null || uaIdent.isBlank())
-                            ? null
-                            : new ActionUnitSeeder.ActionUnitKey(uaIdent.trim());
-
-            String fullIdentifier = identStr;
-
-            result.add(new RecordingUnitSeeder.RecordingUnitSpecs(
-                    fullIdentifier,
-                    identifier,
-                    type,
-                    geomorphCycle,
-                    geomorphAgent,
-                    interpretation,
-                    authorEmail,
-                    institutionId,
-                    authorEmail,   // author
-                    createdBy,
-                    excavators,
-                    creationTime,
-                    beginDate,
-                    endDate,
-                    spatialKey,
-                    actionKey,
-                    description,
-                    matrixColor,
-                    matrixComp,
-                    matrixTexture
-            ));
-        });
-
-
+        forEachDataRow(sheet, row -> parseRowToRecordingUnit(row, cols).ifPresent(result::add));
         return result;
     }
+
+    private Optional<RecordingUnitSeeder.RecordingUnitSpecs> parseRowToRecordingUnit(Row row, Map<String, Integer> cols) {
+        String identStr     = getStringCellOrNull(row, cols.get(IDENTIFIANT));
+        String description  = getStringCellOrNull(row, cols.get("description"));
+
+        if ((identStr == null || identStr.isBlank()) && (description == null || description.isBlank())) {
+            return Optional.empty();
+        }
+
+        Integer identifier = parseIntegerSafe(identStr);
+
+        ConceptSeeder.ConceptKey type          = conceptKeyFromUri(getStringCellOrNull(row, cols.get(TYPE_URI)));
+        ConceptSeeder.ConceptKey geomorphCycle = conceptKeyFromUri(getStringCellOrNull(row, cols.get("cycle uri")));
+        ConceptSeeder.ConceptKey geomorphAgent = conceptKeyFromUri(getStringCellOrNull(row, cols.get("agent uri")));
+        ConceptSeeder.ConceptKey interpretation = conceptKeyFromUri(getOptionalCell(row, cols.get("interpretation uri")));
+
+        String authorEmail     = getStringCellOrNull(row, cols.get("author email"));
+        String institutionId   = getStringCellOrNull(row, cols.get(INSTITUTION));
+        List<String> excavators = parseEmailList(getStringCellOrNull(row, cols.get("contributeurs email")));
+
+        OffsetDateTime beginDate = parseOptionalDate(row, cols.get("date d'ouverture"));
+        OffsetDateTime endDate   = parseOptionalDate(row, cols.get("date de fermeture"));
+
+        OffsetDateTime creationTime = OffsetDateTime.now();
+        String createdBy = "system@siamois.fr";
+
+        SpatialUnitSeeder.SpatialUnitKey spatialKey = parseOptionalSpatialUnit(row, cols.get("unite spatiale"));
+        ActionUnitSeeder.ActionUnitKey actionKey   = parseOptionalActionUnit(row, cols.get("unite d'action"));
+
+        String matrixColor   = getStringCellOrNull(row, cols.get("couleur de la matrice"));
+        String matrixTexture = getStringCellOrNull(row, cols.get("texture de la matrice"));
+        String matrixComp    = getStringCellOrNull(row, cols.get("composition de la matrice"));
+
+        return Optional.of(new RecordingUnitSeeder.RecordingUnitSpecs(
+                identStr,
+                identifier,
+                type,
+                geomorphCycle,
+                geomorphAgent,
+                interpretation,
+                authorEmail,
+                institutionId,
+                authorEmail,   // author
+                createdBy,
+                excavators,
+                creationTime,
+                beginDate,
+                endDate,
+                spatialKey,
+                actionKey,
+                description,
+                matrixColor,
+                matrixComp,
+                matrixTexture
+        ));
+    }
+
+// -------------------- Helpers --------------------
+
+    private Integer parseIntegerSafe(String str) {
+        if (str == null || str.isBlank()) return null;
+        try {
+            return Integer.valueOf(str.trim());
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
+    private SpatialUnitSeeder.SpatialUnitKey parseOptionalSpatialUnit(Row row, Integer col) {
+        String name = getStringCellOrNull(row, col);
+        return (name == null || name.isBlank()) ? null : new SpatialUnitSeeder.SpatialUnitKey(name.trim());
+    }
+
+    private ActionUnitSeeder.ActionUnitKey parseOptionalActionUnit(Row row, Integer col) {
+        String ident = getStringCellOrNull(row, col);
+        return (ident == null || ident.isBlank()) ? null : new ActionUnitSeeder.ActionUnitKey(ident.trim());
+    }
+
 
     public List<SpecimenSeeder.SpecimenSpecs> parseSpecimens(Sheet sheet) {
         if (sheet == null) {
@@ -561,7 +511,7 @@ public class OOXMLImportService {
         Integer colCategorie        = cols.get("categorie");
         Integer colMatiere          = cols.get("matiere");
         Integer colDesignation      = cols.get("designation");           // non utilisée pour l’instant
-        Integer colInstitution      = cols.get("institution");
+        Integer colInstitution      = cols.get(INSTITUTION);
         Integer colAuteurFicheEmail = cols.get("auteur fiche email");
         Integer colCollecteurs      = cols.get("collecteurs emails");
         Integer colUniteEnreg       = cols.get("unite d'enregistrement");
@@ -579,6 +529,7 @@ public class OOXMLImportService {
             try {
                 identifier = Integer.valueOf(identStr.trim());
             } catch (NumberFormatException ignored) {
+                // no op
             }
 
             String fullIdentifier = identStr;
@@ -687,12 +638,15 @@ public class OOXMLImportService {
 
         for (int c = 0; c < header.getLastCellNum(); c++) {
             Cell cell = header.getCell(c);
-            if (cell == null) continue;
-            String raw = getStringCell(cell);
-            if (raw == null) continue;
-            String norm = normalize(raw);
-            map.put(norm, c);
+            if (cell != null) {
+                String raw = getStringCell(cell);
+                if (raw != null) {
+                    String norm = normalize(raw);
+                    map.put(norm, c);
+                }
+            }
         }
+
         return map;
     }
 
@@ -709,7 +663,6 @@ public class OOXMLImportService {
 
     public String getStringCell(Cell cell) {
         if (cell == null) return null;
-        cell.setCellType(CellType.STRING);
         String val = cell.getStringCellValue();
         return val != null ? val.trim() : null;
     }
@@ -720,7 +673,7 @@ public class OOXMLImportService {
         return Arrays.stream(parts)
                 .map(String::trim)
                 .filter(s -> !s.isBlank())
-                .collect(Collectors.toList());
+                .toList();
     }
 
     // Normalisation pour matcher les noms de colonnes malgré les accents / espaces
@@ -744,7 +697,6 @@ public class OOXMLImportService {
             }
 
             // 2) Cas texte "yyyy-MM-dd"
-            cell.setCellType(CellType.STRING);
             String raw = cell.getStringCellValue();
             if (raw == null || raw.isBlank()) return null;
 
@@ -755,7 +707,6 @@ public class OOXMLImportService {
             return ld.atStartOfDay().atOffset(ZoneOffset.UTC); // ou ZoneOffset.ofHours(1/2)
 
         } catch (Exception e) {
-            // log.warn("Impossible de parser la date '{}'", cell, e);
             return null;
         }
     }
