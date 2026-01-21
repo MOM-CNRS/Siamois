@@ -38,7 +38,7 @@ public class SessionSettingsBean implements Serializable {
     private final LangBean langBean;
     private final transient RedirectBean redirectBean;
     private final transient PersonService personService;
-    private final ServletContext servletContext;
+    private final transient ServletContext servletContext;
     private Institution selectedInstitution;
     private InstitutionSettings institutionSettings;
     private PersonSettings personSettings;
