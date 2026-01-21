@@ -8,7 +8,6 @@ import fr.siamois.domain.services.authorization.writeverifier.RecordingUnitWrite
 import fr.siamois.domain.services.form.FormService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitTreeService;
-import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.NavBean;
 import fr.siamois.ui.bean.dialog.newunit.GenericNewUnitDialogBean;
 import fr.siamois.ui.bean.panel.FlowBean;
@@ -57,7 +56,7 @@ public class RecordingUnitListPanel extends AbstractListPanel<RecordingUnit> imp
 
 
     @SuppressWarnings("unchecked")
-    public RecordingUnitListPanel(ApplicationContext context, LangBean langBean) {
+    public RecordingUnitListPanel(ApplicationContext context) {
         super("panel.title.allrecordingunit",
                 "bi bi-pencil-square",
                 "siamois-panel recording-unit-panel list-panel",
