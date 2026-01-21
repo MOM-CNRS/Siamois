@@ -828,6 +828,141 @@ class RecordingUnitServiceTest {
         verifyNoMoreInteractions(recordingUnitIdCounterRepository);
     }
 
+    @Test
+    void save_shouldSucceed_whenFormResponseIsNull() {
+        // Arrange
+        recordingUnitToSave.setFormResponse(null); // Explicitly set to null
+
+        when(recordingUnitRepository.save(any(RecordingUnit.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+        when(conceptService.saveOrGetConcept(any(Concept.class))).thenReturn(new Concept());
+        when(personRepository.findAllById(anyList())).thenReturn(List.of());
+
+        // Act
+        RecordingUnit result = recordingUnitService.save(recordingUnitToSave, new Concept(), List.of(), List.of(), List.of());
+
+        // Assert
+        assertNotNull(result);
+        assertNull(result.getFormResponse()); // The managed unit should have a null form response
+        verify(customFormResponseService, never()).saveFormResponse(any(), any());
+        // It will be saved twice, once in setupAdditionalAnswers and once at the end.
+        verify(recordingUnitRepository, times(2)).save(any(RecordingUnit.class));
+    }
+
+    @Test
+    void save_shouldThrowException_whenParentNotFound() {
+        // Arrange
+        RecordingUnit parentRef = new RecordingUnit();
+        parentRef.setId(999L);
+        recordingUnitToSave.getParents().add(parentRef);
+
+        when(recordingUnitRepository.findById(999L)).thenReturn(Optional.empty());
+
+        // Act & Assert
+        FailedRecordingUnitSaveException exception = assertThrows(
+                FailedRecordingUnitSaveException.class,
+                () -> recordingUnitService.save(recordingUnitToSave, new Concept(), List.of(), List.of(), List.of())
+        );
+
+        assertEquals("Parent not found: 999", exception.getMessage());
+    }
+
+    @Test
+    void save_shouldSetContributors() {
+        // Arrange
+        Person contributor1 = new Person();
+        contributor1.setId(101L);
+        Person contributor2 = new Person();
+        contributor2.setId(102L);
+        recordingUnitToSave.getContributors().add(contributor1);
+        recordingUnitToSave.getContributors().add(contributor2);
+
+        List<Long> contributorIds = List.of(101L, 102L);
+        List<Person> foundContributors = List.of(contributor1, contributor2);
+
+        when(personRepository.findAllById(contributorIds)).thenReturn(foundContributors);
+        when(recordingUnitRepository.save(any(RecordingUnit.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(conceptService.saveOrGetConcept(any(Concept.class))).thenReturn(new Concept());
+
+        // Act
+        RecordingUnit result = recordingUnitService.save(recordingUnitToSave, new Concept(), List.of(), List.of(), List.of());
+
+        // Assert
+        assertNotNull(result);
+        assertTrue(result.getContributors().containsAll(foundContributors));
+        verify(personRepository).findAllById(contributorIds);
+    }
+
+    @Test
+    void fullIdentifierAlreadyExistInAction_returnTrue_whenUnitIsNewAndIdentifierExists() {
+        // Arrange
+        RecordingUnit newUnit = new RecordingUnit(); // ID is null
+        newUnit.setActionUnit(actionUnit);
+        newUnit.setFullIdentifier("test");
+
+        RecordingUnit existingUnit = new RecordingUnit();
+        existingUnit.setId(2L);
+        existingUnit.setActionUnit(actionUnit);
+        existingUnit.setFullIdentifier("test");
+
+        when(recordingUnitRepository.findByFullIdentifierAndActionUnit("test", actionUnit))
+                .thenReturn(List.of(existingUnit));
+
+        // Act & Assert
+        assertTrue(recordingUnitService.fullIdentifierAlreadyExistInAction(newUnit));
+    }
+
+
+    @Test
+    void createOrGetInfoOf_shouldReturnExistingInfo_whenFound() {
+        // Arrange
+        RecordingUnit recordingUnit = new RecordingUnit();
+        recordingUnit.setId(1L);
+        RecordingUnitIdInfo existingInfo = new RecordingUnitIdInfo();
+        existingInfo.setRecordingUnitId(1L);
+
+        when(recordingUnitIdInfoRepository.findById(1L)).thenReturn(Optional.of(existingInfo));
+
+        // Act
+        RecordingUnitIdInfo result = recordingUnitService.createOrGetInfoOf(recordingUnit, null);
+
+        // Assert
+        assertSame(existingInfo, result);
+        verify(recordingUnitIdInfoRepository, never()).save(any(RecordingUnitIdInfo.class));
+    }
+
+    @Test
+    void createOrGetInfoOf_shouldCreateAndSaveNewInfo_whenNotFound() {
+        // Arrange
+        RecordingUnit recordingUnit = new RecordingUnit();
+        recordingUnit.setId(1L);
+        recordingUnit.setActionUnit(actionUnit);
+        SpatialUnit su = new SpatialUnit();
+        su.setId(99L);
+        recordingUnit.setSpatialUnit(su);
+
+        RecordingUnit parentUnit = new RecordingUnit();
+        parentUnit.setId(2L);
+        Concept parentType = new Concept();
+        parentUnit.setType(parentType);
+
+        when(recordingUnitIdInfoRepository.findById(1L)).thenReturn(Optional.empty());
+        when(recordingUnitIdInfoRepository.save(any(RecordingUnitIdInfo.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        // Act
+        RecordingUnitIdInfo result = recordingUnitService.createOrGetInfoOf(recordingUnit, parentUnit);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(1L, result.getRecordingUnitId());
+        assertSame(recordingUnit, result.getRecordingUnit());
+        assertEquals(99, result.getSpatialUnitNumber());
+        assertSame(actionUnit, result.getActionUnit());
+        assertSame(parentUnit, result.getParent());
+        assertSame(parentType, result.getRuParentType());
+        verify(recordingUnitIdInfoRepository).save(result);
+    }
+
     static class FakeResolver implements RuIdentifierResolver {
 
         @Override
