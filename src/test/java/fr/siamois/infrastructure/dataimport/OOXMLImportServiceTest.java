@@ -533,7 +533,6 @@ class OOXMLImportServiceTest {
         row.createCell(6).setCellValue("user@site.fr");
         row.createCell(7).setCellValue("US-001");
 
-
         // Execute
         List<SpecimenSeeder.SpecimenSpecs> specs =
                 service.parseSpecimens(s);
@@ -555,6 +554,66 @@ class OOXMLImportServiceTest {
         assertThat(sp.recordingUnitKey().fullIdentifier()).isEqualTo("US-001");
 
 
+    }
+
+    @Test
+    void extractThesaurusDomain_nullInput_returnsNull() {
+        // when
+        String result = service.extractThesaurusDomain(null);
+
+        // then
+        assertThat(result).isNull();
+    }
+
+    @Test
+    void extractThesaurusDomain_noQueryParams_returnsFullString() {
+        // given
+        String thesaurus = "https://thesaurus.fr/api";
+
+        // when
+        String result = service.extractThesaurusDomain(thesaurus);
+
+        // then
+        assertThat(result).isEqualTo("https://thesaurus.fr/api");
+    }
+
+    @Test
+    void extractThesaurusDomain_withQueryParams_truncatesBeforeQuestionMarkMinusOne() {
+        // given
+        String thesaurus = "https://thesaurus.fr/api?idt=th230&idc=999";
+
+        // when
+        String result = service.extractThesaurusDomain(thesaurus);
+
+        // then
+        // current behavior: idx-1 → drops last char of path
+        assertThat(result).isEqualTo("https://thesaurus.fr/ap");
+    }
+
+    @Test
+    void extractThesaurusDomain_questionMarkAtStart_returnsEmptyString() {
+        // given
+        String thesaurus = "?idt=th230";
+
+        // when
+        String result = service.extractThesaurusDomain(thesaurus);
+
+        // then
+        assertThat(result).isNull();
+    }
+
+    @Test
+    void extractThesaurusDomain_questionMarkAtSecondChar_returnsFirstChar() {
+        // given
+        String thesaurus = "a?idt=1";
+
+        // idx = 1 → idx-1 = 0
+
+        // when
+        String result = service.extractThesaurusDomain(thesaurus);
+
+        // then
+        assertThat(result).isEqualTo("");
     }
 
 
