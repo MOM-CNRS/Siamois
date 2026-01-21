@@ -6,13 +6,14 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
-import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.Date;
 import java.util.List;
@@ -222,32 +223,6 @@ class OOXMLImportServiceTest {
         assertThat(p.username()).isEqualTo("jdoe");
     }
 
-    // -------------------------------------------------------------------------
-    // Persons
-    // -------------------------------------------------------------------------
-
-    @Test
-    void parsePersons_basicCase() {
-        Workbook wb = workbook();
-        Sheet s = sheet(wb, "Personne",
-                "Email",
-                "Nom",
-                "Prenom",
-                "Identifiant"
-        );
-
-        row(s, 1, "john@doe.fr", "Doe", "John", "jdoe");
-
-        List<PersonSeeder.PersonSpec> persons = service.parsePersons(s);
-
-        assertThat(persons).hasSize(1);
-
-        PersonSeeder.PersonSpec p = persons.get(0);
-        assertThat(p.email()).isEqualTo("john@doe.fr");
-        assertThat(p.name()).isEqualTo("Doe");
-        assertThat(p.lastname()).isEqualTo("John");
-        assertThat(p.username()).isEqualTo("jdoe");
-    }
 
     // -------------------------------------------------------------------------
     // Spatial units
@@ -653,30 +628,17 @@ class OOXMLImportServiceTest {
         assertThat(result).isNull();
     }
 
-    @Test
-    void extractThesaurusDomain_noQueryParams_returnsFullString() {
-        // given
-        String thesaurus = "https://thesaurus.fr/api";
-
-        // when
-        String result = service.extractThesaurusDomain(thesaurus);
-
-        // then
-        assertThat(result).isEqualTo("https://thesaurus.fr/api");
+    @ParameterizedTest(name = "{index} => input={0}, expected={1}")
+    @CsvSource({
+            "'https://thesaurus.fr/api', 'https://thesaurus.fr/api'",
+            "'https://thesaurus.fr/api?idt=th230&idc=999', 'https://thesaurus.fr/ap'",
+            "'a?idt=1', ''"
+    })
+    void extractThesaurusDomain_parametrized(String input, String expected) {
+        String result = service.extractThesaurusDomain(input);
+        assertThat(result).isEqualTo(expected);
     }
 
-    @Test
-    void extractThesaurusDomain_withQueryParams_truncatesBeforeQuestionMarkMinusOne() {
-        // given
-        String thesaurus = "https://thesaurus.fr/api?idt=th230&idc=999";
-
-        // when
-        String result = service.extractThesaurusDomain(thesaurus);
-
-        // then
-        // current behavior: idx-1 → drops last char of path
-        assertThat(result).isEqualTo("https://thesaurus.fr/ap");
-    }
 
     @Test
     void extractThesaurusDomain_questionMarkAtStart_returnsEmptyString() {
@@ -689,22 +651,6 @@ class OOXMLImportServiceTest {
         // then
         assertThat(result).isNull();
     }
-
-    @Test
-    void extractThesaurusDomain_questionMarkAtSecondChar_returnsFirstChar() {
-        // given
-        String thesaurus = "a?idt=1";
-
-        // idx = 1 → idx-1 = 0
-
-        // when
-        String result = service.extractThesaurusDomain(thesaurus);
-
-        // then
-        assertThat(result).isEqualTo("");
-    }
-
-
 
 
 }
