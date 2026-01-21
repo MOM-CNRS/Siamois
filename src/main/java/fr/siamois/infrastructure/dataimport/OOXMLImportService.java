@@ -569,7 +569,7 @@ public class OOXMLImportService {
         List<SpecimenSeeder.SpecimenSpecs> result = new ArrayList<>();
 
         forEachDataRow(sheet, row -> {
-            String identStr = colIdentifiant != null ? getStringCell(row, colIdentifiant) : null;
+            String identStr = getStringCellOrNull(row, colIdentifiant);
             if (identStr == null || identStr.isBlank()) {
                 // ligne vide si pas d’identifiant
                 return;
@@ -584,21 +584,20 @@ public class OOXMLImportService {
             String fullIdentifier = identStr;
 
             // ---- URIs → ConceptKey ----
-            String matiereUri     = colMatiere     != null ? getStringCell(row, colMatiere)     : null;
-            String categorieUri   = colCategorie   != null ? getStringCell(row, colCategorie)   : null;
-            String designationUri= colDesignation != null ? getStringCell(row, colDesignation) : null;
+            String matiereUri     = getStringCellOrNull(row, colMatiere);
+            String categorieUri   =  getStringCellOrNull(row, colCategorie);
+            String designationUri=   getStringCellOrNull(row, colDesignation);
 
             ConceptSeeder.ConceptKey typeKey        = conceptKeyFromUri(matiereUri);
             ConceptSeeder.ConceptKey categoryKey    = conceptKeyFromUri(categorieUri);
             ConceptSeeder.ConceptKey designationKey= conceptKeyFromUri(designationUri);
 
             // ---- Institution ----
-            String institutionId = colInstitution != null ? getStringCell(row, colInstitution) : null;
+            String institutionId = getStringCellOrNull(row, colInstitution);
 
             // ---- Auteurs ----
-            String auteurFiche = colAuteurFicheEmail != null
-                    ? getStringCell(row, colAuteurFicheEmail)
-                    : null;
+            String auteurFiche = getStringCellOrNull(row, colAuteurFicheEmail);
+
 
             List<String> authors =
                     (auteurFiche == null || auteurFiche.isBlank())
@@ -606,11 +605,11 @@ public class OOXMLImportService {
                             : List.of(auteurFiche.trim());
 
             // ---- Collecteurs ----
-            String collectorsRaw = colCollecteurs != null ? getStringCell(row, colCollecteurs) : null;
+            String collectorsRaw = getStringCellOrNull(row, colCollecteurs);
             List<String> collectors = parseEmailList(collectorsRaw);
 
             // ---- Recording unit ----
-            String ruStr = colUniteEnreg != null ? getStringCell(row, colUniteEnreg) : null;
+            String ruStr = getStringCellOrNull(row, colUniteEnreg);
             RecordingUnitSeeder.RecordingUnitKey recordingUnitKey =
                     (ruStr == null || ruStr.isBlank())
                             ? null
@@ -741,7 +740,6 @@ public class OOXMLImportService {
             // 1) Cas "vraie" date Excel (numérique + format date)
             if (cell.getCellType() == CellType.NUMERIC && DateUtil.isCellDateFormatted(cell)) {
                 Date d = cell.getDateCellValue();
-                // adapte le fuseau si tu veux Europe/Paris
                 return d.toInstant().atOffset(ZoneOffset.UTC);
             }
 
@@ -752,9 +750,9 @@ public class OOXMLImportService {
 
             raw = raw.trim();
 
-            // ton format aaaa-mm-jj = yyyy-MM-dd
+            // format aaaa-mm-jj = yyyy-MM-dd
             LocalDate ld = LocalDate.parse(raw, DateTimeFormatter.ISO_LOCAL_DATE);
-            return ld.atStartOfDay().atOffset(ZoneOffset.UTC); // ou ZoneOffset.ofHours(1/2) si tu veux
+            return ld.atStartOfDay().atOffset(ZoneOffset.UTC); // ou ZoneOffset.ofHours(1/2)
 
         } catch (Exception e) {
             // log.warn("Impossible de parser la date '{}'", cell, e);
