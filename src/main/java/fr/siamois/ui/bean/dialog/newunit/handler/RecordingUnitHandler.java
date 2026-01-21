@@ -64,7 +64,7 @@ public class RecordingUnitHandler implements INewUnitHandler<RecordingUnit> {
             created.setFullIdentifier(unit.getActionUnit().getRecordingUnitIdentifierFormat());
         }
 
-        created = recordingUnitService.save(created, unit.getType(), null, null, null);
+        created = recordingUnitService.save(created);
 
         return created;
     }

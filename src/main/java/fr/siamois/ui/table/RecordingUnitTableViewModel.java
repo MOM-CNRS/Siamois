@@ -341,7 +341,7 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
             MessageUtils.displayWarnMessage(langBean, "recordingunit.error.identifier.alreadyExists");
         }
 
-        newUnit = recordingUnitService.save(newUnit, newUnit.getType(), List.of(),  List.of(),  List.of());
+        newUnit = recordingUnitService.save(newUnit);
 
         // Build the creation context (as child of the parent of the duplicated row, or root if no parent)
         NewUnitContext ctx = NewUnitContext.builder()

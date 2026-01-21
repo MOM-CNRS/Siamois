@@ -252,7 +252,7 @@ public class RecordingUnitService implements ArkEntityService {
     }
 
     @Override
-    public ArkEntity save(ArkEntity toSave) {
+    public RecordingUnit save(ArkEntity toSave) {
         return recordingUnitRepository.save((RecordingUnit) toSave);
     }
 
