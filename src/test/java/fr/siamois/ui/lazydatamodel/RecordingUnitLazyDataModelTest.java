@@ -239,7 +239,7 @@ class RecordingUnitLazyDataModelTest {
 
         // THEN
         assertEquals(original.getType(), copied.getType());
-        verify(recordingUnitService, times(2)).save(any(), any(), anyList(), anyList(), anyList());
+        verify(recordingUnitService, times(1)).save(any(), any(), anyList(), anyList(), anyList());
 
     }
 
