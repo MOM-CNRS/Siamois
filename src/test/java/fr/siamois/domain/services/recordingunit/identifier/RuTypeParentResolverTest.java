@@ -6,6 +6,7 @@ import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.models.vocabulary.label.ConceptLabel;
 import fr.siamois.domain.models.vocabulary.label.ConceptPrefLabel;
 import fr.siamois.domain.services.vocabulary.LabelService;
+import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitIdLabelRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -38,6 +39,9 @@ class RuTypeParentResolverTest {
 
     @Mock
     private Concept ruParentType;
+
+    @Mock
+    private RecordingUnitIdLabelRepository repository;
 
     @InjectMocks
     private RuTypeParentResolver ruTypeParentResolver;

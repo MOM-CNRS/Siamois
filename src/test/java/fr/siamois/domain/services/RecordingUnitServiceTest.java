@@ -211,8 +211,6 @@ class RecordingUnitServiceTest {
 
         RecordingUnitIdInfo info = new RecordingUnitIdInfo();
 
-        doReturn(Optional.of(info)).when(recordingUnitIdInfoRepository).findById(any());
-
         RecordingUnit result = recordingUnitService.save(recordingUnitToSave,c,
                 List.of(anteriorUnit),
                 List.of(synchronousUnit),
@@ -270,9 +268,6 @@ class RecordingUnitServiceTest {
                 .saveFormResponse(any(CustomFormResponse.class), any(CustomFormResponse.class));
 
         RecordingUnitIdInfo info = new RecordingUnitIdInfo();
-
-        doReturn(Optional.of(info)).when(recordingUnitIdInfoRepository).findById(any());
-        doReturn(new FakeResolver()).when(applicationContext).getBean(any(Class.class));
 
         RecordingUnit res = recordingUnitService.save(recordingUnitToSave, c, List.of(anteriorUnit),
                 List.of(synchronousUnit),
