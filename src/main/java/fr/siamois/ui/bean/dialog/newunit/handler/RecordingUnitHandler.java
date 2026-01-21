@@ -13,6 +13,7 @@ import fr.siamois.ui.bean.dialog.newunit.GenericNewUnitDialogBean;
 import fr.siamois.ui.bean.dialog.newunit.NewUnitContext;
 import fr.siamois.ui.bean.dialog.newunit.UnitKind;
 import fr.siamois.ui.exceptions.CannotInitializeNewUnitDialogException;
+import fr.siamois.utils.MessageUtils;
 import org.springframework.stereotype.Component;
 
 import java.time.OffsetDateTime;
@@ -54,7 +55,20 @@ public class RecordingUnitHandler implements INewUnitHandler<RecordingUnit> {
         return recordingUnit;
     }
     @Override public RecordingUnit save(UserInfo u, RecordingUnit unit) throws EntityAlreadyExistsException {
-        return recordingUnitService.save(unit, unit.getType(), null, null, null); }
+        RecordingUnit created = recordingUnitService.save(unit, unit.getType(), null, null, null);
+        String generatedFullIdentifier = recordingUnitService.generateFullIdentifier(created.getActionUnit(), created);
+        created.setFullIdentifier(generatedFullIdentifier);
+
+        if (recordingUnitService.fullIdentifierAlreadyExistInAction(created)) {
+            MessageUtils.displayWarnMessage(langBean, "recordingunit.error.identifier.alreadyExists");
+            created.setFullIdentifier(unit.getActionUnit().getRecordingUnitIdentifierFormat());
+        }
+
+        created = recordingUnitService.save(created, unit.getType(), null, null, null);
+
+        return created;
+    }
+
     @Override public String dialogWidgetVar() { return "newUnitDiag"; }
 
     @Override public void initFromContext(GenericNewUnitDialogBean<?> bean) throws CannotInitializeNewUnitDialogException {

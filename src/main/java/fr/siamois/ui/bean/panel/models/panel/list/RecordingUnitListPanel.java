@@ -8,6 +8,7 @@ import fr.siamois.domain.services.authorization.writeverifier.RecordingUnitWrite
 import fr.siamois.domain.services.form.FormService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitTreeService;
+import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.NavBean;
 import fr.siamois.ui.bean.dialog.newunit.GenericNewUnitDialogBean;
 import fr.siamois.ui.bean.panel.FlowBean;
@@ -55,6 +56,7 @@ public class RecordingUnitListPanel extends AbstractListPanel<RecordingUnit> imp
 
 
 
+    @SuppressWarnings("unchecked")
     public RecordingUnitListPanel(ApplicationContext context) {
         super("panel.title.allrecordingunit",
                 "bi bi-pencil-square",
@@ -102,8 +104,8 @@ public class RecordingUnitListPanel extends AbstractListPanel<RecordingUnit> imp
                 genericNewUnitDialogBean,
                 recordingUnitWriteVerifier,
                 recordingUnitService,
-                lazyTree
-
+                lazyTree,
+                langBean
         );
 
         return lazy; // l'abstraite en a besoin, mais ce panel ne s'en sert plus ensuite
@@ -166,7 +168,16 @@ public class RecordingUnitListPanel extends AbstractListPanel<RecordingUnit> imp
     }
 
     public void handleRowEdit(RowEditEvent<RecordingUnit> event) {
+        handleRuRowEdit(event, recordingUnitService, langBean);
+    }
+
+    public static void handleRuRowEdit(RowEditEvent<RecordingUnit> event, RecordingUnitService recordingUnitService, LangBean langBean) {
         RecordingUnit toSave = event.getObject();
+
+        if (recordingUnitService.fullIdentifierAlreadyExistInAction(toSave)) {
+            MessageUtils.displayWarnMessage(langBean, "recordingunit.error.identifier.alreadyExists");
+            return;
+        }
 
         try {
             recordingUnitService.save(toSave, toSave.getType(), List.of(), List.of(), List.of());
@@ -177,7 +188,6 @@ public class RecordingUnitListPanel extends AbstractListPanel<RecordingUnit> imp
 
         MessageUtils.displayInfoMessage(langBean, "common.entity.recordingUnits.updated", toSave.getFullIdentifier());
     }
-
 
 
     public static class RecordingUnitListPanelBuilder {

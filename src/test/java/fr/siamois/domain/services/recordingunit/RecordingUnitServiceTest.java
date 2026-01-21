@@ -12,9 +12,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -60,37 +60,5 @@ class RecordingUnitServiceTest {
     void countByInstitution_success() {
         when(recordingUnitRepository.countByCreatedByInstitution(any(Institution.class))).thenReturn(3L);
         assertEquals(3,recordingUnitService.countByInstitution(new Institution()));
-    }
-
-    @Test
-    void testFindByFullIdentifierAndInstitutionIdentifier_returnsRecordingUnit() {
-        String identifier = "RU-123";
-        String institutionIdentifier = "INST-001";
-
-        RecordingUnit expected = new RecordingUnit();
-        when(recordingUnitRepository.findByFullIdentifierAndInstitutionIdentifier(identifier, institutionIdentifier))
-                .thenReturn(Optional.of(expected));
-
-        RecordingUnit actual = recordingUnitService.findByFullIdentifierAndInstitutionIdentifier(identifier, institutionIdentifier);
-
-        assertNotNull(actual);
-        assertSame(expected, actual); // Ensures exact object returned
-        verify(recordingUnitRepository, times(1))
-                .findByFullIdentifierAndInstitutionIdentifier(identifier, institutionIdentifier);
-    }
-
-    @Test
-    void testFindByFullIdentifierAndInstitutionIdentifier_returnsNullWhenNotFound() {
-        String identifier = "RU-999";
-        String institutionIdentifier = "INST-999";
-
-        when(recordingUnitRepository.findByFullIdentifierAndInstitutionIdentifier(identifier, institutionIdentifier))
-                .thenReturn(Optional.empty());
-
-        RecordingUnit actual = recordingUnitService.findByFullIdentifierAndInstitutionIdentifier(identifier, institutionIdentifier);
-
-        assertNull(actual);
-        verify(recordingUnitRepository, times(1))
-                .findByFullIdentifierAndInstitutionIdentifier(identifier, institutionIdentifier);
     }
 }

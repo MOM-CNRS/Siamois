@@ -12,6 +12,7 @@ import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.authorization.writeverifier.RecordingUnitWriteVerifier;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
+import fr.siamois.domain.services.recordingunit.identifier.generic.RuIdentifierResolver;
 import fr.siamois.domain.services.specimen.SpecimenService;
 import fr.siamois.domain.services.vocabulary.LabelService;
 import fr.siamois.ui.bean.LangBean;
@@ -22,6 +23,7 @@ import fr.siamois.ui.bean.dialog.newunit.NewUnitContext;
 import fr.siamois.ui.bean.dialog.newunit.UnitKind;
 import fr.siamois.ui.bean.panel.FlowBean;
 import fr.siamois.ui.bean.panel.models.PanelBreadcrumb;
+import fr.siamois.ui.bean.panel.models.panel.single.tab.ActionSettingsTab;
 import fr.siamois.ui.bean.panel.models.panel.single.tab.RecordingTab;
 import fr.siamois.ui.bean.panel.models.panel.single.tab.SpecimenTab;
 import fr.siamois.ui.bean.settings.team.TeamMembersBean;
@@ -47,6 +49,9 @@ import org.springframework.stereotype.Component;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
@@ -61,6 +66,7 @@ import java.util.stream.Collectors;
 @Component
 @Scope(BeanDefinition.SCOPE_PROTOTYPE)
 public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnit> implements Serializable {
+    public static final String INVALID_FORMAT_CODE = "actionUnit.settings.error.invalidIdentifierFormat";
 
     // Deps
 
@@ -87,6 +93,14 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnit> imple
     private Concept fType;
 
     private transient RecordingUnitTableViewModel recordingTabTableModel;
+
+
+    // Settings tab
+    private Integer minNumber;
+    private boolean minHasBeenModified = false;
+    private Integer maxNumber;
+    private boolean maxHasBeenModified = false;
+    private String format;
 
     @Override
     protected boolean documentExistsInUnitByHash(ActionUnit unit, String hash) {
@@ -210,7 +224,15 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnit> imple
                     "specimenTab",
                     specimenLazyDataModel,
                     totalSpecimenCount);
+
+            ActionSettingsTab settingsTab = new ActionSettingsTab(
+                    "nav.settings",
+                    "bi bi-gear",
+                    "settingsTab"
+            );
+
             tabs.add(recordingTab);
+            tabs.add(settingsTab);
             tabs.add(specimenTab);
 
         } catch (
@@ -222,6 +244,10 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnit> imple
             this.errorMessage = "Failed to load action unit: " + e.getMessage();
             redirectBean.redirectTo(HttpStatus.INTERNAL_SERVER_ERROR);
         }
+
+        minNumber = unit.getMinRecordingUnitCode();
+        maxNumber = unit.getMaxRecordingUnitCode();
+        format = unit.getRecordingUnitIdentifierFormat();
     }
 
     @Override
@@ -395,7 +421,8 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnit> imple
                 (GenericNewUnitDialogBean<RecordingUnit>) genericNewUnitDialogBean,
                 recordingUnitWriteVerifier,
                 recordingUnitService,
-                rLazyTree
+                rLazyTree,
+                langBean
         );
 
         RecordingUnitTableDefinitionFactory.applyTo(recordingTabTableModel);
@@ -417,6 +444,99 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnit> imple
     @Override
     public String getTabView() {
         return "/panel/tabview/actionUnitTabView.xhtml";
+    }
+
+    public void saveSettings() {
+        boolean containsNumRu = false;
+
+        if (format == null || format.isEmpty()) {
+            MessageUtils.displayErrorMessage(langBean, "actionUnit.settings.error.missingNumUe");
+            return;
+        }
+
+        String placeholderPattern = "\\{([^}]+)\\}";
+        Pattern pattern = Pattern.compile(placeholderPattern);
+        Matcher matcher = pattern.matcher(format);
+
+        String strippedFormat = format.replaceAll(placeholderPattern, "");
+        if (strippedFormat.contains("{") || strippedFormat.contains("}")) {
+            MessageUtils.displayErrorMessage(langBean, INVALID_FORMAT_CODE);
+            return;
+        }
+
+        while (matcher.find()) {
+            String placeholderContent = matcher.group(1);
+            String[] parts = placeholderContent.split(":", 2);
+            String placeholderName = parts[0];
+
+            if (formatContainsInvalidCode(placeholderName)) return;
+            containsNumRu = containsNumRu || placeholderName.equals("NUM_UE");
+
+            if (formatOfCodeIsNotValid(parts, placeholderName)) return;
+        }
+
+        if (!containsNumRu) {
+            MessageUtils.displayErrorMessage(langBean, "actionUnit.settings.error.missingNumUe");
+            return;
+        }
+
+        unit.setMinRecordingUnitCode(minNumber);
+        unit.setMaxRecordingUnitCode(maxNumber);
+        unit.setRecordingUnitIdentifierFormat(format);
+
+        unit.setRecordingUnitIdentifierLang(sessionSettingsBean.getLanguageCode());
+
+        actionUnitService.save(unit);
+        log.trace("Action unit saved with values : {} {} {}", unit.getMinRecordingUnitCode(), unit.getMaxRecordingUnitCode(), unit.getRecordingUnitIdentifierFormat());
+
+        MessageUtils.displayInfoMessage(langBean, "actionUnit.settings.success.identifierConfigSaved");
+    }
+
+    private boolean formatContainsInvalidCode(String placeholderName) {
+        if (!recordingUnitService.findAllIdentifiersCode().contains(placeholderName)) {
+            MessageUtils.displayErrorMessage(langBean, INVALID_FORMAT_CODE);
+            return true;
+        }
+        return false;
+    }
+
+    private boolean formatOfCodeIsNotValid(String[] parts, String placeholderName) {
+        if (parts.length <= 1) return false;
+        String formatSpecifier = parts[1];
+        return formatSpecifierIsNotValid(formatSpecifier) || oneNumericalFormatIsNotValid(placeholderName, formatSpecifier);
+    }
+
+    private boolean formatSpecifierIsNotValid(String formatSpecifier) {
+        if (!formatSpecifier.matches("[0X]+")) {
+            MessageUtils.displayErrorMessage(langBean, INVALID_FORMAT_CODE);
+            return true;
+        }
+        return false;
+    }
+
+    private boolean oneNumericalFormatIsNotValid(String placeholderName, String formatSpecifier) {
+        if (recordingUnitService.findAllNumericalIdentifiersCode().contains(placeholderName)) {
+            long zeroCount = formatSpecifier.chars().filter(ch -> ch == '0').count();
+            if (zeroCount > 0 && maxNumber != null && String.valueOf(maxNumber).length() > zeroCount) {
+                MessageUtils.displayErrorMessage(langBean, "actionUnit.settings.error.insufficientDigits", placeholderName);
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public List<RuIdentifierResolver> findAllResolvers() {
+        Map<String, RuIdentifierResolver> resolvers = recordingUnitService.findAllIdentifierResolver();
+        List<RuIdentifierResolver> result = new ArrayList<>();
+        result.add(resolvers.get("NUM_UE"));
+        result.add(resolvers.get("TYPE_UE"));
+        result.add(resolvers.get("NUM_PARENT"));
+        for (RuIdentifierResolver resolver : resolvers.values()) {
+            if (!result.contains(resolver)) {
+                result.add(resolver);
+            }
+        }
+        return result;
     }
 
 }
