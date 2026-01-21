@@ -18,6 +18,8 @@ import fr.siamois.domain.models.vocabulary.Vocabulary;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.form.CustomFormResponseService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
+import fr.siamois.domain.services.recordingunit.identifier.RuNumParentResolver;
+import fr.siamois.domain.services.recordingunit.identifier.RuNumResolver;
 import fr.siamois.domain.services.recordingunit.StratigraphicRelationshipService;
 import fr.siamois.domain.services.recordingunit.identifier.generic.RuIdentifierResolver;
 import fr.siamois.domain.services.vocabulary.ConceptService;
@@ -27,10 +29,10 @@ import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUn
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitIdInfoRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitRepository;
 import fr.siamois.infrastructure.database.repositories.team.TeamMemberRepository;
-import org.checkerframework.checker.nullness.qual.NonNull;
-import org.checkerframework.checker.nullness.qual.Nullable;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -41,8 +43,7 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -963,26 +964,88 @@ class RecordingUnitServiceTest {
         verify(recordingUnitIdInfoRepository).save(result);
     }
 
-    static class FakeResolver implements RuIdentifierResolver {
+    @Nested
+    @DisplayName("generateFullIdentifier tests")
+    class GenerateFullIdentifierTest {
 
-        @Override
-        public @NonNull String getCode() {
-            return "";
+        @BeforeEach
+        void setUp() {
+            recordingUnitToSave.setId(99L); // Assume unit is saved and has an ID
+            when(recordingUnitIdInfoRepository.save(any(RecordingUnitIdInfo.class))).thenAnswer(inv -> inv.getArgument(0));
         }
 
-        @Override
-        public @Nullable String getDescriptionLanguageCode() {
-            return "";
+        @Test
+        @DisplayName("should return numerical id when format is null")
+        void generateFullIdentifier_withNullFormat_shouldReturnNumericalId() {
+            // Arrange
+            actionUnit.setRecordingUnitIdentifierFormat(null);
+            when(recordingUnitIdInfoRepository.findById(recordingUnitToSave.getId())).thenReturn(Optional.empty());
+
+            // Act
+            String identifier = recordingUnitService.generateFullIdentifier(actionUnit, recordingUnitToSave);
+
+            // Assert
+            assertEquals("0", identifier);
         }
 
-        @Override
-        public @NonNull String getTitleCode() {
-            return "";
+        @Test
+        @DisplayName("should return formatted identifier when using resolvers")
+        void generateFullIdentifier_withResolvers_shouldReturnFormattedIdentifier() {
+            // Arrange
+            RecordingUnitService spiedService = spy(recordingUnitService);
+            actionUnit.setRecordingUnitIdentifierFormat("{MOCK}-{NUM_UE:000}");
+
+            RuIdentifierResolver mockResolver = mock(RuIdentifierResolver.class);
+            when(mockResolver.formatUsesThisResolver(anyString())).thenAnswer(inv -> inv.getArgument(0, String.class).contains("{MOCK}"));
+            when(mockResolver.resolve(anyString(), any(RecordingUnitIdInfo.class))).thenAnswer(inv -> inv.getArgument(0, String.class).replace("{MOCK}", "RESOLVED"));
+
+            RuNumResolver numResolver = new RuNumResolver();
+
+            Map<String, RuIdentifierResolver> resolvers = new LinkedHashMap<>();
+            resolvers.put("MOCK", mockResolver);
+            resolvers.put("NUM_UE", numResolver);
+            doReturn(resolvers).when(spiedService).findAllIdentifierResolver();
+
+
+            when(recordingUnitIdCounterRepository.ruNextValUnique(actionUnit.getId())).thenReturn(42);
+            when(recordingUnitIdInfoRepository.findById(recordingUnitToSave.getId())).thenReturn(Optional.empty());
+
+            // Act
+            String identifier = spiedService.generateFullIdentifier(actionUnit, recordingUnitToSave);
+
+            // Assert
+            assertEquals("RESOLVED-042", identifier);
+            verify(spiedService).findAllIdentifierResolver();
         }
 
-        @Override
-        public @NonNull String resolve(@NonNull String baseFormatString, @NonNull RecordingUnitIdInfo ruInfo) {
-            return "";
+        @Test
+        @DisplayName("should use parent info when parent is present")
+        void generateFullIdentifier_withParent_shouldUseParentForIdGeneration() {
+            // Arrange
+            RecordingUnitService spiedService = spy(recordingUnitService);
+            RecordingUnit parentRu = new RecordingUnit();
+            parentRu.setId(5L);
+            recordingUnitToSave.getParents().add(parentRu);
+            actionUnit.setRecordingUnitIdentifierFormat("{NUM_PARENT}-{NUM_UE}");
+
+            RuNumResolver numResolver = new RuNumResolver();
+            RuNumParentResolver numParentResolver = new RuNumParentResolver(recordingUnitIdInfoRepository);
+            Map<String, RuIdentifierResolver> resolvers = new LinkedHashMap<>();
+            resolvers.put("NUM_PARENT", numParentResolver);
+            resolvers.put("NUM_UE", numResolver);
+            doReturn(resolvers).when(spiedService).findAllIdentifierResolver();
+            when(recordingUnitIdCounterRepository.ruNextValParent(parentRu.getId())).thenReturn(7);
+            when(recordingUnitIdInfoRepository.findById(recordingUnitToSave.getId())).thenReturn(Optional.empty());
+            RecordingUnitIdInfo parentInfo = new RecordingUnitIdInfo();
+            parentInfo.setRuNumber(99);
+            when(recordingUnitIdInfoRepository.findById(parentRu.getId())).thenReturn(Optional.of(parentInfo));
+            // Act
+            String identifier = spiedService.generateFullIdentifier(actionUnit, recordingUnitToSave);
+            // Assert
+            assertEquals("99-7", identifier);
+            verify(recordingUnitIdCounterRepository).ruNextValParent(parentRu.getId());
+            verify(spiedService).createOrGetInfoOf(recordingUnitToSave, parentRu);
+            verify(recordingUnitIdInfoRepository).findById(parentRu.getId());
         }
     }
 

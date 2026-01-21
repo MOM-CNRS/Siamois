@@ -77,7 +77,7 @@ class PGProceduresInitializerTest {
                              })) {
 
             // Act & Assert
-            DatabaseDataInitException exception = assertThrows(
+            assertThrows(
                     DatabaseDataInitException.class,
                     () -> pgProceduresInitializer.initialize()
             );
