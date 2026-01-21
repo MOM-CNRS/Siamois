@@ -10,8 +10,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
@@ -106,6 +109,91 @@ class OOXMLImportServiceTest {
                 OffsetDateTime.of(2024, 2, 10, 0, 0, 0, 0, ZoneOffset.UTC)
         );
     }
+
+    @Test
+    void parseOffsetDateTime_nullCell() {
+        OffsetDateTime dt = service.parseOffsetDateTime(null);
+        assertThat(dt).isNull();
+    }
+
+    @Test
+    void parseOffsetDateTime_emptyString() {
+        Workbook wb = workbook();
+        Sheet s = wb.createSheet();
+        Row r = s.createRow(0);
+        Cell c = r.createCell(0);
+        c.setCellValue("   "); // espaces
+
+        OffsetDateTime dt = service.parseOffsetDateTime(c);
+        assertThat(dt).isNull();
+    }
+
+    @Test
+    void parseOffsetDateTime_excelNumericDate() {
+        Workbook wb = workbook();
+        Sheet s = wb.createSheet();
+        Row r = s.createRow(0);
+        Cell c = r.createCell(0);
+
+        c.setCellValue(Date.from(
+                LocalDate.of(2024, 2, 10)
+                        .atStartOfDay(ZoneOffset.UTC)  // <-- UTC
+                        .toInstant()
+        ));
+        // Excel considère ce type comme NUMERIC
+        CellStyle style = wb.createCellStyle();
+        style.setDataFormat((short) 14); // format date
+        c.setCellStyle(style);
+
+        OffsetDateTime dt = service.parseOffsetDateTime(c);
+        assertThat(dt).isEqualTo(
+                LocalDate.of(2024, 2, 10).atStartOfDay().atOffset(ZoneOffset.UTC)
+        );
+    }
+
+    @Test
+    void parseOffsetDateTime_invalidString() {
+        Workbook wb = workbook();
+        Sheet s = wb.createSheet();
+        Row r = s.createRow(0);
+        Cell c = r.createCell(0);
+        c.setCellValue("not-a-date");
+
+        OffsetDateTime dt = service.parseOffsetDateTime(c);
+        assertThat(dt).isNull();
+    }
+
+    @Test
+    void parseOffsetDateTime_stringWithSpaces() {
+        Workbook wb = workbook();
+        Sheet s = wb.createSheet();
+        Row r = s.createRow(0);
+        Cell c = r.createCell(0);
+        c.setCellValue(" 2024-02-10 "); // espaces avant/après
+
+        OffsetDateTime dt = service.parseOffsetDateTime(c);
+        assertThat(dt).isEqualTo(
+                OffsetDateTime.of(2024, 2, 10, 0, 0, 0, 0, ZoneOffset.UTC)
+        );
+    }
+
+    @Test
+    void parseOffsetDateTime_numericNotDate() {
+        Workbook wb = workbook();
+        Sheet s = wb.createSheet();
+        Row r = s.createRow(0);
+        Cell c = r.createCell(0);
+        c.setCellValue(123.45); // juste un nombre
+
+        OffsetDateTime dt = service.parseOffsetDateTime(c);
+        assertThat(dt).isNull();
+    }
+
+
+
+
+
+
 
     @Test
     void parsePersons_basic() {
