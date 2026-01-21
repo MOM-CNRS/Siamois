@@ -507,7 +507,6 @@ public class RecordingUnitService implements ArkEntityService {
     public RecordingUnit findByFullIdentifierAndInstitutionIdentifier(String identifier, String institutionIdentifier) {
         return recordingUnitRepository.findByFullIdentifierAndInstitutionIdentifier(identifier, institutionIdentifier).orElse(null);
     }
-}
 
     public RecordingUnitIdInfo createOrGetInfoOf(@NonNull RecordingUnit recordingUnit, @Nullable RecordingUnit parentRecordingUnit) {
         Optional<RecordingUnitIdInfo> opt = recordingUnitIdInfoRepository.findById(recordingUnit.getId());
