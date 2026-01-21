@@ -275,9 +275,6 @@ class RecordingUnitServiceTest {
         assertNotNull(res);
         verify(customFormResponseService, times(1))
                 .saveFormResponse(any(CustomFormResponse.class), any(CustomFormResponse.class));
-
-
-
     }
 
     @Test

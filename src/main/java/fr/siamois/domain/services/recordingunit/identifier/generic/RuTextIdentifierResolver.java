@@ -56,7 +56,7 @@ public abstract class RuTextIdentifierResolver implements RuIdentifierResolver {
         if (existing.isPresent() && !existing.get().getType().equals(ruInfo.getRuType())) {
             int counter = 1;
             String originalReplacement = replacement;
-            Pattern numberPattern = Pattern.compile("^(.*?)(\\d+)$");
+            Pattern numberPattern = Pattern.compile("^([^\\d\\r\\n]+)(\\d+)$");
             Matcher numberMatcher = numberPattern.matcher(replacement);
             if (numberMatcher.find()) {
                 originalReplacement = numberMatcher.group(1);
