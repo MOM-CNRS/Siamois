@@ -305,8 +305,7 @@ public class ActionUnitService implements ArkEntityService {
     @Override
     public ArkEntity save(ArkEntity toSave) {
         try {
-            ActionUnit unit = (ActionUnit) toSave;
-            return actionUnitRepository.save(unit);
+            return actionUnitRepository.save((ActionUnit) toSave);
         } catch (DataIntegrityViolationException e) {
             throw new FailedActionUnitSaveException(e.getMessage());
         }

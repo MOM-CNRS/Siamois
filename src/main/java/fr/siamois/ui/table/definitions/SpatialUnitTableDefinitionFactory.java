@@ -8,9 +8,6 @@ import fr.siamois.ui.table.*;
 
 import static fr.siamois.ui.bean.panel.models.panel.single.AbstractSingleEntity.SYSTEM_THESO;
 
-
-
-
 /**
  * factory that "applies" a reusable column set + toolbar config onto an existing tableModel.
  * Put this in a shared package and call it from panels, tabs, etc.

@@ -27,14 +27,16 @@ import java.util.stream.Collectors;
 
 /**
  * Per-entity "dynamic form" context.
- *
+ * <p>
  * Holds:
- *  - CustomFormResponse (answers)
- *  - EnabledRulesEngine (column enable/disable)
- *  - hasUnsavedModifications flag
- *  - column enabled state map
- *  - spatial unit tree UI state
- *
+ * <ul>
+ *  <li>CustomFormResponse (answers)</li>
+ *  <li>EnabledRulesEngine (column enable/disable)</li>
+ *  <li>hasUnsavedModifications flag</li>
+ *  <li>column enabled state map</li>
+ *  <li>spatial unit tree UI state</li>
+ *  </ul>
+ *  </p>
  */
 @Data
 public class EntityFormContext<T> {

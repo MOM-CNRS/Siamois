@@ -64,7 +64,6 @@ public abstract class AbstractListPanel<T extends TraceableEntity> extends Abstr
 
     protected AbstractListPanel(BookmarkService bookmarkService) {
         this.bookmarkService = bookmarkService;
-
         conceptService = null;
         langBean = null;
         spatialUnitService = null;

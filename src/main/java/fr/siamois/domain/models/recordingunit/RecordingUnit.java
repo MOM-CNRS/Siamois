@@ -95,7 +95,7 @@ public class RecordingUnit extends RecordingUnitParent implements ArkEntity, Ref
             inverseJoinColumns = {@JoinColumn(name = "fk_document_id")}
     )
     private Set<Document> documents = new HashSet<>();
-
+    
     @FieldCode
     public static final String TYPE_FIELD_CODE = "SIARU.TYPE";
 
@@ -147,6 +147,14 @@ public class RecordingUnit extends RecordingUnitParent implements ArkEntity, Ref
     @Override
     public String toString() {
         return String.format("Recording Unit %s", displayFullIdentifier());
+    }
+
+    /**
+     * Resets the full identifier to it's base format.
+     */
+    public void resetFullIdentifier() {
+        if (actionUnit == null) return;
+        fullIdentifier = actionUnit.getFullIdentifier();
     }
 
     @Transient
