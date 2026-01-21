@@ -473,6 +473,9 @@ public class RecordingUnitService implements ArkEntityService {
     }
 
 
+    public RecordingUnit findByFullIdentifierAndInstitutionIdentifier(String identifier, String institutionIdentifier) {
+        return recordingUnitRepository.findByFullIdentifierAndInstitutionIdentifier(identifier, institutionIdentifier).orElse(null);
+    }
 }
 
 

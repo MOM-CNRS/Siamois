@@ -1,6 +1,8 @@
 package fr.siamois.infrastructure.database.initializer;
 
 import fr.siamois.domain.models.exceptions.database.DatabaseDataInitException;
+import fr.siamois.domain.models.recordingunit.RecordingUnit;
+import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.infrastructure.database.initializer.seeder.*;
 import fr.siamois.infrastructure.dataimport.OOXMLImportService;
 import lombok.Getter;
@@ -37,7 +39,6 @@ public class ChartresDatasetInitializer implements DatabaseInitializer {
     private String adminEmail;
 
 
-
     private final ConceptSeeder conceptSeeder;
     private final PersonSeeder personSeeder;
     private final ThesaurusSeeder thesaurusSeeder;
@@ -49,6 +50,7 @@ public class ChartresDatasetInitializer implements DatabaseInitializer {
     private final InstitutionSeeder institutionSeeder;
     private final OOXMLImportService ooxmlImportService;
     private final RecordingUnitRelSeeder recordingUnitRelSeeder;
+    private final RecordingUnitService recordingUnitService;
 
 
     @Value("${siamois.admin.username}")
@@ -61,6 +63,15 @@ public class ChartresDatasetInitializer implements DatabaseInitializer {
     @Override
     @Transactional
     public void initialize() throws DatabaseDataInitException {
+
+        // run only if not inserted
+        RecordingUnit existing = recordingUnitService
+                .findByFullIdentifierAndInstitutionIdentifier("1000", "chartres");
+
+
+        if(existing!=null) {
+            return; // do nothing
+        }
 
 
         // Init vocabs
