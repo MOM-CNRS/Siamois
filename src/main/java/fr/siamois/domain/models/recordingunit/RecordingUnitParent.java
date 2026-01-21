@@ -72,7 +72,7 @@ public abstract class RecordingUnitParent extends TraceableEntity {
     @Column(name = "end_date")
     protected OffsetDateTime closingDate;
 
-    @Column(name = "description")
+    @Column(name = "description", length = 5000)
     protected String description;
 
     @Column(name = "matrix_composition")

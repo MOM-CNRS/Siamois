@@ -25,6 +25,8 @@ public class SpatialUnitSeeder {
     public record SpatialUnitSpecs(String name, String typeVocabularyExtId, String typeConceptExtId, String authorEmail,
                                    String institutionIdentifier, Set<SpatialUnitKey> childrenKey) {
 
+
+
     }
 
     public record SpatialUnitKey(String unitName) {}

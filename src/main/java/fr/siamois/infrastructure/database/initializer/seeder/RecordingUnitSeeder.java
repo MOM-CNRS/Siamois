@@ -32,8 +32,9 @@ public class RecordingUnitSeeder {
 
     public record RecordingUnitSpecs(String fullIdentifier, Integer identifier,
                                      ConceptSeeder.ConceptKey type,
-                                     ConceptSeeder.ConceptKey secondaryType,
-                                     ConceptSeeder.ConceptKey thirdType,
+                                     ConceptSeeder.ConceptKey geomorphologicalCycle,
+                                     ConceptSeeder.ConceptKey geomorphologicalAgent,
+                                     ConceptSeeder.ConceptKey interpretation,
                                      String authorEmail,
                                      String institutionIdentifier,
                                      String author,
@@ -43,7 +44,11 @@ public class RecordingUnitSeeder {
                                      OffsetDateTime beginDate,
                                      OffsetDateTime endDate,
                                      SpatialUnitSeeder.SpatialUnitKey spatialUnitName,
-                                     ActionUnitSeeder.ActionUnitKey actionUnitIdentifier) {
+                                     ActionUnitSeeder.ActionUnitKey actionUnitIdentifier,
+                                     String description,
+                                     String matrixColor,
+                                     String matrixComposition,
+                                     String matrixTexture) {
 
     }
 
@@ -57,6 +62,7 @@ public class RecordingUnitSeeder {
             recordingUnitRepository.save(recordingUnit);
         }
     }
+
 
 
     public ActionUnit getActionUnitFromKey(ActionUnitSeeder.ActionUnitKey key) {
@@ -79,12 +85,22 @@ public class RecordingUnitSeeder {
         for (var s : specs) {
             // Find Type
             Concept type = conceptSeeder.findConceptOrThrow(s.type);
-            Concept secondaryType = conceptSeeder.findConceptOrThrow(s.secondaryType);
-            Concept thirdType = conceptSeeder.findConceptOrThrow(s.thirdType);
+            Concept geoCycle = s.geomorphologicalCycle != null
+                    ? conceptSeeder.findConceptOrThrow(s.geomorphologicalCycle)
+                    : null;
+
+            Concept geoAgent = s.geomorphologicalAgent != null
+                    ? conceptSeeder.findConceptOrThrow(s.geomorphologicalAgent)
+                    : null;
+
+            Concept interpretation = s.interpretation != null
+                    ? conceptSeeder.findConceptOrThrow(s.interpretation)
+                    : null;
+
 
             // Find Institution
             Institution institution = institutionSeeder.findInstitutionOrReturnNull(s.institutionIdentifier);
-            if(institution == null ) {
+            if (institution == null) {
                 throw new IllegalStateException("Institution introuvable");
             }
 
@@ -106,11 +122,16 @@ public class RecordingUnitSeeder {
 
             RecordingUnit toGetOrCreate = new RecordingUnit();
             toGetOrCreate.setCreatedByInstitution(institution);
+            toGetOrCreate.setDescription(s.description);
+            toGetOrCreate.setMatrixTexture(s.matrixTexture);
+            toGetOrCreate.setMatrixComposition(s.matrixComposition);
+            toGetOrCreate.setMatrixColor(s.matrixColor);
             toGetOrCreate.setIdentifier(s.identifier);
             toGetOrCreate.setFullIdentifier(s.fullIdentifier);
             toGetOrCreate.setType(type);
-            toGetOrCreate.setSecondaryType(secondaryType);
-            toGetOrCreate.setThirdType(thirdType);
+            toGetOrCreate.setGeomorphologicalAgent(geoAgent);
+            toGetOrCreate.setGeomorphologicalCycle(geoCycle);
+            toGetOrCreate.setNormalizedInterpretation(interpretation);
             toGetOrCreate.setOpeningDate(s.beginDate);
             toGetOrCreate.setAuthor(authorPerson);
             toGetOrCreate.setContributors(contributors);

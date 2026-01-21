@@ -6,7 +6,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>fr.siamois</groupId>
     <artifactId>siamois</artifactId>
-    <version>0.2.2-dev-0</version>
+    <version>0.3.0-dev-0</version>
     <packaging>jar</packaging>
     <name>siamois</name>
 
@@ -358,6 +358,12 @@
             <groupId>org.springframework.data</groupId>
             <artifactId>spring-data-envers</artifactId>
             <version>4.0.0-M6</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.poi</groupId>
+            <artifactId>poi-ooxml</artifactId>
+            <version>5.2.3</version>
         </dependency>
 
     </dependencies>

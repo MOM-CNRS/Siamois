@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
@@ -56,6 +57,7 @@ class RecordingUnitSeederTest {
                         new ConceptSeeder.ConceptKey(VOCABULARY_ID, "123456"),
                         new ConceptSeeder.ConceptKey(VOCABULARY_ID, "4287539"),
                         new ConceptSeeder.ConceptKey(VOCABULARY_ID, "4287541"),
+                        new ConceptSeeder.ConceptKey(VOCABULARY_ID, "4287541"),
                         "author@siamois.fr",
                         "chartres",
                         "author@siamois.fr",
@@ -65,7 +67,11 @@ class RecordingUnitSeederTest {
                         null,
                         null,
                         new SpatialUnitSeeder.SpatialUnitKey("Spatial"),
-                        new ActionUnitSeeder.ActionUnitKey("action-01")
+                        new ActionUnitSeeder.ActionUnitKey("action-01"),
+                        "",
+                        "",
+                        "",
+                        ""
                 )
         );
 
@@ -93,6 +99,7 @@ class RecordingUnitSeederTest {
                         new ConceptSeeder.ConceptKey(VOCABULARY_ID, "123456"),
                         new ConceptSeeder.ConceptKey(VOCABULARY_ID, "4287539"),
                         new ConceptSeeder.ConceptKey(VOCABULARY_ID, "4287541"),
+                        new ConceptSeeder.ConceptKey(VOCABULARY_ID, "4287541"),
                         "author@siamois.fr",
                         "chartres",
                         "author@siamois.fr",
@@ -102,7 +109,11 @@ class RecordingUnitSeederTest {
                         null,
                         null,
                         new SpatialUnitSeeder.SpatialUnitKey("Spatial"),
-                        new ActionUnitSeeder.ActionUnitKey("action-01")
+                        new ActionUnitSeeder.ActionUnitKey("action-01"),
+                        "",
+                        "",
+                        "",
+                        ""
                 )
         );
 
@@ -130,6 +141,7 @@ class RecordingUnitSeederTest {
                         new ConceptSeeder.ConceptKey(VOCABULARY_ID, "123456"),
                         new ConceptSeeder.ConceptKey(VOCABULARY_ID, "4287539"),
                         new ConceptSeeder.ConceptKey(VOCABULARY_ID, "4287541"),
+                        new ConceptSeeder.ConceptKey(VOCABULARY_ID, "4287541"),
                         "author@siamois.fr",
                         "chartres",
                         "author@siamois.fr",
@@ -139,7 +151,11 @@ class RecordingUnitSeederTest {
                         null,
                         null,
                         new SpatialUnitSeeder.SpatialUnitKey("Spatial"),
-                        new ActionUnitSeeder.ActionUnitKey("action-01")
+                        new ActionUnitSeeder.ActionUnitKey("action-01"),
+                        "",
+                        "",
+                        "",
+                        ""
                 )
         );
 
@@ -171,6 +187,7 @@ class RecordingUnitSeederTest {
                         new ConceptSeeder.ConceptKey(VOCABULARY_ID, "123456"),
                         new ConceptSeeder.ConceptKey(VOCABULARY_ID, "4287539"),
                         new ConceptSeeder.ConceptKey(VOCABULARY_ID, "4287541"),
+                        new ConceptSeeder.ConceptKey(VOCABULARY_ID, "4287541"),
                         "author@siamois.fr",
                         "chartres",
                         "author@siamois.fr",
@@ -180,7 +197,11 @@ class RecordingUnitSeederTest {
                         null,
                         null,
                         new SpatialUnitSeeder.SpatialUnitKey("Spatial"),
-                        new ActionUnitSeeder.ActionUnitKey("action-01")
+                        new ActionUnitSeeder.ActionUnitKey("action-01"),
+                        "",
+                        "",
+                        "",
+                        ""
                 )
         );
 
@@ -211,6 +232,7 @@ class RecordingUnitSeederTest {
                         new ConceptSeeder.ConceptKey(VOCABULARY_ID, "123456"),
                         new ConceptSeeder.ConceptKey(VOCABULARY_ID, "4287539"),
                         new ConceptSeeder.ConceptKey(VOCABULARY_ID, "4287541"),
+                        new ConceptSeeder.ConceptKey(VOCABULARY_ID, "4287541"),
                         "author@siamois.fr",
                         "chartres",
                         "author@siamois.fr",
@@ -220,7 +242,11 @@ class RecordingUnitSeederTest {
                         null,
                         null,
                         new SpatialUnitSeeder.SpatialUnitKey("Spatial"),
-                        new ActionUnitSeeder.ActionUnitKey("action-01")
+                        new ActionUnitSeeder.ActionUnitKey("action-01"),
+                        "",
+                        "",
+                        "",
+                        ""
                 )
         );
 
@@ -254,6 +280,7 @@ class RecordingUnitSeederTest {
                         new ConceptSeeder.ConceptKey(VOCABULARY_ID, "123456"),
                         new ConceptSeeder.ConceptKey(VOCABULARY_ID, "4287539"),
                         new ConceptSeeder.ConceptKey(VOCABULARY_ID, "4287541"),
+                        new ConceptSeeder.ConceptKey(VOCABULARY_ID, "4287541"),
                         "author@siamois.fr",
                         "chartres",
                         "author@siamois.fr",
@@ -263,7 +290,11 @@ class RecordingUnitSeederTest {
                         null,
                         null,
                         new SpatialUnitSeeder.SpatialUnitKey("Spatial"),
-                        new ActionUnitSeeder.ActionUnitKey("action-01")
+                        new ActionUnitSeeder.ActionUnitKey("action-01"),
+                        "",
+                        "",
+                        "",
+                        ""
                 )
         );
 
@@ -297,6 +328,7 @@ class RecordingUnitSeederTest {
                         new ConceptSeeder.ConceptKey(VOCABULARY_ID, "123456"),
                         new ConceptSeeder.ConceptKey(VOCABULARY_ID, "4287539"),
                         new ConceptSeeder.ConceptKey(VOCABULARY_ID, "4287541"),
+                        new ConceptSeeder.ConceptKey(VOCABULARY_ID, "4287541"),
                         "author@siamois.fr",
                         "chartres",
                         "author@siamois.fr",
@@ -306,7 +338,11 @@ class RecordingUnitSeederTest {
                         null,
                         null,
                         new SpatialUnitSeeder.SpatialUnitKey("Spatial"),
-                        new ActionUnitSeeder.ActionUnitKey("action-01")
+                        new ActionUnitSeeder.ActionUnitKey("action-01"),
+                        "",
+                        "",
+                        "",
+                        ""
                 )
         );
 
@@ -326,6 +362,45 @@ class RecordingUnitSeederTest {
 
         verify(recordingUnitRepository,times(1)).save(any(RecordingUnit.class));
 
+    }
+
+    @Test
+    void getRecordingUnitFromKey_existingRecordingUnit_returnsIt() {
+        // Given
+        RecordingUnitSeeder.RecordingUnitKey key =
+                new RecordingUnitSeeder.RecordingUnitKey("RU-001");
+
+        RecordingUnit recordingUnit = new RecordingUnit(); recordingUnit.setFullIdentifier("RU-001");
+
+        when(recordingUnitRepository.findByFullIdentifier("RU-001"))
+                .thenReturn(Optional.of(recordingUnit));
+
+        // When
+        RecordingUnit result = seeder.getRecordingUnitFromKey(key);
+
+        // Then
+        assertThat(result).isSameAs(recordingUnit);
+
+        verify(recordingUnitRepository)
+                .findByFullIdentifier("RU-001");
+    }
+
+    @Test
+    void getRecordingUnitFromKey_missingRecordingUnit_throwsException() {
+        // Given
+        RecordingUnitSeeder.RecordingUnitKey key =
+                new RecordingUnitSeeder.RecordingUnitKey("RU-404");
+
+        when(recordingUnitRepository.findByFullIdentifier("RU-404"))
+                .thenReturn(Optional.empty());
+
+        // When / Then
+        assertThatThrownBy(() -> seeder.getRecordingUnitFromKey(key))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("Recording unit introuvable");
+
+        verify(recordingUnitRepository)
+                .findByFullIdentifier("RU-404");
     }
 
 

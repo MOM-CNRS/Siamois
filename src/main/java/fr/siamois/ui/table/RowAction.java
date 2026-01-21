@@ -12,6 +12,14 @@ public class RowAction {
     /** Optionnel : process PF (ex: "@this") */
     private String processExpr;
 
+    /** Icône (peut être dynamique via clé) */
+    private String iconKey;
+
+    /** Condition d’affichage */
+    private String renderedKey;
+
+
+
     /** Optionnel : update PF statique (ex: "navBar... bookmarkGroup") */
     private String updateExpr;
 

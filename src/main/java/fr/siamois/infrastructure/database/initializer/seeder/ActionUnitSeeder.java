@@ -63,9 +63,13 @@ public class ActionUnitSeeder {
                     .findByEmailIgnoreCase(s.authorEmail)
                     .orElseThrow(() -> new IllegalStateException("Auteur introuvable"));
             // Find action code
-            ActionCode actionCode = actionCodeRepository
-                    .findById(s.primaryActionCode)
-                    .orElseThrow(() -> new IllegalStateException("Action code introuvable"));
+            ActionCode actionCode = null;
+            if(s.primaryActionCode!=null) {
+                actionCode = actionCodeRepository
+                        .findById(s.primaryActionCode)
+                        .orElseThrow(() -> new IllegalStateException("Action code introuvable"));
+            }
+
             // Find Institution
             Institution institution = institutionRepository.findInstitutionByIdentifier(s.institutionIdentifier)
                     .orElseThrow(() -> new IllegalStateException("Institution introuvable"));
@@ -83,7 +87,10 @@ public class ActionUnitSeeder {
             toGetOrCreate.setIdentifier(s.identifier);
             toGetOrCreate.setName(s.name);
             toGetOrCreate.setCreatedBy(author);
-            toGetOrCreate.setPrimaryActionCode(actionCode);
+            if(actionCode!=null) {
+                toGetOrCreate.setPrimaryActionCode(actionCode);
+            }
+
             toGetOrCreate.setFullIdentifier(s.fullIdentifier);
             toGetOrCreate.setType(type);
             toGetOrCreate.setSpatialContext(spatialContext);

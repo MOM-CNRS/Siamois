@@ -11,6 +11,7 @@ import fr.siamois.domain.services.form.FormService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitTreeService;
+import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.NavBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
 import fr.siamois.ui.bean.dialog.newunit.GenericNewUnitDialogBean;
@@ -54,6 +55,8 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
 
     private final SessionSettingsBean sessionSettingsBean;
 
+    private final LangBean langBean;
+
     public RecordingUnitTableViewModel(BaseRecordingUnitLazyDataModel lazyDataModel,
                                        FormService formService,
                                        SessionSettingsBean sessionSettingsBean,
@@ -63,7 +66,7 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
                                        FlowBean flowBean, GenericNewUnitDialogBean<RecordingUnit> genericNewUnitDialogBean,
                                        RecordingUnitWriteVerifier recordingUnitWriteVerifier,
                                        RecordingUnitService recordingUnitService,
-                                       RecordingUnitTreeTableLazyModel treeLazyModel) {
+                                       RecordingUnitTreeTableLazyModel treeLazyModel, LangBean langBean) {
 
         super(
                 lazyDataModel,
@@ -82,6 +85,7 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
         this.recordingUnitService = recordingUnitService;
         this.recordingUnitWriteVerifier = recordingUnitWriteVerifier;
 
+        this.langBean = langBean;
     }
 
     @Override
@@ -329,9 +333,15 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
             newUnit.getParents().add(parent);
         }
 
-        newUnit.setIdentifier(recordingUnitService.generateNextIdentifier(newUnit));
-
         newUnit = recordingUnitService.save(newUnit, newUnit.getType(), List.of(),  List.of(),  List.of());
+
+        newUnit.setFullIdentifier(recordingUnitService.generateFullIdentifier(newUnit.getActionUnit(), newUnit));
+        if (recordingUnitService.fullIdentifierAlreadyExistInAction(newUnit)) {
+            newUnit.setFullIdentifier(newUnit.getActionUnit().getRecordingUnitIdentifierFormat());
+            MessageUtils.displayWarnMessage(langBean, "recordingunit.error.identifier.alreadyExists");
+        }
+
+        newUnit = recordingUnitService.save(newUnit);
 
         // Build the creation context (as child of the parent of the duplicated row, or root if no parent)
         NewUnitContext ctx = NewUnitContext.builder()

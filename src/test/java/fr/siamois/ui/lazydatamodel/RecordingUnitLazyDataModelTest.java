@@ -232,16 +232,14 @@ class RecordingUnitLazyDataModelTest {
         doReturn(original).when(spyModel).getRowData();
 
         // Mock service behavior
-        when(recordingUnitService.generateNextIdentifier(any())).thenReturn(1);
         when(recordingUnitService.save(any(), any(), anyList(), anyList(), anyList())).thenReturn(copied);
 
         // WHEN
         spyModel.duplicateRow();
 
         // THEN
-        verify(recordingUnitService).generateNextIdentifier(any());
         assertEquals(original.getType(), copied.getType());
-        verify(recordingUnitService).save(any(), any(), anyList(), anyList(), anyList());
+        verify(recordingUnitService, times(1)).save(any(), any(), anyList(), anyList(), anyList());
 
     }
 

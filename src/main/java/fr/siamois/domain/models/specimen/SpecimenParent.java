@@ -32,6 +32,11 @@ public abstract class SpecimenParent extends TraceableEntity {
     protected Concept type;
 
     @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "fk_interpretation")
+    protected Concept interpretation;
+
+
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "fk_collection_method")
     protected Concept collectionMethod;
 

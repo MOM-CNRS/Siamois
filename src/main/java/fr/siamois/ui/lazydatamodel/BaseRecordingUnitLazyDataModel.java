@@ -1,12 +1,12 @@
 package fr.siamois.ui.lazydatamodel;
 
 
-import fr.siamois.domain.models.exceptions.recordingunit.FailedRecordingUnitSaveException;
 import fr.siamois.domain.models.form.customfield.CustomFieldSelectOneFromFieldCode;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.ui.bean.LangBean;
+import fr.siamois.ui.bean.panel.models.panel.list.RecordingUnitListPanel;
 import fr.siamois.utils.MessageUtils;
 import lombok.Getter;
 import lombok.Setter;
@@ -88,17 +88,7 @@ public abstract class BaseRecordingUnitLazyDataModel extends BaseLazyDataModel<R
 
     public void handleRowEdit(RowEditEvent<RecordingUnit> event) {
 
-        RecordingUnit toSave = event.getObject();
-
-        try {
-            recordingUnitService.save(toSave, toSave.getType(), List.of(),  List.of(),  List.of());
-        }
-        catch(FailedRecordingUnitSaveException e) {
-            MessageUtils.displayErrorMessage(langBean, "common.entity.recordingUnits.updateFailed", toSave.getFullIdentifier());
-            return ;
-        }
-
-        MessageUtils.displayInfoMessage(langBean, "common.entity.recordingUnits.updated", toSave.getFullIdentifier());
+        RecordingUnitListPanel.handleRuRowEdit(event, recordingUnitService, langBean);
     }
 
     public void saveFieldBulk() {
@@ -117,10 +107,17 @@ public abstract class BaseRecordingUnitLazyDataModel extends BaseLazyDataModel<R
         // Create a copy from selected row
         RecordingUnit original = getRowData();
         RecordingUnit newRec = new RecordingUnit(original);
-        newRec.setIdentifier(recordingUnitService.generateNextIdentifier(newRec));
 
         // Save it
-        newRec= recordingUnitService.save(newRec, newRec.getType(), List.of(),  List.of(),  List.of());
+        newRec = recordingUnitService.save(newRec, newRec.getType(), List.of(),  List.of(),  List.of());
+
+        newRec.setFullIdentifier(recordingUnitService.generateFullIdentifier(newRec.getActionUnit(), newRec));
+        if (recordingUnitService.fullIdentifierAlreadyExistInAction(newRec)) {
+            MessageUtils.displayWarnMessage(langBean, "recordingunit.error.identifier.alreadyExists");
+            newRec.resetFullIdentifier();
+        }
+
+        newRec = recordingUnitService.save(newRec);
 
         // Add it to the model
         addRowToModel(newRec);
