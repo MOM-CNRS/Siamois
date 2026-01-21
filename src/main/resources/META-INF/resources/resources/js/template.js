@@ -57,13 +57,3 @@ function toggleSiamoisSettingsSidebar() {
 function logout() {
     logoutForm.submit();
 }
-
-// recharger la page au changement d'onglet
-// document.addEventListener('visibilitychange',
-//     function (event) {
-//         if (document.hidden === false) {
-//             // si l'onglet redevient actif
-//             location.reload();
-//         }
-//     }
-// );
