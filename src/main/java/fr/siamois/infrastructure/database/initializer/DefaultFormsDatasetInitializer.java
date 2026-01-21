@@ -112,11 +112,11 @@ public class DefaultFormsDatasetInitializer implements DatabaseInitializer {
                     "SIARU.INTERPRETATION"
             ),
             new CustomFieldSeederSpec(
-                    CustomFieldInteger.class,
+                    CustomFieldText.class,
                     true,
                     "common.label.identifier",
                     new ConceptSeeder.ConceptKey(DEFAULT_VOCABULARY_ID, "4287640"),
-                    "identifier",
+                    "fullIdentifier",
                     null,
                     null,
                     null

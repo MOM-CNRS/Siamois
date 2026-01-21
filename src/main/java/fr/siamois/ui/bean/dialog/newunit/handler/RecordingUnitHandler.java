@@ -60,19 +60,14 @@ public class RecordingUnitHandler implements INewUnitHandler<RecordingUnit> {
         String generatedFullIdentifier = recordingUnitService.generateFullIdentifier(created.getActionUnit(), created);
         created.setFullIdentifier(generatedFullIdentifier);
 
-        List<RecordingUnit> existing = recordingUnitService.findByActionAndFullId(unit.getActionUnit(), unit.getFullIdentifier());
-        if (fullIdentifierAlreadyExistInAction(existing, created)) {
+        if (recordingUnitService.fullIdentifierAlreadyExistInAction(created)) {
             MessageUtils.displayWarnMessage(langBean, "recordingunit.error.identifier.alreadyExists");
-        } else {
-            created = recordingUnitService.save(created, unit.getType(), null, null, null);
+            created.setFullIdentifier(unit.getActionUnit().getRecordingUnitIdentifierFormat());
         }
 
-        return created;
-    }
+        created = recordingUnitService.save(created, unit.getType(), null, null, null);
 
-    private static boolean fullIdentifierAlreadyExistInAction(List<RecordingUnit> existing, RecordingUnit created) {
-        return existing.stream()
-                .anyMatch(r -> Objects.equals(r.getFullIdentifier(), created.getFullIdentifier()) && !Objects.equals(r.getId(), created.getId()));
+        return created;
     }
 
     @Override public String dialogWidgetVar() { return "newUnitDiag"; }

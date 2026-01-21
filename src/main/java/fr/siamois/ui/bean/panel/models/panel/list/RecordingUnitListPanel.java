@@ -8,6 +8,7 @@ import fr.siamois.domain.services.authorization.writeverifier.RecordingUnitWrite
 import fr.siamois.domain.services.form.FormService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitTreeService;
+import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.NavBean;
 import fr.siamois.ui.bean.dialog.newunit.GenericNewUnitDialogBean;
 import fr.siamois.ui.bean.panel.FlowBean;
@@ -48,6 +49,7 @@ public class RecordingUnitListPanel extends AbstractListPanel<RecordingUnit> imp
     private final transient GenericNewUnitDialogBean<RecordingUnit> genericNewUnitDialogBean;
     private final transient RecordingUnitWriteVerifier recordingUnitWriteVerifier;
     private final transient NavBean navBean;
+    private final LangBean langBean;
 
     // locals
     private String actionUnitListErrorMessage;
@@ -55,7 +57,7 @@ public class RecordingUnitListPanel extends AbstractListPanel<RecordingUnit> imp
 
 
 
-    public RecordingUnitListPanel(ApplicationContext context) {
+    public RecordingUnitListPanel(ApplicationContext context, LangBean langBean) {
         super("panel.title.allrecordingunit",
                 "bi bi-pencil-square",
                 "siamois-panel recording-unit-panel list-panel",
@@ -68,6 +70,7 @@ public class RecordingUnitListPanel extends AbstractListPanel<RecordingUnit> imp
         this.genericNewUnitDialogBean = context.getBean(GenericNewUnitDialogBean.class);
         this.recordingUnitWriteVerifier = context.getBean(RecordingUnitWriteVerifier.class);
         this.navBean = context.getBean(NavBean.class);
+        this.langBean = langBean;
     }
 
     @Override
@@ -102,8 +105,8 @@ public class RecordingUnitListPanel extends AbstractListPanel<RecordingUnit> imp
                 genericNewUnitDialogBean,
                 recordingUnitWriteVerifier,
                 recordingUnitService,
-                lazyTree
-
+                lazyTree,
+                langBean
         );
 
         return lazy; // l'abstraite en a besoin, mais ce panel ne s'en sert plus ensuite
@@ -167,6 +170,11 @@ public class RecordingUnitListPanel extends AbstractListPanel<RecordingUnit> imp
 
     public void handleRowEdit(RowEditEvent<RecordingUnit> event) {
         RecordingUnit toSave = event.getObject();
+
+        if (recordingUnitService.fullIdentifierAlreadyExistInAction(toSave)) {
+            MessageUtils.displayWarnMessage(langBean, "recordingunit.error.identifier.alreadyExists");
+            return;
+        }
 
         try {
             recordingUnitService.save(toSave, toSave.getType(), List.of(), List.of(), List.of());

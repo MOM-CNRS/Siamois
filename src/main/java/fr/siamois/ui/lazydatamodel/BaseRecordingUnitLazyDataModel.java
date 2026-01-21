@@ -90,6 +90,11 @@ public abstract class BaseRecordingUnitLazyDataModel extends BaseLazyDataModel<R
 
         RecordingUnit toSave = event.getObject();
 
+        if (recordingUnitService.fullIdentifierAlreadyExistInAction(toSave)) {
+            MessageUtils.displayWarnMessage(langBean, "recordingunit.error.identifier.alreadyExists");
+            return;
+        }
+
         try {
             recordingUnitService.save(toSave, toSave.getType(), List.of(),  List.of(),  List.of());
         }

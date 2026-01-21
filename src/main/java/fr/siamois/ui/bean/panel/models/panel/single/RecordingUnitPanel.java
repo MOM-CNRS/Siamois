@@ -365,6 +365,11 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
             unit.setValidatedAt(null);
         }
 
+        if (recordingUnitService.fullIdentifierAlreadyExistInAction(unit)) {
+            MessageUtils.displayWarnMessage(langBean, "recording.error.identifier.alreadyExists");
+            return false;
+        }
+
         try {
             recordingUnitService.save(unit, unit.getType(), List.of(), List.of(), List.of());
         } catch (FailedRecordingUnitSaveException e) {
