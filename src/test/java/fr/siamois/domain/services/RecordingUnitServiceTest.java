@@ -1,5 +1,6 @@
 package fr.siamois.domain.services;
 
+import fr.siamois.domain.models.ArkEntity;
 import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.ark.Ark;
@@ -510,6 +511,215 @@ class RecordingUnitServiceTest {
         // Assert
         assertEquals(2, result.size());
         verify(recordingUnitRepository).findRootsByAction(actionId);
+    }
+
+    @Test
+    void fullIdentifierAlreadyExistInAction_returnTrue_whenSameIdentifierIsNotSameUnit() {
+        recordingUnit1 = new RecordingUnit();
+        recordingUnit1.setId(1L);
+        recordingUnit1.setActionUnit(actionUnit);
+        recordingUnit1.setFullIdentifier("test");
+
+        recordingUnit2 = new RecordingUnit();
+        recordingUnit2.setId(2L);
+        recordingUnit2.setActionUnit(actionUnit);
+        recordingUnit2.setFullIdentifier("test");
+
+        when(recordingUnitRepository.findByFullIdentifierAndActionUnit("test", actionUnit))
+                .thenReturn(List.of(recordingUnit1, recordingUnit2));
+
+        assertTrue(recordingUnitService.fullIdentifierAlreadyExistInAction(recordingUnit1));
+    }
+
+    @Test
+    void fullIdentifierAlreadyExistInAction_returnFalse_whenSameIdentifierIsSameUnit() {
+        recordingUnit1 = new RecordingUnit();
+        recordingUnit1.setId(1L);
+        recordingUnit1.setActionUnit(actionUnit);
+        recordingUnit1.setFullIdentifier("test");
+
+        when(recordingUnitRepository.findByFullIdentifierAndActionUnit("test", actionUnit))
+                .thenReturn(List.of(recordingUnit1, recordingUnit1));
+
+        assertFalse(recordingUnitService.fullIdentifierAlreadyExistInAction(recordingUnit1));
+    }
+
+    @Test
+    void fullIdentifierAlreadyExistInAction_returnFalse_whenIdentifierDoesntAlreadyExists() {
+        recordingUnit1 = new RecordingUnit();
+        recordingUnit1.setId(1L);
+        recordingUnit1.setActionUnit(actionUnit);
+        recordingUnit1.setFullIdentifier("test");
+
+        when(recordingUnitRepository.findByFullIdentifierAndActionUnit("test", actionUnit))
+                .thenReturn(List.of());
+
+        assertFalse(recordingUnitService.fullIdentifierAlreadyExistInAction(recordingUnit1));
+    }
+
+    @Test
+    void findWithoutArk_returnsListOfRecordingUnits() {
+        // Arrange
+        Institution institution = new Institution();
+        institution.setId(1L);
+        List<RecordingUnit> mockRecordingUnits = List.of(recordingUnit1, recordingUnit2);
+        when(recordingUnitRepository.findAllWithoutArkOfInstitution(institution.getId())).thenReturn(mockRecordingUnits);
+
+        // Act
+        List<? extends ArkEntity> result = recordingUnitService.findWithoutArk(institution);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(2, result.size());
+        assertEquals(recordingUnit1, result.get(0));
+        assertEquals(recordingUnit2, result.get(1));
+        verify(recordingUnitRepository, times(1)).findAllWithoutArkOfInstitution(institution.getId());
+    }
+
+    @Test
+    void save_ArkEntity_returnsSavedRecordingUnit() {
+        // Arrange
+        RecordingUnit arkRecordingUnit = new RecordingUnit();
+        arkRecordingUnit.setId(1L);
+        when(recordingUnitRepository.save(any(RecordingUnit.class))).thenReturn(arkRecordingUnit);
+
+        // Act
+        ArkEntity result = recordingUnitService.save(arkRecordingUnit);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(arkRecordingUnit, result);
+        verify(recordingUnitRepository, times(1)).save(arkRecordingUnit);
+    }
+
+    @Test
+    void countByInstitution_returnsCorrectCount() {
+        // Arrange
+        Institution institution = new Institution();
+        institution.setId(1L);
+        when(recordingUnitRepository.countByCreatedByInstitution(institution)).thenReturn(10L);
+
+        // Act
+        long count = recordingUnitService.countByInstitution(institution);
+
+        // Assert
+        assertEquals(10L, count);
+        verify(recordingUnitRepository, times(1)).countByCreatedByInstitution(institution);
+    }
+
+    @Test
+    void generatedNextIdentifier_UNIQUE_returnsUniqueId() {
+        // Arrange
+        actionUnit.setRecordingUnitIdentifierFormat("{NUM_UE}");
+        when(recordingUnitIdCounterRepository.ruNextValUnique(actionUnit.getId())).thenReturn(100);
+
+        // Act
+        int result = recordingUnitService.generatedNextIdentifier(actionUnit, null, null);
+
+        // Assert
+        assertEquals(100, result);
+        verify(recordingUnitIdCounterRepository, times(1)).ruNextValUnique(actionUnit.getId());
+        verifyNoMoreInteractions(recordingUnitIdCounterRepository);
+    }
+
+    @Test
+    void generatedNextIdentifier_PARENT_withNullParent_returnsUniqueId() {
+        // Arrange
+        actionUnit.setRecordingUnitIdentifierFormat("{NUM_PARENT}-{NUM_UE}");
+        when(recordingUnitIdCounterRepository.ruNextValUnique(actionUnit.getId())).thenReturn(101);
+
+        // Act
+        int result = recordingUnitService.generatedNextIdentifier(actionUnit, null, null);
+
+        // Assert
+        assertEquals(101, result);
+        verify(recordingUnitIdCounterRepository, times(1)).ruNextValUnique(actionUnit.getId());
+        verifyNoMoreInteractions(recordingUnitIdCounterRepository);
+    }
+
+    @Test
+    void generatedNextIdentifier_PARENT_withParent_returnsParentId() {
+        // Arrange
+        actionUnit.setRecordingUnitIdentifierFormat("{NUM_PARENT}-{NUM_UE}");
+        RecordingUnit parentRu = new RecordingUnit();
+        parentRu.setId(5L);
+        when(recordingUnitIdCounterRepository.ruNextValParent(parentRu.getId())).thenReturn(102);
+
+        // Act
+        int result = recordingUnitService.generatedNextIdentifier(actionUnit, null, parentRu);
+
+        // Assert
+        assertEquals(102, result);
+        verify(recordingUnitIdCounterRepository, times(1)).ruNextValParent(parentRu.getId());
+        verifyNoMoreInteractions(recordingUnitIdCounterRepository);
+    }
+
+    @Test
+    void generatedNextIdentifier_TYPE_UNIQUE_returnsTypeId() {
+        // Arrange
+        actionUnit.setRecordingUnitIdentifierFormat("{TYPE_UE}-{NUM_UE}");
+        Concept unitType = new Concept();
+        unitType.setId(10L);
+        when(recordingUnitIdCounterRepository.ruNextValTypeUnique(actionUnit.getId(), unitType.getId())).thenReturn(103);
+
+        // Act
+        int result = recordingUnitService.generatedNextIdentifier(actionUnit, unitType, null);
+
+        // Assert
+        assertEquals(103, result);
+        verify(recordingUnitIdCounterRepository, times(1)).ruNextValTypeUnique(actionUnit.getId(), unitType.getId());
+        verifyNoMoreInteractions(recordingUnitIdCounterRepository);
+    }
+
+    @Test
+    void generatedNextIdentifier_TYPE_UNIQUE_withNullType_returnsTypeId() {
+        // Arrange
+        actionUnit.setRecordingUnitIdentifierFormat("{TYPE_UE}-{NUM_UE}");
+        when(recordingUnitIdCounterRepository.ruNextValTypeUnique(actionUnit.getId(), null)).thenReturn(104);
+
+        // Act
+        int result = recordingUnitService.generatedNextIdentifier(actionUnit, null, null);
+
+        // Assert
+        assertEquals(104, result);
+        verify(recordingUnitIdCounterRepository, times(1)).ruNextValTypeUnique(actionUnit.getId(), null);
+        verifyNoMoreInteractions(recordingUnitIdCounterRepository);
+    }
+
+    @Test
+    void generatedNextIdentifier_PARENT_TYPE_withNullParent_returnsUniqueId() {
+        // Arrange
+        actionUnit.setRecordingUnitIdentifierFormat("{TYPE_UE}{NUM_PARENT}-{NUM_UE}");
+        Concept unitType = new Concept();
+        unitType.setId(10L);
+        when(recordingUnitIdCounterRepository.ruNextValUnique(actionUnit.getId())).thenReturn(105);
+
+        // Act
+        int result = recordingUnitService.generatedNextIdentifier(actionUnit, unitType, null);
+
+        // Assert
+        assertEquals(105, result);
+        verify(recordingUnitIdCounterRepository, times(1)).ruNextValUnique(actionUnit.getId());
+        verifyNoMoreInteractions(recordingUnitIdCounterRepository);
+    }
+
+    @Test
+    void generatedNextIdentifier_PARENT_TYPE_withParentAndType_returnsParentTypeId() {
+        // Arrange
+        actionUnit.setRecordingUnitIdentifierFormat("{TYPE_UE}{NUM_PARENT}-{NUM_UE}");
+        RecordingUnit parentRu = new RecordingUnit();
+        parentRu.setId(5L);
+        Concept unitType = new Concept();
+        unitType.setId(10L);
+        when(recordingUnitIdCounterRepository.ruNextValTypeParent(parentRu.getId(), unitType.getId())).thenReturn(106);
+
+        // Act
+        int result = recordingUnitService.generatedNextIdentifier(actionUnit, unitType, parentRu);
+
+        // Assert
+        assertEquals(106, result);
+        verify(recordingUnitIdCounterRepository, times(1)).ruNextValTypeParent(parentRu.getId(), unitType.getId());
+        verifyNoMoreInteractions(recordingUnitIdCounterRepository);
     }
 
     static class FakeResolver implements RuIdentifierResolver {
