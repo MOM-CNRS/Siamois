@@ -1,8 +1,8 @@
 package fr.siamois.domain.services.recordingunit.identifier;
 
 import fr.siamois.domain.models.actionunit.ActionUnit;
-import fr.siamois.domain.models.recordingunit.identifier.RecordingUnitIdLabel;
 import fr.siamois.domain.models.recordingunit.identifier.RecordingUnitIdInfo;
+import fr.siamois.domain.models.recordingunit.identifier.RecordingUnitIdLabel;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.models.vocabulary.label.ConceptLabel;
 import fr.siamois.domain.models.vocabulary.label.ConceptPrefLabel;
