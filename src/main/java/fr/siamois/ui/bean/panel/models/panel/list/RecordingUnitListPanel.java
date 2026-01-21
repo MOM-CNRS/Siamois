@@ -49,7 +49,6 @@ public class RecordingUnitListPanel extends AbstractListPanel<RecordingUnit> imp
     private final transient GenericNewUnitDialogBean<RecordingUnit> genericNewUnitDialogBean;
     private final transient RecordingUnitWriteVerifier recordingUnitWriteVerifier;
     private final transient NavBean navBean;
-    private final LangBean langBean;
 
     // locals
     private String actionUnitListErrorMessage;
@@ -57,6 +56,7 @@ public class RecordingUnitListPanel extends AbstractListPanel<RecordingUnit> imp
 
 
 
+    @SuppressWarnings("unchecked")
     public RecordingUnitListPanel(ApplicationContext context, LangBean langBean) {
         super("panel.title.allrecordingunit",
                 "bi bi-pencil-square",
@@ -70,7 +70,6 @@ public class RecordingUnitListPanel extends AbstractListPanel<RecordingUnit> imp
         this.genericNewUnitDialogBean = context.getBean(GenericNewUnitDialogBean.class);
         this.recordingUnitWriteVerifier = context.getBean(RecordingUnitWriteVerifier.class);
         this.navBean = context.getBean(NavBean.class);
-        this.langBean = langBean;
     }
 
     @Override

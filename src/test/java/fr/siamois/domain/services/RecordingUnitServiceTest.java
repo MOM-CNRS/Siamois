@@ -209,8 +209,6 @@ class RecordingUnitServiceTest {
 
         when(recordingUnitRepository.findById(10L)).thenReturn(Optional.of(parent1Unit));
 
-        RecordingUnitIdInfo info = new RecordingUnitIdInfo();
-
         RecordingUnit result = recordingUnitService.save(recordingUnitToSave,c,
                 List.of(anteriorUnit),
                 List.of(synchronousUnit),
@@ -266,8 +264,6 @@ class RecordingUnitServiceTest {
 
         doNothing().when(customFormResponseService)
                 .saveFormResponse(any(CustomFormResponse.class), any(CustomFormResponse.class));
-
-        RecordingUnitIdInfo info = new RecordingUnitIdInfo();
 
         RecordingUnit res = recordingUnitService.save(recordingUnitToSave, c, List.of(anteriorUnit),
                 List.of(synchronousUnit),
