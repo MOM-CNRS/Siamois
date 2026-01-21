@@ -74,11 +74,12 @@
 
     <div class="d-flex" style="height:100vh">
         <!-- Barre latérale -->
-        <h:panelGroup  id="navBar" rendered="#{navBean.siamoisMode}" layout="none">
+        <h:panelGroup id="navBar" rendered="#{navBean.siamoisMode}" layout="none">
             <nav id="siamoisNav" class="sidebar collapsed" aria-label="General sidebar">
                 <div>
                     <button id="toggle-btn" type="button"
-                            class="btn btn-outline-light" onclick="toggleCollapseSidebar();"><i class="bi bi-list"/></button>
+                            class="btn btn-outline-light" onclick="toggleCollapseSidebar();"><i class="bi bi-list"/>
+                    </button>
 
                     <ul class="nav flex-column">
                         <li class="nav-item">
@@ -108,6 +109,7 @@
                             <p:divider/>
                             <h:panelGroup id="bookmarkGroup" layout="none"
                                           rendered="#{navBean.bookmarkedPanels.size() > 0}">
+
                                 <li class="nav-header">
                                     #{langBean.msg('nav.header.bookmark')}
                                 </li>
@@ -130,40 +132,60 @@
                 </div>
 
                 <div class="sidebar-footer">
-                    <p:outputPanel class="version-number">
-                        #{appVersionBean.getVersion()}
-                    </p:outputPanel>
-                    <hr class="sidebar-divider"/>
-                    <form:csrfform formId="logoutForm">
-                        <div style="
+                    <ul class="nav flex-column">
+                        <li class="nav-item">
+                            <h:outputLink value="https://amplified-trampoline-ee0.notion.site/1de32b90b4818066a0dac416da8255e3?pvs=105" styleClass="nav-link" target="_blank"
+                                          id="bugLink">
+                                <i class="bi bi-bug-fill" />
+                                <span class="menu-text">#{langBean.msg('nav.bug')}</span>
+                                <p:tooltip for="bugLink" value="#{langBean.msg('nav.bug')}"/>
+                            </h:outputLink>
+                        </li>
+                        <li class="nav-item">
+                            <h:outputLink value="https://discord.gg/MMKxBvNVzt" styleClass="nav-link" target="_blank"
+                                          id="discordLink">
+                                <i class="bi bi-discord" style="color:#7289da;"/>
+                                <span class="menu-text">#{langBean.msg('nav.discord')}</span>
+                                <p:tooltip for="discordLink" value="#{langBean.msg('nav.discord')}"/>
+                            </h:outputLink>
+                        </li>
+                    </ul>
+                    <div class="sidebar-footer-bottom-section">
+                        <p:outputPanel class="version-number">
+                            #{appVersionBean.getVersion()}
+                        </p:outputPanel>
+                        <hr class="sidebar-divider"/>
+                        <form:csrfform formId="logoutForm">
+                            <div style="
                                 padding: 12px 24px 12px 24px;
                                 width: 100%;
                                 display: flex;
                                 justify-content: center;
                                 align-items: center;
                                 gap: 2em;">
-                            <span class="menu-text">#{navBean.currentUser().email}</span>
-                            <p:commandButton action="#{navBean.logout()}"
-                                             icon="bi bi-box-arrow-right"
-                                             styleClass="nav-link logout-button">
-                                <p:confirm header="#{langBean.msg('nav.logout')}"
-                                           message="#{langBean.msg('logout.warning')}" icon="pi pi-info-circle"/>
-                            </p:commandButton>
-                            <p:confirmDialog global="true" showEffect="fade" hideEffect="fade" responsive="true"
-                                             width="350">
-                                <p:commandButton value="#{langBean.msg('common.label.no')}" type="button"
-                                                 styleClass="ui-confirmdialog-no ui-button-flat"/>
-                                <p:commandButton value="#{langBean.msg('common.label.yes')}" type="button"
-                                                 styleClass="ui-confirmdialog-yes"/>
-                            </p:confirmDialog>
-                        </div>
+                                <span class="menu-text">#{navBean.currentUser().email}</span>
+                                <p:commandButton action="#{navBean.logout()}"
+                                                 icon="bi bi-box-arrow-right"
+                                                 styleClass="nav-link logout-button">
+                                    <p:confirm header="#{langBean.msg('nav.logout')}"
+                                               message="#{langBean.msg('logout.warning')}" icon="pi pi-info-circle"/>
+                                </p:commandButton>
+                                <p:confirmDialog global="true" showEffect="fade" hideEffect="fade" responsive="true"
+                                                 width="350">
+                                    <p:commandButton value="#{langBean.msg('common.label.no')}" type="button"
+                                                     styleClass="ui-confirmdialog-no ui-button-flat"/>
+                                    <p:commandButton value="#{langBean.msg('common.label.yes')}" type="button"
+                                                     styleClass="ui-confirmdialog-yes"/>
+                                </p:confirmDialog>
+                            </div>
 
-                    </form:csrfform>
+                        </form:csrfform>
+                    </div>
                 </div>
             </nav>
         </h:panelGroup>
 
-        <h:panelGroup  rendered="#{navBean.settingsMode}" layout="none">
+        <h:panelGroup rendered="#{navBean.settingsMode}" layout="none">
             <nav id="sidebarSettings" class="sidebar" aria-label="Settings sidebar">
                 <form:csrfform formId="settingsNavForm">
                     <ul class="nav flex-column">
@@ -233,9 +255,10 @@
             </form:csrfform>
             <h:panelGroup styleClass="show-small-screen" rendered="#{navBean.settingsMode}" layout="none">
                 <!-- Floating toggle button to open navbar -->
-                <h:panelGroup id="floatingSidebarToggle" class="floating-toggle show-small-screen" rendered="#{navBean.settingsMode}" >
+                <h:panelGroup id="floatingSidebarToggle" class="floating-toggle show-small-screen"
+                              rendered="#{navBean.settingsMode}">
                     <form:csrfform formId="floatingToggleForm" id="floatingToggleCsrfForm">
-                        <p:commandButton icon="bi bi-list" onclick="toggleSiamoisSettingsSidebar();" />
+                        <p:commandButton icon="bi bi-list" onclick="toggleSiamoisSettingsSidebar();"/>
                     </form:csrfform>
                 </h:panelGroup>
             </h:panelGroup>

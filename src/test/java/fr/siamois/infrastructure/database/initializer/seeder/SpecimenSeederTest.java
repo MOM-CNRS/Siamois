@@ -48,6 +48,7 @@ class SpecimenSeederTest {
                         1,
                         new ConceptSeeder.ConceptKey("th240", "123456"),
                         new ConceptSeeder.ConceptKey("th240", "4286252"),
+                        new ConceptSeeder.ConceptKey("th240", "4286252"),
                         "author@siamois.fr",
                         "chartres",
                         List.of("author@siamois.fr"),

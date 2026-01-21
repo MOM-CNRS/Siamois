@@ -4,6 +4,7 @@ import fr.siamois.domain.models.actionunit.ActionCode;
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.institution.Institution;
+import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.infrastructure.database.repositories.SpatialUnitRepository;
 import fr.siamois.infrastructure.database.repositories.actionunit.ActionCodeRepository;
@@ -20,8 +21,10 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.OffsetDateTime;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -69,18 +72,24 @@ class ActionUnitSeederTest {
     }
 
     @Test
-    void seed_creates_whenNotExisting_andSpatialKeysNull() {
+    void seed_creates_whenNotExisting() {
         // Given
         Concept concept = new Concept(); concept.setId(1L);
         Person author = new Person();   // set fields if needed
         Institution institution = new Institution(); institution.setId(99L);
         ActionCode code = new ActionCode(); code.setCode("AC001");
 
+        Set<SpatialUnitSeeder.SpatialUnitKey>
+                keys = new HashSet<SpatialUnitSeeder.SpatialUnitKey>();
+        keys.add(new SpatialUnitSeeder.SpatialUnitKey("spatial"));
+
         commonLookupsOk("vocA", "conA", "author@x.test", "INST-1", "AC001",
                 concept, author, institution, code);
 
         when(actionUnitRepository.findByFullIdentifier("AU-1"))
                 .thenReturn(Optional.empty());
+
+        when(spatialUnitRepository.findByNameAndInstitution("spatial", 99L)).thenReturn(Optional.of(new SpatialUnit()));
 
         var begin = OffsetDateTime.parse("2024-01-01T00:00:00Z");
         var end   = OffsetDateTime.parse("2024-12-31T00:00:00Z");
@@ -90,7 +99,7 @@ class ActionUnitSeederTest {
                 "vocA", "conA",
                 "author@x.test",
                 "INST-1", begin, end,
-                null // spatial keys = null
+                keys
         );
 
         // When
@@ -109,9 +118,8 @@ class ActionUnitSeederTest {
         assertThat(saved.getCreatedByInstitution()).isEqualTo(institution);
         assertThat(saved.getBeginDate()).isEqualTo(begin);
         assertThat(saved.getEndDate()).isEqualTo(end);
-        assertThat(saved.getSpatialContext()).isNotNull().isEmpty();
-
-        verify(spatialUnitRepository, never()).findByNameAndInstitution(anyString(), anyLong());
+        assertThat(saved.getSpatialContext()).isNotNull().isNotEmpty();
+        
     }
 
     @Test
@@ -172,6 +180,8 @@ class ActionUnitSeederTest {
                 .thenReturn(Optional.of(concept));
         when(personRepository.findByEmailIgnoreCase("missing@x"))
                 .thenReturn(Optional.empty());
+
+
 
         ActionUnitSeeder.ActionUnitSpecs s = new ActionUnitSeeder.ActionUnitSpecs("AU-3", "Name", "ID", "ACX",
                 "v", "c",

@@ -207,6 +207,19 @@ public interface RecordingUnitRepository extends CrudRepository<RecordingUnit, L
 
     Optional<RecordingUnit> findByIdentifierAndCreatedByInstitution(Integer identifier, Institution institution);
 
+    @Query(
+            value = "SELECT ru.* " +
+                    "FROM recording_unit ru " +
+                    "JOIN institution i ON ru.fk_institution_id = i.institution_id " +
+                    "WHERE ru.full_identifier = :fullIdentifier " +
+                    "AND i.identifier = :institutionIdentifier",
+            nativeQuery = true
+    )
+    Optional<RecordingUnit> findByFullIdentifierAndInstitutionIdentifier(
+            @Param("fullIdentifier") String fullIdentifier,
+            @Param("institutionIdentifier") String institutionIdentifier
+    );
+
     Optional<RecordingUnit> findByFullIdentifier(@NotNull String fullIdentifier);
 
     @Query(
