@@ -7,6 +7,7 @@ import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.ui.bean.LangBean;
+import fr.siamois.ui.bean.panel.models.panel.list.RecordingUnitListPanel;
 import fr.siamois.utils.MessageUtils;
 import lombok.Getter;
 import lombok.Setter;
@@ -88,22 +89,7 @@ public abstract class BaseRecordingUnitLazyDataModel extends BaseLazyDataModel<R
 
     public void handleRowEdit(RowEditEvent<RecordingUnit> event) {
 
-        RecordingUnit toSave = event.getObject();
-
-        if (recordingUnitService.fullIdentifierAlreadyExistInAction(toSave)) {
-            MessageUtils.displayWarnMessage(langBean, "recordingunit.error.identifier.alreadyExists");
-            return;
-        }
-
-        try {
-            recordingUnitService.save(toSave, toSave.getType(), List.of(),  List.of(),  List.of());
-        }
-        catch(FailedRecordingUnitSaveException e) {
-            MessageUtils.displayErrorMessage(langBean, "common.entity.recordingUnits.updateFailed", toSave.getFullIdentifier());
-            return ;
-        }
-
-        MessageUtils.displayInfoMessage(langBean, "common.entity.recordingUnits.updated", toSave.getFullIdentifier());
+        RecordingUnitListPanel.handleRuRowEdit(event, recordingUnitService, langBean);
     }
 
     public void saveFieldBulk() {
