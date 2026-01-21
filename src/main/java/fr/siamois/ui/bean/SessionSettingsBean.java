@@ -10,11 +10,13 @@ import fr.siamois.domain.models.settings.PersonSettings;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.person.PersonService;
 import fr.siamois.utils.AuthenticatedUserUtils;
+import jakarta.servlet.ServletContext;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.event.EventListener;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
@@ -36,6 +38,7 @@ public class SessionSettingsBean implements Serializable {
     private final LangBean langBean;
     private final transient RedirectBean redirectBean;
     private final transient PersonService personService;
+    private final transient ServletContext servletContext;
     private Institution selectedInstitution;
     private InstitutionSettings institutionSettings;
     private PersonSettings personSettings;
@@ -43,6 +46,9 @@ public class SessionSettingsBean implements Serializable {
     @Getter(AccessLevel.NONE)
     @Setter(AccessLevel.NONE)
     private UserInfo userInfo;
+
+    @Value("${server.servlet.session.timeout}")
+    private String sessionTimeout;
 
     public Person getAuthenticatedUser() {
         return AuthenticatedUserUtils.getAuthenticatedUser().orElse(null);
@@ -116,6 +122,24 @@ public class SessionSettingsBean implements Serializable {
         }
         query = query.toLowerCase();
         return personService.findAllByNameLastnameContaining(query);
+    }
+
+    private long parseTimeoutToSeconds() {
+        if (sessionTimeout.endsWith("m")) {
+            return Long.parseLong(sessionTimeout.replace("m", "")) * 60;
+        } else if (sessionTimeout.endsWith("s")) {
+            return Long.parseLong(sessionTimeout.replace("s", ""));
+        } else {
+            return Long.parseLong(sessionTimeout);
+        }
+    }
+
+    public long getSessionTimeoutInMilliseconds() {
+        return  parseTimeoutToSeconds() * 1000;
+    }
+
+    public String getContextPath() {
+        return servletContext.getContextPath();
     }
 
 }
