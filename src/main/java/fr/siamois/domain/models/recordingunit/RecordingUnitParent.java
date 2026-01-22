@@ -134,6 +134,7 @@ public abstract class RecordingUnitParent extends TraceableEntity {
     @JoinColumn(name="fk_spatial_unit_id")
     protected SpatialUnit spatialUnit;
 
+
     @Override
     public boolean equals(Object o) {
         if (!(o instanceof RecordingUnitParent that)) return false;
