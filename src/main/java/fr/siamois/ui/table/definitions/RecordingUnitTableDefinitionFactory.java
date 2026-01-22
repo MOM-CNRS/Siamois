@@ -71,6 +71,7 @@ public final class RecordingUnitTableDefinitionFactory {
                 .valueBinding("fullIdentifier")
                 .concept(recordingUnitIdConcept)
                 .build();
+
         CustomFieldSelectOneFromFieldCode typeField =  CustomFieldSelectOneFromFieldCode.builder()
                 .label("recordingunit.property.type")
                 .isSystemField(true)

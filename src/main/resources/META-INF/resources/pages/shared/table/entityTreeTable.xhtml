@@ -5,7 +5,6 @@
                 xmlns:f="http://java.sun.com/jsf/core"
 >
 
-
     <p:treeTable id="entityTreeTable"
                  rendered="#{tableModel.treeMode}"
                  value="#{tableModel.treeRoot}"
@@ -60,14 +59,16 @@
                    field="#{column.id}"
                    filterable="#{column.filterable}"
                    toggleable="#{column.type != 'COMMAND_LINK' ? 'true' : 'false'}"
-                   value="#{tableModel.columns}" var="column" varStatus="colStatus">
+                   value="#{tableModel.columns}" var="column" columnIndexVar="colIndex">
+            #{rowIndex}
+
             <ui:include src="/pages/shared/table/columnTemplates.xhtml">
                 <ui:param name="tableModel" value="#{tableModel}" />
                 <ui:param name="column" value="#{column}" />
                 <ui:param name="item" value="#{item}" />
                 <ui:param name="status" value="#{status}" />
                 <ui:param name="rowIndex" value="#{rowIndex}" />
-                <ui:param name="colStatus" value="#{colStatus}" />
+                <ui:param name="colIndex" value="#{colIndex}" />
                 <ui:param name="updateTableString" value="@this #{updateTableString}"/>
                 <ui:param name="canUserEditRow" value="#{tableModel.canUserEditRow(item)}"/>
             </ui:include>
