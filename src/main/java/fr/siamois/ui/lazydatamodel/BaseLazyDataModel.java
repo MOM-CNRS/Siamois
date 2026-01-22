@@ -216,6 +216,7 @@ public abstract class BaseLazyDataModel<T> extends LazyDataModel<T> implements L
         this.first = first;
         this.pageSizeState = pageSize;
         int pageNumber = first / pageSize;
+
         Pageable pageable = PageRequest.of(pageNumber, pageSizeState, buildSort(sortBy, getDefaultSortField()));
 
         // Filter extraction
@@ -287,15 +288,12 @@ public abstract class BaseLazyDataModel<T> extends LazyDataModel<T> implements L
             modifiableCopy  = new ArrayList<>(getWrappedData());
         }
 
-
         // Insert new record at the top
         modifiableCopy.add(0, newUnit);
 
         // Adjust row count
-        int newCount = getRowCount() + 1;
-        setRowCount(newCount);
-        setCachedRowCount(newCount);
-
+        setRowCount(modifiableCopy.size());
+        setCachedRowCount(modifiableCopy.size());
         // Update data
         setWrappedData(modifiableCopy);
         setQueryResult(modifiableCopy);

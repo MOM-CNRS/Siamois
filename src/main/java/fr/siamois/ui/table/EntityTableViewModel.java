@@ -352,7 +352,9 @@ public abstract class EntityTableViewModel<T extends TraceableEntity, ID> {
     }
 
     // Handler when clicking on the create button on top of the table
-    public void openCreateFromToolbar(fr.siamois.ui.bean.dialog.newunit.GenericNewUnitDialogBean<?> dialogBean) {
+    public void openCreateFromToolbar(fr.siamois.ui.bean.dialog.newunit.GenericNewUnitDialogBean<?> dialogBean,
+                                      String updateOnCreate,
+    String tableClientId) {
         if (toolbarCreateConfig == null) {
             return; // pas de bouton configuré
         }
@@ -369,6 +371,8 @@ public abstract class EntityTableViewModel<T extends TraceableEntity, ID> {
                 .trigger(toolbarCreateConfig.getTriggerSupplier().get()) // toolbar()
                 .scope(toolbarCreateConfig.getScopeSupplier().get())
                 .insertPolicy(policy)
+                .updateOnCreate(updateOnCreate)
+                .tableClientId(tableClientId)
                 .build();
 
         try {
@@ -402,6 +406,7 @@ public abstract class EntityTableViewModel<T extends TraceableEntity, ID> {
     * Check if user has permission to edit the row data
      */
     public abstract boolean canUserEditRow(T unit);
+
 
 
 

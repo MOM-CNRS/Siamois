@@ -130,11 +130,13 @@ public abstract class BaseTreeTableLazyModel<T extends TraceableEntity, ID> impl
             TreeNode<T> newNode = new DefaultTreeNode<>(created, null);
             newNode.setParent(parent);
             parent.getChildren().add(0, newNode);
+
             parent.setExpanded(true);
 
             registerNode(created, newNode);
         }
     }
+
 
 
     /**
@@ -249,6 +251,8 @@ public abstract class BaseTreeTableLazyModel<T extends TraceableEntity, ID> impl
             path.remove(id);
         }
     }
+
+
 
 
 }

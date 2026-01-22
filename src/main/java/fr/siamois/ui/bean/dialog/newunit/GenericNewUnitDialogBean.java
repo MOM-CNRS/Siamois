@@ -70,8 +70,6 @@ public class GenericNewUnitDialogBean<T extends TraceableEntity>
     private transient fr.siamois.ui.table.EntityTableViewModel<?, ?> sourceTableModel;
     private transient NewUnitContext newUnitContext;
 
-
-
     public GenericNewUnitDialogBean(ApplicationContext context,
                                     Set<INewUnitHandler<? extends TraceableEntity>> handlerSet) {
         super(context);
@@ -208,11 +206,18 @@ public class GenericNewUnitDialogBean<T extends TraceableEntity>
         try {
             createUnit();
             // JS conditionnel (widgetVar fixe)
-            String js = "PF('newUnitDiag').hide();" + (scrollToTop ? "handleScrollToTop();" : "");
+            String js = "PF('newUnitDiag').hide();";
+
+
+            if (scrollToTop) {
+                js += "handleScrollToTop();";
+            }
+
             PrimeFaces.current().executeScript(js);
 
             // Refresh commun
-            PrimeFaces.current().ajax().update("flow");
+            PrimeFaces.current().ajax().update(newUnitContext.getUpdateOnCreate());
+
 
             // Message succès
             MessageUtils.displayInfoMessage(langBean, getSuccessMessageCode(), unitName());
