@@ -46,7 +46,6 @@ public class InstitutionService {
     private final ActionManagerRepository actionManagerRepository;
     private final VocabularyService vocabularyService;
     private final FieldConfigurationService fieldConfigurationService;
-    private final ActionUnitRepository actionUnitRepository;
 
     /**
      * Finds an institution by its identifier.
