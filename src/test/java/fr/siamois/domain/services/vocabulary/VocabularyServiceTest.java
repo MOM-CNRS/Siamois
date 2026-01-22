@@ -1,6 +1,7 @@
 package fr.siamois.domain.services.vocabulary;
 
 import fr.siamois.domain.models.exceptions.api.InvalidEndpointException;
+import fr.siamois.domain.models.vocabulary.ThesaurusInfo;
 import fr.siamois.domain.models.vocabulary.Vocabulary;
 import fr.siamois.domain.models.vocabulary.VocabularyType;
 import fr.siamois.infrastructure.api.ThesaurusApi;
@@ -15,11 +16,11 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
@@ -100,4 +101,88 @@ class VocabularyServiceTest {
         assertEquals(vocabularyType, result.getType());
     }
 
+    @Test
+    void findAllPublicThesaurusOf_success_preferredLanguageFound() throws InvalidEndpointException {
+        String server = "http://example.com";
+        String lang = "fr";
+        ThesaurusDTO dto1 = new ThesaurusDTO("1", List.of(new LabelDTO("en", "English Label"), new LabelDTO("fr", "Label Français")));
+        when(thesaurusApi.fetchAllPublicThesaurus(server)).thenReturn(List.of(dto1));
+
+        List<ThesaurusInfo> result = vocabularyService.findAllPublicThesaurusOf(server, lang);
+
+        assertEquals(1, result.size());
+        assertEquals("1", result.get(0).idTheso());
+        assertEquals("Label Français", result.get(0).label());
+        assertEquals("fr", result.get(0).langLabel());
+    }
+
+    @Test
+    void findAllPublicThesaurusOf_success_fallbackToDefaultLanguage() throws InvalidEndpointException {
+        String server = "http://example.com";
+        String lang = "es";
+        ThesaurusDTO dto1 = new ThesaurusDTO("1", List.of(new LabelDTO("en", "English Label"), new LabelDTO("fr", "Label Français")));
+        when(thesaurusApi.fetchAllPublicThesaurus(server)).thenReturn(List.of(dto1));
+
+        List<ThesaurusInfo> result = vocabularyService.findAllPublicThesaurusOf(server, lang);
+
+        assertEquals(1, result.size());
+        assertEquals("1", result.get(0).idTheso());
+        assertEquals("English Label", result.get(0).label());
+        assertEquals("en", result.get(0).langLabel());
+    }
+
+    @Test
+    void findAllPublicThesaurusOf_noLabels() throws InvalidEndpointException {
+        String server = "http://example.com";
+        String lang = "fr";
+        ThesaurusDTO dto1 = new ThesaurusDTO("1", Collections.emptyList());
+        when(thesaurusApi.fetchAllPublicThesaurus(server)).thenReturn(List.of(dto1));
+
+        List<ThesaurusInfo> result = vocabularyService.findAllPublicThesaurusOf(server, lang);
+
+        assertEquals(1, result.size());
+        assertEquals("1", result.get(0).idTheso());
+        assertEquals("NULL", result.get(0).label());
+        assertEquals("fr", result.get(0).langLabel());
+    }
+
+    @Test
+    void findAllPublicThesaurusOf_apiReturnsEmptyList() throws InvalidEndpointException {
+        String server = "http://example.com";
+        String lang = "fr";
+        when(thesaurusApi.fetchAllPublicThesaurus(server)).thenReturn(Collections.emptyList());
+
+        List<ThesaurusInfo> result = vocabularyService.findAllPublicThesaurusOf(server, lang);
+
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    void findAllPublicThesaurusOf_apiThrowsException() throws InvalidEndpointException {
+        String server = "http://example.com";
+        String lang = "fr";
+        when(thesaurusApi.fetchAllPublicThesaurus(server)).thenThrow(new InvalidEndpointException("API Error"));
+
+        assertThrows(InvalidEndpointException.class, () -> vocabularyService.findAllPublicThesaurusOf(server, lang));
+    }
+
+    @Test
+    void findAllPublicThesaurusOf_multipleThesaurus() throws InvalidEndpointException {
+        String server = "http://example.com";
+        String lang = "fr";
+        ThesaurusDTO dto1 = new ThesaurusDTO("1", List.of(new LabelDTO("fr", "Label 1")));
+        ThesaurusDTO dto2 = new ThesaurusDTO("2", List.of(new LabelDTO("en", "Label 2")));
+        ThesaurusDTO dto3 = new ThesaurusDTO("3", List.of(new LabelDTO("de", "Label 3"), new LabelDTO("fr", "Label 3 fr")));
+        when(thesaurusApi.fetchAllPublicThesaurus(server)).thenReturn(List.of(dto1, dto2, dto3));
+
+        List<ThesaurusInfo> result = vocabularyService.findAllPublicThesaurusOf(server, lang);
+
+        assertEquals(3, result.size());
+        assertEquals("Label 1", result.get(0).label());
+        assertEquals("fr", result.get(0).langLabel());
+        assertEquals("Label 2", result.get(1).label());
+        assertEquals("en", result.get(1).langLabel());
+        assertEquals("Label 3 fr", result.get(2).label());
+        assertEquals("fr", result.get(2).langLabel());
+    }
 }

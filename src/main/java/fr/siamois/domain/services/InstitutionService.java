@@ -3,6 +3,7 @@ package fr.siamois.domain.services;
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.exceptions.api.InvalidEndpointException;
+import fr.siamois.domain.models.exceptions.api.NotSiamoisThesaurusException;
 import fr.siamois.domain.models.exceptions.institution.FailedInstitutionSaveException;
 import fr.siamois.domain.models.exceptions.institution.InstitutionAlreadyExistException;
 import fr.siamois.domain.models.institution.Institution;
@@ -45,7 +46,6 @@ public class InstitutionService {
     private final ActionManagerRepository actionManagerRepository;
     private final VocabularyService vocabularyService;
     private final FieldConfigurationService fieldConfigurationService;
-    private final ActionUnitRepository actionUnitRepository;
 
     /**
      * Finds an institution by its identifier.
@@ -93,7 +93,7 @@ public class InstitutionService {
      * @throws InstitutionAlreadyExistException if an institution with the same identifier already exists
      * @throws FailedInstitutionSaveException   if there is an error while saving the institution
      */
-    public Institution createInstitution(Institution institution, String thesaurusUrl) throws InstitutionAlreadyExistException, FailedInstitutionSaveException, InvalidEndpointException {
+    public Institution createInstitution(Institution institution, String thesaurusUrl) throws InstitutionAlreadyExistException, FailedInstitutionSaveException, InvalidEndpointException, NotSiamoisThesaurusException {
         Optional<Institution> existing = institutionRepository.findInstitutionByIdentifier(institution.getIdentifier());
         if (existing.isPresent())
             throw new InstitutionAlreadyExistException("Institution with code " + institution.getIdentifier() + " already exists");
@@ -106,11 +106,15 @@ public class InstitutionService {
             Institution i = institutionRepository.save(institution);
             fieldConfigurationService.setupFieldConfigurationForInstitution(i, vocabulary);
             return i;
+        } catch (NotSiamoisThesaurusException e) {
+            log.error("The thesaurus is not a siamois thesaurus : {}", thesaurusUrl, e);
+            throw e;
         } catch (Exception e) {
             log.error("Error while saving institution", e);
             throw new FailedInstitutionSaveException("Failed to save institution");
         }
     }
+
 
     /**
      * Finds all relations of a given action unit.
