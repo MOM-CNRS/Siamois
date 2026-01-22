@@ -16,32 +16,21 @@
                  selection="#{tableModel.checkboxSelectedTreeNodes}"
                  varStatus="status"
                  size="small"
-                 paginatorPosition="bottom"
                  selectionRowMode="none"
                  propagateSelectionUp="false"
                  propagateSelectionDown="false"
-                 lazy="true"
                  globalFilter="#{tableModel.globalFilter}"
                  allowUnsorting="true"
                  sortBy="#{tableModel.treeLazyModel.sortBy}"
-                 rows="#{tableModel.treeLazyModel.pageSizeState}"
-                 first="#{tableModel.treeLazyModel.first}"
                  sortMode="multiple"
                  partialUpdate="false"
                  emptyMessage="#{langBean.msg('recordingUnitList.empty')}"
-                 paginatorTemplate="Rows per page: {RowsPerPageDropdown} {RowReport} {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink}"
                  rowsPerPageTemplate="5,10,15,20,25"
-                 rowIndexVar="rowIndex"
                  style="overflow-x: auto;"
                  tableStyleClass="datatable-hoverable-table"
                  tableStyle="table-layout: auto;"
                  class="#{tableClass}">
 
-        <f:facet name="{RowReport}">
-            <span class="ui-paginator-current">
-                #{tableModel.treeLazyModel.getFirstIndexOnPage()}-#{tableModel.treeLazyModel.getLastIndexOnPage()} of #{tableModel.treeLazyModel.rowCount}
-            </span>
-        </f:facet>
 
         <f:facet name="header">
             <ui:include src="/pages/shared/table/tableToolbar.xhtml">

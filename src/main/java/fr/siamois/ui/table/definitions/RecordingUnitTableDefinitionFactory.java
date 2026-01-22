@@ -3,6 +3,7 @@ package fr.siamois.ui.table.definitions;
 import fr.siamois.domain.models.form.customfield.*;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
+import fr.siamois.infrastructure.database.initializer.seeder.ConceptSeeder;
 import fr.siamois.ui.table.*;
 
 import static fr.siamois.ui.bean.panel.models.panel.single.AbstractSingleEntity.SYSTEM_THESO;
@@ -63,14 +64,20 @@ public final class RecordingUnitTableDefinitionFactory {
                 .vocabulary(SYSTEM_THESO)
                 .externalId("4286193")
                 .build();
+        Concept matrixColorConcept = new Concept.Builder()
+                .vocabulary(SYSTEM_THESO)
+                .externalId("Couleur de la matrice")
+                .build();
 
         CustomFieldText recordingUnitIdField =  CustomFieldText.builder()
                 .label("recordingunit.field.identifier")
                 .isSystemField(true)
+                .isTextArea(false)
                 .id(8L)
                 .valueBinding("fullIdentifier")
                 .concept(recordingUnitIdConcept)
                 .build();
+
 
         CustomFieldSelectOneFromFieldCode typeField =  CustomFieldSelectOneFromFieldCode.builder()
                 .label("recordingunit.property.type")
@@ -81,6 +88,16 @@ public final class RecordingUnitTableDefinitionFactory {
                 .fieldCode("SIARU.TYPE")
                 .styleClass("mr-2 recording-unit-type-chip")
                 .build();
+
+        CustomFieldText matrixColor =  CustomFieldText.builder()
+                .label("recordingunit.field.matrixColor")
+                .isSystemField(true)
+                .isTextArea(false)
+                .id(9L)
+                .valueBinding("matrixColor")
+                .concept(matrixColorConcept)
+                .build();
+
         CustomFieldDateTime dateField =  CustomFieldDateTime.builder()
                 .label("recordingunit.field.openingDate")
                 .isSystemField(true)
@@ -159,6 +176,7 @@ public final class RecordingUnitTableDefinitionFactory {
                         .required(true)
                         .build()
         );
+
         tableModel.getTableDefinition().addColumn(
                 FormFieldColumn.builder()
                         .id("type")
@@ -170,6 +188,18 @@ public final class RecordingUnitTableDefinitionFactory {
                         .required(true)
                         .build()
         );
+
+        tableModel.getTableDefinition().addColumn(
+                FormFieldColumn.builder()
+                        .id("matrixColor")
+                        .headerKey("recordingunit.field.matrixColor")
+                        .field(matrixColor)
+                        .sortable(false)
+                        .visible(true)
+                        .required(true)
+                        .build()
+        );
+
         tableModel.getTableDefinition().addColumn(
                 FormFieldColumn.builder()
                         .id("openingDate")

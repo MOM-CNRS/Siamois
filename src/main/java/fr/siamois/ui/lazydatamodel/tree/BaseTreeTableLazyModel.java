@@ -138,6 +138,7 @@ public abstract class BaseTreeTableLazyModel<T extends TraceableEntity, ID> impl
     }
 
 
+
     /**
      * Insert new parent at ROOT and move clicked node as ONLY child of new parent.
      * Note: if clickedId exists in multiple places, this method uses one arbitrary occurrence (first).
@@ -250,6 +251,8 @@ public abstract class BaseTreeTableLazyModel<T extends TraceableEntity, ID> impl
             path.remove(id);
         }
     }
+
+
 
 
 }

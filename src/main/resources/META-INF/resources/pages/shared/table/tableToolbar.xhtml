@@ -59,7 +59,10 @@
                     rendered="#{not empty tableModel.toolbarCreateConfig}"
                     icon="bi bi-plus-square"
                     immediate="true"
-                    actionListener="#{tableModel.openCreateFromToolbar(genericNewUnitDialogBean)}"
+                    action="#{tableModel.openCreateFromToolbar(genericNewUnitDialogBean,
+                    cc.clientId.concat(':tableContainer'),
+                    cc.clientId.concat('_').concat(tableId)
+                    )}"
                     oncomplete="PF('newUnitDiag').show();"
                     update="newUnitForm">
             </p:commandButton>
