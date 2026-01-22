@@ -11,7 +11,6 @@ import fr.siamois.domain.models.settings.InstitutionSettings;
 import fr.siamois.domain.models.team.ActionManagerRelation;
 import fr.siamois.domain.models.team.TeamMemberRelation;
 import fr.siamois.domain.models.vocabulary.Concept;
-import fr.siamois.domain.models.vocabulary.ThesaurusInfo;
 import fr.siamois.domain.models.vocabulary.Vocabulary;
 import fr.siamois.domain.services.vocabulary.FieldConfigurationService;
 import fr.siamois.domain.services.vocabulary.VocabularyService;

@@ -1,6 +1,5 @@
 package fr.siamois.ui.bean.converter;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import fr.siamois.domain.models.vocabulary.ThesaurusInfo;
 import jakarta.faces.component.UIComponent;
 import jakarta.faces.context.FacesContext;
