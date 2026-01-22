@@ -3,33 +3,44 @@ package fr.siamois.domain.models.actionunit;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import fr.siamois.domain.models.ArkEntity;
 import fr.siamois.domain.models.FieldCode;
+import fr.siamois.domain.models.TraceableEntity;
 import fr.siamois.domain.models.actionunit.form.ActionUnitDetailsForm;
 import fr.siamois.domain.models.actionunit.form.ActionUnitNewForm;
+import fr.siamois.domain.models.ark.Ark;
 import fr.siamois.domain.models.document.Document;
 import fr.siamois.domain.models.exceptions.institution.NullInstitutionIdentifier;
 import fr.siamois.domain.models.form.customform.CustomForm;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
+import fr.siamois.domain.models.vocabulary.Concept;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 import org.hibernate.envers.Audited;
+import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
 
+import java.time.OffsetDateTime;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 
 @Data
 @Entity
 @Table(name = "action_unit", uniqueConstraints = @UniqueConstraint(columnNames = "identifier"))
 @Audited
-@NoArgsConstructor
-public class ActionUnit extends ActionUnitParent implements ArkEntity {
+public class ActionUnit extends TraceableEntity implements ArkEntity {
 
-    public ActionUnit(ActionUnit unit) {
+    public ActionUnit() {
+        this.maxRecordingUnitCode = Integer.MAX_VALUE;
+        this.minRecordingUnitCode = 1;
+    }
+
+    @SuppressWarnings("CopyConstructorMissesField")
+    public ActionUnit(@NonNull ActionUnit unit) {
         this.setName(unit.getName());
-        this.setValidated(false);
+
         this.setType(unit.getType());
         this.setCreatedByInstitution(unit.getCreatedByInstitution());
     }
@@ -103,14 +114,56 @@ public class ActionUnit extends ActionUnitParent implements ArkEntity {
         }
     }
 
+    @Column(name = "begin_date")
+    protected OffsetDateTime beginDate;
+
+    @Column(name = "end_date")
+    protected OffsetDateTime endDate;
+
+    @NotNull
+    @Column(name = "name", nullable = false)
+    protected String name;
+
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "fk_type")
+    protected Concept type;
+
+    @OneToOne(fetch = FetchType.EAGER, cascade = {CascadeType.MERGE, CascadeType.PERSIST})
+    @JoinColumn(name = "fk_ark_id")
+    protected Ark ark;
+
+
+    @ManyToOne(fetch = FetchType.EAGER, cascade = {CascadeType.MERGE})
+    @JoinColumn(name = "fk_primary_action_code")
+    protected ActionCode primaryActionCode;
+
+    @NotNull
+    @Column(name="identifier")
+    protected String identifier;
+
+    @NotNull
+    @Column(name="full_identifier")
+    protected String fullIdentifier;
+
+    @NotNull
+    @Column(name="max_recording_unit_code", nullable = false)
+    protected Integer maxRecordingUnitCode;
+
+    @NotNull
+    @Column(name="min_recording_unit_code")
+    protected Integer minRecordingUnitCode;
+
     @Override
     public boolean equals(Object o) {
-        return super.equals(o);
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        ActionUnit that = (ActionUnit) o;
+        return Objects.equals(fullIdentifier, that.fullIdentifier);
     }
 
     @Override
     public int hashCode() {
-        return super.hashCode();
+        return Objects.hash(fullIdentifier);
     }
 
     @Override
