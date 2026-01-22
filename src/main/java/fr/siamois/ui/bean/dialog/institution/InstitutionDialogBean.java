@@ -32,7 +32,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class InstitutionDialogBean implements Serializable {
 
-    private final VocabularyService vocabularyService;
+    private final transient VocabularyService vocabularyService;
     private String title;
     private String buttonLabel;
 
@@ -46,7 +46,7 @@ public class InstitutionDialogBean implements Serializable {
 
     private String thesaurusServerUrl = "https://thesaurus.mom.fr";
     private ThesaurusInfo selected = new ThesaurusInfo("", "", "", "");
-    private List<ThesaurusInfo> publicThesaurus = new ArrayList<>();
+    private transient List<ThesaurusInfo> publicThesaurus = new ArrayList<>();
 
     @EventListener(LoginEvent.class)
     public void reset() {
