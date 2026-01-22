@@ -3,7 +3,6 @@ package fr.siamois.ui.bean.dialog.document;
 import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.ark.Ark;
 import fr.siamois.domain.models.document.Document;
-import fr.siamois.domain.models.document.DocumentParent;
 import fr.siamois.domain.models.events.LoginEvent;
 import fr.siamois.domain.models.exceptions.InvalidFileSizeException;
 import fr.siamois.domain.models.exceptions.InvalidFileTypeException;
@@ -148,11 +147,11 @@ public class DocumentCreationBean implements Serializable {
     }
 
     public int maxDescriptionSize() {
-        return DocumentParent.MAX_DESCRIPTION_LENGTH;
+        return Document.MAX_DESCRIPTION_LENGTH;
     }
 
     public int maxTitleLength() {
-        return DocumentParent.MAX_TITLE_LENGTH;
+        return Document.MAX_TITLE_LENGTH;
     }
 
     public void callActionOnSave() {

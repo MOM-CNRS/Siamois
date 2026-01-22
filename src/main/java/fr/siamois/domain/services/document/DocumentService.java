@@ -4,7 +4,6 @@ import fr.siamois.domain.models.ArkEntity;
 import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.document.Document;
-import fr.siamois.domain.models.document.DocumentParent;
 import fr.siamois.domain.models.exceptions.InvalidFileSizeException;
 import fr.siamois.domain.models.exceptions.InvalidFileTypeException;
 import fr.siamois.domain.models.institution.Institution;
@@ -74,7 +73,7 @@ public class DocumentService implements ArkEntityService {
         String code;
         int counter = 0;
         do {
-            code = CodeUtils.generateCode(DocumentParent.FILE_INTERNAL_CODE_LENGTH);
+            code = CodeUtils.generateCode(Document.FILE_INTERNAL_CODE_LENGTH);
             counter++;
         } while (counter < MAX_GENERATIONS && documentRepository.existsByFileCode(code));
 
@@ -123,7 +122,7 @@ public class DocumentService implements ArkEntityService {
         }
 
 
-        if (document.getFileName().length() > DocumentParent.MAX_FILE_NAME_LENGTH) {
+        if (document.getFileName().length() > Document.MAX_FILE_NAME_LENGTH) {
             throw new InvalidFileNameException(document.getFileName(), "File name too long");
         }
 

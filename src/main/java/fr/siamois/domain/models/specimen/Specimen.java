@@ -4,40 +4,39 @@ package fr.siamois.domain.models.specimen;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import fr.siamois.domain.models.ArkEntity;
 import fr.siamois.domain.models.FieldCode;
+import fr.siamois.domain.models.TraceableEntity;
+import fr.siamois.domain.models.ark.Ark;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.document.Document;
-import fr.siamois.domain.models.form.customfield.CustomFieldDateTime;
-import fr.siamois.domain.models.form.customfield.CustomFieldSelectMultiplePerson;
-import fr.siamois.domain.models.form.customfield.CustomFieldSelectOneFromFieldCode;
-import fr.siamois.domain.models.form.customfield.CustomFieldText;
-import fr.siamois.domain.models.form.customform.CustomCol;
+import fr.siamois.domain.models.exceptions.actionunit.NullActionUnitIdentifierException;
 import fr.siamois.domain.models.form.customform.CustomForm;
-import fr.siamois.domain.models.form.customform.CustomFormPanel;
-import fr.siamois.domain.models.form.customform.CustomRow;
+import fr.siamois.domain.models.recordingunit.RecordingUnit;
+import fr.siamois.domain.models.specimen.form.SpecimenDetailsForm;
+import fr.siamois.domain.models.specimen.form.SpecimenNewUnitForm;
 import fr.siamois.domain.models.vocabulary.Concept;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.hibernate.envers.Audited;
 import org.hibernate.envers.NotAudited;
+import org.springframework.lang.NonNull;
 
+import java.time.OffsetDateTime;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
-
-import static fr.siamois.ui.bean.panel.models.panel.single.AbstractSingleEntity.COLUMN_CLASS_NAME;
-import static fr.siamois.ui.bean.panel.models.panel.single.AbstractSingleEntity.SYSTEM_THESO;
 
 @Data
 @Entity
 @Table(name = "specimen")
 @Audited
-public class Specimen extends SpecimenParent implements ArkEntity {
+@NoArgsConstructor
+public class Specimen extends TraceableEntity implements ArkEntity {
 
-    public Specimen() {
-
-    }
-
-    public Specimen(Specimen specimen) {
+    @SuppressWarnings("CopyConstructorMissesField")
+    public Specimen(@NonNull Specimen specimen) {
         setType(specimen.getType());
         setRecordingUnit(specimen.getRecordingUnit());
         setCategory(specimen.getCategory());
@@ -77,8 +76,6 @@ public class Specimen extends SpecimenParent implements ArkEntity {
     @NotAudited
     private List<Person> collectors;
 
-
-
     @FieldCode
     public static final String CATEGORY_FIELD = "SIAS.CATEGORY"; // ceramique, ...
 
@@ -96,232 +93,81 @@ public class Specimen extends SpecimenParent implements ArkEntity {
 
     @Transient
     @JsonIgnore
+    @SuppressWarnings("unused")
     public static List<String> getBindableFieldNames() {
         return List.of("collectionDate", "collectors", "fullIdentifier", "authors",
                 "type", "category");
     }
 
-    // ----------- Concepts for system fields
+    @NotNull
+    @OneToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "fk_ark_id")
+    protected Ark ark;
 
-    // Specimen identifier
-    private static Concept specimenIdConcept = new Concept.Builder()
-            .vocabulary(SYSTEM_THESO)
-            .externalId("4286193")
-            .build();
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "fk_specimen_category")
+    protected Concept category; // lot, object, echantillon
 
-    // Authors
-    @Transient
-    @JsonIgnore
-    private static Concept authorsConcept = new Concept.Builder()
-            .vocabulary(SYSTEM_THESO)
-            .externalId("4286246")
-            .build();
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "fk_specimen_type")
+    protected Concept type;
 
-    // Excavators
-    @Transient
-    @JsonIgnore
-    private static Concept collectorsConcept = new Concept.Builder()
-            .vocabulary(SYSTEM_THESO)
-            .externalId("4286247")
-            .build();
-
-    // Specimen type
-    @Transient
-    @JsonIgnore
-    private static Concept specimenTypeConcept = new Concept.Builder()
-            .vocabulary(SYSTEM_THESO)
-            .externalId("4282392")
-            .build();
-
-    // Specimen category
-    @Transient
-    @JsonIgnore
-    private static Concept specimenCategoryConcept = new Concept.Builder()
-            .vocabulary(SYSTEM_THESO)
-            .externalId("4286248")
-            .build();
-
-    // Date
-    @Transient
-    @JsonIgnore
-    private static Concept collectionDateConcept = new Concept.Builder()
-            .vocabulary(SYSTEM_THESO)
-            .externalId("4286249")
-            .build();
-
-    // --------------- Fields
-
-    // Fields
-    private static CustomFieldText specimenIdField = CustomFieldText.builder()
-            .label("recordingunit.field.identifier")
-            .isSystemField(true)
-            .id(1L)
-            .valueBinding("fullIdentifier")
-            .concept(specimenIdConcept)
-            .build();
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "fk_interpretation")
+    protected Concept interpretation;
 
 
-    @Transient
-    @JsonIgnore
-    private static CustomFieldSelectMultiplePerson authorsField =  CustomFieldSelectMultiplePerson.builder()
-            .label("specimen.field.authors")
-            .isSystemField(true)
-            .id(2L)
-            .valueBinding("authors")
-            .concept(authorsConcept)
-            .build();
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "fk_collection_method")
+    protected Concept collectionMethod;
 
-    @Transient
-    @JsonIgnore
-    private static CustomFieldSelectMultiplePerson collectorsField =  CustomFieldSelectMultiplePerson.builder()
-            .label("specimen.field.collectors")
-            .isSystemField(true)
-            .id(3L)
-            .valueBinding("collectors")
-            .concept(collectorsConcept)
-            .build();
+    @Column(name = "collection_date")
+    protected OffsetDateTime collectionDate;
 
-    @Transient
-    @JsonIgnore
-    private static CustomFieldSelectOneFromFieldCode specimenTypeField =  CustomFieldSelectOneFromFieldCode.builder()
-            .label("specimen.field.type")
-            .isSystemField(true)
-            .valueBinding("type")
-            .id(4L)
-            .styleClass("mr-2 specimen-type-chip")
-            .iconClass("bi bi-bucket")
-            .fieldCode(Specimen.CATEGORY_FIELD)
-            .concept(specimenTypeConcept)
-            .build();
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "fk_recording_unit_id")
+    protected RecordingUnit recordingUnit;
 
-    @Transient
-    @JsonIgnore
-    private static CustomFieldSelectOneFromFieldCode specimenCategoryField =  CustomFieldSelectOneFromFieldCode.builder()
-            .label("specimen.field.category")
-            .isSystemField(true)
-            .valueBinding("category")
-            .id(5L)
-            .styleClass("mr-2 specimen-type-chip")
-            .iconClass("bi bi-bucket")
-            .fieldCode(Specimen.CAT_FIELD)
-            .concept(specimenCategoryConcept)
-            .build();
+    @NotNull
+    @Column(name = "identifier")
+    protected Integer identifier;
 
-    @Transient
-    @JsonIgnore
-    private static CustomFieldDateTime collectionDateField =  CustomFieldDateTime.builder()
-            .label("specimen.field.collectionDate")
-            .isSystemField(true)
-            .id(6L)
-            .valueBinding("collectionDate")
-            .showTime(false)
-            .concept(collectionDateConcept)
-            .build();
-
-    @Transient
-    @JsonIgnore
-    public static final CustomForm DETAILS_FORM = new CustomForm.Builder()
-            .name("Details tab form")
-            .description("Contains the main form")
-            .addPanel(
-                    new CustomFormPanel.Builder()
-                            .name("common.header.general")
-                            .isSystemPanel(true)
-                            .addRow(
-                                    new CustomRow.Builder()
-                                            .addColumn(new CustomCol.Builder()
-                                                    .readOnly(true)
-                                                    .className(COLUMN_CLASS_NAME)
-                                                    .field(specimenIdField)
-                                                    .build())
-                                            .addColumn(new CustomCol.Builder()
-                                                    .readOnly(false)
-                                                    .className(COLUMN_CLASS_NAME)
-                                                    .field(authorsField)
-                                                    .build())
-                                            .addColumn(new CustomCol.Builder()
-                                                    .readOnly(false)
-                                                    .className(COLUMN_CLASS_NAME)
-                                                    .field(collectorsField)
-                                                    .build())
-                                            .addColumn(new CustomCol.Builder()
-                                                    .readOnly(false)
-                                                    .className(COLUMN_CLASS_NAME)
-                                                    .field(specimenTypeField)
-                                                    .build())
-                                            .addColumn(new CustomCol.Builder()
-                                                    .readOnly(false)
-                                                    .className(COLUMN_CLASS_NAME)
-                                                    .field(specimenCategoryField)
-                                                    .build())
-                                            .addColumn(new CustomCol.Builder()
-                                                    .readOnly(false)
-                                                    .className(COLUMN_CLASS_NAME)
-                                                    .field(collectionDateField)
-                                                    .build())
-                                            .build()
-                            )
-                            .build()
-            )
-            .build();
-
-    @Transient
-    @JsonIgnore
-    public static final CustomForm NEW_UNIT_FORM = new CustomForm.Builder()
-            .name("Details tab form")
-            .description("Contains the main form")
-            .addPanel(
-                    new CustomFormPanel.Builder()
-                            .name("common.header.general")
-                            .isSystemPanel(true)
-                            .addRow(
-                                    new CustomRow.Builder()
-                                            .addColumn(new CustomCol.Builder()
-                                                    .readOnly(false)
-                                                    .isRequired(true)
-                                                    .className(COLUMN_CLASS_NAME)
-                                                    .field(authorsField)
-                                                    .build())
-                                            .addColumn(new CustomCol.Builder()
-                                                    .readOnly(false)
-                                                    .isRequired(true)
-                                                    .className(COLUMN_CLASS_NAME)
-                                                    .field(collectorsField)
-                                                    .build())
-                                            .build()
-                            )
-                            .addRow(
-                                    new CustomRow.Builder()
-                                            .addColumn(new CustomCol.Builder()
-                                                    .readOnly(false)
-                                                    .isRequired(true)
-                                                    .className(COLUMN_CLASS_NAME)
-                                                    .field(specimenCategoryField)
-                                                    .build())
-                                            .addColumn(new CustomCol.Builder()
-                                                    .readOnly(false)
-                                                    .isRequired(true)
-                                                    .className(COLUMN_CLASS_NAME)
-                                                    .field(specimenTypeField)
-                                                    .build())
-                                            .addColumn(new CustomCol.Builder()
-                                                    .readOnly(false)
-                                                    .isRequired(true)
-                                                    .className(COLUMN_CLASS_NAME)
-                                                    .field(collectionDateField)
-                                                    .build())
-                                            .build()
-                            ).build()
-            )
-            .build();
+    @NotNull
+    @Column(name = "full_identifier")
+    protected String fullIdentifier;
 
     @Override
     public boolean equals(Object o) {
-        return super.equals(o);
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Specimen that = (Specimen) o;
+        return Objects.equals(fullIdentifier, that.fullIdentifier);  // Compare based on RecordingUnit
     }
 
     @Override
     public int hashCode() {
-        return super.hashCode();
+        return Objects.hash(fullIdentifier);  // Hash based on RecordingUnit
     }
+
+    // utils
+    public String displayFullIdentifier() {
+        if(getFullIdentifier() == null) {
+            if(getRecordingUnit().getFullIdentifier() == null) {
+                throw new NullActionUnitIdentifierException("Recording identifier must be set");
+            }
+            return getRecordingUnit().getFullIdentifier() + "-" + (getIdentifier() == null ? "?" : getIdentifier());
+        }
+        else {
+            return getFullIdentifier();
+        }
+    }
+
+    @Transient
+    @JsonIgnore
+    public static final CustomForm DETAILS_FORM = SpecimenDetailsForm.build();
+
+    @Transient
+    @JsonIgnore
+    public static final CustomForm NEW_UNIT_FORM = SpecimenNewUnitForm.build();
+
 }
