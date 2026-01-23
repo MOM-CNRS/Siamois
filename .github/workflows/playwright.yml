@@ -37,7 +37,7 @@ jobs:
           echo "Polling https://siamois.dvlogys.dev/actuator/health..."
           # Boucle 'until' : tant que grep ne trouve pas "UP", on attend
           until curl -s https://siamois.dvlogys.dev/actuator/health | grep -q '"status":"UP"'; do
-            echo "Environment not ready yet. Retrying in 5 seconds..."
+            echo "Environment not ready yet. Retrying in 5 seconds ..."
             sleep 5
           done
           echo "Environment is UP! Starting tests..."
