@@ -23,7 +23,7 @@ jobs:
       # 2. Installation de Node.js
       - name: Setup Node.js
         uses: actions/setup-node@v4
-        en
+
         with:
           node-version: '20'
           cache: 'npm'
