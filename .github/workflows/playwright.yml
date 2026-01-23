@@ -37,10 +37,10 @@ jobs:
       # 4. Installation des navigateurs Playwright
       - name: Install Playwright Browsers
         run: npx playwright install --with-deps
-        env:
-          TEST_EMAIL: ${{ secrets.TEST_EMAIL }}
-          TEST_PASSWORD: ${{ secrets.TEST_PASSWORD }}
 
       # 5. Exécution des tests
       - name: Run Playwright tests
         run: npx playwright test
+        env:
+          TEST_EMAIL: ${{ secrets.TEST_EMAIL }}
+          TEST_PASSWORD: ${{ secrets.TEST_PASSWORD }}
