@@ -10,21 +10,21 @@
 
     <h:outputScript>
         if (typeof window.insertAtCursor !== 'function') {
-            window.insertAtCursor = function(inputId, text) {
-                const input = document.getElementById(inputId);
-                if (!input) return;
+        window.insertAtCursor = function(inputId, text) {
+        const input = document.getElementById(inputId);
+        if (!input) return;
 
-                if (document.activeElement === input) {
-                    const start = input.selectionStart;
-                    const end = input.selectionEnd;
-                    input.value = input.value.substring(0, start) + text + input.value.substring(end);
-                    input.selectionStart = input.selectionEnd = start + text.length;
-                } else {
-                    input.value += text;
-                }
-                input.focus();
-                $(input).trigger('change'); // Notify JSF about the change
-            }
+        if (document.activeElement === input) {
+        const start = input.selectionStart;
+        const end = input.selectionEnd;
+        input.value = input.value.substring(0, start) + text + input.value.substring(end);
+        input.selectionStart = input.selectionEnd = start + text.length;
+        } else {
+        input.value += text;
+        }
+        input.focus();
+        $(input).trigger('change'); // Notify JSF about the change
+        }
         }
     </h:outputScript>
 
@@ -34,92 +34,102 @@
             id="customFormPanel-#{panelIndex}"
             class="sia-form-panel"
             toggleable="true">
+        <p:panelGrid
+                layout="grid">
 
-        <p:row id="row-#{panelIndex}-1">
-            <p:column styleClass="ui-g-12" id="col-#{panelIndex}-1-0">
-                <sharedInput:panelField
-                        id="panelField-#{panelIndex}-1-0"
-                        required="true"
-                        title="#{langBean.msg('actionUnit.settings.label.firstNumber')}"
-                        forId="input-min-value-#{panelIndex}"
-                        fluid="false"
+            <p:row id="row-#{panelIndex}-1">
+                <p:column styleClass="ui-g-12 ui-md-6 ui-lg-4" id="col-#{panelIndex}-1-0">
+                    <sharedInput:panelField
+                            id="panelField-#{panelIndex}-1-0"
+                            required="true"
+                            title="#{langBean.msg('actionUnit.settings.label.firstNumber')}"
+                            forId="input-min-value-#{panelIndex}"
+                            fluid="false"
 
-                >
-                    <p:inputNumber value="#{panelModel.minNumber}"
-                                   id="input-min-value-#{panelIndex}"
-                                   inputStyle="width: 100%"
-                                   inputStyleClass="#{panelModel.minHasBeenModified ? 'track-change sia-modified-field': 'track-change'}"
-                                   minValue="1"
-                                   maxValue="99998"
-                                   required="true">
-                    </p:inputNumber>
-                </sharedInput:panelField>
-            </p:column>
-            <p:column styleClass="ui-g-12" id="col-#{panelIndex}-1-1">
-                <sharedInput:panelField
-                        id="panelField-#{panelIndex}-1-1"
-                        required="true"
-                        title="#{langBean.msg('actionUnit.settings.label.lastNumber')}"
-                        forId="input-max-value-#{panelIndex}"
-                        fluid="false"
+                    >
+                        <p:inputNumber value="#{panelModel.minNumber}"
+                                       id="input-min-value-#{panelIndex}"
+                                       inputStyle="width: 100%"
+                                       inputStyleClass="#{panelModel.minHasBeenModified ? 'track-change sia-modified-field': 'track-change'}"
+                                       minValue="1"
+                                       maxValue="99998"
+                                       required="true">
+                        </p:inputNumber>
+                    </sharedInput:panelField>
+                </p:column>
+                <p:column styleClass="ui-g-12 ui-md-6 ui-lg-4" id="col-#{panelIndex}-1-1">
+                    <sharedInput:panelField
+                            id="panelField-#{panelIndex}-1-1"
+                            required="true"
+                            title="#{langBean.msg('actionUnit.settings.label.lastNumber')}"
+                            forId="input-max-value-#{panelIndex}"
+                            fluid="false"
 
-                >
-                    <p:inputNumber value="#{panelModel.maxNumber}"
-                                   id="input-max-value-#{panelIndex}"
-                                   inputStyle="width: 100%"
-                                   inputStyleClass="#{panelModel.maxHasBeenModified ? 'track-change sia-modified-field': 'track-change'}"
-                                   minValue="2"
-                                   maxValue="99999"
-                                   required="true">
-                    </p:inputNumber>
-                </sharedInput:panelField>
-            </p:column>
-        </p:row>
-        <!-- Placeholder buttons toolbar -->
-        <p:row>
-            <p:column styleClass="ui-g-12" style="padding-bottom: 0;">
-                <div class="ui-g">
+                    >
+                        <p:inputNumber value="#{panelModel.maxNumber}"
+                                       id="input-max-value-#{panelIndex}"
+                                       inputStyle="width: 100%"
+                                       inputStyleClass="#{panelModel.maxHasBeenModified ? 'track-change sia-modified-field': 'track-change'}"
+                                       minValue="2"
+                                       maxValue="99999"
+                                       required="true">
+                        </p:inputNumber>
+                    </sharedInput:panelField>
+                </p:column>
+                <p:column styleClass="ui-g-12" id="col-#{panelIndex}-1-2">
+                    <sharedInput:panelField
+                            id="panelField-#{panelIndex}-2-0"
+                            required="true"
+                            title="#{langBean.msg('actionUnit.settings.label.format')}"
+                            forId="input-format-#{panelIndex}"
+                            fluid="false"
+                    >
+                        <p:inputText value="#{panelModel.format}"
+                                     id="input-format-#{panelIndex}"
+                                     styleClass="format-input-for-button"
+                                     style="width: 100%"
+                                     required="true">
+                        </p:inputText>
 
-                    <ui:repeat value="#{panelModel.findAllResolvers()}" var="resolver">
-                        <div class="ui-g-4">
-                            <p:button type="button"
-                                      value="#{langBean.msg(resolver.getTitleCode())}"
-                                      title="#{langBean.msg(resolver.getDescriptionLanguageCode())}"
-                                      icon="bi bi-braces"
-                                      styleClass="#{resolver.getButtonStyleClass()}"
-                                      onmousedown="event.preventDefault(); var inputId = $(this).closest('.sia-form-panel').find('.format-input-for-button').attr('id'); insertAtCursor(inputId, '{#{resolver.getCode()}}');"
-                                      onclick="return false;"/>
+                        <div class="identifier-input-button-div" style="display:flex ;
+                                padding:1em;
+                                flex-wrap: wrap;
+                                gap: 10px;
+                                width: 100%;
+                            ">
+
+                            <ui:repeat value="#{panelModel.findAllResolvers()}" var="resolver">
+
+                                <p:button type="button"
+                                          value="#{langBean.msg(resolver.getTitleCode())}"
+                                          title="#{langBean.msg(resolver.getDescriptionLanguageCode())}"
+                                          icon="bi bi-braces"
+                                          style="flex:1;max-width: 100%;"
+                                          styleClass="#{resolver.getButtonStyleClass()}"
+                                          onmousedown="event.preventDefault(); var inputId = $(this).closest('.sia-form-panel').find('.format-input-for-button').attr('id'); insertAtCursor(inputId, '{#{resolver.getCode()}}');"
+                                          onclick="return false;"/>
+
+                            </ui:repeat>
                         </div>
-                    </ui:repeat>
-                </div>
-            </p:column>
-        </p:row>
-        <!-- Format input field -->
-        <p:row>
-            <p:column styleClass="ui-g-12" id="col-#{panelIndex}-2-0">
-                <sharedInput:panelField
-                        id="panelField-#{panelIndex}-2-0"
-                        required="true"
-                        title="#{langBean.msg('actionUnit.settings.label.format')}"
-                        forId="input-format-#{panelIndex}"
-                        fluid="false"
-                >
-                    <p:inputText value="#{panelModel.format}"
-                                 id="input-format-#{panelIndex}"
-                                 styleClass="format-input-for-button"
-                                 style="width: 100%"
-                                 required="true">
-                    </p:inputText>
-                </sharedInput:panelField>
-            </p:column>
-        </p:row>
-        <p:commandButton
-                value="#{langBean.msg('actionUnit.settings.button.save')}"
-                icon="bi bi-gear"
-                action="#{panelModel.saveSettings()}"
-                process="@parent"
-                update="@parent"
-        />
+
+
+                    </sharedInput:panelField>
+                </p:column>
+            </p:row>
+
+
+
+
+        </p:panelGrid>
+
     </p:panel>
+
+    <p:commandButton
+            value="#{langBean.msg('actionUnit.settings.button.save')}"
+            icon="bi bi-gear"
+            action="#{panelModel.saveSettings()}"
+            process="@parent"
+            update="@parent"
+    />
 
 </ui:fragment>
