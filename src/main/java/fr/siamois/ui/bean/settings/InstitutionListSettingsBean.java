@@ -4,6 +4,7 @@ import fr.siamois.domain.events.publisher.InstitutionChangeEventPublisher;
 import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.events.LoginEvent;
 import fr.siamois.domain.models.exceptions.api.InvalidEndpointException;
+import fr.siamois.domain.models.exceptions.api.NotSiamoisThesaurusException;
 import fr.siamois.domain.models.exceptions.institution.FailedInstitutionSaveException;
 import fr.siamois.domain.models.exceptions.institution.InstitutionAlreadyExistException;
 import fr.siamois.domain.models.institution.Institution;
@@ -54,17 +55,17 @@ public class InstitutionListSettingsBean implements Serializable {
     private String filterText;
 
     public void init() {
-            UserInfo info = sessionSettingsBean.getUserInfo();
-            institutions = institutionService.findInstitutionsOfPerson(info.getUser());
-            filteredInstitutions = new ArrayList<>(institutions);
-            onFilterType();
-            updateTogglesState();
-            sortBy = new ArrayList<>();
-            sortBy.add(SortMeta.builder()
-                    .field("active")
-                    .order(SortOrder.ASCENDING)
-                    .priority(1)
-                    .build());
+        UserInfo info = sessionSettingsBean.getUserInfo();
+        institutions = institutionService.findInstitutionsOfPerson(info.getUser());
+        filteredInstitutions = new ArrayList<>(institutions);
+        onFilterType();
+        updateTogglesState();
+        sortBy = new ArrayList<>();
+        sortBy.add(SortMeta.builder()
+                .field("active")
+                .order(SortOrder.ASCENDING)
+                .priority(1)
+                .build());
     }
 
     public String displayDate(OffsetDateTime date) {
@@ -126,6 +127,10 @@ public class InstitutionListSettingsBean implements Serializable {
         try {
             institution = institutionDialogBean.createInstitution();
             MessageUtils.displayInfoMessage(langBean, "common.entity.institution.created", institution.getName());
+        } catch (NotSiamoisThesaurusException e) {
+            institutionDialogBean.setThesaurusError(true);
+            MessageUtils.displayErrorMessage(langBean, "myProfile.thesaurus.siamois.invalid");
+            return;
         } catch (InstitutionAlreadyExistException e) {
             log.error("Institution already exists");
             MessageUtils.displayErrorMessage(langBean, "common.entity.institution.error.alreadyExist");
@@ -134,7 +139,7 @@ public class InstitutionListSettingsBean implements Serializable {
             log.error("Failed to create institution", e);
             MessageUtils.displayErrorMessage(langBean, "common.error.internal");
             return;
-        } catch(InvalidEndpointException e) {
+        } catch (InvalidEndpointException e) {
             log.error("Invalid thesaurus url", e);
             institutionDialogBean.setThesaurusError(true);
             MessageUtils.displayErrorMessage(langBean, "common.error.thesaurusConfig.invalidUrl");

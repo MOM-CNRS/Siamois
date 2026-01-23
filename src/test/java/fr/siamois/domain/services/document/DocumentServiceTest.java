@@ -4,7 +4,6 @@ import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.document.Document;
-import fr.siamois.domain.models.document.DocumentParent;
 import fr.siamois.domain.models.exceptions.InvalidFileSizeException;
 import fr.siamois.domain.models.exceptions.InvalidFileTypeException;
 import fr.siamois.domain.models.institution.Institution;
@@ -273,7 +272,7 @@ class DocumentServiceTest {
     @Test
     void checkFileDataShouldThrowInvalidFileNameException() {
         Document document = new Document();
-        document.setFileName("a".repeat(DocumentParent.MAX_FILE_NAME_LENGTH + 1));
+        document.setFileName("a".repeat(Document.MAX_FILE_NAME_LENGTH + 1));
         document.setMimeType("application/pdf");
 
         MimeType mimeType = MimeType.valueOf("application/pdf");

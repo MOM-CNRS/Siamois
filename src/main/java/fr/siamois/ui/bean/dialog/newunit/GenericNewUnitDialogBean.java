@@ -70,8 +70,6 @@ public class GenericNewUnitDialogBean<T extends TraceableEntity>
     private transient fr.siamois.ui.table.EntityTableViewModel<?, ?> sourceTableModel;
     private transient NewUnitContext newUnitContext;
 
-
-
     public GenericNewUnitDialogBean(ApplicationContext context,
                                     Set<INewUnitHandler<? extends TraceableEntity>> handlerSet) {
         super(context);
@@ -85,16 +83,6 @@ public class GenericNewUnitDialogBean<T extends TraceableEntity>
         this.spatialUnitFieldBean = context.getBean(SpatialUnitFieldBean.class);
     }
 
-    @SuppressWarnings("unchecked")
-    // DO NOT DELETE, USED BY XHTML FILE
-    public void selectKind(UnitKind kind) throws CannotInitializeNewUnitDialogException {
-        this.kind = kind;
-        this.handler = (INewUnitHandler<T>) handlers.get(kind);
-        this.lazyDataModel = null;
-        this.multiHierarchyChild = null;
-        this.multiHierarchyParent = null;
-        init();
-    }
 
     // Unique selectKind
     @SuppressWarnings("unchecked")
@@ -107,13 +95,6 @@ public class GenericNewUnitDialogBean<T extends TraceableEntity>
 
         this.sourceTableModel = sourceTableModel;
         this.newUnitContext = ctx;
-
-        // reset context legacy
-        this.lazyDataModel = null;
-        this.setToUpdate = null;
-        this.parent = null;
-        this.multiHierarchyChild = null;
-        this.multiHierarchyParent = null;
 
         init();
     }
@@ -208,11 +189,18 @@ public class GenericNewUnitDialogBean<T extends TraceableEntity>
         try {
             createUnit();
             // JS conditionnel (widgetVar fixe)
-            String js = "PF('newUnitDiag').hide();" + (scrollToTop ? "handleScrollToTop();" : "");
+            String js = "PF('newUnitDiag').hide();";
+
+
+            if (scrollToTop) {
+                js += "handleScrollToTop();";
+            }
+
             PrimeFaces.current().executeScript(js);
 
             // Refresh commun
-            PrimeFaces.current().ajax().update("flow");
+            PrimeFaces.current().ajax().update(newUnitContext.getUpdateOnCreate());
+
 
             // Message succès
             MessageUtils.displayInfoMessage(langBean, getSuccessMessageCode(), unitName());
@@ -243,6 +231,20 @@ public class GenericNewUnitDialogBean<T extends TraceableEntity>
         // Post-create: laisse la table décider quoi faire (liste/tree) selon ctx
         if (sourceTableModel != null && newUnitContext != null) {
             sourceTableModel.onAnyEntityCreated(unit, newUnitContext);
+        }
+    }
+
+    /*
+    Initializing the new entity dialog without context from home panel
+     */
+    public void openNewEntityDiag(UnitKind unitKind) {
+        NewUnitContext ctx = NewUnitContext.builder()
+                .kindToCreate(unitKind)
+                .build();
+        try {
+            selectKind(ctx, null);
+        } catch (CannotInitializeNewUnitDialogException e) {
+            MessageUtils.displayErrorMessage(langBean, "common.message.errorOpeningNewEntityDialog");
         }
     }
 

@@ -28,8 +28,8 @@
     <!-- TEXT -->
 
     <siaInplace:text
+            id="text"
             rendered="#{col.field['class'].simpleName eq 'CustomFieldText'}"
-            id="#{prefix}-#{statusIndex}-#{rowIndex}-#{colIndex}"
             field="#{col.field}"
             required="#{col.required}"
             label="#{spatialUnitFieldBean.resolveCustomFieldLabel(col.field)}"

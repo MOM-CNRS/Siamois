@@ -10,6 +10,7 @@
                 <div style="display: flex; flex-direction: row; flex-wrap: wrap; gap: 1em; align-items: center;">
                     <!-- Toggle Switch -->
                     <p:toggleSwitch
+                            rendered="#{tableModel.isSwitchVisible()}"
                             value="#{tableModel.treeMode}"
                             onIcon="bi bi-list-nested"
                             offIcon="bi bi-list">
@@ -58,7 +59,10 @@
                     rendered="#{not empty tableModel.toolbarCreateConfig}"
                     icon="bi bi-plus-square"
                     immediate="true"
-                    actionListener="#{tableModel.openCreateFromToolbar(genericNewUnitDialogBean)}"
+                    action="#{tableModel.openCreateFromToolbar(genericNewUnitDialogBean,
+                    cc.clientId.concat(':tableContainer'),
+                    cc.clientId.concat('_').concat(tableId)
+                    )}"
                     oncomplete="PF('newUnitDiag').show();"
                     update="newUnitForm">
             </p:commandButton>

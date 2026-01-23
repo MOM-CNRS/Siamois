@@ -55,7 +55,6 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
 
     private final SessionSettingsBean sessionSettingsBean;
 
-    private final LangBean langBean;
 
     public RecordingUnitTableViewModel(BaseRecordingUnitLazyDataModel lazyDataModel,
                                        FormService formService,
@@ -76,16 +75,15 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
                 spatialUnitTreeService,
                 spatialUnitService,
                 navBean,
+                langBean,
                 RecordingUnit::getId,   // idExtractor
-                "type"                  // formScopeValueBinding
+                "type" // formScopeValueBinding
         );
         this.recordingUnitLazyDataModel = lazyDataModel;
         this.sessionSettingsBean = sessionSettingsBean;
         this.flowBean = flowBean;
         this.recordingUnitService = recordingUnitService;
         this.recordingUnitWriteVerifier = recordingUnitWriteVerifier;
-
-        this.langBean = langBean;
     }
 
     @Override
@@ -307,10 +305,6 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
         return true;
     }
 
-    @Override
-    public void save() {
-// will be implemented when working on recording unit table
-    }
 
     @Override
     public boolean canUserEditRow(RecordingUnit unit) {

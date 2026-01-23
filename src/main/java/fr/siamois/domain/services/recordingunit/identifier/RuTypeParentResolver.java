@@ -41,4 +41,10 @@ public class RuTypeParentResolver extends RuTextIdentifierResolver {
     protected Concept getAssociatedConcept(@NonNull RecordingUnitIdInfo info) {
         return info.getRuParentType();
     }
+
+    @NonNull
+    @Override
+    public String getButtonStyleClass() {
+        return "rounded-button recording-unit";
+    }
 }

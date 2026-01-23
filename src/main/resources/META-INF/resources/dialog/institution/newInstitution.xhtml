@@ -1,6 +1,5 @@
 <ui:fragment xmlns="http://www.w3.org/1999/xhtml"
              xmlns:ui="http://java.sun.com/jsf/facelets"
-             xmlns:pe="http://primefaces.org/ui/extensions"
              xmlns:p="http://primefaces.org/ui" xmlns:h="http://java.sun.com/jsf/html"
              xmlns:f="http://java.sun.com/jsf/core"
 
@@ -61,29 +60,43 @@
                     </div>
                     <div class="form-group row">
                         <p:outputLabel class="col-lg-3 col-form-label"
-                                       for="thesaurus">#{langBean.msg('common.label.thesaurusUrl')}</p:outputLabel>
+                                       for="thesaurus">Adresse du serveur de Opentheso</p:outputLabel>
                         <div class="col-lg-1 ms-auto">
-                            <p:commandButton id="image" type="button" icon="bi bi-question-circle"/>
-                            <p:overlayPanel for="image" dismissable="false" showCloseIcon="true"
-                                            style="width:60vh; height: auto;">
-                                <pe:imageZoom for="help"/>
-                                <h:graphicImage styleClass="config-example" id="help" library="img"
-                                                name="opentheso_config_example.png"
-                                                alt="Example configuration on OpenTheso"/>
-                            </p:overlayPanel>
+                            <p:commandButton id="reload-info-list"
+                                             icon="bi bi-arrow-counterclockwise"
+                                             action="#{institutionDialogBean.reloadThesaurusInfoList()}"
+                                             update="thesaurus-selection-menu"
+                                             process="@this thesaurus-selection-menu thesaurus"
+                            />
                         </div>
                         <div class="col-lg-6 ms-auto">
                             <p:inputText
                                     style="width: 100%"
                                     required="true"
-                                    placeholder="ex: https://thesaurus.mom.fr/?idt=th230"
+                                    placeholder="ex: https://thesaurus.mom.fr"
                                     id="thesaurus"
-                                    value="#{institutionDialogBean.thesaurusUrl}"
+                                    value="#{institutionDialogBean.thesaurusServerUrl}"
                                     styleClass="#{institutionDialogBean.thesaurusError ? 'ui-state-error' : ''}"
                             />
                         </div>
-
-
+                    </div>
+                    <div class="form-group row">
+                        <p:outputLabel class="col-lg-4 col-form-label"
+                                       for="thesaurus-selection-menu">Selection du thésaurus*</p:outputLabel>
+                        <div class="col-lg-6 ms-auto">
+                            <p:autoComplete
+                                    id="thesaurus-selection-menu"
+                                    value="#{institutionDialogBean.selected}"
+                                    completeMethod="#{institutionDialogBean.completeFromInput}"
+                                    var="publicThesoInfo"
+                                    itemLabel="#{publicThesoInfo.label()} (#{publicThesoInfo.idTheso()})"
+                                    itemValue="#{publicThesoInfo}"
+                                    forceSelection="true"
+                                    converter="#{thesaurusInfoConverter}"
+                                    dropdown="true"
+                                    scrollHeight="300"
+                            />
+                        </div>
                     </div>
                     <div class="form-group row">
                         <p:outputLabel class="col-lg-4 col-form-label"

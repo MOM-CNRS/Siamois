@@ -81,7 +81,7 @@ class SpecimenInActionUnitLazyDataModelTest {
         when(langBean.getLanguageCode()).thenReturn("en");
 
         // Act
-        Page<Specimen> actualResult = lazyModel.loadSpecimens("null", new Long[2], new Long[2], "null", pageable);
+        Page<Specimen> actualResult = lazyModel.loadData("null", new Long[2], new Long[2], "null", pageable);
 
         // Assert
         // Assert

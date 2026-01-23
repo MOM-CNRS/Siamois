@@ -61,6 +61,7 @@ public class ActionUnitTableViewModel extends EntityTableViewModel<ActionUnit, L
                 spatialUnitTreeService,
                 spatialUnitService,
                 navBean,
+                sessionSettingsBean.getLangBean(),
                 ActionUnit::getId,   // idExtractor
                 "type"                  // formScopeValueBinding
         );
@@ -244,11 +245,6 @@ public class ActionUnitTableViewModel extends EntityTableViewModel<ActionUnit, L
     @Override
     public boolean isTreeViewSupported() {
         return true;
-    }
-
-    @Override
-    public void save() {
-    // will be implemented when working on action unit table
     }
 
     @Override

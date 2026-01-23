@@ -7,7 +7,6 @@
 
     <p:dataTable paginator="true"
                  rendered="#{not tableModel.treeMode}"
-                 editable="true"
                  cellNavigation="true"
                  id="entityDatatable"
                  varStatus="status"
@@ -20,6 +19,7 @@
                  selection="#{tableModel.lazyDataModel.selectedUnits}"
                  widgetVar="#{cc.clientId}_entityDatatable"
                  lazy="true"
+                 rowKey="#{item.id}"
                  globalFilter="#{tableModel.globalFilter}"
                  allowUnsorting="true"
                  sortBy="#{tableModel.lazyDataModel.sortBy}"
@@ -54,6 +54,7 @@
 
         <!-- Dynamic Columns -->
         <p:columns style="min-width: #{column.type != 'COMMAND_LINK' ? '10em' : ''};"
+                   id="form"
                    field="#{column.id}"
                    sortable="#{column.sortable}"
                    filterable="#{column.filterable}"
@@ -64,7 +65,7 @@
                 <ui:param name="column" value="#{column}" />
                 <ui:param name="item" value="#{item}" />
                 <ui:param name="status" value="#{status}" />
-                <ui:param name="rowIndex" value="#{rowIndex}" />
+                <ui:param name="rowIndex" value="#{item.id}" />
                 <ui:param name="colStatus" value="#{colStatus}" />
                 <ui:param name="updateTableString" value="@this #{updateTableString}"/>
                 <ui:param name="canUserEditRow" value="#{tableModel.canUserEditRow(item)}"/>

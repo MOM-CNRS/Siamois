@@ -24,6 +24,10 @@ public class NewUnitContext implements Serializable {
     @Builder.Default
     private final UiInsertPolicy insertPolicy = UiInsertPolicy.defaultRoot();
 
+    @Builder.Default
+    private String updateOnCreate = "flow";
+    private String tableClientId ;
+
     // ======================
     // Scope
     // ======================

@@ -48,13 +48,16 @@
                                            immediate="true"
                                            style="margin-right: 1rem">
                             </p:commandLink>
+                            <!-- resetValues=true in the commands resets the datatables value. With false it was causing issues -->
                             <p:commandButton id="createButton" value='#{langBean.msg("common.action.create")}'
                                              action="#{genericNewUnitDialogBean.create()}"
-                                             update="newUnitFormContent templateFormCC:templateForm:templateGrowl"
+                                             resetValues="true"
+                                             update="newUnitFormContent templateFormCC:templateForm:templateGrowl #{genericNewUnitDialogBean.newUnitContext.updateOnCreate}"
                                              style="margin-right: 1rem">
                             </p:commandButton>
                             <p:commandButton id="createAndViewButton"
-                                             update="newUnitFormContent templateFormCC:templateForm:templateGrowl"
+                                             resetValues="true"
+                                             update="newUnitFormContent templateFormCC:templateForm:templateGrowl flow"
                                              action="#{genericNewUnitDialogBean.createAndOpen()}"
                                              value='#{langBean.msg("common.action.createAndView")}'
                                              style="margin-right: .5rem">

@@ -7,6 +7,7 @@ import fr.siamois.domain.models.form.customform.CustomForm;
 import fr.siamois.domain.services.form.FormService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitTreeService;
+import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.NavBean;
 import fr.siamois.ui.bean.dialog.newunit.GenericNewUnitDialogBean;
 import fr.siamois.ui.bean.dialog.newunit.NewUnitContext;
@@ -31,6 +32,7 @@ import java.util.Objects;
 import java.util.function.Function;
 
 import static fr.siamois.ui.bean.dialog.newunit.NewUnitContext.TreeInsert.ROOT;
+import static fr.siamois.utils.MessageUtils.displayErrorMessage;
 
 /**
  * View model générique pour une table d'entités avec formulaires dynamiques.
@@ -50,7 +52,7 @@ import static fr.siamois.ui.bean.dialog.newunit.NewUnitContext.TreeInsert.ROOT;
 public abstract class EntityTableViewModel<T extends TraceableEntity, ID> {
 
     @Setter
-    protected String globalFilter;
+    protected String globalFilter = "";
 
     /** Lazy model "pur data" (chargement, tri, filtres, sélection, etc.) */
     protected final BaseLazyDataModel<T> lazyDataModel;
@@ -62,6 +64,7 @@ public abstract class EntityTableViewModel<T extends TraceableEntity, ID> {
     protected final SpatialUnitService spatialUnitService;
     protected final NavBean navBean;
     protected final GenericNewUnitDialogBean<T> genericNewUnitDialogBean;
+    protected final LangBean langBean;
 
     /** Fournit l'identifiant unique d'une entité T (ex: RecordingUnit::getId) */
     private final Function<T, ID> idExtractor;
@@ -94,6 +97,10 @@ public abstract class EntityTableViewModel<T extends TraceableEntity, ID> {
     @Setter
     protected boolean treeMode = true; // false = table, true = tree
 
+    @Getter
+    @Setter
+    protected boolean isSwitchVisible = true;
+
     protected EntityTableViewModel(
             BaseLazyDataModel<T> lazyDataModel,
             GenericNewUnitDialogBean<T> genericNewUnitDialogBean,
@@ -102,7 +109,7 @@ public abstract class EntityTableViewModel<T extends TraceableEntity, ID> {
             SpatialUnitService spatialUnitService,
             NavBean navBean,
             Function<T, ID> idExtractor,
-            String formScopeValueBinding
+            String formScopeValueBinding, LangBean langBean
     ) {
         this(
                 lazyDataModel,
@@ -111,7 +118,7 @@ public abstract class EntityTableViewModel<T extends TraceableEntity, ID> {
                 formService,
                 spatialUnitTreeService,
                 spatialUnitService,
-                navBean,
+                navBean, langBean,
                 idExtractor,
                 formScopeValueBinding
         );
@@ -124,7 +131,7 @@ public abstract class EntityTableViewModel<T extends TraceableEntity, ID> {
             FormService formService,
             SpatialUnitTreeService spatialUnitTreeService,
             SpatialUnitService spatialUnitService,
-            NavBean navBean,
+            NavBean navBean, LangBean langBean,
             Function<T, ID> idExtractor,
             String formScopeValueBinding
     ) {
@@ -135,6 +142,7 @@ public abstract class EntityTableViewModel<T extends TraceableEntity, ID> {
         this.spatialUnitTreeService = spatialUnitTreeService;
         this.spatialUnitService = spatialUnitService;
         this.navBean = navBean;
+        this.langBean = langBean;
         this.idExtractor = idExtractor;
         this.formScopeValueBinding = formScopeValueBinding;
 
@@ -348,7 +356,9 @@ public abstract class EntityTableViewModel<T extends TraceableEntity, ID> {
     }
 
     // Handler when clicking on the create button on top of the table
-    public void openCreateFromToolbar(fr.siamois.ui.bean.dialog.newunit.GenericNewUnitDialogBean<?> dialogBean) {
+    public void openCreateFromToolbar(fr.siamois.ui.bean.dialog.newunit.GenericNewUnitDialogBean<?> dialogBean,
+                                      String updateOnCreate,
+    String tableClientId) {
         if (toolbarCreateConfig == null) {
             return; // pas de bouton configuré
         }
@@ -365,6 +375,8 @@ public abstract class EntityTableViewModel<T extends TraceableEntity, ID> {
                 .trigger(toolbarCreateConfig.getTriggerSupplier().get()) // toolbar()
                 .scope(toolbarCreateConfig.getScopeSupplier().get())
                 .insertPolicy(policy)
+                .updateOnCreate(updateOnCreate)
+                .tableClientId(tableClientId)
                 .build();
 
         try {
@@ -382,7 +394,10 @@ public abstract class EntityTableViewModel<T extends TraceableEntity, ID> {
     /**
      * Save all the entities of the table
      */
-    public abstract void save();
+    public void save() {
+        // warning message saying not implemented
+        displayErrorMessage(langBean, "common.error.savingNotImplemented");
+    }
 
     /**
      * Cancel any modifs
@@ -398,6 +413,7 @@ public abstract class EntityTableViewModel<T extends TraceableEntity, ID> {
     * Check if user has permission to edit the row data
      */
     public abstract boolean canUserEditRow(T unit);
+
 
 
 

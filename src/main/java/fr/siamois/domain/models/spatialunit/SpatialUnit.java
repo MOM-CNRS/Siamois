@@ -3,7 +3,9 @@ package fr.siamois.domain.models.spatialunit;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import fr.siamois.domain.models.ArkEntity;
 import fr.siamois.domain.models.FieldCode;
+import fr.siamois.domain.models.TraceableEntity;
 import fr.siamois.domain.models.actionunit.ActionUnit;
+import fr.siamois.domain.models.ark.Ark;
 import fr.siamois.domain.models.document.Document;
 import fr.siamois.domain.models.form.customfield.CustomFieldSelectOneFromFieldCode;
 import fr.siamois.domain.models.form.customfield.CustomFieldText;
@@ -14,10 +16,11 @@ import fr.siamois.domain.models.form.customform.CustomRow;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
-import org.hibernate.annotations.SQLRestriction;
 import org.hibernate.envers.Audited;
 import org.hibernate.envers.NotAudited;
+import org.locationtech.jts.geom.MultiPolygon;
 
 import java.util.HashSet;
 import java.util.List;
@@ -30,9 +33,8 @@ import static fr.siamois.ui.bean.panel.models.panel.single.AbstractSingleEntity.
 @Data
 @Entity
 @Table(name = "spatial_unit")
-@SQLRestriction("fk_parent_action_unit_id IS NULL")
 @Audited
-public class SpatialUnit extends SpatialUnitGeneric implements ArkEntity {
+public class SpatialUnit extends TraceableEntity implements ArkEntity {
 
     @SuppressWarnings("CopyConstructorMissesField")
     public SpatialUnit (SpatialUnit spatialUnit) {
@@ -76,6 +78,23 @@ public class SpatialUnit extends SpatialUnitGeneric implements ArkEntity {
     @OneToMany(mappedBy="spatialUnit")
     @JsonIgnore
     private Set<RecordingUnit> recordingUnitList;
+
+    @NotNull
+    @Column(name = "name", nullable = false, length = Integer.MAX_VALUE)
+    protected String name;
+
+    @NotNull
+    @OneToOne
+    @JoinColumn(name = "fk_ark_id")
+    protected Ark ark;
+
+    @ManyToOne
+    @JoinColumn(name = "fk_concept_category_id")
+    protected Concept category;
+
+    @Column(name="geom",columnDefinition = "geometry")
+    @JsonIgnore
+    protected MultiPolygon geom;
 
 
 

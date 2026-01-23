@@ -185,3 +185,9 @@ body .ui-treetable-header {
     visibility: visible;
     opacity: 1;
 }
+
+.identifier-input-button-div .ui-button-text {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
