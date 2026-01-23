@@ -75,8 +75,9 @@ public class SpatialUnitTableViewModel extends EntityTableViewModel<SpatialUnit,
                 spatialUnitTreeService,
                 spatialUnitService,
                 navBean,
+                sessionSettingsBean.getLangBean(),
                 SpatialUnit::getId,   // idExtractor
-                "type"                  // formScopeValueBinding
+                "type"           // formScopeValueBinding
         );
         this.spatialUnitLazyDataModel = lazyDataModel;
         this.sessionSettingsBean = sessionSettingsBean;

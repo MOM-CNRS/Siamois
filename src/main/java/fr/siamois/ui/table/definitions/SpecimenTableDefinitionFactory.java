@@ -1,10 +1,16 @@
 package fr.siamois.ui.table.definitions;
 
 
+import fr.siamois.domain.models.form.customfield.CustomFieldSelectOneFromFieldCode;
+import fr.siamois.domain.models.form.customfield.CustomFieldText;
 import fr.siamois.domain.models.specimen.Specimen;
+import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.ui.table.CommandLinkColumn;
 import fr.siamois.ui.table.EntityTableViewModel;
+import fr.siamois.ui.table.FormFieldColumn;
 import fr.siamois.ui.table.TableColumnAction;
+
+import static fr.siamois.ui.bean.panel.models.panel.single.AbstractSingleEntity.SYSTEM_THESO;
 
 
 /**
@@ -27,6 +33,37 @@ public final class SpecimenTableDefinitionFactory {
         if (tableModel == null) {
             return;
         }
+
+        Concept idConcept = new Concept.Builder()
+                .vocabulary(SYSTEM_THESO)
+                .externalId("4286250")
+                .build();
+        Concept typeConcept = new Concept.Builder()
+                .vocabulary(SYSTEM_THESO)
+                .externalId("4286248")
+                .build();
+
+        CustomFieldText idField =  CustomFieldText.builder()
+                .label("recordingunit.field.identifier")
+                .isSystemField(true)
+                .isTextArea(false)
+                .id(1L)
+                .valueBinding("fullIdentifier")
+                .concept(idConcept)
+                .build();
+
+
+        CustomFieldSelectOneFromFieldCode catField =  CustomFieldSelectOneFromFieldCode.builder()
+                .label("recordingunit.property.type")
+                .isSystemField(true)
+                .id(2L)
+                .valueBinding("category")
+                .concept(typeConcept)
+                .fieldCode("SIAS.CAT")
+                .styleClass("mr-2 recording-unit-type-chip")
+                .build();
+
+
 
         tableModel.getTableDefinition().addColumn(
                 CommandLinkColumn.builder()
@@ -51,6 +88,29 @@ public final class SpecimenTableDefinitionFactory {
                         .updateExpr("flow")
                         .onstartJs("PF('buiContent').show()")
                         .oncompleteJs("PF('buiContent').hide();handleScrollToTop();")
+                        .build()
+        );
+
+        tableModel.getTableDefinition().addColumn(
+                FormFieldColumn.builder()
+                        .id("identifier")
+                        .headerKey("recordingunit.field.identifier")
+                        .field(idField)
+                        .sortable(true)
+                        .visible(true)
+                        .required(true)
+                        .build()
+        );
+
+        tableModel.getTableDefinition().addColumn(
+                FormFieldColumn.builder()
+                        .id("type")
+                        .headerKey("recordingunit.property.type")
+                        .field(catField)
+                        .sortable(false)
+                        .filterable(false)
+                        .visible(true)
+                        .required(true)
                         .build()
         );
 

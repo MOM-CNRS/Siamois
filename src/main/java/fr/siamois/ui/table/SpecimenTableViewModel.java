@@ -6,12 +6,14 @@ import fr.siamois.domain.models.specimen.Specimen;
 import fr.siamois.domain.services.form.FormService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitTreeService;
+import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.NavBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
 import fr.siamois.ui.bean.dialog.newunit.GenericNewUnitDialogBean;
 import fr.siamois.ui.bean.panel.FlowBean;
 import fr.siamois.ui.lazydatamodel.BaseSpecimenLazyDataModel;
 import lombok.Getter;
+import org.apache.commons.codec.language.bm.Lang;
 import org.primefaces.model.TreeNode;
 
 import java.util.List;
@@ -42,7 +44,8 @@ public class SpecimenTableViewModel extends EntityTableViewModel<Specimen, Long>
                                   SpatialUnitTreeService spatialUnitTreeService,
                                   SpatialUnitService spatialUnitService,
                                   NavBean navBean,
-                                  FlowBean flowBean, GenericNewUnitDialogBean<Specimen> genericNewUnitDialogBean) {
+                                  FlowBean flowBean,
+                                  GenericNewUnitDialogBean<Specimen> genericNewUnitDialogBean) {
 
         super(
                 lazyDataModel,
@@ -52,7 +55,8 @@ public class SpecimenTableViewModel extends EntityTableViewModel<Specimen, Long>
                 spatialUnitService,
                 navBean,
                 Specimen::getId,   // idExtractor
-                "type"                  // formScopeValueBinding
+                "type"   ,// formScopeValueBinding
+                sessionSettingsBean.getLangBean()
         );
         this.specimenLazyDataModel = lazyDataModel;
         this.setTreeMode(false);
@@ -192,10 +196,6 @@ public class SpecimenTableViewModel extends EntityTableViewModel<Specimen, Long>
         return null;
     }
 
-    @Override
-    public void save() {
-        // will be implemented when working on specimen table
-    }
 
     @Override
     public boolean canUserEditRow(Specimen unit) {
