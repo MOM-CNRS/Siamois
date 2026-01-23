@@ -36,6 +36,11 @@ class RuNumSpatialUnitResolverTest {
         assertThat(ruNumSpatialUnitResolver.getDescriptionLanguageCode()).isEqualTo("ru.identifier.description.num_uspatial");
     }
 
+    @Test
+    void testCss() {
+        assertThat(ruNumSpatialUnitResolver.getButtonStyleClass()).isEqualTo("rounded-button spatial-unit");
+    }
+
     @Nested
     @DisplayName("formatUsesThisResolver() tests")
     class FormatUsesThisResolverTest {
