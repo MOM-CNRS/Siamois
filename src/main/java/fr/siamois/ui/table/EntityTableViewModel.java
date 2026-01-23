@@ -52,7 +52,7 @@ import static fr.siamois.utils.MessageUtils.displayErrorMessage;
 public abstract class EntityTableViewModel<T extends TraceableEntity, ID> {
 
     @Setter
-    protected String globalFilter;
+    protected String globalFilter = "";
 
     /** Lazy model "pur data" (chargement, tri, filtres, sélection, etc.) */
     protected final BaseLazyDataModel<T> lazyDataModel;
