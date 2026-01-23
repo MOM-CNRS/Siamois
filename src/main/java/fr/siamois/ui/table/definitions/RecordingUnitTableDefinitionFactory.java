@@ -3,7 +3,6 @@ package fr.siamois.ui.table.definitions;
 import fr.siamois.domain.models.form.customfield.*;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
-import fr.siamois.infrastructure.database.initializer.seeder.ConceptSeeder;
 import fr.siamois.ui.table.*;
 
 import static fr.siamois.ui.bean.panel.models.panel.single.AbstractSingleEntity.SYSTEM_THESO;
