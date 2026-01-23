@@ -41,7 +41,6 @@
 
     <!-- COMMAND_LINK Column -->
     <ui:fragment rendered="#{column.type eq 'COMMAND_LINK'}">
-        #{item}
         <p:commandButton
                 styleClass="hidden-column"
                 action="#{tableModel.handleAction(column, item, panelIndex)}"

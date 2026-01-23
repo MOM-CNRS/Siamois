@@ -39,7 +39,7 @@
                                     btnNewActionUpdate="newUnitForm"
                                     btnNewActionOnComplete="PF('newUnitDiag').show();"
                                     btnNewActionOnStart=""
-                                    btnNewAction="#{genericNewUnitDialogBean.selectKind('SPATIAL')}"
+                                    btnNewAction="#{genericNewUnitDialogBean.openNewEntityDiag('SPATIAL')}"
                                     isCreateAllowed="#{spatialUnitFieldBean.isCreateAllowed()}"
                             />
 
@@ -59,7 +59,7 @@
                                     btnNewActionUpdate="newUnitForm"
                                     btnNewActionOnComplete="PF('newUnitDiag').show();"
                                     btnNewActionOnStart=""
-                                    btnNewAction="#{genericNewUnitDialogBean.selectKind('ACTION')}"
+                                    btnNewAction="#{genericNewUnitDialogBean.openNewEntityDiag('ACTION')}"
                                     isCreateAllowed="#{flowBean.isActionUnitCreateAllowed()}"
                             />
 

@@ -251,4 +251,18 @@ public class GenericNewUnitDialogBean<T extends TraceableEntity>
         }
     }
 
+    /*
+    Initializing the new entity dialog without context from home panel
+     */
+    public void openNewEntityDiag(UnitKind unitKind) {
+        NewUnitContext ctx = NewUnitContext.builder()
+                .kindToCreate(unitKind)
+                .build();
+        try {
+            selectKind(ctx, null);
+        } catch (CannotInitializeNewUnitDialogException e) {
+            MessageUtils.displayErrorMessage(langBean, "common.message.errorOpeningNewEntityDialog");
+        }
+    }
+
 }
