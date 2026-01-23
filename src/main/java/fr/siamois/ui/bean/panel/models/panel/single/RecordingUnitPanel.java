@@ -47,6 +47,7 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import org.hibernate.Hibernate;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.context.ApplicationContext;
@@ -209,6 +210,8 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
         try {
 
             unit = recordingUnitService.findById(idunit);
+            Hibernate.initialize(unit.getChildren());
+            Hibernate.initialize(unit.getParents());
 
             specimenListLazyDataModel = new SpecimenInRecordingUnitLazyDataModel(
                     specimenService,
@@ -439,7 +442,7 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
 
     @Override
     public String getTabView() {
-        return "/panel/tabview/spatialUnitTabView.xhtml";
+        return "/panel/tabview/recordingUnitTabView.xhtml";
     }
 
     public void initSpecimenTab() {
