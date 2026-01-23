@@ -59,6 +59,11 @@ class RuTypeParentResolverTest {
         assertThat(ruTypeParentResolver.getDescriptionLanguageCode()).isEqualTo("ru.identifier.description.type_parent");
     }
 
+    @Test
+    void testCss() {
+        assertThat(ruTypeParentResolver.getButtonStyleClass()).isEqualTo("rounded-button recording-unit");
+    }
+
     @Nested
     @DisplayName("formatUsesThisResolver() tests")
     class FormatUsesThisResolverTest {
