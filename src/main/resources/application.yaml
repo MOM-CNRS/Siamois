@@ -15,7 +15,7 @@ server:
 
 siamois:
   lang:
-    default: en
+    default: ${DEFAULT_LANG:fr}
     available: en, fr
   admin:
     username: ${SIAMOIS_ADMIN_LOGIN}
