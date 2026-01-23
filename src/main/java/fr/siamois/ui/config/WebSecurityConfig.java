@@ -39,6 +39,7 @@ public class WebSecurityConfig {
                 .requestMatchers("/error/**", "/pages/error/**").permitAll()
                 .requestMatchers("/api/**").permitAll()
                 .requestMatchers("/register/**").permitAll()
+                .requestMatchers("/actuator/**").permitAll()
                 .requestMatchers(EndpointRequest.to(HealthEndpoint.class)).permitAll()
                 .anyRequest().authenticated()
         );

@@ -12,3 +12,11 @@ siamois.iml
 /.smarttomcat/
 /htmlReport/
 /.local/
+
+siamois-e2e/node_modules/
+siamois-e2e/test-results/
+siamois-e2e/playwright-report/
+siamois-e2e/blob-report/
+siamois-e2e/playwright/.cache/
+siamois-e2e/playwright/.auth/
+siamois-e2e/siamois-e2e.iml
