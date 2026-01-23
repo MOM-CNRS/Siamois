@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgis/postgis
+    networks:
+      - siamois-net
+
+  siamois:
+    build:
+      context: ../
+      dockerfile: Dockerfile
+    depends_on:
+      - db
+    ports:
+      - "8099:8099"
+    environment:
+      CONTEXT_PATH: /
+    networks:
+      - siamois-net
+
+networks:
+  siamois-net:
