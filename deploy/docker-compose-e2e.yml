@@ -7,7 +7,9 @@ services:
       - siamois-net
 
   siamois:
-    build: ../
+    build:
+      context: ../
+      dockerfile: Dockerfile
     depends_on:
       - db
     ports:
