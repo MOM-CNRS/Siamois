@@ -17,18 +17,31 @@ import fr.siamois.domain.models.form.customformresponse.CustomFormResponse;
 import fr.siamois.domain.models.history.RevisionWithInfo;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
+import fr.siamois.domain.models.specimen.Specimen;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.person.PersonService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.specimen.SpecimenService;
 import fr.siamois.ui.bean.LangBean;
+import fr.siamois.ui.bean.NavBean;
 import fr.siamois.ui.bean.RedirectBean;
+import fr.siamois.ui.bean.dialog.newunit.GenericNewUnitDialogBean;
+import fr.siamois.ui.bean.dialog.newunit.NewUnitContext;
+import fr.siamois.ui.bean.dialog.newunit.UnitKind;
+import fr.siamois.ui.bean.panel.FlowBean;
 import fr.siamois.ui.bean.panel.models.PanelBreadcrumb;
 import fr.siamois.ui.bean.panel.models.panel.single.tab.SpecimenTab;
 import fr.siamois.ui.lazydatamodel.RecordingUnitChildrenLazyDataModel;
+import fr.siamois.ui.lazydatamodel.RecordingUnitInActionUnitLazyDataModel;
 import fr.siamois.ui.lazydatamodel.RecordingUnitParentsLazyDataModel;
 import fr.siamois.ui.lazydatamodel.SpecimenInRecordingUnitLazyDataModel;
+import fr.siamois.ui.lazydatamodel.scope.RecordingUnitScope;
+import fr.siamois.ui.lazydatamodel.tree.RecordingUnitTreeTableLazyModel;
 import fr.siamois.ui.table.RecordingUnitTableViewModel;
+import fr.siamois.ui.table.SpecimenTableViewModel;
+import fr.siamois.ui.table.ToolbarCreateConfig;
+import fr.siamois.ui.table.definitions.RecordingUnitTableDefinitionFactory;
+import fr.siamois.ui.table.definitions.SpecimenTableDefinitionFactory;
 import fr.siamois.utils.MessageUtils;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -60,6 +73,9 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
     protected final transient PersonService personService;
     private final transient RedirectBean redirectBean;
     private final transient SpecimenService specimenService;
+    private final transient NavBean navBean;
+    private final transient FlowBean flowBean;
+    private final transient GenericNewUnitDialogBean<?> genericNewUnitDialogBean;
 
     // ---------- Locals
     // RU
@@ -81,6 +97,8 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
     // lazy model for parents
     private transient RecordingUnitTableViewModel childTableModel;
 
+    private transient SpecimenTableViewModel specimenTableModel;
+
     protected RecordingUnitPanel(ApplicationContext context)  {
 
         super("common.entity.recordingunit",
@@ -92,6 +110,9 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
         this.personService = context.getBean(PersonService.class);
         this.redirectBean = context.getBean(RedirectBean.class);
         this.specimenService = context.getBean(SpecimenService.class);
+        this.navBean = context.getBean(NavBean.class);
+        this.flowBean = context.getBean(FlowBean.class);
+        this.genericNewUnitDialogBean = context.getBean(GenericNewUnitDialogBean.class);
     }
 
 
@@ -248,13 +269,15 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
                 errorMessage = "The Recording Unit page should not be accessed without ID or by direct page path";
             }
 
+            initSpecimenTab();
+
             super.init();
 
             SpecimenTab specimenTab = new SpecimenTab(
                     "common.entity.specimen",
                     "bi bi-bucket",
                     "specimenTab",
-                    specimenListLazyDataModel,
+                    specimenTableModel,
                     0);
 
             tabs.add(specimenTab);
@@ -417,6 +440,41 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
     @Override
     public String getTabView() {
         return "/panel/tabview/spatialUnitTabView.xhtml";
+    }
+
+    public void initSpecimenTab() {
+        SpecimenInRecordingUnitLazyDataModel lazyDataModel = new SpecimenInRecordingUnitLazyDataModel(
+                specimenService,
+                sessionSettingsBean,
+                langBean,
+                unit
+        );
+
+        specimenTableModel = new SpecimenTableViewModel(
+                lazyDataModel,
+                formService,
+                sessionSettingsBean,
+                spatialUnitTreeService,
+                spatialUnitService,
+                navBean,
+                flowBean,
+                (GenericNewUnitDialogBean<Specimen>) genericNewUnitDialogBean
+        );
+
+        SpecimenTableDefinitionFactory.applyTo(specimenTableModel);
+
+        // configuration du bouton creer
+        specimenTableModel.setToolbarCreateConfig(
+                ToolbarCreateConfig.builder()
+                        .kindToCreate(UnitKind.SPECIMEN)
+                        .scopeSupplier(() ->
+                                NewUnitContext.Scope.builder()
+                                        .key("RECORDING")
+                                        .entityId(unit.getId())
+                                        .build()
+                        )
+                        .build()
+        );
     }
 
 

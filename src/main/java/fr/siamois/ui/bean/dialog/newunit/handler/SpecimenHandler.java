@@ -1,13 +1,16 @@
 package fr.siamois.ui.bean.dialog.newunit.handler;
 
 import fr.siamois.domain.models.UserInfo;
+import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.exceptions.EntityAlreadyExistsException;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.specimen.Specimen;
+import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.specimen.SpecimenService;
 import fr.siamois.ui.bean.SessionSettingsBean;
 import fr.siamois.ui.bean.dialog.newunit.GenericNewUnitDialogBean;
+import fr.siamois.ui.bean.dialog.newunit.NewUnitContext;
 import fr.siamois.ui.bean.dialog.newunit.UnitKind;
 import fr.siamois.ui.exceptions.CannotInitializeNewUnitDialogException;
 import fr.siamois.ui.lazydatamodel.SpecimenInRecordingUnitLazyDataModel;
@@ -20,11 +23,13 @@ import java.util.List;
 public class SpecimenHandler implements INewUnitHandler<Specimen> {
 
     private final SpecimenService specimenService;
+    private final RecordingUnitService recordingUnitService;
     private final SessionSettingsBean sessionSettingsBean;
 
-    public SpecimenHandler(SessionSettingsBean sessionSettingsBean, SpecimenService specimenService) {
+    public SpecimenHandler(SessionSettingsBean sessionSettingsBean, SpecimenService specimenService, RecordingUnitService recordingUnitService) {
         this.sessionSettingsBean = sessionSettingsBean;
         this.specimenService = specimenService;
+        this.recordingUnitService = recordingUnitService;
     }
 
     @Override
@@ -57,20 +62,39 @@ public class SpecimenHandler implements INewUnitHandler<Specimen> {
     public void initFromContext(GenericNewUnitDialogBean<?> bean) throws CannotInitializeNewUnitDialogException {
 
         Specimen unit = (Specimen) bean.getUnit();
-        RecordingUnit ru;
-        if (bean.getLazyDataModel() instanceof SpecimenInRecordingUnitLazyDataModel typedModel) {
-            ru = typedModel.getRecordingUnit();
-        } else if (bean.getParent() instanceof RecordingUnit) {
-            ru = (RecordingUnit) bean.getParent();
-        } else {
+        NewUnitContext ctx = bean.getNewUnitContext();
+        if (ctx == null) throw new CannotInitializeNewUnitDialogException("Specimen cannot be created without a context");
+
+        // 1) If creation comes from toolbar: use SCOPE
+        NewUnitContext.Trigger trigger = ctx.getTrigger();
+        if (trigger != null && trigger.getType() == NewUnitContext.TriggerType.TOOLBAR) {
+            applyScope(unit, ctx);
+        }
+
+
+    }
+
+    private void applyScope(Specimen unit, NewUnitContext ctx) throws CannotInitializeNewUnitDialogException {
+        NewUnitContext.Scope scope = ctx.getScope();
+        if (scope == null || scope.getKey() == null || scope.getEntityId() == null) {
             throw new CannotInitializeNewUnitDialogException("Specimen cannot be created without a context");
         }
-        unit.setRecordingUnit(ru);
-        unit.setCreatedByInstitution(sessionSettingsBean.getSelectedInstitution());
-        unit.setCreatedBy(sessionSettingsBean.getAuthenticatedUser());
-        unit.setAuthors(List.of(sessionSettingsBean.getAuthenticatedUser()));
-        unit.setCollectors(List.of(sessionSettingsBean.getAuthenticatedUser()));
-        unit.setCollectionDate(OffsetDateTime.now());
+
+
+        if ("RECORDING".equals(scope.getKey())) {
+            RecordingUnit ru = recordingUnitService.findById(scope.getEntityId()); // adapt Optional
+            if (ru != null) {
+                unit.setCreatedByInstitution(ru.getCreatedByInstitution());
+                unit.setRecordingUnit(ru);
+                unit.setCreatedBy(sessionSettingsBean.getAuthenticatedUser());
+                unit.setAuthors(List.of(sessionSettingsBean.getAuthenticatedUser()));
+                unit.setCollectors(List.of(sessionSettingsBean.getAuthenticatedUser()));
+                unit.setCollectionDate(OffsetDateTime.now());
+                return ;
+            }
+        }
+
+        throw new CannotInitializeNewUnitDialogException("Specimen cannot be created without a context");
     }
 
     @Override

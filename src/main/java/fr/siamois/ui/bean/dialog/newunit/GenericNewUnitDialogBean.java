@@ -83,16 +83,6 @@ public class GenericNewUnitDialogBean<T extends TraceableEntity>
         this.spatialUnitFieldBean = context.getBean(SpatialUnitFieldBean.class);
     }
 
-    @SuppressWarnings("unchecked")
-    // DO NOT DELETE, USED BY XHTML FILE
-    public void selectKind(UnitKind kind) throws CannotInitializeNewUnitDialogException {
-        this.kind = kind;
-        this.handler = (INewUnitHandler<T>) handlers.get(kind);
-        this.lazyDataModel = null;
-        this.multiHierarchyChild = null;
-        this.multiHierarchyParent = null;
-        init();
-    }
 
     // Unique selectKind
     @SuppressWarnings("unchecked")
@@ -105,13 +95,6 @@ public class GenericNewUnitDialogBean<T extends TraceableEntity>
 
         this.sourceTableModel = sourceTableModel;
         this.newUnitContext = ctx;
-
-        // reset context legacy
-        this.lazyDataModel = null;
-        this.setToUpdate = null;
-        this.parent = null;
-        this.multiHierarchyChild = null;
-        this.multiHierarchyParent = null;
 
         init();
     }

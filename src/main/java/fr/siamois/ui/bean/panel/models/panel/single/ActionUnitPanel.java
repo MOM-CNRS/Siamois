@@ -218,12 +218,7 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnit> imple
                     "recordingTab",
                     recordingTabTableModel,
                     totalRecordingUnitCount);
-            SpecimenTab specimenTab = new SpecimenTab(
-                    "common.entity.specimens",
-                    "bi bi-bucket",
-                    "specimenTab",
-                    specimenLazyDataModel,
-                    totalSpecimenCount);
+
 
             ActionSettingsTab settingsTab = new ActionSettingsTab(
                     "nav.settings",
@@ -233,7 +228,7 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnit> imple
 
             tabs.add(recordingTab);
             tabs.add(settingsTab);
-            tabs.add(specimenTab);
+
 
         } catch (
                 ActionUnitNotFoundException e) {
