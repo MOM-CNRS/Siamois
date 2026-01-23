@@ -65,7 +65,7 @@ class SpecimenInRecordingUnitLazyDataModelTest {
     }
 
     @Test
-    void loadActionUnits_Success() {
+    void loadSpecimen_Success() {
 
         lazyModel = new SpecimenInRecordingUnitLazyDataModel(specimenService,sessionSettingsBean,langBean, u);
 

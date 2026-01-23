@@ -19,4 +19,10 @@ public class RuNumSpatialUnitResolver extends RuNumericalIdentifierResolver {
         }
         return info.getSpatialUnitNumber();
     }
+
+    @NonNull
+    @Override
+    public String getButtonStyleClass() {
+        return "rounded-button spatial-unit";
+    }
 }

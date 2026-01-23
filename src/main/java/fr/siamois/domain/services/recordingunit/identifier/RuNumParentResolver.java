@@ -30,6 +30,6 @@ public class RuNumParentResolver extends RuNumericalIdentifierResolver {
     @NonNull
     @Override
     public String getButtonStyleClass() {
-        return "rounded-button ui-button-warning";
+        return "rounded-button recording-unit";
     }
 }

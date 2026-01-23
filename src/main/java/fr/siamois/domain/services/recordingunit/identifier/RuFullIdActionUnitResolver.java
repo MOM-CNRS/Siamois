@@ -58,4 +58,10 @@ public class RuFullIdActionUnitResolver implements RuIdentifierResolver {
 
         return baseFormatString;
     }
+
+    @NonNull
+    @Override
+    public String getButtonStyleClass() {
+        return "rounded-button action-unit";
+    }
 }

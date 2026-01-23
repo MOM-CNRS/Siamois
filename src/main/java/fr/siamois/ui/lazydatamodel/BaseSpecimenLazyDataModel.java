@@ -10,6 +10,7 @@ import fr.siamois.ui.bean.LangBean;
 import fr.siamois.utils.MessageUtils;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.Hibernate;
 import org.primefaces.event.RowEditEvent;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -49,7 +50,14 @@ public abstract class BaseSpecimenLazyDataModel extends BaseLazyDataModel<Specim
 
     @Override
     protected Page<Specimen> loadData(String name, Long[] categoryIds, Long[] personIds, String globalFilter, Pageable pageable) {
-        return loadSpecimens(name, categoryIds, personIds, globalFilter, pageable);
+        Page<Specimen> page =  loadSpecimens(name, categoryIds, personIds, globalFilter, pageable);
+        page.forEach(specimen -> {
+            Hibernate.initialize(specimen.getDocuments());
+            Hibernate.initialize(specimen.getAuthors());
+            Hibernate.initialize(specimen.getCollectors());
+            Hibernate.initialize(specimen.getRecordingUnit());
+        });
+        return page;
     }
 
     protected abstract Page<Specimen> loadSpecimens(

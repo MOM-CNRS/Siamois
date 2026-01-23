@@ -57,26 +57,6 @@
 
         </p:tab>
 
-        <!-- hierarchy tab -->
-        <p:tab>
-
-            <f:facet name="title">
-
-                <ui:include src="/pages/shared/tab/tabTitle.xhtml">
-                    <ui:param name="title" value='#{langBean.msg(panelModel.tabs[2].titleCode)}'/>
-                    <ui:param name="icon" value="#{panelModel.tabs[2].icon}"/>
-                    <ui:param name="emptyTab" value="#{panelModel.emptyTabFor(panelModel.tabs[2])}"/>
-                    <ui:param name="validated" value="#{panelModel.unit.validated}"/>
-                </ui:include>
-            </f:facet>
-
-            <ui:include src="#{panelModel.tabs[2].getViewName()}">
-                <ui:param name="panelModel" value="#{panelModel}"/>
-                <ui:param name="panelIndex" value="#{panelIndex}"/>
-                <ui:param name="tabModel" value="#{panelModel.tabs[2]}"/>
-            </ui:include>
-
-        </p:tab>
 
         <!-- specimen tab -->
         <p:tab>

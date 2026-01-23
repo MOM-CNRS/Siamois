@@ -63,7 +63,7 @@ class RuTypeResolverTest {
         String styleClass = ruTypeResolver.getButtonStyleClass();
 
         // Then
-        assertThat(styleClass).isEqualTo("rounded-button ui-button-warning");
+        assertThat(styleClass).isEqualTo("rounded-button recording-unit");
     }
 
     @Test

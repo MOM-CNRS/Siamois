@@ -25,7 +25,6 @@ import fr.siamois.ui.bean.panel.FlowBean;
 import fr.siamois.ui.bean.panel.models.PanelBreadcrumb;
 import fr.siamois.ui.bean.panel.models.panel.single.tab.ActionSettingsTab;
 import fr.siamois.ui.bean.panel.models.panel.single.tab.RecordingTab;
-import fr.siamois.ui.bean.panel.models.panel.single.tab.SpecimenTab;
 import fr.siamois.ui.bean.settings.team.TeamMembersBean;
 import fr.siamois.ui.lazydatamodel.RecordingUnitInActionUnitLazyDataModel;
 import fr.siamois.ui.lazydatamodel.SpecimenInActionUnitLazyDataModel;
@@ -218,12 +217,7 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnit> imple
                     "recordingTab",
                     recordingTabTableModel,
                     totalRecordingUnitCount);
-            SpecimenTab specimenTab = new SpecimenTab(
-                    "common.entity.specimens",
-                    "bi bi-bucket",
-                    "specimenTab",
-                    specimenLazyDataModel,
-                    totalSpecimenCount);
+
 
             ActionSettingsTab settingsTab = new ActionSettingsTab(
                     "nav.settings",
@@ -233,7 +227,7 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnit> imple
 
             tabs.add(recordingTab);
             tabs.add(settingsTab);
-            tabs.add(specimenTab);
+
 
         } catch (
                 ActionUnitNotFoundException e) {

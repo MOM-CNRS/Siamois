@@ -42,7 +42,8 @@ public class SpecimenTableViewModel extends EntityTableViewModel<Specimen, Long>
                                   SpatialUnitTreeService spatialUnitTreeService,
                                   SpatialUnitService spatialUnitService,
                                   NavBean navBean,
-                                  FlowBean flowBean, GenericNewUnitDialogBean<Specimen> genericNewUnitDialogBean) {
+                                  FlowBean flowBean,
+                                  GenericNewUnitDialogBean<Specimen> genericNewUnitDialogBean) {
 
         super(
                 lazyDataModel,
@@ -52,7 +53,8 @@ public class SpecimenTableViewModel extends EntityTableViewModel<Specimen, Long>
                 spatialUnitService,
                 navBean,
                 Specimen::getId,   // idExtractor
-                "type"                  // formScopeValueBinding
+                "type"   ,// formScopeValueBinding
+                sessionSettingsBean.getLangBean()
         );
         this.specimenLazyDataModel = lazyDataModel;
         this.setTreeMode(false);
@@ -192,10 +194,6 @@ public class SpecimenTableViewModel extends EntityTableViewModel<Specimen, Long>
         return null;
     }
 
-    @Override
-    public void save() {
-        // will be implemented when working on specimen table
-    }
 
     @Override
     public boolean canUserEditRow(Specimen unit) {

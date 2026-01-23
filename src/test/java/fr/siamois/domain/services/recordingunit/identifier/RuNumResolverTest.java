@@ -43,7 +43,7 @@ class RuNumResolverTest {
         String styleClass = ruNumResolver.getButtonStyleClass();
 
         // Then
-        assertThat(styleClass).isEqualTo("rounded-button ui-button-danger");
+        assertThat(styleClass).isEqualTo("rounded-button recording-unit");
     }
 
     @Nested

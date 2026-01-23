@@ -18,7 +18,6 @@ import fr.siamois.domain.models.vocabulary.Concept;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
-import org.hibernate.annotations.SQLRestriction;
 import org.hibernate.envers.Audited;
 import org.hibernate.envers.NotAudited;
 import org.locationtech.jts.geom.MultiPolygon;
