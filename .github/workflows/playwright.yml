@@ -10,35 +10,38 @@ jobs:
     timeout-minutes: 60
     runs-on: ubuntu-latest
 
-    # C'est ici qu'on définit le dossier de travail par défaut pour toutes les commandes 'run'
     defaults:
       run:
         working-directory: ./siamois-e2e
 
     steps:
-      # 1. Récupération du code source
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 2. Installation de Node.js
       - name: Setup Node.js
         uses: actions/setup-node@v4
-
         with:
           node-version: '20'
           cache: 'npm'
-          # Important : on spécifie le chemin du fichier lock pour le cache
           cache-dependency-path: siamois-e2e/package-lock.json
 
-      # 3. Installation des dépendances (dans le sous-dossier grâce au 'defaults')
       - name: Install dependencies
         run: npm ci
 
-      # 4. Installation des navigateurs Playwright
       - name: Install Playwright Browsers
         run: npx playwright install --with-deps
 
-      # 5. Exécution des tests
+      - name: Wait for Environment to be UP
+        timeout-minutes: 5  # Sécurité : arrête si l'API ne répond pas après 5 min
+        run: |
+          echo "Polling https://siamois.dvlogys.dev/actuator/health..."
+          # Boucle 'until' : tant que grep ne trouve pas "UP", on attend
+          until curl -s https://siamois.dvlogys.dev/actuator/health | grep -q '"status":"UP"'; do
+            echo "Environment not ready yet. Retrying in 5 seconds..."
+            sleep 5
+          done
+          echo "Environment is UP! Starting tests..."
+
       - name: Run Playwright tests
         run: npx playwright test
         env:
@@ -49,5 +52,5 @@ jobs:
         if: ${{ !cancelled() }}
         with:
           name: playwright-report
-          path: playwright-report/
+          path: siamois-e2e/playwright-report/
           retention-days: 30
