@@ -5,10 +5,10 @@ on:
     branches: [ main ]
 
 jobs:
-  test:
+  e2e-tests:
+    environment: E2E_TESTS
     timeout-minutes: 60
     runs-on: ubuntu-latest
-    environment: 'E2E_TESTS'
 
     # C'est ici qu'on définit le dossier de travail par défaut pour toutes les commandes 'run'
     defaults:
