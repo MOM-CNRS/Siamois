@@ -35,6 +35,10 @@ jobs:
       # 4. Installation des navigateurs Playwright
       - name: Install Playwright Browsers
         run: npx playwright install --with-deps
+        env:
+          # On mappe les secrets GitHub vers les variables attendues par le script
+          TEST_EMAIL: ${{ secrets.E2E_TEST_EMAIL }}
+          TEST_PASSWORD: ${{ secrets.E2E_TEST_PASSWORD }}
 
       # 5. Exécution des tests
       - name: Run Playwright tests
