@@ -191,3 +191,27 @@ body .ui-treetable-header {
     overflow: hidden;
     text-overflow: ellipsis;
 }
+
+body .add-strati-rel.ui-card .ui-card-content {
+    display: flex;
+    gap: 1em;
+    align-items: center;
+    padding: 0;
+    flex-direction: row;
+    flex-wrap:wrap;
+}
+
+body .strati-rel-card.ui-card .ui-card-content {
+    display: flex;
+    gap: 0.5em;
+    padding: 0;
+    flex-direction: column;
+}
+
+body .strati-rel-card.ui-card .ui-chip .ui-chip-text {
+    font-size:10px;
+}
+
+body .ui-chkbox .ui-chkbox-box.ui-state-active {
+    border-color: var(--main-color)
+}

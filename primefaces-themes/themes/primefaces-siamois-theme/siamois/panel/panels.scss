@@ -393,7 +393,7 @@
 }
 
 // Super clean usage - just define the color!
-@include themed-panel('spatial-unit', $contextMainColor, $contextLightColor50, $contextLightColor100, $contextLightColor200, $contextDarkColor);
-@include themed-panel('action-unit', $contextMainColor, $contextLightColor50, $contextLightColor100, $contextLightColor200, $contextDarkColor);
+@include themed-panel('spatial-unit', var(--context-main-color), var(--context-light-color-50), var(--context-light-color-100), var(--context-light-color-200), var(--context-dark-color));
+@include themed-panel('action-unit', var(--context-main-color), var(--context-light-color-50), var(--context-light-color-100), var(--context-light-color-200), var(--context-dark-color));
 @include themed-panel('recording-unit', $groundMainColor, $groundLightColor50, $groundLightColor100, $groundLightColor200, $groundDarkColor);
 @include themed-panel('specimen', $groundMainColor, $groundLightColor50, $groundLightColor100, $groundLightColor200, $groundDarkColor);
