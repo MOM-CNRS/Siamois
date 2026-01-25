@@ -3,6 +3,7 @@
              xmlns:p="http://primefaces.org/ui"
              xmlns:c="http://java.sun.com/jsp/jstl/core"
              xmlns:f="http://xmlns.jcp.org/jsf/core"
+             xmlns:h="http://xmlns.jcp.org/jsf/html"
              xmlns:sharedInput="http://xmlns.jcp.org/jsf/composite/pages/shared/input"
 >
 
@@ -86,6 +87,33 @@
                             <p:selectBooleanCheckbox itemLabel="Incertain"/>
                             <p:commandButton icon="pi pi-check" value="Ajouter"/>
                         </p:card>
+
+                        <p:outputPanel layout="block" style="position:relative;display:flex;">
+
+                            <svg style="flex:3;" id="stratigraphy" width="800" height="500"></svg>
+
+                            <!-- Side panel using PrimeFaces -->
+                            <p:outputPanel id="sidePanel" styleClass="side-panel" style="display: none;flex:1;">
+                                <div class="side-panel-header">
+                                    <h3 id="relationTitle">Relation</h3>
+                                    <button onclick="closeSidePanel()" class="close-btn">×</button>
+                                </div>
+                                <div class="side-panel-content">
+                                    <p id="relationDesc"></p>
+                                    <div id="relationVocab" class="relation-vocab"></div>
+                                    <div id="relationDocs" class="relation-docs"></div>
+                                    <button onclick="closeSidePanel()" class="delete-relation-btn">Supprimer la
+                                        relation
+                                    </button>
+                                </div>
+                            </p:outputPanel>
+
+
+                            <h:outputScript>
+                                initStratigraphyIfNeeded();
+                            </h:outputScript>
+                        </p:outputPanel>
+
 
                         <p:panelGrid style="padding: 0.5em; color: var(--text-light);"
                                      layout="grid"

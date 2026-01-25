@@ -215,3 +215,73 @@ body .strati-rel-card.ui-card .ui-chip .ui-chip-text {
 body .ui-chkbox .ui-chkbox-box.ui-state-active {
     border-color: var(--main-color)
 }
+
+
+/* Side Panel Styling */
+.side-panel {
+    position: fixed;
+    top: 0;
+    right: -400px; /* Hidden by default */
+    width: 400px;
+    height: 100%;
+    background: #fff;
+    box-shadow: -2px 0 10px rgba(0, 0, 0, 0.1);
+    transition: right 0.3s ease;
+    z-index: 1000;
+    border-left: 1px solid #e2e8f0;
+}
+
+.side-panel.open {
+    right: 0; /* Slide in */
+}
+
+.side-panel-header {
+    padding: 16px;
+    border-bottom: 1px solid #e2e8f0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.side-panel-header h3 {
+    margin: 0;
+    font-size: 18px;
+    color: #1a202c;
+}
+
+.close-btn {
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: #718096;
+}
+
+.side-panel-content {
+    padding: 16px;
+}
+
+.relation-vocab {
+    margin: 12px 0;
+}
+
+.relation-docs {
+    margin: 12px 0;
+}
+
+.delete-relation-btn {
+    background: #e53e3e;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-weight: 500;
+    cursor: pointer;
+    width: 100%;
+    margin-top: 12px;
+}
+
+.delete-relation-btn:hover {
+    background: #c53030;
+}
+
