@@ -208,15 +208,15 @@ class RecordingUnitServiceTest {
         StratigraphicRelationship antRelationship = new StratigraphicRelationship();
         antRelationship.setUnit1(recordingUnitToSave);
         antRelationship.setUnit2(anteriorUnit);
-        antRelationship.setType(StratigraphicRelationshipService.ASYNCHRONOUS);
+        antRelationship.setConcept(StratigraphicRelationshipService.ASYNCHRONOUS);
         StratigraphicRelationship syncRelationship = new StratigraphicRelationship();
         syncRelationship.setUnit1(recordingUnitToSave);
         syncRelationship.setUnit2(synchronousUnit);
-        syncRelationship.setType(StratigraphicRelationshipService.SYNCHRONOUS);
+        syncRelationship.setConcept(StratigraphicRelationshipService.SYNCHRONOUS);
         StratigraphicRelationship postRelationship = new StratigraphicRelationship();
         postRelationship.setUnit1(posteriorUnit);
         postRelationship.setUnit2(recordingUnitToSave);
-        postRelationship.setType(StratigraphicRelationshipService.ASYNCHRONOUS);
+        postRelationship.setConcept(StratigraphicRelationshipService.ASYNCHRONOUS);
 
         Person p = new Person();
 
@@ -264,15 +264,15 @@ class RecordingUnitServiceTest {
         StratigraphicRelationship antRelationship = new StratigraphicRelationship();
         antRelationship.setUnit1(recordingUnitToSave);
         antRelationship.setUnit2(anteriorUnit);
-        antRelationship.setType(StratigraphicRelationshipService.ASYNCHRONOUS);
+        antRelationship.setConcept(StratigraphicRelationshipService.ASYNCHRONOUS);
         StratigraphicRelationship syncRelationship = new StratigraphicRelationship();
         syncRelationship.setUnit1(recordingUnitToSave);
         syncRelationship.setUnit2(synchronousUnit);
-        syncRelationship.setType(StratigraphicRelationshipService.SYNCHRONOUS);
+        syncRelationship.setConcept(StratigraphicRelationshipService.SYNCHRONOUS);
         StratigraphicRelationship postRelationship = new StratigraphicRelationship();
         postRelationship.setUnit1(posteriorUnit);
         postRelationship.setUnit2(recordingUnitToSave);
-        postRelationship.setType(StratigraphicRelationshipService.ASYNCHRONOUS);
+        postRelationship.setConcept(StratigraphicRelationshipService.ASYNCHRONOUS);
 
         Person p = new Person();
 

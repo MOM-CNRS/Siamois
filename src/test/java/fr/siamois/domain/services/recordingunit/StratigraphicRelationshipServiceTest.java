@@ -58,15 +58,15 @@ class StratigraphicRelationshipServiceTest {
         StratigraphicRelationship rel1 = new StratigraphicRelationship();
         rel1.setUnit1(unit1);
         rel1.setUnit2(unit2);
-        rel1.setType(synchronous);
+        rel1.setConcept(synchronous);
 
         StratigraphicRelationship rel2 = new StratigraphicRelationship();
         rel2.setUnit1(unit2);
         rel2.setUnit2(unit1);
-        rel2.setType(synchronous);
+        rel2.setConcept(synchronous);
 
-        when(relationshipRepository.findByUnit1AndType(unit1, synchronous)).thenReturn(List.of(rel1));
-        when(relationshipRepository.findByUnit2AndType(unit1, synchronous)).thenReturn(List.of(rel2));
+        when(relationshipRepository.findByUnit1AndConcept(unit1, synchronous)).thenReturn(List.of(rel1));
+        when(relationshipRepository.findByUnit2AndConcept(unit1, synchronous)).thenReturn(List.of(rel2));
 
         List<RecordingUnit> result = service.getSynchronousUnits(unit1);
 
@@ -79,9 +79,9 @@ class StratigraphicRelationshipServiceTest {
         StratigraphicRelationship rel = new StratigraphicRelationship();
         rel.setUnit1(unit1);
         rel.setUnit2(unit2);
-        rel.setType(asynchronous);
+        rel.setConcept(asynchronous);
 
-        when(relationshipRepository.findByUnit2AndType(unit2, asynchronous)).thenReturn(List.of(rel));
+        when(relationshipRepository.findByUnit2AndConcept(unit2, asynchronous)).thenReturn(List.of(rel));
 
         List<RecordingUnit> result = service.getAnteriorUnits(unit2);
 
@@ -94,9 +94,9 @@ class StratigraphicRelationshipServiceTest {
         StratigraphicRelationship rel = new StratigraphicRelationship();
         rel.setUnit1(unit1);
         rel.setUnit2(unit2);
-        rel.setType(asynchronous);
+        rel.setConcept(asynchronous);
 
-        when(relationshipRepository.findByUnit1AndType(unit1, asynchronous)).thenReturn(List.of(rel));
+        when(relationshipRepository.findByUnit1AndConcept(unit1, asynchronous)).thenReturn(List.of(rel));
 
         List<RecordingUnit> result = service.getPosteriorUnits(unit1);
 
@@ -109,9 +109,9 @@ class StratigraphicRelationshipServiceTest {
         StratigraphicRelationship existingRel = new StratigraphicRelationship();
         existingRel.setUnit1(unit1);
         existingRel.setUnit2(unit2);
-        existingRel.setType(synchronous);
+        existingRel.setConcept(synchronous);
 
-        when(relationshipRepository.findByUnit1AndUnit2AndType(unit1, unit2, synchronous))
+        when(relationshipRepository.findByUnit1AndUnit2AndConcept(unit1, unit2, synchronous))
                 .thenReturn(Optional.of(existingRel));
         when(relationshipRepository.save(existingRel)).thenReturn(existingRel);
 
@@ -129,10 +129,10 @@ class StratigraphicRelationshipServiceTest {
         StratigraphicRelationship existingRel = new StratigraphicRelationship();
         existingRel.setUnit1(unit2);
         existingRel.setUnit2(unit1);
-        existingRel.setType(synchronous);
+        existingRel.setConcept(synchronous);
 
-        when(relationshipRepository.findByUnit1AndUnit2AndType(unit1, unit2, synchronous)).thenReturn(Optional.empty());
-        when(relationshipRepository.findByUnit1AndUnit2AndType(unit2, unit1, synchronous))
+        when(relationshipRepository.findByUnit1AndUnit2AndConcept(unit1, unit2, synchronous)).thenReturn(Optional.empty());
+        when(relationshipRepository.findByUnit1AndUnit2AndConcept(unit2, unit1, synchronous))
                 .thenReturn(Optional.of(existingRel));
 
         StratigraphicRelationship newRel = new StratigraphicRelationship();
@@ -148,8 +148,8 @@ class StratigraphicRelationshipServiceTest {
 
     @Test
     void testSaveOrGet_WhenNoExistingRelationship() {
-        when(relationshipRepository.findByUnit1AndUnit2AndType(unit1, unit2, synchronous)).thenReturn(Optional.empty());
-        when(relationshipRepository.findByUnit1AndUnit2AndType(unit2, unit1, synchronous)).thenReturn(Optional.empty());
+        when(relationshipRepository.findByUnit1AndUnit2AndConcept(unit1, unit2, synchronous)).thenReturn(Optional.empty());
+        when(relationshipRepository.findByUnit1AndUnit2AndConcept(unit2, unit1, synchronous)).thenReturn(Optional.empty());
 
         StratigraphicRelationship newRel = new StratigraphicRelationship();
         when(relationshipRepository.save(any())).thenReturn(newRel);

@@ -32,12 +32,12 @@ public class StratigraphyOrderRelationshipProcessor {
     public boolean containsRelationshipOfType(Set<StratigraphicRelationship> relationships,
                                               Concept type) {
         return relationships.stream()
-                .anyMatch(rel -> rel.getType().equals(type));
+                .anyMatch(rel -> rel.getConcept().equals(type));
     }
 
     public boolean hasRelationshipWithUnit2OfType(SynchronousGroup unit1, SynchronousGroup unit2, Concept type) {
         return unit1.getRelationshipsAsUnit1().stream()
-                .anyMatch(rel -> rel.getUnit2().equals(unit2) && rel.getType().equals(type));
+                .anyMatch(rel -> rel.getUnit2().equals(unit2) && rel.getConcept().equals(type));
     }
 
     public boolean hasRelationshipWithUnit2(SynchronousGroup unit1, SynchronousGroup unit2) {
@@ -71,13 +71,13 @@ public class StratigraphyOrderRelationshipProcessor {
                 Optional<StratigraphicRelationship> rel = getRelationshipWithUnit2(unit1, group3);
                 if (rel.isPresent()) {
                     // type is now asynchronous deducted
-                    rel.get().setType(StratigraphicRelationshipService.ASYNCHRONOUS_DEDUCTED);
+                    rel.get().setConcept(StratigraphicRelationshipService.ASYNCHRONOUS_DEDUCTED);
                 } else {
                     // we add it as asynchronous deducted
                     StratigraphicRelationship newRel = new StratigraphicRelationship();
                     newRel.setUnit1(unit1);
                     newRel.setUnit2(group3);
-                    newRel.setType(StratigraphicRelationshipService.ASYNCHRONOUS_DEDUCTED);
+                    newRel.setConcept(StratigraphicRelationshipService.ASYNCHRONOUS_DEDUCTED);
                     unit1.getRelationshipsAsUnit1().add(newRel);
                 }
 

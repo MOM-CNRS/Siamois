@@ -71,6 +71,7 @@ public class DefaultFormsDatasetInitializer implements DatabaseInitializer {
             new ConceptSeeder.ConceptSpec(DEFAULT_VOCABULARY_ID, "4287611", "Description", "fr"),
             new ConceptSeeder.ConceptSpec(DEFAULT_VOCABULARY_ID, "4286198", "Date d'ouverture", "fr"),
             new ConceptSeeder.ConceptSpec(DEFAULT_VOCABULARY_ID, "4286199", "Date de fermeture", "fr"),
+            new ConceptSeeder.ConceptSpec(DEFAULT_VOCABULARY_ID, "4287646", "Relation stratigrahique", "fr"),
 
             // Réponses de champs
             new ConceptSeeder.ConceptSpec(DEFAULT_VOCABULARY_ID, "4287636", "Altération", "fr"),
@@ -288,6 +289,16 @@ public class DefaultFormsDatasetInitializer implements DatabaseInitializer {
                     "recordingunit.field.closingDate",
                     new ConceptSeeder.ConceptKey(DEFAULT_VOCABULARY_ID, "4286199"),
                     "closingDate",
+                    null,
+                    null,
+                    null
+            ),
+            new CustomFieldSeederSpec(
+                    CustomFieldStratigraphy.class,
+                    true,
+                    "recordingunit.field.stratigraphicRelationships",
+                    new ConceptSeeder.ConceptKey(DEFAULT_VOCABULARY_ID, "4287646"),
+                    "relationshipsAsUnit1",
                     null,
                     null,
                     null
@@ -575,7 +586,16 @@ public class DefaultFormsDatasetInitializer implements DatabaseInitializer {
                             new CustomFormPanelDTO(
                                     "",
                                     "recordingunit.panel.stratigraphy",
-                                    List.of(),
+                                    List.of(new CustomRowDTO(
+                                            List.of(
+                                                    new CustomColDTO(
+                                                            false,
+                                                            false,
+                                                            fields.get(21),
+                                                            "ui-g-12"
+                                                    )
+                                            )
+                                    )),
                                     true
                             ),
                             new CustomFormPanelDTO(

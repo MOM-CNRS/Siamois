@@ -34,7 +34,13 @@ public class StratigraphicRelationship {
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "fk_relationship_concept_id")
-    private Concept type;
+    private Concept concept;
+
+    @Column(name = "asynchronous")
+    private Boolean isAsynchronous;
+
+    @Column(name = "concept_direction")
+    private Boolean conceptDirection;
 
     @Override
     public boolean equals(Object obj) {
@@ -44,12 +50,12 @@ public class StratigraphicRelationship {
         StratigraphicRelationship that = (StratigraphicRelationship) obj;
         return Objects.equals(unit1, that.unit1) &&
                 Objects.equals(unit2, that.unit2) &&
-                Objects.equals(type, that.type);
+                Objects.equals(concept, that.concept);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(unit1, unit2, type);
+        return Objects.hash(unit1, unit2, concept);
     }
 
 

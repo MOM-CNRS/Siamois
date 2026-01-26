@@ -28,6 +28,7 @@ import org.springframework.web.client.ResourceAccessException;
 import javax.faces.bean.SessionScoped;
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
 import static fr.siamois.utils.MessageUtils.displayErrorMessage;
@@ -108,6 +109,7 @@ public class SpatialUnitFieldBean implements Serializable {
 
     /**
      * Fetch the autocomplete results on API for the selected field and add them to the list of concepts.
+     * Optionally sorts the results by root group if the "sortByParent" component attribute is true.
      *
      * @param input the input of the user
      * @return the list of concepts that match the input to display in the autocomplete
@@ -117,20 +119,54 @@ public class SpatialUnitFieldBean implements Serializable {
         try {
             FacesContext context = FacesContext.getCurrentInstance();
             fieldCode = (String) UIComponent.getCurrentComponent(context).getAttributes().get("fieldCode");
-            return fieldConfigurationService.fetchAutocomplete(sessionSettingsBean.getUserInfo(), fieldCode, input);
+
+            // Retrieve the sortByParent attribute from the current UI component
+            Boolean sortByParent = Boolean.parseBoolean(
+                    (String) UIComponent.getCurrentComponent(context).getAttributes().get("sortByParent")
+            );
+
+            List<ConceptAutocompleteDTO> results = fieldConfigurationService.fetchAutocomplete(
+                    sessionSettingsBean.getUserInfo(), fieldCode, input
+            );
+
+            if (sortByParent != null && sortByParent) {
+                // Sort the results by root group (using the getRootGroup method)
+                results.sort(Comparator.comparing(
+                        this::getRootGroup,
+                        Comparator.nullsLast(Comparator.naturalOrder())
+                ));
+            }
+
+            return results;
         }
         catch (NoConfigForFieldException e) {
-            displayErrorMessage(langBean, "common.error.thesaurus.noConfigForField",fieldCode);
+            displayErrorMessage(langBean, "common.error.thesaurus.noConfigForField", fieldCode);
             return List.of();
         }
-        catch(ResourceAccessException e) {
-            displayErrorMessage(langBean, "common.error.thesaurus.resourceAccess",fieldCode);
+        catch (ResourceAccessException e) {
+            displayErrorMessage(langBean, "common.error.thesaurus.resourceAccess", fieldCode);
             return List.of();
         }
-        catch(Exception e) {
-            displayErrorMessage(langBean, "common.error.thesaurus.field.exception",fieldCode);
+        catch (Exception e) {
+            displayErrorMessage(langBean, "common.error.thesaurus.field.exception", fieldCode);
             return List.of();
         }
+    }
+
+
+
+    /**
+     * return the root label of the concept for autocomplete grouping
+     *
+     * @param dto The concept DTO
+     * @return the root concept label
+     */
+    public String getRootGroup(ConceptAutocompleteDTO dto) {
+        if (dto.getHierarchyPrefLabels() != null) {
+            String hierarchy = dto.getHierarchyPrefLabels();
+            return hierarchy.split("\n")[0].trim();
+        }
+        return dto.getOriginalPrefLabel();
     }
 
     public String resolveCustomFieldLabel(CustomField f) {

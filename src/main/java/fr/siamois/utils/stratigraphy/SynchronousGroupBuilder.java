@@ -55,7 +55,7 @@ public class SynchronousGroupBuilder {
                 StratigraphicRelationship newRelationship = new StratigraphicRelationship();
                 newRelationship.setUnit1(unit1);
                 newRelationship.setUnit2(recordingUnit);
-                newRelationship.setType(StratigraphicRelationshipService.SYNCHRONOUS); // Assuming this is your synchronous concept
+                newRelationship.setConcept(StratigraphicRelationshipService.SYNCHRONOUS); // Assuming this is your synchronous concept
                 unit1.getRelationshipsAsUnit1().add(newRelationship);
                 //  End
                 signalModif = true;
@@ -83,7 +83,7 @@ public class SynchronousGroupBuilder {
                     StratigraphicRelationship newRelationship = new StratigraphicRelationship();
                     newRelationship.setUnit1(recordingUnits.get(u2));
                     newRelationship.setUnit2(unit);
-                    newRelationship.setType(StratigraphicRelationshipService.SYNCHRONOUS); // Assuming this is your synchronous concept
+                    newRelationship.setConcept(StratigraphicRelationshipService.SYNCHRONOUS); // Assuming this is your synchronous concept
                     recordingUnits.get(u2).getRelationshipsAsUnit1().add(newRelationship);
                     //  End
                     signalModifSymetry = true;
@@ -171,7 +171,7 @@ public class SynchronousGroupBuilder {
         return relationships.stream()
                 .anyMatch(rel -> rel.getUnit1().equals(unit1)
                         && rel.getUnit2().equals(unit2)
-                        && rel.getType().equals(type));
+                        && rel.getConcept().equals(type));
     }
 
     public void transferRelationshipToGroup(StratigraphicRelationship rel, SynchronousGroup group) {
@@ -184,8 +184,8 @@ public class SynchronousGroupBuilder {
             throw new StratigraphicUnitNotFoundInAnyGroup("Impossible to find unit2 in groups");
         }
         newRel.setUnit2(group2);
-        newRel.setType(rel.getType());
-        if(!containsRelationship(group.getRelationshipsAsUnit1(), newRel.getUnit1(), newRel.getUnit2(), newRel.getType())) {
+        newRel.setConcept(rel.getConcept());
+        if(!containsRelationship(group.getRelationshipsAsUnit1(), newRel.getUnit1(), newRel.getUnit2(), newRel.getConcept())) {
             group.getRelationshipsAsUnit1().add(newRel);
         }
     }
@@ -198,7 +198,7 @@ public class SynchronousGroupBuilder {
             for(RecordingUnit unit : group.getUnits()) {
                 for(StratigraphicRelationship rel : unit.getRelationshipsAsUnit1()) {
                     // We will transfer asynchronous rel to the parent and uncertain synchronous rel
-                    if(rel.getType().equals(StratigraphicRelationshipService.ASYNCHRONOUS)) {
+                    if(rel.getConcept().equals(StratigraphicRelationshipService.ASYNCHRONOUS)) {
                         transferRelationshipToGroup(rel, group);
                     }
                 }
@@ -274,7 +274,7 @@ public class SynchronousGroupBuilder {
      */
     private boolean isSynchronous(StratigraphicRelationship relationship) {
 
-        return StratigraphicRelationshipService.SYNCHRONOUS.equals(relationship.getType());
+        return StratigraphicRelationshipService.SYNCHRONOUS.equals(relationship.getConcept());
     }
 
 }

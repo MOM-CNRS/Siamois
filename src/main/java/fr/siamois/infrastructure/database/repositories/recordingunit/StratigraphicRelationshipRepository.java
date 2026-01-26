@@ -16,9 +16,9 @@ public interface StratigraphicRelationshipRepository extends
         JpaRepository<StratigraphicRelationship, StratigraphicRelationshipId>,
         RevisionRepository<StratigraphicRelationship, StratigraphicRelationshipId, Long> {
 
-    Optional<StratigraphicRelationship> findByUnit1AndUnit2AndType(RecordingUnit unit1, RecordingUnit unit2, Concept type);
+    Optional<StratigraphicRelationship> findByUnit1AndUnit2AndConcept(RecordingUnit unit1, RecordingUnit unit2, Concept type);
 
-    List<StratigraphicRelationship> findByUnit1AndType(RecordingUnit unit, Concept type);
+    List<StratigraphicRelationship> findByUnit1AndConcept(RecordingUnit unit, Concept type);
 
-    List<StratigraphicRelationship> findByUnit2AndType(RecordingUnit unit, Concept type);
+    List<StratigraphicRelationship> findByUnit2AndConcept(RecordingUnit unit, Concept type);
 }
