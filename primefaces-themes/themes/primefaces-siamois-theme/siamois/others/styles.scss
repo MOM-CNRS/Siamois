@@ -285,3 +285,48 @@ body .ui-chkbox .ui-chkbox-box.ui-state-active {
     background: #c53030;
 }
 
+.side-panel-content {
+    padding: 1rem;
+    display: flex;
+    border-left: 1px dashed var(--light-color-200);
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.relation-title {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #111827;
+}
+
+.relation-edit-row {
+    display: flex;
+    gap: 0.75rem;
+}
+
+.relation-select {
+    width: 100%;
+}
+
+.section-title {
+    margin: 0;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: #374151;
+}
+
+.docs-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+}
+.add-doc-btn {
+    color:#7e1717;
+    }
+
+.add-doc-btn,
+.delete-relation-btn {
+    width: 100%;
+}
+

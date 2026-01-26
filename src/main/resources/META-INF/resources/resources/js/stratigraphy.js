@@ -3,9 +3,10 @@ const linkLabels = {
     above: "s'appuie contre",
     below: "sous",
     side: "équivalent à",
-    uncertain: "incertain"
+    uncertain: "sous"
 };
 
+// Initialize stratigraphy if the SVG exists
 function initStratigraphyIfNeeded() {
     const svgElement = document.getElementById("stratigraphy");
     if (!svgElement) return;
@@ -16,6 +17,7 @@ function initStratigraphyIfNeeded() {
     drawStratigraphy(svg);
 }
 
+// Main drawing function
 function drawStratigraphy(svg) {
     const nodes = [
         { id: "US 100", x: 400, y: 250, main: true },
@@ -34,7 +36,7 @@ function drawStratigraphy(svg) {
 
     const nodeById = Object.fromEntries(nodes.map(n => [n.id, n]));
 
-    // Arrows
+    // Define arrow marker
     svg.append("defs").append("marker")
         .attr("id", "arrow")
         .attr("viewBox", "0 -5 10 10")
@@ -47,6 +49,7 @@ function drawStratigraphy(svg) {
         .attr("d", "M0,-5L10,0L0,5")
         .attr("fill", "#3b82f6");
 
+    // Group for links
     const linkGroup = svg.append("g")
         .attr("class", "links")
         .selectAll("g")
@@ -54,20 +57,16 @@ function drawStratigraphy(svg) {
         .enter()
         .append("g");
 
-    // Draw lines
+    // Draw lines with arrows
     linkGroup.append("line")
         .attr("x1", d => nodeById[d.source].x)
         .attr("y1", d => nodeById[d.source].y)
         .attr("x2", d => nodeById[d.target].x)
         .attr("y2", d => nodeById[d.target].y)
-        .attr("stroke", d =>
-            d.type === "uncertain" ? "#f59e0b" : "#3b82f6"
-        )
+        .attr("stroke", d => d.type === "uncertain" ? "#f59e0b" : "#3b82f6")
         .attr("stroke-width", 2)
-        .attr("stroke-dasharray", d =>
-            d.type === "uncertain" ? "6,4" : "0"
-        )
-        .attr("marker-end", d => d.type === "side" ? "" : "url(#arrow)")
+        .attr("stroke-dasharray", d => d.type === "uncertain" ? "6,4" : "0")
+        .attr("marker-end", "url(#arrow)") // arrow at end of every link
         .style("cursor", "pointer")
         .on("click", (event, d) => {
             showSidePanel(d);
@@ -122,36 +121,31 @@ function drawStratigraphy(svg) {
         .on("click", (event, d) => console.log("Node text clicked:", d));
 }
 
+// Show side panel and populate fields
 function showSidePanel(d) {
-    document.getElementById("relationTitle").textContent = `Relation Postérieure: ${d.target}`;
-    document.getElementById("relationDesc").textContent = `${d.source} ${linkLabels[d.type] || ""} ${d.target}`;
+    const title = document.getElementById("relationTitle");
+    if (title) {
+        title.textContent = `Relation – ${d.source} → ${d.target}`;
+    }
 
-    const vocabGroup = document.getElementById("relationVocab");
-    vocabGroup.innerHTML = `<span style="padding:2px 6px;border:1px solid #ccc;border-radius:4px;">${linkLabels[d.type]}</span>`;
-
+    // Documents
     const docsGroup = document.getElementById("relationDocs");
-    docsGroup.innerHTML = "";
-    d.doc.forEach(doc => {
-        const div = document.createElement("div");
-        div.textContent = doc;
-        div.style.margin = "2px 0";
-        docsGroup.appendChild(div);
-    });
 
     openSidePanel();
 }
 
+// Open side panel (show the div)
 function openSidePanel() {
-    const sidePanel = document.querySelector("[id$=':sidePanel']");
+    const sidePanel = document.querySelector(".side-panel-content");
     if (sidePanel) {
-        sidePanel.style.display = "block"; // show it
+        sidePanel.style.display = "block";
     }
 }
 
+// Close side panel
 function closeSidePanel() {
-    const sidePanel = document.getElementById("sidePanel");
-    sidePanel.classList.remove("open");
-    setTimeout(() => {
-        sidePanel.style.display = "none";
-    }, 300);
+    const sidePanel = document.querySelector(".side-panel-content");
+    if (!sidePanel) return;
+
+    sidePanel.style.display = "none";
 }

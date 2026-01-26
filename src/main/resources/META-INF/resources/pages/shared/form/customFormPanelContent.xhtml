@@ -65,7 +65,6 @@
                     <div>
                         <p:card styleClass="add-strati-rel" style="
     border: 1px dashed oklch(0.74 0 0);
-    width: fit-content;
     border-radius: 1em;
     background: #ffffff;">
 
@@ -88,25 +87,76 @@
                             <p:commandButton icon="pi pi-check" value="Ajouter"/>
                         </p:card>
 
-                        <p:outputPanel layout="block" style="position:relative;display:flex;">
+                        <p:outputPanel layout="block" style="border: 2px solid var(--light-color-200);
+  margin-top: 1em;
+    border-radius: 2em;display:flex;">
 
                             <svg style="flex:3;" id="stratigraphy" width="800" height="500"></svg>
 
                             <!-- Side panel using PrimeFaces -->
-                            <p:outputPanel id="sidePanel" styleClass="side-panel" style="display: none;flex:1;">
-                                <div class="side-panel-header">
-                                    <h3 id="relationTitle">Relation</h3>
-                                    <button onclick="closeSidePanel()" class="close-btn">×</button>
+                            <div class="side-panel-content">
+
+                                <!-- Title -->
+                                <h3 id="relationTitle" class="relation-title relation-edit-row">
+                                    US 100
+                                    <!-- Relation type -->
+                                    <p:selectOneMenu id="relationType"
+                                                     value="#{relationBean.selectedType}"
+                                                     styleClass="relation-select">
+                                        <f:selectItem itemLabel="s'appuie contre" itemValue="above"/>
+                                        <f:selectItem itemLabel="sous" itemValue="below"/>
+                                        <f:selectItem itemLabel="équivalent à" itemValue="side"/>
+                                        <f:selectItem itemLabel="incertain" itemValue="uncertain"/>
+                                    </p:selectOneMenu>
+                                    <!-- Target US -->
+                                    <p:selectOneMenu id="relationTarget"
+                                                     value="us 23"
+                                                     styleClass="relation-select">
+                                        <f:selectItem itemLabel="US 43" itemValue="above"/>
+                                        <f:selectItem itemLabel="US 87" itemValue="below"/>
+                                    </p:selectOneMenu>
+                                </h3>
+
+
+
+                                <!-- Documents -->
+                                <h4 class="section-title">Documents</h4>
+
+                                <div id="relationDocs" class="docs-container">
+                                    <!-- Example document 1 -->
+                                    <span class="doc-chip"
+                                          style="display:inline-block; padding:2px 6px; border:1px solid #ccc; border-radius:4px; margin:2px;">
+        coupe_stratigraphique.pdf
+        <button type="button" onclick="this.parentElement.remove()"
+                style="border:none; background:none; cursor:pointer; margin-left:4px;">✕</button>
+    </span>
+
+                                    <!-- Example document 2 -->
+                                    <span class="doc-chip"
+                                          style="display:inline-block; padding:2px 6px; border:1px solid #ccc; border-radius:4px; margin:2px;">
+        notes_terrain.docx
+        <button type="button" onclick="this.parentElement.remove()"
+                style="border:none; background:none; cursor:pointer; margin-left:4px;">✕</button>
+    </span>
                                 </div>
-                                <div class="side-panel-content">
-                                    <p id="relationDesc"></p>
-                                    <div id="relationVocab" class="relation-vocab"></div>
-                                    <div id="relationDocs" class="relation-docs"></div>
-                                    <button onclick="closeSidePanel()" class="delete-relation-btn">Supprimer la
-                                        relation
-                                    </button>
-                                </div>
-                            </p:outputPanel>
+
+
+                                <p:commandButton value="Ajouter un document"
+                                                 icon="pi pi-plus"
+                                                 style="color:#7e1717;"
+                                                 styleClass="ui-button-outlined add-doc-btn"
+                                                 action="#{relationBean.addDocument}"/>
+
+
+
+                                <!-- Delete -->
+                                <p:commandButton value="Supprimer la relation"
+                                                 icon="pi pi-trash"
+                                                 styleClass="ui-button-danger delete-relation-btn"
+                                                 action="#{relationBean.deleteRelation}"
+                                                 update="@form"/>
+
+                            </div>
 
 
                             <h:outputScript>
