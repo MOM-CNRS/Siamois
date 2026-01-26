@@ -22,7 +22,8 @@ public final class CustomFieldAnswerFactory {
                     Map.entry(CustomFieldSelectMultipleSpatialUnitTree.class, CustomFieldAnswerSelectMultipleSpatialUnitTree::new),
                     Map.entry(CustomFieldSelectOneActionCode.class, CustomFieldAnswerSelectOneActionCode::new),
                     Map.entry(CustomFieldInteger.class, CustomFieldAnswerInteger::new),
-                    Map.entry(CustomFieldSelectOnePerson.class, CustomFieldAnswerSelectOnePerson::new)
+                    Map.entry(CustomFieldSelectOnePerson.class, CustomFieldAnswerSelectOnePerson::new),
+                    Map.entry(CustomFieldStratigraphy.class, CustomFieldAnswerStratigraphy::new)
             );
 
     public static CustomFieldAnswer instantiateAnswerForField(CustomField field) {

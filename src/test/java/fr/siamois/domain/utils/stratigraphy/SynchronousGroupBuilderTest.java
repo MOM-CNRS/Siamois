@@ -74,7 +74,7 @@ class SynchronousGroupBuilderTest {
         StratigraphicRelationship rel = multiUnitGroup.getRelationshipsAsUnit1().iterator().next();
         assertEquals(multiUnitGroup,rel.getUnit1());
         assertEquals(singleUnitGroup, rel.getUnit2());
-        assertEquals(StratigraphicRelationshipService.ASYNCHRONOUS, rel.getType());
+        assertEquals(StratigraphicRelationshipService.ASYNCHRONOUS, rel.getConcept());
 
 
         // Validate multi-unit group
@@ -90,14 +90,14 @@ class SynchronousGroupBuilderTest {
         StratigraphicRelationship relationship = new StratigraphicRelationship();
         relationship.setUnit1(unit1);
         relationship.setUnit2(unit2);
-        relationship.setType(StratigraphicRelationshipService.SYNCHRONOUS);
+        relationship.setConcept(StratigraphicRelationshipService.SYNCHRONOUS);
         unit1.getRelationshipsAsUnit1().add(relationship);
     }
     private void createAsynchronousRelationship(RecordingUnit unit1, RecordingUnit unit2) {
         StratigraphicRelationship relationship = new StratigraphicRelationship();
         relationship.setUnit1(unit1);
         relationship.setUnit2(unit2);
-        relationship.setType(StratigraphicRelationshipService.ASYNCHRONOUS);
+        relationship.setConcept(StratigraphicRelationshipService.ASYNCHRONOUS);
         unit1.getRelationshipsAsUnit1().add(relationship);
     }
 }

@@ -1,0 +1,67 @@
+<ui:composition
+        xmlns="http://www.w3.org/1999/xhtml"
+        xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
+        xmlns:cc="http://java.sun.com/jsf/composite"
+        xmlns:p="http://primefaces.org/ui" xmlns:f="http://java.sun.com/jsf/core" xmlns:h="http://java.sun.com/jsf/html"
+>
+
+    <cc:interface>
+        <cc:attribute name="answer" type="fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerStratigraphy" required="true"/>
+        <cc:attribute name="hasBeenModified" type="Boolean" required="false" default="false"/>
+        <cc:attribute name="field" type="fr.siamois.domain.models.form.customfield.CustomFieldStratigraphy"
+                      required="true"/>
+        <cc:attribute name="mode" type="String" required="false" default="READ"/>
+        <cc:attribute name="updateTargetsOnBlur" type="String" required="false" default="@this"/>
+    </cc:interface>
+
+    <cc:implementation>
+        <p:inplace mode="#{cc.attrs.mode}" toggleable="false">
+            <f:facet name="output">
+                <!-- just showing the diagram -->
+            </f:facet>
+            <f:facet name="input">
+                <p:outputPanel>
+                    <p:card styleClass="add-strati-rel" style="
+                          border: 1px dashed oklch(0.74 0 0);
+                          border-radius: 1em;
+                          background: #ffffff;">
+
+                        <p:autoComplete id="relationshipVocab" value="#{answer.conceptToAdd}"
+                                        style="width: 20em"
+                                        completeMethod="#{spatialUnitFieldBean.completeWithFieldCode}"
+                                        showEmptyMessage="false"
+                                        maxResults="#{fieldConfigurationService.resultLimit()}"
+                                        placeholder="#{langBean.msg('common.action.chooseConcept')}"
+                                        dropdown="true"
+                                        itemValue="#{autocompleteDto}"
+                                        itemLabel="#{autocompleteDto.conceptLabelToDisplay.label}"
+                                        var="autocompleteDto"
+                                        forceSelection="true"
+                                        scrollHeight="300"
+                                        onclick="event.stopPropagation();"
+                                        groupBy="#{spatialUnitFieldBean.getRootGroup(autocompleteDto)}"
+                                        converter="#{conceptAutocompleteDTOConverter}"
+                                        escape="false">
+                            <f:attribute name="fieldCode" value="SIARU.STRATI" />
+                            <f:attribute name="sortByParent" value="true" />
+                        </p:autoComplete>
+
+
+                        <p:selectOneMenu style="width: 10em" filter="true">
+                            <f:selectItem itemLabel="UE" itemValue=""/>
+                            <f:selectItem itemLabel="UE 254" itemValue=""/>
+                            <f:selectItem itemLabel="029" itemValue="Option1"/>
+                            <f:selectItem itemLabel="27698" itemValue="Option2"/>
+                        </p:selectOneMenu>
+
+
+                        <p:selectBooleanCheckbox  style="width: 10em" itemLabel="Incertain"/>
+                        <p:commandButton style="width: 10em" icon="pi pi-check" value="Ajouter"/>
+                    </p:card>
+                </p:outputPanel>
+            </f:facet>
+        </p:inplace>
+
+    </cc:implementation>
+
+</ui:composition>
