@@ -47,11 +47,20 @@
                         </p:autoComplete>
 
 
-                        <p:selectOneMenu style="width: 10em" filter="true">
-                            <f:selectItem itemLabel="UE" itemValue=""/>
-                            <f:selectItem itemLabel="UE 254" itemValue=""/>
-                            <f:selectItem itemLabel="029" itemValue="Option1"/>
-                            <f:selectItem itemLabel="27698" itemValue="Option2"/>
+                        <p:selectOneMenu id="selectRU"
+                                         style="width: 10em" filter="true"
+                                         panelStyleClass="recording-unit"
+                                         value="#{cc.attrs.answer.targetToAdd}"
+                                         var="ru"
+                                         converter="#{recordingUnitConverter}">
+                            <f:selectItems
+                                    var="unit"
+                                    itemValue="#{unit}"
+                                    itemLabel="#{unit.fullIdentifier}"
+                                    value="#{cc.attrs.recordingUnitOptions}"/>
+                            <p:column>
+                                    <p:outputLabel value="#{ru.fullIdentifier}"/>
+                            </p:column>
                         </p:selectOneMenu>
 
 
