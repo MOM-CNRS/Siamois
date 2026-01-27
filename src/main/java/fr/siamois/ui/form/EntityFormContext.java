@@ -409,18 +409,42 @@ public class EntityFormContext<T extends TraceableEntity> {
         // tood : invalid if the rel already exist
 
         // If validation passes, proceed with adding the relationship
+        // TODO : base the following not on labels but siamois code.
         StratigraphicRelationship newRel = new StratigraphicRelationship();
-        newRel.setUnit1(answer.getSourceToAdd());
-        newRel.setUnit2(answer.getTargetToAdd());
-        newRel.setConcept(answer.getConceptToAdd().concept());
-        newRel.setIsAsynchronous(true);
-        newRel.setUncertain(answer.getIsUncertainToAdd());
-        newRel.setConceptDirection(answer.getVocabularyDirectionToAdd());
+        String parentLabel = answer.getConceptToAdd().getHierarchyPrefLabels() == null ? answer.getConceptToAdd().getOriginalPrefLabel() : answer.getConceptToAdd().getHierarchyPrefLabels();
 
-        if (answer.getAnteriorRelationships() == null) {
-            answer.setAnteriorRelationships(new HashSet<>());
+        if(parentLabel.equalsIgnoreCase("synchrone")) {
+            // Adding synchrone rel, order does not change
+            newRel.setUnit1(answer.getSourceToAdd());
+            newRel.setUnit2(answer.getTargetToAdd());
+            newRel.setConcept(answer.getConceptToAdd().concept());
+            newRel.setIsAsynchronous(false);
+            newRel.setUncertain(answer.getIsUncertainToAdd());
+            newRel.setConceptDirection(answer.getVocabularyDirectionToAdd());
+            answer.getSynchronousRelationships().add(newRel);
         }
-        answer.getAnteriorRelationships().add(newRel);
+        else if(parentLabel.equalsIgnoreCase("postérieur")) {
+            // adding a "posterior to"
+            // normal side of how we record in db, no need to invert
+            newRel.setUnit1(answer.getSourceToAdd());
+            newRel.setUnit2(answer.getTargetToAdd());
+            newRel.setConcept(answer.getConceptToAdd().concept());
+            newRel.setIsAsynchronous(true);
+            newRel.setUncertain(answer.getIsUncertainToAdd());
+            newRel.setConceptDirection(answer.getVocabularyDirectionToAdd());
+            answer.getPosteriorRelationships().add(newRel);
+        }
+        else if(parentLabel.equalsIgnoreCase("antérieur")) {
+            // adding a "anterior to"
+            // invert rel
+            newRel.setUnit1(answer.getTargetToAdd()); // reverse
+            newRel.setUnit2(answer.getSourceToAdd()); // reverse
+            newRel.setConcept(answer.getConceptToAdd().concept());
+            newRel.setIsAsynchronous(true);
+            newRel.setUncertain(answer.getIsUncertainToAdd());
+            newRel.setConceptDirection(!answer.getVocabularyDirectionToAdd()); // reverse
+            answer.getAnteriorRelationships().add(newRel);
+        }
 
         // Optionally, reset the form fields
         answer.setConceptToAdd(null);
@@ -438,12 +462,13 @@ public class EntityFormContext<T extends TraceableEntity> {
 
         ObjectMapper mapper = new ObjectMapper();
         ObjectNode root = mapper.createObjectNode();
+        RecordingUnit centralUnit = answer.getSourceToAdd();
 
         // anterior
         ArrayNode anteriorArray = mapper.createArrayNode();
         for (StratigraphicRelationship rel : answer.getAnteriorRelationships()) {
             ObjectNode node = mapper.createObjectNode();
-            node.put("unit1Id", rel.getUnit2().getFullIdentifier());
+            node.put("unit1Id", rel.getUnit1().getFullIdentifier());
             node.put("vocabularyLabel", formService.getLabelBean().findLabelOf(rel.getConcept()));
             node.put("vocabularyDirection", rel.getConceptDirection());
             node.put("uncertain", rel.getUncertain() != null && rel.getUncertain());
@@ -465,14 +490,30 @@ public class EntityFormContext<T extends TraceableEntity> {
 
         // synchronous
         ArrayNode synchronousArray = mapper.createArrayNode();
+
         for (StratigraphicRelationship rel : answer.getSynchronousRelationships()) {
             ObjectNode node = mapper.createObjectNode();
-            node.put("unit1Id", rel.getUnit1().getFullIdentifier());
-            node.put("vocabularyLabel", formService.getLabelBean().findLabelOf(rel.getConcept()));
+
+            RecordingUnit otherUnit;
+
+            if (rel.getUnit1().equals(centralUnit)) {
+                otherUnit = rel.getUnit2();
+            } else if (rel.getUnit2().equals(centralUnit)) {
+                otherUnit = rel.getUnit1();
+            } else {
+                // Safety net: malformed relationship, skip
+                continue;
+            }
+
+            node.put("unit1Id", otherUnit.getFullIdentifier());
+            node.put("vocabularyLabel",
+                    formService.getLabelBean().findLabelOf(rel.getConcept()));
             node.put("vocabularyDirection", rel.getConceptDirection());
-            node.put("uncertain", rel.getUncertain() != null && rel.getUncertain());
+            node.put("uncertain", Boolean.TRUE.equals(rel.getUncertain()));
+
             synchronousArray.add(node);
         }
+
         root.set("synchronous", synchronousArray);
 
         try {
