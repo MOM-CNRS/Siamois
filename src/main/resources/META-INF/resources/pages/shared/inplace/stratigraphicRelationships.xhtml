@@ -21,6 +21,11 @@
                 name="onAddStratigraphicRelationship"
                 method-signature="void f(fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerStratigraphy)"
                 required="true"/>
+        <cc:attribute
+                name="relationshipsAsJson"
+                type="java.lang.String"
+                required="true"/>
+
     </cc:interface>
 
     <cc:implementation>
@@ -83,32 +88,37 @@
                                 icon="bi bi-plus"
                                 value="Ajouter"
                                 action="#{cc.attrs.onAddStratigraphicRelationship}"
-                                update="newStratiRelForm, stratigraphyGraphContainer"
+                                update="newStratiRelForm"
                                 process="newStratiRelForm"
                         />
                     </p:card>
 
-                    <p:outputPanel layout="block" id="stratigraphyGraphContainer" style="border: 2px solid var(--light-color-200);
-margin-top: 1em;
-  border-radius: 2em;display:flex;">
 
-                        <svg style="flex:3;" id="#{cc.clientId}:stratigraphyGraph" width="800" height="500"></svg>
 
-                    </p:outputPanel>
 
-                    <h:outputScript>
-                        const unit2Id = "#{cc.attrs.answer.sourceToAdd.fullIdentifier}";
-                        const relationships = #{cc.attrs.answer.relationshipsAsJson};
 
-                        drawStratigraphyDiagram(
-                        "#{cc.clientId}:stratigraphyGraph",
-                        unit2Id,
-                        relationships
-                        );
-                    </h:outputScript>
+
 
 
                 </p:outputPanel>
+
+                <p:outputPanel layout="block" id="stratigraphyGraphContainer" style="border: 2px solid var(--light-color-200);
+margin-top: 1em;
+  border-radius: 2em;display:flex;">
+                    <svg style="flex:3;" id="#{cc.clientId}:stratigraphyGraph" width="800" height="500"></svg>
+
+                    <h:outputScript>
+                        (function() {
+                        const unit2Id = "#{cc.attrs.answer.sourceToAdd.fullIdentifier}";
+                        const relationships = #{cc.attrs.relationshipsAsJson};
+                        drawStratigraphyDiagram("#{cc.clientId}:stratigraphyGraph", unit2Id, relationships);
+                        })();
+                    </h:outputScript>
+
+
+
+                </p:outputPanel>
+
 
 
             </f:facet>

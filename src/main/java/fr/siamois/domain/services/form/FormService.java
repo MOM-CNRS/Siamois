@@ -21,6 +21,7 @@ import fr.siamois.ui.form.EnabledRulesEngine;
 import fr.siamois.ui.form.FieldSource;
 import fr.siamois.ui.form.ValueMatcherFactory;
 import fr.siamois.ui.form.rules.*;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -42,6 +43,7 @@ import java.util.function.Supplier;
  * It is agnostic of layout (single panel vs table row) thanks to FieldSource.
  */
 @Service
+@Getter
 @RequiredArgsConstructor
 public class FormService {
 
