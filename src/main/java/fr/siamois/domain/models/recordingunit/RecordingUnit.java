@@ -58,9 +58,11 @@ public class RecordingUnit extends RecordingUnitParent implements ArkEntity, Ref
     private Long id;
 
     @OneToMany(mappedBy = "unit1", fetch = FetchType.LAZY)
+    @JsonIgnore
     private transient Set<StratigraphicRelationship> relationshipsAsUnit1 = new HashSet<>();
 
     @OneToMany(mappedBy = "unit2", fetch = FetchType.LAZY)
+    @JsonIgnore
     private transient Set<StratigraphicRelationship> relationshipsAsUnit2 = new HashSet<>();
 
     @ManyToMany(fetch = FetchType.LAZY)
@@ -83,9 +85,11 @@ public class RecordingUnit extends RecordingUnitParent implements ArkEntity, Ref
             joinColumns = @JoinColumn(name = "fk_recording_unit_id"),
             inverseJoinColumns = @JoinColumn(name = "fk_person_id"))
     @NotAudited
+    @JsonIgnore
     private List<Person> contributors = new ArrayList<>();
 
     @OneToMany(mappedBy = "recordingUnit")
+    @JsonIgnore
     private Set<Specimen> specimenList;
 
     @OneToMany(fetch = FetchType.LAZY)
@@ -94,6 +98,7 @@ public class RecordingUnit extends RecordingUnitParent implements ArkEntity, Ref
             joinColumns = {@JoinColumn(name = "fk_recording_unit_id")},
             inverseJoinColumns = {@JoinColumn(name = "fk_document_id")}
     )
+    @JsonIgnore
     private Set<Document> documents = new HashSet<>();
     
     @FieldCode
@@ -140,6 +145,7 @@ public class RecordingUnit extends RecordingUnitParent implements ArkEntity, Ref
 
 
     @Override
+    @JsonIgnore
     public String getTableName() {
         return "RECORDING_UNIT";
     }
@@ -424,4 +430,5 @@ public class RecordingUnit extends RecordingUnitParent implements ArkEntity, Ref
     public int hashCode() {
         return super.hashCode();
     }
+
 }

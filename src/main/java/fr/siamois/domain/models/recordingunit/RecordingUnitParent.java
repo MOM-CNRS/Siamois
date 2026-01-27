@@ -106,6 +106,7 @@ public abstract class RecordingUnitParent extends TraceableEntity {
     @NotNull
     @ManyToOne(fetch = FetchType.EAGER, optional = false)
     @JoinColumn(name = "fk_action_unit_id", nullable = false)
+    @JsonIgnore
     protected ActionUnit actionUnit;
 
     @NotNull
@@ -128,10 +129,12 @@ public abstract class RecordingUnitParent extends TraceableEntity {
     )
     @JoinColumn(name = "fk_custom_form_response", referencedColumnName = "custom_form_response_id")
     @NotAudited
+    @JsonIgnore
     protected CustomFormResponse formResponse;
 
     @ManyToOne
     @JoinColumn(name="fk_spatial_unit_id")
+    @JsonIgnore
     protected SpatialUnit spatialUnit;
 
 

@@ -1,25 +1,34 @@
 package fr.siamois.ui.form;
 
+import fr.siamois.domain.models.TraceableEntity;
 import fr.siamois.domain.models.form.customfield.CustomField;
+import fr.siamois.domain.models.form.customfield.CustomFieldStratigraphy;
 import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswer;
 import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerSelectMultipleSpatialUnitTree;
+import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerStratigraphy;
 import fr.siamois.domain.models.form.customformresponse.CustomFormResponse;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
+import fr.siamois.domain.models.recordingunit.StratigraphicRelationship;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.form.FormService;
+import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitTreeService;
 import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
 import fr.siamois.ui.form.rules.ColumnApplier;
 import fr.siamois.ui.form.rules.ValueProvider;
 import fr.siamois.ui.viewmodel.TreeUiStateViewModel;
+import jakarta.faces.application.FacesMessage;
 import jakarta.faces.component.UIComponent;
+import jakarta.faces.component.UIInput;
+import jakarta.faces.context.FacesContext;
 import jakarta.faces.event.AjaxBehaviorEvent;
 import lombok.Data;
 import lombok.Getter;
 import org.primefaces.event.SelectEvent;
 import org.primefaces.model.TreeNode;
+import org.springframework.context.ApplicationContext;
 
 import java.util.*;
 import java.util.function.BiConsumer;
@@ -39,7 +48,7 @@ import java.util.stream.Collectors;
  *  </p>
  */
 @Data
-public class EntityFormContext<T> {
+public class EntityFormContext<T extends TraceableEntity> {
 
     @Getter
     private final T unit;
@@ -48,6 +57,7 @@ public class EntityFormContext<T> {
     private final FormService formService;
     private final SpatialUnitTreeService spatialUnitTreeService;
     private final SpatialUnitService spatialUnitService;
+    private final RecordingUnitService recordingUnitService;
 
     @Getter
     private CustomFormResponse formResponse;
@@ -74,16 +84,15 @@ public class EntityFormContext<T> {
 
     public EntityFormContext(T unit,
                              FieldSource fieldSource,
-                             FormService formService,
-                             SpatialUnitTreeService spatialUnitTreeService,
-                             SpatialUnitService spatialUnitService,
+                             FormContextServices services,
                              BiConsumer<CustomField, Concept> formScopeChangeCallback,
                              String formScopeValueBinding) {
         this.unit = unit;
         this.fieldSource = fieldSource;
-        this.formService = formService;
-        this.spatialUnitTreeService = spatialUnitTreeService;
-        this.spatialUnitService = spatialUnitService;
+        this.formService = services.getFormService();
+        this.spatialUnitTreeService = services.getSpatialUnitTreeService();
+        this.spatialUnitService = services.getSpatialUnitService();
+        this.recordingUnitService = services.getRecordingUnitService();
         this.formScopeChangeCallback = formScopeChangeCallback;
         this.formScopeValueBinding = formScopeValueBinding;
     }
@@ -337,4 +346,79 @@ public class EntityFormContext<T> {
 
         handleConceptChange(field, newValue);
     }
+
+    /**
+     * Get all recording units of the same scope (action unit) as the current unit.
+     * @return The list of recording units
+     */
+    public List<RecordingUnit> getRecordingUnitOptions() {
+        if (unit instanceof RecordingUnit recordingUnit) {
+            return recordingUnitService.findAllByActionUnit(recordingUnit.getActionUnit());
+        }
+        return Collections.emptyList();
+    }
+
+
+    public void addStratigraphicRelationship(CustomFieldAnswerStratigraphy answer) {
+        FacesContext context = FacesContext.getCurrentInstance();
+        boolean isValid = true;
+
+        // Validate conceptToAdd
+         if (answer.getConceptToAdd() == null) {
+            UIComponent cc = UIComponent.getCurrentCompositeComponent(context);
+            UIInput c = (UIInput) cc.findComponent("relationshipVocab");
+            c.setValid(false);
+            isValid = false;
+            FacesMessage msg = new FacesMessage(
+                    FacesMessage.SEVERITY_ERROR,
+                    "Ne peux pas être vide",
+                    null
+            );
+
+            context.addMessage(c.getClientId(context), msg);
+        }
+
+        // Validate targetToAdd
+        if (answer.getTargetToAdd() == null) {
+
+            UIComponent cc = UIComponent.getCurrentCompositeComponent(context);
+            UIInput c = (UIInput) cc.findComponent("selectRU");
+            c.setValid(false);
+            isValid = false;
+            FacesMessage msg = new FacesMessage(
+                    FacesMessage.SEVERITY_ERROR,
+                    "Ne peux pas être vide",
+                    null
+            );
+
+            context.addMessage(c.getClientId(context), msg);
+        }
+
+        // If validation fails, return early
+        if (!isValid) {
+            context.validationFailed();
+            return;
+        }
+
+        // If validation passes, proceed with adding the relationship
+        StratigraphicRelationship newRel = new StratigraphicRelationship();
+        newRel.setUnit1(answer.getSourceToAdd());
+        newRel.setUnit2(answer.getTargetToAdd());
+        newRel.setConcept(answer.getConceptToAdd().concept());
+        newRel.setIsAsynchronous(true);
+        newRel.setUncertain(answer.getIsUncertainToAdd());
+        newRel.setConceptDirection(answer.getVocabularyDirectionToAdd());
+
+        if (answer.getAnteriorRelationships() == null) {
+            answer.setAnteriorRelationships(new HashSet<>());
+        }
+        answer.getAnteriorRelationships().add(newRel);
+
+        // Optionally, reset the form fields
+        answer.setConceptToAdd(null);
+        answer.setTargetToAdd(null);
+        answer.setIsUncertainToAdd(false);
+    }
+
+
 }

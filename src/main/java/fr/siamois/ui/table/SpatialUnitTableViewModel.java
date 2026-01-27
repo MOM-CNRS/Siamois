@@ -16,6 +16,7 @@ import fr.siamois.ui.bean.dialog.newunit.NewUnitContext;
 import fr.siamois.ui.bean.dialog.newunit.UnitKind;
 import fr.siamois.ui.bean.panel.FlowBean;
 import fr.siamois.ui.form.EntityFormContext;
+import fr.siamois.ui.form.FormContextServices;
 import fr.siamois.ui.lazydatamodel.BaseSpatialUnitLazyDataModel;
 import fr.siamois.ui.lazydatamodel.tree.SpatialUnitTreeTableLazyModel;
 import fr.siamois.utils.MessageUtils;
@@ -65,7 +66,8 @@ public class SpatialUnitTableViewModel extends EntityTableViewModel<SpatialUnit,
                                      FlowBean flowBean, GenericNewUnitDialogBean<SpatialUnit> genericNewUnitDialogBean,
                                      SpatialUnitWriteVerifier writeVerifier,
                                      SpatialUnitTreeTableLazyModel treeLazyModel,
-                                     InstitutionService institutionService) {
+                                     InstitutionService institutionService,
+                                     FormContextServices formContextService) {
 
         super(
                 lazyDataModel,
@@ -77,7 +79,8 @@ public class SpatialUnitTableViewModel extends EntityTableViewModel<SpatialUnit,
                 navBean,
                 sessionSettingsBean.getLangBean(),
                 SpatialUnit::getId,   // idExtractor
-                "type"           // formScopeValueBinding
+                "type"  ,         // formScopeValueBinding,
+                formContextService
         );
         this.spatialUnitLazyDataModel = lazyDataModel;
         this.sessionSettingsBean = sessionSettingsBean;

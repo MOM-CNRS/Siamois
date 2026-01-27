@@ -1,5 +1,6 @@
 package fr.siamois.ui.form;
 
+import fr.siamois.domain.models.TraceableEntity;
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswer;
 import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerSelectMultipleSpatialUnitTree;
@@ -36,11 +37,16 @@ class EntityFormContextTest {
 
     private BiConsumer<CustomField, Concept> scopeCallback;
 
-    private Object unit;
+    private TraceableEntity unit;
 
     @BeforeEach
     void setup() {
-        unit = new Object();
+        unit = new TraceableEntity() {
+            @Override
+            public Long getId() {
+                return 0L;
+            }
+        };
         scopeCallback = mock(BiConsumer.class);
     }
 
@@ -55,7 +61,7 @@ class EntityFormContextTest {
     @Test
     void init_callsFormServiceAndBuildsEnabledEngineAndAppliesRules_andInitializesTreeStates() {
         // arrange
-        EntityFormContext<Object> ctx = new EntityFormContext<>(
+        EntityFormContext<TraceableEntity> ctx = new EntityFormContext<>(
                 unit, fieldSource, formService, spatialUnitTreeService, spatialUnitService,
                 scopeCallback, "scopeBinding"
         );
@@ -92,7 +98,7 @@ class EntityFormContextTest {
 
     @Test
     void getFieldAnswer_returnsNull_whenNoResponseOrAnswers() {
-        EntityFormContext<Object> ctx = new EntityFormContext<>(
+        EntityFormContext<TraceableEntity> ctx = new EntityFormContext<>(
                 unit, fieldSource, formService, spatialUnitTreeService, spatialUnitService,
                 scopeCallback, "scopeBinding"
         );
@@ -114,7 +120,7 @@ class EntityFormContextTest {
 
     @Test
     void isColumnEnabled_defaultsToTrue_whenNoRuleApplied() {
-        EntityFormContext<Object> ctx = new EntityFormContext<>(
+        EntityFormContext<TraceableEntity> ctx = new EntityFormContext<>(
                 unit, fieldSource, formService, spatialUnitTreeService, spatialUnitService,
                 scopeCallback, "scopeBinding"
         );
@@ -127,7 +133,7 @@ class EntityFormContextTest {
     @Test
     void markFieldModified_marksAnswerAndSetsGlobalFlag() {
         // arrange
-        EntityFormContext<Object> ctx = new EntityFormContext<>(
+        EntityFormContext<TraceableEntity> ctx = new EntityFormContext<>(
                 unit, fieldSource, formService, spatialUnitTreeService, spatialUnitService,
                 scopeCallback, "scopeBinding"
         );
@@ -153,7 +159,7 @@ class EntityFormContextTest {
 
     @Test
     void onConceptChanged_delegatesToEnabledEngine() {
-        EntityFormContext<Object> ctx = new EntityFormContext<>(
+        EntityFormContext<TraceableEntity> ctx = new EntityFormContext<>(
                 unit, fieldSource, formService, spatialUnitTreeService, spatialUnitService,
                 scopeCallback, "scopeBinding"
         );
@@ -177,7 +183,7 @@ class EntityFormContextTest {
 
     @Test
     void flushBackToEntity_callsFormServiceUpdate() {
-        EntityFormContext<Object> ctx = new EntityFormContext<>(
+        EntityFormContext<TraceableEntity> ctx = new EntityFormContext<>(
                 unit, fieldSource, formService, spatialUnitTreeService, spatialUnitService,
                 scopeCallback, "scopeBinding"
         );
@@ -198,7 +204,7 @@ class EntityFormContextTest {
     @Test
     void spatialTree_addAndRemove_marksModifiedAndUpdatesSelection() {
         // arrange
-        EntityFormContext<Object> ctx = new EntityFormContext<>(
+        EntityFormContext<TraceableEntity> ctx = new EntityFormContext<>(
                 unit, fieldSource, formService, spatialUnitTreeService, spatialUnitService,
                 scopeCallback, "scopeBinding"
         );
@@ -233,7 +239,7 @@ class EntityFormContextTest {
     @Test
     void getNormalizedSelectedUnits_removesDescendants_whenAncestorSelected() {
         // arrange: A is parent of B
-        EntityFormContext<Object> ctx = new EntityFormContext<>(
+        EntityFormContext<TraceableEntity> ctx = new EntityFormContext<>(
                 unit, fieldSource, formService, spatialUnitTreeService, spatialUnitService,
                 scopeCallback, "scopeBinding"
         );
@@ -260,7 +266,7 @@ class EntityFormContextTest {
 
     @Test
     void getNormalizedSelectedUnits_sortsByName_caseInsensitive_nullsLast() {
-        EntityFormContext<Object> ctx = new EntityFormContext<>(
+        EntityFormContext<TraceableEntity> ctx = new EntityFormContext<>(
                 unit, fieldSource, formService, spatialUnitTreeService, spatialUnitService,
                 scopeCallback, "scopeBinding"
         );
@@ -282,7 +288,7 @@ class EntityFormContextTest {
     void handleConceptChange_marksModified_reEvaluatesRules_andInvokesCallback_whenFormScopeField() {
         // arrange
         String scopeBinding = "scopeBinding";
-        EntityFormContext<Object> ctx = new EntityFormContext<>(
+        EntityFormContext<TraceableEntity> ctx = new EntityFormContext<>(
                 unit, fieldSource, formService, spatialUnitTreeService, spatialUnitService,
                 scopeCallback, scopeBinding
         );
@@ -315,7 +321,7 @@ class EntityFormContextTest {
 
     @Test
     void handleConceptChange_doesNotInvokeCallback_whenNotFormScopeField() {
-        EntityFormContext<Object> ctx = new EntityFormContext<>(
+        EntityFormContext<TraceableEntity> ctx = new EntityFormContext<>(
                 unit, fieldSource, formService, spatialUnitTreeService, spatialUnitService,
                 scopeCallback, "scopeBinding"
         );
@@ -342,20 +348,25 @@ class EntityFormContextTest {
 
     @Test
     void getAutocompleteClass_returnsExpectedCssClass() {
-        EntityFormContext<Object> ctx1 = new EntityFormContext<>(
+        EntityFormContext<TraceableEntity> ctx1 = new EntityFormContext<>(
                 mock(RecordingUnit.class), fieldSource, formService, spatialUnitTreeService, spatialUnitService,
                 scopeCallback, "scopeBinding"
         );
         assertEquals("recording-unit-autocomplete", ctx1.getAutocompleteClass());
 
-        EntityFormContext<Object> ctx2 = new EntityFormContext<>(
+        EntityFormContext<TraceableEntity> ctx2 = new EntityFormContext<>(
                 mock(SpatialUnit.class), fieldSource, formService, spatialUnitTreeService, spatialUnitService,
                 scopeCallback, "scopeBinding"
         );
         assertEquals("spatial-unit-autocomplete", ctx2.getAutocompleteClass());
 
-        EntityFormContext<Object> ctx3 = new EntityFormContext<>(
-                new Object(), fieldSource, formService, spatialUnitTreeService, spatialUnitService,
+        EntityFormContext<TraceableEntity> ctx3 = new EntityFormContext<>(
+                new TraceableEntity() {
+                    @Override
+                    public Long getId() {
+                        return 0L;
+                    }
+                }, fieldSource, formService, spatialUnitTreeService, spatialUnitService,
                 scopeCallback, "scopeBinding"
         );
         assertEquals("", ctx3.getAutocompleteClass());
@@ -363,8 +374,13 @@ class EntityFormContextTest {
 
     @Test
     void getSpatialUnitOptions_returnsEmpty_whenUnitNotRecordingUnit() {
-        EntityFormContext<Object> ctx = new EntityFormContext<>(
-                new Object(), fieldSource, formService, spatialUnitTreeService, spatialUnitService,
+        EntityFormContext<TraceableEntity> ctx = new EntityFormContext<>(
+                new TraceableEntity() {
+                    @Override
+                    public Long getId() {
+                        return 0L;
+                    }
+                }, fieldSource, formService, spatialUnitTreeService, spatialUnitService,
                 scopeCallback, "scopeBinding"
         );
         assertTrue(ctx.getSpatialUnitOptions().isEmpty());
@@ -374,7 +390,7 @@ class EntityFormContextTest {
     @Test
     void getSpatialUnitOptions_delegatesToService_whenUnitIsRecordingUnit() {
         RecordingUnit ru = mock(RecordingUnit.class);
-        EntityFormContext<Object> ctx = new EntityFormContext<>(
+        EntityFormContext<TraceableEntity> ctx = new EntityFormContext<>(
                 ru, fieldSource, formService, spatialUnitTreeService, spatialUnitService,
                 scopeCallback, "scopeBinding"
         );

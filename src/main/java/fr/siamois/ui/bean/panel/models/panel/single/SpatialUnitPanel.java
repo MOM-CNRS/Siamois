@@ -375,7 +375,8 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
                 flowBean,
                 (GenericNewUnitDialogBean<ActionUnit>) genericNewUnitDialogBean,
                 actionLazyTree,
-                institutionService
+                institutionService,
+                formContextServices
         );
 
         ActionUnitTableDefinitionFactory.applyTo(actionTabTableModel);
@@ -421,7 +422,8 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
                 (GenericNewUnitDialogBean<SpatialUnit>) genericNewUnitDialogBean,
                 spatialUnitWriteVerifier,
                 parentLazyTree,
-                institutionService
+                institutionService,
+                formContextServices
         );
         SpatialUnitTableDefinitionFactory.applyTo(parentTableModel);
 
@@ -473,7 +475,8 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
                 (GenericNewUnitDialogBean<SpatialUnit>) genericNewUnitDialogBean,
                 spatialUnitWriteVerifier,
                 childLazyTree,
-                institutionService
+                institutionService,
+                formContextServices
         );
         SpatialUnitTableDefinitionFactory.applyTo(childTableModel);
 
