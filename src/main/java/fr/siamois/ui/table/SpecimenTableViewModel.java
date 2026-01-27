@@ -10,6 +10,7 @@ import fr.siamois.ui.bean.NavBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
 import fr.siamois.ui.bean.dialog.newunit.GenericNewUnitDialogBean;
 import fr.siamois.ui.bean.panel.FlowBean;
+import fr.siamois.ui.form.FormContextServices;
 import fr.siamois.ui.lazydatamodel.BaseSpecimenLazyDataModel;
 import lombok.Getter;
 import org.primefaces.model.TreeNode;
@@ -43,7 +44,7 @@ public class SpecimenTableViewModel extends EntityTableViewModel<Specimen, Long>
                                   SpatialUnitService spatialUnitService,
                                   NavBean navBean,
                                   FlowBean flowBean,
-                                  GenericNewUnitDialogBean<Specimen> genericNewUnitDialogBean) {
+                                  GenericNewUnitDialogBean<Specimen> genericNewUnitDialogBean, FormContextServices formContextServices) {
 
         super(
                 lazyDataModel,
@@ -54,7 +55,8 @@ public class SpecimenTableViewModel extends EntityTableViewModel<Specimen, Long>
                 navBean,
                 Specimen::getId,   // idExtractor
                 "type"   ,// formScopeValueBinding
-                sessionSettingsBean.getLangBean()
+                sessionSettingsBean.getLangBean(),
+                formContextServices
         );
         this.specimenLazyDataModel = lazyDataModel;
         this.setTreeMode(false);

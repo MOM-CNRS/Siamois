@@ -1,5 +1,6 @@
 package fr.siamois.ui.bean.panel.models.panel.single;
 
+import fr.siamois.domain.models.TraceableEntity;
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.customfield.CustomFieldText;
 import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswer;
@@ -20,12 +21,14 @@ import fr.siamois.domain.services.form.FormService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitTreeService;
 import fr.siamois.domain.services.vocabulary.FieldConfigurationService;
+import fr.siamois.domain.services.vocabulary.VocabularyService;
 import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
 import fr.siamois.ui.bean.LabelBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
 import fr.siamois.ui.bean.dialog.newunit.GenericNewUnitDialogBean;
 import fr.siamois.ui.bean.panel.models.panel.AbstractPanel;
 import fr.siamois.ui.form.EntityFormContext;
+import fr.siamois.ui.form.FormContextServices;
 import fr.siamois.ui.form.PanelFieldSource;
 import fr.siamois.utils.DateUtils;
 import jakarta.faces.component.UIComponent;
@@ -51,7 +54,7 @@ import java.util.Set;
 @EqualsAndHashCode(callSuper = true, onlyExplicitlyIncluded = true)
 @Data
 @Slf4j
-public abstract class AbstractSingleEntity<T> extends AbstractPanel implements Serializable {
+public abstract class AbstractSingleEntity<T extends TraceableEntity> extends AbstractPanel implements Serializable {
 
     public static final String FIELD = "field";
     public static final String COLUMN_CLASS_NAME = "ui-g-12 ui-md-6 ui-lg-4";
@@ -66,6 +69,7 @@ public abstract class AbstractSingleEntity<T> extends AbstractPanel implements S
     protected final transient DocumentService documentService;
     protected final transient LabelBean labelBean;
     protected final transient FormService formService;
+    protected final transient FormContextServices formContextServices;
 
     // -------------------- Local state ---------------------
 
@@ -103,6 +107,7 @@ public abstract class AbstractSingleEntity<T> extends AbstractPanel implements S
         this.documentService = context.getBean(DocumentService.class);
         this.labelBean = context.getBean(LabelBean.class);
         this.formService = context.getBean(FormService.class);
+        this.formContextServices = context.getBean(FormContextServices.class);
     }
 
     protected AbstractSingleEntity(String titleCodeOrTitle,
@@ -118,6 +123,7 @@ public abstract class AbstractSingleEntity<T> extends AbstractPanel implements S
         this.documentService = context.getBean(DocumentService.class);
         this.labelBean = context.getBean(LabelBean.class);
         this.formService = context.getBean(FormService.class);
+        this.formContextServices = context.getBean(FormContextServices.class);
     }
 
     // -------------------- Utility -------------------------
@@ -191,9 +197,7 @@ public abstract class AbstractSingleEntity<T> extends AbstractPanel implements S
             formContext = new EntityFormContext<>(
                     unit,
                     fieldSource,
-                    formService,
-                    spatialUnitTreeService,
-                    spatialUnitService,
+                    formContextServices,
                     // callback appelé quand le champ de scope change
                     (field, concept) -> onFormScopeChanged(concept),
                     // nom de la propriété qui porte le scope (ex: "type")

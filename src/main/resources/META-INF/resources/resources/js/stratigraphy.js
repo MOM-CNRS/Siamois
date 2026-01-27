@@ -1,42 +1,79 @@
-// Define linkLabels globally
-const linkLabels = {
-    above: "s'appuie contre",
-    below: "sous",
-    side: "équivalent à",
-    uncertain: "sous"
-};
+// Stratigraphy.js
+// ----------------
+// D3.js v7 required
 
-// Initialize stratigraphy if the SVG exists
-function initStratigraphyIfNeeded() {
-    const svgElement = document.getElementById("stratigraphy");
-    if (!svgElement) return;
+function drawStratigraphyDiagram(svgId, centralUnitId, relationships) {
+    const svgEl = document.getElementById(svgId);
+    if (!svgEl) {
+        console.error(`SVG element with ID ${svgId} not found.`);
+        return;
+    }
 
-    const svg = d3.select(svgElement)
-        .attr("viewBox", "0 0 800 500");
+    const width = svgEl.clientWidth || 800;
+    const height = svgEl.clientHeight || 500;
 
-    drawStratigraphy(svg);
-}
+    const svg = d3.select(svgEl)
+        .attr("viewBox", [0, 0, width, height])
+        .call(d3.zoom().scaleExtent([0.5, 3]).on("zoom", (event) => {
+            svgGroup.attr("transform", event.transform);
+        }));
 
-// Main drawing function
-function drawStratigraphy(svg) {
-    const nodes = [
-        { id: "US 100", x: 400, y: 250, main: true },
-        { id: "US 23",  x: 400, y: 80 },
-        { id: "US 18",  x: 120, y: 250 },
-        { id: "US 12",  x: 350, y: 420 },
-        { id: "US 15",  x: 470, y: 420, uncertain: true }
-    ];
+    const svgGroup = svg.append("g");
 
-    const links = [
-        { source: "US 100", target: "US 23", type: "above", doc: ["coupe_stratigraphique.pdf", "notes_terrain.docx"] },
-        { source: "US 100", target: "US 18", type: "side", doc: [] },
-        { source: "US 100", target: "US 12", type: "below", doc: [] },
-        { source: "US 100", target: "US 15", type: "uncertain", doc: [] }
-    ];
+    // Nodes and links
+    const nodesMap = {};
+    const nodes = [];
+    const links = [];
 
-    const nodeById = Object.fromEntries(nodes.map(n => [n.id, n]));
+    // Central node (main, fixed)
+    const centralNode = { id: centralUnitId, main: true, fx: width/2, fy: height/2, x: width/2, y: height/2 };
+    nodesMap[centralUnitId] = centralNode;
+    nodes.push(centralNode);
 
-    // Define arrow marker
+    // Helper: add nodes and links
+    function addRelationship(relList, type) {
+        const yOffset = type === 'posterior' ? -100 : (type === 'anterior' ? 100 : 0);
+        const xOffsetBase = type === 'synchronous' ? 150 : 0;
+
+        relList.forEach((rel, idx) => {
+            const nodeId = rel.unit1Id;
+            if (!nodesMap[nodeId]) {
+                nodesMap[nodeId] = { id: nodeId, uncertain: rel.uncertain };
+                nodes.push(nodesMap[nodeId]);
+            }
+
+            const link = {
+                source: rel.vocabularyDirection ? centralUnitId : nodeId,
+                target: rel.vocabularyDirection ? nodeId : centralUnitId,
+                type: rel.uncertain ? 'uncertain' : 'normal',
+                label: rel.vocabularyLabel
+            };
+            links.push(link);
+
+            // Pre-position nodes
+            if (type === 'posterior' || type === 'anterior') {
+                nodesMap[nodeId].x = width/2 + (idx - relList.length/2) * 120;
+                nodesMap[nodeId].y = height/2 + yOffset;
+            } else if (type === 'synchronous') {
+                nodesMap[nodeId].x = width/2 + xOffsetBase * (idx % 2 === 0 ? 1 : -1);
+                nodesMap[nodeId].y = height/2 + (Math.floor(idx/2) * 60) * (idx % 2 === 0 ? 1 : -1);
+            }
+        });
+    }
+
+    addRelationship(relationships.anterior || [], 'anterior');
+    addRelationship(relationships.posterior || [], 'posterior');
+    addRelationship(relationships.synchronous || [], 'synchronous');
+
+    // Simulation
+    const simulation = d3.forceSimulation(nodes)
+        .force("link", d3.forceLink(links).id(d => d.id).distance(150))
+        .force("charge", d3.forceManyBody().strength(-400))
+        .force("center", d3.forceCenter(width / 2, height / 2))
+        .force("collide", d3.forceCollide(50))
+        .on("tick", ticked);
+
+    // Arrow marker
     svg.append("defs").append("marker")
         .attr("id", "arrow")
         .attr("viewBox", "0 -5 10 10")
@@ -49,103 +86,90 @@ function drawStratigraphy(svg) {
         .attr("d", "M0,-5L10,0L0,5")
         .attr("fill", "#3b82f6");
 
-    // Group for links
-    const linkGroup = svg.append("g")
+    // Links
+    const linkGroup = svgGroup.append("g")
         .attr("class", "links")
         .selectAll("g")
         .data(links)
         .enter()
         .append("g");
 
-    // Draw lines with arrows
-    linkGroup.append("line")
-        .attr("x1", d => nodeById[d.source].x)
-        .attr("y1", d => nodeById[d.source].y)
-        .attr("x2", d => nodeById[d.target].x)
-        .attr("y2", d => nodeById[d.target].y)
-        .attr("stroke", d => d.type === "uncertain" ? "#f59e0b" : "#3b82f6")
+    const linkLines = linkGroup.append("line")
+        .attr("stroke", d => d.type === 'uncertain' ? "#f59e0b" : "var(--main-color)")
         .attr("stroke-width", 2)
-        .attr("stroke-dasharray", d => d.type === "uncertain" ? "6,4" : "0")
-        .attr("marker-end", "url(#arrow)") // arrow at end of every link
-        .style("cursor", "pointer")
-        .on("click", (event, d) => {
-            showSidePanel(d);
-        });
+        .attr("stroke-dasharray", d => d.type === 'uncertain' ? "6,4" : "0")
+        .attr("marker-end", "url(#arrow)");
 
-    // Edge labels
-    linkGroup.append("text")
-        .text(d => linkLabels[d.type] || "")
-        .attr("x", d => (nodeById[d.source].x + nodeById[d.target].x)/2)
-        .attr("y", d => (nodeById[d.source].y + nodeById[d.target].y)/2 - 10)
-        .attr("text-anchor", "middle")
+    const linkLabels = linkGroup.append("text")
+        .text(d => d.label)
         .attr("font-size", "12px")
         .attr("fill", "#111827")
-        .style("cursor", "pointer")
-        .on("click", (event, d) => {
-            showSidePanel(d);
-        });
+        .attr("text-anchor", "middle")
+        .attr("dominant-baseline", "middle");
 
-    // Draw nodes
-    const node = svg.append("g")
+    // Nodes
+    const nodeGroup = svgGroup.append("g")
         .attr("class", "nodes")
         .selectAll("g")
         .data(nodes)
         .enter()
         .append("g")
-        .attr("transform", d => `translate(${d.x}, ${d.y})`);
+        .call(d3.drag()
+            .filter(d => !d.main) // only non-main nodes are draggable
+            .on("start", dragstarted)
+            .on("drag", dragged)
+            .on("end", dragended)
+        );
 
-    node.append("rect")
-        .attr("x", -45)
-        .attr("y", -20)
-        .attr("width", 90)
-        .attr("height", 40)
+    const nodeWidth = 90;
+    const nodeHeight = 40;
+
+    nodeGroup.append("rect")
+        .attr("x", -nodeWidth / 2)
+        .attr("y", -nodeHeight / 2)
+        .attr("width", nodeWidth)
+        .attr("height", nodeHeight)
         .attr("rx", 10)
-        .attr("fill", d =>
-            d.main ? "#f8fafc" :
-            d.uncertain ? "#fff7ed" : "#eff6ff"
-        )
-        .attr("stroke", d =>
-            d.uncertain ? "#f59e0b" : "#3b82f6"
-        )
-        .attr("stroke-width", d => d.main ? 3 : 2)
-        .style("cursor", "pointer")
-        .on("click", (event, d) => console.log("Node rect clicked:", d));
+        .attr("fill", d => d.main ? "var(--light-color-50)" : (d.uncertain ? "#fff7ed" : "var(--light-color-50)"))
+        .attr("stroke", d => d.main ? "var(--dark-color)" : (d.uncertain ? "#f59e0b" : "var(--main-color)"))
+        .attr("stroke-width", d => d.main ? 3 : 2);
 
-    node.append("text")
+    nodeGroup.append("text")
         .text(d => d.id)
         .attr("text-anchor", "middle")
         .attr("dominant-baseline", "middle")
-        .attr("font-size", "14px")
         .attr("font-weight", d => d.main ? "bold" : "normal")
-        .style("cursor", "pointer")
-        .on("click", (event, d) => console.log("Node text clicked:", d));
-}
+        .style("pointer-events", "none");
 
-// Show side panel and populate fields
-function showSidePanel(d) {
-    const title = document.getElementById("relationTitle");
-    if (title) {
-        title.textContent = `Relation – ${d.source} → ${d.target}`;
+    function ticked() {
+        linkLines
+            .attr("x1", d => d.source.x)
+            .attr("y1", d => d.source.y)
+            .attr("x2", d => d.target.x)
+            .attr("y2", d => d.target.y);
+
+        linkLabels
+            .attr("x", d => (d.source.x + d.target.x) / 2)
+            .attr("y", d => (d.source.y + d.target.y) / 2 - 10);
+
+        nodeGroup.attr("transform", d => `translate(${d.x},${d.y})`);
     }
 
-    // Documents
-    const docsGroup = document.getElementById("relationDocs");
-
-    openSidePanel();
-}
-
-// Open side panel (show the div)
-function openSidePanel() {
-    const sidePanel = document.querySelector(".side-panel-content");
-    if (sidePanel) {
-        sidePanel.style.display = "block";
+    // Drag functions
+    function dragstarted(event, d) {
+        if (!event.active) simulation.alphaTarget(0.3).restart();
+        d.fx = d.x;
+        d.fy = d.y;
     }
-}
 
-// Close side panel
-function closeSidePanel() {
-    const sidePanel = document.querySelector(".side-panel-content");
-    if (!sidePanel) return;
+    function dragged(event, d) {
+        d.fx = event.x;
+        d.fy = event.y;
+    }
 
-    sidePanel.style.display = "none";
+    function dragended(event, d) {
+        if (!event.active) simulation.alphaTarget(0);
+        d.fx = d.x;
+        d.fy = d.y;
+    }
 }

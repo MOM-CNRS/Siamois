@@ -416,7 +416,8 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnit> imple
                 recordingUnitWriteVerifier,
                 recordingUnitService,
                 rLazyTree,
-                langBean
+                langBean,
+                formContextServices
         );
 
         RecordingUnitTableDefinitionFactory.applyTo(recordingTabTableModel);

@@ -13,6 +13,7 @@ import fr.siamois.ui.bean.dialog.newunit.GenericNewUnitDialogBean;
 import fr.siamois.ui.bean.dialog.newunit.NewUnitContext;
 import fr.siamois.ui.form.EntityFormContext;
 import fr.siamois.ui.form.FieldSource;
+import fr.siamois.ui.form.FormContextServices;
 import fr.siamois.ui.form.TableRowFieldSource;
 import fr.siamois.ui.lazydatamodel.BaseLazyDataModel;
 import fr.siamois.ui.lazydatamodel.tree.BaseTreeTableLazyModel;
@@ -65,6 +66,7 @@ public abstract class EntityTableViewModel<T extends TraceableEntity, ID> {
     protected final NavBean navBean;
     protected final GenericNewUnitDialogBean<T> genericNewUnitDialogBean;
     protected final LangBean langBean;
+    protected final transient FormContextServices formContextServices;
 
     /** Fournit l'identifiant unique d'une entité T (ex: RecordingUnit::getId) */
     private final Function<T, ID> idExtractor;
@@ -109,7 +111,8 @@ public abstract class EntityTableViewModel<T extends TraceableEntity, ID> {
             SpatialUnitService spatialUnitService,
             NavBean navBean,
             Function<T, ID> idExtractor,
-            String formScopeValueBinding, LangBean langBean
+            String formScopeValueBinding, LangBean langBean,
+            FormContextServices formContextServices
     ) {
         this(
                 lazyDataModel,
@@ -120,7 +123,8 @@ public abstract class EntityTableViewModel<T extends TraceableEntity, ID> {
                 spatialUnitService,
                 navBean, langBean,
                 idExtractor,
-                formScopeValueBinding
+                formScopeValueBinding,
+                formContextServices
         );
     }
 
@@ -133,7 +137,8 @@ public abstract class EntityTableViewModel<T extends TraceableEntity, ID> {
             SpatialUnitService spatialUnitService,
             NavBean navBean, LangBean langBean,
             Function<T, ID> idExtractor,
-            String formScopeValueBinding
+            String formScopeValueBinding,
+            FormContextServices formContextServices
     ) {
         this.lazyDataModel = lazyDataModel;
         this.treeLazyModel = treeLazyModel;
@@ -145,6 +150,7 @@ public abstract class EntityTableViewModel<T extends TraceableEntity, ID> {
         this.langBean = langBean;
         this.idExtractor = idExtractor;
         this.formScopeValueBinding = formScopeValueBinding;
+        this.formContextServices = formContextServices;
 
         // Set global filter for both models if they exist
         if (this.lazyDataModel != null) {
@@ -190,9 +196,7 @@ public abstract class EntityTableViewModel<T extends TraceableEntity, ID> {
             EntityFormContext<T> ctx = new EntityFormContext<>(
                     entity,
                     fs,
-                    formService,
-                    spatialUnitTreeService,
-                    spatialUnitService,
+                    formContextServices,
                     null,                    // pas de callback form scope en mode table pour l’instant
                     formScopeValueBinding
             );

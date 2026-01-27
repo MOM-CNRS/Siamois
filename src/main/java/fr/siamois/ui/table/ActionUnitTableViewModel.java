@@ -12,6 +12,7 @@ import fr.siamois.ui.bean.dialog.newunit.GenericNewUnitDialogBean;
 import fr.siamois.ui.bean.dialog.newunit.NewUnitContext;
 import fr.siamois.ui.bean.dialog.newunit.UnitKind;
 import fr.siamois.ui.bean.panel.FlowBean;
+import fr.siamois.ui.form.FormContextServices;
 import fr.siamois.ui.lazydatamodel.BaseActionUnitLazyDataModel;
 import fr.siamois.ui.lazydatamodel.tree.ActionUnitTreeTableLazyModel;
 import lombok.Getter;
@@ -51,7 +52,8 @@ public class ActionUnitTableViewModel extends EntityTableViewModel<ActionUnit, L
                                     NavBean navBean,
                                     FlowBean flowBean, GenericNewUnitDialogBean<ActionUnit> genericNewUnitDialogBean,
                                     ActionUnitTreeTableLazyModel treeLazyModel,
-                                    InstitutionService institutionService) {
+                                    InstitutionService institutionService,
+                                    FormContextServices formContextServices) {
 
         super(
                 actionUnitLazyDataModel,
@@ -63,7 +65,8 @@ public class ActionUnitTableViewModel extends EntityTableViewModel<ActionUnit, L
                 navBean,
                 sessionSettingsBean.getLangBean(),
                 ActionUnit::getId,   // idExtractor
-                "type"                  // formScopeValueBinding
+                "type"        ,          // formScopeValueBinding,
+                formContextServices
         );
         this.actionUnitLazyDataModel = actionUnitLazyDataModel;
         this.sessionSettingsBean = sessionSettingsBean;

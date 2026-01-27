@@ -12,6 +12,7 @@ import fr.siamois.ui.bean.dialog.newunit.NewUnitContext;
 import fr.siamois.ui.bean.dialog.newunit.UnitKind;
 import fr.siamois.ui.bean.panel.FlowBean;
 import fr.siamois.ui.bean.panel.models.PanelBreadcrumb;
+import fr.siamois.ui.form.FormContextServices;
 import fr.siamois.ui.lazydatamodel.ActionUnitLazyDataModel;
 import fr.siamois.ui.lazydatamodel.BaseLazyDataModel;
 import fr.siamois.ui.lazydatamodel.scope.ActionUnitScope;
@@ -51,6 +52,7 @@ public class ActionUnitListPanel extends AbstractListPanel<ActionUnit> implement
     private final transient SpatialUnitWriteVerifier spatialUnitWriteVerifier;
     private final transient NavBean navBean;
     private final transient InstitutionService institutionService;
+    private final transient FormContextServices formContextServices;
 
     // locals
     private String actionUnitListErrorMessage;
@@ -81,7 +83,9 @@ public class ActionUnitListPanel extends AbstractListPanel<ActionUnit> implement
                 flowBean,
                 genericNewUnitDialogBean,
                 lazyTree,
-                institutionService
+                institutionService,
+                formContextServices
+
         );
         return lazy;
     }
@@ -104,6 +108,7 @@ public class ActionUnitListPanel extends AbstractListPanel<ActionUnit> implement
         this.spatialUnitWriteVerifier = context.getBean(SpatialUnitWriteVerifier.class);
         this.navBean = context.getBean(NavBean.class);
         this.institutionService = context.getBean(InstitutionService.class);
+        this.formContextServices = context.getBean(FormContextServices.class);
     }
 
     @Override

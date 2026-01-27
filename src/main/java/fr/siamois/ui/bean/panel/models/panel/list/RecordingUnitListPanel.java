@@ -13,6 +13,7 @@ import fr.siamois.ui.bean.NavBean;
 import fr.siamois.ui.bean.dialog.newunit.GenericNewUnitDialogBean;
 import fr.siamois.ui.bean.panel.FlowBean;
 import fr.siamois.ui.bean.panel.models.PanelBreadcrumb;
+import fr.siamois.ui.form.FormContextServices;
 import fr.siamois.ui.lazydatamodel.BaseLazyDataModel;
 import fr.siamois.ui.lazydatamodel.BaseRecordingUnitLazyDataModel;
 import fr.siamois.ui.lazydatamodel.RecordingUnitLazyDataModel;
@@ -49,6 +50,7 @@ public class RecordingUnitListPanel extends AbstractListPanel<RecordingUnit> imp
     private final transient GenericNewUnitDialogBean<RecordingUnit> genericNewUnitDialogBean;
     private final transient RecordingUnitWriteVerifier recordingUnitWriteVerifier;
     private final transient NavBean navBean;
+    private final transient FormContextServices formContextServices;
 
     // locals
     private String actionUnitListErrorMessage;
@@ -70,6 +72,7 @@ public class RecordingUnitListPanel extends AbstractListPanel<RecordingUnit> imp
         this.genericNewUnitDialogBean = context.getBean(GenericNewUnitDialogBean.class);
         this.recordingUnitWriteVerifier = context.getBean(RecordingUnitWriteVerifier.class);
         this.navBean = context.getBean(NavBean.class);
+        this.formContextServices = context.getBean(FormContextServices.class);
     }
 
     @Override
@@ -105,7 +108,8 @@ public class RecordingUnitListPanel extends AbstractListPanel<RecordingUnit> imp
                 recordingUnitWriteVerifier,
                 recordingUnitService,
                 lazyTree,
-                langBean
+                langBean,
+                formContextServices
         );
 
         return lazy; // l'abstraite en a besoin, mais ce panel ne s'en sert plus ensuite

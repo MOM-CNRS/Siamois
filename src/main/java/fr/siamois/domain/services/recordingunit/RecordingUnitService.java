@@ -612,4 +612,8 @@ public class RecordingUnitService implements ArkEntityService {
     public List<RecordingUnit> findByActionAndFullId(@NotNull ActionUnit actionUnit, @NotNull String fullIdentifier) {
         return recordingUnitRepository.findByFullIdentifierAndActionUnit(fullIdentifier, actionUnit);
     }
+
+    public List<RecordingUnit> findAllByActionUnit(@NotNull ActionUnit actionUnit) {
+        return recordingUnitRepository.findAllByActionUnit(actionUnit);
+    }
 }

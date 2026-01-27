@@ -31,6 +31,7 @@ import fr.siamois.ui.bean.dialog.newunit.UnitKind;
 import fr.siamois.ui.bean.panel.FlowBean;
 import fr.siamois.ui.bean.panel.models.PanelBreadcrumb;
 import fr.siamois.ui.bean.panel.models.panel.single.tab.SpecimenTab;
+import fr.siamois.ui.form.FormContextServices;
 import fr.siamois.ui.lazydatamodel.RecordingUnitChildrenLazyDataModel;
 import fr.siamois.ui.lazydatamodel.RecordingUnitParentsLazyDataModel;
 import fr.siamois.ui.lazydatamodel.SpecimenInRecordingUnitLazyDataModel;
@@ -73,6 +74,7 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
     private final transient NavBean navBean;
     private final transient FlowBean flowBean;
     private final transient GenericNewUnitDialogBean<?> genericNewUnitDialogBean;
+    private final transient FormContextServices formContextServices;
 
     // ---------- Locals
     // RU
@@ -110,6 +112,7 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
         this.navBean = context.getBean(NavBean.class);
         this.flowBean = context.getBean(FlowBean.class);
         this.genericNewUnitDialogBean = context.getBean(GenericNewUnitDialogBean.class);
+        this.formContextServices = context.getBean(FormContextServices.class);
     }
 
 
@@ -457,7 +460,8 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
                 spatialUnitService,
                 navBean,
                 flowBean,
-                (GenericNewUnitDialogBean<Specimen>) genericNewUnitDialogBean
+                (GenericNewUnitDialogBean<Specimen>) genericNewUnitDialogBean,
+                formContextServices
         );
 
         SpecimenTableDefinitionFactory.applyTo(specimenTableModel);

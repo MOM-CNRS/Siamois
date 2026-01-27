@@ -42,6 +42,9 @@ public class StratigraphicRelationship {
     @Column(name = "concept_direction")
     private Boolean conceptDirection;
 
+    @Column(name = "uncertain")
+    private Boolean uncertain;
+
     @Override
     public boolean equals(Object obj) {
         if (this == obj) return true;  // Same reference
