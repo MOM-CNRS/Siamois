@@ -94,12 +94,6 @@
                     </p:card>
 
 
-
-
-
-
-
-
                 </p:outputPanel>
 
                 <p:outputPanel layout="block" id="stratigraphyGraphContainer" style="border: 2px solid var(--light-color-200);
@@ -107,18 +101,92 @@ margin-top: 1em;
   border-radius: 2em;display:flex;">
                     <svg style="flex:3;" id="#{cc.clientId}:stratigraphyGraph" width="800" height="500"></svg>
 
+                    <!-- Side panel using PrimeFaces -->
+                    <div class="side-panel-content">
+
+                        <!-- Title -->
+                        <h3 id="relationTitle" class="relation-title relation-edit-row">
+                            US 100
+                            <!-- Relation type -->
+                            <p:selectOneMenu id="relationType"
+                                             value="#{relationBean.selectedType}"
+                                             styleClass="relation-select">
+                                <f:selectItem itemLabel="s'appuie contre" itemValue="above"/>
+                                <f:selectItem itemLabel="sous" itemValue="below"/>
+                                <f:selectItem itemLabel="équivalent à" itemValue="side"/>
+                                <f:selectItem itemLabel="incertain" itemValue="uncertain"/>
+                            </p:selectOneMenu>
+                            <!-- Target US -->
+                            <p:selectOneMenu id="relationTarget"
+                                             value="us 23"
+                                             styleClass="relation-select">
+                                <f:selectItem itemLabel="US 43" itemValue="above"/>
+                                <f:selectItem itemLabel="US 87" itemValue="below"/>
+                            </p:selectOneMenu>
+                        </h3>
+
+
+                        <!-- Documents -->
+                        <h4 class="section-title">Documents</h4>
+
+                        <div id="relationDocs" class="docs-container">
+                            <!-- Example document 1 -->
+                            <span class="doc-chip"
+                                  style="display:inline-block; padding:2px 6px; border:1px solid #ccc; border-radius:4px; margin:2px;">
+                                  exemple_coupe_stratigraphique.pdf
+                                  <button type="button" onclick="this.parentElement.remove()"
+                                          style="border:none; background:none; cursor:pointer; margin-left:4px;">✕</button>
+                              </span>
+
+                                                        <!-- Example document 2 -->
+                            <span class="doc-chip"
+                                  style="display:inline-block; padding:2px 6px; border:1px solid #ccc; border-radius:4px; margin:2px;">
+                                  exemple_notes_terrain.docx
+                                  <button type="button" onclick="this.parentElement.remove()"
+                                          style="border:none; background:none; cursor:pointer; margin-left:4px;">✕</button>
+                              </span>
+                        </div>
+
+
+                        <p:commandButton value="Ajouter un document (à venir)"
+                                         disabled="true"
+                                         id="addDocumentToRel"
+                                         icon="pi pi-plus"
+                                         style="color:#7e1717;"
+                                         styleClass="ui-button-outlined add-doc-btn"
+                                         action="#{relationBean.addDocument}"/>
+
+
+                        <!-- Delete -->
+                        <p:commandButton value="Supprimer la relation"
+                                         icon="pi pi-trash"
+                                         styleClass="ui-button-danger delete-relation-btn"
+                                         action="#{relationBean.deleteRelation}"
+                                         update="@form"/>
+
+                    </div>
+
                     <h:outputScript>
                         (function() {
                         const unit2Id = "#{cc.attrs.answer.sourceToAdd.fullIdentifier}";
                         const relationships = #{cc.attrs.relationshipsAsJson};
-                        drawStratigraphyDiagram("#{cc.clientId}:stratigraphyGraph", unit2Id, relationships);
+
+                        // Define the callback function
+                        const onEdgeSelected = function(selectedEdge) {
+                        console.log("Selected relationship:", selectedEdge);
+                        // Update the selectedRel in your model
+                        customFieldAnswerStratigraphy.selectedRel = selectedEdge;
+                        // Optionally, trigger UI updates or AJAX calls here
+                        console.log("Selected relationship:", selectedEdge);
+                        };
+
+                        // Call the drawStratigraphyDiagram function with the callback
+                        drawStratigraphyDiagram("#{cc.clientId}:stratigraphyGraph", unit2Id, relationships, onEdgeSelected);
                         })();
                     </h:outputScript>
 
 
-
                 </p:outputPanel>
-
 
 
             </f:facet>

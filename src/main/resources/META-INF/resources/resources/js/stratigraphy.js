@@ -2,11 +2,15 @@
 // ----------------
 // Requires D3.js v7+
 
-function drawStratigraphyDiagram(svgId, centralUnitId, relationships) {
-
+function drawStratigraphyDiagram(svgId, centralUnitId, relationships, onEdgeSelected) {
+    // Validate inputs
     const svgEl = document.getElementById(svgId);
     if (!svgEl) {
         console.error(`SVG element with ID ${svgId} not found.`);
+        return;
+    }
+    if (!relationships) {
+        console.error("Relationships data is missing.");
         return;
     }
 
@@ -16,38 +20,50 @@ function drawStratigraphyDiagram(svgId, centralUnitId, relationships) {
     const svg = d3.select(svgEl)
         .attr("viewBox", [0, 0, width, height]);
 
-    svg.selectAll("*").remove(); // clean re-render
-
-    const svgGroup = svg.append("g");
+    svg.selectAll("*").remove();
 
     /* ------------------------------------------------------------------
-       Nodes & links
+       Zoom & pan
     ------------------------------------------------------------------ */
 
-    const nodesMap = {};
+    const zoomGroup = svg.append("g");
+
+    const zoom = d3.zoom()
+        .scaleExtent([0.5, 3])
+        .on("zoom", (event) => {
+            zoomGroup.attr("transform", event.transform);
+        });
+
+    svg.call(zoom);
+
+    /* ------------------------------------------------------------------
+       Data
+    ------------------------------------------------------------------ */
+
     const nodes = [];
+    const nodesMap = {};
     const links = [];
 
-    // Central node (fully fixed)
+    const centerX = width / 2;
+    const centerY = height / 2;
+
     const centralNode = {
         id: centralUnitId,
         main: true,
         zone: "central",
-        x: width / 2,
-        y: height / 2,
-        fx: width / 2,
-        fy: height / 2
+        x: centerX,
+        y: centerY,
+        fx: centerX,
+        fy: centerY
     };
 
-    nodesMap[centralUnitId] = centralNode;
     nodes.push(centralNode);
+    nodesMap[centralUnitId] = centralNode;
 
     function addRelationship(relList, zone) {
-
-        relList.forEach((rel) => {
-
+        if (!relList) return;
+        relList.forEach(rel => {
             const nodeId = rel.unit1Id;
-
             if (!nodesMap[nodeId]) {
                 nodesMap[nodeId] = {
                     id: nodeId,
@@ -56,7 +72,6 @@ function drawStratigraphyDiagram(svgId, centralUnitId, relationships) {
                 };
                 nodes.push(nodesMap[nodeId]);
             }
-
             links.push({
                 source: rel.vocabularyDirection ? centralUnitId : nodeId,
                 target: rel.vocabularyDirection ? nodeId : centralUnitId,
@@ -66,12 +81,12 @@ function drawStratigraphyDiagram(svgId, centralUnitId, relationships) {
         });
     }
 
-    addRelationship(relationships.anterior || [], "anterior");
-    addRelationship(relationships.posterior || [], "posterior");
-    addRelationship(relationships.synchronous || [], "synchronous");
+    addRelationship(relationships.anterior, "anterior");
+    addRelationship(relationships.posterior, "posterior");
+    addRelationship(relationships.synchronous, "synchronous");
 
     /* ------------------------------------------------------------------
-       Forces (controlled, deterministic)
+       Forces (layout only)
     ------------------------------------------------------------------ */
 
     const Y_OFFSET = 140;
@@ -88,72 +103,94 @@ function drawStratigraphyDiagram(svgId, centralUnitId, relationships) {
         .force("collide", d3.forceCollide(45))
         .force("y",
             d3.forceY(d => {
-                if (d.zone === "anterior") return height / 2 - Y_OFFSET;
-                if (d.zone === "posterior") return height / 2 + Y_OFFSET;
-                return height / 2;
+                if (d.zone === "anterior") return centerY - Y_OFFSET;
+                if (d.zone === "posterior") return centerY + Y_OFFSET;
+                return centerY;
             }).strength(d => d.zone === "central" ? 1 : 0.6)
         )
         .force("x",
             d3.forceX(d => {
                 if (d.zone === "synchronous") {
-                    return d.x < width / 2
-                        ? width / 2 - X_OFFSET
-                        : width / 2 + X_OFFSET;
+                    return d.x < centerX
+                        ? centerX - X_OFFSET
+                        : centerX + X_OFFSET;
                 }
-                return width / 2;
+                return centerX;
             }).strength(d => d.zone === "synchronous" ? 0.4 : 0)
         )
-        .alpha(0.9)
-        .alphaDecay(0.1)
+        .alpha(0.3)
+        .alphaDecay(0.0228)
         .on("tick", ticked)
         .on("end", () => simulation.stop());
 
     /* ------------------------------------------------------------------
-       Arrow marker
+       Arrow marker (static color, original refX)
     ------------------------------------------------------------------ */
 
     svg.append("defs")
         .append("marker")
         .attr("id", "arrow")
         .attr("viewBox", "0 -5 10 10")
-        .attr("refX", 18)
+        .attr("refX", 22) // Your original value
         .attr("refY", 0)
         .attr("markerWidth", 6)
         .attr("markerHeight", 6)
         .attr("orient", "auto")
         .append("path")
         .attr("d", "M0,-5L10,0L0,5")
-        .attr("fill", "#3b82f6");
+        .attr("fill", "var(--main-color)"); // Static color
 
     /* ------------------------------------------------------------------
        Links
     ------------------------------------------------------------------ */
 
-    const linkGroup = svgGroup.append("g")
+const linkGroup = zoomGroup.append("g")
         .attr("class", "links")
         .selectAll("g")
         .data(links)
         .enter()
-        .append("g");
+        .append("g")
+        .on("click", (event, d) => {
+            if (typeof onEdgeSelected === 'function') {
+                onEdgeSelected(d);
+            }
+        });
 
     const linkLines = linkGroup.append("line")
         .attr("stroke", d => d.type === "uncertain" ? "#f59e0b" : "var(--main-color)")
         .attr("stroke-width", 2)
         .attr("stroke-dasharray", d => d.type === "uncertain" ? "6,4" : "0")
-        .attr("marker-end", "url(#arrow)");
+        .attr("marker-end", "url(#arrow)")
+        .on("click", (event, d) => {
+            event.stopPropagation();
+            if (typeof onEdgeSelected === 'function') {
+                onEdgeSelected(d);
+            }
+        });
 
     const linkLabels = linkGroup.append("text")
         .text(d => d.label)
         .attr("font-size", "12px")
         .attr("fill", "#111827")
         .attr("text-anchor", "middle")
-        .attr("dominant-baseline", "middle");
+        .attr("dominant-baseline", "middle")
+        .attr("x", d => (d.source.x + d.target.x) / 2 + 10)
+        .attr("y", d => (d.source.y + d.target.y) / 2 - 10)
+        .on("click", (event, d) => {
+            event.stopPropagation();
+            if (typeof onEdgeSelected === 'function') {
+                onEdgeSelected(d);
+            }
+        });
 
     /* ------------------------------------------------------------------
        Nodes
     ------------------------------------------------------------------ */
 
-    const nodeGroup = svgGroup.append("g")
+    const NODE_WIDTH = 90;
+    const NODE_HEIGHT = 40;
+
+    const nodeGroup = zoomGroup.append("g")
         .attr("class", "nodes")
         .selectAll("g")
         .data(nodes)
@@ -166,9 +203,6 @@ function drawStratigraphyDiagram(svgId, centralUnitId, relationships) {
                 .on("drag", dragged)
                 .on("end", dragended)
         );
-
-    const NODE_WIDTH = 90;
-    const NODE_HEIGHT = 40;
 
     nodeGroup.append("rect")
         .attr("x", -NODE_WIDTH / 2)
@@ -204,26 +238,33 @@ function drawStratigraphyDiagram(svgId, centralUnitId, relationships) {
     ------------------------------------------------------------------ */
 
     function ticked() {
-
         linkLines
             .attr("x1", d => d.source.x)
             .attr("y1", d => d.source.y)
-            .attr("x2", d => d.target.x)
-            .attr("y2", d => d.target.y);
+            .attr("x2", d => {
+                const dx = d.target.x - d.source.x;
+                const dy = d.target.y - d.source.y;
+                const angle = Math.atan2(dy, dx);
+                return d.target.x - Math.cos(angle) * (NODE_WIDTH / 2);
+            })
+            .attr("y2", d => {
+                const dx = d.target.x - d.source.x;
+                const dy = d.target.y - d.source.y;
+                const angle = Math.atan2(dy, dx);
+                return d.target.y - Math.sin(angle) * (NODE_HEIGHT / 2);
+            });
 
         linkLabels
-            .attr("x", d => (d.source.x + d.target.x) / 2)
+            .attr("x", d => (d.source.x + d.target.x) / 2 + 10)
             .attr("y", d => (d.source.y + d.target.y) / 2 - 10);
 
         nodeGroup.attr("transform", d => `translate(${d.x},${d.y})`);
     }
 
     /* ------------------------------------------------------------------
-       Drag handlers (no physics restart)
+       Drag handlers (with zone constraints)
     ------------------------------------------------------------------ */
 
-
-    // Drag functions
     function dragstarted(event, d) {
         if (!event.active) simulation.alphaTarget(0.3).restart();
         d.fx = d.x;
@@ -231,6 +272,11 @@ function drawStratigraphyDiagram(svgId, centralUnitId, relationships) {
     }
 
     function dragged(event, d) {
+        if (d.zone === "anterior") {
+            d.fy = Math.min(event.y, centerY - Y_OFFSET / 2);
+        } else if (d.zone === "posterior") {
+            d.fy = Math.max(event.y, centerY + Y_OFFSET / 2);
+        }
         d.fx = event.x;
         d.fy = event.y;
     }
@@ -240,6 +286,4 @@ function drawStratigraphyDiagram(svgId, centralUnitId, relationships) {
         d.fx = d.x;
         d.fy = d.y;
     }
-
 }
-
