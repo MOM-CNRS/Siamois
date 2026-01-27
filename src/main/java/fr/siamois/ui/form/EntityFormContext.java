@@ -482,7 +482,7 @@ public class EntityFormContext<T extends TraceableEntity> {
             ObjectNode node = mapper.createObjectNode();
             node.put("unit1Id", rel.getUnit2().getFullIdentifier());
             node.put("vocabularyLabel", formService.getLabelBean().findLabelOf(rel.getConcept()));
-            node.put("vocabularyDirection", rel.getConceptDirection());
+            node.put("vocabularyDirection", !rel.getConceptDirection());
             node.put("uncertain", rel.getUncertain() != null && rel.getUncertain());
             posteriorArray.add(node);
         }
@@ -495,11 +495,14 @@ public class EntityFormContext<T extends TraceableEntity> {
             ObjectNode node = mapper.createObjectNode();
 
             RecordingUnit otherUnit;
+            Boolean direction;
 
             if (rel.getUnit1().equals(centralUnit)) {
                 otherUnit = rel.getUnit2();
+                direction = !rel.getConceptDirection();
             } else if (rel.getUnit2().equals(centralUnit)) {
                 otherUnit = rel.getUnit1();
+                direction = rel.getConceptDirection();
             } else {
                 // Safety net: malformed relationship, skip
                 continue;
@@ -508,7 +511,7 @@ public class EntityFormContext<T extends TraceableEntity> {
             node.put("unit1Id", otherUnit.getFullIdentifier());
             node.put("vocabularyLabel",
                     formService.getLabelBean().findLabelOf(rel.getConcept()));
-            node.put("vocabularyDirection", rel.getConceptDirection());
+            node.put("vocabularyDirection", direction);
             node.put("uncertain", Boolean.TRUE.equals(rel.getUncertain()));
 
             synchronousArray.add(node);
