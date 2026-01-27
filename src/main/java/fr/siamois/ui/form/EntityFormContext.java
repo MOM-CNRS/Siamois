@@ -1,5 +1,8 @@
 package fr.siamois.ui.form;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import fr.siamois.domain.models.TraceableEntity;
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.customfield.CustomFieldStratigraphy;
@@ -26,6 +29,7 @@ import jakarta.faces.context.FacesContext;
 import jakarta.faces.event.AjaxBehaviorEvent;
 import lombok.Data;
 import lombok.Getter;
+import org.primefaces.PrimeFaces;
 import org.primefaces.event.SelectEvent;
 import org.primefaces.model.TreeNode;
 import org.springframework.context.ApplicationContext;
@@ -363,9 +367,11 @@ public class EntityFormContext<T extends TraceableEntity> {
         FacesContext context = FacesContext.getCurrentInstance();
         boolean isValid = true;
 
+        UIComponent cc = UIComponent.getCurrentCompositeComponent(context);
+
         // Validate conceptToAdd
          if (answer.getConceptToAdd() == null) {
-            UIComponent cc = UIComponent.getCurrentCompositeComponent(context);
+
             UIInput c = (UIInput) cc.findComponent("relationshipVocab");
             c.setValid(false);
             isValid = false;
@@ -380,8 +386,6 @@ public class EntityFormContext<T extends TraceableEntity> {
 
         // Validate targetToAdd
         if (answer.getTargetToAdd() == null) {
-
-            UIComponent cc = UIComponent.getCurrentCompositeComponent(context);
             UIInput c = (UIInput) cc.findComponent("selectRU");
             c.setValid(false);
             isValid = false;
@@ -399,6 +403,10 @@ public class EntityFormContext<T extends TraceableEntity> {
             context.validationFailed();
             return;
         }
+
+        // tood : invalid if one of the unit is the current unit
+
+        // tood : invalid if the rel already exist
 
         // If validation passes, proceed with adding the relationship
         StratigraphicRelationship newRel = new StratigraphicRelationship();
@@ -418,6 +426,61 @@ public class EntityFormContext<T extends TraceableEntity> {
         answer.setConceptToAdd(null);
         answer.setTargetToAdd(null);
         answer.setIsUncertainToAdd(false);
+
+        PrimeFaces.current().ajax().update(
+                cc.getClientId().concat(":stratigraphyGraphContainer")
+        );
+
+        // set field as modified? ou declenchement d'une sauvegarde??
+    }
+
+    public String getRelationshipsAsJson(CustomFieldAnswerStratigraphy answer) {
+
+        ObjectMapper mapper = new ObjectMapper();
+        ObjectNode root = mapper.createObjectNode();
+
+        // anterior
+        ArrayNode anteriorArray = mapper.createArrayNode();
+        for (StratigraphicRelationship rel : answer.getAnteriorRelationships()) {
+            ObjectNode node = mapper.createObjectNode();
+            node.put("unit1Id", rel.getUnit2().getFullIdentifier());
+            node.put("vocabularyLabel", formService.getLabelBean().findLabelOf(rel.getConcept()));
+            node.put("vocabularyDirection", rel.getConceptDirection());
+            node.put("uncertain", rel.getUncertain() != null && rel.getUncertain());
+            anteriorArray.add(node);
+        }
+        root.set("anterior", anteriorArray);
+
+        // posterior
+        ArrayNode posteriorArray = mapper.createArrayNode();
+        for (StratigraphicRelationship rel : answer.getPosteriorRelationships()) {
+            ObjectNode node = mapper.createObjectNode();
+            node.put("unit1Id", rel.getUnit2().getFullIdentifier());
+            node.put("vocabularyLabel", formService.getLabelBean().findLabelOf(rel.getConcept()));
+            node.put("vocabularyDirection", rel.getConceptDirection());
+            node.put("uncertain", rel.getUncertain() != null && rel.getUncertain());
+            posteriorArray.add(node);
+        }
+        root.set("posterior", posteriorArray);
+
+        // synchronous
+        ArrayNode synchronousArray = mapper.createArrayNode();
+        for (StratigraphicRelationship rel : answer.getSynchronousRelationships()) {
+            ObjectNode node = mapper.createObjectNode();
+            node.put("unit1Id", rel.getUnit1().getFullIdentifier());
+            node.put("vocabularyLabel", formService.getLabelBean().findLabelOf(rel.getConcept()));
+            node.put("vocabularyDirection", rel.getConceptDirection());
+            node.put("uncertain", rel.getUncertain() != null && rel.getUncertain());
+            synchronousArray.add(node);
+        }
+        root.set("synchronous", synchronousArray);
+
+        try {
+            return mapper.writeValueAsString(root);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return "{}";
+        }
     }
 
 

@@ -25,65 +25,20 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 @Table(name = "custom_field_answer")
 public class CustomFieldAnswerStratigraphy extends CustomFieldAnswer {
 
+    // The rels
     private transient Set<StratigraphicRelationship> anteriorRelationships = new HashSet<>();
     private transient Set<StratigraphicRelationship> posteriorRelationships = new HashSet<>();
     private transient Set<StratigraphicRelationship> synchronousRelationships = new HashSet<>();
 
+    // New rel form
     private transient ConceptAutocompleteDTO conceptToAdd;
     private transient RecordingUnit sourceToAdd = new RecordingUnit(); // always the recording unit the panel is about
     private transient RecordingUnit targetToAdd;
     private transient Boolean vocabularyDirectionToAdd = false; // always false in this version
     private transient Boolean isUncertainToAdd;
 
-    public String getRelationshipsAsJson() {
-
-        ObjectMapper mapper = new ObjectMapper();
-        ObjectNode root = mapper.createObjectNode();
-
-        // anterior
-        ArrayNode anteriorArray = mapper.createArrayNode();
-        for (StratigraphicRelationship rel : anteriorRelationships) {
-            ObjectNode node = mapper.createObjectNode();
-            node.put("unit1Id", rel.getUnit1().getFullIdentifier());
-            node.put("vocabularyLabel", rel.getConcept().getExternalId());
-            node.put("vocabularyDirection", rel.getConceptDirection());
-            node.put("uncertain", rel.getUncertain() != null && rel.getUncertain());
-            anteriorArray.add(node);
-        }
-        root.set("anterior", anteriorArray);
-
-        // posterior
-        ArrayNode posteriorArray = mapper.createArrayNode();
-        for (StratigraphicRelationship rel : posteriorRelationships) {
-            ObjectNode node = mapper.createObjectNode();
-            node.put("unit1Id", rel.getUnit2().getFullIdentifier());
-            node.put("vocabularyLabel", rel.getConcept().getExternalId());
-            node.put("vocabularyDirection", rel.getConceptDirection());
-            node.put("uncertain", rel.getUncertain() != null && rel.getUncertain());
-            posteriorArray.add(node);
-        }
-        root.set("posterior", posteriorArray);
-
-        // synchronous
-        ArrayNode synchronousArray = mapper.createArrayNode();
-        for (StratigraphicRelationship rel : synchronousRelationships) {
-            ObjectNode node = mapper.createObjectNode();
-            node.put("unit1Id", rel.getUnit2().getFullIdentifier());
-            node.put("vocabularyLabel", rel.getConcept().getExternalId());
-            node.put("vocabularyDirection", rel.getConceptDirection());
-            node.put("uncertain", rel.getUncertain() != null && rel.getUncertain());
-            synchronousArray.add(node);
-        }
-        root.set("synchronous", synchronousArray);
-
-        try {
-            return mapper.writeValueAsString(root);
-        } catch (Exception e) {
-            e.printStackTrace();
-            return "{}";
-        }
-    }
-
+    // Displayed selected rel info
+    private transient StratigraphicRelationship selectedRel;
 
     @Override
     public boolean equals(Object o) {
