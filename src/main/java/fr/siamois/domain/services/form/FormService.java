@@ -210,17 +210,14 @@ public class FormService {
             CustomField field = entry.getKey();
             CustomFieldAnswer answer = entry.getValue();
 
-            if(answer instanceof CustomFieldAnswerStratigraphy stratiAnswer && jpaEntity instanceof RecordingUnit ru) {
+            if (answer instanceof CustomFieldAnswerStratigraphy stratiAnswer && jpaEntity instanceof RecordingUnit ru) {
                 // Special case
                 setStratigraphyFieldValue(stratiAnswer, ru);
-                continue;
-            }
-
-            if (!isBindableSystemField(field, answer, bindableFields)) continue;
-
-            Object value = extractValueFromAnswer(answer);
-            if (value != null) {
-                setFieldValue(jpaEntity, field.getValueBinding(), value);
+            } else if (isBindableSystemField(field, answer, bindableFields)) {
+                Object value = extractValueFromAnswer(answer);
+                if (value != null) {
+                    setFieldValue(jpaEntity, field.getValueBinding(), value);
+                }
             }
         }
     }
