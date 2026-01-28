@@ -57,13 +57,13 @@ public class StratigraphicRelationshipService {
         List<RecordingUnit> synchronousUnits = new ArrayList<>();
 
         // Find synchronous relationships where usq is unit1
-        synchronousUnits.addAll(relationshipRepository.findByUnit1AndType(usq, SYNCHRONOUS)
+        synchronousUnits.addAll(relationshipRepository.findByUnit1AndConcept(usq, SYNCHRONOUS)
                 .stream()
                 .map(StratigraphicRelationship::getUnit2)
                 .toList());
 
         // Find synchronous relationships where usq is unit2
-        synchronousUnits.addAll(relationshipRepository.findByUnit2AndType(usq, SYNCHRONOUS)
+        synchronousUnits.addAll(relationshipRepository.findByUnit2AndConcept(usq, SYNCHRONOUS)
                 .stream()
                 .map(StratigraphicRelationship::getUnit1) // Here we take unit1 instead of unit2
                 .toList());
@@ -78,7 +78,7 @@ public class StratigraphicRelationshipService {
      * @return a list of recording units that are asynchronous with the given unit
      */
     public List<RecordingUnit> getAnteriorUnits(RecordingUnit usq) {
-        return relationshipRepository.findByUnit2AndType(usq, ASYNCHRONOUS)
+        return relationshipRepository.findByUnit2AndConcept(usq, ASYNCHRONOUS)
                 .stream()
                 .map(StratigraphicRelationship::getUnit1) // If unit2 = usq, unit1 is anterior
                 .toList();
@@ -91,7 +91,7 @@ public class StratigraphicRelationshipService {
      * @return a list of recording units that are posterior to the given unit
      */
     public List<RecordingUnit> getPosteriorUnits(RecordingUnit usq) {
-        return relationshipRepository.findByUnit1AndType(usq, ASYNCHRONOUS)
+        return relationshipRepository.findByUnit1AndConcept(usq, ASYNCHRONOUS)
                 .stream()
                 .map(StratigraphicRelationship::getUnit2) // If unit1 = usq, unit2 is posterior
                 .toList();
@@ -109,17 +109,17 @@ public class StratigraphicRelationshipService {
     public StratigraphicRelationship saveOrGet(RecordingUnit unit1, RecordingUnit unit2, Concept type) {
 
         // First, try to find the relationship with the given order of units (unit1, unit2)
-        Optional<StratigraphicRelationship> opt = relationshipRepository.findByUnit1AndUnit2AndType(unit1, unit2, type);
+        Optional<StratigraphicRelationship> opt = relationshipRepository.findByUnit1AndUnit2AndConcept(unit1, unit2, type);
 
         // If found, update the type and return the relationship
         if (opt.isPresent()) {
             StratigraphicRelationship existingRel = opt.get();
-            existingRel.setType(type);
+            existingRel.setConcept(type);
             return relationshipRepository.save(existingRel);
         }
 
         // If not found, check for the reversed relationship (unit2, unit1)
-        opt = relationshipRepository.findByUnit1AndUnit2AndType(unit2, unit1, type);
+        opt = relationshipRepository.findByUnit1AndUnit2AndConcept(unit2, unit1, type);
 
         // If reversed relationship found, delete the old one and create a new one with the correct order
         if (opt.isPresent()) {
@@ -142,7 +142,7 @@ public class StratigraphicRelationshipService {
         id.setUnit1Id(unit1.getId());
         id.setUnit2Id(unit2.getId());
         newRel.setId(id);
-        newRel.setType(type);
+        newRel.setConcept(type);
         newRel.setUnit1(unit1);
         newRel.setUnit2(unit2);
 

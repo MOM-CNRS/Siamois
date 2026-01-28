@@ -11,6 +11,8 @@ import fr.siamois.domain.models.form.customform.EnabledWhenJson;
 import fr.siamois.domain.models.form.customform.ValueMatcher;
 import fr.siamois.domain.models.form.customformresponse.CustomFormResponse;
 import fr.siamois.domain.models.institution.Institution;
+import fr.siamois.domain.models.recordingunit.RecordingUnit;
+import fr.siamois.domain.models.recordingunit.StratigraphicRelationship;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.infrastructure.database.repositories.form.FormRepository;
@@ -21,6 +23,7 @@ import fr.siamois.ui.form.EnabledRulesEngine;
 import fr.siamois.ui.form.FieldSource;
 import fr.siamois.ui.form.ValueMatcherFactory;
 import fr.siamois.ui.form.rules.*;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -42,6 +45,7 @@ import java.util.function.Supplier;
  * It is agnostic of layout (single panel vs table row) thanks to FieldSource.
  */
 @Service
+@Getter
 @RequiredArgsConstructor
 public class FormService {
 
@@ -206,11 +210,14 @@ public class FormService {
             CustomField field = entry.getKey();
             CustomFieldAnswer answer = entry.getValue();
 
-            if (!isBindableSystemField(field, answer, bindableFields)) continue;
-
-            Object value = extractValueFromAnswer(answer);
-            if (value != null) {
-                setFieldValue(jpaEntity, field.getValueBinding(), value);
+            if (answer instanceof CustomFieldAnswerStratigraphy stratiAnswer && jpaEntity instanceof RecordingUnit ru) {
+                // Special case
+                setStratigraphyFieldValue(stratiAnswer, ru);
+            } else if (isBindableSystemField(field, answer, bindableFields)) {
+                Object value = extractValueFromAnswer(answer);
+                if (value != null) {
+                    setFieldValue(jpaEntity, field.getValueBinding(), value);
+                }
             }
         }
     }
@@ -266,6 +273,12 @@ public class FormService {
         answerId.setField(field);
         answer.setPk(answerId);
         answer.setHasBeenModified(false);
+
+        if(answer instanceof CustomFieldAnswerStratigraphy stratiAnswer && jpaEntity instanceof RecordingUnit ru) {
+            // Special case
+            handleStratigraphyRelationships(stratiAnswer, ru);
+            return;
+        }
 
         if (Boolean.TRUE.equals(field.getIsSystemField())
                 && field.getValueBinding() != null
@@ -370,6 +383,38 @@ public class FormService {
         }
     }
 
+    private void handleStratigraphyRelationships(CustomFieldAnswerStratigraphy answer, RecordingUnit unit) {
+        // Set the source unit for the answer
+        answer.setSourceToAdd(unit);
+
+        // Clear existing lists to avoid duplicates
+        answer.getAnteriorRelationships().clear();
+        answer.getPosteriorRelationships().clear();
+        answer.getSynchronousRelationships().clear();
+
+        // Process relationships where unit is unit1
+        for (StratigraphicRelationship rel : unit.getRelationshipsAsUnit1()) {
+            if (Boolean.FALSE.equals(rel.getIsAsynchronous())) {
+                // Synchronous
+                answer.getSynchronousRelationships().add(rel);
+            } else {
+                // Asynchronous → current unit is unit1, goes to posterior
+                answer.getPosteriorRelationships().add(rel);
+            }
+        }
+
+        // Process relationships where unit is unit2
+        for (StratigraphicRelationship rel : unit.getRelationshipsAsUnit2()) {
+            if (Boolean.FALSE.equals(rel.getIsAsynchronous())) {
+                // Synchronous
+                answer.getSynchronousRelationships().add(rel);
+            } else {
+                // Asynchronous → current unit is unit2, goes to anterior
+                answer.getAnteriorRelationships().add(rel);
+            }
+        }
+    }
+
 
     @SuppressWarnings("unchecked")
     private static List<String> getBindableFieldNames(Object entity) {
@@ -402,6 +447,38 @@ public class FormService {
             // ignored, the value won't be set
         }
     }
+
+    private void setStratigraphyFieldValue(CustomFieldAnswerStratigraphy stratiAnswer, RecordingUnit entity) {
+        // Clear existing relationships to avoid duplicates
+        entity.getRelationshipsAsUnit1().clear();
+        entity.getRelationshipsAsUnit2().clear();
+
+        // Helper method to add relationships to the correct set
+        for (StratigraphicRelationship rel : stratiAnswer.getAnteriorRelationships()) {
+            if (rel.getUnit1().equals(entity)) {
+                entity.getRelationshipsAsUnit1().add(rel);
+            } else if (rel.getUnit2().equals(entity)) {
+                entity.getRelationshipsAsUnit2().add(rel);
+            }
+        }
+
+        for (StratigraphicRelationship rel : stratiAnswer.getPosteriorRelationships()) {
+            if (rel.getUnit1().equals(entity)) {
+                entity.getRelationshipsAsUnit1().add(rel);
+            } else if (rel.getUnit2().equals(entity)) {
+                entity.getRelationshipsAsUnit2().add(rel);
+            }
+        }
+
+        for (StratigraphicRelationship rel : stratiAnswer.getSynchronousRelationships()) {
+            if (rel.getUnit1().equals(entity)) {
+                entity.getRelationshipsAsUnit1().add(rel);
+            } else if (rel.getUnit2().equals(entity)) {
+                entity.getRelationshipsAsUnit2().add(rel);
+            }
+        }
+    }
+
 
 
 }

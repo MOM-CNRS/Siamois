@@ -10,6 +10,8 @@ import fr.siamois.domain.models.form.customform.CustomForm;
 import fr.siamois.domain.models.form.customform.EnabledWhenJson;
 import fr.siamois.domain.models.form.customformresponse.CustomFormResponse;
 import fr.siamois.domain.models.institution.Institution;
+import fr.siamois.domain.models.recordingunit.RecordingUnit;
+import fr.siamois.domain.models.recordingunit.StratigraphicRelationship;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.infrastructure.database.repositories.form.FormRepository;
@@ -682,6 +684,157 @@ class FormServiceTest {
             assertFalse(response.getAnswers().get(titleField).getHasBeenModified());
         }
     }
+
+    @Test
+    void initOrReuseResponse_populatesStratigraphyRelationshipsCorrectly() {
+        // Arrange
+        FieldSource fieldSource = mock(FieldSource.class);
+        CustomField stratigraphyField = mock(CustomField.class);
+
+
+        // Mock the field source to return the stratigraphy field
+        when(fieldSource.getAllFields()).thenReturn(List.of(stratigraphyField));
+
+        // Create a mock RecordingUnit
+        RecordingUnit recordingUnit = mock(RecordingUnit.class);
+
+        // Mock relationships for unit1
+        StratigraphicRelationship syncRelUnit1 = mock(StratigraphicRelationship.class);
+        StratigraphicRelationship asyncRelUnit1 = mock(StratigraphicRelationship.class);
+
+        // Mock relationships for unit2
+        StratigraphicRelationship syncRelUnit2 = mock(StratigraphicRelationship.class);
+        StratigraphicRelationship asyncRelUnit2 = mock(StratigraphicRelationship.class);
+
+        // Setup mocks for relationshipsAsUnit1
+        Set<StratigraphicRelationship> relationshipsAsUnit1 = new HashSet<>();
+        relationshipsAsUnit1.add(syncRelUnit1);
+        relationshipsAsUnit1.add(asyncRelUnit1);
+
+        // Setup mocks for relationshipsAsUnit2
+        Set<StratigraphicRelationship> relationshipsAsUnit2 = new HashSet<>();
+        relationshipsAsUnit2.add(syncRelUnit2);
+        relationshipsAsUnit2.add(asyncRelUnit2);
+
+        // Mock behavior for relationships
+        when(recordingUnit.getRelationshipsAsUnit1()).thenReturn(relationshipsAsUnit1);
+        when(recordingUnit.getRelationshipsAsUnit2()).thenReturn(relationshipsAsUnit2);
+
+        // Mock behavior for isAsynchronous
+        when(syncRelUnit1.getIsAsynchronous()).thenReturn(false);
+        when(asyncRelUnit1.getIsAsynchronous()).thenReturn(true);
+        when(syncRelUnit2.getIsAsynchronous()).thenReturn(false);
+        when(asyncRelUnit2.getIsAsynchronous()).thenReturn(true);
+
+        // Mock the CustomFieldAnswerFactory to return a CustomFieldAnswerStratigraphy
+        CustomFieldAnswerStratigraphy stratigraphyAnswer = new CustomFieldAnswerStratigraphy();
+        try (MockedStatic<CustomFieldAnswerFactory> mockedFactory = mockStatic(CustomFieldAnswerFactory.class)) {
+            mockedFactory.when(() -> CustomFieldAnswerFactory.instantiateAnswerForField(stratigraphyField))
+                    .thenReturn(stratigraphyAnswer);
+
+            // Act
+            CustomFormResponse response = formService.initOrReuseResponse(null, recordingUnit, fieldSource, false);
+
+            // Assert
+            CustomFieldAnswerStratigraphy resultAnswer = (CustomFieldAnswerStratigraphy) response.getAnswers().get(stratigraphyField);
+
+            // Check if sourceToAdd is set
+            assertEquals(recordingUnit, resultAnswer.getSourceToAdd());
+
+            // Check if synchronous relationships are populated correctly
+            assertTrue(resultAnswer.getSynchronousRelationships().contains(syncRelUnit1));
+            assertTrue(resultAnswer.getSynchronousRelationships().contains(syncRelUnit2));
+            assertEquals(2, resultAnswer.getSynchronousRelationships().size());
+
+            // Check if posterior relationships are populated correctly
+            assertTrue(resultAnswer.getPosteriorRelationships().contains(asyncRelUnit1));
+            assertEquals(1, resultAnswer.getPosteriorRelationships().size());
+
+            // Check if anterior relationships are populated correctly
+            assertTrue(resultAnswer.getAnteriorRelationships().contains(asyncRelUnit2));
+            assertEquals(1, resultAnswer.getAnteriorRelationships().size());
+        }
+    }
+
+    @Test
+    void updateJpaEntityFromResponse_setsStratigraphyFieldValueCorrectly() {
+        // Arrange
+        RecordingUnit recordingUnit = new RecordingUnit();
+
+        // Create a CustomFieldAnswerStratigraphy with mock relationships
+        CustomFieldAnswerStratigraphy stratiAnswer = new CustomFieldAnswerStratigraphy();
+
+        // Create real instances of RecordingUnit for relationships
+        RecordingUnit unit1 = new RecordingUnit(); unit1.setFullIdentifier("unit1");
+        RecordingUnit unit2 = new RecordingUnit(); unit2.setFullIdentifier("unit2");
+
+        // Create StratigraphicRelationships with non-null units
+        StratigraphicRelationship anteriorRelUnit1 = new StratigraphicRelationship();
+        anteriorRelUnit1.setUnit1(recordingUnit);
+        anteriorRelUnit1.setUnit2(unit2);
+
+        StratigraphicRelationship anteriorRelUnit2 = new StratigraphicRelationship();
+        anteriorRelUnit2.setUnit1(unit1);
+        anteriorRelUnit2.setUnit2(recordingUnit);
+
+        StratigraphicRelationship posteriorRelUnit1 = new StratigraphicRelationship();
+        posteriorRelUnit1.setUnit1(recordingUnit);
+        posteriorRelUnit1.setUnit2(unit2);
+
+        StratigraphicRelationship posteriorRelUnit2 = new StratigraphicRelationship();
+        posteriorRelUnit2.setUnit1(unit1);
+        posteriorRelUnit2.setUnit2(recordingUnit);
+
+        StratigraphicRelationship synchronousRelUnit1 = new StratigraphicRelationship();
+        synchronousRelUnit1.setUnit1(recordingUnit);
+        synchronousRelUnit1.setUnit2(unit2);
+
+        StratigraphicRelationship synchronousRelUnit2 = new StratigraphicRelationship();
+        synchronousRelUnit2.setUnit1(unit1);
+        synchronousRelUnit2.setUnit2(recordingUnit);
+
+        // Add mock relationships to stratiAnswer
+        stratiAnswer.getAnteriorRelationships().add(anteriorRelUnit1);
+        stratiAnswer.getAnteriorRelationships().add(anteriorRelUnit2);
+        stratiAnswer.getPosteriorRelationships().add(posteriorRelUnit1);
+        stratiAnswer.getPosteriorRelationships().add(posteriorRelUnit2);
+        stratiAnswer.getSynchronousRelationships().add(synchronousRelUnit1);
+        stratiAnswer.getSynchronousRelationships().add(synchronousRelUnit2);
+
+        // Create a CustomField for stratigraphy
+        CustomField stratigraphyField = mock(CustomField.class);
+
+        // Create a CustomFormResponse with the stratigraphy answer
+        CustomFormResponse response = new CustomFormResponse();
+        Map<CustomField, CustomFieldAnswer> answers = new HashMap<>();
+        answers.put(stratigraphyField, stratiAnswer);
+        response.setAnswers(answers);
+
+
+
+        // Act
+        formService.updateJpaEntityFromResponse(response, recordingUnit);
+
+
+        // Assert
+        assertTrue(recordingUnit.getRelationshipsAsUnit1().contains(anteriorRelUnit1),
+                "anteriorRelUnit1 should be in relationshipsAsUnit1");
+        assertTrue(recordingUnit.getRelationshipsAsUnit1().contains(posteriorRelUnit1),
+                "posteriorRelUnit1 should be in relationshipsAsUnit1");
+        assertTrue(recordingUnit.getRelationshipsAsUnit1().contains(synchronousRelUnit1),
+                "synchronousRelUnit1 should be in relationshipsAsUnit1");
+
+        assertTrue(recordingUnit.getRelationshipsAsUnit2().contains(anteriorRelUnit2),
+                "anteriorRelUnit2 should be in relationshipsAsUnit2");
+        assertTrue(recordingUnit.getRelationshipsAsUnit2().contains(posteriorRelUnit2),
+                "posteriorRelUnit2 should be in relationshipsAsUnit2");
+        assertTrue(recordingUnit.getRelationshipsAsUnit2().contains(synchronousRelUnit2),
+                "synchronousRelUnit2 should be in relationshipsAsUnit2");
+    }
+
+
+
+
 
 
 

@@ -72,9 +72,9 @@ public class Stratifiant {
                 rel.setUnit2(indexMap.get(ru2Name));
 
                 if (Objects.equals(relType, "sous") || Objects.equals(relType, "peut-être sous")) {
-                    rel.setType(StratigraphicRelationshipService.ASYNCHRONOUS);
+                    rel.setConcept(StratigraphicRelationshipService.ASYNCHRONOUS);
                 } else if (Objects.equals(relType, "synchrone avec") || Objects.equals(relType, "pt.être synchrone")) {
-                    rel.setType(StratigraphicRelationshipService.SYNCHRONOUS);
+                    rel.setConcept(StratigraphicRelationshipService.SYNCHRONOUS);
                 }
 
                 // Add the rel to the unit1

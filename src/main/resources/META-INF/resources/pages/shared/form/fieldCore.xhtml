@@ -160,4 +160,18 @@
             updateTargetsOnBlur="#{updateTargetsOnBlur}"
     />
 
+    <!-- Strartigraphy -->
+    <siaInplace:stratigraphicRelationships
+            rendered="#{col.field['class'].simpleName eq 'CustomFieldStratigraphy'}"
+            field="#{col.field}"
+            label="#{spatialUnitFieldBean.resolveCustomFieldLabel(col.field)}"
+            hasBeenModified="#{hasBeenModified}"
+            answer="#{answer}"
+            panelIndex="#{panelIndex}"
+            mode="#{mode}"
+            recordingUnitOptions="#{formCtx.getRecordingUnitOptions()}"
+            relationshipsAsJson="#{formCtx.getRelationshipsAsJson(answer)}"
+            onAddStratigraphicRelationship="#{formCtx.addStratigraphicRelationship(answer)}"
+    />
+
 </ui:fragment>

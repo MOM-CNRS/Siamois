@@ -1,23 +1,34 @@
 package fr.siamois.ui.form;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import fr.siamois.domain.models.TraceableEntity;
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswer;
 import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerSelectMultipleSpatialUnitTree;
+import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerStratigraphy;
 import fr.siamois.domain.models.form.customformresponse.CustomFormResponse;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
+import fr.siamois.domain.models.recordingunit.StratigraphicRelationship;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.form.FormService;
+import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitTreeService;
 import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
 import fr.siamois.ui.form.rules.ColumnApplier;
 import fr.siamois.ui.form.rules.ValueProvider;
 import fr.siamois.ui.viewmodel.TreeUiStateViewModel;
+import jakarta.faces.application.FacesMessage;
 import jakarta.faces.component.UIComponent;
+import jakarta.faces.component.UIInput;
+import jakarta.faces.context.FacesContext;
 import jakarta.faces.event.AjaxBehaviorEvent;
 import lombok.Data;
 import lombok.Getter;
+import org.primefaces.PrimeFaces;
 import org.primefaces.event.SelectEvent;
 import org.primefaces.model.TreeNode;
 
@@ -39,8 +50,13 @@ import java.util.stream.Collectors;
  *  </p>
  */
 @Data
-public class EntityFormContext<T> {
+public class EntityFormContext<T extends TraceableEntity> {
 
+    public static final String UNIT_1_ID = "unit1Id";
+    public static final String VOCABULARY_DIRECTION = "vocabularyDirection";
+    public static final String UNCERTAIN = "uncertain";
+    public static final String VOCABULARY_LABEL = "vocabularyLabel";
+    public static final String SELECT_RU = "selectRU";
     @Getter
     private final T unit;
 
@@ -48,6 +64,7 @@ public class EntityFormContext<T> {
     private final FormService formService;
     private final SpatialUnitTreeService spatialUnitTreeService;
     private final SpatialUnitService spatialUnitService;
+    private final RecordingUnitService recordingUnitService;
 
     @Getter
     private CustomFormResponse formResponse;
@@ -74,16 +91,15 @@ public class EntityFormContext<T> {
 
     public EntityFormContext(T unit,
                              FieldSource fieldSource,
-                             FormService formService,
-                             SpatialUnitTreeService spatialUnitTreeService,
-                             SpatialUnitService spatialUnitService,
+                             FormContextServices services,
                              BiConsumer<CustomField, Concept> formScopeChangeCallback,
                              String formScopeValueBinding) {
         this.unit = unit;
         this.fieldSource = fieldSource;
-        this.formService = formService;
-        this.spatialUnitTreeService = spatialUnitTreeService;
-        this.spatialUnitService = spatialUnitService;
+        this.formService = services.getFormService();
+        this.spatialUnitTreeService = services.getSpatialUnitTreeService();
+        this.spatialUnitService = services.getSpatialUnitService();
+        this.recordingUnitService = services.getRecordingUnitService();
         this.formScopeChangeCallback = formScopeChangeCallback;
         this.formScopeValueBinding = formScopeValueBinding;
     }
@@ -337,4 +353,222 @@ public class EntityFormContext<T> {
 
         handleConceptChange(field, newValue);
     }
+
+    /**
+     * Get all recording units of the same scope (action unit) as the current unit.
+     * @return The list of recording units
+     */
+    public List<RecordingUnit> getRecordingUnitOptions() {
+        if (unit instanceof RecordingUnit recordingUnit) {
+            return recordingUnitService.findAllByActionUnit(recordingUnit.getActionUnit());
+        }
+        return Collections.emptyList();
+    }
+
+
+    public void addStratigraphicRelationship(CustomFieldAnswerStratigraphy answer) {
+        FacesContext context = FacesContext.getCurrentInstance();
+        UIComponent cc = UIComponent.getCurrentCompositeComponent(context);
+
+        if (!validateInputs(answer, context, cc)) {
+            context.validationFailed();
+            return;
+        }
+
+        if (relationshipExists(answer)) {
+            markAsInvalid(context, cc, SELECT_RU, "Une relation existe déjà entre ces deux unités");
+            context.validationFailed();
+            return;
+        }
+
+        addNewStratigraphicRelationship(answer);
+
+        // Optionally, reset the form fields
+        answer.setConceptToAdd(null);
+        answer.setTargetToAdd(null);
+        answer.setIsUncertainToAdd(false);
+
+        PrimeFaces.current().ajax().update(cc.getClientId().concat(":stratigraphyGraphContainer"));
+    }
+
+    private boolean validateInputs(CustomFieldAnswerStratigraphy answer, FacesContext context, UIComponent cc) {
+        boolean isValid = true;
+
+        if (answer.getConceptToAdd() == null) {
+            markAsInvalid(context, cc, "relationshipVocab", "Ne peux pas être vide");
+            isValid = false;
+        }
+
+        if (answer.getTargetToAdd() == null) {
+            markAsInvalid(context, cc, SELECT_RU, "Ne peux pas être vide");
+            isValid = false;
+        } else if (Objects.equals(answer.getTargetToAdd().getFullIdentifier(), answer.getSourceToAdd().getFullIdentifier())) {
+            markAsInvalid(context, cc, SELECT_RU, "Les deux UE ne peuvent être identiques");
+            isValid = false;
+        }
+
+        return isValid;
+    }
+
+    private void markAsInvalid(FacesContext context, UIComponent cc, String componentId, String message) {
+        UIInput c = (UIInput) cc.findComponent(componentId);
+        c.setValid(false);
+        FacesMessage msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, message, null);
+        context.addMessage(c.getClientId(context), msg);
+    }
+
+    private boolean relationshipExists(CustomFieldAnswerStratigraphy answer) {
+        return checkSynchronousRelationships(answer) ||
+                checkPosteriorRelationships(answer) ||
+                checkAnteriorRelationships(answer);
+    }
+
+    private boolean checkSynchronousRelationships(CustomFieldAnswerStratigraphy answer) {
+        for (StratigraphicRelationship rel : answer.getSynchronousRelationships()) {
+            if ((rel.getUnit1().equals(answer.getSourceToAdd()) && rel.getUnit2().equals(answer.getTargetToAdd())) ||
+                    (rel.getUnit1().equals(answer.getTargetToAdd()) && rel.getUnit2().equals(answer.getSourceToAdd()))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean checkPosteriorRelationships(CustomFieldAnswerStratigraphy answer) {
+        for (StratigraphicRelationship rel : answer.getPosteriorRelationships()) {
+            if (rel.getUnit1().equals(answer.getSourceToAdd()) && rel.getUnit2().equals(answer.getTargetToAdd())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean checkAnteriorRelationships(CustomFieldAnswerStratigraphy answer) {
+        for (StratigraphicRelationship rel : answer.getAnteriorRelationships()) {
+            if (rel.getUnit1().equals(answer.getTargetToAdd()) && rel.getUnit2().equals(answer.getSourceToAdd())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private void addNewStratigraphicRelationship(CustomFieldAnswerStratigraphy answer) {
+        StratigraphicRelationship newRel = new StratigraphicRelationship();
+        String parentLabel = getParentLabel(answer);
+
+        if (parentLabel.equalsIgnoreCase("synchrone avec")) {
+            setupSynchronousRelationship(answer, newRel);
+        } else if (parentLabel.equalsIgnoreCase("postérieur à")) {
+            setupPosteriorRelationship(answer, newRel);
+        } else if (parentLabel.equalsIgnoreCase("antérieur à")) {
+            setupAnteriorRelationship(answer, newRel);
+        }
+    }
+
+    private String getParentLabel(CustomFieldAnswerStratigraphy answer) {
+        return answer.getConceptToAdd().getHierarchyPrefLabels() == null ?
+                answer.getConceptToAdd().getOriginalPrefLabel() :
+                answer.getConceptToAdd().getHierarchyPrefLabels();
+    }
+
+    private void setupSynchronousRelationship(CustomFieldAnswerStratigraphy answer, StratigraphicRelationship newRel) {
+        newRel.setUnit1(answer.getSourceToAdd());
+        newRel.setUnit2(answer.getTargetToAdd());
+        newRel.setConcept(answer.getConceptToAdd().concept());
+        newRel.setIsAsynchronous(false);
+        newRel.setUncertain(answer.getIsUncertainToAdd());
+        newRel.setConceptDirection(answer.getVocabularyDirectionToAdd());
+        answer.getSynchronousRelationships().add(newRel);
+    }
+
+    private void setupPosteriorRelationship(CustomFieldAnswerStratigraphy answer, StratigraphicRelationship newRel) {
+        newRel.setUnit1(answer.getSourceToAdd());
+        newRel.setUnit2(answer.getTargetToAdd());
+        newRel.setConcept(answer.getConceptToAdd().concept());
+        newRel.setIsAsynchronous(true);
+        newRel.setUncertain(answer.getIsUncertainToAdd());
+        newRel.setConceptDirection(answer.getVocabularyDirectionToAdd());
+        answer.getPosteriorRelationships().add(newRel);
+    }
+
+    private void setupAnteriorRelationship(CustomFieldAnswerStratigraphy answer, StratigraphicRelationship newRel) {
+        newRel.setUnit1(answer.getTargetToAdd());
+        newRel.setUnit2(answer.getSourceToAdd());
+        newRel.setConcept(answer.getConceptToAdd().concept());
+        newRel.setIsAsynchronous(true);
+        newRel.setUncertain(answer.getIsUncertainToAdd());
+        newRel.setConceptDirection(!answer.getVocabularyDirectionToAdd());
+        answer.getAnteriorRelationships().add(newRel);
+    }
+
+
+
+    public String getRelationshipsAsJson(CustomFieldAnswerStratigraphy answer) {
+
+        ObjectMapper mapper = new ObjectMapper();
+        ObjectNode root = mapper.createObjectNode();
+        RecordingUnit centralUnit = answer.getSourceToAdd();
+
+        // anterior
+        ArrayNode anteriorArray = mapper.createArrayNode();
+        for (StratigraphicRelationship rel : answer.getAnteriorRelationships()) {
+            ObjectNode node = mapper.createObjectNode();
+            node.put(UNIT_1_ID, rel.getUnit1().getFullIdentifier());
+            node.put(VOCABULARY_LABEL, formService.getLabelBean().findLabelOf(rel.getConcept()));
+            node.put(VOCABULARY_DIRECTION, rel.getConceptDirection());
+            node.put(UNCERTAIN, rel.getUncertain() != null && rel.getUncertain());
+            anteriorArray.add(node);
+        }
+        root.set("anterior", anteriorArray);
+
+        // posterior
+        ArrayNode posteriorArray = mapper.createArrayNode();
+        for (StratigraphicRelationship rel : answer.getPosteriorRelationships()) {
+            ObjectNode node = mapper.createObjectNode();
+            node.put(UNIT_1_ID, rel.getUnit2().getFullIdentifier());
+            node.put(VOCABULARY_LABEL, formService.getLabelBean().findLabelOf(rel.getConcept()));
+            node.put(VOCABULARY_DIRECTION, !rel.getConceptDirection());
+            node.put(UNCERTAIN, rel.getUncertain() != null && rel.getUncertain());
+            posteriorArray.add(node);
+        }
+        root.set("posterior", posteriorArray);
+
+        // synchronous
+        ArrayNode synchronousArray = mapper.createArrayNode();
+
+        for (StratigraphicRelationship rel : answer.getSynchronousRelationships()) {
+            ObjectNode node = mapper.createObjectNode();
+
+            RecordingUnit otherUnit;
+            Boolean direction;
+
+            if (rel.getUnit1().equals(centralUnit)) {
+                otherUnit = rel.getUnit2();
+                direction = !rel.getConceptDirection();
+            } else if (rel.getUnit2().equals(centralUnit)) {
+                otherUnit = rel.getUnit1();
+                direction = rel.getConceptDirection();
+            } else {
+                // Safety net: malformed relationship, skip
+                continue;
+            }
+
+            node.put(UNIT_1_ID, otherUnit.getFullIdentifier());
+            node.put(VOCABULARY_LABEL,
+                    formService.getLabelBean().findLabelOf(rel.getConcept()));
+            node.put(VOCABULARY_DIRECTION, direction);
+            node.put(UNCERTAIN, Boolean.TRUE.equals(rel.getUncertain()));
+
+            synchronousArray.add(node);
+        }
+
+        root.set("synchronous", synchronousArray);
+
+        try {
+            return mapper.writeValueAsString(root);
+        } catch (Exception e) {
+            return "{}";
+        }
+    }
+
+
 }
