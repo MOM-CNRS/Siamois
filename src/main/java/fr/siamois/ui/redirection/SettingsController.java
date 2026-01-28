@@ -2,13 +2,12 @@ package fr.siamois.ui.redirection;
 
 import fr.siamois.ui.bean.NavBean;
 import fr.siamois.ui.bean.settings.InstitutionListSettingsBean;
+import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 
-import javax.faces.bean.SessionScoped;
-
 @Controller
-@SessionScoped
+@Scope(value = "session")
 public class SettingsController {
 
     private final NavBean navBean;

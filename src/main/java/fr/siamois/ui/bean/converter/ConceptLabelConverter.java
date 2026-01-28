@@ -7,15 +7,14 @@ import jakarta.faces.context.FacesContext;
 import jakarta.faces.convert.Converter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
-
-import javax.faces.bean.SessionScoped;
 
 /**
  * Converter for ConceptLabel objects. Uses the LabelBean cache to convert between ConceptLabel objects and their string representations.
  */
 @Slf4j
-@SessionScoped
+@Scope(value = "session")
 @Component
 @RequiredArgsConstructor
 public class ConceptLabelConverter implements Converter<ConceptLabel> {

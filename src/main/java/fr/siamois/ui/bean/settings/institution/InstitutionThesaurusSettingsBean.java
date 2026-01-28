@@ -17,10 +17,11 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.context.annotation.Scope;
+import org.springframework.context.annotation.ScopedProxyMode;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
-import javax.faces.bean.SessionScoped;
 import java.io.Serializable;
 import java.util.Optional;
 
@@ -30,7 +31,7 @@ import static fr.siamois.utils.MessageUtils.displayErrorMessage;
 @Component
 @Getter
 @Setter
-@SessionScoped
+@Scope(value = "session", proxyMode = ScopedProxyMode.TARGET_CLASS)
 public class InstitutionThesaurusSettingsBean implements Serializable {
 
     private final transient FieldConfigurationService fieldConfigurationService;
