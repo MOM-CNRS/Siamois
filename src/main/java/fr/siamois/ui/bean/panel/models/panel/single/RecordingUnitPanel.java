@@ -74,7 +74,6 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
     private final transient NavBean navBean;
     private final transient FlowBean flowBean;
     private final transient GenericNewUnitDialogBean<?> genericNewUnitDialogBean;
-    private final transient FormContextServices formContextServices;
 
     // ---------- Locals
     // RU
@@ -112,7 +111,6 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
         this.navBean = context.getBean(NavBean.class);
         this.flowBean = context.getBean(FlowBean.class);
         this.genericNewUnitDialogBean = context.getBean(GenericNewUnitDialogBean.class);
-        this.formContextServices = context.getBean(FormContextServices.class);
     }
 
 

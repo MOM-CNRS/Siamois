@@ -56,6 +56,7 @@ public class EntityFormContext<T extends TraceableEntity> {
     public static final String VOCABULARY_DIRECTION = "vocabularyDirection";
     public static final String UNCERTAIN = "uncertain";
     public static final String VOCABULARY_LABEL = "vocabularyLabel";
+    public static final String SELECT_RU = "selectRU";
     @Getter
     private final T unit;
 
@@ -375,7 +376,7 @@ public class EntityFormContext<T extends TraceableEntity> {
         }
 
         if (relationshipExists(answer)) {
-            markAsInvalid(context, cc, "selectRU", "Une relation existe déjà entre ces deux unités");
+            markAsInvalid(context, cc, SELECT_RU, "Une relation existe déjà entre ces deux unités");
             context.validationFailed();
             return;
         }
@@ -399,10 +400,10 @@ public class EntityFormContext<T extends TraceableEntity> {
         }
 
         if (answer.getTargetToAdd() == null) {
-            markAsInvalid(context, cc, "selectRU", "Ne peux pas être vide");
+            markAsInvalid(context, cc, SELECT_RU, "Ne peux pas être vide");
             isValid = false;
         } else if (Objects.equals(answer.getTargetToAdd().getFullIdentifier(), answer.getSourceToAdd().getFullIdentifier())) {
-            markAsInvalid(context, cc, "selectRU", "Les deux UE ne peuvent être identiques");
+            markAsInvalid(context, cc, SELECT_RU, "Les deux UE ne peuvent être identiques");
             isValid = false;
         }
 

@@ -55,7 +55,6 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
     private final RecordingUnitWriteVerifier recordingUnitWriteVerifier;
 
     private final SessionSettingsBean sessionSettingsBean;
-    private final FormContextServices formContextServices;
 
 
     public RecordingUnitTableViewModel(BaseRecordingUnitLazyDataModel lazyDataModel,
@@ -87,7 +86,6 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
         this.flowBean = flowBean;
         this.recordingUnitService = recordingUnitService;
         this.recordingUnitWriteVerifier = recordingUnitWriteVerifier;
-        this.formContextServices = formContextServices;
     }
 
     @Override

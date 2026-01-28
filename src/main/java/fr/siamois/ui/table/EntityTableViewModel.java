@@ -66,7 +66,7 @@ public abstract class EntityTableViewModel<T extends TraceableEntity, ID> {
     protected final NavBean navBean;
     protected final GenericNewUnitDialogBean<T> genericNewUnitDialogBean;
     protected final LangBean langBean;
-    protected final transient FormContextServices formContextServices;
+    protected final FormContextServices formContextServices;
 
     /** Fournit l'identifiant unique d'une entité T (ex: RecordingUnit::getId) */
     private final Function<T, ID> idExtractor;
