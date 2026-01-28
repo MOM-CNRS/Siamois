@@ -370,8 +370,7 @@ public class EntityFormContext<T extends TraceableEntity> {
         UIComponent cc = UIComponent.getCurrentCompositeComponent(context);
 
         // Validate conceptToAdd
-         if (answer.getConceptToAdd() == null) {
-
+        if (answer.getConceptToAdd() == null) {
             UIInput c = (UIInput) cc.findComponent("relationshipVocab");
             c.setValid(false);
             isValid = false;
@@ -380,7 +379,6 @@ public class EntityFormContext<T extends TraceableEntity> {
                     "Ne peux pas être vide",
                     null
             );
-
             context.addMessage(c.getClientId(context), msg);
         }
 
@@ -394,8 +392,69 @@ public class EntityFormContext<T extends TraceableEntity> {
                     "Ne peux pas être vide",
                     null
             );
-
             context.addMessage(c.getClientId(context), msg);
+        }
+
+        if (Objects.equals(answer.getTargetToAdd().getFullIdentifier(), answer.getSourceToAdd().getFullIdentifier())) {
+            UIInput c = (UIInput) cc.findComponent("selectRU");
+            c.setValid(false);
+            isValid = false;
+            FacesMessage msg = new FacesMessage(
+                    FacesMessage.SEVERITY_ERROR,
+                    "Les deux UE ne peuvent être identiques",
+                    null
+            );
+            context.addMessage(c.getClientId(context), msg);
+        }
+
+        // Check if a relationship already exists between the two nodes
+        if (isValid) {
+            boolean relExists = false;
+            String parentLabel = answer.getConceptToAdd().getHierarchyPrefLabels() == null ?
+                    answer.getConceptToAdd().getOriginalPrefLabel() :
+                    answer.getConceptToAdd().getHierarchyPrefLabels();
+
+            // Check in synchronous relationships
+            for (StratigraphicRelationship rel : answer.getSynchronousRelationships()) {
+                if ((rel.getUnit1().equals(answer.getSourceToAdd()) && rel.getUnit2().equals(answer.getTargetToAdd())) ||
+                        (rel.getUnit1().equals(answer.getTargetToAdd()) && rel.getUnit2().equals(answer.getSourceToAdd()))) {
+                    relExists = true;
+                    break;
+                }
+            }
+
+            // Check in posterior relationships
+            if (!relExists) {
+                for (StratigraphicRelationship rel : answer.getPosteriorRelationships()) {
+                    if (rel.getUnit1().equals(answer.getSourceToAdd()) && rel.getUnit2().equals(answer.getTargetToAdd())) {
+                        relExists = true;
+                        break;
+                    }
+                }
+            }
+
+            // Check in anterior relationships
+            if (!relExists) {
+                for (StratigraphicRelationship rel : answer.getAnteriorRelationships()) {
+                    if (rel.getUnit1().equals(answer.getTargetToAdd()) && rel.getUnit2().equals(answer.getSourceToAdd())) {
+                        relExists = true;
+                        break;
+                    }
+                }
+            }
+
+            // If a relationship already exists, show an error message
+            if (relExists) {
+                UIInput c = (UIInput) cc.findComponent("selectRU");
+                c.setValid(false);
+                isValid = false;
+                FacesMessage msg = new FacesMessage(
+                        FacesMessage.SEVERITY_ERROR,
+                        "Une relation existe déjà entre ces deux unités",
+                        null
+                );
+                context.addMessage(c.getClientId(context), msg);
+            }
         }
 
         // If validation fails, return early
@@ -404,17 +463,13 @@ public class EntityFormContext<T extends TraceableEntity> {
             return;
         }
 
-        // tood : invalid if one of the unit is the current unit
-
-        // tood : invalid if the rel already exist
-
         // If validation passes, proceed with adding the relationship
-        // TODO : base the following not on labels but siamois code.
         StratigraphicRelationship newRel = new StratigraphicRelationship();
-        String parentLabel = answer.getConceptToAdd().getHierarchyPrefLabels() == null ? answer.getConceptToAdd().getOriginalPrefLabel() : answer.getConceptToAdd().getHierarchyPrefLabels();
+        String parentLabel = answer.getConceptToAdd().getHierarchyPrefLabels() == null ?
+                answer.getConceptToAdd().getOriginalPrefLabel() :
+                answer.getConceptToAdd().getHierarchyPrefLabels();
 
-        if(parentLabel.equalsIgnoreCase("synchrone avec")) {
-            // Adding synchrone rel, order does not change
+        if (parentLabel.equalsIgnoreCase("synchrone avec")) {
             newRel.setUnit1(answer.getSourceToAdd());
             newRel.setUnit2(answer.getTargetToAdd());
             newRel.setConcept(answer.getConceptToAdd().concept());
@@ -422,10 +477,7 @@ public class EntityFormContext<T extends TraceableEntity> {
             newRel.setUncertain(answer.getIsUncertainToAdd());
             newRel.setConceptDirection(answer.getVocabularyDirectionToAdd());
             answer.getSynchronousRelationships().add(newRel);
-        }
-        else if(parentLabel.equalsIgnoreCase("postérieur à")) {
-            // adding a "posterior to"
-            // normal side of how we record in db, no need to invert
+        } else if (parentLabel.equalsIgnoreCase("postérieur à")) {
             newRel.setUnit1(answer.getSourceToAdd());
             newRel.setUnit2(answer.getTargetToAdd());
             newRel.setConcept(answer.getConceptToAdd().concept());
@@ -433,16 +485,13 @@ public class EntityFormContext<T extends TraceableEntity> {
             newRel.setUncertain(answer.getIsUncertainToAdd());
             newRel.setConceptDirection(answer.getVocabularyDirectionToAdd());
             answer.getPosteriorRelationships().add(newRel);
-        }
-        else if(parentLabel.equalsIgnoreCase("antérieur à")) {
-            // adding a "anterior to"
-            // invert rel
-            newRel.setUnit1(answer.getTargetToAdd()); // reverse
-            newRel.setUnit2(answer.getSourceToAdd()); // reverse
+        } else if (parentLabel.equalsIgnoreCase("antérieur à")) {
+            newRel.setUnit1(answer.getTargetToAdd());
+            newRel.setUnit2(answer.getSourceToAdd());
             newRel.setConcept(answer.getConceptToAdd().concept());
             newRel.setIsAsynchronous(true);
             newRel.setUncertain(answer.getIsUncertainToAdd());
-            newRel.setConceptDirection(!answer.getVocabularyDirectionToAdd()); // reverse
+            newRel.setConceptDirection(!answer.getVocabularyDirectionToAdd());
             answer.getAnteriorRelationships().add(newRel);
         }
 
@@ -454,9 +503,8 @@ public class EntityFormContext<T extends TraceableEntity> {
         PrimeFaces.current().ajax().update(
                 cc.getClientId().concat(":stratigraphyGraphContainer")
         );
-
-        // set field as modified? ou declenchement d'une sauvegarde??
     }
+
 
     public String getRelationshipsAsJson(CustomFieldAnswerStratigraphy answer) {
 
