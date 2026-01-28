@@ -413,7 +413,7 @@ public class EntityFormContext<T extends TraceableEntity> {
         StratigraphicRelationship newRel = new StratigraphicRelationship();
         String parentLabel = answer.getConceptToAdd().getHierarchyPrefLabels() == null ? answer.getConceptToAdd().getOriginalPrefLabel() : answer.getConceptToAdd().getHierarchyPrefLabels();
 
-        if(parentLabel.equalsIgnoreCase("synchrone")) {
+        if(parentLabel.equalsIgnoreCase("synchrone avec")) {
             // Adding synchrone rel, order does not change
             newRel.setUnit1(answer.getSourceToAdd());
             newRel.setUnit2(answer.getTargetToAdd());
@@ -423,7 +423,7 @@ public class EntityFormContext<T extends TraceableEntity> {
             newRel.setConceptDirection(answer.getVocabularyDirectionToAdd());
             answer.getSynchronousRelationships().add(newRel);
         }
-        else if(parentLabel.equalsIgnoreCase("postérieur")) {
+        else if(parentLabel.equalsIgnoreCase("postérieur à")) {
             // adding a "posterior to"
             // normal side of how we record in db, no need to invert
             newRel.setUnit1(answer.getSourceToAdd());
@@ -434,7 +434,7 @@ public class EntityFormContext<T extends TraceableEntity> {
             newRel.setConceptDirection(answer.getVocabularyDirectionToAdd());
             answer.getPosteriorRelationships().add(newRel);
         }
-        else if(parentLabel.equalsIgnoreCase("antérieur")) {
+        else if(parentLabel.equalsIgnoreCase("antérieur à")) {
             // adding a "anterior to"
             // invert rel
             newRel.setUnit1(answer.getTargetToAdd()); // reverse

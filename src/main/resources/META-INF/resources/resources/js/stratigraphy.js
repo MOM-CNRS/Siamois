@@ -145,43 +145,47 @@ function drawStratigraphyDiagram(svgId, centralUnitId, relationships, onEdgeSele
     ------------------------------------------------------------------ */
 
 const linkGroup = zoomGroup.append("g")
-        .attr("class", "links")
-        .selectAll("g")
-        .data(links)
-        .enter()
-        .append("g")
-        .on("click", (event, d) => {
-            if (typeof onEdgeSelected === 'function') {
-                onEdgeSelected(d);
-            }
-        });
+    .attr("class", "links")
+    .selectAll("g")
+    .data(links)
+    .enter()
+    .append("g")
+    .on("click", (event, d) => {
+        if (typeof onEdgeSelected === 'function') {
+            onEdgeSelected(d);
+        }
+    })
+    .style("cursor", "pointer"); // Add hover cursor to the group
 
-    const linkLines = linkGroup.append("line")
-        .attr("stroke", d => d.type === "uncertain" ? "#f59e0b" : "var(--main-color)")
-        .attr("stroke-width", 2)
-        .attr("stroke-dasharray", d => d.type === "uncertain" ? "6,4" : "0")
-        .attr("marker-end", "url(#arrow)")
-        .on("click", (event, d) => {
-            event.stopPropagation();
-            if (typeof onEdgeSelected === 'function') {
-                onEdgeSelected(d);
-            }
-        });
+const linkLines = linkGroup.append("line")
+    .attr("stroke", d => d.type === "uncertain" ? "#f59e0b" : "var(--main-color)")
+    .attr("stroke-width", 2)
+    .attr("stroke-dasharray", d => d.type === "uncertain" ? "6,4" : "0")
+    .attr("marker-end", "url(#arrow)")
+    .on("click", (event, d) => {
+        event.stopPropagation();
+        if (typeof onEdgeSelected === 'function') {
+            onEdgeSelected(d);
+        }
+    })
+    .style("cursor", "pointer"); // Add hover cursor to the line
 
-    const linkLabels = linkGroup.append("text")
-        .text(d => d.label)
-        .attr("font-size", "12px")
-        .attr("fill", "#111827")
-        .attr("text-anchor", "middle")
-        .attr("dominant-baseline", "middle")
-        .attr("x", d => (d.source.x + d.target.x) / 2 + 10)
-        .attr("y", d => (d.source.y + d.target.y) / 2 - 10)
-        .on("click", (event, d) => {
-            event.stopPropagation();
-            if (typeof onEdgeSelected === 'function') {
-                onEdgeSelected(d);
-            }
-        });
+const linkLabels = linkGroup.append("text")
+    .text(d => d.label)
+    .attr("font-size", "12px")
+    .attr("fill", "#111827")
+    .attr("text-anchor", "middle")
+    .attr("dominant-baseline", "middle")
+    .attr("x", d => (d.source.x + d.target.x) / 2 + 10)
+    .attr("y", d => (d.source.y + d.target.y) / 2 - 10)
+    .on("click", (event, d) => {
+        event.stopPropagation();
+        if (typeof onEdgeSelected === 'function') {
+            onEdgeSelected(d);
+        }
+    })
+    .style("cursor", "pointer"); // Add hover cursor to the label
+
 
     /* ------------------------------------------------------------------
        Nodes

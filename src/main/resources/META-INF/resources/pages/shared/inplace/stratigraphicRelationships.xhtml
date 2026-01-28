@@ -38,6 +38,27 @@
                     <p:card styleClass="add-strati-rel"
                             style=" border: 1px dashed oklch(0.74 0 0);border-radius: 1em;background: #ffffff;">
 
+                        <p:selectOneMenu id="selectSourceRU"
+                                         style="width: 10em"
+                                         filter="true"
+                                         panelStyleClass="recording-unit"
+                                         value="#{cc.attrs.answer.sourceToAdd}"
+                                         var="ru"
+                                         disabled="true"
+                                         label="ru.fullIdentifier"
+                                         converter="#{recordingUnitConverter}">
+                            <f:selectItems
+                                    var="unit"
+                                    itemValue="#{unit}"
+                                    itemLabel="#{unit.fullIdentifier}"
+                                    value="#{cc.attrs.recordingUnitOptions}"/>
+
+                            <p:column>
+                                #{ru.fullIdentifier}
+                            </p:column>
+
+                        </p:selectOneMenu>
+
                         <p:autoComplete id="relationshipVocab" value="#{answer.conceptToAdd}"
                                         style="width: 20em"
                                         completeMethod="#{spatialUnitFieldBean.completeWithFieldCode}"
@@ -102,27 +123,13 @@ margin-top: 1em;
                     <svg style="flex:3;" id="#{cc.clientId}:stratigraphyGraph" width="800" height="500"></svg>
 
                     <!-- Side panel using PrimeFaces -->
-                    <div class="side-panel-content">
+                    <p:outputPanel id="sidePanelContent" class="side-panel-content" rendered="#{not empty cc.attrs.answer.selectedRel}">
 
                         <!-- Title -->
                         <h3 id="relationTitle" class="relation-title relation-edit-row">
-                            US 100
-                            <!-- Relation type -->
-                            <p:selectOneMenu id="relationType"
-                                             value="#{relationBean.selectedType}"
-                                             styleClass="relation-select">
-                                <f:selectItem itemLabel="s'appuie contre" itemValue="above"/>
-                                <f:selectItem itemLabel="sous" itemValue="below"/>
-                                <f:selectItem itemLabel="équivalent à" itemValue="side"/>
-                                <f:selectItem itemLabel="incertain" itemValue="uncertain"/>
-                            </p:selectOneMenu>
-                            <!-- Target US -->
-                            <p:selectOneMenu id="relationTarget"
-                                             value="us 23"
-                                             styleClass="relation-select">
-                                <f:selectItem itemLabel="US 43" itemValue="above"/>
-                                <f:selectItem itemLabel="US 87" itemValue="below"/>
-                            </p:selectOneMenu>
+                            #{cc.attrs.answer.selectedRel.unit1.fullIdentifier}
+                            #{labelBean.findLabelOf(cc.attrs.answer.selectedRel.concept)}
+                            #{cc.attrs.answer.selectedRel.unit2.fullIdentifier}
                         </h3>
 
 
@@ -154,17 +161,17 @@ margin-top: 1em;
                                          icon="pi pi-plus"
                                          style="color:#7e1717;"
                                          styleClass="ui-button-outlined add-doc-btn"
-                                         action="#{relationBean.addDocument}"/>
+                                         />
 
 
                         <!-- Delete -->
                         <p:commandButton value="Supprimer la relation"
                                          icon="pi pi-trash"
                                          styleClass="ui-button-danger delete-relation-btn"
-                                         action="#{relationBean.deleteRelation}"
-                                         update="@form"/>
+                                         update="stratigraphyGraphContainer" action="#{cc.attrs.answer.deleteStratigraphicRelationship}"
+                                         />
 
-                    </div>
+                    </p:outputPanel>
 
                     <h:outputScript>
                         (function() {
@@ -174,10 +181,11 @@ margin-top: 1em;
                         // Define the callback function
                         const onEdgeSelected = function(selectedEdge) {
                         console.log("Selected relationship:", selectedEdge);
-                        // Update the selectedRel in your model
-                        customFieldAnswerStratigraphy.selectedRel = selectedEdge;
-                        // Optionally, trigger UI updates or AJAX calls here
-                        console.log("Selected relationship:", selectedEdge);
+
+
+                        // Trigger the AJAX call to update the server-side model
+                        updateSelectedRel([{name: "source", "value":selectedEdge.source.id}, {name:"target", "value":selectedEdge.target.id}, {name:"typeRel", "value":selectedEdge.target.zone}]);
+
                         };
 
                         // Call the drawStratigraphyDiagram function with the callback
@@ -187,6 +195,8 @@ margin-top: 1em;
 
 
                 </p:outputPanel>
+
+                <p:remoteCommand name="updateSelectedRel" update="stratigraphyGraphContainer" action="#{cc.attrs.answer.updateSelectedRel}"/>
 
 
             </f:facet>
