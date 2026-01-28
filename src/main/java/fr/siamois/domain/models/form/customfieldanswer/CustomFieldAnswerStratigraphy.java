@@ -82,6 +82,7 @@ public class CustomFieldAnswerStratigraphy extends CustomFieldAnswer {
 
             if (sourceMatches) {
                 setSelectedRel(rel);
+                setHasBeenModified(true);
                 return;
             }
         }
@@ -91,28 +92,29 @@ public class CustomFieldAnswerStratigraphy extends CustomFieldAnswer {
         // Check if the relationship exists in anteriorRelationships
         if (anteriorRelationships!= null) {
             anteriorRelationships.removeIf(rel ->
-                    rel.getUnit1().equals(selectedRel.getUnit1()) &&
-                            rel.getUnit2().equals(selectedRel.getUnit2())
+                    rel.getUnit1().getFullIdentifier().equals(selectedRel.getUnit1().getFullIdentifier()) &&
+                            rel.getUnit2().getFullIdentifier().equals(selectedRel.getUnit2().getFullIdentifier())
             );
         }
 
         // Check if the relationship exists in posteriorRelationships
         if (posteriorRelationships != null) {
             posteriorRelationships.removeIf(rel ->
-                    rel.getUnit1().equals(selectedRel.getUnit1()) &&
-                            rel.getUnit2().equals(selectedRel.getUnit2())
+                    rel.getUnit1().getFullIdentifier().equals(selectedRel.getUnit1().getFullIdentifier()) &&
+                            rel.getUnit2().getFullIdentifier().equals(selectedRel.getUnit2().getFullIdentifier())
             );
         }
 
         // Check if the relationship exists in synchronousRelationships
         if (synchronousRelationships != null) {
             synchronousRelationships.removeIf(rel ->
-                    rel.getUnit1().equals(selectedRel.getUnit1()) &&
-                            rel.getUnit2().equals(selectedRel.getUnit2())
+                    rel.getUnit1().getFullIdentifier().equals(selectedRel.getUnit1().getFullIdentifier()) &&
+                            rel.getUnit2().getFullIdentifier().equals(selectedRel.getUnit2().getFullIdentifier())
             );
         }
 
         selectedRel = null;
+        setHasBeenModified(true);
     }
 
 

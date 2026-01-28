@@ -183,10 +183,28 @@ margin-top: 1em;
                         console.log("Selected relationship:", selectedEdge);
 
 
-                        // Trigger the AJAX call to update the server-side model
-                        updateSelectedRel([{name: "source", "value":selectedEdge.source.id}, {name:"target", "value":selectedEdge.target.id}, {name:"typeRel", "value":selectedEdge.target.zone}]);
+                        // Determine source and target based on zone
+                        let source, target, typeRel;
+                        if (selectedEdge.source.zone === "central") {
+                        source = selectedEdge.source;
+                        target = selectedEdge.target;
+                        } else if (selectedEdge.target.zone === "central") {
+                        source = selectedEdge.target;
+                        target = selectedEdge.source;
+                        } else {
+                        // Handle unexpected cases (e.g., neither or both are "central")
+                        console.error("Neither or both nodes are 'central'. Cannot determine source.");
+                        return;
+                        }
 
-                        };
+                        // Trigger the AJAX call with the correct source and target
+                        updateSelectedRel([
+                        { name: "source", value: source.id },
+                        { name: "target", value: target.id },
+                        { name: "typeRel", value: target.zone }
+                        ]);
+
+                        }
 
                         // Call the drawStratigraphyDiagram function with the callback
                         drawStratigraphyDiagram("#{cc.clientId}:stratigraphyGraph", unit2Id, relationships, onEdgeSelected);

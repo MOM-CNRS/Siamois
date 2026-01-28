@@ -211,6 +211,21 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
             unit = recordingUnitService.findById(idunit);
             Hibernate.initialize(unit.getChildren());
             Hibernate.initialize(unit.getParents());
+            Hibernate.initialize(unit.getRelationshipsAsUnit1());
+            Hibernate.initialize(unit.getRelationshipsAsUnit2());
+
+            // For each relationship, initialize the other unit's fullIdentifier for equals/hashCode
+            unit.getRelationshipsAsUnit1().forEach(rel -> {
+                if (rel.getUnit2() != null) {
+                    Hibernate.initialize(rel.getUnit2().getFullIdentifier());
+                }
+            });
+
+            unit.getRelationshipsAsUnit2().forEach(rel -> {
+                if (rel.getUnit1() != null) {
+                    Hibernate.initialize(rel.getUnit1().getFullIdentifier());
+                }
+            });
 
             specimenListLazyDataModel = new SpecimenInRecordingUnitLazyDataModel(
                     specimenService,

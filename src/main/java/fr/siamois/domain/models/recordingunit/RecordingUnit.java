@@ -2,6 +2,7 @@ package fr.siamois.domain.models.recordingunit;
 
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import fr.siamois.domain.models.ArkEntity;
 import fr.siamois.domain.models.FieldCode;
 import fr.siamois.domain.models.ReferencableEntity;
@@ -36,6 +37,7 @@ import static fr.siamois.ui.bean.panel.models.panel.single.AbstractSingleEntity.
 @Table(name = "recording_unit")
 @NoArgsConstructor
 @Audited
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class RecordingUnit extends RecordingUnitParent implements ArkEntity, ReferencableEntity {
 
     public RecordingUnit(RecordingUnit recordingUnit) {
@@ -57,13 +59,13 @@ public class RecordingUnit extends RecordingUnitParent implements ArkEntity, Ref
     @Column(name = "recording_unit_id", nullable = false)
     private Long id;
 
-    @OneToMany(mappedBy = "unit1", fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "unit1", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonIgnore
-    private transient Set<StratigraphicRelationship> relationshipsAsUnit1 = new HashSet<>();
+    private Set<StratigraphicRelationship> relationshipsAsUnit1 = new HashSet<>();
 
-    @OneToMany(mappedBy = "unit2", fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "unit2", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonIgnore
-    private transient Set<StratigraphicRelationship> relationshipsAsUnit2 = new HashSet<>();
+    private Set<StratigraphicRelationship> relationshipsAsUnit2 = new HashSet<>();
 
     @ManyToMany(fetch = FetchType.LAZY)
     @JsonIgnore
@@ -429,6 +431,28 @@ public class RecordingUnit extends RecordingUnitParent implements ArkEntity, Ref
     @Override
     public int hashCode() {
         return super.hashCode();
+    }
+
+    // --- helpers ---
+    @JsonIgnore
+    public void addRelationshipAsUnit1(StratigraphicRelationship rel) {
+        relationshipsAsUnit1.add(rel);
+        rel.setUnit1(this); // owning side
+    }
+    @JsonIgnore
+    public void removeRelationshipAsUnit1(StratigraphicRelationship rel) {
+        relationshipsAsUnit1.remove(rel);
+        rel.setUnit1(null); // orphanRemoval → DELETE
+    }
+    @JsonIgnore
+    public void addRelationshipAsUnit2(StratigraphicRelationship rel) {
+        relationshipsAsUnit2.add(rel);
+        rel.setUnit2(this);
+    }
+    @JsonIgnore
+    public void removeRelationshipAsUnit2(StratigraphicRelationship rel) {
+        relationshipsAsUnit2.remove(rel);
+        rel.setUnit2(null);
     }
 
 }
