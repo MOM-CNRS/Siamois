@@ -14,6 +14,7 @@ import fr.siamois.ui.bean.dialog.newunit.NewUnitContext;
 import fr.siamois.ui.bean.dialog.newunit.UnitKind;
 import fr.siamois.ui.bean.panel.FlowBean;
 import fr.siamois.ui.bean.panel.models.PanelBreadcrumb;
+import fr.siamois.ui.form.FormContextServices;
 import fr.siamois.ui.lazydatamodel.BaseLazyDataModel;
 import fr.siamois.ui.lazydatamodel.SpatialUnitLazyDataModel;
 import fr.siamois.ui.lazydatamodel.scope.SpatialUnitScope;
@@ -50,6 +51,7 @@ public class SpatialUnitListPanel extends AbstractListPanel<SpatialUnit>  implem
     private final transient SpatialUnitWriteVerifier spatialUnitWriteVerifier;
     private final transient NavBean navBean;
     private final transient InstitutionService institutionService;
+    private final transient FormContextServices formContextServices;
 
     // locals
     private String spatialUnitListErrorMessage;
@@ -66,6 +68,7 @@ public class SpatialUnitListPanel extends AbstractListPanel<SpatialUnit>  implem
         this.spatialUnitWriteVerifier = context.getBean(SpatialUnitWriteVerifier.class);
         this.navBean = context.getBean(NavBean.class);
         this.institutionService = context.getBean(InstitutionService.class);
+        this.formContextServices = context.getBean(FormContextServices.class);
     }
 
     @Override
@@ -112,7 +115,8 @@ public class SpatialUnitListPanel extends AbstractListPanel<SpatialUnit>  implem
                 genericNewUnitDialogBean,
                 spatialUnitWriteVerifier,
                 lazyTree,
-                institutionService
+                institutionService,
+                formContextServices
         );
 
         return lazy; // l'abstraite en a besoin, mais ce panel ne s'en sert plus ensuite

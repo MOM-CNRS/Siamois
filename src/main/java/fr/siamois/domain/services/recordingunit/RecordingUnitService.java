@@ -10,6 +10,7 @@ import fr.siamois.domain.models.exceptions.recordingunit.RecordingUnitNotFoundEx
 import fr.siamois.domain.models.form.customformresponse.CustomFormResponse;
 import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
+import fr.siamois.domain.models.recordingunit.StratigraphicRelationship;
 import fr.siamois.domain.models.recordingunit.identifier.RecordingUnitIdInfo;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
@@ -41,6 +42,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.lang.reflect.Modifier;
 import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * Service to manage RecordingUnit
@@ -86,16 +89,10 @@ public class RecordingUnitService implements ArkEntityService {
      *
      * @param recordingUnit    The recording unit to save.
      * @param concept          The concept associated with the recording unit.
-     * @param anteriorUnits    List of recording units that are considered as "anterior" to the current one.
-     * @param synchronousUnits List of recording units that are considered as "synchronous" to the current one.
-     * @param posteriorUnits   List of recording units that are considered as "posterior" to the current one.
      * @return The saved RecordingUnit instance.
      */
     @Transactional
-    public RecordingUnit save(RecordingUnit recordingUnit, Concept concept,
-                              List<RecordingUnit> anteriorUnits,
-                              List<RecordingUnit> synchronousUnits,
-                              List<RecordingUnit> posteriorUnits) {
+    public RecordingUnit save(RecordingUnit recordingUnit, Concept concept) {
 
         try {
 
@@ -104,6 +101,7 @@ public class RecordingUnitService implements ArkEntityService {
             managedRecordingUnit = newOrGetRecordingUnit(recordingUnit);
 
             setupActionUnitInfo(recordingUnit, managedRecordingUnit);
+            setupStratigraphicRelationships(recordingUnit, managedRecordingUnit);
             setupConcept(concept, managedRecordingUnit);
             setupSpatialUnit(recordingUnit, managedRecordingUnit);
             setupOtherFields(recordingUnit, managedRecordingUnit);
@@ -207,6 +205,82 @@ public class RecordingUnitService implements ArkEntityService {
         managedRecordingUnit.setChronologicalPhase(recordingUnit.getChronologicalPhase());
         managedRecordingUnit.setGeomorphologicalAgent(recordingUnit.getGeomorphologicalAgent());
     }
+
+    private void setupStratigraphicRelationships(RecordingUnit recordingUnit, RecordingUnit managedRecordingUnit) {
+
+        syncAsUnit1(managedRecordingUnit, recordingUnit.getRelationshipsAsUnit1());
+        syncAsUnit2(managedRecordingUnit, recordingUnit.getRelationshipsAsUnit2());
+
+    }
+
+    private void syncAsUnit1(RecordingUnit managed, Set<StratigraphicRelationship> incoming) {
+        // Index des relations existantes côté unit1
+        Map<StratigraphicRelationship.StratRelKey, StratigraphicRelationship> existing =
+                managed.getRelationshipsAsUnit1().stream()
+                        .collect(Collectors.toMap(StratigraphicRelationship::keyOf, Function.identity()));
+
+        // Parcours des relations entrantes
+        for (StratigraphicRelationship incomingRel : incoming) {
+            // ✅ Setter le côté propriétaire
+            incomingRel.setUnit1(managed);
+
+            RecordingUnit managedUnit2 = recordingUnitRepository.findById(incomingRel.getUnit2().getId()).orElse(null);
+            incomingRel.setUnit2(managedUnit2);
+
+            StratigraphicRelationship.StratRelKey key = StratigraphicRelationship.keyOf(incomingRel);
+            StratigraphicRelationship managedRel = existing.remove(key);
+
+            if (managedRel != null) {
+                // 🔄 UPDATE de la relation existante
+                managedRel.setConcept(incomingRel.getConcept());
+                managedRel.setUncertain(incomingRel.getUncertain());
+                managedRel.setIsAsynchronous(incomingRel.getIsAsynchronous());
+                managedRel.setConceptDirection(incomingRel.getConceptDirection());
+            } else {
+                // ➕ INSERT nouvelle relation
+                managed.addRelationshipAsUnit1(incomingRel);
+            }
+        }
+
+        // 🗑 DELETE des relations supprimées
+        existing.values().forEach(managed::removeRelationshipAsUnit1);
+    }
+
+
+    private void syncAsUnit2(RecordingUnit managed, Set<StratigraphicRelationship> incoming) {
+        Map<StratigraphicRelationship.StratRelKey, StratigraphicRelationship> existing =
+                managed.getRelationshipsAsUnit2().stream()
+                        .collect(Collectors.toMap(StratigraphicRelationship::keyOf, Function.identity()));
+
+        for (StratigraphicRelationship incomingRel : incoming) {
+            // ✅ Owner side
+            incomingRel.setUnit2(managed);
+
+            RecordingUnit managedUnit1 = recordingUnitRepository.findById(incomingRel.getUnit1().getId()).orElse(null);
+            incomingRel.setUnit1(managedUnit1);
+
+            StratigraphicRelationship.StratRelKey key = StratigraphicRelationship.keyOf(incomingRel);
+            StratigraphicRelationship managedRel = existing.remove(key);
+
+            if (managedRel != null) {
+                // UPDATE existant
+                managedRel.setConcept(incomingRel.getConcept());
+                managedRel.setUncertain(incomingRel.getUncertain());
+                managedRel.setIsAsynchronous(incomingRel.getIsAsynchronous());
+                managedRel.setConceptDirection(incomingRel.getConceptDirection());
+            } else {
+                // INSERT
+                managed.addRelationshipAsUnit2(incomingRel);
+            }
+        }
+
+        // DELETE les supprimés
+        existing.values().forEach(managed::removeRelationshipAsUnit2);
+    }
+
+
+
+
 
     private void setupSpatialUnit(RecordingUnit recordingUnit, RecordingUnit managedRecordingUnit) {
         managedRecordingUnit.setSpatialUnit(recordingUnit.getSpatialUnit());
@@ -611,5 +685,9 @@ public class RecordingUnitService implements ArkEntityService {
     @NonNull
     public List<RecordingUnit> findByActionAndFullId(@NotNull ActionUnit actionUnit, @NotNull String fullIdentifier) {
         return recordingUnitRepository.findByFullIdentifierAndActionUnit(fullIdentifier, actionUnit);
+    }
+
+    public List<RecordingUnit> findAllByActionUnit(@NotNull ActionUnit actionUnit) {
+        return recordingUnitRepository.findAllByActionUnit(actionUnit);
     }
 }

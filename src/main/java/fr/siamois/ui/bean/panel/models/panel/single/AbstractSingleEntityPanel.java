@@ -1,5 +1,6 @@
 package fr.siamois.ui.bean.panel.models.panel.single;
 
+import fr.siamois.domain.models.TraceableEntity;
 import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.document.Document;
@@ -36,7 +37,7 @@ import java.util.stream.Collectors;
 @Getter
 @Setter
 @Slf4j
-public abstract class AbstractSingleEntityPanel<T> extends AbstractSingleEntity<T>  implements Serializable {
+public abstract class AbstractSingleEntityPanel<T extends TraceableEntity> extends AbstractSingleEntity<T>  implements Serializable {
 
     public static final String RECORDING_UNIT_FORM_RECORDING_UNIT_TABS = "recordingUnitForm:recordingUnitTabs";
     // Deps

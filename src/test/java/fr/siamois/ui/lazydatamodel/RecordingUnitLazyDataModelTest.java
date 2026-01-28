@@ -151,7 +151,7 @@ class RecordingUnitLazyDataModelTest {
 
 
             // THEN
-            verify(recordingUnitService).save(eq(unit), any(), anyList(), anyList(), anyList());
+            verify(recordingUnitService).save(eq(unit), any());
 
             messageUtilsMock.verify(() ->
                     MessageUtils.displayInfoMessage(langBean, "common.entity.recordingUnits.updated", "RU123"));
@@ -166,7 +166,7 @@ class RecordingUnitLazyDataModelTest {
         RowEditEvent<RecordingUnit> event = mock(RowEditEvent.class);
         when(event.getObject()).thenReturn(unit);
 
-        doThrow(new FailedRecordingUnitSaveException("")).when(recordingUnitService).save(any(), any(), anyList(), anyList(), anyList());
+        doThrow(new FailedRecordingUnitSaveException("")).when(recordingUnitService).save(any(), any());
 
         try (MockedStatic<MessageUtils> messageUtilsMock = mockStatic(MessageUtils.class)) {
             // WHEN
@@ -174,7 +174,7 @@ class RecordingUnitLazyDataModelTest {
 
 
             // THEN
-            verify(recordingUnitService).save(eq(unit), any(), anyList(), anyList(), anyList());
+            verify(recordingUnitService).save(eq(unit), any());
 
             messageUtilsMock.verify(() ->
                     MessageUtils.displayErrorMessage(langBean, "common.entity.recordingUnits.updateFailed", "RU123"));
@@ -232,14 +232,14 @@ class RecordingUnitLazyDataModelTest {
         doReturn(original).when(spyModel).getRowData();
 
         // Mock service behavior
-        when(recordingUnitService.save(any(), any(), anyList(), anyList(), anyList())).thenReturn(copied);
+        when(recordingUnitService.save(any(), any())).thenReturn(copied);
 
         // WHEN
         spyModel.duplicateRow();
 
         // THEN
         assertEquals(original.getType(), copied.getType());
-        verify(recordingUnitService, times(1)).save(any(), any(), anyList(), anyList(), anyList());
+        verify(recordingUnitService, times(1)).save(any(), any());
 
     }
 

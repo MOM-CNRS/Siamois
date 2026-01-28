@@ -11,6 +11,7 @@ import fr.siamois.ui.bean.NavBean;
 import fr.siamois.ui.bean.dialog.newunit.GenericNewUnitDialogBean;
 import fr.siamois.ui.bean.panel.FlowBean;
 import fr.siamois.ui.bean.panel.models.PanelBreadcrumb;
+import fr.siamois.ui.form.FormContextServices;
 import fr.siamois.ui.lazydatamodel.BaseLazyDataModel;
 import fr.siamois.ui.lazydatamodel.SpecimenLazyDataModel;
 import fr.siamois.ui.table.SpecimenTableViewModel;
@@ -43,6 +44,7 @@ public class SpecimenListPanel extends AbstractListPanel<Specimen>  implements S
     private final transient GenericNewUnitDialogBean<Specimen> genericNewUnitDialogBean;
     private final transient RecordingUnitWriteVerifier recordingUnitWriteVerifier;
     private final transient NavBean navBean;
+    private final transient FormContextServices formContextServices;
 
     // locals
     private String actionUnitListErrorMessage;
@@ -65,7 +67,8 @@ public class SpecimenListPanel extends AbstractListPanel<Specimen>  implements S
                 spatialUnitService,
                 navBean,
                 flowBean,
-                genericNewUnitDialogBean
+                genericNewUnitDialogBean,
+                formContextServices
         );
 
         return lazyModel;
@@ -91,6 +94,7 @@ public class SpecimenListPanel extends AbstractListPanel<Specimen>  implements S
         this.genericNewUnitDialogBean = context.getBean(GenericNewUnitDialogBean.class);
         this.recordingUnitWriteVerifier = context.getBean(RecordingUnitWriteVerifier.class);
         this.navBean = context.getBean(NavBean.class);
+        this.formContextServices = context.getBean(FormContextServices.class);
     }
 
     @Override

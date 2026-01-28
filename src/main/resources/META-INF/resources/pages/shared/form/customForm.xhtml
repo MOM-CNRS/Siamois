@@ -17,7 +17,6 @@
     <h:panelGroup rendered="#{not flowBean.isFieldMode}">
         <c:forEach items="#{layout}" var="customFormPanel" varStatus="status">
             <p:panel
-                    toggleableHeader="true"
                     header="#{spatialUnitFieldBean.resolvePanelLabel(customFormPanel)}"
                     id="customFormPanel-#{status.index}-#{prefix}"
                     class="sia-form-panel"

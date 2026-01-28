@@ -191,3 +191,142 @@ body .ui-treetable-header {
     overflow: hidden;
     text-overflow: ellipsis;
 }
+
+body .add-strati-rel.ui-card .ui-card-content {
+    display: flex;
+    gap: 1em;
+    align-items: center;
+    padding: 0;
+    flex-direction: row;
+    flex-wrap:wrap;
+}
+
+body .strati-rel-card.ui-card .ui-card-content {
+    display: flex;
+    gap: 0.5em;
+    padding: 0;
+    flex-direction: column;
+}
+
+body .strati-rel-card.ui-card .ui-chip .ui-chip-text {
+    font-size:10px;
+}
+
+body .ui-chkbox .ui-chkbox-box.ui-state-active {
+    border-color: var(--main-color)
+}
+
+
+/* Side Panel Styling */
+.side-panel {
+    position: fixed;
+    top: 0;
+    right: -400px; /* Hidden by default */
+    width: 400px;
+    height: 100%;
+    background: #fff;
+    box-shadow: -2px 0 10px rgba(0, 0, 0, 0.1);
+    transition: right 0.3s ease;
+    z-index: 1000;
+    border-left: 1px solid #e2e8f0;
+}
+
+.side-panel.open {
+    right: 0; /* Slide in */
+}
+
+.side-panel-header {
+    padding: 16px;
+    border-bottom: 1px solid #e2e8f0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.side-panel-header h3 {
+    margin: 0;
+    font-size: 18px;
+    color: #1a202c;
+}
+
+.close-btn {
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: #718096;
+}
+
+.side-panel-content {
+    padding: 16px;
+}
+
+.relation-vocab {
+    margin: 12px 0;
+}
+
+.relation-docs {
+    margin: 12px 0;
+}
+
+.delete-relation-btn {
+    background: #e53e3e;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-weight: 500;
+    cursor: pointer;
+    width: 100%;
+    margin-top: 12px;
+}
+
+.delete-relation-btn:hover {
+    background: #c53030;
+}
+
+.side-panel-content {
+    padding: 1rem;
+    display: flex;
+    border-left: 1px dashed var(--light-color-200);
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.relation-title {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #111827;
+}
+
+.relation-edit-row {
+    display: flex;
+    gap: 0.75rem;
+}
+
+.relation-select {
+    width: 100%;
+}
+
+.section-title {
+    margin: 0;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: #374151;
+}
+
+.docs-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+}
+.add-doc-btn {
+    color:#7e1717;
+    }
+
+.add-doc-btn,
+.delete-relation-btn {
+    width: 100%;
+}
+

@@ -23,22 +23,24 @@
                 <c:forEach items="#{row.columns}" var="col" varStatus="colStatus">
                     <p:column styleClass="#{col.className}"
                               id="col-#{prefix}-#{statusIndex}-#{rowStatus.index}-#{colStatus.index}">
-                                <ui:include src="/pages/shared/form/customFormFieldContentForPanel.xhtml">
-                                    <ui:param name="bean" value="#{bean}" />
-                                    <ui:param name="col" value="#{col}" />
-                                    <ui:param name="hasBeenModified" value="#{bean.formResponse.answers.get(col.field).hasBeenModified}"/>
-                                    <ui:param name="prefix" value="#{prefix}" />
-                                    <ui:param name="statusIndex" value="#{statusIndex}" />
-                                    <ui:param name="rowIndex" value="#{rowStatus.index}" />
-                                    <ui:param name="colIndex" value="#{colStatus.index}" />
-                                    <ui:param name="root" value="#{root}" />
-                                    <ui:param name="panelIndex" value="#{panelIndex}" />
-                                    <ui:param name="answer" value="#{bean.formResponse.answers.get(col.field)}"/>
-                                    <ui:param name="onModified" value="#{ctx.onFieldAnswerModifiedListener}"/>
-                                    <ui:param name="panelHeaderUpdateId" value="#{bean.getPanelHeaderUpdateId(panelIndex)}"/>
-                                    <ui:param name="onGenerateValue" value="#{bean.generateValueForField}"/>
-                                    <ui:param name="hasAutoGenerationFunction" value="#{bean.hasAutoGenerationFunction(col.field)}"/>
-                                </ui:include>
+                        <ui:include src="/pages/shared/form/customFormFieldContentForPanel.xhtml">
+                            <ui:param name="bean" value="#{bean}"/>
+                            <ui:param name="col" value="#{col}"/>
+                            <ui:param name="hasBeenModified"
+                                      value="#{bean.formResponse.answers.get(col.field).hasBeenModified}"/>
+                            <ui:param name="prefix" value="#{prefix}"/>
+                            <ui:param name="statusIndex" value="#{statusIndex}"/>
+                            <ui:param name="rowIndex" value="#{rowStatus.index}"/>
+                            <ui:param name="colIndex" value="#{colStatus.index}"/>
+                            <ui:param name="root" value="#{root}"/>
+                            <ui:param name="panelIndex" value="#{panelIndex}"/>
+                            <ui:param name="answer" value="#{bean.formResponse.answers.get(col.field)}"/>
+                            <ui:param name="onModified" value="#{ctx.onFieldAnswerModifiedListener}"/>
+                            <ui:param name="panelHeaderUpdateId" value="#{bean.getPanelHeaderUpdateId(panelIndex)}"/>
+                            <ui:param name="onGenerateValue" value="#{bean.generateValueForField}"/>
+                            <ui:param name="hasAutoGenerationFunction"
+                                      value="#{bean.hasAutoGenerationFunction(col.field)}"/>
+                        </ui:include>
                     </p:column>
                 </c:forEach>
             </p:row>

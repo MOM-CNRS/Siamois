@@ -71,7 +71,7 @@ class StratigraphyOrderRelationshipProcessorTest {
         StratigraphicRelationship expectedRelationship = new StratigraphicRelationship();
         expectedRelationship.setUnit1(unitC);
         expectedRelationship.setUnit2(unitA);
-        expectedRelationship.setType(StratigraphicRelationshipService.ASYNCHRONOUS_DEDUCTED);
+        expectedRelationship.setConcept(StratigraphicRelationshipService.ASYNCHRONOUS_DEDUCTED);
         assertTrue(unitC.getRelationshipsAsUnit1().contains(expectedRelationship));
 
 
@@ -81,7 +81,7 @@ class StratigraphyOrderRelationshipProcessorTest {
         StratigraphicRelationship relationship = new StratigraphicRelationship();
         relationship.setUnit1(unit1);
         relationship.setUnit2(unit2);
-        relationship.setType(StratigraphicRelationshipService.ASYNCHRONOUS);
+        relationship.setConcept(StratigraphicRelationshipService.ASYNCHRONOUS);
         unit1.getRelationshipsAsUnit1().add(relationship);
     }
 }

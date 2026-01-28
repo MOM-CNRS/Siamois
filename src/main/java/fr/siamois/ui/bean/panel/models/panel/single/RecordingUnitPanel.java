@@ -31,6 +31,7 @@ import fr.siamois.ui.bean.dialog.newunit.UnitKind;
 import fr.siamois.ui.bean.panel.FlowBean;
 import fr.siamois.ui.bean.panel.models.PanelBreadcrumb;
 import fr.siamois.ui.bean.panel.models.panel.single.tab.SpecimenTab;
+import fr.siamois.ui.form.FormContextServices;
 import fr.siamois.ui.lazydatamodel.RecordingUnitChildrenLazyDataModel;
 import fr.siamois.ui.lazydatamodel.RecordingUnitParentsLazyDataModel;
 import fr.siamois.ui.lazydatamodel.SpecimenInRecordingUnitLazyDataModel;
@@ -208,6 +209,21 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
             unit = recordingUnitService.findById(idunit);
             Hibernate.initialize(unit.getChildren());
             Hibernate.initialize(unit.getParents());
+            Hibernate.initialize(unit.getRelationshipsAsUnit1());
+            Hibernate.initialize(unit.getRelationshipsAsUnit2());
+
+            // For each relationship, initialize the other unit's fullIdentifier for equals/hashCode
+            unit.getRelationshipsAsUnit1().forEach(rel -> {
+                if (rel.getUnit2() != null) {
+                    Hibernate.initialize(rel.getUnit2().getFullIdentifier());
+                }
+            });
+
+            unit.getRelationshipsAsUnit2().forEach(rel -> {
+                if (rel.getUnit1() != null) {
+                    Hibernate.initialize(rel.getUnit1().getFullIdentifier());
+                }
+            });
 
             specimenListLazyDataModel = new SpecimenInRecordingUnitLazyDataModel(
                     specimenService,
@@ -393,7 +409,7 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
         }
 
         try {
-            recordingUnitService.save(unit, unit.getType(), List.of(), List.of(), List.of());
+            recordingUnitService.save(unit, unit.getType());
         } catch (FailedRecordingUnitSaveException e) {
             MessageUtils.displayErrorMessage(langBean, "common.entity.recordingUnits.updateFailed", unit.getFullIdentifier());
             return false;
@@ -457,7 +473,8 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
                 spatialUnitService,
                 navBean,
                 flowBean,
-                (GenericNewUnitDialogBean<Specimen>) genericNewUnitDialogBean
+                (GenericNewUnitDialogBean<Specimen>) genericNewUnitDialogBean,
+                formContextServices
         );
 
         SpecimenTableDefinitionFactory.applyTo(specimenTableModel);

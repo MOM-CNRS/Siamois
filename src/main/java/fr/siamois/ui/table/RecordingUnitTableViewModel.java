@@ -18,6 +18,7 @@ import fr.siamois.ui.bean.dialog.newunit.GenericNewUnitDialogBean;
 import fr.siamois.ui.bean.dialog.newunit.NewUnitContext;
 import fr.siamois.ui.bean.dialog.newunit.UnitKind;
 import fr.siamois.ui.bean.panel.FlowBean;
+import fr.siamois.ui.form.FormContextServices;
 import fr.siamois.ui.lazydatamodel.BaseRecordingUnitLazyDataModel;
 import fr.siamois.ui.lazydatamodel.tree.RecordingUnitTreeTableLazyModel;
 import fr.siamois.utils.MessageUtils;
@@ -65,7 +66,7 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
                                        FlowBean flowBean, GenericNewUnitDialogBean<RecordingUnit> genericNewUnitDialogBean,
                                        RecordingUnitWriteVerifier recordingUnitWriteVerifier,
                                        RecordingUnitService recordingUnitService,
-                                       RecordingUnitTreeTableLazyModel treeLazyModel, LangBean langBean) {
+                                       RecordingUnitTreeTableLazyModel treeLazyModel, LangBean langBean, FormContextServices formContextServices) {
 
         super(
                 lazyDataModel,
@@ -77,7 +78,8 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
                 navBean,
                 langBean,
                 RecordingUnit::getId,   // idExtractor
-                "type" // formScopeValueBinding
+                "type", // formScopeValueBinding,
+                formContextServices
         );
         this.recordingUnitLazyDataModel = lazyDataModel;
         this.sessionSettingsBean = sessionSettingsBean;
@@ -327,7 +329,7 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
             newUnit.getParents().add(parent);
         }
 
-        newUnit = recordingUnitService.save(newUnit, newUnit.getType(), List.of(),  List.of(),  List.of());
+        newUnit = recordingUnitService.save(newUnit, newUnit.getType());
 
         newUnit.setFullIdentifier(recordingUnitService.generateFullIdentifier(newUnit.getActionUnit(), newUnit));
         if (recordingUnitService.fullIdentifierAlreadyExistInAction(newUnit)) {

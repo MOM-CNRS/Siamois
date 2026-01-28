@@ -1,0 +1,234 @@
+<ui:composition
+        xmlns="http://www.w3.org/1999/xhtml"
+        xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
+        xmlns:cc="http://java.sun.com/jsf/composite"
+        xmlns:p="http://primefaces.org/ui" xmlns:f="http://java.sun.com/jsf/core" xmlns:h="http://java.sun.com/jsf/html"
+>
+
+    <cc:interface>
+        <cc:attribute name="answer" type="fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerStratigraphy"
+                      required="true"/>
+        <cc:attribute name="hasBeenModified" type="Boolean" required="false" default="false"/>
+        <cc:attribute name="field" type="fr.siamois.domain.models.form.customfield.CustomFieldStratigraphy"
+                      required="true"/>
+        <cc:attribute name="mode" type="String" required="false" default="READ"/>
+        <cc:attribute name="updateTargetsOnBlur" type="String" required="false" default="@this"/>
+        <cc:attribute
+                name="recordingUnitOptions"
+                type="java.util.List"
+                required="true"/>
+        <cc:attribute
+                name="onAddStratigraphicRelationship"
+                method-signature="void f(fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerStratigraphy)"
+                required="true"/>
+        <cc:attribute
+                name="relationshipsAsJson"
+                type="java.lang.String"
+                required="true"/>
+        <cc:attribute
+                name="panelIndex"
+                type="java.lang.Integer"
+                required="true"/>
+
+    </cc:interface>
+
+    <cc:implementation>
+        <p:inplace mode="#{cc.attrs.mode}" toggleable="false">
+            <f:facet name="output">
+                <!-- just showing the diagram -->
+            </f:facet>
+            <f:facet name="input">
+                <p:outputPanel id="newStratiRelForm">
+                    <p:card styleClass="add-strati-rel"
+                            style=" border: 1px dashed oklch(0.74 0 0);border-radius: 1em;background: #ffffff;">
+
+                        <p:selectOneMenu id="selectSourceRU"
+                                         style="width: 10em"
+                                         filter="true"
+                                         panelStyleClass="recording-unit"
+                                         value="#{cc.attrs.answer.sourceToAdd}"
+                                         var="ru"
+                                         disabled="true"
+                                         label="ru.fullIdentifier"
+                                         converter="#{recordingUnitConverter}">
+                            <f:selectItems
+                                    var="unit"
+                                    itemValue="#{unit}"
+                                    itemLabel="#{unit.fullIdentifier}"
+                                    value="#{cc.attrs.recordingUnitOptions}"/>
+
+                            <p:column>
+                                #{ru.fullIdentifier}
+                            </p:column>
+
+                        </p:selectOneMenu>
+
+                        <p:autoComplete id="relationshipVocab" value="#{answer.conceptToAdd}"
+                                        style="width: 20em"
+                                        completeMethod="#{spatialUnitFieldBean.completeWithFieldCode}"
+                                        showEmptyMessage="false"
+                                        maxResults="#{fieldConfigurationService.resultLimit()}"
+                                        placeholder="#{langBean.msg('common.action.chooseConcept')}"
+                                        dropdown="true"
+                                        itemValue="#{autocompleteDto}"
+                                        itemLabel="#{autocompleteDto.conceptLabelToDisplay.label}"
+                                        var="autocompleteDto"
+                                        forceSelection="true"
+                                        scrollHeight="300"
+                                        onclick="event.stopPropagation();"
+                                        groupBy="#{spatialUnitFieldBean.getRootGroup(autocompleteDto)}"
+                                        converter="#{conceptAutocompleteDTOConverter}"
+                                        escape="false">
+                            <f:attribute name="fieldCode" value="SIARU.STRATI"/>
+                            <f:attribute name="sortByParent" value="true"/>
+                        </p:autoComplete>
+                        <p:message for="relationshipVocab"/>
+
+                        <p:selectOneMenu id="selectRU"
+                                         style="width: 10em"
+                                         filter="true"
+                                         panelStyleClass="recording-unit"
+                                         value="#{cc.attrs.answer.targetToAdd}"
+                                         var="ru"
+                                         label="ru.fullIdentifier"
+                                         converter="#{recordingUnitConverter}">
+                            <f:selectItems
+                                    var="unit"
+                                    itemValue="#{unit}"
+                                    itemLabel="#{unit.fullIdentifier}"
+                                    value="#{cc.attrs.recordingUnitOptions}"/>
+
+                            <p:column>
+                                #{ru.fullIdentifier}
+                            </p:column>
+
+                        </p:selectOneMenu>
+                        <p:message for="selectRU"/>
+
+                        <p:selectBooleanCheckbox style="width: 10em" itemLabel="Incertain"
+                                                 value="#{cc.attrs.answer.isUncertainToAdd}"/>
+
+                        <p:commandButton
+                                style="width: 10em"
+                                icon="bi bi-plus"
+                                value="Ajouter"
+                                action="#{cc.attrs.onAddStratigraphicRelationship}"
+                                update="newStratiRelForm"
+                                process="newStratiRelForm"
+                        />
+                    </p:card>
+
+
+                </p:outputPanel>
+
+                <p:outputPanel layout="block" id="stratigraphyGraphContainer" style="border: 2px solid var(--light-color-200);
+margin-top: 1em;
+  border-radius: 2em;display:flex;">
+                    <svg style="flex:3;" id="#{cc.clientId}:stratigraphyGraph" width="800" height="500"></svg>
+
+                    <!-- Side panel using PrimeFaces -->
+                    <p:outputPanel id="sidePanelContent" class="side-panel-content" rendered="#{not empty cc.attrs.answer.selectedRel}">
+
+                        <!-- Title -->
+                        <h3 id="relationTitle" class="relation-title relation-edit-row">
+                            <h:commandLink action="#{flowBean.goToRecordingUnitByIdNewPanel(cc.attrs.answer.selectedRel.unit1.id)}" update="flow">
+                                #{cc.attrs.answer.selectedRel.unit1.fullIdentifier}
+                            </h:commandLink>
+
+                            #{labelBean.findLabelOf(cc.attrs.answer.selectedRel.concept)}
+                            <h:commandLink action="#{flowBean.goToRecordingUnitByIdNewPanel(cc.attrs.answer.selectedRel.unit2.id)}" update="flow">
+                                #{cc.attrs.answer.selectedRel.unit2.fullIdentifier}
+                            </h:commandLink>
+                        </h3>
+
+
+                        <!-- Documents -->
+                        <h4 class="section-title">Documents</h4>
+
+                        <div id="relationDocs" class="docs-container">
+                            <!-- Example document 1 -->
+                            <span class="doc-chip"
+                                  style="display:inline-block; padding:2px 6px; border:1px solid #ccc; border-radius:4px; margin:2px;">
+                                  exemple_coupe_stratigraphique.pdf
+                                  <button type="button" onclick="this.parentElement.remove()"
+                                          style="border:none; background:none; cursor:pointer; margin-left:4px;">✕</button>
+                              </span>
+
+                                                        <!-- Example document 2 -->
+                            <span class="doc-chip"
+                                  style="display:inline-block; padding:2px 6px; border:1px solid #ccc; border-radius:4px; margin:2px;">
+                                  exemple_notes_terrain.docx
+                                  <button type="button" onclick="this.parentElement.remove()"
+                                          style="border:none; background:none; cursor:pointer; margin-left:4px;">✕</button>
+                              </span>
+                        </div>
+
+
+                        <p:commandButton value="Ajouter un document (à venir)"
+                                         disabled="true"
+                                         id="addDocumentToRel"
+                                         icon="pi pi-plus"
+                                         style="color:#7e1717;"
+                                         styleClass="ui-button-outlined add-doc-btn"
+                                         />
+
+
+                        <!-- Delete -->
+                        <p:commandButton value="Supprimer la relation"
+                                         icon="pi pi-trash"
+                                         styleClass="ui-button-danger delete-relation-btn"
+                                         update="stratigraphyGraphContainer" action="#{cc.attrs.answer.deleteStratigraphicRelationship}"
+                                         />
+
+                    </p:outputPanel>
+
+                    <h:outputScript>
+                        (function() {
+                        const unit2Id = "#{cc.attrs.answer.sourceToAdd.fullIdentifier}";
+                        const relationships = #{cc.attrs.relationshipsAsJson};
+
+                        // Define the callback function
+                        const onEdgeSelected = function(selectedEdge) {
+                        console.log("Selected relationship:", selectedEdge);
+
+
+                        // Determine source and target based on zone
+                        let source, target, typeRel;
+                        if (selectedEdge.source.zone === "central") {
+                        source = selectedEdge.source;
+                        target = selectedEdge.target;
+                        } else if (selectedEdge.target.zone === "central") {
+                        source = selectedEdge.target;
+                        target = selectedEdge.source;
+                        } else {
+                        // Handle unexpected cases (e.g., neither or both are "central")
+                        console.error("Neither or both nodes are 'central'. Cannot determine source.");
+                        return;
+                        }
+
+                        // Trigger the AJAX call with the correct source and target
+                        updateSelectedRel_#{cc.attrs.panelIndex}([
+                        { name: "source", value: source.id },
+                        { name: "target", value: target.id },
+                        { name: "typeRel", value: target.zone }
+                        ]);
+
+                        }
+
+                        // Call the drawStratigraphyDiagram function with the callback
+                        drawStratigraphyDiagram("#{cc.clientId}:stratigraphyGraph", unit2Id, relationships, onEdgeSelected);
+                        })();
+                    </h:outputScript>
+
+
+                </p:outputPanel>
+
+                <p:remoteCommand name="updateSelectedRel_#{cc.attrs.panelIndex}" update="#{cc.clientId}:stratigraphyGraphContainer" action="#{cc.attrs.answer.updateSelectedRel}"/>
+
+
+            </f:facet>
+        </p:inplace>
+
+    </cc:implementation>
+
+</ui:composition>
