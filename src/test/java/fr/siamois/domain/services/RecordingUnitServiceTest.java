@@ -231,10 +231,7 @@ class RecordingUnitServiceTest {
 
         when(recordingUnitRepository.findById(10L)).thenReturn(Optional.of(parent1Unit));
 
-        RecordingUnit result = recordingUnitService.save(recordingUnitToSave,c,
-                List.of(anteriorUnit),
-                List.of(synchronousUnit),
-                List.of(posteriorUnit)
+        RecordingUnit result = recordingUnitService.save(recordingUnitToSave,c
         );
 
         // assert
@@ -287,9 +284,7 @@ class RecordingUnitServiceTest {
         doNothing().when(customFormResponseService)
                 .saveFormResponse(any(CustomFormResponse.class), any(CustomFormResponse.class));
 
-        RecordingUnit res = recordingUnitService.save(recordingUnitToSave, c, List.of(anteriorUnit),
-                List.of(synchronousUnit),
-                List.of(posteriorUnit));
+        RecordingUnit res = recordingUnitService.save(recordingUnitToSave, c);
         assertNotNull(res);
         verify(customFormResponseService, times(1))
                 .saveFormResponse(any(CustomFormResponse.class), any(CustomFormResponse.class));
@@ -312,7 +307,7 @@ class RecordingUnitServiceTest {
         when(personRepository.findAllById(anyList())).thenReturn(List.of());
 
         // Act
-        RecordingUnit result = recordingUnitService.save(recordingUnitToSave, new Concept(), List.of(), List.of(), List.of());
+        RecordingUnit result = recordingUnitService.save(recordingUnitToSave, new Concept());
 
         // Assert
         assertEquals(existingId, result.getId());
@@ -335,7 +330,7 @@ class RecordingUnitServiceTest {
         when(personRepository.findAllById(anyList())).thenReturn(List.of());
 
         // Act
-        RecordingUnit result = recordingUnitService.save(recordingUnitToSave, new Concept(), List.of(), List.of(), List.of());
+        RecordingUnit result = recordingUnitService.save(recordingUnitToSave, new Concept());
 
         // Assert
         assertNull(result.getId());
@@ -352,7 +347,7 @@ class RecordingUnitServiceTest {
         // Act & Assert
         FailedRecordingUnitSaveException exception = assertThrows(
                 FailedRecordingUnitSaveException.class,
-                () -> recordingUnitService.save(recordingUnitToSave, new Concept(), List.of(), List.of(), List.of())
+                () -> recordingUnitService.save(recordingUnitToSave, new Concept())
         );
 
         assertEquals("Dependency error", exception.getMessage());
@@ -843,7 +838,7 @@ class RecordingUnitServiceTest {
         when(personRepository.findAllById(anyList())).thenReturn(List.of());
 
         // Act
-        RecordingUnit result = recordingUnitService.save(recordingUnitToSave, new Concept(), List.of(), List.of(), List.of());
+        RecordingUnit result = recordingUnitService.save(recordingUnitToSave, new Concept());
 
         // Assert
         assertNotNull(result);
@@ -865,7 +860,7 @@ class RecordingUnitServiceTest {
         // Act & Assert
         FailedRecordingUnitSaveException exception = assertThrows(
                 FailedRecordingUnitSaveException.class,
-                () -> recordingUnitService.save(recordingUnitToSave, new Concept(), List.of(), List.of(), List.of())
+                () -> recordingUnitService.save(recordingUnitToSave, new Concept())
         );
 
         assertEquals("Parent not found: 999", exception.getMessage());
@@ -889,7 +884,7 @@ class RecordingUnitServiceTest {
         when(conceptService.saveOrGetConcept(any(Concept.class))).thenReturn(new Concept());
 
         // Act
-        RecordingUnit result = recordingUnitService.save(recordingUnitToSave, new Concept(), List.of(), List.of(), List.of());
+        RecordingUnit result = recordingUnitService.save(recordingUnitToSave, new Concept());
 
         // Assert
         assertNotNull(result);
