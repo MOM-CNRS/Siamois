@@ -1,14 +1,14 @@
 package fr.siamois.ui.redirection;
+
 import fr.siamois.ui.bean.NavBean;
 import fr.siamois.ui.bean.panel.FlowBean;
+import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 
-import javax.faces.bean.SessionScoped;
-
 @Controller
-@SessionScoped
+@Scope(value = "session")
 public class SpatialUnitController {
 
     public static final String FLOW_XHTML = "forward:/flow.xhtml";

@@ -21,11 +21,12 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.NoSuchMessageException;
+import org.springframework.context.annotation.Scope;
+import org.springframework.context.annotation.ScopedProxyMode;
 import org.springframework.context.event.EventListener;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
-import javax.faces.bean.SessionScoped;
 import java.io.Serializable;
 import java.util.List;
 
@@ -39,7 +40,7 @@ import java.util.List;
 @Component
 @Getter
 @Setter
-@SessionScoped
+@Scope(value = "session", proxyMode = ScopedProxyMode.TARGET_CLASS)
 public class NavBean implements Serializable {
 
     public static final String COMMON_BOOKMARK_SAVED = "common.bookmark.saved";

@@ -8,12 +8,12 @@ import jakarta.faces.context.FacesContext;
 import jakarta.faces.convert.Converter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Scope;
+import org.springframework.context.annotation.ScopedProxyMode;
 import org.springframework.stereotype.Component;
 
-import javax.faces.bean.SessionScoped;
-
 @Slf4j
-@SessionScoped
+@Scope(value = "session", proxyMode = ScopedProxyMode.TARGET_CLASS)
 @Component
 @RequiredArgsConstructor
 public class LocalizedConceptDataConverter implements Converter<LocalizedConceptData> {

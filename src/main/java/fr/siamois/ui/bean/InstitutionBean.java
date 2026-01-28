@@ -4,14 +4,15 @@ import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.models.vocabulary.label.ConceptLabel;
 import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.domain.services.vocabulary.LabelService;
+import org.springframework.context.annotation.Scope;
+import org.springframework.context.annotation.ScopedProxyMode;
 import org.springframework.stereotype.Component;
 
-import javax.faces.bean.SessionScoped;
 import java.util.ArrayList;
 import java.util.List;
 
 @Component
-@SessionScoped
+@Scope(value = "session", proxyMode = ScopedProxyMode.TARGET_CLASS)
 public class InstitutionBean {
 
     private final ConceptService conceptService;

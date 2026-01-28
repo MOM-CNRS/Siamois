@@ -10,18 +10,19 @@ import fr.siamois.domain.models.settings.PersonSettings;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.person.PersonService;
 import fr.siamois.utils.AuthenticatedUserUtils;
-import jakarta.servlet.ServletContext;
+import jakarta.faces.context.FacesContext;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Scope;
+import org.springframework.context.annotation.ScopedProxyMode;
 import org.springframework.context.event.EventListener;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
-import javax.faces.bean.SessionScoped;
 import java.io.Serializable;
 import java.util.Collections;
 import java.util.List;
@@ -30,7 +31,7 @@ import java.util.Set;
 @Setter
 @Getter
 @Component
-@SessionScoped
+@Scope(value = "session", proxyMode = ScopedProxyMode.TARGET_CLASS)
 @RequiredArgsConstructor
 public class SessionSettingsBean implements Serializable {
 
@@ -38,7 +39,6 @@ public class SessionSettingsBean implements Serializable {
     private final LangBean langBean;
     private final transient RedirectBean redirectBean;
     private final transient PersonService personService;
-    private final transient ServletContext servletContext;
     private Institution selectedInstitution;
     private InstitutionSettings institutionSettings;
     private PersonSettings personSettings;
@@ -139,7 +139,9 @@ public class SessionSettingsBean implements Serializable {
     }
 
     public String getContextPath() {
-        return servletContext.getContextPath();
+        return FacesContext.getCurrentInstance()
+                .getExternalContext()
+                .getRequestContextPath();
     }
 
 }

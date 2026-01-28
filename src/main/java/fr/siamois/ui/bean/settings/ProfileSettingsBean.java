@@ -32,10 +32,11 @@ import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.context.annotation.Scope;
+import org.springframework.context.annotation.ScopedProxyMode;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
-import javax.faces.bean.SessionScoped;
 import java.io.Serializable;
 import java.util.List;
 import java.util.Locale;
@@ -47,7 +48,7 @@ import static fr.siamois.utils.MessageUtils.displayErrorMessage;
 @Getter
 @Setter
 @Component
-@SessionScoped
+@Scope(value = "session", proxyMode = ScopedProxyMode.TARGET_CLASS)
 @RequiredArgsConstructor
 public class ProfileSettingsBean implements Serializable {
 

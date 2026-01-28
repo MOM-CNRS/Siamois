@@ -21,11 +21,12 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Scope;
+import org.springframework.context.annotation.ScopedProxyMode;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.ResourceAccessException;
 
-import javax.faces.bean.SessionScoped;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -42,7 +43,7 @@ import static fr.siamois.utils.MessageUtils.displayErrorMessage;
 @Setter
 @Slf4j
 @Component
-@SessionScoped
+@Scope(value = "session", proxyMode = ScopedProxyMode.TARGET_CLASS)
 @RequiredArgsConstructor
 public class SpatialUnitFieldBean implements Serializable {
 
