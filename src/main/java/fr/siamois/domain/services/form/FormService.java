@@ -11,6 +11,7 @@ import fr.siamois.domain.models.form.customform.EnabledWhenJson;
 import fr.siamois.domain.models.form.customform.ValueMatcher;
 import fr.siamois.domain.models.form.customformresponse.CustomFormResponse;
 import fr.siamois.domain.models.institution.Institution;
+import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.infrastructure.database.repositories.form.FormRepository;
@@ -269,6 +270,12 @@ public class FormService {
         answer.setPk(answerId);
         answer.setHasBeenModified(false);
 
+        if(answer instanceof CustomFieldAnswerStratigraphy stratiAnswer && jpaEntity instanceof RecordingUnit ru) {
+            // Special case
+            handleStratigraphyRelationships(stratiAnswer, ru);
+            return;
+        }
+
         if (Boolean.TRUE.equals(field.getIsSystemField())
                 && field.getValueBinding() != null
                 && bindableFields.contains(field.getValueBinding())) {
@@ -370,6 +377,11 @@ public class FormService {
         if (answer instanceof CustomFieldAnswerSelectMultipleSpatialUnitTree treeAnswer) {
             treeAnswer.setValue((Set<SpatialUnit>) value);
         }
+    }
+
+    private void handleStratigraphyRelationships(CustomFieldAnswerStratigraphy answer, RecordingUnit unit) {
+        answer.setSourceToAdd(unit);
+        // todo : init strati rels
     }
 
 
