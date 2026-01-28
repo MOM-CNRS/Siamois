@@ -1,6 +1,12 @@
 // Stratigraphy.js
 // ----------------
 // Requires D3.js v7+
+document.addEventListener("keydown", (e) => {
+    if (e.code === "Space") spacePressed = true;
+});
+document.addEventListener("keyup", (e) => {
+    if (e.code === "Space") spacePressed = false;
+});
 
 function drawStratigraphyDiagram(svgId, centralUnitId, relationships, onEdgeSelected) {
     // Validate inputs
@@ -28,11 +34,23 @@ function drawStratigraphyDiagram(svgId, centralUnitId, relationships, onEdgeSele
 
     const zoomGroup = svg.append("g");
 
-    const zoom = d3.zoom()
-        .scaleExtent([0.5, 3])
-        .on("zoom", (event) => {
-            zoomGroup.attr("transform", event.transform);
-        });
+const zoom = d3.zoom()
+    .scaleExtent([0.5, 3])
+    .filter((event) => {
+        // Zoom only when space is held
+        if (event.type === "wheel") return spacePressed;
+        // Pan only when space is held
+        if (event.type === "mousedown" || event.type === "mousemove") return spacePressed;
+        // Touch events
+        if (event.type.startsWith("touch")) return true;
+        return false;
+    })
+    .on("zoom", (event) => {
+        zoomGroup.attr("transform", event.transform);
+    });
+
+
+
 
     svg.call(zoom);
 
