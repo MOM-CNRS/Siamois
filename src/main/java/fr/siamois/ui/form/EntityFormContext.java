@@ -31,7 +31,6 @@ import lombok.Getter;
 import org.primefaces.PrimeFaces;
 import org.primefaces.event.SelectEvent;
 import org.primefaces.model.TreeNode;
-import org.springframework.context.ApplicationContext;
 
 import java.util.*;
 import java.util.function.BiConsumer;
@@ -53,6 +52,10 @@ import java.util.stream.Collectors;
 @Data
 public class EntityFormContext<T extends TraceableEntity> {
 
+    public static final String UNIT_1_ID = "unit1Id";
+    public static final String VOCABULARY_DIRECTION = "vocabularyDirection";
+    public static final String UNCERTAIN = "uncertain";
+    public static final String VOCABULARY_LABEL = "vocabularyLabel";
     @Getter
     private final T unit;
 
@@ -364,145 +367,138 @@ public class EntityFormContext<T extends TraceableEntity> {
 
     public void addStratigraphicRelationship(CustomFieldAnswerStratigraphy answer) {
         FacesContext context = FacesContext.getCurrentInstance();
-        boolean isValid = true;
-
         UIComponent cc = UIComponent.getCurrentCompositeComponent(context);
 
-        // Validate conceptToAdd
-        if (answer.getConceptToAdd() == null) {
-            UIInput c = (UIInput) cc.findComponent("relationshipVocab");
-            c.setValid(false);
-            isValid = false;
-            FacesMessage msg = new FacesMessage(
-                    FacesMessage.SEVERITY_ERROR,
-                    "Ne peux pas être vide",
-                    null
-            );
-            context.addMessage(c.getClientId(context), msg);
-        }
-
-        // Validate targetToAdd
-        if (answer.getTargetToAdd() == null) {
-            UIInput c = (UIInput) cc.findComponent("selectRU");
-            c.setValid(false);
-            isValid = false;
-            FacesMessage msg = new FacesMessage(
-                    FacesMessage.SEVERITY_ERROR,
-                    "Ne peux pas être vide",
-                    null
-            );
-            context.addMessage(c.getClientId(context), msg);
-        }
-
-        if (Objects.equals(answer.getTargetToAdd().getFullIdentifier(), answer.getSourceToAdd().getFullIdentifier())) {
-            UIInput c = (UIInput) cc.findComponent("selectRU");
-            c.setValid(false);
-            isValid = false;
-            FacesMessage msg = new FacesMessage(
-                    FacesMessage.SEVERITY_ERROR,
-                    "Les deux UE ne peuvent être identiques",
-                    null
-            );
-            context.addMessage(c.getClientId(context), msg);
-        }
-
-        // Check if a relationship already exists between the two nodes
-        if (isValid) {
-            boolean relExists = false;
-            String parentLabel = answer.getConceptToAdd().getHierarchyPrefLabels() == null ?
-                    answer.getConceptToAdd().getOriginalPrefLabel() :
-                    answer.getConceptToAdd().getHierarchyPrefLabels();
-
-            // Check in synchronous relationships
-            for (StratigraphicRelationship rel : answer.getSynchronousRelationships()) {
-                if ((rel.getUnit1().equals(answer.getSourceToAdd()) && rel.getUnit2().equals(answer.getTargetToAdd())) ||
-                        (rel.getUnit1().equals(answer.getTargetToAdd()) && rel.getUnit2().equals(answer.getSourceToAdd()))) {
-                    relExists = true;
-                    break;
-                }
-            }
-
-            // Check in posterior relationships
-            if (!relExists) {
-                for (StratigraphicRelationship rel : answer.getPosteriorRelationships()) {
-                    if (rel.getUnit1().equals(answer.getSourceToAdd()) && rel.getUnit2().equals(answer.getTargetToAdd())) {
-                        relExists = true;
-                        break;
-                    }
-                }
-            }
-
-            // Check in anterior relationships
-            if (!relExists) {
-                for (StratigraphicRelationship rel : answer.getAnteriorRelationships()) {
-                    if (rel.getUnit1().equals(answer.getTargetToAdd()) && rel.getUnit2().equals(answer.getSourceToAdd())) {
-                        relExists = true;
-                        break;
-                    }
-                }
-            }
-
-            // If a relationship already exists, show an error message
-            if (relExists) {
-                UIInput c = (UIInput) cc.findComponent("selectRU");
-                c.setValid(false);
-                isValid = false;
-                FacesMessage msg = new FacesMessage(
-                        FacesMessage.SEVERITY_ERROR,
-                        "Une relation existe déjà entre ces deux unités",
-                        null
-                );
-                context.addMessage(c.getClientId(context), msg);
-            }
-        }
-
-        // If validation fails, return early
-        if (!isValid) {
+        if (!validateInputs(answer, context, cc)) {
             context.validationFailed();
             return;
         }
 
-        // If validation passes, proceed with adding the relationship
-        StratigraphicRelationship newRel = new StratigraphicRelationship();
-        String parentLabel = answer.getConceptToAdd().getHierarchyPrefLabels() == null ?
-                answer.getConceptToAdd().getOriginalPrefLabel() :
-                answer.getConceptToAdd().getHierarchyPrefLabels();
-
-        if (parentLabel.equalsIgnoreCase("synchrone avec")) {
-            newRel.setUnit1(answer.getSourceToAdd());
-            newRel.setUnit2(answer.getTargetToAdd());
-            newRel.setConcept(answer.getConceptToAdd().concept());
-            newRel.setIsAsynchronous(false);
-            newRel.setUncertain(answer.getIsUncertainToAdd());
-            newRel.setConceptDirection(answer.getVocabularyDirectionToAdd());
-            answer.getSynchronousRelationships().add(newRel);
-        } else if (parentLabel.equalsIgnoreCase("postérieur à")) {
-            newRel.setUnit1(answer.getSourceToAdd());
-            newRel.setUnit2(answer.getTargetToAdd());
-            newRel.setConcept(answer.getConceptToAdd().concept());
-            newRel.setIsAsynchronous(true);
-            newRel.setUncertain(answer.getIsUncertainToAdd());
-            newRel.setConceptDirection(answer.getVocabularyDirectionToAdd());
-            answer.getPosteriorRelationships().add(newRel);
-        } else if (parentLabel.equalsIgnoreCase("antérieur à")) {
-            newRel.setUnit1(answer.getTargetToAdd());
-            newRel.setUnit2(answer.getSourceToAdd());
-            newRel.setConcept(answer.getConceptToAdd().concept());
-            newRel.setIsAsynchronous(true);
-            newRel.setUncertain(answer.getIsUncertainToAdd());
-            newRel.setConceptDirection(!answer.getVocabularyDirectionToAdd());
-            answer.getAnteriorRelationships().add(newRel);
+        if (relationshipExists(answer)) {
+            markAsInvalid(context, cc, "selectRU", "Une relation existe déjà entre ces deux unités");
+            context.validationFailed();
+            return;
         }
+
+        addNewStratigraphicRelationship(answer);
 
         // Optionally, reset the form fields
         answer.setConceptToAdd(null);
         answer.setTargetToAdd(null);
         answer.setIsUncertainToAdd(false);
 
-        PrimeFaces.current().ajax().update(
-                cc.getClientId().concat(":stratigraphyGraphContainer")
-        );
+        PrimeFaces.current().ajax().update(cc.getClientId().concat(":stratigraphyGraphContainer"));
     }
+
+    private boolean validateInputs(CustomFieldAnswerStratigraphy answer, FacesContext context, UIComponent cc) {
+        boolean isValid = true;
+
+        if (answer.getConceptToAdd() == null) {
+            markAsInvalid(context, cc, "relationshipVocab", "Ne peux pas être vide");
+            isValid = false;
+        }
+
+        if (answer.getTargetToAdd() == null) {
+            markAsInvalid(context, cc, "selectRU", "Ne peux pas être vide");
+            isValid = false;
+        } else if (Objects.equals(answer.getTargetToAdd().getFullIdentifier(), answer.getSourceToAdd().getFullIdentifier())) {
+            markAsInvalid(context, cc, "selectRU", "Les deux UE ne peuvent être identiques");
+            isValid = false;
+        }
+
+        return isValid;
+    }
+
+    private void markAsInvalid(FacesContext context, UIComponent cc, String componentId, String message) {
+        UIInput c = (UIInput) cc.findComponent(componentId);
+        c.setValid(false);
+        FacesMessage msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, message, null);
+        context.addMessage(c.getClientId(context), msg);
+    }
+
+    private boolean relationshipExists(CustomFieldAnswerStratigraphy answer) {
+        return checkSynchronousRelationships(answer) ||
+                checkPosteriorRelationships(answer) ||
+                checkAnteriorRelationships(answer);
+    }
+
+    private boolean checkSynchronousRelationships(CustomFieldAnswerStratigraphy answer) {
+        for (StratigraphicRelationship rel : answer.getSynchronousRelationships()) {
+            if ((rel.getUnit1().equals(answer.getSourceToAdd()) && rel.getUnit2().equals(answer.getTargetToAdd())) ||
+                    (rel.getUnit1().equals(answer.getTargetToAdd()) && rel.getUnit2().equals(answer.getSourceToAdd()))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean checkPosteriorRelationships(CustomFieldAnswerStratigraphy answer) {
+        for (StratigraphicRelationship rel : answer.getPosteriorRelationships()) {
+            if (rel.getUnit1().equals(answer.getSourceToAdd()) && rel.getUnit2().equals(answer.getTargetToAdd())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean checkAnteriorRelationships(CustomFieldAnswerStratigraphy answer) {
+        for (StratigraphicRelationship rel : answer.getAnteriorRelationships()) {
+            if (rel.getUnit1().equals(answer.getTargetToAdd()) && rel.getUnit2().equals(answer.getSourceToAdd())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private void addNewStratigraphicRelationship(CustomFieldAnswerStratigraphy answer) {
+        StratigraphicRelationship newRel = new StratigraphicRelationship();
+        String parentLabel = getParentLabel(answer);
+
+        if (parentLabel.equalsIgnoreCase("synchrone avec")) {
+            setupSynchronousRelationship(answer, newRel);
+        } else if (parentLabel.equalsIgnoreCase("postérieur à")) {
+            setupPosteriorRelationship(answer, newRel);
+        } else if (parentLabel.equalsIgnoreCase("antérieur à")) {
+            setupAnteriorRelationship(answer, newRel);
+        }
+    }
+
+    private String getParentLabel(CustomFieldAnswerStratigraphy answer) {
+        return answer.getConceptToAdd().getHierarchyPrefLabels() == null ?
+                answer.getConceptToAdd().getOriginalPrefLabel() :
+                answer.getConceptToAdd().getHierarchyPrefLabels();
+    }
+
+    private void setupSynchronousRelationship(CustomFieldAnswerStratigraphy answer, StratigraphicRelationship newRel) {
+        newRel.setUnit1(answer.getSourceToAdd());
+        newRel.setUnit2(answer.getTargetToAdd());
+        newRel.setConcept(answer.getConceptToAdd().concept());
+        newRel.setIsAsynchronous(false);
+        newRel.setUncertain(answer.getIsUncertainToAdd());
+        newRel.setConceptDirection(answer.getVocabularyDirectionToAdd());
+        answer.getSynchronousRelationships().add(newRel);
+    }
+
+    private void setupPosteriorRelationship(CustomFieldAnswerStratigraphy answer, StratigraphicRelationship newRel) {
+        newRel.setUnit1(answer.getSourceToAdd());
+        newRel.setUnit2(answer.getTargetToAdd());
+        newRel.setConcept(answer.getConceptToAdd().concept());
+        newRel.setIsAsynchronous(true);
+        newRel.setUncertain(answer.getIsUncertainToAdd());
+        newRel.setConceptDirection(answer.getVocabularyDirectionToAdd());
+        answer.getPosteriorRelationships().add(newRel);
+    }
+
+    private void setupAnteriorRelationship(CustomFieldAnswerStratigraphy answer, StratigraphicRelationship newRel) {
+        newRel.setUnit1(answer.getTargetToAdd());
+        newRel.setUnit2(answer.getSourceToAdd());
+        newRel.setConcept(answer.getConceptToAdd().concept());
+        newRel.setIsAsynchronous(true);
+        newRel.setUncertain(answer.getIsUncertainToAdd());
+        newRel.setConceptDirection(!answer.getVocabularyDirectionToAdd());
+        answer.getAnteriorRelationships().add(newRel);
+    }
+
 
 
     public String getRelationshipsAsJson(CustomFieldAnswerStratigraphy answer) {
@@ -515,10 +511,10 @@ public class EntityFormContext<T extends TraceableEntity> {
         ArrayNode anteriorArray = mapper.createArrayNode();
         for (StratigraphicRelationship rel : answer.getAnteriorRelationships()) {
             ObjectNode node = mapper.createObjectNode();
-            node.put("unit1Id", rel.getUnit1().getFullIdentifier());
-            node.put("vocabularyLabel", formService.getLabelBean().findLabelOf(rel.getConcept()));
-            node.put("vocabularyDirection", rel.getConceptDirection());
-            node.put("uncertain", rel.getUncertain() != null && rel.getUncertain());
+            node.put(UNIT_1_ID, rel.getUnit1().getFullIdentifier());
+            node.put(VOCABULARY_LABEL, formService.getLabelBean().findLabelOf(rel.getConcept()));
+            node.put(VOCABULARY_DIRECTION, rel.getConceptDirection());
+            node.put(UNCERTAIN, rel.getUncertain() != null && rel.getUncertain());
             anteriorArray.add(node);
         }
         root.set("anterior", anteriorArray);
@@ -527,10 +523,10 @@ public class EntityFormContext<T extends TraceableEntity> {
         ArrayNode posteriorArray = mapper.createArrayNode();
         for (StratigraphicRelationship rel : answer.getPosteriorRelationships()) {
             ObjectNode node = mapper.createObjectNode();
-            node.put("unit1Id", rel.getUnit2().getFullIdentifier());
-            node.put("vocabularyLabel", formService.getLabelBean().findLabelOf(rel.getConcept()));
-            node.put("vocabularyDirection", !rel.getConceptDirection());
-            node.put("uncertain", rel.getUncertain() != null && rel.getUncertain());
+            node.put(UNIT_1_ID, rel.getUnit2().getFullIdentifier());
+            node.put(VOCABULARY_LABEL, formService.getLabelBean().findLabelOf(rel.getConcept()));
+            node.put(VOCABULARY_DIRECTION, !rel.getConceptDirection());
+            node.put(UNCERTAIN, rel.getUncertain() != null && rel.getUncertain());
             posteriorArray.add(node);
         }
         root.set("posterior", posteriorArray);
@@ -555,11 +551,11 @@ public class EntityFormContext<T extends TraceableEntity> {
                 continue;
             }
 
-            node.put("unit1Id", otherUnit.getFullIdentifier());
-            node.put("vocabularyLabel",
+            node.put(UNIT_1_ID, otherUnit.getFullIdentifier());
+            node.put(VOCABULARY_LABEL,
                     formService.getLabelBean().findLabelOf(rel.getConcept()));
-            node.put("vocabularyDirection", direction);
-            node.put("uncertain", Boolean.TRUE.equals(rel.getUncertain()));
+            node.put(VOCABULARY_DIRECTION, direction);
+            node.put(UNCERTAIN, Boolean.TRUE.equals(rel.getUncertain()));
 
             synchronousArray.add(node);
         }

@@ -21,7 +21,6 @@ import fr.siamois.domain.services.form.FormService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitTreeService;
 import fr.siamois.domain.services.vocabulary.FieldConfigurationService;
-import fr.siamois.domain.services.vocabulary.VocabularyService;
 import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
 import fr.siamois.ui.bean.LabelBean;
 import fr.siamois.ui.bean.SessionSettingsBean;

@@ -1,13 +1,9 @@
 package fr.siamois.domain.models.form.customfieldanswer;
 
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.recordingunit.StratigraphicRelationship;
-import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
 import jakarta.faces.context.FacesContext;
-import jakarta.persistence.Column;
 import jakarta.persistence.DiscriminatorValue;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
@@ -16,10 +12,6 @@ import lombok.Data;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import org.primefaces.PrimeFaces;
 
 @Data
 @Entity
