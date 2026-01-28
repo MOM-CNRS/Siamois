@@ -569,7 +569,6 @@ public class EntityFormContext<T extends TraceableEntity> {
         try {
             return mapper.writeValueAsString(root);
         } catch (Exception e) {
-            e.printStackTrace();
             return "{}";
         }
     }
