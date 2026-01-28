@@ -396,7 +396,7 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
         }
 
         try {
-            recordingUnitService.save(unit, unit.getType(), List.of(), List.of(), List.of());
+            recordingUnitService.save(unit, unit.getType());
         } catch (FailedRecordingUnitSaveException e) {
             MessageUtils.displayErrorMessage(langBean, "common.entity.recordingUnits.updateFailed", unit.getFullIdentifier());
             return false;

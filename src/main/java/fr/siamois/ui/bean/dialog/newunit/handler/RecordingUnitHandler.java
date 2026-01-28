@@ -55,7 +55,7 @@ public class RecordingUnitHandler implements INewUnitHandler<RecordingUnit> {
         return recordingUnit;
     }
     @Override public RecordingUnit save(UserInfo u, RecordingUnit unit) throws EntityAlreadyExistsException {
-        RecordingUnit created = recordingUnitService.save(unit, unit.getType(), null, null, null);
+        RecordingUnit created = recordingUnitService.save(unit, unit.getType());
         String generatedFullIdentifier = recordingUnitService.generateFullIdentifier(created.getActionUnit(), created);
         created.setFullIdentifier(generatedFullIdentifier);
 
