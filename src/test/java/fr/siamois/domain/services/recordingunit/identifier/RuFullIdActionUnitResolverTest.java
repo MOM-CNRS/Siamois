@@ -69,6 +69,11 @@ class RuFullIdActionUnitResolverTest {
         }
     }
 
+    @Test
+    void testCss() {
+        assertThat(resolver.getButtonStyleClass()).isEqualTo("rounded-button action-unit");
+    }
+
     @Nested
     @DisplayName("resolve() tests")
     class ResolveTest {
