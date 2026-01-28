@@ -25,6 +25,10 @@
                 name="relationshipsAsJson"
                 type="java.lang.String"
                 required="true"/>
+        <cc:attribute
+                name="panelIndex"
+                type="java.lang.Integer"
+                required="true"/>
 
     </cc:interface>
 
@@ -127,9 +131,14 @@ margin-top: 1em;
 
                         <!-- Title -->
                         <h3 id="relationTitle" class="relation-title relation-edit-row">
-                            #{cc.attrs.answer.selectedRel.unit1.fullIdentifier}
+                            <h:commandLink action="#{flowBean.goToRecordingUnitByIdNewPanel(cc.attrs.answer.selectedRel.unit1.id)}" update="flow">
+                                #{cc.attrs.answer.selectedRel.unit1.fullIdentifier}
+                            </h:commandLink>
+
                             #{labelBean.findLabelOf(cc.attrs.answer.selectedRel.concept)}
-                            #{cc.attrs.answer.selectedRel.unit2.fullIdentifier}
+                            <h:commandLink action="#{flowBean.goToRecordingUnitByIdNewPanel(cc.attrs.answer.selectedRel.unit2.id)}" update="flow">
+                                #{cc.attrs.answer.selectedRel.unit2.fullIdentifier}
+                            </h:commandLink>
                         </h3>
 
 
@@ -198,7 +207,7 @@ margin-top: 1em;
                         }
 
                         // Trigger the AJAX call with the correct source and target
-                        updateSelectedRel([
+                        updateSelectedRel_#{cc.attrs.panelIndex}([
                         { name: "source", value: source.id },
                         { name: "target", value: target.id },
                         { name: "typeRel", value: target.zone }
@@ -214,7 +223,7 @@ margin-top: 1em;
 
                 </p:outputPanel>
 
-                <p:remoteCommand name="updateSelectedRel" update="stratigraphyGraphContainer" action="#{cc.attrs.answer.updateSelectedRel}"/>
+                <p:remoteCommand name="updateSelectedRel_#{cc.attrs.panelIndex}" update="#{cc.clientId}:stratigraphyGraphContainer" action="#{cc.attrs.answer.updateSelectedRel}"/>
 
 
             </f:facet>

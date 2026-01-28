@@ -19,6 +19,7 @@ import java.util.Set;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import org.primefaces.PrimeFaces;
 
 @Data
 @Entity
@@ -44,7 +45,6 @@ public class CustomFieldAnswerStratigraphy extends CustomFieldAnswer {
 
     public void updateSelectedRel() {
 
-        // TODO : modify equals/hashcode of rels to base it only on the units.
 
         // Retrieve parameters from the request
         String sourceId = FacesContext.getCurrentInstance().getExternalContext().getRequestParameterMap().get("source");
