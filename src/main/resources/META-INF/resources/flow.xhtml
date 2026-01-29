@@ -249,7 +249,7 @@
                 </h:form>
                 <h:form id="fieldDesktopSwitchForm">
                     <input type="hidden"  name="${_csrf.parameterName}" value="${_csrf.token}"/>
-                    <p:selectBooleanButton value="#{flowBean.isFieldMode}" offIcon="bi bi-pc-display" onIcon="bi bi-phone" id="fieldOfficeSwitchButton">
+                    <p:selectBooleanButton style="display:none;" value="#{flowBean.isFieldMode}" offIcon="bi bi-pc-display" onIcon="bi bi-phone" id="fieldOfficeSwitchButton">
                         <p:ajax event="valueChange" listener="#{flowBean.changeFieldOfficeMode()}" update="flow fieldDesktopSwitchForm"
                                 onstart="PF('buiContent').show()" oncomplete="PF('buiContent').hide()"/>
                     </p:selectBooleanButton>
