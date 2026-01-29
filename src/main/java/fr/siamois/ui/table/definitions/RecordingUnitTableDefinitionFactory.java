@@ -273,7 +273,7 @@ public final class RecordingUnitTableDefinitionFactory {
                         .viewAction(TableColumnAction.VIEW_RELATION)
                         .viewTargetIndex(3)
 
-                        .addEnabled(true)
+                        .addEnabled(false)
                         .addIcon(BI_BI_PLUS_SQUARE)
                         .addAction(TableColumnAction.ADD_RELATION)
                         .addRenderedKey("specimenCreateAllowed")

@@ -330,3 +330,14 @@ body .ui-chkbox .ui-chkbox-box.ui-state-active {
     width: 100%;
 }
 
+nav.panel-bc {
+    padding:0.5em;
+padding-bottom: 0.2em;
+    padding-top: 0.2em;
+
+    span {
+    font-size: 14px;
+    color: var(--text-light) !important;
+        }
+}
+

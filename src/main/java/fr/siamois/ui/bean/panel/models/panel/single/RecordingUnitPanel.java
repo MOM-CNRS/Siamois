@@ -44,6 +44,9 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.Hibernate;
+import org.primefaces.model.menu.DefaultMenuItem;
+import org.primefaces.model.menu.DefaultMenuModel;
+import org.primefaces.model.menu.MenuModel;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.context.ApplicationContext;
@@ -95,6 +98,137 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
     private transient RecordingUnitTableViewModel childTableModel;
 
     private transient SpecimenTableViewModel specimenTableModel;
+
+    public List<List<RecordingUnit>> findAllParentPathsToRoot() {
+        List<List<RecordingUnit>> allPaths = new ArrayList<>();
+        List<RecordingUnit> parents = recordingUnitService.findDirectParentsOf(this.idunit);
+
+        // Si pas de parents, retourne une liste vide
+        if (parents == null || parents.isEmpty()) {
+            return allPaths;
+        }
+
+        // Pour chaque parent, trouve tous les chemins vers la racine
+        for (RecordingUnit parent : parents) {
+            List<RecordingUnit> currentPath = new ArrayList<>();
+            currentPath.add(parent);
+            findPathsRecursively(parent.getId(), currentPath, allPaths);
+        }
+
+        return allPaths;
+    }
+
+    private void findPathsRecursively(Long unitId, List<RecordingUnit> currentPath, List<List<RecordingUnit>> allPaths) {
+        List<RecordingUnit> parents = recordingUnitService.findDirectParentsOf(unitId);
+
+        // Si pas de parents, c'est la racine, ajoute le chemin actuel à allPaths
+        if (parents == null || parents.isEmpty()) {
+            allPaths.add(new ArrayList<>(currentPath));
+        } else {
+            // Trouve récursivement les chemins pour chaque parent
+            for (RecordingUnit parent : parents) {
+                currentPath.add(parent);
+                findPathsRecursively(parent.getId(), currentPath, allPaths);
+                currentPath.remove(currentPath.size() - 1); // Retour en arrière
+            }
+        }
+    }
+
+    public List<MenuModel> getAllParentBreadcrumbModels() {
+        List<List<RecordingUnit>> allPaths = findAllParentPathsToRoot();
+        List<MenuModel> breadcrumbModels = new ArrayList<>();
+
+        // Récupère l'entité courante
+        RecordingUnit currentUnit = recordingUnitService.findById(this.idunit);
+
+        // Si pas de parents, crée un breadcrumb avec uniquement Home et l'entité courante
+        if (allPaths.isEmpty()) {
+            MenuModel breadcrumbModel = new DefaultMenuModel();
+
+            // Ajoute l'élément Home
+            DefaultMenuItem homeItem = DefaultMenuItem.builder()
+                    .value("")
+                    .id("home")
+                    .icon("bi bi-house")
+                    .command("#{flowBean.addWelcomePanel()}")
+                    .update("flow")
+                    .onstart("PF('buiContent').show()")
+                    .oncomplete("PF('buiContent').hide()")
+                    .process("@this")
+                    .build();
+            breadcrumbModel.getElements().add(homeItem);
+
+            // Ajoute l'entité courante
+            if (currentUnit != null) {
+                DefaultMenuItem currentUnitItem = DefaultMenuItem.builder()
+                        .value(currentUnit.getFullIdentifier())
+                        .id(String.valueOf(currentUnit.getId()))
+                        .command("#{flowBean.addRecordingUnitPanel(" + currentUnit.getId() + ")}")
+                        .update("flow")
+                        .onstart("PF('buiContent').show()")
+                        .oncomplete("PF('buiContent').hide()")
+                        .process("@this")
+                        .build();
+                breadcrumbModel.getElements().add(currentUnitItem);
+            }
+
+            breadcrumbModels.add(breadcrumbModel);
+        } else {
+            // Si des parents existent, crée un breadcrumb pour chaque chemin
+            for (List<RecordingUnit> path : allPaths) {
+                MenuModel breadcrumbModel = new DefaultMenuModel();
+
+                // Ajoute l'élément Home
+                DefaultMenuItem homeItem = DefaultMenuItem.builder()
+                        .value("")
+                        .id("home")
+                        .icon("bi bi-house")
+                        .command("#{flowBean.addWelcomePanel()}")
+                        .update("flow")
+                        .onstart("PF('buiContent').show()")
+                        .oncomplete("PF('buiContent').hide()")
+                        .process("@this")
+                        .build();
+                breadcrumbModel.getElements().add(homeItem);
+
+                // Ajoute les parents dans l'ordre racine → parent
+                List<RecordingUnit> reversedPath = new ArrayList<>(path);
+                java.util.Collections.reverse(reversedPath);
+
+                for (RecordingUnit unit : reversedPath) {
+                    DefaultMenuItem item = DefaultMenuItem.builder()
+                            .value(unit.getFullIdentifier())
+                            .id(String.valueOf(unit.getId()))
+                            .command("#{flowBean.addRecordingUnitPanel(" + unit.getId() + ")}")
+                            .update("flow")
+                            .onstart("PF('buiContent').show()")
+                            .oncomplete("PF('buiContent').hide()")
+                            .process("@this")
+                            .build();
+                    breadcrumbModel.getElements().add(item);
+                }
+
+                // Ajoute l'entité courante à la fin
+                if (currentUnit != null) {
+                    DefaultMenuItem currentUnitItem = DefaultMenuItem.builder()
+                            .value(currentUnit.getFullIdentifier())
+                            .id(String.valueOf(currentUnit.getId()))
+                            .command("#{flowBean.addRecordingUnitPanel(" + currentUnit.getId() + ")}")
+                            .update("flow")
+                            .onstart("PF('buiContent').show()")
+                            .oncomplete("PF('buiContent').hide()")
+                            .process("@this")
+                            .build();
+                    breadcrumbModel.getElements().add(currentUnitItem);
+                }
+
+                breadcrumbModels.add(breadcrumbModel);
+            }
+        }
+
+        return breadcrumbModels;
+    }
+
 
     protected RecordingUnitPanel(ApplicationContext context)  {
 

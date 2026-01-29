@@ -4,6 +4,7 @@ package fr.siamois.infrastructure.database.repositories.recordingunit;
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
+import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import jakarta.transaction.Transactional;
 import jakarta.validation.constraints.NotNull;
 import org.springframework.data.domain.Page;
@@ -18,6 +19,7 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 @Repository
 public interface RecordingUnitRepository extends CrudRepository<RecordingUnit, Long>, RevisionRepository<RecordingUnit, Long, Long> {
@@ -453,6 +455,14 @@ public interface RecordingUnitRepository extends CrudRepository<RecordingUnit, L
     """, nativeQuery = true)
     List<RecordingUnit> findChildrenByParentAndInstitution(@Param("parentId") Long parentId,
                                                            @Param("institutionId") Long institutionId);
+
+    @Query(
+            nativeQuery = true,
+            value = "SELECT DISTINCT su.* FROM recording_unit su " +
+                    "JOIN recording_unit_hierarchy sh ON sh.fk_parent_id = su.recording_unit_id " +
+                    "WHERE sh.fk_child_id = :recordingUnitId"
+    )
+    Set<RecordingUnit> findParentsOf(Long recordingUnitId);
 
 
     @Query(value = """
