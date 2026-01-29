@@ -59,10 +59,11 @@
                     </h:panelGroup>
                 </p:outputPanel>
                 <!-- Séléction des USp dans un treenode -->
-                <p:panel header="Table de sélection du contexte spatiale" toggleable="true" collapsed="true">
+                <p:panel header="Table de sélection du contexte spatiale" toggleable="true"  collapsed="true">
                 <p:treeTable value="#{cc.attrs.formCtx.getRoot(cc.attrs.answer)}"
                              widgetVar="spatialUnitTreeTable"
                              rows="5"
+                             id="selectSpatialTree"
                              propagateSelectionUp="false"
                              paginatorPosition="bottom"
                              size="small"
@@ -79,7 +80,8 @@
                         <p:commandButton value="Ajouter"
                                          rendered="#{!cc.attrs.formCtx.treeStates.get(cc.attrs.answer).selection.contains(su)}"
                                          actionListener="#{cc.attrs.formCtx.addSUToSelection(cc.attrs.answer,su)}"
-                                         update="#{cc.attrs.updateTargetsOnBlur} selectedSpatialUnitPanel"
+                                         process="@this"
+                                         update="#{cc.attrs.updateTargetsOnBlur} #{cc.clientId}:selectedSpatialUnitPanel #{cc.clientId}:selectSpatialTree"
                                          immediate="true"/>
 
                     </p:column>

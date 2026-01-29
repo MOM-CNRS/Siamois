@@ -52,6 +52,11 @@
                                  required="#{cc.attrs.required}"
                                  var="su"
                                  converter="#{spatialUnitConverter}">
+                    <!-- Null / no selection -->
+                    <f:selectItem
+                            itemLabel="Choisir"
+                            itemValue="#{null}"
+                            noSelectionOption="true"/>
                     <f:selectItems
                             var="unit"
                             itemValue="#{unit}"

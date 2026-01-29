@@ -150,6 +150,7 @@ public class RecordingUnitService implements ArkEntityService {
     }
 
     private RecordingUnit setupAdditionalAnswers(RecordingUnit recordingUnit, RecordingUnit managedRecordingUnit) {
+
         CustomFormResponse managedFormResponse;
 
         if (recordingUnit.getFormResponse() != null && recordingUnit.getFormResponse().getForm() != null) {

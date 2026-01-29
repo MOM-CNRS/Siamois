@@ -393,7 +393,7 @@ public class RecordingUnit extends RecordingUnitParent implements ArkEntity, Ref
                                             .addColumn(new CustomCol.Builder()
                                                     .readOnly(false)
                                                     .className(COLUMN_CLASS_NAME)
-                                                    .isRequired(true)
+                                                    .isRequired(false)
                                                     .field(spatialUnitField)
                                                     .build())
                                             .addColumn(new CustomCol.Builder()

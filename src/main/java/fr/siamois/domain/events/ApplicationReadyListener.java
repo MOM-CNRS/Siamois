@@ -1,7 +1,10 @@
 package fr.siamois.domain.events;
 
+import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.exceptions.database.DatabaseDataInitException;
 import fr.siamois.infrastructure.database.initializer.DatabaseInitializer;
+import fr.siamois.utils.context.ExecutionContextHolder;
+import fr.siamois.utils.context.SystemUserLoader;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
@@ -21,6 +24,7 @@ import java.util.List;
 public class ApplicationReadyListener {
 
     private final List<DatabaseInitializer> databaseInitializer;
+    private final SystemUserLoader systemUserLoader;
 
     /**
      * onApplicationReady is triggered when the application is fully started.
@@ -29,6 +33,10 @@ public class ApplicationReadyListener {
      */
     @EventListener(ApplicationReadyEvent.class)
     public void onApplicationReady() {
+
+        UserInfo systemUser = systemUserLoader.loadSystemUser(); // system
+        ExecutionContextHolder.set(systemUser);
+
         for (DatabaseInitializer initializer : databaseInitializer) {
             try {
                 initializer.initialize();

@@ -1,31 +1,27 @@
 package fr.siamois.domain.events.listener;
 
 import fr.siamois.domain.models.UserInfo;
-import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.history.InfoRevisionEntity;
-import fr.siamois.domain.models.institution.Institution;
-import fr.siamois.infrastructure.database.repositories.institution.InstitutionRepository;
-import fr.siamois.infrastructure.database.repositories.person.PersonRepository;
 import fr.siamois.ui.bean.SessionSettingsBean;
+import fr.siamois.utils.context.ExecutionContextHolder;
+import fr.siamois.utils.context.SystemUserLoader;
 import jakarta.persistence.PrePersist;
-import jakarta.validation.constraints.NotNull;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
 @Scope(value = "session")
 @Component
 public class InfoRevisionListener {
 
+    private SystemUserLoader systemUserLoader;
+    private final SessionSettingsBean sessionSettingsBean;
     private final ApplicationContext applicationContext;
 
-    private SessionSettingsBean sessionSettingsBean;
-    private InstitutionRepository institutionRepository;
-    private PersonRepository personRepository;
-
-    // If the beans are initialized in the constructor, it causes circular dependencies issues.
-    // So we initialize them lazily in the onPersist method.
-    public InfoRevisionListener(ApplicationContext applicationContext) {
+    public InfoRevisionListener(SessionSettingsBean sessionSettingsBean, ApplicationContext applicationContext) {
+        this.sessionSettingsBean = sessionSettingsBean;
         this.applicationContext = applicationContext;
     }
 
@@ -36,28 +32,38 @@ public class InfoRevisionListener {
      * @param entity the InfoRevisionEntity being persisted
      */
     @PrePersist
-    private void onPersist(@NotNull InfoRevisionEntity entity) {
-        if (sessionSettingsBean == null) {
-            sessionSettingsBean = applicationContext.getBean(SessionSettingsBean.class);
-        }
+    private void onPersist(InfoRevisionEntity entity) {
 
-        if (personRepository == null) {
-            personRepository = applicationContext.getBean(PersonRepository.class);
-        }
-
-        if (institutionRepository == null) {
-            institutionRepository = applicationContext.getBean(InstitutionRepository.class);
-        }
-
-        UserInfo info = sessionSettingsBean.getUserInfo();
-        if (info == null) {
-            Person admin = personRepository.findByUsernameIgnoreCase("system").orElseThrow(() -> new IllegalStateException("System user should exists"));
-            Institution defaultInsti = institutionRepository.findInstitutionByIdentifier("siamois").orElseThrow(() -> new IllegalStateException("Default institution should exist"));
-            info = new UserInfo(defaultInsti, admin, "en");
-        }
+        UserInfo info = resolveCurrentUser();
 
         entity.setUpdatedBy(info.getUser());
         entity.setUpdatedFrom(info.getInstitution());
     }
+
+    private UserInfo resolveCurrentUser() {
+        // --- 1. Try web session ---
+        try {
+            if (RequestContextHolder.getRequestAttributes() instanceof ServletRequestAttributes && sessionSettingsBean != null) {
+                UserInfo user = sessionSettingsBean.getUserInfo();
+                if (user != null) return user;
+
+            }
+        } catch (Exception ignored) {
+
+            // no op, goes to next block
+
+        }
+
+        // --- 2. Try ThreadLocal (ExecutionContextHolder) ---
+        UserInfo user = ExecutionContextHolder.get();
+        if (user != null) return user;
+
+        // --- 3. Lazy load SystemUserLoader from context ---
+        if (systemUserLoader == null) {
+            systemUserLoader = applicationContext.getBean(SystemUserLoader.class);
+        }
+        return systemUserLoader.loadSystemUser();
+    }
+
 
 }
