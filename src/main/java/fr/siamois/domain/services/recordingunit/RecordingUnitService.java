@@ -151,30 +151,28 @@ public class RecordingUnitService implements ArkEntityService {
 
     private RecordingUnit setupAdditionalAnswers(RecordingUnit recordingUnit, RecordingUnit managedRecordingUnit) {
 
-        // todo : re-enabled, disabled for workshop at bibracte because it's causing field modifications in db
+        CustomFormResponse managedFormResponse;
 
-//        CustomFormResponse managedFormResponse;
-//
-//        if (recordingUnit.getFormResponse() != null && recordingUnit.getFormResponse().getForm() != null) {
-//            // Save the form response if there is one
-//
-//            // Get the existing response or create a new one
-//            if (managedRecordingUnit.getFormResponse() == null) {
-//                // Initialize the managed form response
-//                managedFormResponse = new CustomFormResponse();
-//                managedRecordingUnit.setFormResponse(managedFormResponse);
-//            } else {
-//                managedFormResponse = managedRecordingUnit.getFormResponse();
-//            }
-//            // Process form response
-//            customFormResponseService
-//                    .saveFormResponse(managedFormResponse, recordingUnit.getFormResponse());
-//        } else {
-//            managedRecordingUnit.setFormResponse(null);
-//        }
-//
-//
-//        managedRecordingUnit = recordingUnitRepository.save(managedRecordingUnit);
+        if (recordingUnit.getFormResponse() != null && recordingUnit.getFormResponse().getForm() != null) {
+            // Save the form response if there is one
+
+            // Get the existing response or create a new one
+            if (managedRecordingUnit.getFormResponse() == null) {
+                // Initialize the managed form response
+                managedFormResponse = new CustomFormResponse();
+                managedRecordingUnit.setFormResponse(managedFormResponse);
+            } else {
+                managedFormResponse = managedRecordingUnit.getFormResponse();
+            }
+            // Process form response
+            customFormResponseService
+                    .saveFormResponse(managedFormResponse, recordingUnit.getFormResponse());
+        } else {
+            managedRecordingUnit.setFormResponse(null);
+        }
+
+
+        managedRecordingUnit = recordingUnitRepository.save(managedRecordingUnit);
         return managedRecordingUnit;
     }
 

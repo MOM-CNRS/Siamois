@@ -32,6 +32,7 @@ public class CustomFormResponse implements Serializable {
     @OneToMany(
             fetch = FetchType.EAGER,
             orphanRemoval = true,
+            cascade = {CascadeType.PERSIST, CascadeType.MERGE},
             mappedBy = "pk.formResponse"
     )
     @MapKey(name="pk.field")
