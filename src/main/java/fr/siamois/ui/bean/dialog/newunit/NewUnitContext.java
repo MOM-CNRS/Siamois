@@ -62,6 +62,10 @@ public class NewUnitContext implements Serializable {
             return Trigger.builder().type(TriggerType.TOOLBAR).build();
         }
 
+        public static Trigger homePanel() {
+            return Trigger.builder().type(TriggerType.HOME_PANEL).build();
+        }
+
         public static Trigger cell(UnitKind clickedKind, Long clickedId, String columnKey) {
             return Trigger.builder()
                     .type(TriggerType.CELL)
@@ -73,7 +77,7 @@ public class NewUnitContext implements Serializable {
     }
 
 
-    public enum TriggerType { TOOLBAR, CELL }
+    public enum TriggerType { TOOLBAR, CELL, HOME_PANEL }
 
     // ======================
     // UI insertion policy
