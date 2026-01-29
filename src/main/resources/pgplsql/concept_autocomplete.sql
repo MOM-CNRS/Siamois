@@ -201,42 +201,45 @@ BEGIN
               AND cl.lang_code = p_langcode
               AND NOT c.is_deleted
               AND cl.label_type = 0
+            ORDER BY cl.label  -- Sort by label in alphabetical order
             LIMIT p_limit;
-    end if;
+    ELSE
 
-    -- Cas quand input n'est pas vide
-    RETURN QUERY
-        SELECT c.concept_id,
-               c.external_id,
+        -- Cas quand input n'est pas vide
+        RETURN QUERY
+            SELECT c.concept_id,
+                   c.external_id,
 
-               c2.concept_id,
-               c2.external_id,
+                   c2.concept_id,
+                   c2.external_id,
 
-               v.vocabulary_id,
-               v.base_uri,
-               v.external_id,
+                   v.vocabulary_id,
+                   v.base_uri,
+                   v.external_id,
 
-               vt.vocabulary_type_id,
-               vt.label,
+                   vt.vocabulary_type_id,
+                   vt.label,
 
-               cl.concept_label_id,
-               cl.label,
+                   cl.concept_label_id,
+                   cl.label,
 
-               concept_autocomplete_get_alt_labels(c.concept_id, p_field_concept_id, p_langcode),
-               concept_autocomplete_get_definition(c.concept_id, p_langcode),
-               concept_autocomplete_get_hierarchy(c.concept_id, p_field_concept_id, p_langcode)
-        FROM concept_label cl
-                 JOIN concept c ON cl.fk_concept_id = c.concept_id
-                 JOIN concept c2 ON c2.concept_id = p_field_concept_id
-                 JOIN vocabulary v ON c.fk_vocabulary_id = v.vocabulary_id
-                 JOIN vocabulary_type vt ON v.fk_type_id = vt.vocabulary_type_id
-        WHERE cl.fk_field_parent_concept_id = p_field_concept_id
-          AND cl.lang_code = p_langcode
-          AND NOT c.is_deleted
-          AND unaccent(cl.label) ILIKE unaccent('%' || p_input || '%')
-          AND cl.label_type = 0
-        LIMIT p_limit;
+                   concept_autocomplete_get_alt_labels(c.concept_id, p_field_concept_id, p_langcode),
+                   concept_autocomplete_get_definition(c.concept_id, p_langcode),
+                   concept_autocomplete_get_hierarchy(c.concept_id, p_field_concept_id, p_langcode)
+            FROM concept_label cl
+                     JOIN concept c ON cl.fk_concept_id = c.concept_id
+                     JOIN concept c2 ON c2.concept_id = p_field_concept_id
+                     JOIN vocabulary v ON c.fk_vocabulary_id = v.vocabulary_id
+                     JOIN vocabulary_type vt ON v.fk_type_id = vt.vocabulary_type_id
+            WHERE cl.fk_field_parent_concept_id = p_field_concept_id
+              AND cl.lang_code = p_langcode
+              AND NOT c.is_deleted
+              AND unaccent(cl.label) ILIKE unaccent('%' || p_input || '%')
+              AND cl.label_type = 0
+            ORDER BY cl.label  -- Sort by label in alphabetical order
+            LIMIT p_limit;
 
+    END IF;
 
 END;
 $$ LANGUAGE plpgsql;
