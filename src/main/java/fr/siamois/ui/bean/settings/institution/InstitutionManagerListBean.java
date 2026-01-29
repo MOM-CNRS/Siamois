@@ -15,10 +15,10 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.primefaces.PrimeFaces;
+import org.springframework.context.annotation.Scope;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
-import javax.faces.bean.SessionScoped;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -29,7 +29,7 @@ import static fr.siamois.utils.MessageUtils.displayWarnMessage;
 
 @Slf4j
 @Component
-@SessionScoped
+@Scope(value = "session")
 @Getter
 @Setter
 public class InstitutionManagerListBean implements SettingsDatatableBean {

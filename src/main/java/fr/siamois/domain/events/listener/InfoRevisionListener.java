@@ -10,11 +10,10 @@ import fr.siamois.ui.bean.SessionSettingsBean;
 import jakarta.persistence.PrePersist;
 import jakarta.validation.constraints.NotNull;
 import org.springframework.context.ApplicationContext;
+import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
-import javax.faces.bean.SessionScoped;
-
-@SessionScoped
+@Scope(value = "session")
 @Component
 public class InfoRevisionListener {
 

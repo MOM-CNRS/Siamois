@@ -6,6 +6,7 @@ import fr.siamois.domain.services.document.DocumentService;
 import fr.siamois.domain.services.document.compressor.FileCompressor;
 import fr.siamois.ui.bean.SessionSettingsBean;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Scope;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.*;
@@ -13,13 +14,12 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 
-import javax.faces.bean.SessionScoped;
 import java.io.InputStream;
 import java.util.Optional;
 
 @Slf4j
 @Controller
-@SessionScoped
+@Scope(value = "session")
 public class DocumentController {
 
 

@@ -5,16 +5,17 @@ import fr.siamois.domain.models.auth.Person;
 import fr.siamois.utils.AuthenticatedUserUtils;
 import jakarta.faces.context.FacesContext;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Scope;
+import org.springframework.context.annotation.ScopedProxyMode;
 import org.springframework.stereotype.Component;
 
-import javax.faces.bean.SessionScoped;
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.Optional;
 
 @Slf4j
 @Component
-@SessionScoped
+@Scope(value = "session", proxyMode = ScopedProxyMode.TARGET_CLASS)
 public class PresentationBean implements Serializable {
 
     private final SessionSettingsBean sessionSettingsBean;

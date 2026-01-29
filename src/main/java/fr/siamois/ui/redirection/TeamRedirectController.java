@@ -7,13 +7,12 @@ import fr.siamois.ui.bean.settings.InstitutionDetailsBean;
 import fr.siamois.ui.bean.settings.InstitutionListSettingsBean;
 import fr.siamois.ui.bean.settings.team.TeamListBean;
 import fr.siamois.ui.bean.settings.team.TeamMembersBean;
+import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 
-import javax.faces.bean.SessionScoped;
-
-@SessionScoped
+@Scope(value = "session")
 @Controller
 public class TeamRedirectController {
 
