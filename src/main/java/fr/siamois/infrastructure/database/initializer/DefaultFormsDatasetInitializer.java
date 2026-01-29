@@ -408,7 +408,7 @@ public class DefaultFormsDatasetInitializer implements DatabaseInitializer {
                                                     ),
                                                     new CustomColDTO(
                                                             false,
-                                                            true,
+                                                            false,
                                                             fields.get(5),
                                                             UI_G_12_UI_MD_6_UI_LG_3
                                                     ),
@@ -487,7 +487,7 @@ public class DefaultFormsDatasetInitializer implements DatabaseInitializer {
                                                             ),
                                                             new CustomColDTO(
                                                                     false,
-                                                                    true,
+                                                                    false,
                                                                     fields.get(5),
                                                                     UI_G_12_UI_MD_6_UI_LG_3
                                                             ),
@@ -643,7 +643,7 @@ public class DefaultFormsDatasetInitializer implements DatabaseInitializer {
                                                     ),
                                                     new CustomColDTO(
                                                             false,
-                                                            true,
+                                                            false,
                                                             fields.get(5),
                                                             UI_G_12_UI_MD_6_UI_LG_3
                                                     ),

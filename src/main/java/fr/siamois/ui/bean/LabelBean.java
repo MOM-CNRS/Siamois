@@ -13,12 +13,12 @@ import org.springframework.context.annotation.ScopedProxyMode;
 import org.springframework.context.event.EventListener;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 
 import java.io.Serializable;
 import java.util.*;
 
-@Component
-@Scope(value = "session", proxyMode = ScopedProxyMode.TARGET_CLASS)
+@Service
 @RequiredArgsConstructor
 public class LabelBean implements Serializable {
 
