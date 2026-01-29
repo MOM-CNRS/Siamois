@@ -9,16 +9,16 @@ import fr.siamois.utils.MessageUtils;
 import jakarta.faces.application.FacesMessage;
 import lombok.Getter;
 import lombok.Setter;
+import org.springframework.context.annotation.Scope;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
-import javax.faces.bean.SessionScoped;
 import java.io.Serializable;
 
 @Getter
 @Setter
 @Component
-@SessionScoped
+@Scope(value = "session")
 public class InstitutionInfoSettingsBean implements Serializable {
 
     private final transient InstitutionService institutionService;
