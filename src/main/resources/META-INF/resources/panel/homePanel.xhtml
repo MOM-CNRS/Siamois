@@ -41,6 +41,7 @@
                                     btnNewActionOnStart=""
                                     btnNewAction="#{genericNewUnitDialogBean.openNewEntityDiag('SPATIAL')}"
                                     isCreateAllowed="#{spatialUnitFieldBean.isCreateAllowed()}"
+                                    description="Découpage spatial et localisation des projets"
                             />
 
                         </p:column>
@@ -61,6 +62,7 @@
                                     btnNewActionOnStart=""
                                     btnNewAction="#{genericNewUnitDialogBean.openNewEntityDiag('ACTION')}"
                                     isCreateAllowed="#{flowBean.isActionUnitCreateAllowed()}"
+                                    description="Les interventions et fouilles"
                             />
 
 
@@ -77,6 +79,7 @@
                                     label="#{langBean.msg('common.entity.recordingUnits')}"
                                     count="#{panelModel.nbOfRecordingUnits}"
                                     btnAction="#{flowBean.addRecordingUnitListPanel(panelModel.breadcrumb)}"
+                                    description="Les unités d'enregistrement"
 
                             />
 
@@ -93,6 +96,7 @@
                                     label="#{langBean.msg('common.entity.specimen')}"
                                     count="#{panelModel.nbOfSpecimen}"
                                     btnAction="#{flowBean.addSpecimenListPanel(panelModel.breadcrumb)}"
+                                    description="Mobiliers, prélèvements et VAB"
 
                             />
 

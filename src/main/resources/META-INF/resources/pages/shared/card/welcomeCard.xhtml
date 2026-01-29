@@ -12,6 +12,7 @@
         <cc:attribute name="chipStyleClass" type="java.lang.String" required="true"/>
         <cc:attribute name="btnStyleClass" type="java.lang.String" required="true"/>
         <cc:attribute name="label" type="java.lang.String" required="true"/>
+        <cc:attribute name="description" type="java.lang.String" required="false"/>
         <cc:attribute name="count" type="long" required="true" />
         <cc:attribute name="btnLabel" type="java.lang.String" required="true"/>
         <cc:attribute name="btnAction" required="false" method-signature="java.lang.Void f()"/>
@@ -31,6 +32,10 @@
                 <i class="#{cc.attrs.icon}"/>
                 #{cc.attrs.label}
                 <p:chip styleClass="#{cc.attrs.chipStyleClass}" label="#{cc.attrs.count}" />
+            </div>
+
+            <div>
+                <small>#{cc.attrs.description}</small>
             </div>
 
 
