@@ -76,8 +76,8 @@ public abstract class AbstractSingleEntityPanel<T extends TraceableEntity> exten
         return "/panel/singleUnitPanel.xhtml";
     }
 
-    public MenuModel getBreadcrumbModel() {
-        return null; // no bc by default
+    public List<MenuModel> getAllParentBreadcrumbModels() {
+        return List.of(); // no bc by default
     }
 
     public abstract void init();
