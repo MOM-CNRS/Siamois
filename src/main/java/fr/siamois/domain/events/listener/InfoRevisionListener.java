@@ -1,22 +1,14 @@
 package fr.siamois.domain.events.listener;
 
 import fr.siamois.domain.models.UserInfo;
-import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.history.InfoRevisionEntity;
-import fr.siamois.domain.models.institution.Institution;
-import fr.siamois.infrastructure.database.repositories.institution.InstitutionRepository;
-import fr.siamois.infrastructure.database.repositories.person.PersonRepository;
 import fr.siamois.ui.bean.SessionSettingsBean;
 import fr.siamois.utils.context.ExecutionContextHolder;
 import fr.siamois.utils.context.SystemUserLoader;
 import jakarta.persistence.PrePersist;
-import jakarta.validation.constraints.NotNull;
-import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Scope;
-import org.springframework.context.annotation.ScopedProxyMode;
 import org.springframework.stereotype.Component;
-import org.springframework.web.context.request.RequestAttributes;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
@@ -51,13 +43,16 @@ public class InfoRevisionListener {
     private UserInfo resolveCurrentUser() {
         // --- 1. Try web session ---
         try {
-            if (RequestContextHolder.getRequestAttributes() instanceof ServletRequestAttributes) {
-                if (sessionSettingsBean != null) {
-                    UserInfo user = sessionSettingsBean.getUserInfo();
-                    if (user != null) return user;
-                }
+            if (RequestContextHolder.getRequestAttributes() instanceof ServletRequestAttributes && sessionSettingsBean != null) {
+                UserInfo user = sessionSettingsBean.getUserInfo();
+                if (user != null) return user;
+
             }
-        } catch (Exception ignored) { }
+        } catch (Exception ignored) {
+
+            // no op, goes to next block
+
+        }
 
         // --- 2. Try ThreadLocal (ExecutionContextHolder) ---
         UserInfo user = ExecutionContextHolder.get();

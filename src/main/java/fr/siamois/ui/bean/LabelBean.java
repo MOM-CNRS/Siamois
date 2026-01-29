@@ -8,11 +8,8 @@ import fr.siamois.domain.models.vocabulary.label.ConceptPrefLabel;
 import fr.siamois.domain.services.vocabulary.LabelService;
 import fr.siamois.infrastructure.database.repositories.vocabulary.label.ConceptLabelRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.context.annotation.Scope;
-import org.springframework.context.annotation.ScopedProxyMode;
 import org.springframework.context.event.EventListener;
 import org.springframework.lang.Nullable;
-import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 
 import java.io.Serializable;
