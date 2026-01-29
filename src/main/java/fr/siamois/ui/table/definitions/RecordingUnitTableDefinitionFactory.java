@@ -195,7 +195,7 @@ public final class RecordingUnitTableDefinitionFactory {
                         .field(matrixColor)
                         .sortable(false)
                         .visible(true)
-                        .required(true)
+                        .required(false)
                         .build()
         );
 
@@ -229,7 +229,7 @@ public final class RecordingUnitTableDefinitionFactory {
                         .sortable(false)
                         .filterable(false)
                         .visible(true)
-                        .required(true)
+                        .required(false)
                         .build()
         );
         tableModel.getTableDefinition().addColumn(
@@ -253,7 +253,7 @@ public final class RecordingUnitTableDefinitionFactory {
                         .filterable(false)
                         .visible(true)
                         .readOnly(false)
-                        .required(true)
+                        .required(false)
                         .build()
         );
 

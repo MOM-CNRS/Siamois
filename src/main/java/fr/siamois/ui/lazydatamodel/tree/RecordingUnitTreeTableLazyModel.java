@@ -42,5 +42,8 @@ public class RecordingUnitTreeTableLazyModel extends BaseTreeTableLazyModel<Reco
         Hibernate.initialize(child.getChildren());
         Hibernate.initialize(child.getParents());
         Hibernate.initialize(child.getSpecimenList());
+        Hibernate.initialize(child.getDocuments());
+        Hibernate.initialize(child.getRelationshipsAsUnit2());
+        Hibernate.initialize(child.getRelationshipsAsUnit1());
     }
 }

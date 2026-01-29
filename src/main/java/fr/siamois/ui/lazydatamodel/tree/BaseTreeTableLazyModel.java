@@ -222,6 +222,7 @@ public abstract class BaseTreeTableLazyModel<T extends TraceableEntity, ID> impl
             if (r == null || r.getId() == null) continue;
 
             TreeNode<T> node = new DefaultTreeNode<>(r, rootNode);
+            initializeAssociations(r);
             registerNode(r, node);
 
             path.clear();

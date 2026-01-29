@@ -1,10 +1,12 @@
 package fr.siamois.ui.table;
 
+import fr.siamois.domain.models.exceptions.recordingunit.FailedRecordingUnitSaveException;
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.customfield.CustomFieldDateTime;
 import fr.siamois.domain.models.form.customfield.CustomFieldInteger;
 import fr.siamois.domain.models.form.customform.CustomForm;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
+import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.authorization.writeverifier.RecordingUnitWriteVerifier;
 import fr.siamois.domain.services.form.FormService;
@@ -18,6 +20,7 @@ import fr.siamois.ui.bean.dialog.newunit.GenericNewUnitDialogBean;
 import fr.siamois.ui.bean.dialog.newunit.NewUnitContext;
 import fr.siamois.ui.bean.dialog.newunit.UnitKind;
 import fr.siamois.ui.bean.panel.FlowBean;
+import fr.siamois.ui.form.EntityFormContext;
 import fr.siamois.ui.form.FormContextServices;
 import fr.siamois.ui.lazydatamodel.BaseRecordingUnitLazyDataModel;
 import fr.siamois.ui.lazydatamodel.tree.RecordingUnitTreeTableLazyModel;
@@ -27,8 +30,10 @@ import org.primefaces.model.TreeNode;
 
 import java.time.LocalDateTime;
 import java.time.Month;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 import static fr.siamois.ui.bean.dialog.newunit.NewUnitContext.TreeInsert.ROOT;
 import static fr.siamois.ui.table.TableColumnAction.DUPLICATE_ROW;
@@ -360,6 +365,39 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
 
         onAnyEntityCreated(newUnit, ctx) ;
         MessageUtils.displayInfoMessage(sessionSettingsBean.getLangBean(), "common.action.duplicateEntity", toDuplicate.getFullIdentifier());
+    }
+
+    @Override
+    public void save() {
+        // Determine the source of entities based on treeMode
+        Set<RecordingUnit> entities;
+        if (treeMode) {
+            entities = treeLazyModel.getAllEntitiesFromTree();
+        } else {
+            entities = new HashSet<>(lazyDataModel.getQueryResult());
+        }
+
+        // Iterate over all entities
+        for (RecordingUnit entity : entities) {
+            Long entityId = entity.getId();
+            EntityFormContext<RecordingUnit> context = rowContexts.get(entityId);
+
+            // Check if the entity has been modified
+            if (context != null && context.isHasUnsavedModifications()) {
+                try {
+                    // Save the entity
+                    context.flushBackToEntity();
+
+                    recordingUnitService.save(entity, entity.getType());
+
+                    context.init(true);
+
+                } catch (FailedRecordingUnitSaveException e) {
+                    // Display error message
+                    MessageUtils.displayErrorMessage(sessionSettingsBean.getLangBean(), "common.entity.recordingUnits.updateFailed", entity.getFullIdentifier());
+                }
+            }
+        }
     }
 
 }
