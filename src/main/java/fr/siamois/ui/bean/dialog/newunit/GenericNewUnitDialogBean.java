@@ -151,8 +151,16 @@ public class GenericNewUnitDialogBean<T extends TraceableEntity>
         initForms(true);
     }
 
-    public void createAndOpen() { performCreate(true, true); }
-    public void create() { performCreate(false, false); }
+    public void create() {
+
+        boolean isDifferentKind = newUnitContext.getTrigger().getType() == NewUnitContext.TriggerType.HOME_PANEL
+                || ( newUnitContext.getTrigger().getType() == NewUnitContext.TriggerType.CELL  &&
+                newUnitContext.getTrigger().getClickedKind() != newUnitContext.getKindToCreate());
+
+
+        performCreate(isDifferentKind, isDifferentKind);
+
+    }
 
     @Override
     public String display() {
@@ -240,6 +248,7 @@ public class GenericNewUnitDialogBean<T extends TraceableEntity>
     public void openNewEntityDiag(UnitKind unitKind) {
         NewUnitContext ctx = NewUnitContext.builder()
                 .kindToCreate(unitKind)
+                .trigger(NewUnitContext.Trigger.homePanel())
                 .build();
         try {
             selectKind(ctx, null);
