@@ -43,10 +43,8 @@ import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * <p>This ui.bean handles the home page</p>
@@ -172,6 +170,13 @@ public class FlowBean implements Serializable {
         //if fullscreen set this new panel as the active one
         if (fullscreenPanelIndex >= 0) {
             fullscreenPanelIndex = 0;
+        }
+
+        // Update context form for sync
+        FacesContext facesContext = FacesContext.getCurrentInstance();
+        // Check if the current request is an AJAX request
+        if (facesContext != null) {
+            PrimeFaces.current().ajax().update("contextForm");
         }
 
     }
@@ -361,6 +366,13 @@ public class FlowBean implements Serializable {
             PrimeFaces.current().ajax().update("flow");
         }
 
+        // Update context form for sync
+        FacesContext facesContext = FacesContext.getCurrentInstance();
+        // Check if the current request is an AJAX request
+        if (facesContext != null) {
+            PrimeFaces.current().ajax().update("contextForm");
+        }
+
     }
 
     private void fillAllUnsavedPanel() {
@@ -506,6 +518,7 @@ public class FlowBean implements Serializable {
         } else {
             selectedInstitution = sessionSettings.getSelectedInstitution();
         }
+
     }
 
     /**
@@ -551,6 +564,18 @@ public class FlowBean implements Serializable {
             return langBean.msg("common.label.switchToWriteMode");
         }
     }
+
+    /**
+     * Retourne les URIs des panels actuels sous forme de chaîne (ex: "/spatial/1,/action/2").
+     * Pour verifier la desynchronisation coté client
+     */
+    public String getCurrentPanelIdsAsString() {
+        return panels.stream()
+                .map(AbstractPanel::ressourceUri) // Utilise resourceUri() au lieu des IDs
+                .filter(Objects::nonNull) // Ignore les panels sans URI
+                .collect(Collectors.joining(","));
+    }
+
 
 
 }

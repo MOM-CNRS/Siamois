@@ -57,3 +57,38 @@ function toggleSiamoisSettingsSidebar() {
 function logout() {
     logoutForm.submit();
 }
+
+// BELOW IS A TEMP SOLUTION FOR RELOADING THE PAGE ON NAVIGATOR TAB CHANGE
+function handleDesynchronization(needsReload) {
+        if (needsReload === true) {
+           window.location.reload();
+        }
+    }
+
+function checkDesync() {
+    const institutionId =
+        document.getElementById("contextForm:currentInstitutionId")?.value;
+    const panelIds =
+        document.getElementById("contextForm:currentPanelIds")?.value;
+
+    if (!institutionId || !panelIds) {
+        location.reload(true);
+        return;
+    }
+
+    fetch(APP_CTX + `/api/context/check?institutionId=${encodeURIComponent(institutionId)}&panelIds=${encodeURIComponent(panelIds)}`, {
+        credentials: "same-origin"
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.reload === true) {
+            location.reload(true);
+        }
+    });
+}
+
+document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") {
+        checkDesync();
+    }
+});
