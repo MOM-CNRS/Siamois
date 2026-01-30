@@ -187,6 +187,14 @@ public class SpatialUnitTableViewModel extends EntityTableViewModel<SpatialUnit,
                         .styleClass(SIA_ICON_BTN)
                         .build(),
 
+                // Add Parent
+                RowAction.builder()
+                        .action(TableColumnAction.NEW_PARENT)
+                        .processExpr(THIS)
+                        .updateSelfTable(true)
+                        .styleClass(SIA_ICON_BTN)
+                        .build(),
+
                 // New action
                 RowAction.builder()
                         .action(TableColumnAction.NEW_ACTION)
@@ -245,7 +253,7 @@ public class SpatialUnitTableViewModel extends EntityTableViewModel<SpatialUnit,
     public boolean isRendered(RowAction action, SpatialUnit su) {
         // todo: display based on permissions
         return switch (action.getAction()) {
-            case DUPLICATE_ROW, NEW_CHILDREN -> flowBean.getIsWriteMode() && // perm to create spatial unit in orga and app is in write mode
+            case DUPLICATE_ROW, NEW_CHILDREN, NEW_PARENT -> flowBean.getIsWriteMode() && // perm to create spatial unit in orga and app is in write mode
                     spatialUnitService.hasCreatePermission(sessionSettingsBean.getUserInfo());
             case TOGGLE_BOOKMARK -> true; // Anyone can add to fav
             case NEW_ACTION -> flowBean.getIsWriteMode() && // perm to create action unit in orga and app is in write mode
@@ -264,6 +272,7 @@ public class SpatialUnitTableViewModel extends EntityTableViewModel<SpatialUnit,
                 case DUPLICATE_ROW -> "bi bi-copy";
                 case NEW_ACTION -> "bi bi-arrow-down-square";
                 case NEW_CHILDREN -> "bi bi-node-plus-fill rotate-90";
+                case NEW_PARENT -> "bi bi-node-plus-fill rotate-minus90";
                 default -> "";
             };
     }
@@ -285,6 +294,21 @@ public class SpatialUnitTableViewModel extends EntityTableViewModel<SpatialUnit,
                         .insertPolicy(NewUnitContext.UiInsertPolicy.builder()
                                 .listInsert(NewUnitContext.ListInsert.TOP)
                                 .treeInsert(NewUnitContext.TreeInsert.CHILD_FIRST)
+                                .build())
+                        .build();
+
+                openCreateDialog(ctx, genericNewUnitDialogBean);
+            }
+
+            case NEW_PARENT -> {
+                // Open new spatial unit dialog
+                // The new spatial unit will be PARENT of the current su
+                NewUnitContext ctx = NewUnitContext.builder()
+                        .kindToCreate(UnitKind.SPATIAL)
+                        .trigger(NewUnitContext.Trigger.cell(UnitKind.SPATIAL, su.getId(), PARENTS))
+                        .insertPolicy(NewUnitContext.UiInsertPolicy.builder()
+                                .listInsert(NewUnitContext.ListInsert.TOP)
+                                .treeInsert(NewUnitContext.TreeInsert.PARENT_AT_ROOT)
                                 .build())
                         .build();
 
@@ -321,6 +345,8 @@ public class SpatialUnitTableViewModel extends EntityTableViewModel<SpatialUnit,
             case DUPLICATE_ROW -> sessionSettingsBean.getLangBean().msg("common.action.duplicate") ;
 
             case NEW_CHILDREN -> sessionSettingsBean.getLangBean().msg("common.action.createChildren") ;
+
+            case NEW_PARENT -> sessionSettingsBean.getLangBean().msg("common.action.createParent") ;
 
             case NEW_ACTION -> sessionSettingsBean.getLangBean().msg("common.action.createAction") ;
 
