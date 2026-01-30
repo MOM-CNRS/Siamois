@@ -277,11 +277,25 @@
         }
     </h:outputScript>
 
+    <h:form id="contextForm">
+        <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
+        <!-- ID de l'institution actuelle -->
+        <h:inputHidden id="currentInstitutionId" value="#{sessionSettingsBean.selectedInstitution.id}" />
+
+        <!-- IDs des panels actuels (séparés par des virgules) -->
+        <h:inputHidden id="currentPanelIds" value="#{flowBean.currentPanelIdsAsString}" />
+
+    </h:form>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js"
             integrity="sha512-7Pi/otdlbbCR+LnW+F7PwFcSDJOuUJB3OxtEHbg4vSMvzvJjde4Po1v4BR9Gdc9aXNUNFVUY+SK51wWT8WF0Gg=="
             crossorigin="anonymous"
             referrerpolicy="no-referrer">
     </script>
+
+    <h:outputScript>
+        var APP_CTX = '#{facesContext.externalContext.requestContextPath}';
+    </h:outputScript>
 
     <h:outputScript library="js" name="template.js"/>
 </h:body>

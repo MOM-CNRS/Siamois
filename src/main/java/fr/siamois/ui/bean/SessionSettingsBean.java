@@ -9,6 +9,7 @@ import fr.siamois.domain.models.settings.InstitutionSettings;
 import fr.siamois.domain.models.settings.PersonSettings;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.person.PersonService;
+import fr.siamois.ui.bean.panel.FlowBean;
 import fr.siamois.utils.AuthenticatedUserUtils;
 import jakarta.faces.context.FacesContext;
 import lombok.AccessLevel;
@@ -42,6 +43,7 @@ public class SessionSettingsBean implements Serializable {
     private Institution selectedInstitution;
     private InstitutionSettings institutionSettings;
     private PersonSettings personSettings;
+    private final FlowBean flowBean;
 
     @Getter(AccessLevel.NONE)
     @Setter(AccessLevel.NONE)

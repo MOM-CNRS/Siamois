@@ -1,7 +1,9 @@
 package fr.siamois.domain.events.publisher;
 
 import fr.siamois.domain.models.events.InstitutionChangeEvent;
+import jakarta.faces.context.FacesContext;
 import lombok.RequiredArgsConstructor;
+import org.primefaces.PrimeFaces;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
@@ -21,6 +23,12 @@ public class InstitutionChangeEventPublisher {
      */
     public void publishInstitutionChangeEvent() {
         InstitutionChangeEvent event = new InstitutionChangeEvent(this);
+        // Update context form for sync
+        FacesContext facesContext = FacesContext.getCurrentInstance();
+        // Check if the current request is an AJAX request
+        if (facesContext != null) {
+            PrimeFaces.current().ajax().update("contextForm");
+        }
         applicationEventPublisher.publishEvent(event);
     }
 
