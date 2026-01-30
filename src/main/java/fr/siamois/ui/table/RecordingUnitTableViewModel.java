@@ -237,6 +237,14 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
                         .processExpr(THIS)
                         .updateSelfTable(true)
                         .styleClass(SIA_ICON_BTN)
+                        .build(),
+
+                // Add specimen
+                RowAction.builder()
+                        .action(TableColumnAction.NEW_SPECIMEN)
+                        .processExpr(THIS)
+                        .updateSelfTable(true)
+                        .styleClass(SIA_ICON_BTN)
                         .build()
         );
     }
@@ -277,6 +285,7 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
             case DUPLICATE_ROW -> "bi bi-copy";
             case NEW_CHILDREN -> "bi bi-node-plus-fill rotate-90";
             case NEW_PARENT -> "bi bi-node-plus-fill rotate-minus90";
+            case NEW_SPECIMEN -> "bi bi-bucket";
             default -> "";
         };
     }
@@ -308,6 +317,17 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
                                 .listInsert(NewUnitContext.ListInsert.TOP)
                                 .treeInsert(NewUnitContext.TreeInsert.PARENT_AT_ROOT)
                                 .build())
+                        .build();
+
+                openCreateDialog(ctx, genericNewUnitDialogBean);
+            }
+            case NEW_SPECIMEN -> {
+                // Open new specimen unit dialog
+                // The new action unit will have the current unit as spatial context
+                NewUnitContext ctx = NewUnitContext.builder()
+                        .kindToCreate(UnitKind.SPECIMEN)
+                        .trigger(NewUnitContext.Trigger.cell(UnitKind.RECORDING, ru.getId(), "specimen"))
+                        .insertPolicy(null)
                         .build();
 
                 openCreateDialog(ctx, genericNewUnitDialogBean);

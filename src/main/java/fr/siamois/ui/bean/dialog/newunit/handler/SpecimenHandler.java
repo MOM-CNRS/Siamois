@@ -69,7 +69,37 @@ public class SpecimenHandler implements INewUnitHandler<Specimen> {
             applyScope(unit, ctx);
         }
 
+        handleCellContext(ctx, unit);
 
+
+    }
+
+    private void handleCellContext(NewUnitContext ctx, Specimen unit) throws CannotInitializeNewUnitDialogException {
+        NewUnitContext.Trigger trigger = ctx.getTrigger();
+        if (trigger == null || trigger.getClickedId() == null || trigger.getColumnKey() == null) {
+            return;
+        }
+
+        Long clickedId = trigger.getClickedId();
+        String key = trigger.getColumnKey();
+        RecordingUnit clicked = recordingUnitService.findById(clickedId);
+
+        if (clicked == null) {
+            return;
+        }
+
+        if(key.equals("specimen")) {
+            unit.setCreatedByInstitution(clicked.getCreatedByInstitution());
+            unit.setRecordingUnit(clicked);
+            unit.setCreatedBy(sessionSettingsBean.getAuthenticatedUser());
+            unit.setAuthors(List.of(sessionSettingsBean.getAuthenticatedUser()));
+            unit.setCollectors(List.of(sessionSettingsBean.getAuthenticatedUser()));
+            unit.setCollectionDate(OffsetDateTime.now());
+        }
+
+        switch (key) {
+            default -> { /* no-op */ }
+        }
     }
 
     private void applyScope(Specimen unit, NewUnitContext ctx) throws CannotInitializeNewUnitDialogException {
