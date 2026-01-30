@@ -44,7 +44,7 @@
                                      value="Sauvegarder"
                                      rendered="#{tableModel.hasUnsavedModifications()}"
                                      actionListener="#{tableModel.save()}"
-                                     update="#{updateTableString}"/>
+                                     update="#{updateTableString} templateFormCC:templateForm:templateGrowl"/>
                     <p:commandLink value="Annuler les modifications" id="cancelButton"
                                    rendered="#{tableModel.hasUnsavedModifications()}"
                                    immediate="true"

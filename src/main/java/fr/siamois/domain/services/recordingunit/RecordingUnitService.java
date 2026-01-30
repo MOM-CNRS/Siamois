@@ -180,7 +180,7 @@ public class RecordingUnitService implements ArkEntityService {
         managedRecordingUnit.setAltitude(recordingUnit.getAltitude());
         managedRecordingUnit.setArk(recordingUnit.getArk());
         managedRecordingUnit.setDescription(recordingUnit.getDescription());
-
+        managedRecordingUnit.setFullIdentifier(recordingUnit.getFullIdentifier());
         managedRecordingUnit.setAuthor(recordingUnit.getAuthor());
         managedRecordingUnit.setClosingDate(recordingUnit.getClosingDate());
         managedRecordingUnit.setOpeningDate(recordingUnit.getOpeningDate());
@@ -690,5 +690,15 @@ public class RecordingUnitService implements ArkEntityService {
 
     public List<RecordingUnit> findAllByActionUnit(@NotNull ActionUnit actionUnit) {
         return recordingUnitRepository.findAllByActionUnit(actionUnit);
+    }
+
+    /**
+     * Find all direct parents of a given SpatialUnit
+     *
+     * @param id The ID of the SpatialUnit to find parents for
+     * @return A list of direct parents SpatialUnit of the given SpatialUnit
+     */
+    public List<RecordingUnit> findDirectParentsOf(Long id) {
+        return recordingUnitRepository.findParentsOf(id).stream().toList();
     }
 }

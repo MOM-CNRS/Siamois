@@ -83,6 +83,11 @@ public class WelcomePanel extends AbstractPanel implements Serializable {
 
 
     @Override
+    public void refresh() {
+        init();
+    }
+
+    @Override
     public String display() {
         return "/panel/homePanel.xhtml";
     }

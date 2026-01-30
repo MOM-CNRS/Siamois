@@ -118,18 +118,30 @@
             </p:row>
 
 
-
-
         </p:panelGrid>
 
     </p:panel>
 
-    <p:commandButton
-            value="#{langBean.msg('actionUnit.settings.button.save')}"
-            icon="bi bi-gear"
-            action="#{panelModel.saveSettings()}"
-            process="@parent"
-            update="@parent"
-    />
+    <p:panel
+            toggleableHeader="true"
+            header="Membres du projet"
+            class="sia-form-panel"
+            toggleable="true">
+        <p:commandButton
+                value="Gérer les membre du projet"
+                action="#{teamListBean.manageTeamMember(panelModel.unit)}"
+        />
+    </p:panel>
+
+    <div style="padding-top: 3em;">
+        <p:commandButton
+                value="#{langBean.msg('actionUnit.settings.button.save')}"
+                icon="bi bi-gear"
+                action="#{panelModel.saveSettings()}"
+                process="@parent"
+                update="@all"
+        />
+    </div>
+
 
 </ui:fragment>

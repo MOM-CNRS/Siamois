@@ -220,7 +220,7 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnit> imple
 
 
             ActionSettingsTab settingsTab = new ActionSettingsTab(
-                    "nav.settings",
+                    "nav.configuration",
                     "bi bi-gear",
                     "settingsTab"
             );

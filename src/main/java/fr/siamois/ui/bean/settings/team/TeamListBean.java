@@ -5,6 +5,7 @@ import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
+import fr.siamois.ui.bean.NavBean;
 import fr.siamois.ui.bean.dialog.institution.UserDialogBean;
 import fr.siamois.ui.bean.settings.SettingsDatatableBean;
 import lombok.Getter;
@@ -30,6 +31,7 @@ public class TeamListBean implements SettingsDatatableBean {
     private final TeamMembersBean teamMembersBean;
     private final UserDialogBean userDialogBean;
     private Institution institution;
+    private final NavBean navBean;
 
     private final transient InstitutionService institutionService;
     private String searchInput;
@@ -81,6 +83,7 @@ public class TeamListBean implements SettingsDatatableBean {
 
     public String manageTeamMember(ActionUnit actionUnit) {
         teamMembersBean.init(actionUnit);
+        navBean.setApplicationMode(NavBean.ApplicationMode.SETTINGS);
         return "/pages/settings/team/manageTeamMember.xhtml?faces-redirect=true";
     }
 

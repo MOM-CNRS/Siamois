@@ -58,6 +58,8 @@ public class ActionUnitListPanel extends AbstractListPanel<ActionUnit> implement
     private String actionUnitListErrorMessage;
 
 
+
+
     @Override
     protected long countUnitsByInstitution() {
         return actionUnitService.countByInstitution(sessionSettingsBean.getSelectedInstitution());

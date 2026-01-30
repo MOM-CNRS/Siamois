@@ -1,5 +1,6 @@
 package fr.siamois.ui.table;
 
+import fr.siamois.domain.models.exceptions.recordingunit.FailedRecordingUnitSaveException;
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.customfield.CustomFieldDateTime;
 import fr.siamois.domain.models.form.customfield.CustomFieldInteger;
@@ -18,6 +19,7 @@ import fr.siamois.ui.bean.dialog.newunit.GenericNewUnitDialogBean;
 import fr.siamois.ui.bean.dialog.newunit.NewUnitContext;
 import fr.siamois.ui.bean.dialog.newunit.UnitKind;
 import fr.siamois.ui.bean.panel.FlowBean;
+import fr.siamois.ui.form.EntityFormContext;
 import fr.siamois.ui.form.FormContextServices;
 import fr.siamois.ui.lazydatamodel.BaseRecordingUnitLazyDataModel;
 import fr.siamois.ui.lazydatamodel.tree.RecordingUnitTreeTableLazyModel;
@@ -27,8 +29,10 @@ import org.primefaces.model.TreeNode;
 
 import java.time.LocalDateTime;
 import java.time.Month;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 import static fr.siamois.ui.bean.dialog.newunit.NewUnitContext.TreeInsert.ROOT;
 import static fr.siamois.ui.table.TableColumnAction.DUPLICATE_ROW;
@@ -47,6 +51,7 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
 
     public static final String THIS = "@this";
     public static final String SIA_ICON_BTN = "sia-icon-btn";
+    public static final String PARENTS = "parents";
     /** Lazy model spécifique RecordingUnit (accès à selectedUnits, etc.) */
     private final BaseRecordingUnitLazyDataModel recordingUnitLazyDataModel;
     private final FlowBean flowBean;
@@ -176,7 +181,7 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
     public Integer resolveCount(TableColumn column, RecordingUnit ru) {
         if (column instanceof RelationColumn rel) {
             return switch (rel.getCountKey()) {
-                case "parents" -> ru.getParents() == null ? 0 : ru.getParents().size();
+                case PARENTS -> ru.getParents() == null ? 0 : ru.getParents().size();
                 case "children" -> ru.getChildren() == null ? 0 : ru.getChildren().size();
                 case "specimenList" -> ru.getSpecimenList() == null ? 0 : ru.getSpecimenList().size();
                 default -> 0;
@@ -224,6 +229,22 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
                         .processExpr(THIS)
                         .updateSelfTable(true)
                         .styleClass(SIA_ICON_BTN)
+                        .build(),
+
+                // Add children
+                RowAction.builder()
+                        .action(TableColumnAction.NEW_PARENT)
+                        .processExpr(THIS)
+                        .updateSelfTable(true)
+                        .styleClass(SIA_ICON_BTN)
+                        .build(),
+
+                // Add specimen
+                RowAction.builder()
+                        .action(TableColumnAction.NEW_SPECIMEN)
+                        .processExpr(THIS)
+                        .updateSelfTable(true)
+                        .styleClass(SIA_ICON_BTN)
                         .build()
         );
     }
@@ -263,6 +284,8 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
                             : "bi bi-bookmark-plus";
             case DUPLICATE_ROW -> "bi bi-copy";
             case NEW_CHILDREN -> "bi bi-node-plus-fill rotate-90";
+            case NEW_PARENT -> "bi bi-node-plus-fill rotate-minus90";
+            case NEW_SPECIMEN -> "bi bi-bucket";
             default -> "";
         };
     }
@@ -280,6 +303,31 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
                                 .listInsert(NewUnitContext.ListInsert.TOP)
                                 .treeInsert(NewUnitContext.TreeInsert.CHILD_FIRST)
                                 .build())
+                        .build();
+
+                openCreateDialog(ctx, genericNewUnitDialogBean);
+            }
+            case NEW_PARENT -> {
+                // Open new rec unit dialog
+                // The new spatial rec will be children of the current ru
+                NewUnitContext ctx = NewUnitContext.builder()
+                        .kindToCreate(UnitKind.RECORDING)
+                        .trigger(NewUnitContext.Trigger.cell(UnitKind.RECORDING, ru.getId(), PARENTS))
+                        .insertPolicy(NewUnitContext.UiInsertPolicy.builder()
+                                .listInsert(NewUnitContext.ListInsert.TOP)
+                                .treeInsert(NewUnitContext.TreeInsert.PARENT_AT_ROOT)
+                                .build())
+                        .build();
+
+                openCreateDialog(ctx, genericNewUnitDialogBean);
+            }
+            case NEW_SPECIMEN -> {
+                // Open new specimen unit dialog
+                // The new action unit will have the current unit as spatial context
+                NewUnitContext ctx = NewUnitContext.builder()
+                        .kindToCreate(UnitKind.SPECIMEN)
+                        .trigger(NewUnitContext.Trigger.cell(UnitKind.RECORDING, ru.getId(), "specimen"))
+                        .insertPolicy(null)
                         .build();
 
                 openCreateDialog(ctx, genericNewUnitDialogBean);
@@ -348,7 +396,7 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
                                 : NewUnitContext.Trigger.cell(
                                 UnitKind.RECORDING,
                                 parent.getId(),
-                                "parents"
+                                PARENTS
                         )
                 )
                 .insertPolicy(NewUnitContext.UiInsertPolicy.builder()
@@ -360,6 +408,60 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
 
         onAnyEntityCreated(newUnit, ctx) ;
         MessageUtils.displayInfoMessage(sessionSettingsBean.getLangBean(), "common.action.duplicateEntity", toDuplicate.getFullIdentifier());
+    }
+
+    @Override
+    public void save() {
+        // Determine the source of entities based on treeMode
+        Set<RecordingUnit> entities;
+        if (treeMode) {
+            entities = treeLazyModel.getAllEntitiesFromTree();
+        } else {
+            entities = new HashSet<>(lazyDataModel.getQueryResult());
+        }
+
+        // Iterate over all entities
+        for (RecordingUnit entity : entities) {
+            Long entityId = entity.getId();
+            EntityFormContext<RecordingUnit> context = rowContexts.get(entityId);
+
+            // Check if the entity has been modified
+            if (context != null && context.isHasUnsavedModifications()) {
+                try {
+                    // Save the entity
+                    context.flushBackToEntity();
+
+                    recordingUnitService.save(entity, entity.getType());
+
+                    context.init(true);
+
+                } catch (FailedRecordingUnitSaveException e) {
+                    // Display error message
+                    MessageUtils.displayErrorMessage(sessionSettingsBean.getLangBean(), "common.entity.recordingUnits.updateFailed", entity.getFullIdentifier());
+                }
+            }
+        }
+    }
+
+    @Override
+    public String getRowActionTooltipCode(RowAction action, RecordingUnit unit) {
+
+        return switch (action.getAction()) {
+
+            case TOGGLE_BOOKMARK ->  Boolean.TRUE.equals(navBean.isRecordingUnitBookmarkedByUser(unit.getFullIdentifier()))
+                    ? sessionSettingsBean.getLangBean().msg("common.action.unbookmark")
+                    : sessionSettingsBean.getLangBean().msg("common.action.bookmark") ;
+
+            case DUPLICATE_ROW -> sessionSettingsBean.getLangBean().msg("common.action.duplicate") ;
+
+            case NEW_CHILDREN -> sessionSettingsBean.getLangBean().msg("common.action.createChildren") ;
+
+            case NEW_PARENT -> sessionSettingsBean.getLangBean().msg("common.action.createParent") ;
+
+            case NEW_SPECIMEN -> sessionSettingsBean.getLangBean().msg("common.action.createSpecimen") ;
+
+            default -> null;
+        };
     }
 
 }

@@ -81,7 +81,7 @@ class RecordingUnitLazyDataModelTest {
         when(langBean.getLanguageCode()).thenReturn("en");
 
         // Act
-        Page<RecordingUnit> actualResult = lazyModel.loadRecordingUnits("null",
+        Page<RecordingUnit> actualResult = lazyModel.loadData("null",
                 new Long[2],new Long[2], "null", pageable);
 
         // Assert

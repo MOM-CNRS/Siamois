@@ -156,6 +156,10 @@ body .ui-datatable .ui-datatable-data>tr.ui-state-highlight {
     transform: rotate(90deg);
 }
 
+.rotate-minus90 {
+    transform: rotate(-90deg);
+}
+
 body .ui-toggleswitch.ui-toggleswitch-checked .ui-toggleswitch-slider {
     background: var(--light-color-200);
 }
@@ -328,5 +332,16 @@ body .ui-chkbox .ui-chkbox-box.ui-state-active {
 .add-doc-btn,
 .delete-relation-btn {
     width: 100%;
+}
+
+nav.panel-bc {
+    padding:0.5em;
+padding-bottom: 0.2em;
+    padding-top: 0.2em;
+
+    span {
+    font-size: 14px;
+    color: var(--text-light) !important;
+        }
 }
 

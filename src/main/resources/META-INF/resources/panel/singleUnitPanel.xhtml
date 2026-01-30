@@ -17,6 +17,11 @@
         <h:form id="singlePanelUnitForm-#{panelIndex}">
             <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
 
+            <!-- breadcrumbs if exists -->
+            <ui:repeat var="breadcrumbModel" value="#{panelModel.allParentBreadcrumbModels}">
+                <p:breadCrumb lastItemDisabled="true" styleClass="panel-bc" homeDisplay="text" model="#{breadcrumbModel}" />
+            </ui:repeat>
+
             <!-- Tabs -->
             <ui:include src="#{panelModel.getTabView()}" />
 
