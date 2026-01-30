@@ -9,6 +9,7 @@ import fr.siamois.domain.models.settings.InstitutionSettings;
 import fr.siamois.domain.models.settings.PersonSettings;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.person.PersonService;
+import fr.siamois.ui.bean.panel.FlowBean;
 import fr.siamois.utils.AuthenticatedUserUtils;
 import jakarta.faces.context.FacesContext;
 import lombok.AccessLevel;
@@ -16,6 +17,7 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import org.apache.commons.lang3.StringUtils;
+import org.primefaces.PrimeFaces;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Scope;
 import org.springframework.context.annotation.ScopedProxyMode;
@@ -42,6 +44,7 @@ public class SessionSettingsBean implements Serializable {
     private Institution selectedInstitution;
     private InstitutionSettings institutionSettings;
     private PersonSettings personSettings;
+    private final FlowBean flowBean;
 
     @Getter(AccessLevel.NONE)
     @Setter(AccessLevel.NONE)
