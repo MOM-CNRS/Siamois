@@ -2,7 +2,6 @@ package fr.siamois.domain.events.publisher;
 
 import fr.siamois.domain.models.events.InstitutionChangeEvent;
 import jakarta.faces.context.FacesContext;
-import jakarta.faces.context.PartialViewContext;
 import lombok.RequiredArgsConstructor;
 import org.primefaces.PrimeFaces;
 import org.springframework.context.ApplicationEventPublisher;
