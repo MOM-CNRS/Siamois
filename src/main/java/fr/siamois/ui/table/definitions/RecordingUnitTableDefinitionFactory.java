@@ -271,7 +271,7 @@ public final class RecordingUnitTableDefinitionFactory {
 
                         .viewIcon(BI_BI_EYE)
                         .viewAction(TableColumnAction.VIEW_RELATION)
-                        .viewTargetIndex(3)
+                        .viewTargetIndex(2)
 
                         .addEnabled(false)
                         .addIcon(BI_BI_PLUS_SQUARE)
