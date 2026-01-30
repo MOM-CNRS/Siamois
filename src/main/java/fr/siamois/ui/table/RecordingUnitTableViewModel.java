@@ -6,7 +6,6 @@ import fr.siamois.domain.models.form.customfield.CustomFieldDateTime;
 import fr.siamois.domain.models.form.customfield.CustomFieldInteger;
 import fr.siamois.domain.models.form.customform.CustomForm;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
-import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.authorization.writeverifier.RecordingUnitWriteVerifier;
 import fr.siamois.domain.services.form.FormService;
