@@ -75,6 +75,10 @@ import static fr.siamois.ui.lazydatamodel.scope.SpatialUnitScope.Type.PARENTS_OF
 public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel<SpatialUnit> implements Serializable {
 
     public static final String SPATIAL = "SPATIAL";
+    public static final String PF_BUI_CONTENT_SHOW = "PF('buiContent').show()";
+    public static final String PF_BUI_CONTENT_HIDE = "PF('buiContent').hide()";
+    public static final String THIS = "@this";
+    public static final String FLOW_BEAN_ADD_SPATIAL_UNIT_PANEL = "#{flowBean.addSpatialUnitPanel(";
     // Dependencies
     private final transient RecordingUnitService recordingUnitService;
     private final transient SpecimenService specimenService;
@@ -107,8 +111,6 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
     private transient ActionUnitTableViewModel actionTabTableModel;
     private Integer totalActionUnitCount;
 
-    // BC
-    private MenuModel breadcrumbModel;
 
     public List<List<SpatialUnit>> findAllParentPathsToRoot() {
         List<List<SpatialUnit>> allPaths = new ArrayList<>();
@@ -145,6 +147,7 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
         }
     }
 
+    @Override
     public List<MenuModel> getAllParentBreadcrumbModels() {
         List<List<SpatialUnit>> allPaths = findAllParentPathsToRoot();
         List<MenuModel> breadcrumbModels = new ArrayList<>();
@@ -163,9 +166,9 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
                     .icon("bi bi-house")
                     .command("#{flowBean.addWelcomePanel()}")
                     .update("flow")
-                    .onstart("PF('buiContent').show()")
-                    .oncomplete("PF('buiContent').hide()")
-                    .process("@this")
+                    .onstart(PF_BUI_CONTENT_SHOW)
+                    .oncomplete(PF_BUI_CONTENT_HIDE)
+                    .process(THIS)
                     .build();
             breadcrumbModel.getElements().add(homeItem);
 
@@ -174,11 +177,11 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
                 DefaultMenuItem currentUnitItem = DefaultMenuItem.builder()
                         .value(currentUnit.getName())
                         .id(String.valueOf(currentUnit.getId()))
-                        .command("#{flowBean.addSpatialUnitPanel(" + currentUnit.getId() + ")}")
+                        .command(FLOW_BEAN_ADD_SPATIAL_UNIT_PANEL + currentUnit.getId() + ")}")
                         .update("flow")
-                        .onstart("PF('buiContent').show()")
-                        .oncomplete("PF('buiContent').hide()")
-                        .process("@this")
+                        .onstart(PF_BUI_CONTENT_SHOW)
+                        .oncomplete(PF_BUI_CONTENT_HIDE)
+                        .process(THIS)
                         .build();
                 breadcrumbModel.getElements().add(currentUnitItem);
             }
@@ -196,9 +199,9 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
                         .icon("bi bi-house")
                         .command("#{flowBean.addWelcomePanel()}")
                         .update("flow")
-                        .onstart("PF('buiContent').show()")
-                        .oncomplete("PF('buiContent').hide()")
-                        .process("@this")
+                        .onstart(PF_BUI_CONTENT_SHOW)
+                        .oncomplete(PF_BUI_CONTENT_HIDE)
+                        .process(THIS)
                         .build();
                 breadcrumbModel.getElements().add(homeItem);
 
@@ -210,11 +213,11 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
                     DefaultMenuItem item = DefaultMenuItem.builder()
                             .value(unit.getName())
                             .id(String.valueOf(unit.getId()))
-                            .command("#{flowBean.addSpatialUnitPanel(" + unit.getId() + ")}")
+                            .command(FLOW_BEAN_ADD_SPATIAL_UNIT_PANEL + unit.getId() + ")}")
                             .update("flow")
-                            .onstart("PF('buiContent').show()")
-                            .oncomplete("PF('buiContent').hide()")
-                            .process("@this")
+                            .onstart(PF_BUI_CONTENT_SHOW)
+                            .oncomplete(PF_BUI_CONTENT_HIDE)
+                            .process(THIS)
                             .build();
                     breadcrumbModel.getElements().add(item);
                 }
@@ -224,11 +227,11 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
                     DefaultMenuItem currentUnitItem = DefaultMenuItem.builder()
                             .value(currentUnit.getName())
                             .id(String.valueOf(currentUnit.getId()))
-                            .command("#{flowBean.addSpatialUnitPanel(" + currentUnit.getId() + ")}")
+                            .command(FLOW_BEAN_ADD_SPATIAL_UNIT_PANEL + currentUnit.getId() + ")}")
                             .update("flow")
-                            .onstart("PF('buiContent').show()")
-                            .oncomplete("PF('buiContent').hide()")
-                            .process("@this")
+                            .onstart(PF_BUI_CONTENT_SHOW)
+                            .oncomplete(PF_BUI_CONTENT_HIDE)
+                            .process(THIS)
                             .build();
                     breadcrumbModel.getElements().add(currentUnitItem);
                 }

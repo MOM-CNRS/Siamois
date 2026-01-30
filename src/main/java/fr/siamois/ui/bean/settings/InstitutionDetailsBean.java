@@ -100,7 +100,7 @@ public class InstitutionDetailsBean implements Serializable {
 
     public String goToInstitutionList() {
         institution = null;
-        if(elements != null && elements.size() > 0) {
+        if(elements != null && !elements.isEmpty()) {
             elements.clear();
         }
         return "/pages/settings/institutionListSettings.xhtml?faces-redirect=true";

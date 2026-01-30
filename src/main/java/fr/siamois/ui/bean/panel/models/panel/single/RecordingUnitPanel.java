@@ -67,6 +67,10 @@ import java.util.*;
 @Scope(BeanDefinition.SCOPE_PROTOTYPE)
 public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel<RecordingUnit>  implements Serializable {
 
+    public static final String PF_BUI_CONTENT_SHOW = "PF('buiContent').show()";
+    public static final String PF_BUI_CONTENT_HIDE = "PF('buiContent').hide()";
+    public static final String THIS = "@this";
+    public static final String FLOW_BEAN_ADD_RECORDING_UNIT_PANEL = "#{flowBean.addRecordingUnitPanel(";
     // Deps
     protected final transient LangBean langBean;
     protected final transient RecordingUnitService recordingUnitService;
@@ -134,6 +138,7 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
         }
     }
 
+    @Override
     public List<MenuModel> getAllParentBreadcrumbModels() {
         List<List<RecordingUnit>> allPaths = findAllParentPathsToRoot();
         List<MenuModel> breadcrumbModels = new ArrayList<>();
@@ -152,9 +157,9 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
                     .icon("bi bi-house")
                     .command("#{flowBean.addWelcomePanel()}")
                     .update("flow")
-                    .onstart("PF('buiContent').show()")
-                    .oncomplete("PF('buiContent').hide()")
-                    .process("@this")
+                    .onstart(PF_BUI_CONTENT_SHOW)
+                    .oncomplete(PF_BUI_CONTENT_HIDE)
+                    .process(THIS)
                     .build();
             breadcrumbModel.getElements().add(homeItem);
 
@@ -163,11 +168,11 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
                 DefaultMenuItem currentUnitItem = DefaultMenuItem.builder()
                         .value(currentUnit.getFullIdentifier())
                         .id(String.valueOf(currentUnit.getId()))
-                        .command("#{flowBean.addRecordingUnitPanel(" + currentUnit.getId() + ")}")
+                        .command(FLOW_BEAN_ADD_RECORDING_UNIT_PANEL + currentUnit.getId() + ")}")
                         .update("flow")
-                        .onstart("PF('buiContent').show()")
-                        .oncomplete("PF('buiContent').hide()")
-                        .process("@this")
+                        .onstart(PF_BUI_CONTENT_SHOW)
+                        .oncomplete(PF_BUI_CONTENT_HIDE)
+                        .process(THIS)
                         .build();
                 breadcrumbModel.getElements().add(currentUnitItem);
             }
@@ -185,9 +190,9 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
                         .icon("bi bi-house")
                         .command("#{flowBean.addWelcomePanel()}")
                         .update("flow")
-                        .onstart("PF('buiContent').show()")
-                        .oncomplete("PF('buiContent').hide()")
-                        .process("@this")
+                        .onstart(PF_BUI_CONTENT_SHOW)
+                        .oncomplete(PF_BUI_CONTENT_HIDE)
+                        .process(THIS)
                         .build();
                 breadcrumbModel.getElements().add(homeItem);
 
@@ -199,11 +204,11 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
                     DefaultMenuItem item = DefaultMenuItem.builder()
                             .value(unit.getFullIdentifier())
                             .id(String.valueOf(unit.getId()))
-                            .command("#{flowBean.addRecordingUnitPanel(" + unit.getId() + ")}")
+                            .command(FLOW_BEAN_ADD_RECORDING_UNIT_PANEL + unit.getId() + ")}")
                             .update("flow")
-                            .onstart("PF('buiContent').show()")
-                            .oncomplete("PF('buiContent').hide()")
-                            .process("@this")
+                            .onstart(PF_BUI_CONTENT_SHOW)
+                            .oncomplete(PF_BUI_CONTENT_HIDE)
+                            .process(THIS)
                             .build();
                     breadcrumbModel.getElements().add(item);
                 }
@@ -213,11 +218,11 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
                     DefaultMenuItem currentUnitItem = DefaultMenuItem.builder()
                             .value(currentUnit.getFullIdentifier())
                             .id(String.valueOf(currentUnit.getId()))
-                            .command("#{flowBean.addRecordingUnitPanel(" + currentUnit.getId() + ")}")
+                            .command(FLOW_BEAN_ADD_RECORDING_UNIT_PANEL + currentUnit.getId() + ")}")
                             .update("flow")
-                            .onstart("PF('buiContent').show()")
-                            .oncomplete("PF('buiContent').hide()")
-                            .process("@this")
+                            .onstart(PF_BUI_CONTENT_SHOW)
+                            .oncomplete(PF_BUI_CONTENT_HIDE)
+                            .process(THIS)
                             .build();
                     breadcrumbModel.getElements().add(currentUnitItem);
                 }

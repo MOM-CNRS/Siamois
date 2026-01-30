@@ -51,6 +51,7 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
 
     public static final String THIS = "@this";
     public static final String SIA_ICON_BTN = "sia-icon-btn";
+    public static final String PARENTS = "parents";
     /** Lazy model spécifique RecordingUnit (accès à selectedUnits, etc.) */
     private final BaseRecordingUnitLazyDataModel recordingUnitLazyDataModel;
     private final FlowBean flowBean;
@@ -180,7 +181,7 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
     public Integer resolveCount(TableColumn column, RecordingUnit ru) {
         if (column instanceof RelationColumn rel) {
             return switch (rel.getCountKey()) {
-                case "parents" -> ru.getParents() == null ? 0 : ru.getParents().size();
+                case PARENTS -> ru.getParents() == null ? 0 : ru.getParents().size();
                 case "children" -> ru.getChildren() == null ? 0 : ru.getChildren().size();
                 case "specimenList" -> ru.getSpecimenList() == null ? 0 : ru.getSpecimenList().size();
                 default -> 0;
@@ -311,7 +312,7 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
                 // The new spatial rec will be children of the current ru
                 NewUnitContext ctx = NewUnitContext.builder()
                         .kindToCreate(UnitKind.RECORDING)
-                        .trigger(NewUnitContext.Trigger.cell(UnitKind.RECORDING, ru.getId(), "parents"))
+                        .trigger(NewUnitContext.Trigger.cell(UnitKind.RECORDING, ru.getId(), PARENTS))
                         .insertPolicy(NewUnitContext.UiInsertPolicy.builder()
                                 .listInsert(NewUnitContext.ListInsert.TOP)
                                 .treeInsert(NewUnitContext.TreeInsert.PARENT_AT_ROOT)
@@ -395,7 +396,7 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
                                 : NewUnitContext.Trigger.cell(
                                 UnitKind.RECORDING,
                                 parent.getId(),
-                                "parents"
+                                PARENTS
                         )
                 )
                 .insertPolicy(NewUnitContext.UiInsertPolicy.builder()

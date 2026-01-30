@@ -74,7 +74,7 @@ public class SpecimenHandler implements INewUnitHandler<Specimen> {
 
     }
 
-    private void handleCellContext(NewUnitContext ctx, Specimen unit) throws CannotInitializeNewUnitDialogException {
+    private void handleCellContext(NewUnitContext ctx, Specimen unit) {
         NewUnitContext.Trigger trigger = ctx.getTrigger();
         if (trigger == null || trigger.getClickedId() == null || trigger.getColumnKey() == null) {
             return;
@@ -97,9 +97,6 @@ public class SpecimenHandler implements INewUnitHandler<Specimen> {
             unit.setCollectionDate(OffsetDateTime.now());
         }
 
-        switch (key) {
-            default -> { /* no-op */ }
-        }
     }
 
     private void applyScope(Specimen unit, NewUnitContext ctx) throws CannotInitializeNewUnitDialogException {
