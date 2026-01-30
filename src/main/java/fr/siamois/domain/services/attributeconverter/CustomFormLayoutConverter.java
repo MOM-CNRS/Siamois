@@ -13,6 +13,7 @@ import fr.siamois.domain.models.form.customform.EnabledWhenJson;
 import fr.siamois.infrastructure.database.repositories.form.CustomFieldRepository;
 import jakarta.persistence.AttributeConverter;
 import jakarta.persistence.Converter;
+import jakarta.persistence.EntityManager;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
@@ -145,11 +146,15 @@ public class CustomFormLayoutConverter implements AttributeConverter<List<Custom
         col.setClassName((String) colMap.get(CLASS_NAME_KEY));
         col.setRequired((Boolean) colMap.get("isRequired"));
         col.setReadOnly((Boolean) colMap.get("isReadOnly"));
+
         Object fieldId = colMap.get("fieldId");
         if (fieldId != null) {
-            CustomField field = getCustomFieldRepository().findById(Long.valueOf(fieldId.toString()))
-                    .orElse(null);
-            col.setField(field);
+            CustomField field = getCustomFieldRepository().findById(Long.valueOf(fieldId.toString())).orElse(null);
+            if (field != null) {
+                // Détacher le CustomField pour éviter les mises à jour involontaires
+                applicationContext.getBean(EntityManager.class).detach(field);
+                col.setField(field);
+            }
         }
 
         Object ewObj = colMap.get("enabledWhen");

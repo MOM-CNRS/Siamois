@@ -75,6 +75,9 @@ public abstract class AbstractListPanel<T extends TraceableEntity> extends Abstr
         fieldConfigurationService = null;
     }
 
+    public void refresh() {
+        init();
+    }
 
 
     protected AbstractListPanel(

@@ -44,7 +44,7 @@
                                      value="Sauvegarder"
                                      rendered="#{tableModel.hasUnsavedModifications()}"
                                      actionListener="#{tableModel.save()}"
-                                     update="#{updateTableString}"/>
+                                     update="#{updateTableString} templateFormCC:templateForm:templateGrowl"/>
                     <p:commandLink value="Annuler les modifications" id="cancelButton"
                                    rendered="#{tableModel.hasUnsavedModifications()}"
                                    immediate="true"
@@ -53,10 +53,11 @@
                 </div>
             </p:toolbarGroup>
         </p:toolbarGroup>
+
         <p:toolbarGroup align="right">
             <p:commandButton
                     value="#{langBean.msg('common.action.create')}"
-                    rendered="#{not empty tableModel.toolbarCreateConfig}"
+                    rendered="#{not empty tableModel.toolbarCreateConfig and flowBean.isWriteMode}"
                     icon="bi bi-plus-square"
                     immediate="true"
                     action="#{tableModel.openCreateFromToolbar(genericNewUnitDialogBean,

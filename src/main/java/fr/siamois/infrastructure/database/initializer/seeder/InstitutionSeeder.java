@@ -43,7 +43,7 @@ public class InstitutionSeeder {
         try {
             fieldConfigurationService.setupFieldConfigurationForInstitution(inst, vocabulary);
         } catch (NotSiamoisThesaurusException | ErrorProcessingExpansionException e) {
-            throw new DatabaseDataInitException("error with thesaurus init",e);
+            throw new DatabaseDataInitException("error with thesaurus init:",e);
         }
     }
 

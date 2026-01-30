@@ -1,6 +1,5 @@
 <ui:fragment xmlns="http://www.w3.org/1999/xhtml"
              xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
-             xmlns:p="http://primefaces.org/ui"
              xmlns:table="http://xmlns.jcp.org/jsf/composite/pages/shared/table"
 
 >
@@ -8,28 +7,13 @@
     <!--@elvariable id="tabModel" type="fr.siamois.ui.panel.models.panel.single.tab.RecordingTab"-->
     <!--@elvariable id="panelIndex" type="java.lang.Integer" -->
 
-    <p:panel id="parentsPanel" class="sia-form-panel" header="Parents"
-             toggleable="true"
-             collapsed="false">
 
-        <table:entityTable
-                tableModel="#{tabModel.parentTableModel}"
-                panelIndex="#{panelIndex}"
-                id="parentList"
-        />
+    <table:entityTable
+            tableModel="#{tabModel.childTableModel}"
+            panelIndex="#{panelIndex}"
+            id="childList"
+    />
 
-    </p:panel>
-
-    <p:panel id="childrenPanel" class="sia-form-panel"
-             header="Enfants" toggleable="true"
-             collapsed="false">
-        <table:entityTable
-                tableModel="#{tabModel.childTableModel}"
-                panelIndex="#{panelIndex}"
-                id="childList"
-        />
-
-    </p:panel>
 
 
 

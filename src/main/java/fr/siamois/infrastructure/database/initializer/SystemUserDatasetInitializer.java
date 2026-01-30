@@ -1,6 +1,5 @@
 package fr.siamois.infrastructure.database.initializer;
 
-import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.exceptions.database.DatabaseDataInitException;
 import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.infrastructure.database.repositories.institution.InstitutionRepository;
@@ -23,23 +22,7 @@ public class SystemUserDatasetInitializer implements DatabaseInitializer {
 
     @Override
     public void initialize() throws DatabaseDataInitException {
-        initializeSystemUser();
         initializeAdminOrganization();
-    }
-
-    private void initializeSystemUser() {
-        Optional<Person> result =  personRepository.findByUsernameIgnoreCase("system");
-        if (result.isEmpty()) {
-            Person person = new Person();
-            person.setUsername("system");
-            person.setEnabled(true);
-            person.setName("SIAMOIS");
-            person.setLastname("SYSTEM");
-            person.setEmail("system@siamois.fr");
-            person.setPassword("SIAMOIS_UNHASHED");
-            person.setSuperAdmin(false);
-            personRepository.save(person);
-        }
     }
 
     void initializeAdminOrganization() {

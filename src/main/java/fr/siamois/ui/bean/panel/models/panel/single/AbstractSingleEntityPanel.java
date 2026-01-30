@@ -23,6 +23,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.hibernate.envers.RevisionType;
 import org.primefaces.PrimeFaces;
 import org.primefaces.event.TabChangeEvent;
+import org.primefaces.model.menu.MenuModel;
 import org.springframework.context.ApplicationContext;
 import org.springframework.util.MimeType;
 
@@ -70,9 +71,19 @@ public abstract class AbstractSingleEntityPanel<T extends TraceableEntity> exten
 
     protected transient RevisionWithInfo<T> bufferedLastRevision;
 
+    public abstract void refreshUnit();
+
+    public void refresh() {
+        refreshUnit();
+    }
+
     @Override
     public String display() {
         return "/panel/singleUnitPanel.xhtml";
+    }
+
+    public List<MenuModel> getAllParentBreadcrumbModels() {
+        return List.of(); // no bc by default
     }
 
     public abstract void init();

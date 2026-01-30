@@ -10,6 +10,7 @@ import fr.siamois.ui.bean.panel.models.panel.list.RecordingUnitListPanel;
 import fr.siamois.utils.MessageUtils;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.Hibernate;
 import org.primefaces.event.RowEditEvent;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -49,7 +50,15 @@ public abstract class BaseRecordingUnitLazyDataModel extends BaseLazyDataModel<R
 
     @Override
     protected Page<RecordingUnit> loadData(String name, Long[] categoryIds, Long[] personIds, String globalFilter, Pageable pageable) {
-        return loadRecordingUnits(name, categoryIds, personIds, globalFilter, pageable);
+        Page<RecordingUnit> page =  loadRecordingUnits(name, categoryIds, personIds, globalFilter, pageable);
+        page.forEach(unit -> {
+            Hibernate.initialize(unit.getDocuments());
+            Hibernate.initialize(unit.getRelationshipsAsUnit2());
+            Hibernate.initialize(unit.getRelationshipsAsUnit1());
+            Hibernate.initialize(unit.getParents());
+            Hibernate.initialize(unit.getChildren());
+        });
+        return page;
     }
 
     protected abstract Page<RecordingUnit> loadRecordingUnits(

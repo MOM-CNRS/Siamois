@@ -17,6 +17,11 @@
         <h:form id="singlePanelUnitForm-#{panelIndex}">
             <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
 
+            <!-- breadcrumbs if exists -->
+            <ui:repeat var="breadcrumbModel" value="#{panelModel.allParentBreadcrumbModels}">
+                <p:breadCrumb lastItemDisabled="true" styleClass="panel-bc" homeDisplay="text" model="#{breadcrumbModel}" />
+            </ui:repeat>
+
             <!-- Tabs -->
             <ui:include src="#{panelModel.getTabView()}" />
 
@@ -97,12 +102,6 @@
 
                                      action="#{panelModel.saveAction(false)}"
                                      style="margin-right: 1rem">
-                    </p:commandButton>
-                    <p:commandButton id="saveAndValidateButton" value='#{langBean.msg("common.action.saveAndValidate")}'
-                                     update="panel-#{panelIndex}"
-                                     action="#{panelModel.saveAction(true)}"
-
-                                     style="margin-right: .5rem">
                     </p:commandButton>
                 </p:toolbarGroup>
             </p:toolbar>

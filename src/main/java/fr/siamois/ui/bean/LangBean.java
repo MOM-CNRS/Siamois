@@ -8,6 +8,7 @@ import fr.siamois.domain.services.LangService;
 import fr.siamois.domain.services.person.PersonService;
 import fr.siamois.utils.AuthenticatedUserUtils;
 import jakarta.annotation.PostConstruct;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Scope;
@@ -23,6 +24,7 @@ import java.util.Locale;
 @Slf4j
 @Component
 @Scope(value = "session", proxyMode = ScopedProxyMode.TARGET_CLASS)
+@RequiredArgsConstructor
 public class LangBean implements Serializable {
 
     private final transient LangService langService;
@@ -32,11 +34,6 @@ public class LangBean implements Serializable {
     private String defaultLang;
 
     private Locale locale = new Locale("en");
-
-    public LangBean(LangService langService, PersonService personService) {
-        this.langService = langService;
-        this.personService = personService;
-    }
 
     @PostConstruct
     public void initLang() {

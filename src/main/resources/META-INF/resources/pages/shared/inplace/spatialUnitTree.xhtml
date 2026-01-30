@@ -59,32 +59,42 @@
                     </h:panelGroup>
                 </p:outputPanel>
                 <!-- Séléction des USp dans un treenode -->
-                <p:panel header="Table de sélection du contexte spatiale" toggleable="true" collapsed="true">
-                <p:treeTable value="#{cc.attrs.formCtx.getRoot(cc.attrs.answer)}"
-                             widgetVar="spatialUnitTreeTable"
-                             rows="5"
-                             propagateSelectionUp="false"
-                             paginatorPosition="bottom"
-                             size="small"
-                             scrollable="true"
-                             scrollHeight="400px"
-                             paginator="true"
-                             var="su"
-                             styleClass="#{cc.attrs.answer.hasBeenModified ? 'track-change sia-modified-field': 'track-change'}"
-                >
-                    <p:column headerText="Nom" filterBy="#{su.name}"
-                              filterMatchMode="contains">
+                <p:panel header="Table de sélection de l'emprise spatiale" toggleable="true" collapsed="true">
+                    <p:treeTable value="#{cc.attrs.formCtx.getRoot(cc.attrs.answer)}"
+                                 widgetVar="spatialUnitTreeTable"
+                                 rows="5"
+                                 id="selectSpatialTree"
+                                 propagateSelectionUp="false"
+                                 paginatorPosition="bottom"
+                                 size="small"
+                                 scrollable="true"
+                                 scrollHeight="400px"
+                                 paginator="true"
+                                 var="su"
+                                 styleClass="#{cc.attrs.answer.hasBeenModified ? 'track-change sia-modified-field': 'track-change'}"
+                    >
+                        <p:column headerText="Nom" filterBy="#{su.name}"
+                                  filterMatchMode="contains">
 
-                        <p:outputLabel value="#{su.getName()}" style="margin-right:1em"/>
-                        <p:commandButton value="Ajouter"
-                                         rendered="#{!cc.attrs.formCtx.treeStates.get(cc.attrs.answer).selection.contains(su)}"
-                                         actionListener="#{cc.attrs.formCtx.addSUToSelection(cc.attrs.answer,su)}"
-                                         update="#{cc.attrs.updateTargetsOnBlur} selectedSpatialUnitPanel"
-                                         immediate="true"/>
+                            <p:outputLabel value="#{su.getName()}" style="margin-right:1em"/>
+                            <p:commandButton value="Ajouter"
+                                             rendered="#{!cc.attrs.formCtx.treeStates.get(cc.attrs.answer).selection.contains(su)}"
+                                             actionListener="#{cc.attrs.formCtx.addSUToSelection(cc.attrs.answer,su)}"
+                                             process="@this"
+                                             update="#{cc.attrs.updateTargetsOnBlur} #{cc.clientId}:selectedSpatialUnitPanel #{cc.clientId}:selectSpatialTree"
+                                             immediate="true"/>
 
-                    </p:column>
+                        </p:column>
 
-                </p:treeTable>
+                        <f:facet name="emptyMessage">
+                            <p:commandLink update="flow" action="#{flowBean.addSpatialUnitListPanel(null)}"
+                                           onstart="PF('newUnitDiag').hide();PF('buiContent').show();"
+                                           process="@this"
+                                           oncomplete="PF('buiContent').hide()"
+                                           value="Aucun lieu existant. Commencer par créer des lieux"/>
+                        </f:facet>
+
+                    </p:treeTable>
                 </p:panel>
             </f:facet>
         </p:inplace>
