@@ -75,7 +75,7 @@
         <!-- Actions Column -->
         <p:column exportable="false" toggleable="false" style="min-width: 100px;">
             <p:toolbar>
-                <p:toolbarGroup>
+                <p:toolbarGroup styleClass="action-col">
                     <ui:repeat value="#{tableModel.rowActions}" var="action">
                         <p:commandButton
                                 rendered="#{tableModel.isRendered(action, item)}"
