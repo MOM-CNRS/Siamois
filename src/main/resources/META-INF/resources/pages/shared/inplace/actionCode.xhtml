@@ -19,9 +19,18 @@
     <cc:implementation>
         <p:inplace mode="#{cc.attrs.mode}" toggleable="false">
             <f:facet name="output">
-                <h:outputText value="#{cc.attrs.answer.value.code}"/>
-                <p:chip label="#{labelBean.findLabelOf(cc.attrs.answer.value.type)}"
-                        styleClass="mr-2 action-unit-type-chip"/>
+                <!-- Cas où answer.value n'est PAS null -->
+                <ui:fragment rendered="#{not empty cc.attrs.answer.value}">
+                    <h:outputText value="#{cc.attrs.answer.value.code}"/>
+                    <p:chip
+                            label="#{labelBean.findLabelOf(cc.attrs.answer.value.type)}"
+                            styleClass="mr-2 action-unit-type-chip"/>
+                </ui:fragment>
+
+                <!-- Cas où answer.value est null -->
+                <ui:fragment rendered="#{empty cc.attrs.answer.value}">
+                    <h:outputText value="Aucun code associé"/>
+                </ui:fragment>
             </f:facet>
             <f:facet name="input">
 
