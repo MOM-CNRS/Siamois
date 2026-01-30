@@ -29,6 +29,8 @@ public abstract class AbstractPanel implements Serializable {
     protected Boolean isBreadcrumbVisible = true;
     protected Boolean collapsed = false;
 
+    public abstract void refresh();
+
     protected AbstractPanel() {
     }
 

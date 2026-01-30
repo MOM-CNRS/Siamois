@@ -70,6 +70,10 @@ public class GenericNewUnitDialogBean<T extends TraceableEntity>
     private transient fr.siamois.ui.table.EntityTableViewModel<?, ?> sourceTableModel;
     private transient NewUnitContext newUnitContext;
 
+    public void refresh() {
+        // NOTHING TO DO, I THINK THIS CLASS DOES NOT INHERIT FROM THE PROPER ONE
+    }
+
     public GenericNewUnitDialogBean(ApplicationContext context,
                                     Set<INewUnitHandler<? extends TraceableEntity>> handlerSet) {
         super(context);

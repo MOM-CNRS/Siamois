@@ -293,6 +293,15 @@
                         </ui:include>
                         <f:facet name="actions">
                             <form:csrfform formId="actionsFormId">
+                                <p:commandLink id="refreshPanelButton"
+                                               styleClass="ui-panel-titlebar-icon ui-corner-all ui-state-default"
+                                               action="#{panel.refresh()}"
+                                               onstart="PF('buiPanel_${status.index}').show();"
+                                               oncomplete="PF('buiPanel_${status.index}').hide();"
+                                               onclick="event.stopPropagation();"
+                                               update="panel-${status.index}">
+                                    <h:outputText styleClass="bi bi-arrow-clockwise"/>
+                                </p:commandLink>
                                 <p:commandLink id="bookmarkToggleButton"
                                                styleClass="ui-panel-titlebar-icon ui-corner-all ui-state-default"
                                                action="#{navBean.togglePanelBookmark(panel)}"
@@ -316,6 +325,10 @@
                             </form:csrfform>
                         </f:facet>
                     </p:panel>
+                    <p:blockUI block="panel-${status.index}" widgetVar="buiPanel_${status.index}">
+                        <i class="pi pi-spin pi-spinner" style="font-size: 3rem"/>
+                    </p:blockUI>
+
                 </c:forEach>
             </h:panelGroup>
 

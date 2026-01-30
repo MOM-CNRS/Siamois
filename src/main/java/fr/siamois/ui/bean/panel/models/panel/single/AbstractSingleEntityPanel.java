@@ -71,6 +71,12 @@ public abstract class AbstractSingleEntityPanel<T extends TraceableEntity> exten
 
     protected transient RevisionWithInfo<T> bufferedLastRevision;
 
+    public abstract void refreshUnit();
+
+    public void refresh() {
+        refreshUnit();
+    }
+
     @Override
     public String display() {
         return "/panel/singleUnitPanel.xhtml";
