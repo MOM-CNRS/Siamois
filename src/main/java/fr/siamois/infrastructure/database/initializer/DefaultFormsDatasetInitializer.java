@@ -720,7 +720,7 @@ public class DefaultFormsDatasetInitializer implements DatabaseInitializer {
             new CustomFormScopeDTO(
                     FormScope.ScopeLevel.GLOBAL_DEFAULT.toString(),
                     null,
-                    forms.get(2)
+                    forms.get(1)
             )
     );
 
