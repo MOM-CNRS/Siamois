@@ -229,6 +229,14 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
                         .processExpr(THIS)
                         .updateSelfTable(true)
                         .styleClass(SIA_ICON_BTN)
+                        .build(),
+
+                // Add children
+                RowAction.builder()
+                        .action(TableColumnAction.NEW_PARENT)
+                        .processExpr(THIS)
+                        .updateSelfTable(true)
+                        .styleClass(SIA_ICON_BTN)
                         .build()
         );
     }
@@ -268,6 +276,7 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
                             : "bi bi-bookmark-plus";
             case DUPLICATE_ROW -> "bi bi-copy";
             case NEW_CHILDREN -> "bi bi-node-plus-fill rotate-90";
+            case NEW_PARENT -> "bi bi-node-plus-fill rotate-minus90";
             default -> "";
         };
     }
@@ -284,6 +293,20 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
                         .insertPolicy(NewUnitContext.UiInsertPolicy.builder()
                                 .listInsert(NewUnitContext.ListInsert.TOP)
                                 .treeInsert(NewUnitContext.TreeInsert.CHILD_FIRST)
+                                .build())
+                        .build();
+
+                openCreateDialog(ctx, genericNewUnitDialogBean);
+            }
+            case NEW_PARENT -> {
+                // Open new rec unit dialog
+                // The new spatial rec will be children of the current ru
+                NewUnitContext ctx = NewUnitContext.builder()
+                        .kindToCreate(UnitKind.RECORDING)
+                        .trigger(NewUnitContext.Trigger.cell(UnitKind.RECORDING, ru.getId(), "parents"))
+                        .insertPolicy(NewUnitContext.UiInsertPolicy.builder()
+                                .listInsert(NewUnitContext.ListInsert.TOP)
+                                .treeInsert(NewUnitContext.TreeInsert.PARENT_AT_ROOT)
                                 .build())
                         .build();
 
@@ -398,6 +421,27 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
                 }
             }
         }
+    }
+
+    @Override
+    public String getRowActionTooltipCode(RowAction action, RecordingUnit unit) {
+
+        return switch (action.getAction()) {
+
+            case TOGGLE_BOOKMARK ->  Boolean.TRUE.equals(navBean.isRecordingUnitBookmarkedByUser(unit.getFullIdentifier()))
+                    ? sessionSettingsBean.getLangBean().msg("common.action.unbookmark")
+                    : sessionSettingsBean.getLangBean().msg("common.action.bookmark") ;
+
+            case DUPLICATE_ROW -> sessionSettingsBean.getLangBean().msg("common.action.duplicate") ;
+
+            case NEW_CHILDREN -> sessionSettingsBean.getLangBean().msg("common.action.createChildren") ;
+
+            case NEW_PARENT -> sessionSettingsBean.getLangBean().msg("common.action.createParent") ;
+
+            case NEW_SPECIMEN -> sessionSettingsBean.getLangBean().msg("common.action.createSpecimen") ;
+
+            default -> null;
+        };
     }
 
 }

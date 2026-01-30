@@ -15,5 +15,6 @@ public enum TableColumnAction {
     NEW_ACTION,
     NEW_CHILDREN,
     NEW_PARENT,
+    NEW_SPECIMEN,
     OPEN_ENTITY
 }
