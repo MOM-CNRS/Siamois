@@ -9,7 +9,7 @@
 
         <cc:attribute name="completeMethod" required="true" method-signature="java.util.List &lt;java.lang.String&gt;(java.lang.String)" />
         <cc:attribute name="itemSelectListener" required="false" method-signature="void &lt;java.lang.String&gt;()" />
-        <cc:attribute name="selectedConcept" type="fr.siamois.domain.models.vocabulary.Concept" required="true"/>
+        <cc:attribute name="selectedConcept" type="fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO" required="true"/>
         <cc:attribute name="editConceptUrl" required="true"/>
         <cc:attribute name="disabled" required="false" default="false"/>
         <cc:attribute name="ajaxUpdateTargets" required="false"/>
@@ -24,16 +24,16 @@
         <p:autoComplete value="#{cc.attrs.selectedConcept}"
                         id="conceptAutocomplete"
                         completeMethod="#{cc.attrs.completeMethod}"
-                        var="field"
+                        var="autocompleteDto"
                         panelStyleClass="#{cc.attrs.panelStyleClass}"
-                        itemValue="#{field}"
+                        itemValue="#{autocompleteDto}"
+                        itemLabel="#{autocompleteDto.conceptLabelToDisplay.label}"
                         disabled="#{cc.attrs.disabled}"
                         required="#{cc.attrs.required}"
-                        converter="#{conceptConverter}"
+                        converter="#{conceptAutocompleteDTOConverter}"
                         forceSelection="true"
                         scrollHeight="300"
                         dropdown="true"
-                        itemLabel="#{labelBean.findLabelOf(field)}"
                         placeholder="#{langBean.msg('common.action.chooseConcept')}"
                         showEmptyMessage="false"
         >
@@ -48,14 +48,16 @@
                     process="#{cc.attrs.ajaxProcessTargets}"/>
 
             <p:column>
-                <p:commandButton icon="bi bi-box-arrow-up-right" styleClass="btn btn-primary"
-                                 onclick="event.stopPropagation(); window.open('#{field.vocabulary.baseUri}/?idc=#{field.externalId}&amp;idt=#{field.vocabulary.externalVocabularyId}', '_blank'); return false;" />
-            </p:column>
-            <p:column>
-                <div style="display:flex; flex-direction: column">
-                    <h:outputText style="vertical-align: middle; margin-left: .5rem" value="#{labelBean.findLabelOf(field)}"/>
-                    <small>#{field.vocabulary.baseUri} - #{labelBean.findVocabularyLabelOf(field)}</small>
-                </div>
+
+                <h:panelGroup id="conceptItem" layout="block" style="display:flex; flex-direction: column">
+                    <h:outputText style="vertical-align: middle" value="#{autocompleteDto.conceptLabelToDisplay.label}"/>
+                    <h:panelGroup rendered="#{autocompleteDto.conceptLabelToDisplay.altLabel}">
+                        <small>#{langBean.msg('concept.common.preflabel')} : #{autocompleteDto.originalPrefLabel}</small>
+                    </h:panelGroup>
+                    <h:panelGroup rendered="#{not empty autocompleteDto.hierarchyPrefLabels}">
+                        <small>#{langBean.msg('concept.common.parents')} : #{autocompleteDto.hierarchyPrefLabels}</small>
+                    </h:panelGroup>
+                </h:panelGroup>
 
             </p:column>
 
