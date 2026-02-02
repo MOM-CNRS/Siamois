@@ -13,7 +13,10 @@ import fr.siamois.domain.models.vocabulary.Vocabulary;
 import fr.siamois.domain.services.history.HistoryAuditService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.domain.services.vocabulary.FieldService;
+import fr.siamois.domain.services.vocabulary.VocabularyService;
+import fr.siamois.infrastructure.files.DocumentStorage;
 import fr.siamois.ui.bean.dialog.document.DocumentCreationBean;
+import fr.siamois.ui.bean.panel.FlowBean;
 import fr.siamois.ui.bean.panel.models.panel.single.tab.*;
 import io.micrometer.common.lang.Nullable;
 import lombok.EqualsAndHashCode;
@@ -23,6 +26,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.hibernate.envers.RevisionType;
 import org.primefaces.PrimeFaces;
 import org.primefaces.event.TabChangeEvent;
+import org.primefaces.model.DefaultStreamedContent;
 import org.primefaces.model.menu.DefaultMenuItem;
 import org.primefaces.model.menu.DefaultMenuModel;
 import org.primefaces.model.menu.MenuModel;
@@ -31,6 +35,7 @@ import org.springframework.util.MimeType;
 
 import java.io.BufferedInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.Serializable;
 import java.time.OffsetDateTime;
 import java.util.*;
@@ -48,6 +53,7 @@ public abstract class AbstractSingleEntityPanel<T extends TraceableEntity> exten
     protected final transient HistoryAuditService historyAuditService;
     protected final transient FieldService fieldService;
     protected final transient ConceptService conceptService;
+    protected final transient FlowBean flowBean;
 
     //--------------- Locals
 
@@ -169,6 +175,7 @@ Return the command that opens panel for the unit
         this.historyAuditService = context.getBean(HistoryAuditService.class);
         this.fieldService = context.getBean(FieldService.class);
         this.conceptService = context.getBean(ConceptService.class);
+        this.flowBean = context.getBean(FlowBean.class);
 
         // Overview tab
         tabs = new ArrayList<>();
@@ -235,7 +242,11 @@ Return the command that opens panel for the unit
 
         documents.add(created);
         PrimeFaces.current().executeScript("PF('newDocumentDiag').hide()");
-        PrimeFaces.current().ajax().update("spatialUnitForm");
+
+        int pos = flowBean.getPanels().indexOf(this);
+        if(pos >=0) { PrimeFaces.current().ajax().update("panel-".concat(Integer.toString(pos))); }
+
+
     }
 
     public Integer getIndexOfTab(PanelTab tab) {
@@ -246,6 +257,7 @@ Return the command that opens panel for the unit
     public void initDialog() throws NoConfigForFieldException {
         log.trace("initDialog");
         documentCreationBean.init();
+
         documentCreationBean.setActionOnSave(this::saveDocument);
 
         PrimeFaces.current().executeScript("PF('newDocumentDiag').show()");
@@ -334,5 +346,20 @@ Return the command that opens panel for the unit
 
     // Get the tabview view name for this panel
     public abstract String getTabView() ;
+
+    public DefaultStreamedContent streamOf(Document document) {
+
+        Optional<InputStream> opt = documentService.findInputStreamOfDocument(document);
+        if (opt.isPresent()) {
+            InputStream inputStream = opt.get();
+            return DefaultStreamedContent.builder()
+                    .stream(() -> inputStream)
+                    .contentType(document.getMimeType()) // Set the correct content type
+                    .name(document.getFileName()) // Set the filename
+                    .build();
+        }
+        return null;
+    }
+
 
 }

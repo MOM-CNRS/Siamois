@@ -301,11 +301,6 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnit> imple
     }
 
     @Override
-    public void saveDocument() {
-        // TODO : implement
-    }
-
-    @Override
     public boolean save(Boolean validated) {
 
         formContext.flushBackToEntity();

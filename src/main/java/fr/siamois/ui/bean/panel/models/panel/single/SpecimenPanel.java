@@ -223,11 +223,6 @@ public class SpecimenPanel extends AbstractSingleEntityPanel<Specimen>  implemen
     }
 
     @Override
-    public void saveDocument() {
-        // todo: implement
-    }
-
-    @Override
     public String getAutocompleteClass() {
         return "recording-unit-autocomplete";
     }
