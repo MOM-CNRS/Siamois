@@ -175,7 +175,7 @@ public class FieldConfigurationService {
             ConceptFieldConfig fieldConfig;
             Optional<ConceptFieldConfig> optConfig;
 
-            if (user == null) {
+            if (user == null) { // TODO FIX HERE ITS FETCHING ONLY ON CONCEPT ID AND ITS NOT UNIQUE !!!
                 optConfig = conceptFieldConfigRepository.findOneByFieldCodeForInstitution(institution.getId(), fieldCode);
             } else {
                 optConfig = conceptFieldConfigRepository.findOneByFieldCodeForUser(user.getId(), institution.getId(), fieldCode);
@@ -186,11 +186,14 @@ public class FieldConfigurationService {
                 fieldConfig.setInstitution(institution);
                 fieldConfig.setUser(user);
                 fieldConfig.setFieldCode(fieldCode);
-                fieldConfig.setConcept(concept);
+
                 fieldConfig = conceptFieldConfigRepository.save(fieldConfig);
             } else {
                 fieldConfig = optConfig.get();
             }
+
+            fieldConfig.setConcept(concept); // update concept also if there is already a field config
+
             progressWrapper.incrementStep();
             conceptService.saveAllSubConceptOfIfUpdated(fieldConfig, progressWrapper);
             progressWrapper.incrementStep();
