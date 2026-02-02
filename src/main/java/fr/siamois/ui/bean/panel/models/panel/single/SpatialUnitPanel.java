@@ -43,8 +43,6 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.primefaces.model.menu.DefaultMenuItem;
-import org.primefaces.model.menu.DefaultMenuModel;
-import org.primefaces.model.menu.MenuModel;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.BeanDefinition;
@@ -74,11 +72,8 @@ import static fr.siamois.ui.lazydatamodel.scope.SpatialUnitScope.Type.PARENTS_OF
 @Scope(BeanDefinition.SCOPE_PROTOTYPE)
 public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel<SpatialUnit> implements Serializable {
 
-    public static final String SPATIAL = "SPATIAL";
-    public static final String PF_BUI_CONTENT_SHOW = "PF('buiContent').show()";
-    public static final String PF_BUI_CONTENT_HIDE = "PF('buiContent').hide()";
-    public static final String THIS = "@this";
-    public static final String FLOW_BEAN_ADD_SPATIAL_UNIT_PANEL = "#{flowBean.addSpatialUnitPanel(";
+
+
     // Dependencies
     private final transient RecordingUnitService recordingUnitService;
     private final transient SpecimenService specimenService;
@@ -112,139 +107,25 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
     private Integer totalActionUnitCount;
 
 
-    public List<List<SpatialUnit>> findAllParentPathsToRoot() {
-        List<List<SpatialUnit>> allPaths = new ArrayList<>();
-        List<SpatialUnit> parents = spatialUnitService.findDirectParentsOf(this.idunit);
-
-        // Si pas de parents, retourne une liste vide
-        if (parents == null || parents.isEmpty()) {
-            return allPaths;
-        }
-
-        // Pour chaque parent, trouve tous les chemins vers la racine
-        for (SpatialUnit parent : parents) {
-            List<SpatialUnit> currentPath = new ArrayList<>();
-            currentPath.add(parent);
-            findPathsRecursively(parent.getId(), currentPath, allPaths);
-        }
-
-        return allPaths;
-    }
-
-    private void findPathsRecursively(Long unitId, List<SpatialUnit> currentPath, List<List<SpatialUnit>> allPaths) {
-        List<SpatialUnit> parents = spatialUnitService.findDirectParentsOf(unitId);
-
-        // Si pas de parents, c'est la racine, ajoute le chemin actuel à allPaths
-        if (parents == null || parents.isEmpty()) {
-            allPaths.add(new ArrayList<>(currentPath));
-        } else {
-            // Trouve récursivement les chemins pour chaque parent
-            for (SpatialUnit parent : parents) {
-                currentPath.add(parent);
-                findPathsRecursively(parent.getId(), currentPath, allPaths);
-                currentPath.remove(currentPath.size() - 1); // Retour en arrière
-            }
-        }
+    @Override
+    List<SpatialUnit> findDirectParentsOf(Long id) {
+        return spatialUnitService.findDirectParentsOf(id);
     }
 
     @Override
-    public List<MenuModel> getAllParentBreadcrumbModels() {
-        List<List<SpatialUnit>> allPaths = findAllParentPathsToRoot();
-        List<MenuModel> breadcrumbModels = new ArrayList<>();
-
-        // Récupère l'entité courante
-        SpatialUnit currentUnit = spatialUnitService.findById(this.idunit);
-
-        // Si pas de parents, crée un breadcrumb avec uniquement Home et l'entité courante
-        if (allPaths.isEmpty()) {
-            MenuModel breadcrumbModel = new DefaultMenuModel();
-
-            // Ajoute l'élément Home
-            DefaultMenuItem homeItem = DefaultMenuItem.builder()
-                    .value("")
-                    .id("home")
-                    .icon("bi bi-house")
-                    .command("#{flowBean.addWelcomePanel()}")
-                    .update("flow")
-                    .onstart(PF_BUI_CONTENT_SHOW)
-                    .oncomplete(PF_BUI_CONTENT_HIDE)
-                    .process(THIS)
-                    .build();
-            breadcrumbModel.getElements().add(homeItem);
-
-            // Ajoute l'entité courante
-            if (currentUnit != null) {
-                DefaultMenuItem currentUnitItem = DefaultMenuItem.builder()
-                        .value(currentUnit.getName())
-                        .id(String.valueOf(currentUnit.getId()))
-                        .command(FLOW_BEAN_ADD_SPATIAL_UNIT_PANEL + currentUnit.getId() + ")}")
-                        .update("flow")
-                        .onstart(PF_BUI_CONTENT_SHOW)
-                        .oncomplete(PF_BUI_CONTENT_HIDE)
-                        .process(THIS)
-                        .build();
-                breadcrumbModel.getElements().add(currentUnitItem);
-            }
-
-            breadcrumbModels.add(breadcrumbModel);
-        } else {
-            // Si des parents existent, crée un breadcrumb pour chaque chemin
-            for (List<SpatialUnit> path : allPaths) {
-                MenuModel breadcrumbModel = new DefaultMenuModel();
-
-                // Ajoute l'élément Home
-                DefaultMenuItem homeItem = DefaultMenuItem.builder()
-                        .value("")
-                        .id("home")
-                        .icon("bi bi-house")
-                        .command("#{flowBean.addWelcomePanel()}")
-                        .update("flow")
-                        .onstart(PF_BUI_CONTENT_SHOW)
-                        .oncomplete(PF_BUI_CONTENT_HIDE)
-                        .process(THIS)
-                        .build();
-                breadcrumbModel.getElements().add(homeItem);
-
-                // Ajoute les parents dans l'ordre racine → parent
-                List<SpatialUnit> reversedPath = new ArrayList<>(path);
-                java.util.Collections.reverse(reversedPath);
-
-                for (SpatialUnit unit : reversedPath) {
-                    DefaultMenuItem item = DefaultMenuItem.builder()
-                            .value(unit.getName())
-                            .id(String.valueOf(unit.getId()))
-                            .command(FLOW_BEAN_ADD_SPATIAL_UNIT_PANEL + unit.getId() + ")}")
-                            .update("flow")
-                            .onstart(PF_BUI_CONTENT_SHOW)
-                            .oncomplete(PF_BUI_CONTENT_HIDE)
-                            .process(THIS)
-                            .build();
-                    breadcrumbModel.getElements().add(item);
-                }
-
-                // Ajoute l'entité courante à la fin
-                if (currentUnit != null) {
-                    DefaultMenuItem currentUnitItem = DefaultMenuItem.builder()
-                            .value(currentUnit.getName())
-                            .id(String.valueOf(currentUnit.getId()))
-                            .command(FLOW_BEAN_ADD_SPATIAL_UNIT_PANEL + currentUnit.getId() + ")}")
-                            .update("flow")
-                            .onstart(PF_BUI_CONTENT_SHOW)
-                            .oncomplete(PF_BUI_CONTENT_HIDE)
-                            .process(THIS)
-                            .build();
-                    breadcrumbModel.getElements().add(currentUnitItem);
-                }
-
-                breadcrumbModels.add(breadcrumbModel);
-            }
-        }
-
-        return breadcrumbModels;
+    SpatialUnit findUnitById(Long id) {
+        return spatialUnitService.findById(id);
     }
 
+    @Override
+    String findLabel(SpatialUnit unit) {
+        return unit.getName();
+    }
 
-
+    @Override
+    String getOpenPanelCommand(SpatialUnit unit) {
+        return "#{flowBean.addSpatialUnitPanel(".concat(unit.getId().toString()).concat(")}");
+    }
 
 
     @Autowired
@@ -640,6 +521,20 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
         );
 
 
+    }
+
+    @Override
+    protected DefaultMenuItem createRootTypeItem()
+    {
+        return DefaultMenuItem.builder()
+                .value(langBean.msg("panel.title.allspatialunit"))
+                .id("allSpatialUnits")
+                .command("#{flowBean.addSpatialUnitListPanel(null)}")
+                .update("flow")
+                .onstart(PF_BUI_CONTENT_SHOW)
+                .oncomplete(PF_BUI_CONTENT_HIDE)
+                .process(THIS)
+                .build();
     }
 
 }

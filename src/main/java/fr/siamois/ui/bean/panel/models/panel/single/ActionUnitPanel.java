@@ -38,6 +38,7 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import org.primefaces.model.menu.DefaultMenuItem;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.context.ApplicationContext;
@@ -247,6 +248,22 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnit> imple
     @Override
     public List<Person> authorsAvailable() {
         return List.of();
+    }
+
+    @Override
+    ActionUnit findUnitById(Long id) {
+        return actionUnitService.findById(id);
+    }
+
+    @Override
+    String findLabel(ActionUnit unit) {
+        return unit.getName();
+    }
+
+
+    @Override
+    String getOpenPanelCommand(ActionUnit unit) {
+        return "#{flowBean.addActionUnitPanel(".concat(unit.getId().toString()).concat(")}");
     }
 
     @Override
@@ -541,5 +558,20 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnit> imple
         }
         return result;
     }
+
+    @Override
+    protected DefaultMenuItem createRootTypeItem()
+    {
+        return DefaultMenuItem.builder()
+                .value(langBean.msg("panel.title.allactionunit"))
+                .id("allActionUnits")
+                .command("#{flowBean.addActionUnitListPanel(null)}")
+                .update("flow")
+                .onstart(PF_BUI_CONTENT_SHOW)
+                .oncomplete(PF_BUI_CONTENT_HIDE)
+                .process(THIS)
+                .build();
+    }
+
 
 }

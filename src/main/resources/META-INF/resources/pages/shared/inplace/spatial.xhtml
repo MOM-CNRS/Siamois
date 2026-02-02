@@ -33,9 +33,18 @@
                 <!-- Single value -->
                 <h:panelGroup rendered="#{(not cc.attrs.multiple) and (not empty cc.attrs.answer.value)}">
                     <div style="display:flex;gap:0.5em;">
-                        <h:outputLink value="#{request.contextPath}/spatial-unit/#{cc.attrs.answer.value.id}">
-                            #{cc.attrs.answer.value.name}
-                        </h:outputLink>
+
+
+                        <p:commandLink
+                                styleClass="spatial-unit"
+                                value="#{cc.attrs.answer.value.name}"
+                                action="#{flowBean.goToSpatialUnitByIdNewPanel(cc.attrs.answer.value.id,panelIndex)}"
+                                onstart="PF('buiContent').show()"
+                                oncomplete="PF('buiContent').hide()"
+                                process="@this"
+                                update="flow">
+                        </p:commandLink>
+
                         <p:chip rendered="#{cc.attrs.displayType}"
                                 label="#{labelBean.findLabelOf(cc.attrs.answer.value.category)}"
                                 styleClass="mr-2 spatial-unit-type-chip"/>

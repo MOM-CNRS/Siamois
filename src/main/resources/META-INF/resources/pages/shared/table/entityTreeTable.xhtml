@@ -76,7 +76,7 @@
                                 process="#{empty action.processExpr ? '@this' : action.processExpr}"
                                 update="#{action.updateSelfTable ? (':'.concat(cc.clientId).concat(':entityTreeTable')) : action.updateExpr}"
                                 styleClass="#{action.styleClass}"/>
-                        <p:tooltip autoHide="false" value="#{tableModel.getRowActionTooltipCode(action,item)}" for="btn_#{status.index}"
+                        <p:tooltip autoHide="false" value="#{tableModel.getRowActionTooltipCode(action,item)}" position="bottom" for="btn_#{status.index}"
                         />
                     </ui:repeat>
                 </p:toolbarGroup>

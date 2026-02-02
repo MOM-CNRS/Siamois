@@ -186,11 +186,14 @@ public class FieldConfigurationService {
                 fieldConfig.setInstitution(institution);
                 fieldConfig.setUser(user);
                 fieldConfig.setFieldCode(fieldCode);
-                fieldConfig.setConcept(concept);
+
                 fieldConfig = conceptFieldConfigRepository.save(fieldConfig);
             } else {
                 fieldConfig = optConfig.get();
             }
+
+            fieldConfig.setConcept(concept); // update concept also if there is already a field config
+
             progressWrapper.incrementStep();
             conceptService.saveAllSubConceptOfIfUpdated(fieldConfig, progressWrapper);
             progressWrapper.incrementStep();

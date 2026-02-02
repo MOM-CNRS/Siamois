@@ -19,6 +19,7 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.Hibernate;
+import org.primefaces.model.menu.DefaultMenuItem;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.context.ApplicationContext;
@@ -152,6 +153,34 @@ public class SpecimenPanel extends AbstractSingleEntityPanel<Specimen>  implemen
     @Override
     public List<Person> authorsAvailable() {
         return List.of();
+    }
+
+    @Override
+    Specimen findUnitById(Long id) {
+        return specimenService.findById(id);
+    }
+
+    @Override
+    String findLabel(Specimen unit) {
+        return unit.getFullIdentifier();
+    }
+
+    @Override
+    protected DefaultMenuItem createRootTypeItem() {
+        return DefaultMenuItem.builder()
+                .value(langBean.msg("panel.title.allspecimenunit"))
+                .id("allSpecimen")
+                .command("#{flowBean.addSpecimenListPanel(null)}")
+                .update("flow")
+                .onstart(PF_BUI_CONTENT_SHOW)
+                .oncomplete(PF_BUI_CONTENT_HIDE)
+                .process(THIS)
+                .build();
+    }
+
+    @Override
+    String getOpenPanelCommand(Specimen unit) {
+        return "#{flowBean.addSpecimenPanel(".concat(unit.getId().toString()).concat(")}");
     }
 
 
