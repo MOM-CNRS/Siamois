@@ -175,7 +175,7 @@ public class FieldConfigurationService {
             ConceptFieldConfig fieldConfig;
             Optional<ConceptFieldConfig> optConfig;
 
-            if (user == null) { // TODO FIX HERE ITS FETCHING ONLY ON CONCEPT ID AND ITS NOT UNIQUE !!!
+            if (user == null) {
                 optConfig = conceptFieldConfigRepository.findOneByFieldCodeForInstitution(institution.getId(), fieldCode);
             } else {
                 optConfig = conceptFieldConfigRepository.findOneByFieldCodeForUser(user.getId(), institution.getId(), fieldCode);
