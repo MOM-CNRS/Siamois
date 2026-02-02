@@ -3,7 +3,6 @@ package fr.siamois.ui.bean.panel.models.panel.single;
 import fr.siamois.domain.models.TraceableEntity;
 import fr.siamois.ui.bean.panel.models.panel.single.tab.MultiHierarchyTab;
 import fr.siamois.ui.table.EntityTableViewModel;
-import org.primefaces.model.menu.DefaultMenuItem;
 import org.primefaces.model.menu.DefaultMenuModel;
 import org.primefaces.model.menu.MenuModel;
 import org.springframework.context.ApplicationContext;
