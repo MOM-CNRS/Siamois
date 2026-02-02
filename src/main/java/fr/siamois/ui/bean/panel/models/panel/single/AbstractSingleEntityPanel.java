@@ -23,6 +23,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.hibernate.envers.RevisionType;
 import org.primefaces.PrimeFaces;
 import org.primefaces.event.TabChangeEvent;
+import org.primefaces.model.menu.DefaultMenuItem;
+import org.primefaces.model.menu.DefaultMenuModel;
 import org.primefaces.model.menu.MenuModel;
 import org.springframework.context.ApplicationContext;
 import org.springframework.util.MimeType;
@@ -48,6 +50,11 @@ public abstract class AbstractSingleEntityPanel<T extends TraceableEntity> exten
     protected final transient ConceptService conceptService;
 
     //--------------- Locals
+
+    public static final String SPATIAL = "SPATIAL";
+    public static final String PF_BUI_CONTENT_SHOW = "PF('buiContent').show()";
+    public static final String PF_BUI_CONTENT_HIDE = "PF('buiContent').hide()";
+    public static final String THIS = "@this";
 
     protected Integer activeTabIndex; // Keeping state of active tab
     protected transient T backupClone;
@@ -82,9 +89,7 @@ public abstract class AbstractSingleEntityPanel<T extends TraceableEntity> exten
         return "/panel/singleUnitPanel.xhtml";
     }
 
-    public List<MenuModel> getAllParentBreadcrumbModels() {
-        return List.of(); // no bc by default
-    }
+
 
     public abstract void init();
 
@@ -99,6 +104,62 @@ public abstract class AbstractSingleEntityPanel<T extends TraceableEntity> exten
     }
 
     protected static final String COLUMN_CLASS_NAME = "ui-g-12 ui-md-6 ui-lg-4";
+
+        /*
+    Find unit by its ID
+     */
+    abstract T findUnitById(Long id);
+
+    /*
+    Get label of unit to display in breadcrumn
+     */
+    abstract String findLabel(T unit);
+
+    protected abstract DefaultMenuItem createRootTypeItem();
+
+    /*
+Return the command that opens panel for the unit
+ */
+    abstract String getOpenPanelCommand(T unit);
+
+    public List<MenuModel> getAllParentBreadcrumbModels() {
+
+        MenuModel breadcrumbModel = new DefaultMenuModel();
+        breadcrumbModel.getElements().add(createHomeItem());
+        breadcrumbModel.getElements().add(createRootTypeItem());
+        T currentUnit = findUnitById(idunit);
+
+        if (currentUnit != null) {
+            breadcrumbModel.getElements().add(createUnitItem(currentUnit));
+        }
+
+        return List.of(breadcrumbModel);
+    }
+
+    protected DefaultMenuItem createHomeItem() {
+        return DefaultMenuItem.builder()
+                .value("")
+                .id("home")
+                .icon("bi bi-house")
+                .command("#{flowBean.addWelcomePanel()}")
+                .update("flow")
+                .onstart(PF_BUI_CONTENT_SHOW)
+                .oncomplete(PF_BUI_CONTENT_HIDE)
+                .process(THIS)
+                .build();
+    }
+
+    protected DefaultMenuItem createUnitItem(T unit) {
+        return DefaultMenuItem.builder()
+                .value(findLabel(unit))
+                .id(String.valueOf(unit.getId()))
+                .command(getOpenPanelCommand(unit))
+                .update("flow")
+                .onstart(PF_BUI_CONTENT_SHOW)
+                .oncomplete(PF_BUI_CONTENT_HIDE)
+                .process(THIS)
+                .build();
+    }
 
     protected AbstractSingleEntityPanel(String titleCodeOrTitle,
                                         String icon, String panelClass,
