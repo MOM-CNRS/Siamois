@@ -100,6 +100,9 @@ public class ProfileSettingsBean implements Serializable {
 
     private void initThesaurusSection(UserInfo info) {
         try {
+
+            // TODO : store the user thesaurus URL in its profil? to be discussed with Julien. We don't get consistent thesaurus URL for user;
+            //  It's changing when we are in different institutions
             refConfigConcept = fieldConfigurationService.findParentConceptForFieldcode(info, SpatialUnit.CATEGORY_FIELD_CODE);
             fThesaurusUrl = refConfigConcept.getVocabulary().getUri();
         } catch (NoConfigForFieldException e) {
