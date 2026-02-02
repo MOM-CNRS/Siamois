@@ -190,9 +190,10 @@ public class FieldConfigurationService {
                 fieldConfig = conceptFieldConfigRepository.save(fieldConfig);
             } else {
                 fieldConfig = optConfig.get();
+                fieldConfig.setConcept(concept); // update concept also if there is already a field config
             }
 
-            fieldConfig.setConcept(concept); // update concept also if there is already a field config
+
 
             progressWrapper.incrementStep();
             conceptService.saveAllSubConceptOfIfUpdated(fieldConfig, progressWrapper);
