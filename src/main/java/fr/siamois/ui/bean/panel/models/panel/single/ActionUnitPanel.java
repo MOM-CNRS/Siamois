@@ -78,7 +78,6 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnit> imple
     private final transient RecordingUnitService recordingUnitService;
     private final transient SpecimenService specimenService;
     private final transient NavBean navBean;
-    private final transient FlowBean flowBean;
     private final transient GenericNewUnitDialogBean<?> genericNewUnitDialogBean;
     private final transient InstitutionService institutionService;
     private final transient RecordingUnitWriteVerifier recordingUnitWriteVerifier;
@@ -134,7 +133,6 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnit> imple
         this.recordingUnitService = context.getBean(RecordingUnitService.class);
         this.specimenService = context.getBean(SpecimenService.class);
         this.navBean = context.getBean(NavBean.class);
-        this.flowBean = context.getBean(FlowBean.class);
         this.genericNewUnitDialogBean = context.getBean(GenericNewUnitDialogBean.class);
         this.institutionService = context.getBean(InstitutionService.class);
         this.recordingUnitWriteVerifier = context.getBean(RecordingUnitWriteVerifier.class);
