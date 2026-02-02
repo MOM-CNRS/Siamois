@@ -122,9 +122,9 @@ public class DocumentUtils {
     public static Document prepareDocumentFrom(ConceptService conceptService, UploadedFile uploadedFile, DocumentCreationBean bean) {
         Document document = new Document();
         document.setTitle(bean.getDocTitle());
-        document.setNature(conceptService.saveOrGetConcept(bean.getDocNature()));
-        document.setScale(conceptService.saveOrGetConcept(bean.getDocScale()));
-        document.setFormat(conceptService.saveOrGetConcept(bean.getDocType()));
+        document.setNature(conceptService.saveOrGetConcept(bean.getDocNature().getConceptLabelToDisplay().getConcept()));
+        document.setScale(conceptService.saveOrGetConcept(bean.getDocScale().getConceptLabelToDisplay().getConcept()));
+        document.setFormat(conceptService.saveOrGetConcept(bean.getDocType().getConceptLabelToDisplay().getConcept()));
         document.setMimeType(uploadedFile.getContentType());
         document.setFileName(uploadedFile.getFileName());
         document.setSize(uploadedFile.getSize());

@@ -6,12 +6,14 @@ import fr.siamois.domain.models.document.Document;
 import fr.siamois.domain.models.events.LoginEvent;
 import fr.siamois.domain.models.exceptions.InvalidFileSizeException;
 import fr.siamois.domain.models.exceptions.InvalidFileTypeException;
+import fr.siamois.domain.models.exceptions.vocabulary.NoConfigForFieldException;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.ark.ArkService;
 import fr.siamois.domain.services.document.DocumentService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.domain.services.vocabulary.FieldConfigurationService;
 import fr.siamois.domain.services.vocabulary.FieldService;
+import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
 import fr.siamois.ui.bean.ActionFromBean;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
@@ -52,9 +54,9 @@ public class DocumentCreationBean implements Serializable {
     private final transient ArkService arkService;
     private final transient FieldService fieldService;
     private String docTitle;
-    private Concept docNature;
-    private Concept docScale;
-    private Concept docType;
+    private ConceptAutocompleteDTO docNature;
+    private ConceptAutocompleteDTO docScale;
+    private ConceptAutocompleteDTO docType;
     private String docDescription;
 
     private transient ActionFromBean actionOnSave = null;
@@ -82,21 +84,23 @@ public class DocumentCreationBean implements Serializable {
     }
 
 
-    public List<Concept> autocomplete(String fieldCode, String input) {
-        log.trace("Autocomplete order received");
-        log.trace("Autocomplete is ignored for the moment, returning empty list for {} and input {}", fieldCode, input);
-        return List.of();
+    public List<ConceptAutocompleteDTO>  autocomplete(String fieldCode, String input) throws NoConfigForFieldException {
+
+        return fieldConfigurationService.fetchAutocomplete(
+                sessionSettingsBean.getUserInfo(), fieldCode, input
+        );
+
     }
 
-    public List<Concept> autocompleteNature(String input) {
+    public List<ConceptAutocompleteDTO> autocompleteNature(String input) throws NoConfigForFieldException {
         return autocomplete(Document.NATURE_FIELD_CODE, input);
     }
 
-    public List<Concept> autocompleteScale(String input) {
+    public List<ConceptAutocompleteDTO> autocompleteScale(String input) throws NoConfigForFieldException {
         return autocomplete(Document.SCALE_FIELD_CODE, input);
     }
 
-    public List<Concept> autocompleteType(String input) {
+    public List<ConceptAutocompleteDTO> autocompleteType(String input) throws NoConfigForFieldException {
         return autocomplete(Document.FORMAT_FIELD_CODE, input);
     }
 
