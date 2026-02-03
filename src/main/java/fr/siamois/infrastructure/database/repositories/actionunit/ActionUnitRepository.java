@@ -232,12 +232,13 @@ public interface ActionUnitRepository extends CrudRepository<ActionUnit, Long>, 
         SELECT DISTINCT au.*
         FROM action_unit au
         JOIN team_member tm ON au.action_unit_id = tm.fk_action_unit_id
-        WHERE tm.fk_person_id = :personId
+        WHERE tm.fk_person_id = :personId AND au.fk_institution_id = :institutionId
         UNION
         SELECT au.*
         FROM action_unit au
-        WHERE au.fk_created_by = :personId
+        WHERE au.fk_created_by = :personId AND au.fk_institution_id = :institutionId
     """
     )
-    List<ActionUnit> findByTeamMemberOrCreator(Long personId);
+    List<ActionUnit> findByTeamMemberOrCreatorAndInstitution(@Param("personId") Long personId, @Param("institutionId") Long institutionId);
+
 }
