@@ -13,9 +13,63 @@
 
     <form:csrfform formId="homeForm">
         <div style="padding:1em;">
-            <!-- Common fields -->
+            <p:panel id="myActionUnits" class="sia-form-panel" header="Mes derniers projets"
+                     toggleable="true"
+                     collapsed="false">
 
-            <p:panel id="dbAccess" class="sia-form-panel" header="#{langBean.msg('homePanel.database')}" toggleable="true"
+
+                    <ui:fragment rendered="#{not empty flowBean.getMyActionUnits()}">
+                        <div class="ui-g">
+                            <ui:repeat value="#{flowBean.myActionUnits}" var="actionUnit">
+                                <div class="ui-g-12 ui-xs-12 ui-md-6 ui-lg-3">
+                                    <p:card style="background: var(--siamois-green-light-50); ">
+
+                                        <p:outputPanel style="display: flex; gap:1em;">
+                                            <i class="bi bi-arrow-down-square" style="color:var(--context-main-color);"/>
+                                            <p:outputLabel value="#{actionUnit.name}"/>
+                                        </p:outputPanel>
+
+                                        <p:outputPanel style="display: flex; gap:1em;">
+                                            <i class="bi bi-geo-alt" style="color:var(--context-main-color);"/>
+                                            <p:outputLabel value="#{actionUnit.spatialContextNames}"/>
+                                        </p:outputPanel>
+
+                                        <p:outputPanel style="display: flex; gap:1em;">
+                                            <i class="bi bi-pencil-square" style="color:var(--ground-main-color);"/>
+                                            <p:outputLabel value="#{actionUnit.recordingUnitList.size} enregistrements"/>
+                                        </p:outputPanel>
+
+                                        <p:commandButton
+                                                value="Ajouter des enregistrements"
+                                                action="#{flowBean.goToActionUnitByIdNewPanel(actionUnit.id,0,2)}"
+                                                onstart="PF('buiContent').show()"
+                                                oncomplete="PF('buiContent').hide()"
+                                                process="@this"
+                                                update="flow"
+                                                style="margin-top:1em;margin-bottom:1em;display: block; margin-left: auto; margin-right: auto; width: fit-content;"
+                                        />
+
+
+                                    </p:card>
+                                </div>
+                            </ui:repeat>
+                        </div>
+
+                    </ui:fragment>
+
+                    <ui:fragment rendered="#{empty flowBean.getMyActionUnits()}">
+                        <p:column styleClass="ui-g-12 ui-xs-12 ui-md-6 ui-lg-3">
+                            <p:outputLabel value="Aucun projet"/>
+                        </p:column>
+                    </ui:fragment>
+
+
+
+
+            </p:panel>
+
+            <p:panel id="dbAccess" class="sia-form-panel" header="#{langBean.msg('homePanel.database')}"
+                     toggleable="true"
                      collapsed="false">
 
 
