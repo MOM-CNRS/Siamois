@@ -225,4 +225,19 @@ public interface ActionUnitRepository extends CrudRepository<ActionUnit, Long>, 
     """, nativeQuery = true)
     List<ActionUnit> findBySpatialContextAndInstitution(@Param("spatialId") Long spatialId,
                                                         @Param("institutionId") Long institutionId);
+
+    @Query(
+            nativeQuery = true,
+            value = """
+        SELECT DISTINCT au.*
+        FROM action_unit au
+        JOIN team_member tm ON au.action_unit_id = tm.fk_action_unit_id
+        WHERE tm.fk_person_id = :personId
+        UNION
+        SELECT au.*
+        FROM action_unit au
+        WHERE au.fk_created_by = :personId
+    """
+    )
+    List<ActionUnit> findByTeamMemberOrCreator(Long personId);
 }

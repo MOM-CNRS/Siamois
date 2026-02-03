@@ -42,6 +42,7 @@ import org.springframework.context.annotation.ScopedProxyMode;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
+import javax.swing.*;
 import java.io.Serializable;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -574,6 +575,13 @@ public class FlowBean implements Serializable {
                 .map(AbstractPanel::ressourceUri) // Utilise resourceUri() au lieu des IDs
                 .filter(Objects::nonNull) // Ignore les panels sans URI
                 .collect(Collectors.joining(","));
+    }
+
+    /**
+     * Return the active actions units for which i'm a member
+     */
+    public List<ActionUnit> getMyActionUnits() {
+        return actionUnitService.findByTeamMember(sessionSettings.getUserInfo().getUser());
     }
 
 

@@ -25,6 +25,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Data
 @Entity
@@ -208,6 +209,16 @@ public class ActionUnit extends TraceableEntity implements ArkEntity {
     @Transient
     @JsonIgnore
     public static final CustomForm DETAILS_FORM = ActionUnitDetailsForm.build();
+
+    public String getSpatialContextNames() {
+        if (spatialContext == null || spatialContext.isEmpty()) {
+            return "Aucun contexte spatial";
+        }
+        return spatialContext.stream()
+                .map(SpatialUnit::getName)
+                .collect(Collectors.joining(", "));
+    }
+
 
 
 
