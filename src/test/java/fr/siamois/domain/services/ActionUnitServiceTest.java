@@ -265,14 +265,17 @@ class ActionUnitServiceTest {
         actionUnit2.setId(102L);
         actionUnit2.setName("Action Unit 2");
 
+        Institution institution = new Institution();
+        institution.setId(1L);
+
         List<ActionUnit> expectedActionUnits = Arrays.asList(actionUnit1, actionUnit2);
 
         // 2. Configuration du comportement simulé du repository
-        when(actionUnitRepository.findByTeamMemberOrCreator(memberId))
+        when(actionUnitRepository.findByTeamMemberOrCreatorAndInstitution(memberId, 1L))
                 .thenReturn(expectedActionUnits);
 
         // 3. Appel de la méthode à tester
-        List<ActionUnit> result = actionUnitService.findByTeamMember(member);
+        List<ActionUnit> result = actionUnitService.findByTeamMember(member, institution);
 
         // 4. Vérification des résultats
         assertNotNull(result);
@@ -281,7 +284,7 @@ class ActionUnitServiceTest {
         assertEquals("Action Unit 2", result.get(1).getName());
 
         // 5. Vérification que la méthode du repository a été appelée avec le bon argument
-        verify(actionUnitRepository, times(1)).findByTeamMemberOrCreator(memberId);
+        verify(actionUnitRepository, times(1)).findByTeamMemberOrCreatorAndInstitution(memberId, 1L);
     }
 
 
