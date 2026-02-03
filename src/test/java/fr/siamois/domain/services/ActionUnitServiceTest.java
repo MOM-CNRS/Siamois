@@ -24,6 +24,7 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -31,7 +32,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class ActionUnitServiceTest {
@@ -247,6 +248,40 @@ class ActionUnitServiceTest {
         // Assert
         assertEquals(actionUnit1, actualResult.getContent().get(0));
         assertEquals(actionUnit2, actualResult.getContent().get(1));
+    }
+
+    @Test
+    void testFindByTeamMember() {
+        // 1. Préparation des données de test
+        Long memberId = 1L;
+        Person member = new Person();
+        member.setId(memberId);
+
+        ActionUnit actionUnit1 = new ActionUnit();
+        actionUnit1.setId(101L);
+        actionUnit1.setName("Action Unit 1");
+
+        ActionUnit actionUnit2 = new ActionUnit();
+        actionUnit2.setId(102L);
+        actionUnit2.setName("Action Unit 2");
+
+        List<ActionUnit> expectedActionUnits = Arrays.asList(actionUnit1, actionUnit2);
+
+        // 2. Configuration du comportement simulé du repository
+        when(actionUnitRepository.findByTeamMemberOrCreator(memberId))
+                .thenReturn(expectedActionUnits);
+
+        // 3. Appel de la méthode à tester
+        List<ActionUnit> result = actionUnitService.findByTeamMember(member);
+
+        // 4. Vérification des résultats
+        assertNotNull(result);
+        assertEquals(2, result.size());
+        assertEquals("Action Unit 1", result.get(0).getName());
+        assertEquals("Action Unit 2", result.get(1).getName());
+
+        // 5. Vérification que la méthode du repository a été appelée avec le bon argument
+        verify(actionUnitRepository, times(1)).findByTeamMemberOrCreator(memberId);
     }
 
 
