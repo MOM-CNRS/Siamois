@@ -24,7 +24,9 @@ import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.primefaces.PrimeFaces;
 import org.primefaces.event.SelectEvent;
+import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.context.ApplicationContext;
+import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
 import javax.faces.bean.ViewScoped;
@@ -34,7 +36,7 @@ import java.util.Map;
 import java.util.Set;
 
 @Slf4j
-@ViewScoped
+@Scope("session")
 @Component
 @Getter
 @Setter
