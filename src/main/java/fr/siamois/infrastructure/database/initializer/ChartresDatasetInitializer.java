@@ -51,6 +51,7 @@ public class ChartresDatasetInitializer implements DatabaseInitializer {
     private final OOXMLImportService ooxmlImportService;
     private final RecordingUnitRelSeeder recordingUnitRelSeeder;
     private final RecordingUnitService recordingUnitService;
+    private final RecordingUnitStratiRelSeeder recordingUnitStratiRelSeeder;
 
 
     @Value("${siamois.admin.username}")
@@ -70,7 +71,7 @@ public class ChartresDatasetInitializer implements DatabaseInitializer {
 
 
         if(existing!=null) {
-            return; // do nothing
+            //return; // do nothing
         }
 
 
@@ -98,6 +99,7 @@ public class ChartresDatasetInitializer implements DatabaseInitializer {
         specimenSeeder.seed(specs.getSpecimenSpecs());
         recordingUnitSeeder.seed(specs.getRecordingUnits());
         recordingUnitRelSeeder.seed(specs.getRecordingUnitRelSpecs());
+        recordingUnitStratiRelSeeder.seed(specs.getRecordingUnitStratiRelSpecs());
 
 
     }

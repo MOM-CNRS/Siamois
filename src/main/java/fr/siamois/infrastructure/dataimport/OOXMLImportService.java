@@ -90,6 +90,7 @@ public class OOXMLImportService {
             Sheet recordingUnitSheet  = workbook.getSheet(sheetIdToName.getOrDefault("recording_unit", "Unite action"));
             Sheet specimenSheet  = workbook.getSheet(sheetIdToName.getOrDefault("specimen", "Prelev."));
             Sheet recordingRelSheet  = workbook.getSheet(sheetIdToName.getOrDefault("recordingRel", "UE_rel"));
+            Sheet stratiSheet  = workbook.getSheet(sheetIdToName.getOrDefault("stratiRel", "Strati_Rel"));
 
             List<InstitutionSeeder.InstitutionSpec> institutions = parseInstitutions(institutionSheet);
             List<PersonSeeder.PersonSpec> persons = parsePersons(personSheet);
@@ -99,9 +100,10 @@ public class OOXMLImportService {
             List<RecordingUnitSeeder.RecordingUnitSpecs> recordingUnits = parseRecordingUnits(recordingUnitSheet);
             List<SpecimenSeeder.SpecimenSpecs> specimenSpecs = parseSpecimens(specimenSheet);
             List<RecordingUnitRelSeeder.RecordingUnitDTO> recordingUnitDTOS = parseRecordingRels(recordingRelSheet);
+            List<RecordingUnitStratiRelSeeder.RecordingUnitStratiRelDTO> stratiDTOS = parseStratiRels(stratiSheet);
 
             return new ImportSpecs(institutions, persons, spatialUnits, actionCodes, actionUnits,
-                    recordingUnits, specimenSpecs, recordingUnitDTOS);
+                    recordingUnits, specimenSpecs, recordingUnitDTOS, stratiDTOS);
         }
     }
 
@@ -292,6 +294,54 @@ public class OOXMLImportService {
             if (child  == null || child.isBlank())  return;
 
             specs.add(new RecordingUnitRelSeeder.RecordingUnitDTO(parent, child));
+        });
+
+        return specs;
+    }
+
+    public List<RecordingUnitStratiRelSeeder.RecordingUnitStratiRelDTO> parseStratiRels(Sheet sheet) {
+        if (sheet == null) {
+            return List.of();
+        }
+
+        Row header = sheet.getRow(0);
+        if (header == null) {
+            return List.of();
+        }
+
+        Map<String, Integer> cols = indexColumns(header);
+
+        Integer us1Num    = cols.get("us1");
+        Integer us2Num = cols.get("us2");
+        Integer relationNum    = cols.get("relation");
+        Integer directionNum = cols.get("direction vocabulaire");
+        Integer asynchroneNum    = cols.get("asynchrone");
+        Integer incertainNum    = cols.get("incertain");
+
+        if (us1Num == null || us2Num == null) {
+            // tu peux logger un warning ici
+            return List.of();
+        }
+
+        List<RecordingUnitStratiRelSeeder.RecordingUnitStratiRelDTO> specs = new ArrayList<>();
+
+        forEachDataRow(sheet, row -> {
+            String us1 = getStringCell(row, us1Num);
+            String us2  = getStringCell(row, us2Num);
+            ConceptSeeder.ConceptKey relKey = conceptKeyFromUri(getStringCellOrNull(row,relationNum));
+            String direction  = getStringCell(row, directionNum);
+            boolean directionBool = direction.equals("True");
+            String asynchrone  = getStringCell(row, asynchroneNum);
+            boolean asynchroneBool = asynchrone.equals("True");
+            String incertain  = getStringCell(row, incertainNum);
+            boolean incertainBool = incertain.equals("True");
+
+            if (us1 == null || us1.isBlank()) return;
+            if (us2  == null || us2.isBlank())  return;
+
+            specs.add(new RecordingUnitStratiRelSeeder.RecordingUnitStratiRelDTO(us1, us2,
+                    relKey, directionBool, asynchroneBool, incertainBool
+                    ));
         });
 
         return specs;
