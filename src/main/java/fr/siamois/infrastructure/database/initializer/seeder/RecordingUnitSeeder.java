@@ -116,8 +116,10 @@ public class RecordingUnitSeeder {
                 }
             }
 
-
-            SpatialUnit su = getSpatialUnitFromKey(s.spatialUnitName, institution);
+            SpatialUnit su = null;
+            if(s.spatialUnitName != null) {
+                su = getSpatialUnitFromKey(s.spatialUnitName, institution);
+            }
             ActionUnit au = getActionUnitFromKey(s.actionUnitIdentifier);
 
             RecordingUnit toGetOrCreate = new RecordingUnit();

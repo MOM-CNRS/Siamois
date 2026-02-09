@@ -16,6 +16,7 @@ import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptReposit
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import javax.swing.plaf.synth.SynthPainter;
 import java.time.OffsetDateTime;
 import java.util.HashSet;
 import java.util.List;
@@ -38,7 +39,7 @@ public class ActionUnitSeeder {
                                   String typeVocabularyExtId, String typeConceptExtId,
                                   String authorEmail,
                                   String institutionIdentifier, OffsetDateTime beginDate, OffsetDateTime endDate,
-                                  Set<SpatialUnitSeeder.SpatialUnitKey> spatialContextKeys) {
+                                  Set<SpatialUnitSeeder.SpatialUnitKey> spatialContextKeys, SpatialUnitSeeder.SpatialUnitKey mainLocation) {
 
     }
 
@@ -82,6 +83,11 @@ public class ActionUnitSeeder {
                 }
             }
 
+            SpatialUnit mainLocation = null;
+            if(s.mainLocation != null) {
+                 mainLocation = spatialUnitRepository.findByNameAndInstitution(s.mainLocation.unitName(), institution.getId()).orElse(null);
+            }
+
             ActionUnit toGetOrCreate = new ActionUnit();
             toGetOrCreate.setCreatedByInstitution(institution);
             toGetOrCreate.setIdentifier(s.identifier);
@@ -93,6 +99,7 @@ public class ActionUnitSeeder {
 
             toGetOrCreate.setFullIdentifier(s.fullIdentifier);
             toGetOrCreate.setType(type);
+            toGetOrCreate.setMainLocation(mainLocation);
             toGetOrCreate.setSpatialContext(spatialContext);
             toGetOrCreate.setBeginDate(s.beginDate);
             toGetOrCreate.setEndDate(s.endDate);
