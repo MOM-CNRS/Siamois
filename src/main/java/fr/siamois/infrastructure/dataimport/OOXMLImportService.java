@@ -424,6 +424,7 @@ public class OOXMLImportService {
 
         OffsetDateTime beginDate = parseOptionalDate(row, cols.get("date debut"));
         OffsetDateTime endDate   = parseOptionalDate(row, cols.get("date fin"));
+        String mainLoc  = getStringCellOrNull(row, cols.get("localisation principale"));
 
         Set<SpatialUnitSeeder.SpatialUnitKey> spatialContextKeys = parseSpatialNames(contexteRaw);
 
@@ -440,7 +441,8 @@ public class OOXMLImportService {
                 institution,
                 beginDate,
                 endDate,
-                spatialContextKeys
+                spatialContextKeys,
+                new SpatialUnitSeeder.SpatialUnitKey(mainLoc)
         ));
     }
 

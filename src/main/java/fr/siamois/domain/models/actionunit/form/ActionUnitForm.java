@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.form.customfield.*;
 import fr.siamois.domain.models.vocabulary.Concept;
+import fr.siamois.infrastructure.database.initializer.seeder.ConceptSeeder;
 import fr.siamois.ui.bean.panel.models.panel.single.AbstractSingleEntity;
 import jakarta.persistence.Transient;
 
@@ -32,6 +33,11 @@ public abstract class ActionUnitForm {
     public static final Concept NAME_CONCEPT = new Concept.Builder()
             .vocabulary(SYSTEM_THESO)
             .externalId("4285848")
+            .build();
+
+    public static final Concept MAIN_LOCATION_CONCEPT = new Concept.Builder()
+            .vocabulary(SYSTEM_THESO)
+            .externalId("4288509")
             .build();
 
     // unit id
@@ -152,5 +158,15 @@ public abstract class ActionUnitForm {
             .valueBinding("primaryActionCode")
             .concept(ACTION_CODE_CONCEPT)
             .build();
+
+    protected static final  CustomFieldSelectOneSpatialUnit MAIN_LOCATION_FIELD = CustomFieldSelectOneSpatialUnit.builder()
+            .label("common.label.mainLocation")
+            .isSystemField(true)
+            .id(10L)
+            .valueBinding("mainLocation")
+            .concept(MAIN_LOCATION_CONCEPT)
+            .build();
+
+
 
 }

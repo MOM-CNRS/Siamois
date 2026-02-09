@@ -131,17 +131,23 @@ $highlightTextColor:#6B7280 !default;
     --siamois-green-light-50: #{$siamoisGreenLight50};
     --siamois-over-grey: #{$siamoisOverGrey};
 
+    --main-color: #{$siamoisGreen};
+    --light-color-50: #{$siamoisGreenLight50};
+    --light-color-100: #{$siamoisGreenLight100};
+    --light-color-200: #{$siamoisGreenLight200};
+    --dark-color: #{$siamoisGreen};
+
     --context-main-color: #{$contextMainColor};
     --context-light-color-50: #{$contextLightColor50};
     --context-light-color-100: #{$contextLightColor100};
     --context-light-color-200: #{$contextLightColor200};
     --context-dark-color: #{$contextDarkColor};
-    --dark-color: #{$siamoisGreen};
 
     --ground-main-color: #{$groundMainColor};
     --ground-light-color-100: #{$groundLightColor100};
     --ground-light-color-200: #{$groundLightColor200};
     --ground-light-color-50: #{$groundLightColor50};
     --ground-dark-color: #{$groundDarkColor};
+
     --error-main: #D32F2F;
 }

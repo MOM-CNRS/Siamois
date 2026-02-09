@@ -34,7 +34,7 @@ public class RecordingUnitTreeTableLazyModel extends BaseTreeTableLazyModel<Reco
 
     @Override
     protected List<RecordingUnit> fetchChildren(RecordingUnit parentUnit) {
-        return recordingUnitService.findChildrenByParentAndInstitution(parentUnit.getId(), scope.getInstitutionId());
+        return recordingUnitService.findChildrenByParentAndInstitution(parentUnit.getId(), parentUnit.getCreatedByInstitution().getId());
     }
 
     @Override
