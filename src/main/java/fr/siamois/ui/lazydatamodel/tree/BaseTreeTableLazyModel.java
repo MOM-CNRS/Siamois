@@ -4,10 +4,7 @@ import fr.siamois.domain.models.TraceableEntity;
 import fr.siamois.ui.lazydatamodel.LazyModel;
 import lombok.Getter;
 import lombok.Setter;
-import org.primefaces.model.DefaultTreeNode;
-import org.primefaces.model.SortMeta;
-import org.primefaces.model.TreeNode;
-import org.primefaces.model.TreeNodeChildren;
+import org.primefaces.model.*;
 
 import java.io.Serializable;
 import java.util.*;
@@ -221,7 +218,7 @@ public abstract class BaseTreeTableLazyModel<T extends TraceableEntity, ID> impl
         for (T r : roots) {
             if (r == null || r.getId() == null) continue;
 
-            TreeNode<T> node = new DefaultTreeNode<>(r, rootNode);
+            TreeNode<T> node = new LazyDefaultTreeNode<>(r, rootNode);
             initializeAssociations(r);
             registerNode(r, node);
 
