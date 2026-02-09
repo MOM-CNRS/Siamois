@@ -99,7 +99,7 @@ class ActionUnitSeederTest {
                 "vocA", "conA",
                 "author@x.test",
                 "INST-1", begin, end,
-                keys
+                keys, null
         );
 
         // When
@@ -141,7 +141,7 @@ class ActionUnitSeederTest {
                 "vocB", "conB",
                 "a@b.c", "INST-2",
                 OffsetDateTime.now(), null,
-                null
+                null, null
         );
 
         // When
@@ -160,7 +160,7 @@ class ActionUnitSeederTest {
         ActionUnitSeeder.ActionUnitSpecs s = new ActionUnitSeeder.ActionUnitSpecs("AU-2", "Name", "ID", "ACX",
                 "v", "c",
                 "author@x", "INST",
-                null, null, null);
+                null, null, null, null);
 
         List<ActionUnitSeeder.ActionUnitSpecs> specs = List.of(s);
 
@@ -186,7 +186,7 @@ class ActionUnitSeederTest {
         ActionUnitSeeder.ActionUnitSpecs s = new ActionUnitSeeder.ActionUnitSpecs("AU-3", "Name", "ID", "ACX",
                 "v", "c",
                 "missing@x", "INST",
-                null, null, null);
+                null, null, null, null);
 
         List<ActionUnitSeeder.ActionUnitSpecs> specs = List.of(s);
 
@@ -211,7 +211,7 @@ class ActionUnitSeederTest {
         ActionUnitSeeder.ActionUnitSpecs s = new ActionUnitSeeder.ActionUnitSpecs("AU-4", "Name", "ID", "MISSING",
                 "v", "c",
                 "a@x", "INST",
-                null, null, null);
+                null, null, null, null);
 
         List<ActionUnitSeeder.ActionUnitSpecs> specs = List.of(s);
 
@@ -239,7 +239,7 @@ class ActionUnitSeederTest {
         ActionUnitSeeder.ActionUnitSpecs s = new ActionUnitSeeder.ActionUnitSpecs("AU-5", "Name", "ID", "ACZ",
                 "v", "c",
                 "a@x", "MISSING",
-                null, null, null);
+                null, null, null, null);
 
         List<ActionUnitSeeder.ActionUnitSpecs> specs = List.of(s);
 
@@ -266,7 +266,7 @@ class ActionUnitSeederTest {
         ActionUnitSeeder.ActionUnitSpecs s = new ActionUnitSeeder.ActionUnitSpecs("AU-77", "Name77", "ID77", "AC777",
                 "v77", "c77",
                 "a@77", "INST-77",
-                null, null, null);
+                null, null, null, null);
 
         List<ActionUnitSeeder.ActionUnitSpecs> specs = List.of(s);
 
