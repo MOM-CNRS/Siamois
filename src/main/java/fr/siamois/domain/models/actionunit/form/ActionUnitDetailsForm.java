@@ -44,6 +44,7 @@ public class ActionUnitDetailsForm extends ActionUnitForm {
                                                         .className(COLUMN_CLASS_NAME)
                                                         .field(ACTION_CODE_FIELD)
                                                         .build())
+
                                                 .build()
                                 )
                                 .addRow(
@@ -65,8 +66,18 @@ public class ActionUnitDetailsForm extends ActionUnitForm {
                 )
                 .addPanel(
                         new CustomFormPanel.Builder()
-                                .name(SPATIAL_UNIT_CONTEXT_LABEL_CODE)
+                                .name("common.label.localisation")
                                 .isSystemPanel(true)
+                                .addRow(
+                                        new CustomRow.Builder()
+                                                .addColumn(new CustomCol.Builder()
+                                                        .readOnly(true)
+                                                        .className(COLUMN_CLASS_NAME)
+                                                        .field(MAIN_LOCATION_FIELD)
+                                                        .build())
+                                                .build()
+                                )
+
                                 .addRow(
                                         new CustomRow.Builder()
                                                 .addColumn(new CustomCol.Builder()

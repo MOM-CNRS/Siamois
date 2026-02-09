@@ -10,6 +10,9 @@
 
     <chip:conceptChip concept="#{panelModel.unit.type}" styleClass="mr-2 action-unit-type-chip"/>
 
+    <p:chip rendered="#{not empty panelModel.unit.mainLocation}" label="#{panelModel.unit.mainLocation.name}"
+            styleClass="mr-2 spatial-unit-chip" icon="bi bi-geo-alt"
+    />
     <p:chip rendered="#{not panelModel.unit.validated}" label="Non validé"
             styleClass="mr-2 error-chip"
             />

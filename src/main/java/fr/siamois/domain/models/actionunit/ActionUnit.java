@@ -85,6 +85,10 @@ public class ActionUnit extends TraceableEntity implements ArkEntity {
     @OneToMany(mappedBy = "actionUnit")
     private Set<RecordingUnit> recordingUnitList;
 
+    @ManyToOne
+    @JoinColumn(name = "fk_main_location")
+    private SpatialUnit mainLocation ;
+
     @ManyToMany
     @JoinTable(
             name = "action_unit_spatial_context",
@@ -176,7 +180,7 @@ public class ActionUnit extends TraceableEntity implements ArkEntity {
     @JsonIgnore
     @SuppressWarnings("unused")
     public List<String> getBindableFieldNames() {
-        return List.of("type", "name", "identifier", "spatialContext", "beginDate", "endDate", "primaryActionCode");
+        return List.of("type", "name", "identifier", "spatialContext", "beginDate", "endDate", "primaryActionCode", "mainLocation");
     }
 
     @JsonIgnore
