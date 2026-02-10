@@ -287,5 +287,22 @@ class ActionUnitServiceTest {
         verify(actionUnitRepository, times(1)).findByTeamMemberOrCreatorAndInstitution(memberId, 1L);
     }
 
+    @Test
+    void existsChildrenByParentAndInstitution_shouldReturnTrue_whenChildrenExist() {
+        // Arrange
+        Long parentId = 1L;
+        Long institutionId = 10L;
+        when(actionUnitRepository.existsChildrenByParentAndInstitution(parentId, institutionId))
+                .thenReturn(true);
+
+        // Act
+        boolean result = actionUnitService.existsChildrenByParentAndInstitution(parentId, institutionId);
+
+        // Assert
+        assertTrue(result);
+        verify(actionUnitRepository, times(1))
+                .existsChildrenByParentAndInstitution(parentId, institutionId);
+    }
+
 
 }

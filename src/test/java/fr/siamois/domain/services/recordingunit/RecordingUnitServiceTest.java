@@ -22,8 +22,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.*;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -248,5 +247,22 @@ class RecordingUnitServiceTest {
         assertEquals(unit1, savedRel.getUnit1());
         assertEquals(result, savedRel.getUnit2());
         assertEquals(newConcept, savedRel.getConcept());
+    }
+
+    @Test
+    void existsChildrenByParentAndInstitution_shouldReturnTrue_whenChildrenExist() {
+        // Arrange
+        Long parentId = 1L;
+        Long institutionId = 10L;
+        when(recordingUnitRepository.existsChildrenByParentAndInstitution(parentId, institutionId))
+                .thenReturn(true);
+
+        // Act
+        boolean result = recordingUnitService.existsChildrenByParentAndInstitution(parentId, institutionId);
+
+        // Assert
+        assertTrue(result);
+        verify(recordingUnitRepository, times(1))
+                .existsChildrenByParentAndInstitution(parentId, institutionId);
     }
 }
