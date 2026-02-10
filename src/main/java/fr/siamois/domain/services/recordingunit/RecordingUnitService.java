@@ -541,6 +541,15 @@ public class RecordingUnitService implements ArkEntityService {
     }
 
     /**
+     * Does the institution have recording units?
+     * @param institutionId the institution ID
+     * @return True if they are children
+     */
+    public boolean existsRootChildrenByInstitution(Long institutionId) {
+        return recordingUnitRepository.existsRootChildrenByInstitution(institutionId);
+    }
+
+    /**
      * Get all recording unit that are the roots for a given action
      *
      * @param actionId the action id
