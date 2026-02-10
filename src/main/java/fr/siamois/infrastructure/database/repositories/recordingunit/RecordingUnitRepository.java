@@ -479,4 +479,14 @@ public interface RecordingUnitRepository extends CrudRepository<RecordingUnit, L
 
     @NonNull
     List<RecordingUnit> findByFullIdentifierAndActionUnit(String fullIdentifier, ActionUnit actionUnit);
+
+    @Query(value = """
+    SELECT COUNT(1) > 0
+    FROM recording_unit ru
+    JOIN recording_unit_hierarchy h ON h.fk_child_id = ru.recording_unit_id
+    WHERE ru.fk_institution_id = :institutionId
+      AND h.fk_parent_id = :parentId
+    """, nativeQuery = true)
+    boolean existsChildrenByParentAndInstitution(@Param("parentId") Long parentId,
+                                                 @Param("institutionId") Long institutionId);
 }

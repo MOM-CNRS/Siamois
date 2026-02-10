@@ -82,7 +82,7 @@
                                      required="#{cc.attrs.required}"
                         >
                             <f:attribute name="field" value="#{cc.attrs.field}" />
-                            <p:ajax event="keyup" delay="1000" update="#{cc.attrs.updateTargetsOnBlur}"
+                            <p:ajax event="keyup" delay="2000" update="#{cc.attrs.updateTargetsOnBlur}"
                                     onstart="$(PrimeFaces.escapeClientId('#{cc.clientId}:input')).addClass('sia-modified-field')"
                                     process="@this"
 

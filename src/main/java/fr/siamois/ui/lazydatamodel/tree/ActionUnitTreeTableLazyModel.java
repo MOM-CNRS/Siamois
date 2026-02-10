@@ -41,4 +41,9 @@ public class ActionUnitTreeTableLazyModel extends BaseTreeTableLazyModel<ActionU
                 scope.getInstitutionId());
     }
 
+    @Override
+    protected Boolean isLeaf(ActionUnit node) {
+        return !actionUnitService.existsChildrenByParentAndInstitution(node.getId(), node.getCreatedByInstitution().getId());
+    }
+
 }
