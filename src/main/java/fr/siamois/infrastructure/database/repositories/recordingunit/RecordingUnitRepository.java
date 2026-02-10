@@ -489,4 +489,16 @@ public interface RecordingUnitRepository extends CrudRepository<RecordingUnit, L
     """, nativeQuery = true)
     boolean existsChildrenByParentAndInstitution(@Param("parentId") Long parentId,
                                                  @Param("institutionId") Long institutionId);
+
+    @Query(value = """
+    SELECT COUNT(1) > 0
+    FROM recording_unit ru
+    WHERE ru.fk_institution_id = :institutionId
+      AND NOT EXISTS (
+          SELECT 1
+          FROM recording_unit_hierarchy h
+          WHERE h.fk_child_id = ru.recording_unit_id
+      )
+    """, nativeQuery = true)
+    boolean existsRootChildrenByInstitution(@Param("institutionId") Long institutionId);
 }
