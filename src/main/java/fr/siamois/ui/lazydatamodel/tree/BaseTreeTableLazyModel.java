@@ -1,7 +1,9 @@
 package fr.siamois.ui.lazydatamodel.tree;
 
+import fr.siamois.annotations.ExecutionTimeLogger;
 import fr.siamois.domain.models.TraceableEntity;
 import fr.siamois.ui.lazydatamodel.LazyModel;
+import fr.siamois.utils.TimerUtils;
 import lombok.Getter;
 import lombok.Setter;
 import org.primefaces.model.*;
@@ -53,8 +55,8 @@ public abstract class BaseTreeTableLazyModel<T extends TraceableEntity, ID> impl
         if (!initialized || root == null) {
             // rebuild index along with the tree
             nodesById = new HashMap<>();
+            TimerUtils.withTimer(() -> root = buildTree(), "buildTree");
 
-            root = buildTree();
             if (root == null) {
                 // never return null to the component
                 root = new DefaultTreeNode<>(null, null);
@@ -211,31 +213,19 @@ public abstract class BaseTreeTableLazyModel<T extends TraceableEntity, ID> impl
         // empty default
     }
 
+    @ExecutionTimeLogger
     protected TreeNode<T> buildTree() {
-        TreeNode<T> rootNode = new DefaultTreeNode<>(null, null);
-        List<T> roots = fetchRoots();
 
-        for (T r : roots) {
-            if (r == null || r.getId() == null) continue;
-
-            TreeNode<T> node = new LazyDefaultTreeNode<>(r,
-                    (Callbacks.SerializableFunction<T, List<T>>) this::loadFunction,
-                    (Callbacks.SerializableFunction<T, Boolean>) this::isLeaf
-            );
-
-            initializeAssociations(r);
-            registerNode(r, node);
-
-            rootNode.getChildren().add(node);
-
-        }
-
-        return rootNode;
+        return new LazyDefaultTreeNode<>(null,
+                (Callbacks.SerializableFunction<T, List<T>>) this::loadFunction,
+                (Callbacks.SerializableFunction<T, Boolean>) this::isLeaf
+        );
     }
 
-
+    @ExecutionTimeLogger
     protected abstract Boolean isLeaf( T node) ;
 
+    @ExecutionTimeLogger
     protected List<T> loadFunction(T parentUnit) {
         List<T> children = fetchChildren(parentUnit);
 

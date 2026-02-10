@@ -265,4 +265,18 @@ class RecordingUnitServiceTest {
         verify(recordingUnitRepository, times(1))
                 .existsChildrenByParentAndInstitution(parentId, institutionId);
     }
+
+    @Test
+    void existsRootChildrenByInstitution_ShouldReturnTrue_WhenChildrenExist() {
+        // Arrange
+        Long institutionId = 1L;
+        when(recordingUnitRepository.existsRootChildrenByInstitution(institutionId))
+                .thenReturn(true);
+
+        // Act
+        boolean result = recordingUnitService.existsRootChildrenByInstitution(institutionId);
+
+        // Assert
+        assertTrue(result);
+    }
 }
