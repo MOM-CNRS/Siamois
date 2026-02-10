@@ -4,10 +4,8 @@ import fr.siamois.domain.models.TraceableEntity;
 import fr.siamois.ui.lazydatamodel.LazyModel;
 import lombok.Getter;
 import lombok.Setter;
-import org.primefaces.model.DefaultTreeNode;
-import org.primefaces.model.SortMeta;
-import org.primefaces.model.TreeNode;
-import org.primefaces.model.TreeNodeChildren;
+import org.primefaces.model.*;
+import org.primefaces.util.Callbacks;
 
 import java.io.Serializable;
 import java.util.*;
@@ -217,40 +215,35 @@ public abstract class BaseTreeTableLazyModel<T extends TraceableEntity, ID> impl
         TreeNode<T> rootNode = new DefaultTreeNode<>(null, null);
         List<T> roots = fetchRoots();
 
-        Set<Long> path = new HashSet<>();
         for (T r : roots) {
             if (r == null || r.getId() == null) continue;
 
-            TreeNode<T> node = new DefaultTreeNode<>(r, rootNode);
+            TreeNode<T> node = new LazyDefaultTreeNode<>(r,
+                    (Callbacks.SerializableFunction<T, List<T>>) this::loadFunction,
+                    (Callbacks.SerializableFunction<T, Boolean>) this::isLeaf
+            );
+
             initializeAssociations(r);
             registerNode(r, node);
 
-            path.clear();
-            path.add(r.getId());
-            buildChildren(node, r, path);
+            rootNode.getChildren().add(node);
+
         }
 
         return rootNode;
     }
 
-    protected void buildChildren(TreeNode<T> parentNode, T parentUnit, Set<Long> path) {
+
+    protected abstract Boolean isLeaf( T node) ;
+
+    protected List<T> loadFunction(T parentUnit) {
         List<T> children = fetchChildren(parentUnit);
 
         for (T child : children) {
-            Long id = child.getId();
-            if (id == null || path.contains(id)) {
-                continue;
-            }
-
             initializeAssociations(child);
-
-            TreeNode<T> childNode = new DefaultTreeNode<>(child, parentNode);
-            registerNode(child, childNode);
-
-            path.add(id);
-            buildChildren(childNode, child, path);
-            path.remove(id);
         }
+
+        return children;
     }
 
 

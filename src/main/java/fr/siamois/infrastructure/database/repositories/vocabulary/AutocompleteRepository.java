@@ -1,6 +1,7 @@
 package fr.siamois.infrastructure.database.repositories.vocabulary;
 
 import com.zaxxer.hikari.HikariDataSource;
+import fr.siamois.annotations.ExecutionTimeLogger;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.models.vocabulary.Vocabulary;
 import fr.siamois.domain.models.vocabulary.VocabularyType;
@@ -90,6 +91,7 @@ public class AutocompleteRepository {
      * @return A list of ConceptAutocompleteDTO containing matching concepts
      */
     @NonNull
+    @ExecutionTimeLogger
     public List<ConceptAutocompleteDTO> findMatchingConceptsFor(@NonNull Concept concept,
                                                                 @NonNull String lang,
                                                                 @Nullable String input,

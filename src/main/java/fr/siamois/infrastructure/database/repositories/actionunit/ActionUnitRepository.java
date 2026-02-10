@@ -241,4 +241,14 @@ public interface ActionUnitRepository extends CrudRepository<ActionUnit, Long>, 
     )
     List<ActionUnit> findByTeamMemberOrCreatorAndInstitution(@Param("personId") Long personId, @Param("institutionId") Long institutionId);
 
+    @Query(value = """
+    SELECT COUNT(1) > 0
+    FROM action_unit au
+    JOIN action_hierarchy h ON h.fk_child_id = au.action_unit_id
+    WHERE au.fk_institution_id = :institutionId
+      AND h.fk_parent_id = :parentId
+    """, nativeQuery = true)
+    boolean existsChildrenByParentAndInstitution(@Param("parentId") Long parentId,
+                                                 @Param("institutionId") Long institutionId);
+
 }

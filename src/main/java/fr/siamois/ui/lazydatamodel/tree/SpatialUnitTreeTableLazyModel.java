@@ -43,4 +43,9 @@ public class SpatialUnitTreeTableLazyModel extends BaseTreeTableLazyModel<Spatia
         Hibernate.initialize(child.getRelatedActionUnitList());
     }
 
+    @Override
+    protected Boolean isLeaf(SpatialUnit node) {
+        return !spatialUnitService.existsChildrenByParentAndInstitution(node.getId(), node.getCreatedByInstitution().getId());
+    }
+
 }
