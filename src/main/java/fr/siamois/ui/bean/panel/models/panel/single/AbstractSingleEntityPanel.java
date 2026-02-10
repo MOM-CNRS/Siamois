@@ -13,8 +13,6 @@ import fr.siamois.domain.models.vocabulary.Vocabulary;
 import fr.siamois.domain.services.history.HistoryAuditService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.domain.services.vocabulary.FieldService;
-import fr.siamois.domain.services.vocabulary.VocabularyService;
-import fr.siamois.infrastructure.files.DocumentStorage;
 import fr.siamois.ui.bean.dialog.document.DocumentCreationBean;
 import fr.siamois.ui.bean.panel.FlowBean;
 import fr.siamois.ui.bean.panel.models.panel.single.tab.*;

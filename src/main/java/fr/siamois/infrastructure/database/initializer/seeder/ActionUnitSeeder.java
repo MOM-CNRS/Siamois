@@ -14,11 +14,8 @@ import fr.siamois.infrastructure.database.repositories.institution.InstitutionRe
 import fr.siamois.infrastructure.database.repositories.person.PersonRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Service;
 
-import javax.swing.plaf.synth.SynthPainter;
 import java.time.OffsetDateTime;
 import java.util.HashSet;
 import java.util.List;
