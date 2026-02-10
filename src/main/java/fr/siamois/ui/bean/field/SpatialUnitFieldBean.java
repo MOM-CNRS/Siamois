@@ -1,5 +1,6 @@
 package fr.siamois.ui.bean.field;
 
+import fr.siamois.annotations.ExecutionTimeLogger;
 import fr.siamois.domain.models.events.LoginEvent;
 import fr.siamois.domain.models.exceptions.vocabulary.NoConfigForFieldException;
 import fr.siamois.domain.models.form.customfield.CustomField;
@@ -115,6 +116,7 @@ public class SpatialUnitFieldBean implements Serializable {
      * @param input the input of the user
      * @return the list of concepts that match the input to display in the autocomplete
      */
+    @ExecutionTimeLogger
     public List<ConceptAutocompleteDTO> completeWithFieldCode(String input) {
         String fieldCode = "Undefined";
         try {

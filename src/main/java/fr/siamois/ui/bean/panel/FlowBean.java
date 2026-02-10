@@ -42,7 +42,6 @@ import org.springframework.context.annotation.ScopedProxyMode;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
-import javax.swing.*;
 import java.io.Serializable;
 import java.util.*;
 import java.util.stream.Collectors;

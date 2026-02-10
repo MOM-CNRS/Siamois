@@ -16,7 +16,6 @@ import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptReposit
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import javax.swing.plaf.synth.SynthPainter;
 import java.time.OffsetDateTime;
 import java.util.HashSet;
 import java.util.List;
@@ -107,4 +106,6 @@ public class ActionUnitSeeder {
 
         }
     }
+
+
 }

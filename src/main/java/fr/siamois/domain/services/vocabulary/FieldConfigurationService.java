@@ -1,5 +1,6 @@
 package fr.siamois.domain.services.vocabulary;
 
+import fr.siamois.annotations.ExecutionTimeLogger;
 import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.exceptions.ErrorProcessingExpansionException;
@@ -269,6 +270,7 @@ public class FieldConfigurationService {
      * @throws NoConfigForFieldException if no configuration is found for the field code
      */
     @NonNull
+    @ExecutionTimeLogger
     public ConceptFieldConfig findConfigurationForFieldCode(@NonNull UserInfo info, @NonNull String fieldCode) throws NoConfigForFieldException {
         Optional<ConceptFieldConfig> personConfig = conceptFieldConfigRepository.findOneByFieldCodeForUser(info.getUser().getId(), info.getInstitution().getId(), fieldCode);
         if (personConfig.isEmpty()) {
@@ -291,6 +293,7 @@ public class FieldConfigurationService {
      * @throws NoConfigForFieldException if no configuration is found for the field code
      */
     @NonNull
+    @ExecutionTimeLogger
     public List<ConceptAutocompleteDTO> fetchAutocomplete(@NonNull UserInfo info, @NonNull String fieldCode, @Nullable String input) throws NoConfigForFieldException {
         ConceptFieldConfig config = findConfigurationForFieldCode(info, fieldCode);
         return autocompleteRepository.findMatchingConceptsFor(config.getConcept(), info.getLang(), input, LIMIT_RESULTS);

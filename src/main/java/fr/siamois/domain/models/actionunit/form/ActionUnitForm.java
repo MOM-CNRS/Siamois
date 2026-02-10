@@ -4,7 +4,6 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.form.customfield.*;
 import fr.siamois.domain.models.vocabulary.Concept;
-import fr.siamois.infrastructure.database.initializer.seeder.ConceptSeeder;
 import fr.siamois.ui.bean.panel.models.panel.single.AbstractSingleEntity;
 import jakarta.persistence.Transient;
 

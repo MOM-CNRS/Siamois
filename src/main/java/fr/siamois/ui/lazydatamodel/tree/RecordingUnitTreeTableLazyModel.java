@@ -46,4 +46,9 @@ public class RecordingUnitTreeTableLazyModel extends BaseTreeTableLazyModel<Reco
         Hibernate.initialize(child.getRelationshipsAsUnit2());
         Hibernate.initialize(child.getRelationshipsAsUnit1());
     }
+
+    @Override
+    protected Boolean isLeaf(RecordingUnit node) {
+        return !recordingUnitService.existsChildrenByParentAndInstitution(node.getId(), node.getCreatedByInstitution().getId());
+    }
 }

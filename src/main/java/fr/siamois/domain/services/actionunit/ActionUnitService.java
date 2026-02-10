@@ -25,7 +25,6 @@ import org.hibernate.Hibernate;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -444,6 +443,15 @@ public class ActionUnitService implements ArkEntityService {
         return actionUnitRepository.findByTeamMemberOrCreatorAndInstitution(member.getId(), institution.getId());
     }
 
+    /**
+     * Does this unit has children?
+     * @param parentId The parent ID
+     * @param institutionId the institution ID
+     * @return True if they are children
+     */
+    public boolean existsChildrenByParentAndInstitution(Long parentId, Long institutionId) {
+        return actionUnitRepository.existsChildrenByParentAndInstitution(parentId, institutionId);
+    }
 
 
 

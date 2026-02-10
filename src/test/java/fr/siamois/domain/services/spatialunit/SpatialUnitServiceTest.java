@@ -672,4 +672,21 @@ class SpatialUnitServiceTest {
                 .findDescendantsUpToDepth(any(Long[].class), eq(10));
     }
 
+    @Test
+    void existsChildrenByParentAndInstitution_shouldReturnTrue_whenChildrenExist() {
+        // Arrange
+        Long parentId = 1L;
+        Long institutionId = 10L;
+        when(spatialUnitRepository.existsChildrenByParentAndInstitution(parentId, institutionId))
+                .thenReturn(true);
+
+        // Act
+        boolean result = spatialUnitService.existsChildrenByParentAndInstitution(parentId, institutionId);
+
+        // Assert
+        assertTrue(result);
+        verify(spatialUnitRepository, times(1))
+                .existsChildrenByParentAndInstitution(parentId, institutionId);
+    }
+
 }
