@@ -419,4 +419,9 @@ public class SpatialUnitService implements ArkEntityService {
         return spatialUnitRepository.existsRootChildrenByInstitution(institutionId);
     }
 
+
+    public boolean existsRootChildrenByParent(Long spatialUnitId) {
+        return spatialUnitRepository.existsRootChildrenByParent(spatialUnitId);
+    }
+
 }

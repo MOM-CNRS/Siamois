@@ -28,7 +28,7 @@ public abstract class BaseTreeTableLazyModel<T extends TraceableEntity, ID> impl
     private String globalFilter;
 
     /** Cached root node */
-    private transient TreeNode<T> root;
+    private transient LazyDefaultTreeNode<T> root;
 
     protected int first = 0;
     protected int pageSizeState = 10;
@@ -41,7 +41,7 @@ public abstract class BaseTreeTableLazyModel<T extends TraceableEntity, ID> impl
     private final transient Function<T, ID> idExtractor;
 
     /** Multi-hierarchy index: entity id -> all nodes representing it */
-    private transient Map<ID, List<TreeNode<T>>> nodesById = new HashMap<>();
+    private transient Map<ID, List<LazyDefaultTreeNode<T>>> nodesById = new HashMap<>();
 
     protected BaseTreeTableLazyModel(Function<T, ID> idExtractor) {
         this.idExtractor = idExtractor;
@@ -50,7 +50,7 @@ public abstract class BaseTreeTableLazyModel<T extends TraceableEntity, ID> impl
     /**
      * PrimeFaces <p:treeTable value="..."> expects a TreeNode root.
      */
-    public TreeNode<T> getRoot() {
+    public LazyDefaultTreeNode<T> getRoot() {
         if (!initialized || root == null) {
             // rebuild index along with the tree
             nodesById = new HashMap<>();
@@ -58,7 +58,7 @@ public abstract class BaseTreeTableLazyModel<T extends TraceableEntity, ID> impl
 
             if (root == null) {
                 // never return null to the component
-                root = new DefaultTreeNode<>(null, null);
+                root = new LazyDefaultTreeNode<>(null, null, null);
             }
             initialized = true;
         }
@@ -78,11 +78,11 @@ public abstract class BaseTreeTableLazyModel<T extends TraceableEntity, ID> impl
 
 
     /** Lookup ALL nodes for a given entity id (multi-hierarchy) */
-    public List<TreeNode<T>> findNodesById(ID id) {
+    public List<LazyDefaultTreeNode<T>> findNodesById(ID id) {
         if (id == null) return List.of();
         // ensure initialized
         getRoot();
-        List<TreeNode<T>> nodes = nodesById.get(id);
+        List<LazyDefaultTreeNode<T>> nodes = nodesById.get(id);
         return (nodes == null) ? List.of() : Collections.unmodifiableList(nodes);
     }
 
@@ -90,13 +90,13 @@ public abstract class BaseTreeTableLazyModel<T extends TraceableEntity, ID> impl
      * Convenience: returns the first node if you don't care which occurrence you get.
      * Prefer using findNodesById(...) when ambiguity matters.
      */
-    public TreeNode<T> findAnyNodeById(ID id) {
-        List<TreeNode<T>> nodes = findNodesById(id);
+    public LazyDefaultTreeNode<T> findAnyNodeById(ID id) {
+        List<LazyDefaultTreeNode<T>> nodes = findNodesById(id);
         return nodes.isEmpty() ? null : nodes.get(0);
     }
 
     /** Register node in the index (call during build and during inserts) */
-    protected void registerNode(T entity, TreeNode<T> node) {
+    protected void registerNode(T entity, LazyDefaultTreeNode<T> node) {
         if (entity == null || node == null) return;
         ID id = idExtractor.apply(entity);
         if (id == null) return;
@@ -108,7 +108,7 @@ public abstract class BaseTreeTableLazyModel<T extends TraceableEntity, ID> impl
     public void insertChildFirst(ID parentId, T created) {
 
         // Determine all parent occurrences
-        final List<TreeNode<T>> parents;
+        final List<LazyDefaultTreeNode<T>> parents;
         if (parentId == null) {
             parents = List.of(getRoot());
         } else {
@@ -117,16 +117,23 @@ public abstract class BaseTreeTableLazyModel<T extends TraceableEntity, ID> impl
 
         if (parents == null || parents.isEmpty()) {
             // fallback: add under root
-            TreeNode<T> n = new DefaultTreeNode<>(created, getRoot());
-            registerNode(created, n);
+            LazyDefaultTreeNode<T> newNode = new LazyDefaultTreeNode<>(created,
+                    (Callbacks.SerializableFunction<T, List<T>>) this::loadFunction,
+                    (Callbacks.SerializableFunction<T, Boolean>) this::isLeaf
+            );
+            newNode.setParent(getRoot());
+            registerNode(created, newNode);
             return;
         }
 
         // Insert under every occurrence of the parent entity
-        for (TreeNode<T> parent : parents) {
+        for (LazyDefaultTreeNode<T> parent : parents) {
             if (parent == null) continue;
 
-            TreeNode<T> newNode = new DefaultTreeNode<>(created, null);
+            LazyDefaultTreeNode<T> newNode = new LazyDefaultTreeNode<>(created,
+                    (Callbacks.SerializableFunction<T, List<T>>) this::loadFunction,
+                    (Callbacks.SerializableFunction<T, Boolean>) this::isLeaf
+            );
             newNode.setParent(parent);
             parent.getChildren().add(0, newNode);
 
@@ -146,13 +153,14 @@ public abstract class BaseTreeTableLazyModel<T extends TraceableEntity, ID> impl
     public void insertParentAtRoot(ID clickedId, T createdParent) {
 
         // 1) create new parent under root
-        TreeNode<T> newParentNode = new DefaultTreeNode<>(createdParent, null);
+        LazyDefaultTreeNode<T> newParentNode = new LazyDefaultTreeNode<>(createdParent,  (Callbacks.SerializableFunction<T, List<T>>) this::loadFunction,
+                (Callbacks.SerializableFunction<T, Boolean>) this::isLeaf);
         newParentNode.setParent(root);
         root.getChildren().add(0, newParentNode);
         registerNode(createdParent, newParentNode);
 
         // 2) pick a source occurrence to duplicate (any)
-        TreeNode<T> source = findAnyNodeById(clickedId);
+        LazyDefaultTreeNode<T> source = findAnyNodeById(clickedId);
         if (source == null) {
             newParentNode.setExpanded(true);
             return;
@@ -160,7 +168,8 @@ public abstract class BaseTreeTableLazyModel<T extends TraceableEntity, ID> impl
 
         // 3) duplicate: create a NEW node pointing to the SAME entity data
         T clickedEntity = source.getData();
-        TreeNode<T> duplicate = new DefaultTreeNode<>(clickedEntity, newParentNode);
+        LazyDefaultTreeNode<T> duplicate = new LazyDefaultTreeNode<>(clickedEntity, (Callbacks.SerializableFunction<T, List<T>>) this::loadFunction,
+                (Callbacks.SerializableFunction<T, Boolean>) this::isLeaf);
 
         // 4) index the duplicate occurrence
         registerNode(clickedEntity, duplicate);
@@ -213,7 +222,7 @@ public abstract class BaseTreeTableLazyModel<T extends TraceableEntity, ID> impl
     }
 
     @ExecutionTimeLogger
-    protected TreeNode<T> buildTree() {
+    protected LazyDefaultTreeNode<T> buildTree() {
 
         return new LazyDefaultTreeNode<>(null,
                 (Callbacks.SerializableFunction<T, List<T>>) this::loadFunction,

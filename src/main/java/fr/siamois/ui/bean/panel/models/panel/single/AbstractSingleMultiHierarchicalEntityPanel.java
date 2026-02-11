@@ -96,10 +96,6 @@ public abstract class AbstractSingleMultiHierarchicalEntityPanel<T extends Trace
     }
 
 
-
-
-
-
     protected AbstractSingleMultiHierarchicalEntityPanel(
             String titleCodeOrTitle,
             String icon,
@@ -107,8 +103,6 @@ public abstract class AbstractSingleMultiHierarchicalEntityPanel<T extends Trace
             ApplicationContext context) {
         super(titleCodeOrTitle, icon, panelClass, context);
     }
-
-    public abstract EntityTableViewModel<T, Long> getParentTableModel();
 
     public abstract EntityTableViewModel<T, Long> getChildTableModel();
 
@@ -119,7 +113,6 @@ public abstract class AbstractSingleMultiHierarchicalEntityPanel<T extends Trace
                 "panel.tab.hierarchy",
                 this.getIcon(),
                 "hierarchyTab",
-                getParentTableModel(),
                 getChildTableModel());
 
         tabs.add(2, multiHierTab);

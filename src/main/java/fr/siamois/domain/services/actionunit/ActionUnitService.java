@@ -421,11 +421,10 @@ public class ActionUnitService implements ArkEntityService {
      * Get all ActionUnit in the institution that are linked to a spatial unit
      *
      * @param spatialId     the spatial unit id
-     * @param institutionId the institution id
      * @return The list of ActionUnit
      */
-    public List<ActionUnit> findBySpatialContextAndInstitution(Long spatialId, Long institutionId) {
-        List<ActionUnit> res = actionUnitRepository.findBySpatialContextAndInstitution(spatialId, institutionId);
+    public List<ActionUnit> findBySpatialContext(Long spatialId) {
+        List<ActionUnit> res = actionUnitRepository.findBySpatialContext(spatialId);
         initializeActionUnitCollections(res);
         return res;
     }
@@ -465,4 +464,7 @@ public class ActionUnitService implements ArkEntityService {
         return actionUnitRepository.existsRootChildrenByInstitution(institutionId);
     }
 
+    public boolean existsRootChildrenByRelatedSpatialUnit(Long spatialUnitId) {
+        return actionUnitRepository.existsRootChildrenByRelatedSpatialUnit(spatialUnitId);
+    }
 }

@@ -550,6 +550,15 @@ public class RecordingUnitService implements ArkEntityService {
     }
 
     /**
+     * Does the action have recording units?
+     * @param actionId the action ID
+     * @return True if they are children
+     */
+    public boolean existsRootChildrenByAction(Long actionId) {
+        return recordingUnitRepository.existsRootChildrenByAction(actionId);
+    }
+
+    /**
      * Get all recording unit that are the roots for a given action
      *
      * @param actionId the action id
@@ -720,4 +729,6 @@ public class RecordingUnitService implements ArkEntityService {
     public List<RecordingUnit> findDirectParentsOf(Long id) {
         return recordingUnitRepository.findParentsOf(id).stream().toList();
     }
+
+
 }

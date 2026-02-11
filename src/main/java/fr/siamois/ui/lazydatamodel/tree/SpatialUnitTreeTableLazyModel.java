@@ -28,7 +28,6 @@ public class SpatialUnitTreeTableLazyModel extends BaseTreeTableLazyModel<Spatia
         return switch (scope.getType()) {
             case INSTITUTION -> spatialUnitService.findRootsOf(scope.getInstitutionId());
             case CHILDREN_OF_SPATIAL_UNIT -> spatialUnitService.findDirectChildrensOf(scope.getSpatialUnitId());
-            case PARENTS_OF_SPATIAL_UNIT -> spatialUnitService.findDirectParentsOf(scope.getSpatialUnitId());
         };
     }
 
@@ -52,9 +51,13 @@ public class SpatialUnitTreeTableLazyModel extends BaseTreeTableLazyModel<Spatia
         if(node!=null){
             return !spatialUnitService.existsChildrenByParentAndInstitution(node.getId(), node.getCreatedByInstitution().getId());
         }
-        else {
-            return !spatialUnitService.existsRootChildrenByInstitution(scope.getInstitutionId());
-        }
+        // If no parent, it depends on the scope
+        return switch (scope.getType()) {
+            case INSTITUTION ->
+                    !spatialUnitService.existsRootChildrenByInstitution(scope.getInstitutionId());
+            case CHILDREN_OF_SPATIAL_UNIT ->
+                    !spatialUnitService.existsRootChildrenByParent(scope.getSpatialUnitId());
+        };
     }
 
 

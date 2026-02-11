@@ -220,11 +220,9 @@ public interface ActionUnitRepository extends CrudRepository<ActionUnit, Long>, 
     FROM action_unit su
     JOIN action_unit_spatial_context h
       ON h.fk_action_unit_id = su.action_unit_id
-    WHERE su.fk_institution_id = :institutionId
-      AND h.fk_spatial_unit_id = :spatialId
+    WHERE h.fk_spatial_unit_id = :spatialId
     """, nativeQuery = true)
-    List<ActionUnit> findBySpatialContextAndInstitution(@Param("spatialId") Long spatialId,
-                                                        @Param("institutionId") Long institutionId);
+    List<ActionUnit> findBySpatialContext(@Param("spatialId") Long spatialId);
 
     @Query(
             nativeQuery = true,
@@ -263,5 +261,17 @@ public interface ActionUnitRepository extends CrudRepository<ActionUnit, Long>, 
     """, nativeQuery = true)
     boolean existsRootChildrenByInstitution(@Param("institutionId") Long institutionId);
 
+    @Query(value = """
+                SELECT COUNT(1) > 0
+                FROM action_unit au
+                JOIN action_unit_spatial_context auc ON auc.fk_action_unit_id = au.action_unit_id
+                WHERE auc.fk_spatial_unit_id = :spatialUnitId
+                  AND NOT EXISTS (
+                      SELECT 1
+                      FROM action_hierarchy h
+                      WHERE h.fk_child_id = au.action_unit_id
+                  )
+            """, nativeQuery = true)
+    boolean existsRootChildrenByRelatedSpatialUnit(@Param("spatialUnitId") Long spatialUnitId);
 
 }
