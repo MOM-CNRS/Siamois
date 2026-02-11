@@ -410,6 +410,13 @@ public class SpatialUnitService implements ArkEntityService {
         return spatialUnitRepository.existsChildrenByParentAndInstitution(parentId, institutionId);
     }
 
-
+    /**
+     * Does the institution have spatial units?
+     * @param institutionId the institution ID
+     * @return True if they are children
+     */
+    public boolean existsRootChildrenByInstitution(Long institutionId) {
+        return spatialUnitRepository.existsRootChildrenByInstitution(institutionId);
+    }
 
 }

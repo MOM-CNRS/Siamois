@@ -55,7 +55,7 @@ public abstract class BaseTreeTableLazyModel<T extends TraceableEntity, ID> impl
         if (!initialized || root == null) {
             // rebuild index along with the tree
             nodesById = new HashMap<>();
-            TimerUtils.withTimer(() -> root = buildTree(), "buildTree");
+            root = buildTree();
 
             if (root == null) {
                 // never return null to the component

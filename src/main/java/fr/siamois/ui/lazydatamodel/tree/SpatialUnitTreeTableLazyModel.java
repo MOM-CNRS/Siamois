@@ -1,5 +1,6 @@
 package fr.siamois.ui.lazydatamodel.tree;
 
+import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.ui.lazydatamodel.scope.SpatialUnitScope;
@@ -33,7 +34,10 @@ public class SpatialUnitTreeTableLazyModel extends BaseTreeTableLazyModel<Spatia
 
     @Override
     protected List<SpatialUnit> fetchChildren(SpatialUnit parentUnit) {
-        return spatialUnitService.findDirectChildrensOf(parentUnit.getId());
+        if(parentUnit != null) {
+            return spatialUnitService.findDirectChildrensOf(parentUnit.getId());
+        }
+         return fetchRoots();
     }
 
     @Override
@@ -45,7 +49,14 @@ public class SpatialUnitTreeTableLazyModel extends BaseTreeTableLazyModel<Spatia
 
     @Override
     protected Boolean isLeaf(SpatialUnit node) {
-        return !spatialUnitService.existsChildrenByParentAndInstitution(node.getId(), node.getCreatedByInstitution().getId());
+        if(node!=null){
+            return !spatialUnitService.existsChildrenByParentAndInstitution(node.getId(), node.getCreatedByInstitution().getId());
+        }
+        else {
+            return !spatialUnitService.existsRootChildrenByInstitution(scope.getInstitutionId());
+        }
     }
+
+
 
 }
