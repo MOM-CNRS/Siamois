@@ -545,7 +545,6 @@ class ActionUnitServiceTest {
     void findBySpatialContextAndInstitution_returnsInitializedActionUnits() {
         // Arrange
         Long spatialId = 1L;
-        Long institutionId = 1L;
         List<ActionUnit> mockActionUnits = List.of(mock(ActionUnit.class), mock(ActionUnit.class));
         when(actionUnitRepository.findBySpatialContext(spatialId)).thenReturn(mockActionUnits);
 
@@ -558,7 +557,7 @@ class ActionUnitServiceTest {
     }
 
     @Test
-    public void existsRootChildrenByRelatedSpatialUnit_ShouldReturnTrue_WhenChildrenExist() {
+    void existsRootChildrenByRelatedSpatialUnit_ShouldReturnTrue_WhenChildrenExist() {
         // Arrange
         Long spatialUnitId = 1L;
         when(actionUnitRepository.existsRootChildrenByRelatedSpatialUnit(spatialUnitId))
