@@ -329,6 +329,16 @@ public interface SpatialUnitRepository extends JpaRepository<SpatialUnit, Long>,
     boolean existsChildrenByParentAndInstitution(@Param("parentId") Long parentId,
                                                  @Param("institutionId") Long institutionId);
 
-
+    @Query(value = """
+    SELECT COUNT(1) > 0
+    FROM spatial_unit su
+    WHERE su.fk_institution_id = :institutionId
+      AND NOT EXISTS (
+          SELECT 1
+          FROM spatial_hierarchy h
+          WHERE h.fk_child_id = su.spatial_unit_id
+      )
+    """, nativeQuery = true)
+    boolean existsRootChildrenByInstitution(@Param("institutionId") Long institutionId);
 }
 

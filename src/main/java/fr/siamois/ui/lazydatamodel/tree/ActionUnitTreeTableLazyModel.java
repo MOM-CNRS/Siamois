@@ -1,6 +1,7 @@
 package fr.siamois.ui.lazydatamodel.tree;
 
 import fr.siamois.domain.models.actionunit.ActionUnit;
+import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.ui.lazydatamodel.scope.ActionUnitScope;
 import lombok.Getter;
@@ -37,13 +38,18 @@ public class ActionUnitTreeTableLazyModel extends BaseTreeTableLazyModel<ActionU
 
     @Override
     protected List<ActionUnit> fetchChildren(ActionUnit parentUnit) {
-        return actionUnitService.findChildrenByParentAndInstitution(parentUnit.getId(),
-                scope.getInstitutionId());
+        if(parentUnit != null) {
+            return actionUnitService.findChildrenByParentAndInstitution(parentUnit.getId(),
+                    scope.getInstitutionId());
+        }
+        return fetchRoots();
     }
 
     @Override
     protected Boolean isLeaf(ActionUnit node) {
-        return !actionUnitService.existsChildrenByParentAndInstitution(node.getId(), node.getCreatedByInstitution().getId());
+        if(node != null) {
+            return !actionUnitService.existsChildrenByParentAndInstitution(node.getId(), node.getCreatedByInstitution().getId());
+        }
+        return !actionUnitService.existsRootChildrenByInstitution(scope.getInstitutionId());
     }
-
 }
