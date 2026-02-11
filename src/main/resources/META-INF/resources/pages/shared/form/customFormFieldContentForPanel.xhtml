@@ -54,8 +54,8 @@
                 <ui:param name="rowStatus" value="#{rowStatus}"/>
                 <ui:param name="colStatus" value="#{colStatus}"/>
                 <ui:param name="panelStyleClass" value="#{bean.getAutocompleteClass()}"/>
-                <ui:param name="conceptFieldsUpdateTargetsOnBlur" value="#{bean.getConceptFieldsUpdateTargetsOnBlur(panelIndex)}"/>
-                <ui:param name="updateTargetsOnBlur" value="#{root}:field-#{prefix}-#{statusIndex}-#{rowIndex}-#{colIndex} #{bean.getPanelHeaderUpdateId(panelIndex)}"/>
+                <ui:param name="conceptFieldsUpdateTargetsOnBlur" value="#{bean.getConceptFieldsUpdateTargetsOnBlur()}"/>
+                <ui:param name="updateTargetsOnBlur" value="#{root}:field-#{prefix}-#{statusIndex}-#{rowIndex}-#{colIndex} #{bean.getPanelHeaderUpdateId()}"/>
                 <ui:param name="spatialUnitOptions" value="#{bean.getSpatialUnitOptions()}" />
                 <ui:param name="mode" value="#{(col.readOnly) ? 'output' : flowBean.getInPlaceFieldMode()}"/>
             </ui:include>

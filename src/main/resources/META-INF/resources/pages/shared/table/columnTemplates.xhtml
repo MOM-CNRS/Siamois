@@ -43,7 +43,7 @@
     <ui:fragment rendered="#{column.type eq 'COMMAND_LINK'}">
         <p:commandButton
                 styleClass="hidden-column"
-                action="#{tableModel.handleAction(column, item, panelIndex)}"
+                action="#{tableModel.handleAction(column, item)}"
                 onstart="#{column.onstartJs}"
                 icon="bi bi-box-arrow-up-right"
                 oncomplete="#{column.oncompleteJs}"

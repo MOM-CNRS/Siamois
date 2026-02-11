@@ -203,67 +203,34 @@ public class FlowBean implements Serializable {
     }
 
 
-    public void goToSpatialUnitByIdNewPanel(Long id, AbstractPanel currentPanel) {
+    public void goToSpatialUnitByIdNewPanel(Long id,Integer activeIndex) {
         // Create new panel type and add items to its breadcrumb
-        SpatialUnitPanel newPanel = panelFactory.createSpatialUnitPanel(id, currentPanel.getBreadcrumb());
+        SpatialUnitPanel newPanel = panelFactory.createSpatialUnitPanel(id, activeIndex);
         addPanel(newPanel);
     }
 
-    public void goToSpatialUnitByIdNewPanel(Long id, AbstractPanel currentPanel, Integer activeIndex) {
-        // Create new panel type and add items to its breadcrumb
-        SpatialUnitPanel newPanel = panelFactory.createSpatialUnitPanel(id, currentPanel.getBreadcrumb(), activeIndex);
+    public void goToSpatialUnitByIdNewPanel(Long id) {
+
+        SpatialUnitPanel newPanel = panelFactory.createSpatialUnitPanel(id);
         addPanel(newPanel);
-    }
-
-    public void goToSpatialUnitByIdNewPanel(Long id, Integer currentPanelIndex) {
-
-        SpatialUnitPanel newPanel = panelFactory.createSpatialUnitPanel(id, panels.get(currentPanelIndex).getBreadcrumb());
-        addPanel(newPanel);
-
-    }
-
-    public void goToSpatialUnitByIdNewPanel(Long id, Integer currentPanelIndex, Integer activeIndex) {
-
-        SpatialUnitPanel newPanel = panelFactory.createSpatialUnitPanel(id, panels.get(currentPanelIndex).getBreadcrumb(), activeIndex);
-        addPanel(newPanel);
-
-    }
-
-
-    public void goToRecordingUnitByIdCurrentPanel(Long id, Integer currentPanelIndex) {
-
-        RecordingUnitPanel newPanel = panelFactory.createRecordingUnitPanel(id, panels.get(currentPanelIndex).getBreadcrumb());
-        panels.set(currentPanelIndex, newPanel);
 
     }
 
     public void goToRecordingUnitByIdNewPanel(Long id) {
 
-        RecordingUnitPanel newPanel = panelFactory.createRecordingUnitPanel(id, new PanelBreadcrumb());
+        RecordingUnitPanel newPanel = panelFactory.createRecordingUnitPanel(id);
         addPanel(newPanel);
 
     }
 
-    public void goToRecordingUnitByIdNewPanel(Long id, Integer currentPanelIndex) {
 
-        RecordingUnitPanel newPanel = panelFactory.createRecordingUnitPanel(id, panels.get(currentPanelIndex).getBreadcrumb());
+    public void goToRecordingUnitByIdNewPanel(Long id, Integer tabIndex) {
+
+        RecordingUnitPanel newPanel = panelFactory.createRecordingUnitPanel(id, tabIndex);
         addPanel(newPanel);
 
     }
 
-    public void goToRecordingUnitByIdNewPanel(Long id, Integer currentPanelIndex, Integer tabIndex) {
-
-        RecordingUnitPanel newPanel = panelFactory.createRecordingUnitPanel(id, panels.get(currentPanelIndex).getBreadcrumb(), tabIndex);
-        addPanel(newPanel);
-
-    }
-
-    public void goToRecordingUnitByIdNewPanel(Long id, AbstractPanel panel) {
-
-        RecordingUnitPanel newPanel = panelFactory.createRecordingUnitPanel(id, panel.getBreadcrumb());
-        addPanel(newPanel);
-
-    }
 
     public void goToSpecimenByIdNewPanel(Long id, AbstractPanel currentPanel) {
 
@@ -272,52 +239,27 @@ public class FlowBean implements Serializable {
 
     }
 
-    public void goToSpecimenByIdNewPanel(Long id, Integer currentPanelIndex) {
+    public void goToSpecimenByIdNewPanel(Long id) {
 
-        SpecimenPanel newPanel = panelFactory.createSpecimenPanel(id, panels.get(currentPanelIndex).getBreadcrumb());
+        SpecimenPanel newPanel = panelFactory.createSpecimenPanel(id);
         addPanel(newPanel);
 
     }
 
-    public void goToActionUnitByIdNewPanel(Long id, Integer currentPanelIndex) {
-        goToActionUnitByIdNewPanel(id, currentPanelIndex, 0);
-    }
 
-    public void goToActionUnitByIdNewPanel(Long id, Integer currentPanelIndex, Integer activeTabIndex) {
+    public void goToActionUnitByIdNewPanel(Long id) {
         // Create new panel type and add items to its breadcrumb
-        ActionUnitPanel newPanel = panelFactory.createActionUnitPanel(id, panels.get(currentPanelIndex).getBreadcrumb(), activeTabIndex);
+        ActionUnitPanel newPanel = panelFactory.createActionUnitPanel(id);
         addPanel(newPanel);
     }
 
-    public void goToActionUnitByIdNewPanel(Long id, AbstractPanel panel) {
+    public void goToActionUnitByIdNewPanel(Long id, Integer activeTabIndex) {
         // Create new panel type and add items to its breadcrumb
-        ActionUnitPanel newPanel = panelFactory.createActionUnitPanel(id, panel.getBreadcrumb());
+        ActionUnitPanel newPanel = panelFactory.createActionUnitPanel(id, activeTabIndex);
         addPanel(newPanel);
     }
 
-    public void goToActionUnitByIdNewPanel(Long id, AbstractPanel panel, Integer activeTabIndex) {
-        // Create new panel type and add items to its breadcrumb
-        ActionUnitPanel newPanel = panelFactory.createActionUnitPanel(id, panel.getBreadcrumb(), activeTabIndex);
-        addPanel(newPanel);
-    }
 
-    public void goToSpatialUnitByIdCurrentPanel(Long id, AbstractPanel currentPanel) {
-        // Change current panel type add item to its breadcrumb
-        int index = panels.indexOf(currentPanel);
-        if (index != -1) {
-            SpatialUnitPanel newPanel = panelFactory.createSpatialUnitPanel(id, currentPanel.getBreadcrumb());
-            panels.set(index, newPanel);
-
-        }
-
-    }
-
-    public void goToActionUnitByIdCurrentPanel(Long id, Integer currentPanelIndex) {
-        // Change current panel type add item to its breadcrumb
-        int index = currentPanelIndex;
-        ActionUnitPanel newPanel = panelFactory.createActionUnitPanel(id, panels.get(currentPanelIndex).getBreadcrumb());
-        panels.set(index, newPanel);
-    }
 
     public void fullScreen(AbstractPanel panel) {
         // Could use setter if we don't add more code
@@ -336,13 +278,39 @@ public class FlowBean implements Serializable {
         addPanel(panelFactory.createSpatialUnitPanel(id));
     }
 
-    public void handleToggleOfPanelAtIndex(int idx) {
+    public void handleToggleOfPanel(String panelId) {
+        if (panels == null || panels.isEmpty()) {
+            return;
+        }
+
+        // Find the index of the panel with the given panelId
+        int idx = getPanelIndex(panelId);
+        if (idx == -1) {
+            // Panel not found
+            return;
+        }
         AbstractPanel panel = panels.get(idx);
         panel.setCollapsed(!panel.getCollapsed());
     }
 
-    public void closePanelAtIndex(int idx) {
-        if (panels == null || panels.isEmpty() || idx < 0 || idx >= panels.size()) {
+    private int getPanelIndex(String panelId) {
+        for (int i = 0; i < panels.size(); i++) {
+            if (panels.get(i).getPanelIndex().equals(panelId)) {
+                return i;
+            }
+        }
+        return -1; // Panel not found
+    }
+
+    public void closePanel(String panelId) {
+        if (panels == null || panels.isEmpty()) {
+            return;
+        }
+
+        // Find the index of the panel with the given panelId
+        int idx = getPanelIndex(panelId);
+        if (idx == -1) {
+            // Panel not found
             return;
         }
 

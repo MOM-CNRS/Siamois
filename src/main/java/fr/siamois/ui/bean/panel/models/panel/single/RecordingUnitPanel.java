@@ -531,5 +531,10 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
         );
     }
 
+    @Override
+    public String getPanelIndex() {
+        return "recording-unit-"+idunit;
+    }
+
 
 }

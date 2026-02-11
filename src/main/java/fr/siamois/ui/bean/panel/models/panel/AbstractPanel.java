@@ -119,4 +119,6 @@ public abstract class AbstractPanel implements Serializable {
         return Objects.hash(ressourceUri());
     }
 
+    public abstract String getPanelIndex();
+
 }

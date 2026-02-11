@@ -86,14 +86,12 @@ public class ActionUnitTableViewModel extends EntityTableViewModel<ActionUnit, L
 
     @Override
     protected void handleCommandLink(CommandLinkColumn column,
-                                     ActionUnit au,
-                                     Integer panelIndex) {
+                                     ActionUnit au) {
 
         if (column.getAction() == GO_TO_ACTION_UNIT) {
 
             flowBean.goToActionUnitByIdNewPanel(
-                    au.getId(),
-                    panelIndex
+                    au.getId()
             );
 
         } else {
@@ -136,7 +134,7 @@ public class ActionUnitTableViewModel extends EntityTableViewModel<ActionUnit, L
     }
 
     @Override
-    public boolean isRendered(TableColumn column, String key, ActionUnit au, Integer panelIndex) {
+    public boolean isRendered(TableColumn column, String key, ActionUnit au) {
         return switch (key) {
             case "writeMode" -> flowBean.getIsWriteMode();
             case "actionUnitCreateAllowed" -> institutionService.personIsInstitutionManagerOrActionManager(
@@ -173,11 +171,11 @@ public class ActionUnitTableViewModel extends EntityTableViewModel<ActionUnit, L
 
 
     @Override
-    public void handleRelationAction(RelationColumn col, ActionUnit au, Integer panelIndex, TableColumnAction action) {
+    public void handleRelationAction(RelationColumn col, ActionUnit au, TableColumnAction action) {
         switch (action) {
 
             case VIEW_RELATION ->
-                    flowBean.goToActionUnitByIdNewPanel(au.getId(), panelIndex, col.getViewTargetIndex());
+                    flowBean.goToActionUnitByIdNewPanel(au.getId(), col.getViewTargetIndex());
 
             case ADD_RELATION -> {
                 // Dispatch based on column.countKey (or add a dedicated "relationKey")

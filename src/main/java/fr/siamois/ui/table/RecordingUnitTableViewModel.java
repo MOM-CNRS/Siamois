@@ -144,13 +144,11 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
 
     @Override
     protected void handleCommandLink(CommandLinkColumn column,
-                                     RecordingUnit ru,
-                                     Integer panelIndex) {
+                                     RecordingUnit ru) {
 
         if (column.getAction() == GO_TO_RECORDING_UNIT) {
             flowBean.goToRecordingUnitByIdNewPanel(
-                    ru.getId(),
-                    panelIndex
+                    ru.getId()
             );
         } else {
             throw new IllegalStateException(
@@ -191,7 +189,7 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
     }
 
     @Override
-    public boolean isRendered(TableColumn column, String key, RecordingUnit ru, Integer panelIndex) {
+    public boolean isRendered(TableColumn column, String key, RecordingUnit ru) {
         return switch (key) {
             case "writeMode" -> flowBean.getIsWriteMode();
             case "recordingUnitCreateAllowed" -> recordingUnitWriteVerifier.hasSpecificWritePermission(flowBean.getSessionSettings().getUserInfo(), ru);
@@ -251,11 +249,11 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
 
 
     @Override
-    public void handleRelationAction(RelationColumn col, RecordingUnit ru, Integer panelIndex, TableColumnAction action) {
+    public void handleRelationAction(RelationColumn col, RecordingUnit ru, TableColumnAction action) {
         switch (action) {
 
             case VIEW_RELATION ->
-                    flowBean.goToRecordingUnitByIdNewPanel(ru.getId(), panelIndex, col.getViewTargetIndex());
+                    flowBean.goToRecordingUnitByIdNewPanel(ru.getId(), col.getViewTargetIndex());
 
             case ADD_RELATION -> {
                 // Dispatch based on column.countKey (or add a dedicated "relationKey")

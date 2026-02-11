@@ -565,5 +565,10 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnit> imple
                 .build();
     }
 
+    @Override
+    public String getPanelIndex() {
+        return "action-unit-"+idunit;
+    }
+
 
 }

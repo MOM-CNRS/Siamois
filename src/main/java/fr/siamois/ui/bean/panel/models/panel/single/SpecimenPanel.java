@@ -283,5 +283,10 @@ public class SpecimenPanel extends AbstractSingleEntityPanel<Specimen>  implemen
         return "/panel/tabview/specimenTabView.xhtml";
     }
 
+    @Override
+    public String getPanelIndex() {
+        return "specimen-"+idunit;
+    }
+
 
 }

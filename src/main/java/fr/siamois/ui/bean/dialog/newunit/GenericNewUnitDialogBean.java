@@ -261,4 +261,8 @@ public class GenericNewUnitDialogBean<T extends TraceableEntity>
         }
     }
 
+    public String getPanelIndex() {
+        return "new-unit";
+    }
+
 }

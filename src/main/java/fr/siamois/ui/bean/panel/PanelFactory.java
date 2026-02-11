@@ -67,56 +67,24 @@ public class PanelFactory {
 
     }
 
-    public SpatialUnitPanel createSpatialUnitPanel(Long spatialUnitId, PanelBreadcrumb currentBreadcrumb) {
 
-        PanelBreadcrumb bc = new PanelBreadcrumb();
-        bc.getModel().getElements().clear();
-        bc.getModel().getElements().addAll(new ArrayList<>(currentBreadcrumb.getModel().getElements()));
+    public SpatialUnitPanel createSpatialUnitPanel(Long spatialUnitId, Integer activeIndex) {
 
-        return new SpatialUnitPanel.SpatialUnitPanelBuilder(spatialUnitPanelProvider)
-                .id(spatialUnitId)
-                .breadcrumb(bc)
-                .build();
-
-    }
-
-    public SpatialUnitPanel createSpatialUnitPanel(Long spatialUnitId, PanelBreadcrumb currentBreadcrumb,Integer activeIndex) {
-
-        PanelBreadcrumb bc = new PanelBreadcrumb();
-        bc.getModel().getElements().clear();
-        bc.getModel().getElements().addAll(new ArrayList<>(currentBreadcrumb.getModel().getElements()));
 
         return new SpatialUnitPanel.SpatialUnitPanelBuilder(spatialUnitPanelProvider)
                 .id(spatialUnitId)
                 .activeIndex(activeIndex)
-                .breadcrumb(bc)
                 .build();
     }
 
-    public ActionUnitPanel createActionUnitPanel(Long actionUnitId, PanelBreadcrumb currentBreadcrumb) {
 
-        PanelBreadcrumb bc = new PanelBreadcrumb();
-        bc.getModel().getElements().clear();
-        bc.getModel().getElements().addAll(new ArrayList<>(currentBreadcrumb.getModel().getElements()));
-
-        return new ActionUnitPanel.ActionUnitPanelBuilder(actionUnitPanelProvider)
-                .id(actionUnitId)
-                .breadcrumb(bc)
-                .build();
-
-    }
-
-    public ActionUnitPanel createActionUnitPanel(Long actionUnitId, PanelBreadcrumb currentBreadcrumb,
+    public ActionUnitPanel createActionUnitPanel(Long actionUnitId,
                                                  Integer activeTabIndex) {
 
-        PanelBreadcrumb bc = new PanelBreadcrumb();
-        bc.getModel().getElements().clear();
-        bc.getModel().getElements().addAll(new ArrayList<>(currentBreadcrumb.getModel().getElements()));
 
         return new ActionUnitPanel.ActionUnitPanelBuilder(actionUnitPanelProvider)
                 .id(actionUnitId)
                 .activeIndex(activeTabIndex)
-                .breadcrumb(bc)
                 .build();
 
     }
@@ -133,44 +101,23 @@ public class PanelFactory {
     }
 
 
-    public RecordingUnitPanel createRecordingUnitPanel(Long recordingUnitId, PanelBreadcrumb currentBreadcrumb) {
+    public RecordingUnitPanel createRecordingUnitPanel(Long recordingUnitId) {
 
-        PanelBreadcrumb bc = new PanelBreadcrumb();
-        bc.getModel().getElements().clear();
-        bc.getModel().getElements().addAll(new ArrayList<>(currentBreadcrumb.getModel().getElements()));
 
         return new RecordingUnitPanel.RecordingUnitPanelBuilder(recordingUnitPanelProvider)
                 .id(recordingUnitId)
-                .breadcrumb(bc)
                 .build();
 
     }
 
-    public RecordingUnitPanel createRecordingUnitPanel(Long recordingUnitId, PanelBreadcrumb currentBreadcrumb, Integer tabIndex) {
-
-        PanelBreadcrumb bc = new PanelBreadcrumb();
-        bc.getModel().getElements().clear();
-        bc.getModel().getElements().addAll(new ArrayList<>(currentBreadcrumb.getModel().getElements()));
+    public RecordingUnitPanel createRecordingUnitPanel(Long recordingUnitId, Integer tabIndex) {
 
         return new RecordingUnitPanel.RecordingUnitPanelBuilder(recordingUnitPanelProvider)
                 .id(recordingUnitId)
                 .tabIndex(tabIndex)
-                .breadcrumb(bc)
                 .build();
 
     }
-
-    public RecordingUnitPanel createRecordingUnitPanel(Long recordingUnitId) {
-
-        PanelBreadcrumb bc = new PanelBreadcrumb();
-
-        return new RecordingUnitPanel.RecordingUnitPanelBuilder(recordingUnitPanelProvider)
-                .id(recordingUnitId)
-                .breadcrumb(bc)
-                .build();
-
-    }
-
     public SpecimenPanel createSpecimenPanel(Long id, PanelBreadcrumb currentBreadcrumb) {
 
         PanelBreadcrumb bc = new PanelBreadcrumb();

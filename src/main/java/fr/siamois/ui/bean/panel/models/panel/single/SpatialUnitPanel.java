@@ -317,6 +317,11 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
     }
 
     @Override
+    public String getPanelIndex() {
+        return "spatial-unit-"+idunit;
+    }
+
+    @Override
     public boolean save(Boolean validated) {
 
         // Recupération des champs systeme

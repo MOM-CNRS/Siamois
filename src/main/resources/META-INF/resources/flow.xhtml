@@ -272,16 +272,16 @@
                 <c:forEach items="#{flowBean.panels}" var="panel" varStatus="status">
                     <p:panel styleClass="#{panel.panelClass} #{flowBean.fullscreenPanelIndex == -1 ? '' : 'panel-docked'}"
                              rendered="#{flowBean.fullscreenPanelIndex ==-1 || flowBean.fullscreenPanelIndex == status.index}"
-                             id="panel-${status.index}"
+                             id="panel-${panel.panelIndex}"
                              toggleable="#{flowBean.fullscreenPanelIndex ==-1}" closable="#{flowBean.fullscreenPanelIndex ==-1}"
                              toggleableHeader="#{flowBean.fullscreenPanelIndex ==-1}" collapsed="#{!(flowBean.fullscreenPanelIndex ==-1)and panel.collapsed}">
 
-                        <p:ajax event="close" listener="#{flowBean.closePanelAtIndex(status.index)}" update="flow"
-                                onstart="PF('buiContent').show()" oncomplete="PF('buiContent').hide()"/>
-                        <p:ajax event="toggle" listener="#{flowBean.handleToggleOfPanelAtIndex(status.index)}"/>
+                        <p:ajax event="close" listener="#{flowBean.closePanel(panel.panelIndex)}" update="@none"
+                                />
+                        <p:ajax event="toggle" listener="#{flowBean.handleToggleOfPanel(panel.panelIndex)}"/>
 
                         <f:facet name="header">
-                            <p:outputPanel id="panel-${status.index}-header" style="display: flex;gap: 0.5em; align-items: center;
+                            <p:outputPanel id="panel-${panel.panelIndex}-header" style="display: flex;gap: 0.5em; align-items: center;
                             flex-wrap: wrap; float:left;color: var(--main-color);">
                                 <ui:include rendered="#{panel.displayHeader() != null}"
                                             src="#{panel.displayHeader()}">
@@ -291,17 +291,17 @@
                         </f:facet>
                         <ui:include src="#{panel.display()}" id="panel-body">
                             <ui:param name="panelModel" value="#{panel}"/>
-                            <ui:param name="panelIndex" value="#{status.index}"/>
+                            <ui:param name="panelIndex" value="#{panel.panelIndex}"/>
                         </ui:include>
                         <f:facet name="actions">
                             <form:csrfform formId="actionsFormId">
                                 <p:commandLink id="refreshPanelButton"
                                                styleClass="ui-panel-titlebar-icon ui-corner-all ui-state-default"
                                                action="#{panel.refresh()}"
-                                               onstart="PF('buiPanel_${status.index}').show();"
-                                               oncomplete="PF('buiPanel_${status.index}').hide();"
+                                               onstart="PF('buiPanel_${panel.panelIndex}').show();"
+                                               oncomplete="PF('buiPanel_${panel.panelIndex}').hide();"
                                                onclick="event.stopPropagation();"
-                                               update="panel-${status.index}">
+                                               update="panel-${panel.panelIndex}">
                                     <h:outputText styleClass="bi bi-arrow-clockwise"/>
                                 </p:commandLink>
                                 <p:commandLink id="bookmarkToggleButton"
@@ -327,7 +327,7 @@
                             </form:csrfform>
                         </f:facet>
                     </p:panel>
-                    <p:blockUI block="panel-${status.index}" widgetVar="buiPanel_${status.index}">
+                    <p:blockUI block="panel-${panel.panelIndex}" widgetVar="buiPanel_${panel.panelIndex}">
                         <i class="pi pi-spin pi-spinner" style="font-size: 3rem"/>
                     </p:blockUI>
 

@@ -136,21 +136,21 @@ public abstract class AbstractSingleEntity<T extends TraceableEntity> extends Ab
         return DateUtils.formatOffsetDateTime(offsetDateTime);
     }
 
-    public String getConceptFieldsUpdateTargetsOnBlur(int panelIndex) {
+    public String getConceptFieldsUpdateTargetsOnBlur() {
         // If new unit panel form, update only header when concept is selected, otherwise @form
         if (this.getClass() == GenericNewUnitDialogBean.class) {
             return "";
         } else {
-            return "@form panel-" + panelIndex + "-header";
+            return "@form panel-" + getPanelIndex() + "-header";
         }
     }
 
-    public String getPanelHeaderUpdateId(int panelIndex) {
+    public String getPanelHeaderUpdateId() {
         // If new unit panel form
         if (this.getClass() == GenericNewUnitDialogBean.class) {
             return "";
         } else {
-            return "panel-" + panelIndex + "-header";
+            return "panel-" + getPanelIndex() + "-header";
         }
     }
 

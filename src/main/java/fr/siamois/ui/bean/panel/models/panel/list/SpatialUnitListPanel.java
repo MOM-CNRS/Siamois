@@ -56,6 +56,10 @@ public class SpatialUnitListPanel extends AbstractListPanel<SpatialUnit>  implem
     // locals
     private String spatialUnitListErrorMessage;
 
+    public String getPanelIndex() {
+        return "spatial-unit-list";
+    }
+
     public SpatialUnitListPanel(ApplicationContext context) {
         super("panel.title.allspatialunit",
                 "bi bi-geo-alt",
