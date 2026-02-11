@@ -9,7 +9,7 @@
     <!--@elvariable id="panelIndex" type="Integer"-->
 
     <!-- Tabs -->
-    <p:tabView id="singlePanelUnitTabs" activeIndex="#{panelModel.activeTabIndex}">
+    <p:tabView id="singlePanelUnitTabs" activeIndex="#{panelModel.activeTabIndex}" dynamic="true">
         <p:ajax event="tabChange" listener="#{panelModel.onTabChange}"/>
 
 

@@ -34,8 +34,6 @@ public class RecordingUnitTreeTableLazyModel extends BaseTreeTableLazyModel<Reco
     }
 
 
-
-
     @Override
     protected void initializeAssociations(RecordingUnit child) {
         Hibernate.initialize(child.getChildren());
@@ -59,6 +57,12 @@ public class RecordingUnitTreeTableLazyModel extends BaseTreeTableLazyModel<Reco
         if(node != null) {
             return !recordingUnitService.existsChildrenByParentAndInstitution(node.getId(), node.getCreatedByInstitution().getId());
         }
-        return !recordingUnitService.existsRootChildrenByInstitution(scope.getInstitutionId());
+        // If no parent, it depends on the scope
+        return switch (scope.getType()) {
+            case RU_IN_INSTITUTION ->
+                    !recordingUnitService.existsRootChildrenByInstitution(scope.getInstitutionId());
+            case ACTION ->
+                    !recordingUnitService.existsRootChildrenByAction(scope.getActionId());
+        };
     }
 }

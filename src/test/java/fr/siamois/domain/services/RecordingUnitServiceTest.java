@@ -1047,4 +1047,18 @@ class RecordingUnitServiceTest {
         }
     }
 
+    @Test
+    void existsRootChildrenByAction_ShouldReturnTrue_WhenChildrenExist() {
+        // Arrange
+        Long actionId = 1L;
+        when(recordingUnitRepository.existsRootChildrenByAction(actionId))
+                .thenReturn(true);
+
+        // Act
+        boolean result = recordingUnitService.existsRootChildrenByAction(actionId);
+
+        // Assert
+        assertTrue(result, "La méthode doit retourner true si des enfants existent.");
+    }
+
 }

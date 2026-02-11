@@ -320,16 +320,6 @@ Return the command that opens panel for the unit
                 .collect(Collectors.joining(", "));
     }
 
-    /**
-     * Returns multi hierarchy tab parent table
-     * @return parent table
-     */
-    public Object parentTableModelOf(Object tabItem) {
-        if (tabItem instanceof MultiHierarchyTab t) {
-            return t.getParentTableModel();
-        }
-        return null;
-    }
 
     /**
      * Returns multi hierarchy tab childen table

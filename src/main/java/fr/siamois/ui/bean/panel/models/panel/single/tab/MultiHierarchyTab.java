@@ -5,17 +5,13 @@ import lombok.Getter;
 
 public class MultiHierarchyTab extends PanelTab {
 
-    // lazy model for children
-    @Getter
-    private final EntityTableViewModel<?,?> parentTableModel;
-    // lazy model for parents
+
     @Getter
     private final EntityTableViewModel<?,?> childTableModel;
 
     public MultiHierarchyTab(String titleCode, String icon, String id,
-                             EntityTableViewModel<?,?> parentTableModel, EntityTableViewModel<?,?> childTableModel) {
+                             EntityTableViewModel<?,?> childTableModel) {
         super(titleCode, icon, id);
-        this.parentTableModel = parentTableModel;
         this.childTableModel = childTableModel;
     }
 
