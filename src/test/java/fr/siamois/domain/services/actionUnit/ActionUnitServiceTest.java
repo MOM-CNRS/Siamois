@@ -557,8 +557,19 @@ class ActionUnitServiceTest {
         verify(actionUnitRepository).findBySpatialContext(spatialId);
     }
 
+    @Test
+    public void existsRootChildrenByRelatedSpatialUnit_ShouldReturnTrue_WhenChildrenExist() {
+        // Arrange
+        Long spatialUnitId = 1L;
+        when(actionUnitRepository.existsRootChildrenByRelatedSpatialUnit(spatialUnitId))
+                .thenReturn(true);
 
+        // Act
+        boolean result = actionUnitService.existsRootChildrenByRelatedSpatialUnit(spatialUnitId);
 
+        // Assert
+        assertTrue(result, "La méthode doit retourner true si des enfants existent pour l'unité spatiale donnée.");
+    }
 
 
 
