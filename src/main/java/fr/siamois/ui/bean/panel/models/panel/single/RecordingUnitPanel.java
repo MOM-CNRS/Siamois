@@ -73,7 +73,6 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
     private final transient RedirectBean redirectBean;
     private final transient SpecimenService specimenService;
     private final transient NavBean navBean;
-    private final transient FlowBean flowBean;
     private final transient GenericNewUnitDialogBean<?> genericNewUnitDialogBean;
 
     // ---------- Locals
@@ -112,7 +111,6 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
         this.redirectBean = context.getBean(RedirectBean.class);
         this.specimenService = context.getBean(SpecimenService.class);
         this.navBean = context.getBean(NavBean.class);
-        this.flowBean = context.getBean(FlowBean.class);
         this.genericNewUnitDialogBean = context.getBean(GenericNewUnitDialogBean.class);
     }
 
@@ -295,7 +293,7 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
         return DefaultMenuItem.builder()
                 .value(langBean.msg("panel.title.allrecordingunit"))
                 .id("allRecordingUnits")
-                .command("#{flowBean.addRecordingUnitListPanel(null)}")
+                .command("#{flowBean.addRecordingUnitListPanel()}")
                 .update("flow")
                 .onstart(PF_BUI_CONTENT_SHOW)
                 .oncomplete(PF_BUI_CONTENT_HIDE)

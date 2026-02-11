@@ -41,7 +41,7 @@
 
                                         <p:commandButton
                                                 value="Ajouter des enregistrements"
-                                                action="#{flowBean.goToActionUnitByIdNewPanel(actionUnit.id,0,2)}"
+                                                action="#{flowBean.goToActionUnitByIdNewPanel(actionUnit.id,2)}"
                                                 onstart="PF('buiContent').show()"
                                                 oncomplete="PF('buiContent').hide()"
                                                 process="@this"
@@ -89,7 +89,7 @@
                                     panelModel="#{panelModel}"
                                     label="#{langBean.msg('common.entity.spatialUnits')}"
                                     count="#{panelModel.nbOfSpatialUnits}"
-                                    btnAction="#{flowBean.addSpatialUnitListPanel(panelModel.breadcrumb)}"
+                                    btnAction="#{flowBean.addSpatialUnitListPanel()}"
                                     btnNewActionUpdate="newUnitForm"
                                     btnNewActionOnComplete="PF('newUnitDiag').show();"
                                     btnNewActionOnStart=""
@@ -110,7 +110,7 @@
                                     btnLabel="#{langBean.msg('homePanel.see.actionUnit')}"
                                     label="#{langBean.msg('common.entity.actionUnits')}"
                                     count="#{panelModel.nbOfActionUnits}"
-                                    btnAction="#{flowBean.addActionUnitListPanel(panelModel.breadcrumb)}"
+                                    btnAction="#{flowBean.addActionUnitListPanel()}"
                                     btnNewActionUpdate="newUnitForm"
                                     btnNewActionOnComplete="PF('newUnitDiag').show();"
                                     btnNewActionOnStart=""
@@ -132,7 +132,7 @@
                                     btnLabel="#{langBean.msg('homePanel.see.recordingUnit')}"
                                     label="#{langBean.msg('common.entity.recordingUnits')}"
                                     count="#{panelModel.nbOfRecordingUnits}"
-                                    btnAction="#{flowBean.addRecordingUnitListPanel(panelModel.breadcrumb)}"
+                                    btnAction="#{flowBean.addRecordingUnitListPanel()}"
                                     description="Les unités d'enregistrement"
 
                             />
@@ -149,7 +149,7 @@
                                     btnLabel="#{langBean.msg('homePanel.see.specimen')}"
                                     label="#{langBean.msg('common.entity.specimen')}"
                                     count="#{panelModel.nbOfSpecimen}"
-                                    btnAction="#{flowBean.addSpecimenListPanel(panelModel.breadcrumb)}"
+                                    btnAction="#{flowBean.addSpecimenListPanel()}"
                                     description="Mobiliers, prélèvements et VAB"
 
                             />

@@ -31,7 +31,7 @@ public class ActionUnitController {
     @GetMapping("/action-unit")
     public String toActionUnitList() {
         navBean.setApplicationMode(NavBean.ApplicationMode.SIAMOIS);
-        flowBean.addActionUnitListPanel(null);
+        flowBean.addActionUnitListPanel();
         return FLOW_FORWARD_PATH;
     }
 

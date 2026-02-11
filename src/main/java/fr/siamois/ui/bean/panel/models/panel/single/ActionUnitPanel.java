@@ -557,7 +557,7 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnit> imple
         return DefaultMenuItem.builder()
                 .value(langBean.msg("panel.title.allactionunit"))
                 .id("allActionUnits")
-                .command("#{flowBean.addActionUnitListPanel(null)}")
+                .command("#{flowBean.addActionUnitListPanel()}")
                 .update("flow")
                 .onstart(PF_BUI_CONTENT_SHOW)
                 .oncomplete(PF_BUI_CONTENT_HIDE)

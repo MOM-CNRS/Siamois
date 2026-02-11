@@ -23,7 +23,6 @@ import fr.siamois.domain.services.vocabulary.FieldService;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.RedirectBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
-import fr.siamois.ui.bean.panel.models.PanelBreadcrumb;
 import fr.siamois.ui.bean.panel.models.panel.AbstractPanel;
 import fr.siamois.ui.bean.panel.models.panel.WelcomePanel;
 import fr.siamois.ui.bean.panel.models.panel.single.*;
@@ -123,20 +122,20 @@ public class FlowBean implements Serializable {
         init();
     }
 
-    public void addSpatialUnitListPanel(PanelBreadcrumb bc) {
-        addPanel(panelFactory.createSpatialUnitListPanel(bc));
+    public void addSpatialUnitListPanel() {
+        addPanel(panelFactory.createSpatialUnitListPanel());
     }
 
-    public void addActionUnitListPanel(PanelBreadcrumb bc) {
-        addPanel(panelFactory.createActionUnitListPanel(bc));
+    public void addActionUnitListPanel() {
+        addPanel(panelFactory.createActionUnitListPanel());
     }
 
-    public void addRecordingUnitListPanel(PanelBreadcrumb bc) {
-        addPanel(panelFactory.createRecordingUnitListPanel(bc));
+    public void addRecordingUnitListPanel() {
+        addPanel(panelFactory.createRecordingUnitListPanel());
     }
 
-    public void addSpecimenListPanel(PanelBreadcrumb bc) {
-        addPanel(panelFactory.createSpecimenListPanel(bc));
+    public void addSpecimenListPanel() {
+        addPanel(panelFactory.createSpecimenListPanel());
     }
 
 
@@ -203,11 +202,6 @@ public class FlowBean implements Serializable {
     }
 
 
-    public void goToSpatialUnitByIdNewPanel(Long id,Integer activeIndex) {
-        // Create new panel type and add items to its breadcrumb
-        SpatialUnitPanel newPanel = panelFactory.createSpatialUnitPanel(id, activeIndex);
-        addPanel(newPanel);
-    }
 
     public void goToSpatialUnitByIdNewPanel(Long id) {
 
@@ -232,13 +226,6 @@ public class FlowBean implements Serializable {
     }
 
 
-    public void goToSpecimenByIdNewPanel(Long id, AbstractPanel currentPanel) {
-
-        SpecimenPanel newPanel = panelFactory.createSpecimenPanel(id, currentPanel.getBreadcrumb());
-        addPanel(newPanel);
-
-    }
-
     public void goToSpecimenByIdNewPanel(Long id) {
 
         SpecimenPanel newPanel = panelFactory.createSpecimenPanel(id);
@@ -248,14 +235,14 @@ public class FlowBean implements Serializable {
 
 
     public void goToActionUnitByIdNewPanel(Long id) {
-        // Create new panel type and add items to its breadcrumb
+
         ActionUnitPanel newPanel = panelFactory.createActionUnitPanel(id);
         addPanel(newPanel);
     }
 
-    public void goToActionUnitByIdNewPanel(Long id, Integer activeTabIndex) {
-        // Create new panel type and add items to its breadcrumb
-        ActionUnitPanel newPanel = panelFactory.createActionUnitPanel(id, activeTabIndex);
+    public void goToActionUnitByIdNewPanel(Long id, Integer tabIndex) {
+
+        ActionUnitPanel newPanel = panelFactory.createActionUnitPanel(id,tabIndex);
         addPanel(newPanel);
     }
 

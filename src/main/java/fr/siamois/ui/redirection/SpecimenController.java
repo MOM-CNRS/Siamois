@@ -23,7 +23,7 @@ public class SpecimenController {
     @GetMapping("/specimen")
     public String toSpecimenList() {
         navBean.setApplicationMode(NavBean.ApplicationMode.SIAMOIS);
-        flowBean.addSpecimenListPanel(null);
+        flowBean.addSpecimenListPanel();
         return "forward:/flow.xhtml";
     }
 

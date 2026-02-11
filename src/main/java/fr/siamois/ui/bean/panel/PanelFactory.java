@@ -15,7 +15,6 @@ import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Component;
 
 import javax.faces.bean.ApplicationScoped;
-import java.util.ArrayList;
 
 
 @Component
@@ -91,11 +90,8 @@ public class PanelFactory {
 
     public ActionUnitPanel createActionUnitPanel(Long actionUnitId) {
 
-        PanelBreadcrumb bc = new PanelBreadcrumb();
-
         return new ActionUnitPanel.ActionUnitPanelBuilder(actionUnitPanelProvider)
                 .id(actionUnitId)
-                .breadcrumb(bc)
                 .build();
 
     }
@@ -118,59 +114,42 @@ public class PanelFactory {
                 .build();
 
     }
-    public SpecimenPanel createSpecimenPanel(Long id, PanelBreadcrumb currentBreadcrumb) {
 
-        PanelBreadcrumb bc = new PanelBreadcrumb();
-        bc.getModel().getElements().clear();
-        bc.getModel().getElements().addAll(new ArrayList<>(currentBreadcrumb.getModel().getElements()));
-
-        return new SpecimenPanel.Builder(specimenPanelProvider)
-                .id(id)
-                .breadcrumb(bc)
-                .build();
-
-    }
 
     public SpecimenPanel createSpecimenPanel(Long id) {
 
-        PanelBreadcrumb bc = new PanelBreadcrumb();
+
 
         return new SpecimenPanel.Builder(specimenPanelProvider)
                 .id(id)
-                .breadcrumb(bc)
+
                 .build();
 
     }
 
 
-    public SpatialUnitListPanel createSpatialUnitListPanel(PanelBreadcrumb currentBreadcrumb) {
+    public SpatialUnitListPanel createSpatialUnitListPanel() {
         return new SpatialUnitListPanel.SpatialUnitListPanelBuilder(spatialUnitListPanelProvider)
-                .breadcrumb(currentBreadcrumb)
                 .build();
     }
 
-    public ActionUnitListPanel createActionUnitListPanel(PanelBreadcrumb currentBreadcrumb) {
+    public ActionUnitListPanel createActionUnitListPanel() {
         return new ActionUnitListPanel.ActionUnitListPanelBuilder(actionUnitListPanelProvider)
-                .breadcrumb(currentBreadcrumb)
                 .build();
     }
 
-    public RecordingUnitListPanel createRecordingUnitListPanel(PanelBreadcrumb currentBreadcrumb) {
+    public RecordingUnitListPanel createRecordingUnitListPanel() {
         return new RecordingUnitListPanel.RecordingUnitListPanelBuilder(recordingUnitListPanelProvider)
-                .breadcrumb(currentBreadcrumb)
                 .build();
     }
 
-    public SpecimenListPanel createSpecimenListPanel(PanelBreadcrumb currentBreadcrumb) {
+    public SpecimenListPanel createSpecimenListPanel() {
         return new SpecimenListPanel.Builder(specimenListPanel)
-                .breadcrumb(currentBreadcrumb)
                 .build();
     }
 
     public WelcomePanel createWelcomePanel() {
-        WelcomePanel wp = welcomePanelProvider.getObject();
-        wp.setBreadcrumb(new PanelBreadcrumb());
-        return wp;
+        return welcomePanelProvider.getObject();
     }
 
 }

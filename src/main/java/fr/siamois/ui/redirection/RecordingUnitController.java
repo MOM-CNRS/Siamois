@@ -23,7 +23,7 @@ public class RecordingUnitController {
     @GetMapping("/recording-unit")
     public String toRecordingUnitList() {
         navBean.setApplicationMode(NavBean.ApplicationMode.SIAMOIS);
-        flowBean.addRecordingUnitListPanel(null);
+        flowBean.addRecordingUnitListPanel();
         return FORWARD_FLOW_XHTML;
     }
 
