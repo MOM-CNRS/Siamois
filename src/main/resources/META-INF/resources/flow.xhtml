@@ -274,7 +274,7 @@
                              rendered="#{flowBean.fullscreenPanelIndex ==-1 || flowBean.fullscreenPanelIndex == status.index}"
                              id="panel-${panel.panelIndex}"
                              toggleable="#{flowBean.fullscreenPanelIndex ==-1}" closable="#{flowBean.fullscreenPanelIndex ==-1}"
-                             toggleableHeader="#{flowBean.fullscreenPanelIndex ==-1}" collapsed="#{!(flowBean.fullscreenPanelIndex ==-1)and panel.collapsed}">
+                             toggleableHeader="#{flowBean.fullscreenPanelIndex ==-1}" collapsed="#{flowBean.fullscreenPanelIndex != -1 or panel.collapsed}">
 
                         <p:ajax event="close" listener="#{flowBean.closePanel(panel.panelIndex)}" update="@none"
                                 />
