@@ -304,5 +304,20 @@ class ActionUnitServiceTest {
                 .existsChildrenByParentAndInstitution(parentId, institutionId);
     }
 
+    @Test
+    void existsRootChildrenByInstitution_ShouldReturnTrue_WhenChildrenExist() {
+        // Arrange
+        Long institutionId = 1L;
+        when(actionUnitRepository.existsRootChildrenByInstitution(institutionId))
+                .thenReturn(true);
+
+        // Act
+        boolean result = actionUnitService.existsRootChildrenByInstitution(institutionId);
+
+        // Assert
+        assertTrue(result, "La méthode doit retourner true si des enfants existent.");
+    }
+
+
 
 }

@@ -194,7 +194,7 @@ public class ActionUnitService implements ArkEntityService {
      */
     @Transactional
     public ActionUnit save(UserInfo info, ActionUnit actionUnit, Concept typeConcept)
-            throws ActionUnitAlreadyExistsException{
+            throws ActionUnitAlreadyExistsException {
         return saveNotTransactional(info, actionUnit, typeConcept);
     }
 
@@ -375,7 +375,7 @@ public class ActionUnitService implements ArkEntityService {
     public boolean canCreateRecordingUnit(UserInfo user, ActionUnit action) {
         // Authorized if user is the organisation manager, action unit manager
         // or action team member while action is still open
-        return institutionService.isManagerOf(action.getCreatedByInstitution(),user.getUser()) ||
+        return institutionService.isManagerOf(action.getCreatedByInstitution(), user.getUser()) ||
                 isManagerOf(action, user.getUser()) ||
                 (teamMemberRepository.existsByActionUnitAndPerson(action, user.getUser()) && isActionUnitStillOngoing(action));
     }
@@ -384,7 +384,7 @@ public class ActionUnitService implements ArkEntityService {
      * Checks if a person is a manager of a given action
      *
      * @param action the action to check
-     * @param person      the person to check
+     * @param person the person to check
      * @return true if the person is a manager of the institution, false otherwise
      */
     public boolean isManagerOf(ActionUnit action, Person person) {
@@ -407,7 +407,7 @@ public class ActionUnitService implements ArkEntityService {
     /**
      * Get all ActionUnit in the institution that are the children of a given parent
      *
-     * @param parentId the parent id
+     * @param parentId      the parent id
      * @param institutionId the institution id
      * @return The list of ActionUnit associated with the institution and that are the children of a given parent
      */
@@ -420,7 +420,7 @@ public class ActionUnitService implements ArkEntityService {
     /**
      * Get all ActionUnit in the institution that are linked to a spatial unit
      *
-     * @param spatialId the spatial unit id
+     * @param spatialId     the spatial unit id
      * @param institutionId the institution id
      * @return The list of ActionUnit
      */
@@ -445,7 +445,8 @@ public class ActionUnitService implements ArkEntityService {
 
     /**
      * Does this unit has children?
-     * @param parentId The parent ID
+     *
+     * @param parentId      The parent ID
      * @param institutionId the institution ID
      * @return True if they are children
      */
@@ -454,7 +455,14 @@ public class ActionUnitService implements ArkEntityService {
     }
 
 
-
-
+    /**
+     * Does the institution have action units?
+     *
+     * @param institutionId the institution ID
+     * @return True if they are children
+     */
+    public boolean existsRootChildrenByInstitution(Long institutionId) {
+        return actionUnitRepository.existsRootChildrenByInstitution(institutionId);
+    }
 
 }

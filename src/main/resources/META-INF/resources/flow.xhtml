@@ -267,14 +267,14 @@
 
 
             <h:panelGroup
-                    style="#{flowBean.fullscreenPanelIndex == -1 ? 'display:flex;flex-direction: column;gap:3em;padding:1em;' : 'display:flex;flex-direction: column;gap:1em;padding:0.5em;'}"
+                    style="#{flowBean.fullscreenPanelIndex == -1 ? 'display:flex;flex-direction: column;gap:3em;padding:1em;' : 'display:flex;flex-direction: column;gap:0em;padding:0em;border-radius:0px; border:0px;'}"
                     id="flow-panels">
                 <c:forEach items="#{flowBean.panels}" var="panel" varStatus="status">
-                    <p:panel styleClass="#{panel.panelClass}"
+                    <p:panel styleClass="#{panel.panelClass} #{flowBean.fullscreenPanelIndex == -1 ? '' : 'panel-docked'}"
                              rendered="#{flowBean.fullscreenPanelIndex ==-1 || flowBean.fullscreenPanelIndex == status.index}"
                              id="panel-${status.index}"
-                             toggleable="true" closable="true"
-                             toggleableHeader="true" collapsed="#{panel.collapsed}">
+                             toggleable="#{flowBean.fullscreenPanelIndex ==-1}" closable="#{flowBean.fullscreenPanelIndex ==-1}"
+                             toggleableHeader="#{flowBean.fullscreenPanelIndex ==-1}" collapsed="#{!(flowBean.fullscreenPanelIndex ==-1)and panel.collapsed}">
 
                         <p:ajax event="close" listener="#{flowBean.closePanelAtIndex(status.index)}" update="flow"
                                 onstart="PF('buiContent').show()" oncomplete="PF('buiContent').hide()"/>

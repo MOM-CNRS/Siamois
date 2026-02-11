@@ -166,9 +166,20 @@ body .ui-datepicker .ui-datepicker-calendar td>a.ui-state-active, body .ui-datep
   background-color: var(--main-color);
 }
 
+body .ui-panel.panel-docked {
+  border-radius:0;
+  border:none;
 
+  .ui-panel-titlebar {
+    border-radius:0;
+    border:none;
+  }
 
-
+  .ui-panel-content {
+    border-radius:0;
+    border:none;
+  }
+}
 
 
 
