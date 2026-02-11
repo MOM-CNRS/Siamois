@@ -57,7 +57,7 @@ public class RecordingUnitListPanel extends AbstractListPanel<RecordingUnit> imp
     private Concept bulkEditTypeValue;
 
     public String getPanelIndex() {
-        return "action-unit-list";
+        return "recording-unit-list";
     }
 
     @SuppressWarnings("unchecked")
