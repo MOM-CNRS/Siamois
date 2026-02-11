@@ -689,4 +689,19 @@ class SpatialUnitServiceTest {
                 .existsChildrenByParentAndInstitution(parentId, institutionId);
     }
 
+    @Test
+    public void existsRootChildrenByInstitution_ShouldReturnTrue_WhenChildrenExist() {
+        // Arrange
+        Long institutionId = 1L;
+        when(spatialUnitRepository.existsRootChildrenByInstitution(institutionId))
+                .thenReturn(true);
+
+        // Act
+        boolean result = spatialUnitService.existsRootChildrenByInstitution(institutionId);
+
+        // Assert
+        assertTrue(result, "La méthode doit retourner true si des enfants existent.");
+    }
+
+
 }
