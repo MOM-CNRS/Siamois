@@ -545,20 +545,30 @@ class ActionUnitServiceTest {
     void findBySpatialContextAndInstitution_returnsInitializedActionUnits() {
         // Arrange
         Long spatialId = 1L;
-        Long institutionId = 1L;
         List<ActionUnit> mockActionUnits = List.of(mock(ActionUnit.class), mock(ActionUnit.class));
-        when(actionUnitRepository.findBySpatialContextAndInstitution(spatialId, institutionId)).thenReturn(mockActionUnits);
+        when(actionUnitRepository.findBySpatialContext(spatialId)).thenReturn(mockActionUnits);
 
         // Act
-        List<ActionUnit> result = actionUnitService.findBySpatialContextAndInstitution(spatialId, institutionId);
+        List<ActionUnit> result = actionUnitService.findBySpatialContext(spatialId);
 
         // Assert
         assertEquals(2, result.size());
-        verify(actionUnitRepository).findBySpatialContextAndInstitution(spatialId, institutionId);
+        verify(actionUnitRepository).findBySpatialContext(spatialId);
     }
 
+    @Test
+    void existsRootChildrenByRelatedSpatialUnit_ShouldReturnTrue_WhenChildrenExist() {
+        // Arrange
+        Long spatialUnitId = 1L;
+        when(actionUnitRepository.existsRootChildrenByRelatedSpatialUnit(spatialUnitId))
+                .thenReturn(true);
 
+        // Act
+        boolean result = actionUnitService.existsRootChildrenByRelatedSpatialUnit(spatialUnitId);
 
+        // Assert
+        assertTrue(result, "La méthode doit retourner true si des enfants existent pour l'unité spatiale donnée.");
+    }
 
 
 

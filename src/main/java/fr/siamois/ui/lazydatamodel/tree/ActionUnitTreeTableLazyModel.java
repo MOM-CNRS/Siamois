@@ -23,22 +23,18 @@ public class ActionUnitTreeTableLazyModel extends BaseTreeTableLazyModel<ActionU
     }
 
 
-
     @Override
     protected List<ActionUnit> fetchRoots() {
         return switch (scope.getType()) {
-            case INSTITUTION ->
-                    actionUnitService.findAllWithoutParentsByInstitution(scope.getInstitutionId());
-            case LINKED_TO_SPATIAL_UNIT ->
-                    actionUnitService.findBySpatialContextAndInstitution(
-                            scope.getSpatialUnitId(),
-                            scope.getInstitutionId());
+            case INSTITUTION -> actionUnitService.findAllWithoutParentsByInstitution(scope.getInstitutionId());
+            case LINKED_TO_SPATIAL_UNIT -> actionUnitService.findBySpatialContext(
+                    scope.getSpatialUnitId());
         };
     }
 
     @Override
     protected List<ActionUnit> fetchChildren(ActionUnit parentUnit) {
-        if(parentUnit != null) {
+        if (parentUnit != null) {
             return actionUnitService.findChildrenByParentAndInstitution(parentUnit.getId(),
                     scope.getInstitutionId());
         }
@@ -47,9 +43,13 @@ public class ActionUnitTreeTableLazyModel extends BaseTreeTableLazyModel<ActionU
 
     @Override
     protected Boolean isLeaf(ActionUnit node) {
-        if(node != null) {
+        if (node != null) {
             return !actionUnitService.existsChildrenByParentAndInstitution(node.getId(), node.getCreatedByInstitution().getId());
         }
-        return !actionUnitService.existsRootChildrenByInstitution(scope.getInstitutionId());
+        return switch (scope.getType()) {
+            case INSTITUTION -> !actionUnitService.existsRootChildrenByInstitution(scope.getInstitutionId());
+            case LINKED_TO_SPATIAL_UNIT -> !actionUnitService.existsRootChildrenByRelatedSpatialUnit(scope.getSpatialUnitId());
+        };
+
     }
 }
