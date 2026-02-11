@@ -3,7 +3,6 @@ package fr.siamois.ui.lazydatamodel.tree;
 import fr.siamois.annotations.ExecutionTimeLogger;
 import fr.siamois.domain.models.TraceableEntity;
 import fr.siamois.ui.lazydatamodel.LazyModel;
-import fr.siamois.utils.TimerUtils;
 import lombok.Getter;
 import lombok.Setter;
 import org.primefaces.model.*;

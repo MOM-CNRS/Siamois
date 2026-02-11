@@ -690,7 +690,7 @@ class SpatialUnitServiceTest {
     }
 
     @Test
-    public void existsRootChildrenByInstitution_ShouldReturnTrue_WhenChildrenExist() {
+    void existsRootChildrenByInstitution_ShouldReturnTrue_WhenChildrenExist() {
         // Arrange
         Long institutionId = 1L;
         when(spatialUnitRepository.existsRootChildrenByInstitution(institutionId))
