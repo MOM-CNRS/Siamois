@@ -62,14 +62,14 @@
             <span>#{tableModel.resolveCount(column, item)}</span>
             <p:commandButton
                     icon="#{column.viewIcon}"
-                    action="#{tableModel.handleRelationAction(column, item, panelIndex, 'VIEW_RELATION')}"
+                    action="#{tableModel.handleRelationAction(column, item, 'VIEW_RELATION')}"
                     styleClass="sia-icon-btn"
                     process="#{column.processExpr}"
                     update="#{column.updateExpr}"
                     onstart="#{column.onstartJs}"
                     oncomplete="#{column.oncompleteJs}"/>
             <p:commandButton
-                    rendered="#{column.addEnabled and tableModel.isRendered(column, column.addRenderedKey, item, panelIndex)}"
+                    rendered="#{column.addEnabled and tableModel.isRendered(column, column.addRenderedKey, item)}"
                     styleClass="sia-icon-btn"
                     icon="#{column.addIcon}"
                     action="#{tableModel.handleRelationAction(column, item, panelIndex, 'ADD_RELATION')}"
