@@ -7,8 +7,13 @@
 }
 
 /* in order to align boostrap icons */
-[class^="bi-"]::before, [class*=" bi-"]::before {
-    vertical-align: baseline !important;
+
+.bi {
+    vertical-align: 0.125em !important;
+}
+
+.ui-button .bi::before, .ui-button [class^="bi-"]::before, .ui-button [class*=" bi-"]::before {
+    vertical-align: 0.125em !important;
 }
 
 html, body {

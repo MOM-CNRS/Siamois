@@ -13,6 +13,7 @@
                       required="true"/>
         <cc:attribute name="mode" type="String" required="false" default="READ"/>
         <cc:attribute name="label" type="String" required="false"/>
+        <cc:attribute name="panelId" type="String" required="false"/>
         <cc:attribute name="required" type="java.lang.Boolean" required="true"/>
         <cc:attribute name="updateTargetsOnBlur" type="String" required="false" default="@this"/>
         <!-- Callback appelé quand le champ est modifié -->
@@ -83,9 +84,10 @@
                         >
                             <f:attribute name="field" value="#{cc.attrs.field}" />
                             <p:ajax event="keyup" delay="2000" update="#{cc.attrs.updateTargetsOnBlur}"
-                                    onstart="$(PrimeFaces.escapeClientId('#{cc.clientId}:input')).addClass('sia-modified-field')"
                                     process="@this"
-
+                                    onstart="$(PrimeFaces.escapeClientId('#{cc.clientId}:input')).removeClass('sia-modified-field'); showSpinner('#{cc.attrs.panelId}')"
+                                    oncomplete="hideSpinner('#{cc.attrs.panelId}')"
+                                    onerror="handleAjaxError(xhr, status, args, '#{cc.attrs.panelId}'); $(PrimeFaces.escapeClientId('#{cc.clientId}:input')).addClass('sia-modified-field');"
                                     listener="#{cc.attrs.onModified}"/>
                         </p:inputText>
                     </h:panelGroup>

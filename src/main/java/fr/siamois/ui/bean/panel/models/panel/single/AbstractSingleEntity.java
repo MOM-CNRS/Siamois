@@ -252,21 +252,6 @@ public abstract class AbstractSingleEntity<T extends TraceableEntity> extends Ab
         }
     }
 
-    public void onFieldAnswerModifiedListener(AjaxBehaviorEvent event) {
-        CustomField field = (CustomField) event.getComponent().getAttributes().get(FIELD);
-        setFieldAnswerHasBeenModified(field);
-    }
-
-    public void setFieldConceptAnswerHasBeenModified(SelectEvent<ConceptLabel> event) {
-        UIComponent component = event.getComponent();
-        CustomField field = (CustomField) component.getAttributes().get(FIELD);
-        Concept newValue = event.getObject().getConcept();
-
-        if (formContext != null) {
-            formContext.handleConceptChange(field, newValue);
-        }
-    }
-
     /**
      * Called when the "scope" system concept field changes.
      * Flushes current answers to the entity, updates the entity scope, then re-inits forms.

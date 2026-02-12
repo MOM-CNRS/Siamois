@@ -14,6 +14,7 @@
     <!--@elvariable id="colIndex" type="java.lang.Integer" -->
     <!--@elvariable id="root" type="java.lang.String" -->
     <!--@elvariable id="panelIndex" type="java.lang.Integer" -->
+    <!--@elvariable id="panelId" type="java.lang.String" -->
     <!--@elvariable id="hasBeenModified" type="java.lang.Boolean" -->
     <!--@elvariable id="answer" type="fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswer" required="true" -->
     <!--@elvariable id="onModified" type="javax.el.MethodExpression" required="false" description="Callback method: void method(javax.faces.event.AjaxBehaviorEvent)" -->
@@ -26,6 +27,7 @@
                    styleClass="#{answer['class'].simpleName ne 'CustomFieldAnswerSelectMultipleSpatialUnitTree' ? 'ui-fluid' : ''}"
                    id="field-#{prefix}-#{rowIndex}">
         <ui:include src="/pages/shared/form/fieldCore.xhtml">
+            <ui:param name="panelId" value="#{panelId}"/>
             <ui:param name="bean" value="#{bean}"/>
             <ui:param name="col" value="#{col}"/>
             <ui:param name="prefix" value="#{prefix}"/>

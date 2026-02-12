@@ -24,6 +24,7 @@
     <!-- @elvariable id="updateTargetsOnBlur" type="java.lang.String" -->
     <!-- @elvariable id="spatialUnitOptions" type="java.util.List" -->
     <!-- @elvariable id="mode" type="java.lang.String" -->
+    <!-- @elvariable id="panelId" type="java.lang.String" -->
 
     <!-- TEXT -->
 
@@ -36,7 +37,8 @@
             hasBeenModified="#{hasBeenModified}"
             answer="#{answer}"
             mode="#{mode}"
-            updateTargetsOnBlur="#{panelHeaderUpdateId} #{updateTargetsOnBlur}"
+            updateTargetsOnBlur="#{panelHeaderUpdateId}"
+            panelId="#{panelId}"
             onModified="#{formCtx.onFieldAnswerModifiedListener}"
             hasAutoGenerationFunction="#{hasAutoGenerationFunction}"
             onGenerateValue="#{onGenerateValue}"
@@ -150,7 +152,6 @@
     <!-- Select one code OA -->
     <siaInplace:actionCode
             rendered="#{col.field['class'].simpleName eq 'CustomFieldSelectOneActionCode'}"
-            panelModel="#{bean}"
             field="#{col.field}"
             required="#{col.required}"
             label="#{spatialUnitFieldBean.resolveCustomFieldLabel(col.field)}"
@@ -164,7 +165,6 @@
     <siaInplace:stratigraphicRelationships
             rendered="#{col.field['class'].simpleName eq 'CustomFieldStratigraphy'}"
             field="#{col.field}"
-            label="#{spatialUnitFieldBean.resolveCustomFieldLabel(col.field)}"
             hasBeenModified="#{hasBeenModified}"
             answer="#{answer}"
             panelIndex="#{panelIndex}"

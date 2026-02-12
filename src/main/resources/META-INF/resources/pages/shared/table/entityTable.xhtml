@@ -17,6 +17,7 @@
             <!-- DataTable -->
             <ui:include src="/pages/shared/table/entityDataTable.xhtml">
                 <ui:param name="tableModel" value="#{cc.attrs.tableModel}" />
+                <ui:param name="panelId" value="#{panelIndex}"/>
                 <ui:param name="panelIndex" value="#{cc.attrs.panelIndex}" />
                 <ui:param name="tableClass" value="#{cc.attrs.tableClass}" />
                 <ui:param name="updateTableString" value="#{cc.clientId}:entityDatatable" />
@@ -25,6 +26,7 @@
             <!-- TreeTable -->
             <ui:include src="/pages/shared/table/entityTreeTable.xhtml">
                 <ui:param name="tableModel" value="#{cc.attrs.tableModel}" />
+                <ui:param name="panelId" value="#{panelIndex}"/>
                 <ui:param name="panelIndex" value="#{cc.attrs.panelIndex}" />
                 <ui:param name="tableClass" value="#{cc.attrs.tableClass}" />
                 <ui:param name="updateTableString" value="#{cc.clientId}:entityTreeTable" />

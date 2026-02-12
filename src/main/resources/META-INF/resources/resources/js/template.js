@@ -92,3 +92,28 @@ document.addEventListener("visibilitychange", () => {
         checkDesync();
     }
 });
+
+// Show the spinner
+function showSpinner(panelId) {
+    const panel = document.getElementById(`panel-${panelId}`);
+    const spinner = panel.querySelector('#spinner');
+    spinner.style.display = 'inline-block'; // or 'flex' if using flexbox
+}
+
+// Hide the spinner
+function hideSpinner(panelId) {
+    const panel = document.getElementById(`panel-${panelId}`);
+    const spinner = panel.querySelector('#spinner');
+    spinner.style.display = 'none';
+}
+
+// Handle AJAX errors
+function handleAutoSaveError(xhr, status, args, panelId) {
+    hideSpinner(panelId);
+    // Show error message (e.g., growl)
+    PF('templateGrowl').renderMessage({
+        summary: 'Error',
+        detail: 'Failed to save changes. Please try again.',
+        severity: 'error'
+    });
+}

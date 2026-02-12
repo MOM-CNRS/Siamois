@@ -162,6 +162,7 @@ public abstract class EntityTableViewModel<T extends TraceableEntity, ID> {
     }
 
 
+
     /**
      * Colonnes visibles (pour <p:columns>).
      */

@@ -29,10 +29,7 @@ import org.primefaces.model.TreeNode;
 
 import java.time.LocalDateTime;
 import java.time.Month;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 
 import static fr.siamois.ui.bean.dialog.newunit.NewUnitContext.TreeInsert.ROOT;
 import static fr.siamois.ui.table.TableColumnAction.DUPLICATE_ROW;
@@ -60,6 +57,9 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
     private final RecordingUnitWriteVerifier recordingUnitWriteVerifier;
 
     private final SessionSettingsBean sessionSettingsBean;
+
+    private Map<Concept, CustomForm> typeToFormMap;
+
 
 
     public RecordingUnitTableViewModel(BaseRecordingUnitLazyDataModel lazyDataModel,
@@ -99,11 +99,13 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
         if (type == null) {
             return null;
         }
+        // TODO : pre-fetch all the possible forms when initializing the table?
         return formService.findCustomFormByRecordingUnitTypeAndInstitutionId(
                 type,
                 sessionSettingsBean.getSelectedInstitution()
         );
     }
+
 
     @Override
     protected void configureRowSystemFields(RecordingUnit ru, CustomForm rowForm) {

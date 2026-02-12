@@ -27,7 +27,7 @@
                         <p:commandLink
                                 styleClass="action-unit"
                                 value="#{cc.attrs.answer.value.name}"
-                                action="#{flowBean.goToActionUnitByIdNewPanel(cc.attrs.answer.value.id,panelIndex)}"
+                                action="#{flowBean.goToActionUnitByIdNewPanel(cc.attrs.answer.value.id)}"
                                 onstart="PF('buiContent').show()"
                                 oncomplete="PF('buiContent').hide()"
                                 process="@this"
