@@ -427,33 +427,9 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
 
     @Override
     public boolean save(Boolean validated) {
-
-        formContext.flushBackToEntity();
-        unit.setValidated(validated);
-        if(Boolean.TRUE.equals(validated)) {
-            unit.setValidatedBy(sessionSettingsBean.getAuthenticatedUser());
-            unit.setValidatedAt(OffsetDateTime.now());
-        }
-        else {
-            unit.setValidatedBy(null);
-            unit.setValidatedAt(null);
-        }
-
-        if (recordingUnitService.fullIdentifierAlreadyExistInAction(unit)) {
-            MessageUtils.displayWarnMessage(langBean, "recording.error.identifier.alreadyExists");
-            return false;
-        }
-
-        try {
-            recordingUnitService.save(unit, unit.getType());
-        } catch (FailedRecordingUnitSaveException e) {
-            MessageUtils.displayErrorMessage(langBean, "common.entity.recordingUnits.updateFailed", unit.getFullIdentifier());
-            return false;
-        }
-
-        refreshUnit();
-        MessageUtils.displayInfoMessage(langBean, "common.entity.recordingUnits.updated", unit.getFullIdentifier());
-        return true;
+        return formContext.save();
+        // update bandeau?
+        // update bc?
     }
 
     public static class RecordingUnitPanelBuilder {

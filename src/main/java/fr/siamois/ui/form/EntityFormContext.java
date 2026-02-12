@@ -18,7 +18,10 @@ import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitTreeService;
 import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
+import fr.siamois.ui.bean.LangBean;
+import fr.siamois.ui.form.fieldsource.FieldSource;
 import fr.siamois.ui.form.rules.ColumnApplier;
+import fr.siamois.ui.form.rules.EnabledRulesEngine;
 import fr.siamois.ui.form.rules.ValueProvider;
 import fr.siamois.ui.viewmodel.TreeUiStateViewModel;
 import jakarta.faces.application.FacesMessage;
@@ -65,6 +68,7 @@ public class EntityFormContext<T extends TraceableEntity> {
     private final SpatialUnitTreeService spatialUnitTreeService;
     private final SpatialUnitService spatialUnitService;
     private final RecordingUnitService recordingUnitService;
+    private final LangBean langBean;
 
     @Getter
     private CustomFormResponse formResponse;
@@ -89,6 +93,14 @@ public class EntityFormContext<T extends TraceableEntity> {
     private final ColumnApplier applier = (colField, enabled) ->
             colEnabledByFieldId.put(colField.getId(), enabled);
 
+    // Saving methods
+    private static final Map<Class<? extends TraceableEntity>, EntityFormContextSaveStrategy<? extends TraceableEntity>> SAVE_STRATEGIES =
+            new HashMap<>();
+
+    static {
+        SAVE_STRATEGIES.put(RecordingUnit.class, new RecordingUnitSaveStrategy());
+    }
+
     public EntityFormContext(T unit,
                              FieldSource fieldSource,
                              FormContextServices services,
@@ -100,6 +112,7 @@ public class EntityFormContext<T extends TraceableEntity> {
         this.spatialUnitTreeService = services.getSpatialUnitTreeService();
         this.spatialUnitService = services.getSpatialUnitService();
         this.recordingUnitService = services.getRecordingUnitService();
+        this.langBean = services.getLangBean();
         this.formScopeChangeCallback = formScopeChangeCallback;
         this.formScopeValueBinding = formScopeValueBinding;
     }
@@ -343,7 +356,13 @@ public class EntityFormContext<T extends TraceableEntity> {
 
     public void onFieldAnswerModifiedListener(AjaxBehaviorEvent event) {
         CustomField field = (CustomField) event.getComponent().getAttributes().get("field");
-        setFieldAnswerHasBeenModified(field);
+        boolean status = save();
+        if(status) {
+            setHasUnsavedModifications(false);
+        }
+        else {
+            setFieldAnswerHasBeenModified(field);
+        }
     }
 
     public void setFieldConceptAnswerHasBeenModified(SelectEvent<ConceptAutocompleteDTO> event) {
@@ -570,5 +589,16 @@ public class EntityFormContext<T extends TraceableEntity> {
         }
     }
 
+    @SuppressWarnings("unchecked")
+    public boolean save() {
+        EntityFormContextSaveStrategy<T> strategy = (EntityFormContextSaveStrategy<T>) SAVE_STRATEGIES.get(unit.getClass());
+        if (strategy != null) {
+            return strategy.save(this);
+        } else {
+            throw new UnsupportedOperationException(
+                    "No save strategy defined for type: " + unit.getClass().getSimpleName()
+            );
+        }
+    }
 
 }

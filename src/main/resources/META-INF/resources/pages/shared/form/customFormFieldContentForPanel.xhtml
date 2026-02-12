@@ -36,6 +36,7 @@
         >
 
             <ui:include src="/pages/shared/form/fieldCore.xhtml">
+                <ui:param name="panelId" value="#{panelId}"/>
                 <ui:param name="bean" value="#{bean}"/>
                 <ui:param name="formCtx" value="#{bean.formContext}"/>
                 <ui:param name="col" value="#{col}"/>
