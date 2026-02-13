@@ -299,19 +299,7 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnit> imple
 
     @Override
     public boolean save(Boolean validated) {
-
-        formContext.flushBackToEntity();
-        unit.setValidated(validated);
-        try {
-            actionUnitService.save(unit);
-        } catch (FailedActionUnitSaveException e) {
-            MessageUtils.displayErrorMessage(langBean, "common.entity.actionUnits.updateFailed", unit.getFullIdentifier());
-            return false;
-        }
-
-        refreshUnit();
-        MessageUtils.displayInfoMessage(langBean, "common.entity.actionUnits.updated", unit.getFullIdentifier());
-        return true;
+        return formContext.save();
     }
     
 

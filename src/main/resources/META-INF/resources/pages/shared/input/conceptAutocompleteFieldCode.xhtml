@@ -12,6 +12,7 @@
         <cc:attribute name="editConceptUrl" required="true"/>
         <cc:attribute name="disabled" required="false" default="false"/>
         <cc:attribute name="ajaxUpdateTargets" required="false" default="@form"/>
+        <cc:attribute name="panelId" type="String" required="false"/>
         <cc:attribute name="ajaxProcessTargets" required="false" default="@this"/>
         <cc:attribute name="panelStyleClass" required="false" default="sia-autocomplete-panel"/>
         <cc:attribute name="field" required="true"/>
@@ -74,6 +75,9 @@
                     disabled="#{empty cc.attrs.itemSelectListener}"
                     update="#{cc.attrs.ajaxUpdateTargets}"
                     immediate="true"
+                    onstart="$(PrimeFaces.escapeClientId('#{cc.clientId}:input')).removeClass('sia-modified-field'); showSpinner('#{cc.attrs.panelId}')"
+                    oncomplete="hideSpinner('#{cc.attrs.panelId}')"
+                    onerror="handleAutoSaveError(xhr, status, '#{cc.attrs.panelId}'); $(PrimeFaces.escapeClientId('#{cc.clientId}:input')).addClass('sia-modified-field');"
                     process="#{cc.attrs.ajaxProcessTargets}"/>
 
             <p:column>

@@ -108,10 +108,10 @@ function hideSpinner(panelId) {
 }
 
 // Handle AJAX errors
-function handleAutoSaveError(xhr, status, args, panelId) {
+function handleAutoSaveError(xhr, status, panelId) {
     hideSpinner(panelId);
     // Show error message (e.g., growl)
-    PF('templateGrowl').renderMessage({
+    PF('templateGrowlVar').renderMessage({
         summary: 'Error',
         detail: 'Failed to save changes. Please try again.',
         severity: 'error'

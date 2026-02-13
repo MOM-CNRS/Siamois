@@ -278,6 +278,8 @@ public class FlowBean implements Serializable {
         }
         AbstractPanel panel = panels.get(idx);
         panel.setCollapsed(!panel.getCollapsed());
+
+
     }
 
     private int getPanelIndex(String panelId) {
@@ -304,9 +306,11 @@ public class FlowBean implements Serializable {
         panels.remove(idx);
 
         // If only one panel is left, uncollapse it
-        if (panels.size() == 1 || (idx == 0 && !panels.isEmpty())) {
+        if (panels.size() == 1) {
             panels.get(0).setCollapsed(false);
+            PrimeFaces.current().ajax().update("panel-"+panels.get(0).getPanelIndex());
         }
+
         // If no panel left, open the homepanel
         else if (panels.isEmpty()) {
             addWelcomePanel();

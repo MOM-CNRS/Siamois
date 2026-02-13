@@ -146,7 +146,7 @@ public abstract class AbstractSingleEntity<T extends TraceableEntity> extends Ab
         if (this.getClass() == GenericNewUnitDialogBean.class) {
             return "";
         } else {
-            return "panel-" + getPanelIndex() + "-header";
+            return "panel-" + getPanelIndex() + "-header singlePanelUnitForm-"+getPanelIndex()+":breadcrumbs";
         }
     }
 

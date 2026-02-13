@@ -14,6 +14,7 @@
         <cc:attribute name="hasBeenModified" type="Boolean" required="false" default="false"/>
         <cc:attribute name="field" type="fr.siamois.domain.models.form.customfield.CustomFieldSelectOneFromFieldCode"
                       required="true"/>
+        <cc:attribute name="panelId" type="String" required="false"/>
         <cc:attribute name="label" type="String" required="false"/>
         <cc:attribute name="mode" type="String" required="false" default="READ"/>
         <cc:attribute name="updateTargetsOnBlur" type="String" required="false" default="@this"/>
@@ -37,6 +38,7 @@
                                                           panelStyleClass="#{cc.attrs.panelStyleClass}"
                                                           selectedConcept="#{cc.attrs.answer.uiVal}"
                                                           field="#{cc.attrs.field}"
+                                                          panelId="#{cc.attrs.panelId}"
                                                           label="#{cc.attrs.label}"
                                                           ajaxUpdateTargets="#{cc.attrs.updateTargetsOnBlur}"
                                                           required="#{cc.attrs.required}"

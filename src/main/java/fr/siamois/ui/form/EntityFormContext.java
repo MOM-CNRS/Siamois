@@ -4,15 +4,18 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import fr.siamois.domain.models.TraceableEntity;
+import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswer;
 import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerSelectMultipleSpatialUnitTree;
+import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerSelectOneFromFieldCode;
 import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerStratigraphy;
 import fr.siamois.domain.models.form.customformresponse.CustomFormResponse;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.recordingunit.StratigraphicRelationship;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
+import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.form.FormService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
@@ -68,6 +71,7 @@ public class EntityFormContext<T extends TraceableEntity> {
     private final SpatialUnitTreeService spatialUnitTreeService;
     private final SpatialUnitService spatialUnitService;
     private final RecordingUnitService recordingUnitService;
+    private final ActionUnitService actionUnitService;
     private final LangBean langBean;
 
     @Getter
@@ -99,6 +103,8 @@ public class EntityFormContext<T extends TraceableEntity> {
 
     static {
         SAVE_STRATEGIES.put(RecordingUnit.class, new RecordingUnitSaveStrategy());
+        SAVE_STRATEGIES.put(ActionUnit.class, new ActionUnitSaveStrategy());
+        SAVE_STRATEGIES.put(SpatialUnit.class, new SpatialUnitSaveStrategy());
     }
 
     public EntityFormContext(T unit,
@@ -109,6 +115,7 @@ public class EntityFormContext<T extends TraceableEntity> {
         this.unit = unit;
         this.fieldSource = fieldSource;
         this.formService = services.getFormService();
+        this.actionUnitService = services.getActionUnitService();
         this.spatialUnitTreeService = services.getSpatialUnitTreeService();
         this.spatialUnitService = services.getSpatialUnitService();
         this.recordingUnitService = services.getRecordingUnitService();
@@ -150,7 +157,8 @@ public class EntityFormContext<T extends TraceableEntity> {
     }
 
     public boolean isColumnEnabled(CustomField field) {
-        return colEnabledByFieldId.getOrDefault(field.getId(), true);
+        return colEnabledByFieldId.getOrDefault(field.getId(), true) ||
+                !(formResponse.getAnswers().get(field) == null);
     }
 
     /**
@@ -162,6 +170,16 @@ public class EntityFormContext<T extends TraceableEntity> {
             answer.setHasBeenModified(true);
         }
         hasUnsavedModifications = true;
+    }
+
+    /**
+     * Mark a field as not modified
+     */
+    public void markFieldNotModified(CustomField field) {
+        CustomFieldAnswer answer = getFieldAnswer(field);
+        if (answer != null) {
+            answer.setHasBeenModified(false);
+        }
     }
 
     /**
@@ -310,17 +328,29 @@ public class EntityFormContext<T extends TraceableEntity> {
         return res;
     }
 
-    public void handleConceptChange(CustomField field, Concept newValue) {
-        // 1) Marquer comme modifié
-        markFieldModified(field);
+    public void handleConceptChange(CustomField field, ConceptAutocompleteDTO newValue) {
 
-        // 2) Appliquer la logique actuelle de changement de concept
-        onConceptChanged(field, newValue);
+        CustomFieldAnswerSelectOneFromFieldCode ans = (CustomFieldAnswerSelectOneFromFieldCode) formResponse.getAnswers().get(field);
+        ans.setUiVal(newValue);
 
-        // 3) Si c'est le champ de scope de formulaire → callback
-        if (isFormScopeField(field) && formScopeChangeCallback != null) {
-            formScopeChangeCallback.accept(field, newValue);
+        // Save the change
+        boolean status = save();
+        if(status) {
+            markFieldNotModified(field);
         }
+        else {
+            setFieldAnswerHasBeenModified(field);
+        }
+
+        // Apply concept change logic
+        onConceptChanged(field, newValue.getConceptLabelToDisplay().getConcept());
+
+        // If it's the field defining the form, change form
+        if (isFormScopeField(field) && formScopeChangeCallback != null) {
+            formScopeChangeCallback.accept(field, newValue.getConceptLabelToDisplay().getConcept());
+        }
+
+
     }
 
     private boolean isFormScopeField(CustomField field) {
@@ -368,9 +398,8 @@ public class EntityFormContext<T extends TraceableEntity> {
     public void setFieldConceptAnswerHasBeenModified(SelectEvent<ConceptAutocompleteDTO> event) {
         UIComponent component = event.getComponent();
         CustomField field = (CustomField) component.getAttributes().get("field");
-        Concept newValue = event.getObject().getConceptLabelToDisplay().getConcept();
 
-        handleConceptChange(field, newValue);
+        handleConceptChange(field,  event.getObject());
     }
 
     /**

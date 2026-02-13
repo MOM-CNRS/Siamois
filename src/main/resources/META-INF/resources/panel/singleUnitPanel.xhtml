@@ -18,12 +18,15 @@
             <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
 
             <!-- breadcrumbs if exists -->
-            <ui:repeat var="breadcrumbModel" value="#{panelModel.allParentBreadcrumbModels}">
-                <p:breadCrumb lastItemDisabled="true" styleClass="panel-bc" homeDisplay="text" model="#{breadcrumbModel}" />
-            </ui:repeat>
+            <p:outputPanel id="breadcrumbs">
+                <ui:repeat var="breadcrumbModel" value="#{panelModel.allParentBreadcrumbModels}">
+                    <p:breadCrumb lastItemDisabled="true" styleClass="panel-bc" homeDisplay="text"
+                                  model="#{breadcrumbModel}"/>
+                </ui:repeat>
+            </p:outputPanel>
 
             <!-- Tabs -->
-            <ui:include src="#{panelModel.getTabView()}" />
+            <ui:include src="#{panelModel.getTabView()}"/>
 
             <!-- Save/Cancel Toolbar -->
             <p:toolbar class="panel-footer">
@@ -88,21 +91,6 @@
                         </div>
                     </div>
 
-                </p:toolbarGroup>
-                <p:toolbarGroup align="right" rendered="#{flowBean.isWriteMode}">
-                    <p:commandLink value='#{langBean.msg("common.action.cancel")}'
-                                   update="panel-#{panelIndex}"
-                                   id="cancelButton"
-                                   action="#{panelModel.cancelChanges()}"
-
-                                   style="margin-right: 1rem">
-                    </p:commandLink>
-                    <p:commandButton id="saveButton" value='#{langBean.msg("common.action.save")}'
-                                     update="panel-#{panelIndex}"
-
-                                     action="#{panelModel.saveAction(false)}"
-                                     style="margin-right: 1rem">
-                    </p:commandButton>
                 </p:toolbarGroup>
             </p:toolbar>
         </h:form>

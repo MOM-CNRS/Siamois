@@ -1,5 +1,6 @@
 package fr.siamois.ui.form;
 
+import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.form.FormService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
@@ -19,5 +20,6 @@ public class FormContextServices {
     private final SpatialUnitTreeService spatialUnitTreeService;
     private final SpatialUnitService spatialUnitService;
     private final RecordingUnitService recordingUnitService;
+    private final ActionUnitService actionUnitService;
 
 }

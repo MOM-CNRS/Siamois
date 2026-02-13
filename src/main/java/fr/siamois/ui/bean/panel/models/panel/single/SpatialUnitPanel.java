@@ -321,24 +321,7 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
 
     @Override
     public boolean save(Boolean validated) {
-
-        // Recupération des champs systeme
-
-        // Name
-        formContext.flushBackToEntity();
-
-        unit.setValidated(validated);
-        try {
-            spatialUnitService.save(unit);
-        }
-        catch(FailedRecordingUnitSaveException e) {
-            MessageUtils.displayErrorMessage(langBean, "common.entity.spatialUnits.updateFailed", unit.getName());
-            return false;
-        }
-
-        refreshUnit();
-        MessageUtils.displayInfoMessage(langBean, "common.entity.spatialUnits.updated", unit.getName());
-        return true;
+        return formContext.save();
     }
 
     public static class SpatialUnitPanelBuilder {
