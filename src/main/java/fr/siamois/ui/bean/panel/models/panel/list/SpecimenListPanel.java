@@ -49,6 +49,10 @@ public class SpecimenListPanel extends AbstractListPanel<Specimen>  implements S
     // locals
     private String actionUnitListErrorMessage;
 
+    public String getPanelIndex() {
+        return "specimen-list";
+    }
+
     @Override
     protected long countUnitsByInstitution() {
         return specimenService.countByInstitution(sessionSettingsBean.getSelectedInstitution());

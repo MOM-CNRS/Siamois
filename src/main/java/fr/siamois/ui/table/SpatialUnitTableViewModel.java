@@ -102,11 +102,10 @@ public class SpatialUnitTableViewModel extends EntityTableViewModel<SpatialUnit,
 
     @Override
     protected void handleCommandLink(CommandLinkColumn column,
-                                     SpatialUnit su,
-                                     Integer panelIndex) {
+                                     SpatialUnit su) {
 
         if (column.getAction() == GO_TO_SPATIAL_UNIT) {
-            flowBean.goToSpatialUnitByIdNewPanel(su.getId(), panelIndex);
+            flowBean.goToSpatialUnitByIdNewPanel(su.getId());
         } else {
             throw new IllegalStateException("Unhandled action: " + column.getAction());
         }
@@ -145,7 +144,7 @@ public class SpatialUnitTableViewModel extends EntityTableViewModel<SpatialUnit,
     }
 
     @Override
-    public boolean isRendered(TableColumn column, String key, SpatialUnit su, Integer panelIndex) {
+    public boolean isRendered(TableColumn column, String key, SpatialUnit su) {
         return switch (key) {
             case "writeMode" -> flowBean.getIsWriteMode();
             case "spatialUnitCreateAllowed" -> spatialUnitWriteVerifier.hasSpecificWritePermission(flowBean.getSessionSettings().getUserInfo(), su);
@@ -207,10 +206,10 @@ public class SpatialUnitTableViewModel extends EntityTableViewModel<SpatialUnit,
 
 
     @Override
-    public void handleRelationAction(RelationColumn col, SpatialUnit su, Integer panelIndex, TableColumnAction action) {
+    public void handleRelationAction(RelationColumn col, SpatialUnit su, TableColumnAction action) {
         switch (action) {
 
-            case VIEW_RELATION -> flowBean.goToSpatialUnitByIdNewPanel(su.getId(), panelIndex, col.getViewTargetIndex());
+            case VIEW_RELATION -> flowBean.goToSpatialUnitByIdNewPanel(su.getId());
 
             case ADD_RELATION -> {
                 // Dispatch based on column.countKey (or add a dedicated "relationKey")

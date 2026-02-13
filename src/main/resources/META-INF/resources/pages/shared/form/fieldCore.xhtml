@@ -24,6 +24,7 @@
     <!-- @elvariable id="updateTargetsOnBlur" type="java.lang.String" -->
     <!-- @elvariable id="spatialUnitOptions" type="java.util.List" -->
     <!-- @elvariable id="mode" type="java.lang.String" -->
+    <!-- @elvariable id="panelId" type="java.lang.String" -->
 
     <!-- TEXT -->
 
@@ -36,7 +37,8 @@
             hasBeenModified="#{hasBeenModified}"
             answer="#{answer}"
             mode="#{mode}"
-            updateTargetsOnBlur="#{panelHeaderUpdateId} #{updateTargetsOnBlur}"
+            updateTargetsOnBlur="#{panelHeaderUpdateId}"
+            panelId="#{panelId}"
             onModified="#{formCtx.onFieldAnswerModifiedListener}"
             hasAutoGenerationFunction="#{hasAutoGenerationFunction}"
             onGenerateValue="#{onGenerateValue}"
@@ -50,13 +52,16 @@
             required="#{col.required}"
             label="#{spatialUnitFieldBean.resolveCustomFieldLabel(col.field)}"
             hasBeenModified="#{hasBeenModified}"
+            panelId="#{panelId}"
+            onModified="#{formCtx.onFieldAnswerModifiedListener}"
             answer="#{answer}"
             mode="#{mode}"
-            updateTargetsOnBlur="#{panelHeaderUpdateId} #{updateTargetsOnBlur}"
+            updateTargetsOnBlur="#{panelHeaderUpdateId}"
     />
 
     <!-- DATETIME -->
     <siaInplace:datePicker
+            panelId="#{panelId}"
             required="#{col.required}"
             label="#{spatialUnitFieldBean.resolveCustomFieldLabel(col.field)}"
             rendered="#{col.field['class'].simpleName eq 'CustomFieldDateTime'}"
@@ -64,7 +69,7 @@
             hasBeenModified="#{hasBeenModified}"
             answer="#{answer}"
             mode="#{mode}"
-            updateTargetsOnBlur="#{updateTargetsOnBlur}"
+            updateTargetsOnBlur="#{panelHeaderUpdateId}"
             onModified="#{formCtx.onFieldAnswerModifiedListener}"
             panelStyleClass="#{panelStyleClass}"
     />
@@ -74,6 +79,7 @@
             rendered="#{col.field['class'].simpleName eq 'CustomFieldSelectOneFromFieldCode'}"
             hasBeenModified="#{hasBeenModified}"
             field="#{col.field}"
+            panelId="#{panelId}"
             required="#{col.required}"
             label="#{spatialUnitFieldBean.resolveCustomFieldLabel(col.field)}"
             mode="#{mode}"
@@ -99,13 +105,15 @@
             rendered="#{col.field['class'].simpleName eq 'CustomFieldSelectOneSpatialUnit'}"
             hasBeenModified="#{hasBeenModified}"
             field="#{col.field}"
-            onModified="#{formCtx.onFieldAnswerModifiedListener}"
             mode="#{mode}"
+            panelId="#{panelId}"
+            onModified="#{formCtx.onFieldAnswerModifiedListener}"
+            updateTargetsOnBlur="#{panelHeaderUpdateId}"
             required="#{col.required}"
             label="#{spatialUnitFieldBean.resolveCustomFieldLabel(col.field)}"
-            updateTargetsOnBlur="#{updateTargetsOnBlur}"
             spatialUnitOptions="#{spatialUnitOptions}"
-            answer="#{answer}"/>
+            answer="#{answer}"
+    />
 
 
     <!-- Select one from person -->
@@ -114,11 +122,12 @@
             hasBeenModified="#{hasBeenModified}"
             field="#{col.field}"
             mode="#{mode}"
-            onModified="#{formCtx.onFieldAnswerModifiedListener}"
             panelStyleClass="#{panelStyleClass}"
             required="#{col.required}"
+            panelId="#{panelId}"
             label="#{spatialUnitFieldBean.resolveCustomFieldLabel(col.field)}"
-            updateTargetsOnBlur="#{updateTargetsOnBlur}"
+            onModified="#{formCtx.onFieldAnswerModifiedListener}"
+            updateTargetsOnBlur="#{panelHeaderUpdateId}"
             answer="#{answer}"/>
 
 
@@ -150,7 +159,6 @@
     <!-- Select one code OA -->
     <siaInplace:actionCode
             rendered="#{col.field['class'].simpleName eq 'CustomFieldSelectOneActionCode'}"
-            panelModel="#{bean}"
             field="#{col.field}"
             required="#{col.required}"
             label="#{spatialUnitFieldBean.resolveCustomFieldLabel(col.field)}"
@@ -160,18 +168,5 @@
             updateTargetsOnBlur="#{updateTargetsOnBlur}"
     />
 
-    <!-- Strartigraphy -->
-    <siaInplace:stratigraphicRelationships
-            rendered="#{col.field['class'].simpleName eq 'CustomFieldStratigraphy'}"
-            field="#{col.field}"
-            label="#{spatialUnitFieldBean.resolveCustomFieldLabel(col.field)}"
-            hasBeenModified="#{hasBeenModified}"
-            answer="#{answer}"
-            panelIndex="#{panelIndex}"
-            mode="#{mode}"
-            recordingUnitOptions="#{formCtx.getRecordingUnitOptions()}"
-            relationshipsAsJson="#{formCtx.getRelationshipsAsJson(answer)}"
-            onAddStratigraphicRelationship="#{formCtx.addStratigraphicRelationship(answer)}"
-    />
 
 </ui:fragment>

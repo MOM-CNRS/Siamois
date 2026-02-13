@@ -299,19 +299,7 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnit> imple
 
     @Override
     public boolean save(Boolean validated) {
-
-        formContext.flushBackToEntity();
-        unit.setValidated(validated);
-        try {
-            actionUnitService.save(unit);
-        } catch (FailedActionUnitSaveException e) {
-            MessageUtils.displayErrorMessage(langBean, "common.entity.actionUnits.updateFailed", unit.getFullIdentifier());
-            return false;
-        }
-
-        refreshUnit();
-        MessageUtils.displayInfoMessage(langBean, "common.entity.actionUnits.updated", unit.getFullIdentifier());
-        return true;
+        return formContext.save();
     }
     
 
@@ -557,12 +545,17 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnit> imple
         return DefaultMenuItem.builder()
                 .value(langBean.msg("panel.title.allactionunit"))
                 .id("allActionUnits")
-                .command("#{flowBean.addActionUnitListPanel(null)}")
+                .command("#{flowBean.addActionUnitListPanel()}")
                 .update("flow")
                 .onstart(PF_BUI_CONTENT_SHOW)
                 .oncomplete(PF_BUI_CONTENT_HIDE)
                 .process(THIS)
                 .build();
+    }
+
+    @Override
+    public String getPanelIndex() {
+        return "action-unit-"+idunit;
     }
 
 

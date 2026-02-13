@@ -14,7 +14,6 @@ import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.models.vocabulary.Vocabulary;
 import fr.siamois.domain.models.vocabulary.VocabularyType;
-import fr.siamois.domain.models.vocabulary.label.ConceptLabel;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.document.DocumentService;
 import fr.siamois.domain.services.form.FormService;
@@ -28,15 +27,12 @@ import fr.siamois.ui.bean.dialog.newunit.GenericNewUnitDialogBean;
 import fr.siamois.ui.bean.panel.models.panel.AbstractPanel;
 import fr.siamois.ui.form.EntityFormContext;
 import fr.siamois.ui.form.FormContextServices;
-import fr.siamois.ui.form.PanelFieldSource;
+import fr.siamois.ui.form.fieldsource.PanelFieldSource;
 import fr.siamois.utils.DateUtils;
-import jakarta.faces.component.UIComponent;
 import jakarta.faces.event.ActionEvent;
-import jakarta.faces.event.AjaxBehaviorEvent;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
-import org.primefaces.event.SelectEvent;
 import org.springframework.context.ApplicationContext;
 
 import java.io.Serializable;
@@ -136,21 +132,21 @@ public abstract class AbstractSingleEntity<T extends TraceableEntity> extends Ab
         return DateUtils.formatOffsetDateTime(offsetDateTime);
     }
 
-    public String getConceptFieldsUpdateTargetsOnBlur(int panelIndex) {
+    public String getConceptFieldsUpdateTargetsOnBlur() {
         // If new unit panel form, update only header when concept is selected, otherwise @form
         if (this.getClass() == GenericNewUnitDialogBean.class) {
             return "";
         } else {
-            return "@form panel-" + panelIndex + "-header";
+            return "@form panel-" + getPanelIndex() + "-header";
         }
     }
 
-    public String getPanelHeaderUpdateId(int panelIndex) {
+    public String getPanelHeaderUpdateId() {
         // If new unit panel form
         if (this.getClass() == GenericNewUnitDialogBean.class) {
             return "";
         } else {
-            return "panel-" + panelIndex + "-header";
+            return "panel-" + getPanelIndex() + "-header singlePanelUnitForm-"+getPanelIndex()+":breadcrumbs";
         }
     }
 
@@ -249,21 +245,6 @@ public abstract class AbstractSingleEntity<T extends TraceableEntity> extends Ab
     public void setFieldAnswerHasBeenModified(CustomField field) {
         if (formContext != null) {
             formContext.markFieldModified(field);
-        }
-    }
-
-    public void onFieldAnswerModifiedListener(AjaxBehaviorEvent event) {
-        CustomField field = (CustomField) event.getComponent().getAttributes().get(FIELD);
-        setFieldAnswerHasBeenModified(field);
-    }
-
-    public void setFieldConceptAnswerHasBeenModified(SelectEvent<ConceptLabel> event) {
-        UIComponent component = event.getComponent();
-        CustomField field = (CustomField) component.getAttributes().get(FIELD);
-        Concept newValue = event.getObject().getConcept();
-
-        if (formContext != null) {
-            formContext.handleConceptChange(field, newValue);
         }
     }
 

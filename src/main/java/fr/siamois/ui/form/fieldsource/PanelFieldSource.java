@@ -1,4 +1,4 @@
-package fr.siamois.ui.form;
+package fr.siamois.ui.form.fieldsource;
 
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.customform.*;

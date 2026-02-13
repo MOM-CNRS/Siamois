@@ -79,13 +79,11 @@ public class SpecimenTableViewModel extends EntityTableViewModel<Specimen, Long>
 
     @Override
     protected void handleCommandLink(CommandLinkColumn column,
-                                     Specimen s,
-                                     Integer panelIndex) {
+                                     Specimen s) {
 
         if (column.getAction() == GO_TO_SPECIMEN) {
             flowBean.goToSpecimenByIdNewPanel(
-                    s.getId(),
-                    panelIndex
+                    s.getId()
             );
         } else {
             throw new IllegalStateException(
@@ -119,7 +117,7 @@ public class SpecimenTableViewModel extends EntityTableViewModel<Specimen, Long>
     }
 
     @Override
-    public boolean isRendered(TableColumn column, String key, Specimen s, Integer panelIndex) {
+    public boolean isRendered(TableColumn column, String key, Specimen s) {
         return switch (key) {
             case "writeMode" -> flowBean.getIsWriteMode();
             default -> false;
@@ -153,7 +151,7 @@ public class SpecimenTableViewModel extends EntityTableViewModel<Specimen, Long>
 
 
     @Override
-    public void handleRelationAction(RelationColumn col, Specimen s, Integer panelIndex, TableColumnAction action) {
+    public void handleRelationAction(RelationColumn col, Specimen s, TableColumnAction action) {
         throw new IllegalStateException(
                 "Unhandled relation action: " + action
         );

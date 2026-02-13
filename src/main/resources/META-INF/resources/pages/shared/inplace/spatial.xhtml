@@ -25,6 +25,7 @@
                       required="true"
                       shortDescription="List of SpatialUnit to display in the dropdown"/>
         <cc:attribute name="displayType" type="java.lang.Boolean" required="false" default="false"/>
+        <cc:attribute name="panelId" type="String" required="false"/>
     </cc:interface>
 
     <cc:implementation>
@@ -38,7 +39,7 @@
                         <p:commandLink
                                 styleClass="spatial-unit"
                                 value="#{cc.attrs.answer.value.name}"
-                                action="#{flowBean.goToSpatialUnitByIdNewPanel(cc.attrs.answer.value.id,panelIndex)}"
+                                action="#{flowBean.goToSpatialUnitByIdNewPanel(cc.attrs.answer.value.id)}"
                                 onstart="PF('buiContent').show()"
                                 oncomplete="PF('buiContent').hide()"
                                 process="@this"
@@ -80,7 +81,12 @@
                                     styleClass="mr-2 spatial-unit-type-chip"/>
                         </div>
                     </p:column>
+                    <f:attribute name="field" value="#{cc.attrs.field}" />
                     <p:ajax update="#{cc.attrs.updateTargetsOnBlur}"
+                            process="@this"
+                            onstart="$(PrimeFaces.escapeClientId('#{cc.clientId}:input')).removeClass('sia-modified-field'); showSpinner('#{cc.attrs.panelId}')"
+                            oncomplete="hideSpinner('#{cc.attrs.panelId}')"
+                            onerror="handleAutoSaveError(xhr, status, '#{cc.attrs.panelId}'); $(PrimeFaces.escapeClientId('#{cc.clientId}:input')).addClass('sia-modified-field');"
                             listener="#{cc.attrs.onModified}"/>
                 </p:selectOneMenu>
             </f:facet>

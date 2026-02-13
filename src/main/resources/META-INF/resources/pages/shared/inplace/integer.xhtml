@@ -10,9 +10,14 @@
                       required="true"/>
         <cc:attribute name="panelModel" type="fr.siamois.ui.bean.panel.models.panel.single.AbstractSingleEntity"
                       required="true"/>
+        <cc:attribute name="panelId" type="String" required="false"/>
         <cc:attribute name="hasBeenModified" type="Boolean" required="false" default="false"/>
         <cc:attribute name="field" type="fr.siamois.domain.models.form.customfield.CustomFieldInteger"
                       required="true"/>
+        <!-- Callback appelé quand le champ est modifié -->
+        <cc:attribute name="onModified"
+                      method-signature="void setFieldAnswerHasBeenModified(javax.faces.event.AjaxBehaviorEvent)"
+                      required="false"/>
         <cc:attribute name="mode" type="String" required="false" default="READ"/>
         <cc:attribute name="label" type="String" required="false"/>
         <cc:attribute name="required" type="java.lang.Boolean" required="true"/>
@@ -38,10 +43,13 @@
                                required="#{cc.attrs.required}"
 
                                id="input">
-                    <p:ajax event="keyup" delay="500" update="#{cc.attrs.updateTargetsOnBlur}"
+                    <f:attribute name="field" value="#{cc.attrs.field}" />
+                    <p:ajax event="keyup" delay="2000" update="#{cc.attrs.updateTargetsOnBlur}"
                             process="@this"
-                            onstart="$(PrimeFaces.escapeClientId('#{cc.clientId}:input_input')).addClass('sia-modified-field')"
-                            listener="#{cc.attrs.panelModel.setFieldAnswerHasBeenModified(cc.attrs.field)}"/>
+                            onstart="$(PrimeFaces.escapeClientId('#{cc.clientId}:input')).removeClass('sia-modified-field'); showSpinner('#{cc.attrs.panelId}')"
+                            oncomplete="hideSpinner('#{cc.attrs.panelId}')"
+                            onerror="handleAutoSaveError(xhr, status, '#{cc.attrs.panelId}'); $(PrimeFaces.escapeClientId('#{cc.clientId}:input')).addClass('sia-modified-field');"
+                            listener="#{cc.attrs.onModified}"/>
                 </p:inputNumber>
             </f:facet>
         </p:inplace>

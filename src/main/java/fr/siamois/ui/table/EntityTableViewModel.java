@@ -12,9 +12,9 @@ import fr.siamois.ui.bean.NavBean;
 import fr.siamois.ui.bean.dialog.newunit.GenericNewUnitDialogBean;
 import fr.siamois.ui.bean.dialog.newunit.NewUnitContext;
 import fr.siamois.ui.form.EntityFormContext;
-import fr.siamois.ui.form.FieldSource;
+import fr.siamois.ui.form.fieldsource.FieldSource;
 import fr.siamois.ui.form.FormContextServices;
-import fr.siamois.ui.form.TableRowFieldSource;
+import fr.siamois.ui.form.fieldsource.TableRowFieldSource;
 import fr.siamois.ui.lazydatamodel.BaseLazyDataModel;
 import fr.siamois.ui.lazydatamodel.tree.BaseTreeTableLazyModel;
 import jakarta.faces.application.FacesMessage;
@@ -162,6 +162,7 @@ public abstract class EntityTableViewModel<T extends TraceableEntity, ID> {
     }
 
 
+
     /**
      * Colonnes visibles (pour <p:columns>).
      */
@@ -263,21 +264,21 @@ public abstract class EntityTableViewModel<T extends TraceableEntity, ID> {
 
     public abstract Integer resolveCount(TableColumn column, T item);
 
-    public abstract boolean isRendered(TableColumn column, String key, T item, Integer panelIndex);
+    public abstract boolean isRendered(TableColumn column, String key, T item);
 
-    public void handleAction(TableColumn column, T item, Integer panelIndex) {
+    public void handleAction(TableColumn column, T item) {
         if (column instanceof CommandLinkColumn linkColumn) {
-            handleCommandLink(linkColumn, item, panelIndex);
+            handleCommandLink(linkColumn, item);
         } else if (column instanceof RelationColumn relColumn) {
-            handleRelationAction(relColumn, item, panelIndex, relColumn.getViewAction());
+            handleRelationAction(relColumn, item, relColumn.getViewAction());
         }
     }
 
-    public void handleRelationAction(RelationColumn column, T item, Integer panelIndex, TableColumnAction action) {
+    public void handleRelationAction(RelationColumn column, T item, TableColumnAction action) {
         // default no-op
     }
 
-    protected void handleCommandLink(CommandLinkColumn column, T item, Integer panelIndex) {
+    protected void handleCommandLink(CommandLinkColumn column, T item) {
         // default no-op
     }
 

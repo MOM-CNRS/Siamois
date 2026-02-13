@@ -9,7 +9,6 @@ import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerSelectOn
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.models.vocabulary.Vocabulary;
 import fr.siamois.ui.form.CustomFieldAnswerFactory;
-import fr.siamois.ui.form.EnabledRulesEngine;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

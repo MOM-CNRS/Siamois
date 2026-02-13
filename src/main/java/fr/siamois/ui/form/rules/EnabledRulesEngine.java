@@ -1,4 +1,4 @@
-package fr.siamois.ui.form;
+package fr.siamois.ui.form.rules;
 
 
 import fr.siamois.domain.models.form.customfield.CustomField;
@@ -6,10 +6,7 @@ import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswer;
 import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerId;
 import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerSelectOneFromFieldCode;
 import fr.siamois.domain.models.vocabulary.Concept;
-import fr.siamois.ui.form.rules.ColumnApplier;
-import fr.siamois.ui.form.rules.ColumnRule;
-import fr.siamois.ui.form.rules.Condition;
-import fr.siamois.ui.form.rules.ValueProvider;
+import fr.siamois.ui.form.CustomFieldAnswerFactory;
 
 import java.util.*;
 import java.util.stream.Collectors;

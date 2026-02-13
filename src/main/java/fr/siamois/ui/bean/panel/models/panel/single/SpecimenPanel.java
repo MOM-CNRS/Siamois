@@ -170,7 +170,7 @@ public class SpecimenPanel extends AbstractSingleEntityPanel<Specimen>  implemen
         return DefaultMenuItem.builder()
                 .value(langBean.msg("panel.title.allspecimenunit"))
                 .id("allSpecimen")
-                .command("#{flowBean.addSpecimenListPanel(null)}")
+                .command("#{flowBean.addSpecimenListPanel()}")
                 .update("flow")
                 .onstart(PF_BUI_CONTENT_SHOW)
                 .oncomplete(PF_BUI_CONTENT_HIDE)
@@ -281,6 +281,11 @@ public class SpecimenPanel extends AbstractSingleEntityPanel<Specimen>  implemen
     @Override
     public String getTabView() {
         return "/panel/tabview/specimenTabView.xhtml";
+    }
+
+    @Override
+    public String getPanelIndex() {
+        return "specimen-"+idunit;
     }
 
 

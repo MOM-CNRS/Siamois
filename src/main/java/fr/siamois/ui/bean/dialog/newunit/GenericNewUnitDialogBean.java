@@ -127,13 +127,6 @@ public class GenericNewUnitDialogBean<T extends TraceableEntity>
         return unit != null ? unit.getId() : null;
     }
 
-    // ==== logique ====
-    @Override
-    public void setFieldConceptAnswerHasBeenModified(SelectEvent<ConceptLabel> event) {
-        UIComponent component = event.getComponent();
-        CustomField field = (CustomField) component.getAttributes().get("field");
-        formContext.markFieldModified(field);
-    }
 
     @Override
     public void initForms(boolean forceInit) {
@@ -259,6 +252,10 @@ public class GenericNewUnitDialogBean<T extends TraceableEntity>
         } catch (CannotInitializeNewUnitDialogException e) {
             MessageUtils.displayErrorMessage(langBean, "common.message.errorOpeningNewEntityDialog");
         }
+    }
+
+    public String getPanelIndex() {
+        return "new-unit";
     }
 
 }

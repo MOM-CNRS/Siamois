@@ -20,6 +20,7 @@
         <cc:attribute name="onModified"
                       method-signature="void setFieldAnswerHasBeenModified(javax.faces.event.AjaxBehaviorEvent)"
                       required="false"/>
+        <cc:attribute name="panelId" type="String" required="false"/>
     </cc:interface>
 
     <cc:implementation>
@@ -47,12 +48,17 @@
                                 required="#{cc.attrs.required}"
                                 onchange="this.input[0].classList.add('sia-modified-field')"
                                 scrollHeight="300"
+
                                 var="person" itemLabel="#{person.displayName()}"
                                 itemValue="#{person}"
                                 converter="#{personConverter}"
                                 dropdown="false">
                     <p:ajax update="#{cc.attrs.updateTargetsOnBlur}"
-                            listener="#{cc.attrs.onModified}" />
+                            process="@this"
+                            onstart="$(PrimeFaces.escapeClientId('#{cc.clientId}:input')).removeClass('sia-modified-field'); showSpinner('#{cc.attrs.panelId}')"
+                            oncomplete="hideSpinner('#{cc.attrs.panelId}')"
+                            onerror="handleAutoSaveError(xhr, status, '#{cc.attrs.panelId}'); $(PrimeFaces.escapeClientId('#{cc.clientId}:input')).addClass('sia-modified-field');"
+                            listener="#{cc.attrs.onModified}"/>
                 </p:autoComplete>
             </f:facet>
         </p:inplace>

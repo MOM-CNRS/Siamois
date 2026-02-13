@@ -40,6 +40,10 @@ public class WelcomePanel extends AbstractPanel implements Serializable {
     private long nbOfRecordingUnits;
     private long nbOfSpecimen;
 
+    public String getPanelIndex() {
+        return "welcome-panel";
+    }
+
     public WelcomePanel(SessionSettingsBean sessionSettingsBean,
                         RecordingUnitService recordingUnitService,
                         ActionUnitService actionUnitService,

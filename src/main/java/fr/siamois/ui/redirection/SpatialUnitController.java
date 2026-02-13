@@ -30,7 +30,7 @@ public class SpatialUnitController {
     @GetMapping("/spatial-unit")
     public String toSpatialUnitList() {
         navBean.setApplicationMode(NavBean.ApplicationMode.SIAMOIS);
-        flowBean.addSpatialUnitListPanel(null);
+        flowBean.addSpatialUnitListPanel();
         return FLOW_XHTML;
     }
 

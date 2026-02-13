@@ -73,7 +73,6 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
     private final transient RedirectBean redirectBean;
     private final transient SpecimenService specimenService;
     private final transient NavBean navBean;
-    private final transient FlowBean flowBean;
     private final transient GenericNewUnitDialogBean<?> genericNewUnitDialogBean;
 
     // ---------- Locals
@@ -112,7 +111,6 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
         this.redirectBean = context.getBean(RedirectBean.class);
         this.specimenService = context.getBean(SpecimenService.class);
         this.navBean = context.getBean(NavBean.class);
-        this.flowBean = context.getBean(FlowBean.class);
         this.genericNewUnitDialogBean = context.getBean(GenericNewUnitDialogBean.class);
     }
 
@@ -295,7 +293,7 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
         return DefaultMenuItem.builder()
                 .value(langBean.msg("panel.title.allrecordingunit"))
                 .id("allRecordingUnits")
-                .command("#{flowBean.addRecordingUnitListPanel(null)}")
+                .command("#{flowBean.addRecordingUnitListPanel()}")
                 .update("flow")
                 .onstart(PF_BUI_CONTENT_SHOW)
                 .oncomplete(PF_BUI_CONTENT_HIDE)
@@ -429,33 +427,9 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
 
     @Override
     public boolean save(Boolean validated) {
-
-        formContext.flushBackToEntity();
-        unit.setValidated(validated);
-        if(Boolean.TRUE.equals(validated)) {
-            unit.setValidatedBy(sessionSettingsBean.getAuthenticatedUser());
-            unit.setValidatedAt(OffsetDateTime.now());
-        }
-        else {
-            unit.setValidatedBy(null);
-            unit.setValidatedAt(null);
-        }
-
-        if (recordingUnitService.fullIdentifierAlreadyExistInAction(unit)) {
-            MessageUtils.displayWarnMessage(langBean, "recording.error.identifier.alreadyExists");
-            return false;
-        }
-
-        try {
-            recordingUnitService.save(unit, unit.getType());
-        } catch (FailedRecordingUnitSaveException e) {
-            MessageUtils.displayErrorMessage(langBean, "common.entity.recordingUnits.updateFailed", unit.getFullIdentifier());
-            return false;
-        }
-
-        refreshUnit();
-        MessageUtils.displayInfoMessage(langBean, "common.entity.recordingUnits.updated", unit.getFullIdentifier());
-        return true;
+        return formContext.save();
+        // update bandeau?
+        // update bc?
     }
 
     public static class RecordingUnitPanelBuilder {
@@ -529,6 +503,11 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
                         )
                         .build()
         );
+    }
+
+    @Override
+    public String getPanelIndex() {
+        return "recording-unit-"+idunit;
     }
 
 

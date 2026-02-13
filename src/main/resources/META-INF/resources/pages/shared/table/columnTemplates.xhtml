@@ -21,6 +21,7 @@
 
     <ui:fragment rendered="#{column.type eq 'FORM_FIELD'}">
         <ui:include src="/pages/shared/form/customFormFieldContentForTable.xhtml">
+            <ui:param name="panelId" value="#{panelId}"/>
             <ui:param name="bean" value="#{rowContext}"/>
             <ui:param name="col" value="#{column}"/>
             <ui:param name="prefix" value="table"/>
@@ -43,7 +44,7 @@
     <ui:fragment rendered="#{column.type eq 'COMMAND_LINK'}">
         <p:commandButton
                 styleClass="hidden-column"
-                action="#{tableModel.handleAction(column, item, panelIndex)}"
+                action="#{tableModel.handleAction(column, item)}"
                 onstart="#{column.onstartJs}"
                 icon="bi bi-box-arrow-up-right"
                 oncomplete="#{column.oncompleteJs}"
@@ -62,14 +63,14 @@
             <span>#{tableModel.resolveCount(column, item)}</span>
             <p:commandButton
                     icon="#{column.viewIcon}"
-                    action="#{tableModel.handleRelationAction(column, item, panelIndex, 'VIEW_RELATION')}"
+                    action="#{tableModel.handleRelationAction(column, item, 'VIEW_RELATION')}"
                     styleClass="sia-icon-btn"
                     process="#{column.processExpr}"
                     update="#{column.updateExpr}"
                     onstart="#{column.onstartJs}"
                     oncomplete="#{column.oncompleteJs}"/>
             <p:commandButton
-                    rendered="#{column.addEnabled and tableModel.isRendered(column, column.addRenderedKey, item, panelIndex)}"
+                    rendered="#{column.addEnabled and tableModel.isRendered(column, column.addRenderedKey, item)}"
                     styleClass="sia-icon-btn"
                     icon="#{column.addIcon}"
                     action="#{tableModel.handleRelationAction(column, item, panelIndex, 'ADD_RELATION')}"
