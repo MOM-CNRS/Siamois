@@ -113,4 +113,12 @@ public class WelcomePanel extends AbstractPanel implements Serializable {
                 sessionSettingsBean.getSelectedInstitution().getName());
     }
 
+    public String resolveTitleOrTitleCode() {
+        try {
+            return langBean.msg(titleCodeOrTitle);
+        }
+        catch(Exception e) {
+            return titleCodeOrTitle;
+        }
+    }
 }

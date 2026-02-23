@@ -205,6 +205,11 @@ public class SpatialUnitListPanel extends AbstractListPanel<SpatialUnit>  implem
         );
     }
 
+    @Override
+    public String getPanelTypeClass() {
+        return "spatial-unit";
+    }
+
 
 
 

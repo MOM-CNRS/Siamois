@@ -558,5 +558,10 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnit> imple
         return "action-unit-"+idunit;
     }
 
+    @Override
+    public String getPanelTypeClass() {
+        return "spatial-unit";
+    }
+
 
 }

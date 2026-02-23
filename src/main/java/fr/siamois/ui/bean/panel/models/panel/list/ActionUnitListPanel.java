@@ -186,6 +186,11 @@ public class ActionUnitListPanel extends AbstractListPanel<ActionUnit> implement
         );
     }
 
+    @Override
+    public String getPanelTypeClass() {
+        return "action-unit";
+    }
+
 
 
 

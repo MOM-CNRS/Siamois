@@ -96,6 +96,7 @@ public class SpecimenPanel extends AbstractSingleEntityPanel<Specimen>  implemen
 
             unit = specimenService.findById(idunit);
             Hibernate.initialize(unit.getDocuments());
+            Hibernate.initialize(unit.getRecordingUnit());
             Hibernate.initialize(unit.getAuthors());
             Hibernate.initialize(unit.getCollectors());
             backupClone = new Specimen(unit);
@@ -229,27 +230,7 @@ public class SpecimenPanel extends AbstractSingleEntityPanel<Specimen>  implemen
 
     @Override
     public boolean save(Boolean validated) {
-
-        formContext.flushBackToEntity();
-        unit.setValidated(validated);
-        if (Boolean.TRUE.equals(validated)) {
-            unit.setValidatedBy(sessionSettingsBean.getAuthenticatedUser());
-            unit.setValidatedAt(OffsetDateTime.now());
-        } else {
-            unit.setValidatedBy(null);
-            unit.setValidatedAt(null);
-        }
-
-        try {
-            specimenService.save(unit);
-        } catch (FailedRecordingUnitSaveException e) {
-            MessageUtils.displayErrorMessage(langBean, "common.entity.specimen.updateFailed", unit.getFullIdentifier());
-            return false;
-        }
-
-        refreshUnit();
-        MessageUtils.displayInfoMessage(langBean, "common.entity.specimen.updated", unit.getFullIdentifier());
-        return true;
+        return formContext.save();
     }
 
     public static class Builder {
@@ -286,6 +267,11 @@ public class SpecimenPanel extends AbstractSingleEntityPanel<Specimen>  implemen
     @Override
     public String getPanelIndex() {
         return "specimen-"+idunit;
+    }
+
+    @Override
+    public String getPanelTypeClass() {
+        return "specimen";
     }
 
 

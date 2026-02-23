@@ -467,4 +467,9 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
                 .build();
     }
 
+    @Override
+    public String getPanelTypeClass() {
+        return "spatial-unit";
+    }
+
 }

@@ -168,6 +168,11 @@ public class SpecimenListPanel extends AbstractListPanel<Specimen>  implements S
         // no toolbar button in institution context
     }
 
+    @Override
+    public String getPanelTypeClass() {
+        return "specimen";
+    }
+
 
 
 

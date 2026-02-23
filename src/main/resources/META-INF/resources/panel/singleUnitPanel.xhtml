@@ -17,6 +17,10 @@
         <h:form id="singlePanelUnitForm-#{panelIndex}">
             <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
 
+            <p:progressBar widgetVar="pbBarAjax_#{panelIndex}" id="progressBar"
+                           class="panel-progressbar"
+                           style="height:3px" mode="indeterminate"/>
+
             <!-- breadcrumbs if exists -->
             <p:outputPanel id="breadcrumbs">
                 <ui:repeat var="breadcrumbModel" value="#{panelModel.allParentBreadcrumbModels}">

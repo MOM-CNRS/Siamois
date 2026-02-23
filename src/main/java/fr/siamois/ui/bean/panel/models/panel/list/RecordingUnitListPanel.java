@@ -214,4 +214,9 @@ public class RecordingUnitListPanel extends AbstractListPanel<RecordingUnit> imp
             return recordingUnitListPanel;
         }
     }
+
+    @Override
+    public String getPanelTypeClass() {
+        return "recording-unit";
+    }
 }

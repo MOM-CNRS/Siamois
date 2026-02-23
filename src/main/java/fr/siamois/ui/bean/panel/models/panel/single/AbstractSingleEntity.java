@@ -22,6 +22,7 @@ import fr.siamois.domain.services.spatialunit.SpatialUnitTreeService;
 import fr.siamois.domain.services.vocabulary.FieldConfigurationService;
 import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
 import fr.siamois.ui.bean.LabelBean;
+import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
 import fr.siamois.ui.bean.dialog.newunit.GenericNewUnitDialogBean;
 import fr.siamois.ui.bean.panel.models.panel.AbstractPanel;
@@ -63,6 +64,7 @@ public abstract class AbstractSingleEntity<T extends TraceableEntity> extends Ab
     protected final transient ActionUnitService actionUnitService;
     protected final transient DocumentService documentService;
     protected final transient LabelBean labelBean;
+    protected final transient LangBean langBean;
     protected final transient FormService formService;
     protected final transient FormContextServices formContextServices;
 
@@ -103,6 +105,7 @@ public abstract class AbstractSingleEntity<T extends TraceableEntity> extends Ab
         this.labelBean = context.getBean(LabelBean.class);
         this.formService = context.getBean(FormService.class);
         this.formContextServices = context.getBean(FormContextServices.class);
+        this.langBean = context.getBean(LangBean.class);
     }
 
     protected AbstractSingleEntity(String titleCodeOrTitle,
@@ -119,6 +122,7 @@ public abstract class AbstractSingleEntity<T extends TraceableEntity> extends Ab
         this.labelBean = context.getBean(LabelBean.class);
         this.formService = context.getBean(FormService.class);
         this.formContextServices = context.getBean(FormContextServices.class);
+        this.langBean = context.getBean(LangBean.class);
     }
 
     // -------------------- Utility -------------------------
@@ -351,5 +355,15 @@ public abstract class AbstractSingleEntity<T extends TraceableEntity> extends Ab
             fields.add(field);
         }
     }
+
+    public String resolveTitleOrTitleCode() {
+        try {
+            return langBean.msg(titleCodeOrTitle);
+        }
+        catch(Exception e) {
+            return titleCodeOrTitle;
+        }
+    }
+
 
 }

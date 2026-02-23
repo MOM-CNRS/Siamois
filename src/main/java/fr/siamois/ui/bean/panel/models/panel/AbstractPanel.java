@@ -1,5 +1,6 @@
 package fr.siamois.ui.bean.panel.models.panel;
 
+import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.panel.models.PanelBreadcrumb;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -18,6 +19,8 @@ import java.util.Objects;
 @Getter
 @Setter
 public abstract class AbstractPanel implements Serializable {
+
+
 
 
     protected String titleCodeOrTitle;
@@ -121,4 +124,9 @@ public abstract class AbstractPanel implements Serializable {
 
     public abstract String getPanelIndex();
 
+    public String getPanelTypeClass() {
+        return "";
+    }
+
+    public abstract String resolveTitleOrTitleCode() ;
 }

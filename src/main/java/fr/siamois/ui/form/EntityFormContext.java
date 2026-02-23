@@ -14,12 +14,14 @@ import fr.siamois.domain.models.form.customformresponse.CustomFormResponse;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.recordingunit.StratigraphicRelationship;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
+import fr.siamois.domain.models.specimen.Specimen;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.form.FormService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitTreeService;
+import fr.siamois.domain.services.specimen.SpecimenService;
 import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.form.fieldsource.FieldSource;
@@ -70,6 +72,7 @@ public class EntityFormContext<T extends TraceableEntity> {
     private final FormService formService;
     private final SpatialUnitTreeService spatialUnitTreeService;
     private final SpatialUnitService spatialUnitService;
+    private final SpecimenService specimenService;
     private final RecordingUnitService recordingUnitService;
     private final ActionUnitService actionUnitService;
     private final LangBean langBean;
@@ -105,6 +108,7 @@ public class EntityFormContext<T extends TraceableEntity> {
         SAVE_STRATEGIES.put(RecordingUnit.class, new RecordingUnitSaveStrategy());
         SAVE_STRATEGIES.put(ActionUnit.class, new ActionUnitSaveStrategy());
         SAVE_STRATEGIES.put(SpatialUnit.class, new SpatialUnitSaveStrategy());
+        SAVE_STRATEGIES.put(Specimen.class, new SpecimenSaveStrategy());
     }
 
     public EntityFormContext(T unit,
@@ -117,6 +121,7 @@ public class EntityFormContext<T extends TraceableEntity> {
         this.formService = services.getFormService();
         this.actionUnitService = services.getActionUnitService();
         this.spatialUnitTreeService = services.getSpatialUnitTreeService();
+        this.specimenService = services.getSpecimenService();
         this.spatialUnitService = services.getSpatialUnitService();
         this.recordingUnitService = services.getRecordingUnitService();
         this.langBean = services.getLangBean();

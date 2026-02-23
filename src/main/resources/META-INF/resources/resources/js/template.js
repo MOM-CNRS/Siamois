@@ -60,10 +60,10 @@ function logout() {
 
 // BELOW IS A TEMP SOLUTION FOR RELOADING THE PAGE ON NAVIGATOR TAB CHANGE
 function handleDesynchronization(needsReload) {
-        if (needsReload === true) {
-           window.location.reload();
-        }
+    if (needsReload === true) {
+        window.location.reload();
     }
+}
 
 function checkDesync() {
     const institutionId =
@@ -79,12 +79,12 @@ function checkDesync() {
     fetch(APP_CTX + `/api/context/check?institutionId=${encodeURIComponent(institutionId)}&panelIds=${encodeURIComponent(panelIds)}`, {
         credentials: "same-origin"
     })
-    .then(r => r.json())
-    .then(data => {
-        if (data.reload === true) {
-            location.reload(true);
-        }
-    });
+        .then(r => r.json())
+        .then(data => {
+            if (data.reload === true) {
+                location.reload(true);
+            }
+        });
 }
 
 document.addEventListener("visibilitychange", () => {
@@ -117,3 +117,84 @@ function handleAutoSaveError(xhr, status, panelId) {
         severity: 'error'
     });
 }
+
+// --------------- TAB MENU
+$(document).ready(function () {
+    $(document).on('mouseenter', '.panel-menu', function () {
+        $(this).addClass('panel-menu-hover');
+    }).on('mouseleave', '.panel-menu', function () {
+        $(this).removeClass('panel-menu-hover');
+    });
+});
+
+function handleMenuItemClick(panelSelector) {
+    // Remove 'active' class from all menu items
+    $('.panel-menu .menu-item').removeClass('active');
+
+    // Add 'active' class to the clicked menu item
+    $(event.currentTarget).addClass('active');
+
+    // Scroll the corresponding panel into view
+    scrollToPanel(panelSelector);
+}
+
+function handleMenuItemClick(panelSelector) {
+    // Remove 'active' class from all menu items
+    $('.panel-menu .menu-item').removeClass('active');
+
+    // Add 'active' class to the clicked menu item
+    $(event.currentTarget).addClass('active');
+
+    // Scroll the corresponding panel into view
+    scrollToPanel(panelSelector);
+}
+
+function scrollToPanel(selector) {
+    const panel = $(selector);
+    if (panel.length) {
+        // Find the panel header (PrimeFaces adds aria-expanded to the header)
+        const panelHeader = panel.find('.ui-panel-titlebar:first');
+        if (panelHeader.length) {
+            const isCollapsed = panelHeader.attr('aria-expanded') === 'false';
+
+            if (isCollapsed) {
+                // Expand the panel by clicking the header
+                panelHeader.trigger('click');
+
+                // Wait for the panel to expand before scrolling
+                setTimeout(function() {
+                    scrollAfterExpand(selector);
+                }, 300); // Adjust delay to match the panel's animation duration
+            } else {
+                // Panel is already expanded, scroll directly
+                scrollAfterExpand(selector);
+            }
+        }
+    }
+}
+
+function scrollAfterExpand(selector) {
+    const panel = $(selector);
+    $('#flowContent').animate(
+        { scrollTop: panel.position().top + $('#flowContent').scrollTop() },
+        { duration: 500 }
+    );
+}
+
+
+// ********** PANEL PROGRESS BAR
+// Function to show the progress bar with the custom color
+function showProgressBar(widgetVar, color) {
+    const progressBarValue = widgetVar.jq.find('.ui-progressbar-value');
+    progressBarValue.css('background-color', color).show();
+}
+
+// Function to hide the progress bar and reset its color
+function hideProgressBar(widgetVar) {
+    const progressBarValue = widgetVar.jq.find('.ui-progressbar-value');
+    progressBarValue.css('background-color', 'transparent').hide();
+}
+
+
+
+

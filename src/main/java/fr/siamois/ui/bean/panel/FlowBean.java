@@ -158,10 +158,6 @@ public class FlowBean implements Serializable {
             // Only one panel: open it
             panels.get(0).setCollapsed(false);
         } else {
-            // Collapse all except the first
-            for (int i = 1; i < panels.size(); i++) {
-                panels.get(i).setCollapsed(true);
-            }
             // Ensure the top one is open
             panels.get(0).setCollapsed(false);
         }

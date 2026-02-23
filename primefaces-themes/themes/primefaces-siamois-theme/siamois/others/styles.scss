@@ -355,4 +355,102 @@ padding-bottom: 0.2em;
  }
 
 
+body .panel-progressbar.ui-progressbar {
+    background-color: var(--light-color-50);
+    height: 3px;
+}
+
+body .panel-progressbar.ui-progressbar .ui-progressbar-value {
+    display: none;
+    background-color: transparent;
+}
+
+
+
+/* ----------- Panel Menu ---------- */
+
+body .panel-menu.ui-tabmenu .ui-tabmenu-nav .ui-tabmenuitem {
+
+    &.ui-state-active {
+        color: var(--main-color);
+        border-color: var(--main-color);
+        a {
+            color: var(--main-color);
+            .ui-icon {
+                color: var(--main-color);
+            }
+        }
+    }
+
+    &.ui-state-hover {
+        background: var(--light-color-50);
+        border-color: var(--main-color);
+        color: var(--main-color);
+
+        a {
+            color: var(--main-color);
+            .ui-icon {
+                color: var(--main-color);
+            }
+        }
+    }
+
+}
+
+body .panel-menu .ui-menuitem-icon{
+    color: var(--main-color);
+}
+
+body .panel-menu-text.ui-tabmenu .ui-tabmenu-nav .ui-tabmenuitem {
+    a {
+        color: var(--main-color);
+    }
+}
+
+/* Primary menu: icons only, not overlaying */
+.panel-menu {
+    position: relative;
+    z-index: 1000;
+    background: transparent;
+    overflow: visible;
+    height: fit-content;
+}
+
+body .ui-tabmenu.panel-menu-text {
+    position: absolute;
+    left: 0; /* Align with the primary menu */
+    top: 0;
+    z-index: 999;
+    background: #f8f8f8;
+    display: none;
+    white-space: nowrap;
+    margin-left: 50px; /* Offset by the width of the primary menu */
+
+    ul {
+        box-shadow: 1px 5px 5px #e0e0e0;
+    }
+}
+
+/* Hide immediately when not hovering either menu */
+.panel-menu-text {
+    display: none;
+}
+
+/* Only show when hovering the primary menu OR the text menu */
+.panel-menu:hover + .panel-menu-text,
+.panel-menu-text:hover {
+    display: block;
+}
+
+/* Flow div: not affected by menus */
+.flow {
+    position: relative;
+    flex: 1;
+    overflow-y: auto;
+    margin-left: 0; /* No margin, menus are absolutely positioned */
+    z-index: 1;
+}
+
+
+
 

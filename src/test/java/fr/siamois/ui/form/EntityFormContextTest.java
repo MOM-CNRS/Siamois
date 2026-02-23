@@ -4,13 +4,17 @@ import fr.siamois.domain.models.TraceableEntity;
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswer;
 import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerSelectMultipleSpatialUnitTree;
+import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerSelectOneFromFieldCode;
 import fr.siamois.domain.models.form.customformresponse.CustomFormResponse;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
+import fr.siamois.domain.models.vocabulary.label.ConceptLabel;
 import fr.siamois.domain.services.form.FormService;
+import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitTreeService;
+import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
 import fr.siamois.ui.form.fieldsource.FieldSource;
 import fr.siamois.ui.form.rules.EnabledRulesEngine;
 import org.junit.jupiter.api.BeforeEach;
@@ -35,18 +39,21 @@ class EntityFormContextTest {
     @Mock private FormService formService;
     @Mock private SpatialUnitTreeService spatialUnitTreeService;
     @Mock private SpatialUnitService spatialUnitService;
+    @Mock private RecordingUnitService recordingUnitService;
 
     @Mock private EnabledRulesEngine enabledRulesEngine;
 
     private BiConsumer<CustomField, Concept> scopeCallback;
 
     private TraceableEntity unit;
+    private RecordingUnit unit2;
 
     @BeforeEach
     void setup() {
         when(formContextServices.getFormService()).thenReturn(formService);
         when(formContextServices.getSpatialUnitTreeService()).thenReturn(spatialUnitTreeService);
         when(formContextServices.getSpatialUnitService()).thenReturn(spatialUnitService);
+        when(formContextServices.getRecordingUnitService()).thenReturn(recordingUnitService);
         unit = new TraceableEntity() {
             @Override
             public Long getId() {
@@ -294,48 +301,57 @@ class EntityFormContextTest {
     void handleConceptChange_marksModified_reEvaluatesRules_andInvokesCallback_whenFormScopeField() {
         // arrange
         String scopeBinding = "scopeBinding";
-        EntityFormContext<TraceableEntity> ctx = new EntityFormContext<>(
-                unit, fieldSource,formContextServices,
+        unit2 = new RecordingUnit();
+        unit2.setType(new Concept());
+        EntityFormContext<RecordingUnit> ctx = new EntityFormContext<>(
+                unit2, fieldSource,formContextServices,
                 scopeCallback, scopeBinding
         );
 
         CustomField scopeField = mock(CustomField.class);
         when(scopeField.getIsSystemField()).thenReturn(true);
         when(scopeField.getValueBinding()).thenReturn(scopeBinding);
-        CustomFieldAnswer ans = mock(CustomFieldAnswer.class);
+        CustomFieldAnswerSelectOneFromFieldCode ans = mock(CustomFieldAnswerSelectOneFromFieldCode.class);
 
         CustomFormResponse response = new CustomFormResponse();
         response.setAnswers(new HashMap<>(Map.of(scopeField, ans)));
 
         when(formService.initOrReuseResponse(any(), any(), any(), anyBoolean())).thenReturn(response);
         when(formService.buildEnabledEngine(any())).thenReturn(enabledRulesEngine);
-
+        when(recordingUnitService.save(any(RecordingUnit.class), any(Concept.class))).thenReturn(new RecordingUnit());
+        when(recordingUnitService.fullIdentifierAlreadyExistInAction(any(RecordingUnit.class))).thenReturn(false);
 
         ctx.init(false);
 
-        Concept newValue = mock(Concept.class);
+        ConceptAutocompleteDTO newValue = mock(ConceptAutocompleteDTO.class);
+        Concept newConcept = mock(Concept.class);
+        ConceptLabel cL = mock(ConceptLabel.class);
+        when(newValue.getConceptLabelToDisplay()).thenReturn(cL);
+        when(newValue.getConceptLabelToDisplay().getConcept()).thenReturn(newConcept);
 
         // act
         ctx.handleConceptChange(scopeField, newValue);
 
         // assert
-        verify(ans).setHasBeenModified(true);
-        assertTrue(ctx.isHasUnsavedModifications());
-        verify(enabledRulesEngine).onAnswerChange(eq(scopeField), eq(newValue), any(), any());
-        verify(scopeCallback).accept(scopeField, newValue);
+        verify(ans).setHasBeenModified(false);
+        assertFalse(ctx.isHasUnsavedModifications());
+        verify(enabledRulesEngine).onAnswerChange(eq(scopeField), eq(newConcept), any(), any());
+        verify(scopeCallback).accept(scopeField, newConcept);
     }
 
     @Test
     void handleConceptChange_doesNotInvokeCallback_whenNotFormScopeField() {
-        EntityFormContext<TraceableEntity> ctx = new EntityFormContext<>(
-                unit, fieldSource, formContextServices,
+        unit2 = new RecordingUnit();
+        unit2.setType(new Concept());
+        EntityFormContext<RecordingUnit> ctx = new EntityFormContext<>(
+                unit2, fieldSource,formContextServices,
                 scopeCallback, "scopeBinding"
         );
 
         CustomField otherField = mock(CustomField.class);
         when(otherField.getIsSystemField()).thenReturn(true);
         when(otherField.getValueBinding()).thenReturn("otherBinding");
-        CustomFieldAnswer ans = mock(CustomFieldAnswer.class);
+        CustomFieldAnswerSelectOneFromFieldCode ans = mock(CustomFieldAnswerSelectOneFromFieldCode.class);
 
         CustomFormResponse response = new CustomFormResponse();
         response.setAnswers(new HashMap<>(Map.of(otherField, ans)));
@@ -345,7 +361,11 @@ class EntityFormContextTest {
 
         ctx.init(false);
 
-        Concept newValue = mock(Concept.class);
+        ConceptAutocompleteDTO newValue = mock(ConceptAutocompleteDTO.class);
+        Concept newConcept = mock(Concept.class);
+        ConceptLabel cL = mock(ConceptLabel.class);
+        when(newValue.getConceptLabelToDisplay()).thenReturn(cL);
+        when(newValue.getConceptLabelToDisplay().getConcept()).thenReturn(newConcept);
 
         ctx.handleConceptChange(otherField, newValue);
 
