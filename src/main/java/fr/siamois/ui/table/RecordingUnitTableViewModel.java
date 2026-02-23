@@ -99,7 +99,7 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
         if (type == null) {
             return null;
         }
-        // TODO : pre-fetch all the possible forms when initializing the table?
+        // pre-fetch all the possible forms when initializing the table?
         return formService.findCustomFormByRecordingUnitTypeAndInstitutionId(
                 type,
                 sessionSettingsBean.getSelectedInstitution()

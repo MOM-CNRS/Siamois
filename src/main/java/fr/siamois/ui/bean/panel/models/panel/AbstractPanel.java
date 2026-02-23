@@ -1,6 +1,5 @@
 package fr.siamois.ui.bean.panel.models.panel;
 
-import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.panel.models.PanelBreadcrumb;
 import lombok.AccessLevel;
 import lombok.Getter;

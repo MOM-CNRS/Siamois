@@ -163,7 +163,7 @@ public class EntityFormContext<T extends TraceableEntity> {
 
     public boolean isColumnEnabled(CustomField field) {
         return colEnabledByFieldId.getOrDefault(field.getId(), true) ||
-                !(formResponse.getAnswers().get(field) == null);
+                (formResponse.getAnswers().get(field) != null);
     }
 
     /**
