@@ -10,6 +10,7 @@
         <cc:attribute name="hasBeenModified" type="Boolean" required="false" default="false"/>
         <cc:attribute name="field" type="fr.siamois.domain.models.form.customfield.CustomFieldDateTime"
                       required="true"/>
+        <cc:attribute name="panelId" type="String" required="false"/>
         <cc:attribute name="label" type="String" required="false"/>
         <cc:attribute name="required" type="java.lang.Boolean" required="true"/>
         <cc:attribute name="mode" type="String" required="false" default="READ"/>
@@ -39,8 +40,14 @@
                               inputStyleClass="#{cc.attrs.answer.hasBeenModified ? 'track-change sia-modified-field': 'track-change'}"
                               required="#{cc.attrs.required}"
                               value="#{cc.attrs.answer.value}">
-                    <p:ajax  update="#{cc.attrs.updateTargetsOnBlur}"
-                            listener="#{cc.attrs.onModified}" />
+                    <f:attribute name="field" value="#{cc.attrs.field}" />
+                    <p:ajax
+                            update="#{cc.attrs.updateTargetsOnBlur}"
+                            process="@this"
+                            onstart="$(PrimeFaces.escapeClientId('#{cc.clientId}:input')).removeClass('sia-modified-field'); showSpinner('#{cc.attrs.panelId}')"
+                            oncomplete="hideSpinner('#{cc.attrs.panelId}')"
+                            onerror="handleAutoSaveError(xhr, status, '#{cc.attrs.panelId}'); $(PrimeFaces.escapeClientId('#{cc.clientId}:input')).addClass('sia-modified-field');"
+                            listener="#{cc.attrs.onModified}"/>
                 </p:datePicker>
             </f:facet>
         </p:inplace>

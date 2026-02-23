@@ -13,8 +13,13 @@
     <p:chip rendered="#{not panelModel.unit.validated}" label="Non validé"
             styleClass="mr-2 error-chip"
             />
+
     <p:chip rendered="#{panelModel.hasUnsavedModifications}"  label="Modifications non enregistré"
             styleClass="mr-2 error-chip"
     />
+
+    <div id="spinner" style="display:none;" class="spinner-border">
+        <output class="visually-hidden">Loading...</output>
+    </div>
 
 </ui:fragment>

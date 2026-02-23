@@ -20,6 +20,8 @@ import java.util.Objects;
 public abstract class AbstractPanel implements Serializable {
 
 
+
+
     protected String titleCodeOrTitle;
     protected String panelClass;
     protected String icon;
@@ -119,4 +121,11 @@ public abstract class AbstractPanel implements Serializable {
         return Objects.hash(ressourceUri());
     }
 
+    public abstract String getPanelIndex();
+
+    public String getPanelTypeClass() {
+        return "";
+    }
+
+    public abstract String resolveTitleOrTitleCode() ;
 }

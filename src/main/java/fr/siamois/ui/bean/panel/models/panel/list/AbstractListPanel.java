@@ -163,4 +163,13 @@ public abstract class AbstractListPanel<T extends TraceableEntity> extends Abstr
     }
 
     abstract void configureTableColumns();
+
+    public String resolveTitleOrTitleCode() {
+        try {
+            return langBean.msg(titleCodeOrTitle);
+        }
+        catch(Exception e) {
+            return titleCodeOrTitle;
+        }
+    }
 }

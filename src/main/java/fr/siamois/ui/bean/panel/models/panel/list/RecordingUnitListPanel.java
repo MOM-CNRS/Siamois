@@ -56,7 +56,9 @@ public class RecordingUnitListPanel extends AbstractListPanel<RecordingUnit> imp
     private String actionUnitListErrorMessage;
     private Concept bulkEditTypeValue;
 
-
+    public String getPanelIndex() {
+        return "recording-unit-list";
+    }
 
     @SuppressWarnings("unchecked")
     public RecordingUnitListPanel(ApplicationContext context) {
@@ -211,5 +213,10 @@ public class RecordingUnitListPanel extends AbstractListPanel<RecordingUnit> imp
             recordingUnitListPanel.init();
             return recordingUnitListPanel;
         }
+    }
+
+    @Override
+    public String getPanelTypeClass() {
+        return "recording-unit";
     }
 }

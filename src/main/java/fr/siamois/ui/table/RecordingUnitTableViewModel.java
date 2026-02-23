@@ -29,10 +29,7 @@ import org.primefaces.model.TreeNode;
 
 import java.time.LocalDateTime;
 import java.time.Month;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 
 import static fr.siamois.ui.bean.dialog.newunit.NewUnitContext.TreeInsert.ROOT;
 import static fr.siamois.ui.table.TableColumnAction.DUPLICATE_ROW;
@@ -60,6 +57,9 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
     private final RecordingUnitWriteVerifier recordingUnitWriteVerifier;
 
     private final SessionSettingsBean sessionSettingsBean;
+
+    private Map<Concept, CustomForm> typeToFormMap;
+
 
 
     public RecordingUnitTableViewModel(BaseRecordingUnitLazyDataModel lazyDataModel,
@@ -99,11 +99,13 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
         if (type == null) {
             return null;
         }
+        // pre-fetch all the possible forms when initializing the table?
         return formService.findCustomFormByRecordingUnitTypeAndInstitutionId(
                 type,
                 sessionSettingsBean.getSelectedInstitution()
         );
     }
+
 
     @Override
     protected void configureRowSystemFields(RecordingUnit ru, CustomForm rowForm) {
@@ -144,13 +146,11 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
 
     @Override
     protected void handleCommandLink(CommandLinkColumn column,
-                                     RecordingUnit ru,
-                                     Integer panelIndex) {
+                                     RecordingUnit ru) {
 
         if (column.getAction() == GO_TO_RECORDING_UNIT) {
             flowBean.goToRecordingUnitByIdNewPanel(
-                    ru.getId(),
-                    panelIndex
+                    ru.getId()
             );
         } else {
             throw new IllegalStateException(
@@ -191,7 +191,7 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
     }
 
     @Override
-    public boolean isRendered(TableColumn column, String key, RecordingUnit ru, Integer panelIndex) {
+    public boolean isRendered(TableColumn column, String key, RecordingUnit ru) {
         return switch (key) {
             case "writeMode" -> flowBean.getIsWriteMode();
             case "recordingUnitCreateAllowed" -> recordingUnitWriteVerifier.hasSpecificWritePermission(flowBean.getSessionSettings().getUserInfo(), ru);
@@ -251,11 +251,11 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
 
 
     @Override
-    public void handleRelationAction(RelationColumn col, RecordingUnit ru, Integer panelIndex, TableColumnAction action) {
+    public void handleRelationAction(RelationColumn col, RecordingUnit ru, TableColumnAction action) {
         switch (action) {
 
             case VIEW_RELATION ->
-                    flowBean.goToRecordingUnitByIdNewPanel(ru.getId(), panelIndex, col.getViewTargetIndex());
+                    flowBean.goToRecordingUnitByIdNewPanel(ru.getId(), col.getViewTargetIndex());
 
             case ADD_RELATION -> {
                 // Dispatch based on column.countKey (or add a dedicated "relationKey")

@@ -80,10 +80,8 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
     private final transient SpatialUnitHelperService spatialUnitHelperService;
     private final transient CustomFieldService customFieldService;
     private final transient LabelService labelService;
-    private final transient LangBean langBean;
     private final transient PersonService personService;
     private final transient NavBean navBean;
-    private final transient FlowBean flowBean;
     private final transient GenericNewUnitDialogBean<?> genericNewUnitDialogBean;
     private final transient InstitutionService institutionService;
     private final transient SpatialUnitWriteVerifier spatialUnitWriteVerifier;
@@ -133,11 +131,9 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
         this.spatialUnitHelperService = context.getBean(SpatialUnitHelperService.class);
         this.customFieldService = context.getBean(CustomFieldService.class);
         this.labelService = context.getBean(LabelService.class);
-        this.langBean = context.getBean(LangBean.class);
         this.personService = context.getBean(PersonService.class);
         this.specimenService = context.getBean(SpecimenService.class);
         this.navBean = context.getBean(NavBean.class);
-        this.flowBean = context.getBean(FlowBean.class);
         this.genericNewUnitDialogBean = context.getBean(GenericNewUnitDialogBean.class);
         this.institutionService = context.getBean(InstitutionService.class);
         this.spatialUnitWriteVerifier = context.getBean(SpatialUnitWriteVerifier.class);
@@ -317,25 +313,13 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
     }
 
     @Override
+    public String getPanelIndex() {
+        return "spatial-unit-"+idunit;
+    }
+
+    @Override
     public boolean save(Boolean validated) {
-
-        // Recupération des champs systeme
-
-        // Name
-        formContext.flushBackToEntity();
-
-        unit.setValidated(validated);
-        try {
-            spatialUnitService.save(unit);
-        }
-        catch(FailedRecordingUnitSaveException e) {
-            MessageUtils.displayErrorMessage(langBean, "common.entity.spatialUnits.updateFailed", unit.getName());
-            return false;
-        }
-
-        refreshUnit();
-        MessageUtils.displayInfoMessage(langBean, "common.entity.spatialUnits.updated", unit.getName());
-        return true;
+        return formContext.save();
     }
 
     public static class SpatialUnitPanelBuilder {
@@ -473,12 +457,17 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
         return DefaultMenuItem.builder()
                 .value(langBean.msg("panel.title.allspatialunit"))
                 .id("allSpatialUnits")
-                .command("#{flowBean.addSpatialUnitListPanel(null)}")
+                .command("#{flowBean.addSpatialUnitListPanel()}")
                 .update("flow")
                 .onstart(PF_BUI_CONTENT_SHOW)
                 .oncomplete(PF_BUI_CONTENT_HIDE)
                 .process(THIS)
                 .build();
+    }
+
+    @Override
+    public String getPanelTypeClass() {
+        return "spatial-unit";
     }
 
 }

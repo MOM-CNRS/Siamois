@@ -54,7 +54,6 @@ public class GenericNewUnitDialogBean<T extends TraceableEntity>
     protected T multiHierarchyParent;
     protected T multiHierarchyChild;
 
-    protected final LangBean langBean;
     protected final FlowBean flowBean;
     protected final RedirectBean redirectBean;
 
@@ -77,7 +76,6 @@ public class GenericNewUnitDialogBean<T extends TraceableEntity>
     public GenericNewUnitDialogBean(ApplicationContext context,
                                     Set<INewUnitHandler<? extends TraceableEntity>> handlerSet) {
         super(context);
-        this.langBean = context.getBean(LangBean.class);
         this.flowBean = context.getBean(FlowBean.class);
         this.redirectBean = context.getBean(RedirectBean.class);
         this.handlers = handlerSet.stream()
@@ -127,13 +125,6 @@ public class GenericNewUnitDialogBean<T extends TraceableEntity>
         return unit != null ? unit.getId() : null;
     }
 
-    // ==== logique ====
-    @Override
-    public void setFieldConceptAnswerHasBeenModified(SelectEvent<ConceptLabel> event) {
-        UIComponent component = event.getComponent();
-        CustomField field = (CustomField) component.getAttributes().get("field");
-        formContext.markFieldModified(field);
-    }
 
     @Override
     public void initForms(boolean forceInit) {
@@ -259,6 +250,10 @@ public class GenericNewUnitDialogBean<T extends TraceableEntity>
         } catch (CannotInitializeNewUnitDialogException e) {
             MessageUtils.displayErrorMessage(langBean, "common.message.errorOpeningNewEntityDialog");
         }
+    }
+
+    public String getPanelIndex() {
+        return "new-unit";
     }
 
 }

@@ -40,8 +40,6 @@ import java.util.List;
 public class SpecimenPanel extends AbstractSingleEntityPanel<Specimen>  implements Serializable {
 
     public static final String BI_BI_BUCKET = "bi bi-bucket";
-    // Deps
-    protected final transient LangBean langBean;
 
 
     protected final transient RecordingUnitService recordingUnitService;
@@ -67,7 +65,6 @@ public class SpecimenPanel extends AbstractSingleEntityPanel<Specimen>  implemen
                 BI_BI_BUCKET,
                 "siamois-panel specimen-panel single-panel",
                 context);
-        this.langBean = context.getBean(LangBean.class);
         this.recordingUnitService = context.getBean(RecordingUnitService.class);
         this.personService = context.getBean(PersonService.class);
         this.specimenService = context.getBean(SpecimenService.class);
@@ -96,6 +93,7 @@ public class SpecimenPanel extends AbstractSingleEntityPanel<Specimen>  implemen
 
             unit = specimenService.findById(idunit);
             Hibernate.initialize(unit.getDocuments());
+            Hibernate.initialize(unit.getRecordingUnit());
             Hibernate.initialize(unit.getAuthors());
             Hibernate.initialize(unit.getCollectors());
             backupClone = new Specimen(unit);
@@ -170,7 +168,7 @@ public class SpecimenPanel extends AbstractSingleEntityPanel<Specimen>  implemen
         return DefaultMenuItem.builder()
                 .value(langBean.msg("panel.title.allspecimenunit"))
                 .id("allSpecimen")
-                .command("#{flowBean.addSpecimenListPanel(null)}")
+                .command("#{flowBean.addSpecimenListPanel()}")
                 .update("flow")
                 .onstart(PF_BUI_CONTENT_SHOW)
                 .oncomplete(PF_BUI_CONTENT_HIDE)
@@ -229,27 +227,7 @@ public class SpecimenPanel extends AbstractSingleEntityPanel<Specimen>  implemen
 
     @Override
     public boolean save(Boolean validated) {
-
-        formContext.flushBackToEntity();
-        unit.setValidated(validated);
-        if (Boolean.TRUE.equals(validated)) {
-            unit.setValidatedBy(sessionSettingsBean.getAuthenticatedUser());
-            unit.setValidatedAt(OffsetDateTime.now());
-        } else {
-            unit.setValidatedBy(null);
-            unit.setValidatedAt(null);
-        }
-
-        try {
-            specimenService.save(unit);
-        } catch (FailedRecordingUnitSaveException e) {
-            MessageUtils.displayErrorMessage(langBean, "common.entity.specimen.updateFailed", unit.getFullIdentifier());
-            return false;
-        }
-
-        refreshUnit();
-        MessageUtils.displayInfoMessage(langBean, "common.entity.specimen.updated", unit.getFullIdentifier());
-        return true;
+        return formContext.save();
     }
 
     public static class Builder {
@@ -281,6 +259,16 @@ public class SpecimenPanel extends AbstractSingleEntityPanel<Specimen>  implemen
     @Override
     public String getTabView() {
         return "/panel/tabview/specimenTabView.xhtml";
+    }
+
+    @Override
+    public String getPanelIndex() {
+        return "specimen-"+idunit;
+    }
+
+    @Override
+    public String getPanelTypeClass() {
+        return "specimen";
     }
 
 

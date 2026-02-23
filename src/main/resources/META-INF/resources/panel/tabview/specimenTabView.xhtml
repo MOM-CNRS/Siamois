@@ -10,7 +10,13 @@
 
     <!-- Tabs -->
     <p:tabView id="singlePanelUnitTabs" activeIndex="#{panelModel.activeTabIndex}" dynamic="true">
-        <p:ajax event="tabChange" listener="#{panelModel.onTabChange}"/>
+        <p:ajax
+                event="tabChange"
+                listener="#{panelModel.onTabChange}"
+                onstart="showProgressBar(PF('pbBarAjax_#{panelIndex}'), 'var(--main-color)');"
+                oncomplete="hideProgressBar(PF('pbBarAjax_#{panelIndex}'));"
+        />
+
 
 
         <!-- details tab -->

@@ -58,7 +58,9 @@ public class ActionUnitListPanel extends AbstractListPanel<ActionUnit> implement
     private String actionUnitListErrorMessage;
 
 
-
+    public String getPanelIndex() {
+        return "action-unit-list";
+    }
 
     @Override
     protected long countUnitsByInstitution() {
@@ -182,6 +184,11 @@ public class ActionUnitListPanel extends AbstractListPanel<ActionUnit> implement
                                 .build())
                         .build()
         );
+    }
+
+    @Override
+    public String getPanelTypeClass() {
+        return "action-unit";
     }
 
 

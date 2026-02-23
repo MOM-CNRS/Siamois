@@ -49,6 +49,10 @@ public class SpecimenListPanel extends AbstractListPanel<Specimen>  implements S
     // locals
     private String actionUnitListErrorMessage;
 
+    public String getPanelIndex() {
+        return "specimen-list";
+    }
+
     @Override
     protected long countUnitsByInstitution() {
         return specimenService.countByInstitution(sessionSettingsBean.getSelectedInstitution());
@@ -162,6 +166,11 @@ public class SpecimenListPanel extends AbstractListPanel<Specimen>  implements S
     void configureTableColumns() {
         SpecimenTableDefinitionFactory.applyTo(tableModel);
         // no toolbar button in institution context
+    }
+
+    @Override
+    public String getPanelTypeClass() {
+        return "specimen";
     }
 
 

@@ -23,7 +23,6 @@ import fr.siamois.domain.services.vocabulary.FieldService;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.RedirectBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
-import fr.siamois.ui.bean.panel.models.PanelBreadcrumb;
 import fr.siamois.ui.bean.panel.models.panel.AbstractPanel;
 import fr.siamois.ui.bean.panel.models.panel.WelcomePanel;
 import fr.siamois.ui.bean.panel.models.panel.single.*;
@@ -123,20 +122,20 @@ public class FlowBean implements Serializable {
         init();
     }
 
-    public void addSpatialUnitListPanel(PanelBreadcrumb bc) {
-        addPanel(panelFactory.createSpatialUnitListPanel(bc));
+    public void addSpatialUnitListPanel() {
+        addPanel(panelFactory.createSpatialUnitListPanel());
     }
 
-    public void addActionUnitListPanel(PanelBreadcrumb bc) {
-        addPanel(panelFactory.createActionUnitListPanel(bc));
+    public void addActionUnitListPanel() {
+        addPanel(panelFactory.createActionUnitListPanel());
     }
 
-    public void addRecordingUnitListPanel(PanelBreadcrumb bc) {
-        addPanel(panelFactory.createRecordingUnitListPanel(bc));
+    public void addRecordingUnitListPanel() {
+        addPanel(panelFactory.createRecordingUnitListPanel());
     }
 
-    public void addSpecimenListPanel(PanelBreadcrumb bc) {
-        addPanel(panelFactory.createSpecimenListPanel(bc));
+    public void addSpecimenListPanel() {
+        addPanel(panelFactory.createSpecimenListPanel());
     }
 
 
@@ -155,17 +154,7 @@ public class FlowBean implements Serializable {
             panels = new ArrayList<>(panels.subList(0, MAX_NUMBER_OF_PANEL));
         }
 
-        if (panels.size() == 1) {
-            // Only one panel: open it
-            panels.get(0).setCollapsed(false);
-        } else {
-            // Collapse all except the first
-            for (int i = 1; i < panels.size(); i++) {
-                panels.get(i).setCollapsed(true);
-            }
-            // Ensure the top one is open
-            panels.get(0).setCollapsed(false);
-        }
+        panels.get(0).setCollapsed(false);
 
         //if fullscreen set this new panel as the active one
         if (fullscreenPanelIndex >= 0) {
@@ -203,121 +192,51 @@ public class FlowBean implements Serializable {
     }
 
 
-    public void goToSpatialUnitByIdNewPanel(Long id, AbstractPanel currentPanel) {
-        // Create new panel type and add items to its breadcrumb
-        SpatialUnitPanel newPanel = panelFactory.createSpatialUnitPanel(id, currentPanel.getBreadcrumb());
+
+    public void goToSpatialUnitByIdNewPanel(Long id) {
+
+        SpatialUnitPanel newPanel = panelFactory.createSpatialUnitPanel(id);
         addPanel(newPanel);
-    }
-
-    public void goToSpatialUnitByIdNewPanel(Long id, AbstractPanel currentPanel, Integer activeIndex) {
-        // Create new panel type and add items to its breadcrumb
-        SpatialUnitPanel newPanel = panelFactory.createSpatialUnitPanel(id, currentPanel.getBreadcrumb(), activeIndex);
-        addPanel(newPanel);
-    }
-
-    public void goToSpatialUnitByIdNewPanel(Long id, Integer currentPanelIndex) {
-
-        SpatialUnitPanel newPanel = panelFactory.createSpatialUnitPanel(id, panels.get(currentPanelIndex).getBreadcrumb());
-        addPanel(newPanel);
-
-    }
-
-    public void goToSpatialUnitByIdNewPanel(Long id, Integer currentPanelIndex, Integer activeIndex) {
-
-        SpatialUnitPanel newPanel = panelFactory.createSpatialUnitPanel(id, panels.get(currentPanelIndex).getBreadcrumb(), activeIndex);
-        addPanel(newPanel);
-
-    }
-
-
-    public void goToRecordingUnitByIdCurrentPanel(Long id, Integer currentPanelIndex) {
-
-        RecordingUnitPanel newPanel = panelFactory.createRecordingUnitPanel(id, panels.get(currentPanelIndex).getBreadcrumb());
-        panels.set(currentPanelIndex, newPanel);
 
     }
 
     public void goToRecordingUnitByIdNewPanel(Long id) {
 
-        RecordingUnitPanel newPanel = panelFactory.createRecordingUnitPanel(id, new PanelBreadcrumb());
+        RecordingUnitPanel newPanel = panelFactory.createRecordingUnitPanel(id);
         addPanel(newPanel);
 
     }
 
-    public void goToRecordingUnitByIdNewPanel(Long id, Integer currentPanelIndex) {
 
-        RecordingUnitPanel newPanel = panelFactory.createRecordingUnitPanel(id, panels.get(currentPanelIndex).getBreadcrumb());
+    public void goToRecordingUnitByIdNewPanel(Long id, Integer tabIndex) {
+
+        RecordingUnitPanel newPanel = panelFactory.createRecordingUnitPanel(id, tabIndex);
         addPanel(newPanel);
 
     }
 
-    public void goToRecordingUnitByIdNewPanel(Long id, Integer currentPanelIndex, Integer tabIndex) {
 
-        RecordingUnitPanel newPanel = panelFactory.createRecordingUnitPanel(id, panels.get(currentPanelIndex).getBreadcrumb(), tabIndex);
+    public void goToSpecimenByIdNewPanel(Long id) {
+
+        SpecimenPanel newPanel = panelFactory.createSpecimenPanel(id);
         addPanel(newPanel);
 
     }
 
-    public void goToRecordingUnitByIdNewPanel(Long id, AbstractPanel panel) {
 
-        RecordingUnitPanel newPanel = panelFactory.createRecordingUnitPanel(id, panel.getBreadcrumb());
-        addPanel(newPanel);
+    public void goToActionUnitByIdNewPanel(Long id) {
 
-    }
-
-    public void goToSpecimenByIdNewPanel(Long id, AbstractPanel currentPanel) {
-
-        SpecimenPanel newPanel = panelFactory.createSpecimenPanel(id, currentPanel.getBreadcrumb());
-        addPanel(newPanel);
-
-    }
-
-    public void goToSpecimenByIdNewPanel(Long id, Integer currentPanelIndex) {
-
-        SpecimenPanel newPanel = panelFactory.createSpecimenPanel(id, panels.get(currentPanelIndex).getBreadcrumb());
-        addPanel(newPanel);
-
-    }
-
-    public void goToActionUnitByIdNewPanel(Long id, Integer currentPanelIndex) {
-        goToActionUnitByIdNewPanel(id, currentPanelIndex, 0);
-    }
-
-    public void goToActionUnitByIdNewPanel(Long id, Integer currentPanelIndex, Integer activeTabIndex) {
-        // Create new panel type and add items to its breadcrumb
-        ActionUnitPanel newPanel = panelFactory.createActionUnitPanel(id, panels.get(currentPanelIndex).getBreadcrumb(), activeTabIndex);
+        ActionUnitPanel newPanel = panelFactory.createActionUnitPanel(id);
         addPanel(newPanel);
     }
 
-    public void goToActionUnitByIdNewPanel(Long id, AbstractPanel panel) {
-        // Create new panel type and add items to its breadcrumb
-        ActionUnitPanel newPanel = panelFactory.createActionUnitPanel(id, panel.getBreadcrumb());
+    public void goToActionUnitByIdNewPanel(Long id, Integer tabIndex) {
+
+        ActionUnitPanel newPanel = panelFactory.createActionUnitPanel(id,tabIndex);
         addPanel(newPanel);
     }
 
-    public void goToActionUnitByIdNewPanel(Long id, AbstractPanel panel, Integer activeTabIndex) {
-        // Create new panel type and add items to its breadcrumb
-        ActionUnitPanel newPanel = panelFactory.createActionUnitPanel(id, panel.getBreadcrumb(), activeTabIndex);
-        addPanel(newPanel);
-    }
 
-    public void goToSpatialUnitByIdCurrentPanel(Long id, AbstractPanel currentPanel) {
-        // Change current panel type add item to its breadcrumb
-        int index = panels.indexOf(currentPanel);
-        if (index != -1) {
-            SpatialUnitPanel newPanel = panelFactory.createSpatialUnitPanel(id, currentPanel.getBreadcrumb());
-            panels.set(index, newPanel);
-
-        }
-
-    }
-
-    public void goToActionUnitByIdCurrentPanel(Long id, Integer currentPanelIndex) {
-        // Change current panel type add item to its breadcrumb
-        int index = currentPanelIndex;
-        ActionUnitPanel newPanel = panelFactory.createActionUnitPanel(id, panels.get(currentPanelIndex).getBreadcrumb());
-        panels.set(index, newPanel);
-    }
 
     public void fullScreen(AbstractPanel panel) {
         // Could use setter if we don't add more code
@@ -336,22 +255,52 @@ public class FlowBean implements Serializable {
         addPanel(panelFactory.createSpatialUnitPanel(id));
     }
 
-    public void handleToggleOfPanelAtIndex(int idx) {
+    public void handleToggleOfPanel(String panelId) {
+        if (panels == null || panels.isEmpty()) {
+            return;
+        }
+
+        // Find the index of the panel with the given panelId
+        int idx = getPanelIndex(panelId);
+        if (idx == -1) {
+            // Panel not found
+            return;
+        }
         AbstractPanel panel = panels.get(idx);
         panel.setCollapsed(!panel.getCollapsed());
+
+
     }
 
-    public void closePanelAtIndex(int idx) {
-        if (panels == null || panels.isEmpty() || idx < 0 || idx >= panels.size()) {
+    private int getPanelIndex(String panelId) {
+        for (int i = 0; i < panels.size(); i++) {
+            if (panels.get(i).getPanelIndex().equals(panelId)) {
+                return i;
+            }
+        }
+        return -1; // Panel not found
+    }
+
+    public void closePanel(String panelId) {
+        if (panels == null || panels.isEmpty()) {
+            return;
+        }
+
+        // Find the index of the panel with the given panelId
+        int idx = getPanelIndex(panelId);
+        if (idx == -1) {
+            // Panel not found
             return;
         }
 
         panels.remove(idx);
 
         // If only one panel is left, uncollapse it
-        if (panels.size() == 1 || (idx == 0 && !panels.isEmpty())) {
+        if (panels.size() == 1) {
             panels.get(0).setCollapsed(false);
+            PrimeFaces.current().ajax().update("panel-"+panels.get(0).getPanelIndex());
         }
+
         // If no panel left, open the homepanel
         else if (panels.isEmpty()) {
             addWelcomePanel();

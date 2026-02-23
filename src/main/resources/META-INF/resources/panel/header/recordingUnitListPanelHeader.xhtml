@@ -1,5 +1,3 @@
-
-
 <ui:fragment xmlns="http://www.w3.org/1999/xhtml"
              xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
              xmlns:p="http://primefaces.org/ui"
@@ -7,7 +5,15 @@
     <!--@elvariable id="panelModel" type="fr.siamois.ui.bean.panel.models.panel.list.RecordingUnitListPanel"-->
 
     <i class="#{panelModel.icon}" style="font-size: 2rem; color:var(--main-color)"/>
-<span style="padding-right:0.5em;">#{langBean.msg(panelModel.titleCodeOrTitle)}</span>
-<p:chip label="#{panelModel.totalNumberOfUnits}" styleClass="recording-unit-count-chip" style="background: transparent;"/>
+    <span style="padding-right:0.5em;">#{langBean.msg(panelModel.titleCodeOrTitle)}</span>
+    <p:chip label="#{panelModel.totalNumberOfUnits}" styleClass="recording-unit-count-chip"
+            style="background: transparent;"/>
+    <p:chip label="Modifications non enregistré"
+            style="display: none;"
+            styleClass="mr-2 error-chip"
+    />
+    <div id="spinner" style="display:none;" class="spinner-border">
+        <output class="visually-hidden">Loading...</output>
+    </div>
 
 </ui:fragment>
