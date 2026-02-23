@@ -185,6 +185,33 @@ function hideProgressBar(widgetVar) {
     progressBarValue.css('background-color', 'transparent').hide();
 }
 
+function measurePerformance() {
+    const startTime = performance.now();
 
+    // Simulate or attach to your button click event
+    document.getElementById('openUnitListPanelButton').addEventListener('click', function() {
+        const requestStart = performance.now();
+
+        // Listen to AJAX start/end events
+        $(document).on('ajaxStart', function() {
+            console.log('AJAX started at:', performance.now() - requestStart, 'ms');
+        });
+
+        $(document).on('ajaxComplete', function() {
+            const requestEnd = performance.now();
+            console.log('AJAX completed in:', requestEnd - requestStart, 'ms');
+
+            // Measure rendering time
+            const renderStart = performance.now();
+            setTimeout(() => {
+                const renderEnd = performance.now();
+                console.log('Rendering completed in:', renderEnd - renderStart, 'ms');
+                console.log('Total time (click to render):', renderEnd - startTime, 'ms');
+            }, 0);
+        });
+    });
+}
+
+measurePerformance();
 
 

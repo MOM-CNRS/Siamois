@@ -512,9 +512,7 @@ public class RecordingUnitService implements ArkEntityService {
      * @return The list of RecordingUnit associated with the institution
      */
     public List<RecordingUnit> findAllWithoutParentsByInstitution(Long institutionId) {
-        List<RecordingUnit> res = recordingUnitRepository.findRootsByInstitution(institutionId);
-        initializeRecordingUnitCollections(res);
-        return res;
+        return recordingUnitRepository.findRootsByInstitution(institutionId);
     }
 
     /**
@@ -525,9 +523,7 @@ public class RecordingUnitService implements ArkEntityService {
      * @return The list of RecordingUnit associated with the institution and that are the children of a given parent
      */
     public List<RecordingUnit> findChildrenByParentAndInstitution(Long parentId, Long institutionId) {
-        List<RecordingUnit> res = recordingUnitRepository.findChildrenByParentAndInstitution(parentId, institutionId);
-        initializeRecordingUnitCollections(res);
-        return res;
+        return recordingUnitRepository.findChildrenByParentAndInstitution(parentId, institutionId);
     }
 
     /**
