@@ -60,27 +60,46 @@ public class TableRowFieldSource implements FieldSource {
 
 
     private void indexEnabledWhenFromForm(CustomForm form) {
-        if (form.getLayout() == null) return;
+        if (form.getLayout() == null) {
+            return;
+        }
 
-        for (CustomFormPanel p : form.getLayout()) {
-            if (p.getRows() == null) continue;
-            for (CustomRow r : p.getRows()) {
-                if (r.getColumns() == null) continue;
-                for (CustomCol c : r.getColumns()) {
-                    CustomField f = c.getField();
-
-                    if (f == null || f.getId() == null || !byId.containsKey(f.getId())) {
-                        continue;
-                    }
-
-                    if (c.getEnabledWhenSpec() != null) {
-                        enabledByField.put(f, c.getEnabledWhenSpec());
-                    }
-                }
-
-            }
+        for (CustomFormPanel panel : form.getLayout()) {
+            processPanel(panel);
         }
     }
+
+    private void processPanel(CustomFormPanel panel) {
+        if (panel.getRows() == null) {
+            return;
+        }
+
+        for (CustomRow row : panel.getRows()) {
+            processRow(row);
+        }
+    }
+
+    private void processRow(CustomRow row) {
+        if (row.getColumns() == null) {
+            return;
+        }
+
+        for (CustomCol column : row.getColumns()) {
+            processColumn(column);
+        }
+    }
+
+    private void processColumn(CustomCol column) {
+        CustomField field = column.getField();
+        if (field == null || field.getId() == null || !byId.containsKey(field.getId())) {
+            return;
+        }
+
+        if (column.getEnabledWhenSpec() != null) {
+            enabledByField.put(field, column.getEnabledWhenSpec());
+        }
+    }
+
 
     @Override
     public Collection<CustomField> getAllFields() {
