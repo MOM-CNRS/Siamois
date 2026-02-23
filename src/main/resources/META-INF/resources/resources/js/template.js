@@ -138,16 +138,6 @@ function handleMenuItemClick(panelSelector) {
     scrollToPanel(panelSelector);
 }
 
-function handleMenuItemClick(panelSelector) {
-    // Remove 'active' class from all menu items
-    $('.panel-menu .menu-item').removeClass('active');
-
-    // Add 'active' class to the clicked menu item
-    $(event.currentTarget).addClass('active');
-
-    // Scroll the corresponding panel into view
-    scrollToPanel(panelSelector);
-}
 
 function scrollToPanel(selector) {
     const panel = $(selector);

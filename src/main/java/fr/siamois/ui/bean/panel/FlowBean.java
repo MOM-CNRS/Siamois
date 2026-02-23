@@ -154,13 +154,7 @@ public class FlowBean implements Serializable {
             panels = new ArrayList<>(panels.subList(0, MAX_NUMBER_OF_PANEL));
         }
 
-        if (panels.size() == 1) {
-            // Only one panel: open it
-            panels.get(0).setCollapsed(false);
-        } else {
-            // Ensure the top one is open
-            panels.get(0).setCollapsed(false);
-        }
+        panels.get(0).setCollapsed(false);
 
         //if fullscreen set this new panel as the active one
         if (fullscreenPanelIndex >= 0) {
