@@ -76,7 +76,6 @@ public class GenericNewUnitDialogBean<T extends TraceableEntity>
     public GenericNewUnitDialogBean(ApplicationContext context,
                                     Set<INewUnitHandler<? extends TraceableEntity>> handlerSet) {
         super(context);
-        this.langBean = context.getBean(LangBean.class);
         this.flowBean = context.getBean(FlowBean.class);
         this.redirectBean = context.getBean(RedirectBean.class);
         this.handlers = handlerSet.stream()

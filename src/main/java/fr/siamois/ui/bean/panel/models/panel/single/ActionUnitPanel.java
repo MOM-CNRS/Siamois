@@ -121,7 +121,6 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnit> imple
         super("Unité d'action", "bi bi-arrow-down-square", "siamois-panel action-unit-panel single-panel",
                 context);
 
-        this.langBean = context.getBean(LangBean.class);
         this.redirectBean = context.getBean(RedirectBean.class);
         this.labelService = context.getBean(LabelService.class);
         this.teamMembersBean = context.getBean(TeamMembersBean.class);
