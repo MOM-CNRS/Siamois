@@ -54,7 +54,6 @@ public class GenericNewUnitDialogBean<T extends TraceableEntity>
     protected T multiHierarchyParent;
     protected T multiHierarchyChild;
 
-    protected final LangBean langBean;
     protected final FlowBean flowBean;
     protected final RedirectBean redirectBean;
 

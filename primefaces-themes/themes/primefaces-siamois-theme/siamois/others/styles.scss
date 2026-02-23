@@ -449,6 +449,7 @@ body .ui-tabmenu.panel-menu-text {
     overflow-y: auto;
     margin-left: 0; /* No margin, menus are absolutely positioned */
     z-index: 1;
+    padding-bottom: 30vh; // for scrolling from panel nav bar
 }
 
 

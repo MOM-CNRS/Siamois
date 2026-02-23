@@ -67,10 +67,6 @@ import java.util.stream.Collectors;
 public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnit> implements Serializable {
     public static final String INVALID_FORMAT_CODE = "actionUnit.settings.error.invalidIdentifierFormat";
 
-    // Deps
-
-    private final LangBean langBean;
-
     private final RedirectBean redirectBean;
     private final transient LabelService labelService;
     private final TeamMembersBean teamMembersBean;

@@ -40,8 +40,6 @@ import java.util.List;
 public class SpecimenPanel extends AbstractSingleEntityPanel<Specimen>  implements Serializable {
 
     public static final String BI_BI_BUCKET = "bi bi-bucket";
-    // Deps
-    protected final transient LangBean langBean;
 
 
     protected final transient RecordingUnitService recordingUnitService;
@@ -67,7 +65,6 @@ public class SpecimenPanel extends AbstractSingleEntityPanel<Specimen>  implemen
                 BI_BI_BUCKET,
                 "siamois-panel specimen-panel single-panel",
                 context);
-        this.langBean = context.getBean(LangBean.class);
         this.recordingUnitService = context.getBean(RecordingUnitService.class);
         this.personService = context.getBean(PersonService.class);
         this.specimenService = context.getBean(SpecimenService.class);

@@ -80,7 +80,6 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
     private final transient SpatialUnitHelperService spatialUnitHelperService;
     private final transient CustomFieldService customFieldService;
     private final transient LabelService labelService;
-    private final transient LangBean langBean;
     private final transient PersonService personService;
     private final transient NavBean navBean;
     private final transient GenericNewUnitDialogBean<?> genericNewUnitDialogBean;
@@ -132,7 +131,6 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
         this.spatialUnitHelperService = context.getBean(SpatialUnitHelperService.class);
         this.customFieldService = context.getBean(CustomFieldService.class);
         this.labelService = context.getBean(LabelService.class);
-        this.langBean = context.getBean(LangBean.class);
         this.personService = context.getBean(PersonService.class);
         this.specimenService = context.getBean(SpecimenService.class);
         this.navBean = context.getBean(NavBean.class);

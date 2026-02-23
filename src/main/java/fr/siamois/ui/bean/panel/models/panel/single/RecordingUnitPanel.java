@@ -66,8 +66,6 @@ import java.util.*;
 public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel<RecordingUnit>  implements Serializable {
 
 
-    // Deps
-    protected final transient LangBean langBean;
     protected final transient RecordingUnitService recordingUnitService;
     protected final transient PersonService personService;
     private final transient RedirectBean redirectBean;
@@ -105,7 +103,6 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
                 "bi bi-pencil-square",
                 "siamois-panel recording-unit-panel single-panel",
                 context);
-        this.langBean = context.getBean(LangBean.class);
         this.recordingUnitService = context.getBean(RecordingUnitService.class);
         this.personService = context.getBean(PersonService.class);
         this.redirectBean = context.getBean(RedirectBean.class);
