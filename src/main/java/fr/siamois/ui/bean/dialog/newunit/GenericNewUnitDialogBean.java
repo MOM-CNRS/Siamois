@@ -16,6 +16,7 @@ import fr.siamois.ui.bean.field.SpatialUnitFieldBean;
 import fr.siamois.ui.bean.panel.FlowBean;
 import fr.siamois.ui.bean.panel.models.panel.single.AbstractSingleEntity;
 import fr.siamois.ui.exceptions.CannotInitializeNewUnitDialogException;
+import fr.siamois.ui.form.FormUiDto;
 import fr.siamois.ui.lazydatamodel.BaseLazyDataModel;
 import fr.siamois.ui.mapper.FormMapper;
 import fr.siamois.utils.MessageUtils;
@@ -28,6 +29,7 @@ import org.primefaces.PrimeFaces;
 import org.primefaces.event.SelectEvent;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Scope;
+import org.springframework.core.convert.ConversionService;
 import org.springframework.stereotype.Component;
 
 import java.io.Serializable;
@@ -47,7 +49,6 @@ public class GenericNewUnitDialogBean<T extends TraceableEntity>
     private final transient FieldService fieldService;
     private final transient ConceptService conceptService;
     private final SpatialUnitFieldBean spatialUnitFieldBean;
-    private final transient FormMapper formMapper;
     // The sets to update after creation
     protected BaseLazyDataModel<T> lazyDataModel;
     protected transient Set<T> setToUpdate;
@@ -86,7 +87,6 @@ public class GenericNewUnitDialogBean<T extends TraceableEntity>
         this.fieldService = context.getBean(FieldService.class);
         this.conceptService = context.getBean(ConceptService.class);
         this.spatialUnitFieldBean = context.getBean(SpatialUnitFieldBean.class);
-        this.formMapper = context.getBean(FormMapper.class);
     }
 
 
@@ -132,7 +132,8 @@ public class GenericNewUnitDialogBean<T extends TraceableEntity>
 
     @Override
     public void initForms(boolean forceInit) {
-        detailsForm = formMapper.customFormToFormUiDto(handler.formLayout());
+        detailsForm = formContextServices.getConversionService().convert(handler.formLayout(), FormUiDto.class);
+
         initFormContext(forceInit);
     }
 

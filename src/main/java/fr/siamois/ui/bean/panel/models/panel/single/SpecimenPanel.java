@@ -14,6 +14,7 @@ import fr.siamois.domain.services.specimen.SpecimenService;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.RedirectBean;
 import fr.siamois.ui.bean.panel.models.PanelBreadcrumb;
+import fr.siamois.ui.form.FormUiDto;
 import fr.siamois.ui.mapper.FormMapper;
 import fr.siamois.utils.MessageUtils;
 import lombok.EqualsAndHashCode;
@@ -121,7 +122,7 @@ public class SpecimenPanel extends AbstractSingleEntityPanel<Specimen>  implemen
         try {
 
             // Details form
-            detailsForm = formMapper.customFormToFormUiDto(Specimen.DETAILS_FORM);
+            detailsForm = formContextServices.getConversionService().convert(Specimen.DETAILS_FORM, FormUiDto.class);
 
             activeTabIndex = 0;
 

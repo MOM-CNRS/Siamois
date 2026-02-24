@@ -117,7 +117,7 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
                 sessionSettingsBean.getSelectedInstitution()
         );
 
-        FormUiDto formDto = formContextServices.getFormMapper().customFormToFormUiDto(form);
+        FormUiDto formDto = formContextServices.getConversionService().convert(form, FormUiDto.class);
 
         formCache.put(type, formDto);
         return formDto;

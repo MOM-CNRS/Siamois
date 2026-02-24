@@ -9,6 +9,7 @@ import fr.siamois.domain.models.exceptions.actionunit.FailedActionUnitSaveExcept
 import fr.siamois.domain.models.form.customform.CustomForm;
 import fr.siamois.domain.models.history.RevisionWithInfo;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
+import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.authorization.writeverifier.RecordingUnitWriteVerifier;
@@ -26,6 +27,7 @@ import fr.siamois.ui.bean.panel.models.PanelBreadcrumb;
 import fr.siamois.ui.bean.panel.models.panel.single.tab.ActionSettingsTab;
 import fr.siamois.ui.bean.panel.models.panel.single.tab.RecordingTab;
 import fr.siamois.ui.bean.settings.team.TeamMembersBean;
+import fr.siamois.ui.form.FormUiDto;
 import fr.siamois.ui.lazydatamodel.RecordingUnitInActionUnitLazyDataModel;
 import fr.siamois.ui.lazydatamodel.SpecimenInActionUnitLazyDataModel;
 import fr.siamois.ui.lazydatamodel.scope.RecordingUnitScope;
@@ -265,7 +267,7 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnit> imple
     @Override
     public void initForms(boolean forceInit) {
 
-        detailsForm = formMapper.customFormToFormUiDto(ActionUnit.DETAILS_FORM);
+        detailsForm = formContextServices.getConversionService().convert(ActionUnit.DETAILS_FORM, FormUiDto.class);
         // Init system form answers
         initFormContext(forceInit);
 

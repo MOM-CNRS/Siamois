@@ -25,6 +25,7 @@ import fr.siamois.ui.bean.panel.FlowBean;
 import fr.siamois.ui.bean.panel.models.PanelBreadcrumb;
 import fr.siamois.ui.bean.panel.models.panel.single.tab.ActionTab;
 import fr.siamois.ui.bean.panel.utils.SpatialUnitHelperService;
+import fr.siamois.ui.form.FormUiDto;
 import fr.siamois.ui.lazydatamodel.ActionUnitInSpatialUnitLazyDataModel;
 import fr.siamois.ui.lazydatamodel.SpatialUnitChildrenLazyDataModel;
 import fr.siamois.ui.lazydatamodel.SpatialUnitParentsLazyDataModel;
@@ -182,7 +183,7 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
     @Override
     public void initForms(boolean forceInit) {
 
-        detailsForm = formMapper.customFormToFormUiDto(SpatialUnit.DETAILS_FORM);
+        detailsForm =  formContextServices.getConversionService().convert(SpatialUnit.DETAILS_FORM, FormUiDto.class);
         // Init system form answers
         initFormContext(forceInit);
     }

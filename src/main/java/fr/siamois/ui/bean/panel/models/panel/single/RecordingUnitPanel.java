@@ -1,5 +1,6 @@
 package fr.siamois.ui.bean.panel.models.panel.single;
 
+import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.actionunit.ActionUnitFormMapping;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.document.Document;
@@ -31,6 +32,7 @@ import fr.siamois.ui.bean.dialog.newunit.UnitKind;
 import fr.siamois.ui.bean.panel.FlowBean;
 import fr.siamois.ui.bean.panel.models.PanelBreadcrumb;
 import fr.siamois.ui.bean.panel.models.panel.single.tab.SpecimenTab;
+import fr.siamois.ui.form.FormUiDto;
 import fr.siamois.ui.lazydatamodel.RecordingUnitChildrenLazyDataModel;
 import fr.siamois.ui.lazydatamodel.RecordingUnitParentsLazyDataModel;
 import fr.siamois.ui.lazydatamodel.SpecimenInRecordingUnitLazyDataModel;
@@ -338,7 +340,7 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
     @Override
     public void initForms(boolean forceInit) {
         CustomForm form = formService.findCustomFormByRecordingUnitTypeAndInstitutionId(unit.getType(), sessionSettingsBean.getSelectedInstitution());
-        detailsForm = formMapper.customFormToFormUiDto(form);
+        detailsForm = formContextServices.getConversionService().convert(form, FormUiDto.class);
         configureSystemFieldsBeforeInit();
         // Init system form answers
         initFormContext(forceInit);

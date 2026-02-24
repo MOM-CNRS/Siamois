@@ -8,6 +8,8 @@ import org.springframework.core.convert.converter.Converter;
 
 @Mapper(uses = {FormPanelMapper.class}, componentModel = MappingConstants.ComponentModel.SPRING)
 public interface FormMapper extends Converter<CustomForm, FormUiDto> {
-    FormUiDto customFormToFormUiDto(CustomForm customForm);
+
+
+
 }
 
