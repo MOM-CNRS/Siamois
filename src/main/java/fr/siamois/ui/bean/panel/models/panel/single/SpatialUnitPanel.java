@@ -86,6 +86,7 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
     private final transient GenericNewUnitDialogBean<?> genericNewUnitDialogBean;
     private final transient InstitutionService institutionService;
     private final transient SpatialUnitWriteVerifier spatialUnitWriteVerifier;
+    private final transient FormMapper formMapper;
 
 
     private String spatialUnitErrorMessage;
@@ -138,6 +139,7 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
         this.genericNewUnitDialogBean = context.getBean(GenericNewUnitDialogBean.class);
         this.institutionService = context.getBean(InstitutionService.class);
         this.spatialUnitWriteVerifier = context.getBean(SpatialUnitWriteVerifier.class);
+        this.formMapper = context.getBean(FormMapper.class);
     }
 
 
@@ -180,7 +182,7 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
     @Override
     public void initForms(boolean forceInit) {
 
-        detailsForm = FormMapper.INSTANCE.customFormToFormUiDto(SpatialUnit.DETAILS_FORM);
+        detailsForm = formMapper.customFormToFormUiDto(SpatialUnit.DETAILS_FORM);
         // Init system form answers
         initFormContext(forceInit);
     }

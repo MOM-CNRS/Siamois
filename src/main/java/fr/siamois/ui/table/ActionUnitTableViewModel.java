@@ -13,6 +13,7 @@ import fr.siamois.ui.bean.dialog.newunit.NewUnitContext;
 import fr.siamois.ui.bean.dialog.newunit.UnitKind;
 import fr.siamois.ui.bean.panel.FlowBean;
 import fr.siamois.ui.form.FormContextServices;
+import fr.siamois.ui.form.FormUiDto;
 import fr.siamois.ui.lazydatamodel.BaseActionUnitLazyDataModel;
 import fr.siamois.ui.lazydatamodel.tree.ActionUnitTreeTableLazyModel;
 import lombok.Getter;
@@ -75,12 +76,12 @@ public class ActionUnitTableViewModel extends EntityTableViewModel<ActionUnit, L
     }
 
     @Override
-    protected CustomForm resolveRowFormFor(ActionUnit au) {
+    protected FormUiDto resolveRowFormFor(ActionUnit au) {
         return null;
     }
 
     @Override
-    protected void configureRowSystemFields(ActionUnit au, CustomForm rowForm) {
+    protected void configureRowSystemFields(ActionUnit au, FormUiDto rowForm) {
         // no system field to init
     }
 

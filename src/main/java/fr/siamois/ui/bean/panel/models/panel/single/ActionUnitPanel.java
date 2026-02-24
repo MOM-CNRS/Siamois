@@ -78,6 +78,7 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnit> imple
     private final transient GenericNewUnitDialogBean<?> genericNewUnitDialogBean;
     private final transient InstitutionService institutionService;
     private final transient RecordingUnitWriteVerifier recordingUnitWriteVerifier;
+    private final transient FormMapper formMapper;
 
     // For entering new code
     private ActionCode newCode;
@@ -132,6 +133,7 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnit> imple
         this.genericNewUnitDialogBean = context.getBean(GenericNewUnitDialogBean.class);
         this.institutionService = context.getBean(InstitutionService.class);
         this.recordingUnitWriteVerifier = context.getBean(RecordingUnitWriteVerifier.class);
+        this.formMapper = context.getBean(FormMapper.class);
     }
 
 
@@ -263,7 +265,7 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnit> imple
     @Override
     public void initForms(boolean forceInit) {
 
-        detailsForm = FormMapper.INSTANCE.customFormToFormUiDto(ActionUnit.DETAILS_FORM);
+        detailsForm = formMapper.customFormToFormUiDto(ActionUnit.DETAILS_FORM);
         // Init system form answers
         initFormContext(forceInit);
 

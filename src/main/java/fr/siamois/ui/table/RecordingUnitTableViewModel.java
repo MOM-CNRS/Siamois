@@ -6,6 +6,7 @@ import fr.siamois.domain.models.form.customfield.CustomFieldDateTime;
 import fr.siamois.domain.models.form.customfield.CustomFieldInteger;
 import fr.siamois.domain.models.form.customform.CustomForm;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
+import fr.siamois.domain.models.specimen.Specimen;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.authorization.writeverifier.RecordingUnitWriteVerifier;
 import fr.siamois.domain.services.form.FormService;
@@ -21,11 +22,14 @@ import fr.siamois.ui.bean.dialog.newunit.UnitKind;
 import fr.siamois.ui.bean.panel.FlowBean;
 import fr.siamois.ui.form.EntityFormContext;
 import fr.siamois.ui.form.FormContextServices;
+import fr.siamois.ui.form.FormUiDto;
 import fr.siamois.ui.lazydatamodel.BaseRecordingUnitLazyDataModel;
 import fr.siamois.ui.lazydatamodel.tree.RecordingUnitTreeTableLazyModel;
+import fr.siamois.ui.mapper.FormMapper;
 import fr.siamois.utils.MessageUtils;
 import lombok.Getter;
 import org.primefaces.model.TreeNode;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.time.LocalDateTime;
 import java.time.Month;
@@ -46,8 +50,11 @@ import static fr.siamois.ui.table.TableColumnAction.GO_TO_RECORDING_UNIT;
 @Getter
 public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingUnit, Long> {
 
+
+
+
     // Cache: key = (type, institutionId), value = CustomForm
-    private final Map<Concept, CustomForm> formCache = new HashMap<>();
+    private final Map<Concept, FormUiDto> formCache = new HashMap<>();
 
     public static final String THIS = "@this";
     public static final String SIA_ICON_BTN = "sia-icon-btn";
@@ -94,7 +101,7 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
     }
 
     @Override
-    protected CustomForm resolveRowFormFor(RecordingUnit ru) {
+    protected FormUiDto resolveRowFormFor(RecordingUnit ru) {
         Concept type = ru.getType();
         if (type == null) {
             return null;
@@ -110,13 +117,15 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
                 sessionSettingsBean.getSelectedInstitution()
         );
 
-        formCache.put(type, form);
-        return form;
+        FormUiDto formDto = formContextServices.getFormMapper().customFormToFormUiDto(form);
+
+        formCache.put(type, formDto);
+        return formDto;
     }
 
 
     @Override
-    protected void configureRowSystemFields(RecordingUnit ru, CustomForm rowForm) {
+    protected void configureRowSystemFields(RecordingUnit ru, FormUiDto rowForm) {
         if (rowForm == null || rowForm.getLayout() == null) {
             return;
         }

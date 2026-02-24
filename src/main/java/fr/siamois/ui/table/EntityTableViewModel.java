@@ -11,7 +11,9 @@ import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.NavBean;
 import fr.siamois.ui.bean.dialog.newunit.GenericNewUnitDialogBean;
 import fr.siamois.ui.bean.dialog.newunit.NewUnitContext;
+import fr.siamois.ui.form.CustomColUiDto;
 import fr.siamois.ui.form.EntityFormContext;
+import fr.siamois.ui.form.FormUiDto;
 import fr.siamois.ui.form.fieldsource.FieldSource;
 import fr.siamois.ui.form.FormContextServices;
 import fr.siamois.ui.form.fieldsource.TableRowFieldSource;
@@ -185,7 +187,7 @@ public abstract class EntityTableViewModel<T extends TraceableEntity, ID> {
 
         return rowContexts.computeIfAbsent(id, key -> {
             // 1) Formulaire spécifique à cette entité (défini par la sous-classe)
-            CustomForm rowForm = resolveRowFormFor(entity);
+            FormUiDto rowForm = resolveRowFormFor(entity);
 
             // 2) Configuration min/max des champs système pour CETTE ligne
             configureRowSystemFields(entity, rowForm);
@@ -217,16 +219,16 @@ public abstract class EntityTableViewModel<T extends TraceableEntity, ID> {
     // ---------------------- Hooks à surcharger par les sous-classes ----------------------
 
     /**
-     * Détermine le CustomForm spécifique à une ligne d'entité T.
+     * Détermine le FormUiDto spécifique à une ligne d'entité T.
      * (ex: pour RecordingUnit, dépend du type + institution)
      */
-    protected abstract CustomForm resolveRowFormFor(T entity);
+    protected abstract FormUiDto resolveRowFormFor(T entity);
 
     /**
      * Applique la logique min/max sur les champs système pour une ligne donnée.
      * (ex: identifier, openingDate, closingDate pour RecordingUnit)
      */
-    protected abstract void configureRowSystemFields(T entity, CustomForm rowForm);
+    protected abstract void configureRowSystemFields(T entity, FormUiDto rowForm);
 
     // ---------------------- Helpers génériques ----------------------
 
@@ -234,7 +236,7 @@ public abstract class EntityTableViewModel<T extends TraceableEntity, ID> {
      * Helper : récupère tous les CustomField d'un CustomForm (panels → rows → cols).
      * Indépendant du type T, donc factorisé ici.
      */
-    protected List<CustomField> getAllFieldsFromForm(CustomForm form) {
+    protected List<CustomField> getAllFieldsFromForm(FormUiDto form) {
         if (form == null || form.getLayout() == null) {
             return List.of();
         }
@@ -244,7 +246,7 @@ public abstract class EntityTableViewModel<T extends TraceableEntity, ID> {
                 .flatMap(panel -> panel.getRows().stream())
                 .filter(row -> row.getColumns() != null)
                 .flatMap(row -> row.getColumns().stream())
-                .map(CustomCol::getField)
+                .map(CustomColUiDto::getField)
                 .filter(Objects::nonNull)
                 .toList();
     }

@@ -17,6 +17,7 @@ import fr.siamois.ui.bean.dialog.newunit.UnitKind;
 import fr.siamois.ui.bean.panel.FlowBean;
 import fr.siamois.ui.form.EntityFormContext;
 import fr.siamois.ui.form.FormContextServices;
+import fr.siamois.ui.form.FormUiDto;
 import fr.siamois.ui.lazydatamodel.BaseSpatialUnitLazyDataModel;
 import fr.siamois.ui.lazydatamodel.tree.SpatialUnitTreeTableLazyModel;
 import fr.siamois.utils.MessageUtils;
@@ -91,12 +92,12 @@ public class SpatialUnitTableViewModel extends EntityTableViewModel<SpatialUnit,
     }
 
     @Override
-    protected CustomForm resolveRowFormFor(SpatialUnit su) {
+    protected FormUiDto resolveRowFormFor(SpatialUnit su) {
         return null;
     }
 
     @Override
-    protected void configureRowSystemFields(SpatialUnit su, CustomForm rowForm) {
+    protected void configureRowSystemFields(SpatialUnit su, FormUiDto rowForm) {
        // no system field to configure
     }
 

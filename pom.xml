@@ -385,6 +385,12 @@
             <scope>provided</scope>
         </dependency>
 
+        <dependency>
+            <groupId>org.mapstruct.extensions.spring</groupId>
+            <artifactId>mapstruct-spring-extensions</artifactId>
+            <version>2.0.0</version>
+        </dependency>
+
     </dependencies>
 
     <build>
@@ -416,7 +422,8 @@
                         </goals>
                         <configuration>
                             <!-- adjust path if your scss lives elsewhere -->
-                            <inputFolder>${project.basedir}/primefaces-themes/themes/primefaces-siamois-theme</inputFolder>
+                            <inputFolder>${project.basedir}/primefaces-themes/themes/primefaces-siamois-theme
+                            </inputFolder>
                             <outputFolder>${project.build.directory}/generated-resources/css</outputFolder>
                             <update>true</update>
                             <noSourceMap>true</noSourceMap>
@@ -439,7 +446,8 @@
                             <goal>copy-resources</goal>
                         </goals>
                         <configuration>
-                            <outputDirectory>${project.build.outputDirectory}/META-INF/resources/resources</outputDirectory>
+                            <outputDirectory>${project.build.outputDirectory}/META-INF/resources/resources
+                            </outputDirectory>
                             <resources>
                                 <!-- theme.css for siamois -->
                                 <resource>
@@ -557,7 +565,8 @@
                                     <goal>compile-sass</goal>
                                 </goals>
                                 <configuration>
-                                    <inputFolder>${project.basedir}/primefaces-themes/themes/primefaces-siamois-theme</inputFolder>
+                                    <inputFolder>${project.basedir}/primefaces-themes/themes/primefaces-siamois-theme
+                                    </inputFolder>
                                     <outputFolder>${project.build.directory}/generated-resources/css</outputFolder>
                                     <update>true</update>
                                     <noSourceMap>true</noSourceMap>
@@ -579,7 +588,8 @@
                                     <goal>copy-resources</goal>
                                 </goals>
                                 <configuration>
-                                    <outputDirectory>${project.build.outputDirectory}/META-INF/resources/resources</outputDirectory>
+                                    <outputDirectory>${project.build.outputDirectory}/META-INF/resources/resources
+                                    </outputDirectory>
                                     <resources>
                                         <resource>
                                             <directory>${project.build.directory}/generated-resources/css</directory>

@@ -73,13 +73,11 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
     private final transient SpecimenService specimenService;
     private final transient NavBean navBean;
     private final transient GenericNewUnitDialogBean<?> genericNewUnitDialogBean;
+    private final transient FormMapper formMapper;
 
     // ---------- Locals
     // RU
     protected RecordingUnit recordingUnit;
-
-    // Form
-    protected CustomForm additionalForm;
 
     // Linked specimen
     private transient SpecimenInRecordingUnitLazyDataModel specimenListLazyDataModel ;
@@ -98,6 +96,7 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
 
 
 
+
     protected RecordingUnitPanel(ApplicationContext context)  {
 
         super("common.entity.recordingunit",
@@ -110,6 +109,7 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
         this.specimenService = context.getBean(SpecimenService.class);
         this.navBean = context.getBean(NavBean.class);
         this.genericNewUnitDialogBean = context.getBean(GenericNewUnitDialogBean.class);
+        this.formMapper = context.getBean(FormMapper.class);
     }
 
 
@@ -156,21 +156,6 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
         }
     }
 
-    public void changeCustomForm() {
-        // Do we have a form available for the selected type?
-        Set<ActionUnitFormMapping> formsAvailable = recordingUnit.getActionUnit().getFormsAvailable();
-        additionalForm = getFormForRecordingUnitType(recordingUnit.getType(), formsAvailable);
-        if (recordingUnit.getFormResponse() == null) {
-            recordingUnit.setFormResponse(new CustomFormResponse());
-            recordingUnit.getFormResponse().setAnswers(new HashMap<>());
-        }
-        recordingUnit.getFormResponse().setForm(additionalForm);
-        if (additionalForm != null) {
-            initFormResponseAnswers();
-        }
-
-
-    }
 
     public CustomForm getFormForRecordingUnitType(Concept type, Set<ActionUnitFormMapping> availableForms) {
         return availableForms.stream()
@@ -353,7 +338,7 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
     @Override
     public void initForms(boolean forceInit) {
         CustomForm form = formService.findCustomFormByRecordingUnitTypeAndInstitutionId(unit.getType(), sessionSettingsBean.getSelectedInstitution());
-        detailsForm = FormMapper.INSTANCE.customFormToFormUiDto(form);
+        detailsForm = formMapper.customFormToFormUiDto(form);
         configureSystemFieldsBeforeInit();
         // Init system form answers
         initFormContext(forceInit);

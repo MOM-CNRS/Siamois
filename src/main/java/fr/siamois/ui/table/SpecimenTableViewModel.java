@@ -11,6 +11,7 @@ import fr.siamois.ui.bean.SessionSettingsBean;
 import fr.siamois.ui.bean.dialog.newunit.GenericNewUnitDialogBean;
 import fr.siamois.ui.bean.panel.FlowBean;
 import fr.siamois.ui.form.FormContextServices;
+import fr.siamois.ui.form.FormUiDto;
 import fr.siamois.ui.lazydatamodel.BaseSpecimenLazyDataModel;
 import lombok.Getter;
 import org.primefaces.model.TreeNode;
@@ -68,12 +69,12 @@ public class SpecimenTableViewModel extends EntityTableViewModel<Specimen, Long>
     }
 
     @Override
-    protected CustomForm resolveRowFormFor(Specimen s) {
+    protected FormUiDto resolveRowFormFor(Specimen s) {
         return null;
     }
 
     @Override
-    protected void configureRowSystemFields(Specimen s, CustomForm rowForm) {
+    protected void configureRowSystemFields(Specimen s, FormUiDto rowForm) {
         // no specific configs
     }
 

@@ -2,6 +2,10 @@ package fr.siamois.ui.form.fieldsource;
 
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.customform.*;
+import fr.siamois.ui.form.CustomColUiDto;
+import fr.siamois.ui.form.CustomFormPanelUiDto;
+import fr.siamois.ui.form.CustomRowUiDto;
+import fr.siamois.ui.form.FormUiDto;
 import fr.siamois.ui.table.FormFieldColumn;
 import fr.siamois.ui.table.TableColumn;
 import fr.siamois.ui.table.TableDefinition;
@@ -39,7 +43,7 @@ public class TableRowFieldSource implements FieldSource {
      * @param tableDefinition définition globale des colonnes
      * @param rowSpecificForm CustomForm spécifique à la ligne (si tu veux récupérer les EnabledWhenJson depuis le form)
      */
-    public TableRowFieldSource(TableDefinition tableDefinition, CustomForm rowSpecificForm) {
+    public TableRowFieldSource(TableDefinition tableDefinition, FormUiDto rowSpecificForm) {
         this.tableDefinition = tableDefinition != null ? tableDefinition : new TableDefinition();
         indexFromTableDefinition();
         if (rowSpecificForm != null) {
@@ -59,37 +63,37 @@ public class TableRowFieldSource implements FieldSource {
     }
 
 
-    private void indexEnabledWhenFromForm(CustomForm form) {
+    private void indexEnabledWhenFromForm(FormUiDto form) {
         if (form.getLayout() == null) {
             return;
         }
 
-        for (CustomFormPanel panel : form.getLayout()) {
+        for (CustomFormPanelUiDto panel : form.getLayout()) {
             processPanel(panel);
         }
     }
 
-    private void processPanel(CustomFormPanel panel) {
+    private void processPanel(CustomFormPanelUiDto panel) {
         if (panel.getRows() == null) {
             return;
         }
 
-        for (CustomRow row : panel.getRows()) {
+        for (CustomRowUiDto row : panel.getRows()) {
             processRow(row);
         }
     }
 
-    private void processRow(CustomRow row) {
+    private void processRow(CustomRowUiDto row) {
         if (row.getColumns() == null) {
             return;
         }
 
-        for (CustomCol column : row.getColumns()) {
+        for (CustomColUiDto column : row.getColumns()) {
             processColumn(column);
         }
     }
 
-    private void processColumn(CustomCol column) {
+    private void processColumn(CustomColUiDto column) {
         CustomField field = column.getField();
         if (field == null || field.getId() == null || !byId.containsKey(field.getId())) {
             return;

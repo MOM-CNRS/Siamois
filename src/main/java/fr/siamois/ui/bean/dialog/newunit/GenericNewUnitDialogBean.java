@@ -47,6 +47,7 @@ public class GenericNewUnitDialogBean<T extends TraceableEntity>
     private final transient FieldService fieldService;
     private final transient ConceptService conceptService;
     private final SpatialUnitFieldBean spatialUnitFieldBean;
+    private final transient FormMapper formMapper;
     // The sets to update after creation
     protected BaseLazyDataModel<T> lazyDataModel;
     protected transient Set<T> setToUpdate;
@@ -85,6 +86,7 @@ public class GenericNewUnitDialogBean<T extends TraceableEntity>
         this.fieldService = context.getBean(FieldService.class);
         this.conceptService = context.getBean(ConceptService.class);
         this.spatialUnitFieldBean = context.getBean(SpatialUnitFieldBean.class);
+        this.formMapper = context.getBean(FormMapper.class);
     }
 
 
@@ -130,7 +132,7 @@ public class GenericNewUnitDialogBean<T extends TraceableEntity>
 
     @Override
     public void initForms(boolean forceInit) {
-        detailsForm = FormMapper.INSTANCE.customFormToFormUiDto(handler.formLayout());
+        detailsForm = formMapper.customFormToFormUiDto(handler.formLayout());
         initFormContext(forceInit);
     }
 

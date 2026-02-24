@@ -42,7 +42,7 @@ import java.util.List;
 public class SpecimenPanel extends AbstractSingleEntityPanel<Specimen>  implements Serializable {
 
     public static final String BI_BI_BUCKET = "bi bi-bucket";
-
+    private final transient FormMapper formMapper;
 
     protected final transient RecordingUnitService recordingUnitService;
     protected final transient PersonService personService;
@@ -61,12 +61,13 @@ public class SpecimenPanel extends AbstractSingleEntityPanel<Specimen>  implemen
 
     // ---------- Locals
 
-    protected SpecimenPanel(ApplicationContext context) {
+    protected SpecimenPanel(FormMapper formMapper, ApplicationContext context) {
 
         super("common.entity.specimen",
                 BI_BI_BUCKET,
                 "siamois-panel specimen-panel single-panel",
                 context);
+        this.formMapper = formMapper;
         this.recordingUnitService = context.getBean(RecordingUnitService.class);
         this.personService = context.getBean(PersonService.class);
         this.specimenService = context.getBean(SpecimenService.class);
@@ -120,7 +121,7 @@ public class SpecimenPanel extends AbstractSingleEntityPanel<Specimen>  implemen
         try {
 
             // Details form
-            detailsForm = FormMapper.INSTANCE.customFormToFormUiDto(Specimen.DETAILS_FORM);
+            detailsForm = formMapper.customFormToFormUiDto(Specimen.DETAILS_FORM);
 
             activeTabIndex = 0;
 
