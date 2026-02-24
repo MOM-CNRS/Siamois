@@ -4,6 +4,7 @@ import fr.siamois.domain.models.TraceableEntity;
 import fr.siamois.domain.models.exceptions.EntityAlreadyExistsException;
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
+import fr.siamois.domain.models.specimen.Specimen;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.models.vocabulary.label.ConceptLabel;
 import fr.siamois.domain.services.vocabulary.ConceptService;
@@ -16,6 +17,7 @@ import fr.siamois.ui.bean.panel.FlowBean;
 import fr.siamois.ui.bean.panel.models.panel.single.AbstractSingleEntity;
 import fr.siamois.ui.exceptions.CannotInitializeNewUnitDialogException;
 import fr.siamois.ui.lazydatamodel.BaseLazyDataModel;
+import fr.siamois.ui.mapper.FormMapper;
 import fr.siamois.utils.MessageUtils;
 import jakarta.faces.component.UIComponent;
 import lombok.EqualsAndHashCode;
@@ -128,7 +130,7 @@ public class GenericNewUnitDialogBean<T extends TraceableEntity>
 
     @Override
     public void initForms(boolean forceInit) {
-        detailsForm = handler.formLayout();
+        detailsForm = FormMapper.INSTANCE.customFormToFormUiDto(handler.formLayout());
         initFormContext(forceInit);
     }
 

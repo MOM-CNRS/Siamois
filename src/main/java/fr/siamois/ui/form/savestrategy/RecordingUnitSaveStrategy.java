@@ -1,9 +1,11 @@
-package fr.siamois.ui.form;
+package fr.siamois.ui.form.savestrategy;
 
 import fr.siamois.domain.models.exceptions.recordingunit.FailedRecordingUnitSaveException;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.ui.bean.LangBean;
+import fr.siamois.ui.form.EntityFormContext;
+import fr.siamois.ui.form.EntityFormContextSaveStrategy;
 import fr.siamois.utils.MessageUtils;
 
 public class RecordingUnitSaveStrategy implements EntityFormContextSaveStrategy<RecordingUnit> {

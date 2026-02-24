@@ -6,6 +6,7 @@ import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.document.Document;
 import fr.siamois.domain.models.exceptions.actionunit.ActionUnitNotFoundException;
 import fr.siamois.domain.models.exceptions.actionunit.FailedActionUnitSaveException;
+import fr.siamois.domain.models.form.customform.CustomForm;
 import fr.siamois.domain.models.history.RevisionWithInfo;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
@@ -29,6 +30,7 @@ import fr.siamois.ui.lazydatamodel.RecordingUnitInActionUnitLazyDataModel;
 import fr.siamois.ui.lazydatamodel.SpecimenInActionUnitLazyDataModel;
 import fr.siamois.ui.lazydatamodel.scope.RecordingUnitScope;
 import fr.siamois.ui.lazydatamodel.tree.RecordingUnitTreeTableLazyModel;
+import fr.siamois.ui.mapper.FormMapper;
 import fr.siamois.ui.table.RecordingUnitTableViewModel;
 import fr.siamois.ui.table.ToolbarCreateConfig;
 import fr.siamois.ui.table.definitions.RecordingUnitTableDefinitionFactory;
@@ -261,7 +263,7 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnit> imple
     @Override
     public void initForms(boolean forceInit) {
 
-        detailsForm = ActionUnit.DETAILS_FORM;
+        detailsForm = FormMapper.INSTANCE.customFormToFormUiDto(ActionUnit.DETAILS_FORM);
         // Init system form answers
         initFormContext(forceInit);
 

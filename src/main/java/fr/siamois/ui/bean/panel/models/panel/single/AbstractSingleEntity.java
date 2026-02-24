@@ -26,8 +26,10 @@ import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
 import fr.siamois.ui.bean.dialog.newunit.GenericNewUnitDialogBean;
 import fr.siamois.ui.bean.panel.models.panel.AbstractPanel;
+import fr.siamois.ui.form.CustomFormPanelUiDto;
 import fr.siamois.ui.form.EntityFormContext;
 import fr.siamois.ui.form.FormContextServices;
+import fr.siamois.ui.form.FormUiDto;
 import fr.siamois.ui.form.fieldsource.PanelFieldSource;
 import fr.siamois.utils.DateUtils;
 import jakarta.faces.event.ActionEvent;
@@ -72,7 +74,7 @@ public abstract class AbstractSingleEntity<T extends TraceableEntity> extends Ab
 
     protected transient T unit;
 
-    protected CustomForm detailsForm;
+    protected FormUiDto detailsForm;
 
     /**
      * Per-entity form context. Holds answers, enabled rules, spatial tree state, etc.

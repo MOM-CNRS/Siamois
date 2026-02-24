@@ -1,19 +1,21 @@
-package fr.siamois.ui.form;
+package fr.siamois.ui.form.savestrategy;
 
-import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.exceptions.actionunit.FailedActionUnitSaveException;
-import fr.siamois.domain.services.actionunit.ActionUnitService;
+import fr.siamois.domain.models.specimen.Specimen;
+import fr.siamois.domain.services.specimen.SpecimenService;
 import fr.siamois.ui.bean.LangBean;
+import fr.siamois.ui.form.EntityFormContext;
+import fr.siamois.ui.form.EntityFormContextSaveStrategy;
 import fr.siamois.utils.MessageUtils;
 
-public class ActionUnitSaveStrategy implements EntityFormContextSaveStrategy<ActionUnit> {
+public class SpecimenSaveStrategy implements EntityFormContextSaveStrategy<Specimen> {
     @Override
-    public boolean save(EntityFormContext<ActionUnit> context) {
+    public boolean save(EntityFormContext<Specimen> context) {
 
         context.flushBackToEntity();
-        // Custom save logic for Action Unit
-        ActionUnit unit = context.getUnit();
-        ActionUnitService service = context.getActionUnitService();
+        // Custom save logic for Specimen
+        Specimen unit = context.getUnit();
+        SpecimenService service = context.getSpecimenService();
         LangBean langBean = context.getLangBean();
 
         try {

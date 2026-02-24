@@ -32,6 +32,7 @@ import fr.siamois.ui.lazydatamodel.scope.ActionUnitScope;
 import fr.siamois.ui.lazydatamodel.scope.SpatialUnitScope;
 import fr.siamois.ui.lazydatamodel.tree.ActionUnitTreeTableLazyModel;
 import fr.siamois.ui.lazydatamodel.tree.SpatialUnitTreeTableLazyModel;
+import fr.siamois.ui.mapper.FormMapper;
 import fr.siamois.ui.table.ActionUnitTableViewModel;
 import fr.siamois.ui.table.SpatialUnitTableViewModel;
 import fr.siamois.ui.table.ToolbarCreateConfig;
@@ -179,7 +180,7 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
     @Override
     public void initForms(boolean forceInit) {
 
-        detailsForm = SpatialUnit.DETAILS_FORM;
+        detailsForm = FormMapper.INSTANCE.customFormToFormUiDto(SpatialUnit.DETAILS_FORM);
         // Init system form answers
         initFormContext(forceInit);
     }

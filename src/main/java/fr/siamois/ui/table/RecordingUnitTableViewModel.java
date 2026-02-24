@@ -46,6 +46,9 @@ import static fr.siamois.ui.table.TableColumnAction.GO_TO_RECORDING_UNIT;
 @Getter
 public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingUnit, Long> {
 
+    // Cache: key = (type, institutionId), value = CustomForm
+    private final Map<Concept, CustomForm> formCache = new HashMap<>();
+
     public static final String THIS = "@this";
     public static final String SIA_ICON_BTN = "sia-icon-btn";
     public static final String PARENTS = "parents";
@@ -99,11 +102,19 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
         if (type == null) {
             return null;
         }
-        // pre-fetch all the possible forms when initializing the table?
-        return formService.findCustomFormByRecordingUnitTypeAndInstitutionId(
+
+        // Check cache first
+        if (formCache.containsKey(type)) {
+            return formCache.get(type);
+        }
+
+        CustomForm form = formService.findCustomFormByRecordingUnitTypeAndInstitutionId(
                 type,
                 sessionSettingsBean.getSelectedInstitution()
         );
+
+        formCache.put(type, form);
+        return form;
     }
 
 

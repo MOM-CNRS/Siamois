@@ -1,5 +1,6 @@
 package fr.siamois.ui.bean.panel.models.panel.single;
 
+import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.document.Document;
 import fr.siamois.domain.models.exceptions.actionunit.ActionUnitNotFoundException;
@@ -13,6 +14,7 @@ import fr.siamois.domain.services.specimen.SpecimenService;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.RedirectBean;
 import fr.siamois.ui.bean.panel.models.PanelBreadcrumb;
+import fr.siamois.ui.mapper.FormMapper;
 import fr.siamois.utils.MessageUtils;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -118,11 +120,9 @@ public class SpecimenPanel extends AbstractSingleEntityPanel<Specimen>  implemen
         try {
 
             // Details form
-            detailsForm = Specimen.DETAILS_FORM;
-
+            detailsForm = FormMapper.INSTANCE.customFormToFormUiDto(Specimen.DETAILS_FORM);
 
             activeTabIndex = 0;
-
 
             if (idunit == null) {
                 this.errorMessage = "The ID of the specimen unit must be defined";

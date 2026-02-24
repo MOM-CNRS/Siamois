@@ -34,6 +34,7 @@ import fr.siamois.ui.bean.panel.models.panel.single.tab.SpecimenTab;
 import fr.siamois.ui.lazydatamodel.RecordingUnitChildrenLazyDataModel;
 import fr.siamois.ui.lazydatamodel.RecordingUnitParentsLazyDataModel;
 import fr.siamois.ui.lazydatamodel.SpecimenInRecordingUnitLazyDataModel;
+import fr.siamois.ui.mapper.FormMapper;
 import fr.siamois.ui.table.RecordingUnitTableViewModel;
 import fr.siamois.ui.table.SpecimenTableViewModel;
 import fr.siamois.ui.table.ToolbarCreateConfig;
@@ -351,7 +352,8 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
 
     @Override
     public void initForms(boolean forceInit) {
-        detailsForm = formService.findCustomFormByRecordingUnitTypeAndInstitutionId(unit.getType(), sessionSettingsBean.getSelectedInstitution());
+        CustomForm form = formService.findCustomFormByRecordingUnitTypeAndInstitutionId(unit.getType(), sessionSettingsBean.getSelectedInstitution());
+        detailsForm = FormMapper.INSTANCE.customFormToFormUiDto(form);
         configureSystemFieldsBeforeInit();
         // Init system form answers
         initFormContext(forceInit);

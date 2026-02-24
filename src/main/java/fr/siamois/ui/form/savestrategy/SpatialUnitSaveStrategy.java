@@ -1,9 +1,11 @@
-package fr.siamois.ui.form;
+package fr.siamois.ui.form.savestrategy;
 
 import fr.siamois.domain.models.exceptions.actionunit.FailedActionUnitSaveException;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.ui.bean.LangBean;
+import fr.siamois.ui.form.EntityFormContext;
+import fr.siamois.ui.form.EntityFormContextSaveStrategy;
 import fr.siamois.utils.MessageUtils;
 
 public class SpatialUnitSaveStrategy implements EntityFormContextSaveStrategy<SpatialUnit> {
