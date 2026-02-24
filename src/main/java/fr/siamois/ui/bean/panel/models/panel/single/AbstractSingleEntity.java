@@ -26,10 +26,7 @@ import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
 import fr.siamois.ui.bean.dialog.newunit.GenericNewUnitDialogBean;
 import fr.siamois.ui.bean.panel.models.panel.AbstractPanel;
-import fr.siamois.ui.form.CustomFormPanelUiDto;
-import fr.siamois.ui.form.EntityFormContext;
-import fr.siamois.ui.form.FormContextServices;
-import fr.siamois.ui.form.FormUiDto;
+import fr.siamois.ui.form.*;
 import fr.siamois.ui.form.fieldsource.PanelFieldSource;
 import fr.siamois.utils.DateUtils;
 import jakarta.faces.event.ActionEvent;
@@ -284,71 +281,71 @@ public abstract class AbstractSingleEntity<T extends TraceableEntity> extends Ab
         // Default : nothing
     }
 
-    protected List<CustomField> getAllFieldsFrom(CustomForm... forms) {
+    protected List<CustomField> getAllFieldsFrom(FormUiDto... forms) {
         if (isEmpty(forms)) {
             return List.of();
         }
 
         Set<CustomField> fields = new LinkedHashSet<>();
-        for (CustomForm form : forms) {
+        for (FormUiDto form : forms) {
             addFieldsFromForm(fields, form);
         }
         return new ArrayList<>(fields);
     }
 
-    private boolean isEmpty(CustomForm[] forms) {
+    private boolean isEmpty(FormUiDto[] forms) {
         return forms == null || forms.length == 0;
     }
 
-    private void addFieldsFromForm(Set<CustomField> fields, CustomForm form) {
+    private void addFieldsFromForm(Set<CustomField> fields, FormUiDto form) {
         if (form == null) {
             return;
         }
         addFieldsFromLayout(fields, form.getLayout());
     }
 
-    private void addFieldsFromLayout(Set<CustomField> fields, List<CustomFormPanel> layout) {
+    private void addFieldsFromLayout(Set<CustomField> fields, List<CustomFormPanelUiDto> layout) {
         if (layout == null) {
             return;
         }
-        for (CustomFormPanel panel : layout) {
+        for (CustomFormPanelUiDto panel : layout) {
             addFieldsFromPanel(fields, panel);
         }
     }
 
-    private void addFieldsFromPanel(Set<CustomField> fields, CustomFormPanel panel) {
+    private void addFieldsFromPanel(Set<CustomField> fields, CustomFormPanelUiDto panel) {
         if (panel == null) {
             return;
         }
         addFieldsFromRows(fields, panel.getRows());
     }
 
-    private void addFieldsFromRows(Set<CustomField> fields, List<CustomRow> rows) {
+    private void addFieldsFromRows(Set<CustomField> fields, List<CustomRowUiDto> rows) {
         if (rows == null) {
             return;
         }
-        for (CustomRow row : rows) {
+        for (CustomRowUiDto row : rows) {
             addFieldsFromRow(fields, row);
         }
     }
 
-    private void addFieldsFromRow(Set<CustomField> fields, CustomRow row) {
+    private void addFieldsFromRow(Set<CustomField> fields, CustomRowUiDto row) {
         if (row == null) {
             return;
         }
         addFieldsFromColumns(fields, row.getColumns());
     }
 
-    private void addFieldsFromColumns(Set<CustomField> fields, List<CustomCol> columns) {
+    private void addFieldsFromColumns(Set<CustomField> fields, List<CustomColUiDto> columns) {
         if (columns == null) {
             return;
         }
-        for (CustomCol col : columns) {
+        for (CustomColUiDto col : columns) {
             addFieldFromColumn(fields, col);
         }
     }
 
-    private void addFieldFromColumn(Set<CustomField> fields, CustomCol col) {
+    private void addFieldFromColumn(Set<CustomField> fields, CustomColUiDto col) {
         if (col == null) {
             return;
         }

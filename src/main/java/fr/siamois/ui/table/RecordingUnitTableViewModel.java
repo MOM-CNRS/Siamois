@@ -61,9 +61,6 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
 
     private final SessionSettingsBean sessionSettingsBean;
 
-    private Map<Concept, CustomForm> typeToFormMap;
-
-
 
     public RecordingUnitTableViewModel(BaseRecordingUnitLazyDataModel lazyDataModel,
                                        FormService formService,
