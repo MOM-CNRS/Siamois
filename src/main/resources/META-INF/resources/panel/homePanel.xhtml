@@ -1,42 +1,62 @@
-<ui:fragment xmlns="http://www.w3.org/1999/xhtml"
-             xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
-             xmlns:p="http://primefaces.org/ui"
-             xmlns:siaCard="http://xmlns.jcp.org/jsf/composite/pages/shared/card"
-             xmlns:form="http://java.sun.com/jsf/composite/pages/shared/form"
+<ui:composition
+        xmlns="http://www.w3.org/1999/xhtml"
+        xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
+        xmlns:cc="http://xmlns.jcp.org/jsf/composite"
+        xmlns:p="http://primefaces.org/ui"
+        xmlns:siaCard="http://java.sun.com/jsf/composite/pages/shared/card"
+        xmlns:form="http://java.sun.com/jsf/composite/pages/shared/form">
 >
-    <!--@elvariable id="panelIndex" type="Integer"-->
-    <!--@elvariable id="panelModel" type="fr.siamois.ui.bean.panel.models.panel.WelcomePanel"-->
+    <cc:interface>
+        <cc:attribute name="panelModel"
+                      type="fr.siamois.ui.bean.panel.models.panel.WelcomePanel"
+                      required="true"/>
+        <cc:attribute name="panelIndex"
+                      type="java.lang.Integer"
+                      required="true"/>
+    </cc:interface>
 
-    <div class="sia-panel-title">
-        #{langBean.msg('homePanel.title', sessionSettingsBean.selectedInstitution.name)}
-    </div>
+    <cc:implementation>
 
-    <form:csrfform formId="homeForm">
-        <div style="padding:1em;">
-            <p:panel id="myActionUnits" class="sia-form-panel" header="Mes derniers projets"
-                     toggleable="true"
-                     collapsed="false">
+        <div class="sia-panel-title">
+            #{langBean.msg('homePanel.title', sessionSettingsBean.selectedInstitution.name)}
+        </div>
 
+        <form:csrfform formId="homeForm">
+            <div style="padding:1em;">
 
-                    <ui:fragment rendered="#{not empty flowBean.getMyActionUnits()}">
+                <!-- ============================= -->
+                <!-- My Action Units               -->
+                <!-- ============================= -->
+
+                <p:panel id="myActionUnits"
+                         class="sia-form-panel"
+                         header="Mes derniers projets"
+                         toggleable="true"
+                         collapsed="false">
+
+                    <ui:fragment rendered="#{not empty flowBean.myActionUnits}">
                         <div class="ui-g">
                             <ui:repeat value="#{flowBean.myActionUnits}" var="actionUnit">
                                 <div class="ui-g-12 ui-xs-12 ui-md-6 ui-lg-3">
-                                    <p:card style="background: var(--siamois-green-light-50); ">
+                                    <p:card style="background: var(--siamois-green-light-50);">
 
-                                        <p:outputPanel style="display: flex; gap:1em;">
-                                            <i class="bi bi-arrow-down-square" style="color:var(--context-main-color);"/>
+                                        <p:outputPanel style="display:flex; gap:1em;">
+                                            <i class="bi bi-arrow-down-square"
+                                               style="color:var(--context-main-color);"/>
                                             <p:outputLabel value="#{actionUnit.name}"/>
                                         </p:outputPanel>
 
-                                        <p:outputPanel style="display: flex; gap:1em;">
-                                            <i class="bi bi-geo-alt" style="color:var(--context-main-color);"/>
+                                        <p:outputPanel style="display:flex; gap:1em;">
+                                            <i class="bi bi-geo-alt"
+                                               style="color:var(--context-main-color);"/>
                                             <p:outputLabel value="#{actionUnit.spatialContextNames}"/>
                                         </p:outputPanel>
 
-                                        <p:outputPanel style="display: flex; gap:1em;">
-                                            <i class="bi bi-pencil-square" style="color:var(--ground-main-color);"/>
-                                            <p:outputLabel value="#{actionUnit.recordingUnitList.size} enregistrements"/>
+                                        <p:outputPanel style="display:flex; gap:1em;">
+                                            <i class="bi bi-pencil-square"
+                                               style="color:var(--ground-main-color);"/>
+                                            <p:outputLabel
+                                                    value="#{actionUnit.recordingUnitList.size} enregistrements"/>
                                         </p:outputPanel>
 
                                         <p:commandButton
@@ -46,124 +66,118 @@
                                                 oncomplete="PF('buiContent').hide()"
                                                 process="@this"
                                                 update="flow"
-                                                style="margin-top:1em;margin-bottom:1em;display: block; margin-left: auto; margin-right: auto; width: fit-content;"
-                                        />
-
-
+                                                style="margin:1em auto;display:block;width:fit-content;"/>
                                     </p:card>
                                 </div>
                             </ui:repeat>
                         </div>
-
                     </ui:fragment>
 
-                    <ui:fragment rendered="#{empty flowBean.getMyActionUnits()}">
-                        <p:column styleClass="ui-g-12 ui-xs-12 ui-md-6 ui-lg-3">
-                            <p:outputLabel value="Aucun projet"/>
-                        </p:column>
+                    <ui:fragment rendered="#{empty flowBean.myActionUnits}">
+                        <p:outputLabel value="Aucun projet"/>
                     </ui:fragment>
 
+                </p:panel>
+
+                <!-- ============================= -->
+                <!-- Database Access Cards         -->
+                <!-- ============================= -->
+
+                <p:panel id="dbAccess"
+                         class="sia-form-panel"
+                         header="#{langBean.msg('homePanel.database')}"
+                         toggleable="true"
+                         collapsed="false">
+
+                    <p:panelGrid layout="grid">
+                        <p:row>
 
 
+                            <p:column styleClass="ui-g-12 ui-xs-12 ui-md-6 ui-lg-3">
 
-            </p:panel>
+                                <siaCard:welcomeCard
+                                        icon="bi bi-geo-alt"
+                                        cardStyleClass="sia-welcome-card sia-spatial-unit"
+                                        chipStyleClass="spatial-unit-count-chip-alt"
+                                        btnStyleClass="spatial-unit-btn"
+                                        btnLabel="#{langBean.msg('homePanel.see.spatialUnit')}"
+                                        panelModel="#{cc.attrs.panelModel}"
+                                        label="#{langBean.msg('common.entity.spatialUnits')}"
+                                        count="#{cc.attrs.panelModel.nbOfSpatialUnits}"
+                                        btnAction="#{flowBean.addSpatialUnitListPanel()}"
+                                        btnNewActionUpdate="newUnitForm"
+                                        btnNewActionOnComplete="PF('newUnitDiag').show();"
+                                        btnNewActionOnStart=""
+                                        btnNewAction="#{genericNewUnitDialogBean.openNewEntityDiag('SPATIAL')}"
+                                        isCreateAllowed="#{spatialUnitFieldBean.isCreateAllowed()}"
+                                        description="Les lieux et leurs découpages spatiaux"
+                                />
 
-            <p:panel id="dbAccess" class="sia-form-panel" header="#{langBean.msg('homePanel.database')}"
-                     toggleable="true"
-                     collapsed="false">
+                            </p:column>
 
+                            <p:column styleClass="ui-g-12 ui-xs-12 ui-md-6 ui-lg-3">
 
-                <p:panelGrid id="dbAccessPanelGrid"
-                             layout="grid"
-                >
-                    <p:row>
-
-                        <p:column styleClass="ui-g-12 ui-xs-12 ui-md-6 ui-lg-3">
-
-                            <siaCard:welcomeCard
-                                    icon="bi bi-geo-alt"
-                                    cardStyleClass="sia-welcome-card sia-spatial-unit"
-                                    chipStyleClass="spatial-unit-count-chip-alt"
-                                    btnStyleClass="spatial-unit-btn"
-                                    btnLabel="#{langBean.msg('homePanel.see.spatialUnit')}"
-                                    panelModel="#{panelModel}"
-                                    label="#{langBean.msg('common.entity.spatialUnits')}"
-                                    count="#{panelModel.nbOfSpatialUnits}"
-                                    btnAction="#{flowBean.addSpatialUnitListPanel()}"
-                                    btnNewActionUpdate="newUnitForm"
-                                    btnNewActionOnComplete="PF('newUnitDiag').show();"
-                                    btnNewActionOnStart=""
-                                    btnNewAction="#{genericNewUnitDialogBean.openNewEntityDiag('SPATIAL')}"
-                                    isCreateAllowed="#{spatialUnitFieldBean.isCreateAllowed()}"
-                                    description="Les lieux et leurs découpages spatiaux"
-                            />
-
-                        </p:column>
-
-                        <p:column styleClass="ui-g-12 ui-xs-12 ui-md-6 ui-lg-3">
-
-                            <siaCard:welcomeCard
-                                    icon="bi bi-arrow-down-square"
-                                    cardStyleClass="sia-welcome-card sia-action-unit"
-                                    chipStyleClass="action-unit-count-chip-alt"
-                                    btnStyleClass="action-unit-btn"
-                                    btnLabel="#{langBean.msg('homePanel.see.actionUnit')}"
-                                    label="#{langBean.msg('common.entity.actionUnits')}"
-                                    count="#{panelModel.nbOfActionUnits}"
-                                    btnAction="#{flowBean.addActionUnitListPanel()}"
-                                    btnNewActionUpdate="newUnitForm"
-                                    btnNewActionOnComplete="PF('newUnitDiag').show();"
-                                    btnNewActionOnStart=""
-                                    btnNewAction="#{genericNewUnitDialogBean.openNewEntityDiag('ACTION')}"
-                                    isCreateAllowed="#{flowBean.isActionUnitCreateAllowed()}"
-                                    description="Interventions, opérations, fouilles, etc."
-                            />
+                                <siaCard:welcomeCard
+                                        icon="bi bi-arrow-down-square"
+                                        cardStyleClass="sia-welcome-card sia-action-unit"
+                                        chipStyleClass="action-unit-count-chip-alt"
+                                        btnStyleClass="action-unit-btn"
+                                        btnLabel="#{langBean.msg('homePanel.see.actionUnit')}"
+                                        label="#{langBean.msg('common.entity.actionUnits')}"
+                                        count="#{cc.attrs.panelModel.nbOfActionUnits}"
+                                        btnAction="#{flowBean.addActionUnitListPanel()}"
+                                        btnNewActionUpdate="newUnitForm"
+                                        btnNewActionOnComplete="PF('newUnitDiag').show();"
+                                        btnNewActionOnStart=""
+                                        btnNewAction="#{genericNewUnitDialogBean.openNewEntityDiag('ACTION')}"
+                                        isCreateAllowed="#{flowBean.isActionUnitCreateAllowed()}"
+                                        description="Interventions, opérations, fouilles, etc."
+                                />
 
 
-                        </p:column>
+                            </p:column>
 
-                        <p:column styleClass="ui-g-12 ui-xs-12 ui-md-6 ui-lg-3">
+                            <p:column styleClass="ui-g-12 ui-xs-12 ui-md-6 ui-lg-3">
 
-                            <siaCard:welcomeCard
-                                    icon="bi bi-pencil-square"
-                                    cardStyleClass="sia-welcome-card sia-recording-unit"
-                                    chipStyleClass="recording-unit-count-chip-alt"
-                                    btnStyleClass="recording-unit-btn"
-                                    btnLabel="#{langBean.msg('homePanel.see.recordingUnit')}"
-                                    label="#{langBean.msg('common.entity.recordingUnits')}"
-                                    count="#{panelModel.nbOfRecordingUnits}"
-                                    btnAction="#{flowBean.addRecordingUnitListPanel()}"
-                                    description="Les unités d'enregistrement"
+                                <siaCard:welcomeCard
+                                        icon="bi bi-pencil-square"
+                                        cardStyleClass="sia-welcome-card sia-recording-unit"
+                                        chipStyleClass="recording-unit-count-chip-alt"
+                                        btnStyleClass="recording-unit-btn"
+                                        btnLabel="#{langBean.msg('homePanel.see.recordingUnit')}"
+                                        label="#{langBean.msg('common.entity.recordingUnits')}"
+                                        count="#{cc.attrs.panelModel.nbOfRecordingUnits}"
+                                        btnAction="#{flowBean.addRecordingUnitListPanel()}"
+                                        description="Les unités d'enregistrement"
 
-                            />
+                                />
 
-                        </p:column>
+                            </p:column>
 
-                        <p:column styleClass="ui-g-12 ui-xs-12 ui-md-6 ui-lg-3">
+                            <p:column styleClass="ui-g-12 ui-xs-12 ui-md-6 ui-lg-3">
 
-                            <siaCard:welcomeCard
-                                    icon="bi bi-bucket"
-                                    cardStyleClass="sia-welcome-card sia-specimen"
-                                    chipStyleClass="specimen-count-chip-alt"
-                                    btnStyleClass="specimen-btn"
-                                    btnLabel="#{langBean.msg('homePanel.see.specimen')}"
-                                    label="#{langBean.msg('common.entity.specimen')}"
-                                    count="#{panelModel.nbOfSpecimen}"
-                                    btnAction="#{flowBean.addSpecimenListPanel()}"
-                                    description="Mobiliers, prélèvements et VAB"
+                                <siaCard:welcomeCard
+                                        icon="bi bi-bucket"
+                                        cardStyleClass="sia-welcome-card sia-specimen"
+                                        chipStyleClass="specimen-count-chip-alt"
+                                        btnStyleClass="specimen-btn"
+                                        btnLabel="#{langBean.msg('homePanel.see.specimen')}"
+                                        label="#{langBean.msg('common.entity.specimen')}"
+                                        count="#{cc.attrs.panelModel.nbOfSpecimen}"
+                                        btnAction="#{flowBean.addSpecimenListPanel()}"
+                                        description="Mobiliers, prélèvements et VAB"
 
-                            />
+                                />
 
-                        </p:column>
+                            </p:column>
 
-                    </p:row>
+                        </p:row>
+                    </p:panelGrid>
 
-                </p:panelGrid>
+                </p:panel>
 
-            </p:panel>
+            </div>
+        </form:csrfform>
 
-        </div>
-    </form:csrfform>
-
-
-</ui:fragment>
+    </cc:implementation>
+</ui:composition>

@@ -1,86 +1,104 @@
-<!-- /pages/shared/table/entityTreeTable.xhtml -->
-<ui:composition xmlns="http://www.w3.org/1999/xhtml"
-                xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
-                xmlns:p="http://primefaces.org/ui"
-                xmlns:f="http://java.sun.com/jsf/core"
+<ui:composition
+        xmlns="http://www.w3.org/1999/xhtml"
+        xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
+        xmlns:p="http://primefaces.org/ui"
+        xmlns:f="http://java.sun.com/jsf/core"
+        xmlns:cc="http://xmlns.jcp.org/jsf/composite"
+
 >
-    <p:treeTable id="entityTreeTable"
-                 rendered="#{tableModel.treeMode}"
-                 value="#{tableModel.treeRoot}"
-                 var="item"
-                 nodeVar="node"
-                 widgetVar="#{cc.clientId}_entityTreeTable"
-                 cellNavigation="true"
-                 selectionMode="checkbox"
-                 selection="#{tableModel.checkboxSelectedTreeNodes}"
-                 varStatus="status"
-                 size="small"
-                 selectionRowMode="none"
-                 propagateSelectionUp="false"
-                 propagateSelectionDown="false"
-                 globalFilter="#{tableModel.globalFilter}"
-                 allowUnsorting="true"
-                 sortBy="#{tableModel.treeLazyModel.sortBy}"
-                 sortMode="multiple"
-                 partialUpdate="false"
-                 emptyMessage="#{langBean.msg('recordingUnitList.empty')}"
-                 rowsPerPageTemplate="5,10,15,20,25"
-                 style="overflow-x: auto;"
-                 tableStyleClass="datatable-hoverable-table"
-                 tableStyle="table-layout: auto;"
-                 class="#{tableClass}">
 
+    <!-- 1. Interface -->
+    <cc:interface>
+        <cc:attribute name="tableModel" required="true" />
+        <cc:attribute name="tableClass" required="false" />
+        <cc:attribute name="updateTableString" required="false" />
+    </cc:interface>
 
-        <f:facet name="header">
-            <ui:include src="/pages/shared/table/tableToolbar.xhtml">
-                <ui:param name="tableModel" value="#{tableModel}" />
-                <ui:param name="updateTableString" value="#{updateTableString}" />
-                <ui:param name="tableId" value="entityTreeTable"/>
-            </ui:include>
-        </f:facet>
+    <!-- 2. Implementation -->
+    <cc:implementation>
 
-        <p:column style="min-width: 10px;" selectionBox="true" width="fit-content" toggleable="false"/>
+        <p:treeTable id="entityTreeTable"
+                     rendered="#{cc.attrs.tableModel.treeMode}"
+                     value="#{cc.attrs.tableModel.treeRoot}"
+                     var="item"
+                     nodeVar="node"
+                     widgetVar="#{cc.clientId}_entityTreeTable"
+                     cellNavigation="true"
+                     selectionMode="checkbox"
+                     selection="#{cc.attrs.tableModel.checkboxSelectedTreeNodes}"
+                     varStatus="status"
+                     size="small"
+                     selectionRowMode="none"
+                     propagateSelectionUp="false"
+                     propagateSelectionDown="false"
+                     globalFilter="#{cc.attrs.tableModel.globalFilter}"
+                     allowUnsorting="true"
+                     sortBy="#{cc.attrs.tableModel.treeLazyModel.sortBy}"
+                     sortMode="multiple"
+                     partialUpdate="false"
+                     emptyMessage="#{langBean.msg('recordingUnitList.empty')}"
+                     rowsPerPageTemplate="5,10,15,20,25"
+                     style="overflow-x: auto;"
+                     tableStyleClass="datatable-hoverable-table"
+                     tableStyle="table-layout: auto;"
+                     class="#{cc.attrs.tableClass}">
 
-        <!-- Dynamic Columns -->
-        <p:columns style="min-width: #{column.type != 'COMMAND_LINK' ? '10em' : ''};"
-                   sortable="#{column.sortable}"
-                   field="#{column.id}"
-                   filterable="#{column.filterable}"
-                   toggleable="#{column.type != 'COMMAND_LINK' ? 'true' : 'false'}"
-                   value="#{tableModel.columns}" var="column" columnIndexVar="colIndex">
-            #{rowIndex}
+            <!-- Toolbar -->
+            <f:facet name="header">
+                <ui:include src="/pages/shared/table/tableToolbar.xhtml">
+                    <ui:param name="tableModel" value="#{cc.attrs.tableModel}" />
+                    <ui:param name="updateTableString" value="#{cc.attrs.updateTableString}" />
+                    <ui:param name="tableId" value="entityTreeTable"/>
+                </ui:include>
+            </f:facet>
 
-            <ui:include src="/pages/shared/table/columnTemplates.xhtml">
-                <ui:param name="tableModel" value="#{tableModel}" />
-                <ui:param name="column" value="#{column}" />
-                <ui:param name="item" value="#{item}" />
-                <ui:param name="status" value="#{status}" />
-                <ui:param name="rowIndex" value="#{rowIndex}" />
-                <ui:param name="colIndex" value="#{colIndex}" />
-                <ui:param name="updateTableString" value="@this #{updateTableString}"/>
-                <ui:param name="canUserEditRow" value="#{tableModel.canUserEditRow(item)}"/>
-            </ui:include>
-        </p:columns>
+            <!-- Selection column -->
+            <p:column style="min-width: 10px;" selectionBox="true" width="fit-content" toggleable="false"/>
 
-        <!-- Actions Column -->
-        <p:column exportable="false" toggleable="false" style="min-width: 100px;">
-            <p:toolbar id="actionButtonToolbar">
-                <p:toolbarGroup styleClass="action-col">
-                    <ui:repeat value="#{tableModel.rowActions}" var="action" varStatus="status">
-                        <p:commandButton
-                                id="btn_#{status.index}"
-                                rendered="#{tableModel.isRendered(action, item)}"
-                                icon="#{tableModel.resolveIcon(action, item)}"
-                                action="#{tableModel.handleRowAction(action, node)}"
-                                process="#{empty action.processExpr ? '@this' : action.processExpr}"
-                                update="#{action.updateSelfTable ? (':'.concat(cc.clientId).concat(':entityTreeTable')) : action.updateExpr}"
-                                styleClass="#{action.styleClass}"/>
-                        <p:tooltip autoHide="false" value="#{tableModel.getRowActionTooltipCode(action,item)}" position="bottom" for="btn_#{status.index}"
-                        />
-                    </ui:repeat>
-                </p:toolbarGroup>
-            </p:toolbar>
-        </p:column>
-    </p:treeTable>
+            <!-- Dynamic Columns -->
+            <p:columns style="min-width: #{column.type != 'COMMAND_LINK' ? '10em' : ''};"
+                       sortable="#{column.sortable}"
+                       field="#{column.id}"
+                       filterable="#{column.filterable}"
+                       toggleable="#{column.type != 'COMMAND_LINK' ? 'true' : 'false'}"
+                       value="#{cc.attrs.tableModel.columns}" var="column" columnIndexVar="colIndex">
 
+                <ui:include src="/pages/shared/table/columnTemplates.xhtml">
+                    <ui:param name="tableModel" value="#{cc.attrs.tableModel}" />
+                    <ui:param name="column" value="#{column}" />
+                    <ui:param name="item" value="#{item}" />
+                    <ui:param name="status" value="#{status}" />
+                    <ui:param name="rowIndex" value="#{rowIndex}" />
+                    <ui:param name="colIndex" value="#{colIndex}" />
+                    <ui:param name="updateTableString" value="@this #{cc.attrs.updateTableString}"/>
+                    <ui:param name="canUserEditRow" value="#{cc.attrs.tableModel.canUserEditRow(item)}"/>
+                </ui:include>
+            </p:columns>
+
+            <!-- Actions column -->
+            <p:column exportable="false" toggleable="false" style="min-width: 100px;" id="actionsCol">
+                <p:toolbar id="actionButtonToolbar">
+                    <p:toolbarGroup styleClass="action-col" id="actionButtonToolbarGroup">
+                        <ui:repeat value="#{cc.attrs.tableModel.rowActions}" var="action" varStatus="statusButtons" id="actionsRepeat">
+                            <p:commandButton
+                                    id="btn"
+                                    rendered="#{cc.attrs.tableModel.isRendered(action, item)}"
+                                    icon="#{cc.attrs.tableModel.resolveIcon(action, item)}"
+                                    action="#{cc.attrs.tableModel.handleRowAction(action, node)}"
+                                    process="#{empty action.processExpr ? '@this' : action.processExpr}"
+                                    update="#{action.updateSelfTable ? (':'.concat(cc.clientId).concat(':entityTreeTable')) : action.updateExpr}"
+                                    styleClass="#{action.styleClass}" />
+                            <p:tooltip id="tooltip" rendered="#{cc.attrs.tableModel.isRendered(action, item)}"
+                                       autoHide="false"
+                                       value="#{cc.attrs.tableModel.getRowActionTooltipCode(action,item)}"
+                                       position="bottom"
+                                       for="btn" />
+                        </ui:repeat>
+                    </p:toolbarGroup>
+                </p:toolbar>
+            </p:column>
+
+        </p:treeTable>
+
+    </cc:implementation>
 </ui:composition>

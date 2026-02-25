@@ -1,28 +1,44 @@
-<ui:fragment xmlns="http://www.w3.org/1999/xhtml"
-             xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
-             xmlns:p="http://primefaces.org/ui"
-             xmlns:table="http://xmlns.jcp.org/jsf/composite/pages/shared/table"
-             xmlns:h="http://java.sun.com/jsf/html"
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:cc="http://xmlns.jcp.org/jsf/composite"
+                xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
+                xmlns:h="http://java.sun.com/jsf/html"
+                xmlns:p="http://primefaces.org/ui"
+                xmlns:table="http://xmlns.jcp.org/jsf/composite/pages/shared/table">
 
->
-    <!--@elvariable id="panelIndex" type="Integer"-->
-    <!--@elvariable id="panelModel" type="fr.siamois.ui.bean.panel.models.panel.list.RecordingUnitListPanel"-->
-    <!-- Conditionally render the message if it's set in the bean -->
-    <p:staticMessage severity="error" summary="Error" closable="false"
-                     detail="#{panelModel.errorMessage}"
-                     rendered="#{not empty panelModel.errorMessage}"/>
+    <cc:interface>
 
-    <h:form id="recordingUnitListForm"
+        <!-- panel index -->
+        <cc:attribute name="panelIndex"
+                      type="java.lang.Integer"
+                      required="true"/>
 
-    >
-        <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
-        <table:entityTable
-                tableModel="#{panelModel.tableModel}"
-                panelIndex="#{panelIndex}"
-                id="recordingUnitList"
-        >
-        </table:entityTable>
-    </h:form>
+        <!-- panel model -->
+        <cc:attribute name="panelModel"
+                      type="fr.siamois.ui.bean.panel.models.panel.list.RecordingUnitListPanel"
+                      required="true"/>
 
+    </cc:interface>
 
-</ui:fragment>
+    <cc:implementation>
+
+        <p:staticMessage severity="error"
+                         summary="Error"
+                         closable="false"
+                         detail="#{cc.attrs.panelModel.errorMessage}"
+                         rendered="#{not empty cc.attrs.panelModel.errorMessage}"/>
+
+        <h:form id="recordingUnitListForm">
+
+            <input type="hidden"
+                   name="${_csrf.parameterName}"
+                   value="${_csrf.token}"/>
+
+            <table:entityTable
+                    id="recordingUnitList"
+                    tableModel="#{cc.attrs.panelModel.tableModel}"
+                    panelIndex="#{cc.attrs.panelIndex}"/>
+
+        </h:form>
+
+    </cc:implementation>
+</ui:composition>

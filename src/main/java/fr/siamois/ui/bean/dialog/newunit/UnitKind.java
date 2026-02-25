@@ -1,6 +1,7 @@
 package fr.siamois.ui.bean.dialog.newunit;
 
 import fr.siamois.domain.models.actionunit.ActionUnit;
+import fr.siamois.domain.models.actionunit.form.ActionUnitNewForm;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.specimen.Specimen;
@@ -27,7 +28,7 @@ public enum UnitKind {
             "action-unit-autocomplete",
             "common.entity.spatialUnits.updated",
             "/action-unit/",
-            ActionUnit.NEW_UNIT_FORM
+            ActionUnitNewForm.build()
     )),
     SPECIMEN(new UnitKindConfig(
             "/specimen/new",

@@ -10,12 +10,13 @@
                 <div style="display: flex; flex-direction: row; flex-wrap: wrap; gap: 1em; align-items: center;">
                     <!-- Toggle Switch -->
                     <p:toggleSwitch
+                            id="tableTypeToggleSwitch"
                             rendered="#{tableModel.isSwitchVisible()}"
                             value="#{tableModel.treeMode}"
                             onIcon="bi bi-list-nested"
                             offIcon="bi bi-list">
-                        <p:ajax process="@this" update=":#{cc.clientId}:tableContainer" onstart="PF('#{cc.clientId}_buiTables').show()"
-                                oncomplete="PF('#{cc.clientId}_buiTables').hide()"/>
+                        <p:ajax process="@this" update=":#{updateTableString}:tableContainer" onstart="PF('#{cc.clientId}_buiTables').show()"
+                                oncomplete="PF('#{updateTableString}_buiTables').hide()"/>
 
                     </p:toggleSwitch>
 

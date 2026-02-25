@@ -1,6 +1,7 @@
 package fr.siamois.ui.bean.panel.models.panel;
 
 import fr.siamois.ui.bean.panel.models.PanelBreadcrumb;
+import fr.siamois.ui.bean.panel.models.panel.single.AbstractSingleEntityPanel;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
@@ -128,4 +129,8 @@ public abstract class AbstractPanel implements Serializable {
     }
 
     public abstract String resolveTitleOrTitleCode() ;
+
+    public boolean isSingleEntityPanel() {
+        return this instanceof AbstractSingleEntityPanel;
+    }
 }
