@@ -16,6 +16,7 @@ import fr.siamois.ui.bean.LabelBean;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.RedirectBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
+import fr.siamois.ui.form.CustomFormPanelUiDto;
 import jakarta.faces.component.UIComponent;
 import jakarta.faces.context.FacesContext;
 import lombok.Getter;
@@ -180,7 +181,7 @@ public class SpatialUnitFieldBean implements Serializable {
     }
 
 
-    public String resolvePanelLabel(CustomFormPanel p) {
+    public String resolvePanelLabel(CustomFormPanelUiDto p) {
         if(p == null) {
             return langBean.msg("common.panel.title.undefined");
         }
