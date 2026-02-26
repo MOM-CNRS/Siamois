@@ -1,11 +1,9 @@
 package fr.siamois.ui.bean.panel.models.panel.single;
 
-import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.actionunit.ActionUnitFormMapping;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.document.Document;
 import fr.siamois.domain.models.exceptions.actionunit.ActionUnitNotFoundException;
-import fr.siamois.domain.models.exceptions.recordingunit.FailedRecordingUnitSaveException;
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.customfield.CustomFieldDateTime;
 import fr.siamois.domain.models.form.customfield.CustomFieldInteger;
@@ -14,22 +12,21 @@ import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerInteger;
 import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerSelectMultiple;
 import fr.siamois.domain.models.form.customform.CustomCol;
 import fr.siamois.domain.models.form.customform.CustomForm;
-import fr.siamois.domain.models.form.customformresponse.CustomFormResponse;
 import fr.siamois.domain.models.history.RevisionWithInfo;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
-import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.specimen.Specimen;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.person.PersonService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.specimen.SpecimenService;
-import fr.siamois.ui.bean.LangBean;
+import fr.siamois.dto.entity.ConceptDTO;
+import fr.siamois.dto.entity.RecordingUnitDTO;
+import fr.siamois.dto.entity.SpatialUnitDTO;
 import fr.siamois.ui.bean.NavBean;
 import fr.siamois.ui.bean.RedirectBean;
 import fr.siamois.ui.bean.dialog.newunit.GenericNewUnitDialogBean;
 import fr.siamois.ui.bean.dialog.newunit.NewUnitContext;
 import fr.siamois.ui.bean.dialog.newunit.UnitKind;
-import fr.siamois.ui.bean.panel.FlowBean;
 import fr.siamois.ui.bean.panel.models.PanelBreadcrumb;
 import fr.siamois.ui.bean.panel.models.panel.single.tab.SpecimenTab;
 import fr.siamois.ui.form.FormUiDto;
@@ -41,7 +38,6 @@ import fr.siamois.ui.table.RecordingUnitTableViewModel;
 import fr.siamois.ui.table.SpecimenTableViewModel;
 import fr.siamois.ui.table.ToolbarCreateConfig;
 import fr.siamois.ui.table.definitions.SpecimenTableDefinitionFactory;
-import fr.siamois.utils.MessageUtils;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
@@ -57,7 +53,6 @@ import org.springframework.stereotype.Component;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
-import java.time.OffsetDateTime;
 import java.util.*;
 
 @Slf4j
@@ -66,7 +61,7 @@ import java.util.*;
 @Setter
 @Component
 @Scope(BeanDefinition.SCOPE_PROTOTYPE)
-public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel<RecordingUnit>  implements Serializable {
+public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel<RecordingUnitDTO>  implements Serializable {
 
 
     protected final transient RecordingUnitService recordingUnitService;
@@ -127,10 +122,11 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
 
     /**
      * Returns all the spatial units a recording unit can be attached to
+     *
      * @return The list of spatial unit
      */
     @Override
-    public List<SpatialUnit> getSpatialUnitOptions() {
+    public List<SpatialUnitDTO> getSpatialUnitOptions() {
 
         if(unit == null) return Collections.emptyList();
         return spatialUnitService.getSpatialUnitOptionsFor(unit);
@@ -143,7 +139,7 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
     }
 
     @Override
-    protected void setFormScopePropertyValue(Concept concept) {
+    protected void setFormScopePropertyValue(ConceptDTO concept) {
         unit.setType(concept);
     }
 

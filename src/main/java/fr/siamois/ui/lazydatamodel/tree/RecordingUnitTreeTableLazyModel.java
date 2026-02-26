@@ -3,6 +3,7 @@ package fr.siamois.ui.lazydatamodel.tree;
 import fr.siamois.annotations.ExecutionTimeLogger;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
+import fr.siamois.dto.entity.RecordingUnitDTO;
 import fr.siamois.ui.lazydatamodel.scope.RecordingUnitScope;
 import lombok.Getter;
 import lombok.Setter;
@@ -12,19 +13,19 @@ import java.util.List;
 
 @Getter
 @Setter
-public class RecordingUnitTreeTableLazyModel extends BaseTreeTableLazyModel<RecordingUnit, Long> {
+public class RecordingUnitTreeTableLazyModel extends BaseTreeTableLazyModel<RecordingUnitDTO, Long> {
 
     private final transient RecordingUnitService recordingUnitService;
     private transient RecordingUnitScope scope;
 
     public RecordingUnitTreeTableLazyModel(RecordingUnitService recordingUnitService, RecordingUnitScope scope) {
-        super(RecordingUnit::getId);
+        super(RecordingUnitDTO::getId);
         this.recordingUnitService = recordingUnitService;
         this.scope = scope;
     }
 
     @Override
-    protected List<RecordingUnit> fetchRoots() {
+    protected List<RecordingUnitDTO> fetchRoots() {
         return switch (scope.getType()) {
             case RU_IN_INSTITUTION ->
                     recordingUnitService.findAllWithoutParentsByInstitution(scope.getInstitutionId());
@@ -35,17 +36,7 @@ public class RecordingUnitTreeTableLazyModel extends BaseTreeTableLazyModel<Reco
 
 
     @Override
-    protected void initializeAssociations(RecordingUnit child) {
-        Hibernate.initialize(child.getChildren());
-        Hibernate.initialize(child.getParents());
-        Hibernate.initialize(child.getSpecimenList());
-        Hibernate.initialize(child.getDocuments());
-        Hibernate.initialize(child.getRelationshipsAsUnit2());
-        Hibernate.initialize(child.getRelationshipsAsUnit1());
-    }
-
-    @Override
-    protected List<RecordingUnit> fetchChildren(RecordingUnit parentUnit) {
+    protected List<RecordingUnitDTO> fetchChildren(RecordingUnitDTO parentUnit) {
         if(parentUnit != null) {
             return recordingUnitService.findChildrenByParentAndInstitution(parentUnit.getId(), parentUnit.getCreatedByInstitution().getId());
         }
@@ -53,7 +44,7 @@ public class RecordingUnitTreeTableLazyModel extends BaseTreeTableLazyModel<Reco
     }
 
     @Override
-    protected Boolean isLeaf(RecordingUnit node) {
+    protected Boolean isLeaf(RecordingUnitDTO node) {
         if(node != null) {
             return !recordingUnitService.existsChildrenByParentAndInstitution(node.getId(), node.getCreatedByInstitution().getId());
         }

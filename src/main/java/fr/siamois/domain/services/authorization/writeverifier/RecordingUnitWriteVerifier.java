@@ -6,6 +6,7 @@ import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
+import fr.siamois.dto.entity.AbstractEntityDTO;
 import fr.siamois.infrastructure.database.repositories.team.TeamMemberRepository;
 import org.springframework.stereotype.Component;
 
@@ -27,7 +28,7 @@ public class RecordingUnitWriteVerifier implements WritePermissionVerifier {
     }
 
     @Override
-    public boolean hasSpecificWritePermission(UserInfo userInfo, TraceableEntity resource) {
+    public boolean hasSpecificWritePermission(UserInfo userInfo, AbstractEntityDTO resource) {
         RecordingUnit recordingUnit = (RecordingUnit) resource;
         ActionUnit action = recordingUnit.getActionUnit();
         if(action == null) {

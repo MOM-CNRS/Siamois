@@ -10,6 +10,7 @@ import fr.siamois.domain.services.form.FormService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitTreeService;
 import fr.siamois.dto.entity.SpatialUnitDTO;
+import fr.siamois.dto.entity.SpatialUnitSummaryDTO;
 import fr.siamois.ui.bean.NavBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
 import fr.siamois.ui.bean.dialog.newunit.GenericNewUnitDialogBean;
@@ -146,7 +147,7 @@ public class SpatialUnitTableViewModel extends EntityTableViewModel<SpatialUnitD
     }
 
     @Override
-    public boolean isRendered(TableColumn column, String key, SpatialUnit su) {
+    public boolean isRendered(TableColumn column, String key, SpatialUnitDTO su) {
         return switch (key) {
             case "writeMode" -> flowBean.getIsWriteMode();
             case "spatialUnitCreateAllowed" -> spatialUnitWriteVerifier.hasSpecificWritePermission(flowBean.getSessionSettings().getUserInfo(), su);
@@ -278,7 +279,7 @@ public class SpatialUnitTableViewModel extends EntityTableViewModel<SpatialUnitD
             };
     }
 
-    public void handleRowAction(RowAction action, SpatialUnit su) {
+    public void handleRowAction(RowAction action, SpatialUnitDTO su) {
 
         switch (action.getAction()) {
 
@@ -356,8 +357,8 @@ public class SpatialUnitTableViewModel extends EntityTableViewModel<SpatialUnitD
     }
 
     // actions specific to treetable
-    public void handleRowAction(RowAction action, TreeNode<SpatialUnit> node) {
-        SpatialUnit su = node.getData();
+    public void handleRowAction(RowAction action, TreeNode<SpatialUnitDTO> node) {
+        SpatialUnitDTO su = node.getData();
 
         if (action.getAction() == DUPLICATE_ROW) {
             if (!Objects.equals(node.getParent().getRowKey(), "root")) {
@@ -424,7 +425,7 @@ public class SpatialUnitTableViewModel extends EntityTableViewModel<SpatialUnitD
 
     // Duplique une unité spatiale
     // Le place au même niveau dans la hierarchie mais ne copie pas les enfants
-    private void duplicateRow(SpatialUnitDTO toDuplicate, SpatialUnitDTO parent) {
+    private void duplicateRow(SpatialUnitDTO toDuplicate, SpatialUnitSummaryDTO parent) {
 
         // Create a copy from selected row
         SpatialUnitDTO newUnit = new SpatialUnitDTO(toDuplicate);

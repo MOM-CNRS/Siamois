@@ -7,6 +7,7 @@ import fr.siamois.domain.services.authorization.writeverifier.RecordingUnitWrite
 import fr.siamois.domain.services.form.FormService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitTreeService;
 import fr.siamois.domain.services.specimen.SpecimenService;
+import fr.siamois.dto.entity.SpecimenDTO;
 import fr.siamois.ui.bean.NavBean;
 import fr.siamois.ui.bean.dialog.newunit.GenericNewUnitDialogBean;
 import fr.siamois.ui.bean.panel.FlowBean;
@@ -35,13 +36,13 @@ import java.util.List;
 @Setter
 @Component
 @Scope(BeanDefinition.SCOPE_PROTOTYPE)
-public class SpecimenListPanel extends AbstractListPanel<Specimen>  implements Serializable {
+public class SpecimenListPanel extends AbstractListPanel<SpecimenDTO>  implements Serializable {
 
     private final transient SpecimenService specimenService;
     private final transient FormService formService;
     private final transient SpatialUnitTreeService spatialUnitTreeService;
     private final transient FlowBean flowBean;
-    private final transient GenericNewUnitDialogBean<Specimen> genericNewUnitDialogBean;
+    private final transient GenericNewUnitDialogBean<SpecimenDTO> genericNewUnitDialogBean;
     private final transient RecordingUnitWriteVerifier recordingUnitWriteVerifier;
     private final transient NavBean navBean;
     private final transient FormContextServices formContextServices;
@@ -59,7 +60,7 @@ public class SpecimenListPanel extends AbstractListPanel<Specimen>  implements S
     }
 
     @Override
-    protected BaseLazyDataModel<Specimen> createLazyDataModel() {
+    protected BaseLazyDataModel<SpecimenDTO> createLazyDataModel() {
         SpecimenLazyDataModel lazyModel = new SpecimenLazyDataModel(specimenService, sessionSettingsBean, langBean);
 
         // instanciate table model

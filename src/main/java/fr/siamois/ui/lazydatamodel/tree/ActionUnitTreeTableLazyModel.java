@@ -3,6 +3,7 @@ package fr.siamois.ui.lazydatamodel.tree;
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
+import fr.siamois.dto.entity.ActionUnitDTO;
 import fr.siamois.ui.lazydatamodel.scope.ActionUnitScope;
 import lombok.Getter;
 import lombok.Setter;
@@ -11,20 +12,20 @@ import java.util.List;
 
 @Getter
 @Setter
-public class ActionUnitTreeTableLazyModel extends BaseTreeTableLazyModel<ActionUnit, Long> {
+public class ActionUnitTreeTableLazyModel extends BaseTreeTableLazyModel<ActionUnitDTO, Long> {
 
     private final transient ActionUnitService actionUnitService;
     private transient ActionUnitScope scope;
 
     public ActionUnitTreeTableLazyModel(ActionUnitService actionUnitService, ActionUnitScope scope) {
-        super(ActionUnit::getId);
+        super(ActionUnitDTO::getId);
         this.actionUnitService = actionUnitService;
         this.scope = scope;
     }
 
 
     @Override
-    protected List<ActionUnit> fetchRoots() {
+    protected List<ActionUnitDTO> fetchRoots() {
         return switch (scope.getType()) {
             case INSTITUTION -> actionUnitService.findAllWithoutParentsByInstitution(scope.getInstitutionId());
             case LINKED_TO_SPATIAL_UNIT -> actionUnitService.findBySpatialContext(
@@ -33,7 +34,7 @@ public class ActionUnitTreeTableLazyModel extends BaseTreeTableLazyModel<ActionU
     }
 
     @Override
-    protected List<ActionUnit> fetchChildren(ActionUnit parentUnit) {
+    protected List<ActionUnitDTO> fetchChildren(ActionUnitDTO parentUnit) {
         if (parentUnit != null) {
             return actionUnitService.findChildrenByParentAndInstitution(parentUnit.getId(),
                     scope.getInstitutionId());
@@ -42,7 +43,7 @@ public class ActionUnitTreeTableLazyModel extends BaseTreeTableLazyModel<ActionU
     }
 
     @Override
-    protected Boolean isLeaf(ActionUnit node) {
+    protected Boolean isLeaf(ActionUnitDTO node) {
         if (node != null) {
             return !actionUnitService.existsChildrenByParentAndInstitution(node.getId(), node.getCreatedByInstitution().getId());
         }

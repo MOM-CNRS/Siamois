@@ -2,16 +2,11 @@ package fr.siamois.ui.bean.dialog.newunit;
 
 import fr.siamois.domain.models.TraceableEntity;
 import fr.siamois.domain.models.exceptions.EntityAlreadyExistsException;
-import fr.siamois.domain.models.form.customfield.CustomField;
-import fr.siamois.domain.models.spatialunit.SpatialUnit;
-import fr.siamois.domain.models.specimen.Specimen;
-import fr.siamois.domain.models.vocabulary.Concept;
-import fr.siamois.domain.models.vocabulary.label.ConceptLabel;
 import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.domain.services.vocabulary.FieldService;
 import fr.siamois.dto.entity.AbstractEntityDTO;
 import fr.siamois.dto.entity.ConceptDTO;
-import fr.siamois.ui.bean.LangBean;
+import fr.siamois.dto.entity.SpatialUnitDTO;
 import fr.siamois.ui.bean.RedirectBean;
 import fr.siamois.ui.bean.dialog.newunit.handler.INewUnitHandler;
 import fr.siamois.ui.bean.field.SpatialUnitFieldBean;
@@ -20,18 +15,14 @@ import fr.siamois.ui.bean.panel.models.panel.single.AbstractSingleEntity;
 import fr.siamois.ui.exceptions.CannotInitializeNewUnitDialogException;
 import fr.siamois.ui.form.FormUiDto;
 import fr.siamois.ui.lazydatamodel.BaseLazyDataModel;
-import fr.siamois.ui.mapper.FormMapper;
 import fr.siamois.utils.MessageUtils;
-import jakarta.faces.component.UIComponent;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.primefaces.PrimeFaces;
-import org.primefaces.event.SelectEvent;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Scope;
-import org.springframework.core.convert.ConversionService;
 import org.springframework.stereotype.Component;
 
 import java.io.Serializable;
@@ -177,10 +168,11 @@ public class GenericNewUnitDialogBean<T extends AbstractEntityDTO>
 
     /**
      * Return the spatial unit options for spatial unit selection field
+     *
      * @return The list of selectable spatial unit
      */
     @Override
-    public List<SpatialUnit> getSpatialUnitOptions() {
+    public List<SpatialUnitDTO> getSpatialUnitOptions() {
         return handler.getSpatialUnitOptions(unit);
     }
 

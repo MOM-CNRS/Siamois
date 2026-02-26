@@ -73,7 +73,7 @@ public class FormService {
      * @return The form
      */
     @Transactional(readOnly = true)
-    public CustomForm findCustomFormByRecordingUnitTypeAndInstitutionId(Concept recordingUnitType, Institution institution) {
+    public CustomForm findCustomFormByRecordingUnitTypeAndInstitutionId(ConceptDTO recordingUnitType, Institution institution) {
         Optional<CustomForm> optForm = formRepository.findEffectiveFormByTypeAndInstitution(recordingUnitType == null ? null : recordingUnitType.getId(), institution.getId());
         // If none found, try to find a form without specifying the type
         // Should we throw an error if none found?

@@ -4,6 +4,7 @@ import fr.siamois.domain.models.history.RevisionWithInfo;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.services.history.HistoryAuditService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
+import fr.siamois.dto.entity.SpatialUnitDTO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -46,7 +47,7 @@ public class SpatialUnitHelperService {
         return historyAuditService.findAllRevisionForEntity(SpatialUnit.class, spatialUnit.getId());
     }
 
-    public void reinitialize(Consumer<SpatialUnit> spatialUnitSetter,
+    public void reinitialize(Consumer<SpatialUnitDTO> spatialUnitSetter,
                              Consumer<String> spatialUnitErrorMessageSetter,
                              Consumer<String> spatialUnitListErrorMessageSetter,
                              Consumer<List<SpatialUnit>> spatialUnitListSetter,

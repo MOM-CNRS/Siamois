@@ -201,6 +201,7 @@ public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
                     entity,
                     fs,
                     formContextServices,
+                    formContextServices.getConversionService(),
                     null,                    // pas de callback form scope en mode table pour l’instant
                     formScopeValueBinding
             );

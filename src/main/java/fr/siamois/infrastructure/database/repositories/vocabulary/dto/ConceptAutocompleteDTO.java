@@ -7,6 +7,7 @@ import fr.siamois.domain.models.vocabulary.label.ConceptPrefLabel;
 import fr.siamois.dto.entity.ConceptDTO;
 import fr.siamois.dto.entity.ConceptLabelDTO;
 import fr.siamois.dto.entity.ConceptPrefLabelDTO;
+import fr.siamois.dto.entity.VocabularyDTO;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
@@ -84,7 +85,7 @@ public class ConceptAutocompleteDTO implements Serializable {
     }
 
     @Nullable
-    public Vocabulary vocabulary() {
+    public VocabularyDTO vocabulary() {
         return conceptLabelToDisplay.getConcept().getVocabulary();
     }
 

@@ -11,6 +11,7 @@ import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.person.PersonService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.specimen.SpecimenService;
+import fr.siamois.dto.entity.SpecimenDTO;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.RedirectBean;
 import fr.siamois.ui.bean.panel.models.PanelBreadcrumb;
@@ -40,7 +41,7 @@ import java.util.List;
 @Setter
 @Component
 @Scope(BeanDefinition.SCOPE_PROTOTYPE)
-public class SpecimenPanel extends AbstractSingleEntityPanel<Specimen>  implements Serializable {
+public class SpecimenPanel extends AbstractSingleEntityPanel<SpecimenDTO>  implements Serializable {
 
     public static final String BI_BI_BUCKET = "bi bi-bucket";
     private final transient FormMapper formMapper;
@@ -96,11 +97,7 @@ public class SpecimenPanel extends AbstractSingleEntityPanel<Specimen>  implemen
         try {
 
             unit = specimenService.findById(idunit);
-            Hibernate.initialize(unit.getDocuments());
-            Hibernate.initialize(unit.getRecordingUnit());
-            Hibernate.initialize(unit.getAuthors());
-            Hibernate.initialize(unit.getCollectors());
-            backupClone = new Specimen(unit);
+            backupClone = new Specimen(SpecimenDTO);
             this.titleCodeOrTitle = unit.getFullIdentifier();
 
             initForms(true);
@@ -112,7 +109,7 @@ public class SpecimenPanel extends AbstractSingleEntityPanel<Specimen>  implemen
         }
 
 
-        history = historyAuditService.findAllRevisionForEntity(Specimen.class, idunit);
+        history = historyAuditService.findAllRevisionForEntity(SpecimenDTO.class, idunit);
         documents = documentService.findForSpecimen(unit);
     }
 

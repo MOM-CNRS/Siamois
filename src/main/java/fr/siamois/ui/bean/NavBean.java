@@ -10,6 +10,8 @@ import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.specimen.Specimen;
 import fr.siamois.domain.services.BookmarkService;
 import fr.siamois.domain.services.InstitutionService;
+import fr.siamois.dto.entity.RecordingUnitDTO;
+import fr.siamois.dto.entity.SpatialUnitDTO;
 import fr.siamois.ui.bean.converter.InstitutionConverter;
 import fr.siamois.ui.bean.panel.FlowBean;
 import fr.siamois.ui.bean.panel.models.panel.AbstractPanel;
@@ -190,7 +192,7 @@ public class NavBean implements Serializable {
         return bookmarkService.isRessourceBookmarkedByUser(sessionSettingsBean.getUserInfo(), ressourceUri);
     }
 
-    public void toggleRecordingUnitBookmark(RecordingUnit recordingUnit) {
+    public void toggleRecordingUnitBookmark(RecordingUnitDTO recordingUnit) {
         if(Boolean.TRUE.equals(isRessourceBookmarkedByUser(RECORDING_UNIT_BASE_URI + recordingUnit.getId()))) {
             unBookmarkRecordingUnit(recordingUnit);
         }
@@ -200,7 +202,7 @@ public class NavBean implements Serializable {
         reloadBookmarkedPanels();
     }
 
-    public void toggleSpatialUnitBookmark(SpatialUnit su) {
+    public void toggleSpatialUnitBookmark(SpatialUnitDTO su) {
         final String uri = SPATIAL_UNIT_BASE_URI + su.getId();
         if(Boolean.TRUE.equals(isRessourceBookmarkedByUser(uri))) {
             unBookmark(uri);

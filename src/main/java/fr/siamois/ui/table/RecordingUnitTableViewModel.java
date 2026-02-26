@@ -13,7 +13,9 @@ import fr.siamois.domain.services.form.FormService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitTreeService;
+import fr.siamois.dto.entity.ConceptDTO;
 import fr.siamois.dto.entity.RecordingUnitDTO;
+import fr.siamois.dto.entity.RecordingUnitSummaryDTO;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.NavBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
@@ -55,7 +57,7 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
 
 
     // Cache: key = (type, institutionId), value = CustomForm
-    private final Map<Concept, FormUiDto> formCache = new HashMap<>();
+    private final Map<ConceptDTO, FormUiDto> formCache = new HashMap<>();
 
     public static final String THIS = "@this";
     public static final String SIA_ICON_BTN = "sia-icon-btn";
@@ -102,8 +104,8 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
     }
 
     @Override
-    protected FormUiDto resolveRowFormFor(RecordingUnit ru) {
-        Concept type = ru.getType();
+    protected FormUiDto resolveRowFormFor(RecordingUnitDTO ru) {
+        ConceptDTO type = ru.getType();
         if (type == null) {
             return null;
         }
@@ -184,7 +186,7 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
 
         if (column instanceof CommandLinkColumn linkColumn) {
             if ("fullIdentifier".equals(linkColumn.getValueKey())) {
-                return ru.displayFullIdentifier();
+                return ru.getFullIdentifier();
             } else {
                 throw new IllegalStateException(
                         "Unknown valueKey: " + linkColumn.getValueKey()
@@ -209,7 +211,7 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
     }
 
     @Override
-    public boolean isRendered(TableColumn column, String key, RecordingUnit ru) {
+    public boolean isRendered(TableColumn column, String key, RecordingUnitDTO ru) {
         return switch (key) {
             case "writeMode" -> flowBean.getIsWriteMode();
             case "recordingUnitCreateAllowed" -> recordingUnitWriteVerifier.hasSpecificWritePermission(flowBean.getSessionSettings().getUserInfo(), ru);
@@ -269,7 +271,7 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
 
 
     @Override
-    public void handleRelationAction(RelationColumn col, RecordingUnit ru, TableColumnAction action) {
+    public void handleRelationAction(RelationColumn col, RecordingUnitDTO ru, TableColumnAction action) {
         switch (action) {
 
             case VIEW_RELATION ->
@@ -284,7 +286,7 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
         }
     }
 
-    public boolean isRendered(RowAction action, RecordingUnit ru) {
+    public boolean isRendered(RowAction action, RecordingUnitDTO ru) {
         return switch (action.getAction()) {
             case DUPLICATE_ROW -> flowBean.getIsWriteMode();
             case TOGGLE_BOOKMARK -> true;
@@ -294,7 +296,7 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
     }
 
 
-    public String resolveIcon(RowAction action,RecordingUnit ru) {
+    public String resolveIcon(RowAction action,RecordingUnitDTO ru) {
 
         return switch (action.getAction()) {
             case TOGGLE_BOOKMARK -> Boolean.TRUE.equals(navBean.isRecordingUnitBookmarkedByUser(ru.getFullIdentifier()))
@@ -392,7 +394,7 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
         RecordingUnitDTO newUnit = new RecordingUnitDTO(toDuplicate);
 
         if(parent != null) {
-            newUnit.getParents().add(parent);
+            newUnit.getParents().add(new RecordingUnitSummaryDTO(parent));
         }
 
         newUnit = recordingUnitService.save(newUnit, newUnit.getType());

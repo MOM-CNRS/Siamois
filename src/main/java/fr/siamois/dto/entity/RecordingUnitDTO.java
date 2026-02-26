@@ -16,8 +16,10 @@ public class RecordingUnitDTO extends AbstractEntityDTO {
     private ConceptDTO type;
     private ActionUnitDTO actionUnit;
     private Set<RecordingUnitSummaryDTO> parents;
+    private Set<RecordingUnitSummaryDTO> children;
     private OffsetDateTime openingDate;
     private OffsetDateTime closingDate;
+    private Set<SpecimenSummaryDTO> specimenList;
 
     public RecordingUnitDTO(RecordingUnitDTO original) {
         identifier = original.getIdentifier();

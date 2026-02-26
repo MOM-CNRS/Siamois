@@ -8,6 +8,8 @@ import fr.siamois.domain.models.specimen.Specimen;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.ArkEntityService;
 import fr.siamois.dto.entity.AbstractEntityDTO;
+import fr.siamois.dto.entity.ConceptDTO;
+import fr.siamois.dto.entity.SpecimenDTO;
 import fr.siamois.infrastructure.database.repositories.specimen.SpecimenRepository;
 import org.springframework.core.convert.ConversionService;
 import org.springframework.data.domain.Page;
@@ -39,7 +41,7 @@ public class SpecimenService implements ArkEntityService {
      * @param specimen the specimen for which the identifier is being generated
      * @return the next identifier to be used for the specimen
      */
-    public int generateNextIdentifier(Specimen specimen) {
+    public int generateNextIdentifier(SpecimenDTO specimen) {
         // Generate next identifier
         Integer currentMaxIdentifier = specimenRepository.findMaxUsedIdentifierByRecordingUnit(specimen.getRecordingUnit().getId());
         return ((currentMaxIdentifier == null) ? 1 : currentMaxIdentifier + 1);
@@ -51,7 +53,7 @@ public class SpecimenService implements ArkEntityService {
      * @param toSave the specimen to save
      * @return the saved specimen
      */
-    public Specimen save(Specimen toSave) {
+    public SpecimenDTO save(SpecimenDTO toSave) {
 
         if (toSave.getFullIdentifier() == null) {
             if (toSave.getIdentifier() == null) {
@@ -79,7 +81,7 @@ public class SpecimenService implements ArkEntityService {
      * @return the specimen if found, or null if not found
      */
     @Transactional
-    public Specimen findById(Long id) {
+    public SpecimenDTO findById(Long id) {
         return specimenRepository.findById(id).orElse(null);
     }
 
@@ -121,7 +123,7 @@ public class SpecimenService implements ArkEntityService {
      * @return a page of specimens matching the criteria
      */
     @Transactional
-    public Page<Specimen> findAllByInstitutionAndByRecordingUnitAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
+    public Page<SpecimenDTO> findAllByInstitutionAndByRecordingUnitAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
             Long institutionId,
             Long recordingUnitId,
             String fullIdentifier,
@@ -171,7 +173,7 @@ public class SpecimenService implements ArkEntityService {
      * @return the number of specimens updated
      */
     @Transactional
-    public int bulkUpdateType(List<Long> ids, Concept type) {
+    public int bulkUpdateType(List<Long> ids, ConceptDTO type) {
         return specimenRepository.updateTypeByIds(type.getId(), ids);
     }
 

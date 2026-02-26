@@ -82,7 +82,7 @@ public class RecordingUnitService implements ArkEntityService {
      * @return The number of recording units updated.
      */
     @Transactional
-    public int bulkUpdateType(List<Long> ids, Concept type) {
+    public int bulkUpdateType(List<Long> ids, ConceptDTO type) {
         return recordingUnitRepository.updateTypeByIds(type.getId(), ids);
     }
 
@@ -401,7 +401,7 @@ public class RecordingUnitService implements ArkEntityService {
      * @return A page of RecordingUnit matching the criteria.
      */
     @Transactional
-    public Page<RecordingUnit> findAllByInstitutionAndByActionUnitAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
+    public Page<RecordingUnitDTO> findAllByInstitutionAndByActionUnitAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
             Long institutionId,
             Long actionId,
             String fullIdentifier,
@@ -462,7 +462,7 @@ public class RecordingUnitService implements ArkEntityService {
                 .map(unit ->  conversionService.convert(unit, RecordingUnitDTO.class));
     }
 
-    public Page<RecordingUnit> findAllByChildAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(Long childId,
+    public Page<RecordingUnitDTO> findAllByChildAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(Long childId,
                                                                                                                String fullIdentifierFilter,
                                                                                                                Long[] categoryIds,
                                                                                                                String globalFilter, String languageCode, Pageable pageable) {
@@ -526,7 +526,7 @@ public class RecordingUnitService implements ArkEntityService {
      * @param institutionId the institution id
      * @return The list of RecordingUnit associated with the institution
      */
-    public List<RecordingUnit> findAllWithoutParentsByInstitution(Long institutionId) {
+    public List<RecordingUnitDTO> findAllWithoutParentsByInstitution(Long institutionId) {
         List<RecordingUnit> res = recordingUnitRepository.findRootsByInstitution(institutionId);
         initializeRecordingUnitCollections(res);
         return res;
@@ -539,7 +539,7 @@ public class RecordingUnitService implements ArkEntityService {
      * @param institutionId the institution id
      * @return The list of RecordingUnit associated with the institution and that are the children of a given parent
      */
-    public List<RecordingUnit> findChildrenByParentAndInstitution(Long parentId, Long institutionId) {
+    public List<RecordingUnitDTO> findChildrenByParentAndInstitution(Long parentId, Long institutionId) {
         List<RecordingUnit> res = recordingUnitRepository.findChildrenByParentAndInstitution(parentId, institutionId);
         initializeRecordingUnitCollections(res);
         return res;
@@ -579,7 +579,7 @@ public class RecordingUnitService implements ArkEntityService {
      * @param actionId the action id
      * @return The list of RecordingUnit that are the roots for a given action
      */
-    public List<RecordingUnit> findAllWithoutParentsByAction(Long actionId) {
+    public List<RecordingUnitDTO> findAllWithoutParentsByAction(Long actionId) {
         List<RecordingUnit> res = recordingUnitRepository.findRootsByAction(actionId);
         initializeRecordingUnitCollections(res);
         return res;

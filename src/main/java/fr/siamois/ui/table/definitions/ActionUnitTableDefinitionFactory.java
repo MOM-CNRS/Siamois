@@ -3,6 +3,7 @@ package fr.siamois.ui.table.definitions;
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.form.customfield.CustomFieldText;
 import fr.siamois.domain.models.vocabulary.Concept;
+import fr.siamois.dto.entity.ActionUnitDTO;
 import fr.siamois.ui.table.*;
 
 import static fr.siamois.ui.bean.panel.models.panel.single.AbstractSingleEntity.SYSTEM_THESO;
@@ -24,7 +25,7 @@ public final class ActionUnitTableDefinitionFactory {
      * - Only sets column metadata + generic toolbar create policy.
      * - If you want per-screen overrides, call them AFTER this method.
      */
-    public static void applyTo(EntityTableViewModel<ActionUnit, ?> tableModel) {
+    public static void applyTo(EntityTableViewModel<ActionUnitDTO, ?> tableModel) {
         if (tableModel == null) {
             return;
         }

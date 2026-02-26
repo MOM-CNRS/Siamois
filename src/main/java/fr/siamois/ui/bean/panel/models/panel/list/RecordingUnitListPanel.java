@@ -42,13 +42,13 @@ import java.util.List;
 @Setter
 @Component
 @Scope(BeanDefinition.SCOPE_PROTOTYPE)
-public class RecordingUnitListPanel extends AbstractListPanel<RecordingUnit> implements Serializable {
+public class RecordingUnitListPanel extends AbstractListPanel<RecordingUnitDTO> implements Serializable {
 
     private final transient RecordingUnitService recordingUnitService;
     private final transient FormService formService;
     private final transient SpatialUnitTreeService spatialUnitTreeService;
     private final transient FlowBean flowBean;
-    private final transient GenericNewUnitDialogBean<RecordingUnit> genericNewUnitDialogBean;
+    private final transient GenericNewUnitDialogBean<RecordingUnitDTO> genericNewUnitDialogBean;
     private final transient RecordingUnitWriteVerifier recordingUnitWriteVerifier;
     private final transient NavBean navBean;
     private final transient FormContextServices formContextServices;
@@ -89,7 +89,7 @@ public class RecordingUnitListPanel extends AbstractListPanel<RecordingUnit> imp
      * Ensuite, cette classe n'utilise plus jamais le lazy directement.
      */
     @Override
-    protected BaseLazyDataModel<RecordingUnit> createLazyDataModel() {
+    protected BaseLazyDataModel<RecordingUnitDTO> createLazyDataModel() {
         BaseRecordingUnitLazyDataModel lazy =
                 new RecordingUnitLazyDataModel(recordingUnitService, sessionSettingsBean, langBean);
         RecordingUnitTreeTableLazyModel lazyTree = new RecordingUnitTreeTableLazyModel(recordingUnitService,

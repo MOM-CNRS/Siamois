@@ -3,6 +3,7 @@ package fr.siamois.ui.lazydatamodel.tree;
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
+import fr.siamois.dto.entity.SpatialUnitDTO;
 import fr.siamois.ui.lazydatamodel.scope.SpatialUnitScope;
 import lombok.Getter;
 import lombok.Setter;
@@ -12,19 +13,19 @@ import java.util.List;
 
 @Getter
 @Setter
-public class SpatialUnitTreeTableLazyModel extends BaseTreeTableLazyModel<SpatialUnit, Long> {
+public class SpatialUnitTreeTableLazyModel extends BaseTreeTableLazyModel<SpatialUnitDTO, Long> {
 
     private final transient SpatialUnitService spatialUnitService;
     private transient SpatialUnitScope scope;
 
     public SpatialUnitTreeTableLazyModel(SpatialUnitService spatialUnitService, SpatialUnitScope scope) {
-        super(SpatialUnit::getId);
+        super(SpatialUnitDTO::getId);
         this.spatialUnitService = spatialUnitService;
         this.scope = scope;
     }
 
     @Override
-    protected List<SpatialUnit> fetchRoots() {
+    protected List<SpatialUnitDTO> fetchRoots() {
         return switch (scope.getType()) {
             case INSTITUTION -> spatialUnitService.findRootsOf(scope.getInstitutionId());
             case CHILDREN_OF_SPATIAL_UNIT -> spatialUnitService.findDirectChildrensOf(scope.getSpatialUnitId());

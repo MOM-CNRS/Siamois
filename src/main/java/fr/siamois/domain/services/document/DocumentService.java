@@ -13,6 +13,7 @@ import fr.siamois.domain.models.specimen.Specimen;
 import fr.siamois.domain.services.ArkEntityService;
 import fr.siamois.domain.services.document.compressor.FileCompressor;
 import fr.siamois.dto.entity.AbstractEntityDTO;
+import fr.siamois.dto.entity.SpecimenDTO;
 import fr.siamois.infrastructure.database.repositories.DocumentRepository;
 import fr.siamois.infrastructure.files.DocumentStorage;
 import fr.siamois.utils.CodeUtils;
@@ -202,7 +203,7 @@ public class DocumentService implements ArkEntityService {
      * @param specimen the specimen for which documents are to be found
      * @return a list of documents associated with the specimen
      */
-    public List<Document> findForSpecimen(Specimen specimen) {
+    public List<Document> findForSpecimen(SpecimenDTO specimen) {
         return documentRepository.findDocumentsBySpecimen(specimen.getId());
     }
 

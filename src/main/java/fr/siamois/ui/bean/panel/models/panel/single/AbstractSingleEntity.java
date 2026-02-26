@@ -1,17 +1,10 @@
 package fr.siamois.ui.bean.panel.models.panel.single;
 
-import fr.siamois.domain.models.TraceableEntity;
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.customfield.CustomFieldText;
 import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswer;
 import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerText;
-import fr.siamois.domain.models.form.customform.CustomCol;
-import fr.siamois.domain.models.form.customform.CustomForm;
-import fr.siamois.domain.models.form.customform.CustomFormPanel;
-import fr.siamois.domain.models.form.customform.CustomRow;
 import fr.siamois.domain.models.form.customformresponse.CustomFormResponse;
-import fr.siamois.domain.models.spatialunit.SpatialUnit;
-import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.models.vocabulary.Vocabulary;
 import fr.siamois.domain.models.vocabulary.VocabularyType;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
@@ -22,6 +15,7 @@ import fr.siamois.domain.services.spatialunit.SpatialUnitTreeService;
 import fr.siamois.domain.services.vocabulary.FieldConfigurationService;
 import fr.siamois.dto.entity.AbstractEntityDTO;
 import fr.siamois.dto.entity.ConceptDTO;
+import fr.siamois.dto.entity.SpatialUnitDTO;
 import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
 import fr.siamois.ui.bean.LabelBean;
 import fr.siamois.ui.bean.LangBean;
@@ -35,7 +29,6 @@ import jakarta.faces.event.ActionEvent;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.Conversion;
 import org.springframework.context.ApplicationContext;
 import org.springframework.core.convert.ConversionService;
 
@@ -182,7 +175,7 @@ public abstract class AbstractSingleEntity<T extends AbstractEntityDTO> extends 
     /**
      * In list panels children may override this to provide options.
      */
-    public List<SpatialUnit> getSpatialUnitOptions() {
+    public List<SpatialUnitDTO> getSpatialUnitOptions() {
         return List.of();
     }
 

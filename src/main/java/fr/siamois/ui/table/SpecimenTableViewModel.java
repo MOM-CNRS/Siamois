@@ -6,6 +6,7 @@ import fr.siamois.domain.models.specimen.Specimen;
 import fr.siamois.domain.services.form.FormService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitTreeService;
+import fr.siamois.dto.entity.SpecimenDTO;
 import fr.siamois.ui.bean.NavBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
 import fr.siamois.ui.bean.dialog.newunit.GenericNewUnitDialogBean;
@@ -30,7 +31,7 @@ import static fr.siamois.ui.table.TableColumnAction.GO_TO_SPECIMEN;
  *      - configureRowSystemFields
  */
 @Getter
-public class SpecimenTableViewModel extends EntityTableViewModel<Specimen, Long> {
+public class SpecimenTableViewModel extends EntityTableViewModel<SpecimenDTO, Long> {
 
     private final BaseSpecimenLazyDataModel specimenLazyDataModel;
     private final FlowBean flowBean;
@@ -45,7 +46,7 @@ public class SpecimenTableViewModel extends EntityTableViewModel<Specimen, Long>
                                   SpatialUnitService spatialUnitService,
                                   NavBean navBean,
                                   FlowBean flowBean,
-                                  GenericNewUnitDialogBean<Specimen> genericNewUnitDialogBean, FormContextServices formContextServices) {
+                                  GenericNewUnitDialogBean<SpecimenDTO> genericNewUnitDialogBean, FormContextServices formContextServices) {
 
         super(
                 lazyDataModel,
@@ -54,7 +55,7 @@ public class SpecimenTableViewModel extends EntityTableViewModel<Specimen, Long>
                 spatialUnitTreeService,
                 spatialUnitService,
                 navBean,
-                Specimen::getId,   // idExtractor
+                SpecimenDTO::getId,   // idExtractor
                 "type"   ,// formScopeValueBinding
                 sessionSettingsBean.getLangBean(),
                 formContextServices

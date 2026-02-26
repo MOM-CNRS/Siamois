@@ -2,6 +2,7 @@ package fr.siamois.ui.lazydatamodel;
 
 
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
+import fr.siamois.dto.entity.SpatialUnitDTO;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.data.domain.Page;
@@ -13,7 +14,7 @@ import java.util.Map;
 
 @Getter
 @Setter
-public abstract class BaseSpatialUnitLazyDataModel extends BaseLazyDataModel<SpatialUnit> {
+public abstract class BaseSpatialUnitLazyDataModel extends BaseLazyDataModel<SpatialUnitDTO> {
 
     private static final Map<String, String> FIELD_MAPPING;
 
@@ -36,15 +37,15 @@ public abstract class BaseSpatialUnitLazyDataModel extends BaseLazyDataModel<Spa
     }
 
     @Override
-    protected Page<SpatialUnit> loadData(String name, Long[] categoryIds, Long[] personIds, String globalFilter, Pageable pageable) {
+    protected Page<SpatialUnitDTO> loadData(String name, Long[] categoryIds, Long[] personIds, String globalFilter, Pageable pageable) {
         return loadSpatialUnits(name, categoryIds, personIds, globalFilter, pageable);
     }
 
     @Override
-    public String getRowKey(SpatialUnit spatialUnit) {
+    public String getRowKey(SpatialUnitDTO spatialUnit) {
         return spatialUnit != null ? Long.toString(spatialUnit.getId()) : null;
     }
 
-    protected abstract Page<SpatialUnit> loadSpatialUnits(String nameFilter, Long[] categoryIds, Long[] personIds, String globalFilter, Pageable pageable);
+    protected abstract Page<SpatialUnitDTO> loadSpatialUnits(String nameFilter, Long[] categoryIds, Long[] personIds, String globalFilter, Pageable pageable);
 
 }

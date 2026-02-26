@@ -218,9 +218,6 @@ public abstract class BaseTreeTableLazyModel<T extends AbstractEntityDTO, ID> im
 
     protected abstract List<T> fetchRoots();
     protected abstract List<T> fetchChildren(T parentUnit);
-    protected void initializeAssociations(T child) {
-        // empty default
-    }
 
     @ExecutionTimeLogger
     protected LazyDefaultTreeNode<T> buildTree() {
@@ -237,10 +234,6 @@ public abstract class BaseTreeTableLazyModel<T extends AbstractEntityDTO, ID> im
     @ExecutionTimeLogger
     protected List<T> loadFunction(T parentUnit) {
         List<T> children = fetchChildren(parentUnit);
-
-        for (T child : children) {
-            initializeAssociations(child);
-        }
 
         return children;
     }

@@ -6,6 +6,7 @@ import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.form.FormService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitTreeService;
+import fr.siamois.dto.entity.ActionUnitDTO;
 import fr.siamois.ui.bean.NavBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
 import fr.siamois.ui.bean.dialog.newunit.GenericNewUnitDialogBean;
@@ -32,7 +33,7 @@ import static fr.siamois.ui.table.TableColumnAction.GO_TO_ACTION_UNIT;
  *      - configureRowSystemFields
  */
 @Getter
-public class ActionUnitTableViewModel extends EntityTableViewModel<ActionUnit, Long> {
+public class ActionUnitTableViewModel extends EntityTableViewModel<ActionUnitDTO, Long> {
 
     public static final String PARENTS = "parents";
     public static final String CHILDREN = "children";
@@ -51,7 +52,7 @@ public class ActionUnitTableViewModel extends EntityTableViewModel<ActionUnit, L
                                     SpatialUnitTreeService spatialUnitTreeService,
                                     SpatialUnitService spatialUnitService,
                                     NavBean navBean,
-                                    FlowBean flowBean, GenericNewUnitDialogBean<ActionUnit> genericNewUnitDialogBean,
+                                    FlowBean flowBean, GenericNewUnitDialogBean<ActionUnitDTO> genericNewUnitDialogBean,
                                     ActionUnitTreeTableLazyModel treeLazyModel,
                                     InstitutionService institutionService,
                                     FormContextServices formContextServices) {
@@ -65,7 +66,7 @@ public class ActionUnitTableViewModel extends EntityTableViewModel<ActionUnit, L
                 spatialUnitService,
                 navBean,
                 sessionSettingsBean.getLangBean(),
-                ActionUnit::getId,   // idExtractor
+                ActionUnitDTO::getId,   // idExtractor
                 "type"        ,          // formScopeValueBinding,
                 formContextServices
         );
@@ -76,18 +77,18 @@ public class ActionUnitTableViewModel extends EntityTableViewModel<ActionUnit, L
     }
 
     @Override
-    protected FormUiDto resolveRowFormFor(ActionUnit au) {
+    protected FormUiDto resolveRowFormFor(ActionUnitDTO au) {
         return null;
     }
 
     @Override
-    protected void configureRowSystemFields(ActionUnit au, FormUiDto rowForm) {
+    protected void configureRowSystemFields(ActionUnitDTO au, FormUiDto rowForm) {
         // no system field to init
     }
 
     @Override
     protected void handleCommandLink(CommandLinkColumn column,
-                                     ActionUnit au) {
+                                     ActionUnitDTO au) {
 
         if (column.getAction() == GO_TO_ACTION_UNIT) {
 
@@ -104,7 +105,7 @@ public class ActionUnitTableViewModel extends EntityTableViewModel<ActionUnit, L
 
     // resolving cell text based on value key
     @Override
-    public String resolveText(TableColumn column, ActionUnit au) {
+    public String resolveText(TableColumn column, ActionUnitDTO au) {
 
         if (column instanceof CommandLinkColumn linkColumn) {
 
@@ -122,7 +123,7 @@ public class ActionUnitTableViewModel extends EntityTableViewModel<ActionUnit, L
     }
 
     @Override
-    public Integer resolveCount(TableColumn column, ActionUnit au) {
+    public Integer resolveCount(TableColumn column, ActionUnitDTO au) {
         if (column instanceof RelationColumn rel) {
             return switch (rel.getCountKey()) {
                 case PARENTS -> au.getParents() == null ? 0 : au.getParents().size();
@@ -135,7 +136,7 @@ public class ActionUnitTableViewModel extends EntityTableViewModel<ActionUnit, L
     }
 
     @Override
-    public boolean isRendered(TableColumn column, String key, ActionUnit au) {
+    public boolean isRendered(TableColumn column, String key, ActionUnitDTO au) {
         return switch (key) {
             case "writeMode" -> flowBean.getIsWriteMode();
             case "actionUnitCreateAllowed" -> institutionService.personIsInstitutionManagerOrActionManager(
@@ -172,7 +173,7 @@ public class ActionUnitTableViewModel extends EntityTableViewModel<ActionUnit, L
 
 
     @Override
-    public void handleRelationAction(RelationColumn col, ActionUnit au, TableColumnAction action) {
+    public void handleRelationAction(RelationColumn col, ActionUnitDTO au, TableColumnAction action) {
         switch (action) {
 
             case VIEW_RELATION ->
@@ -250,12 +251,12 @@ public class ActionUnitTableViewModel extends EntityTableViewModel<ActionUnit, L
     }
 
     @Override
-    public boolean canUserEditRow(ActionUnit unit) {
+    public boolean canUserEditRow(ActionUnitDTO unit) {
         return true; // todo: implement permission
     }
 
     @Override
-    public TreeNode<ActionUnit> getTreeRoot() {
+    public TreeNode<ActionUnitDTO> getTreeRoot() {
         return treeLazyModel.getRoot();
     }
 

@@ -15,6 +15,8 @@ import fr.siamois.domain.services.person.PersonService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.specimen.SpecimenService;
 import fr.siamois.domain.services.vocabulary.LabelService;
+import fr.siamois.dto.entity.ConceptDTO;
+import fr.siamois.dto.entity.SpatialUnitDTO;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.NavBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
@@ -71,7 +73,7 @@ import static fr.siamois.ui.lazydatamodel.scope.SpatialUnitScope.Type.CHILDREN_O
 @Setter
 @Component
 @Scope(BeanDefinition.SCOPE_PROTOTYPE)
-public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel<SpatialUnit> implements Serializable {
+public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel<SpatialUnitDTO> implements Serializable {
 
 
 
@@ -106,22 +108,22 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
 
 
     @Override
-    List<SpatialUnit> findDirectParentsOf(Long id) {
+    List<SpatialUnitDTO> findDirectParentsOf(Long id) {
         return spatialUnitService.findDirectParentsOf(id);
     }
 
     @Override
-    SpatialUnit findUnitById(Long id) {
+    SpatialUnitDTO findUnitById(Long id) {
         return spatialUnitService.findById(id);
     }
 
     @Override
-    String findLabel(SpatialUnit unit) {
+    String findLabel(SpatialUnitDTO unit) {
         return unit.getName();
     }
 
     @Override
-    String getOpenPanelCommand(SpatialUnit unit) {
+    String getOpenPanelCommand(SpatialUnitDTO unit) {
         return "#{flowBean.addSpatialUnitPanel(".concat(unit.getId().toString()).concat(")}");
     }
 
@@ -194,7 +196,7 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
     }
 
     @Override
-    protected void setFormScopePropertyValue(Concept concept) {
+    protected void setFormScopePropertyValue(ConceptDTO concept) {
         unit.setCategory(concept);
     }
 

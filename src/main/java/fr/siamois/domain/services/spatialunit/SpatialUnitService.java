@@ -21,6 +21,7 @@ import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.dto.entity.AbstractEntityDTO;
 import fr.siamois.dto.entity.RecordingUnitDTO;
 import fr.siamois.dto.entity.SpatialUnitDTO;
+import fr.siamois.dto.entity.SpatialUnitSummaryDTO;
 import fr.siamois.infrastructure.database.repositories.SpatialUnitRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.Hibernate;
@@ -33,6 +34,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Service to manage SpatialUnit
@@ -192,8 +194,10 @@ public class SpatialUnitService implements ArkEntityService {
     @Transactional
     public SpatialUnitDTO save(UserInfo info, SpatialUnitDTO su) throws SpatialUnitAlreadyExistsException {
         String name = su.getName();
-        Concept type = su.getCategory();
-        Set<SpatialUnit> children = su.getChildren();
+        Concept type = conversionService.convert(su.getCategory(), Concept.class);
+        Set<SpatialUnit> children = su.getChildren().stream()
+                .map(child -> conversionService.convert(child, SpatialUnit.class))
+                .collect(Collectors.toSet());
 
         Optional<SpatialUnit> optSpatialUnit = spatialUnitRepository.findByNameAndInstitution(name, info.getInstitution().getId());
         if (optSpatialUnit.isPresent())
@@ -216,7 +220,7 @@ public class SpatialUnitService implements ArkEntityService {
         }
 
         // Reattach parents
-        for (SpatialUnit parentRef : su.getParents()) {
+        for (SpatialUnitSummaryDTO parentRef : su.getParents()) {
             SpatialUnit parent = spatialUnitRepository.findById(parentRef.getId())
                     .orElseThrow(() -> new IllegalArgumentException("Parent not found: " + parentRef.getId()));
 
@@ -336,7 +340,7 @@ public class SpatialUnitService implements ArkEntityService {
      * @param id The institution id to filter by
      * @return A list of root SpatialUnit that have no parents
      */
-    public List<SpatialUnit> findRootsOf(Long id) {
+    public List<SpatialUnitDTO> findRootsOf(Long id) {
         List<SpatialUnit> result = new ArrayList<>();
         for (SpatialUnit spatialUnit : findAllOfInstitution(id)) {
             if (countParentsByChild(spatialUnit) == 0) {

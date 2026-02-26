@@ -5,8 +5,10 @@ import lombok.Data;
 @Data
 public class SpecimenDTO extends AbstractEntityDTO {
 
-    private String identifier;
+    private int identifier;
     private ConceptDTO type;
     private String fullIdentifier;
 
+    public SpecimenDTO(SpecimenDTO original) {
+    }
 }

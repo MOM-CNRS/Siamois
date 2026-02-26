@@ -33,6 +33,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.OffsetDateTime;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Service for managing Action Units.
@@ -404,10 +405,12 @@ public class ActionUnitService implements ArkEntityService {
      * @param institutionId the institution id
      * @return The list of ActionUnit associated with the institution
      */
-    public List<ActionUnit> findAllWithoutParentsByInstitution(Long institutionId) {
+    public List<ActionUnitDTO> findAllWithoutParentsByInstitution(Long institutionId) {
         List<ActionUnit> res = actionUnitRepository.findRootsByInstitution(institutionId);
         initializeActionUnitCollections(res);
-        return res;
+        return res.stream()
+                .map(actionUnit -> conversionService.convert(actionUnit, ActionUnitDTO.class))
+                .collect(Collectors.toList());
     }
 
     /**
@@ -417,10 +420,12 @@ public class ActionUnitService implements ArkEntityService {
      * @param institutionId the institution id
      * @return The list of ActionUnit associated with the institution and that are the children of a given parent
      */
-    public List<ActionUnit> findChildrenByParentAndInstitution(Long parentId, Long institutionId) {
+    public List<ActionUnitDTO> findChildrenByParentAndInstitution(Long parentId, Long institutionId) {
         List<ActionUnit> res = actionUnitRepository.findChildrenByParentAndInstitution(parentId, institutionId);
         initializeActionUnitCollections(res);
-        return res;
+        return res.stream()
+                .map(actionUnit -> conversionService.convert(actionUnit, ActionUnitDTO.class))
+                .collect(Collectors.toList());
     }
 
     /**
@@ -429,10 +434,12 @@ public class ActionUnitService implements ArkEntityService {
      * @param spatialId     the spatial unit id
      * @return The list of ActionUnit
      */
-    public List<ActionUnit> findBySpatialContext(Long spatialId) {
+    public List<ActionUnitDTO> findBySpatialContext(Long spatialId) {
         List<ActionUnit> res = actionUnitRepository.findBySpatialContext(spatialId);
         initializeActionUnitCollections(res);
-        return res;
+        return res.stream()
+                .map(actionUnit -> conversionService.convert(actionUnit, ActionUnitDTO.class))
+                .collect(Collectors.toList());
     }
 
     // Reusable method to initialize collections
