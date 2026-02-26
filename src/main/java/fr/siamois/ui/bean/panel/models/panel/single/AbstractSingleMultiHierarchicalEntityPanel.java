@@ -1,6 +1,7 @@
 package fr.siamois.ui.bean.panel.models.panel.single;
 
 import fr.siamois.domain.models.TraceableEntity;
+import fr.siamois.dto.entity.AbstractEntityDTO;
 import fr.siamois.ui.bean.panel.models.panel.single.tab.MultiHierarchyTab;
 import fr.siamois.ui.table.EntityTableViewModel;
 import org.primefaces.model.menu.DefaultMenuModel;
@@ -12,7 +13,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-public abstract class AbstractSingleMultiHierarchicalEntityPanel<T extends TraceableEntity>
+public abstract class AbstractSingleMultiHierarchicalEntityPanel<T extends AbstractEntityDTO>
         extends AbstractSingleEntityPanel<T> implements Serializable {
 
 

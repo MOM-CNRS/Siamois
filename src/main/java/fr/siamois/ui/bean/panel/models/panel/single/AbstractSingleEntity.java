@@ -21,6 +21,7 @@ import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitTreeService;
 import fr.siamois.domain.services.vocabulary.FieldConfigurationService;
 import fr.siamois.dto.entity.AbstractEntityDTO;
+import fr.siamois.dto.entity.ConceptDTO;
 import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
 import fr.siamois.ui.bean.LabelBean;
 import fr.siamois.ui.bean.LangBean;
@@ -171,7 +172,7 @@ public abstract class AbstractSingleEntity<T extends AbstractEntityDTO> extends 
      */
     protected abstract String getFormScopePropertyName();
 
-    protected abstract void setFormScopePropertyValue(Concept concept);
+    protected abstract void setFormScopePropertyValue(ConceptDTO concept);
 
     /**
      * In list panels children may override this to provide options.
@@ -256,7 +257,7 @@ public abstract class AbstractSingleEntity<T extends AbstractEntityDTO> extends 
      * Called when the "scope" system concept field changes.
      * Flushes current answers to the entity, updates the entity scope, then re-inits forms.
      */
-    protected void onFormScopeChanged(Concept newVal) {
+    protected void onFormScopeChanged(ConceptDTO newVal) {
         if (formContext != null) {
             formContext.flushBackToEntity();
         }
@@ -269,7 +270,7 @@ public abstract class AbstractSingleEntity<T extends AbstractEntityDTO> extends 
     // If you still use populateSystemFieldValue for Concepts in lists etc.,
     // you can keep convenience methods here that rely on labelBean:
 
-    protected ConceptAutocompleteDTO toAutocompleteDTO(Concept c) {
+    protected ConceptAutocompleteDTO toAutocompleteDTO(ConceptDTO c) {
         if (c == null) return null;
         return new ConceptAutocompleteDTO(
                 c,

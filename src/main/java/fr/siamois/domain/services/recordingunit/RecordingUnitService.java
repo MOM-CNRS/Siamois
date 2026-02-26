@@ -89,7 +89,8 @@ public class RecordingUnitService implements ArkEntityService {
     public boolean fullIdentifierAlreadyExistInAction(RecordingUnitDTO unit) {
         List<RecordingUnit> existing = findByActionAndFullId(unit.getActionUnit(), unit.getFullIdentifier());
         return existing.stream()
-                .anyMatch(r -> Objects.equals(r.getFullIdentifier(), unit.getFullIdentifier()) && !Objects.equals(r.getId(), unit.getId()));
+                .anyMatch(r -> Objects.equals(r.getFullIdentifier(), unit.getFullIdentifier()) && !Objects.equals(r.getId(),
+                        unit.getId()));
     }
 
     /**

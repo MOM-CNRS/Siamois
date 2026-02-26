@@ -17,6 +17,7 @@ import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.recordingunit.identifier.generic.RuIdentifierResolver;
 import fr.siamois.domain.services.specimen.SpecimenService;
 import fr.siamois.domain.services.vocabulary.LabelService;
+import fr.siamois.dto.entity.ActionUnitDTO;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.NavBean;
 import fr.siamois.ui.bean.RedirectBean;
@@ -68,7 +69,7 @@ import java.util.stream.Collectors;
 @Setter
 @Component
 @Scope(BeanDefinition.SCOPE_PROTOTYPE)
-public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnit> implements Serializable {
+public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnitDTO> implements Serializable {
     public static final String INVALID_FORMAT_CODE = "actionUnit.settings.error.invalidIdentifierFormat";
 
     private final RedirectBean redirectBean;
@@ -102,12 +103,12 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnit> imple
     private String format;
 
     @Override
-    protected boolean documentExistsInUnitByHash(ActionUnit unit, String hash) {
+    protected boolean documentExistsInUnitByHash(ActionUnitDTO unit, String hash) {
         return documentService.existInActionUnitByHash(unit, hash);
     }
 
     @Override
-    protected void addDocumentToUnit(Document doc, ActionUnit unit) {
+    protected void addDocumentToUnit(Document doc, ActionUnitDTO unit) {
         documentService.addToActionUnit(doc, unit);
     }
 

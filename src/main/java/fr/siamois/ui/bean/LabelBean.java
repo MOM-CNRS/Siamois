@@ -6,9 +6,12 @@ import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.models.vocabulary.label.ConceptLabel;
 import fr.siamois.domain.models.vocabulary.label.ConceptPrefLabel;
 import fr.siamois.domain.services.vocabulary.LabelService;
+import fr.siamois.dto.entity.ConceptDTO;
+import fr.siamois.dto.entity.ConceptLabelDTO;
 import fr.siamois.infrastructure.database.repositories.vocabulary.label.ConceptLabelRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.event.EventListener;
+import org.springframework.core.convert.ConversionService;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 
@@ -27,8 +30,9 @@ public class LabelBean implements Serializable {
     // This caching mechanism is a simple in-memory cache to avoid repeated database calls during a user session.
     // However, it would be better to use Spring boot's embedded caching mechanism with a proper cache manager.
     // Can't do it right now because of the JSF managed bean session scope.
-    private final Map<String, Map<Concept, String>> prefLabelCache = new HashMap<>();
-    private final Map<Long, ConceptLabel> idToLabelCache = new HashMap<>();
+    private final Map<String, Map<ConceptDTO, String>> prefLabelCache = new HashMap<>();
+    private final Map<Long, ConceptLabelDTO> idToLabelCache = new HashMap<>();
+    private final ConversionService conversionService;
 
     @EventListener(ConceptChangeEvent.class)
     public void resetCache() {
@@ -36,13 +40,13 @@ public class LabelBean implements Serializable {
         idToLabelCache.clear();
     }
 
-    private Optional<String> searchMatchingLangAndPrefLabel(String lang, Concept concept, List<ConceptPrefLabel> existingLabels) {
+    private Optional<String> searchMatchingLangAndPrefLabel(String lang, ConceptDTO concept, List<ConceptPrefLabel> existingLabels) {
         if (prefLabelCache.containsKey(lang) && prefLabelCache.get(lang).containsKey(concept)) {
             return Optional.of(prefLabelCache.get(lang).get(concept));
         }
 
         if (existingLabels.isEmpty())
-            existingLabels.addAll(conceptLabelRepository.findAllPrefLabelsByConcept(concept));
+            existingLabels.addAll(conceptLabelRepository.findAllPrefLabelsByConcept(conversionService.convert(concept,Concept.class)));
 
         return existingLabels.stream()
                 .filter(data -> data.getLangCode().equalsIgnoreCase(lang))
@@ -50,7 +54,7 @@ public class LabelBean implements Serializable {
                 .map(ConceptPrefLabel::getLabel);
     }
 
-    private void addToCache(String lang, Concept concept, String label) {
+    private void addToCache(String lang, ConceptDTO concept, String label) {
         prefLabelCache.computeIfAbsent(lang, k -> new HashMap<>()).put(concept, label);
     }
 
@@ -61,7 +65,7 @@ public class LabelBean implements Serializable {
      * @return the best matching label, or the concept's external ID if no label is found
      */
     @Nullable
-    public String findLabelOf(@Nullable Concept concept) {
+    public String findLabelOf(@Nullable ConceptDTO concept) {
         if (concept == null) return null;
         UserInfo userInfo = sessionSettingsBean.getUserInfo();
         List<ConceptPrefLabel> labels = new ArrayList<>();
@@ -82,11 +86,11 @@ public class LabelBean implements Serializable {
         return labelService.findLabelOf(concept.getVocabulary(), info.getLang()).getValue();
     }
 
-    public Optional<ConceptLabel> findById(Long id) {
+    public Optional<ConceptLabelDTO> findById(Long id) {
         if (idToLabelCache.containsKey(id)) {
             return Optional.of(idToLabelCache.get(id));
         }
-        Optional<ConceptLabel> label = conceptLabelRepository.findById(id);
+        Optional<ConceptLabelDTO> label = Optional.ofNullable(conversionService.convert(conceptLabelRepository.findById(id), ConceptLabelDTO.class));
         label.ifPresent(l -> idToLabelCache.put(id, l));
         return label;
     }

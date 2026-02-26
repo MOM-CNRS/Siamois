@@ -9,6 +9,7 @@ import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.domain.services.vocabulary.FieldConfigurationService;
 import fr.siamois.domain.services.vocabulary.FieldService;
 import fr.siamois.domain.services.vocabulary.LabelService;
+import fr.siamois.dto.entity.AbstractEntityDTO;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
 import fr.siamois.ui.bean.panel.models.panel.AbstractPanel;
@@ -34,7 +35,7 @@ import java.util.List;
 @NoArgsConstructor(force = true)
 @EqualsAndHashCode(callSuper = true, onlyExplicitlyIncluded = true)
 @Slf4j
-public abstract class AbstractListPanel<T extends TraceableEntity> extends AbstractPanel  implements Serializable {
+public abstract class AbstractListPanel<T extends AbstractEntityDTO> extends AbstractPanel  implements Serializable {
 
     // deps
     protected final transient SpatialUnitService spatialUnitService;

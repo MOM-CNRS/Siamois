@@ -7,7 +7,9 @@ import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.specimen.Specimen;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.ArkEntityService;
+import fr.siamois.dto.entity.AbstractEntityDTO;
 import fr.siamois.infrastructure.database.repositories.specimen.SpecimenRepository;
+import org.springframework.core.convert.ConversionService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -19,9 +21,11 @@ import java.util.List;
 public class SpecimenService implements ArkEntityService {
 
     private final SpecimenRepository specimenRepository;
+    private final ConversionService conversionService;
 
-    public SpecimenService(SpecimenRepository specimenRepository) {
+    public SpecimenService(SpecimenRepository specimenRepository, ConversionService conversionService) {
         this.specimenRepository = specimenRepository;
+        this.conversionService = conversionService;
     }
 
     @Override
@@ -62,8 +66,10 @@ public class SpecimenService implements ArkEntityService {
     }
 
     @Override
-    public ArkEntity save(ArkEntity toSave) {
-        return specimenRepository.save((Specimen) toSave);
+    public AbstractEntityDTO save(AbstractEntityDTO abstractEntityDTO) {
+        Specimen specimen = conversionService.convert(abstractEntityDTO, Specimen.class);
+        Specimen saved = specimenRepository.save(specimen);
+        return conversionService.convert(saved, abstractEntityDTO.getClass());
     }
 
     /**

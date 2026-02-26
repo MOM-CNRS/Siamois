@@ -20,6 +20,10 @@ import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.domain.services.vocabulary.FieldConfigurationService;
 import fr.siamois.domain.services.vocabulary.FieldService;
+import fr.siamois.dto.entity.ActionUnitDTO;
+import fr.siamois.dto.entity.RecordingUnitDTO;
+import fr.siamois.dto.entity.SpatialUnitDTO;
+import fr.siamois.dto.entity.SpecimenDTO;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.RedirectBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
@@ -382,13 +386,13 @@ public class FlowBean implements Serializable {
 
     private static String findMatchingTitle(AbstractSingleEntityPanel<?> panel) {
         String title = "UNKNOWN";
-        if (panel.getUnit() instanceof SpatialUnit su) {
+        if (panel.getUnit() instanceof SpatialUnitDTO su) {
             title = su.getName();
-        } else if (panel.getUnit() instanceof ActionUnit au) {
+        } else if (panel.getUnit() instanceof ActionUnitDTO au) {
             title = au.getFullIdentifier();
-        } else if (panel.getUnit() instanceof RecordingUnit ru) {
+        } else if (panel.getUnit() instanceof RecordingUnitDTO ru) {
             title = ru.getFullIdentifier();
-        } else if (panel.getUnit() instanceof Specimen sp) {
+        } else if (panel.getUnit() instanceof SpecimenDTO sp) {
             title = sp.getFullIdentifier();
         }
         return title;

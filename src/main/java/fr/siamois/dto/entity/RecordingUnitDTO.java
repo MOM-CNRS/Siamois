@@ -1,10 +1,14 @@
 package fr.siamois.dto.entity;
 
+import jakarta.persistence.Column;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
+import java.time.OffsetDateTime;
 import java.util.Set;
 
 @Data
+@NoArgsConstructor
 public class RecordingUnitDTO extends AbstractEntityDTO {
 
     private String identifier;
@@ -12,6 +16,8 @@ public class RecordingUnitDTO extends AbstractEntityDTO {
     private ConceptDTO type;
     private ActionUnitDTO actionUnit;
     private Set<RecordingUnitSummaryDTO> parents;
+    private OffsetDateTime openingDate;
+    private OffsetDateTime closingDate;
 
     public RecordingUnitDTO(RecordingUnitDTO original) {
         identifier = original.getIdentifier();

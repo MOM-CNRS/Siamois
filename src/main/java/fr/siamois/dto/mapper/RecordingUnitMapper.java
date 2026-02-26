@@ -1,4 +1,4 @@
-package fr.siamois.domain.mapper;
+package fr.siamois.dto.mapper;
 
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.dto.entity.RecordingUnitDTO;

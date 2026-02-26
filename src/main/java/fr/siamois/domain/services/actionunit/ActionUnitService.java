@@ -133,9 +133,11 @@ public class ActionUnitService implements ArkEntityService {
      * @throws RuntimeException            If the repository method returns a RuntimeException
      */
     @Transactional(readOnly = true)
-    public ActionUnit findById(long id) {
+    public ActionUnitDTO findById(long id) {
         try {
-            return actionUnitRepository.findById(id).orElseThrow(() -> new ActionUnitNotFoundException("ActionUnit not found with ID: " + id));
+            ActionUnit actionUnit = actionUnitRepository.findById(id)
+                    .orElseThrow(() -> new ActionUnitNotFoundException("ActionUnit not found with ID: " + id));
+            return conversionService.convert(actionUnit, ActionUnitDTO.class);
         } catch (RuntimeException e) {
             log.error(e.getMessage(), e);
             throw e;

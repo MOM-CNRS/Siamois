@@ -23,6 +23,7 @@ import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitTreeService;
 import fr.siamois.domain.services.specimen.SpecimenService;
 import fr.siamois.dto.entity.AbstractEntityDTO;
+import fr.siamois.dto.entity.ConceptDTO;
 import fr.siamois.dto.entity.RecordingUnitDTO;
 import fr.siamois.dto.entity.SpatialUnitDTO;
 import fr.siamois.infrastructure.database.initializer.seeder.RecordingUnitRelSeeder;
@@ -95,7 +96,7 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
 
     private EnabledRulesEngine enabledEngine;
 
-    private final BiConsumer<CustomField, Concept> formScopeChangeCallback;
+    private final BiConsumer<CustomField, ConceptDTO> formScopeChangeCallback;
     private final String formScopeValueBinding;
 
     // Column enabled state; if key missing, considered enabled
@@ -123,8 +124,9 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
 
     public EntityFormContext(T unit,
                              FieldSource fieldSource,
-                             FormContextServices services, ConversionService conversionService,
-                             BiConsumer<CustomField, Concept> formScopeChangeCallback,
+                             FormContextServices services,
+                             ConversionService conversionService,
+                             BiConsumer<CustomField, ConceptDTO> formScopeChangeCallback,
                              String formScopeValueBinding) {
         this.unit = unit;
         this.fieldSource = fieldSource;

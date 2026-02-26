@@ -9,6 +9,7 @@ import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.models.vocabulary.label.ConceptLabel;
 import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.domain.services.vocabulary.FieldService;
+import fr.siamois.dto.entity.AbstractEntityDTO;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.RedirectBean;
 import fr.siamois.ui.bean.dialog.newunit.handler.INewUnitHandler;
@@ -43,7 +44,7 @@ import java.util.Set;
 @Getter
 @Setter
 @EqualsAndHashCode(callSuper = true)
-public class GenericNewUnitDialogBean<T extends TraceableEntity>
+public class GenericNewUnitDialogBean<T extends AbstractEntityDTO>
         extends AbstractSingleEntity<T> implements Serializable {
 
     private final transient FieldService fieldService;

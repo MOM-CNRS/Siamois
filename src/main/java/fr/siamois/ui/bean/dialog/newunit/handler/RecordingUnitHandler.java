@@ -22,7 +22,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Component
-public class RecordingUnitHandler implements INewUnitHandler<RecordingUnit> {
+public class RecordingUnitHandler implements INewUnitHandler<RecordingUnitDTO> {
 
     public static final String CHILDREN = "children";
     public static final String PARENTS = "parents";
@@ -50,12 +50,12 @@ public class RecordingUnitHandler implements INewUnitHandler<RecordingUnit> {
     }
 
     @Override public UnitKind kind() { return UnitKind.RECORDING; }
-    @Override public RecordingUnit newEmpty() {
-        RecordingUnit recordingUnit = new RecordingUnit();
+    @Override public RecordingUnitDTO newEmpty() {
+        RecordingUnitDTO recordingUnit = new RecordingUnitDTO();
         recordingUnit.setOpeningDate(OffsetDateTime.now());
         return recordingUnit;
     }
-    @Override public RecordingUnit save(UserInfo u, RecordingUnitDTO unit) throws EntityAlreadyExistsException {
+    @Override public RecordingUnitDTO save(UserInfo u, RecordingUnitDTO unit) throws EntityAlreadyExistsException {
         RecordingUnitDTO created = recordingUnitService.save(unit, unit.getType());
         String generatedFullIdentifier = recordingUnitService.generateFullIdentifier(created.getActionUnit(), created);
         created.setFullIdentifier(generatedFullIdentifier);
@@ -74,7 +74,7 @@ public class RecordingUnitHandler implements INewUnitHandler<RecordingUnit> {
 
     @Override public void initFromContext(GenericNewUnitDialogBean<?> bean) throws CannotInitializeNewUnitDialogException {
 
-        RecordingUnit unit = (RecordingUnit) bean.getUnit();
+        RecordingUnitDTO unit = (RecordingUnitDTO) bean.getUnit();
         NewUnitContext ctx = bean.getNewUnitContext();
         if (ctx == null) throw new CannotInitializeNewUnitDialogException("Recording unit cannot be created without a context");
 
@@ -119,7 +119,7 @@ public class RecordingUnitHandler implements INewUnitHandler<RecordingUnit> {
         }
     }
 
-    private void applyScope(RecordingUnit unit, NewUnitContext ctx) throws CannotInitializeNewUnitDialogException {
+    private void applyScope(RecordingUnitDTO unit, NewUnitContext ctx) throws CannotInitializeNewUnitDialogException {
         NewUnitContext.Scope scope = ctx.getScope();
         if (scope == null || scope.getKey() == null || scope.getEntityId() == null) {
             throw new CannotInitializeNewUnitDialogException("Recording unit cannot be created without a context");

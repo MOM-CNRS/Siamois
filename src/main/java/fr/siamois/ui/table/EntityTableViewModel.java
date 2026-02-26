@@ -7,6 +7,7 @@ import fr.siamois.domain.models.form.customform.CustomForm;
 import fr.siamois.domain.services.form.FormService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitTreeService;
+import fr.siamois.dto.entity.AbstractEntityDTO;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.NavBean;
 import fr.siamois.ui.bean.dialog.newunit.GenericNewUnitDialogBean;
@@ -52,7 +53,7 @@ import static fr.siamois.utils.MessageUtils.displayErrorMessage;
  *  - configureRowSystemFields(T entity, CustomForm form)
  */
 @Getter
-public abstract class EntityTableViewModel<T extends TraceableEntity, ID> {
+public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
 
     @Setter
     protected String globalFilter = "";
@@ -312,7 +313,7 @@ public abstract class EntityTableViewModel<T extends TraceableEntity, ID> {
     }
 
 
-    public void onAnyEntityCreated(fr.siamois.domain.models.TraceableEntity created, NewUnitContext ctx) {
+    public void onAnyEntityCreated(T created, NewUnitContext ctx) {
         if (created == null) return;
 
         NewUnitContext.UiInsertPolicy policy = ctx.getInsertPolicy();

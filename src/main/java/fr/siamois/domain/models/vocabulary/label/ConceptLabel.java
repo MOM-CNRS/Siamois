@@ -51,12 +51,6 @@ public abstract class ConceptLabel implements Serializable {
     @JoinColumn(name = "fk_field_parent_concept_id")
     protected Concept parentConcept;
 
-    public abstract LabelType getLabelType();
-
-    public boolean isAltLabel() {
-        return getLabelType() == LabelType.ALT_LABEL;
-    }
-
     @Override
     public boolean equals(Object o) {
         if (!(o instanceof ConceptLabel that)) return false;

@@ -1,5 +1,7 @@
 package fr.siamois.dto.entity;
 
+import jakarta.persistence.Column;
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
 import java.util.HashSet;
@@ -14,5 +16,7 @@ public class ActionUnitDTO extends AbstractEntityDTO {
     private SpatialUnitDTO mainLocation ;
     private String fullIdentifier;
     private Set<SpatialUnitDTO> spatialContext = new HashSet<>();
+    protected Integer maxRecordingUnitCode;
+    protected Integer minRecordingUnitCode;
 
 }

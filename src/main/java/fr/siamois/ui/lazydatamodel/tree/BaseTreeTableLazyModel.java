@@ -2,6 +2,7 @@ package fr.siamois.ui.lazydatamodel.tree;
 
 import fr.siamois.annotations.ExecutionTimeLogger;
 import fr.siamois.domain.models.TraceableEntity;
+import fr.siamois.dto.entity.AbstractEntityDTO;
 import fr.siamois.ui.lazydatamodel.LazyModel;
 import lombok.Getter;
 import lombok.Setter;
@@ -22,7 +23,7 @@ import java.util.function.Function;
  */
 @Getter
 @Setter
-public abstract class BaseTreeTableLazyModel<T extends TraceableEntity, ID> implements Serializable, LazyModel {
+public abstract class BaseTreeTableLazyModel<T extends AbstractEntityDTO, ID> implements Serializable, LazyModel {
 
     /** Filters (for later) */
     private String globalFilter;

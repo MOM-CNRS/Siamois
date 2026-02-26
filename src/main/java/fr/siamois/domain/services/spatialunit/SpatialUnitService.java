@@ -379,17 +379,11 @@ public class SpatialUnitService implements ArkEntityService {
                 || permissionService.isActionManager(user);
     }
 
-    /**
-     * Returns all the spatial units a recording unit can be attached to
-     * @param unitDTO The recording unit
-     * @return The list of spatial unit
-     */
-    public List<SpatialUnit> getSpatialUnitOptionsFor(RecordingUnitDTO unitDTO) {
+    public List<SpatialUnitDTO> getSpatialUnitOptionsFor(RecordingUnitDTO unitDTO) {
         RecordingUnit unit = conversionService.convert(unitDTO, RecordingUnit.class);
         assert unit != null;
         if (unit.getActionUnit() == null) return List.of();
 
-        // Roots from the action’s spatial context
         List<SpatialUnit> roots = new ArrayList<>(unit.getActionUnit().getSpatialContext());
         List<Long> rootIds = roots.stream()
                 .map(SpatialUnit::getId)
@@ -401,10 +395,10 @@ public class SpatialUnitService implements ArkEntityService {
                 ? List.of()
                 : spatialUnitRepository.findDescendantsUpToDepth(rootIds.toArray(Long[]::new), 10);
 
+        LinkedHashMap<Long, SpatialUnitDTO> byId = new LinkedHashMap<>();
+        roots.forEach(su -> byId.put(su.getId(), conversionService.convert(su, SpatialUnitDTO.class)));
+        descendants.forEach(su -> byId.putIfAbsent(su.getId(), conversionService.convert(su, SpatialUnitDTO.class)));
 
-        LinkedHashMap<Long, SpatialUnit> byId = new LinkedHashMap<>();
-        roots.forEach(su -> byId.put(su.getId(), su));
-        descendants.forEach(su -> byId.putIfAbsent(su.getId(), su));
         return new ArrayList<>(byId.values());
     }
 

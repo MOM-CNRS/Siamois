@@ -10,8 +10,5 @@ import lombok.EqualsAndHashCode;
 @Data
 @DiscriminatorValue("0")
 public class ConceptPrefLabel extends ConceptLabel {
-    @Override
-    public LabelType getLabelType() {
-        return LabelType.PREF_LABEL;
-    }
+
 }
