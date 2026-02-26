@@ -8,6 +8,7 @@ import fr.siamois.domain.models.specimen.Specimen;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.ArkEntityService;
 import fr.siamois.dto.entity.AbstractEntityDTO;
+import fr.siamois.dto.entity.ActionUnitDTO;
 import fr.siamois.dto.entity.ConceptDTO;
 import fr.siamois.dto.entity.SpecimenDTO;
 import fr.siamois.infrastructure.database.repositories.specimen.SpecimenRepository;
@@ -191,7 +192,7 @@ public class SpecimenService implements ArkEntityService {
         return specimenRepository.countBySpatialContext(spatialUnit.getId());
     }
 
-    public Integer countByActionContext(ActionUnit actionUnit) {
+    public Integer countByActionContext(ActionUnitDTO actionUnit) {
         return specimenRepository.countByActionContext(actionUnit.getId());
     }
 

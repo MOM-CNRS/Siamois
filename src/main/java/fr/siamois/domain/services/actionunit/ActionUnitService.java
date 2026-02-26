@@ -18,6 +18,7 @@ import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.dto.entity.AbstractEntityDTO;
 import fr.siamois.dto.entity.ActionUnitDTO;
+import fr.siamois.dto.entity.SpatialUnitDTO;
 import fr.siamois.infrastructure.database.repositories.actionunit.ActionCodeRepository;
 import fr.siamois.infrastructure.database.repositories.actionunit.ActionUnitRepository;
 import fr.siamois.infrastructure.database.repositories.team.TeamMemberRepository;
@@ -102,7 +103,7 @@ public class ActionUnitService implements ArkEntityService {
      * @return A page of Action Units matching the criteria
      */
     @Transactional(readOnly = true)
-    public Page<ActionUnit> findAllByInstitutionAndBySpatialUnitAndByNameContainingAndByCategoriesAndByGlobalContaining(
+    public Page<ActionUnitDTO> findAllByInstitutionAndBySpatialUnitAndByNameContainingAndByCategoriesAndByGlobalContaining(
             Long institutionId, Long spatialUnitId,
             String name, Long[] categoryIds, Long[] personIds, String global, String langCode, Pageable pageable) {
 
@@ -334,7 +335,7 @@ public class ActionUnitService implements ArkEntityService {
      * @param spatialUnit The SpatialUnit to count ActionUnits for
      * @return The count of ActionUnits associated with the SpatialUnit
      */
-    public Integer countBySpatialContext(SpatialUnit spatialUnit) {
+    public Integer countBySpatialContext(SpatialUnitDTO spatialUnit) {
         return actionUnitRepository.countBySpatialContext(spatialUnit.getId());
     }
 

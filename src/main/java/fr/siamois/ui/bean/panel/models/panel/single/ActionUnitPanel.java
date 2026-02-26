@@ -18,6 +18,8 @@ import fr.siamois.domain.services.recordingunit.identifier.generic.RuIdentifierR
 import fr.siamois.domain.services.specimen.SpecimenService;
 import fr.siamois.domain.services.vocabulary.LabelService;
 import fr.siamois.dto.entity.ActionUnitDTO;
+import fr.siamois.dto.entity.ConceptDTO;
+import fr.siamois.dto.entity.RecordingUnitDTO;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.NavBean;
 import fr.siamois.ui.bean.RedirectBean;
@@ -159,10 +161,8 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnitDTO> im
 
             unit = actionUnitService.findById(idunit);
             this.setTitleCodeOrTitle(unit.getName()); // Set panel title
-            backupClone = new ActionUnit(unit);
+            backupClone = new ActionUnitDTO();
             this.titleCodeOrTitle = unit.getName();
-            secondaryActionCodes = new ArrayList<>(unit.getSecondaryActionCodes());
-            fType = this.unit.getType();
 
             initForms(true);
 
@@ -180,7 +180,7 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnitDTO> im
         }
 
 
-        history = historyAuditService.findAllRevisionForEntity(ActionUnit.class, idunit);
+        history = historyAuditService.findAllRevisionForEntity(ActionUnitDTO.class, idunit);
         documents = documentService.findForActionUnit(unit);
     }
 
@@ -250,18 +250,18 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnitDTO> im
     }
 
     @Override
-    ActionUnit findUnitById(Long id) {
+    ActionUnitDTO findUnitById(Long id) {
         return actionUnitService.findById(id);
     }
 
     @Override
-    String findLabel(ActionUnit unit) {
+    String findLabel(ActionUnitDTO unit) {
         return unit.getName();
     }
 
 
     @Override
-    String getOpenPanelCommand(ActionUnit unit) {
+    String getOpenPanelCommand(ActionUnitDTO unit) {
         return "#{flowBean.addActionUnitPanel(".concat(unit.getId().toString()).concat(")}");
     }
 
@@ -280,7 +280,7 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnitDTO> im
     }
 
     @Override
-    protected void setFormScopePropertyValue(Concept concept) {
+    protected void setFormScopePropertyValue(ConceptDTO concept) {
         // to be implemented
     }
 
@@ -288,14 +288,13 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnitDTO> im
     @Override
     public void cancelChanges() {
         unit.setName(backupClone.getName());
-        unit.setValidated(backupClone.getValidated());
         unit.setType(backupClone.getType());
         formContext.setHasUnsavedModifications(false);
         initForms(true);
     }
 
     @Override
-    public void visualise(RevisionWithInfo<ActionUnit> history) {
+    public void visualise(RevisionWithInfo<ActionUnitDTO> history) {
         // button is deactivated
     }
 
@@ -411,7 +410,7 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnitDTO> im
                 spatialUnitService,
                 navBean,
                 flowBean,
-                (GenericNewUnitDialogBean<RecordingUnit>) genericNewUnitDialogBean,
+                (GenericNewUnitDialogBean<RecordingUnitDTO>) genericNewUnitDialogBean,
                 recordingUnitWriteVerifier,
                 recordingUnitService,
                 rLazyTree,

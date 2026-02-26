@@ -13,6 +13,8 @@ import fr.siamois.domain.models.specimen.Specimen;
 import fr.siamois.domain.services.ArkEntityService;
 import fr.siamois.domain.services.document.compressor.FileCompressor;
 import fr.siamois.dto.entity.AbstractEntityDTO;
+import fr.siamois.dto.entity.ActionUnitDTO;
+import fr.siamois.dto.entity.SpatialUnitDTO;
 import fr.siamois.dto.entity.SpecimenDTO;
 import fr.siamois.infrastructure.database.repositories.DocumentRepository;
 import fr.siamois.infrastructure.files.DocumentStorage;
@@ -173,7 +175,7 @@ public class DocumentService implements ArkEntityService {
      * @param spatialUnit the spatial unit for which documents are to be found
      * @return a list of documents associated with the spatial unit
      */
-    public List<Document> findForSpatialUnit(SpatialUnit spatialUnit) {
+    public List<Document> findForSpatialUnit(SpatialUnitDTO spatialUnit) {
         return documentRepository.findDocumentsBySpatialUnit(spatialUnit.getId());
     }
 
@@ -183,7 +185,7 @@ public class DocumentService implements ArkEntityService {
      * @param actionUnit the action unit for which documents are to be found
      * @return a list of documents associated with the action unit
      */
-    public List<Document> findForActionUnit(ActionUnit actionUnit) {
+    public List<Document> findForActionUnit(ActionUnitDTO actionUnit) {
         return documentRepository.findDocumentsByActionUnit(actionUnit.getId());
     }
 
@@ -213,7 +215,7 @@ public class DocumentService implements ArkEntityService {
      * @param document    the document to be added
      * @param spatialUnit the spatial unit to which the document is to be added
      */
-    public void addToSpatialUnit(Document document, SpatialUnit spatialUnit) {
+    public void addToSpatialUnit(Document document, SpatialUnitDTO spatialUnit) {
         documentRepository.addDocumentToSpatialUnit(document.getId(), spatialUnit.getId());
     }
 
@@ -223,7 +225,7 @@ public class DocumentService implements ArkEntityService {
      * @param document    the document to be added
      * @param specimen the spatial unit to which the document is to be added
      */
-    public void addToSpecimen(Document document, Specimen specimen) {
+    public void addToSpecimen(Document document, SpecimenDTO specimen) {
         documentRepository.addDocumentToSpecimen(document.getId(), specimen.getId());
     }
 
@@ -233,7 +235,7 @@ public class DocumentService implements ArkEntityService {
      * @param document    the document to be added
      * @param actionUnit the action unit to which the document is to be added
      */
-    public void addToActionUnit(Document document, ActionUnit actionUnit) {
+    public void addToActionUnit(Document document, ActionUnitDTO actionUnit) {
         documentRepository.addDocumentToActionUnit(document.getId(), actionUnit.getId());
     }
 
@@ -305,7 +307,7 @@ public class DocumentService implements ArkEntityService {
      * @param hash        the hash of the document to check
      * @return true if the document exists in the spatial unit, false otherwise
      */
-    public boolean existInSpatialUnitByHash(SpatialUnit spatialUnit, String hash) {
+    public boolean existInSpatialUnitByHash(SpatialUnitDTO spatialUnit, String hash) {
         return documentRepository.existsByHashInSpatialUnit(spatialUnit.getId(), hash);
     }
 
@@ -316,7 +318,7 @@ public class DocumentService implements ArkEntityService {
      * @param hash        the hash of the document to check
      * @return true if the document exists in the spatial unit, false otherwise
      */
-    public boolean existInSpecimenByHash(Specimen specimen, String hash) {
+    public boolean existInSpecimenByHash(SpecimenDTO specimen, String hash) {
         return documentRepository.existsByHashInSpecimen(specimen.getId(), hash);
     }
 
@@ -338,7 +340,7 @@ public class DocumentService implements ArkEntityService {
      * @param hash        the hash of the document to check
      * @return true if the document exists in the spatial unit, false otherwise
      */
-    public boolean existInActionUnitByHash(ActionUnit actionUnit, String hash) {
+    public boolean existInActionUnitByHash(ActionUnitDTO actionUnit, String hash) {
         return documentRepository.existsByHashInActionUnit(actionUnit.getId(), hash);
     }
 

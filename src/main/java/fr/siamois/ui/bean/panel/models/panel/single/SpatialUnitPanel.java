@@ -15,6 +15,7 @@ import fr.siamois.domain.services.person.PersonService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.specimen.SpecimenService;
 import fr.siamois.domain.services.vocabulary.LabelService;
+import fr.siamois.dto.entity.ActionUnitDTO;
 import fr.siamois.dto.entity.ConceptDTO;
 import fr.siamois.dto.entity.SpatialUnitDTO;
 import fr.siamois.ui.bean.LangBean;
@@ -217,7 +218,7 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
             this.unit = spatialUnitService.findById(idunit);
             this.setTitleCodeOrTitle(unit.getName()); // Set panel title
 
-            backupClone = new SpatialUnit(unit);
+            backupClone = new SpatialUnitDTO(unit);
 
             initForms(true);
 
@@ -233,16 +234,13 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
         }
 
 
-        history = historyAuditService.findAllRevisionForEntity(SpatialUnit.class, idunit);
+        history = historyAuditService.findAllRevisionForEntity(SpatialUnitDTO.class, idunit);
         documents = documentService.findForSpatialUnit(unit);
     }
 
     @Override
     public void cancelChanges() {
-        unit.setGeom(backupClone.getGeom());
         unit.setName(backupClone.getName());
-        unit.setValidated(backupClone.getValidated());
-        unit.setArk(backupClone.getArk());
         unit.setCategory(backupClone.getCategory());
         formContext.setHasUnsavedModifications(false);
         initForms(true);
@@ -272,7 +270,7 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
     }
 
     @Override
-    public void visualise(RevisionWithInfo<SpatialUnit> history) {
+    public void visualise(RevisionWithInfo<SpatialUnitDTO> history) {
         // button is deactivated
     }
 
@@ -304,12 +302,12 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
     }
 
     @Override
-    protected boolean documentExistsInUnitByHash(SpatialUnit unit, String hash) {
+    protected boolean documentExistsInUnitByHash(SpatialUnitDTO unit, String hash) {
         return documentService.existInSpatialUnitByHash(unit, hash);
     }
 
     @Override
-    protected void addDocumentToUnit(Document doc, SpatialUnit unit) {
+    protected void addDocumentToUnit(Document doc, SpatialUnitDTO unit) {
         documentService.addToSpatialUnit(doc, unit);
     }
 
@@ -381,7 +379,7 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
                 spatialUnitService,
                 navBean,
                 flowBean,
-                (GenericNewUnitDialogBean<ActionUnit>) genericNewUnitDialogBean,
+                (GenericNewUnitDialogBean<ActionUnitDTO>) genericNewUnitDialogBean,
                 actionLazyTree,
                 institutionService,
                 formContextServices
@@ -428,7 +426,7 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
                 spatialUnitService,
                 navBean,
                 flowBean,
-                (GenericNewUnitDialogBean<SpatialUnit>) genericNewUnitDialogBean,
+                (GenericNewUnitDialogBean<SpatialUnitDTO>) genericNewUnitDialogBean,
                 spatialUnitWriteVerifier,
                 childLazyTree,
                 institutionService,

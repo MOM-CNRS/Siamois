@@ -11,6 +11,7 @@ import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.person.PersonService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.specimen.SpecimenService;
+import fr.siamois.dto.entity.ConceptDTO;
 import fr.siamois.dto.entity.SpecimenDTO;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.RedirectBean;
@@ -52,12 +53,12 @@ public class SpecimenPanel extends AbstractSingleEntityPanel<SpecimenDTO>  imple
     private final transient SpecimenService specimenService;
 
     @Override
-    protected boolean documentExistsInUnitByHash(Specimen unit, String hash) {
+    protected boolean documentExistsInUnitByHash(SpecimenDTO unit, String hash) {
         return documentService.existInSpecimenByHash(unit, hash);
     }
 
     @Override
-    protected void addDocumentToUnit(Document doc, Specimen unit) {
+    protected void addDocumentToUnit(Document doc, SpecimenDTO unit) {
         documentService.addToSpecimen(doc, unit);
     }
 
@@ -97,7 +98,7 @@ public class SpecimenPanel extends AbstractSingleEntityPanel<SpecimenDTO>  imple
         try {
 
             unit = specimenService.findById(idunit);
-            backupClone = new Specimen(SpecimenDTO);
+            backupClone = new SpecimenDTO();
             this.titleCodeOrTitle = unit.getFullIdentifier();
 
             initForms(true);
@@ -153,12 +154,12 @@ public class SpecimenPanel extends AbstractSingleEntityPanel<SpecimenDTO>  imple
     }
 
     @Override
-    Specimen findUnitById(Long id) {
+    SpecimenDTO findUnitById(Long id) {
         return specimenService.findById(id);
     }
 
     @Override
-    String findLabel(Specimen unit) {
+    String findLabel(SpecimenDTO unit) {
         return unit.getFullIdentifier();
     }
 
@@ -176,7 +177,7 @@ public class SpecimenPanel extends AbstractSingleEntityPanel<SpecimenDTO>  imple
     }
 
     @Override
-    String getOpenPanelCommand(Specimen unit) {
+    String getOpenPanelCommand(SpecimenDTO unit) {
         return "#{flowBean.addSpecimenPanel(".concat(unit.getId().toString()).concat(")}");
     }
 
@@ -195,7 +196,7 @@ public class SpecimenPanel extends AbstractSingleEntityPanel<SpecimenDTO>  imple
     }
 
     @Override
-    protected void setFormScopePropertyValue(Concept concept) {
+    protected void setFormScopePropertyValue(ConceptDTO concept) {
         unit.setType(concept);
     }
 
@@ -203,19 +204,14 @@ public class SpecimenPanel extends AbstractSingleEntityPanel<SpecimenDTO>  imple
     public void cancelChanges() {
 
         unit.setType(backupClone.getType());
-        unit.setRecordingUnit(backupClone.getRecordingUnit());
-        unit.setCategory(backupClone.getCategory());
         unit.setCreatedByInstitution(backupClone.getCreatedByInstitution());
         unit.setCreatedBy(backupClone.getCreatedBy());
-        unit.setAuthors(backupClone.getAuthors());
-        unit.setCollectors(backupClone.getCollectors());
-        unit.setCollectionDate(backupClone.getCollectionDate());
         formContext.setHasUnsavedModifications(false);
         initForms(true);
     }
 
     @Override
-    public void visualise(RevisionWithInfo<Specimen> history) {
+    public void visualise(RevisionWithInfo<SpecimenDTO> history) {
         // button is deactivated
     }
 

@@ -27,13 +27,13 @@ public class SpatialUnitTreeTableLazyModel extends BaseTreeTableLazyModel<Spatia
     @Override
     protected List<SpatialUnitDTO> fetchRoots() {
         return switch (scope.getType()) {
-            case INSTITUTION -> spatialUnitService.findRootsOf(scope.getInstitutionId());
+            case INSTITUTION -> spatialUnitService.findDTORootsOf(scope.getInstitutionId());
             case CHILDREN_OF_SPATIAL_UNIT -> spatialUnitService.findDirectChildrensOf(scope.getSpatialUnitId());
         };
     }
 
     @Override
-    protected List<SpatialUnit> fetchChildren(SpatialUnit parentUnit) {
+    protected List<SpatialUnitDTO> fetchChildren(SpatialUnitDTO parentUnit) {
         if(parentUnit != null) {
             return spatialUnitService.findDirectChildrensOf(parentUnit.getId());
         }
@@ -41,14 +41,7 @@ public class SpatialUnitTreeTableLazyModel extends BaseTreeTableLazyModel<Spatia
     }
 
     @Override
-    protected void initializeAssociations(SpatialUnit child) {
-        Hibernate.initialize(child.getChildren());
-        Hibernate.initialize(child.getParents());
-        Hibernate.initialize(child.getRelatedActionUnitList());
-    }
-
-    @Override
-    protected Boolean isLeaf(SpatialUnit node) {
+    protected Boolean isLeaf(SpatialUnitDTO node) {
         if(node!=null){
             return !spatialUnitService.existsChildrenByParentAndInstitution(node.getId(), node.getCreatedByInstitution().getId());
         }

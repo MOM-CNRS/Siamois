@@ -89,7 +89,7 @@ public class RecordingUnitHandler implements INewUnitHandler<RecordingUnitDTO> {
 
     }
 
-    private void handleCellContext(NewUnitContext ctx, RecordingUnit unit) throws CannotInitializeNewUnitDialogException {
+    private void handleCellContext(NewUnitContext ctx, RecordingUnitDTO unit) throws CannotInitializeNewUnitDialogException {
         NewUnitContext.Trigger trigger = ctx.getTrigger();
         if (trigger == null || trigger.getClickedId() == null || trigger.getColumnKey() == null) {
             return;

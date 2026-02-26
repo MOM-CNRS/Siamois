@@ -516,7 +516,7 @@ public class RecordingUnitService implements ArkEntityService {
      * @param actionUnit The ActionUnit to count RecordingUnits for
      * @return The count of RecordingUnit associated with the SpatialUnit
      */
-    public Integer countByActionContext(ActionUnit actionUnit) {
+    public Integer countByActionContext(ActionUnitDTO actionUnit) {
         return recordingUnitRepository.countByActionContext(actionUnit.getId());
     }
 

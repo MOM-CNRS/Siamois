@@ -73,7 +73,7 @@ public class SpatialUnitService implements ArkEntityService {
      * @throws RuntimeException             If the repository method returns a RuntimeException
      */
     @Transactional(readOnly = true)
-    public SpatialUnit findById(long id) {
+    public SpatialUnitDTO findById(long id) {
         try {
             SpatialUnit spatialUnit = spatialUnitRepository.findById(id).orElseThrow(() -> new SpatialUnitNotFoundException("SpatialUnit not found with ID: " + id));
             Hibernate.initialize(spatialUnit);
@@ -330,7 +330,7 @@ public class SpatialUnitService implements ArkEntityService {
      * @param spatialUnit The SpatialUnit to count parents for
      * @return The count of parents for the given SpatialUnit
      */
-    public long countParentsByChild(SpatialUnit spatialUnit) {
+    public long countParentsByChild(SpatialUnitDTO spatialUnit) {
         return spatialUnitRepository.countParentsByChildId(spatialUnit.getId());
     }
 
@@ -340,7 +340,14 @@ public class SpatialUnitService implements ArkEntityService {
      * @param id The institution id to filter by
      * @return A list of root SpatialUnit that have no parents
      */
-    public List<SpatialUnitDTO> findRootsOf(Long id) {
+    public List<SpatialUnitDTO> findDTORootsOf(Long id) {
+        List<SpatialUnit> roots = findRootsOf(id);
+        return roots.stream()
+                .map(spatialUnit -> conversionService.convert(spatialUnit, SpatialUnitDTO.class))
+                .collect(Collectors.toList());
+    }
+
+    public List<SpatialUnit> findRootsOf(Long id) {
         List<SpatialUnit> result = new ArrayList<>();
         for (SpatialUnit spatialUnit : findAllOfInstitution(id)) {
             if (countParentsByChild(spatialUnit) == 0) {
@@ -357,7 +364,7 @@ public class SpatialUnitService implements ArkEntityService {
      * @return A list of direct children SpatialUnit of the given SpatialUnit
      */
     @Transactional
-    public List<SpatialUnit> findDirectChildrensOf(Long id) {
+    public List<SpatialUnitDTO> findDirectChildrensOf(Long id) {
         return spatialUnitRepository.findChildrensOf(id).stream().toList();
     }
 
@@ -367,7 +374,7 @@ public class SpatialUnitService implements ArkEntityService {
      * @param id The ID of the SpatialUnit to find parents for
      * @return A list of direct parents SpatialUnit of the given SpatialUnit
      */
-    public List<SpatialUnit> findDirectParentsOf(Long id) {
+    public List<SpatialUnitDTO> findDirectParentsOf(Long id) {
         return spatialUnitRepository.findParentsOf(id).stream().toList();
     }
 
