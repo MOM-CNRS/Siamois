@@ -203,7 +203,7 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
     /**
      * Notify that a Concept answer changed on the given field – triggers enabled rules re-eval.
      */
-    public void onConceptChanged(CustomField field, Concept newVal) {
+    public void onConceptChanged(CustomField field, ConceptDTO newVal) {
         if (enabledEngine != null) {
             enabledEngine.onAnswerChange(field, newVal, vp, applier);
         }

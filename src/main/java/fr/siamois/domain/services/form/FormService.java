@@ -15,6 +15,7 @@ import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.recordingunit.StratigraphicRelationship;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
+import fr.siamois.dto.entity.ConceptDTO;
 import fr.siamois.infrastructure.database.repositories.form.FormRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
 import fr.siamois.ui.bean.LabelBean;
@@ -343,7 +344,7 @@ public class FormService {
 
     private void handleConcept(CustomFieldAnswer answer, Object value) {
         if (answer instanceof CustomFieldAnswerSelectOneFromFieldCode codeAnswer) {
-            Concept c = (Concept) value;
+            ConceptDTO c = (ConceptDTO) value;
             codeAnswer.setValue(c);
             codeAnswer.setUiVal(new ConceptAutocompleteDTO(
                     c,

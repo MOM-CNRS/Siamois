@@ -190,7 +190,7 @@ public class SpatialUnitService implements ArkEntityService {
      * @throws SpatialUnitAlreadyExistsException If a SpatialUnit with the same name already exists in the institution
      */
     @Transactional
-    public SpatialUnit save(UserInfo info, SpatialUnit su) throws SpatialUnitAlreadyExistsException {
+    public SpatialUnitDTO save(UserInfo info, SpatialUnitDTO su) throws SpatialUnitAlreadyExistsException {
         String name = su.getName();
         Concept type = su.getCategory();
         Set<SpatialUnit> children = su.getChildren();
@@ -230,7 +230,7 @@ public class SpatialUnitService implements ArkEntityService {
 
         spatialUnit = spatialUnitRepository.save(spatialUnit);
 
-        return spatialUnit;
+        return conversionService.convert(spatialUnit, SpatialUnitDTO.class);
     }
 
     /**

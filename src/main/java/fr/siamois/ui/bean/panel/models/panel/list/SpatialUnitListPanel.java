@@ -8,6 +8,7 @@ import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.authorization.writeverifier.SpatialUnitWriteVerifier;
 import fr.siamois.domain.services.form.FormService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitTreeService;
+import fr.siamois.dto.entity.SpatialUnitDTO;
 import fr.siamois.ui.bean.NavBean;
 import fr.siamois.ui.bean.dialog.newunit.GenericNewUnitDialogBean;
 import fr.siamois.ui.bean.dialog.newunit.NewUnitContext;
@@ -40,14 +41,14 @@ import static fr.siamois.ui.lazydatamodel.scope.SpatialUnitScope.Type.INSTITUTIO
 @Data
 @Component
 @Scope(BeanDefinition.SCOPE_PROTOTYPE)
-public class SpatialUnitListPanel extends AbstractListPanel<SpatialUnit>  implements Serializable {
+public class SpatialUnitListPanel extends AbstractListPanel<SpatialUnitDTO>  implements Serializable {
 
 
     //deps
     private final transient FormService formService;
     private final transient SpatialUnitTreeService spatialUnitTreeService;
     private final transient FlowBean flowBean;
-    private final transient GenericNewUnitDialogBean<SpatialUnit> genericNewUnitDialogBean;
+    private final transient GenericNewUnitDialogBean<SpatialUnitDTO> genericNewUnitDialogBean;
     private final transient SpatialUnitWriteVerifier spatialUnitWriteVerifier;
     private final transient NavBean navBean;
     private final transient InstitutionService institutionService;
@@ -99,7 +100,7 @@ public class SpatialUnitListPanel extends AbstractListPanel<SpatialUnit>  implem
 
 
     @Override
-    protected BaseLazyDataModel<SpatialUnit> createLazyDataModel() {
+    protected BaseLazyDataModel<SpatialUnitDTO> createLazyDataModel() {
         SpatialUnitLazyDataModel lazy = new SpatialUnitLazyDataModel(spatialUnitService, sessionSettingsBean, langBean);
         SpatialUnitTreeTableLazyModel lazyTree = new SpatialUnitTreeTableLazyModel(spatialUnitService,
                 SpatialUnitScope.builder()

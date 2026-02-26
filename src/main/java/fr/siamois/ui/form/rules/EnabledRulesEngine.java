@@ -6,6 +6,7 @@ import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswer;
 import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerId;
 import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerSelectOneFromFieldCode;
 import fr.siamois.domain.models.vocabulary.Concept;
+import fr.siamois.dto.entity.ConceptDTO;
 import fr.siamois.ui.form.CustomFieldAnswerFactory;
 
 import java.util.*;
@@ -46,7 +47,7 @@ public final class EnabledRulesEngine {
         }
     }
 
-    private CustomFieldAnswer buildConceptOverride(CustomField field, Concept concept) {
+    private CustomFieldAnswer buildConceptOverride(CustomField field, ConceptDTO concept) {
         CustomFieldAnswer answer = CustomFieldAnswerFactory.instantiateAnswerForField(field);
         CustomFieldAnswerId id = new CustomFieldAnswerId();
         id.setField(field);
@@ -66,7 +67,7 @@ public final class EnabledRulesEngine {
     /** À appeler quand la réponse d'un champ a changé. */
     public void onAnswerChange(
             CustomField changedField,
-            Concept newConcept,
+            ConceptDTO newConcept,
             ValueProvider baseVp,
             ColumnApplier applier
     ) {

@@ -2,6 +2,8 @@ package fr.siamois.domain.models.form.customfieldanswer;
 
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.models.vocabulary.label.ConceptLabel;
+import fr.siamois.dto.entity.ConceptDTO;
+import fr.siamois.dto.entity.ConceptLabelDTO;
 import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
 import jakarta.persistence.*;
 import lombok.Data;
@@ -19,18 +21,16 @@ import java.util.Objects;
 @Table(name = "custom_field_answer")
 public class CustomFieldAnswerSelectOneFromFieldCode extends CustomFieldAnswer {
 
-    @ManyToOne
-    @JoinColumn(name = "fk_value_as_concept")
-    private Concept value;
+    private ConceptDTO value;
 
     @Transient
     private transient ConceptAutocompleteDTO uiVal;
 
-    public void setValue(ConceptLabel conceptLabel) {
+    public void setValue(ConceptLabelDTO conceptLabel) {
         this.value = conceptLabel.getConcept();
     }
 
-    public void setValue(Concept concept) {
+    public void setValue(ConceptDTO concept) {
         this.value = concept;
     }
 

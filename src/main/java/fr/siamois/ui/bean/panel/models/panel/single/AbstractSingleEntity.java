@@ -35,7 +35,9 @@ import jakarta.faces.event.ActionEvent;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.Conversion;
 import org.springframework.context.ApplicationContext;
+import org.springframework.core.convert.ConversionService;
 
 import java.io.Serializable;
 import java.time.OffsetDateTime;
@@ -68,6 +70,7 @@ public abstract class AbstractSingleEntity<T extends AbstractEntityDTO> extends 
     protected final transient LangBean langBean;
     protected final transient FormService formService;
     protected final transient FormContextServices formContextServices;
+    protected final transient ConversionService conversionService;
 
     // -------------------- Local state ---------------------
 
@@ -107,6 +110,7 @@ public abstract class AbstractSingleEntity<T extends AbstractEntityDTO> extends 
         this.formService = context.getBean(FormService.class);
         this.formContextServices = context.getBean(FormContextServices.class);
         this.langBean = context.getBean(LangBean.class);
+        this.conversionService = context.getBean(ConversionService.class);
     }
 
     protected AbstractSingleEntity(String titleCodeOrTitle,
@@ -124,6 +128,7 @@ public abstract class AbstractSingleEntity<T extends AbstractEntityDTO> extends 
         this.formService = context.getBean(FormService.class);
         this.formContextServices = context.getBean(FormContextServices.class);
         this.langBean = context.getBean(LangBean.class);
+        this.conversionService = context.getBean(ConversionService.class);
     }
 
     // -------------------- Utility -------------------------
@@ -198,6 +203,7 @@ public abstract class AbstractSingleEntity<T extends AbstractEntityDTO> extends 
                     unit,
                     fieldSource,
                     formContextServices,
+                    conversionService,
                     // callback appelé quand le champ de scope change
                     (field, concept) -> onFormScopeChanged(concept),
                     // nom de la propriété qui porte le scope (ex: "type")

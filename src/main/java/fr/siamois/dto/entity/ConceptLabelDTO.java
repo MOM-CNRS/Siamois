@@ -13,4 +13,8 @@ public abstract class ConceptLabelDTO extends AbstractEntityDTO {
 
     public abstract LabelType getLabelType();
 
+    public boolean isAltLabel() {
+        return getLabelType() == LabelType.ALT_LABEL;
+    }
+
 }
