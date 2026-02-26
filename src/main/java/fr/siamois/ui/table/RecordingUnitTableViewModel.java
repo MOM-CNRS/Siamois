@@ -49,7 +49,7 @@ import static fr.siamois.ui.table.TableColumnAction.GO_TO_RECORDING_UNIT;
  *      - configureRowSystemFields
  */
 @Getter
-public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingUnit, Long> {
+public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingUnitDTO, Long> {
 
 
 
@@ -76,7 +76,7 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
                                        SpatialUnitTreeService spatialUnitTreeService,
                                        SpatialUnitService spatialUnitService,
                                        NavBean navBean,
-                                       FlowBean flowBean, GenericNewUnitDialogBean<RecordingUnit> genericNewUnitDialogBean,
+                                       FlowBean flowBean, GenericNewUnitDialogBean<RecordingUnitDTO> genericNewUnitDialogBean,
                                        RecordingUnitWriteVerifier recordingUnitWriteVerifier,
                                        RecordingUnitService recordingUnitService,
                                        RecordingUnitTreeTableLazyModel treeLazyModel, LangBean langBean, FormContextServices formContextServices) {
@@ -90,7 +90,7 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
                 spatialUnitService,
                 navBean,
                 langBean,
-                RecordingUnit::getId,   // idExtractor
+                RecordingUnitDTO::getId,   // idExtractor
                 "type", // formScopeValueBinding,
                 formContextServices
         );
@@ -126,7 +126,7 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
 
 
     @Override
-    protected void configureRowSystemFields(RecordingUnit ru, FormUiDto rowForm) {
+    protected void configureRowSystemFields(RecordingUnitDTO ru, FormUiDto rowForm) {
         if (rowForm == null || rowForm.getLayout() == null) {
             return;
         }
@@ -137,7 +137,7 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
         }
     }
 
-    private void configureIdentifierField(RecordingUnit ru, CustomField field) {
+    private void configureIdentifierField(RecordingUnitDTO ru, CustomField field) {
         if (!"identifier".equals(field.getValueBinding()) || !(field instanceof CustomFieldInteger cfi)) {
             return;
         }
@@ -147,7 +147,7 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
         }
     }
 
-    private void configureDateTimeField(RecordingUnit ru, CustomField field) {
+    private void configureDateTimeField(RecordingUnitDTO ru, CustomField field) {
         if (!(field instanceof CustomFieldDateTime dt)) {
             return;
         }
@@ -164,7 +164,7 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
 
     @Override
     protected void handleCommandLink(CommandLinkColumn column,
-                                     RecordingUnit ru) {
+                                     RecordingUnitDTO ru) {
 
         if (column.getAction() == GO_TO_RECORDING_UNIT) {
             flowBean.goToRecordingUnitByIdNewPanel(
@@ -180,7 +180,7 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
 
     // resolving cell text based on value key
     @Override
-    public String resolveText(TableColumn column, RecordingUnit ru) {
+    public String resolveText(TableColumn column, RecordingUnitDTO ru) {
 
         if (column instanceof CommandLinkColumn linkColumn) {
             if ("fullIdentifier".equals(linkColumn.getValueKey())) {
@@ -196,7 +196,7 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
     }
 
     @Override
-    public Integer resolveCount(TableColumn column, RecordingUnit ru) {
+    public Integer resolveCount(TableColumn column, RecordingUnitDTO ru) {
         if (column instanceof RelationColumn rel) {
             return switch (rel.getCountKey()) {
                 case PARENTS -> ru.getParents() == null ? 0 : ru.getParents().size();
@@ -307,7 +307,7 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
             default -> "";
         };
     }
-    public void handleRowAction(RowAction action,  RecordingUnit ru) {
+    public void handleRowAction(RowAction action,  RecordingUnitDTO ru) {
         switch (action.getAction()) {
             case TOGGLE_BOOKMARK -> navBean.toggleRecordingUnitBookmark(ru);
             case DUPLICATE_ROW -> this.duplicateRow(ru, null);
@@ -355,8 +355,8 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
     }
 
     // actions specific to treetable
-    public void handleRowAction(RowAction action, TreeNode<RecordingUnit> node) {
-        RecordingUnit ru = node.getData();
+    public void handleRowAction(RowAction action, TreeNode<RecordingUnitDTO> node) {
+        RecordingUnitDTO ru = node.getData();
         if (action.getAction() == DUPLICATE_ROW) {
             if (!Objects.equals(node.getParent().getRowKey(), "root")) {
                 this.duplicateRow(node.getData(), node.getParent().getData());
@@ -375,12 +375,12 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
 
 
     @Override
-    public boolean canUserEditRow(RecordingUnit unit) {
+    public boolean canUserEditRow(RecordingUnitDTO unit) {
         return true; // todo: implement permission
     }
 
     @Override
-    public TreeNode<RecordingUnit> getTreeRoot() {
+    public TreeNode<RecordingUnitDTO> getTreeRoot() {
         return treeLazyModel.getRoot();
     }
 
@@ -431,7 +431,7 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
     @Override
     public void save() {
         // Determine the source of entities based on treeMode
-        Set<RecordingUnit> entities;
+        Set<RecordingUnitDTO> entities;
         if (treeMode) {
             entities = treeLazyModel.getAllEntitiesFromTree();
         } else {
@@ -439,9 +439,9 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
         }
 
         // Iterate over all entities
-        for (RecordingUnit entity : entities) {
+        for (RecordingUnitDTO entity : entities) {
             Long entityId = entity.getId();
-            EntityFormContext<RecordingUnit> context = rowContexts.get(entityId);
+            EntityFormContext<RecordingUnitDTO> context = rowContexts.get(entityId);
 
             // Check if the entity has been modified
             if (context != null && context.isHasUnsavedModifications()) {
@@ -462,7 +462,7 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
     }
 
     @Override
-    public String getRowActionTooltipCode(RowAction action, RecordingUnit unit) {
+    public String getRowActionTooltipCode(RowAction action, RecordingUnitDTO unit) {
 
         return switch (action.getAction()) {
 

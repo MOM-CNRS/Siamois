@@ -2,6 +2,7 @@ package fr.siamois.ui.lazydatamodel;
 
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
+import fr.siamois.dto.entity.RecordingUnitDTO;
 import fr.siamois.ui.bean.LangBean;
 import lombok.Getter;
 import org.springframework.data.domain.Page;
@@ -19,11 +20,11 @@ public class RecordingUnitParentsLazyDataModel extends BaseRecordingUnitLazyData
     }
 
     @Override
-    protected Page<RecordingUnit> loadRecordingUnits(String fullIdentifierFilter,
-                                                     Long[] categoryIds,
-                                                     Long[] personIds,
-                                                     String globalFilter,
-                                                     Pageable pageable) {
+    protected Page<RecordingUnitDTO> loadRecordingUnits(String fullIdentifierFilter,
+                                                        Long[] categoryIds,
+                                                        Long[] personIds,
+                                                        String globalFilter,
+                                                        Pageable pageable) {
         return recordingUnitService.findAllByChildAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
                 recordingUnit.getId(),
                 fullIdentifierFilter, categoryIds, globalFilter,
