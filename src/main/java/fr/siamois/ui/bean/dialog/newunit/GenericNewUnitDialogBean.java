@@ -10,6 +10,7 @@ import fr.siamois.domain.models.vocabulary.label.ConceptLabel;
 import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.domain.services.vocabulary.FieldService;
 import fr.siamois.dto.entity.AbstractEntityDTO;
+import fr.siamois.dto.entity.ConceptDTO;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.RedirectBean;
 import fr.siamois.ui.bean.dialog.newunit.handler.INewUnitHandler;
@@ -66,7 +67,7 @@ public class GenericNewUnitDialogBean<T extends AbstractEntityDTO>
     protected static final String ENTITY_ALREADY_EXIST_MESSAGE_CODE = "common.entity.alreadyExist";
 
     // ==== handlers ====
-    private transient Map<UnitKind, INewUnitHandler<? extends TraceableEntity>> handlers;
+    private transient Map<UnitKind, INewUnitHandler<? extends AbstractEntityDTO>> handlers;
     private UnitKind kind;
     private transient INewUnitHandler<T> handler;
 
@@ -79,7 +80,7 @@ public class GenericNewUnitDialogBean<T extends AbstractEntityDTO>
     }
 
     public GenericNewUnitDialogBean(ApplicationContext context,
-                                    Set<INewUnitHandler<? extends TraceableEntity>> handlerSet) {
+                                    Set<INewUnitHandler<? extends AbstractEntityDTO>> handlerSet) {
         super(context);
         this.flowBean = context.getBean(FlowBean.class);
         this.redirectBean = context.getBean(RedirectBean.class);
@@ -189,7 +190,7 @@ public class GenericNewUnitDialogBean<T extends AbstractEntityDTO>
     }
 
     @Override
-    protected void setFormScopePropertyValue(Concept concept) {
+    protected void setFormScopePropertyValue(ConceptDTO concept) {
         // Empty because new unit form don't change based on type.
         // Need refactoring? Wrong parent class
     }
