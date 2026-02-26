@@ -6,7 +6,7 @@
                 xmlns:p="http://primefaces.org/ui"
                 xmlns:c="http://java.sun.com/jsp/jstl/core"
                 xmlns:f="http://xmlns.jcp.org/jsf/core"
-                xmlns:form="http://java.sun.com/jsf/composite/pages/shared/form">
+                xmlns:form="http://java.sun.com/jsf/composite/pages/shared/form" xmlns:H="http://java.sun.com/jsf/html">
 
     <ui:define name="head">
 
@@ -268,7 +268,7 @@
         <p:outputPanel style="display: flex; flex-direction: row; overflow-y: hidden;" id="flow">
 
             <h:form>
-            <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
+                <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
 
                 <p:tabMenu id="panelTabMenu" class="panel-menu" orientation="left" activeIndex="-1">
                     <c:forEach items="#{flowBean.panels}" var="panel" varStatus="tabStatus">
@@ -291,81 +291,83 @@
             </h:form>
 
 
-
-
-
             <p:outputPanel id="flowContent" styleClass="flow">
-
-
                 <h:panelGroup
                         style="#{flowBean.fullscreenPanelIndex == -1 ? 'display:flex;flex-direction: column;gap:3em;padding:1em;' : 'display:flex;flex-direction: column;gap:0em;padding:0em;border-radius:0px; border:0px;'}"
                         id="flow-panels">
                     <c:forEach items="#{flowBean.panels}" var="panel" varStatus="status">
-                        <p:panel
-                                styleClass="#{panel.panelClass} #{flowBean.fullscreenPanelIndex == -1 ? '' : 'panel-docked'}"
-                                rendered="#{flowBean.fullscreenPanelIndex ==-1 || flowBean.fullscreenPanelIndex == status.index}"
-                                id="panel-${panel.panelIndex}"
-                                toggleable="#{flowBean.fullscreenPanelIndex ==-1}"
-                                closable="#{flowBean.fullscreenPanelIndex ==-1}"
-                                toggleableHeader="#{flowBean.fullscreenPanelIndex ==-1}"
-                                collapsed="#{flowBean.fullscreenPanelIndex != -1 or panel.collapsed}">
+                        <p:outputPanel id="panel-${panel.panelIndex}-container">
+                            <p:panel
+                                    styleClass="#{panel.panelClass} #{flowBean.fullscreenPanelIndex == -1 ? '' : 'panel-docked'}"
+                                    rendered="#{flowBean.fullscreenPanelIndex ==-1 || flowBean.fullscreenPanelIndex == status.index}"
+                                    id="panel-${panel.panelIndex}"
+                                    toggleable="#{flowBean.fullscreenPanelIndex ==-1}"
+                                    closable="#{flowBean.fullscreenPanelIndex ==-1}"
+                                    toggleableHeader="#{flowBean.fullscreenPanelIndex ==-1}"
+                                    collapsed="#{flowBean.fullscreenPanelIndex != -1 or panel.collapsed}">
 
-                            <p:ajax event="close" listener="#{flowBean.closePanel(panel.panelIndex)}" update="flow"
-                                    onstart="PF('newUnitDiag').hide();PF('buiContent').show();"
-                                    oncomplete="PF('buiContent').hide()"
-                            />
-                            <p:ajax event="toggle" listener="#{flowBean.handleToggleOfPanel(panel.panelIndex)}"/>
+                                <p:ajax event="close" listener="#{flowBean.closePanel(panel.panelIndex)}" update="flow"
+                                        onstart="PF('newUnitDiag').hide();PF('buiContent').show();"
+                                        oncomplete="PF('buiContent').hide()"
+                                />
+                                <p:ajax event="toggle" listener="#{flowBean.handleToggleOfPanel(panel.panelIndex)}"/>
 
-                            <f:facet name="header">
-                                <p:outputPanel id="panel-${panel.panelIndex}-header" style="display: flex;gap: 0.5em; align-items: center;
+                                <f:facet name="header">
+                                    <p:outputPanel id="panel-${panel.panelIndex}-header" style="display: flex;gap: 0.5em; align-items: center;
                             flex-wrap: wrap; float:left;color: var(--main-color);">
-                                    <ui:include rendered="#{panel.displayHeader() != null}"
-                                                src="#{panel.displayHeader()}">
+                                        <ui:include rendered="#{panel.displayHeader() != null}"
+                                                    src="#{panel.displayHeader()}">
+                                            <ui:param name="panelModel" value="#{panel}"/>
+                                        </ui:include>
+                                    </p:outputPanel>
+                                </f:facet>
+                                <p:outputPanel id="panelContent" deferred="true" loaded="#{panel.loaded}">
+                                    <p:ajax event="load" action="#{panel.loadData()}" update="panel-${panel.panelIndex}-container"/>
+                                    <ui:include src="#{panel.display()}" id="panel-body">
                                         <ui:param name="panelModel" value="#{panel}"/>
+                                        <ui:param name="panelIndex" value="#{panel.panelIndex}"/>
                                     </ui:include>
                                 </p:outputPanel>
-                            </f:facet>
-                            <ui:include src="#{panel.display()}" id="panel-body">
-                                <ui:param name="panelModel" value="#{panel}"/>
-                                <ui:param name="panelIndex" value="#{panel.panelIndex}"/>
-                            </ui:include>
-                            <f:facet name="actions">
-                                <form:csrfform formId="actionsFormId">
-                                    <p:commandLink id="refreshPanelButton"
-                                                   styleClass="ui-panel-titlebar-icon ui-corner-all ui-state-default"
-                                                   action="#{panel.refresh()}"
-                                                   onstart="PF('buiPanel_${panel.panelIndex}').show();"
-                                                   oncomplete="PF('buiPanel_${panel.panelIndex}').hide();"
-                                                   onclick="event.stopPropagation();"
-                                                   update="panel-${panel.panelIndex}">
-                                        <h:outputText styleClass="bi bi-arrow-clockwise"/>
-                                    </p:commandLink>
-                                    <p:commandLink id="bookmarkToggleButton"
-                                                   styleClass="ui-panel-titlebar-icon ui-corner-all ui-state-default"
-                                                   action="#{navBean.togglePanelBookmark(panel)}"
-                                                   onclick="event.stopPropagation();"
-                                                   update="bookmarkToggleButton navBarCsrfForm:siamoisNavForm">
-                                        <h:outputText styleClass="#{navBean.isPanelBookmarkedByUser(panel) ?
+                                <f:facet name="actions">
+                                    <h:form id="actionForm-${panel.panelIndex}">
+                                        <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
+                                        <p:commandLink id="refreshPanelButton"
+                                                       styleClass="ui-panel-titlebar-icon ui-corner-all ui-state-default"
+                                                       action="#{panel.refresh()}"
+                                                       onstart="PF('buiPanel_${panel.panelIndex}').show();"
+                                                       oncomplete="PF('buiPanel_${panel.panelIndex}').hide();"
+                                                       onclick="event.stopPropagation();"
+                                                       update="panel-${panel.panelIndex}">
+                                            <h:outputText styleClass="bi bi-arrow-clockwise"/>
+                                        </p:commandLink>
+                                        <p:commandLink id="bookmarkToggleButton"
+                                                       styleClass="ui-panel-titlebar-icon ui-corner-all ui-state-default"
+                                                       action="#{navBean.togglePanelBookmark(panel)}"
+                                                       onclick="event.stopPropagation();"
+                                                       update="bookmarkToggleButton navBarCsrfForm:siamoisNavForm">
+                                            <h:outputText styleClass="#{navBean.isPanelBookmarkedByUser(panel) ?
                             'ui-icon bi bi-bookmark-fill' : 'ui-icon bi bi-bookmark'}"/>
-                                    </p:commandLink>
-                                    <p:commandLink rendered="#{flowBean.fullscreenPanelIndex ==-1}"
-                                                   action="#{flowBean.fullScreen(panel)}"
-                                                   update="flow"
-                                                   styleClass="ui-panel-titlebar-icon ui-corner-all ui-state-default">
-                                        <h:outputText styleClass="ui-icon bi bi-arrows-angle-expand"/>
-                                    </p:commandLink>
-                                    <p:commandLink rendered="#{flowBean.fullscreenPanelIndex == status.index}"
-                                                   action="#{flowBean.closeFullScreen()}"
-                                                   update="flow"
-                                                   styleClass="ui-panel-titlebar-icon ui-corner-all ui-state-default">
-                                        <h:outputText styleClass="ui-icon bi bi-arrows-angle-contract"/>
-                                    </p:commandLink>
-                                </form:csrfform>
-                            </f:facet>
-                        </p:panel>
-                        <p:blockUI block="panel-${panel.panelIndex}" widgetVar="buiPanel_${panel.panelIndex}">
-                            <i class="pi pi-spin pi-spinner" style="font-size: 3rem"/>
-                        </p:blockUI>
+                                        </p:commandLink>
+                                        <p:commandLink rendered="#{flowBean.fullscreenPanelIndex ==-1}"
+                                                       action="#{flowBean.fullScreen(panel)}"
+                                                       update="flow"
+                                                       styleClass="ui-panel-titlebar-icon ui-corner-all ui-state-default">
+                                            <h:outputText styleClass="ui-icon bi bi-arrows-angle-expand"/>
+                                        </p:commandLink>
+                                        <p:commandLink rendered="#{flowBean.fullscreenPanelIndex == status.index}"
+                                                       action="#{flowBean.closeFullScreen()}"
+                                                       update="flow"
+                                                       styleClass="ui-panel-titlebar-icon ui-corner-all ui-state-default">
+                                            <h:outputText styleClass="ui-icon bi bi-arrows-angle-contract"/>
+                                        </p:commandLink>
+                                    </h:form>
+                                </f:facet>
+                            </p:panel>
+                            <p:blockUI block="panel-${panel.panelIndex}" widgetVar="buiPanel_${panel.panelIndex}">
+                                <i class="pi pi-spin pi-spinner" style="font-size: 3rem"/>
+                            </p:blockUI>
+                        </p:outputPanel>
+
 
                     </c:forEach>
                 </h:panelGroup>

@@ -42,7 +42,7 @@
         <p:column style="min-width: 10px;" selectionBox="true" width="fit-content" toggleable="false"/>
 
         <!-- Dynamic Columns -->
-        <p:columns style="min-width: #{column.type != 'COMMAND_LINK' ? '10em' : ''};"
+        <p:columns id="dynamicCols" style="min-width: #{column.type != 'COMMAND_LINK' ? '10em' : ''};"
                    sortable="#{column.sortable}"
                    field="#{column.id}"
                    filterable="#{column.filterable}"

@@ -30,6 +30,12 @@ public abstract class AbstractPanel implements Serializable {
     @Getter(AccessLevel.NONE)
     protected Boolean isBreadcrumbVisible = true;
     protected Boolean collapsed = false;
+    protected Boolean loaded = false;
+
+    public void loadData() {
+        // deffer loading here ?
+        loaded = true;
+    }
 
     public abstract void refresh();
 

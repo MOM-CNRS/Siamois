@@ -19,7 +19,7 @@
     <!-- Row Context -->
     <ui:param name="rowContext" value="#{tableModel.getRowContext(item)}"/>
 
-    <ui:fragment rendered="#{column.type eq 'FORM_FIELD'}">
+    <ui:fragment rendered="#{column.type eq 'FORM_FIELD'}" >
         <ui:include src="/pages/shared/form/customFormFieldContentForTable.xhtml">
             <ui:param name="panelId" value="#{panelId}"/>
             <ui:param name="bean" value="#{rowContext}"/>
