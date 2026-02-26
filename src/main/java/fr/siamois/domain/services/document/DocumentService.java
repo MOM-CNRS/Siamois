@@ -12,6 +12,7 @@ import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.specimen.Specimen;
 import fr.siamois.domain.services.ArkEntityService;
 import fr.siamois.domain.services.document.compressor.FileCompressor;
+import fr.siamois.dto.entity.AbstractEntityDTO;
 import fr.siamois.infrastructure.database.repositories.DocumentRepository;
 import fr.siamois.infrastructure.files.DocumentStorage;
 import fr.siamois.utils.CodeUtils;
@@ -55,9 +56,13 @@ public class DocumentService implements ArkEntityService {
         return documentRepository.findAllByArkIsNullAndCreatedByInstitution(institution);
     }
 
-    @Override
     public ArkEntity save(ArkEntity toSave) {
         return documentRepository.save((Document) toSave);
+    }
+
+    @Override
+    public AbstractEntityDTO save(AbstractEntityDTO toSave) {
+        return null; // TODO IMPLEMENT
     }
 
     /**

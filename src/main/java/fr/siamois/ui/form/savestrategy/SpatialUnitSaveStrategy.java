@@ -3,25 +3,26 @@ package fr.siamois.ui.form.savestrategy;
 import fr.siamois.domain.models.exceptions.actionunit.FailedActionUnitSaveException;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
+import fr.siamois.dto.entity.SpatialUnitDTO;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.form.EntityFormContext;
 import fr.siamois.ui.form.EntityFormContextSaveStrategy;
 import fr.siamois.utils.MessageUtils;
 
-public class SpatialUnitSaveStrategy implements EntityFormContextSaveStrategy<SpatialUnit> {
+public class SpatialUnitSaveStrategy implements EntityFormContextSaveStrategy<SpatialUnitDTO> {
     @Override
-    public boolean save(EntityFormContext<SpatialUnit> context) {
+    public boolean save(EntityFormContext<SpatialUnitDTO> context) {
 
         context.flushBackToEntity();
         // Custom save logic for Action Unit
-        SpatialUnit unit = context.getUnit();
+        SpatialUnitDTO unit = context.getUnit();
         SpatialUnitService service = context.getSpatialUnitService();
         LangBean langBean = context.getLangBean();
 
         try {
             service.save(unit);
         } catch (FailedActionUnitSaveException e) {
-            MessageUtils.displayErrorMessage(langBean, "common.entity.recordingUnits.updateFailed", unit.getName());
+            MessageUtils.displayErrorMessage(langBean, "common.entity.recordingUnits.updateFailed", unit);
             return false;
         }
 

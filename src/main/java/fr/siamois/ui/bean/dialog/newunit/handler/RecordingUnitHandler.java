@@ -7,6 +7,7 @@ import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
+import fr.siamois.dto.entity.RecordingUnitDTO;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
 import fr.siamois.ui.bean.dialog.newunit.GenericNewUnitDialogBean;
@@ -54,8 +55,8 @@ public class RecordingUnitHandler implements INewUnitHandler<RecordingUnit> {
         recordingUnit.setOpeningDate(OffsetDateTime.now());
         return recordingUnit;
     }
-    @Override public RecordingUnit save(UserInfo u, RecordingUnit unit) throws EntityAlreadyExistsException {
-        RecordingUnit created = recordingUnitService.save(unit, unit.getType());
+    @Override public RecordingUnit save(UserInfo u, RecordingUnitDTO unit) throws EntityAlreadyExistsException {
+        RecordingUnitDTO created = recordingUnitService.save(unit, unit.getType());
         String generatedFullIdentifier = recordingUnitService.generateFullIdentifier(created.getActionUnit(), created);
         created.setFullIdentifier(generatedFullIdentifier);
 

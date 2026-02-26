@@ -22,6 +22,10 @@ import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitTreeService;
 import fr.siamois.domain.services.specimen.SpecimenService;
+import fr.siamois.dto.entity.AbstractEntityDTO;
+import fr.siamois.dto.entity.RecordingUnitDTO;
+import fr.siamois.dto.entity.SpatialUnitDTO;
+import fr.siamois.infrastructure.database.initializer.seeder.RecordingUnitRelSeeder;
 import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.form.fieldsource.FieldSource;
@@ -43,6 +47,7 @@ import lombok.Getter;
 import org.primefaces.PrimeFaces;
 import org.primefaces.event.SelectEvent;
 import org.primefaces.model.TreeNode;
+import org.springframework.core.convert.ConversionService;
 
 import java.util.*;
 import java.util.function.BiConsumer;
@@ -62,7 +67,7 @@ import java.util.stream.Collectors;
  *  </p>
  */
 @Data
-public class EntityFormContext<T extends TraceableEntity> {
+public class EntityFormContext<T extends AbstractEntityDTO> {
 
     public static final String UNIT_1_ID = "unit1Id";
     public static final String VOCABULARY_DIRECTION = "vocabularyDirection";
@@ -80,6 +85,7 @@ public class EntityFormContext<T extends TraceableEntity> {
     private final RecordingUnitService recordingUnitService;
     private final ActionUnitService actionUnitService;
     private final LangBean langBean;
+    private final ConversionService conversionService;
 
     @Getter
     private CustomFormResponse formResponse;
@@ -105,7 +111,7 @@ public class EntityFormContext<T extends TraceableEntity> {
             colEnabledByFieldId.put(colField.getId(), enabled);
 
     // Saving methods
-    private static final Map<Class<? extends TraceableEntity>, EntityFormContextSaveStrategy<? extends TraceableEntity>> SAVE_STRATEGIES =
+    private static final Map<Class<? extends TraceableEntity>, EntityFormContextSaveStrategy<? extends AbstractEntityDTO>> SAVE_STRATEGIES =
             new HashMap<>();
 
     static {
@@ -117,7 +123,7 @@ public class EntityFormContext<T extends TraceableEntity> {
 
     public EntityFormContext(T unit,
                              FieldSource fieldSource,
-                             FormContextServices services,
+                             FormContextServices services, ConversionService conversionService,
                              BiConsumer<CustomField, Concept> formScopeChangeCallback,
                              String formScopeValueBinding) {
         this.unit = unit;
@@ -129,6 +135,7 @@ public class EntityFormContext<T extends TraceableEntity> {
         this.spatialUnitService = services.getSpatialUnitService();
         this.recordingUnitService = services.getRecordingUnitService();
         this.langBean = services.getLangBean();
+        this.conversionService = conversionService;
         this.formScopeChangeCallback = formScopeChangeCallback;
         this.formScopeValueBinding = formScopeValueBinding;
     }
@@ -370,8 +377,8 @@ public class EntityFormContext<T extends TraceableEntity> {
     }
 
     public String getAutocompleteClass() {
-        if (unit instanceof RecordingUnit) return "recording-unit-autocomplete";
-        if (unit instanceof SpatialUnit)   return "spatial-unit-autocomplete";
+        if (unit instanceof RecordingUnitDTO) return "recording-unit-autocomplete";
+        if (unit instanceof SpatialUnitDTO)   return "spatial-unit-autocomplete";
         return "";
     }
 
@@ -379,9 +386,9 @@ public class EntityFormContext<T extends TraceableEntity> {
      * Returns all the spatial units a recording unit can be attached to
      * @return The list of spatial unit
      */
-    public List<SpatialUnit> getSpatialUnitOptions() {
+    public List<SpatialUnitDTO> getSpatialUnitOptions() {
 
-        if (!(unit instanceof RecordingUnit ru)) {
+        if (!(unit instanceof RecordingUnitDTO ru)) {
             return Collections.emptyList();
         }
 
@@ -415,8 +422,8 @@ public class EntityFormContext<T extends TraceableEntity> {
      * Get all recording units of the same scope (action unit) as the current unit.
      * @return The list of recording units
      */
-    public List<RecordingUnit> getRecordingUnitOptions() {
-        if (unit instanceof RecordingUnit recordingUnit) {
+    public List<RecordingUnitDTO> getRecordingUnitOptions() {
+        if (unit instanceof RecordingUnitDTO recordingUnit) {
             return recordingUnitService.findAllByActionUnit(recordingUnit.getActionUnit());
         }
         return Collections.emptyList();

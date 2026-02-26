@@ -29,6 +29,7 @@ public class RecordingUnitChildrenLazyDataModel extends BaseRecordingUnitLazyDat
                 fullIdentifierFilter, categoryIds, globalFilter,
                 langBean.getLanguageCode(),
                 pageable
+
         );
     }
 

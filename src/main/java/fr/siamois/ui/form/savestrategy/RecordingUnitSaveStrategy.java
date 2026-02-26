@@ -3,18 +3,19 @@ package fr.siamois.ui.form.savestrategy;
 import fr.siamois.domain.models.exceptions.recordingunit.FailedRecordingUnitSaveException;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
+import fr.siamois.dto.entity.RecordingUnitDTO;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.form.EntityFormContext;
 import fr.siamois.ui.form.EntityFormContextSaveStrategy;
 import fr.siamois.utils.MessageUtils;
 
-public class RecordingUnitSaveStrategy implements EntityFormContextSaveStrategy<RecordingUnit> {
+public class RecordingUnitSaveStrategy implements EntityFormContextSaveStrategy<RecordingUnitDTO> {
     @Override
-    public boolean save(EntityFormContext<RecordingUnit> context) {
+    public boolean save(EntityFormContext<RecordingUnitDTO> context) {
 
         context.flushBackToEntity();
         // Custom save logic for RecordingUnit
-        RecordingUnit unit = context.getUnit();
+        RecordingUnitDTO unit = context.getUnit();
         RecordingUnitService service = context.getRecordingUnitService();
         LangBean langBean = context.getLangBean();
 
@@ -26,7 +27,7 @@ public class RecordingUnitSaveStrategy implements EntityFormContextSaveStrategy<
         try {
             service.save(unit, unit.getType());
         } catch (FailedRecordingUnitSaveException e) {
-            MessageUtils.displayErrorMessage(langBean, "common.entity.recordingUnits.updateFailed", unit.getFullIdentifier());
+            MessageUtils.displayErrorMessage(langBean, "common.entity.recordingUnits.updateFailed", unit);
             return false;
         }
 

@@ -8,6 +8,7 @@ import fr.siamois.domain.services.authorization.writeverifier.RecordingUnitWrite
 import fr.siamois.domain.services.form.FormService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitTreeService;
+import fr.siamois.dto.entity.RecordingUnitDTO;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.NavBean;
 import fr.siamois.ui.bean.dialog.newunit.GenericNewUnitDialogBean;
@@ -173,12 +174,12 @@ public class RecordingUnitListPanel extends AbstractListPanel<RecordingUnit> imp
         return "/recording-unit";
     }
 
-    public void handleRowEdit(RowEditEvent<RecordingUnit> event) {
+    public void handleRowEdit(RowEditEvent<RecordingUnitDTO> event) {
         handleRuRowEdit(event, recordingUnitService, langBean);
     }
 
-    public static void handleRuRowEdit(RowEditEvent<RecordingUnit> event, RecordingUnitService recordingUnitService, LangBean langBean) {
-        RecordingUnit toSave = event.getObject();
+    public static void handleRuRowEdit(RowEditEvent<RecordingUnitDTO> event, RecordingUnitService recordingUnitService, LangBean langBean) {
+        RecordingUnitDTO toSave = event.getObject();
 
         if (recordingUnitService.fullIdentifierAlreadyExistInAction(toSave)) {
             MessageUtils.displayWarnMessage(langBean, "recordingunit.error.identifier.alreadyExists");

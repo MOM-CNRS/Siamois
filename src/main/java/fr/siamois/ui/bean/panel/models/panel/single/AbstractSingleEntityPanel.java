@@ -13,6 +13,7 @@ import fr.siamois.domain.models.vocabulary.Vocabulary;
 import fr.siamois.domain.services.history.HistoryAuditService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.domain.services.vocabulary.FieldService;
+import fr.siamois.dto.entity.AbstractEntityDTO;
 import fr.siamois.ui.bean.dialog.document.DocumentCreationBean;
 import fr.siamois.ui.bean.panel.FlowBean;
 import fr.siamois.ui.bean.panel.models.panel.single.tab.*;
@@ -43,7 +44,7 @@ import java.util.stream.Collectors;
 @Getter
 @Setter
 @Slf4j
-public abstract class AbstractSingleEntityPanel<T extends TraceableEntity> extends AbstractSingleEntity<T>  implements Serializable {
+public abstract class AbstractSingleEntityPanel<T extends AbstractEntityDTO> extends AbstractSingleEntity<T>  implements Serializable {
 
     public static final String RECORDING_UNIT_FORM_RECORDING_UNIT_TABS = "recordingUnitForm:recordingUnitTabs";
     // Deps

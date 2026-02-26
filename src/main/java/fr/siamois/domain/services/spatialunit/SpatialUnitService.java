@@ -18,9 +18,13 @@ import fr.siamois.domain.services.ark.ArkService;
 import fr.siamois.domain.services.authorization.PermissionServiceImpl;
 import fr.siamois.domain.services.person.PersonService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
+import fr.siamois.dto.entity.AbstractEntityDTO;
+import fr.siamois.dto.entity.RecordingUnitDTO;
+import fr.siamois.dto.entity.SpatialUnitDTO;
 import fr.siamois.infrastructure.database.repositories.SpatialUnitRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.Hibernate;
+import org.springframework.core.convert.ConversionService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -45,14 +49,16 @@ public class SpatialUnitService implements ArkEntityService {
     private final InstitutionService institutionService;
     private final PersonService personService;
     private final PermissionServiceImpl permissionService;
+    private final ConversionService conversionService;
 
-    public SpatialUnitService(SpatialUnitRepository spatialUnitRepository, ConceptService conceptService, ArkService arkService, InstitutionService institutionService, PersonService personService, PermissionServiceImpl permissionService) {
+    public SpatialUnitService(SpatialUnitRepository spatialUnitRepository, ConceptService conceptService, ArkService arkService, InstitutionService institutionService, PersonService personService, PermissionServiceImpl permissionService, ConversionService conversionService) {
         this.spatialUnitRepository = spatialUnitRepository;
         this.conceptService = conceptService;
         this.arkService = arkService;
         this.institutionService = institutionService;
         this.personService = personService;
         this.permissionService = permissionService;
+        this.conversionService = conversionService;
     }
 
 
@@ -256,10 +262,10 @@ public class SpatialUnitService implements ArkEntityService {
      */
     @Override
     @Transactional
-    public ArkEntity save(ArkEntity toSave) {
+    public AbstractEntityDTO save(AbstractEntityDTO toSave) {
         try {
             SpatialUnit managedSpatialUnit;
-            SpatialUnit spatialUnit = (SpatialUnit) toSave;
+            SpatialUnit spatialUnit = conversionService.convert(toSave, SpatialUnit.class);
 
             if (spatialUnit.getId() != null) {
                 Optional<SpatialUnit> optUnit = spatialUnitRepository.findById(spatialUnit.getId());
@@ -278,7 +284,7 @@ public class SpatialUnitService implements ArkEntityService {
             Concept type = conceptService.saveOrGetConcept(spatialUnit.getCategory());
             managedSpatialUnit.setCategory(type);
 
-            return spatialUnitRepository.save(managedSpatialUnit);
+            return conversionService.convert(spatialUnitRepository.save(managedSpatialUnit), SpatialUnitDTO.class);
 
         } catch (RuntimeException e) {
             throw new FailedRecordingUnitSaveException(e.getMessage());
@@ -375,10 +381,12 @@ public class SpatialUnitService implements ArkEntityService {
 
     /**
      * Returns all the spatial units a recording unit can be attached to
-     * @param unit The recording unit
+     * @param unitDTO The recording unit
      * @return The list of spatial unit
      */
-    public List<SpatialUnit> getSpatialUnitOptionsFor(RecordingUnit unit) {
+    public List<SpatialUnit> getSpatialUnitOptionsFor(RecordingUnitDTO unitDTO) {
+        RecordingUnit unit = conversionService.convert(unitDTO, RecordingUnit.class);
+        assert unit != null;
         if (unit.getActionUnit() == null) return List.of();
 
         // Roots from the action’s spatial context

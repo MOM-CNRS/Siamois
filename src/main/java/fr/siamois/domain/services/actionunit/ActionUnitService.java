@@ -16,12 +16,15 @@ import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.ArkEntityService;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
+import fr.siamois.dto.entity.AbstractEntityDTO;
+import fr.siamois.dto.entity.ActionUnitDTO;
 import fr.siamois.infrastructure.database.repositories.actionunit.ActionCodeRepository;
 import fr.siamois.infrastructure.database.repositories.actionunit.ActionUnitRepository;
 import fr.siamois.infrastructure.database.repositories.team.TeamMemberRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.Hibernate;
+import org.springframework.core.convert.ConversionService;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -46,6 +49,7 @@ public class ActionUnitService implements ArkEntityService {
     private final ActionCodeRepository actionCodeRepository;
     private final TeamMemberRepository teamMemberRepository;
     private final InstitutionService institutionService;
+    private final ConversionService conversionService;
 
     /**
      * Find all Action Units by institution, name, categories, persons, and global search.
@@ -303,9 +307,9 @@ public class ActionUnitService implements ArkEntityService {
      * @return The saved ActionUnit
      */
     @Override
-    public ArkEntity save(ArkEntity toSave) {
+    public AbstractEntityDTO save(AbstractEntityDTO toSave) {
         try {
-            return actionUnitRepository.save((ActionUnit) toSave);
+            return conversionService.convert(actionUnitRepository.save(Objects.requireNonNull(conversionService.convert(toSave, ActionUnit.class))),ActionUnitDTO.class);
         } catch (DataIntegrityViolationException e) {
             throw new FailedActionUnitSaveException(e.getMessage());
         }

@@ -1,5 +1,6 @@
 package fr.siamois.domain.services.recordingunit;
 
+import com.sun.faces.cdi.RequestCookieMapProducer;
 import fr.siamois.domain.models.ArkEntity;
 import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.actionunit.ActionUnit;
@@ -21,18 +22,24 @@ import fr.siamois.domain.services.form.CustomFormResponseService;
 import fr.siamois.domain.services.recordingunit.identifier.generic.RuIdentifierResolver;
 import fr.siamois.domain.services.recordingunit.identifier.generic.RuNumericalIdentifierResolver;
 import fr.siamois.domain.services.vocabulary.ConceptService;
+import fr.siamois.dto.entity.AbstractEntityDTO;
+import fr.siamois.dto.entity.ActionUnitDTO;
+import fr.siamois.dto.entity.ConceptDTO;
+import fr.siamois.dto.entity.RecordingUnitDTO;
 import fr.siamois.infrastructure.database.repositories.person.PersonRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitIdCounterRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitIdInfoRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitRepository;
 import fr.siamois.infrastructure.database.repositories.team.TeamMemberRepository;
 import jakarta.validation.constraints.NotNull;
+import jdk.jfr.consumer.RecordedObject;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.Hibernate;
 import org.reflections.Reflections;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
+import org.springframework.core.convert.ConversionService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.lang.NonNull;
@@ -65,6 +72,7 @@ public class RecordingUnitService implements ArkEntityService {
     private final RecordingUnitIdCounterRepository recordingUnitIdCounterRepository;
     private final RecordingUnitIdInfoRepository recordingUnitIdInfoRepository;
     private final ApplicationContext applicationContext;
+    private final ConversionService conversionService;
 
     /**
      * Bulk update the type of multiple recording units.
@@ -78,7 +86,7 @@ public class RecordingUnitService implements ArkEntityService {
         return recordingUnitRepository.updateTypeByIds(type.getId(), ids);
     }
 
-    public boolean fullIdentifierAlreadyExistInAction(RecordingUnit unit) {
+    public boolean fullIdentifierAlreadyExistInAction(RecordingUnitDTO unit) {
         List<RecordingUnit> existing = findByActionAndFullId(unit.getActionUnit(), unit.getFullIdentifier());
         return existing.stream()
                 .anyMatch(r -> Objects.equals(r.getFullIdentifier(), unit.getFullIdentifier()) && !Objects.equals(r.getId(), unit.getId()));
@@ -87,17 +95,20 @@ public class RecordingUnitService implements ArkEntityService {
     /**
      * Save a recording unit with its associated concept and related units.
      *
-     * @param recordingUnit    The recording unit to save.
-     * @param concept          The concept associated with the recording unit.
+     * @param recordingUnitDTO    The recording unit to save.
+     * @param conceptDTO          The concept associated with the recording unit.
      * @return The saved RecordingUnit instance.
      */
     @Transactional
-    public RecordingUnit save(RecordingUnit recordingUnit, Concept concept) {
+    public RecordingUnitDTO save(RecordingUnitDTO recordingUnitDTO, ConceptDTO conceptDTO) {
 
         try {
 
+            RecordingUnit recordingUnit = conversionService.convert(recordingUnitDTO, RecordingUnit.class);
+            Concept concept = conversionService.convert(conceptDTO, Concept.class);
             RecordingUnit managedRecordingUnit;
 
+            assert recordingUnit != null;
             managedRecordingUnit = newOrGetRecordingUnit(recordingUnit);
 
             setupActionUnitInfo(recordingUnit, managedRecordingUnit);
@@ -109,7 +120,7 @@ public class RecordingUnitService implements ArkEntityService {
             setupParents(recordingUnit, managedRecordingUnit);
             setupChilds(recordingUnit, managedRecordingUnit);
 
-            return recordingUnitRepository.save(managedRecordingUnit);
+            return conversionService.convert(recordingUnitRepository.save(managedRecordingUnit), RecordingUnitDTO.class);
 
         } catch (RuntimeException e) {
             log.error(e.getMessage(), e);
@@ -327,8 +338,9 @@ public class RecordingUnitService implements ArkEntityService {
     }
 
     @Override
-    public RecordingUnit save(ArkEntity toSave) {
-        return recordingUnitRepository.save((RecordingUnit) toSave);
+    public RecordingUnitDTO save(AbstractEntityDTO toSave) {
+        RecordingUnit toReturn = recordingUnitRepository.save(Objects.requireNonNull(conversionService.convert(toSave, RecordingUnit.class)));
+        return conversionService.convert(toReturn,RecordingUnitDTO.class);
     }
 
     /**
@@ -425,7 +437,7 @@ public class RecordingUnitService implements ArkEntityService {
                 (teamMemberRepository.existsByActionUnitAndPerson(action, user.getUser()) && actionUnitService.isActionUnitStillOngoing(action));
     }
 
-    public Page<RecordingUnit> findAllByParentAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
+    public Page<RecordingUnitDTO> findAllByParentAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
             Long recordingUnitId,
             String fullIdentifierFilter,
             Long[] categoryIds,
@@ -437,14 +449,16 @@ public class RecordingUnitService implements ArkEntityService {
                 recordingUnitId, fullIdentifierFilter, categoryIds, globalFilter, languageCode, pageable
         );
 
-
-        // load related entities
-        res.forEach(actionUnit -> {
-            Hibernate.initialize(actionUnit.getParents());
-            Hibernate.initialize(actionUnit.getChildren());
+        res.forEach(unit -> {
+            Hibernate.initialize(unit.getDocuments());
+            Hibernate.initialize(unit.getRelationshipsAsUnit2());
+            Hibernate.initialize(unit.getRelationshipsAsUnit1());
+            Hibernate.initialize(unit.getParents());
+            Hibernate.initialize(unit.getChildren());
         });
 
-        return res;
+        return res
+                .map(unit ->  conversionService.convert(unit, RecordingUnitDTO.class));
     }
 
     public Page<RecordingUnit> findAllByChildAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(Long childId,
@@ -632,13 +646,18 @@ public class RecordingUnitService implements ArkEntityService {
      * Generates the identifier for a recording unit that has no parent.
      * Its creation parameters therefore refer directly to the action unit.
      *
-     * @param actionUnit The action unit containing the identifier configuration.
-     * @param recordingUnit The recording unit to generate the identifier for.
+     * @param actionUnitDTO The action unit containing the identifier configuration.
+     * @param recordingUnitDTO The recording unit to generate the identifier for.
      * @return The generated identifier.
      */
-    public String generateFullIdentifier(@NonNull ActionUnit actionUnit, @NonNull RecordingUnit recordingUnit) {
+    public String generateFullIdentifier(@NonNull ActionUnitDTO actionUnitDTO, @NonNull RecordingUnitDTO recordingUnitDTO) {
+
+        RecordingUnit recordingUnit = conversionService.convert(recordingUnitDTO, RecordingUnit.class);
+        ActionUnit actionUnit = conversionService.convert(actionUnitDTO, ActionUnit.class);
         log.trace("Generating full identifier for recording unit");
+        assert actionUnit != null;
         String format = actionUnit.getRecordingUnitIdentifierFormat();
+        assert recordingUnit != null;
         RecordingUnit parent = recordingUnit
                 .getParents()
                 .stream()
@@ -712,12 +731,17 @@ public class RecordingUnitService implements ArkEntityService {
     }
 
     @NonNull
-    public List<RecordingUnit> findByActionAndFullId(@NotNull ActionUnit actionUnit, @NotNull String fullIdentifier) {
-        return recordingUnitRepository.findByFullIdentifierAndActionUnit(fullIdentifier, actionUnit);
+    public List<RecordingUnit> findByActionAndFullId(@NotNull ActionUnitDTO actionUnit, @NotNull String fullIdentifier) {
+        return recordingUnitRepository.findByFullIdentifierAndActionUnit(fullIdentifier, conversionService.convert(actionUnit, ActionUnit.class));
     }
 
-    public List<RecordingUnit> findAllByActionUnit(@NotNull ActionUnit actionUnit) {
-        return recordingUnitRepository.findAllByActionUnit(actionUnit);
+    public List<RecordingUnitDTO> findAllByActionUnit(@NotNull ActionUnitDTO actionUnitDTO) {
+
+        return recordingUnitRepository
+                .findAllByActionUnit(conversionService.convert(actionUnitDTO, ActionUnit.class))
+                .stream()
+                .map(unit -> conversionService.convert(unit, RecordingUnitDTO.class))
+                .collect(Collectors.toList());
     }
 
     /**

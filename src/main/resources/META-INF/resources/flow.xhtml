@@ -322,7 +322,17 @@
                                     </p:outputPanel>
                                 </f:facet>
                                 <p:outputPanel id="panelContent" deferred="true" loaded="#{panel.loaded}">
-                                    <p:ajax event="load" action="#{panel.loadData()}" update="panel-${panel.panelIndex}-container"/>
+                                    <f:facet name="loading">
+                                        <div class="field" style="padding: 2em 3em;">
+                                            <p:skeleton class="mb-2"/>
+                                            <p:skeleton width="10rem" class="mb-2"/>
+                                            <p:skeleton width="5rem" class="mb-2"/>
+                                            <p:skeleton height="2rem" class="mb-2"/>
+                                            <p:skeleton width="10rem" height="4rem"/>
+                                        </div>
+                                    </f:facet>
+                                    <p:ajax event="load" action="#{panel.loadData()}"
+                                            update="panel-${panel.panelIndex}-container"/>
                                     <ui:include src="#{panel.display()}" id="panel-body">
                                         <ui:param name="panelModel" value="#{panel}"/>
                                         <ui:param name="panelIndex" value="#{panel.panelIndex}"/>

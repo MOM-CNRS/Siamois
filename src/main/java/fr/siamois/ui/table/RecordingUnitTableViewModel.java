@@ -13,6 +13,7 @@ import fr.siamois.domain.services.form.FormService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitTreeService;
+import fr.siamois.dto.entity.RecordingUnitDTO;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.NavBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
@@ -385,10 +386,10 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
 
     // Duplique une unité d'enregistrement
     // Le place au même niveau dans la hierarchie mais ne copie pas les enfants
-    private void duplicateRow(RecordingUnit toDuplicate, RecordingUnit parent) {
+    private void duplicateRow(RecordingUnitDTO toDuplicate, RecordingUnitDTO parent) {
 
         // Create a copy from selected row
-        RecordingUnit newUnit = new RecordingUnit(toDuplicate);
+        RecordingUnitDTO newUnit = new RecordingUnitDTO(toDuplicate);
 
         if(parent != null) {
             newUnit.getParents().add(parent);

@@ -5,6 +5,8 @@ import fr.siamois.domain.models.form.customfield.CustomFieldSelectOneFromFieldCo
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
+import fr.siamois.dto.entity.ConceptDTO;
+import fr.siamois.dto.entity.RecordingUnitDTO;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.panel.models.panel.list.RecordingUnitListPanel;
 import fr.siamois.utils.MessageUtils;
@@ -22,12 +24,12 @@ import java.util.Map;
 
 @Getter
 @Setter
-public abstract class BaseRecordingUnitLazyDataModel extends BaseLazyDataModel<RecordingUnit> {
+public abstract class BaseRecordingUnitLazyDataModel extends BaseLazyDataModel<RecordingUnitDTO> {
 
     protected final transient RecordingUnitService recordingUnitService;
     protected final transient LangBean langBean;
 
-    private Concept bulkEditTypeValue;
+    private ConceptDTO bulkEditTypeValue;
 
     private static final Map<String, String> FIELD_MAPPING;
 
@@ -49,19 +51,11 @@ public abstract class BaseRecordingUnitLazyDataModel extends BaseLazyDataModel<R
     }
 
     @Override
-    protected Page<RecordingUnit> loadData(String name, Long[] categoryIds, Long[] personIds, String globalFilter, Pageable pageable) {
-        Page<RecordingUnit> page =  loadRecordingUnits(name, categoryIds, personIds, globalFilter, pageable);
-        page.forEach(unit -> {
-            Hibernate.initialize(unit.getDocuments());
-            Hibernate.initialize(unit.getRelationshipsAsUnit2());
-            Hibernate.initialize(unit.getRelationshipsAsUnit1());
-            Hibernate.initialize(unit.getParents());
-            Hibernate.initialize(unit.getChildren());
-        });
-        return page;
+    protected Page<RecordingUnitDTO> loadData(String name, Long[] categoryIds, Long[] personIds, String globalFilter, Pageable pageable) {
+        return loadRecordingUnits(name, categoryIds, personIds, globalFilter, pageable);
     }
 
-    protected abstract Page<RecordingUnit> loadRecordingUnits(
+    protected abstract Page<RecordingUnitDTO> loadRecordingUnits(
             String nameFilter, Long[] categoryIds, Long[] personIds,
             String globalFilter, Pageable pageable);
 
@@ -76,17 +70,17 @@ public abstract class BaseRecordingUnitLazyDataModel extends BaseLazyDataModel<R
     }
 
     @Override
-    public String getRowKey(RecordingUnit recordingUnit) {
+    public String getRowKey(RecordingUnitDTO recordingUnit) {
         return recordingUnit != null ? Long.toString(recordingUnit.getId()) : null;
     }
 
 
     @Override
-    public RecordingUnit getRowData(String rowKey) {
-        List<RecordingUnit> units = getWrappedData();
+    public RecordingUnitDTO getRowData(String rowKey) {
+        List<RecordingUnitDTO> units = getWrappedData();
         Long value = Long.valueOf(rowKey);
 
-        for (RecordingUnit unit : units) {
+        for (RecordingUnitDTO unit : units) {
             if (unit.getId().equals(value)) {
                 return unit;
             }
@@ -95,18 +89,18 @@ public abstract class BaseRecordingUnitLazyDataModel extends BaseLazyDataModel<R
         return null;
     }
 
-    public void handleRowEdit(RowEditEvent<RecordingUnit> event) {
+    public void handleRowEdit(RowEditEvent<RecordingUnitDTO> event) {
 
         RecordingUnitListPanel.handleRuRowEdit(event, recordingUnitService, langBean);
     }
 
     public void saveFieldBulk() {
         List<Long> ids = getSelectedUnits().stream()
-                .map(RecordingUnit::getId)
+                .map(RecordingUnitDTO::getId)
                 .toList();
         int updateCount = recordingUnitService.bulkUpdateType(ids, bulkEditTypeValue);
         // Update in-memory list (for UI sync)
-        for (RecordingUnit s : getSelectedUnits()) {
+        for (RecordingUnitDTO s : getSelectedUnits()) {
             s.setType(bulkEditTypeValue);
         }
         MessageUtils.displayInfoMessage(langBean, "common.entity.recordingUnits.bulkUpdated", updateCount);
@@ -114,8 +108,8 @@ public abstract class BaseRecordingUnitLazyDataModel extends BaseLazyDataModel<R
 
     public void duplicateRow() {
         // Create a copy from selected row
-        RecordingUnit original = getRowData();
-        RecordingUnit newRec = new RecordingUnit(original);
+        RecordingUnitDTO original = getRowData();
+        RecordingUnitDTO newRec = new RecordingUnitDTO(original);
 
         // Save it
         newRec = recordingUnitService.save(newRec, newRec.getType());
