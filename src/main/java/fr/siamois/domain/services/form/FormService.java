@@ -10,16 +10,11 @@ import fr.siamois.domain.models.form.customform.CustomForm;
 import fr.siamois.domain.models.form.customform.EnabledWhenJson;
 import fr.siamois.domain.models.form.customform.ValueMatcher;
 import fr.siamois.domain.models.form.customformresponse.CustomFormResponse;
-import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
-import fr.siamois.domain.models.recordingunit.StratigraphicRelationship;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.dto.StratigraphicRelationshipDTO;
-import fr.siamois.dto.entity.ConceptDTO;
-import fr.siamois.dto.entity.InstitutionDTO;
-import fr.siamois.dto.entity.RecordingUnitDTO;
-import fr.siamois.dto.entity.RecordingUnitSummaryDTO;
+import fr.siamois.dto.entity.*;
 import fr.siamois.infrastructure.database.repositories.form.FormRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
 import fr.siamois.ui.bean.LabelBean;
@@ -139,7 +134,7 @@ public class FormService {
                 continue;
             }
 
-            CustomFieldAnswer answer =
+            CustomFieldAnswerViewModel answer =
                     CustomFieldAnswerFactory.instantiateAnswerForField(field);
 
             if (answer != null) {
@@ -217,7 +212,8 @@ public class FormService {
             CustomField field = entry.getKey();
             CustomFieldAnswerViewModel answer = entry.getValue();
 
-            if (answer instanceof CustomFieldAnswerStratigraphy stratiAnswer && jpaEntity instanceof RecordingUnit ru) {
+            if (answer instanceof CustomFieldAnswerStratigraphyViewModel stratiAnswer &&
+                    jpaEntity instanceof RecordingUnitDTO ru) {
                 // Special case
                 setStratigraphyFieldValue(stratiAnswer, ru);
             } else if (isBindableSystemField(field, answer, bindableFields)) {
@@ -254,15 +250,15 @@ public class FormService {
             } catch (NullPointerException e) {
                 return null;
             }
-        } else if (answer instanceof CustomFieldAnswerSelectOneActionUnit a) {
+        } else if (answer instanceof CustomFieldAnswerSelectOneActionUnitViewModel a) {
             return a.getValue();
-        } else if (answer instanceof CustomFieldAnswerSelectOneSpatialUnit a) {
+        } else if (answer instanceof CustomFieldAnswerSelectOneSpatialUnitViewModel a) {
             return a.getValue();
         } else if (answer instanceof CustomFieldAnswerSelectMultipleSpatialUnitTreeViewModel a) {
             return a.getValue();
-        } else if (answer instanceof CustomFieldAnswerSelectOneActionCode a) {
+        } else if (answer instanceof CustomFieldAnswerSelectOneActionCodeViewModel a) {
             return a.getValue();
-        } else if (answer instanceof CustomFieldAnswerInteger a) {
+        } else if (answer instanceof CustomFieldAnswerIntegerViewModel a) {
             return a.getValue();
         }
 
@@ -281,7 +277,7 @@ public class FormService {
         answer.setPk(answerId);
         answer.setHasBeenModified(false);
 
-        if(answer instanceof CustomFieldAnswerStratigraphy stratiAnswer && jpaEntity instanceof RecordingUnitDTO ru) {
+        if(answer instanceof CustomFieldAnswerStratigraphyViewModel stratiAnswer && jpaEntity instanceof RecordingUnitDTO ru) {
             // Special case
             handleStratigraphyRelationships(stratiAnswer, ru);
             return;
@@ -299,9 +295,9 @@ public class FormService {
 
 
 
-    private void populateSystemFieldValue(CustomFieldAnswer answer, Object value) {
+    private void populateSystemFieldValue(CustomFieldAnswerViewModel answer, Object value) {
 
-        Map<Class<?>, BiConsumer<CustomFieldAnswer, Object>> handlers = new HashMap<>();
+        Map<Class<?>, BiConsumer<CustomFieldAnswerViewModel, Object>> handlers = new HashMap<>();
         handlers.put(OffsetDateTime.class, this::handleDateTime);
         handlers.put(String.class, this::handleString);
         handlers.put(Person.class, this::handlePerson);
@@ -321,38 +317,37 @@ public class FormService {
     }
 
     // Méthodes dédiées pour chaque type de 'value'
-    private void handleDateTime(CustomFieldAnswer answer, Object value) {
-        if (answer instanceof CustomFieldAnswerDateTime dateTimeAnswer) {
+    private void handleDateTime(CustomFieldAnswerViewModel answer, Object value) {
+        if (answer instanceof CustomFieldAnswerDateTimeViewModel dateTimeAnswer) {
             dateTimeAnswer.setValue(((OffsetDateTime) value).toLocalDateTime());
         }
     }
 
-    private void handleString(CustomFieldAnswer answer, Object value) {
-        if (answer instanceof CustomFieldAnswerText textAnswer) {
+    private void handleString(CustomFieldAnswerViewModel answer, Object value) {
+        if (answer instanceof CustomFieldAnswerTextViewModel textAnswer) {
             textAnswer.setValue((String) value);
         }
     }
 
-    private void handlePerson(CustomFieldAnswer answer, Object value) {
-        if (answer instanceof CustomFieldAnswerSelectOnePerson singlePersonAnswer) {
-            singlePersonAnswer.setValue((Person) value);
+    private void handlePerson(CustomFieldAnswerViewModel answer, Object value) {
+        if (answer instanceof CustomFieldAnswerSelectOnePersonViewModel singlePersonAnswer) {
+            singlePersonAnswer.setValue((PersonDTO) value);
         }
     }
     @SuppressWarnings("unchecked")
-    private void handlePersonList(CustomFieldAnswer answer, Object value) {
-        if (answer instanceof CustomFieldAnswerSelectMultiplePerson multiplePersonAnswer) {
+    private void handlePersonList(CustomFieldAnswerViewModel answer, Object value) {
+        if (answer instanceof CustomFieldAnswerSelectMultiplePersonViewModel multiplePersonAnswer) {
             List<?> list = (List<?>) value;
             if (list.stream().allMatch(Person.class::isInstance)) {
-                multiplePersonAnswer.setValue((List<Person>) list);
+                multiplePersonAnswer.setValue((List<PersonDTO>) list);
             }
         }
     }
 
-    private void handleConcept(CustomFieldAnswer answer, Object value) {
-        if (answer instanceof CustomFieldAnswerSelectOneFromFieldCode codeAnswer) {
+    private void handleConcept(CustomFieldAnswerViewModel answer, Object value) {
+        if (answer instanceof CustomFieldAnswerSelectOneFromFieldCodeViewModel codeAnswer) {
             ConceptDTO c = (ConceptDTO) value;
-            codeAnswer.setValue(c);
-            codeAnswer.setUiVal(new ConceptAutocompleteDTO(
+            codeAnswer.setValue(new ConceptAutocompleteDTO(
                     c,
                     labelBean.findLabelOf(c),
                     labelBean.getCurrentUserLang()
@@ -360,37 +355,37 @@ public class FormService {
         }
     }
 
-    private void handleActionUnit(CustomFieldAnswer answer, Object value) {
-        if (answer instanceof CustomFieldAnswerSelectOneActionUnit actionUnitAnswer) {
-            actionUnitAnswer.setValue((ActionUnit) value);
+    private void handleActionUnit(CustomFieldAnswerViewModel answer, Object value) {
+        if (answer instanceof CustomFieldAnswerSelectOneActionUnitViewModel actionUnitAnswer) {
+            actionUnitAnswer.setValue((ActionUnitDTO) value);
         }
     }
 
-    private void handleSpatialUnit(CustomFieldAnswer answer, Object value) {
-        if (answer instanceof CustomFieldAnswerSelectOneSpatialUnit spatialUnitAnswer) {
-            spatialUnitAnswer.setValue((SpatialUnit) value);
+    private void handleSpatialUnit(CustomFieldAnswerViewModel answer, Object value) {
+        if (answer instanceof CustomFieldAnswerSelectOneSpatialUnitViewModel spatialUnitAnswer) {
+            spatialUnitAnswer.setValue((SpatialUnitDTO) value);
         }
     }
 
-    private void handleActionCode(CustomFieldAnswer answer, Object value) {
-        if (answer instanceof CustomFieldAnswerSelectOneActionCode actionCodeAnswer) {
+    private void handleActionCode(CustomFieldAnswerViewModel answer, Object value) {
+        if (answer instanceof CustomFieldAnswerSelectOneActionCodeViewModel actionCodeAnswer) {
             actionCodeAnswer.setValue((ActionCode) value);
         }
     }
 
-    private void handleInteger(CustomFieldAnswer answer, Object value) {
-        if (answer instanceof CustomFieldAnswerInteger integerAnswer) {
+    private void handleInteger(CustomFieldAnswerViewModel answer, Object value) {
+        if (answer instanceof CustomFieldAnswerIntegerViewModel integerAnswer) {
             integerAnswer.setValue((Integer) value);
         }
     }
     @SuppressWarnings("unchecked")
-    private void handleSpatialUnitSet(CustomFieldAnswer answer, Object value) {
-        if (answer instanceof CustomFieldAnswerSelectMultipleSpatialUnitTree treeAnswer) {
-            treeAnswer.setValue((Set<SpatialUnit>) value);
+    private void handleSpatialUnitSet(CustomFieldAnswerViewModel answer, Object value) {
+        if (answer instanceof CustomFieldAnswerSelectMultipleSpatialUnitTreeViewModel treeAnswer) {
+            treeAnswer.setValue((Set<SpatialUnitDTO>) value);
         }
     }
 
-    private void handleStratigraphyRelationships(CustomFieldAnswerStratigraphy answer, RecordingUnitDTO unit) {
+    private void handleStratigraphyRelationships(CustomFieldAnswerStratigraphyViewModel answer, RecordingUnitDTO unit) {
         // Set the source unit for the answer
         answer.setSourceToAdd(new RecordingUnitSummaryDTO(unit));
 
@@ -455,7 +450,7 @@ public class FormService {
         }
     }
 
-    private void setStratigraphyFieldValue(CustomFieldAnswerStratigraphy stratiAnswer, RecordingUnitDTO entity) {
+    private void setStratigraphyFieldValue(CustomFieldAnswerStratigraphyViewModel stratiAnswer, RecordingUnitDTO entity) {
         // Clear existing relationships to avoid duplicates
         entity.getRelationshipsAsUnit1().clear();
         entity.getRelationshipsAsUnit2().clear();
