@@ -11,6 +11,6 @@ import java.time.LocalDateTime;
 @Getter
 @Setter
 @NoArgsConstructor
-public class CustomFieldAnswerSelectOnePersonViewModel extends CustomFieldAnswerViewModel {
+public class CustomFieldAnswerSelectOnePersonViewModel extends CustomFieldAnswerSelectPersonViewModel {
     private PersonDTO value;
 }

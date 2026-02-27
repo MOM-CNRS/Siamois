@@ -1,6 +1,5 @@
 package fr.siamois.ui.viewmodel.fieldanswer;
 
-import fr.siamois.domain.models.auth.Person;
 import fr.siamois.dto.entity.PersonDTO;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -12,6 +11,6 @@ import java.util.List;
 @Getter
 @Setter
 @NoArgsConstructor
-public class CustomFieldAnswerSelectMultiplePersonViewModel extends CustomFieldAnswerSelectPersonViewModel {
-    private List<PersonDTO> value = new ArrayList<>();
+public abstract class CustomFieldAnswerSelectPersonViewModel extends CustomFieldAnswerViewModel {
+
 }

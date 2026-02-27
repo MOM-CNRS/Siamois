@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
+import fr.siamois.dto.entity.SpatialUnitDTO;
 import jakarta.faces.component.UIComponent;
 import jakarta.faces.context.FacesContext;
 import jakarta.faces.convert.Converter;
@@ -17,7 +18,7 @@ import java.io.Serializable;
 @ManagedBean
 @Component
 @Slf4j
-public class SpatialUnitConverter implements Converter<SpatialUnit>, Serializable {
+public class SpatialUnitConverter implements Converter<SpatialUnitDTO>, Serializable {
 
     private final ObjectMapper objectMapper;
 
@@ -30,9 +31,9 @@ public class SpatialUnitConverter implements Converter<SpatialUnit>, Serializabl
 
 
     @Override
-    public SpatialUnit getAsObject(FacesContext context, UIComponent component, String value) {
+    public SpatialUnitDTO getAsObject(FacesContext context, UIComponent component, String value) {
         try {
-            return objectMapper.readValue(value, SpatialUnit.class);
+            return objectMapper.readValue(value, SpatialUnitDTO.class);
         } catch (JsonProcessingException e) {
             log.error("Error while converting string to SpatialUnit object", e);
             return null;
@@ -40,7 +41,7 @@ public class SpatialUnitConverter implements Converter<SpatialUnit>, Serializabl
     }
 
     @Override
-    public String getAsString(FacesContext context, UIComponent component, SpatialUnit value) {
+    public String getAsString(FacesContext context, UIComponent component, SpatialUnitDTO value) {
         try {
             if (value == null) {
                 return "";
