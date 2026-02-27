@@ -4,6 +4,7 @@ import jakarta.persistence.Column;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
+import java.time.OffsetDateTime;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -24,5 +25,7 @@ public class ActionUnitDTO extends AbstractEntityDTO {
     private Set<RecordingUnitSummaryDTO> recordingUnitList;
     protected String recordingUnitIdentifierLang;
     private Boolean validated;
+    private OffsetDateTime beginDate;
+    private OffsetDateTime endDate;
 
 }

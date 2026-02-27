@@ -1,0 +1,80 @@
+#######################
+#  Server Configuration
+#######################
+server:
+  port: 8099
+  forward-headers-strategy: native
+  servlet:
+    context-path: /siamois
+    session:
+      timeout: 125m
+      persistent: true
+  error:
+    path: /error/500
+    whitelabel:
+      enabled: false
+
+siamois:
+  lang:
+    default: fr
+  admin:
+    username: miled.rousset
+    password: opentheso
+    email: miled.rousset@siamois.fr
+  documents:
+    folder-path: C:\Users\pccnr\Documents\SiamoisDevStorage\Document
+    allowed-types: image/jpeg, image/png, image/svg+xml, image/tiff, image/webp, image/apng, application/pdf
+
+spring:
+  main:
+    allow-bean-definition-overriding: true
+  datasource:
+    url: jdbc:postgresql://localhost:5432/siamois
+    password: siamois
+    username: siamois
+    hikari:
+      maximum-pool-size: 1000
+      minimum-idle: 1
+      idle-timeout: 30000
+      connection-test-query: SELECT 1
+  jpa:
+    show-sql: true
+    generate-ddl: true
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+        show_sql: true
+        generate_statistics: true
+        use_sql_comments: true
+        jdbc:
+          time_zone: UTC+1
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+  liquibase:
+    enabled: true
+    change-log: classpath:/changelog/db.changelog.xml
+  messages:
+    basename: language/messages
+    encoding: UTF-8
+
+jsf:
+  primefaces:
+    FONT_AWESOME: true
+
+joinfaces:
+  faces:
+    project-stage: development
+
+logging:
+  level:
+    root: ERROR
+    fr.siamois: DEBUG
+    org:
+      springframework:
+        transaction: DEBUG
+        orm.jpa: DEBUG
+      hibernate:
+        SQL: TRACE
+        type: TRACE

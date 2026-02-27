@@ -190,7 +190,7 @@ public class ActionUnitService implements ArkEntityService {
         }
 
         // Add concept
-        Concept type = conceptService.saveOrGetConcept(typeConcept);
+        Concept type = conceptService.saveOrGetConcept(typeConceptDTO);
         actionUnit.setType(type);
         actionUnit.setCreatedBy(user);
 
@@ -351,7 +351,7 @@ public class ActionUnitService implements ArkEntityService {
      * @param actionUnit The action
      * @return True if the action is open
      */
-    public boolean isActionUnitStillOngoing(ActionUnit actionUnit) {
+    public boolean isActionUnitStillOngoing(ActionUnitDTO actionUnit) {
         OffsetDateTime beginDate = actionUnit.getBeginDate();
         OffsetDateTime endDate = actionUnit.getEndDate();
 

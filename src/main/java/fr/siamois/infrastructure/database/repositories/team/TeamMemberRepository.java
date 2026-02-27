@@ -3,6 +3,8 @@ package fr.siamois.infrastructure.database.repositories.team;
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.team.TeamMemberRelation;
+import fr.siamois.dto.entity.ActionUnitDTO;
+import fr.siamois.dto.entity.PersonDTO;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.stereotype.Repository;
@@ -30,7 +32,7 @@ public interface TeamMemberRepository extends CrudRepository<TeamMemberRelation,
     )
     boolean personIsInInstitution(Long personId, Long institutionId);
 
-    boolean existsByActionUnitAndPerson(ActionUnit actionUnit, Person person);
+    boolean existsByActionUnitAndPerson(ActionUnitDTO actionUnit, PersonDTO person);
 
     Set<TeamMemberRelation> findAllByActionUnit(ActionUnit actionUnit);
 
