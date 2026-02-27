@@ -59,10 +59,17 @@ public class SpecimenService implements ArkEntityService {
                 toSave.setIdentifier(generateNextIdentifier(toSave));
             }
             // Set full identifier
-            toSave.setFullIdentifier(toSave.displayFullIdentifier());
+            toSave.setFullIdentifier(toSave.getFullIdentifier());
         }
 
-        return specimenRepository.save(toSave);
+        // Convertir SpecimenDTO en Specimen
+        Specimen specimen = conversionService.convert(toSave, Specimen.class);
+
+        // Sauvegarder l'entité Specimen
+        Specimen savedSpecimen = specimenRepository.save(specimen);
+
+        // Convertir l'entité sauvegardée en SpecimenDTO et la retourner
+        return conversionService.convert(savedSpecimen, SpecimenDTO.class);
     }
 
     @Override
@@ -78,10 +85,12 @@ public class SpecimenService implements ArkEntityService {
      * @param id the ID of the specimen to find
      * @return the specimen if found, or null if not found
      */
-    @Transactional
+    @Transactional(readOnly = true)
     public SpecimenDTO findById(Long id) {
-        return specimenRepository.findById(id).orElse(null);
+        Specimen specimen = specimenRepository.findById(id).orElse(null);
+        return specimen != null ? conversionService.convert(specimen, SpecimenDTO.class) : null;
     }
+
 
     /**
      * Finds all specimens by institution and full identifier containing the specified string,
@@ -94,7 +103,7 @@ public class SpecimenService implements ArkEntityService {
      * @param pageable       the pagination information
      * @return a page of specimens matching the criteria
      */
-    @Transactional
+    @Transactional(readOnly = true)
     public Page<SpecimenDTO> findAllByInstitutionAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
             Long institutionId,
             String fullIdentifier,
@@ -103,10 +112,13 @@ public class SpecimenService implements ArkEntityService {
             String langCode,
             Pageable pageable
     ) {
-        return specimenRepository.findAllByInstitutionAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
+        Page<Specimen> specimenPage = specimenRepository.findAllByInstitutionAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
                 institutionId, fullIdentifier, categoryIds, global, langCode, pageable
         );
+
+        return specimenPage.map(specimen -> conversionService.convert(specimen, SpecimenDTO.class));
     }
+
 
     /**
      * Finds all specimens by institution, recording unit, full identifier containing the specified string,
@@ -120,7 +132,7 @@ public class SpecimenService implements ArkEntityService {
      * @param pageable        the pagination information
      * @return a page of specimens matching the criteria
      */
-    @Transactional
+    @Transactional(readOnly = true)
     public Page<SpecimenDTO> findAllByInstitutionAndByRecordingUnitAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
             Long institutionId,
             Long recordingUnitId,
@@ -130,12 +142,15 @@ public class SpecimenService implements ArkEntityService {
             String langCode,
             Pageable pageable
     ) {
-        return specimenRepository.findAllByInstitutionAndByRecordingUnitIdAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
+        Page<Specimen> specimenPage = specimenRepository.findAllByInstitutionAndByRecordingUnitIdAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
                 institutionId, recordingUnitId, fullIdentifier, categoryIds, global, langCode, pageable
         );
+
+        return specimenPage.map(specimen -> conversionService.convert(specimen, SpecimenDTO.class));
     }
 
-    @Transactional
+
+    @Transactional(readOnly = true)
     public Page<SpecimenDTO> findAllBySpatialUnitAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
             Long spatialUnitId,
             String fullIdentifier,
@@ -144,12 +159,15 @@ public class SpecimenService implements ArkEntityService {
             String langCode,
             Pageable pageable
     ) {
-        return specimenRepository.findAllBySpatialUnitIdAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
+        Page<Specimen> specimenPage = specimenRepository.findAllBySpatialUnitIdAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
                 spatialUnitId, fullIdentifier, categoryIds, global, langCode, pageable
         );
+
+        return specimenPage.map(specimen -> conversionService.convert(specimen, SpecimenDTO.class));
     }
 
-    @Transactional
+
+    @Transactional(readOnly = true)
     public Page<SpecimenDTO> findAllByActionUnitAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
             Long actionUnitId,
             String fullIdentifier,
@@ -157,11 +175,14 @@ public class SpecimenService implements ArkEntityService {
             String global,
             String langCode,
             Pageable pageable
-    ){
-        return specimenRepository.findAllByActionUnitIdAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
+    ) {
+        Page<Specimen> specimenPage = specimenRepository.findAllByActionUnitIdAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
                 actionUnitId, fullIdentifier, categoryIds, global, langCode, pageable
         );
+
+        return specimenPage.map(specimen -> conversionService.convert(specimen, SpecimenDTO.class));
     }
+
 
     /**
      * Updates the type of multiple specimens in bulk.
@@ -182,12 +203,11 @@ public class SpecimenService implements ArkEntityService {
      * @return the count of specimens created by the institution
      */
     public long countByInstitution(InstitutionDTO institution) {
-        return specimenRepository.countByCreatedByInstitution(institution);
+        Institution institutionEntity = conversionService.convert(institution, Institution.class);
+        return specimenRepository.countByCreatedByInstitution(institutionEntity);
     }
 
-    public Integer countBySpatialContext(SpatialUnit spatialUnit) {
-        return specimenRepository.countBySpatialContext(spatialUnit.getId());
-    }
+
 
     public Integer countByActionContext(ActionUnitDTO actionUnit) {
         return specimenRepository.countByActionContext(actionUnit.getId());

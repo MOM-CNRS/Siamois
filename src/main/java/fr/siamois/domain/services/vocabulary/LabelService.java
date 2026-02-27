@@ -6,17 +6,21 @@ import fr.siamois.domain.models.vocabulary.label.ConceptAltLabel;
 import fr.siamois.domain.models.vocabulary.label.ConceptLabel;
 import fr.siamois.domain.models.vocabulary.label.ConceptPrefLabel;
 import fr.siamois.domain.models.vocabulary.label.VocabularyLabel;
+import fr.siamois.dto.entity.ConceptAltLabelDTO;
 import fr.siamois.dto.entity.ConceptDTO;
 import fr.siamois.dto.entity.ConceptLabelDTO;
+import fr.siamois.dto.entity.ConceptPrefLabelDTO;
 import fr.siamois.infrastructure.database.repositories.vocabulary.label.ConceptLabelRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.label.VocabularyLabelRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.convert.ConversionService;
 import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
@@ -32,6 +36,7 @@ public class LabelService {
 
     private final VocabularyLabelRepository vocabularyLabelRepository;
     private final ConceptLabelRepository conceptLabelRepository;
+    private final ConversionService conversionService;
 
     /**
      * Finds the label for a given vocabulary in the specified language.
@@ -144,25 +149,26 @@ public class LabelService {
 
     /**
      * Finds the label (preferred or alternative) for a concept in a given language.
-     * @param concept The concept
+     * @param conceptDTO The concept
      * @param langCode The language code
      * @return This method returns the preferred label if it exists. Then looks for an alternative label in
      * the given language and return the first found. If none is found, it returns a fallback label in the format "[externalId]".
      */
     @NonNull
-    public ConceptLabelDTO findLabelOf(@NonNull ConceptDTO concept, @NonNull String langCode) {
+    public ConceptLabelDTO findLabelOf(@NonNull ConceptDTO conceptDTO, @NonNull String langCode) {
+        Concept concept = conversionService.convert(conceptDTO,Concept.class);
         Optional<ConceptPrefLabel> opt = conceptLabelRepository.findPrefLabelByLangCodeAndConcept(langCode, concept);
-        if (opt.isPresent()) return opt.get();
+        if (opt.isPresent()) return Objects.requireNonNull(conversionService.convert(opt.get(), ConceptPrefLabelDTO.class));
 
         Set<ConceptAltLabel> altLabels = conceptLabelRepository.findAllAltLabelsByLangCodeAndConcept(langCode, concept);
         for (ConceptAltLabel altLabel : altLabels) {
             if (altLabel.getLangCode().equalsIgnoreCase(langCode)) {
-                return altLabel;
+                return Objects.requireNonNull(conversionService.convert(altLabel, ConceptAltLabelDTO.class));
             }
         }
 
-        ConceptPrefLabel fallbackLabel = new ConceptPrefLabel();
-        fallbackLabel.setConcept(concept);
+        ConceptPrefLabelDTO fallbackLabel = new ConceptPrefLabelDTO();
+        fallbackLabel.setConcept(conceptDTO);
         fallbackLabel.setLangCode(langCode);
         fallbackLabel.setLabel("[" + concept.getExternalId() + "]");
         return fallbackLabel;

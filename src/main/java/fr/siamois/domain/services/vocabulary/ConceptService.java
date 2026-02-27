@@ -20,11 +20,13 @@ import fr.siamois.infrastructure.database.repositories.vocabulary.LocalizedConce
 import fr.siamois.infrastructure.database.repositories.vocabulary.label.ConceptLabelRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.convert.ConversionService;
 import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Service for managing concepts in the vocabulary.
@@ -44,17 +46,20 @@ public class ConceptService {
     private final ConceptChangeEventPublisher conceptChangeEventPublisher;
     private final ConceptLabelRepository conceptLabelRepository;
     private final ConceptHierarchyRepository conceptHierarchyRepository;
+    private final ConversionService conversionService;
 
     /**
      * Saves a concept if it does not already exist in the repository.
      *
-     * @param concept the concept to save or retrieve
+     * @param conceptDTO the concept to save or retrieve
      * @return the saved or existing concept
      */
     @NonNull
-    public Concept saveOrGetConcept(@NonNull Concept concept) {
+    public Concept saveOrGetConcept(@NonNull ConceptDTO conceptDTO) {
+        Concept concept = conversionService.convert(conceptDTO, Concept.class);
         Vocabulary vocabulary = concept.getVocabulary();
-        Optional<Concept> optConcept = conceptRepository.findConceptByExternalIdIgnoreCase(vocabulary.getExternalVocabularyId(), concept.getExternalId());
+        Optional<Concept> optConcept = conceptRepository.findConceptByExternalIdIgnoreCase(
+                vocabulary.getExternalVocabularyId(), concept.getExternalId());
         return optConcept.orElseGet(() -> conceptRepository.save(concept));
     }
 
@@ -66,8 +71,12 @@ public class ConceptService {
      */
     @NonNull
     public List<ConceptDTO> findAllBySpatialUnitOfInstitution(@NonNull InstitutionDTO institution) {
-        return conceptRepository.findAllBySpatialUnitOfInstitution(institution.getId());
+        List<Concept> concepts = conceptRepository.findAllBySpatialUnitOfInstitution(institution.getId());
+        return concepts.stream()
+                .map(concept -> conversionService.convert(concept, ConceptDTO.class))
+                .collect(Collectors.toList());
     }
+
 
     /**
      * Finds all concepts related to action units of a given institution.

@@ -1,5 +1,6 @@
 package fr.siamois.dto.entity;
 
+import io.swagger.models.auth.In;
 import lombok.Data;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -14,7 +15,7 @@ import java.util.Set;
 @NoArgsConstructor
 public class SpecimenDTO extends AbstractEntityDTO {
 
-    private int identifier;
+    private Integer identifier;
     private ConceptDTO type;
     private String fullIdentifier;
     private Boolean validated;

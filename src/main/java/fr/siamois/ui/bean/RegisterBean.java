@@ -74,7 +74,7 @@ public class RegisterBean {
             return;
         }
 
-        PersonDTO person = new Person();
+        PersonDTO person = new PersonDTO();
         person.setEmail(email);
         person.setName(firstName);
         person.setLastname(lastName);
