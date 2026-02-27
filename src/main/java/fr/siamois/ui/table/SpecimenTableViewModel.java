@@ -70,18 +70,18 @@ public class SpecimenTableViewModel extends EntityTableViewModel<SpecimenDTO, Lo
     }
 
     @Override
-    protected FormUiDto resolveRowFormFor(Specimen s) {
+    protected FormUiDto resolveRowFormFor(SpecimenDTO s) {
         return null;
     }
 
     @Override
-    protected void configureRowSystemFields(Specimen s, FormUiDto rowForm) {
+    protected void configureRowSystemFields(SpecimenDTO s, FormUiDto rowForm) {
         // no specific configs
     }
 
     @Override
     protected void handleCommandLink(CommandLinkColumn column,
-                                     Specimen s) {
+                                     SpecimenDTO s) {
 
         if (column.getAction() == GO_TO_SPECIMEN) {
             flowBean.goToSpecimenByIdNewPanel(
@@ -97,12 +97,12 @@ public class SpecimenTableViewModel extends EntityTableViewModel<SpecimenDTO, Lo
 
     // resolving cell text based on value key
     @Override
-    public String resolveText(TableColumn column, Specimen s) {
+    public String resolveText(TableColumn column, SpecimenDTO s) {
 
         if (column instanceof CommandLinkColumn linkColumn) {
 
             if ("fullIdentifier".equals(linkColumn.getValueKey())) {
-                return s.displayFullIdentifier();
+                return s.getFullIdentifier();
             }
 
             throw new IllegalStateException(
@@ -114,12 +114,12 @@ public class SpecimenTableViewModel extends EntityTableViewModel<SpecimenDTO, Lo
     }
 
     @Override
-    public Integer resolveCount(TableColumn column, Specimen s) {
+    public Integer resolveCount(TableColumn column, SpecimenDTO s) {
         return null;
     }
 
     @Override
-    public boolean isRendered(TableColumn column, String key, Specimen s) {
+    public boolean isRendered(TableColumn column, String key, SpecimenDTO s) {
         return switch (key) {
             case "writeMode" -> flowBean.getIsWriteMode();
             default -> false;
@@ -153,7 +153,7 @@ public class SpecimenTableViewModel extends EntityTableViewModel<SpecimenDTO, Lo
 
 
     @Override
-    public void handleRelationAction(RelationColumn col, Specimen s, TableColumnAction action) {
+    public void handleRelationAction(RelationColumn col, SpecimenDTO s, TableColumnAction action) {
         throw new IllegalStateException(
                 "Unhandled relation action: " + action
         );
@@ -179,7 +179,7 @@ public class SpecimenTableViewModel extends EntityTableViewModel<SpecimenDTO, Lo
         };
     }
 
-    public void handleRowAction(RowAction action, Specimen s) {
+    public void handleRowAction(RowAction action, SpecimenDTO s) {
         if (action.getAction() == DUPLICATE_ROW) {
             specimenLazyDataModel.duplicateRow();
         } else {
@@ -187,7 +187,7 @@ public class SpecimenTableViewModel extends EntityTableViewModel<SpecimenDTO, Lo
         }
     }
 
-    public void handleRowAction(RowAction action, TreeNode<Specimen> node) {
+    public void handleRowAction(RowAction action, TreeNode<SpecimenDTO> node) {
         handleRowAction(action, node.getData());
     }
 
@@ -198,7 +198,7 @@ public class SpecimenTableViewModel extends EntityTableViewModel<SpecimenDTO, Lo
 
 
     @Override
-    public boolean canUserEditRow(Specimen unit) {
+    public boolean canUserEditRow(SpecimenDTO unit) {
         return true; // todo: implement permission
     }
 

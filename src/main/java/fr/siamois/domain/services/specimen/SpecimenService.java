@@ -150,7 +150,7 @@ public class SpecimenService implements ArkEntityService {
     }
 
     @Transactional
-    public Page<Specimen> findAllByActionUnitAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
+    public Page<SpecimenDTO> findAllByActionUnitAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
             Long actionUnitId,
             String fullIdentifier,
             Long[] categoryIds,

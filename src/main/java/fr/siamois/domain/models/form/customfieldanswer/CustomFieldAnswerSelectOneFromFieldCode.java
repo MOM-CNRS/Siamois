@@ -23,9 +23,6 @@ public class CustomFieldAnswerSelectOneFromFieldCode extends CustomFieldAnswer {
 
     private ConceptDTO value;
 
-    @Transient
-    private transient ConceptAutocompleteDTO uiVal;
-
     public void setValue(ConceptLabelDTO conceptLabel) {
         this.value = conceptLabel.getConcept();
     }

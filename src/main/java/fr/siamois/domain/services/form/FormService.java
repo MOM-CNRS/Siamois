@@ -15,8 +15,11 @@ import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.recordingunit.StratigraphicRelationship;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
+import fr.siamois.dto.StratigraphicRelationshipDTO;
 import fr.siamois.dto.entity.ConceptDTO;
 import fr.siamois.dto.entity.InstitutionDTO;
+import fr.siamois.dto.entity.RecordingUnitDTO;
+import fr.siamois.dto.entity.RecordingUnitSummaryDTO;
 import fr.siamois.infrastructure.database.repositories.form.FormRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
 import fr.siamois.ui.bean.LabelBean;
@@ -25,6 +28,8 @@ import fr.siamois.ui.form.rules.EnabledRulesEngine;
 import fr.siamois.ui.form.fieldsource.FieldSource;
 import fr.siamois.ui.form.ValueMatcherFactory;
 import fr.siamois.ui.form.rules.*;
+import fr.siamois.ui.viewmodel.CustomFormResponseViewModel;
+import fr.siamois.ui.viewmodel.fieldanswer.*;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -203,14 +208,14 @@ public class FormService {
      * Apply all bindable system fields from the response back into the JPA entity.
      * This is basically your previous updateJpaEntityFromFormResponse method.
      */
-    public void updateJpaEntityFromResponse(CustomFormResponse response, Object jpaEntity) {
+    public void updateJpaEntityFromResponse(CustomFormResponseViewModel response, Object jpaEntity) {
         if (response == null || jpaEntity == null) return;
 
         List<String> bindableFields = getBindableFieldNames(jpaEntity);
 
-        for (Map.Entry<CustomField, CustomFieldAnswer> entry : response.getAnswers().entrySet()) {
+        for (Map.Entry<CustomField, CustomFieldAnswerViewModel> entry : response.getAnswers().entrySet()) {
             CustomField field = entry.getKey();
-            CustomFieldAnswer answer = entry.getValue();
+            CustomFieldAnswerViewModel answer = entry.getValue();
 
             if (answer instanceof CustomFieldAnswerStratigraphy stratiAnswer && jpaEntity instanceof RecordingUnit ru) {
                 // Special case
@@ -225,7 +230,7 @@ public class FormService {
     }
 
     private static boolean isBindableSystemField(CustomField field,
-                                                 CustomFieldAnswer answer,
+                                                 CustomFieldAnswerViewModel answer,
                                                  List<String> bindableFields) {
         return field != null
                 && answer != null
@@ -234,18 +239,18 @@ public class FormService {
                 && bindableFields.contains(field.getValueBinding());
     }
 
-    private static Object extractValueFromAnswer(CustomFieldAnswer answer) {
-        if (answer instanceof CustomFieldAnswerDateTime a && a.getValue() != null) {
+    private static Object extractValueFromAnswer(CustomFieldAnswerViewModel answer) {
+        if (answer instanceof CustomFieldAnswerDateTimeViewModel a && a.getValue() != null) {
             return a.getValue().atOffset(ZoneOffset.UTC);
-        } else if (answer instanceof CustomFieldAnswerText a) {
+        } else if (answer instanceof CustomFieldAnswerTextViewModel a) {
             return a.getValue();
-        } else if (answer instanceof CustomFieldAnswerSelectMultiplePerson a) {
+        } else if (answer instanceof CustomFieldAnswerSelectMultiplePersonViewModel a) {
             return a.getValue();
-        } else if (answer instanceof CustomFieldAnswerSelectOnePerson a) {
+        } else if (answer instanceof CustomFieldAnswerSelectOnePersonViewModel a) {
             return a.getValue();
-        } else if (answer instanceof CustomFieldAnswerSelectOneFromFieldCode a) {
+        } else if (answer instanceof CustomFieldAnswerSelectOneFromFieldCodeViewModel a) {
             try {
-                return a.getUiVal().concept();
+                return a.getValue().concept();
             } catch (NullPointerException e) {
                 return null;
             }
@@ -253,7 +258,7 @@ public class FormService {
             return a.getValue();
         } else if (answer instanceof CustomFieldAnswerSelectOneSpatialUnit a) {
             return a.getValue();
-        } else if (answer instanceof CustomFieldAnswerSelectMultipleSpatialUnitTree a) {
+        } else if (answer instanceof CustomFieldAnswerSelectMultipleSpatialUnitTreeViewModel a) {
             return a.getValue();
         } else if (answer instanceof CustomFieldAnswerSelectOneActionCode a) {
             return a.getValue();
@@ -266,7 +271,7 @@ public class FormService {
 
     // -------------- Internal helpers
 
-    private void initializeAnswer(CustomFieldAnswer answer,
+    private void initializeAnswer(CustomFieldAnswerViewModel answer,
                                   CustomField field,
                                   Object jpaEntity,
                                   List<String> bindableFields) {
@@ -276,7 +281,7 @@ public class FormService {
         answer.setPk(answerId);
         answer.setHasBeenModified(false);
 
-        if(answer instanceof CustomFieldAnswerStratigraphy stratiAnswer && jpaEntity instanceof RecordingUnit ru) {
+        if(answer instanceof CustomFieldAnswerStratigraphy stratiAnswer && jpaEntity instanceof RecordingUnitDTO ru) {
             // Special case
             handleStratigraphyRelationships(stratiAnswer, ru);
             return;
@@ -385,9 +390,9 @@ public class FormService {
         }
     }
 
-    private void handleStratigraphyRelationships(CustomFieldAnswerStratigraphy answer, RecordingUnit unit) {
+    private void handleStratigraphyRelationships(CustomFieldAnswerStratigraphy answer, RecordingUnitDTO unit) {
         // Set the source unit for the answer
-        answer.setSourceToAdd(unit);
+        answer.setSourceToAdd(new RecordingUnitSummaryDTO(unit));
 
         // Clear existing lists to avoid duplicates
         answer.getAnteriorRelationships().clear();
@@ -395,7 +400,7 @@ public class FormService {
         answer.getSynchronousRelationships().clear();
 
         // Process relationships where unit is unit1
-        for (StratigraphicRelationship rel : unit.getRelationshipsAsUnit1()) {
+        for (StratigraphicRelationshipDTO rel : unit.getRelationshipsAsUnit1()) {
             if (Boolean.FALSE.equals(rel.getIsAsynchronous())) {
                 // Synchronous
                 answer.getSynchronousRelationships().add(rel);
@@ -406,7 +411,7 @@ public class FormService {
         }
 
         // Process relationships where unit is unit2
-        for (StratigraphicRelationship rel : unit.getRelationshipsAsUnit2()) {
+        for (StratigraphicRelationshipDTO rel : unit.getRelationshipsAsUnit2()) {
             if (Boolean.FALSE.equals(rel.getIsAsynchronous())) {
                 // Synchronous
                 answer.getSynchronousRelationships().add(rel);
@@ -450,13 +455,14 @@ public class FormService {
         }
     }
 
-    private void setStratigraphyFieldValue(CustomFieldAnswerStratigraphy stratiAnswer, RecordingUnit entity) {
+    private void setStratigraphyFieldValue(CustomFieldAnswerStratigraphy stratiAnswer, RecordingUnitDTO entity) {
         // Clear existing relationships to avoid duplicates
         entity.getRelationshipsAsUnit1().clear();
         entity.getRelationshipsAsUnit2().clear();
 
         // Helper method to add relationships to the correct set
-        for (StratigraphicRelationship rel : stratiAnswer.getAnteriorRelationships()) {
+        // TODO : check equality method for recordingunit and recordingunitsummary
+        for (StratigraphicRelationshipDTO rel : stratiAnswer.getAnteriorRelationships()) {
             if (rel.getUnit1().equals(entity)) {
                 entity.getRelationshipsAsUnit1().add(rel);
             } else if (rel.getUnit2().equals(entity)) {
@@ -464,7 +470,7 @@ public class FormService {
             }
         }
 
-        for (StratigraphicRelationship rel : stratiAnswer.getPosteriorRelationships()) {
+        for (StratigraphicRelationshipDTO rel : stratiAnswer.getPosteriorRelationships()) {
             if (rel.getUnit1().equals(entity)) {
                 entity.getRelationshipsAsUnit1().add(rel);
             } else if (rel.getUnit2().equals(entity)) {
@@ -472,7 +478,7 @@ public class FormService {
             }
         }
 
-        for (StratigraphicRelationship rel : stratiAnswer.getSynchronousRelationships()) {
+        for (StratigraphicRelationshipDTO rel : stratiAnswer.getSynchronousRelationships()) {
             if (rel.getUnit1().equals(entity)) {
                 entity.getRelationshipsAsUnit1().add(rel);
             } else if (rel.getUnit2().equals(entity)) {

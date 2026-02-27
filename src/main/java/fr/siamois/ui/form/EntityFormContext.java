@@ -35,8 +35,10 @@ import fr.siamois.ui.form.savestrategy.ActionUnitSaveStrategy;
 import fr.siamois.ui.form.savestrategy.RecordingUnitSaveStrategy;
 import fr.siamois.ui.form.savestrategy.SpatialUnitSaveStrategy;
 import fr.siamois.ui.form.savestrategy.SpecimenSaveStrategy;
+import fr.siamois.ui.viewmodel.CustomFormResponseViewModel;
 import fr.siamois.ui.viewmodel.TreeUiStateViewModel;
 import fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerSelectMultipleSpatialUnitTreeViewModel;
+import fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerViewModel;
 import jakarta.faces.application.FacesMessage;
 import jakarta.faces.component.UIComponent;
 import jakarta.faces.component.UIInput;
@@ -88,7 +90,7 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
     private final ConversionService conversionService;
 
     @Getter
-    private CustomFormResponse formResponse;
+    private CustomFormResponseViewModel formResponse;
 
     @Getter
     private boolean hasUnsavedModifications = false;
@@ -169,7 +171,7 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
     // Column / answer helpers
     // -------------------------------------------------------------------------
 
-    public CustomFieldAnswer getFieldAnswer(CustomField field) {
+    public CustomFieldAnswerViewModel getFieldAnswer(CustomField field) {
         if (formResponse == null || formResponse.getAnswers() == null) return null;
         return formResponse.getAnswers().get(field);
     }
@@ -183,7 +185,7 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
      * Mark a field as modified and set global "hasUnsavedModifications".
      */
     public void markFieldModified(CustomField field) {
-        CustomFieldAnswer answer = getFieldAnswer(field);
+        CustomFieldAnswerViewModel answer = getFieldAnswer(field);
         if (answer != null) {
             answer.setHasBeenModified(true);
         }
@@ -194,7 +196,7 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
      * Mark a field as not modified
      */
     public void markFieldNotModified(CustomField field) {
-        CustomFieldAnswer answer = getFieldAnswer(field);
+        CustomFieldAnswerViewModel answer = getFieldAnswer(field);
         if (answer != null) {
             answer.setHasBeenModified(false);
         }
@@ -223,8 +225,8 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
     private void initSpatialUnitTreeStates() {
         if (formResponse == null || formResponse.getAnswers() == null) return;
 
-        for (CustomFieldAnswer a : formResponse.getAnswers().values()) {
-            if (a instanceof CustomFieldAnswerSelectMultipleSpatialUnitTree treeAnswer) {
+        for (CustomFieldAnswerViewModelx a : formResponse.getAnswers().values()) {
+            if (a instanceof CustomFieldAnswerSelectMultipleSpatialUnitTreeViewModel treeAnswer) {
                 treeStates.computeIfAbsent(treeAnswer, this::buildUiFor);
             }
         }

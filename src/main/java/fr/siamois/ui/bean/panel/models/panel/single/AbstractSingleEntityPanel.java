@@ -7,6 +7,7 @@ import fr.siamois.domain.models.document.Document;
 import fr.siamois.domain.models.exceptions.vocabulary.NoConfigForFieldException;
 import fr.siamois.domain.models.history.InfoRevisionEntity;
 import fr.siamois.domain.models.history.RevisionWithInfo;
+import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.settings.ConceptFieldConfig;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.models.vocabulary.Vocabulary;
@@ -288,8 +289,8 @@ Return the command that opens panel for the unit
             UserInfo userInfo = sessionSettingsBean.getUserInfo();
             info.setRevId(0L);
             info.setEpochTimestamp(OffsetDateTime.now().toEpochSecond());
-            info.setUpdatedBy(userInfo.getUser());
-            info.setUpdatedFrom(userInfo.getInstitution());
+            info.setUpdatedBy(conversionService.convert(userInfo.getUser(), Person.class));
+            info.setUpdatedFrom(conversionService.convert(userInfo.getInstitution(), Institution.class));
             result = new RevisionWithInfo<>(unit, info, RevisionType.MOD);
         }
         return result;
