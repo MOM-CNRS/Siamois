@@ -105,13 +105,13 @@ public class FormService {
      * @param fieldSource abstraction over fields (single panel or row)
      * @param forceInit   if true, ignore existing answers and rebuild everything
      */
-    public CustomFormResponse initOrReuseResponse(CustomFormResponse existing,
+    public CustomFormResponseViewModel initOrReuseResponse(CustomFormResponseViewModel existing,
                                                   Object jpaEntity,
                                                   FieldSource fieldSource,
                                                   boolean forceInit) {
 
-        CustomFormResponse response;
-        Map<CustomField, CustomFieldAnswer> answers;
+        CustomFormResponseViewModel response;
+        Map<CustomField, CustomFieldAnswerViewModel> answers;
 
         if (existing != null && !forceInit) {
             response = existing;
@@ -120,7 +120,7 @@ public class FormService {
                 answers = new HashMap<>();
             }
         } else {
-            response = new CustomFormResponse();
+            response = new CustomFormResponseViewModel();
             answers = new HashMap<>();
         }
 

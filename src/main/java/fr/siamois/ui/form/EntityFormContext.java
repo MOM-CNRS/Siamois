@@ -38,6 +38,7 @@ import fr.siamois.ui.form.savestrategy.SpecimenSaveStrategy;
 import fr.siamois.ui.viewmodel.CustomFormResponseViewModel;
 import fr.siamois.ui.viewmodel.TreeUiStateViewModel;
 import fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerSelectMultipleSpatialUnitTreeViewModel;
+import fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerSelectOneFromFieldCodeViewModel;
 import fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerViewModel;
 import jakarta.faces.application.FacesMessage;
 import jakarta.faces.component.UIComponent;
@@ -225,7 +226,7 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
     private void initSpatialUnitTreeStates() {
         if (formResponse == null || formResponse.getAnswers() == null) return;
 
-        for (CustomFieldAnswerViewModelx a : formResponse.getAnswers().values()) {
+        for (CustomFieldAnswerViewModel a : formResponse.getAnswers().values()) {
             if (a instanceof CustomFieldAnswerSelectMultipleSpatialUnitTreeViewModel treeAnswer) {
                 treeStates.computeIfAbsent(treeAnswer, this::buildUiFor);
             }
@@ -351,8 +352,8 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
 
     public void handleConceptChange(CustomField field, ConceptAutocompleteDTO newValue) {
 
-        CustomFieldAnswerSelectOneFromFieldCode ans = (CustomFieldAnswerSelectOneFromFieldCode) formResponse.getAnswers().get(field);
-        ans.setUiVal(newValue);
+        CustomFieldAnswerSelectOneFromFieldCodeViewModel ans = (CustomFieldAnswerSelectOneFromFieldCodeViewModel) formResponse.getAnswers().get(field);
+        ans.setValue(newValue);
 
         // Save the change
         boolean status = save();
