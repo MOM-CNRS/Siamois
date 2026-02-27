@@ -19,6 +19,7 @@ import fr.siamois.infrastructure.database.repositories.person.PendingPersonRepos
 import fr.siamois.infrastructure.database.repositories.person.PersonRepository;
 import fr.siamois.infrastructure.database.repositories.settings.PersonSettingsRepository;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.convert.ConversionService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -26,6 +27,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * Service to manage Person
@@ -37,30 +39,34 @@ public class PersonService {
     private final PersonRepository personRepository;
     private final BCryptPasswordEncoder passwordEncoder;
     private final List<PersonDataVerifier> verifiers;
+    private final List<PasswordVerifier> passVerifiers;
     private final PersonSettingsRepository personSettingsRepository;
     private final InstitutionService institutionService;
     private final LangService langService;
     private final PendingPersonRepository pendingPersonRepository;
     private final PendingPersonService pendingPersonService;
+    private final ConversionService conversionService;
     private final fr.siamois.infrastructure.database.repositories.person.PendingInstitutionInviteRepository pendingInstitutionInviteRepository;
 
     public PersonService(PersonRepository personRepository,
                          BCryptPasswordEncoder passwordEncoder,
-                         List<PersonDataVerifier> verifiers,
+                         List<PersonDataVerifier> verifiers, List<PasswordVerifier> passVerifiers,
                          PersonSettingsRepository personSettingsRepository,
                          InstitutionService institutionService,
                          LangService langService,
                          PendingPersonRepository pendingPersonRepository,
-                         PendingPersonService pendingPersonService,
+                         PendingPersonService pendingPersonService, ConversionService conversionService,
                          PendingInstitutionInviteRepository pendingInstitutionInviteRepository) {
         this.personRepository = personRepository;
         this.passwordEncoder = passwordEncoder;
         this.verifiers = verifiers;
+        this.passVerifiers = passVerifiers;
         this.personSettingsRepository = personSettingsRepository;
         this.institutionService = institutionService;
         this.langService = langService;
         this.pendingPersonRepository = pendingPersonRepository;
         this.pendingPersonService = pendingPersonService;
+        this.conversionService = conversionService;
         this.pendingInstitutionInviteRepository = pendingInstitutionInviteRepository;
     }
 
@@ -94,7 +100,7 @@ public class PersonService {
     /**
      * Create a new Person in the database.
      *
-     * @param person The Person to create with a plain password. It will be hashed before saving.
+     * @param personDTO The Person to create with a plain password. It will be hashed before saving.
      * @return The created Person with its ID set.
      * @throws InvalidUsernameException  if the username is invalid or already exists.
      * @throws InvalidEmailException     if the email is invalid or already exists.
@@ -102,10 +108,17 @@ public class PersonService {
      * @throws InvalidPasswordException  if the password does not meet the required criteria.
      * @throws InvalidNameException      if the name is invalid or does not meet the required criteria.
      */
-    public Person createPerson(Person person) throws InvalidUsernameException, InvalidEmailException, UserAlreadyExistException, InvalidPasswordException, InvalidNameException {
-        person.setId(-1L);
+    public Person createPerson(PersonDTO personDTO, String password) throws InvalidUsernameException,
+            InvalidEmailException,
+            UserAlreadyExistException,
+            InvalidPasswordException,
+            InvalidNameException {
+        personDTO.setId(-1L);
 
-        checkPersonData(person, true);
+        checkPersonData(personDTO, true);
+        checkPassword(password);
+
+        Person person = conversionService.convert(personDTO,Person.class);
 
         person.setPassword(passwordEncoder.encode(person.getPassword()));
 
@@ -116,10 +129,21 @@ public class PersonService {
         return person;
     }
 
-    private void checkPersonData(Person person, boolean isForCreation) throws InvalidUsernameException, InvalidEmailException, UserAlreadyExistException, InvalidPasswordException, InvalidNameException {
+    private void checkPersonData(PersonDTO person, boolean isForCreation)
+            throws InvalidUsernameException,
+            InvalidEmailException,
+            UserAlreadyExistException,
+            InvalidPasswordException, InvalidNameException {
         for (PersonDataVerifier verifier : verifiers) {
             verifier.setForCreation(isForCreation);
             verifier.verify(person);
+        }
+    }
+
+    private void checkPassword(String password)
+            throws InvalidPasswordException {
+        for (PasswordVerifier verifier : passVerifiers) {
+            verifier.verify(password);
         }
     }
 
@@ -141,7 +165,10 @@ public class PersonService {
      * @return The Person list
      */
     public List<PersonDTO> findAllAuthorsOfSpatialUnitByInstitution(InstitutionDTO institution) {
-        return personRepository.findAllAuthorsOfSpatialUnitByInstitution(institution.getId());
+        List<Person> authors = personRepository.findAllAuthorsOfSpatialUnitByInstitution(institution.getId());
+        return authors.stream()
+                .map(person -> conversionService.convert(person, PersonDTO.class))
+                .collect(Collectors.toList());
     }
 
     /**
@@ -167,16 +194,33 @@ public class PersonService {
     /**
      * Update a Person in the database. This methods cannot update the email of the person as it won't be saved.
      *
-     * @param person The Person to update. It must have an ID set.
+     * @param personDTO The Person to update. It must have an ID set.
      * @throws UserAlreadyExistException if a user with the same username or email already exists.
      * @throws InvalidNameException      if the name is invalid or does not meet the required criteria.
      * @throws InvalidPasswordException  if the password does not meet the required criteria.
      * @throws InvalidUsernameException  if the username is invalid or already exists.
      * @throws InvalidEmailException     if the email is invalid or already exists.
      */
-    public void updatePerson(PersonDTO person) throws UserAlreadyExistException, InvalidNameException, InvalidPasswordException, InvalidUsernameException, InvalidEmailException {
-        checkPersonData(person, false);
+    public void updatePerson(PersonDTO personDTO, String password) throws UserAlreadyExistException, InvalidNameException, InvalidPasswordException, InvalidUsernameException, InvalidEmailException {
+        checkPersonData(personDTO, false);
+        checkPassword(password);
+        Person person = conversionService.convert(personDTO,Person.class);
+        personRepository.save(person);
+    }
 
+    /**
+     * Update a Person in the database. This methods cannot update the email of the person as it won't be saved.
+     *
+     * @param personDTO The Person to update. It must have an ID set.
+     * @throws UserAlreadyExistException if a user with the same username or email already exists.
+     * @throws InvalidNameException      if the name is invalid or does not meet the required criteria.
+     * @throws InvalidPasswordException  if the password does not meet the required criteria.
+     * @throws InvalidUsernameException  if the username is invalid or already exists.
+     * @throws InvalidEmailException     if the email is invalid or already exists.
+     */
+    public void updatePerson(PersonDTO personDTO) throws UserAlreadyExistException, InvalidNameException, InvalidPasswordException, InvalidUsernameException, InvalidEmailException {
+        checkPersonData(personDTO, false);
+        Person person = conversionService.convert(personDTO,Person.class);
         personRepository.save(person);
     }
 
@@ -192,7 +236,7 @@ public class PersonService {
     }
 
     Optional<PasswordVerifier> findPasswordVerifier() {
-        for (PersonDataVerifier verifier : verifiers) {
+        for (PasswordVerifier verifier : passVerifiers) {
             if (verifier.getClass().equals(PasswordVerifier.class)) return Optional.of((PasswordVerifier) verifier);
         }
         return Optional.empty();
@@ -201,17 +245,18 @@ public class PersonService {
     /**
      * Update the password of a Person.
      *
-     * @param person      The Person whose password is to be updated. The person must have an ID set.
+     * @param personDTO      The Person whose password is to be updated. The person must have an ID set.
      * @param newPassword The new plain password to set for the person.
      * @throws InvalidPasswordException if the new password does not meet the required criteria.
      */
-    public void updatePassword(PersonDTO person, String newPassword) throws InvalidPasswordException {
+    public void updatePassword(PersonDTO personDTO, String newPassword) throws InvalidPasswordException {
         PasswordVerifier verifier = findPasswordVerifier().orElseThrow(() -> new IllegalStateException("Password verifier is not defined"));
-
+        verifier.verify(newPassword);
+        Person person = conversionService.convert(personDTO,Person.class);
         person.setPassword(newPassword);
         person.setPassToModify(false);
 
-        verifier.verify(person);
+
 
         person.setPassword(passwordEncoder.encode(newPassword));
         personRepository.save(person);
@@ -220,16 +265,17 @@ public class PersonService {
     /**
      * Create or get the settings of a Person.
      *
-     * @param person The Person for whom to create or get the settings.
+     * @param personDTO The Person for whom to create or get the settings.
      * @return The PersonSettings object for the given person.
      */
-    public PersonSettings createOrGetSettingsOf(PersonDTO person) {
+    public PersonSettings createOrGetSettingsOf(PersonDTO personDTO) {
+        Person person = conversionService.convert(personDTO,Person.class);
         Optional<PersonSettings> personSettings = personSettingsRepository.findByPerson(person);
         if (personSettings.isPresent()) return personSettings.get();
 
         PersonSettings toSave = new PersonSettings();
         toSave.setPerson(person);
-        toSave.setDefaultInstitution(findDefaultInstitution(person));
+        toSave.setDefaultInstitution(conversionService.convert(findDefaultInstitution(personDTO),Institution.class));
         toSave.setLangCode(findDefaultLang());
 
         return personSettingsRepository.save(toSave);
@@ -239,8 +285,8 @@ public class PersonService {
         return langService.getDefaultLang();
     }
 
-    private Institution findDefaultInstitution(Person person) {
-        Set<Institution> institutions = institutionService.findInstitutionsOfPerson(person);
+    private InstitutionDTO findDefaultInstitution(PersonDTO personDTO) {
+        Set<InstitutionDTO> institutions = institutionService.findInstitutionsOfPerson(personDTO);
         return institutions.isEmpty() ? null : institutions.stream().findFirst().orElseThrow(IllegalStateException::new);
     }
 

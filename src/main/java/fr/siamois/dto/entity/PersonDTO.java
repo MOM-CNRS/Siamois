@@ -16,5 +16,6 @@ public class PersonDTO extends AbstractEntityDTO {
     private String email;
     private String lastname;
     private boolean isPassToModify;
+    private String username;
 
 }

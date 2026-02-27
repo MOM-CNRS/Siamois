@@ -24,6 +24,7 @@ import fr.siamois.infrastructure.database.repositories.team.TeamMemberRepository
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.Hibernate;
+import org.springframework.core.convert.ConversionService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -47,6 +48,7 @@ public class InstitutionService {
     private final ActionManagerRepository actionManagerRepository;
     private final VocabularyService vocabularyService;
     private final FieldConfigurationService fieldConfigurationService;
+    private final ConversionService conversionService;
 
     /**
      * Finds an institution by its identifier.
@@ -63,28 +65,37 @@ public class InstitutionService {
     /**
      * Find all institutions in the system.
      *
-     * @return a set of all institutions
+     * @return a set of all institutions as DTOs
      */
     public Set<InstitutionDTO> findAll() {
-        Set<Institution> result = new HashSet<>();
-        for (Institution institution : institutionRepository.findAll())
-            result.add(institution);
-        return result;
+        Iterable<Institution> institutions = institutionRepository.findAll();
+        Set<InstitutionDTO> institutionDTOs = new HashSet<>();
+
+        institutions.forEach(institution ->
+                institutionDTOs.add(conversionService.convert(institution, InstitutionDTO.class))
+        );
+
+        return institutionDTOs;
     }
 
     /**
      * Finds all institutions that a person is associated with.
      *
      * @param person the person whose institutions to find
-     * @return a set of institutions associated with the person
+     * @return a set of institutions associated with the person as DTOs
      */
     public Set<InstitutionDTO> findInstitutionsOfPerson(PersonDTO person) {
         Set<Institution> institutions = new HashSet<>();
         institutions.addAll(institutionRepository.findAllAsMember(person.getId()));
         institutions.addAll(institutionRepository.findAllAsActionManager(person.getId()));
         institutions.addAll(institutionRepository.findAllAsInstitutionManager(person.getId()));
-        return institutions;
+
+        // Convert Set<Institution> to Set<InstitutionDTO>
+        return institutions.stream()
+                .map(institution -> conversionService.convert(institution, InstitutionDTO.class))
+                .collect(Collectors.toSet());
     }
+
 
     /**
      * Creates a new institution.
@@ -104,9 +115,9 @@ public class InstitutionService {
 
         try {
             // Création de l'institution et préparation des concepts du thésaurus sélectionnés
-            InstitutionDTO i = institutionRepository.save(institution);
+            Institution i = institutionRepository.save(conversionService.convert(institution, Institution.class));
             fieldConfigurationService.setupFieldConfigurationForInstitution(i, vocabulary);
-            return i;
+            return conversionService.convert(i, InstitutionDTO.class);
         } catch (NotSiamoisThesaurusException e) {
             log.error("The thesaurus is not a siamois thesaurus : {}", thesaurusUrl, e);
             throw e;
@@ -245,7 +256,11 @@ public class InstitutionService {
      * @return true if the person is associated with the institution, false otherwise
      */
     public boolean personIsInInstitution(PersonDTO person, InstitutionDTO institution) {
-        Optional<ActionManagerRelation> optManager = actionManagerRepository.findByPersonAndInstitution(person, institution);
+        Person personEntity = conversionService.convert(person, Person.class);
+        Institution institutionEntity = conversionService.convert(institution, Institution.class);
+
+        Optional<ActionManagerRelation> optManager = actionManagerRepository.findByPersonAndInstitution(
+                personEntity, institutionEntity);
         if (optManager.isPresent()) {
             return true;
         }
@@ -281,8 +296,10 @@ public class InstitutionService {
      * @param institution the institution to check against
      * @return true if the person is an action manager, false otherwise
      */
-    public boolean personIsActionManager(Person person, Institution institution) {
-        return actionManagerRepository.findByPersonAndInstitution(person, institution).isPresent();
+    public boolean personIsActionManager(PersonDTO person, InstitutionDTO institution) {
+        Person personEntity = conversionService.convert(person, Person.class);
+        Institution institutionEntity = conversionService.convert(institution, Institution.class);
+        return actionManagerRepository.findByPersonAndInstitution(personEntity, institutionEntity).isPresent();
     }
 
     /**

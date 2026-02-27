@@ -95,7 +95,7 @@ public class SpecimenService implements ArkEntityService {
      * @return a page of specimens matching the criteria
      */
     @Transactional
-    public Page<Specimen> findAllByInstitutionAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
+    public Page<SpecimenDTO> findAllByInstitutionAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
             Long institutionId,
             String fullIdentifier,
             Long[] categoryIds,
@@ -136,7 +136,7 @@ public class SpecimenService implements ArkEntityService {
     }
 
     @Transactional
-    public Page<Specimen> findAllBySpatialUnitAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
+    public Page<SpecimenDTO> findAllBySpatialUnitAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
             Long spatialUnitId,
             String fullIdentifier,
             Long[] categoryIds,

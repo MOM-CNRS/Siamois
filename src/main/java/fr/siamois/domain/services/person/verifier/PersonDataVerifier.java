@@ -2,6 +2,7 @@ package fr.siamois.domain.services.person.verifier;
 
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.exceptions.auth.*;
+import fr.siamois.dto.entity.PersonDTO;
 import lombok.Setter;
 
 /**
@@ -23,6 +24,6 @@ public abstract class PersonDataVerifier {
      * @throws InvalidPasswordException if the password does not meet the required criteria
      * @throws InvalidNameException if the name is invalid or does not meet the required criteria
      */
-    public abstract void verify(Person person) throws InvalidUsernameException, UserAlreadyExistException, InvalidEmailException, InvalidPasswordException, InvalidNameException;
+    public abstract void verify(PersonDTO person) throws InvalidUsernameException, UserAlreadyExistException, InvalidEmailException, InvalidPasswordException, InvalidNameException;
 
 }

@@ -161,7 +161,7 @@ public class SpatialUnitService implements ArkEntityService {
      * @return A page of SpatialUnit matching the criteria
      */
     @Transactional(readOnly = true)
-    public Page<SpatialUnit> findAllByChildAndByNameContainingAndByCategoriesAndByGlobalContaining(
+    public Page<SpatialUnitDTO> findAllByChildAndByNameContainingAndByCategoriesAndByGlobalContaining(
             SpatialUnit child,
             String name, Long[] categoryIds, Long[] personIds, String global, String langCode, Pageable pageable) {
         Page<SpatialUnit> res = spatialUnitRepository.findAllByChildAndByNameContainingAndByCategoriesAndByGlobalContaining(

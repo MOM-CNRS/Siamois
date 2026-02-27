@@ -2,6 +2,7 @@ package fr.siamois.domain.services.person.verifier;
 
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.exceptions.auth.*;
+import fr.siamois.dto.entity.PersonDTO;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
@@ -16,7 +17,7 @@ public class NamesVerifier extends PersonDataVerifier {
     }
 
     @Override
-    public void verify(Person person) throws InvalidUsernameException, UserAlreadyExistException, InvalidEmailException, InvalidPasswordException, InvalidNameException {
+    public void verify(PersonDTO person) throws InvalidUsernameException, UserAlreadyExistException, InvalidEmailException, InvalidPasswordException, InvalidNameException {
         validateNameLength(person.getName(), "Name");
         validateNameLength(person.getLastname(), "Last name");
     }
