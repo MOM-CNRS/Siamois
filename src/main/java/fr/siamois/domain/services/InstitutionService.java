@@ -58,9 +58,14 @@ public class InstitutionService {
      * @return the institution if found, or null if not found
      */
     @Transactional(readOnly = true)
-    public Institution findById(Long id) {
-        Optional<Institution> institution = institutionRepository.findById(id);
-        return institution.orElse(null);
+    public InstitutionDTO findById(Long id) {
+        Optional<Institution> institutionOpt = institutionRepository.findById(id);
+        if (institutionOpt.isEmpty()) {
+            return null;
+        }
+
+        Institution institution = institutionOpt.get();
+        return conversionService.convert(institution, InstitutionDTO.class);
     }
 
     /**

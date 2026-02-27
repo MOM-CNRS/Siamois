@@ -13,7 +13,7 @@ public class ActionUnitSummaryDTO extends AbstractEntityDTO {
     private String identifier;
     private SpatialUnitDTO mainLocation ;
     private String fullIdentifier;
-    private Set<SpatialUnitDTO> spatialContext = new HashSet<>();
+    private Set<SpatialUnitSummaryDTO> spatialContext = new HashSet<>();
     protected Integer maxRecordingUnitCode;
     protected Integer minRecordingUnitCode;
 

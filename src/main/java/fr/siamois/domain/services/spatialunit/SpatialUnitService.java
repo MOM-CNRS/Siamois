@@ -216,7 +216,7 @@ public class SpatialUnitService implements ArkEntityService {
 
         SpatialUnit spatialUnit = new SpatialUnit();
         spatialUnit.setName(name);
-        spatialUnit.setCreatedByInstitution(institutionService.findById(info.getInstitution().getId()));
+        spatialUnit.setCreatedByInstitution(conversionService.convert(institutionService.findById(info.getInstitution().getId()),Institution.class));
         spatialUnit.setCreatedBy(personService.findById(info.getUser().getId()));
         spatialUnit.setCategory(conceptService.saveOrGetConcept(su.getCategory()));
         spatialUnit.setCreationTime(OffsetDateTime.now(ZoneId.systemDefault()));

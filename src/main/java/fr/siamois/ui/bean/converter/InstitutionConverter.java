@@ -2,6 +2,7 @@ package fr.siamois.ui.bean.converter;
 
 import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.services.InstitutionService;
+import fr.siamois.dto.entity.InstitutionDTO;
 import jakarta.faces.component.UIComponent;
 import jakarta.faces.context.FacesContext;
 import jakarta.faces.convert.Converter;
@@ -13,7 +14,7 @@ import java.io.Serializable;
 
 @Slf4j
 @Component("institutionConverter") // make sure this name matches your XHTML
-public class InstitutionConverter implements Converter<Institution>, Serializable {
+public class InstitutionConverter implements Converter<InstitutionDTO>, Serializable {
 
     private final transient InstitutionService institutionService;
 
@@ -23,7 +24,7 @@ public class InstitutionConverter implements Converter<Institution>, Serializabl
     }
 
     @Override
-    public Institution getAsObject(FacesContext context, UIComponent component, String value) {
+    public InstitutionDTO getAsObject(FacesContext context, UIComponent component, String value) {
         if (value == null || value.isBlank()) {
             return null;
         }
@@ -37,7 +38,7 @@ public class InstitutionConverter implements Converter<Institution>, Serializabl
     }
 
     @Override
-    public String getAsString(FacesContext context, UIComponent component, Institution institution) {
+    public String getAsString(FacesContext context, UIComponent component, InstitutionDTO institution) {
         if (institution == null || institution.getId() == null) {
             return "";
         }
