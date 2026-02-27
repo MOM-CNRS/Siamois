@@ -1,13 +1,8 @@
 package fr.siamois.ui.bean.panel.models.panel.single;
 
-import fr.siamois.domain.models.actionunit.ActionUnit;
-import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.document.Document;
-import fr.siamois.domain.models.exceptions.recordingunit.FailedRecordingUnitSaveException;
 import fr.siamois.domain.models.history.RevisionWithInfo;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
-import fr.siamois.domain.models.vocabulary.Concept;
-import fr.siamois.domain.models.vocabulary.label.ConceptLabel;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.authorization.writeverifier.SpatialUnitWriteVerifier;
 import fr.siamois.domain.services.form.CustomFieldService;
@@ -16,20 +11,17 @@ import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.specimen.SpecimenService;
 import fr.siamois.domain.services.vocabulary.LabelService;
 import fr.siamois.dto.entity.*;
-import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.NavBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
 import fr.siamois.ui.bean.dialog.newunit.GenericNewUnitDialogBean;
 import fr.siamois.ui.bean.dialog.newunit.NewUnitContext;
 import fr.siamois.ui.bean.dialog.newunit.UnitKind;
-import fr.siamois.ui.bean.panel.FlowBean;
 import fr.siamois.ui.bean.panel.models.PanelBreadcrumb;
 import fr.siamois.ui.bean.panel.models.panel.single.tab.ActionTab;
 import fr.siamois.ui.bean.panel.utils.SpatialUnitHelperService;
 import fr.siamois.ui.form.FormUiDto;
 import fr.siamois.ui.lazydatamodel.ActionUnitInSpatialUnitLazyDataModel;
 import fr.siamois.ui.lazydatamodel.SpatialUnitChildrenLazyDataModel;
-import fr.siamois.ui.lazydatamodel.SpatialUnitParentsLazyDataModel;
 import fr.siamois.ui.lazydatamodel.scope.ActionUnitScope;
 import fr.siamois.ui.lazydatamodel.scope.SpatialUnitScope;
 import fr.siamois.ui.lazydatamodel.tree.ActionUnitTreeTableLazyModel;
@@ -163,7 +155,7 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
 
     @Override
     public String ressourceUri() {
-        return "/spatial-unit/" + idunit;
+        return "/spatial-unit/" + unitId;
     }
 
     @Override
@@ -213,7 +205,7 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
 
         try {
 
-            this.unit = spatialUnitService.findById(idunit);
+            this.unit = spatialUnitService.findById(unitId);
             this.setTitleCodeOrTitle(unit.getName()); // Set panel title
 
             backupClone = new SpatialUnitDTO(unit);
@@ -232,7 +224,7 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
         }
 
 
-        history = historyAuditService.findAllRevisionForEntity(SpatialUnitDTO.class, idunit);
+        //history = historyAuditService.findAllRevisionForEntity(SpatialUnitDTO.class, unitId);
         documents = documentService.findForSpatialUnit(unit);
     }
 
@@ -247,7 +239,7 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
     @Override
     public void init() {
 
-        if (idunit == null) {
+        if (unitId == null) {
             this.spatialUnitErrorMessage = "The ID of the spatial unit must be defined";
             return;
         }
@@ -316,7 +308,7 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
 
     @Override
     public String getPanelIndex() {
-        return "spatial-unit-"+idunit;
+        return "spatial-unit-"+ unitId;
     }
 
     @Override
@@ -333,7 +325,7 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
         }
 
         public SpatialUnitPanelBuilder id(Long id) {
-            spatialUnitPanel.setIdunit(id);
+            spatialUnitPanel.setUnitId(id);
             return this;
         }
 

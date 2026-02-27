@@ -1,6 +1,5 @@
 package fr.siamois.ui.bean.panel.models.panel.single;
 
-import fr.siamois.domain.models.TraceableEntity;
 import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.document.Document;
@@ -8,6 +7,7 @@ import fr.siamois.domain.models.exceptions.vocabulary.NoConfigForFieldException;
 import fr.siamois.domain.models.history.InfoRevisionEntity;
 import fr.siamois.domain.models.history.RevisionWithInfo;
 import fr.siamois.domain.models.institution.Institution;
+import fr.siamois.domain.services.EntityDTORegistry;
 import fr.siamois.domain.models.settings.ConceptFieldConfig;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.models.vocabulary.Vocabulary;
@@ -55,6 +55,7 @@ public abstract class AbstractSingleEntityPanel<T extends AbstractEntityDTO> ext
     protected final transient FieldService fieldService;
     protected final transient ConceptService conceptService;
     protected final transient FlowBean flowBean;
+    private final transient EntityDTORegistry entityDTORegistry;
 
     //--------------- Locals
 
@@ -68,7 +69,7 @@ public abstract class AbstractSingleEntityPanel<T extends AbstractEntityDTO> ext
     protected String errorMessage;
     protected transient List<RevisionWithInfo<T>> history;
     protected transient RevisionWithInfo<T> revisionToDisplay = null;
-    protected Long idunit;  // ID of the spatial unit
+    protected Long unitId;  // ID of the spatial unit
     protected transient List<Document> documents;
     protected transient Map<String, ConceptFieldConfig> fieldConfigs = new HashMap<>();
 
@@ -95,8 +96,6 @@ public abstract class AbstractSingleEntityPanel<T extends AbstractEntityDTO> ext
     public String display() {
         return "/panel/singleUnitPanel.xhtml";
     }
-
-
 
     public abstract void init();
 
@@ -134,7 +133,7 @@ Return the command that opens panel for the unit
         MenuModel breadcrumbModel = new DefaultMenuModel();
         breadcrumbModel.getElements().add(createHomeItem());
         breadcrumbModel.getElements().add(createRootTypeItem());
-        T currentUnit = findUnitById(idunit);
+        T currentUnit = findUnitById(unitId);
 
         if (currentUnit != null) {
             breadcrumbModel.getElements().add(createUnitItem(currentUnit));
@@ -177,6 +176,7 @@ Return the command that opens panel for the unit
         this.fieldService = context.getBean(FieldService.class);
         this.conceptService = context.getBean(ConceptService.class);
         this.flowBean = context.getBean(FlowBean.class);
+        this.entityDTORegistry = context.getBean(EntityDTORegistry.class);
 
         // Overview tab
         tabs = new ArrayList<>();
@@ -283,7 +283,7 @@ Return the command that opens panel for the unit
 
     @SuppressWarnings("unchecked")
     private RevisionWithInfo<T> findLastRevisionForEntity() {
-        RevisionWithInfo<T> result = (RevisionWithInfo<T>) historyAuditService.findLastRevisionForEntity(unit.getClass(), idunit);
+        RevisionWithInfo<T> result = (RevisionWithInfo<T>) historyAuditService.findLastRevisionForEntity(unit.getClass(), unitId);
         if (result == null) {
             InfoRevisionEntity info = new InfoRevisionEntity();
             UserInfo userInfo = sessionSettingsBean.getUserInfo();
@@ -315,7 +315,7 @@ Return the command that opens panel for the unit
      * @return the list of contributors as a string
      */
     public String allUpdaters() {
-        return historyAuditService.findAllContributorsFor(unit.getClass(), idunit)
+        return historyAuditService.findAllContributorsFor(unit.getClass(), unitId)
                 .stream()
                 .map(Person::displayName)
                 .filter(Objects::nonNull)

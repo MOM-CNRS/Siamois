@@ -43,9 +43,6 @@ public class SpatialUnitHelperService {
         }
     }
 
-    public List<RevisionWithInfo<SpatialUnit>> findHistory(SpatialUnit spatialUnit) {
-        return historyAuditService.findAllRevisionForEntity(SpatialUnit.class, spatialUnit.getId());
-    }
 
     public void reinitialize(Consumer<SpatialUnitDTO> spatialUnitSetter,
                              Consumer<String> spatialUnitErrorMessageSetter,

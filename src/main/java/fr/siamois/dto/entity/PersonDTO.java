@@ -18,4 +18,8 @@ public class PersonDTO extends AbstractEntityDTO {
     private boolean isPassToModify;
     private String username;
 
+    public String displayName() {
+        return name + " " + lastname;
+    }
+
 }

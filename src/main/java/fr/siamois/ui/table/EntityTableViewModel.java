@@ -100,7 +100,7 @@ public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
 
     @Getter
     @Setter
-    protected boolean treeMode = false; // false = table, true = tree
+    protected boolean treeMode = true; // false = table, true = tree
 
     @Getter
     @Setter

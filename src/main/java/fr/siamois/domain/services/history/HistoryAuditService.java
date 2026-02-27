@@ -1,23 +1,27 @@
 package fr.siamois.domain.services.history;
 
+import fr.siamois.domain.models.TraceableEntity;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.history.InfoRevisionEntity;
 import fr.siamois.domain.models.history.RevisionWithInfo;
+import fr.siamois.domain.models.recordingunit.RecordingUnit;
+import fr.siamois.domain.services.EntityDTORegistry;
+import fr.siamois.dto.entity.AbstractEntityDTO;
 import jakarta.persistence.NoResultException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.hibernate.Hibernate;
 import org.hibernate.envers.AuditReader;
 import org.hibernate.envers.NotAudited;
 import org.hibernate.envers.RevisionType;
 import org.hibernate.envers.query.AuditEntity;
 import org.hibernate.envers.query.AuditQuery;
+import org.springframework.core.convert.ConversionService;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.lang.reflect.Field;
-import java.util.List;
-import java.util.Objects;
-import java.util.SortedSet;
-import java.util.TreeSet;
+import java.util.*;
 
 @Slf4j
 @Service
@@ -25,37 +29,70 @@ import java.util.TreeSet;
 public class HistoryAuditService {
 
     private final AuditReader auditReader;
+    private final EntityDTORegistry registry;
+    private final ConversionService conversionService;
 
     @SuppressWarnings("unchecked")
-    public <T> List<RevisionWithInfo<T>> findAllRevisionForEntity(Class<T> entityClass, Long entityId) {
-        SortedSet<RevisionWithInfo<T>> results = new TreeSet<>();
+    @Transactional(readOnly = true)
+    public <D extends AbstractEntityDTO,
+            E extends TraceableEntity> List<RevisionWithInfo<D>> findAllRevisionForEntity(Class<D> dtoClass, Long entityId) {
 
+        Class<E> entityClass = registry.getEntityClass(dtoClass);
+
+        if (entityClass == null) {
+            throw new IllegalArgumentException("No JPA Entity mapped for DTO: " + dtoClass.getName());
+        }
+
+        // 2. Query the AuditReader using the Entity class
         List<Object[]> rows = auditReader.createQuery()
                 .forRevisionsOfEntity(entityClass, false, true)
                 .add(AuditEntity.id().eq(entityId))
                 .getResultList();
 
+        List<RevisionWithInfo<D>> results = new ArrayList<>();
+
         for (Object[] row : rows) {
-            RevisionWithInfo<T> info = new RevisionWithInfo<>(
-                    (T) row[0],
+            // row[0] is the Entity snapshot
+            E entitySnapshot = (E) row[0];
+
+            if (entitySnapshot instanceof RecordingUnit ru) {
+                Hibernate.initialize(ru.getActionUnit().getSpatialContext());
+                Hibernate.initialize(ru.getActionUnit().getMainLocation());
+            }
+
+            // 3. Convert the Entity snapshot into a DTO
+            D dto = conversionService.convert(entitySnapshot, dtoClass);
+
+            RevisionWithInfo<D> info = new RevisionWithInfo<>(
+                    dto,
                     (InfoRevisionEntity) row[1],
                     (RevisionType) row[2]
             );
             results.add(info);
         }
 
-        return results.stream().toList();
+        return results;
     }
 
     /**
      * Find the last revision of the entity with the given ID. If the revision does not exist, returns a system user
-     * @param entityClass The class of the entity
+     * @param dtoClass The class of the entity
      * @param entityId The ID of the entity
      * @return The revision
-     * @param <T> The type of the entity
+     * @param <D> The type of the entity
      */
-    @SuppressWarnings("unchecked")
-    public <T> RevisionWithInfo<T> findLastRevisionForEntity(Class<T> entityClass, Long entityId) {
+
+    @Transactional(readOnly = true)
+    public <D extends AbstractEntityDTO> RevisionWithInfo<D> findLastRevisionForEntity(Class<D> dtoClass, Long entityId) {
+
+        // 1. Get the JPA Entity class from the registry
+        // Note: Use 'Class<?>' because the registry returns the Entity type, not the DTO type
+        Class<?> entityClass = registry.getEntityClass(dtoClass);
+
+        if (entityClass == null) {
+            throw new IllegalArgumentException("No JPA Entity mapped for DTO: " + dtoClass.getName());
+        }
+
         AuditQuery query = auditReader.createQuery().forRevisionsOfEntity(entityClass, false, false);
         query.add(AuditEntity.id().eq(entityId));
         query.add(AuditEntity.revisionNumber().maximize().computeAggregationInInstanceContext());
@@ -63,16 +100,18 @@ public class HistoryAuditService {
         try {
             Object[] result = (Object[]) query.getSingleResult();
 
+            // 2. Convert the Entity snapshot (result[0]) to the DTO class
+            D dto = conversionService.convert(result[0], dtoClass);
 
+            // 3. Return the RevisionWithInfo wrapped with the DTO
             return new RevisionWithInfo<>(
-                    (T) result[0],
+                    dto,
                     (InfoRevisionEntity) result[1],
                     (RevisionType) result[2]
             );
         } catch (NoResultException e) {
             return null;
         }
-
     }
 
     /**

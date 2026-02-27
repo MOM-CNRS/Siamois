@@ -2,14 +2,9 @@ package fr.siamois.ui.bean.panel.models.panel.single;
 
 import fr.siamois.domain.models.actionunit.ActionCode;
 import fr.siamois.domain.models.actionunit.ActionUnit;
-import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.document.Document;
 import fr.siamois.domain.models.exceptions.actionunit.ActionUnitNotFoundException;
-import fr.siamois.domain.models.exceptions.actionunit.FailedActionUnitSaveException;
-import fr.siamois.domain.models.form.customform.CustomForm;
 import fr.siamois.domain.models.history.RevisionWithInfo;
-import fr.siamois.domain.models.recordingunit.RecordingUnit;
-import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.authorization.writeverifier.RecordingUnitWriteVerifier;
@@ -21,7 +16,6 @@ import fr.siamois.dto.entity.ActionUnitDTO;
 import fr.siamois.dto.entity.ConceptDTO;
 import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.dto.entity.RecordingUnitDTO;
-import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.NavBean;
 import fr.siamois.ui.bean.RedirectBean;
 import fr.siamois.ui.bean.dialog.newunit.GenericNewUnitDialogBean;
@@ -59,7 +53,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 /**
  * <p>This bean handles the spatial unit page</p>
@@ -160,7 +153,7 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnitDTO> im
 
         try {
 
-            unit = actionUnitService.findById(idunit);
+            unit = actionUnitService.findById(unitId);
             this.setTitleCodeOrTitle(unit.getName()); // Set panel title
             backupClone = new ActionUnitDTO();
             this.titleCodeOrTitle = unit.getName();
@@ -181,7 +174,7 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnitDTO> im
         }
 
 
-        history = historyAuditService.findAllRevisionForEntity(ActionUnitDTO.class, idunit);
+        //history = historyAuditService.findAllRevisionForEntity(ActionUnitDTO.class, unitId);
         documents = documentService.findForActionUnit(unit);
     }
 
@@ -189,7 +182,7 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnitDTO> im
     public void init() {
         try {
 
-            if (idunit == null) {
+            if (unitId == null) {
                 this.errorMessage = "The ID of the spatial unit must be defined";
                 return;
             }
@@ -232,7 +225,7 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnitDTO> im
 
         } catch (
                 ActionUnitNotFoundException e) {
-            log.error("Action unit with id {} not found", idunit);
+            log.error("Action unit with id {} not found", unitId);
             redirectBean.redirectTo(HttpStatus.NOT_FOUND);
         } catch (
                 RuntimeException e) {
@@ -337,7 +330,7 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnitDTO> im
         }
 
         public ActionUnitPanelBuilder id(Long id) {
-            actionUnitPanel.setIdunit(id);
+            actionUnitPanel.setUnitId(id);
             return this;
         }
 
@@ -533,7 +526,7 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnitDTO> im
 
     @Override
     public String getPanelIndex() {
-        return "action-unit-"+idunit;
+        return "action-unit-"+ unitId;
     }
 
     @Override

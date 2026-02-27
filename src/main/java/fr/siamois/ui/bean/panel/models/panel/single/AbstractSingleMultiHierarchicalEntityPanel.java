@@ -1,6 +1,5 @@
 package fr.siamois.ui.bean.panel.models.panel.single;
 
-import fr.siamois.domain.models.TraceableEntity;
 import fr.siamois.dto.entity.AbstractEntityDTO;
 import fr.siamois.ui.bean.panel.models.panel.single.tab.MultiHierarchyTab;
 import fr.siamois.ui.table.EntityTableViewModel;
@@ -27,7 +26,7 @@ public abstract class AbstractSingleMultiHierarchicalEntityPanel<T extends Abstr
 
     protected List<List<T>> findAllParentPathsToRoot() {
         List<List<T>> allPaths = new ArrayList<>();
-        List<T> parents = findDirectParentsOf(idunit);
+        List<T> parents = findDirectParentsOf(unitId);
 
         if (parents == null || parents.isEmpty()) {
             return allPaths;
@@ -60,7 +59,7 @@ public abstract class AbstractSingleMultiHierarchicalEntityPanel<T extends Abstr
     public List<MenuModel> getAllParentBreadcrumbModels() {
         List<List<T>> allPaths = findAllParentPathsToRoot();
         List<MenuModel> breadcrumbModels = new ArrayList<>();
-        T currentUnit = findUnitById(idunit);
+        T currentUnit = findUnitById(unitId);
 
         if (allPaths.isEmpty()) {
             MenuModel breadcrumbModel = new DefaultMenuModel();

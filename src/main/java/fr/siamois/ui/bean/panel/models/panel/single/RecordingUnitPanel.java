@@ -1,7 +1,6 @@
 package fr.siamois.ui.bean.panel.models.panel.single;
 
 import fr.siamois.domain.models.actionunit.ActionUnitFormMapping;
-import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.document.Document;
 import fr.siamois.domain.models.exceptions.actionunit.ActionUnitNotFoundException;
 import fr.siamois.domain.models.form.customfield.CustomField;
@@ -14,7 +13,6 @@ import fr.siamois.domain.models.form.customform.CustomCol;
 import fr.siamois.domain.models.form.customform.CustomForm;
 import fr.siamois.domain.models.history.RevisionWithInfo;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
-import fr.siamois.domain.models.specimen.Specimen;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.person.PersonService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
@@ -110,7 +108,7 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
 
     @Override
     public String ressourceUri() {
-        return "/recording-unit/" + idunit;
+        return "/recording-unit/" + unitId;
     }
 
     @Override
@@ -186,24 +184,8 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
 
         try {
 
-            unit = recordingUnitService.findById(idunit);
-            Hibernate.initialize(unit.getChildren());
-            Hibernate.initialize(unit.getParents());
-            Hibernate.initialize(unit.getRelationshipsAsUnit1());
-            Hibernate.initialize(unit.getRelationshipsAsUnit2());
+            unit = recordingUnitService.findById(unitId);
 
-            // For each relationship, initialize the other unit's fullIdentifier for equals/hashCode
-            unit.getRelationshipsAsUnit1().forEach(rel -> {
-                if (rel.getUnit2() != null) {
-                    Hibernate.initialize(rel.getUnit2().getFullIdentifier());
-                }
-            });
-
-            unit.getRelationshipsAsUnit2().forEach(rel -> {
-                if (rel.getUnit1() != null) {
-                    Hibernate.initialize(rel.getUnit1().getFullIdentifier());
-                }
-            });
 
             specimenListLazyDataModel = new SpecimenInRecordingUnitLazyDataModel(
                     specimenService,
@@ -242,7 +224,7 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
         }
 
 
-        history = historyAuditService.findAllRevisionForEntity(RecordingUnitDTO.class, idunit);
+        //history = historyAuditService.findAllRevisionForEntity(RecordingUnitDTO.class, unitId);
         documents = documentService.findForRecordingUnit(unit);
     }
 
@@ -285,7 +267,7 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
     public void init() {
         try {
 
-            if (idunit == null) {
+            if (unitId == null) {
                 this.errorMessage = "The ID of the recording unit must be defined";
                 return;
             }
@@ -315,7 +297,7 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
 
         } catch (
                 ActionUnitNotFoundException e) {
-            log.error("Recording unit with id {} not found", idunit);
+            log.error("Recording unit with id {} not found", unitId);
             redirectBean.redirectTo(HttpStatus.NOT_FOUND);
         } catch (
                 RuntimeException e) {
@@ -416,7 +398,7 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
         }
 
         public RecordingUnitPanel.RecordingUnitPanelBuilder id(Long id) {
-            recordingUnitPanel.setIdunit(id);
+            recordingUnitPanel.setUnitId(id);
             return this;
         }
 
@@ -482,7 +464,7 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
 
     @Override
     public String getPanelIndex() {
-        return "recording-unit-"+idunit;
+        return "recording-unit-"+ unitId;
     }
 
     @Override
