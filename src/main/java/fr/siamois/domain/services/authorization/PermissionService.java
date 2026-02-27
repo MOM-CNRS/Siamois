@@ -2,6 +2,7 @@ package fr.siamois.domain.services.authorization;
 
 import fr.siamois.domain.models.TraceableEntity;
 import fr.siamois.domain.models.UserInfo;
+import fr.siamois.dto.entity.AbstractEntityDTO;
 import org.springframework.stereotype.Service;
 
 
@@ -18,7 +19,7 @@ public interface PermissionService {
      * @param resource the resource to check permissions against
      * @return true if the user has read permission, false otherwise
      */
-    boolean hasReadPermission(UserInfo user, TraceableEntity resource);
+    boolean hasReadPermission(UserInfo user, AbstractEntityDTO resource);
 
     /**
      * Checks if the user has write permission for the specified resource.
@@ -27,7 +28,7 @@ public interface PermissionService {
      * @param resource the resource to check permissions against
      * @return true if the user has write permission, false otherwise
      */
-    boolean hasWritePermission(UserInfo user, TraceableEntity resource);
+    boolean hasWritePermission(UserInfo user, AbstractEntityDTO resource);
 
     /**
      * Checks if the user is an institution manager.

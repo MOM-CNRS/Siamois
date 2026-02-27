@@ -9,6 +9,7 @@ import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.person.PersonService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.domain.services.vocabulary.FieldConfigurationService;
+import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.ui.bean.LabelBean;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
@@ -164,16 +165,15 @@ public class UserDialogBean implements Serializable {
             return null;
         }
 
-        Person person = new Person();
+        PersonDTO person = new PersonDTO();
         person.setName(firstname);
         person.setLastname(lastname);
         person.setUsername(username);
         person.setEmail(email);
-        person.setPassword(password);
         person.setPassToModify(true);
 
         try {
-            return new PersonRole(personService.createPerson(person), null);
+            return new PersonRole(personService.createPerson(person, password), null);
         } catch (InvalidUsernameException e) {
             displayErrorMessage(langBean, "userDialog.error.username");
         } catch (EmailAlreadyExistException e) {

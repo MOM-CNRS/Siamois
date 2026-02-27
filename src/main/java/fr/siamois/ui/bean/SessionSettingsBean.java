@@ -57,7 +57,7 @@ public class SessionSettingsBean implements Serializable {
     private String sessionTimeout;
 
     public PersonDTO getAuthenticatedUser() {
-        return AuthenticatedUserUtils.getAuthenticatedUser().orElse(null);
+        return conversionService.convert(AuthenticatedUserUtils.getAuthenticatedUser().orElse(null), PersonDTO.class);
     }
 
     public InstitutionDTO getSelectedInstitution() {

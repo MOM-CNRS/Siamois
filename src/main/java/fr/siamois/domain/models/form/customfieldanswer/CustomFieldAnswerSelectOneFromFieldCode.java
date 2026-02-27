@@ -21,16 +21,6 @@ import java.util.Objects;
 @Table(name = "custom_field_answer")
 public class CustomFieldAnswerSelectOneFromFieldCode extends CustomFieldAnswer {
 
-    private ConceptDTO value;
-
-    public void setValue(ConceptLabelDTO conceptLabel) {
-        this.value = conceptLabel.getConcept();
-    }
-
-    public void setValue(ConceptDTO concept) {
-        this.value = concept;
-    }
-
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

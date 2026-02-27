@@ -8,9 +8,12 @@ import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.infrastructure.database.repositories.institution.InstitutionRepository;
 import fr.siamois.infrastructure.database.repositories.person.PersonRepository;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.convert.ConversionService;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 @Service
 @RequiredArgsConstructor
 public class SystemUserLoader {
@@ -20,7 +23,7 @@ public class SystemUserLoader {
     private final ConversionService conversionService;
 
 
-
+    @Transactional(readOnly = true)
     public UserInfo loadSystemUser() {
 
         // --- Personne système ---

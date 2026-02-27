@@ -29,6 +29,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -115,8 +116,8 @@ public class InstitutionService {
 
         try {
             // Création de l'institution et préparation des concepts du thésaurus sélectionnés
-            Institution i = institutionRepository.save(conversionService.convert(institution, Institution.class));
-            fieldConfigurationService.setupFieldConfigurationForInstitution(i, vocabulary);
+            Institution i = institutionRepository.save(Objects.requireNonNull(conversionService.convert(institution, Institution.class)));
+            fieldConfigurationService.setupFieldConfigurationForInstitution(institution, vocabulary);
             return conversionService.convert(i, InstitutionDTO.class);
         } catch (NotSiamoisThesaurusException e) {
             log.error("The thesaurus is not a siamois thesaurus : {}", thesaurusUrl, e);

@@ -20,7 +20,7 @@ public class AuthenticatedUserUtils {
      * Retrieve the authenticated Person from the {@link SecurityContextHolder}
      * @return Optional contains Person if user is authenticated and empty if no user is authenticated
      */
-    public static Optional<PersonDTO> getAuthenticatedUser() {
+    public static Optional<Person> getAuthenticatedUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if ( authentication == null || authentication instanceof AnonymousAuthenticationToken) return Optional.empty();
         Person person = (Person) authentication.getPrincipal();

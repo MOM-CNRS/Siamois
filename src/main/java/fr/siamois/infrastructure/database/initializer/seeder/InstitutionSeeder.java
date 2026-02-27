@@ -8,14 +8,13 @@ import fr.siamois.domain.models.exceptions.database.DatabaseDataInitException;
 import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.vocabulary.Vocabulary;
 import fr.siamois.domain.services.vocabulary.FieldConfigurationService;
+import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.infrastructure.database.repositories.institution.InstitutionRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.core.convert.ConversionService;
 import org.springframework.stereotype.Service;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 
 
 @Service
@@ -25,6 +24,7 @@ public class InstitutionSeeder {
     private final FieldConfigurationService fieldConfigurationService;
     private final PersonSeeder personSeeder;
     private final ThesaurusSeeder thesaurusSeeder;
+    private final ConversionService conversionService;
 
     public record InstitutionSpec(String name, String description, String identifier, List<String> managerEmails,
                                   String baseUri, String externalId) {
@@ -41,7 +41,9 @@ public class InstitutionSeeder {
             inst = institutionRepository.save(i);
         }
         try {
-            fieldConfigurationService.setupFieldConfigurationForInstitution(inst, vocabulary);
+            fieldConfigurationService.setupFieldConfigurationForInstitution(
+                    Objects.requireNonNull(conversionService.convert(inst, InstitutionDTO.class))
+                    , vocabulary);
         } catch (NotSiamoisThesaurusException | ErrorProcessingExpansionException e) {
             throw new DatabaseDataInitException("error with thesaurus init:",e);
         }

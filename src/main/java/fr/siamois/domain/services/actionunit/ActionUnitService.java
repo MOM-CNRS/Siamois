@@ -210,9 +210,9 @@ public class ActionUnitService implements ArkEntityService {
      * @return The saved ActionUnit
      */
     @Transactional
-    public ActionUnit save(UserInfo info, ActionUnitDTO actionUnit, ConceptDTO typeConcept)
+    public ActionUnitDTO save(UserInfo info, ActionUnitDTO actionUnit, ConceptDTO typeConcept)
             throws ActionUnitAlreadyExistsException {
-        return saveNotTransactional(info, actionUnit, typeConcept);
+        return conversionService.convert(saveNotTransactional(info, actionUnit, typeConcept), ActionUnitDTO.class);
     }
 
     /**

@@ -3,6 +3,7 @@ package fr.siamois.domain.services.document;
 import fr.siamois.domain.models.ArkEntity;
 import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.actionunit.ActionUnit;
+import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.document.Document;
 import fr.siamois.domain.models.exceptions.InvalidFileSizeException;
 import fr.siamois.domain.models.exceptions.InvalidFileTypeException;
@@ -17,9 +18,11 @@ import fr.siamois.infrastructure.database.repositories.DocumentRepository;
 import fr.siamois.infrastructure.files.DocumentStorage;
 import fr.siamois.utils.CodeUtils;
 import fr.siamois.utils.DocumentUtils;
+import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.tomcat.util.http.fileupload.InvalidFileNameException;
+import org.springframework.core.convert.ConversionService;
 import org.springframework.stereotype.Service;
 import org.springframework.util.MimeType;
 
@@ -36,20 +39,18 @@ import java.util.Optional;
 @Slf4j
 @Service
 @Setter
+@RequiredArgsConstructor
 public class DocumentService implements ArkEntityService {
 
 
     private final DocumentRepository documentRepository;
+    private final ConversionService conversionService;
 
     private static final int MAX_GENERATIONS = 100;
     private final DocumentStorage documentStorage;
     private final Collection<FileCompressor> fileCompressors;
 
-    public DocumentService(DocumentRepository documentRepository, DocumentStorage documentStorage, Collection<FileCompressor> fileCompressors) {
-        this.documentRepository = documentRepository;
-        this.documentStorage = documentStorage;
-        this.fileCompressors = fileCompressors;
-    }
+
 
     @Override
     public List<Document> findWithoutArk(Institution institution) {
@@ -108,8 +109,8 @@ public class DocumentService implements ArkEntityService {
 
             document.setMd5Sum(DocumentUtils.md5(bufferedInputStream));
             document.setFileCode(generateFileInternalCode());
-            document.setCreatedBy(userInfo.getUser());
-            document.setCreatedByInstitution(userInfo.getInstitution());
+            document.setCreatedBy(conversionService.convert(userInfo.getUser(), Person.class));
+            document.setCreatedByInstitution(conversionService.convert(userInfo.getInstitution(), Institution.class));
             document.setUrl(String.format("%s/content/%s", contextPath, document.contentFileName()));
 
             documentStorage.save(userInfo, document, bufferedInputStream);

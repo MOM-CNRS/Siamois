@@ -362,7 +362,7 @@ public class SpatialUnitTableViewModel extends EntityTableViewModel<SpatialUnitD
 
         if (action.getAction() == DUPLICATE_ROW) {
             if (!Objects.equals(node.getParent().getRowKey(), "root")) {
-                this.duplicateRow(node.getData(), node.getParent().getData());
+                this.duplicateRow(node.getData(), new SpatialUnitSummaryDTO(node.getParent().getData()));
                 return;
             }
             this.duplicateRow(node.getData(), null);
