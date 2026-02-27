@@ -1,8 +1,11 @@
 package fr.siamois.dto.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import jakarta.persistence.Transient;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
 import java.util.Set;
 
 @Data
@@ -19,6 +22,11 @@ public class SpatialUnitDTO extends AbstractEntityDTO {
     private Set<SpatialUnitSummaryDTO> children;
     private Set<RecordingUnitSummaryDTO> recordingUnitList;
     private Set<ActionUnitSummaryDTO> relatedActionUnitList;
+
+    public List<String> getBindableFieldNames() {
+        return List.of("category", "name");
+    }
+
 
 
 }

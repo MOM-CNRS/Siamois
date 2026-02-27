@@ -91,14 +91,6 @@ public class Specimen extends TraceableEntity implements ArkEntity {
     @FieldCode
     public static final String INTERPRETATION_FIELD = "SIAS.INTERPRETATION";
 
-    @Transient
-    @JsonIgnore
-    @SuppressWarnings("unused")
-    public static List<String> getBindableFieldNames() {
-        return List.of("collectionDate", "collectors", "fullIdentifier", "authors",
-                "type", "category");
-    }
-
     @NotNull
     @OneToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "fk_ark_id")

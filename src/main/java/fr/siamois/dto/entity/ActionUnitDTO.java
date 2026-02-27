@@ -6,6 +6,7 @@ import lombok.Data;
 
 import java.time.OffsetDateTime;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 @Data
@@ -27,5 +28,9 @@ public class ActionUnitDTO extends AbstractEntityDTO {
     private Boolean validated;
     private OffsetDateTime beginDate;
     private OffsetDateTime endDate;
+
+    public List<String> getBindableFieldNames() {
+        return List.of("type", "name", "identifier", "spatialContext", "beginDate", "endDate", "primaryActionCode", "mainLocation");
+    }
 
 }

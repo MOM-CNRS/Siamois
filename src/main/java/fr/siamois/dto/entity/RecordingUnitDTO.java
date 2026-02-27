@@ -1,7 +1,9 @@
 package fr.siamois.dto.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.dto.StratigraphicRelationshipDTO;
+import jakarta.persistence.Transient;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -42,5 +44,13 @@ public class RecordingUnitDTO extends AbstractEntityDTO {
     public void resetFullIdentifier() {
         if (actionUnit == null) return;
         fullIdentifier = actionUnit.getFullIdentifier();
+    }
+
+    public List<String> getBindableFieldNames() {
+        return List.of("creationTime", "openingDate", "closingDate", "description","identifier",
+                "contributors", "type", "secondaryType", "thirdType", "actionUnit", "spatialUnit",
+                "geomorphologicalCycle", "normalizedInterpretation", "author", "geomorphologicalAgent",
+                "matrixComposition", "matrixColor", "matrixTexture", "erosionShape", "erosionOrientation",
+                "erosionProfile", "taq", "tpq", "chronologicalPhase", "fullIdentifier");
     }
 }

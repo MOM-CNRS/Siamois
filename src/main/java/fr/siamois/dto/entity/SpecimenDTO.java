@@ -1,6 +1,8 @@
 package fr.siamois.dto.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.swagger.models.auth.In;
+import jakarta.persistence.Transient;
 import lombok.Data;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -26,5 +28,10 @@ public class SpecimenDTO extends AbstractEntityDTO {
 
 
     public SpecimenDTO(SpecimenDTO original) {
+    }
+
+    public static List<String> getBindableFieldNames() {
+        return List.of("collectionDate", "collectors", "fullIdentifier", "authors",
+                "type", "category");
     }
 }

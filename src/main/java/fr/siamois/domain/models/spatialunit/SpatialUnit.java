@@ -124,11 +124,6 @@ public class SpatialUnit extends TraceableEntity implements ArkEntity {
         return Objects.hash(id);  // Hash based on id
     }
 
-    @Transient
-    @JsonIgnore
-    public List<String> getBindableFieldNames() {
-        return List.of("category", "name");
-    }
 
     // ----------- Concepts for system fields
 
