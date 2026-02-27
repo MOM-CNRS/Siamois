@@ -3,25 +3,28 @@ package fr.siamois.utils.context;
 import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.institution.Institution;
+import fr.siamois.dto.entity.ConceptLabelDTO;
+import fr.siamois.dto.entity.InstitutionDTO;
+import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.infrastructure.database.repositories.institution.InstitutionRepository;
 import fr.siamois.infrastructure.database.repositories.person.PersonRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.core.convert.ConversionService;
 import org.springframework.stereotype.Service;
 @Service
+@RequiredArgsConstructor
 public class SystemUserLoader {
 
     private final PersonRepository personRepository;
     private final InstitutionRepository institutionRepository;
+    private final ConversionService conversionService;
 
-    public SystemUserLoader(PersonRepository personRepository,
-                            InstitutionRepository institutionRepository) {
-        this.personRepository = personRepository;
-        this.institutionRepository = institutionRepository;
-    }
+
 
     public UserInfo loadSystemUser() {
 
         // --- Personne système ---
-        Person admin = personRepository.findByUsernameIgnoreCase("system")
+        PersonDTO admin = conversionService.convert(personRepository.findByUsernameIgnoreCase("system")
                 .orElseGet(() -> {
                     Person p = new Person();
                     p.setUsername("system");
@@ -32,17 +35,17 @@ public class SystemUserLoader {
                     p.setPassword("SIAMOIS_UNHASHED");
                     p.setSuperAdmin(false);
                     return personRepository.save(p);
-                });
+                }), PersonDTO.class);
 
         // --- Institution par défaut ---
-        Institution defaultInsti = institutionRepository.findInstitutionByIdentifier("siamois")
+        InstitutionDTO defaultInsti = conversionService.convert(institutionRepository.findInstitutionByIdentifier("siamois")
                 .orElseGet(() -> {
                     Institution inst = new Institution();
                     inst.setName("Organisation par défaut");
                     inst.setDescription("DEFAULT");
                     inst.setIdentifier("siamois");
                     return institutionRepository.save(inst);
-                });
+                }),InstitutionDTO.class);
 
         return new UserInfo(defaultInsti, admin, "en");
     }

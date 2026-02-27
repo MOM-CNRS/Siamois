@@ -9,6 +9,8 @@ import fr.siamois.domain.models.settings.InstitutionSettings;
 import fr.siamois.domain.models.settings.PersonSettings;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.person.PersonService;
+import fr.siamois.dto.entity.InstitutionDTO;
+import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.ui.bean.panel.FlowBean;
 import fr.siamois.utils.AuthenticatedUserUtils;
 import jakarta.faces.context.FacesContext;
@@ -22,6 +24,7 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.context.annotation.ScopedProxyMode;
 import org.springframework.context.event.EventListener;
 import org.springframework.core.annotation.Order;
+import org.springframework.core.convert.ConversionService;
 import org.springframework.stereotype.Component;
 
 import java.io.Serializable;
@@ -40,10 +43,11 @@ public class SessionSettingsBean implements Serializable {
     private final LangBean langBean;
     private final transient RedirectBean redirectBean;
     private final transient PersonService personService;
-    private Institution selectedInstitution;
+    private InstitutionDTO selectedInstitution;
     private InstitutionSettings institutionSettings;
     private PersonSettings personSettings;
     private final FlowBean flowBean;
+    private final ConversionService conversionService;
 
     @Getter(AccessLevel.NONE)
     @Setter(AccessLevel.NONE)
@@ -52,11 +56,11 @@ public class SessionSettingsBean implements Serializable {
     @Value("${server.servlet.session.timeout}")
     private String sessionTimeout;
 
-    public Person getAuthenticatedUser() {
+    public PersonDTO getAuthenticatedUser() {
         return AuthenticatedUserUtils.getAuthenticatedUser().orElse(null);
     }
 
-    public Institution getSelectedInstitution() {
+    public InstitutionDTO getSelectedInstitution() {
         UserInfo currentUserInfo = getUserInfo();
         if (currentUserInfo == null) {
             return null;
@@ -80,17 +84,17 @@ public class SessionSettingsBean implements Serializable {
 
     private void loadInstitutionsSettings() {
         if (personSettings.getDefaultInstitution() != null) {
-            selectedInstitution = personSettings.getDefaultInstitution();
+            selectedInstitution = conversionService.convert(personSettings.getDefaultInstitution(), InstitutionDTO.class);
         } else {
-            Set<Institution> allInstitutions = findReferencedInstitutions();
+            Set<InstitutionDTO> allInstitutions = findReferencedInstitutions();
             selectedInstitution = allInstitutions.stream().findFirst().orElse(null);
         }
         assert selectedInstitution != null;
         institutionSettings = institutionService.createOrGetSettingsOf(selectedInstitution);
     }
 
-    private Set<Institution> findReferencedInstitutions() {
-        Person person = getAuthenticatedUser();
+    private Set<InstitutionDTO> findReferencedInstitutions() {
+        PersonDTO person = getAuthenticatedUser();
         if (person.isSuperAdmin()) {
             return institutionService.findAll();
         } else {

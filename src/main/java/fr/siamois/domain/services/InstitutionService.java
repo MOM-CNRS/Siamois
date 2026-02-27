@@ -14,6 +14,8 @@ import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.models.vocabulary.Vocabulary;
 import fr.siamois.domain.services.vocabulary.FieldConfigurationService;
 import fr.siamois.domain.services.vocabulary.VocabularyService;
+import fr.siamois.dto.entity.InstitutionDTO;
+import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.infrastructure.database.repositories.institution.InstitutionRepository;
 import fr.siamois.infrastructure.database.repositories.person.PersonRepository;
 import fr.siamois.infrastructure.database.repositories.settings.InstitutionSettingsRepository;
@@ -63,7 +65,7 @@ public class InstitutionService {
      *
      * @return a set of all institutions
      */
-    public Set<Institution> findAll() {
+    public Set<InstitutionDTO> findAll() {
         Set<Institution> result = new HashSet<>();
         for (Institution institution : institutionRepository.findAll())
             result.add(institution);
@@ -76,7 +78,7 @@ public class InstitutionService {
      * @param person the person whose institutions to find
      * @return a set of institutions associated with the person
      */
-    public Set<Institution> findInstitutionsOfPerson(Person person) {
+    public Set<InstitutionDTO> findInstitutionsOfPerson(PersonDTO person) {
         Set<Institution> institutions = new HashSet<>();
         institutions.addAll(institutionRepository.findAllAsMember(person.getId()));
         institutions.addAll(institutionRepository.findAllAsActionManager(person.getId()));
@@ -92,7 +94,7 @@ public class InstitutionService {
      * @throws InstitutionAlreadyExistException if an institution with the same identifier already exists
      * @throws FailedInstitutionSaveException   if there is an error while saving the institution
      */
-    public Institution createInstitution(Institution institution, String thesaurusUrl) throws InstitutionAlreadyExistException, FailedInstitutionSaveException, InvalidEndpointException, NotSiamoisThesaurusException {
+    public InstitutionDTO createInstitution(InstitutionDTO institution, String thesaurusUrl) throws InstitutionAlreadyExistException, FailedInstitutionSaveException, InvalidEndpointException, NotSiamoisThesaurusException {
         Optional<Institution> existing = institutionRepository.findInstitutionByIdentifier(institution.getIdentifier());
         if (existing.isPresent())
             throw new InstitutionAlreadyExistException("Institution with code " + institution.getIdentifier() + " already exists");
@@ -102,7 +104,7 @@ public class InstitutionService {
 
         try {
             // Création de l'institution et préparation des concepts du thésaurus sélectionnés
-            Institution i = institutionRepository.save(institution);
+            InstitutionDTO i = institutionRepository.save(institution);
             fieldConfigurationService.setupFieldConfigurationForInstitution(i, vocabulary);
             return i;
         } catch (NotSiamoisThesaurusException e) {
@@ -171,7 +173,7 @@ public class InstitutionService {
      * @param institution the institution for which to create or retrieve settings
      * @return the institution settings
      */
-    public InstitutionSettings createOrGetSettingsOf(Institution institution) {
+    public InstitutionSettings createOrGetSettingsOf(InstitutionDTO institution) {
         Optional<InstitutionSettings> opt = institutionSettingsRepository.findById(institution.getId());
         if (opt.isPresent()) return opt.get();
         InstitutionSettings empty = new InstitutionSettings();
@@ -211,7 +213,7 @@ public class InstitutionService {
      * @param person      the person to check
      * @return true if the person is a manager of the institution, false otherwise
      */
-    public boolean isManagerOf(Institution institution, Person person) {
+    public boolean isManagerOf(InstitutionDTO institution, PersonDTO person) {
         return institutionRepository.personIsInstitutionManagerOf(institution.getId(), person.getId());
     }
 
@@ -242,7 +244,7 @@ public class InstitutionService {
      * @param institution the institution to check against
      * @return true if the person is associated with the institution, false otherwise
      */
-    public boolean personIsInInstitution(Person person, Institution institution) {
+    public boolean personIsInInstitution(PersonDTO person, InstitutionDTO institution) {
         Optional<ActionManagerRelation> optManager = actionManagerRepository.findByPersonAndInstitution(person, institution);
         if (optManager.isPresent()) {
             return true;

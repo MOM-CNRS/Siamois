@@ -18,10 +18,7 @@ import fr.siamois.domain.services.ark.ArkService;
 import fr.siamois.domain.services.authorization.PermissionServiceImpl;
 import fr.siamois.domain.services.person.PersonService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
-import fr.siamois.dto.entity.AbstractEntityDTO;
-import fr.siamois.dto.entity.RecordingUnitDTO;
-import fr.siamois.dto.entity.SpatialUnitDTO;
-import fr.siamois.dto.entity.SpatialUnitSummaryDTO;
+import fr.siamois.dto.entity.*;
 import fr.siamois.infrastructure.database.repositories.SpatialUnitRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.Hibernate;
@@ -179,7 +176,7 @@ public class SpatialUnitService implements ArkEntityService {
      * @param id The institution id to filter by
      * @return A list of SpatialUnit belonging to the given institution
      */
-    public List<SpatialUnit> findAllOfInstitution(Long id) {
+    public List<SpatialUnitDTO> findAllOfInstitution(Long id) {
         return spatialUnitRepository.findAllOfInstitution(id);
     }
 
@@ -301,7 +298,7 @@ public class SpatialUnitService implements ArkEntityService {
      * @param institution The institution to filter by
      * @return The count of SpatialUnits created in the institution
      */
-    public long countByInstitution(Institution institution) {
+    public long countByInstitution(InstitutionDTO institution) {
         return spatialUnitRepository.countByCreatedByInstitution(institution);
     }
 
@@ -341,15 +338,15 @@ public class SpatialUnitService implements ArkEntityService {
      * @return A list of root SpatialUnit that have no parents
      */
     public List<SpatialUnitDTO> findDTORootsOf(Long id) {
-        List<SpatialUnit> roots = findRootsOf(id);
+        List<SpatialUnitDTO> roots = findRootsOf(id);
         return roots.stream()
                 .map(spatialUnit -> conversionService.convert(spatialUnit, SpatialUnitDTO.class))
                 .collect(Collectors.toList());
     }
 
-    public List<SpatialUnit> findRootsOf(Long id) {
-        List<SpatialUnit> result = new ArrayList<>();
-        for (SpatialUnit spatialUnit : findAllOfInstitution(id)) {
+    public List<SpatialUnitDTO> findRootsOf(Long id) {
+        List<SpatialUnitDTO> result = new ArrayList<>();
+        for (SpatialUnitDTO spatialUnit : findAllOfInstitution(id)) {
             if (countParentsByChild(spatialUnit) == 0) {
                 result.add(spatialUnit);
             }

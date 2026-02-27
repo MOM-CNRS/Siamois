@@ -22,10 +22,8 @@ import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitTreeService;
 import fr.siamois.domain.services.specimen.SpecimenService;
-import fr.siamois.dto.entity.AbstractEntityDTO;
-import fr.siamois.dto.entity.ConceptDTO;
-import fr.siamois.dto.entity.RecordingUnitDTO;
-import fr.siamois.dto.entity.SpatialUnitDTO;
+import fr.siamois.dto.StratigraphicRelationshipDTO;
+import fr.siamois.dto.entity.*;
 import fr.siamois.infrastructure.database.initializer.seeder.RecordingUnitRelSeeder;
 import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
 import fr.siamois.ui.bean.LangBean;
@@ -38,6 +36,7 @@ import fr.siamois.ui.form.savestrategy.RecordingUnitSaveStrategy;
 import fr.siamois.ui.form.savestrategy.SpatialUnitSaveStrategy;
 import fr.siamois.ui.form.savestrategy.SpecimenSaveStrategy;
 import fr.siamois.ui.viewmodel.TreeUiStateViewModel;
+import fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerSelectMultipleSpatialUnitTreeViewModel;
 import jakarta.faces.application.FacesMessage;
 import jakarta.faces.component.UIComponent;
 import jakarta.faces.component.UIInput;
@@ -103,7 +102,8 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
     private final Map<Long, Boolean> colEnabledByFieldId = new HashMap<>();
 
     // For multi-select spatial unit tree UI (per-answer state)
-    private final Map<CustomFieldAnswerSelectMultipleSpatialUnitTree, TreeUiStateViewModel> treeStates =
+    private final Map<CustomFieldAnswerSelectMultipleSpatialUnitTreeViewModel,
+            TreeUiStateViewModel> treeStates =
             new HashMap<>();
 
     // Rules engine plumbing
@@ -230,7 +230,8 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
         }
     }
 
-    private TreeUiStateViewModel buildUiFor(CustomFieldAnswerSelectMultipleSpatialUnitTree answer) {
+    private TreeUiStateViewModel buildUiFor(CustomFieldAnswerSelectMultipleSpatialUnitTreeViewModel
+                                                    answer) {
         TreeUiStateViewModel ui = new TreeUiStateViewModel();
         ui.setRoot(spatialUnitTreeService.buildTree());
         ui.setSelection(answer.getValue());
@@ -240,7 +241,7 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
     /**
      * Returns the root TreeNode for a given spatial-unit-tree answer.
      */
-    public TreeNode<SpatialUnit> getRoot(CustomFieldAnswerSelectMultipleSpatialUnitTree answer) {
+    public TreeNode<SpatialUnitDTO> getRoot(CustomFieldAnswerSelectMultipleSpatialUnitTree answer) {
         TreeUiStateViewModel ui = treeStates.get(answer);
         return ui != null ? ui.getRoot() : null;
     }
@@ -248,13 +249,13 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
     /**
      * Returns normalized selected spatial units (business-level "chips").
      */
-    public List<SpatialUnit> getNormalizedSpatialUnits(CustomFieldAnswerSelectMultipleSpatialUnitTree answer) {
+    public List<SpatialUnitDTO> getNormalizedSpatialUnits(CustomFieldAnswerSelectMultipleSpatialUnitTree answer) {
         TreeUiStateViewModel ui = treeStates.get(answer);
         if (ui == null) return Collections.emptyList();
         return getNormalizedSelectedUnits(ui.getSelection());
     }
 
-    public void addSUToSelection(CustomFieldAnswerSelectMultipleSpatialUnitTree answer, SpatialUnit su) {
+    public void addSUToSelection(CustomFieldAnswerSelectMultipleSpatialUnitTreeViewModel answer, SpatialUnitDTO su) {
         TreeUiStateViewModel ui = treeStates.computeIfAbsent(answer, this::buildUiFor);
         if (ui.getSelection() == null) {
             ui.setSelection(new HashSet<>());
@@ -263,7 +264,7 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
         markTreeAnswerModified(answer);
     }
 
-    public boolean removeSpatialUnit(CustomFieldAnswerSelectMultipleSpatialUnitTree answer, SpatialUnit su) {
+    public boolean removeSpatialUnit(CustomFieldAnswerSelectMultipleSpatialUnitTreeViewModel answer, SpatialUnitDTO su) {
         TreeUiStateViewModel ui = treeStates.get(answer);
         if (ui == null || ui.getSelection() == null) return false;
         boolean removed = ui.getSelection().remove(su);
@@ -273,7 +274,7 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
         return removed;
     }
 
-    private void markTreeAnswerModified(CustomFieldAnswerSelectMultipleSpatialUnitTree answer) {
+    private void markTreeAnswerModified(CustomFieldAnswerSelectMultipleSpatialUnitTreeViewModel answer) {
         answer.setHasBeenModified(true);
         hasUnsavedModifications = true;
     }
@@ -283,12 +284,12 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
      *
      * Keeps a minimal set where no selected node is a descendant of another selected node.
      */
-    public List<SpatialUnit> getNormalizedSelectedUnits(Set<SpatialUnit> selectedNodes) {
+    public List<SpatialUnitDTO> getNormalizedSelectedUnits(Set<SpatialUnitDTO> selectedNodes) {
         if (selectedNodes == null || selectedNodes.isEmpty()) return Collections.emptyList();
 
-        Map<Long, SpatialUnit> byId = new HashMap<>();
+        Map<Long, SpatialUnitDTO> byId = new HashMap<>();
         Set<Long> selectedIds = new LinkedHashSet<>();
-        for (SpatialUnit u : selectedNodes) {
+        for (SpatialUnitDTO u : selectedNodes) {
             if (u == null || u.getId() == null) continue;
             byId.putIfAbsent(u.getId(), u);
             selectedIds.add(u.getId());
@@ -308,12 +309,12 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
 
         selectedIds.removeAll(toRemove);
 
-        List<SpatialUnit> chips = selectedIds.stream()
+        List<SpatialUnitDTO> chips = selectedIds.stream()
                 .map(byId::get)
                 .filter(Objects::nonNull)
                 .collect(Collectors.toCollection(ArrayList::new));
 
-        chips.sort(Comparator.comparing(SpatialUnit::getName, Comparator.nullsLast(String::compareToIgnoreCase)));
+        chips.sort(Comparator.comparing(SpatialUnitDTO::getName, Comparator.nullsLast(String::compareToIgnoreCase)));
         return chips;
     }
 
@@ -324,7 +325,7 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
         Set<Long> res = new HashSet<>();
 
         Deque<Long> stack = spatialUnitService.findDirectParentsOf(id).stream()
-                .map(SpatialUnit::getId)
+                .map(SpatialUnitDTO::getId)
                 .filter(Objects::nonNull)
                 .distinct()
                 .collect(Collectors.toCollection(ArrayDeque::new));
@@ -333,7 +334,7 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
             long cur = stack.pop();
             if (res.add(cur)) {
                 List<Long> parents = spatialUnitService.findDirectParentsOf(cur).stream()
-                        .map(SpatialUnit::getId)
+                        .map(SpatialUnitDTO::getId)
                         .filter(Objects::nonNull)
                         .toList();
                 for (Long p : parents) {
@@ -490,7 +491,7 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
     }
 
     private boolean checkSynchronousRelationships(CustomFieldAnswerStratigraphy answer) {
-        for (StratigraphicRelationship rel : answer.getSynchronousRelationships()) {
+        for (StratigraphicRelationshipDTO rel : answer.getSynchronousRelationships()) {
             if ((rel.getUnit1().equals(answer.getSourceToAdd()) && rel.getUnit2().equals(answer.getTargetToAdd())) ||
                     (rel.getUnit1().equals(answer.getTargetToAdd()) && rel.getUnit2().equals(answer.getSourceToAdd()))) {
                 return true;
@@ -500,7 +501,7 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
     }
 
     private boolean checkPosteriorRelationships(CustomFieldAnswerStratigraphy answer) {
-        for (StratigraphicRelationship rel : answer.getPosteriorRelationships()) {
+        for (StratigraphicRelationshipDTO rel : answer.getPosteriorRelationships()) {
             if (rel.getUnit1().equals(answer.getSourceToAdd()) && rel.getUnit2().equals(answer.getTargetToAdd())) {
                 return true;
             }
@@ -509,7 +510,7 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
     }
 
     private boolean checkAnteriorRelationships(CustomFieldAnswerStratigraphy answer) {
-        for (StratigraphicRelationship rel : answer.getAnteriorRelationships()) {
+        for (StratigraphicRelationshipDTO rel : answer.getAnteriorRelationships()) {
             if (rel.getUnit1().equals(answer.getTargetToAdd()) && rel.getUnit2().equals(answer.getSourceToAdd())) {
                 return true;
             }
@@ -518,7 +519,7 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
     }
 
     private void addNewStratigraphicRelationship(CustomFieldAnswerStratigraphy answer) {
-        StratigraphicRelationship newRel = new StratigraphicRelationship();
+        StratigraphicRelationshipDTO newRel = new StratigraphicRelationshipDTO();
         String parentLabel = getParentLabel(answer);
 
         if (parentLabel.equalsIgnoreCase("synchrone avec")) {
@@ -536,7 +537,8 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
                 answer.getConceptToAdd().getHierarchyPrefLabels();
     }
 
-    private void setupSynchronousRelationship(CustomFieldAnswerStratigraphy answer, StratigraphicRelationship newRel) {
+    private void setupSynchronousRelationship(CustomFieldAnswerStratigraphy answer,
+                                              StratigraphicRelationshipDTO newRel) {
         newRel.setUnit1(answer.getSourceToAdd());
         newRel.setUnit2(answer.getTargetToAdd());
         newRel.setConcept(answer.getConceptToAdd().concept());
@@ -546,7 +548,8 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
         answer.getSynchronousRelationships().add(newRel);
     }
 
-    private void setupPosteriorRelationship(CustomFieldAnswerStratigraphy answer, StratigraphicRelationship newRel) {
+    private void setupPosteriorRelationship(CustomFieldAnswerStratigraphy answer,
+                                            StratigraphicRelationshipDTO newRel) {
         newRel.setUnit1(answer.getSourceToAdd());
         newRel.setUnit2(answer.getTargetToAdd());
         newRel.setConcept(answer.getConceptToAdd().concept());
@@ -556,7 +559,8 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
         answer.getPosteriorRelationships().add(newRel);
     }
 
-    private void setupAnteriorRelationship(CustomFieldAnswerStratigraphy answer, StratigraphicRelationship newRel) {
+    private void setupAnteriorRelationship(CustomFieldAnswerStratigraphy answer,
+                                           StratigraphicRelationshipDTO newRel) {
         newRel.setUnit1(answer.getTargetToAdd());
         newRel.setUnit2(answer.getSourceToAdd());
         newRel.setConcept(answer.getConceptToAdd().concept());
@@ -572,11 +576,11 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
 
         ObjectMapper mapper = new ObjectMapper();
         ObjectNode root = mapper.createObjectNode();
-        RecordingUnit centralUnit = answer.getSourceToAdd();
+        RecordingUnitSummaryDTO centralUnit = answer.getSourceToAdd();
 
         // anterior
         ArrayNode anteriorArray = mapper.createArrayNode();
-        for (StratigraphicRelationship rel : answer.getAnteriorRelationships()) {
+        for (StratigraphicRelationshipDTO rel : answer.getAnteriorRelationships()) {
             ObjectNode node = mapper.createObjectNode();
             node.put(UNIT_1_ID, rel.getUnit1().getFullIdentifier());
             node.put(VOCABULARY_LABEL, formService.getLabelBean().findLabelOf(rel.getConcept()));
@@ -588,7 +592,7 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
 
         // posterior
         ArrayNode posteriorArray = mapper.createArrayNode();
-        for (StratigraphicRelationship rel : answer.getPosteriorRelationships()) {
+        for (StratigraphicRelationshipDTO rel : answer.getPosteriorRelationships()) {
             ObjectNode node = mapper.createObjectNode();
             node.put(UNIT_1_ID, rel.getUnit2().getFullIdentifier());
             node.put(VOCABULARY_LABEL, formService.getLabelBean().findLabelOf(rel.getConcept()));
@@ -601,10 +605,10 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
         // synchronous
         ArrayNode synchronousArray = mapper.createArrayNode();
 
-        for (StratigraphicRelationship rel : answer.getSynchronousRelationships()) {
+        for (StratigraphicRelationshipDTO rel : answer.getSynchronousRelationships()) {
             ObjectNode node = mapper.createObjectNode();
 
-            RecordingUnit otherUnit;
+            RecordingUnitSummaryDTO otherUnit;
             Boolean direction;
 
             if (rel.getUnit1().equals(centralUnit)) {

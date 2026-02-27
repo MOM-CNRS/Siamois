@@ -1,13 +1,14 @@
 package fr.siamois.ui.bean.panel.models.panel.single.tab;
 
 import fr.siamois.domain.models.TraceableEntity;
+import fr.siamois.dto.entity.AbstractEntityDTO;
 import fr.siamois.ui.lazydatamodel.BaseLazyDataModel;
 import fr.siamois.ui.table.EntityTableViewModel;
 import lombok.Getter;
 import lombok.Setter;
 
 @Getter
-public abstract class EntityListTab<T extends TraceableEntity> extends PanelTab {
+public abstract class EntityListTab<T extends AbstractEntityDTO> extends PanelTab {
 
     private final BaseLazyDataModel<T> lazyDataModel ;
     @Setter

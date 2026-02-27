@@ -3,6 +3,7 @@ package fr.siamois.ui.lazydatamodel;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.specimen.Specimen;
 import fr.siamois.domain.services.specimen.SpecimenService;
+import fr.siamois.dto.entity.RecordingUnitDTO;
 import fr.siamois.dto.entity.SpecimenDTO;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
@@ -18,12 +19,12 @@ public class SpecimenInRecordingUnitLazyDataModel extends BaseSpecimenLazyDataMo
 
     // locals
     @Getter
-    private final transient RecordingUnit recordingUnit;
+    private final transient RecordingUnitDTO recordingUnit;
 
     public SpecimenInRecordingUnitLazyDataModel(
             SpecimenService specimenService,
             SessionSettingsBean sessionSettings,
-            LangBean langBean, RecordingUnit recordingUnit) {
+            LangBean langBean, RecordingUnitDTO recordingUnit) {
         super(specimenService, langBean);
         this.sessionSettings = sessionSettings;
         this.recordingUnit = recordingUnit;

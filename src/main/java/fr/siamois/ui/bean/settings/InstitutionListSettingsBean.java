@@ -10,6 +10,7 @@ import fr.siamois.domain.models.exceptions.institution.InstitutionAlreadyExistEx
 import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
+import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.RedirectBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
@@ -48,8 +49,10 @@ public class InstitutionListSettingsBean implements Serializable {
     private final InstitutionDetailsBean institutionDetailsBean;
     private final LangBean langBean;
     private final RedirectBean redirectBean;
-    private Set<Institution> institutions = null;
-    private List<Institution> filteredInstitutions = null;
+
+
+    private Set<InstitutionDTO> institutions = null;
+    private List<InstitutionDTO> filteredInstitutions = null;
     private List<SortMeta> sortBy;
     private Map<Long, Boolean> toggleSwitchState = new HashMap<>();
 
@@ -83,7 +86,7 @@ public class InstitutionListSettingsBean implements Serializable {
         }
     }
 
-    public void changeCurrentInstitution(Institution institution) {
+    public void changeCurrentInstitution(InstitutionDTO institution) {
         log.trace("Change current institution received : {}", institution);
         sessionSettingsBean.setSelectedInstitution(institution);
         institutionChangeEventPublisher.publishInstitutionChangeEvent();
@@ -91,8 +94,8 @@ public class InstitutionListSettingsBean implements Serializable {
     }
 
     private void updateTogglesState() {
-        Institution selected = sessionSettingsBean.getSelectedInstitution();
-        for (Institution institution : institutions) {
+        InstitutionDTO selected = sessionSettingsBean.getSelectedInstitution();
+        for (InstitutionDTO institution : institutions) {
             boolean isSelected = institution.getId().equals(selected.getId());
             toggleSwitchState.put(institution.getId(), isSelected);
         }
@@ -122,7 +125,7 @@ public class InstitutionListSettingsBean implements Serializable {
     }
 
     public void createInstitution() {
-        Institution institution;
+        InstitutionDTO institution;
         institutionDialogBean.setThesaurusError(false);
 
         try {
@@ -158,7 +161,7 @@ public class InstitutionListSettingsBean implements Serializable {
         return institutionService.countMembersInInstitution(institution);
     }
 
-    public long numberOfRecordingUnitInInstitution(Institution institution) {
+    public long numberOfRecordingUnitInInstitution(InstitutionDTO institution) {
         return recordingUnitService.countByInstitution(institution);
     }
 

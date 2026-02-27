@@ -20,10 +20,7 @@ import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.domain.services.vocabulary.FieldConfigurationService;
 import fr.siamois.domain.services.vocabulary.FieldService;
-import fr.siamois.dto.entity.ActionUnitDTO;
-import fr.siamois.dto.entity.RecordingUnitDTO;
-import fr.siamois.dto.entity.SpatialUnitDTO;
-import fr.siamois.dto.entity.SpecimenDTO;
+import fr.siamois.dto.entity.*;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.RedirectBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
@@ -89,12 +86,12 @@ public class FlowBean implements Serializable {
     private static final int MAX_NUMBER_OF_PANEL = 10;
 
     // Search bar
-    private List<SpatialUnit> fSpatialUnits = List.of();
-    private List<Institution> institutions = List.of();
+    private List<SpatialUnitDTO> fSpatialUnits = List.of();
+    private List<InstitutionDTO> institutions = List.of();
     private List<ActionUnit> fActionUnits = List.of();
-    private SpatialUnit fSelectedSpatialUnit;
-    private ActionUnit fSelectedActionUnit;
-    private Institution selectedInstitution;
+    private SpatialUnitDTO fSelectedSpatialUnit;
+    private ActionUnitDTO fSelectedActionUnit;
+    private InstitutionDTO selectedInstitution;
 
     @Getter
     private transient List<AbstractPanel> panels = new ArrayList<>();
@@ -107,7 +104,7 @@ public class FlowBean implements Serializable {
         fullscreenPanelIndex = -1;
         panels = new ArrayList<>();
         addWelcomePanel();
-        Institution institution = sessionSettings.getSelectedInstitution();
+        InstitutionDTO institution = sessionSettings.getSelectedInstitution();
         UserInfo info = sessionSettings.getUserInfo();
         institutions = new ArrayList<>();
         institutions.addAll(institutionService.findInstitutionsOfPerson(info.getUser()));
@@ -532,7 +529,7 @@ public class FlowBean implements Serializable {
     /**
      * Return the active actions units for which i'm a member
      */
-    public List<ActionUnit> getMyActionUnits() {
+    public List<ActionUnitDTO> getMyActionUnits() {
         return actionUnitService.findByTeamMember(sessionSettings.getUserInfo().getUser(),  sessionSettings.getSelectedInstitution());
     }
 

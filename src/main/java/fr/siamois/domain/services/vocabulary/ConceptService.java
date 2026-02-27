@@ -7,6 +7,8 @@ import fr.siamois.domain.models.misc.ProgressWrapper;
 import fr.siamois.domain.models.settings.ConceptFieldConfig;
 import fr.siamois.domain.models.vocabulary.*;
 import fr.siamois.domain.models.vocabulary.label.ConceptLabel;
+import fr.siamois.dto.entity.ConceptDTO;
+import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.infrastructure.api.ConceptApi;
 import fr.siamois.infrastructure.api.dto.ConceptBranchDTO;
 import fr.siamois.infrastructure.api.dto.FullInfoDTO;
@@ -63,7 +65,7 @@ public class ConceptService {
      * @return a list of concepts associated with spatial units of the institution
      */
     @NonNull
-    public List<Concept> findAllBySpatialUnitOfInstitution(@NonNull Institution institution) {
+    public List<ConceptDTO> findAllBySpatialUnitOfInstitution(@NonNull InstitutionDTO institution) {
         return conceptRepository.findAllBySpatialUnitOfInstitution(institution.getId());
     }
 

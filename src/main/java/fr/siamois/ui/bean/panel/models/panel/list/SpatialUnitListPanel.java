@@ -8,6 +8,8 @@ import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.authorization.writeverifier.SpatialUnitWriteVerifier;
 import fr.siamois.domain.services.form.FormService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitTreeService;
+import fr.siamois.dto.entity.ConceptDTO;
+import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.dto.entity.SpatialUnitDTO;
 import fr.siamois.ui.bean.NavBean;
 import fr.siamois.ui.bean.dialog.newunit.GenericNewUnitDialogBean;
@@ -133,7 +135,7 @@ public class SpatialUnitListPanel extends AbstractListPanel<SpatialUnitDTO>  imp
     }
 
     public List<ConceptLabel> categoriesAvailable() {
-        List<Concept> cList = conceptService.findAllBySpatialUnitOfInstitution(sessionSettingsBean.getSelectedInstitution());
+        List<ConceptDTO> cList = conceptService.findAllBySpatialUnitOfInstitution(sessionSettingsBean.getSelectedInstitution());
 
         return new ArrayList<>(cList.stream()
                 .map(concept -> labelService.findLabelOf(
@@ -143,7 +145,7 @@ public class SpatialUnitListPanel extends AbstractListPanel<SpatialUnitDTO>  imp
 
     }
 
-    public List<Person> authorsAvailable() {
+    public List<PersonDTO> authorsAvailable() {
         return personService.findAllAuthorsOfSpatialUnitByInstitution(sessionSettingsBean.getSelectedInstitution());
     }
 

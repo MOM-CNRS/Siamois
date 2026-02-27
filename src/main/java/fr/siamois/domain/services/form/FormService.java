@@ -16,6 +16,7 @@ import fr.siamois.domain.models.recordingunit.StratigraphicRelationship;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.dto.entity.ConceptDTO;
+import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.infrastructure.database.repositories.form.FormRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
 import fr.siamois.ui.bean.LabelBean;
@@ -73,7 +74,7 @@ public class FormService {
      * @return The form
      */
     @Transactional(readOnly = true)
-    public CustomForm findCustomFormByRecordingUnitTypeAndInstitutionId(ConceptDTO recordingUnitType, Institution institution) {
+    public CustomForm findCustomFormByRecordingUnitTypeAndInstitutionId(ConceptDTO recordingUnitType, InstitutionDTO institution) {
         Optional<CustomForm> optForm = formRepository.findEffectiveFormByTypeAndInstitution(recordingUnitType == null ? null : recordingUnitType.getId(), institution.getId());
         // If none found, try to find a form without specifying the type
         // Should we throw an error if none found?

@@ -63,7 +63,7 @@ public class GenericNewUnitDialogBean<T extends AbstractEntityDTO>
     private transient INewUnitHandler<T> handler;
 
     // creation  callback + contexte ====
-    private transient fr.siamois.ui.table.EntityTableViewModel<?, ?> sourceTableModel;
+    private transient fr.siamois.ui.table.EntityTableViewModel<T, ?> sourceTableModel;
     private transient NewUnitContext newUnitContext;
 
     public void refresh() {
@@ -86,7 +86,7 @@ public class GenericNewUnitDialogBean<T extends AbstractEntityDTO>
     // Unique selectKind
     @SuppressWarnings("unchecked")
     public void selectKind(NewUnitContext ctx,
-                           fr.siamois.ui.table.EntityTableViewModel<?, ?> sourceTableModel)
+                           fr.siamois.ui.table.EntityTableViewModel<T, ?> sourceTableModel)
             throws CannotInitializeNewUnitDialogException {
 
         this.kind = ctx.getKindToCreate();

@@ -12,6 +12,8 @@ import fr.siamois.domain.services.LangService;
 import fr.siamois.domain.services.auth.PendingPersonService;
 import fr.siamois.domain.services.person.verifier.PasswordVerifier;
 import fr.siamois.domain.services.person.verifier.PersonDataVerifier;
+import fr.siamois.dto.entity.InstitutionDTO;
+import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.infrastructure.database.repositories.person.PendingInstitutionInviteRepository;
 import fr.siamois.infrastructure.database.repositories.person.PendingPersonRepository;
 import fr.siamois.infrastructure.database.repositories.person.PersonRepository;
@@ -138,7 +140,7 @@ public class PersonService {
      * @param institution The institution
      * @return The Person list
      */
-    public List<Person> findAllAuthorsOfSpatialUnitByInstitution(Institution institution) {
+    public List<PersonDTO> findAllAuthorsOfSpatialUnitByInstitution(InstitutionDTO institution) {
         return personRepository.findAllAuthorsOfSpatialUnitByInstitution(institution.getId());
     }
 
@@ -148,7 +150,7 @@ public class PersonService {
      * @param institution The institution
      * @return The Person list
      */
-    public List<Person> findAllAuthorsOfActionUnitByInstitution(Institution institution) {
+    public List<Person> findAllAuthorsOfActionUnitByInstitution(InstitutionDTO institution) {
         return personRepository.findAllAuthorsOfActionUnitByInstitution(institution.getId());
     }
 
@@ -221,7 +223,7 @@ public class PersonService {
      * @param person The Person for whom to create or get the settings.
      * @return The PersonSettings object for the given person.
      */
-    public PersonSettings createOrGetSettingsOf(Person person) {
+    public PersonSettings createOrGetSettingsOf(PersonDTO person) {
         Optional<PersonSettings> personSettings = personSettingsRepository.findByPerson(person);
         if (personSettings.isPresent()) return personSettings.get();
 

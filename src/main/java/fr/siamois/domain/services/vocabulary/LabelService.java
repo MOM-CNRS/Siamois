@@ -6,6 +6,7 @@ import fr.siamois.domain.models.vocabulary.label.ConceptAltLabel;
 import fr.siamois.domain.models.vocabulary.label.ConceptLabel;
 import fr.siamois.domain.models.vocabulary.label.ConceptPrefLabel;
 import fr.siamois.domain.models.vocabulary.label.VocabularyLabel;
+import fr.siamois.dto.entity.ConceptDTO;
 import fr.siamois.infrastructure.database.repositories.vocabulary.label.ConceptLabelRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.label.VocabularyLabelRepository;
 import lombok.RequiredArgsConstructor;
@@ -148,7 +149,7 @@ public class LabelService {
      * the given language and return the first found. If none is found, it returns a fallback label in the format "[externalId]".
      */
     @NonNull
-    public ConceptLabel findLabelOf(@NonNull Concept concept, @NonNull String langCode) {
+    public ConceptLabel findLabelOf(@NonNull ConceptDTO concept, @NonNull String langCode) {
         Optional<ConceptPrefLabel> opt = conceptLabelRepository.findPrefLabelByLangCodeAndConcept(langCode, concept);
         if (opt.isPresent()) return opt.get();
 

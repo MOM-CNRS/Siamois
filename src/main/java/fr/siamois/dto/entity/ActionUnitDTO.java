@@ -23,5 +23,6 @@ public class ActionUnitDTO extends AbstractEntityDTO {
     private Set<ActionUnitSummaryDTO> children;
     private Set<RecordingUnitSummaryDTO> recordingUnitList;
     protected String recordingUnitIdentifierLang;
+    private Boolean validated;
 
 }

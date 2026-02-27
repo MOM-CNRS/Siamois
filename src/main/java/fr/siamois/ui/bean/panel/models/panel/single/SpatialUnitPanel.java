@@ -17,6 +17,7 @@ import fr.siamois.domain.services.specimen.SpecimenService;
 import fr.siamois.domain.services.vocabulary.LabelService;
 import fr.siamois.dto.entity.ActionUnitDTO;
 import fr.siamois.dto.entity.ConceptDTO;
+import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.dto.entity.SpatialUnitDTO;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.NavBean;
@@ -177,7 +178,7 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
 
 
     @Override
-    public List<Person> authorsAvailable() {
+    public List<PersonDTO> authorsAvailable() {
 
         return personService.findAllAuthorsOfSpatialUnitByInstitution(sessionSettings.getSelectedInstitution());
 

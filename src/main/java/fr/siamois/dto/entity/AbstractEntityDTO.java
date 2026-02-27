@@ -12,5 +12,6 @@ public abstract class AbstractEntityDTO {
     protected Long id;
     protected PersonDTO createdBy;
     protected InstitutionDTO createdByInstitution;
+    private Boolean validated;
 
 }

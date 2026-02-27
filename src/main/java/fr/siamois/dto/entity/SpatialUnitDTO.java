@@ -20,4 +20,5 @@ public class SpatialUnitDTO extends AbstractEntityDTO {
     private Set<RecordingUnitSummaryDTO> recordingUnitList;
     private Set<ActionUnitDTO> relatedActionUnitList;
 
+
 }

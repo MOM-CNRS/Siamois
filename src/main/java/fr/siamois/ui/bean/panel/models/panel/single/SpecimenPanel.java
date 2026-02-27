@@ -98,7 +98,7 @@ public class SpecimenPanel extends AbstractSingleEntityPanel<SpecimenDTO>  imple
         try {
 
             unit = specimenService.findById(idunit);
-            backupClone = new SpecimenDTO();
+            backupClone = new SpecimenDTO(unit);
             this.titleCodeOrTitle = unit.getFullIdentifier();
 
             initForms(true);

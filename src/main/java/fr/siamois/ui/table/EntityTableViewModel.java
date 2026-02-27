@@ -303,7 +303,7 @@ public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
     }
 
     public void openCreateDialog(NewUnitContext ctx,
-                                 fr.siamois.ui.bean.dialog.newunit.GenericNewUnitDialogBean<?> dialogBean) {
+                                 fr.siamois.ui.bean.dialog.newunit.GenericNewUnitDialogBean<T> dialogBean) {
         try {
             dialogBean.selectKind(ctx, this);
             org.primefaces.PrimeFaces.current().ajax().update("newUnitForm");
@@ -365,7 +365,7 @@ public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
     }
 
     // Handler when clicking on the create button on top of the table
-    public void openCreateFromToolbar(fr.siamois.ui.bean.dialog.newunit.GenericNewUnitDialogBean<?> dialogBean,
+    public void openCreateFromToolbar(fr.siamois.ui.bean.dialog.newunit.GenericNewUnitDialogBean<T> dialogBean,
                                       String updateOnCreate,
     String tableClientId) {
         if (toolbarCreateConfig == null) {

@@ -14,6 +14,7 @@ import fr.siamois.domain.services.history.HistoryAuditService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.domain.services.vocabulary.FieldService;
 import fr.siamois.dto.entity.AbstractEntityDTO;
+import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.ui.bean.dialog.document.DocumentCreationBean;
 import fr.siamois.ui.bean.panel.FlowBean;
 import fr.siamois.ui.bean.panel.models.panel.single.tab.*;
@@ -98,7 +99,7 @@ public abstract class AbstractSingleEntityPanel<T extends AbstractEntityDTO> ext
 
     public abstract void init();
 
-    public abstract List<Person> authorsAvailable();
+    public abstract List<PersonDTO> authorsAvailable();
 
     public static final Vocabulary SYSTEM_THESO;
 

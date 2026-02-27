@@ -6,6 +6,7 @@ import fr.siamois.domain.models.events.LoginEvent;
 import fr.siamois.domain.models.settings.PersonSettings;
 import fr.siamois.domain.services.LangService;
 import fr.siamois.domain.services.person.PersonService;
+import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.utils.AuthenticatedUserUtils;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
@@ -86,7 +87,7 @@ public class LangBean implements Serializable {
 
     @EventListener({LangageChangeEvent.class, LoginEvent.class})
     public void loadUserLang() {
-        Person logged = AuthenticatedUserUtils.getAuthenticatedUser().orElseThrow(() -> new IllegalStateException("User not logged in"));
+        PersonDTO logged = AuthenticatedUserUtils.getAuthenticatedUser().orElseThrow(() -> new IllegalStateException("User not logged in"));
         PersonSettings settings = personService.createOrGetSettingsOf(logged);
         if (settings.getLangCode() != null) {
             locale = new Locale(settings.getLangCode());

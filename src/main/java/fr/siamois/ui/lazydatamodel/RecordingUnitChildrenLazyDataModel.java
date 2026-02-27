@@ -12,9 +12,10 @@ import org.springframework.data.domain.Pageable;
 public class RecordingUnitChildrenLazyDataModel extends BaseRecordingUnitLazyDataModel {
 
     @Getter
-    private final transient RecordingUnit recordingUnit;
+    private final transient RecordingUnitDTO recordingUnit;
 
-    public RecordingUnitChildrenLazyDataModel(RecordingUnitService recordingUnitService, LangBean langBean, RecordingUnit recordingUnit) {
+    public RecordingUnitChildrenLazyDataModel(RecordingUnitService recordingUnitService, LangBean langBean,
+                                              RecordingUnitDTO recordingUnit) {
         super(recordingUnitService, langBean);
         this.recordingUnit = recordingUnit;
     }

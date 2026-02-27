@@ -1,10 +1,12 @@
 package fr.siamois.dto.entity;
 
-import jakarta.persistence.Column;
+import fr.siamois.domain.models.auth.Person;
+import fr.siamois.dto.StratigraphicRelationshipDTO;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.Set;
 
 @Data
@@ -20,6 +22,12 @@ public class RecordingUnitDTO extends AbstractEntityDTO {
     private OffsetDateTime openingDate;
     private OffsetDateTime closingDate;
     private Set<SpecimenSummaryDTO> specimenList;
+    private Person author;
+    private List<Person> contributors;
+    private SpatialUnitDTO spatialUnit;
+    private Set<StratigraphicRelationshipDTO> relationshipsAsUnit1 ;
+    private Set<StratigraphicRelationshipDTO> relationshipsAsUnit2 ;
+    private Boolean validated;
 
     public RecordingUnitDTO(RecordingUnitDTO original) {
         identifier = original.getIdentifier();

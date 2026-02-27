@@ -16,9 +16,7 @@ import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.ArkEntityService;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
-import fr.siamois.dto.entity.AbstractEntityDTO;
-import fr.siamois.dto.entity.ActionUnitDTO;
-import fr.siamois.dto.entity.SpatialUnitDTO;
+import fr.siamois.dto.entity.*;
 import fr.siamois.infrastructure.database.repositories.actionunit.ActionCodeRepository;
 import fr.siamois.infrastructure.database.repositories.actionunit.ActionUnitRepository;
 import fr.siamois.infrastructure.database.repositories.team.TeamMemberRepository;
@@ -325,7 +323,7 @@ public class ActionUnitService implements ArkEntityService {
      * @param institution The institution to count ActionUnits for
      * @return The count of ActionUnits created by the institution
      */
-    public long countByInstitution(Institution institution) {
+    public long countByInstitution(InstitutionDTO institution) {
         return actionUnitRepository.countByCreatedByInstitution(institution);
     }
 
@@ -395,7 +393,7 @@ public class ActionUnitService implements ArkEntityService {
      * @param person the person to check
      * @return true if the person is a manager of the institution, false otherwise
      */
-    public boolean isManagerOf(ActionUnit action, Person person) {
+    public boolean isManagerOf(ActionUnitDTO action, PersonDTO person) {
         // For now only the author is the manager, but we might need to extend it.
         return Objects.equals(action.getCreatedBy().getId(), person.getId());
     }
@@ -452,7 +450,7 @@ public class ActionUnitService implements ArkEntityService {
         });
     }
 
-    public List<ActionUnit> findByTeamMember(Person member, Institution institution) {
+    public List<ActionUnitDTO> findByTeamMember(PersonDTO member, InstitutionDTO institution) {
         return actionUnitRepository.findByTeamMemberOrCreatorAndInstitution(member.getId(), institution.getId());
     }
 

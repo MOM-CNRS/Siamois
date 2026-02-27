@@ -9,6 +9,7 @@ import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.vocabulary.ThesaurusInfo;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.vocabulary.VocabularyService;
+import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.ui.bean.ActionFromBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
 import lombok.Getter;
@@ -65,8 +66,8 @@ public class InstitutionDialogBean implements Serializable {
         reloadThesaurusInfoList();
     }
 
-    public Institution createInstitution() throws InstitutionAlreadyExistException, FailedInstitutionSaveException, InvalidEndpointException, NotSiamoisThesaurusException {
-        Institution institution = new Institution();
+    public InstitutionDTO createInstitution() throws InstitutionAlreadyExistException, FailedInstitutionSaveException, InvalidEndpointException, NotSiamoisThesaurusException {
+        InstitutionDTO institution = new InstitutionDTO();
         institution.setName(institutionName);
         institution.setIdentifier(identifier);
         institution.setId(-1L);

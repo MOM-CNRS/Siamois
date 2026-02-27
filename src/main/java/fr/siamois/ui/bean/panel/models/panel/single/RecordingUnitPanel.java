@@ -19,9 +19,7 @@ import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.person.PersonService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.specimen.SpecimenService;
-import fr.siamois.dto.entity.ConceptDTO;
-import fr.siamois.dto.entity.RecordingUnitDTO;
-import fr.siamois.dto.entity.SpatialUnitDTO;
+import fr.siamois.dto.entity.*;
 import fr.siamois.ui.bean.NavBean;
 import fr.siamois.ui.bean.RedirectBean;
 import fr.siamois.ui.bean.dialog.newunit.GenericNewUnitDialogBean;
@@ -215,7 +213,7 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
             );
             specimenListLazyDataModel.setSelectedUnits(new ArrayList<>());
 
-            backupClone = new RecordingUnit(unit);
+            backupClone = new RecordingUnitDTO(unit);
             initForms(true);
             this.titleCodeOrTitle = unit.getFullIdentifier();
 
@@ -244,27 +242,27 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
         }
 
 
-        history = historyAuditService.findAllRevisionForEntity(RecordingUnit.class, idunit);
+        history = historyAuditService.findAllRevisionForEntity(RecordingUnitDTO.class, idunit);
         documents = documentService.findForRecordingUnit(unit);
     }
 
     @Override
-    List<RecordingUnit> findDirectParentsOf(Long id) {
+    List<RecordingUnitDTO> findDirectParentsOf(Long id) {
         return recordingUnitService.findDirectParentsOf(id);
     }
 
     @Override
-    RecordingUnit findUnitById(Long id) {
+    RecordingUnitDTO findUnitById(Long id) {
         return recordingUnitService.findById(id);
     }
 
     @Override
-    String findLabel(RecordingUnit unit) {
+    String findLabel(RecordingUnitDTO unit) {
         return unit.getFullIdentifier();
     }
 
     @Override
-    String getOpenPanelCommand(RecordingUnit unit) {
+    String getOpenPanelCommand(RecordingUnitDTO unit) {
         return "#{flowBean.addRecordingUnitPanel(".concat(unit.getId().toString()).concat(")}");
     }
 
@@ -328,7 +326,7 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
     }
 
     @Override
-    public List<Person> authorsAvailable() {
+    public List<PersonDTO> authorsAvailable() {
         return List.of();
     }
 
@@ -345,9 +343,6 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
     @Override
     public void cancelChanges() {
         unit.setSpatialUnit(backupClone.getSpatialUnit());
-        unit.setThirdType(backupClone.getThirdType());
-        unit.setSecondaryType(backupClone.getSecondaryType());
-        unit.setArk(backupClone.getArk());
         unit.setIdentifier(backupClone.getIdentifier());
         unit.setType(backupClone.getType());
         unit.setOpeningDate(backupClone.getOpeningDate());
@@ -355,8 +350,6 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
         unit.setAuthor(backupClone.getAuthor());
         unit.setCreatedBy(unit.getCreatedBy());
         unit.setContributors(backupClone.getContributors());
-        unit.setGeomorphologicalCycle(backupClone.getGeomorphologicalCycle());
-        unit.setNormalizedInterpretation(backupClone.getNormalizedInterpretation());
         formContext.setHasUnsavedModifications(false);
         initForms(true);
     }
@@ -386,17 +379,17 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
 
 
     @Override
-    public void visualise(RevisionWithInfo<RecordingUnit> history) {
+    public void visualise(RevisionWithInfo<RecordingUnitDTO> history) {
         // todo: implement
     }
 
     @Override
-    protected boolean documentExistsInUnitByHash(RecordingUnit unit, String hash) {
+    protected boolean documentExistsInUnitByHash(RecordingUnitDTO unit, String hash) {
         return documentService.existInRecordingUnitByHash(unit, hash);
     }
 
     @Override
-    protected void addDocumentToUnit(Document doc, RecordingUnit unit) {
+    protected void addDocumentToUnit(Document doc, RecordingUnitDTO unit) {
         documentService.addToRecordingUnit(doc, unit);
     }
 
@@ -467,7 +460,7 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
                 spatialUnitService,
                 navBean,
                 flowBean,
-                (GenericNewUnitDialogBean<Specimen>) genericNewUnitDialogBean,
+                (GenericNewUnitDialogBean<SpecimenDTO>) genericNewUnitDialogBean,
                 formContextServices
         );
 

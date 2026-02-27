@@ -6,6 +6,7 @@ import fr.siamois.domain.models.exceptions.EntityAlreadyExistsException;
 import fr.siamois.domain.models.form.customform.CustomForm;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.dto.entity.AbstractEntityDTO;
+import fr.siamois.dto.entity.SpatialUnitDTO;
 import fr.siamois.ui.bean.dialog.newunit.GenericNewUnitDialogBean;
 import fr.siamois.ui.bean.dialog.newunit.NewUnitContext;
 import fr.siamois.ui.bean.dialog.newunit.UnitKind;
@@ -21,7 +22,7 @@ public interface INewUnitHandler<T extends AbstractEntityDTO> {
     String dialogWidgetVar();
     void initFromContext(GenericNewUnitDialogBean<?> bean) throws CannotInitializeNewUnitDialogException; // optionnel pour pré-remplir (parents/enfants…)
     String getName(T unit); // Get unit name
-    List<SpatialUnit> getSpatialUnitOptions(T unit);
+    List<SpatialUnitDTO> getSpatialUnitOptions(T unit);
 
     // shared UI defaults (pull from UnitKind)
     default String getResourceUri()     { return kind().getConfig().resourceUri(); }

@@ -1,4 +1,4 @@
-package fr.siamois.ui.mapper;
+package fr.siamois.mapper;
 
 import org.mapstruct.MapperConfig;
 import org.mapstruct.extensions.spring.SpringMapperConfig;

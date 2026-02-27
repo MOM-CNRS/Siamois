@@ -2,6 +2,9 @@ package fr.siamois.domain.models.form.customfieldanswer;
 
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.recordingunit.StratigraphicRelationship;
+import fr.siamois.dto.StratigraphicRelationshipDTO;
+import fr.siamois.dto.entity.RecordingUnitDTO;
+import fr.siamois.dto.entity.RecordingUnitSummaryDTO;
 import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
 import jakarta.faces.context.FacesContext;
 import jakarta.persistence.DiscriminatorValue;
@@ -20,19 +23,19 @@ import java.util.Set;
 public class CustomFieldAnswerStratigraphy extends CustomFieldAnswer {
 
     // The rels
-    private transient Set<StratigraphicRelationship> anteriorRelationships = new HashSet<>();
-    private transient Set<StratigraphicRelationship> posteriorRelationships = new HashSet<>();
-    private transient Set<StratigraphicRelationship> synchronousRelationships = new HashSet<>();
+    private transient Set<StratigraphicRelationshipDTO> anteriorRelationships = new HashSet<>();
+    private transient Set<StratigraphicRelationshipDTO> posteriorRelationships = new HashSet<>();
+    private transient Set<StratigraphicRelationshipDTO> synchronousRelationships = new HashSet<>();
 
     // New rel form
     private transient ConceptAutocompleteDTO conceptToAdd;
-    private transient RecordingUnit sourceToAdd = new RecordingUnit(); // always the recording unit the panel is about
-    private transient RecordingUnit targetToAdd;
+    private transient RecordingUnitSummaryDTO sourceToAdd = new RecordingUnitSummaryDTO(); // always the recording unit the panel is about
+    private transient RecordingUnitSummaryDTO targetToAdd;
     private transient Boolean vocabularyDirectionToAdd = false; // always false in this version
     private transient Boolean isUncertainToAdd;
 
     // Displayed selected rel info
-    private transient StratigraphicRelationship selectedRel;
+    private transient StratigraphicRelationshipDTO selectedRel;
 
 
     public void updateSelectedRel() {
@@ -48,7 +51,7 @@ public class CustomFieldAnswerStratigraphy extends CustomFieldAnswer {
         }
 
         // Determine which set to search based on typeRel
-        Set<StratigraphicRelationship> relsToSearch = null;
+        Set<StratigraphicRelationshipDTO> relsToSearch = null;
         switch (typeRel.toLowerCase()) {
             case "synchronous":
                 relsToSearch = synchronousRelationships;
@@ -64,9 +67,9 @@ public class CustomFieldAnswerStratigraphy extends CustomFieldAnswer {
         }
 
         // Search for the relationship
-        for (StratigraphicRelationship rel : relsToSearch) {
-            RecordingUnit relUnit1 = rel.getUnit1();
-            RecordingUnit relUnit2 = rel.getUnit2();
+        for (StratigraphicRelationshipDTO rel : relsToSearch) {
+            RecordingUnitSummaryDTO relUnit1 = rel.getUnit1();
+            RecordingUnitSummaryDTO relUnit2 = rel.getUnit2();
 
             // Check if the source and target match (order doesn't matter)
             boolean sourceMatches = (relUnit1.getFullIdentifier().equals(sourceId) && relUnit2.getFullIdentifier().equals(targetId)) ||

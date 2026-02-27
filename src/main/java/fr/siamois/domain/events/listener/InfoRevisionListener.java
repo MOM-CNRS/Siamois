@@ -1,29 +1,31 @@
 package fr.siamois.domain.events.listener;
 
 import fr.siamois.domain.models.UserInfo;
+import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.history.InfoRevisionEntity;
+import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.ui.bean.SessionSettingsBean;
 import fr.siamois.utils.context.ExecutionContextHolder;
 import fr.siamois.utils.context.SystemUserLoader;
 import jakarta.persistence.PrePersist;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Scope;
+import org.springframework.core.convert.ConversionService;
 import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
 @Scope(value = "session")
 @Component
+@RequiredArgsConstructor
 public class InfoRevisionListener {
 
     private SystemUserLoader systemUserLoader;
     private final SessionSettingsBean sessionSettingsBean;
     private final ApplicationContext applicationContext;
+    private final ConversionService conversionService;
 
-    public InfoRevisionListener(SessionSettingsBean sessionSettingsBean, ApplicationContext applicationContext) {
-        this.sessionSettingsBean = sessionSettingsBean;
-        this.applicationContext = applicationContext;
-    }
 
     /**
      * Method called before persisting an InfoRevisionEntity.
@@ -36,8 +38,8 @@ public class InfoRevisionListener {
 
         UserInfo info = resolveCurrentUser();
 
-        entity.setUpdatedBy(info.getUser());
-        entity.setUpdatedFrom(info.getInstitution());
+        entity.setUpdatedBy(conversionService.convert(info.getUser(), Person.class));
+        entity.setUpdatedFrom(conversionService.convert(info.getInstitution(), Institution.class));
     }
 
     private UserInfo resolveCurrentUser() {

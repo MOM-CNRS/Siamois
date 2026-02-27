@@ -1,4 +1,4 @@
-package fr.siamois.dto.mapper;
+package fr.siamois.mapper;
 
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;

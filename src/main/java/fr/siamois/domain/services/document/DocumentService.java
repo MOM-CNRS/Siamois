@@ -12,10 +12,7 @@ import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.specimen.Specimen;
 import fr.siamois.domain.services.ArkEntityService;
 import fr.siamois.domain.services.document.compressor.FileCompressor;
-import fr.siamois.dto.entity.AbstractEntityDTO;
-import fr.siamois.dto.entity.ActionUnitDTO;
-import fr.siamois.dto.entity.SpatialUnitDTO;
-import fr.siamois.dto.entity.SpecimenDTO;
+import fr.siamois.dto.entity.*;
 import fr.siamois.infrastructure.database.repositories.DocumentRepository;
 import fr.siamois.infrastructure.files.DocumentStorage;
 import fr.siamois.utils.CodeUtils;
@@ -195,7 +192,7 @@ public class DocumentService implements ArkEntityService {
      * @param recordingUnit the recording unit for which documents are to be found
      * @return a list of documents associated with the recording unit
      */
-    public List<Document> findForRecordingUnit(RecordingUnit recordingUnit) {
+    public List<Document> findForRecordingUnit(RecordingUnitDTO recordingUnit) {
         return documentRepository.findDocumentsByRecordingUnit(recordingUnit.getId());
     }
 
@@ -245,7 +242,7 @@ public class DocumentService implements ArkEntityService {
      * @param document    the document to be added
      * @param recordingUnit the recording unit to which the document is to be added
      */
-    public void addToRecordingUnit(Document document, RecordingUnit recordingUnit) {
+    public void addToRecordingUnit(Document document, RecordingUnitDTO recordingUnit) {
         documentRepository.addDocumentToRecordingUnit(document.getId(), recordingUnit.getId());
     }
 
@@ -329,7 +326,7 @@ public class DocumentService implements ArkEntityService {
      * @param hash        the hash of the document to check
      * @return true if the document exists in the spatial unit, false otherwise
      */
-    public boolean existInRecordingUnitByHash(RecordingUnit recordingUnit, String hash) {
+    public boolean existInRecordingUnitByHash(RecordingUnitDTO recordingUnit, String hash) {
         return documentRepository.existsByHashInRecordingUnit(recordingUnit.getId(), hash);
     }
 

@@ -22,10 +22,7 @@ import fr.siamois.domain.services.form.CustomFormResponseService;
 import fr.siamois.domain.services.recordingunit.identifier.generic.RuIdentifierResolver;
 import fr.siamois.domain.services.recordingunit.identifier.generic.RuNumericalIdentifierResolver;
 import fr.siamois.domain.services.vocabulary.ConceptService;
-import fr.siamois.dto.entity.AbstractEntityDTO;
-import fr.siamois.dto.entity.ActionUnitDTO;
-import fr.siamois.dto.entity.ConceptDTO;
-import fr.siamois.dto.entity.RecordingUnitDTO;
+import fr.siamois.dto.entity.*;
 import fr.siamois.infrastructure.database.repositories.person.PersonRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitIdCounterRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitIdInfoRepository;
@@ -324,7 +321,7 @@ public class RecordingUnitService implements ArkEntityService {
      * @throws RecordingUnitNotFoundException If no recording unit are found for the given id
      * @throws RuntimeException               If the repository method returns a RuntimeException
      */
-    public RecordingUnit findById(long id) {
+    public RecordingUnitDTO findById(long id) {
         try {
             return recordingUnitRepository.findById(id).orElseThrow(() -> new RecordingUnitNotFoundException("RecordingUnit not found with ID: " + id));
         } catch (RuntimeException e) {
@@ -350,7 +347,7 @@ public class RecordingUnitService implements ArkEntityService {
      * @param institution The institution for which to count the recording units.
      * @return The count of recording units created by the specified institution.
      */
-    public long countByInstitution(Institution institution) {
+    public long countByInstitution(InstitutionDTO institution) {
         return recordingUnitRepository.countByCreatedByInstitution(institution);
     }
 
@@ -751,7 +748,7 @@ public class RecordingUnitService implements ArkEntityService {
      * @param id The ID of the SpatialUnit to find parents for
      * @return A list of direct parents SpatialUnit of the given SpatialUnit
      */
-    public List<RecordingUnit> findDirectParentsOf(Long id) {
+    public List<RecordingUnitDTO> findDirectParentsOf(Long id) {
         return recordingUnitRepository.findParentsOf(id).stream().toList();
     }
 

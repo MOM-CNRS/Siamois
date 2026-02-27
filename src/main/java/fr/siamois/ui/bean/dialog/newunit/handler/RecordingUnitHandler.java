@@ -7,7 +7,10 @@ import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
+import fr.siamois.dto.entity.ActionUnitDTO;
 import fr.siamois.dto.entity.RecordingUnitDTO;
+import fr.siamois.dto.entity.RecordingUnitSummaryDTO;
+import fr.siamois.dto.entity.SpatialUnitDTO;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
 import fr.siamois.ui.bean.dialog.newunit.GenericNewUnitDialogBean;
@@ -31,7 +34,10 @@ public class RecordingUnitHandler implements INewUnitHandler<RecordingUnitDTO> {
     private final SessionSettingsBean sessionSettingsBean;
     private final LangBean langBean;
 
-    public RecordingUnitHandler(RecordingUnitService recordingUnitService, ActionUnitService actionUnitService, SessionSettingsBean sessionSettingsBean, LangBean langBean) {
+    public RecordingUnitHandler(RecordingUnitService recordingUnitService,
+                                ActionUnitService actionUnitService,
+                                SessionSettingsBean sessionSettingsBean,
+                                LangBean langBean) {
         this.recordingUnitService = recordingUnitService;
         this.actionUnitService = actionUnitService;
         this.sessionSettingsBean = sessionSettingsBean;
@@ -39,8 +45,8 @@ public class RecordingUnitHandler implements INewUnitHandler<RecordingUnitDTO> {
     }
 
     @Override
-    public List<SpatialUnit> getSpatialUnitOptions(RecordingUnit unit) {
-        ActionUnit actionUnit = unit.getActionUnit();
+    public List<SpatialUnitDTO> getSpatialUnitOptions(RecordingUnitDTO unit) {
+        ActionUnitDTO actionUnit = unit.getActionUnit();
         // Return the spatial context of the parent action
         if (actionUnit != null) {
             return new ArrayList<>(actionUnit.getSpatialContext());
@@ -97,7 +103,7 @@ public class RecordingUnitHandler implements INewUnitHandler<RecordingUnitDTO> {
 
         Long clickedId = trigger.getClickedId();
         String key = trigger.getColumnKey();
-        RecordingUnit clicked = recordingUnitService.findById(clickedId);
+        RecordingUnitDTO clicked = recordingUnitService.findById(clickedId);
 
         if (clicked == null) {
             return;
@@ -113,8 +119,8 @@ public class RecordingUnitHandler implements INewUnitHandler<RecordingUnitDTO> {
         }
 
         switch (key) {
-            case PARENTS -> unit.getChildren().add(clicked);
-            case CHILDREN -> unit.getParents().add(clicked);
+            case PARENTS -> unit.getChildren().add(new RecordingUnitSummaryDTO(clicked));
+            case CHILDREN -> unit.getParents().add(new RecordingUnitSummaryDTO(clicked));
             default -> { /* no-op */ }
         }
     }
@@ -127,7 +133,7 @@ public class RecordingUnitHandler implements INewUnitHandler<RecordingUnitDTO> {
 
 
         if ("ACTION".equals(scope.getKey())) {
-            ActionUnit au = actionUnitService.findById(scope.getEntityId()); // adapt Optional
+            ActionUnitDTO au = actionUnitService.findById(scope.getEntityId()); // adapt Optional
             if (au != null) {
                 unit.setCreatedByInstitution(au.getCreatedByInstitution());
                 unit.setActionUnit(au);
@@ -158,7 +164,7 @@ public class RecordingUnitHandler implements INewUnitHandler<RecordingUnitDTO> {
                 && trigger.getClickedId() != null
                 && trigger.getColumnKey() != null) {
 
-            RecordingUnit clicked = recordingUnitService.findById(trigger.getClickedId());
+            RecordingUnitDTO clicked = recordingUnitService.findById(trigger.getClickedId());
             String name = clicked != null
                     ? clicked.getFullIdentifier()
                     : ("#" + trigger.getClickedId());
@@ -180,7 +186,7 @@ public class RecordingUnitHandler implements INewUnitHandler<RecordingUnitDTO> {
         NewUnitContext.Scope scope = ctx.getScope();
         if (scope != null && "ACTION".equals(scope.getKey()) && scope.getEntityId() != null) {
 
-            ActionUnit scoped = actionUnitService.findById(scope.getEntityId());
+            ActionUnitDTO scoped = actionUnitService.findById(scope.getEntityId());
             String name = scoped != null ? scoped.getName() : ("#" + scope.getEntityId());
 
             return langBean.msg("dialog.label.title.recording.actionContext",name);
@@ -193,7 +199,7 @@ public class RecordingUnitHandler implements INewUnitHandler<RecordingUnitDTO> {
     }
 
     @Override
-    public String getName(RecordingUnit unit) {
+    public String getName(RecordingUnitDTO unit) {
         return unit.getFullIdentifier();
     }
 

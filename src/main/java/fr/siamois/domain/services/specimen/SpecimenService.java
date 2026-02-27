@@ -7,10 +7,7 @@ import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.specimen.Specimen;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.ArkEntityService;
-import fr.siamois.dto.entity.AbstractEntityDTO;
-import fr.siamois.dto.entity.ActionUnitDTO;
-import fr.siamois.dto.entity.ConceptDTO;
-import fr.siamois.dto.entity.SpecimenDTO;
+import fr.siamois.dto.entity.*;
 import fr.siamois.infrastructure.database.repositories.specimen.SpecimenRepository;
 import org.springframework.core.convert.ConversionService;
 import org.springframework.data.domain.Page;
@@ -184,7 +181,7 @@ public class SpecimenService implements ArkEntityService {
      * @param institution the institution for which to count the specimens
      * @return the count of specimens created by the institution
      */
-    public long countByInstitution(Institution institution) {
+    public long countByInstitution(InstitutionDTO institution) {
         return specimenRepository.countByCreatedByInstitution(institution);
     }
 
