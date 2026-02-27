@@ -32,7 +32,7 @@ public interface TeamMemberRepository extends CrudRepository<TeamMemberRelation,
     )
     boolean personIsInInstitution(Long personId, Long institutionId);
 
-    boolean existsByActionUnitAndPerson(ActionUnitDTO actionUnit, PersonDTO person);
+    boolean existsByActionUnitIdAndPerson(Long actionUnitId, PersonDTO person);
 
     Set<TeamMemberRelation> findAllByActionUnit(ActionUnit actionUnit);
 

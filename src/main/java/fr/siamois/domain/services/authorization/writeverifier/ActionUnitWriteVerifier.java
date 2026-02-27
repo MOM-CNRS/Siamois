@@ -27,7 +27,7 @@ public class ActionUnitWriteVerifier implements WritePermissionVerifier {
         ActionUnitDTO actionUnit = (ActionUnitDTO) resource;
         /* FIXME: Being a team member does not grant write permission on the action unit. To be discussed w/ Julien about
         what he wanted to achieve here */
-        return teamMemberRepository.existsByActionUnitAndPerson(actionUnit, userInfo.getUser());
+        return teamMemberRepository.existsByActionUnitIdAndPerson(actionUnit.getId(), userInfo.getUser());
     }
 
 }

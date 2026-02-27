@@ -7,10 +7,7 @@ import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
-import fr.siamois.dto.entity.ActionUnitDTO;
-import fr.siamois.dto.entity.RecordingUnitDTO;
-import fr.siamois.dto.entity.RecordingUnitSummaryDTO;
-import fr.siamois.dto.entity.SpatialUnitDTO;
+import fr.siamois.dto.entity.*;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
 import fr.siamois.ui.bean.dialog.newunit.GenericNewUnitDialogBean;
@@ -45,8 +42,8 @@ public class RecordingUnitHandler implements INewUnitHandler<RecordingUnitDTO> {
     }
 
     @Override
-    public List<SpatialUnitDTO> getSpatialUnitOptions(RecordingUnitDTO unit) {
-        ActionUnitDTO actionUnit = unit.getActionUnit();
+    public List<SpatialUnitSummaryDTO> getSpatialUnitOptions(RecordingUnitDTO unit) {
+        ActionUnitDTO actionUnit = actionUnitService.findById(unit.getActionUnit().getId());
         // Return the spatial context of the parent action
         if (actionUnit != null) {
             return new ArrayList<>(actionUnit.getSpatialContext());
@@ -136,7 +133,7 @@ public class RecordingUnitHandler implements INewUnitHandler<RecordingUnitDTO> {
             ActionUnitDTO au = actionUnitService.findById(scope.getEntityId()); // adapt Optional
             if (au != null) {
                 unit.setCreatedByInstitution(au.getCreatedByInstitution());
-                unit.setActionUnit(au);
+                unit.setActionUnit(new ActionUnitSummaryDTO(au));
                 unit.setAuthor(sessionSettingsBean.getAuthenticatedUser());
                 unit.setContributors(List.of(sessionSettingsBean.getAuthenticatedUser()));
                 unit.setOpeningDate(OffsetDateTime.now());

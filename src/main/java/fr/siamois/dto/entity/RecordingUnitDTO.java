@@ -16,7 +16,7 @@ public class RecordingUnitDTO extends AbstractEntityDTO {
     private String identifier;
     private String fullIdentifier;
     private ConceptDTO type;
-    private ActionUnitDTO actionUnit;
+    private ActionUnitSummaryDTO actionUnit;
     private Set<RecordingUnitSummaryDTO> parents;
     private Set<RecordingUnitSummaryDTO> children;
     private OffsetDateTime openingDate;
@@ -24,7 +24,7 @@ public class RecordingUnitDTO extends AbstractEntityDTO {
     private Set<SpecimenSummaryDTO> specimenList;
     private PersonDTO author;
     private List<PersonDTO> contributors;
-    private SpatialUnitDTO spatialUnit;
+    private SpatialUnitSummaryDTO spatialUnit;
     private Set<StratigraphicRelationshipDTO> relationshipsAsUnit1 ;
     private Set<StratigraphicRelationshipDTO> relationshipsAsUnit2 ;
     private Boolean validated;

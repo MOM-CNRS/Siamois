@@ -7,6 +7,7 @@ import fr.siamois.domain.services.vocabulary.FieldService;
 import fr.siamois.dto.entity.AbstractEntityDTO;
 import fr.siamois.dto.entity.ConceptDTO;
 import fr.siamois.dto.entity.SpatialUnitDTO;
+import fr.siamois.dto.entity.SpatialUnitSummaryDTO;
 import fr.siamois.ui.bean.RedirectBean;
 import fr.siamois.ui.bean.dialog.newunit.handler.INewUnitHandler;
 import fr.siamois.ui.bean.field.SpatialUnitFieldBean;
@@ -172,7 +173,7 @@ public class GenericNewUnitDialogBean<T extends AbstractEntityDTO>
      * @return The list of selectable spatial unit
      */
     @Override
-    public List<SpatialUnitDTO> getSpatialUnitOptions() {
+    public List<SpatialUnitSummaryDTO> getSpatialUnitOptions() {
         return handler.getSpatialUnitOptions(unit);
     }
 

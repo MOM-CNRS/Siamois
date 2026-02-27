@@ -141,12 +141,19 @@ public class HistoryAuditService {
 
     /**
      * Find all the contributors to an entity with the given ID
-     * @param entityClass The class of the entity
+     * @param dtoClass The class of the entity
      * @param entityId The ID of the entity
      * @return The list of contributors
      */
     @SuppressWarnings("unchecked")
-    public List<Person> findAllContributorsFor(Class<?> entityClass, Object entityId) {
+    public <D extends AbstractEntityDTO> List<Person> findAllContributorsFor(Class<D> dtoClass, Object entityId) {
+
+        Class<?> entityClass = registry.getEntityClass(dtoClass);
+
+        if (entityClass == null) {
+            throw new IllegalArgumentException("No JPA Entity mapped for DTO: " + dtoClass.getName());
+        }
+
         List<Person> contributors = auditReader.createQuery()
                 .forRevisionsOfEntity(entityClass, false, false)
                 .add(AuditEntity.id().eq(entityId))

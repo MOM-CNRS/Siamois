@@ -1,6 +1,5 @@
 package fr.siamois.domain.services.recordingunit;
 
-import com.sun.faces.cdi.RequestCookieMapProducer;
 import fr.siamois.domain.models.ArkEntity;
 import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.actionunit.ActionUnit;
@@ -29,7 +28,6 @@ import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUn
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitRepository;
 import fr.siamois.infrastructure.database.repositories.team.TeamMemberRepository;
 import jakarta.validation.constraints.NotNull;
-import jdk.jfr.consumer.RecordedObject;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.Hibernate;
@@ -84,7 +82,7 @@ public class RecordingUnitService implements ArkEntityService {
     }
 
     public boolean fullIdentifierAlreadyExistInAction(RecordingUnitDTO unit) {
-        List<RecordingUnit> existing = findByActionAndFullId(unit.getActionUnit(), unit.getFullIdentifier());
+        List<RecordingUnit> existing = findByActionIdAndFullId(unit.getActionUnit().getId(), unit.getFullIdentifier());
         return existing.stream()
                 .anyMatch(r -> Objects.equals(r.getFullIdentifier(), unit.getFullIdentifier()) && !Objects.equals(r.getId(),
                         unit.getId()));
@@ -435,10 +433,10 @@ public class RecordingUnitService implements ArkEntityService {
      * @return True if the user has sufficient permissions
      */
     public boolean canCreateSpecimen(UserInfo user, RecordingUnitDTO ru) {
-        ActionUnitDTO action = ru.getActionUnit();
+        ActionUnitSummaryDTO action = ru.getActionUnit();
         return institutionService.isManagerOf(action.getCreatedByInstitution(), user.getUser()) ||
                 actionUnitService.isManagerOf(action, user.getUser()) ||
-                (teamMemberRepository.existsByActionUnitAndPerson(action, user.getUser())
+                (teamMemberRepository.existsByActionUnitIdAndPerson(action.getId(), user.getUser())
                         && actionUnitService.isActionUnitStillOngoing(action));
     }
 
@@ -663,7 +661,7 @@ public class RecordingUnitService implements ArkEntityService {
      * @param recordingUnitDTO The recording unit to generate the identifier for.
      * @return The generated identifier.
      */
-    public String generateFullIdentifier(@NonNull ActionUnitDTO actionUnitDTO, @NonNull RecordingUnitDTO recordingUnitDTO) {
+    public String generateFullIdentifier(@NonNull ActionUnitSummaryDTO actionUnitDTO, @NonNull RecordingUnitDTO recordingUnitDTO) {
 
         RecordingUnit recordingUnit = conversionService.convert(recordingUnitDTO, RecordingUnit.class);
         ActionUnit actionUnit = conversionService.convert(actionUnitDTO, ActionUnit.class);
@@ -744,14 +742,14 @@ public class RecordingUnitService implements ArkEntityService {
     }
 
     @NonNull
-    public List<RecordingUnit> findByActionAndFullId(@NotNull ActionUnitDTO actionUnit, @NotNull String fullIdentifier) {
-        return recordingUnitRepository.findByFullIdentifierAndActionUnit(fullIdentifier, conversionService.convert(actionUnit, ActionUnit.class));
+    public List<RecordingUnit> findByActionIdAndFullId(@NotNull Long actionUnitId, @NotNull String fullIdentifier) {
+        return recordingUnitRepository.findByFullIdentifierAndActionUnitId(fullIdentifier, actionUnitId);
     }
 
-    public List<RecordingUnitDTO> findAllByActionUnit(@NotNull ActionUnitDTO actionUnitDTO) {
+    public List<RecordingUnitDTO> findAllByActionUnit(@NotNull Long actionUnitId) {
 
         return recordingUnitRepository
-                .findAllByActionUnit(conversionService.convert(actionUnitDTO, ActionUnit.class))
+                .findAllByActionUnitId(actionUnitId)
                 .stream()
                 .map(unit -> conversionService.convert(unit, RecordingUnitDTO.class))
                 .collect(Collectors.toList());

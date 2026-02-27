@@ -217,7 +217,7 @@ public class ActionUnitTableViewModel extends EntityTableViewModel<ActionUnitDTO
         }
     }
 
-    public boolean isRendered(RowAction action, ActionUnit au) {
+    public boolean isRendered(RowAction action, ActionUnitDTO au) {
         return switch (action.getAction()) {
             case DUPLICATE_ROW -> false;
             case TOGGLE_BOOKMARK -> false;
@@ -227,7 +227,7 @@ public class ActionUnitTableViewModel extends EntityTableViewModel<ActionUnitDTO
 
 
     public String resolveIcon(RowAction action,
-                              ActionUnit au) {
+                              ActionUnitDTO au) {
         return switch (action.getAction()) {
             default -> "";
         };

@@ -16,6 +16,7 @@ import fr.siamois.domain.services.vocabulary.FieldConfigurationService;
 import fr.siamois.dto.entity.AbstractEntityDTO;
 import fr.siamois.dto.entity.ConceptDTO;
 import fr.siamois.dto.entity.SpatialUnitDTO;
+import fr.siamois.dto.entity.SpatialUnitSummaryDTO;
 import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
 import fr.siamois.ui.bean.LabelBean;
 import fr.siamois.ui.bean.LangBean;
@@ -177,7 +178,7 @@ public abstract class AbstractSingleEntity<T extends AbstractEntityDTO> extends 
     /**
      * In list panels children may override this to provide options.
      */
-    public List<SpatialUnitDTO> getSpatialUnitOptions() {
+    public List<SpatialUnitSummaryDTO> getSpatialUnitOptions() {
         return List.of();
     }
 

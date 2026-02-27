@@ -252,7 +252,7 @@ public class SpatialUnitTableViewModel extends EntityTableViewModel<SpatialUnitD
         }
     }
 
-    public boolean isRendered(RowAction action, SpatialUnit su) {
+    public boolean isRendered(RowAction action, SpatialUnitDTO su) {
         // todo: display based on permissions
         return switch (action.getAction()) {
             case DUPLICATE_ROW, NEW_CHILDREN, NEW_PARENT -> flowBean.getIsWriteMode() && // perm to create spatial unit in orga and app is in write mode
@@ -266,7 +266,7 @@ public class SpatialUnitTableViewModel extends EntityTableViewModel<SpatialUnitD
     }
 
 
-    public String resolveIcon(RowAction action, SpatialUnit su) {
+    public String resolveIcon(RowAction action, SpatialUnitDTO su) {
             return switch (action.getAction()) {
                 case TOGGLE_BOOKMARK -> Boolean.TRUE.equals(navBean.isSpatialUnitBookmarkedByUser(su.getId()))
                         ? "bi bi-bookmark-x-fill"

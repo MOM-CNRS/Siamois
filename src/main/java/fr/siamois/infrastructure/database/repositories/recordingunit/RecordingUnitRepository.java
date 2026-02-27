@@ -41,7 +41,7 @@ public interface RecordingUnitRepository extends CrudRepository<RecordingUnit, L
     )
     List<RecordingUnit> findAllBySpatialUnitId(Long spatialUnitId);
 
-    List<RecordingUnit> findAllByActionUnit(ActionUnit actionUnit);
+    List<RecordingUnit> findAllByActionUnitId(Long actionUnitId);
 
     @Transactional
     @Modifying
@@ -478,7 +478,7 @@ public interface RecordingUnitRepository extends CrudRepository<RecordingUnit, L
 
 
     @NonNull
-    List<RecordingUnit> findByFullIdentifierAndActionUnit(String fullIdentifier, ActionUnit actionUnit);
+    List<RecordingUnit> findByFullIdentifierAndActionUnitId(String fullIdentifier, Long actionUnitId);
 
     @Query(value = """
     SELECT COUNT(1) > 0

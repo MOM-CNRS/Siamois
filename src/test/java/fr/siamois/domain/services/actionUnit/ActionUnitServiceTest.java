@@ -478,12 +478,12 @@ class ActionUnitServiceTest {
         commonStubs();
         when(institutionService.isManagerOf(institution, person)).thenReturn(false);
         doReturn(false).when(actionUnitService).isManagerOf(action, person);
-        when(teamMemberRepository.existsByActionUnitAndPerson(action, person)).thenReturn(true);
+        when(teamMemberRepository.existsByActionUnitIdAndPerson(action, person)).thenReturn(true);
         doReturn(true).when(actionUnitService).isActionUnitStillOngoing(action);
 
         assertTrue(actionUnitService.canCreateRecordingUnit(userInfo, action));
 
-        verify(teamMemberRepository).existsByActionUnitAndPerson(action, person);
+        verify(teamMemberRepository).existsByActionUnitIdAndPerson(action, person);
         verify(actionUnitService).isActionUnitStillOngoing(action);
     }
 
@@ -492,7 +492,7 @@ class ActionUnitServiceTest {
         commonStubs();
         when(institutionService.isManagerOf(institution, person)).thenReturn(false);
         doReturn(false).when(actionUnitService).isManagerOf(action, person);
-        when(teamMemberRepository.existsByActionUnitAndPerson(action, person)).thenReturn(true);
+        when(teamMemberRepository.existsByActionUnitIdAndPerson(action, person)).thenReturn(true);
         doReturn(false).when(actionUnitService).isActionUnitStillOngoing(action);
 
         assertFalse(actionUnitService.canCreateRecordingUnit(userInfo, action));
@@ -503,7 +503,7 @@ class ActionUnitServiceTest {
         commonStubs();
         when(institutionService.isManagerOf(institution, person)).thenReturn(false);
         doReturn(false).when(actionUnitService).isManagerOf(action, person);
-        when(teamMemberRepository.existsByActionUnitAndPerson(action, person)).thenReturn(false);
+        when(teamMemberRepository.existsByActionUnitIdAndPerson(action, person)).thenReturn(false);
         // `isActionUnitStillOngoing` won’t be called because teamMemberRepository returns false
 
         assertFalse(actionUnitService.canCreateRecordingUnit(userInfo, action));

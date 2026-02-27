@@ -436,7 +436,7 @@ class RecordingUnitServiceTest {
 
         when(institutionService.isManagerOf(any(Institution.class), any(Person.class))).thenReturn(false);
         when(actionUnitService.isManagerOf(actionUnit, user)).thenReturn(false);
-        when(teamMemberRepository.existsByActionUnitAndPerson(actionUnit, user)).thenReturn(true);
+        when(teamMemberRepository.existsByActionUnitIdAndPerson(actionUnit, user)).thenReturn(true);
         when(actionUnitService.isActionUnitStillOngoing(actionUnit)).thenReturn(true);
 
         boolean result = recordingUnitService.canCreateSpecimen(userInfo, recordingUnit);
@@ -452,7 +452,7 @@ class RecordingUnitServiceTest {
 
         when(institutionService.isManagerOf(any(Institution.class), any(Person.class))).thenReturn(false);
         when(actionUnitService.isManagerOf(actionUnit, user)).thenReturn(false);
-        when(teamMemberRepository.existsByActionUnitAndPerson(actionUnit, user)).thenReturn(true);
+        when(teamMemberRepository.existsByActionUnitIdAndPerson(actionUnit, user)).thenReturn(true);
         when(actionUnitService.isActionUnitStillOngoing(actionUnit)).thenReturn(false);
 
         boolean result = recordingUnitService.canCreateSpecimen(userInfo, recordingUnit);
@@ -468,7 +468,7 @@ class RecordingUnitServiceTest {
 
         when(institutionService.isManagerOf(any(Institution.class), any(Person.class))).thenReturn(false);
         when(actionUnitService.isManagerOf(actionUnit, user)).thenReturn(false);
-        when(teamMemberRepository.existsByActionUnitAndPerson(actionUnit, user)).thenReturn(false);
+        when(teamMemberRepository.existsByActionUnitIdAndPerson(actionUnit, user)).thenReturn(false);
 
         boolean result = recordingUnitService.canCreateSpecimen(userInfo, recordingUnit);
 
@@ -630,7 +630,7 @@ class RecordingUnitServiceTest {
         recordingUnit2.setActionUnit(actionUnit);
         recordingUnit2.setFullIdentifier("test");
 
-        when(recordingUnitRepository.findByFullIdentifierAndActionUnit("test", actionUnit))
+        when(recordingUnitRepository.findByFullIdentifierAndActionUnitId("test", actionUnit))
                 .thenReturn(List.of(recordingUnit1, recordingUnit2));
 
         assertTrue(recordingUnitService.fullIdentifierAlreadyExistInAction(recordingUnit1));
@@ -643,7 +643,7 @@ class RecordingUnitServiceTest {
         recordingUnit1.setActionUnit(actionUnit);
         recordingUnit1.setFullIdentifier("test");
 
-        when(recordingUnitRepository.findByFullIdentifierAndActionUnit("test", actionUnit))
+        when(recordingUnitRepository.findByFullIdentifierAndActionUnitId("test", actionUnit))
                 .thenReturn(List.of(recordingUnit1, recordingUnit1));
 
         assertFalse(recordingUnitService.fullIdentifierAlreadyExistInAction(recordingUnit1));
@@ -656,7 +656,7 @@ class RecordingUnitServiceTest {
         recordingUnit1.setActionUnit(actionUnit);
         recordingUnit1.setFullIdentifier("test");
 
-        when(recordingUnitRepository.findByFullIdentifierAndActionUnit("test", actionUnit))
+        when(recordingUnitRepository.findByFullIdentifierAndActionUnitId("test", actionUnit))
                 .thenReturn(List.of());
 
         assertFalse(recordingUnitService.fullIdentifierAlreadyExistInAction(recordingUnit1));
@@ -904,7 +904,7 @@ class RecordingUnitServiceTest {
         existingUnit.setActionUnit(actionUnit);
         existingUnit.setFullIdentifier("test");
 
-        when(recordingUnitRepository.findByFullIdentifierAndActionUnit("test", actionUnit))
+        when(recordingUnitRepository.findByFullIdentifierAndActionUnitId("test", actionUnit))
                 .thenReturn(List.of(existingUnit));
 
         // Act & Assert

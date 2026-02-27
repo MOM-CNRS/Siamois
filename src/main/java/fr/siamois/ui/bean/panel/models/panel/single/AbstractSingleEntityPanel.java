@@ -65,7 +65,6 @@ public abstract class AbstractSingleEntityPanel<T extends AbstractEntityDTO> ext
     public static final String THIS = "@this";
 
     protected Integer activeTabIndex; // Keeping state of active tab
-    protected transient T backupClone;
     protected String errorMessage;
     protected transient List<RevisionWithInfo<T>> history;
     protected transient RevisionWithInfo<T> revisionToDisplay = null;
@@ -193,8 +192,6 @@ Return the command that opens panel for the unit
 
 
     public abstract void initForms(boolean forceInit);
-
-    public abstract void cancelChanges();
 
     public abstract void visualise(RevisionWithInfo<T> history);
 

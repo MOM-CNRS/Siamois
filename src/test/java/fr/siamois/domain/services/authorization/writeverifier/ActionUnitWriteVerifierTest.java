@@ -56,7 +56,7 @@ class ActionUnitWriteVerifierTest {
         ActionUnit actionUnit = new ActionUnit();
         actionUnit.setId(1L);
 
-        when(teamMemberRepository.existsByActionUnitAndPerson(actionUnit, userInfo.getUser())).thenReturn(true);
+        when(teamMemberRepository.existsByActionUnitIdAndPerson(actionUnit, userInfo.getUser())).thenReturn(true);
 
         // Act
         boolean result = actionUnitWriteVerifier.hasSpecificWritePermission(userInfo, actionUnit);
@@ -71,7 +71,7 @@ class ActionUnitWriteVerifierTest {
         ActionUnit actionUnit = new ActionUnit();
         actionUnit.setId(1L);
 
-        when(teamMemberRepository.existsByActionUnitAndPerson(actionUnit, userInfo.getUser())).thenReturn(false);
+        when(teamMemberRepository.existsByActionUnitIdAndPerson(actionUnit, userInfo.getUser())).thenReturn(false);
 
         // Act
         boolean result = actionUnitWriteVerifier.hasSpecificWritePermission(userInfo, actionUnit);

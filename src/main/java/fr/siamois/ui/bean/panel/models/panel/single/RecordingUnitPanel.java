@@ -66,12 +66,8 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
     private final transient SpecimenService specimenService;
     private final transient NavBean navBean;
     private final transient GenericNewUnitDialogBean<?> genericNewUnitDialogBean;
-    private final transient FormMapper formMapper;
 
     // ---------- Locals
-    // RU
-    protected RecordingUnit recordingUnit;
-
     // Linked specimen
     private transient SpecimenInRecordingUnitLazyDataModel specimenListLazyDataModel ;
 
@@ -102,7 +98,7 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
         this.specimenService = context.getBean(SpecimenService.class);
         this.navBean = context.getBean(NavBean.class);
         this.genericNewUnitDialogBean = context.getBean(GenericNewUnitDialogBean.class);
-        this.formMapper = context.getBean(FormMapper.class);
+
     }
 
 
@@ -122,7 +118,7 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
      * @return The list of spatial unit
      */
     @Override
-    public List<SpatialUnitDTO> getSpatialUnitOptions() {
+    public List<SpatialUnitSummaryDTO> getSpatialUnitOptions() {
 
         if(unit == null) return Collections.emptyList();
         return spatialUnitService.getSpatialUnitOptionsFor(unit);
@@ -139,42 +135,6 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
         unit.setType(concept);
     }
 
-    public void initializeAnswer(CustomField field) {
-        if (recordingUnit.getFormResponse().getAnswers().get(field) == null) {
-            // Init missing parameters
-            if (field instanceof CustomFieldSelectMultiple) {
-                recordingUnit.getFormResponse().getAnswers().put(field, new CustomFieldAnswerSelectMultiple());
-            } else if (field instanceof CustomFieldInteger) {
-                recordingUnit.getFormResponse().getAnswers().put(field, new CustomFieldAnswerInteger());
-            }
-        }
-    }
-
-
-    public CustomForm getFormForRecordingUnitType(Concept type, Set<ActionUnitFormMapping> availableForms) {
-        return availableForms.stream()
-                .filter(mapping -> mapping.getPk().getConcept().equals(type) // Vérifier le concept
-                        && "RECORDING_UNIT" .equals(mapping.getPk().getTableName())) // Vérifier le tableName
-                .map(mapping -> mapping.getPk().getForm())
-                .findFirst()
-                .orElse(null); // Retourner null si aucun match
-    }
-
-
-
-    public void initFormResponseAnswers() {
-
-
-        if (recordingUnit.getFormResponse().getForm() != null) {
-            recordingUnit.getFormResponse().getForm().getLayout().stream()
-                    .flatMap(section -> section.getRows().stream())      // Stream rows in each section
-                    .flatMap(row -> row.getColumns().stream())           // Stream columns in each row
-                    .map(CustomCol::getField)                    // Extract the field from each column
-                    .forEach(this::initializeAnswer);                    // Process each field
-        }
-
-
-    }
 
     public void refreshUnit() {
 
@@ -195,7 +155,7 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
             );
             specimenListLazyDataModel.setSelectedUnits(new ArrayList<>());
 
-            backupClone = new RecordingUnitDTO(unit);
+
             initForms(true);
             this.titleCodeOrTitle = unit.getFullIdentifier();
 
@@ -322,19 +282,7 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
         initFormContext(forceInit);
     }
 
-    @Override
-    public void cancelChanges() {
-        unit.setSpatialUnit(backupClone.getSpatialUnit());
-        unit.setIdentifier(backupClone.getIdentifier());
-        unit.setType(backupClone.getType());
-        unit.setOpeningDate(backupClone.getOpeningDate());
-        unit.setClosingDate(backupClone.getClosingDate());
-        unit.setAuthor(backupClone.getAuthor());
-        unit.setCreatedBy(unit.getCreatedBy());
-        unit.setContributors(backupClone.getContributors());
-        formContext.setHasUnsavedModifications(false);
-        initForms(true);
-    }
+
 
     @Override
     protected void configureSystemFieldsBeforeInit() {

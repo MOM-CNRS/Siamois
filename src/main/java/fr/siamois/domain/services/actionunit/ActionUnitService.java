@@ -351,7 +351,7 @@ public class ActionUnitService implements ArkEntityService {
      * @param actionUnit The action
      * @return True if the action is open
      */
-    public boolean isActionUnitStillOngoing(ActionUnitDTO actionUnit) {
+    public boolean isActionUnitStillOngoing(ActionUnitSummaryDTO actionUnit) {
         OffsetDateTime beginDate = actionUnit.getBeginDate();
         OffsetDateTime endDate = actionUnit.getEndDate();
 
@@ -377,7 +377,7 @@ public class ActionUnitService implements ArkEntityService {
      * @param person the person to check
      * @return true if the person is a manager of the institution, false otherwise
      */
-    public boolean isManagerOf(ActionUnitDTO action, PersonDTO person) {
+    public boolean isManagerOf(ActionUnitSummaryDTO action, PersonDTO person) {
         // For now only the author is the manager, but we might need to extend it.
         return Objects.equals(action.getCreatedBy().getId(), person.getId());
     }

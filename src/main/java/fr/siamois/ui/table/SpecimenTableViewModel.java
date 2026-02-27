@@ -160,7 +160,7 @@ public class SpecimenTableViewModel extends EntityTableViewModel<SpecimenDTO, Lo
 
     }
 
-    public boolean isRendered(RowAction action, Specimen s) {
+    public boolean isRendered(RowAction action, SpecimenDTO s) {
         return switch (action.getAction()) {
             case DUPLICATE_ROW -> flowBean.getIsWriteMode();
             case TOGGLE_BOOKMARK -> true;
@@ -169,7 +169,7 @@ public class SpecimenTableViewModel extends EntityTableViewModel<SpecimenDTO, Lo
     }
 
 
-    public String resolveIcon(RowAction action, Specimen s) {
+    public String resolveIcon(RowAction action, SpecimenDTO s) {
         return switch (action.getAction()) {
             case TOGGLE_BOOKMARK -> Boolean.TRUE.equals(navBean.isSpecimenBookmarkedByUser(s.getFullIdentifier()))
                             ? "bi bi-bookmark-x-fill"

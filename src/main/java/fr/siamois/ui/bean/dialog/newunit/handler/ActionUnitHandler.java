@@ -75,7 +75,7 @@ public class ActionUnitHandler implements INewUnitHandler<ActionUnitDTO> {
         if ("related_actions".equals(key) && clickedKind == UnitKind.SPATIAL) {
             SpatialUnitDTO clickedSpatial = spatialUnitService.findById(clickedId); // adapt Optional
             if (clickedSpatial != null) {
-                unit.getSpatialContext().add(clickedSpatial);
+                unit.getSpatialContext().add(new SpatialUnitSummaryDTO(clickedSpatial));
             }
         }
 
@@ -91,14 +91,14 @@ public class ActionUnitHandler implements INewUnitHandler<ActionUnitDTO> {
         if ("SPATIAL".equals(scope.getKey())) {
             SpatialUnitDTO su = spatialUnitService.findById(scope.getEntityId()); // adapt Optional
             if (su != null) {
-                unit.getSpatialContext().add(su);
+                unit.getSpatialContext().add(new SpatialUnitSummaryDTO(su));
             }
         }
     }
 
 
     @Override
-    public List<SpatialUnitDTO> getSpatialUnitOptions(ActionUnitDTO unit) {
+    public List<SpatialUnitSummaryDTO> getSpatialUnitOptions(ActionUnitDTO unit) {
         return List.of();
     }
 

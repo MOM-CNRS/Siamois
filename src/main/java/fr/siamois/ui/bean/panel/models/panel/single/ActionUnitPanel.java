@@ -155,7 +155,7 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnitDTO> im
 
             unit = actionUnitService.findById(unitId);
             this.setTitleCodeOrTitle(unit.getName()); // Set panel title
-            backupClone = new ActionUnitDTO();
+
             this.titleCodeOrTitle = unit.getName();
 
             initForms(true);
@@ -279,13 +279,6 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnitDTO> im
     }
 
 
-    @Override
-    public void cancelChanges() {
-        unit.setName(backupClone.getName());
-        unit.setType(backupClone.getType());
-        formContext.setHasUnsavedModifications(false);
-        initForms(true);
-    }
 
     @Override
     public void visualise(RevisionWithInfo<ActionUnitDTO> history) {

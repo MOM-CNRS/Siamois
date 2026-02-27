@@ -91,7 +91,7 @@ public class SpecimenPanel extends AbstractSingleEntityPanel<SpecimenDTO>  imple
         try {
 
             unit = specimenService.findById(unitId);
-            backupClone = new SpecimenDTO(unit);
+
             this.titleCodeOrTitle = unit.getFullIdentifier();
 
             initForms(true);
@@ -193,15 +193,6 @@ public class SpecimenPanel extends AbstractSingleEntityPanel<SpecimenDTO>  imple
         unit.setType(concept);
     }
 
-    @Override
-    public void cancelChanges() {
-
-        unit.setType(backupClone.getType());
-        unit.setCreatedByInstitution(backupClone.getCreatedByInstitution());
-        unit.setCreatedBy(backupClone.getCreatedBy());
-        formContext.setHasUnsavedModifications(false);
-        initForms(true);
-    }
 
     @Override
     public void visualise(RevisionWithInfo<SpecimenDTO> history) {

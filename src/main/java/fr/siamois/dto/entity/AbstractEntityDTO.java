@@ -22,7 +22,7 @@ public abstract class AbstractEntityDTO {
     protected Long id;
     protected PersonDTO createdBy;
     protected InstitutionDTO createdByInstitution;
-    private Boolean validated;
+    protected Boolean validated;
     protected OffsetDateTime creationTime;
     protected Person validatedBy ;
 

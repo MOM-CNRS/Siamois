@@ -396,9 +396,6 @@ public class FlowBean implements Serializable {
     }
 
     public void undoChangesOnAllPanels() {
-        for (AbstractSingleEntityPanel<?> panel : unsavedPanels) {
-            panel.cancelChanges();
-        }
         isWriteMode = false;
         PrimeFaces.current().ajax().update("readWriteSwitchForm");
     }

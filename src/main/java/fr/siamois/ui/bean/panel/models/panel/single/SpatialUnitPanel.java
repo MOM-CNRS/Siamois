@@ -208,7 +208,6 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
             this.unit = spatialUnitService.findById(unitId);
             this.setTitleCodeOrTitle(unit.getName()); // Set panel title
 
-            backupClone = new SpatialUnitDTO(unit);
 
             initForms(true);
 
@@ -228,13 +227,6 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
         documents = documentService.findForSpatialUnit(unit);
     }
 
-    @Override
-    public void cancelChanges() {
-        unit.setName(backupClone.getName());
-        unit.setCategory(backupClone.getCategory());
-        formContext.setHasUnsavedModifications(false);
-        initForms(true);
-    }
 
     @Override
     public void init() {

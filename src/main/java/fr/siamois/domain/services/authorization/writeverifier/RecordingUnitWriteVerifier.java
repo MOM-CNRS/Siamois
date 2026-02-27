@@ -2,12 +2,12 @@ package fr.siamois.domain.services.authorization.writeverifier;
 
 import fr.siamois.domain.models.TraceableEntity;
 import fr.siamois.domain.models.UserInfo;
-import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.dto.entity.AbstractEntityDTO;
 import fr.siamois.dto.entity.ActionUnitDTO;
+import fr.siamois.dto.entity.ActionUnitSummaryDTO;
 import fr.siamois.dto.entity.RecordingUnitDTO;
 import fr.siamois.infrastructure.database.repositories.team.TeamMemberRepository;
 import org.springframework.stereotype.Component;
@@ -32,12 +32,12 @@ public class RecordingUnitWriteVerifier implements WritePermissionVerifier {
     @Override
     public boolean hasSpecificWritePermission(UserInfo userInfo, AbstractEntityDTO resource) {
         RecordingUnitDTO recordingUnit = (RecordingUnitDTO) resource;
-        ActionUnitDTO action = recordingUnit.getActionUnit();
+        ActionUnitSummaryDTO action = recordingUnit.getActionUnit();
         if(action == null) {
             return false;
         }
         return institutionService.isManagerOf(action.getCreatedByInstitution(),userInfo.getUser()) ||
                 actionUnitService.isManagerOf(action, userInfo.getUser()) ||
-                (teamMemberRepository.existsByActionUnitAndPerson(action, userInfo.getUser()) && actionUnitService.isActionUnitStillOngoing(action));
+                (teamMemberRepository.existsByActionUnitIdAndPerson(action.getId(), userInfo.getUser()) && actionUnitService.isActionUnitStillOngoing(action));
     }
 }

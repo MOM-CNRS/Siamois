@@ -9,6 +9,7 @@ import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.specimen.SpecimenService;
 import fr.siamois.dto.entity.RecordingUnitDTO;
 import fr.siamois.dto.entity.SpatialUnitDTO;
+import fr.siamois.dto.entity.SpatialUnitSummaryDTO;
 import fr.siamois.dto.entity.SpecimenDTO;
 import fr.siamois.ui.bean.SessionSettingsBean;
 import fr.siamois.ui.bean.dialog.newunit.GenericNewUnitDialogBean;
@@ -34,7 +35,7 @@ public class SpecimenHandler implements INewUnitHandler<SpecimenDTO> {
     }
 
     @Override
-    public List<SpatialUnitDTO> getSpatialUnitOptions(SpecimenDTO unit) {
+    public List<SpatialUnitSummaryDTO> getSpatialUnitOptions(SpecimenDTO unit) {
         return List.of();
     }
 

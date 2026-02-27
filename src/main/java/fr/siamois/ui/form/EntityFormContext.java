@@ -245,7 +245,7 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
     /**
      * Returns the root TreeNode for a given spatial-unit-tree answer.
      */
-    public TreeNode<SpatialUnitDTO> getRoot(CustomFieldAnswerSelectMultipleSpatialUnitTree answer) {
+    public TreeNode<SpatialUnitDTO> getRoot(CustomFieldAnswerSelectMultipleSpatialUnitTreeViewModel answer) {
         TreeUiStateViewModel ui = treeStates.get(answer);
         return ui != null ? ui.getRoot() : null;
     }
@@ -253,7 +253,7 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
     /**
      * Returns normalized selected spatial units (business-level "chips").
      */
-    public List<SpatialUnitDTO> getNormalizedSpatialUnits(CustomFieldAnswerSelectMultipleSpatialUnitTree answer) {
+    public List<SpatialUnitDTO> getNormalizedSpatialUnits(CustomFieldAnswerSelectMultipleSpatialUnitTreeViewModel answer) {
         TreeUiStateViewModel ui = treeStates.get(answer);
         if (ui == null) return Collections.emptyList();
         return getNormalizedSelectedUnits(ui.getSelection());
@@ -393,7 +393,7 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
      * Returns all the spatial units a recording unit can be attached to
      * @return The list of spatial unit
      */
-    public List<SpatialUnitDTO> getSpatialUnitOptions() {
+    public List<SpatialUnitSummaryDTO> getSpatialUnitOptions() {
 
         if (!(unit instanceof RecordingUnitDTO ru)) {
             return Collections.emptyList();
@@ -431,7 +431,7 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
      */
     public List<RecordingUnitDTO> getRecordingUnitOptions() {
         if (unit instanceof RecordingUnitDTO recordingUnit) {
-            return recordingUnitService.findAllByActionUnit(recordingUnit.getActionUnit());
+            return recordingUnitService.findAllByActionUnit(recordingUnit.getActionUnit().getId());
         }
         return Collections.emptyList();
     }

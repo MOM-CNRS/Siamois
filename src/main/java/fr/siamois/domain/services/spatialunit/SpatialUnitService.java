@@ -409,7 +409,7 @@ public class SpatialUnitService implements ArkEntityService {
                 || permissionService.isActionManager(user);
     }
 
-    public List<SpatialUnitDTO> getSpatialUnitOptionsFor(RecordingUnitDTO unitDTO) {
+    public List<SpatialUnitSummaryDTO> getSpatialUnitOptionsFor(RecordingUnitDTO unitDTO) {
         RecordingUnit unit = conversionService.convert(unitDTO, RecordingUnit.class);
         assert unit != null;
         if (unit.getActionUnit() == null) return List.of();
@@ -425,9 +425,9 @@ public class SpatialUnitService implements ArkEntityService {
                 ? List.of()
                 : spatialUnitRepository.findDescendantsUpToDepth(rootIds.toArray(Long[]::new), 10);
 
-        LinkedHashMap<Long, SpatialUnitDTO> byId = new LinkedHashMap<>();
-        roots.forEach(su -> byId.put(su.getId(), conversionService.convert(su, SpatialUnitDTO.class)));
-        descendants.forEach(su -> byId.putIfAbsent(su.getId(), conversionService.convert(su, SpatialUnitDTO.class)));
+        LinkedHashMap<Long, SpatialUnitSummaryDTO> byId = new LinkedHashMap<>();
+        roots.forEach(su -> byId.put(su.getId(), conversionService.convert(su, SpatialUnitSummaryDTO.class)));
+        descendants.forEach(su -> byId.putIfAbsent(su.getId(), conversionService.convert(su, SpatialUnitSummaryDTO.class)));
 
         return new ArrayList<>(byId.values());
     }

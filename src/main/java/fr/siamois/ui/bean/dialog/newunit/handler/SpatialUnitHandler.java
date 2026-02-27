@@ -164,7 +164,7 @@ public class SpatialUnitHandler implements INewUnitHandler<SpatialUnitDTO> {
 
 
     @Override
-    public List<SpatialUnitDTO> getSpatialUnitOptions(SpatialUnitDTO unit) {
+    public List<SpatialUnitSummaryDTO> getSpatialUnitOptions(SpatialUnitDTO unit) {
         return List.of();
     }
 

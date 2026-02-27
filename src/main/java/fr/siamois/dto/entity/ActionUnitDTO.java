@@ -15,9 +15,9 @@ public class ActionUnitDTO extends AbstractEntityDTO {
     private ConceptDTO type;
     private String identifier;
     private String recordingUnitIdentifierFormat;
-    private SpatialUnitDTO mainLocation ;
+    private SpatialUnitSummaryDTO mainLocation ;
     private String fullIdentifier;
-    private Set<SpatialUnitDTO> spatialContext = new HashSet<>();
+    private Set<SpatialUnitSummaryDTO> spatialContext = new HashSet<>();
     protected Integer maxRecordingUnitCode;
     protected Integer minRecordingUnitCode;
     private Set<ActionUnitSummaryDTO> parents;

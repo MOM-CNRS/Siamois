@@ -87,7 +87,7 @@ class RecordingUnitWriteVerifierTest {
         // optional: ensure short-circuit means later checks needn't be called
         verify(institutionService).isManagerOf(institution, user);
         verify(actionUnitService, never()).isManagerOf(any(), any());
-        verify(teamMemberRepository, never()).existsByActionUnitAndPerson(any(), any());
+        verify(teamMemberRepository, never()).existsByActionUnitIdAndPerson(any(), any());
         verify(actionUnitService, never()).isActionUnitStillOngoing(any());
     }
 
@@ -105,7 +105,7 @@ class RecordingUnitWriteVerifierTest {
 
         verify(institutionService).isManagerOf(institution, user);
         verify(actionUnitService).isManagerOf(actionUnit, user);
-        verify(teamMemberRepository, never()).existsByActionUnitAndPerson(any(), any());
+        verify(teamMemberRepository, never()).existsByActionUnitIdAndPerson(any(), any());
         verify(actionUnitService, never()).isActionUnitStillOngoing(any());
     }
 
@@ -117,14 +117,14 @@ class RecordingUnitWriteVerifierTest {
         when(institutionService.isManagerOf(institution, user)).thenReturn(false);
         when(actionUnitService.isManagerOf(actionUnit, user)).thenReturn(false);
 
-        when(teamMemberRepository.existsByActionUnitAndPerson(actionUnit, user)).thenReturn(true);
+        when(teamMemberRepository.existsByActionUnitIdAndPerson(actionUnit, user)).thenReturn(true);
         when(actionUnitService.isActionUnitStillOngoing(actionUnit)).thenReturn(true);
 
         boolean result = handler.hasSpecificWritePermission(userInfo, recordingUnit);
 
         assertTrue(result);
 
-        verify(teamMemberRepository).existsByActionUnitAndPerson(actionUnit, user);
+        verify(teamMemberRepository).existsByActionUnitIdAndPerson(actionUnit, user);
         verify(actionUnitService).isActionUnitStillOngoing(actionUnit);
     }
 
@@ -136,7 +136,7 @@ class RecordingUnitWriteVerifierTest {
         when(institutionService.isManagerOf(institution, user)).thenReturn(false);
         when(actionUnitService.isManagerOf(actionUnit, user)).thenReturn(false);
 
-        when(teamMemberRepository.existsByActionUnitAndPerson(actionUnit, user)).thenReturn(true);
+        when(teamMemberRepository.existsByActionUnitIdAndPerson(actionUnit, user)).thenReturn(true);
         when(actionUnitService.isActionUnitStillOngoing(actionUnit)).thenReturn(false);
 
         boolean result = handler.hasSpecificWritePermission(userInfo, recordingUnit);
