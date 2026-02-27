@@ -6,9 +6,11 @@ import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.io.Serializable;
+
 @Getter
 @Setter
-public abstract class ConceptLabelDTO extends AbstractEntityDTO {
+public abstract class ConceptLabelDTO extends AbstractEntityDTO implements Serializable {
 
     protected ConceptDTO concept;
     protected String label;
