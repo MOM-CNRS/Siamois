@@ -3,6 +3,7 @@ package fr.siamois.ui.bean.settings;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.exceptions.auth.InvalidPasswordException;
 import fr.siamois.domain.services.person.PersonService;
+import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.ui.bean.LangBean;
 import jakarta.faces.application.FacesMessage;
 import jakarta.faces.context.FacesContext;
@@ -27,13 +28,13 @@ public class UpdatePasswordBean implements Serializable {
 
     private final transient PersonService personService;
     private final LangBean langBean;
-    private Person authenticatedUser;
+    private PersonDTO authenticatedUser;
     private String nextUrl;
 
     private String newPassword;
     private String confirmNewPassword;
 
-    public void init(Person authenticatedUser, String nextUrl) {
+    public void init(PersonDTO authenticatedUser, String nextUrl) {
         this.authenticatedUser = authenticatedUser;
         this.nextUrl = nextUrl;
         newPassword = null;

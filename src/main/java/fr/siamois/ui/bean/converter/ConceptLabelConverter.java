@@ -1,6 +1,7 @@
 package fr.siamois.ui.bean.converter;
 
 import fr.siamois.domain.models.vocabulary.label.ConceptLabel;
+import fr.siamois.dto.entity.ConceptLabelDTO;
 import fr.siamois.ui.bean.LabelBean;
 import jakarta.faces.component.UIComponent;
 import jakarta.faces.context.FacesContext;
@@ -17,12 +18,12 @@ import org.springframework.stereotype.Component;
 @Scope(value = "session")
 @Component
 @RequiredArgsConstructor
-public class ConceptLabelConverter implements Converter<ConceptLabel> {
+public class ConceptLabelConverter implements Converter<ConceptLabelDTO> {
 
     private final LabelBean labelBean;
 
     @Override
-    public ConceptLabel getAsObject(FacesContext facesContext, UIComponent uiComponent, String s) {
+    public ConceptLabelDTO getAsObject(FacesContext facesContext, UIComponent uiComponent, String s) {
         if (s == null || s.isEmpty()) {
             return null;
         }
@@ -35,7 +36,7 @@ public class ConceptLabelConverter implements Converter<ConceptLabel> {
     }
 
     @Override
-    public String getAsString(FacesContext facesContext, UIComponent uiComponent, ConceptLabel conceptLabel) {
+    public String getAsString(FacesContext facesContext, UIComponent uiComponent, ConceptLabelDTO conceptLabel) {
         if (conceptLabel == null) {
             return "";
         }

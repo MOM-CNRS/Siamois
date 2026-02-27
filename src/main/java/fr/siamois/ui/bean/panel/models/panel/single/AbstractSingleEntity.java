@@ -24,6 +24,8 @@ import fr.siamois.ui.bean.dialog.newunit.GenericNewUnitDialogBean;
 import fr.siamois.ui.bean.panel.models.panel.AbstractPanel;
 import fr.siamois.ui.form.*;
 import fr.siamois.ui.form.fieldsource.PanelFieldSource;
+import fr.siamois.ui.viewmodel.CustomFormResponseViewModel;
+import fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerViewModel;
 import fr.siamois.utils.DateUtils;
 import jakarta.faces.event.ActionEvent;
 import lombok.Data;
@@ -209,7 +211,7 @@ public abstract class AbstractSingleEntity<T extends AbstractEntityDTO> extends 
     /**
      * Expose the current CustomFormResponse via the context.
      */
-    public CustomFormResponse getFormResponse() {
+    public CustomFormResponseViewModel getFormResponse() {
         return formContext != null ? formContext.getFormResponse() : null;
     }
 
@@ -222,10 +224,6 @@ public abstract class AbstractSingleEntity<T extends AbstractEntityDTO> extends 
 
     public boolean isColumnEnabled(CustomField field) {
         return formContext != null && formContext.isColumnEnabled(field);
-    }
-
-    public CustomFieldAnswer getFieldAnswer(CustomField field) {
-        return formContext != null ? formContext.getFieldAnswer(field) : null;
     }
 
     // -------------------- Auto-generation -----------------

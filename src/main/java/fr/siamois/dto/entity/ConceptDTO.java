@@ -7,5 +7,6 @@ public class ConceptDTO extends AbstractEntityDTO {
 
     private String externalId;
     private VocabularyDTO vocabulary;
+    private boolean deleted;
 
 }

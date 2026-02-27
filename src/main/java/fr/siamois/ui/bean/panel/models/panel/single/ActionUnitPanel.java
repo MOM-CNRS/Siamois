@@ -19,6 +19,7 @@ import fr.siamois.domain.services.specimen.SpecimenService;
 import fr.siamois.domain.services.vocabulary.LabelService;
 import fr.siamois.dto.entity.ActionUnitDTO;
 import fr.siamois.dto.entity.ConceptDTO;
+import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.dto.entity.RecordingUnitDTO;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.NavBean;
@@ -245,7 +246,7 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnitDTO> im
     }
 
     @Override
-    public List<Person> authorsAvailable() {
+    public List<PersonDTO> authorsAvailable() {
         return List.of();
     }
 
@@ -326,30 +327,6 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnitDTO> im
         newCodeIndex = index;
         newCode = new ActionCode();
     }
-
-    public void removeSecondaryCode(int index) {
-        secondaryActionCodes.remove(index);
-    }
-
-    public String getFormattedValue(Object value) {
-        if (value == null) {
-            return "";
-        }
-
-        if (value instanceof Number) {
-            // Integer or Number case
-            return value.toString();
-        } else if (value instanceof List<?> list) {
-            // Handle list of concepts
-            String langCode = sessionSettingsBean.getLanguageCode();
-            return list.stream()
-                    .map(item -> (item instanceof Concept concept) ? labelService.findLabelOf(concept, langCode).getLabel() : item.toString())
-                    .collect(Collectors.joining(", "));
-        }
-
-        return value.toString(); // Default case
-    }
-
 
     public static class ActionUnitPanelBuilder {
 

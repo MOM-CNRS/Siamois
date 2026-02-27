@@ -12,5 +12,9 @@ import java.util.Set;
 public class PersonDTO extends AbstractEntityDTO {
 
     private boolean isSuperAdmin;
+    private String name;
+    private String email;
+    private String lastname;
+    private boolean isPassToModify;
 
 }

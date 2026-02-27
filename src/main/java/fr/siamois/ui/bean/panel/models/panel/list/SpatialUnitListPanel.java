@@ -9,6 +9,7 @@ import fr.siamois.domain.services.authorization.writeverifier.SpatialUnitWriteVe
 import fr.siamois.domain.services.form.FormService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitTreeService;
 import fr.siamois.dto.entity.ConceptDTO;
+import fr.siamois.dto.entity.ConceptLabelDTO;
 import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.dto.entity.SpatialUnitDTO;
 import fr.siamois.ui.bean.NavBean;
@@ -134,7 +135,7 @@ public class SpatialUnitListPanel extends AbstractListPanel<SpatialUnitDTO>  imp
         this.spatialUnitListErrorMessage = msg;
     }
 
-    public List<ConceptLabel> categoriesAvailable() {
+    public List<ConceptLabelDTO> categoriesAvailable() {
         List<ConceptDTO> cList = conceptService.findAllBySpatialUnitOfInstitution(sessionSettingsBean.getSelectedInstitution());
 
         return new ArrayList<>(cList.stream()

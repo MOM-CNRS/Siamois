@@ -3,6 +3,7 @@ package fr.siamois.ui.form.rules;
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswer;
 import fr.siamois.domain.models.form.customform.ValueMatcher;
+import fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerViewModel;
 
 import java.util.Set;
 
@@ -11,7 +12,7 @@ public class NeqCondition implements Condition {
     private final ValueMatcher matcher;
     public NeqCondition(CustomField field, ValueMatcher matcher) { this.field = field; this.matcher = matcher; }
     public boolean test(ValueProvider vp) {
-        CustomFieldAnswer cur = vp.getCurrentAnswer(field);
+        CustomFieldAnswerViewModel cur = vp.getCurrentAnswer(field);
         return !matcher.matches(cur);
     }
     public Set<CustomField> dependsOn() { return java.util.Set.of(field); }

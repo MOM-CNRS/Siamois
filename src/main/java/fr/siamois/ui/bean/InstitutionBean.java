@@ -4,6 +4,7 @@ import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.models.vocabulary.label.ConceptLabel;
 import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.domain.services.vocabulary.LabelService;
+import fr.siamois.dto.entity.ConceptDTO;
 import org.springframework.context.annotation.Scope;
 import org.springframework.context.annotation.ScopedProxyMode;
 import org.springframework.stereotype.Component;
@@ -28,15 +29,5 @@ public class InstitutionBean {
     }
 
 
-    public List<ConceptLabel> actionUnitTypeUsedInInstitution() {
-        List<Concept> cList = conceptService.findAllByActionUnitOfInstitution(sessionSettingsBean.getSelectedInstitution());
-
-        return new ArrayList<>(cList.stream()
-                .map(concept -> labelService.findLabelOf(
-                        concept, langBean.getLanguageCode()
-                ))
-                .toList());
-
-    }
 
 }

@@ -174,7 +174,7 @@ public class PersonService {
      * @throws InvalidUsernameException  if the username is invalid or already exists.
      * @throws InvalidEmailException     if the email is invalid or already exists.
      */
-    public void updatePerson(Person person) throws UserAlreadyExistException, InvalidNameException, InvalidPasswordException, InvalidUsernameException, InvalidEmailException {
+    public void updatePerson(PersonDTO person) throws UserAlreadyExistException, InvalidNameException, InvalidPasswordException, InvalidUsernameException, InvalidEmailException {
         checkPersonData(person, false);
 
         personRepository.save(person);
@@ -205,7 +205,7 @@ public class PersonService {
      * @param newPassword The new plain password to set for the person.
      * @throws InvalidPasswordException if the new password does not meet the required criteria.
      */
-    public void updatePassword(Person person, String newPassword) throws InvalidPasswordException {
+    public void updatePassword(PersonDTO person, String newPassword) throws InvalidPasswordException {
         PasswordVerifier verifier = findPasswordVerifier().orElseThrow(() -> new IllegalStateException("Password verifier is not defined"));
 
         person.setPassword(newPassword);

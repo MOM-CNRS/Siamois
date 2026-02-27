@@ -1,5 +1,6 @@
 package fr.siamois.dto.entity;
 
+import fr.siamois.domain.models.vocabulary.label.ConceptLabel;
 import fr.siamois.domain.models.vocabulary.label.LabelType;
 import lombok.Data;
 import lombok.Getter;
@@ -13,6 +14,7 @@ public abstract class ConceptLabelDTO extends AbstractEntityDTO {
     protected String label;
     protected String langCode;
     protected VocabularyDTO vocabulary;
+    protected ConceptDTO parentConcept;
 
     public abstract LabelType getLabelType();
 

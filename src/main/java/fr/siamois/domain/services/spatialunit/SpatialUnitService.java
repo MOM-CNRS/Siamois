@@ -116,7 +116,7 @@ public class SpatialUnitService implements ArkEntityService {
      * @return A page of SpatialUnit matching the criteria
      */
     @Transactional(readOnly = true)
-    public Page<SpatialUnit> findAllByInstitutionAndByNameContainingAndByCategoriesAndByGlobalContaining(
+    public Page<SpatialUnitDTO> findAllByInstitutionAndByNameContainingAndByCategoriesAndByGlobalContaining(
             Long institutionId,
             String name, Long[] categoryIds, Long[] personIds, String global, String langCode, Pageable pageable) {
 
@@ -139,8 +139,8 @@ public class SpatialUnitService implements ArkEntityService {
      * @return A page of SpatialUnit matching the criteria
      */
     @Transactional(readOnly = true)
-    public Page<SpatialUnit> findAllByParentAndByNameContainingAndByCategoriesAndByGlobalContaining(
-            SpatialUnit parent,
+    public Page<SpatialUnitDTO> findAllByParentAndByNameContainingAndByCategoriesAndByGlobalContaining(
+            SpatialUnitDTO parent,
             String name, Long[] categoryIds, Long[] personIds, String global, String langCode, Pageable pageable) {
         Page<SpatialUnit> res = spatialUnitRepository.findAllByParentAndByNameContainingAndByCategoriesAndByGlobalContaining(
                 parent.getId(), name, categoryIds, personIds, global, langCode, pageable);

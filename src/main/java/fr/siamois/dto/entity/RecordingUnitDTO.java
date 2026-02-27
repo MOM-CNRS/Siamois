@@ -22,8 +22,8 @@ public class RecordingUnitDTO extends AbstractEntityDTO {
     private OffsetDateTime openingDate;
     private OffsetDateTime closingDate;
     private Set<SpecimenSummaryDTO> specimenList;
-    private Person author;
-    private List<Person> contributors;
+    private PersonDTO author;
+    private List<PersonDTO> contributors;
     private SpatialUnitDTO spatialUnit;
     private Set<StratigraphicRelationshipDTO> relationshipsAsUnit1 ;
     private Set<StratigraphicRelationshipDTO> relationshipsAsUnit2 ;

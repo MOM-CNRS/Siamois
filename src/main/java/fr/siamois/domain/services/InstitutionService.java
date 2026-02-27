@@ -270,7 +270,7 @@ public class InstitutionService {
      * @param institution the institution to check against
      * @return true if the person is an institution manager, false otherwise
      */
-    public boolean personIsInstitutionManager(Person person, Institution institution) {
+    public boolean personIsInstitutionManager(PersonDTO person, InstitutionDTO institution) {
         return institutionRepository.personIsInstitutionManagerOf(institution.getId(), person.getId());
     }
 
@@ -292,7 +292,7 @@ public class InstitutionService {
      * @param institution the institution to check against
      * @return true if the person is either an institution manager or an action manager, false otherwise
      */
-    public boolean personIsInstitutionManagerOrActionManager(Person person, Institution institution) {
+    public boolean personIsInstitutionManagerOrActionManager(PersonDTO person, InstitutionDTO institution) {
         return personIsInstitutionManager(person, institution) || personIsActionManager(person, institution);
     }
 

@@ -5,6 +5,7 @@ import fr.siamois.domain.models.team.TeamMemberRelation;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.auth.PendingPersonService;
 import fr.siamois.domain.services.person.PersonService;
+import fr.siamois.dto.entity.ConceptDTO;
 import fr.siamois.ui.bean.LabelBean;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.RedirectBean;
@@ -20,6 +21,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.primefaces.PrimeFaces;
 import org.springframework.context.annotation.Scope;
 import org.springframework.context.annotation.ScopedProxyMode;
+import org.springframework.core.convert.ConversionService;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -43,6 +45,7 @@ public class TeamMembersBean implements SettingsDatatableBean {
     private final RedirectBean redirectBean;
     private final LangBean langBean;
     private ActionUnit actionUnit;
+    private final ConversionService conversionService;
 
     private String searchInput;
 
@@ -103,7 +106,7 @@ public class TeamMembersBean implements SettingsDatatableBean {
         if (relation.getRole() == null) {
             return "";
         }
-        return labelBean.findLabelOf(relation.getRole());
+        return labelBean.findLabelOf(conversionService.convert(relation.getRole(), ConceptDTO.class));
     }
 
     public String formatDate(TeamMemberRelation relation) {

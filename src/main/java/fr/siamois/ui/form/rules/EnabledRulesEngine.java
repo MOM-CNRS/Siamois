@@ -7,7 +7,11 @@ import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerId;
 import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerSelectOneFromFieldCode;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.dto.entity.ConceptDTO;
+import fr.siamois.dto.entity.ConceptLabelDTO;
+import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
 import fr.siamois.ui.form.CustomFieldAnswerFactory;
+import fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerSelectOneFromFieldCodeViewModel;
+import fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerViewModel;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -47,13 +51,13 @@ public final class EnabledRulesEngine {
         }
     }
 
-    private CustomFieldAnswer buildConceptOverride(CustomField field, ConceptDTO concept) {
-        CustomFieldAnswer answer = CustomFieldAnswerFactory.instantiateAnswerForField(field);
+    private CustomFieldAnswerViewModel buildConceptOverride(CustomField field, ConceptAutocompleteDTO concept) {
+        CustomFieldAnswerViewModel answer = CustomFieldAnswerFactory.instantiateAnswerForField(field);
         CustomFieldAnswerId id = new CustomFieldAnswerId();
         id.setField(field);
         answer.setPk(id);
 
-        if (answer instanceof CustomFieldAnswerSelectOneFromFieldCode a) {
+        if (answer instanceof CustomFieldAnswerSelectOneFromFieldCodeViewModel a) {
             a.setValue(concept);
         } else {
             throw new IllegalArgumentException(
@@ -67,7 +71,7 @@ public final class EnabledRulesEngine {
     /** À appeler quand la réponse d'un champ a changé. */
     public void onAnswerChange(
             CustomField changedField,
-            ConceptDTO newConcept,
+            ConceptAutocompleteDTO newConcept,
             ValueProvider baseVp,
             ColumnApplier applier
     ) {
@@ -76,7 +80,7 @@ public final class EnabledRulesEngine {
         Objects.requireNonNull(applier, "applier must not be null");
 
         // Build a temporary answer holding the proposed concept
-        CustomFieldAnswer proposedAnswer = buildConceptOverride(changedField, newConcept);
+        CustomFieldAnswerViewModel proposedAnswer = buildConceptOverride(changedField, newConcept);
 
         // Wrap the base ValueProvider: return our proposedAnswer for this field
         ValueProvider overridingVp = f ->

@@ -6,6 +6,9 @@ import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerSelectOn
 import fr.siamois.domain.models.form.customform.EnabledWhenJson;
 import fr.siamois.domain.models.form.customform.ValueMatcher;
 import fr.siamois.domain.models.vocabulary.Concept;
+import fr.siamois.dto.entity.ConceptDTO;
+import fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerSelectOneFromFieldCodeViewModel;
+import fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerViewModel;
 
 import java.util.Objects;
 
@@ -17,12 +20,12 @@ public final class ValueMatcherFactory {
         JsonNode node = vj.getValue();
         return new ValueMatcher() {
             @Override
-            public boolean matches(CustomFieldAnswer cur) {
-                if (!(cur instanceof CustomFieldAnswerSelectOneFromFieldCode a)) return false;
+            public boolean matches(CustomFieldAnswerViewModel cur) {
+                if (!(cur instanceof CustomFieldAnswerSelectOneFromFieldCodeViewModel a)) return false;
                 String ev = node != null && node.has("vocabularyExtId") ? node.get("vocabularyExtId").asText(null) : null;
                 String ec = node != null && node.has("conceptExtId") ? node.get("conceptExtId").asText(null) : null;
 
-                Concept val = a.getValue();
+                ConceptDTO val = a.getValue().concept();
                 if (val == null) {
                     return ev == null && ec == null;
                 }
@@ -40,7 +43,7 @@ public final class ValueMatcherFactory {
     public static ValueMatcher defaultMatcher() {
         return new ValueMatcher() {
             @Override
-            public boolean matches(CustomFieldAnswer cur) {
+            public boolean matches(CustomFieldAnswerViewModel cur) {
                 return false;
             }
 

@@ -6,6 +6,9 @@ import fr.siamois.domain.models.exceptions.EntityAlreadyExistsException;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
+import fr.siamois.dto.entity.ActionUnitDTO;
+import fr.siamois.dto.entity.SpatialUnitDTO;
+import fr.siamois.dto.entity.SpatialUnitSummaryDTO;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.dialog.newunit.GenericNewUnitDialogBean;
 import fr.siamois.ui.bean.dialog.newunit.NewUnitContext;
@@ -15,7 +18,7 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 
 @Component
-public class ActionUnitHandler implements INewUnitHandler<ActionUnit> {
+public class ActionUnitHandler implements INewUnitHandler<ActionUnitDTO> {
 
     private final ActionUnitService actionUnitService;
     private final SpatialUnitService spatialUnitService;
@@ -33,12 +36,12 @@ public class ActionUnitHandler implements INewUnitHandler<ActionUnit> {
     }
 
     @Override
-    public ActionUnit newEmpty() {
-        return new ActionUnit();
+    public ActionUnitDTO newEmpty() {
+        return new ActionUnitDTO();
     }
 
     @Override
-    public ActionUnit save(UserInfo u, ActionUnit unit) throws EntityAlreadyExistsException {
+    public ActionUnitDTO save(UserInfo u, ActionUnitDTO unit) throws EntityAlreadyExistsException {
         return actionUnitService.save(u, unit, unit.getType());
     }
 
@@ -49,7 +52,7 @@ public class ActionUnitHandler implements INewUnitHandler<ActionUnit> {
 
     @Override
     public void initFromContext(GenericNewUnitDialogBean<?> bean) {
-        ActionUnit unit = (ActionUnit) bean.getUnit();
+        ActionUnitDTO unit = (ActionUnitDTO) bean.getUnit();
         NewUnitContext ctx = bean.getNewUnitContext();
         if (ctx == null) return;
 
@@ -70,7 +73,7 @@ public class ActionUnitHandler implements INewUnitHandler<ActionUnit> {
         if (clickedId == null || key == null || clickedKind == null) return;
 
         if ("related_actions".equals(key) && clickedKind == UnitKind.SPATIAL) {
-            SpatialUnit clickedSpatial = spatialUnitService.findById(clickedId); // adapt Optional
+            SpatialUnitDTO clickedSpatial = spatialUnitService.findById(clickedId); // adapt Optional
             if (clickedSpatial != null) {
                 unit.getSpatialContext().add(clickedSpatial);
             }
@@ -78,7 +81,7 @@ public class ActionUnitHandler implements INewUnitHandler<ActionUnit> {
 
     }
 
-    private void applyScope(ActionUnit unit, NewUnitContext ctx) {
+    private void applyScope(ActionUnitDTO unit, NewUnitContext ctx) {
         NewUnitContext.Scope scope = ctx.getScope();
         if (scope == null || scope.getKey() == null || scope.getEntityId() == null) {
             return;
@@ -86,7 +89,7 @@ public class ActionUnitHandler implements INewUnitHandler<ActionUnit> {
 
         // Example: toolbar on a "Actions of SpatialUnit" screen
         if ("SPATIAL".equals(scope.getKey())) {
-            SpatialUnit su = spatialUnitService.findById(scope.getEntityId()); // adapt Optional
+            SpatialUnitDTO su = spatialUnitService.findById(scope.getEntityId()); // adapt Optional
             if (su != null) {
                 unit.getSpatialContext().add(su);
             }
@@ -95,12 +98,12 @@ public class ActionUnitHandler implements INewUnitHandler<ActionUnit> {
 
 
     @Override
-    public List<SpatialUnit> getSpatialUnitOptions(ActionUnit unit) {
+    public List<SpatialUnitDTO> getSpatialUnitOptions(ActionUnitDTO unit) {
         return List.of();
     }
 
     @Override
-    public String getName(ActionUnit unit) {
+    public String getName(ActionUnitDTO unit) {
         return unit.getName();
     }
 
@@ -149,7 +152,7 @@ public class ActionUnitHandler implements INewUnitHandler<ActionUnit> {
     }
 
     private String buildSpatialContextTitle(Long spatialUnitId) {
-        SpatialUnit unit = spatialUnitService.findById(spatialUnitId);
+        SpatialUnitDTO unit = spatialUnitService.findById(spatialUnitId);
         String name = (unit != null) ? unit.getName() : ("#" + spatialUnitId);
         return langBean.msg("dialog.label.title.action.spatialContext") + " " + name;
     }

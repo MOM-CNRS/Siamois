@@ -4,6 +4,8 @@ import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.exceptions.EntityAlreadyExistsException;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
+import fr.siamois.dto.entity.SpatialUnitDTO;
+import fr.siamois.dto.entity.SpatialUnitSummaryDTO;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.dialog.newunit.GenericNewUnitDialogBean;
 import fr.siamois.ui.bean.dialog.newunit.NewUnitContext;
@@ -13,7 +15,7 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 
 @Component
-public class SpatialUnitHandler implements INewUnitHandler<SpatialUnit> {
+public class SpatialUnitHandler implements INewUnitHandler<SpatialUnitDTO> {
 
     private final SpatialUnitService spatialUnitService;
     private final LangBean langBean;
@@ -31,12 +33,12 @@ public class SpatialUnitHandler implements INewUnitHandler<SpatialUnit> {
     }
 
     @Override
-    public SpatialUnit newEmpty() {
-        return new SpatialUnit();
+    public SpatialUnitDTO newEmpty() {
+        return new SpatialUnitDTO();
     }
 
     @Override
-    public SpatialUnit save(UserInfo u, SpatialUnit unit) throws EntityAlreadyExistsException {
+    public SpatialUnitDTO save(UserInfo u, SpatialUnitDTO unit) throws EntityAlreadyExistsException {
         return spatialUnitService.save(u, unit);
     }
 
@@ -47,7 +49,7 @@ public class SpatialUnitHandler implements INewUnitHandler<SpatialUnit> {
 
     @Override
     public void initFromContext(GenericNewUnitDialogBean<?> bean) {
-        SpatialUnit unit = (SpatialUnit) bean.getUnit();
+        SpatialUnitDTO unit = (SpatialUnitDTO) bean.getUnit();
         NewUnitContext ctx = bean.getNewUnitContext();
         if (ctx == null) {
             return;
@@ -60,7 +62,7 @@ public class SpatialUnitHandler implements INewUnitHandler<SpatialUnit> {
         handleTableScope(ctx, unit);
     }
 
-    private void handleCellContext(NewUnitContext ctx, SpatialUnit unit) {
+    private void handleCellContext(NewUnitContext ctx, SpatialUnitDTO unit) {
         NewUnitContext.Trigger trigger = ctx.getTrigger();
         if (trigger == null || trigger.getClickedId() == null || trigger.getColumnKey() == null) {
             return;
@@ -68,35 +70,35 @@ public class SpatialUnitHandler implements INewUnitHandler<SpatialUnit> {
 
         Long clickedId = trigger.getClickedId();
         String key = trigger.getColumnKey();
-        SpatialUnit clicked = spatialUnitService.findById(clickedId);
+        SpatialUnitDTO clicked = spatialUnitService.findById(clickedId);
 
         if (clicked == null) {
             return;
         }
 
         switch (key) {
-            case "parents" -> unit.getChildren().add(clicked);
-            case "children" -> unit.getParents().add(clicked);
+            case "parents" -> unit.getChildren().add(new SpatialUnitSummaryDTO(clicked));
+            case "children" -> unit.getParents().add(new SpatialUnitSummaryDTO(clicked));
             default -> { /* no-op */ }
         }
     }
 
-    private void handleTableScope(NewUnitContext ctx, SpatialUnit unit) {
+    private void handleTableScope(NewUnitContext ctx, SpatialUnitDTO unit) {
         NewUnitContext.Scope scope = ctx.getScope();
         if (scope == null || !"SPATIAL".equals(scope.getKey()) || scope.getEntityId() == null) {
             return;
         }
 
-        SpatialUnit ref = spatialUnitService.findById(scope.getEntityId());
+        SpatialUnitDTO ref = spatialUnitService.findById(scope.getEntityId());
         if (ref == null) {
             return;
         }
 
         String extra = scope.getExtra();
         if ("PARENTS".equals(extra)) {
-            unit.getChildren().add(ref);
+            unit.getChildren().add(new SpatialUnitSummaryDTO(ref));
         } else if ("CHILDREN".equals(extra)) {
-            unit.getParents().add(ref);
+            unit.getParents().add(new SpatialUnitSummaryDTO(ref));
         }
         // else: no-op
     }
@@ -118,7 +120,7 @@ public class SpatialUnitHandler implements INewUnitHandler<SpatialUnit> {
                 && trigger.getClickedId() != null
                 && trigger.getColumnKey() != null) {
 
-            SpatialUnit clicked = spatialUnitService.findById(trigger.getClickedId());
+            SpatialUnitDTO clicked = spatialUnitService.findById(trigger.getClickedId());
             String name = clicked != null
                     ? clicked.getName()
                     : ("#" + trigger.getClickedId());
@@ -141,7 +143,7 @@ public class SpatialUnitHandler implements INewUnitHandler<SpatialUnit> {
                 && "SPATIAL".equals(scope.getKey())
                 && scope.getEntityId() != null) {
 
-            SpatialUnit ref = spatialUnitService.findById(scope.getEntityId());
+            SpatialUnitDTO ref = spatialUnitService.findById(scope.getEntityId());
             String name = ref != null
                     ? ref.getName()
                     : ("#" + scope.getEntityId());
@@ -162,12 +164,12 @@ public class SpatialUnitHandler implements INewUnitHandler<SpatialUnit> {
 
 
     @Override
-    public List<SpatialUnit> getSpatialUnitOptions(SpatialUnit unit) {
+    public List<SpatialUnitDTO> getSpatialUnitOptions(SpatialUnitDTO unit) {
         return List.of();
     }
 
     @Override
-    public String getName(SpatialUnit unit) {
+    public String getName(SpatialUnitDTO unit) {
         return unit.getName();
     }
 

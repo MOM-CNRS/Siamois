@@ -363,7 +363,7 @@ public class RecordingUnitService implements ArkEntityService {
      * @return A page of RecordingUnit matching the criteria.
      */
     @Transactional
-    public Page<RecordingUnit> findAllByInstitutionAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
+    public Page<RecordingUnitDTO> findAllByInstitutionAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
             Long institutionId,
             String fullIdentifier,
             Long[] categoryIds,
@@ -477,7 +477,7 @@ public class RecordingUnitService implements ArkEntityService {
         return res;
     }
 
-    public Page<RecordingUnit> findAllBySpatialUnitAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(Long spatialUnitId,
+    public Page<RecordingUnitDTO> findAllBySpatialUnitAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(Long spatialUnitId,
                                                                                                                      String fullIdentifierFilter,
                                                                                                                      Long[] categoryIds,
                                                                                                                      String globalFilter, String languageCode, Pageable pageable

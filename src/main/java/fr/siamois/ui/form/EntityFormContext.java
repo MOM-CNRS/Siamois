@@ -16,6 +16,7 @@ import fr.siamois.domain.models.recordingunit.StratigraphicRelationship;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.specimen.Specimen;
 import fr.siamois.domain.models.vocabulary.Concept;
+import fr.siamois.domain.models.vocabulary.label.ConceptLabel;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.form.FormService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
@@ -206,7 +207,7 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
     /**
      * Notify that a Concept answer changed on the given field – triggers enabled rules re-eval.
      */
-    public void onConceptChanged(CustomField field, ConceptDTO newVal) {
+    public void onConceptChanged(CustomField field, ConceptAutocompleteDTO newVal) {
         if (enabledEngine != null) {
             enabledEngine.onAnswerChange(field, newVal, vp, applier);
         }
@@ -365,7 +366,7 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
         }
 
         // Apply concept change logic
-        onConceptChanged(field, newValue.getConceptLabelToDisplay().getConcept());
+        onConceptChanged(field, newValue);
 
         // If it's the field defining the form, change form
         if (isFormScopeField(field) && formScopeChangeCallback != null) {

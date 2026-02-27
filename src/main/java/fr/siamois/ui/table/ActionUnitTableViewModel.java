@@ -46,6 +46,7 @@ public class ActionUnitTableViewModel extends EntityTableViewModel<ActionUnitDTO
     private final SessionSettingsBean sessionSettingsBean;
 
 
+
     public ActionUnitTableViewModel(BaseActionUnitLazyDataModel actionUnitLazyDataModel,
                                     FormService formService,
                                     SessionSettingsBean sessionSettingsBean,

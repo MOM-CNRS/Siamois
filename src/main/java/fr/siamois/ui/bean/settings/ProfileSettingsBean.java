@@ -23,6 +23,8 @@ import fr.siamois.domain.services.LangService;
 import fr.siamois.domain.services.person.PersonService;
 import fr.siamois.domain.services.vocabulary.FieldConfigurationService;
 import fr.siamois.domain.services.vocabulary.VocabularyService;
+import fr.siamois.dto.entity.InstitutionDTO;
+import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
 import fr.siamois.utils.MessageUtils;
@@ -35,6 +37,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.context.annotation.Scope;
 import org.springframework.context.annotation.ScopedProxyMode;
 import org.springframework.context.event.EventListener;
+import org.springframework.core.convert.ConversionService;
 import org.springframework.stereotype.Component;
 
 import java.io.Serializable;
@@ -60,8 +63,9 @@ public class ProfileSettingsBean implements Serializable {
     private final transient LangService langService;
     private final LangBean langBean;
     private final transient LangageChangeEventPublisher langageChangeEventPublisher;
+    private final transient ConversionService conversionService;
 
-    private Set<Institution> refInstitutions;
+    private Set<InstitutionDTO> refInstitutions;
     private PersonSettings personSettings;
     private Concept refConfigConcept;
 
@@ -79,7 +83,7 @@ public class ProfileSettingsBean implements Serializable {
     @EventListener(InstitutionChangeEvent.class)
     public void init() {
         UserInfo info = sessionSettingsBean.getUserInfo();
-        Person user = info.getUser();
+        PersonDTO user = info.getUser();
         initPersonSection(info);
         initThesaurusSection(info);
         initInstitutions(user, info);
@@ -87,7 +91,7 @@ public class ProfileSettingsBean implements Serializable {
         fSelectedLang = langBean.getLanguageCode();
     }
 
-    private void initInstitutions(Person user, UserInfo info) {
+    private void initInstitutions(PersonDTO user, UserInfo info) {
         refInstitutions = institutionService.findInstitutionsOfPerson(user);
         PersonSettings settings = personService.createOrGetSettingsOf(user);
         if (settings.getDefaultInstitution() != null) {
@@ -111,7 +115,7 @@ public class ProfileSettingsBean implements Serializable {
     }
 
     private void initPersonSection(UserInfo info) {
-        Person user = info.getUser();
+        PersonDTO user = info.getUser();
         fEmail = user.getEmail();
         fLastname = user.getLastname();
         fFirstname = user.getName();
@@ -120,7 +124,7 @@ public class ProfileSettingsBean implements Serializable {
 
     public void saveProfile() {
         boolean updated = false;
-        Person user = sessionSettingsBean.getAuthenticatedUser();
+        PersonDTO user = sessionSettingsBean.getAuthenticatedUser();
         if (fEmail != null && !fEmail.isEmpty() && !fEmail.equals(user.getEmail())) {
             user.setEmail(fEmail);
             updated = true;
@@ -209,15 +213,18 @@ public class ProfileSettingsBean implements Serializable {
         return localeToLangName(new Locale(code));
     }
 
-    private Institution findInstitutionById(Long id) {
+    private InstitutionDTO findInstitutionById(Long id) {
         return refInstitutions.stream()
                 .filter(institution -> institution.getId().equals(id))
                 .findFirst()
                 .orElseThrow(() -> new IllegalStateException("Institution not found"));
     }
 
+
     public void savePreferences() {
-        personSettings.setDefaultInstitution(findInstitutionById(fDefaultInstitutionId));
+        personSettings.setDefaultInstitution(
+                conversionService.convert(findInstitutionById(fDefaultInstitutionId),Institution.class)
+                );
         if (!fSelectedLang.equalsIgnoreCase(personSettings.getLangCode())) {
             personSettings.setLangCode(fSelectedLang);
         }

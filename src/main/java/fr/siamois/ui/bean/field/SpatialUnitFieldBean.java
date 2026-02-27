@@ -11,6 +11,8 @@ import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.domain.services.vocabulary.FieldConfigurationService;
 import fr.siamois.domain.services.vocabulary.FieldService;
+import fr.siamois.dto.entity.ConceptDTO;
+import fr.siamois.dto.entity.SpatialUnitDTO;
 import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
 import fr.siamois.ui.bean.LabelBean;
 import fr.siamois.ui.bean.LangBean;
@@ -60,15 +62,15 @@ public class SpatialUnitFieldBean implements Serializable {
     private final LabelBean labelBean;
 
     // Storage
-    private List<SpatialUnit> refSpatialUnits = new ArrayList<>();
+    private List<SpatialUnitDTO> refSpatialUnits = new ArrayList<>();
     private List<String> labels;
-    private List<Concept> concepts;
+    private List<ConceptDTO> concepts;
 
     // Fields
     private Concept selectedConcept = null;
     private String fName = "";
-    private List<SpatialUnit> fParentsSpatialUnits = new ArrayList<>();
-    private List<SpatialUnit> fChildrenSpatialUnits = new ArrayList<>();
+    private List<SpatialUnitDTO> fParentsSpatialUnits = new ArrayList<>();
+    private List<SpatialUnitDTO> fChildrenSpatialUnits = new ArrayList<>();
 
     @EventListener(LoginEvent.class)
     public void reset() {
@@ -86,7 +88,7 @@ public class SpatialUnitFieldBean implements Serializable {
         init(new ArrayList<>(), new ArrayList<>());
         refSpatialUnits = spatialUnitService.findAllOfInstitution(sessionSettingsBean.getSelectedInstitution().getId());
         labels = refSpatialUnits.stream()
-                .map(SpatialUnit::getName)
+                .map(SpatialUnitDTO::getName)
                 .toList();
         concepts = null;
         selectedConcept = null;
@@ -94,10 +96,10 @@ public class SpatialUnitFieldBean implements Serializable {
         fParentsSpatialUnits = new ArrayList<>();
     }
 
-    public void init(List<SpatialUnit> parents, List<SpatialUnit> children) {
+    public void init(List<SpatialUnitDTO> parents, List<SpatialUnitDTO> children) {
         refSpatialUnits = spatialUnitService.findAllOfInstitution(sessionSettingsBean.getSelectedInstitution().getId());
         labels = refSpatialUnits.stream()
-                .map(SpatialUnit::getName)
+                .map(SpatialUnitDTO::getName)
                 .toList();
         concepts = null;
         selectedConcept = null;

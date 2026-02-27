@@ -1,10 +1,11 @@
 package fr.siamois.ui.bean.panel.models.panel.single.tab;
 
 import fr.siamois.domain.models.actionunit.ActionUnit;
+import fr.siamois.dto.entity.ActionUnitDTO;
 import fr.siamois.ui.table.ActionUnitTableViewModel;
 
 
-public class ActionTab extends EntityListTab<ActionUnit> {
+public class ActionTab extends EntityListTab<ActionUnitDTO> {
 
     public ActionTab(String titleCode, String icon, String id,
                      Integer count, ActionUnitTableViewModel tableModel) {

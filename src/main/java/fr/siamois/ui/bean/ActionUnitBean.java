@@ -22,15 +22,5 @@ public class ActionUnitBean {
         this.flowBean = flowBean;
     }
 
-    public boolean showCreateRecordingUnitButton(TraceableEntity context) {
-        if(context.getClass() == ActionUnit.class) {
-            return flowBean.getIsWriteMode() &&
-                    service.canCreateRecordingUnit(sessionSettingsBean.getUserInfo(), (ActionUnit) context) ;
-        }
-        else {
-            return false;
-        }
-
-    }
 
 }

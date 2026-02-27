@@ -1,10 +1,11 @@
 package fr.siamois.ui.bean.panel.models.panel.single.tab;
 
 import fr.siamois.domain.models.specimen.Specimen;
+import fr.siamois.dto.entity.SpecimenDTO;
 import fr.siamois.ui.table.SpecimenTableViewModel;
 
 
-public class SpecimenTab extends EntityListTab<Specimen> {
+public class SpecimenTab extends EntityListTab<SpecimenDTO> {
 
     public SpecimenTab(String titleCode, String icon, String id,
                        SpecimenTableViewModel tableViewModel, Integer count) {

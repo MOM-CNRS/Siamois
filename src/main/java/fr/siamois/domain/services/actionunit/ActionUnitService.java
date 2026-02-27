@@ -27,6 +27,7 @@ import org.springframework.core.convert.ConversionService;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.core.parameters.P;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -64,7 +65,7 @@ public class ActionUnitService implements ArkEntityService {
      * @return A page of Action Units matching the criteria
      */
     @Transactional(readOnly = true)
-    public Page<ActionUnit> findAllByInstitutionAndByNameContainingAndByCategoriesAndByGlobalContaining(
+    public Page<ActionUnitDTO> findAllByInstitutionAndByNameContainingAndByCategoriesAndByGlobalContaining(
             Long institutionId,
             String name, Long[] categoryIds, Long[] personIds, String global, String langCode, Pageable pageable) {
 
@@ -84,7 +85,9 @@ public class ActionUnitService implements ArkEntityService {
         });
 
 
-        return res;
+        return res.map(actionUnit ->
+                conversionService.convert(actionUnit, ActionUnitDTO.class)
+        );
     }
 
     /**
@@ -121,7 +124,9 @@ public class ActionUnitService implements ArkEntityService {
         });
 
 
-        return res;
+        return res.map(actionUnit ->
+                conversionService.convert(actionUnit, ActionUnitDTO.class)
+        );
     }
 
     /**
@@ -148,22 +153,28 @@ public class ActionUnitService implements ArkEntityService {
      * Save an ActionUnit without a transaction.
      *
      * @param info        User information containing the user and institution
-     * @param actionUnit  The ActionUnit to save
-     * @param typeConcept The concept type of the ActionUnit
+     * @param actionUnitDTO  The ActionUnit to save
+     * @param typeConceptDTO The concept type of the ActionUnit
      * @return The saved ActionUnit
      */
-    public ActionUnit saveNotTransactional(UserInfo info, ActionUnit actionUnit, Concept typeConcept)
+    public ActionUnit saveNotTransactional(UserInfo info, ActionUnitDTO actionUnitDTO, ConceptDTO typeConceptDTO)
             throws ActionUnitAlreadyExistsException {
 
-        actionUnit.setCreatedByInstitution(info.getInstitution());
+        Institution institution = conversionService.convert(info.getInstitution(),Institution.class);
+        Person user = conversionService.convert(info.getUser(), Person.class);
 
-        Optional<ActionUnit> opt = actionUnitRepository.findByNameAndCreatedByInstitution(actionUnit.getName(), info.getInstitution());
+        actionUnitDTO.setCreatedByInstitution(info.getInstitution());
+
+        ActionUnit actionUnit = conversionService.convert(actionUnitDTO, ActionUnit.class);
+        Concept typeConcept = conversionService.convert(typeConceptDTO, Concept.class);
+
+        Optional<ActionUnit> opt = actionUnitRepository.findByNameAndCreatedByInstitution(actionUnit.getName(), institution);
         if (opt.isPresent())
             throw new ActionUnitAlreadyExistsException(
                     "name",
                     String.format("Action unit with name %s already exist in institution %s", actionUnit.getName(), info.getInstitution().getName()));
 
-        opt = actionUnitRepository.findByIdentifierAndCreatedByInstitution(actionUnit.getIdentifier(), info.getInstitution());
+        opt = actionUnitRepository.findByIdentifierAndCreatedByInstitution(actionUnit.getIdentifier(), institution);
         if (opt.isPresent())
             throw new ActionUnitAlreadyExistsException(
                     "identifier",
@@ -181,7 +192,7 @@ public class ActionUnitService implements ArkEntityService {
         // Add concept
         Concept type = conceptService.saveOrGetConcept(typeConcept);
         actionUnit.setType(type);
-        actionUnit.setCreatedBy(info.getUser());
+        actionUnit.setCreatedBy(user);
 
         try {
             return actionUnitRepository.save(actionUnit);
@@ -199,7 +210,7 @@ public class ActionUnitService implements ArkEntityService {
      * @return The saved ActionUnit
      */
     @Transactional
-    public ActionUnit save(UserInfo info, ActionUnit actionUnit, Concept typeConcept)
+    public ActionUnit save(UserInfo info, ActionUnitDTO actionUnit, ConceptDTO typeConcept)
             throws ActionUnitAlreadyExistsException {
         return saveNotTransactional(info, actionUnit, typeConcept);
     }
@@ -239,16 +250,11 @@ public class ActionUnitService implements ArkEntityService {
      * @return The saved ActionUnit
      */
     @Transactional
-    public ActionUnit save(ActionUnit actionUnit, List<ActionCode> secondaryActionCodes, UserInfo info)
+    public ActionUnit save(ActionUnitDTO actionUnit, List<ActionCode> secondaryActionCodes, UserInfo info)
             throws ActionUnitAlreadyExistsException {
 
         try {
 
-            // -------------------- Handle the primary action code
-            // Is the action code concept already in DB ?
-            actionUnit.getPrimaryActionCode().setType(conceptService.saveOrGetConcept(actionUnit.getPrimaryActionCode().getType()));
-            // Saving or retrieving primary action code
-            actionUnit.setPrimaryActionCode(saveOrGetActionCode(actionUnit.getPrimaryActionCode()));
 
             // ------------------ Handle secondary codes
             // Get the old version of the actionUnit
@@ -263,15 +269,6 @@ public class ActionUnitService implements ArkEntityService {
             // 2. Add the ones that were not present
             currentSecondaryActionCodes.addAll(secondaryActionCodes);
 
-            // Update action code secondary codes set
-            actionUnit.setSecondaryActionCodes(new HashSet<>());
-            currentSecondaryActionCodes.forEach(actionCode -> {
-                actionCode.setType(conceptService.saveOrGetConcept(actionCode.getType()));
-                // Saving or retrieving action code
-                actionUnit.getSecondaryActionCodes().add(saveOrGetActionCode(actionCode));
-            });
-
-            actionUnit.setSecondaryActionCodes(currentSecondaryActionCodes);
         } catch (RuntimeException e) {
             throw new FailedActionUnitSaveException(e.getMessage());
         }
@@ -324,7 +321,7 @@ public class ActionUnitService implements ArkEntityService {
      * @return The count of ActionUnits created by the institution
      */
     public long countByInstitution(InstitutionDTO institution) {
-        return actionUnitRepository.countByCreatedByInstitution(institution);
+        return actionUnitRepository.countByCreatedByInstitution(conversionService.convert(institution, Institution.class));
     }
 
     /**
@@ -372,19 +369,6 @@ public class ActionUnitService implements ArkEntityService {
         return !now.isBefore(beginDate) && !now.isAfter(endDate);
     }
 
-    /**
-     * Verify if the user has the permission to create recording units in the context of an action unit
-     *
-     * @param user The user to check the permission on
-     * @return True if the user has sufficient permissions
-     */
-    public boolean canCreateRecordingUnit(UserInfo user, ActionUnit action) {
-        // Authorized if user is the organisation manager, action unit manager
-        // or action team member while action is still open
-        return institutionService.isManagerOf(action.getCreatedByInstitution(), user.getUser()) ||
-                isManagerOf(action, user.getUser()) ||
-                (teamMemberRepository.existsByActionUnitAndPerson(action, user.getUser()) && isActionUnitStillOngoing(action));
-    }
 
     /**
      * Checks if a person is a manager of a given action
@@ -451,8 +435,12 @@ public class ActionUnitService implements ArkEntityService {
     }
 
     public List<ActionUnitDTO> findByTeamMember(PersonDTO member, InstitutionDTO institution) {
-        return actionUnitRepository.findByTeamMemberOrCreatorAndInstitution(member.getId(), institution.getId());
+        List<ActionUnit> actionUnits = actionUnitRepository.findByTeamMemberOrCreatorAndInstitution(member.getId(), institution.getId());
+        return actionUnits.stream()
+                .map(actionUnit -> conversionService.convert(actionUnit, ActionUnitDTO.class))
+                .collect(Collectors.toList());
     }
+
 
     /**
      * Does this unit has children?

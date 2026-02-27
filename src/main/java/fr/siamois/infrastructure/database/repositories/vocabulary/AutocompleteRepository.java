@@ -7,6 +7,10 @@ import fr.siamois.domain.models.vocabulary.Vocabulary;
 import fr.siamois.domain.models.vocabulary.VocabularyType;
 import fr.siamois.domain.models.vocabulary.label.ConceptAltLabel;
 import fr.siamois.domain.models.vocabulary.label.ConceptPrefLabel;
+import fr.siamois.dto.entity.ConceptAltLabelDTO;
+import fr.siamois.dto.entity.ConceptDTO;
+import fr.siamois.dto.entity.ConceptPrefLabelDTO;
+import fr.siamois.dto.entity.VocabularyDTO;
 import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -38,25 +42,25 @@ public class AutocompleteRepository {
         type.setId(resultSet.getLong("vocabulary_type_id"));
         type.setLabel(resultSet.getString("vocabulary_type_label"));
 
-        Vocabulary vocabulary = new Vocabulary();
+        VocabularyDTO vocabulary = new VocabularyDTO();
         vocabulary.setId(resultSet.getLong("vocabulary_id"));
         vocabulary.setType(type);
         vocabulary.setBaseUri(resultSet.getString("vocabulary_base_uri"));
         vocabulary.setExternalVocabularyId(resultSet.getString("vocabulary_external_id"));
 
-        Concept concept = new Concept();
+        ConceptDTO concept = new ConceptDTO();
         concept.setId(resultSet.getLong("concept_id"));
         concept.setVocabulary(vocabulary);
         concept.setDeleted(false);
         concept.setExternalId(resultSet.getString("concept_external_id"));
 
-        Concept parentConcept = new Concept();
+        ConceptDTO parentConcept = new ConceptDTO();
         parentConcept.setId(resultSet.getLong("parent_concept_id"));
         parentConcept.setVocabulary(vocabulary);
         parentConcept.setDeleted(false);
         parentConcept.setExternalId(resultSet.getString("parent_concept_external_id"));
 
-        ConceptPrefLabel prefLabel = new ConceptPrefLabel();
+        ConceptPrefLabelDTO prefLabel = new ConceptPrefLabelDTO();
         prefLabel.setId(resultSet.getLong("concept_label_id"));
         prefLabel.setConcept(concept);
         prefLabel.setLabel(resultSet.getString("concept_label_label"));
@@ -129,9 +133,9 @@ public class AutocompleteRepository {
     }
 
     private static void addAllAltLabelsToResults(String lang, ConceptAutocompleteDTO dto, List<ConceptAutocompleteDTO> results) {
-        Concept currentConcept = dto.getConceptLabelToDisplay().getConcept();
+        ConceptDTO currentConcept = dto.getConceptLabelToDisplay().getConcept();
         for (String altLabel : dto.getAltLabels()) {
-            ConceptAltLabel unsavedAltLabel = new ConceptAltLabel();
+            ConceptAltLabelDTO unsavedAltLabel = new ConceptAltLabelDTO();
             unsavedAltLabel.setLabel(altLabel);
             unsavedAltLabel.setLangCode(lang);
             unsavedAltLabel.setConcept(currentConcept);
