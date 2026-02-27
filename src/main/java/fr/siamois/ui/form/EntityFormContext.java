@@ -116,14 +116,14 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
             colEnabledByFieldId.put(colField.getId(), enabled);
 
     // Saving methods
-    private static final Map<Class<? extends TraceableEntity>, EntityFormContextSaveStrategy<? extends AbstractEntityDTO>> SAVE_STRATEGIES =
+    private static final Map<Class<? extends AbstractEntityDTO>, EntityFormContextSaveStrategy<? extends AbstractEntityDTO>> SAVE_STRATEGIES =
             new HashMap<>();
 
     static {
-        SAVE_STRATEGIES.put(RecordingUnit.class, new RecordingUnitSaveStrategy());
-        SAVE_STRATEGIES.put(ActionUnit.class, new ActionUnitSaveStrategy());
-        SAVE_STRATEGIES.put(SpatialUnit.class, new SpatialUnitSaveStrategy());
-        SAVE_STRATEGIES.put(Specimen.class, new SpecimenSaveStrategy());
+        SAVE_STRATEGIES.put(RecordingUnitDTO.class, new RecordingUnitSaveStrategy());
+        SAVE_STRATEGIES.put(ActionUnitDTO.class, new ActionUnitSaveStrategy());
+        SAVE_STRATEGIES.put(SpatialUnitDTO.class, new SpatialUnitSaveStrategy());
+        SAVE_STRATEGIES.put(SpecimenDTO.class, new SpecimenSaveStrategy());
     }
 
     public EntityFormContext(T unit,

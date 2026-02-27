@@ -152,7 +152,7 @@ function scrollToPanel(selector) {
                 panelHeader.trigger('click');
 
                 // Wait for the panel to expand before scrolling
-                setTimeout(function() {
+                setTimeout(function () {
                     scrollAfterExpand(selector);
                 }, 300); // Adjust delay to match the panel's animation duration
             } else {
@@ -166,8 +166,8 @@ function scrollToPanel(selector) {
 function scrollAfterExpand(selector) {
     const panel = $(selector);
     $('#flowContent').animate(
-        { scrollTop: panel.position().top + $('#flowContent').scrollTop() },
-        { duration: 500 }
+        {scrollTop: panel.position().top + $('#flowContent').scrollTop()},
+        {duration: 500}
     );
 }
 
@@ -184,6 +184,100 @@ function hideProgressBar(widgetVar) {
     const progressBarValue = widgetVar.jq.find('.ui-progressbar-value');
     progressBarValue.css('background-color', 'transparent').hide();
 }
+
+(function (XHR) {
+    "use strict";
+
+    var open = XHR.prototype.open;
+    var send = XHR.prototype.send;
+
+    XHR.prototype.open = function (method, url, async, user, pass) {
+        this._url = url;
+        open.call(this, method, url, async, user, pass);
+    };
+
+    XHR.prototype.send = function (data) {
+        var self = this;
+        var oldOnReadyStateChange;
+        var url = this._url;
+
+        function onReadyStateChange() {
+            if (self.readyState == 4 /* complete */) {
+                console.log(data)
+            }
+
+            if (oldOnReadyStateChange) {
+                oldOnReadyStateChange();
+            }
+        }
+
+        /* Set xhr.noIntercept to true to disable the interceptor for a particular call */
+        if (!this.noIntercept) {
+            if (this.addEventListener) {
+                this.addEventListener("readystatechange", onReadyStateChange, false);
+            } else {
+                oldOnReadyStateChange = this.onreadystatechange;
+                this.onreadystatechange = onReadyStateChange;
+            }
+        }
+
+        send.call(this, data);
+    }
+})(XMLHttpRequest);
+
+function loadPanel(t, data, s, xhr) {
+    console.log("Original Response:", t, data, s, xhr);
+
+    // Find the update for flow-panels
+    const updates = data.getElementsByTagName("update");
+    for (let update of updates) {
+        if (update.getAttribute("id") === "flow-panels") {
+            // Extract CDATA content (if any)
+            const cdataNode = update.childNodes[0];
+            if (cdataNode && cdataNode.nodeType === 4) { // CDATA_SECTION_NODE
+                const html = cdataNode.nodeValue;
+
+                // Parse the HTML to manipulate it
+                const divParser = new DOMParser();
+                const htmlDoc = divParser.parseFromString(html, "text/html");
+
+                // Get all direct child divs
+                const container = htmlDoc.body;
+                const allDivs = container.querySelectorAll("div");
+                if (allDivs.length > 0) {
+                    // Keep only the first div
+                    const firstDiv = allDivs[0];
+
+                    // Strip all content from flow-panels in the response
+                    cdataNode.nodeValue = "";
+
+                    // Manually insert the first div into the DOM
+                    const flowPanelsElement = document.getElementById("flow-panels");
+                    if (flowPanelsElement) {
+                        flowPanelsElement.innerHTML = firstDiv.outerHTML;
+                    }
+                }
+            }
+            // Prevent PrimeFaces from updating flow-panels (since we did it manually)
+            // by removing the update element from the response
+            update.parentNode.removeChild(update)
+            break;
+        }
+
+    }
+
+
+
+    // Log the modified response (optional)
+    console.log("Modified Response:", data);
+
+    // Let PrimeFaces handle the rest of the response
+    return true;
+}
+
+
+
+
 
 
 

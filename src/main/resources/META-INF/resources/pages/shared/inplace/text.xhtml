@@ -30,7 +30,7 @@
     </cc:interface>
 
     <cc:implementation>
-        <p:inplace mode="#{cc.attrs.mode}" toggleable="false">
+        <p:inplace id="inplace" mode="#{cc.attrs.mode}" toggleable="false">
             <f:facet name="output">
                 <h:panelGroup rendered="#{cc.attrs.field.isTextArea}">
                     <p:inputTextarea value="#{cc.attrs.answer.value}"
@@ -41,11 +41,7 @@
                     </p:inputTextarea>
                 </h:panelGroup>
                 <h:panelGroup rendered="#{not cc.attrs.field.isTextArea}">
-                    <p:inputText value="#{cc.attrs.answer.value}"
-                                 disabled="true"
-                                 label="#{cc.attrs.label}"
-                    >
-                    </p:inputText>
+                    <span>#{cc.attrs.label}"</span>
                 </h:panelGroup>
             </f:facet>
             <f:facet name="input">
@@ -66,19 +62,7 @@
                                     listener="#{cc.attrs.onModified}"/>
                         </p:inputTextarea>
                     </h:panelGroup>
-                    <h:panelGroup rendered="#{not cc.attrs.field.isTextArea}">
-                        <p:commandButton
-                                rendered="false"
-                                icon="pi pi-refresh"
-                                styleClass="rounded-button"
-                                immediate="true"
-                                process="@this"
-                                actionListener="#{cc.attrs.onGenerateValue}"
-                                update="#{cc.attrs.updateTargetsOnBlur}"
-                        >
-                            <f:attribute name="field" value="#{cc.attrs.field}" />
-                            <f:attribute name="answer" value="#{cc.attrs.answer}" />
-                        </p:commandButton>
+                    <h:panelGroup id="inputPanelGroup" rendered="#{not cc.attrs.field.isTextArea}">
                         <p:inputText value="#{cc.attrs.answer.value}"
                                      styleClass="#{cc.attrs.answer.hasBeenModified ? 'track-change sia-modified-field': 'track-change'}"
                                      label="#{cc.attrs.label}"

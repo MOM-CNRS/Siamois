@@ -267,7 +267,7 @@
 
         <p:outputPanel style="display: flex; flex-direction: row; overflow-y: hidden;" id="flow">
 
-            <h:form>
+            <h:form id="flowSummary">
                 <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
 
                 <p:tabMenu id="panelTabMenu" class="panel-menu" orientation="left" activeIndex="-1">
@@ -321,7 +321,7 @@
                                         </ui:include>
                                     </p:outputPanel>
                                 </f:facet>
-                                <p:outputPanel id="panelContent" deferred="true" loaded="#{panel.loaded}">
+                                <p:outputPanel id="panelContent" deferred="true" loaded="true">
                                     <f:facet name="loading">
                                         <div class="field" style="padding: 2em 3em;">
                                             <p:skeleton class="mb-2"/>
@@ -373,7 +373,7 @@
                                     </h:form>
                                 </f:facet>
                             </p:panel>
-                            <p:blockUI block="panel-${panel.panelIndex}" widgetVar="buiPanel_${panel.panelIndex}">
+                            <p:blockUI id="buiPanel_${panel.panelIndex}" block="panel-${panel.panelIndex}" widgetVar="buiPanel_${panel.panelIndex}">
                                 <i class="pi pi-spin pi-spinner" style="font-size: 3rem"/>
                             </p:blockUI>
                         </p:outputPanel>
