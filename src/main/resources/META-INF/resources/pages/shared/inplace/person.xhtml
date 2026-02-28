@@ -24,7 +24,7 @@
     </cc:interface>
 
     <cc:implementation>
-        <p:inplace mode="#{cc.attrs.mode}" toggleable="false">
+        <p:inplace id="inplace"  mode="#{cc.attrs.mode}" toggleable="false">
             <f:facet name="output">
                 <!-- Single value -->
                 <p:outputLabel rendered="#{(not cc.attrs.multiple) and (not empty cc.attrs.answer.value)}"

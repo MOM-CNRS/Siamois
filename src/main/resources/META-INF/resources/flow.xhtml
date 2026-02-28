@@ -321,7 +321,7 @@
                                         </ui:include>
                                     </p:outputPanel>
                                 </f:facet>
-                                <p:outputPanel id="panelContent" deferred="true" loaded="true">
+                                <p:outputPanel id="panelContent" deferred="true" loaded="#{panel.loaded}" deferredMode="visible">
                                     <f:facet name="loading">
                                         <div class="field" style="padding: 2em 3em;">
                                             <p:skeleton class="mb-2"/>
@@ -360,6 +360,7 @@
                                         </p:commandLink>
                                         <p:commandLink rendered="#{flowBean.fullscreenPanelIndex ==-1}"
                                                        action="#{flowBean.fullScreen(panel)}"
+                                                       id="focusButton"
                                                        update="flow"
                                                        styleClass="ui-panel-titlebar-icon ui-corner-all ui-state-default">
                                             <h:outputText styleClass="ui-icon bi bi-arrows-angle-expand"/>
@@ -373,7 +374,7 @@
                                     </h:form>
                                 </f:facet>
                             </p:panel>
-                            <p:blockUI id="buiPanel_${panel.panelIndex}" block="panel-${panel.panelIndex}" widgetVar="buiPanel_${panel.panelIndex}">
+                            <p:blockUI block="panel-${panel.panelIndex}" widgetVar="buiPanel_${panel.panelIndex}">
                                 <i class="pi pi-spin pi-spinner" style="font-size: 3rem"/>
                             </p:blockUI>
                         </p:outputPanel>

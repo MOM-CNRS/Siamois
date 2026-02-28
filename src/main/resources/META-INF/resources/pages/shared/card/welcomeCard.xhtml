@@ -42,7 +42,7 @@
             <f:facet name="footer">
                 <div style="display: flex; flex-direction: row; gap: 1em; justify-content: center;">
                     <p:commandButton styleClass="#{cc.attrs.btnStyleClass}" value="#{cc.attrs.btnLabel}"
-                                     id="openUnitListPanelButton" onsuccess="loadPanel(this,data,status,xhr)"
+                                     id="openUnitListPanelButton"
                                      onstart="PF('buiContent').show()" oncomplete="PF('buiContent').hide();handleScrollToTop();"
                                      action="#{cc.attrs.btnAction}" disabled="#{empty cc.attrs.btnAction}" update="flowSummary flow-panels"/>
                     <p:commandButton value='#{langBean.msg("common.action.create")}' icon="bi bi-plus-square" styleClass="#{cc.attrs.btnStyleClass}"

@@ -22,7 +22,7 @@
     </cc:interface>
 
     <cc:implementation>
-        <p:inplace mode="#{cc.attrs.mode}" toggleable="false">
+        <p:inplace id="inplace" mode="#{cc.attrs.mode}" toggleable="false">
             <f:facet name="output">
                 <p:inputText value="#{cc.attrs.answer.value}"
                              disabled="true"
@@ -41,7 +41,7 @@
                               inputStyleClass="#{cc.attrs.answer.hasBeenModified ? 'track-change sia-modified-field': 'track-change'}"
                               required="#{cc.attrs.required}"
                               value="#{cc.attrs.answer.value}">
-                    <f:attribute name="field" value="#{cc.attrs.field}" />
+                    <f:attribute id="dateField" name="field" value="#{cc.attrs.field}" />
                     <p:ajax
                             update="#{cc.attrs.updateTargetsOnBlur}"
                             process="@this"

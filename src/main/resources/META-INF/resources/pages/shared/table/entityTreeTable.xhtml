@@ -39,7 +39,7 @@
             </ui:include>
         </f:facet>
 
-        <p:column style="min-width: 10px;" selectionBox="true" width="fit-content" toggleable="false"/>
+        <p:column style="min-width: 10px;" selectionBox="true" id="selectionCol" width="fit-content" toggleable="false"/>
 
         <!-- Dynamic Columns -->
         <p:columns id="dynamicCols" style="min-width: #{column.type != 'COMMAND_LINK' ? '10em' : ''};"
@@ -63,19 +63,22 @@
         </p:columns>
 
         <!-- Actions Column -->
-        <p:column exportable="false" toggleable="false" style="min-width: 100px;">
+        <p:column exportable="false" toggleable="false"  id="actionsCol" style="min-width: 100px;">
             <p:toolbar id="actionButtonToolbar">
-                <p:toolbarGroup styleClass="action-col">
-                    <ui:repeat value="#{tableModel.rowActions}" var="action" varStatus="status">
+                <p:toolbarGroup id="actionButtonToolbarGroup"  styleClass="action-col">
+                    <ui:repeat id="buttons" value="#{tableModel.rowActions}" var="action" varStatus="status">
                         <p:commandButton
-                                id="btn_#{status.index}"
+                                id="btnAction"
                                 rendered="#{tableModel.isRendered(action, item)}"
                                 icon="#{tableModel.resolveIcon(action, item)}"
                                 action="#{tableModel.handleRowAction(action, node)}"
                                 process="#{empty action.processExpr ? '@this' : action.processExpr}"
                                 update="#{action.updateSelfTable ? (':'.concat(cc.clientId).concat(':entityTreeTable')) : action.updateExpr}"
                                 styleClass="#{action.styleClass}"/>
-                        <p:tooltip autoHide="false" value="#{tableModel.getRowActionTooltipCode(action,item)}" position="bottom" for="btn_#{status.index}"
+                        <p:tooltip
+                                id="btnActionTooltip"
+                                autoHide="false" value="#{tableModel.getRowActionTooltipCode(action,item)}" position="bottom"
+                                for="btnAction"
                         />
                     </ui:repeat>
                 </p:toolbarGroup>

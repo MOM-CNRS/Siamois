@@ -43,6 +43,7 @@
     <!-- COMMAND_LINK Column -->
     <ui:fragment rendered="#{column.type eq 'COMMAND_LINK'}">
         <p:commandButton
+                id="openRowLink"
                 styleClass="hidden-column"
                 action="#{tableModel.handleAction(column, item)}"
                 onstart="#{column.onstartJs}"
