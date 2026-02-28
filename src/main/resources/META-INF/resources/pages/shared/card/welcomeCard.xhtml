@@ -43,8 +43,8 @@
                 <div style="display: flex; flex-direction: row; gap: 1em; justify-content: center;">
                     <p:commandButton styleClass="#{cc.attrs.btnStyleClass}" value="#{cc.attrs.btnLabel}"
                                      id="openUnitListPanelButton"
-                                     onstart="PF('buiContent').show()" oncomplete="PF('buiContent').hide();handleScrollToTop();"
-                                     action="#{cc.attrs.btnAction}" disabled="#{empty cc.attrs.btnAction}" update="flowSummary flow-panels"/>
+                                     onstart="PF('buiContent').show()" oncomplete="PF('buiContent').hide();onCompleteCallback('panel-recording-unit-list-container');"
+                                     action="#{cc.attrs.btnAction}" disabled="#{empty cc.attrs.btnAction}" update="flowSummary"/>
                     <p:commandButton value='#{langBean.msg("common.action.create")}' icon="bi bi-plus-square" styleClass="#{cc.attrs.btnStyleClass}"
                                      actionListener="#{cc.attrs.btnNewAction}"
                                      rendered="#{not empty cc.attrs.btnNewAction and flowBean.isWriteMode and cc.attrs.isCreateAllowed}"

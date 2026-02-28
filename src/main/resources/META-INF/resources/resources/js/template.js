@@ -227,12 +227,43 @@ function loadPanel(t, data, s, xhr) {
     }
 
 
-
     // Log the modified response (optional)
     console.log("Modified Response:", data);
 
     // Let PrimeFaces handle the rest of the response
     return true;
+}
+
+function onCompleteCallback(panelId) {
+    const flowPanels = document.getElementById("flow-panels");
+    if (flowPanels) {
+
+        // Remove existing div with same id (if any)
+        const existing = document.getElementById(panelId);
+        if (existing) {
+            existing.remove();
+        }
+
+        const newDiv = document.createElement("div");
+        newDiv.id = panelId;
+
+        flowPanels.insertBefore(newDiv, flowPanels.firstChild);
+
+        // Scroll container to top
+        flowPanels.scrollIntoView({behavior: 'smooth', block: 'start'});
+
+        PrimeFaces.ajax.Request.handle({
+            source: panelId,
+            process: panelId,
+            update: panelId,
+            onsuccess: function (data) {
+                console.log("AJAX update for " + panelId + " completed");
+            },
+            onerror: function (xhr, status, error) {
+                console.error("AJAX error for " + panelId + ": ", status, error);
+            }
+        });
+    }
 }
 
 
