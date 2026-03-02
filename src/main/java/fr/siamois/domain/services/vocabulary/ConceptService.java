@@ -24,6 +24,7 @@ import org.springframework.core.convert.ConversionService;
 import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -55,8 +56,24 @@ public class ConceptService {
      * @return the saved or existing concept
      */
     @NonNull
+    @Transactional
     public Concept saveOrGetConcept(@NonNull ConceptDTO conceptDTO) {
         Concept concept = conversionService.convert(conceptDTO, Concept.class);
+        Vocabulary vocabulary = concept.getVocabulary();
+        Optional<Concept> optConcept = conceptRepository.findConceptByExternalIdIgnoreCase(
+                vocabulary.getExternalVocabularyId(), concept.getExternalId());
+        return optConcept.orElseGet(() -> conceptRepository.save(concept));
+    }
+
+    /**
+     * Saves a concept if it does not already exist in the repository.
+     *
+     * @param concept the concept to save or retrieve
+     * @return the saved or existing concept
+     */
+    @NonNull
+    @Transactional
+    public Concept saveOrGetConcept(@NonNull Concept concept) {
         Vocabulary vocabulary = concept.getVocabulary();
         Optional<Concept> optConcept = conceptRepository.findConceptByExternalIdIgnoreCase(
                 vocabulary.getExternalVocabularyId(), concept.getExternalId());

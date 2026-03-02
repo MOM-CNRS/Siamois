@@ -101,6 +101,21 @@ public class RecordingUnitService implements ArkEntityService {
         try {
 
             RecordingUnit recordingUnit = conversionService.convert(recordingUnitDTO, RecordingUnit.class);
+            Concept concept = conversionService.convert(conceptDTO, Concept.class);
+            return conversionService.convert(save(recordingUnit, concept), RecordingUnitDTO.class);
+
+        } catch (RuntimeException e) {
+            log.error(e.getMessage(), e);
+            throw new FailedRecordingUnitSaveException(e.getMessage());
+        }
+    }
+
+
+    public RecordingUnitDTO save(RecordingUnit recordingUnit, Concept concept) {
+
+        try {
+
+
             RecordingUnit managedRecordingUnit;
 
             assert recordingUnit != null;
@@ -108,7 +123,7 @@ public class RecordingUnitService implements ArkEntityService {
 
             setupActionUnitInfo(recordingUnit, managedRecordingUnit);
             setupStratigraphicRelationships(recordingUnit, managedRecordingUnit);
-            setupConcept(conceptDTO, managedRecordingUnit);
+            setupConcept(concept, managedRecordingUnit);
             setupSpatialUnit(recordingUnit, managedRecordingUnit);
             setupOtherFields(recordingUnit, managedRecordingUnit);
             managedRecordingUnit = setupAdditionalAnswers(recordingUnit, managedRecordingUnit);
@@ -300,7 +315,7 @@ public class RecordingUnitService implements ArkEntityService {
         );
     }
 
-    private void setupConcept(ConceptDTO concept, RecordingUnit managedRecordingUnit) {
+    private void setupConcept(Concept concept, RecordingUnit managedRecordingUnit) {
         Concept type = conceptService.saveOrGetConcept(concept);
         managedRecordingUnit.setType(type);
     }

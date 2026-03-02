@@ -43,7 +43,6 @@ public class RecordingUnit extends RecordingUnitParent implements ArkEntity, Ref
     public RecordingUnit(RecordingUnit recordingUnit) {
         setType(recordingUnit.getType());
         setActionUnit(recordingUnit.getActionUnit());
-        setSecondaryType(recordingUnit.getSecondaryType());
         setSize(recordingUnit.getSize());
         setAltitude(recordingUnit.getAltitude());
         setCreatedByInstitution(recordingUnit.getCreatedByInstitution());

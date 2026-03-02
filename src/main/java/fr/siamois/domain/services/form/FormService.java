@@ -300,11 +300,11 @@ public class FormService {
         Map<Class<?>, BiConsumer<CustomFieldAnswerViewModel, Object>> handlers = new HashMap<>();
         handlers.put(OffsetDateTime.class, this::handleDateTime);
         handlers.put(String.class, this::handleString);
-        handlers.put(Person.class, this::handlePerson);
+        handlers.put(PersonDTO.class, this::handlePerson);
         handlers.put(List.class, this::handlePersonList);
-        handlers.put(Concept.class, this::handleConcept);
-        handlers.put(ActionUnit.class, this::handleActionUnit);
-        handlers.put(SpatialUnit.class, this::handleSpatialUnit);
+        handlers.put(ConceptDTO.class, this::handleConcept);
+        handlers.put(ActionUnitDTO.class, this::handleActionUnit);
+        handlers.put(SpatialUnitDTO.class, this::handleSpatialUnit);
         handlers.put(ActionCode.class, this::handleActionCode);
         handlers.put(Integer.class, this::handleInteger);
         handlers.put(Set.class, this::handleSpatialUnitSet);

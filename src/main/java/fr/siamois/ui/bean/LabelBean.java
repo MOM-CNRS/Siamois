@@ -70,7 +70,7 @@ public class LabelBean implements Serializable {
         UserInfo userInfo = sessionSettingsBean.getUserInfo();
         List<ConceptPrefLabel> labels = new ArrayList<>();
 
-        Optional<String> preferedLang = searchMatchingLangAndPrefLabel(userInfo.getLang(), concept, labels);
+        Optional<String> preferedLang =  searchMatchingLangAndPrefLabel(userInfo.getLang(), concept, labels);
         if (preferedLang.isPresent()) {
             addToCache(userInfo.getLang(), concept, preferedLang.get());
             return preferedLang.get();

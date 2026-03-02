@@ -278,6 +278,7 @@ public class SpatialUnitService implements ArkEntityService {
         try {
             SpatialUnit managedSpatialUnit;
             SpatialUnit spatialUnit = conversionService.convert(toSave, SpatialUnit.class);
+            ConceptDTO conceptDTO = ((SpatialUnitDTO) toSave).getCategory();
 
             if (spatialUnit.getId() != null) {
                 Optional<SpatialUnit> optUnit = spatialUnitRepository.findById(spatialUnit.getId());
@@ -294,8 +295,7 @@ public class SpatialUnitService implements ArkEntityService {
             managedSpatialUnit.setCreatedByInstitution(spatialUnit.getCreatedByInstitution());
             // Add concept
             Concept type = conceptService.saveOrGetConcept(
-                    Objects.requireNonNull(
-                            conversionService.convert(spatialUnit.getCategory(), ConceptDTO.class)));
+                    conceptDTO);
             managedSpatialUnit.setCategory(type);
 
             return conversionService.convert(spatialUnitRepository.save(managedSpatialUnit), SpatialUnitDTO.class);
