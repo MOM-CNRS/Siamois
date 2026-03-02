@@ -26,7 +26,6 @@ public class RecordingUnitSaveStrategy implements EntityFormContextSaveStrategy<
 
         try {
             service.save(unit);
-            context.init(true);
         } catch (FailedRecordingUnitSaveException e) {
             MessageUtils.displayErrorMessage(langBean, "common.entity.recordingUnits.updateFailed", unit);
             return false;
