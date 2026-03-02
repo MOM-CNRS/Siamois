@@ -68,7 +68,6 @@ public class SpatialUnit extends TraceableEntity implements ArkEntity {
             joinColumns = { @JoinColumn(name = "fk_parent_id") },
             inverseJoinColumns = { @JoinColumn(name = "fk_child_id") }
     )
-    @NotAudited
     private Set<SpatialUnit> children = new HashSet<>();
 
     @ManyToMany(mappedBy = "children", fetch = FetchType.LAZY)

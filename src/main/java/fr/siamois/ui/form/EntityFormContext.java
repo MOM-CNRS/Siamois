@@ -80,7 +80,7 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
     public static final String VOCABULARY_LABEL = "vocabularyLabel";
     public static final String SELECT_RU = "selectRU";
     @Getter
-    private final T unit;
+    private T unit;
 
     private final FieldSource fieldSource;
     private final FormService formService;

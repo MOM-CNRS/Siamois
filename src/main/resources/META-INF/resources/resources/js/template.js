@@ -188,6 +188,8 @@ function hideProgressBar(widgetVar) {
 function loadPanel(t, data, s, xhr) {
     console.log("Original Response:", t, data, s, xhr);
 
+
+
     // Find the update for flow-panels
     const updates = data.getElementsByTagName("update");
     for (let update of updates) {
@@ -235,6 +237,9 @@ function loadPanel(t, data, s, xhr) {
 }
 
 function onCompleteCallback(panelId) {
+
+    return;
+
     const flowPanels = document.getElementById("flow-panels");
     if (flowPanels) {
 
@@ -254,7 +259,7 @@ function onCompleteCallback(panelId) {
 
         PrimeFaces.ajax.Request.handle({
             source: panelId,
-            process: "@none",
+            process: "flowContent",
             update: panelId,
             onsuccess: function (data) {
                 console.log("AJAX update for " + panelId + " completed");

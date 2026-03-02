@@ -101,7 +101,7 @@ public class HistoryAuditService {
             Object[] result = (Object[]) query.getSingleResult();
 
             // 2. Convert the Entity snapshot (result[0]) to the DTO class
-            D dto = conversionService. convert(result[0], dtoClass);
+            D dto = conversionService.convert(result[0], dtoClass);
 
             // 3. Return the RevisionWithInfo wrapped with the DTO
             return new RevisionWithInfo<>(

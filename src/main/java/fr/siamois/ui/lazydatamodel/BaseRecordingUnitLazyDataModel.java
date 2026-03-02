@@ -112,7 +112,7 @@ public abstract class BaseRecordingUnitLazyDataModel extends BaseLazyDataModel<R
         RecordingUnitDTO newRec = new RecordingUnitDTO(original);
 
         // Save it
-        newRec = recordingUnitService.save(newRec, newRec.getType());
+        newRec = recordingUnitService.save(newRec);
 
         newRec.setFullIdentifier(recordingUnitService.generateFullIdentifier(newRec.getActionUnit(), newRec));
         if (recordingUnitService.fullIdentifierAlreadyExistInAction(newRec)) {

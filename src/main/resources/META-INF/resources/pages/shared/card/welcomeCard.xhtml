@@ -45,7 +45,7 @@
                     <p:commandButton styleClass="#{cc.attrs.btnStyleClass}" value="#{cc.attrs.btnLabel}"
                                      id="openUnitListPanelButton"
                                      onstart="PF('buiContent').show()" oncomplete="PF('buiContent').hide();onCompleteCallback('#{cc.attrs.newPanelId}');"
-                                     action="#{cc.attrs.btnAction}" disabled="#{empty cc.attrs.btnAction}" update="flowSummary"/>
+                                     action="#{cc.attrs.btnAction}" disabled="#{empty cc.attrs.btnAction}" update="flow"/>
                     <p:commandButton value='#{langBean.msg("common.action.create")}' icon="bi bi-plus-square" styleClass="#{cc.attrs.btnStyleClass}"
                                      actionListener="#{cc.attrs.btnNewAction}"
                                      rendered="#{not empty cc.attrs.btnNewAction and flowBean.isWriteMode and cc.attrs.isCreateAllowed}"

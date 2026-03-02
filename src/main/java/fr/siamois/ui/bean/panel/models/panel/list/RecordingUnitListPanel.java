@@ -187,7 +187,7 @@ public class RecordingUnitListPanel extends AbstractListPanel<RecordingUnitDTO> 
         }
 
         try {
-            recordingUnitService.save(toSave, toSave.getType());
+            recordingUnitService.save(toSave);
         } catch (FailedRecordingUnitSaveException e) {
             MessageUtils.displayErrorMessage(langBean, "common.entity.recordingUnits.updateFailed", toSave.getFullIdentifier());
             return;

@@ -8,8 +8,9 @@ import java.io.Serializable;
 
 @Setter
 @Getter
-public class VocabularyDTO extends AbstractEntityDTO implements Serializable {
+public class VocabularyDTO implements Serializable {
 
+    private long id;
     private VocabularyType type;
     private String externalVocabularyId;
     private String baseUri;

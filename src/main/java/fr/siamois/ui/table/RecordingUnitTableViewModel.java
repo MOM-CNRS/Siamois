@@ -397,7 +397,7 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
             newUnit.getParents().add(new RecordingUnitSummaryDTO(parent));
         }
 
-        newUnit = recordingUnitService.save(newUnit, newUnit.getType());
+        newUnit = recordingUnitService.save(newUnit);
 
         newUnit.setFullIdentifier(recordingUnitService.generateFullIdentifier(newUnit.getActionUnit(), newUnit));
         if (recordingUnitService.fullIdentifierAlreadyExistInAction(newUnit)) {
@@ -451,7 +451,7 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
                     // Save the entity
                     context.flushBackToEntity();
 
-                    recordingUnitService.save(entity, entity.getType());
+                    recordingUnitService.save(entity);
 
                     context.init(true);
 

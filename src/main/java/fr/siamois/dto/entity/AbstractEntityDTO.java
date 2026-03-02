@@ -13,11 +13,12 @@ import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.ColumnDefault;
 
+import java.io.Serializable;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 
 @Data
-public abstract class AbstractEntityDTO {
+public abstract class AbstractEntityDTO implements Serializable {
 
     protected Long id;
     protected PersonDTO createdBy;

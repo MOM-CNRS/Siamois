@@ -96,13 +96,12 @@ public class RecordingUnitService implements ArkEntityService {
      * @return The saved RecordingUnit instance.
      */
     @Transactional
-    public RecordingUnitDTO save(RecordingUnitDTO recordingUnitDTO, ConceptDTO conceptDTO) {
+    public RecordingUnitDTO save(RecordingUnitDTO recordingUnitDTO) {
 
         try {
 
             RecordingUnit recordingUnit = conversionService.convert(recordingUnitDTO, RecordingUnit.class);
-            Concept concept = conversionService.convert(conceptDTO, Concept.class);
-            return conversionService.convert(save(recordingUnit, concept), RecordingUnitDTO.class);
+            return conversionService.convert(save(recordingUnit), RecordingUnitDTO.class);
 
         } catch (RuntimeException e) {
             log.error(e.getMessage(), e);
@@ -111,7 +110,7 @@ public class RecordingUnitService implements ArkEntityService {
     }
 
 
-    public RecordingUnitDTO save(RecordingUnit recordingUnit, Concept concept) {
+    private RecordingUnit save(RecordingUnit recordingUnit) {
 
         try {
 
@@ -123,14 +122,14 @@ public class RecordingUnitService implements ArkEntityService {
 
             setupActionUnitInfo(recordingUnit, managedRecordingUnit);
             setupStratigraphicRelationships(recordingUnit, managedRecordingUnit);
-            setupConcept(concept, managedRecordingUnit);
+            setupConcept(recordingUnit, managedRecordingUnit);
             setupSpatialUnit(recordingUnit, managedRecordingUnit);
             setupOtherFields(recordingUnit, managedRecordingUnit);
             managedRecordingUnit = setupAdditionalAnswers(recordingUnit, managedRecordingUnit);
             setupParents(recordingUnit, managedRecordingUnit);
             setupChilds(recordingUnit, managedRecordingUnit);
 
-            return conversionService.convert(recordingUnitRepository.save(managedRecordingUnit), RecordingUnitDTO.class);
+            return recordingUnitRepository.save(managedRecordingUnit);
 
         } catch (RuntimeException e) {
             log.error(e.getMessage(), e);
@@ -315,9 +314,8 @@ public class RecordingUnitService implements ArkEntityService {
         );
     }
 
-    private void setupConcept(Concept concept, RecordingUnit managedRecordingUnit) {
-        Concept type = conceptService.saveOrGetConcept(concept);
-        managedRecordingUnit.setType(type);
+    private void setupConcept(RecordingUnit recordingUnit, RecordingUnit managedRecordingUnit) {
+        managedRecordingUnit.setType(recordingUnit.getType());
     }
 
     private void setupActionUnitInfo(RecordingUnit recordingUnit, RecordingUnit managedRecordingUnit) {
