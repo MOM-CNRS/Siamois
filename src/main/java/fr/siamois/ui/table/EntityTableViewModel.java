@@ -7,7 +7,7 @@ import fr.siamois.domain.models.form.customform.CustomForm;
 import fr.siamois.domain.services.form.FormService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitTreeService;
-import fr.siamois.dto.entity.AbstractEntityDTO;
+import fr.siamois.dto.entity.*;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.NavBean;
 import fr.siamois.ui.bean.dialog.newunit.GenericNewUnitDialogBean;
@@ -422,6 +422,21 @@ public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
     * Check if user has permission to edit the row data
      */
     public abstract boolean canUserEditRow(T unit);
+
+    public String getOnCompleteJs(T unit) {
+        if (unit instanceof RecordingUnitDTO) {
+            return "PF('buiContent').hide();onCompleteCallback('panel-recording-unit-" + unit.getId() + "-container');";
+        } else if (unit instanceof SpecimenDTO) {
+            return "PF('buiContent').hide();onCompleteCallback('panel-specimen-" + unit.getId() + "-container');";
+        } else if (unit instanceof ActionUnitDTO) {
+            return "PF('buiContent').hide();onCompleteCallback('panel-action-unit-" + unit.getId() + "-container');";
+        } else if (unit instanceof SpatialUnitDTO) {
+            return "PF('buiContent').hide();onCompleteCallback('panel-spatial-unit-" + unit.getId() + "-container');";
+        } else {
+            throw new IllegalArgumentException("Non handled type  : " + unit.getClass().getName());
+        }
+    }
+
 
 
 

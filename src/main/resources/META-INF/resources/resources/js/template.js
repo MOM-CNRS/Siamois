@@ -254,7 +254,7 @@ function onCompleteCallback(panelId) {
 
         PrimeFaces.ajax.Request.handle({
             source: panelId,
-            process: panelId,
+            process: "@none",
             update: panelId,
             onsuccess: function (data) {
                 console.log("AJAX update for " + panelId + " completed");

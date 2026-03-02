@@ -9,6 +9,8 @@ import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.form.CustomFormResponseService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
+import fr.siamois.dto.StratigraphicRelationshipDTO;
+import fr.siamois.dto.entity.*;
 import fr.siamois.infrastructure.database.repositories.person.PersonRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitIdCounterRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitIdInfoRepository;
@@ -77,11 +79,11 @@ class RecordingUnitServiceTest {
 
     @Test
     void save() {
-        RecordingUnit recordingUnit = new RecordingUnit();
+        RecordingUnitDTO recordingUnit = new RecordingUnitDTO();
 
-        when(recordingUnitRepository.save(any(RecordingUnit.class))).thenReturn(recordingUnit);
+        when(recordingUnitRepository.save(any(RecordingUnit.class))).thenReturn(new RecordingUnit());
 
-        ArkEntity result = recordingUnitService.save(recordingUnit);
+        RecordingUnitDTO result = recordingUnitService.save(recordingUnit);
 
         assertNotNull(result);
         assertEquals(recordingUnit, result);
@@ -90,33 +92,33 @@ class RecordingUnitServiceTest {
     @Test
     void countByInstitution_success() {
         when(recordingUnitRepository.countByCreatedByInstitution(any(Institution.class))).thenReturn(3L);
-        assertEquals(3,recordingUnitService.countByInstitution(new Institution()));
+        assertEquals(3,recordingUnitService.countByInstitution(new InstitutionDTO()));
     }
 
     @Test
     void save_SyncsStratigraphicRelationshipsAsUnit1() {
         // Arrange
-        RecordingUnit recordingUnit = new RecordingUnit();
-        RecordingUnit managedRecordingUnit = new RecordingUnit();
+        RecordingUnitDTO recordingUnit = new RecordingUnitDTO();
+        RecordingUnitSummaryDTO managedRecordingUnit = new RecordingUnitSummaryDTO();
         managedRecordingUnit.setId(1L);
 
         // Setup relationships for recordingUnit
-        Set<StratigraphicRelationship> relationshipsAsUnit1 = new HashSet<>();
-        StratigraphicRelationship relUnit1 = new StratigraphicRelationship();
-        RecordingUnit unit2 = new RecordingUnit();
+        Set<StratigraphicRelationshipDTO> relationshipsAsUnit1 = new HashSet<>();
+        StratigraphicRelationshipDTO relUnit1 = new StratigraphicRelationshipDTO();
+        RecordingUnitSummaryDTO unit2 = new RecordingUnitSummaryDTO();
         unit2.setId(2L);
         relUnit1.setUnit1(recordingUnit);
         relUnit1.setUnit2(unit2);
-        relUnit1.setConcept(new Concept());
+        relUnit1.setConcept(new ConceptDTO());
         relationshipsAsUnit1.add(relUnit1);
         recordingUnit.setRelationshipsAsUnit1(relationshipsAsUnit1);
 
         when(recordingUnitRepository.findById(2L)).thenReturn(Optional.of(unit2));
         when(recordingUnitRepository.save(any(RecordingUnit.class))).thenAnswer(invocation -> invocation.getArgument(0));
-        when(conceptService.saveOrGetConcept(any(Concept.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(conceptService.saveOrGetConcept(any(ConceptDTO.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         // Act
-        RecordingUnit result = recordingUnitService.save(recordingUnit, new Concept());
+        RecordingUnit result = recordingUnitService.save(recordingUnit, new ConceptDTO());
 
         // Assert
         assertNotNull(result);

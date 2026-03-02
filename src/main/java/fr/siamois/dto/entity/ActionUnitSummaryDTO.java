@@ -17,7 +17,6 @@ public class ActionUnitSummaryDTO extends AbstractEntityDTO {
     private String name;
     private ConceptDTO type;
     private String identifier;
-    private SpatialUnitSummaryDTO mainLocation ;
     private String fullIdentifier;
     protected Integer maxRecordingUnitCode;
     protected Integer minRecordingUnitCode;

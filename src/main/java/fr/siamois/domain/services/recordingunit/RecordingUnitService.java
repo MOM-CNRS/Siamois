@@ -101,7 +101,6 @@ public class RecordingUnitService implements ArkEntityService {
         try {
 
             RecordingUnit recordingUnit = conversionService.convert(recordingUnitDTO, RecordingUnit.class);
-            Concept concept = conversionService.convert(conceptDTO, Concept.class);
             RecordingUnit managedRecordingUnit;
 
             assert recordingUnit != null;
