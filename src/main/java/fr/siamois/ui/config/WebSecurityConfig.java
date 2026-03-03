@@ -40,6 +40,13 @@ public class WebSecurityConfig {
                 .requestMatchers("/api/**").permitAll()
                 .requestMatchers("/register/**").permitAll()
                 .requestMatchers("/actuator/**").permitAll()
+
+                // décommenter pour ouvrir l'accès à l'API sans connexion
+                .requestMatchers(
+                        "/v3/api-docs/**",
+                        "/swagger-ui/**",
+                        "/swagger-ui.html"
+                ).permitAll()
                 .requestMatchers(EndpointRequest.to(HealthEndpoint.class)).permitAll()
                 .anyRequest().authenticated()
         );
