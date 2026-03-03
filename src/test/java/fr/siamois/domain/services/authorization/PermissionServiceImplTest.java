@@ -6,11 +6,15 @@ import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.authorization.writeverifier.WritePermissionVerifier;
+import fr.siamois.dto.entity.AbstractEntityDTO;
+import fr.siamois.dto.entity.InstitutionDTO;
+import fr.siamois.dto.entity.PersonDTO;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.core.convert.ConversionService;
 
 import java.util.List;
 
@@ -28,7 +32,10 @@ class PermissionServiceImplTest {
     private WritePermissionVerifier writePermissionVerifier;
 
     @Mock
-    private TraceableEntity resource;
+    private ConversionService conversionService;
+
+    @Mock
+    private AbstractEntityDTO resource;
 
     @Mock
     private UserInfo user;
@@ -36,11 +43,13 @@ class PermissionServiceImplTest {
     private PermissionServiceImpl permissionService;
 
     private Person person;
+    private PersonDTO personDto;
     private Institution institutionA, institutionB;
+    private InstitutionDTO institutionADto, institutionBDto;
 
     @BeforeEach
     void setUp() {
-        permissionService = new PermissionServiceImpl(institutionService, List.of(writePermissionVerifier));
+        permissionService = new PermissionServiceImpl(institutionService, List.of(writePermissionVerifier), conversionService);
 
         person = new Person();
         person.setUsername("username");
@@ -53,12 +62,24 @@ class PermissionServiceImplTest {
         institutionB = new Institution();
         institutionB.setName("Institution B");
         institutionB.setId(2L);
+
+        personDto = new PersonDTO();
+        personDto.setUsername("username");
+        personDto.setId(1L);
+
+        institutionADto = new InstitutionDTO();
+        institutionADto.setName("Institution A");
+        institutionADto.setId(1L);
+
+        institutionBDto = new InstitutionDTO();
+        institutionBDto.setName("Institution B");
+        institutionBDto.setId(2L);
     }
 
     @Test
     void hasReadPermission_shouldReturnFalseWhenInstitutionDoesNotMatch() {
-        when(resource.getCreatedByInstitution()).thenReturn(institutionA);
-        when(user.getInstitution()).thenReturn(institutionB);
+        when(resource.getCreatedByInstitution()).thenReturn(institutionADto);
+        when(user.getInstitution()).thenReturn(institutionBDto);
 
         boolean result = permissionService.hasReadPermission(user, resource);
 
@@ -67,8 +88,8 @@ class PermissionServiceImplTest {
 
     @Test
     void hasReadPermission_shouldReturnTrueWhenUserIsActionManager() {
-        when(resource.getCreatedByInstitution()).thenReturn(institutionA);
-        when(user.getInstitution()).thenReturn(institutionA);
+        when(resource.getCreatedByInstitution()).thenReturn(institutionADto);
+        when(user.getInstitution()).thenReturn(institutionADto);
         when(permissionService.isActionManager(user)).thenReturn(true);
 
         boolean result = permissionService.hasReadPermission(user, resource);
@@ -78,8 +99,8 @@ class PermissionServiceImplTest {
 
     @Test
     void hasReadPermission_shouldReturnTrueWhenUserIsInstitutionManager() {
-        when(resource.getCreatedByInstitution()).thenReturn(institutionA);
-        when(user.getInstitution()).thenReturn(institutionA);
+        when(resource.getCreatedByInstitution()).thenReturn(institutionADto);
+        when(user.getInstitution()).thenReturn(institutionADto);
         when(permissionService.isInstitutionManager(user)).thenReturn(true);
 
         boolean result = permissionService.hasReadPermission(user, resource);
@@ -89,11 +110,11 @@ class PermissionServiceImplTest {
 
     @Test
     void hasReadPermission_shouldReturnTrueWhenUserIsInInstitution() {
-        when(resource.getCreatedByInstitution()).thenReturn(institutionA);
-        when(user.getInstitution()).thenReturn(institutionA);
+        when(resource.getCreatedByInstitution()).thenReturn(institutionADto);
+        when(user.getInstitution()).thenReturn(institutionADto);
         when(permissionService.isActionManager(user)).thenReturn(false);
         when(permissionService.isInstitutionManager(user)).thenReturn(false);
-        when(institutionService.personIsInInstitution(user.getUser(), institutionA)).thenReturn(true);
+        when(institutionService.personIsInInstitution(user.getUser(), institutionADto)).thenReturn(true);
 
         boolean result = permissionService.hasReadPermission(user, resource);
 
@@ -102,8 +123,8 @@ class PermissionServiceImplTest {
 
     @Test
     void hasWritePermission_shouldReturnFalseWhenInstitutionDoesNotMatch() {
-        when(resource.getCreatedByInstitution()).thenReturn(institutionA);
-        when(user.getInstitution()).thenReturn(institutionB);
+        when(resource.getCreatedByInstitution()).thenReturn(institutionADto);
+        when(user.getInstitution()).thenReturn(institutionADto);
 
         boolean result = permissionService.hasWritePermission(user, resource);
 
@@ -112,8 +133,8 @@ class PermissionServiceImplTest {
 
     @Test
     void hasWritePermission_shouldReturnTrueWhenUserIsActionManager() {
-        when(resource.getCreatedByInstitution()).thenReturn(institutionA);
-        when(user.getInstitution()).thenReturn(institutionA);
+        when(resource.getCreatedByInstitution()).thenReturn(institutionADto);
+        when(user.getInstitution()).thenReturn(institutionADto);
         when(permissionService.isActionManager(user)).thenReturn(true);
 
         boolean result = permissionService.hasWritePermission(user, resource);
@@ -123,8 +144,8 @@ class PermissionServiceImplTest {
 
     @Test
     void hasWritePermission_shouldReturnTrueWhenUserIsInstitutionManager() {
-        when(resource.getCreatedByInstitution()).thenReturn(institutionA);
-        when(user.getInstitution()).thenReturn(institutionA);
+        when(resource.getCreatedByInstitution()).thenReturn(institutionADto);
+        when(user.getInstitution()).thenReturn(institutionADto);
         when(permissionService.isInstitutionManager(user)).thenReturn(true);
 
         boolean result = permissionService.hasWritePermission(user, resource);
@@ -134,8 +155,8 @@ class PermissionServiceImplTest {
 
     @Test
     void hasWritePermission_shouldReturnFalseWhenVerifierExistsAndPermissionDenied() {
-        when(resource.getCreatedByInstitution()).thenReturn(institutionA);
-        when(user.getInstitution()).thenReturn(institutionA);
+        when(resource.getCreatedByInstitution()).thenReturn(institutionADto);
+        when(user.getInstitution()).thenReturn(institutionADto);
         when(permissionService.isActionManager(user)).thenReturn(false);
         when(permissionService.isInstitutionManager(user)).thenReturn(false);
 
@@ -146,9 +167,9 @@ class PermissionServiceImplTest {
 
     @Test
     void isInstitutionManager_shouldReturnTrueWhenUserIsManager() {
-        when(user.getUser()).thenReturn(person);
-        when(user.getInstitution()).thenReturn(institutionA);
-        when(institutionService.personIsInstitutionManager(person, institutionA)).thenReturn(true);
+        when(user.getUser()).thenReturn(personDto);
+        when(user.getInstitution()).thenReturn(institutionADto);
+        when(institutionService.personIsInstitutionManager(personDto, institutionADto)).thenReturn(true);
 
         boolean result = permissionService.isInstitutionManager(user);
 
@@ -157,9 +178,9 @@ class PermissionServiceImplTest {
 
     @Test
     void isInstitutionManager_shouldReturnFalseWhenUserIsNotManager() {
-        when(user.getUser()).thenReturn(person);
-        when(user.getInstitution()).thenReturn(institutionA);
-        when(institutionService.personIsInstitutionManager(person, institutionA)).thenReturn(false);
+        when(user.getUser()).thenReturn(personDto);
+        when(user.getInstitution()).thenReturn(institutionADto);
+        when(institutionService.personIsInstitutionManager(personDto, institutionADto)).thenReturn(false);
 
         boolean result = permissionService.isInstitutionManager(user);
 
@@ -168,9 +189,9 @@ class PermissionServiceImplTest {
 
     @Test
     void isActionManager_shouldReturnTrueWhenUserIsManager() {
-        when(user.getUser()).thenReturn(person);
-        when(user.getInstitution()).thenReturn(institutionA);
-        when(institutionService.personIsActionManager(person, institutionA)).thenReturn(true);
+        when(user.getUser()).thenReturn(personDto);
+        when(user.getInstitution()).thenReturn(institutionADto);
+        when(institutionService.personIsActionManager(personDto, institutionADto)).thenReturn(true);
 
         boolean result = permissionService.isActionManager(user);
 
@@ -179,9 +200,9 @@ class PermissionServiceImplTest {
 
     @Test
     void isActionManager_shouldReturnFalseWhenUserIsNotManager() {
-        when(user.getUser()).thenReturn(person);
-        when(user.getInstitution()).thenReturn(institutionA);
-        when(institutionService.personIsActionManager(person, institutionA)).thenReturn(false);
+        when(user.getUser()).thenReturn(personDto);
+        when(user.getInstitution()).thenReturn(institutionADto);
+        when(institutionService.personIsActionManager(personDto, institutionADto)).thenReturn(false);
 
         boolean result = permissionService.isActionManager(user);
 
