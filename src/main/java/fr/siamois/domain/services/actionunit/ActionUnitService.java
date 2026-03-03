@@ -157,25 +157,25 @@ public class ActionUnitService implements ArkEntityService {
     public ActionUnit saveNotTransactional(UserInfo info, ActionUnitDTO actionUnitDTO, ConceptDTO typeConceptDTO)
             throws ActionUnitAlreadyExistsException {
 
-        Institution institution = conversionService.convert(info.getInstitution(),Institution.class);
+
+        Optional<ActionUnit> opt = actionUnitRepository.findByNameAndCreatedByInstitutionId(actionUnitDTO.getName(), info.getInstitution().getId());
+        if (opt.isPresent())
+            throw new ActionUnitAlreadyExistsException(
+                    "name",
+                    String.format("Action unit with name %s already exist in institution %s", actionUnitDTO.getName(), info.getInstitution().getName()));
+
+        opt = actionUnitRepository.findByIdentifierAndCreatedByInstitutionId(actionUnitDTO.getIdentifier(), info.getInstitution().getId());
+        if (opt.isPresent())
+            throw new ActionUnitAlreadyExistsException(
+                    "identifier",
+                    String.format("Action unit with identifier %s already exist in institution %s", actionUnitDTO.getIdentifier(), info.getInstitution().getName()));
+
+
         Person user = conversionService.convert(info.getUser(), Person.class);
 
         actionUnitDTO.setCreatedByInstitution(info.getInstitution());
 
         ActionUnit actionUnit = conversionService.convert(actionUnitDTO, ActionUnit.class);
-        Concept typeConcept = conversionService.convert(typeConceptDTO, Concept.class);
-
-        Optional<ActionUnit> opt = actionUnitRepository.findByNameAndCreatedByInstitution(actionUnit.getName(), institution);
-        if (opt.isPresent())
-            throw new ActionUnitAlreadyExistsException(
-                    "name",
-                    String.format("Action unit with name %s already exist in institution %s", actionUnit.getName(), info.getInstitution().getName()));
-
-        opt = actionUnitRepository.findByIdentifierAndCreatedByInstitution(actionUnit.getIdentifier(), institution);
-        if (opt.isPresent())
-            throw new ActionUnitAlreadyExistsException(
-                    "identifier",
-                    String.format("Action unit with identifier %s already exist in institution %s", actionUnit.getIdentifier(), info.getInstitution().getName()));
 
         // Generate unique identifier if not presents
         if (actionUnit.getFullIdentifier() == null) {

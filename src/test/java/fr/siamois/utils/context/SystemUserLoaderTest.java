@@ -28,6 +28,9 @@ class SystemUserLoaderTest {
     @Mock
     private InstitutionRepository institutionRepository;
 
+    @Mock
+    private InstitutionRepository conversionService;
+
     @InjectMocks
     private SystemUserLoader systemUserLoader;
 

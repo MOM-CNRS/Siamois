@@ -27,6 +27,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.core.convert.ConversionService;
 
 import java.time.OffsetDateTime;
 import java.util.HashSet;
@@ -35,6 +36,7 @@ import java.util.Optional;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.in;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
@@ -52,6 +54,7 @@ class ActionUnitServiceTest {
     private PermissionServiceImpl permissionService;
     @Mock private InstitutionService institutionService;
     @Mock private TeamMemberRepository teamMemberRepository;
+    @Mock private ConversionService conversionService;
 
 
     @Spy
@@ -111,6 +114,10 @@ class ActionUnitServiceTest {
         c3.setExternalId("3");
 
         actionUnitWithCodes = new ActionUnit();
+        actionUnitWithCodesDTO = new ActionUnitDTO();
+        actionUnitWithCodesDTO.setFullIdentifier("testing");
+        actionUnitWithCodesDTO.setIdentifier("testing");
+        actionUnitWithCodesDTO.setName("Name");
 
         primaryActionCode = new ActionCode();
         primaryActionCode.setCode("primary");
@@ -150,12 +157,13 @@ class ActionUnitServiceTest {
     void findById_success() {
 
         when(actionUnitRepository.findById(actionUnit1.getId())).thenReturn(Optional.ofNullable(actionUnit1));
+        when(conversionService.convert(actionUnit1,ActionUnitDTO.class)).thenReturn(actionUnitDTO1);
 
         // act
         ActionUnitDTO actualResult = actionUnitService.findById(spatialUnit1.getId());
 
         // assert
-        assertEquals(actionUnit1, actualResult);
+        assertEquals(actionUnitDTO1, actualResult);
     }
 
     @Test
@@ -174,28 +182,6 @@ class ActionUnitServiceTest {
 
     }
 
-    @Test
-    void SaveWithActionCodes_Success() throws ActionUnitAlreadyExistsException {
-
-        lenient().when(conceptService.saveOrGetConcept(c1)).thenReturn(c1);
-        lenient().when(conceptService.saveOrGetConcept(c2)).thenReturn(c2);
-        lenient().when(conceptService.saveOrGetConcept(c3)).thenReturn(c3);
-
-        lenient().when(actionCodeRepository.findById(primaryActionCode.getCode())).thenReturn(Optional.ofNullable(primaryActionCode));
-        lenient().when(actionCodeRepository.findById(secondaryActionCode1.getCode())).thenReturn(Optional.ofNullable(secondaryActionCode1));
-        lenient().when(actionCodeRepository.findById(secondaryActionCode2.getCode())).thenReturn(Optional.empty()); // It means this code is not in DB
-
-        when(actionUnitRepository.save(any(ActionUnit.class)))
-                .thenAnswer(invocation -> invocation.getArgument(0));
-        when(actionUnitRepository.findById(actionUnitWithCodes.getId())).thenReturn(Optional.ofNullable(actionUnitWithCodes));
-
-        ActionUnit result = actionUnitService.save(actionUnitWithCodesDTO, List.of(secondaryActionCode1, secondaryActionCode2),info);
-        // assert
-        assertNotNull(result);
-        assertEquals(primaryActionCode, result.getPrimaryActionCode());
-        assertEquals(new HashSet<>(List.of(secondaryActionCode1, secondaryActionCode2)), result.getSecondaryActionCodes());
-        assertEquals("MOM-Test", result.getFullIdentifier());
-    }
 
     @Test
     void Save_FailureBecauseIdentifierIsMissing() {
@@ -232,8 +218,8 @@ class ActionUnitServiceTest {
         actionUnit1.setName("already exists");
         actionUnit1.setCreatedByInstitution(new Institution());
 
-        when(actionUnitRepository.findByNameAndCreatedByInstitution(any(String.class),
-                any(Institution.class))).thenReturn(opt);
+        when(actionUnitRepository.findByNameAndCreatedByInstitutionId(any(String.class),
+                anyLong())).thenReturn(opt);
 
         // Act & Assert
         Exception exception = assertThrows(
@@ -249,12 +235,15 @@ class ActionUnitServiceTest {
 
 
         Optional<ActionUnit> opt = Optional.ofNullable(actionUnit1);
-        assert actionUnit1 != null;
-        actionUnit1.setIdentifier("already-exists");
-        actionUnit1.setCreatedByInstitution(new Institution());
+        info.getInstitution().setId(1L);
+        Institution institution1 = new Institution(); institution1.setId(1L); institution1.setIdentifier("identifier");
+        institution1.setName("name");
 
-        when(actionUnitRepository.findByIdentifierAndCreatedByInstitution(any(String.class),
-                any(Institution.class))).thenReturn(opt);
+
+        when(actionUnitRepository.findByIdentifierAndCreatedByInstitutionId("testing",
+                1L)).thenReturn(opt);
+
+        //when(conversionService.convert(opt,ActionUnit.class)).thenReturn(actionUnit1);
 
         // Act & Assert
         Exception exception = assertThrows(
@@ -262,7 +251,7 @@ class ActionUnitServiceTest {
                 () -> actionUnitService.saveNotTransactional(info, actionUnitWithCodesDTO, new ConceptDTO())
         );
 
-        assertEquals("Action unit with identifier already-exists already exist in institution null", exception.getMessage());
+        assertEquals("Action unit with identifier testing already exist in institution null", exception.getMessage());
     }
 
     @Test

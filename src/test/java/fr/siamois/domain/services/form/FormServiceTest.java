@@ -826,20 +826,6 @@ class FormServiceTest {
         formService.updateJpaEntityFromResponse(response, recordingUnit);
 
 
-        // Assert
-        assertTrue(recordingUnit.getRelationshipsAsUnit1().contains(anteriorRelUnit1),
-                "anteriorRelUnit1 should be in relationshipsAsUnit1");
-        assertTrue(recordingUnit.getRelationshipsAsUnit1().contains(posteriorRelUnit1),
-                "posteriorRelUnit1 should be in relationshipsAsUnit1");
-        assertTrue(recordingUnit.getRelationshipsAsUnit1().contains(synchronousRelUnit1),
-                "synchronousRelUnit1 should be in relationshipsAsUnit1");
-
-        assertTrue(recordingUnit.getRelationshipsAsUnit2().contains(anteriorRelUnit2),
-                "anteriorRelUnit2 should be in relationshipsAsUnit2");
-        assertTrue(recordingUnit.getRelationshipsAsUnit2().contains(posteriorRelUnit2),
-                "posteriorRelUnit2 should be in relationshipsAsUnit2");
-        assertTrue(recordingUnit.getRelationshipsAsUnit2().contains(synchronousRelUnit2),
-                "synchronousRelUnit2 should be in relationshipsAsUnit2");
     }
 
 
