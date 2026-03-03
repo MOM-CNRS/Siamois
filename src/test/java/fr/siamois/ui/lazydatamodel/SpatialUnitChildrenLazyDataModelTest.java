@@ -3,6 +3,8 @@ package fr.siamois.ui.lazydatamodel;
 import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
+import fr.siamois.dto.entity.InstitutionDTO;
+import fr.siamois.dto.entity.SpatialUnitDTO;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
 import org.junit.jupiter.api.BeforeEach;
@@ -35,49 +37,51 @@ class SpatialUnitChildrenLazyDataModelTest {
     @InjectMocks
     private SpatialUnitChildrenLazyDataModel lazyModel;
 
-    Page<SpatialUnit> p ;
     Pageable pageable;
-    SpatialUnit spatialUnit1;
-    SpatialUnit spatialUnit2;
-    SpatialUnit spatialUnit3;
-    Institution institution;
+
+    Page<SpatialUnitDTO> pageDto ;
+    SpatialUnitDTO spatialUnit1Dto;
+    SpatialUnitDTO spatialUnit2Dto;
+    SpatialUnitDTO spatialUnit3Dto;
+    InstitutionDTO institutionDto;
 
     @BeforeEach
     void setUp() {
-        spatialUnit1 = new SpatialUnit();
-        spatialUnit2 = new SpatialUnit();
-        spatialUnit3 = new SpatialUnit();
-        institution = new Institution();
-        institution.setId(1L);
-        spatialUnit1.setId(1L);
-        spatialUnit2.setId(2L);
-        p = new PageImpl<>(List.of(spatialUnit1, spatialUnit2));
+
         pageable = PageRequest.of(0, 10);
+        spatialUnit1Dto = new SpatialUnitDTO();
+        spatialUnit2Dto = new SpatialUnitDTO();
+        spatialUnit3Dto = new SpatialUnitDTO();
+        institutionDto = new InstitutionDTO();
+        institutionDto.setId(1L);
+        spatialUnit1Dto.setId(1L);
+        spatialUnit2Dto.setId(2L);
+        pageDto = new PageImpl<>(List.of(spatialUnit1Dto, spatialUnit2Dto));
     }
 
     @Test
     void loadSpatialUnits() {
 
-        lazyModel = new SpatialUnitChildrenLazyDataModel(spatialUnitService,langBean, spatialUnit3);
+        lazyModel = new SpatialUnitChildrenLazyDataModel(spatialUnitService,langBean, spatialUnit3Dto);
 
         // Arrange
         when(spatialUnitService.findAllByParentAndByNameContainingAndByCategoriesAndByGlobalContaining(
-                ArgumentMatchers.any(SpatialUnit.class),
+                ArgumentMatchers.any(SpatialUnitDTO.class),
                 ArgumentMatchers.any(String.class),
                 ArgumentMatchers.any(Long[].class),
                 ArgumentMatchers.any(Long[].class),
                 ArgumentMatchers.any(String.class),
                 ArgumentMatchers.any(String.class),
                 ArgumentMatchers.any(org.springframework.data.domain.Pageable.class)
-        )).thenReturn(p);
+        )).thenReturn(pageDto);
         when(langBean.getLanguageCode()).thenReturn("en");
 
         // Act
-        Page<SpatialUnit> actualResult = lazyModel.loadSpatialUnits("null", new Long[2], new Long[2],"null", pageable);
+        Page<SpatialUnitDTO> actualResult = lazyModel.loadSpatialUnits("null", new Long[2], new Long[2],"null", pageable);
 
         // Assert
         // Assert
-        assertEquals(spatialUnit1, actualResult.getContent().get(0));
-        assertEquals(spatialUnit2, actualResult.getContent().get(1));
+        assertEquals(spatialUnit1Dto, actualResult.getContent().get(0));
+        assertEquals(spatialUnit2Dto, actualResult.getContent().get(1));
     }
 }
