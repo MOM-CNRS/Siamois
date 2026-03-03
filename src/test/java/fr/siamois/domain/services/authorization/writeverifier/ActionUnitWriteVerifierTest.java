@@ -5,6 +5,9 @@ import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.institution.Institution;
+import fr.siamois.dto.entity.ActionUnitDTO;
+import fr.siamois.dto.entity.InstitutionDTO;
+import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.infrastructure.database.repositories.team.TeamMemberRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -29,11 +32,11 @@ class ActionUnitWriteVerifierTest {
 
     @BeforeEach
     void setUp() {
-        Person person = new Person();
+        PersonDTO person = new PersonDTO();
         person.setUsername("testUser");
         person.setId(1L);
 
-        Institution institution = new Institution();
+        InstitutionDTO institution = new InstitutionDTO();
         institution.setId(1L);
         institution.setName("Test Institution");
 
@@ -53,10 +56,10 @@ class ActionUnitWriteVerifierTest {
     void hasSpecificWritePermission_shouldReturnTrueWhenPermissionExists() {
         // Arrange
 
-        ActionUnit actionUnit = new ActionUnit();
+        ActionUnitDTO actionUnit = new ActionUnitDTO();
         actionUnit.setId(1L);
 
-        when(teamMemberRepository.existsByActionUnitIdAndPerson(actionUnit, userInfo.getUser())).thenReturn(true);
+        when(teamMemberRepository.existsByActionUnitIdAndPerson(1L, userInfo.getUser())).thenReturn(true);
 
         // Act
         boolean result = actionUnitWriteVerifier.hasSpecificWritePermission(userInfo, actionUnit);
@@ -68,10 +71,10 @@ class ActionUnitWriteVerifierTest {
     @Test
     void hasSpecificWritePermission_shouldReturnFalseWhenPermissionDoesNotExist() {
         // Arrange
-        ActionUnit actionUnit = new ActionUnit();
+        ActionUnitDTO actionUnit = new ActionUnitDTO();
         actionUnit.setId(1L);
 
-        when(teamMemberRepository.existsByActionUnitIdAndPerson(actionUnit, userInfo.getUser())).thenReturn(false);
+        when(teamMemberRepository.existsByActionUnitIdAndPerson(1L, userInfo.getUser())).thenReturn(false);
 
         // Act
         boolean result = actionUnitWriteVerifier.hasSpecificWritePermission(userInfo, actionUnit);

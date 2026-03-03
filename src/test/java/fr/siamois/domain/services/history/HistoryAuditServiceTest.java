@@ -4,6 +4,7 @@ import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.history.InfoRevisionEntity;
 import fr.siamois.domain.models.history.RevisionWithInfo;
 import fr.siamois.domain.models.institution.Institution;
+import fr.siamois.dto.entity.AbstractEntityDTO;
 import jakarta.persistence.NoResultException;
 import org.hibernate.envers.AuditReader;
 import org.hibernate.envers.NotAudited;
@@ -58,7 +59,7 @@ class HistoryAuditServiceTest {
         Object[] row2 = new Object[] { "entity1-v2", e2, RevisionType.MOD };
         when(query.getResultList()).thenReturn(Arrays.asList(row1, row2));
 
-        List<?> results = service.findAllRevisionForEntity(String.class, 1L);
+        List<?> results = service.findAllRevisionForEntity(AbstractEntityDTO.class, 1L);
 
         assertEquals(2, results.size());
         verify(reader).createQuery();
@@ -75,7 +76,7 @@ class HistoryAuditServiceTest {
         when(query.add(any())).thenReturn(query);
         when(query.getResultList()).thenReturn(Collections.emptyList());
 
-        List<RevisionWithInfo<String>> results = service.findAllRevisionForEntity(String.class, 42L);
+        List<RevisionWithInfo<AbstractEntityDTO>> results = service.findAllRevisionForEntity(AbstractEntityDTO.class, 42L);
 
         assertNotNull(results);
         assertTrue(results.isEmpty());
@@ -93,7 +94,7 @@ class HistoryAuditServiceTest {
         Object[] row = new Object[] { "last-entity", mock(InfoRevisionEntity.class), RevisionType.DEL };
         when(query.getSingleResult()).thenReturn(row);
 
-        Object result = service.findLastRevisionForEntity(String.class, 1L);
+        Object result = service.findLastRevisionForEntity(AbstractEntityDTO.class, 1L);
 
         assertNotNull(result);
         verify(reader).createQuery();
@@ -109,7 +110,7 @@ class HistoryAuditServiceTest {
         when(query.add(any())).thenReturn(query);
         when(query.getSingleResult()).thenThrow(new NoResultException());
 
-        assertNull(service.findLastRevisionForEntity(String.class, 999L));
+        assertNull(service.findLastRevisionForEntity(AbstractEntityDTO.class, 999L));
     }
 
     @Test
@@ -163,7 +164,7 @@ class HistoryAuditServiceTest {
         
         when(query.getResultList()).thenReturn(Arrays.asList(e1, e2, null, e1Duplicate));
 
-        List<Person> results = service.findAllContributorsFor(String.class, 1L);
+        List<Person> results = service.findAllContributorsFor(AbstractEntityDTO.class, 1L);
 
         assertEquals(2, results.size());
         assertTrue(results.containsAll(Arrays.asList(e1, e2)));

@@ -3,6 +3,8 @@ package fr.siamois.domain.services.spatialunit;
 
 import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
+import fr.siamois.dto.entity.InstitutionDTO;
+import fr.siamois.dto.entity.SpatialUnitDTO;
 import fr.siamois.ui.bean.SessionSettingsBean;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -31,40 +33,40 @@ class SpatialUnitTreeServiceTest {
     @Test
     void testBuildTree_SingleRootWithChildren() {
         // Setup test data
-        SpatialUnit root = new SpatialUnit();
+        SpatialUnitDTO root = new SpatialUnitDTO();
         root.setId(1L);
         root.setName("Root");
 
-        SpatialUnit child1 = new SpatialUnit();
+        SpatialUnitDTO child1 = new SpatialUnitDTO();
         child1.setId(2L);
         child1.setName("Child 1");
 
-        SpatialUnit child2 = new SpatialUnit();
+        SpatialUnitDTO child2 = new SpatialUnitDTO();
         child2.setId(3L);
         child2.setName("Child 2");
 
-        Map<SpatialUnit, List<SpatialUnit>> mockMap = new HashMap<>();
+        Map<SpatialUnitDTO, List<SpatialUnitDTO>> mockMap = new HashMap<>();
         mockMap.put(root, List.of(child1, child2));
 
         // Institution mock
-        Institution mockInstitution = new Institution();
+        InstitutionDTO mockInstitution = new InstitutionDTO();
         mockInstitution.setId(1L);
         when(sessionSettingsBean.getSelectedInstitution()).thenReturn(mockInstitution);
             when(spatialUnitService.findRootsOf(any(Long.class))).thenReturn(List.of(root));
         when(spatialUnitService.findDirectChildrensOf(root.getId())).thenReturn(List.of(child1, child2));
 
         // Act
-        TreeNode<SpatialUnit> tree = spatialUnitTreeService.buildTree();
+        TreeNode<SpatialUnitDTO> tree = spatialUnitTreeService.buildTree();
 
         // Assert
         assertNotNull(tree);
         assertEquals(1, tree.getChildren().size()); // one root spatial unit
-        TreeNode<SpatialUnit> rootNode = tree.getChildren().get(0);
+        TreeNode<SpatialUnitDTO> rootNode = tree.getChildren().get(0);
         assertEquals("Root", rootNode.getData().getName());
         assertEquals(2, rootNode.getChildren().size());
 
         Set<String> childNames = new HashSet<>();
-        for (TreeNode<SpatialUnit> child : rootNode.getChildren()) {
+        for (TreeNode<SpatialUnitDTO> child : rootNode.getChildren()) {
             childNames.add(child.getData().getName());
         }
         assertTrue(childNames.contains("Child 1"));
@@ -74,38 +76,38 @@ class SpatialUnitTreeServiceTest {
     @Test
     void testBuildTree_MultipleRoots() {
         // Setup test data
-        SpatialUnit root1 = new SpatialUnit();
+        SpatialUnitDTO root1 = new SpatialUnitDTO();
         root1.setId(1L);
         root1.setName("Root1");
 
-        SpatialUnit root2 = new SpatialUnit();
+        SpatialUnitDTO root2 = new SpatialUnitDTO();
         root2.setId(2L);
         root2.setName("Root2");
 
-        SpatialUnit child = new SpatialUnit();
+        SpatialUnitDTO child = new SpatialUnitDTO();
         child.setId(3L);
         child.setName("Child");
 
-        Map<SpatialUnit, List<SpatialUnit>> mockMap = new HashMap<>();
+        Map<SpatialUnitDTO, List<SpatialUnitDTO>> mockMap = new HashMap<>();
         mockMap.put(root1, List.of(child));
         mockMap.put(root2, List.of());
 
         // Institution mock
-        Institution mockInstitution = new Institution();
+        InstitutionDTO mockInstitution = new InstitutionDTO();
         mockInstitution.setId(1L);
         when(sessionSettingsBean.getSelectedInstitution()).thenReturn(mockInstitution);
         when(spatialUnitService.findRootsOf(any(Long.class))).thenReturn(List.of(root1, root2));
 
 
         // Act
-        TreeNode<SpatialUnit> tree = spatialUnitTreeService.buildTree();
+        TreeNode<SpatialUnitDTO> tree = spatialUnitTreeService.buildTree();
 
         // Assert
         assertNotNull(tree);
         assertEquals(2, tree.getChildren().size());
 
         Set<String> rootNames = new HashSet<>();
-        for (TreeNode<SpatialUnit> node : tree.getChildren()) {
+        for (TreeNode<SpatialUnitDTO> node : tree.getChildren()) {
             rootNames.add(node.getData().getName());
         }
 
@@ -115,10 +117,10 @@ class SpatialUnitTreeServiceTest {
 
     @Test
     void testBuildTree_EmptyMap() {
-        Institution mockInstitution = new Institution();
+        InstitutionDTO mockInstitution = new InstitutionDTO();
         when(sessionSettingsBean.getSelectedInstitution()).thenReturn(mockInstitution);
 
-        TreeNode<SpatialUnit> tree = spatialUnitTreeService.buildTree();
+        TreeNode<SpatialUnitDTO> tree = spatialUnitTreeService.buildTree();
 
         assertNotNull(tree);
         assertEquals(0, tree.getChildren().size());

@@ -2,6 +2,7 @@ package fr.siamois.domain.services.person.verifier;
 
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.exceptions.auth.InvalidPasswordException;
+import fr.siamois.dto.entity.PersonDTO;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -12,17 +13,14 @@ class PasswordVerifierTest {
 
     @Test
     void verify_shouldThrowInvalidPassword_whenPasswordIsInvalid() {
-        Person person = new Person();
-        person.setPassword("short");
 
-        assertThrows(InvalidPasswordException.class, () -> passwordVerifier.verify(person));
+
+        assertThrows(InvalidPasswordException.class, () -> passwordVerifier.verify("short"));
     }
 
     @Test
     void verify_shouldNotThrowException_whenPasswordIsValid() throws InvalidPasswordException {
-        Person person = new Person();
-        person.setPassword("validPassword123");
 
-        passwordVerifier.verify(person);
+        passwordVerifier.verify("validPassword123");
     }
 }

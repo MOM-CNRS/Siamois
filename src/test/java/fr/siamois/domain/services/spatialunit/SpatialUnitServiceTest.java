@@ -273,7 +273,7 @@ class SpatialUnitServiceTest {
 
         // Act
         Page<SpatialUnitDTO> actualResult = spatialUnitService.findAllByChildAndByNameContainingAndByCategoriesAndByGlobalContaining(
-                spatialUnit1, "null", new Long[2], new Long[2], "null", "fr", pageable);
+                spatialUnit1DTO, "null", new Long[2], new Long[2], "null", "fr", pageable);
 
         // Assert
         assertEquals(spatialUnit1DTO, actualResult.getContent().get(0));
@@ -298,7 +298,7 @@ class SpatialUnitServiceTest {
         Exception exception = assertThrows(
                 Exception.class,
                 () -> spatialUnitService.findAllByChildAndByNameContainingAndByCategoriesAndByGlobalContaining(
-                        spatialUnit1, "null", new Long[2], new Long[2], "null", "fr", pageable)
+                        spatialUnit1DTO, "null", new Long[2], new Long[2], "null", "fr", pageable)
         );
 
         assertEquals("Database error", exception.getMessage());

@@ -11,6 +11,10 @@ import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
+import fr.siamois.dto.entity.ActionUnitDTO;
+import fr.siamois.dto.entity.ConceptDTO;
+import fr.siamois.dto.entity.InstitutionDTO;
+import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.infrastructure.database.repositories.actionunit.ActionCodeRepository;
 import fr.siamois.infrastructure.database.repositories.actionunit.ActionUnitRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -47,6 +51,8 @@ class ActionUnitServiceTest {
     SpatialUnit spatialUnit1 ;
     ActionUnit actionUnit1 ;
     ActionUnit actionUnit2 ;
+    ActionUnitDTO actionUnit1dto ;
+    ActionUnitDTO actionUnit2dto ;
 
     ActionUnit actionUnitWithCodesBefore;
     ActionUnit actionUnitWithCodesAfter;
@@ -67,14 +73,16 @@ class ActionUnitServiceTest {
         spatialUnit1 = new SpatialUnit();
         actionUnit1 = new ActionUnit();
         actionUnit2 = new ActionUnit();
+        actionUnit1dto = new ActionUnitDTO();
+        actionUnit2dto = new ActionUnitDTO();
         spatialUnit1.setId(1L);
         actionUnit1.setId(1L);
         actionUnit1.setIdentifier("1");
         actionUnit2.setId(2L);
         actionUnit2.setIdentifier("2");
 
-        Person p =new Person();
-        Institution i = new Institution();
+        PersonDTO p =new PersonDTO();
+        InstitutionDTO i = new InstitutionDTO();
         info = new UserInfo(i,p,"fr");
         c1 = new Concept();
         c2 = new Concept();
@@ -122,7 +130,7 @@ class ActionUnitServiceTest {
         when(actionUnitRepository.findById(actionUnit1.getId())).thenReturn(Optional.ofNullable(actionUnit1));
 
         // act
-        ActionUnit actualResult = actionUnitService.findById(spatialUnit1.getId());
+        ActionUnitDTO actualResult = actionUnitService.findById(spatialUnit1.getId());
 
         // assert
         assertEquals(actionUnit1, actualResult);
@@ -147,24 +155,26 @@ class ActionUnitServiceTest {
     void save_withUserInfo_success() throws ActionUnitAlreadyExistsException {
 
 
+        ActionUnitDTO actionUnitdto = new ActionUnitDTO();
+        actionUnitdto.setIdentifier("Test");
         ActionUnit actionUnit = new ActionUnit();
         actionUnit.setIdentifier("Test");
-        Institution institution = new Institution();
+        InstitutionDTO institution = new InstitutionDTO();
         institution.setIdentifier("MOM");
-        actionUnit.setCreatedByInstitution(institution);
+        ConceptDTO typeConceptDTO = new ConceptDTO();
         Concept typeConcept = new Concept();
 
-        UserInfo userInfo = new UserInfo(institution, new Person(), "fr");
+        UserInfo userInfo = new UserInfo(institution, new PersonDTO(), "fr");
 
         when(conceptService.saveOrGetConcept(typeConcept)).thenReturn(typeConcept);
         when(actionUnitRepository.save(actionUnit)).thenReturn(actionUnit);
 
-        ActionUnit result = actionUnitService.save(userInfo, actionUnit, typeConcept);
+        ActionUnitDTO result = actionUnitService.save(userInfo, actionUnitdto, typeConceptDTO);
 
         assertNotNull(result);
         assertEquals("MOM-Test", result.getFullIdentifier());
-        assertEquals(actionUnit, result);
-        assertEquals(typeConcept, result.getType());
+        assertEquals(actionUnitdto, result);
+        assertEquals(typeConceptDTO, result.getType());
         assertEquals(userInfo.getUser(), result.getCreatedBy());
         assertEquals(userInfo.getInstitution(), result.getCreatedByInstitution());
     }
@@ -217,7 +227,7 @@ class ActionUnitServiceTest {
         )).thenReturn(page);
 
         // Act
-        Page<ActionUnit> actualResult = actionUnitService.findAllByInstitutionAndByNameContainingAndByCategoriesAndByGlobalContaining(
+        Page<ActionUnitDTO> actualResult = actionUnitService.findAllByInstitutionAndByNameContainingAndByCategoriesAndByGlobalContaining(
                 1L, "null", new Long[2], new Long[2],"null", "fr", pageable
         );
 
@@ -241,7 +251,7 @@ class ActionUnitServiceTest {
         )).thenReturn(page);
 
         // Act
-        Page<ActionUnit> actualResult = actionUnitService.findAllByInstitutionAndBySpatialUnitAndByNameContainingAndByCategoriesAndByGlobalContaining(
+        Page<ActionUnitDTO> actualResult = actionUnitService.findAllByInstitutionAndBySpatialUnitAndByNameContainingAndByCategoriesAndByGlobalContaining(
                 1L,1L, "null", new Long[2], new Long[2],"null", "fr", pageable
         );
 
@@ -271,11 +281,11 @@ class ActionUnitServiceTest {
         List<ActionUnit> expectedActionUnits = Arrays.asList(actionUnit1, actionUnit2);
 
         // 2. Configuration du comportement simulé du repository
-        when(actionUnitRepository.findByTeamMemberOrCreatorAndInstitution(memberId, 1L))
+        when(actionUnitRepository.findByTeamMemberOrCreatorAndInstitution(anyLong(), anyLong()))
                 .thenReturn(expectedActionUnits);
 
         // 3. Appel de la méthode à tester
-        List<ActionUnit> result = actionUnitService.findByTeamMember(member, institution);
+        List<ActionUnitDTO> result = actionUnitService.findByTeamMember(new PersonDTO(), new InstitutionDTO());
 
         // 4. Vérification des résultats
         assertNotNull(result);

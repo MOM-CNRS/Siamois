@@ -4,6 +4,7 @@ import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.dto.entity.RecordingUnitDTO;
+import fr.siamois.dto.entity.SpatialUnitDTO;
 import fr.siamois.ui.bean.LangBean;
 import lombok.Getter;
 import org.springframework.data.domain.Page;
@@ -15,10 +16,10 @@ public class RecordingUnitInSpatialUnitLazyDataModel extends BaseRecordingUnitLa
 
 
     @Getter
-    private final transient SpatialUnit spatialUnit;
+    private final transient SpatialUnitDTO spatialUnit;
 
     public RecordingUnitInSpatialUnitLazyDataModel(RecordingUnitService recordingUnitService,
-                                                   LangBean langBean, SpatialUnit spatialUnit) {
+                                                   LangBean langBean, SpatialUnitDTO spatialUnit) {
         super(recordingUnitService,langBean);
         this.spatialUnit = spatialUnit;
     }

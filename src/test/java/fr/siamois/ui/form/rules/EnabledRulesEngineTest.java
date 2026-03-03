@@ -8,7 +8,13 @@ import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerId;
 import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerSelectOneFromFieldCode;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.models.vocabulary.Vocabulary;
+import fr.siamois.dto.entity.ConceptAltLabelDTO;
+import fr.siamois.dto.entity.ConceptDTO;
+import fr.siamois.dto.entity.VocabularyDTO;
+import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
 import fr.siamois.ui.form.CustomFieldAnswerFactory;
+import fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerSelectOneFromFieldCodeViewModel;
+import fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerViewModel;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -33,6 +39,17 @@ class EnabledRulesEngineTest {
         return c;
     }
 
+    private static ConceptAutocompleteDTO conceptDTO(String vocabExtId, String conceptExtId) {
+
+        VocabularyDTO voc = new VocabularyDTO();
+        voc.setBaseUri("http://example.com");
+        voc.setExternalVocabularyId(vocabExtId);
+        ConceptDTO c = new ConceptDTO();
+        c.setExternalId(conceptExtId);
+        c.setVocabulary(voc);
+        return  new ConceptAutocompleteDTO(c,"label","fr");
+    }
+
     private static CustomFieldSelectOneFromFieldCode conceptField(long id, String label, Concept concept) {
         CustomFieldSelectOneFromFieldCode f = new CustomFieldSelectOneFromFieldCode();
         f.setId(id);
@@ -49,8 +66,8 @@ class EnabledRulesEngineTest {
         return f;
     }
 
-    private static CustomFieldAnswerSelectOneFromFieldCode answerFor(CustomField field, Concept value) {
-        CustomFieldAnswerSelectOneFromFieldCode a = new CustomFieldAnswerSelectOneFromFieldCode();
+    private static CustomFieldAnswerSelectOneFromFieldCodeViewModel answerFor(CustomField field, ConceptAutocompleteDTO value) {
+        CustomFieldAnswerSelectOneFromFieldCodeViewModel a = new CustomFieldAnswerSelectOneFromFieldCodeViewModel();
         CustomFieldAnswerId pk = new CustomFieldAnswerId();
         pk.setField(field);
         a.setPk(pk);
@@ -60,9 +77,9 @@ class EnabledRulesEngineTest {
 
     // --- minimal ValueProvider backed by a map ---
     private static final class MapValueProvider implements ValueProvider {
-        private final Map<CustomField, CustomFieldAnswer> store;
-        MapValueProvider(Map<CustomField, CustomFieldAnswer> store) { this.store = store; }
-        @Override public CustomFieldAnswer getCurrentAnswer(CustomField field) {
+        private final Map<CustomField, CustomFieldAnswerViewModel> store;
+        MapValueProvider(Map<CustomField, CustomFieldAnswerViewModel> store) { this.store = store; }
+        @Override public CustomFieldAnswerViewModel getCurrentAnswer(CustomField field) {
             return store.get(field);
         }
     }
@@ -78,11 +95,13 @@ class EnabledRulesEngineTest {
 
     private CustomField driverField;     // the field whose value is compared (Concept-valued)
     private CustomField colA;            // a column controlled by a rule on driverField
-    private CustomField colB;            // another column controlled by same driverField
+    private CustomField colB;             // another column controlled by same driverField
 
     private Concept driverConcept;
     private Concept conceptA;                 // expected concept for "enabled"
-    private Concept conceptB;                 // another concept
+    private Concept conceptB;
+    private ConceptAutocompleteDTO conceptAdto;                 // expected concept for "enabled"
+    private ConceptAutocompleteDTO conceptBdto;   // another concept
 
     @BeforeEach
     void setUp() {
@@ -90,6 +109,8 @@ class EnabledRulesEngineTest {
         driverField = conceptField(10L, "Driver Field", driverConcept);
         conceptA = concept("th", "A");
         conceptB = concept("th", "B");
+        conceptAdto = conceptDTO("th", "A");
+        conceptBdto = conceptDTO("th", "B");
         colA = anyColumnField(100L, "Column A", conceptA);
         colB = anyColumnField(200L, "Column B", conceptB);
     }
@@ -99,15 +120,15 @@ class EnabledRulesEngineTest {
         return new Condition() {
             @Override
             public boolean test(ValueProvider vp) {
-                CustomFieldAnswer ans = vp.getCurrentAnswer(observedField);
-                if (!(ans instanceof CustomFieldAnswerSelectOneFromFieldCode a)) return false;
-                Concept cur = a.getValue();
+                CustomFieldAnswerViewModel ans = vp.getCurrentAnswer(observedField);
+                if (!(ans instanceof CustomFieldAnswerSelectOneFromFieldCodeViewModel a)) return false;
+                ConceptAutocompleteDTO cur = a.getValue();
                 if (cur == null && expected == null) return true;
                 if (cur == null) return false;
                 // Compare vocabulary external id + concept external id
-                String curVoc = cur.getVocabulary() != null ? cur.getVocabulary().getExternalVocabularyId() : null;
+                String curVoc = cur.getConceptLabelToDisplay().getVocabulary() != null ? cur.getConceptLabelToDisplay().getVocabulary().getExternalVocabularyId() : null;
                 String expVoc = expected.getVocabulary() != null ? expected.getVocabulary().getExternalVocabularyId() : null;
-                return Objects.equals(curVoc, expVoc) && Objects.equals(cur.getExternalId(), expected.getExternalId());
+                return Objects.equals(curVoc, expVoc) && Objects.equals(cur.getConceptLabelToDisplay().getConcept().getExternalId(), expected.getExternalId());
             }
 
             @Override
@@ -120,8 +141,8 @@ class EnabledRulesEngineTest {
     @Test
     void applyAll_enablesOrDisablesBasedOnCurrentValues() {
         // Given current = C_A
-        Map<CustomField, CustomFieldAnswer> answers = new HashMap<>();
-        answers.put(driverField, answerFor(driverField, conceptA));
+        Map<CustomField, CustomFieldAnswerViewModel> answers = new HashMap<>();
+        answers.put(driverField, answerFor(driverField, conceptAdto));
         ValueProvider vp = new MapValueProvider(answers);
 
         // Two columns, both enabled when driver == C_A
@@ -141,7 +162,7 @@ class EnabledRulesEngineTest {
         assertTrue(applier.enabled(colB));
 
         // Now change the provider to current = C_B (without calling engine onAnswerChange)
-        answers.put(driverField, answerFor(driverField, conceptB));
+        answers.put(driverField, answerFor(driverField, conceptBdto));
         engine.applyAll(vp, applier);
 
         // Then both disabled (condition false)
@@ -152,8 +173,8 @@ class EnabledRulesEngineTest {
     @Test
     void onAnswerChange_usesOverriddenConcept_notOldValue() {
         // Given current = C_B (old value), but event proposes C_A (new value)
-        Map<CustomField, CustomFieldAnswer> answers = new HashMap<>();
-        answers.put(driverField, answerFor(driverField, conceptB));
+        Map<CustomField, CustomFieldAnswerViewModel> answers = new HashMap<>();
+        answers.put(driverField, answerFor(driverField, conceptBdto));
         ValueProvider baseVp = new MapValueProvider(answers);
 
         // colA enabled iff driver == C_A
@@ -162,13 +183,13 @@ class EnabledRulesEngineTest {
         RecordingApplier applier = new RecordingApplier();
 
         // When evaluating with override newConcept = C_A:
-        engine.onAnswerChange(driverField, conceptA, baseVp, applier);
+        engine.onAnswerChange(driverField, conceptAdto, baseVp, applier);
 
         // Then: even though base answer was C_B, we should get enabled=true thanks to the override
         assertTrue(applier.enabled(colA));
 
         // Sanity: if we override with C_B, it should disable
-        engine.onAnswerChange(driverField, conceptB, baseVp, applier);
+        engine.onAnswerChange(driverField, conceptBdto, baseVp, applier);
         assertFalse(applier.enabled(colA));
     }
 
@@ -187,15 +208,15 @@ class EnabledRulesEngineTest {
         EnabledRulesEngine engine = new EnabledRulesEngine(List.of(rA, rB));
 
         // Provider has some initial values
-        Map<CustomField, CustomFieldAnswer> answers = new HashMap<>();
-        answers.put(driverField, answerFor(driverField, conceptB));    // currently B
-        answers.put(otherDriver, answerFor(otherDriver, conceptB));    // currently B
+        Map<CustomField, CustomFieldAnswerViewModel> answers = new HashMap<>();
+        answers.put(driverField, answerFor(driverField, conceptBdto));    // currently B
+        answers.put(otherDriver, answerFor(otherDriver, conceptBdto));    // currently B
         ValueProvider vp = new MapValueProvider(answers);
 
         RecordingApplier applier = new RecordingApplier();
 
         // Change driverField only (override = C_A). Should update colA but not touch colB.
-        engine.onAnswerChange(driverField, conceptA, vp, applier);
+        engine.onAnswerChange(driverField, conceptAdto, vp, applier);
 
         assertTrue(applier.states.containsKey(colA.getId())); // got recomputed
         assertFalse(applier.states.containsKey(colB.getId())); // untouched
@@ -212,8 +233,8 @@ class EnabledRulesEngineTest {
         EnabledRulesEngine engine = new EnabledRulesEngine(List.of(new ColumnRule(colA, exploding)));
 
         // Provider with some value (won't be used)
-        Map<CustomField, CustomFieldAnswer> answers = new HashMap<>();
-        answers.put(driverField, answerFor(driverField, conceptA));
+        Map<CustomField, CustomFieldAnswerViewModel> answers = new HashMap<>();
+        answers.put(driverField, answerFor(driverField, conceptAdto));
         RecordingApplier applier = new RecordingApplier();
 
         engine.applyAll(new MapValueProvider(answers), applier);
@@ -226,15 +247,15 @@ class EnabledRulesEngineTest {
     void instantiateAnswerForField_usedByOverride_canHandleConceptFields() {
         // This test ensures the override path can actually build the temporary answer
         // using AbstractSingleEntity.instantiateAnswerForField and set a Concept.
-        CustomFieldAnswer tmp = CustomFieldAnswerFactory.instantiateAnswerForField(driverField);
-        assertTrue(tmp instanceof CustomFieldAnswerSelectOneFromFieldCode);
+        CustomFieldAnswerViewModel tmp = CustomFieldAnswerFactory.instantiateAnswerForField(driverField);
+        assertTrue(tmp instanceof CustomFieldAnswerSelectOneFromFieldCodeViewModel);
 
         // emulate the same steps as engine.buildConceptOverride(...)
         CustomFieldAnswerId id = new CustomFieldAnswerId();
         id.setField(driverField);
         tmp.setPk(id);
-        ((CustomFieldAnswerSelectOneFromFieldCode) tmp).setValue(conceptA);
+        ((CustomFieldAnswerSelectOneFromFieldCodeViewModel) tmp).setValue(conceptAdto);
 
-        assertEquals(conceptA, ((CustomFieldAnswerSelectOneFromFieldCode) tmp).getValue());
+        assertEquals(conceptA, ((CustomFieldAnswerSelectOneFromFieldCodeViewModel) tmp).getValue());
     }
 }

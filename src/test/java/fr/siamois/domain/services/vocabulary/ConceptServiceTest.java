@@ -7,6 +7,8 @@ import fr.siamois.domain.models.misc.ProgressWrapper;
 import fr.siamois.domain.models.settings.ConceptFieldConfig;
 import fr.siamois.domain.models.vocabulary.*;
 import fr.siamois.domain.models.vocabulary.label.ConceptAltLabel;
+import fr.siamois.dto.entity.ConceptDTO;
+import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.infrastructure.api.ConceptApi;
 import fr.siamois.infrastructure.api.dto.ConceptBranchDTO;
 import fr.siamois.infrastructure.api.dto.FullInfoDTO;
@@ -136,25 +138,30 @@ class ConceptServiceTest {
     void findAllBySpatialUnitConceptsByInstitution_Success() {
 
         // Given
-        Concept concept1 = new Concept();
+        ConceptDTO concept1 = new ConceptDTO();
         concept1.setId(1L);
         concept1.setExternalId("concept1");
-        concept1.setVocabulary(vocabulary);
-
-        Concept concept2 = new Concept();
+        ConceptDTO concept2 = new ConceptDTO();
         concept2.setId(2L);
         concept2.setExternalId("concept2");
-        concept2.setVocabulary(vocabulary);
 
-        Institution i = new Institution();
+        Concept concept1a = new Concept();
+        concept1.setId(1L);
+        concept1.setExternalId("concept1");
+        Concept concept2a = new Concept();
+        concept2.setId(2L);
+        concept2.setExternalId("concept2");
+
+
+        InstitutionDTO i = new InstitutionDTO();
         i.setId(1L);
 
 
-        List<Concept> expectedConcepts = List.of(concept1, concept2);
+        List<ConceptDTO> expectedConcepts = List.of(concept1, concept2);
 
-        when(conceptRepository.findAllBySpatialUnitOfInstitution(any(Long.class))).thenReturn(expectedConcepts);
+        when(conceptRepository.findAllBySpatialUnitOfInstitution(any(Long.class))).thenReturn(List.of(concept1a, concept2a));
 
-        List<Concept> result = conceptService.findAllBySpatialUnitOfInstitution(i);
+        List<ConceptDTO> result = conceptService.findAllBySpatialUnitOfInstitution(i);
 
         // Then
         assertNotNull(result);

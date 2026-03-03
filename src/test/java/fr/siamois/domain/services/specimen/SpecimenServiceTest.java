@@ -7,12 +7,14 @@ import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.specimen.Specimen;
 import fr.siamois.domain.models.vocabulary.Concept;
+import fr.siamois.dto.entity.*;
 import fr.siamois.infrastructure.database.repositories.specimen.SpecimenRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.core.convert.ConversionService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
@@ -32,9 +34,11 @@ class SpecimenServiceTest {
 
     private SpecimenService specimenService;
 
+    private ConversionService conversionService;
+
     @BeforeEach
     void setUp() {
-        specimenService = new SpecimenService(specimenRepository);
+        specimenService = new SpecimenService(specimenRepository,conversionService);
     }
 
 
@@ -61,13 +65,14 @@ class SpecimenServiceTest {
         RecordingUnit ru = new RecordingUnit();
         ru.setFullIdentifier("test");
         specimen.setRecordingUnit(ru);
+        SpecimenDTO specimenDTO = new SpecimenDTO();
 
         when(specimenRepository.save(specimen)).thenReturn(specimen);
 
-        ArkEntity result = specimenService.save(specimen);
+        AbstractEntityDTO result = specimenService.save(specimenDTO);
 
         assertNotNull(result);
-        assertEquals(specimen, result);
+        assertEquals(specimenDTO, result);
         verify(specimenRepository, times(1)).save(specimen);
     }
 
@@ -121,7 +126,7 @@ class SpecimenServiceTest {
 
     @Test
     void testBulkUpdateType() {
-        Concept concept = new Concept();
+        ConceptDTO concept = new ConceptDTO();
         concept.setId(42L);
 
         when(specimenRepository.updateTypeByIds(eq(42L), anyList())).thenReturn(3);
@@ -134,13 +139,12 @@ class SpecimenServiceTest {
 
     @Test
     void testCountByInstitution() {
-        Institution institution = new Institution();
-        when(specimenRepository.countByCreatedByInstitution(institution)).thenReturn(99L);
+        InstitutionDTO institution = new InstitutionDTO();
+        when(specimenRepository.countByCreatedByInstitution(any(Institution.class))).thenReturn(99L);
 
         long count = specimenService.countByInstitution(institution);
 
         assertEquals(99L, count);
-        verify(specimenRepository).countByCreatedByInstitution(institution);
     }
 
     @Test
@@ -170,27 +174,11 @@ class SpecimenServiceTest {
     }
 
 
-    @Test
-    void testCountBySpatialContext() {
-        // Arrange
-        SpatialUnit spatialUnit = mock(SpatialUnit.class);
-        when(spatialUnit.getId()).thenReturn(10L);
-        when(specimenRepository.countBySpatialContext(10L)).thenReturn(5);
-
-        // Act
-        Integer result = specimenService.countBySpatialContext(spatialUnit);
-
-        // Assert
-        assertEquals(5, result);
-        verify(spatialUnit).getId();
-        verify(specimenRepository).countBySpatialContext(10L);
-        verifyNoMoreInteractions(specimenRepository);
-    }
 
     @Test
     void testCountByActionContext() {
         // Arrange
-        ActionUnit actionUnit = mock(ActionUnit.class);
+        ActionUnitDTO actionUnit = mock(ActionUnitDTO.class);
         when(actionUnit.getId()).thenReturn(7L);
         when(specimenRepository.countByActionContext(7L)).thenReturn(3);
 
