@@ -135,6 +135,14 @@
 
                 <div class="sidebar-footer">
                     <ul class="nav flex-column">
+
+                        <li class="nav-item">
+                            <h:outputLink id="linkOpenApi" value="#{request.contextPath}/swagger-ui/index.html" target="_blank" styleClass="nav-link">
+                                <img src="#{request.contextPath}/resources/img/openapi.png" style="height:20px; margin-right: 7px;" alt="Swagger UI"/>
+                            </h:outputLink>
+                            <p:tooltip value="OpenApi" for="linkOpenApi" />
+                        </li>
+
                         <li class="nav-item">
                             <h:outputLink value="https://amplified-trampoline-ee0.notion.site/1de32b90b4818066a0dac416da8255e3?pvs=105" styleClass="nav-link" target="_blank"
                                           id="bugLink">

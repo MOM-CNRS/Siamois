@@ -16,6 +16,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Repository;
 
+import java.math.BigInteger;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -220,6 +221,19 @@ public interface RecordingUnitRepository extends CrudRepository<RecordingUnit, L
     Optional<RecordingUnit> findByFullIdentifierAndInstitutionIdentifier(
             @Param("fullIdentifier") String fullIdentifier,
             @Param("institutionIdentifier") String institutionIdentifier
+    );
+
+    @Query(
+            value = "SELECT ru.* " +
+                    "FROM recording_unit ru " +
+                    "JOIN institution i ON ru.fk_institution_id = i.institution_id " +
+                    "WHERE ru.full_identifier = :fullIdentifier " +
+                    "AND i.institution_id = :institutionId",
+            nativeQuery = true
+    )
+    Optional<RecordingUnit> findByFullIdentifierAndInstitutionId(
+            @Param("fullIdentifier") String fullIdentifier,
+            @Param("institutionId") BigInteger institutionId
     );
 
     Optional<RecordingUnit> findByFullIdentifier(@NotNull String fullIdentifier);

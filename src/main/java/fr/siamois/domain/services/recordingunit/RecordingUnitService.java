@@ -41,6 +41,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.lang.reflect.Modifier;
+import java.math.BigInteger;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -609,6 +610,20 @@ public class RecordingUnitService implements ArkEntityService {
     }
     public RecordingUnit findByFullIdentifierAndInstitutionIdentifier(String identifier, String institutionIdentifier) {
         return recordingUnitRepository.findByFullIdentifierAndInstitutionIdentifier(identifier, institutionIdentifier).orElse(null);
+    }
+
+    public RecordingUnit findByFullIdentifierAndInstitutionId(
+            String fullIdentifier,
+            BigInteger institutionIdentifier) {
+
+        return recordingUnitRepository
+                .findByFullIdentifierAndInstitutionId(fullIdentifier, institutionIdentifier)
+                .orElseThrow(() ->
+                        new RecordingUnitNotFoundException(
+                                "RecordingUnit not found with fullIdentifier="
+                                        + fullIdentifier +
+                                        " and institutionIdentifier="
+                                        + institutionIdentifier));
     }
 
     public RecordingUnitIdInfo createOrGetInfoOf(@NonNull RecordingUnit recordingUnit, @Nullable RecordingUnit parentRecordingUnit) {
