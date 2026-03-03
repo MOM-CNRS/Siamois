@@ -1,6 +1,5 @@
 package fr.siamois.ui.bean.panel.models.panel.list;
 
-import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.authorization.writeverifier.SpatialUnitWriteVerifier;
@@ -65,7 +64,7 @@ public class ActionUnitListPanel extends AbstractListPanel<ActionUnitDTO> implem
 
     @Override
     protected long countUnitsByInstitution() {
-        return actionUnitService.countByInstitution(sessionSettingsBean.getSelectedInstitution());
+        return actionUnitService.countByInstitutionId(sessionSettingsBean.getSelectedInstitution().getId());
     }
 
     @Override

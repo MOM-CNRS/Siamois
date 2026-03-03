@@ -99,156 +99,189 @@ class RecordingUnitServiceTest {
     void save_SyncsStratigraphicRelationshipsAsUnit1() {
         // Arrange
         RecordingUnitDTO recordingUnit = new RecordingUnitDTO();
-        RecordingUnitSummaryDTO managedRecordingUnit = new RecordingUnitSummaryDTO();
+        RecordingUnitDTO managedRecordingUnit = new RecordingUnitDTO();
+        RecordingUnit managedRecordingUnit2 = new RecordingUnit();
         managedRecordingUnit.setId(1L);
+        recordingUnit.setId(1L);
+        managedRecordingUnit2.setId(2L);
+
+        RecordingUnitSummaryDTO recordingUnitSummaryDTO1 = new RecordingUnitSummaryDTO();
+        recordingUnitSummaryDTO1.setId(1L);
+
 
         // Setup relationships for recordingUnit
         Set<StratigraphicRelationshipDTO> relationshipsAsUnit1 = new HashSet<>();
         StratigraphicRelationshipDTO relUnit1 = new StratigraphicRelationshipDTO();
         RecordingUnitSummaryDTO unit2 = new RecordingUnitSummaryDTO();
         unit2.setId(2L);
-        relUnit1.setUnit1(recordingUnit);
+        relUnit1.setUnit1(recordingUnitSummaryDTO1);
         relUnit1.setUnit2(unit2);
         relUnit1.setConcept(new ConceptDTO());
         relationshipsAsUnit1.add(relUnit1);
         recordingUnit.setRelationshipsAsUnit1(relationshipsAsUnit1);
 
-        when(recordingUnitRepository.findById(2L)).thenReturn(Optional.of(unit2));
+        when(recordingUnitRepository.findById(2L)).thenReturn(Optional.of(managedRecordingUnit2));
         when(recordingUnitRepository.save(any(RecordingUnit.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(conceptService.saveOrGetConcept(any(ConceptDTO.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         // Act
-        RecordingUnit result = recordingUnitService.save(recordingUnit, new ConceptDTO());
+        RecordingUnitDTO result = recordingUnitService.save(recordingUnit);
 
         // Assert
         assertNotNull(result);
         assertEquals(1, result.getRelationshipsAsUnit1().size());
-        StratigraphicRelationship savedRel = result.getRelationshipsAsUnit1().iterator().next();
+        StratigraphicRelationshipDTO savedRel = result.getRelationshipsAsUnit1().iterator().next();
         assertEquals(unit2, savedRel.getUnit2());
-        assertEquals(result, savedRel.getUnit1());
+        assertEquals(recordingUnitSummaryDTO1, savedRel.getUnit1());
     }
 
     @Test
     void save_SyncsStratigraphicRelationshipsAsUnit2() {
         // Arrange
-        RecordingUnit recordingUnit = new RecordingUnit();
-        RecordingUnit managedRecordingUnit = new RecordingUnit();
+        RecordingUnitDTO recordingUnit = new RecordingUnitDTO();
+        RecordingUnitDTO managedRecordingUnit = new RecordingUnitDTO();
+        RecordingUnit managedRecordingUnit2 = new RecordingUnit();
         managedRecordingUnit.setId(1L);
+        recordingUnit.setId(1L);
+        managedRecordingUnit2.setId(2L);
+
+        RecordingUnitSummaryDTO recordingUnitSummaryDTO1 = new RecordingUnitSummaryDTO();
+        recordingUnitSummaryDTO1.setId(1L);
+
 
         // Setup relationships for recordingUnit
-        Set<StratigraphicRelationship> relationshipsAsUnit2 = new HashSet<>();
-        StratigraphicRelationship relUnit2 = new StratigraphicRelationship();
-        RecordingUnit unit1 = new RecordingUnit();
+        Set<StratigraphicRelationshipDTO> relationshipsAsUnit2 = new HashSet<>();
+        StratigraphicRelationshipDTO relUnit2 = new StratigraphicRelationshipDTO();
+        RecordingUnitSummaryDTO unit1 = new RecordingUnitSummaryDTO();
         unit1.setId(2L);
         relUnit2.setUnit1(unit1);
-        relUnit2.setUnit2(recordingUnit);
-        relUnit2.setConcept(new Concept());
+        relUnit2.setUnit2(recordingUnitSummaryDTO1);
+        relUnit2.setConcept(new ConceptDTO());
         relationshipsAsUnit2.add(relUnit2);
         recordingUnit.setRelationshipsAsUnit2(relationshipsAsUnit2);
 
-        when(recordingUnitRepository.findById(2L)).thenReturn(Optional.of(unit1));
+        when(recordingUnitRepository.findById(2L)).thenReturn(Optional.of(managedRecordingUnit2));
         when(recordingUnitRepository.save(any(RecordingUnit.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(conceptService.saveOrGetConcept(any(Concept.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         // Act
-        RecordingUnit result = recordingUnitService.save(recordingUnit, new Concept());
+        RecordingUnitDTO result = recordingUnitService.save(recordingUnit);
 
         // Assert
         assertNotNull(result);
         assertEquals(1, result.getRelationshipsAsUnit2().size());
-        StratigraphicRelationship savedRel = result.getRelationshipsAsUnit2().iterator().next();
+        StratigraphicRelationshipDTO savedRel = result.getRelationshipsAsUnit2().iterator().next();
         assertEquals(unit1, savedRel.getUnit1());
-        assertEquals(result, savedRel.getUnit2());
+        assertEquals(recordingUnitSummaryDTO1, savedRel.getUnit2());
     }
 
     @Test
     void save_UpdatesExistingStratigraphicRelationshipsAsUnit1() {
         // Arrange
-        RecordingUnit recordingUnit = new RecordingUnit();
-        RecordingUnit managedRecordingUnit = new RecordingUnit();
+        RecordingUnitDTO recordingUnit = new RecordingUnitDTO();
+        RecordingUnitDTO managedRecordingUnit = new RecordingUnitDTO();
         managedRecordingUnit.setId(1L);
+        RecordingUnitSummaryDTO r1Sum = new RecordingUnitSummaryDTO();
+        r1Sum.setId(1L);
+        RecordingUnit managedRecordingUnit2 = new RecordingUnit();
+        managedRecordingUnit.setId(2L);
+        RecordingUnitSummaryDTO recordingUnitSummaryDTO1 = new RecordingUnitSummaryDTO();
+        recordingUnitSummaryDTO1.setId(1L);
 
         // Setup existing relationships for managedRecordingUnit
-        Set<StratigraphicRelationship> existingRelationshipsAsUnit1 = new HashSet<>();
-        StratigraphicRelationship existingRel = new StratigraphicRelationship();
-        RecordingUnit unit2 = new RecordingUnit();
+        Set<StratigraphicRelationshipDTO> existingRelationshipsAsUnit1 = new HashSet<>();
+        StratigraphicRelationshipDTO existingRel = new StratigraphicRelationshipDTO();
+        RecordingUnitSummaryDTO unit2 = new RecordingUnitSummaryDTO();
         unit2.setId(2L);
-        existingRel.setUnit1(managedRecordingUnit);
+        existingRel.setUnit1(recordingUnitSummaryDTO1);
         existingRel.setUnit2(unit2);
-        existingRel.setConcept(new Concept());
+        existingRel.setConcept(new ConceptDTO());
         existingRelationshipsAsUnit1.add(existingRel);
         managedRecordingUnit.setRelationshipsAsUnit1(existingRelationshipsAsUnit1);
 
         // Setup relationships for recordingUnit with updated concept
-        Set<StratigraphicRelationship> relationshipsAsUnit1 = new HashSet<>();
-        StratigraphicRelationship updatedRel = new StratigraphicRelationship();
-        updatedRel.setUnit1(recordingUnit);
+        Set<StratigraphicRelationshipDTO> relationshipsAsUnit1 = new HashSet<>();
+        StratigraphicRelationshipDTO updatedRel = new StratigraphicRelationshipDTO();
+        updatedRel.setUnit1(recordingUnitSummaryDTO1);
         updatedRel.setUnit2(unit2);
-        Concept newConcept = new Concept();
+        ConceptDTO newConcept = new ConceptDTO();
         newConcept.setId(100L);
         updatedRel.setConcept(newConcept);
         relationshipsAsUnit1.add(updatedRel);
         recordingUnit.setRelationshipsAsUnit1(relationshipsAsUnit1);
 
-        when(recordingUnitRepository.findById(2L)).thenReturn(Optional.of(unit2));
+        when(recordingUnitRepository.findById(2L)).thenReturn(Optional.of(managedRecordingUnit2));
         when(recordingUnitRepository.save(any(RecordingUnit.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(conceptService.saveOrGetConcept(any(Concept.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         // Act
-        RecordingUnit result = recordingUnitService.save(recordingUnit, new Concept());
+        RecordingUnitDTO result = recordingUnitService.save(recordingUnit);
 
         // Assert
         assertNotNull(result);
         assertEquals(1, result.getRelationshipsAsUnit1().size());
-        StratigraphicRelationship savedRel = result.getRelationshipsAsUnit1().iterator().next();
+        StratigraphicRelationshipDTO savedRel = result.getRelationshipsAsUnit1().iterator().next();
         assertEquals(unit2, savedRel.getUnit2());
-        assertEquals(result, savedRel.getUnit1());
+        assertEquals(r1Sum, savedRel.getUnit1());
         assertEquals(newConcept, savedRel.getConcept());
     }
 
     @Test
     void save_UpdatesExistingStratigraphicRelationshipsAsUnit2() {
         // Arrange
-        RecordingUnit recordingUnit = new RecordingUnit();
-        RecordingUnit managedRecordingUnit = new RecordingUnit();
-        managedRecordingUnit.setId(1L);
+        RecordingUnitDTO recordingUnit = new RecordingUnitDTO();
+        recordingUnit.setId(2L); // The unit we are saving (Unit 2)
 
-        // Setup existing relationships for managedRecordingUnit
-        Set<StratigraphicRelationship> existingRelationshipsAsUnit2 = new HashSet<>();
-        StratigraphicRelationship existingRel = new StratigraphicRelationship();
-        RecordingUnit unit1 = new RecordingUnit();
-        unit1.setId(2L);
-        existingRel.setUnit1(unit1);
-        existingRel.setUnit2(managedRecordingUnit);
-        existingRel.setConcept(new Concept());
+        RecordingUnitDTO managedRecordingUnit = new RecordingUnitDTO();
+        managedRecordingUnit.setId(2L);
+
+        RecordingUnitSummaryDTO r2Sum = new RecordingUnitSummaryDTO();
+        r2Sum.setId(2L); // Summary for the unit being saved
+
+        RecordingUnit managedRecordingUnit1 = new RecordingUnit();
+        managedRecordingUnit1.setId(1L); // The "other" side of the link (Unit 1)
+
+        RecordingUnitSummaryDTO unit1Summary = new RecordingUnitSummaryDTO();
+        unit1Summary.setId(1L);
+
+        // 1. Setup existing relationship where managedRecordingUnit is Unit 2
+        Set<StratigraphicRelationshipDTO> existingRelationshipsAsUnit2 = new HashSet<>();
+        StratigraphicRelationshipDTO existingRel = new StratigraphicRelationshipDTO();
+        existingRel.setUnit1(unit1Summary);
+        existingRel.setUnit2(r2Sum);
+        existingRel.setConcept(new ConceptDTO());
         existingRelationshipsAsUnit2.add(existingRel);
         managedRecordingUnit.setRelationshipsAsUnit2(existingRelationshipsAsUnit2);
 
-        // Setup relationships for recordingUnit with updated concept
-        Set<StratigraphicRelationship> relationshipsAsUnit2 = new HashSet<>();
-        StratigraphicRelationship updatedRel = new StratigraphicRelationship();
-        updatedRel.setUnit1(unit1);
-        updatedRel.setUnit2(recordingUnit);
-        Concept newConcept = new Concept();
+        // 2. Setup incoming DTO with updated concept
+        Set<StratigraphicRelationshipDTO> relationshipsAsUnit2 = new HashSet<>();
+        StratigraphicRelationshipDTO updatedRel = new StratigraphicRelationshipDTO();
+        updatedRel.setUnit1(unit1Summary);
+        updatedRel.setUnit2(r2Sum);
+
+        ConceptDTO newConcept = new ConceptDTO();
         newConcept.setId(100L);
         updatedRel.setConcept(newConcept);
+
         relationshipsAsUnit2.add(updatedRel);
         recordingUnit.setRelationshipsAsUnit2(relationshipsAsUnit2);
 
-        when(recordingUnitRepository.findById(2L)).thenReturn(Optional.of(unit1));
+        // Mocks
+        when(recordingUnitRepository.findById(1L)).thenReturn(Optional.of(managedRecordingUnit1));
         when(recordingUnitRepository.save(any(RecordingUnit.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(conceptService.saveOrGetConcept(any(Concept.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         // Act
-        RecordingUnit result = recordingUnitService.save(recordingUnit, new Concept());
+        RecordingUnitDTO result = recordingUnitService.save(recordingUnit);
 
         // Assert
         assertNotNull(result);
-        assertEquals(1, result.getRelationshipsAsUnit2().size());
-        StratigraphicRelationship savedRel = result.getRelationshipsAsUnit2().iterator().next();
-        assertEquals(unit1, savedRel.getUnit1());
-        assertEquals(result, savedRel.getUnit2());
-        assertEquals(newConcept, savedRel.getConcept());
+        assertEquals(1, result.getRelationshipsAsUnit2().size(), "Should have 1 relationship as Unit 2");
+
+        StratigraphicRelationshipDTO savedRel = result.getRelationshipsAsUnit2().iterator().next();
+        assertEquals(unit1Summary, savedRel.getUnit1(), "Unit 1 should match the existing link");
+        assertEquals(r2Sum, savedRel.getUnit2(), "Unit 2 should be the saved unit");
+        assertEquals(newConcept.getId(), savedRel.getConcept().getId(), "Concept should be updated to 100L");
     }
 
     @Test

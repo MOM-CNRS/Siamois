@@ -5,6 +5,9 @@ import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
+import fr.siamois.dto.entity.ConceptDTO;
+import fr.siamois.dto.entity.InstitutionDTO;
+import fr.siamois.dto.entity.RecordingUnitDTO;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
 import fr.siamois.utils.MessageUtils;
@@ -43,23 +46,36 @@ class RecordingUnitLazyDataModelTest {
     private RecordingUnitLazyDataModel lazyModel;
 
     Page<RecordingUnit> p ;
+    Page<RecordingUnitDTO> pageDTO ;
     Pageable pageable;
     RecordingUnit unit1;
     RecordingUnit unit2;
+    RecordingUnitDTO unit1DTO;
+    RecordingUnitDTO unit2DTO;
     Institution institution;
+    InstitutionDTO institutionDTO;
 
 
     @BeforeEach
     void setUp() {
         unit1 = new RecordingUnit();
         unit2 = new RecordingUnit();
+        unit1DTO = new RecordingUnitDTO();
+        unit2DTO = new RecordingUnitDTO();
         institution = new Institution();
         institution.setId(1L);
+        institutionDTO = new InstitutionDTO();
+        institutionDTO.setId(1L);
         unit1.setId(1L);
         unit1.setFullIdentifier("sia-2025-1");
         unit2.setId(2L);
-        unit1.setFullIdentifier("sia-2025-2");
+        unit2.setFullIdentifier("sia-2025-2");
+        unit1DTO.setId(1L);
+        unit1DTO.setFullIdentifier("sia-2025-1");
+        unit2DTO.setId(2L);
+        unit2DTO.setFullIdentifier("sia-2025-2");
         p = new PageImpl<>(List.of(unit1, unit2));
+        pageDTO = new PageImpl<>(List.of(unit1DTO, unit2DTO));
         pageable = PageRequest.of(0, 10);
     }
 
@@ -76,22 +92,22 @@ class RecordingUnitLazyDataModelTest {
                 any(String.class),
                 any(String.class),
                 any(Pageable.class)
-        )).thenReturn(p);
-        when(sessionSettingsBean.getSelectedInstitution()).thenReturn(institution);
+        )).thenReturn(pageDTO);
+        when(sessionSettingsBean.getSelectedInstitution()).thenReturn(institutionDTO);
         when(langBean.getLanguageCode()).thenReturn("en");
 
         // Act
-        Page<RecordingUnit> actualResult = lazyModel.loadData("null",
+        Page<RecordingUnitDTO> actualResult = lazyModel.loadData("null",
                 new Long[2],new Long[2], "null", pageable);
 
         // Assert
         // Assert
-        assertEquals(unit1, actualResult.getContent().get(0));
-        assertEquals(unit2, actualResult.getContent().get(1));
+        assertEquals(unit1DTO, actualResult.getContent().get(0));
+        assertEquals(unit2DTO, actualResult.getContent().get(1));
     }
 
-    private RecordingUnit createUnit(long id) {
-        RecordingUnit unit = new RecordingUnit();
+    private RecordingUnitDTO createUnit(long id) {
+        RecordingUnitDTO unit = new RecordingUnitDTO();
         unit.setId(id);
         return unit;
     }
@@ -99,7 +115,7 @@ class RecordingUnitLazyDataModelTest {
 
     @Test
     void testGetRowKey_Success() {
-        RecordingUnit unit = createUnit(123L);
+        RecordingUnitDTO unit = createUnit(123L);
         String key = lazyModel.getRowKey(unit);
         assertEquals("123", key);
     }
@@ -112,37 +128,37 @@ class RecordingUnitLazyDataModelTest {
 
     @Test
     void testGetRowData_Success() {
-        RecordingUnit expectedUnit = createUnit(456L);
-        List<RecordingUnit> units = Arrays.asList(
+        RecordingUnitDTO expectedUnit = createUnit(456L);
+        List<RecordingUnitDTO> units = Arrays.asList(
                 createUnit(123L),
                 expectedUnit,
                 createUnit(789L)
         );
         lazyModel.setWrappedData(units);
 
-        RecordingUnit result = lazyModel.getRowData("456");
+        RecordingUnitDTO result = lazyModel.getRowData("456");
         assertNotNull(result);
         assertEquals(456L, result.getId());
     }
 
     @Test
     void testGetRowData_NotFound() {
-        List<RecordingUnit> units = Arrays.asList(
+        List<RecordingUnitDTO> units = Arrays.asList(
                 createUnit(100L),
                 createUnit(200L)
         );
         lazyModel.setWrappedData(units);
 
-        RecordingUnit result = lazyModel.getRowData("300");
+        RecordingUnitDTO result = lazyModel.getRowData("300");
         assertNull(result);
     }
 
     @Test
     void testHandleRowEdit_successfulSave() {
-        RecordingUnit unit = new RecordingUnit();
+        RecordingUnitDTO unit = new RecordingUnitDTO();
         unit.setFullIdentifier("RU123");
 
-        RowEditEvent<RecordingUnit> event = mock(RowEditEvent.class);
+        RowEditEvent<RecordingUnitDTO> event = mock(RowEditEvent.class);
         when(event.getObject()).thenReturn(unit);
 
         try (MockedStatic<MessageUtils> messageUtilsMock = mockStatic(MessageUtils.class)) {
@@ -151,7 +167,7 @@ class RecordingUnitLazyDataModelTest {
 
 
             // THEN
-            verify(recordingUnitService).save(eq(unit), any());
+            verify(recordingUnitService).save(eq(unit));
 
             messageUtilsMock.verify(() ->
                     MessageUtils.displayInfoMessage(langBean, "common.entity.recordingUnits.updated", "RU123"));
@@ -160,13 +176,13 @@ class RecordingUnitLazyDataModelTest {
 
     @Test
     void testHandleRowEdit_failedSave() {
-        RecordingUnit unit = new RecordingUnit();
+        RecordingUnitDTO unit = new RecordingUnitDTO();
         unit.setFullIdentifier("RU123");
 
-        RowEditEvent<RecordingUnit> event = mock(RowEditEvent.class);
+        RowEditEvent<RecordingUnitDTO> event = mock(RowEditEvent.class);
         when(event.getObject()).thenReturn(unit);
 
-        doThrow(new FailedRecordingUnitSaveException("")).when(recordingUnitService).save(any(), any());
+        doThrow(new FailedRecordingUnitSaveException("")).when(recordingUnitService).save(any());
 
         try (MockedStatic<MessageUtils> messageUtilsMock = mockStatic(MessageUtils.class)) {
             // WHEN
@@ -174,7 +190,7 @@ class RecordingUnitLazyDataModelTest {
 
 
             // THEN
-            verify(recordingUnitService).save(eq(unit), any());
+            verify(recordingUnitService).save(eq(unit));
 
             messageUtilsMock.verify(() ->
                     MessageUtils.displayErrorMessage(langBean, "common.entity.recordingUnits.updateFailed", "RU123"));
@@ -183,12 +199,12 @@ class RecordingUnitLazyDataModelTest {
 
     @Test
     void testSaveFieldBulk_updatesTypeAndDisplaysMessage() {
-        RecordingUnit r1 = new RecordingUnit();
+        RecordingUnitDTO r1 = new RecordingUnitDTO();
         r1.setId(1L);
-        RecordingUnit r2 = new RecordingUnit();
+        RecordingUnitDTO r2 = new RecordingUnitDTO();
         r2.setId(2L);
 
-        Concept newType = new Concept();
+        ConceptDTO newType = new ConceptDTO();
         lazyModel.setBulkEditTypeValue(newType);
         lazyModel.setSelectedUnits(List.of(r1, r2));
 
@@ -213,14 +229,14 @@ class RecordingUnitLazyDataModelTest {
     @Test
     void testDuplicateRow_createsCopyAndAddsToModel() {
         // GIVEN
-        RecordingUnit original = new RecordingUnit();
+        RecordingUnitDTO original = new RecordingUnitDTO();
         original.setFullIdentifier("RU-Original");
         original.setId(1L);
-        original.setType(new Concept());
+        original.setType(new ConceptDTO());
 
-        RecordingUnit copied = new RecordingUnit(original);
+        RecordingUnitDTO copied = new RecordingUnitDTO(original);
         copied.setId(999L);
-        copied.setIdentifier(1);
+        copied.setIdentifier("1");
 
         // Create spy of lazyModel so we can override getWrappedData() and getRowData()
         BaseRecordingUnitLazyDataModel spyModel = spy(lazyModel);
@@ -232,14 +248,14 @@ class RecordingUnitLazyDataModelTest {
         doReturn(original).when(spyModel).getRowData();
 
         // Mock service behavior
-        when(recordingUnitService.save(any(), any())).thenReturn(copied);
+        when(recordingUnitService.save(any())).thenReturn(copied);
 
         // WHEN
         spyModel.duplicateRow();
 
         // THEN
         assertEquals(original.getType(), copied.getType());
-        verify(recordingUnitService, times(1)).save(any(), any());
+        verify(recordingUnitService, times(1)).save(any());
 
     }
 

@@ -23,6 +23,8 @@ import fr.siamois.domain.services.recordingunit.identifier.RuNumParentResolver;
 import fr.siamois.domain.services.recordingunit.identifier.RuNumResolver;
 import fr.siamois.domain.services.recordingunit.identifier.generic.RuIdentifierResolver;
 import fr.siamois.domain.services.vocabulary.ConceptService;
+import fr.siamois.dto.StratigraphicRelationshipDTO;
+import fr.siamois.dto.entity.*;
 import fr.siamois.infrastructure.api.dto.ConceptFieldDTO;
 import fr.siamois.infrastructure.database.repositories.person.PersonRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitIdCounterRepository;
@@ -84,31 +86,38 @@ class RecordingUnitServiceTest {
 
     SpatialUnit spatialUnit1;
     RecordingUnit recordingUnit1;
+    RecordingUnitDTO recordingUnit1DTO;
     RecordingUnit recordingUnit2;
+    RecordingUnitDTO recordingUnit2DTO;
     Ark newArk;
     Vocabulary vocabulary;
     ConceptFieldDTO dto;
     Concept concept;
 
 
-    RecordingUnit recordingUnitToSave;
+    RecordingUnitDTO recordingUnitToSave;
 
     Page<RecordingUnit> page ;
+    Page<RecordingUnitDTO> pageDto ;
     Pageable pageable;
 
     // For testing permission related method
-    private Person user;
+    private PersonDTO user;
     private UserInfo userInfo;
 
-    private ActionUnit actionUnit;
+    private ActionUnitSummaryDTO actionUnit;
 
     @BeforeEach
     void setUp() {
         spatialUnit1 = new SpatialUnit();
         recordingUnit1 = new RecordingUnit();
+        recordingUnit1DTO = new RecordingUnitDTO();
+        recordingUnit2DTO = new RecordingUnitDTO();
         recordingUnit2 = new RecordingUnit();
         spatialUnit1.setId(1L);
         recordingUnit1.setId(1L);
+        recordingUnit1DTO.setId(1L);
+        recordingUnit1DTO.setId(2L);
         recordingUnit2.setId(2L);
         concept = new Concept();
         newArk = new Ark();
@@ -117,24 +126,26 @@ class RecordingUnitServiceTest {
 
         Institution parentInstitution = new Institution();
         parentInstitution.setIdentifier("MOM");
-        actionUnit = new ActionUnit();
+        InstitutionDTO parentInstitutionDto = new InstitutionDTO();
+        parentInstitutionDto.setIdentifier("MOM");
+        actionUnit = new ActionUnitSummaryDTO();
         actionUnit.setIdentifier("2025");
         actionUnit.setMinRecordingUnitCode(5);
         actionUnit.setId(1L);
         actionUnit.setMaxRecordingUnitCode(5);
-        actionUnit.setCreatedByInstitution(parentInstitution);
-        recordingUnitToSave = new RecordingUnit();
+        actionUnit.setCreatedByInstitution(parentInstitutionDto);
+        recordingUnitToSave = new RecordingUnitDTO();
         recordingUnitToSave.setActionUnit(actionUnit);
-        recordingUnitToSave.setCreatedByInstitution(parentInstitution);
-        recordingUnitToSave.setFormResponse(new CustomFormResponse());
+        recordingUnitToSave.setCreatedByInstitution(parentInstitutionDto);
 
         page = new PageImpl<>(List.of(recordingUnit1, recordingUnit2));
+        pageDto = new PageImpl<>(List.of(recordingUnit1DTO, recordingUnit2DTO));
         pageable = PageRequest.of(0, 10);
 
 
         // Permission related methods
-        user = new Person();
-        userInfo = new UserInfo(parentInstitution, user, "fr");
+        user = new PersonDTO();
+        userInfo = new UserInfo(parentInstitutionDto, user, "fr");
 
 
     }
@@ -145,10 +156,10 @@ class RecordingUnitServiceTest {
         when(recordingUnitRepository.findById(recordingUnit1.getId())).thenReturn(Optional.ofNullable(recordingUnit1));
 
         // act
-        RecordingUnit actualResult = recordingUnitService.findById(recordingUnit1.getId());
+        RecordingUnitDTO actualResult = recordingUnitService.findById(recordingUnit1.getId());
 
         // assert
-        assertEquals(recordingUnit1, actualResult);
+        assertEquals(recordingUnit1DTO, actualResult);
     }
 
     @Test
@@ -171,7 +182,7 @@ class RecordingUnitServiceTest {
     void bulkUpdateType_shouldCallRepository() {
         // Arrange
         List<Long> ids = List.of(1L, 2L, 3L);
-        Concept newType = new Concept();
+        ConceptDTO newType = new ConceptDTO();
         newType.setId(10L);
         when(recordingUnitRepository.updateTypeByIds(newType.getId(), ids)).thenReturn(ids.size());
 
@@ -186,37 +197,37 @@ class RecordingUnitServiceTest {
     @Test
     void save_Success() {
 
-        RecordingUnit anteriorUnit = new RecordingUnit();
+        RecordingUnitSummaryDTO anteriorUnit = new RecordingUnitSummaryDTO();
         anteriorUnit.setId(1L);
-        RecordingUnit synchronousUnit = new RecordingUnit();
+        RecordingUnitSummaryDTO synchronousUnit = new RecordingUnitSummaryDTO();
         synchronousUnit.setId(2L);
-        RecordingUnit posteriorUnit = new RecordingUnit();
+        RecordingUnitSummaryDTO posteriorUnit = new RecordingUnitSummaryDTO();
         posteriorUnit.setId(3L);
 
         // add a parent
-        RecordingUnit parent1Unit = new RecordingUnit();
+        RecordingUnitSummaryDTO parent1Unit = new RecordingUnitSummaryDTO();
         parent1Unit.setId(10L);
         parent1Unit.setFullIdentifier("p1");
         recordingUnitToSave.getParents().add(parent1Unit);
 
         // add a children
-        RecordingUnit child1Unit = new RecordingUnit();
+        RecordingUnitSummaryDTO child1Unit = new RecordingUnitSummaryDTO();
         child1Unit.setId(20L);
         child1Unit.setFullIdentifier("c1");
         recordingUnitToSave.getChildren().add(child1Unit);
 
-        StratigraphicRelationship antRelationship = new StratigraphicRelationship();
-        antRelationship.setUnit1(recordingUnitToSave);
+        StratigraphicRelationshipDTO antRelationship = new StratigraphicRelationshipDTO();
+        antRelationship.setUnit1(new RecordingUnitSummaryDTO(recordingUnitToSave));
         antRelationship.setUnit2(anteriorUnit);
-        antRelationship.setConcept(StratigraphicRelationshipService.ASYNCHRONOUS);
-        StratigraphicRelationship syncRelationship = new StratigraphicRelationship();
-        syncRelationship.setUnit1(recordingUnitToSave);
+        antRelationship.setConcept(new ConceptDTO());
+        StratigraphicRelationshipDTO syncRelationship = new StratigraphicRelationshipDTO();
+        syncRelationship.setUnit1(new RecordingUnitSummaryDTO(recordingUnitToSave));
         syncRelationship.setUnit2(synchronousUnit);
-        syncRelationship.setConcept(StratigraphicRelationshipService.SYNCHRONOUS);
-        StratigraphicRelationship postRelationship = new StratigraphicRelationship();
+        syncRelationship.setConcept(new ConceptDTO());
+        StratigraphicRelationshipDTO postRelationship = new StratigraphicRelationshipDTO();
         postRelationship.setUnit1(posteriorUnit);
-        postRelationship.setUnit2(recordingUnitToSave);
-        postRelationship.setConcept(StratigraphicRelationshipService.ASYNCHRONOUS);
+        postRelationship.setUnit2(new RecordingUnitSummaryDTO(recordingUnitToSave));
+        postRelationship.setConcept(new ConceptDTO());
 
         Person p = new Person();
 
@@ -229,66 +240,18 @@ class RecordingUnitServiceTest {
 
         when(personRepository.findAllById(anyList())).thenReturn(List.of(p));
 
-        when(recordingUnitRepository.findById(10L)).thenReturn(Optional.of(parent1Unit));
+        when(recordingUnitRepository.findById(10L)).thenAnswer(invocation -> invocation.getArgument(0));
 
-        RecordingUnit result = recordingUnitService.save(recordingUnitToSave,c
-        );
+        RecordingUnitDTO result = recordingUnitService.save(recordingUnitToSave);
 
         // assert
         assertNotNull(result);
-        assertNull(result.getFormResponse());
         verify(recordingUnitRepository, times(3)).save(any(RecordingUnit.class));
 
 
 
     }
 
-    @Test
-    @SuppressWarnings("unchecked")
-    void save_saveFormIfSet() {
-
-        CustomForm form = new CustomForm();
-        recordingUnitToSave.setFormResponse(new CustomFormResponse());
-        recordingUnitToSave.getFormResponse().setForm(form);
-
-        RecordingUnit anteriorUnit = new RecordingUnit();
-        anteriorUnit.setId(1L);
-        RecordingUnit synchronousUnit = new RecordingUnit();
-        synchronousUnit.setId(2L);
-        RecordingUnit posteriorUnit = new RecordingUnit();
-        posteriorUnit.setId(3L);
-
-        StratigraphicRelationship antRelationship = new StratigraphicRelationship();
-        antRelationship.setUnit1(recordingUnitToSave);
-        antRelationship.setUnit2(anteriorUnit);
-        antRelationship.setConcept(StratigraphicRelationshipService.ASYNCHRONOUS);
-        StratigraphicRelationship syncRelationship = new StratigraphicRelationship();
-        syncRelationship.setUnit1(recordingUnitToSave);
-        syncRelationship.setUnit2(synchronousUnit);
-        syncRelationship.setConcept(StratigraphicRelationshipService.SYNCHRONOUS);
-        StratigraphicRelationship postRelationship = new StratigraphicRelationship();
-        postRelationship.setUnit1(posteriorUnit);
-        postRelationship.setUnit2(recordingUnitToSave);
-        postRelationship.setConcept(StratigraphicRelationshipService.ASYNCHRONOUS);
-
-        Person p = new Person();
-
-        Concept c = new Concept();
-        when(conceptService.saveOrGetConcept(c)).thenReturn(c);
-
-        when(personRepository.findAllById(anyList())).thenReturn(List.of(p));
-
-        when(recordingUnitRepository.save(any(RecordingUnit.class)))
-                .thenAnswer(invocation -> invocation.getArgument(0));
-
-        doNothing().when(customFormResponseService)
-                .saveFormResponse(any(CustomFormResponse.class), any(CustomFormResponse.class));
-
-        RecordingUnit res = recordingUnitService.save(recordingUnitToSave, c);
-        assertNotNull(res);
-        verify(customFormResponseService, times(1))
-                .saveFormResponse(any(CustomFormResponse.class), any(CustomFormResponse.class));
-    }
 
     @Test
     void save_shouldUpdateExistingUnit_whenIdIsProvided() {
@@ -307,7 +270,7 @@ class RecordingUnitServiceTest {
         when(personRepository.findAllById(anyList())).thenReturn(List.of());
 
         // Act
-        RecordingUnit result = recordingUnitService.save(recordingUnitToSave, new Concept());
+        RecordingUnitDTO result = recordingUnitService.save(recordingUnitToSave);
 
         // Assert
         assertEquals(existingId, result.getId());
@@ -330,7 +293,7 @@ class RecordingUnitServiceTest {
         when(personRepository.findAllById(anyList())).thenReturn(List.of());
 
         // Act
-        RecordingUnit result = recordingUnitService.save(recordingUnitToSave, new Concept());
+        RecordingUnitDTO result = recordingUnitService.save(recordingUnitToSave);
 
         // Assert
         assertNull(result.getId());
@@ -347,7 +310,7 @@ class RecordingUnitServiceTest {
         // Act & Assert
         FailedRecordingUnitSaveException exception = assertThrows(
                 FailedRecordingUnitSaveException.class,
-                () -> recordingUnitService.save(recordingUnitToSave, new Concept())
+                () -> recordingUnitService.save(recordingUnitToSave)
         );
 
         assertEquals("Dependency error", exception.getMessage());
@@ -366,13 +329,13 @@ class RecordingUnitServiceTest {
         )).thenReturn(page);
 
         // Act
-        Page<RecordingUnit> actualResult = recordingUnitService.findAllByInstitutionAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
+        Page<RecordingUnitDTO> actualResult = recordingUnitService.findAllByInstitutionAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
                 1L, "null", new Long[2], "null", "fr", pageable
         );
 
         // Assert
-        assertEquals(recordingUnit1, actualResult.getContent().get(0));
-        assertEquals(recordingUnit2, actualResult.getContent().get(1));
+        assertEquals(recordingUnit1DTO, actualResult.getContent().get(0));
+        assertEquals(recordingUnit2DTO, actualResult.getContent().get(1));
     }
 
     @Test
@@ -390,12 +353,12 @@ class RecordingUnitServiceTest {
         )).thenReturn(page);
 
         // Act
-        Page<RecordingUnit> result = recordingUnitService.findAllByInstitutionAndByActionUnitAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
+        Page<RecordingUnitDTO> result = recordingUnitService.findAllByInstitutionAndByActionUnitAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
                 institutionId, actionId, fullIdentifier, categoryIds, global, langCode, pageable
         );
 
         // Assert
-        assertEquals(page, result);
+        assertEquals(pageDto, result);
         verify(recordingUnitRepository).findAllByInstitutionAndByActionUnitAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
                 institutionId, actionId, fullIdentifier, categoryIds, global, langCode, pageable
         );
@@ -405,11 +368,11 @@ class RecordingUnitServiceTest {
     void canCreateSpecimen_returnsTrue_whenUserIsManagerOfCreatingInstitution() {
         RecordingUnit recordingUnit;
         recordingUnit = mock(RecordingUnit.class);
-        when(recordingUnit.getActionUnit()).thenReturn(actionUnit);
+        when(recordingUnit.getActionUnit()).thenReturn(new ActionUnit());
 
-        when(institutionService.isManagerOf(any(Institution.class), any(Person.class))).thenReturn(true);
+        when(institutionService.isManagerOf(any(InstitutionDTO.class), any(PersonDTO.class))).thenReturn(true);
 
-        boolean result = recordingUnitService.canCreateSpecimen(userInfo, recordingUnit);
+        boolean result = recordingUnitService.canCreateSpecimen(userInfo, recordingUnit1DTO);
 
         assertTrue(result);
     }
@@ -418,12 +381,12 @@ class RecordingUnitServiceTest {
     void canCreateSpecimen_returnsTrue_whenUserIsActionUnitManager() {
         RecordingUnit recordingUnit;
         recordingUnit = mock(RecordingUnit.class);
-        when(recordingUnit.getActionUnit()).thenReturn(actionUnit);
+        when(recordingUnit.getActionUnit()).thenReturn(new ActionUnit());
 
-        when(institutionService.isManagerOf(any(Institution.class), any(Person.class))).thenReturn(false);
+        when(institutionService.isManagerOf(any(InstitutionDTO.class), any(PersonDTO.class))).thenReturn(false);
         when(actionUnitService.isManagerOf(actionUnit, user)).thenReturn(true);
 
-        boolean result = recordingUnitService.canCreateSpecimen(userInfo, recordingUnit);
+        boolean result = recordingUnitService.canCreateSpecimen(userInfo, recordingUnit2DTO);
 
         assertTrue(result);
     }
@@ -432,14 +395,14 @@ class RecordingUnitServiceTest {
     void canCreateSpecimen_returnsTrue_whenUserIsTeamMember_andActionUnitIsOngoing() {
         RecordingUnit recordingUnit;
         recordingUnit = mock(RecordingUnit.class);
-        when(recordingUnit.getActionUnit()).thenReturn(actionUnit);
+        when(recordingUnit.getActionUnit()).thenReturn(new ActionUnit());
 
-        when(institutionService.isManagerOf(any(Institution.class), any(Person.class))).thenReturn(false);
+        when(institutionService.isManagerOf(any(InstitutionDTO.class), any(PersonDTO.class))).thenReturn(false);
         when(actionUnitService.isManagerOf(actionUnit, user)).thenReturn(false);
-        when(teamMemberRepository.existsByActionUnitIdAndPerson(actionUnit, user)).thenReturn(true);
+        when(teamMemberRepository.existsByActionUnitIdAndPerson(anyLong(), any(PersonDTO.class))).thenReturn(true);
         when(actionUnitService.isActionUnitStillOngoing(actionUnit)).thenReturn(true);
 
-        boolean result = recordingUnitService.canCreateSpecimen(userInfo, recordingUnit);
+        boolean result = recordingUnitService.canCreateSpecimen(userInfo, recordingUnitToSave);
 
         assertTrue(result);
     }
@@ -448,14 +411,14 @@ class RecordingUnitServiceTest {
     void canCreateSpecimen_returnsFalse_whenUserIsTeamMember_butActionUnitIsNotOngoing() {
         RecordingUnit recordingUnit;
         recordingUnit = mock(RecordingUnit.class);
-        when(recordingUnit.getActionUnit()).thenReturn(actionUnit);
+        when(recordingUnit.getActionUnit()).thenReturn(new ActionUnit());
 
-        when(institutionService.isManagerOf(any(Institution.class), any(Person.class))).thenReturn(false);
+        when(institutionService.isManagerOf(any(InstitutionDTO.class), any(PersonDTO.class))).thenReturn(false);
         when(actionUnitService.isManagerOf(actionUnit, user)).thenReturn(false);
-        when(teamMemberRepository.existsByActionUnitIdAndPerson(actionUnit, user)).thenReturn(true);
+        when(teamMemberRepository.existsByActionUnitIdAndPerson(anyLong(), any(PersonDTO.class))).thenReturn(true);
         when(actionUnitService.isActionUnitStillOngoing(actionUnit)).thenReturn(false);
 
-        boolean result = recordingUnitService.canCreateSpecimen(userInfo, recordingUnit);
+        boolean result = recordingUnitService.canCreateSpecimen(userInfo, recordingUnitToSave);
 
         assertFalse(result);
     }
@@ -464,13 +427,13 @@ class RecordingUnitServiceTest {
     void canCreateSpecimen_returnsFalse_whenUserHasNoPermissions() {
         RecordingUnit recordingUnit;
         recordingUnit = mock(RecordingUnit.class);
-        when(recordingUnit.getActionUnit()).thenReturn(actionUnit);
+        when(recordingUnit.getActionUnit()).thenReturn(new ActionUnit());
 
-        when(institutionService.isManagerOf(any(Institution.class), any(Person.class))).thenReturn(false);
+        when(institutionService.isManagerOf(any(InstitutionDTO.class), any(PersonDTO.class))).thenReturn(false);
         when(actionUnitService.isManagerOf(actionUnit, user)).thenReturn(false);
-        when(teamMemberRepository.existsByActionUnitIdAndPerson(actionUnit, user)).thenReturn(false);
+        when(teamMemberRepository.existsByActionUnitIdAndPerson(anyLong(), any(PersonDTO.class))).thenReturn(false);
 
-        boolean result = recordingUnitService.canCreateSpecimen(userInfo, recordingUnit);
+        boolean result = recordingUnitService.canCreateSpecimen(userInfo, recordingUnitToSave);
 
         assertFalse(result);
         verify(actionUnitService, never()).isActionUnitStillOngoing(any());
@@ -489,13 +452,13 @@ class RecordingUnitServiceTest {
         )).thenReturn(page);
 
         // Act
-        Page<RecordingUnit> actualResult = recordingUnitService.findAllByChildAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
+        Page<RecordingUnitDTO> actualResult = recordingUnitService.findAllByChildAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
                 1L, "null", new Long[2], "null", "fr", pageable
         );
 
         // Assert
-        assertEquals(recordingUnit1, actualResult.getContent().get(0));
-        assertEquals(recordingUnit2, actualResult.getContent().get(1));
+        assertEquals(recordingUnit1DTO, actualResult.getContent().get(0));
+        assertEquals(recordingUnit2DTO, actualResult.getContent().get(1));
     }
 
     @Test
@@ -511,13 +474,13 @@ class RecordingUnitServiceTest {
         )).thenReturn(page);
 
         // Act
-        Page<RecordingUnit> actualResult = recordingUnitService.findAllByParentAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
+        Page<RecordingUnitDTO> actualResult = recordingUnitService.findAllByParentAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
                 1L, "null", new Long[2], "null", "fr", pageable
         );
 
         // Assert
-        assertEquals(recordingUnit1, actualResult.getContent().get(0));
-        assertEquals(recordingUnit2, actualResult.getContent().get(1));
+        assertEquals(recordingUnit1DTO, actualResult.getContent().get(0));
+        assertEquals(recordingUnit2DTO, actualResult.getContent().get(1));
     }
 
     @Test
@@ -533,13 +496,13 @@ class RecordingUnitServiceTest {
         )).thenReturn(page);
 
         // Act
-        Page<RecordingUnit> actualResult = recordingUnitService.findAllBySpatialUnitAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
+        Page<RecordingUnitDTO> actualResult = recordingUnitService.findAllBySpatialUnitAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
                 1L, "null", new Long[2], "null", "fr", pageable
         );
 
         // Assert
-        assertEquals(recordingUnit1, actualResult.getContent().get(0));
-        assertEquals(recordingUnit2, actualResult.getContent().get(1));
+        assertEquals(recordingUnit1DTO, actualResult.getContent().get(0));
+        assertEquals(recordingUnit2DTO, actualResult.getContent().get(1));
     }
 
     @Test
@@ -560,7 +523,7 @@ class RecordingUnitServiceTest {
     @Test
     void testCountByActionContext() {
         // Arrange
-        ActionUnit au = new ActionUnit();
+        ActionUnitDTO au = new ActionUnitDTO();
         au.setId(2L);
         when(recordingUnitRepository.countByActionContext(2L)).thenReturn(3);
 
@@ -580,7 +543,7 @@ class RecordingUnitServiceTest {
         when(recordingUnitRepository.findRootsByInstitution(institutionId)).thenReturn(mockRecordingUnits);
 
         // Act
-        List<RecordingUnit> result = recordingUnitService.findAllWithoutParentsByInstitution(institutionId);
+        List<RecordingUnitDTO> result = recordingUnitService.findAllWithoutParentsByInstitution(institutionId);
 
         // Assert
         assertEquals(2, result.size());
@@ -596,7 +559,7 @@ class RecordingUnitServiceTest {
         when(recordingUnitRepository.findChildrenByParentAndInstitution(parentId, institutionId)).thenReturn(mockRecordingUnits);
 
         // Act
-        List<RecordingUnit> result = recordingUnitService.findChildrenByParentAndInstitution(parentId, institutionId);
+        List<RecordingUnitDTO> result = recordingUnitService.findChildrenByParentAndInstitution(parentId, institutionId);
 
         // Assert
         assertEquals(2, result.size());
@@ -611,7 +574,7 @@ class RecordingUnitServiceTest {
         when(recordingUnitRepository.findRootsByAction(actionId)).thenReturn(mockRecordingUnits);
 
         // Act
-        List<RecordingUnit> result = recordingUnitService.findAllWithoutParentsByAction(actionId);
+        List<RecordingUnitDTO> result = recordingUnitService.findAllWithoutParentsByAction(actionId);
 
         // Assert
         assertEquals(2, result.size());
@@ -620,46 +583,42 @@ class RecordingUnitServiceTest {
 
     @Test
     void fullIdentifierAlreadyExistInAction_returnTrue_whenSameIdentifierIsNotSameUnit() {
-        recordingUnit1 = new RecordingUnit();
-        recordingUnit1.setId(1L);
-        recordingUnit1.setActionUnit(actionUnit);
-        recordingUnit1.setFullIdentifier("test");
+        recordingUnit1DTO = new RecordingUnitDTO();
+        recordingUnit1DTO.setId(1L);
+        recordingUnit1DTO.setActionUnit(new ActionUnitSummaryDTO());
+        recordingUnit1DTO.setFullIdentifier("test");
 
-        recordingUnit2 = new RecordingUnit();
-        recordingUnit2.setId(2L);
-        recordingUnit2.setActionUnit(actionUnit);
-        recordingUnit2.setFullIdentifier("test");
 
-        when(recordingUnitRepository.findByFullIdentifierAndActionUnitId("test", actionUnit))
+        when(recordingUnitRepository.findByFullIdentifierAndActionUnitId("test", 1L))
                 .thenReturn(List.of(recordingUnit1, recordingUnit2));
 
-        assertTrue(recordingUnitService.fullIdentifierAlreadyExistInAction(recordingUnit1));
+        assertTrue(recordingUnitService.fullIdentifierAlreadyExistInAction(recordingUnit1DTO));
     }
 
     @Test
     void fullIdentifierAlreadyExistInAction_returnFalse_whenSameIdentifierIsSameUnit() {
-        recordingUnit1 = new RecordingUnit();
-        recordingUnit1.setId(1L);
-        recordingUnit1.setActionUnit(actionUnit);
-        recordingUnit1.setFullIdentifier("test");
+        recordingUnit1DTO = new RecordingUnitDTO();
+        recordingUnit1DTO.setId(1L);
+        recordingUnit1DTO.setActionUnit(new ActionUnitSummaryDTO());
+        recordingUnit1DTO.setFullIdentifier("test");
 
-        when(recordingUnitRepository.findByFullIdentifierAndActionUnitId("test", actionUnit))
+        when(recordingUnitRepository.findByFullIdentifierAndActionUnitId("test", 1L))
                 .thenReturn(List.of(recordingUnit1, recordingUnit1));
 
-        assertFalse(recordingUnitService.fullIdentifierAlreadyExistInAction(recordingUnit1));
+        assertFalse(recordingUnitService.fullIdentifierAlreadyExistInAction(recordingUnit1DTO));
     }
 
     @Test
     void fullIdentifierAlreadyExistInAction_returnFalse_whenIdentifierDoesntAlreadyExists() {
-        recordingUnit1 = new RecordingUnit();
-        recordingUnit1.setId(1L);
-        recordingUnit1.setActionUnit(actionUnit);
-        recordingUnit1.setFullIdentifier("test");
+        recordingUnit1DTO = new RecordingUnitDTO();
+        recordingUnit1DTO.setId(1L);
+        recordingUnit1DTO.setActionUnit(new ActionUnitSummaryDTO());
+        recordingUnit1DTO.setFullIdentifier("test");
 
-        when(recordingUnitRepository.findByFullIdentifierAndActionUnitId("test", actionUnit))
+        when(recordingUnitRepository.findByFullIdentifierAndActionUnitId("test", 1L))
                 .thenReturn(List.of());
 
-        assertFalse(recordingUnitService.fullIdentifierAlreadyExistInAction(recordingUnit1));
+        assertFalse(recordingUnitService.fullIdentifierAlreadyExistInAction(recordingUnit1DTO));
     }
 
     @Test
@@ -681,35 +640,21 @@ class RecordingUnitServiceTest {
         verify(recordingUnitRepository, times(1)).findAllWithoutArkOfInstitution(institution.getId());
     }
 
-    @Test
-    void save_ArkEntity_returnsSavedRecordingUnit() {
-        // Arrange
-        RecordingUnit arkRecordingUnit = new RecordingUnit();
-        arkRecordingUnit.setId(1L);
-        when(recordingUnitRepository.save(any(RecordingUnit.class))).thenReturn(arkRecordingUnit);
 
-        // Act
-        ArkEntity result = recordingUnitService.save(arkRecordingUnit);
-
-        // Assert
-        assertNotNull(result);
-        assertEquals(arkRecordingUnit, result);
-        verify(recordingUnitRepository, times(1)).save(arkRecordingUnit);
-    }
 
     @Test
     void countByInstitution_returnsCorrectCount() {
         // Arrange
-        Institution institution = new Institution();
+        InstitutionDTO institution = new InstitutionDTO();
         institution.setId(1L);
-        when(recordingUnitRepository.countByCreatedByInstitution(institution)).thenReturn(10L);
+        when(recordingUnitRepository.countByCreatedByInstitution(any(Institution.class))).thenReturn(10L);
 
         // Act
         long count = recordingUnitService.countByInstitution(institution);
 
         // Assert
         assertEquals(10L, count);
-        verify(recordingUnitRepository, times(1)).countByCreatedByInstitution(institution);
+        verify(recordingUnitRepository, times(1)).countByCreatedByInstitution(any(Institution.class));
     }
 
     @Test
@@ -719,7 +664,7 @@ class RecordingUnitServiceTest {
         when(recordingUnitIdCounterRepository.ruNextValUnique(actionUnit.getId())).thenReturn(100);
 
         // Act
-        int result = recordingUnitService.generatedNextIdentifier(actionUnit, null, null);
+        int result = recordingUnitService.generatedNextIdentifier(new ActionUnit(), null, null);
 
         // Assert
         assertEquals(100, result);
@@ -734,7 +679,7 @@ class RecordingUnitServiceTest {
         when(recordingUnitIdCounterRepository.ruNextValUnique(actionUnit.getId())).thenReturn(101);
 
         // Act
-        int result = recordingUnitService.generatedNextIdentifier(actionUnit, null, null);
+        int result = recordingUnitService.generatedNextIdentifier(new ActionUnit(), null, null);
 
         // Assert
         assertEquals(101, result);
@@ -751,7 +696,7 @@ class RecordingUnitServiceTest {
         when(recordingUnitIdCounterRepository.ruNextValParent(parentRu.getId())).thenReturn(102);
 
         // Act
-        int result = recordingUnitService.generatedNextIdentifier(actionUnit, null, parentRu);
+        int result = recordingUnitService.generatedNextIdentifier(new ActionUnit(), null, parentRu);
 
         // Assert
         assertEquals(102, result);
@@ -768,7 +713,7 @@ class RecordingUnitServiceTest {
         when(recordingUnitIdCounterRepository.ruNextValTypeUnique(actionUnit.getId(), unitType.getId())).thenReturn(103);
 
         // Act
-        int result = recordingUnitService.generatedNextIdentifier(actionUnit, unitType, null);
+        int result = recordingUnitService.generatedNextIdentifier(new ActionUnit(), unitType, null);
 
         // Assert
         assertEquals(103, result);
@@ -783,7 +728,7 @@ class RecordingUnitServiceTest {
         when(recordingUnitIdCounterRepository.ruNextValTypeUnique(actionUnit.getId(), null)).thenReturn(104);
 
         // Act
-        int result = recordingUnitService.generatedNextIdentifier(actionUnit, null, null);
+        int result = recordingUnitService.generatedNextIdentifier(new ActionUnit(), null, null);
 
         // Assert
         assertEquals(104, result);
@@ -800,7 +745,7 @@ class RecordingUnitServiceTest {
         when(recordingUnitIdCounterRepository.ruNextValUnique(actionUnit.getId())).thenReturn(105);
 
         // Act
-        int result = recordingUnitService.generatedNextIdentifier(actionUnit, unitType, null);
+        int result = recordingUnitService.generatedNextIdentifier(new ActionUnit(), unitType, null);
 
         // Assert
         assertEquals(105, result);
@@ -819,7 +764,7 @@ class RecordingUnitServiceTest {
         when(recordingUnitIdCounterRepository.ruNextValTypeParent(parentRu.getId(), unitType.getId())).thenReturn(106);
 
         // Act
-        int result = recordingUnitService.generatedNextIdentifier(actionUnit, unitType, parentRu);
+        int result = recordingUnitService.generatedNextIdentifier(new ActionUnit(), unitType, parentRu);
 
         // Assert
         assertEquals(106, result);
@@ -827,31 +772,11 @@ class RecordingUnitServiceTest {
         verifyNoMoreInteractions(recordingUnitIdCounterRepository);
     }
 
-    @Test
-    void save_shouldSucceed_whenFormResponseIsNull() {
-        // Arrange
-        recordingUnitToSave.setFormResponse(null); // Explicitly set to null
-
-        when(recordingUnitRepository.save(any(RecordingUnit.class)))
-                .thenAnswer(invocation -> invocation.getArgument(0));
-        when(conceptService.saveOrGetConcept(any(Concept.class))).thenReturn(new Concept());
-        when(personRepository.findAllById(anyList())).thenReturn(List.of());
-
-        // Act
-        RecordingUnit result = recordingUnitService.save(recordingUnitToSave, new Concept());
-
-        // Assert
-        assertNotNull(result);
-        assertNull(result.getFormResponse()); // The managed unit should have a null form response
-        verify(customFormResponseService, never()).saveFormResponse(any(), any());
-        // It will be saved twice, once in setupAdditionalAnswers and once at the end.
-        verify(recordingUnitRepository, times(2)).save(any(RecordingUnit.class));
-    }
 
     @Test
     void save_shouldThrowException_whenParentNotFound() {
         // Arrange
-        RecordingUnit parentRef = new RecordingUnit();
+        RecordingUnitSummaryDTO parentRef = new RecordingUnitSummaryDTO();
         parentRef.setId(999L);
         recordingUnitToSave.getParents().add(parentRef);
 
@@ -860,7 +785,7 @@ class RecordingUnitServiceTest {
         // Act & Assert
         FailedRecordingUnitSaveException exception = assertThrows(
                 FailedRecordingUnitSaveException.class,
-                () -> recordingUnitService.save(recordingUnitToSave, new Concept())
+                () -> recordingUnitService.save(recordingUnitToSave)
         );
 
         assertEquals("Parent not found: 999", exception.getMessage());
@@ -869,22 +794,26 @@ class RecordingUnitServiceTest {
     @Test
     void save_shouldSetContributors() {
         // Arrange
-        Person contributor1 = new Person();
+        PersonDTO contributor1 = new PersonDTO();
         contributor1.setId(101L);
-        Person contributor2 = new Person();
+        PersonDTO contributor2 = new PersonDTO();
         contributor2.setId(102L);
+        Person person1 = new Person();
+        person1.setId(101L);
+        Person person2 = new Person();
+        person2.setId(102L);
         recordingUnitToSave.getContributors().add(contributor1);
         recordingUnitToSave.getContributors().add(contributor2);
 
         List<Long> contributorIds = List.of(101L, 102L);
-        List<Person> foundContributors = List.of(contributor1, contributor2);
+        List<PersonDTO> foundContributors = List.of(contributor1, contributor2);
 
-        when(personRepository.findAllById(contributorIds)).thenReturn(foundContributors);
+        when(personRepository.findAllById(contributorIds)).thenReturn(List.of(person1, person2));
         when(recordingUnitRepository.save(any(RecordingUnit.class))).thenAnswer(inv -> inv.getArgument(0));
         when(conceptService.saveOrGetConcept(any(Concept.class))).thenReturn(new Concept());
 
         // Act
-        RecordingUnit result = recordingUnitService.save(recordingUnitToSave, new Concept());
+        RecordingUnitDTO result = recordingUnitService.save(recordingUnitToSave);
 
         // Assert
         assertNotNull(result);
@@ -895,16 +824,16 @@ class RecordingUnitServiceTest {
     @Test
     void fullIdentifierAlreadyExistInAction_returnTrue_whenUnitIsNewAndIdentifierExists() {
         // Arrange
-        RecordingUnit newUnit = new RecordingUnit(); // ID is null
-        newUnit.setActionUnit(actionUnit);
+        RecordingUnitDTO newUnit = new RecordingUnitDTO(); // ID is null
+        newUnit.setActionUnit(new ActionUnitSummaryDTO());
         newUnit.setFullIdentifier("test");
 
         RecordingUnit existingUnit = new RecordingUnit();
         existingUnit.setId(2L);
-        existingUnit.setActionUnit(actionUnit);
+        existingUnit.setActionUnit(new ActionUnit());
         existingUnit.setFullIdentifier("test");
 
-        when(recordingUnitRepository.findByFullIdentifierAndActionUnitId("test", actionUnit))
+        when(recordingUnitRepository.findByFullIdentifierAndActionUnitId(anyString(), anyLong()))
                 .thenReturn(List.of(existingUnit));
 
         // Act & Assert
@@ -935,7 +864,7 @@ class RecordingUnitServiceTest {
         // Arrange
         RecordingUnit recordingUnit = new RecordingUnit();
         recordingUnit.setId(1L);
-        recordingUnit.setActionUnit(actionUnit);
+        recordingUnit.setActionUnit(new ActionUnit());
         SpatialUnit su = new SpatialUnit();
         su.setId(99L);
         recordingUnit.setSpatialUnit(su);
@@ -1020,10 +949,11 @@ class RecordingUnitServiceTest {
         @DisplayName("should use parent info when parent is present")
         void generateFullIdentifier_withParent_shouldUseParentForIdGeneration() {
             // Arrange
+            RecordingUnit ru = new RecordingUnit();
             RecordingUnitService spiedService = spy(recordingUnitService);
             RecordingUnit parentRu = new RecordingUnit();
             parentRu.setId(5L);
-            recordingUnitToSave.getParents().add(parentRu);
+            ru.getParents().add(parentRu);
             actionUnit.setRecordingUnitIdentifierFormat("{NUM_PARENT}-{NUM_UE}");
 
             RuNumResolver numResolver = new RuNumResolver();
@@ -1042,7 +972,7 @@ class RecordingUnitServiceTest {
             // Assert
             assertEquals("99-7", identifier);
             verify(recordingUnitIdCounterRepository).ruNextValParent(parentRu.getId());
-            verify(spiedService).createOrGetInfoOf(recordingUnitToSave, parentRu);
+            verify(spiedService).createOrGetInfoOf(ru, parentRu);
             verify(recordingUnitIdInfoRepository).findById(parentRu.getId());
         }
     }

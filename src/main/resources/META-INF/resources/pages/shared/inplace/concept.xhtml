@@ -28,7 +28,6 @@
 
 
     <cc:implementation>
-        #{cc.attrs.answer}
         <p:inplace id="inplace" mode="#{cc.attrs.mode}" toggleable="false">
             <f:facet name="output">
                 <chip:conceptChip concept="#{cc.attrs.answer.value.concept()}" styleClass="#{cc.attrs.field.styleClass}"/>

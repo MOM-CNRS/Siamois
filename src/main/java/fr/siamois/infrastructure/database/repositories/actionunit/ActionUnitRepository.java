@@ -31,7 +31,7 @@ public interface ActionUnitRepository extends CrudRepository<ActionUnit, Long>, 
     )
     Integer countBySpatialContext(@Param("spatialUnitId") Long spatialUnitId);
 
-    long countByCreatedByInstitution(Institution institution);
+    long countByCreatedByInstitutionId(Long institutionId);
 
     @Query(
             nativeQuery = true,

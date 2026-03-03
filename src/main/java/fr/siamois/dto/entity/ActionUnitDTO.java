@@ -1,5 +1,6 @@
 package fr.siamois.dto.entity;
 
+import fr.siamois.domain.models.actionunit.ActionCode;
 import jakarta.persistence.Column;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
@@ -28,6 +29,8 @@ public class ActionUnitDTO extends AbstractEntityDTO {
     private Boolean validated;
     private OffsetDateTime beginDate;
     private OffsetDateTime endDate;
+    private ActionCode primaryActionCode;
+    private Set<ActionCode> secondaryActionCodes;
 
     public List<String> getBindableFieldNames() {
         return List.of("type", "name", "identifier", "spatialContext", "beginDate", "endDate", "primaryActionCode", "mainLocation");

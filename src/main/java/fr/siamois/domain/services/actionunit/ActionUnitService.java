@@ -1,6 +1,5 @@
 package fr.siamois.domain.services.actionunit;
 
-import fr.siamois.domain.models.ArkEntity;
 import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.actionunit.ActionCode;
 import fr.siamois.domain.models.actionunit.ActionUnit;
@@ -11,7 +10,6 @@ import fr.siamois.domain.models.exceptions.actionunit.ActionUnitNotFoundExceptio
 import fr.siamois.domain.models.exceptions.actionunit.FailedActionUnitSaveException;
 import fr.siamois.domain.models.exceptions.actionunit.NullActionUnitIdentifierException;
 import fr.siamois.domain.models.institution.Institution;
-import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.ArkEntityService;
 import fr.siamois.domain.services.InstitutionService;
@@ -27,7 +25,6 @@ import org.springframework.core.convert.ConversionService;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.security.core.parameters.P;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -317,11 +314,11 @@ public class ActionUnitService implements ArkEntityService {
     /**
      * Count the number of ActionUnits created by a specific institution.
      *
-     * @param institution The institution to count ActionUnits for
+     * @param institutionId The institution to count ActionUnits for
      * @return The count of ActionUnits created by the institution
      */
-    public long countByInstitution(InstitutionDTO institution) {
-        return actionUnitRepository.countByCreatedByInstitution(conversionService.convert(institution, Institution.class));
+    public long countByInstitutionId(Long institutionId) {
+        return actionUnitRepository.countByCreatedByInstitutionId(institutionId);
     }
 
     /**

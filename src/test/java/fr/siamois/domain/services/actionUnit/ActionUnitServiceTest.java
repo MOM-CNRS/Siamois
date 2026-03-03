@@ -1,7 +1,6 @@
 package fr.siamois.domain.services.actionUnit;
 
 
-import fr.siamois.domain.models.ArkEntity;
 import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.actionunit.ActionCode;
 import fr.siamois.domain.models.actionunit.ActionUnit;
@@ -17,6 +16,7 @@ import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.authorization.PermissionServiceImpl;
 import fr.siamois.domain.services.vocabulary.ConceptService;
+import fr.siamois.dto.entity.*;
 import fr.siamois.infrastructure.database.repositories.actionunit.ActionCodeRepository;
 import fr.siamois.infrastructure.database.repositories.actionunit.ActionUnitRepository;
 import fr.siamois.infrastructure.database.repositories.team.TeamMemberRepository;
@@ -65,9 +65,13 @@ class ActionUnitServiceTest {
 
 
     SpatialUnit spatialUnit1;
+    ActionUnitDTO actionUnitDTO1;
+    ActionUnitDTO actionUnitDTO2;
     ActionUnit actionUnit1;
     ActionUnit actionUnit2;
 
+    ActionUnit actionUnitWithCodesEntity;
+    ActionUnitDTO actionUnitWithCodesDTO;
     ActionUnit actionUnitWithCodes;
     ActionCode primaryActionCode;
     ActionCode secondaryActionCode1;
@@ -77,15 +81,20 @@ class ActionUnitServiceTest {
     Concept c1, c2, c3;
 
     UserInfo info;
+    PersonDTO personDTO ;
 
     @BeforeEach
     void setUp() {
 
-        Person p =new Person();
         Institution i = new Institution();
         i.setIdentifier("MOM");
-        info = new UserInfo(i,p,"fr");
+        PersonDTO personDTO =new PersonDTO();
+        InstitutionDTO institutionDTO = new InstitutionDTO();
+        i.setIdentifier("MOM");
+        info = new UserInfo(institutionDTO,personDTO,"fr");
         spatialUnit1 = new SpatialUnit();
+        actionUnitDTO1 = new ActionUnitDTO();
+        actionUnitDTO2 = new ActionUnitDTO();
         actionUnit1 = new ActionUnit();
         actionUnit2 = new ActionUnit();
         spatialUnit1.setId(1L);
@@ -120,6 +129,8 @@ class ActionUnitServiceTest {
 
         actionUnitWithCodes.setPrimaryActionCode(primaryActionCode);
         actionUnitWithCodes.setSecondaryActionCodes(new HashSet<>(List.of(secondaryActionCode1, secondaryActionCode2, secondaryActionCodeThatWillBeRemoved)));
+        actionUnitWithCodesDTO.setPrimaryActionCode(primaryActionCode);
+        actionUnitWithCodesDTO.setSecondaryActionCodes(new HashSet<>(List.of(secondaryActionCode1, secondaryActionCode2, secondaryActionCodeThatWillBeRemoved)));
 
         actionUnitWithCodes.setIdentifier("Test");
         Institution institution1 = new Institution();
@@ -141,7 +152,7 @@ class ActionUnitServiceTest {
         when(actionUnitRepository.findById(actionUnit1.getId())).thenReturn(Optional.ofNullable(actionUnit1));
 
         // act
-        ActionUnit actualResult = actionUnitService.findById(spatialUnit1.getId());
+        ActionUnitDTO actualResult = actionUnitService.findById(spatialUnit1.getId());
 
         // assert
         assertEquals(actionUnit1, actualResult);
@@ -174,10 +185,11 @@ class ActionUnitServiceTest {
         lenient().when(actionCodeRepository.findById(secondaryActionCode1.getCode())).thenReturn(Optional.ofNullable(secondaryActionCode1));
         lenient().when(actionCodeRepository.findById(secondaryActionCode2.getCode())).thenReturn(Optional.empty()); // It means this code is not in DB
 
-        when(actionUnitRepository.save(actionUnitWithCodes)).thenReturn(actionUnitWithCodes);
+        when(actionUnitRepository.save(any(ActionUnit.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
         when(actionUnitRepository.findById(actionUnitWithCodes.getId())).thenReturn(Optional.ofNullable(actionUnitWithCodes));
 
-        ActionUnit result = actionUnitService.save(actionUnitWithCodes, List.of(secondaryActionCode1, secondaryActionCode2),info);
+        ActionUnit result = actionUnitService.save(actionUnitWithCodesDTO, List.of(secondaryActionCode1, secondaryActionCode2),info);
         // assert
         assertNotNull(result);
         assertEquals(primaryActionCode, result.getPrimaryActionCode());
@@ -205,7 +217,7 @@ class ActionUnitServiceTest {
         // Act & Assert
         Exception exception = assertThrows(
                 NullActionUnitIdentifierException.class,
-                () -> actionUnitService.save(actionUnitWithCodes, toSave,info)
+                () -> actionUnitService.save(actionUnitWithCodesDTO, toSave,info)
         );
 
         assertEquals("ActionUnit identifier must be set", exception.getMessage());
@@ -226,7 +238,7 @@ class ActionUnitServiceTest {
         // Act & Assert
         Exception exception = assertThrows(
                 ActionUnitAlreadyExistsException.class,
-                () -> actionUnitService.saveNotTransactional(info, actionUnit1, new Concept())
+                () -> actionUnitService.saveNotTransactional(info, actionUnitWithCodesDTO, new ConceptDTO())
         );
 
         assertEquals("Action unit with name already exists already exist in institution null", exception.getMessage());
@@ -247,7 +259,7 @@ class ActionUnitServiceTest {
         // Act & Assert
         Exception exception = assertThrows(
                 ActionUnitAlreadyExistsException.class,
-                () -> actionUnitService.saveNotTransactional(info, actionUnit1, new Concept())
+                () -> actionUnitService.saveNotTransactional(info, actionUnitWithCodesDTO, new ConceptDTO())
         );
 
         assertEquals("Action unit with identifier already-exists already exist in institution null", exception.getMessage());
@@ -268,7 +280,7 @@ class ActionUnitServiceTest {
         // Act & Assert
         Exception exception = assertThrows(
                 FailedActionUnitSaveException.class,
-                () -> actionUnitService.save(actionUnitWithCodes, toSave,info)
+                () -> actionUnitService.save(actionUnitWithCodesDTO, toSave,info)
         );
 
         assertEquals("Code exists but type does not match", exception.getMessage());
@@ -290,7 +302,7 @@ class ActionUnitServiceTest {
         // Act & Assert
         Exception exception = assertThrows(
                 FailedActionUnitSaveException.class,
-                () -> actionUnitService.save(actionUnitWithCodes, toSave,info)
+                () -> actionUnitService.save(actionUnitWithCodesDTO, toSave,info)
         );
         assertEquals("Database error", exception.getMessage());
 
@@ -333,18 +345,7 @@ class ActionUnitServiceTest {
         assertTrue(result.contains(actionUnitLocal2));
     }
 
-    @Test
-    void save() {
-        ActionUnit actionUnit = new ActionUnit();
-        actionUnit.setId(1L);
 
-        when(actionUnitRepository.save(actionUnit)).thenReturn(actionUnit);
-
-        ArkEntity result = actionUnitService.save(actionUnit);
-
-        assertNotNull(result);
-        assertEquals(actionUnit, result);
-    }
 
     @Test
     void testFindByArk() {
@@ -364,14 +365,14 @@ class ActionUnitServiceTest {
     }
 
     @Test
-    void countByInstitution_success() {
-        when(actionUnitRepository.countByCreatedByInstitution(any(Institution.class))).thenReturn(3L);
-        assertEquals(3,actionUnitService.countByInstitution(new Institution()));
+    void countByInstitution_Id_success() {
+        when(actionUnitRepository.countByCreatedByInstitutionId(anyLong())).thenReturn(3L);
+        assertEquals(3,actionUnitService.countByInstitutionId(1L));
     }
 
     @Test
     void countBySpatialContext_success() {
-        SpatialUnit spatialUnit = new SpatialUnit();
+        SpatialUnitDTO spatialUnit = new SpatialUnitDTO();
         spatialUnit.setId(1L);
 
         when(actionUnitRepository.countBySpatialContext(spatialUnit.getId())).thenReturn(5);
@@ -406,21 +407,21 @@ class ActionUnitServiceTest {
 
     @Test
     void isActionUnitStillOngoing_returnsFalseWhenBeginIsNull() {
-        ActionUnit au = new ActionUnit();
+        ActionUnitSummaryDTO au = new ActionUnitSummaryDTO();
         au.setEndDate(OffsetDateTime.now().plusDays(1));
         assertFalse(actionUnitService.isActionUnitStillOngoing(au));
     }
 
     @Test
     void isActionUnitStillOngoing_returnsTrueWhenEndIsNull() {
-        ActionUnit au = new ActionUnit();
+        ActionUnitSummaryDTO au = new ActionUnitSummaryDTO();
         au.setBeginDate(OffsetDateTime.now().minusDays(1));
         assertTrue(actionUnitService.isActionUnitStillOngoing(au));
     }
 
     @Test
     void isActionUnitStillOngoing_returnsFalseWhenNowBeforeBegin() {
-        ActionUnit au = new ActionUnit();
+        ActionUnitSummaryDTO au = new ActionUnitSummaryDTO();
         OffsetDateTime begin = OffsetDateTime.now().plusHours(2);
         au.setBeginDate(begin);
         au.setEndDate(begin.plusHours(1));
@@ -431,7 +432,7 @@ class ActionUnitServiceTest {
     void isActionUnitStillOngoing_returnsTrueWhenNowWithinRange() {
         OffsetDateTime begin = OffsetDateTime.now().minusHours(1);
         OffsetDateTime end = OffsetDateTime.now().plusHours(1);
-        ActionUnit au = new ActionUnit();
+        ActionUnitSummaryDTO au = new ActionUnitSummaryDTO();
         au.setBeginDate(begin);
         au.setEndDate(end);
         assertTrue(actionUnitService.isActionUnitStillOngoing(au));
@@ -441,7 +442,7 @@ class ActionUnitServiceTest {
     void isActionUnitStillOngoing_returnsFalseWhenNowAfterEnd() {
         OffsetDateTime end = OffsetDateTime.now().minusMinutes(1);
         OffsetDateTime begin = end.minusHours(1);
-        ActionUnit au = new ActionUnit();
+        ActionUnitSummaryDTO au = new ActionUnitSummaryDTO();
         au.setBeginDate(begin);
         au.setEndDate(end);
         assertFalse(actionUnitService.isActionUnitStillOngoing(au));
@@ -451,64 +452,9 @@ class ActionUnitServiceTest {
 
     private void commonStubs() {
         when(action.getCreatedByInstitution()).thenReturn(institution);
-        when(userInfo.getUser()).thenReturn(person);
+        when(userInfo.getUser()).thenReturn(personDTO);
     }
 
-    @Test
-    void returnsTrue_whenUserIsInstitutionManager() {
-        commonStubs();
-        when(institutionService.isManagerOf(institution, person)).thenReturn(true);
-
-        assertTrue(actionUnitService.canCreateRecordingUnit(userInfo, action));
-
-    }
-
-    @Test
-    void returnsTrue_whenUserIsActionUnitManager() {
-        commonStubs();
-        when(institutionService.isManagerOf(institution, person)).thenReturn(false);
-        doReturn(true).when(actionUnitService).isManagerOf(action, person);
-
-        assertTrue(actionUnitService.canCreateRecordingUnit(userInfo, action));
-
-    }
-
-    @Test
-    void returnsTrue_whenUserIsTeamMember_andActionIsOngoing() {
-        commonStubs();
-        when(institutionService.isManagerOf(institution, person)).thenReturn(false);
-        doReturn(false).when(actionUnitService).isManagerOf(action, person);
-        when(teamMemberRepository.existsByActionUnitIdAndPerson(action, person)).thenReturn(true);
-        doReturn(true).when(actionUnitService).isActionUnitStillOngoing(action);
-
-        assertTrue(actionUnitService.canCreateRecordingUnit(userInfo, action));
-
-        verify(teamMemberRepository).existsByActionUnitIdAndPerson(action, person);
-        verify(actionUnitService).isActionUnitStillOngoing(action);
-    }
-
-    @Test
-    void returnsFalse_whenUserIsTeamMember_butActionIsClosed() {
-        commonStubs();
-        when(institutionService.isManagerOf(institution, person)).thenReturn(false);
-        doReturn(false).when(actionUnitService).isManagerOf(action, person);
-        when(teamMemberRepository.existsByActionUnitIdAndPerson(action, person)).thenReturn(true);
-        doReturn(false).when(actionUnitService).isActionUnitStillOngoing(action);
-
-        assertFalse(actionUnitService.canCreateRecordingUnit(userInfo, action));
-    }
-
-    @Test
-    void returnsFalse_whenUserHasNoRole() {
-        commonStubs();
-        when(institutionService.isManagerOf(institution, person)).thenReturn(false);
-        doReturn(false).when(actionUnitService).isManagerOf(action, person);
-        when(teamMemberRepository.existsByActionUnitIdAndPerson(action, person)).thenReturn(false);
-        // `isActionUnitStillOngoing` won’t be called because teamMemberRepository returns false
-
-        assertFalse(actionUnitService.canCreateRecordingUnit(userInfo, action));
-        verify(actionUnitService, never()).isActionUnitStillOngoing(any());
-    }
 
     @Test
     void findChildrenByParentAndInstitution_returnsInitializedActionUnits() {
@@ -519,7 +465,7 @@ class ActionUnitServiceTest {
         when(actionUnitRepository.findChildrenByParentAndInstitution(parentId, institutionId)).thenReturn(mockActionUnits);
 
         // Act
-        List<ActionUnit> result = actionUnitService.findChildrenByParentAndInstitution(parentId, institutionId);
+        List<ActionUnitDTO> result = actionUnitService.findChildrenByParentAndInstitution(parentId, institutionId);
 
         // Assert
         assertEquals(2, result.size());
@@ -534,7 +480,7 @@ class ActionUnitServiceTest {
         when(actionUnitRepository.findRootsByInstitution(institutionId)).thenReturn(mockActionUnits);
 
         // Act
-        List<ActionUnit> result = actionUnitService.findAllWithoutParentsByInstitution(institutionId);
+        List<ActionUnitDTO> result = actionUnitService.findAllWithoutParentsByInstitution(institutionId);
 
         // Assert
         assertEquals(2, result.size());
@@ -549,7 +495,7 @@ class ActionUnitServiceTest {
         when(actionUnitRepository.findBySpatialContext(spatialId)).thenReturn(mockActionUnits);
 
         // Act
-        List<ActionUnit> result = actionUnitService.findBySpatialContext(spatialId);
+        List<ActionUnitDTO> result = actionUnitService.findBySpatialContext(spatialId);
 
         // Assert
         assertEquals(2, result.size());

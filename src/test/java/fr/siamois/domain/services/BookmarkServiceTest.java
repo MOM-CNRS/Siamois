@@ -4,6 +4,8 @@ import fr.siamois.domain.models.Bookmark;
 import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.institution.Institution;
+import fr.siamois.dto.entity.InstitutionDTO;
+import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.infrastructure.database.repositories.BookmarkRepository;
 import fr.siamois.ui.bean.panel.models.panel.AbstractPanel;
 import org.junit.jupiter.api.BeforeEach;
@@ -43,7 +45,7 @@ class BookmarkServiceTest {
         institution.setName("institution1");
         institution.setId(1L);
 
-        userInfo = new UserInfo(institution, person, "fr");
+        userInfo = new UserInfo(new InstitutionDTO(), new PersonDTO(), "fr");
 
     }
 

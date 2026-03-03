@@ -6,6 +6,8 @@ import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.services.InstitutionService;
+import fr.siamois.dto.entity.InstitutionDTO;
+import fr.siamois.dto.entity.PersonDTO;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -29,11 +31,11 @@ class SpatialUnitWriteVerifierTest {
 
     @BeforeEach
     void setUp() {
-        Person person = new Person();
+        PersonDTO person = new PersonDTO();
         person.setUsername("testUser");
         person.setId(1L);
 
-        Institution institution = new Institution();
+        InstitutionDTO institution = new InstitutionDTO();
         institution.setId(1L);
         institution.setName("Test Institution");
 

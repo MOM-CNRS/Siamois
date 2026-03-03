@@ -5,14 +5,18 @@ import fr.siamois.domain.models.exceptions.ark.NoArkConfigException;
 import fr.siamois.domain.models.exceptions.ark.TooManyGenerationsException;
 import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.settings.InstitutionSettings;
+import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
+import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.infrastructure.database.repositories.ArkRepository;
+import org.checkerframework.checker.units.qual.C;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.core.convert.ConversionService;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import org.springframework.web.util.UriComponents;
 
@@ -30,13 +34,13 @@ class ArkServiceTest {
     @Mock private InstitutionService institutionService;
     @Mock private RecordingUnitService recordingUnitService;
     @Mock private ServletUriComponentsBuilder builder;
-    @Mock private UriComponents uriComponents;
+    @Mock private ConversionService conversionService;
 
     private ArkService arkService;
 
     @BeforeEach
     void beforeEach() {
-        arkService = new ArkService(noidCheckService, arkRepository, institutionService, builder);
+        arkService = new ArkService(noidCheckService, arkRepository, institutionService, conversionService ,builder);
     }
 
     @Test
@@ -106,6 +110,9 @@ class ArkServiceTest {
     @Test
     void getUriOf() {
         // Arrange
+        InstitutionDTO institutionDTO = new InstitutionDTO();
+        institutionDTO.setId(1L);
+
         Institution institution = new Institution();
         institution.setId(1L);
 
@@ -120,7 +127,7 @@ class ArkServiceTest {
         ark.setCreatingInstitution(institution);
         ark.setQualifier("abcde-x");
 
-        when(institutionService.createOrGetSettingsOf(institution)).thenReturn(settings);
+        when(institutionService.createOrGetSettingsOf(institutionDTO)).thenReturn(settings);
         when(builder.cloneBuilder()).thenReturn(builder);
         when(builder.path(anyString())).thenReturn(builder);
         when(builder.toUriString()).thenReturn("http://localhost/api/ark:/12345/abcde-x");
