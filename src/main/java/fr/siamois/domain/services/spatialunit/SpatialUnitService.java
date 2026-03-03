@@ -202,7 +202,6 @@ public class SpatialUnitService implements ArkEntityService {
     @Transactional
     public SpatialUnitDTO save(UserInfo info, SpatialUnitDTO su) throws SpatialUnitAlreadyExistsException {
         String name = su.getName();
-        Concept type = conversionService.convert(su.getCategory(), Concept.class);
         Set<SpatialUnit> children = su.getChildren().stream()
                 .map(child -> conversionService.convert(child, SpatialUnit.class))
                 .collect(Collectors.toSet());

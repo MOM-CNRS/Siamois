@@ -14,6 +14,7 @@ import fr.siamois.domain.services.auth.PendingPersonService;
 import fr.siamois.domain.services.person.verifier.EmailVerifier;
 import fr.siamois.domain.services.person.verifier.PasswordVerifier;
 import fr.siamois.domain.services.person.verifier.PersonDataVerifier;
+import fr.siamois.dto.entity.ActionUnitDTO;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.infrastructure.database.repositories.person.PendingInstitutionInviteRepository;
@@ -283,6 +284,7 @@ class PersonServiceTest {
 
         when(personRepository.findAllAuthorsOfSpatialUnitByInstitution(1L)).thenReturn(
                 List.of(pjpa));
+        when(conversionService.convert(any(Person.class), eq(PersonDTO.class))).thenReturn(p);
 
         // Act
         List<PersonDTO> res = personService.findAllAuthorsOfSpatialUnitByInstitution(i);

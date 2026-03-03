@@ -194,16 +194,13 @@ class ActionUnitServiceTest {
         lenient().when(actionCodeRepository.findById(secondaryActionCode1.getCode())).thenReturn(Optional.ofNullable(secondaryActionCode1));
         lenient().when(actionCodeRepository.findById(secondaryActionCode2.getCode())).thenReturn(Optional.empty()); // It means this code is not in DB
 
-        when(actionUnitRepository.findById(actionUnitWithCodes.getId())).thenReturn(Optional.ofNullable(actionUnitWithCodes));
 
-        actionUnitWithCodes.setIdentifier(null); // remove identifier
-
-        List<ActionCode> toSave = List.of(secondaryActionCode1, secondaryActionCode2);
+        actionUnitWithCodesDTO.setFullIdentifier(null); // remove identifier
 
         // Act & Assert
         Exception exception = assertThrows(
                 NullActionUnitIdentifierException.class,
-                () -> actionUnitService.save(actionUnitWithCodesDTO, toSave,info)
+                () -> actionUnitService.saveNotTransactional(info, actionUnitWithCodesDTO, new ConceptDTO())
         );
 
         assertEquals("ActionUnit identifier must be set", exception.getMessage());
@@ -214,9 +211,9 @@ class ActionUnitServiceTest {
 
 
         Optional<ActionUnit> opt = Optional.ofNullable(actionUnit1);
-        assert actionUnit1 != null;
-        actionUnit1.setName("already exists");
-        actionUnit1.setCreatedByInstitution(new Institution());
+        info.getInstitution().setId(1L);
+        Institution institution1 = new Institution(); institution1.setId(1L); institution1.setIdentifier("identifier");
+        institution1.setName("name");
 
         when(actionUnitRepository.findByNameAndCreatedByInstitutionId(any(String.class),
                 anyLong())).thenReturn(opt);
@@ -227,7 +224,7 @@ class ActionUnitServiceTest {
                 () -> actionUnitService.saveNotTransactional(info, actionUnitWithCodesDTO, new ConceptDTO())
         );
 
-        assertEquals("Action unit with name already exists already exist in institution null", exception.getMessage());
+        assertEquals("Action unit with name Name already exist in institution null", exception.getMessage());
     }
 
     @Test
@@ -254,48 +251,8 @@ class ActionUnitServiceTest {
         assertEquals("Action unit with identifier testing already exist in institution null", exception.getMessage());
     }
 
-    @Test
-    void SaveActionCodes_FailedCodeExistsButTypeDoesNotMatch() {
-        lenient().when(conceptService.saveOrGetConcept(c1)).thenReturn(c1);
-        lenient().when(conceptService.saveOrGetConcept(c2)).thenReturn(c2);
-
-        lenient().when(actionCodeRepository.findById(failedCode.getCode())).thenReturn(Optional.ofNullable(primaryActionCode));
 
 
-        actionUnitWithCodes.setPrimaryActionCode(failedCode);
-
-        List<ActionCode> toSave = List.of(secondaryActionCode1, secondaryActionCode2);
-
-        // Act & Assert
-        Exception exception = assertThrows(
-                FailedActionUnitSaveException.class,
-                () -> actionUnitService.save(actionUnitWithCodesDTO, toSave,info)
-        );
-
-        assertEquals("Code exists but type does not match", exception.getMessage());
-    }
-
-    @Test
-    void SaveActionCodes_Exception() {
-        lenient().when(conceptService.saveOrGetConcept(c1)).thenReturn(c1);
-        lenient().when(conceptService.saveOrGetConcept(c2)).thenReturn(c2);
-        lenient().when(conceptService.saveOrGetConcept(c3)).thenReturn(c3);
-        lenient().when(actionCodeRepository.findById(primaryActionCode.getCode())).thenReturn(Optional.ofNullable(primaryActionCode));
-        lenient().when(actionCodeRepository.findById(secondaryActionCode1.getCode())).thenReturn(Optional.ofNullable(secondaryActionCode1));
-        lenient().when(actionCodeRepository.findById(secondaryActionCode2.getCode())).thenReturn(Optional.empty());
-        when(actionUnitRepository.save(actionUnitWithCodes)).thenThrow(new RuntimeException("Database error"));
-        when(actionUnitRepository.findById(actionUnitWithCodes.getId())).thenReturn(Optional.ofNullable(actionUnitWithCodes));
-
-        List<ActionCode> toSave = List.of(secondaryActionCode1, secondaryActionCode2);
-
-        // Act & Assert
-        Exception exception = assertThrows(
-                FailedActionUnitSaveException.class,
-                () -> actionUnitService.save(actionUnitWithCodesDTO, toSave,info)
-        );
-        assertEquals("Database error", exception.getMessage());
-
-    }
 
     @Test
     void findByArk() {

@@ -171,24 +171,22 @@ public class ActionUnitService implements ArkEntityService {
                     String.format("Action unit with identifier %s already exist in institution %s", actionUnitDTO.getIdentifier(), info.getInstitution().getName()));
 
 
-        Person user = conversionService.convert(info.getUser(), Person.class);
+
 
         actionUnitDTO.setCreatedByInstitution(info.getInstitution());
 
-        ActionUnit actionUnit = conversionService.convert(actionUnitDTO, ActionUnit.class);
-
         // Generate unique identifier if not presents
-        if (actionUnit.getFullIdentifier() == null) {
-            if (actionUnit.getIdentifier() == null) {
+        if (actionUnitDTO.getFullIdentifier() == null) {
+
                 throw new NullActionUnitIdentifierException("ActionUnit identifier must be set");
-            }
-            // Set full identifier
-            actionUnit.setFullIdentifier(actionUnit.displayFullIdentifier());
+
         }
 
         // Add concept
+        ActionUnit actionUnit = conversionService.convert(actionUnitDTO, ActionUnit.class);
         Concept type = conceptService.saveOrGetConcept(typeConceptDTO);
         actionUnit.setType(type);
+        Person user = conversionService.convert(info.getUser(), Person.class);
         actionUnit.setCreatedBy(user);
 
         try {
@@ -238,42 +236,6 @@ public class ActionUnitService implements ArkEntityService {
         }
     }
 
-    /**
-     * Save an ActionUnit with its primary action code and a list of secondary action codes.
-     *
-     * @param actionUnit           The ActionUnit to save
-     * @param secondaryActionCodes The list of secondary ActionCodes to associate with the ActionUnit
-     * @param info                 User information containing the user and institution
-     * @return The saved ActionUnit
-     */
-    @Transactional
-    public ActionUnit save(ActionUnitDTO actionUnit, List<ActionCode> secondaryActionCodes, UserInfo info)
-            throws ActionUnitAlreadyExistsException {
-
-        try {
-
-
-            // ------------------ Handle secondary codes
-            // Get the old version of the actionUnit
-            ActionUnit currentVersion = actionUnitRepository.findById(actionUnit.getId()).orElseThrow(IllegalStateException::new);
-
-            // Get the old list of secondaryActionCodes
-            Set<ActionCode> currentSecondaryActionCodes = currentVersion.getSecondaryActionCodes();
-
-            // Handle codes
-            // 1. Remove the ones that are not linked to the action unit anymore
-            currentSecondaryActionCodes.removeIf(actionCode -> !secondaryActionCodes.contains(actionCode));
-            // 2. Add the ones that were not present
-            currentSecondaryActionCodes.addAll(secondaryActionCodes);
-
-        } catch (RuntimeException e) {
-            throw new FailedActionUnitSaveException(e.getMessage());
-        }
-
-        // Saving the action unit
-        return saveNotTransactional(info, actionUnit, actionUnit.getType());
-
-    }
 
     /**
      * Find an ActionUnit by its ARK.
@@ -305,7 +267,9 @@ public class ActionUnitService implements ArkEntityService {
     @Override
     public AbstractEntityDTO save(AbstractEntityDTO toSave) {
         try {
-            return conversionService.convert(actionUnitRepository.save(Objects.requireNonNull(conversionService.convert(toSave, ActionUnit.class))),ActionUnitDTO.class);
+            return conversionService.convert(
+                    actionUnitRepository.save(Objects.requireNonNull(
+                            conversionService.convert(toSave, ActionUnit.class))),ActionUnitDTO.class);
         } catch (DataIntegrityViolationException e) {
             throw new FailedActionUnitSaveException(e.getMessage());
         }
