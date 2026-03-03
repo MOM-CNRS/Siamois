@@ -1,0 +1,11 @@
+<ui:composition
+        xmlns="http://www.w3.org/1999/xhtml"
+        xmlns:ui="http://java.sun.com/jsf/facelets"
+        xmlns:c="http://java.sun.com/jsp/jstl/core"
+        xmlns:p="http://primefaces.org/ui"
+>
+    <c:set var="id" value="#{not empty id ? id : 'myInput'}" />
+    <c:set var="required" value="#{not empty required and required}" />
+
+    <p:inputText id="#{id}" required="#{required}"/>
+</ui:composition>

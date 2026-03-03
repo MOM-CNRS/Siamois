@@ -6,6 +6,7 @@
                 xmlns:p="http://primefaces.org/ui"
                 xmlns:c="http://java.sun.com/jsp/jstl/core"
                 xmlns:f="http://xmlns.jcp.org/jsf/core"
+                xmlns:my="/tags"
                 xmlns:form="http://java.sun.com/jsf/composite/pages/shared/form"
                 xmlns:panel="http://java.sun.com/jsf/composite/panel">
 
@@ -82,6 +83,8 @@
     </ui:define>
 
     <ui:define name="content">
+
+        <my:input/>
 
         <div style="display: flex; flex-direction: row; flex-shrink: 0">
             <div id="search-bar" class="hide-small-screen" style="flex:8">
@@ -298,8 +301,8 @@
                 <h:panelGroup
                         style="#{flowBean.fullscreenPanelIndex == -1 ? 'display:flex;flex-direction: column;gap:3em;padding:1em;' : 'display:flex;flex-direction: column;gap:0em;padding:0em;border-radius:0px; border:0px;'}"
                         id="flow-panels">
-                    <ui:repeat value="#{flowBean.panels}" var="panel" id="flowRepeat" varStatus="status">
-                        <p:outputPanel>
+                    <c:forEach items="#{flowBean.panels}" var="panel" varStatus="status">
+                        <div id="panel-#{panel.panelIndex}">
                             <p:panel
                                     styleClass="#{panel.panelClass} #{flowBean.fullscreenPanelIndex == -1 ? '' : 'panel-docked'}"
                                     rendered="#{flowBean.fullscreenPanelIndex ==-1 || flowBean.fullscreenPanelIndex == status.index}"
@@ -326,26 +329,32 @@
                                 </f:facet>
                                 #{panel.display()}
 
-                                <panel:homePanel
-                                        id="homePanel"
-                                        rendered="#{panel['class'].simpleName eq 'WelcomePanel'}"
-                                        panelModel="#{panel}"
-                                        panelIndex="#{panel.panelIndex}"
-                                />
+                                <c:if test="#{panel['class'].simpleName eq 'WelcomePanel'}">
+                                    <panel:homePanel
+                                            id="panel"
+                                            rendered="#{panel['class'].simpleName eq 'WelcomePanel'}"
+                                            panelModel="#{panel}"
+                                            panelIndex="#{panel.panelIndex}"
+                                    />
+                                </c:if>
 
-                                <panel:recordingUnitListPanel
-                                        id="recordingUnitListPanel"
-                                        rendered="#{panel['class'].simpleName eq 'RecordingUnitListPanel'}"
-                                        panelModel="#{panel}"
-                                        panelIndex="#{panel.panelIndex}"
-                                />
+                                <c:if test="#{panel['class'].simpleName eq 'RecordingUnitListPanel'}">
+                                    <panel:recordingUnitListPanel
+                                            id="panel"
+                                            rendered="#{panel['class'].simpleName eq 'RecordingUnitListPanel'}"
+                                            panelModel="#{panel}"
+                                            panelIndex="#{panel.panelIndex}"
+                                    />
+                                </c:if>
 
-                                <panel:singleUnitPanel
-                                        id="singleUnitListPanel"
-                                        rendered="#{panel.isSingleEntityPanel()}"
-                                        panelModel="#{panel}"
-                                        panelIndex="#{panel.panelIndex}"
-                                />
+                                <c:if test="#{panel.isSingleEntityPanel()}">
+                                    <panel:singleUnitPanel
+                                            id="panel"
+                                            rendered="#{panel.isSingleEntityPanel()}"
+                                            panelModel="#{panel}"
+                                            panelIndex="#{panel.panelIndex}"
+                                    />
+                                </c:if>
 
 
 
@@ -386,9 +395,8 @@
                             <p:blockUI block="@parent" widgetVar="buiPanel_${panel.panelIndex}">
                                 <i class="pi pi-spin pi-spinner" style="font-size: 3rem"/>
                             </p:blockUI>
-                        </p:outputPanel>
-
-                    </ui:repeat>
+                        </div>
+                    </c:forEach>
                 </h:panelGroup>
 
 
