@@ -15,11 +15,19 @@
 
     >
         <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
-        <table:entityTable
-                tableModel="#{panelModel.tableModel}"
-                panelIndex="#{panelIndex}"
-                id="actionUnitList"
-        />
+
+        <p:splitter>
+            <p:splitterPanel :size="100">
+                <table:entityTable
+                        tableModel="#{panelModel.tableModel}"
+                        panelIndex="#{panelIndex}"
+                        id="actionUnitList"
+                />
+            </p:splitterPanel>
+            <p:splitterPanel :size="0">
+                Panel 2
+            </p:splitterPanel>
+        </p:splitter>
     </h:form>
 
 
