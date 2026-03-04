@@ -67,9 +67,9 @@ public class RecordingUnitService implements ArkEntityService {
     private final TeamMemberRepository teamMemberRepository;
     private final RecordingUnitIdCounterRepository recordingUnitIdCounterRepository;
     private final RecordingUnitIdInfoRepository recordingUnitIdInfoRepository;
-    private final ApplicationContext applicationContext;
     private final RecordingUnitMapperImpl recordingUnitMapper;
     private final ConversionService conversionService;
+    private final ApplicationContext applicationContext;
 
     /**
      * Bulk update the type of multiple recording units.

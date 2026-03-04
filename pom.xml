@@ -399,6 +399,18 @@
             <version>${org.mapstruct.extensions.spring.version}</version>
         </dependency>
 
+        <dependency>
+            <groupId>org.mapstruct.extensions.spring</groupId>
+            <artifactId>mapstruct-spring-test-extensions</artifactId>
+            <version>${org.mapstruct.extensions.spring.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+
     </dependencies>
 
     <build>

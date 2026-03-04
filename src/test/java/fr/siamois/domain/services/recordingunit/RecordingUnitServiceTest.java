@@ -16,14 +16,32 @@ import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUn
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitIdInfoRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitRepository;
 import fr.siamois.infrastructure.database.repositories.team.TeamMemberRepository;
+import fr.siamois.mapper.*;
+import fr.siamois.ui.mapper.adapter.ConversionServiceAdapter;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.runner.RunWith;
+import org.mapstruct.Qualifier;
+import org.mapstruct.extensions.spring.test.ConverterScan;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.core.convert.ConversionService;
+import org.springframework.core.convert.support.ConfigurableConversionService;
+import org.springframework.core.convert.support.DefaultConversionService;
+import org.springframework.core.convert.support.GenericConversionService;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
+import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
+import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
+import java.io.ObjectInputFilter;
 import java.util.*;
 
 
@@ -32,6 +50,12 @@ import static org.mockito.ArgumentCaptor.forClass;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
+
+@SpringJUnitConfig(classes = {
+        RecordingUnitMapperImpl.class,
+        ActionUnitMapperImpl.class,
+        ActionUnitSummaryMapperImpl.class
+})
 @ExtendWith(MockitoExtension.class)
 class RecordingUnitServiceTest {
 
@@ -60,13 +84,19 @@ class RecordingUnitServiceTest {
 
     @Mock
     private RecordingUnitIdInfoRepository recordingUnitIdInfoRepository;
-
-    @Mock
-    private ConversionService conversionService;
-
-
     @InjectMocks
     private RecordingUnitService recordingUnitService;
+
+    @Mock
+    private ApplicationContext applicationContext;
+
+    @Autowired // Mockito will create an instance of the IMPL and inject the @Mock above into it
+    private RecordingUnitMapperImpl recordingUnitMapper;
+
+    @BeforeEach
+    void setUp() {
+
+    }
 
 
     @Test
@@ -90,18 +120,18 @@ class RecordingUnitServiceTest {
         RecordingUnit recordingUnit = new RecordingUnit();
 
         // Mock the conversion from DTO to entity
-        when(conversionService.convert(any(RecordingUnitDTO.class), eq(RecordingUnit.class))).thenReturn(recordingUnit);
+        //when(conversionService.convert(any(RecordingUnitDTO.class), eq(RecordingUnit.class))).thenReturn(recordingUnit);
         // Mock the save method
         when(recordingUnitRepository.save(any(RecordingUnit.class))).thenReturn(recordingUnit);
         // Mock the conversion from entity to DTO (return a dummy DTO)
-        when(conversionService.convert(any(RecordingUnit.class), eq(RecordingUnitDTO.class))).thenReturn(new RecordingUnitDTO());
+        //when(conversionService.convert(any(RecordingUnit.class), eq(RecordingUnitDTO.class))).thenReturn(new RecordingUnitDTO());
 
         // Act
         recordingUnitService.save(new RecordingUnitDTO());
 
         // Assert: Capture the argument passed to the last convert call
         ArgumentCaptor<RecordingUnit> entityCaptor = forClass(RecordingUnit.class);
-        verify(conversionService).convert(entityCaptor.capture(), eq(RecordingUnitDTO.class));
+        //verify(conversionService).convert(entityCaptor.capture(), eq(RecordingUnitDTO.class));
 
         RecordingUnit savedEntity = entityCaptor.getValue();
         assertNotNull(savedEntity);
@@ -135,11 +165,11 @@ class RecordingUnitServiceTest {
         rels.add(rel);
         toInsert.setRelationshipsAsUnit1(rels);
 
-        when(conversionService.convert(any(RecordingUnitDTO.class), eq(RecordingUnit.class))).thenReturn(toInsert);
+        //when(conversionService.convert(any(RecordingUnitDTO.class), eq(RecordingUnit.class))).thenReturn(toInsert);
         when(recordingUnitRepository.findById(1L)).thenReturn(Optional.of(managed));
         when(recordingUnitRepository.findById(2L)).thenReturn(Optional.of(unit2));
         when(recordingUnitRepository.save(any(RecordingUnit.class))).thenAnswer(invocation -> invocation.getArgument(0));
-        when(conversionService.convert(any(RecordingUnit.class), eq(RecordingUnitDTO.class))).thenReturn(toInsertDto);
+        //when(conversionService.convert(any(RecordingUnit.class), eq(RecordingUnitDTO.class))).thenReturn(toInsertDto);
 
         // Act
         RecordingUnitDTO result = recordingUnitService.save(toInsertDto);
@@ -173,11 +203,11 @@ class RecordingUnitServiceTest {
         rels.add(rel);
         toInsert.setRelationshipsAsUnit2(rels);
 
-        when(conversionService.convert(any(RecordingUnitDTO.class), eq(RecordingUnit.class))).thenReturn(toInsert);
+        //when(conversionService.convert(any(RecordingUnitDTO.class), eq(RecordingUnit.class))).thenReturn(toInsert);
         when(recordingUnitRepository.findById(1L)).thenReturn(Optional.of(managed));
         when(recordingUnitRepository.findById(2L)).thenReturn(Optional.of(unit2));
         when(recordingUnitRepository.save(any(RecordingUnit.class))).thenAnswer(invocation -> invocation.getArgument(0));
-        when(conversionService.convert(any(RecordingUnit.class), eq(RecordingUnitDTO.class))).thenReturn(toInsertDto);
+        //when(conversionService.convert(any(RecordingUnit.class), eq(RecordingUnitDTO.class))).thenReturn(toInsertDto);
 
         // Act
         RecordingUnitDTO result = recordingUnitService.save(toInsertDto);
