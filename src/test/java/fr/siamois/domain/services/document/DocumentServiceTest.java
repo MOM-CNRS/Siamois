@@ -14,6 +14,8 @@ import fr.siamois.domain.services.document.compressor.FileCompressor;
 import fr.siamois.dto.entity.*;
 import fr.siamois.infrastructure.database.repositories.DocumentRepository;
 import fr.siamois.infrastructure.files.DocumentStorage;
+import fr.siamois.mapper.InstitutionMapperImpl;
+import fr.siamois.mapper.PersonMapperImpl;
 import fr.siamois.utils.DocumentUtils;
 import org.apache.tomcat.util.http.fileupload.InvalidFileNameException;
 import org.junit.jupiter.api.BeforeEach;
@@ -48,8 +50,8 @@ class DocumentServiceTest {
     @Mock
     private FileCompressor fileCompressor;
 
-    private ConversionService conversionService;
-
+    private final PersonMapperImpl personMapper = new PersonMapperImpl();
+    private final InstitutionMapperImpl institutionMapper = new InstitutionMapperImpl();
 
     @InjectMocks
     private DocumentService documentService;
@@ -58,7 +60,7 @@ class DocumentServiceTest {
 
     @BeforeEach
     void setUp() {
-        documentService = new DocumentService(documentRepository, conversionService, documentStorage, List.of(fileCompressor));
+        documentService = new DocumentService(documentRepository, personMapper, institutionMapper, documentStorage, List.of(fileCompressor));
     }
 
     @Test

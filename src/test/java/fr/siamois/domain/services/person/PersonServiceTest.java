@@ -14,7 +14,6 @@ import fr.siamois.domain.services.auth.PendingPersonService;
 import fr.siamois.domain.services.person.verifier.EmailVerifier;
 import fr.siamois.domain.services.person.verifier.PasswordVerifier;
 import fr.siamois.domain.services.person.verifier.PersonDataVerifier;
-import fr.siamois.dto.entity.ActionUnitDTO;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.infrastructure.database.repositories.person.PendingInstitutionInviteRepository;
@@ -119,6 +118,8 @@ class PersonServiceTest {
         // Arrange
         when(personRepository.save(person)).thenReturn(person);
 
+        when(conversionService.convert(any(PersonDTO.class), eq(Person.class))).thenReturn(person);
+
         // Act
         personService.updatePerson(personDto);
 
@@ -146,10 +147,10 @@ class PersonServiceTest {
         when(passwordEncoder.encode("newPassword")).thenReturn("encodedNewPassword");
 
         // Act
-        personService.updatePassword(personDto, "newPassword");
+        personService.updatePassword(1L, "newPassword");
 
         // Assert
-        assertEquals("encodedNewPassword", person.getPassword());
+        verify(personRepository).updatePasswordById(1L, "encodedNewPassword");
     }
 
     @Test
@@ -159,7 +160,7 @@ class PersonServiceTest {
         PersonSettings settings = new PersonSettings();
         settings.setPerson(person);
 
-        when(personSettingsRepository.findByPerson(person)).thenReturn(Optional.empty());
+        when(personSettingsRepository.findByPersonId(1L)).thenReturn(Optional.empty());
         when(personSettingsRepository.save(any(PersonSettings.class))).thenReturn(settings);
 
         PersonSettings result = personService.createOrGetSettingsOf(personDto);
@@ -186,6 +187,8 @@ class PersonServiceTest {
     void createPerson_Success() throws Exception {
         when(personRepository.save(any(Person.class))).thenReturn(person);
 
+        when(conversionService.convert(any(PersonDTO.class), eq(Person.class))).thenReturn(person);
+
         Person result = personService.createPerson(personDto, "password");
 
         assertNotNull(result);
@@ -194,7 +197,7 @@ class PersonServiceTest {
 
     @Test
     void createPerson_ThrowsInvalidEmailException() {
-        person.setEmail("invalid-email");
+        personDto.setEmail("invalid-email");
         assertThrows(InvalidEmailException.class, () -> personService.createPerson(personDto, "password"));
     }
 
@@ -361,6 +364,7 @@ class PersonServiceTest {
         newPerson.setId(42L);
         PersonDTO newPersonDto = new PersonDTO();
         newPersonDto.setId(42L);
+        newPersonDto.setEmail("mail@localhost.com");
         PendingPerson pendingPerson = new PendingPerson();
         pendingPerson.setEmail("mail@localhost.com");
 
@@ -387,7 +391,7 @@ class PersonServiceTest {
 
         // On mock le save du person
         when(personRepository.save(any(Person.class))).thenReturn(newPerson);
-
+        when(conversionService.convert(any(PersonDTO.class),eq(Person.class))).thenReturn(person);
         // Act
         person.setPassword("password");
         person.setEmail("mail@localhost.com");
@@ -429,6 +433,8 @@ class PersonServiceTest {
         when(pendingPersonService.createOrGetPendingPerson(any())).thenReturn(pendingPerson);
         when(personRepository.save(any(Person.class))).thenReturn(newPerson);
 
+        when(conversionService.convert(any(PersonDTO.class),eq(Person.class))).thenReturn(newPerson);
+
         // Act
         person.setPassword("password");
         person.setEmail("mail@localhost.com");
@@ -454,11 +460,12 @@ class PersonServiceTest {
         pendingPerson.setEmail("mail@localhost.com");
         PersonDTO newPersonDto = new PersonDTO();
         newPersonDto.setId(42L);
+        newPersonDto.setEmail("mail@localhost.com");
 
         when(pendingInstitutionInviteRepository.findAllByPendingPerson(any())).thenReturn(Set.of());
         when(pendingPersonService.createOrGetPendingPerson(any())).thenReturn(pendingPerson);
         when(personRepository.save(any(Person.class))).thenReturn(newPerson);
-
+        when(conversionService.convert(any(PersonDTO.class),eq(Person.class))).thenReturn(person);
         // Act
         person.setPassword("password");
         person.setEmail("mail@localhost.com");

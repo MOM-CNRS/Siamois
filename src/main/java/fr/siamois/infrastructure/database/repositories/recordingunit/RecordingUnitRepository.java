@@ -1,7 +1,6 @@
 package fr.siamois.infrastructure.database.repositories.recordingunit;
 
 
-import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import jakarta.transaction.Transactional;
@@ -72,7 +71,7 @@ public interface RecordingUnitRepository extends CrudRepository<RecordingUnit, L
     )
     List<RecordingUnit> findAllWithoutArkOfInstitution(Long institutionId);
 
-    long countByCreatedByInstitution(Institution institution);
+    long countByCreatedByInstitutionId(Long institutionId);
 
     @Query(
             nativeQuery = true,

@@ -18,13 +18,17 @@ import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUn
 import fr.siamois.infrastructure.database.repositories.team.TeamMemberRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.core.convert.ConversionService;
 
 import java.util.*;
 
+
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentCaptor.forClass;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -57,6 +61,9 @@ class RecordingUnitServiceTest {
     @Mock
     private RecordingUnitIdInfoRepository recordingUnitIdInfoRepository;
 
+    @Mock
+    private ConversionService conversionService;
+
 
     @InjectMocks
     private RecordingUnitService recordingUnitService;
@@ -79,100 +86,108 @@ class RecordingUnitServiceTest {
 
     @Test
     void save() {
-        RecordingUnitDTO recordingUnit = new RecordingUnitDTO();
 
-        when(recordingUnitRepository.save(any(RecordingUnit.class))).thenReturn(new RecordingUnit());
+        RecordingUnit recordingUnit = new RecordingUnit();
 
-        RecordingUnitDTO result = recordingUnitService.save(recordingUnit);
+        // Mock the conversion from DTO to entity
+        when(conversionService.convert(any(RecordingUnitDTO.class), eq(RecordingUnit.class))).thenReturn(recordingUnit);
+        // Mock the save method
+        when(recordingUnitRepository.save(any(RecordingUnit.class))).thenReturn(recordingUnit);
+        // Mock the conversion from entity to DTO (return a dummy DTO)
+        when(conversionService.convert(any(RecordingUnit.class), eq(RecordingUnitDTO.class))).thenReturn(new RecordingUnitDTO());
 
-        assertNotNull(result);
-        assertEquals(recordingUnit, result);
+        // Act
+        recordingUnitService.save(new RecordingUnitDTO());
+
+        // Assert: Capture the argument passed to the last convert call
+        ArgumentCaptor<RecordingUnit> entityCaptor = forClass(RecordingUnit.class);
+        verify(conversionService).convert(entityCaptor.capture(), eq(RecordingUnitDTO.class));
+
+        RecordingUnit savedEntity = entityCaptor.getValue();
+        assertNotNull(savedEntity);
+
     }
 
     @Test
     void countByInstitution_success() {
-        when(recordingUnitRepository.countByCreatedByInstitution(any(Institution.class))).thenReturn(3L);
-        assertEquals(3,recordingUnitService.countByInstitution(new InstitutionDTO()));
+        when(recordingUnitRepository.countByCreatedByInstitutionId(3L)).thenReturn(3L);
+        assertEquals(3,recordingUnitService.countByInstitutionId(3L));
     }
 
     @Test
     void save_SyncsStratigraphicRelationshipsAsUnit1() {
         // Arrange
-        RecordingUnitDTO recordingUnit = new RecordingUnitDTO();
-        RecordingUnitDTO managedRecordingUnit = new RecordingUnitDTO();
-        RecordingUnit managedRecordingUnit2 = new RecordingUnit();
-        managedRecordingUnit.setId(1L);
-        recordingUnit.setId(1L);
-        managedRecordingUnit2.setId(2L);
 
-        RecordingUnitSummaryDTO recordingUnitSummaryDTO1 = new RecordingUnitSummaryDTO();
-        recordingUnitSummaryDTO1.setId(1L);
+        // DTO of recording unit with one relationship
+        RecordingUnitSummaryDTO summary1 = new RecordingUnitSummaryDTO(); summary1.setId(1L); summary1.setFullIdentifier("1");
+        RecordingUnitSummaryDTO summary2 = new RecordingUnitSummaryDTO(); summary2.setId(2L); summary2.setFullIdentifier("2");
+        StratigraphicRelationshipDTO relDto = new StratigraphicRelationshipDTO(); relDto.setUnit1(summary1); relDto.setUnit2(summary2);
+        RecordingUnitDTO toInsertDto = new RecordingUnitDTO(); toInsertDto.setId(1L); toInsertDto.setFullIdentifier("1");
+        toInsertDto.setRelationshipsAsUnit1(new HashSet<>());
+        toInsertDto.getRelationshipsAsUnit1().add(relDto);
 
+        // Entity to insert
+        RecordingUnit toInsert = new RecordingUnit(); toInsert.setId(1L); toInsert.setFullIdentifier("1");
+        RecordingUnit managed = new RecordingUnit(); toInsert.setId(1L); toInsert.setFullIdentifier("1");
+        RecordingUnit unit2 = new RecordingUnit(); unit2.setId(2L); unit2.setFullIdentifier("2");
+        StratigraphicRelationship rel = new StratigraphicRelationship(); rel.setUnit1(toInsert); rel.setUnit2(unit2);
+        Set<StratigraphicRelationship> rels = new HashSet<>();
+        rels.add(rel);
+        toInsert.setRelationshipsAsUnit1(rels);
 
-        // Setup relationships for recordingUnit
-        Set<StratigraphicRelationshipDTO> relationshipsAsUnit1 = new HashSet<>();
-        StratigraphicRelationshipDTO relUnit1 = new StratigraphicRelationshipDTO();
-        RecordingUnitSummaryDTO unit2 = new RecordingUnitSummaryDTO();
-        unit2.setId(2L);
-        relUnit1.setUnit1(recordingUnitSummaryDTO1);
-        relUnit1.setUnit2(unit2);
-        relUnit1.setConcept(new ConceptDTO());
-        relationshipsAsUnit1.add(relUnit1);
-        recordingUnit.setRelationshipsAsUnit1(relationshipsAsUnit1);
-
-        when(recordingUnitRepository.findById(2L)).thenReturn(Optional.of(managedRecordingUnit2));
+        when(conversionService.convert(any(RecordingUnitDTO.class), eq(RecordingUnit.class))).thenReturn(toInsert);
+        when(recordingUnitRepository.findById(1L)).thenReturn(Optional.of(managed));
+        when(recordingUnitRepository.findById(2L)).thenReturn(Optional.of(unit2));
         when(recordingUnitRepository.save(any(RecordingUnit.class))).thenAnswer(invocation -> invocation.getArgument(0));
-        when(conceptService.saveOrGetConcept(any(ConceptDTO.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(conversionService.convert(any(RecordingUnit.class), eq(RecordingUnitDTO.class))).thenReturn(toInsertDto);
 
         // Act
-        RecordingUnitDTO result = recordingUnitService.save(recordingUnit);
+        RecordingUnitDTO result = recordingUnitService.save(toInsertDto);
 
         // Assert
         assertNotNull(result);
         assertEquals(1, result.getRelationshipsAsUnit1().size());
         StratigraphicRelationshipDTO savedRel = result.getRelationshipsAsUnit1().iterator().next();
-        assertEquals(unit2, savedRel.getUnit2());
-        assertEquals(recordingUnitSummaryDTO1, savedRel.getUnit1());
+        assertEquals(summary2, savedRel.getUnit2());
+        assertEquals(summary1, savedRel.getUnit1());
     }
 
     @Test
     void save_SyncsStratigraphicRelationshipsAsUnit2() {
         // Arrange
-        RecordingUnitDTO recordingUnit = new RecordingUnitDTO();
-        RecordingUnitDTO managedRecordingUnit = new RecordingUnitDTO();
-        RecordingUnit managedRecordingUnit2 = new RecordingUnit();
-        managedRecordingUnit.setId(1L);
-        recordingUnit.setId(1L);
-        managedRecordingUnit2.setId(2L);
 
-        RecordingUnitSummaryDTO recordingUnitSummaryDTO1 = new RecordingUnitSummaryDTO();
-        recordingUnitSummaryDTO1.setId(1L);
+        // DTO of recording unit with one relationship
+        RecordingUnitSummaryDTO summary1 = new RecordingUnitSummaryDTO(); summary1.setId(1L); summary1.setFullIdentifier("1");
+        RecordingUnitSummaryDTO summary2 = new RecordingUnitSummaryDTO(); summary2.setId(2L); summary2.setFullIdentifier("2");
+        StratigraphicRelationshipDTO relDto = new StratigraphicRelationshipDTO(); relDto.setUnit1(summary2); relDto.setUnit2(summary1);
+        RecordingUnitDTO toInsertDto = new RecordingUnitDTO(); toInsertDto.setId(1L); toInsertDto.setFullIdentifier("1");
+        toInsertDto.setRelationshipsAsUnit2(new HashSet<>());
+        toInsertDto.getRelationshipsAsUnit2().add(relDto);
 
+        // Entity to insert
+        RecordingUnit toInsert = new RecordingUnit(); toInsert.setId(1L); toInsert.setFullIdentifier("1");
+        RecordingUnit managed = new RecordingUnit(); toInsert.setId(1L); toInsert.setFullIdentifier("1");
+        RecordingUnit unit2 = new RecordingUnit(); unit2.setId(2L); unit2.setFullIdentifier("2");
+        StratigraphicRelationship rel = new StratigraphicRelationship(); rel.setUnit1(unit2); rel.setUnit2(toInsert);
+        Set<StratigraphicRelationship> rels = new HashSet<>();
+        rels.add(rel);
+        toInsert.setRelationshipsAsUnit2(rels);
 
-        // Setup relationships for recordingUnit
-        Set<StratigraphicRelationshipDTO> relationshipsAsUnit2 = new HashSet<>();
-        StratigraphicRelationshipDTO relUnit2 = new StratigraphicRelationshipDTO();
-        RecordingUnitSummaryDTO unit1 = new RecordingUnitSummaryDTO();
-        unit1.setId(2L);
-        relUnit2.setUnit1(unit1);
-        relUnit2.setUnit2(recordingUnitSummaryDTO1);
-        relUnit2.setConcept(new ConceptDTO());
-        relationshipsAsUnit2.add(relUnit2);
-        recordingUnit.setRelationshipsAsUnit2(relationshipsAsUnit2);
-
-        when(recordingUnitRepository.findById(2L)).thenReturn(Optional.of(managedRecordingUnit2));
+        when(conversionService.convert(any(RecordingUnitDTO.class), eq(RecordingUnit.class))).thenReturn(toInsert);
+        when(recordingUnitRepository.findById(1L)).thenReturn(Optional.of(managed));
+        when(recordingUnitRepository.findById(2L)).thenReturn(Optional.of(unit2));
         when(recordingUnitRepository.save(any(RecordingUnit.class))).thenAnswer(invocation -> invocation.getArgument(0));
-        when(conceptService.saveOrGetConcept(any(Concept.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(conversionService.convert(any(RecordingUnit.class), eq(RecordingUnitDTO.class))).thenReturn(toInsertDto);
 
         // Act
-        RecordingUnitDTO result = recordingUnitService.save(recordingUnit);
+        RecordingUnitDTO result = recordingUnitService.save(toInsertDto);
 
         // Assert
         assertNotNull(result);
         assertEquals(1, result.getRelationshipsAsUnit2().size());
         StratigraphicRelationshipDTO savedRel = result.getRelationshipsAsUnit2().iterator().next();
-        assertEquals(unit1, savedRel.getUnit1());
-        assertEquals(recordingUnitSummaryDTO1, savedRel.getUnit2());
+        assertEquals(summary2, savedRel.getUnit1());
+        assertEquals(summary1, savedRel.getUnit2());
     }
 
     @Test

@@ -16,6 +16,9 @@ import fr.siamois.domain.services.document.compressor.FileCompressor;
 import fr.siamois.dto.entity.*;
 import fr.siamois.infrastructure.database.repositories.DocumentRepository;
 import fr.siamois.infrastructure.files.DocumentStorage;
+import fr.siamois.mapper.InstitutionMapper;
+import fr.siamois.mapper.InstitutionMapperImpl;
+import fr.siamois.mapper.PersonMapperImpl;
 import fr.siamois.utils.CodeUtils;
 import fr.siamois.utils.DocumentUtils;
 import lombok.RequiredArgsConstructor;
@@ -44,7 +47,8 @@ public class DocumentService implements ArkEntityService {
 
 
     private final DocumentRepository documentRepository;
-    private final ConversionService conversionService;
+    private final PersonMapperImpl personMapper;
+    private final InstitutionMapperImpl institutionMapper;
 
     private static final int MAX_GENERATIONS = 100;
     private final DocumentStorage documentStorage;
@@ -109,8 +113,8 @@ public class DocumentService implements ArkEntityService {
 
             document.setMd5Sum(DocumentUtils.md5(bufferedInputStream));
             document.setFileCode(generateFileInternalCode());
-            document.setCreatedBy(conversionService.convert(userInfo.getUser(), Person.class));
-            document.setCreatedByInstitution(conversionService.convert(userInfo.getInstitution(), Institution.class));
+            document.setCreatedBy(personMapper.invertConvert(userInfo.getUser()));
+            document.setCreatedByInstitution(institutionMapper.invertConvert(userInfo.getInstitution()));
             document.setUrl(String.format("%s/content/%s", contextPath, document.contentFileName()));
 
             documentStorage.save(userInfo, document, bufferedInputStream);

@@ -22,6 +22,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.convert.ConversionService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.HashSet;
 import java.util.List;
@@ -120,7 +121,7 @@ public class PersonService {
 
         Person person = conversionService.convert(personDTO,Person.class);
 
-        person.setPassword(passwordEncoder.encode(person.getPassword()));
+        person.setPassword(passwordEncoder.encode(password));
 
         person = personRepository.save(person);
 
@@ -245,21 +246,20 @@ public class PersonService {
     /**
      * Update the password of a Person.
      *
-     * @param personDTO      The Person whose password is to be updated. The person must have an ID set.
+     * @param id The person ID
      * @param newPassword The new plain password to set for the person.
      * @throws InvalidPasswordException if the new password does not meet the required criteria.
      */
-    public void updatePassword(PersonDTO personDTO, String newPassword) throws InvalidPasswordException {
-        PasswordVerifier verifier = findPasswordVerifier().orElseThrow(() -> new IllegalStateException("Password verifier is not defined"));
+    @Transactional
+    public void updatePassword(Long id, String newPassword) throws InvalidPasswordException {
+        PasswordVerifier verifier = findPasswordVerifier()
+                .orElseThrow(() -> new IllegalStateException("Password verifier is not defined"));
+
         verifier.verify(newPassword);
-        Person person = conversionService.convert(personDTO,Person.class);
-        person.setPassword(newPassword);
-        person.setPassToModify(false);
 
+        String encodedPassword = passwordEncoder.encode(newPassword);
 
-
-        person.setPassword(passwordEncoder.encode(newPassword));
-        personRepository.save(person);
+        personRepository.updatePasswordById(id, encodedPassword);
     }
 
     /**
@@ -269,11 +269,12 @@ public class PersonService {
      * @return The PersonSettings object for the given person.
      */
     public PersonSettings createOrGetSettingsOf(PersonDTO personDTO) {
-        Person person = conversionService.convert(personDTO,Person.class);
-        Optional<PersonSettings> personSettings = personSettingsRepository.findByPerson(person);
+
+        Optional<PersonSettings> personSettings = personSettingsRepository.findByPersonId(personDTO.getId());
         if (personSettings.isPresent()) return personSettings.get();
 
         PersonSettings toSave = new PersonSettings();
+        Person person = conversionService.convert(personDTO,Person.class);
         toSave.setPerson(person);
         toSave.setDefaultInstitution(conversionService.convert(findDefaultInstitution(personDTO),Institution.class));
         toSave.setLangCode(findDefaultLang());

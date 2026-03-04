@@ -7,7 +7,6 @@ import fr.siamois.domain.models.actionunit.ActionUnitResolveConfig;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.exceptions.recordingunit.FailedRecordingUnitSaveException;
 import fr.siamois.domain.models.exceptions.recordingunit.RecordingUnitNotFoundException;
-import fr.siamois.domain.models.form.customformresponse.CustomFormResponse;
 import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.recordingunit.StratigraphicRelationship;
@@ -27,6 +26,8 @@ import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUn
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitIdInfoRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitRepository;
 import fr.siamois.infrastructure.database.repositories.team.TeamMemberRepository;
+import fr.siamois.mapper.RecordingUnitMapper;
+import fr.siamois.mapper.RecordingUnitMapperImpl;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -67,6 +68,7 @@ public class RecordingUnitService implements ArkEntityService {
     private final RecordingUnitIdCounterRepository recordingUnitIdCounterRepository;
     private final RecordingUnitIdInfoRepository recordingUnitIdInfoRepository;
     private final ApplicationContext applicationContext;
+    private final RecordingUnitMapperImpl recordingUnitMapper;
     private final ConversionService conversionService;
 
     /**
@@ -92,7 +94,6 @@ public class RecordingUnitService implements ArkEntityService {
      * Save a recording unit with its associated concept and related units.
      *
      * @param recordingUnitDTO    The recording unit to save.
-     * @param conceptDTO          The concept associated with the recording unit.
      * @return The saved RecordingUnit instance.
      */
     @Transactional
@@ -100,8 +101,8 @@ public class RecordingUnitService implements ArkEntityService {
 
         try {
 
-            RecordingUnit recordingUnit = conversionService.convert(recordingUnitDTO, RecordingUnit.class);
-            return conversionService.convert(save(recordingUnit), RecordingUnitDTO.class);
+            RecordingUnit recordingUnit = recordingUnitMapper.invertConvert(recordingUnitDTO);
+            return recordingUnitMapper.convert(save(recordingUnit));
 
         } catch (RuntimeException e) {
             log.error(e.getMessage(), e);
@@ -114,18 +115,14 @@ public class RecordingUnitService implements ArkEntityService {
 
         try {
 
-
             RecordingUnit managedRecordingUnit;
 
             assert recordingUnit != null;
             managedRecordingUnit = newOrGetRecordingUnit(recordingUnit);
 
-            setupActionUnitInfo(recordingUnit, managedRecordingUnit);
             setupStratigraphicRelationships(recordingUnit, managedRecordingUnit);
-            setupConcept(recordingUnit, managedRecordingUnit);
             setupSpatialUnit(recordingUnit, managedRecordingUnit);
             setupOtherFields(recordingUnit, managedRecordingUnit);
-            managedRecordingUnit = setupAdditionalAnswers(recordingUnit, managedRecordingUnit);
             setupParents(recordingUnit, managedRecordingUnit);
             setupChilds(recordingUnit, managedRecordingUnit);
 
@@ -169,134 +166,66 @@ public class RecordingUnitService implements ArkEntityService {
         }
     }
 
-    private RecordingUnit setupAdditionalAnswers(RecordingUnit recordingUnit, RecordingUnit managedRecordingUnit) {
 
-        CustomFormResponse managedFormResponse;
-
-        if (recordingUnit.getFormResponse() != null && recordingUnit.getFormResponse().getForm() != null) {
-            // Save the form response if there is one
-
-            // Get the existing response or create a new one
-            if (managedRecordingUnit.getFormResponse() == null) {
-                // Initialize the managed form response
-                managedFormResponse = new CustomFormResponse();
-                managedRecordingUnit.setFormResponse(managedFormResponse);
-            } else {
-                managedFormResponse = managedRecordingUnit.getFormResponse();
-            }
-            // Process form response
-            customFormResponseService
-                    .saveFormResponse(managedFormResponse, recordingUnit.getFormResponse());
-        } else {
-            managedRecordingUnit.setFormResponse(null);
-        }
-
-
-        managedRecordingUnit = recordingUnitRepository.save(managedRecordingUnit);
-        return managedRecordingUnit;
-    }
 
     private static void setupOtherFields(RecordingUnit recordingUnit, RecordingUnit managedRecordingUnit) {
-        managedRecordingUnit.setAltitude(recordingUnit.getAltitude());
-        managedRecordingUnit.setArk(recordingUnit.getArk());
-        managedRecordingUnit.setDescription(recordingUnit.getDescription());
-        managedRecordingUnit.setFullIdentifier(recordingUnit.getFullIdentifier());
-        managedRecordingUnit.setAuthor(recordingUnit.getAuthor());
-        managedRecordingUnit.setClosingDate(recordingUnit.getClosingDate());
-        managedRecordingUnit.setOpeningDate(recordingUnit.getOpeningDate());
-        managedRecordingUnit.setSize(recordingUnit.getSize());
-        managedRecordingUnit.setGeomorphologicalCycle(recordingUnit.getGeomorphologicalCycle());
-        managedRecordingUnit.setNormalizedInterpretation(recordingUnit.getNormalizedInterpretation());
-        managedRecordingUnit.setValidated(recordingUnit.getValidated());
-        managedRecordingUnit.setValidatedAt(recordingUnit.getValidatedAt());
-        managedRecordingUnit.setValidatedBy(recordingUnit.getValidatedBy());
-        managedRecordingUnit.setTaq(recordingUnit.getTaq());
-        managedRecordingUnit.setTpq(recordingUnit.getTpq());
-        managedRecordingUnit.setMatrixColor(recordingUnit.getMatrixColor());
-        managedRecordingUnit.setMatrixComposition(recordingUnit.getMatrixComposition());
-        managedRecordingUnit.setMatrixTexture(recordingUnit.getMatrixTexture());
-        managedRecordingUnit.setErosionOrientation(recordingUnit.getErosionOrientation());
-        managedRecordingUnit.setErosionProfile(recordingUnit.getErosionProfile());
-        managedRecordingUnit.setErosionShape(recordingUnit.getErosionShape());
 
         if (managedRecordingUnit.getCreatedBy() == null) {
             managedRecordingUnit.setCreatedBy(recordingUnit.getCreatedBy());
         }
 
-        managedRecordingUnit.setChronologicalPhase(recordingUnit.getChronologicalPhase());
-        managedRecordingUnit.setGeomorphologicalAgent(recordingUnit.getGeomorphologicalAgent());
     }
 
-    private void setupStratigraphicRelationships(RecordingUnit recordingUnit, RecordingUnit managedRecordingUnit) {
-
-        syncAsUnit1(managedRecordingUnit, recordingUnit.getRelationshipsAsUnit1());
-        syncAsUnit2(managedRecordingUnit, recordingUnit.getRelationshipsAsUnit2());
-
+    private void setupStratigraphicRelationships(RecordingUnit source, RecordingUnit target) {
+        syncRelationships(target, source.getRelationshipsAsUnit1(), true);
+        syncRelationships(target, source.getRelationshipsAsUnit2(), false);
     }
 
-    private void syncAsUnit1(RecordingUnit managed, Set<StratigraphicRelationship> incoming) {
-        // Index des relations existantes côté unit1
+    private void syncRelationships(
+            RecordingUnit managed,
+            Set<StratigraphicRelationship> relationships,
+            boolean isUnit1
+    ) {
         Map<StratigraphicRelationship.StratRelKey, StratigraphicRelationship> existing =
-                managed.getRelationshipsAsUnit1().stream()
+                (isUnit1 ? managed.getRelationshipsAsUnit1() : managed.getRelationshipsAsUnit2()).stream()
                         .collect(Collectors.toMap(StratigraphicRelationship::keyOf, Function.identity()));
 
-        // Parcours des relations entrantes
-        for (StratigraphicRelationship incomingRel : incoming) {
-            // ✅ Setter le côté propriétaire
-            incomingRel.setUnit1(managed);
+        for (StratigraphicRelationship rel : relationships) {
+            if (isUnit1) {
+                rel.setUnit1(managed);
+                rel.setUnit2(recordingUnitRepository.findById(rel.getUnit2().getId()).orElse(null));
+            } else {
+                rel.setUnit2(managed);
+                rel.setUnit1(recordingUnitRepository.findById(rel.getUnit1().getId()).orElse(null));
+            }
 
-            RecordingUnit managedUnit2 = recordingUnitRepository.findById(incomingRel.getUnit2().getId()).orElse(null);
-            incomingRel.setUnit2(managedUnit2);
-
-            StratigraphicRelationship.StratRelKey key = StratigraphicRelationship.keyOf(incomingRel);
+            StratigraphicRelationship.StratRelKey key = StratigraphicRelationship.keyOf(rel);
             StratigraphicRelationship managedRel = existing.remove(key);
 
             if (managedRel != null) {
-                // 🔄 UPDATE de la relation existante
-                managedRel.setConcept(incomingRel.getConcept());
-                managedRel.setUncertain(incomingRel.getUncertain());
-                managedRel.setIsAsynchronous(incomingRel.getIsAsynchronous());
-                managedRel.setConceptDirection(incomingRel.getConceptDirection());
+                // Update existing
+                managedRel.setConcept(rel.getConcept());
+                managedRel.setUncertain(rel.getUncertain());
+                managedRel.setIsAsynchronous(rel.getIsAsynchronous());
+                managedRel.setConceptDirection(rel.getConceptDirection());
             } else {
-                // ➕ INSERT nouvelle relation
-                managed.addRelationshipAsUnit1(incomingRel);
+                // Add new
+                if (isUnit1) {
+                    managed.addRelationshipAsUnit1(rel);
+                } else {
+                    managed.addRelationshipAsUnit2(rel);
+                }
             }
         }
 
-        // 🗑 DELETE des relations supprimées
-        existing.values().forEach(managed::removeRelationshipAsUnit1);
-    }
-
-
-    private void syncAsUnit2(RecordingUnit managed, Set<StratigraphicRelationship> incoming) {
-        Map<StratigraphicRelationship.StratRelKey, StratigraphicRelationship> existing =
-                managed.getRelationshipsAsUnit2().stream()
-                        .collect(Collectors.toMap(StratigraphicRelationship::keyOf, Function.identity()));
-
-        for (StratigraphicRelationship incomingRel : incoming) {
-            // ✅ Owner side
-            incomingRel.setUnit2(managed);
-
-            RecordingUnit managedUnit1 = recordingUnitRepository.findById(incomingRel.getUnit1().getId()).orElse(null);
-            incomingRel.setUnit1(managedUnit1);
-
-            StratigraphicRelationship.StratRelKey key = StratigraphicRelationship.keyOf(incomingRel);
-            StratigraphicRelationship managedRel = existing.remove(key);
-
-            if (managedRel != null) {
-                // UPDATE existant
-                managedRel.setConcept(incomingRel.getConcept());
-                managedRel.setUncertain(incomingRel.getUncertain());
-                managedRel.setIsAsynchronous(incomingRel.getIsAsynchronous());
-                managedRel.setConceptDirection(incomingRel.getConceptDirection());
+        // Remove deleted
+        existing.values().forEach(rel -> {
+            if (isUnit1) {
+                managed.removeRelationshipAsUnit1(rel);
             } else {
-                // INSERT
-                managed.addRelationshipAsUnit2(incomingRel);
+                managed.removeRelationshipAsUnit2(rel);
             }
-        }
-
-        // DELETE les supprimés
-        existing.values().forEach(managed::removeRelationshipAsUnit2);
+        });
     }
 
 
@@ -314,14 +243,6 @@ public class RecordingUnitService implements ArkEntityService {
         );
     }
 
-    private void setupConcept(RecordingUnit recordingUnit, RecordingUnit managedRecordingUnit) {
-        managedRecordingUnit.setType(recordingUnit.getType());
-    }
-
-    private void setupActionUnitInfo(RecordingUnit recordingUnit, RecordingUnit managedRecordingUnit) {
-        managedRecordingUnit.setActionUnit(recordingUnit.getActionUnit());
-        managedRecordingUnit.setCreatedByInstitution(recordingUnit.getCreatedByInstitution());
-    }
 
     /**
      * Find a recording unit by its ID
@@ -358,13 +279,12 @@ public class RecordingUnitService implements ArkEntityService {
     /**
      * Count the number of recording units created by a specific institution.
      *
-     * @param institution The institution for which to count the recording units.
+     * @param institutionId The institution for which to count the recording units.
      * @return The count of recording units created by the specified institution.
      */
     @Transactional(readOnly = true)
-    public long countByInstitution(InstitutionDTO institution) {
-        Institution institutionEntity = conversionService.convert(institution, Institution.class);
-        return recordingUnitRepository.countByCreatedByInstitution(institutionEntity);
+    public long countByInstitutionId(Long institutionId) {
+        return recordingUnitRepository.countByCreatedByInstitutionId(institutionId);
     }
 
     /**

@@ -44,7 +44,7 @@ public class UpdatePasswordBean implements Serializable {
     public void updatePassword() {
         if (newPassword != null && newPassword.equals(confirmNewPassword)) {
             try {
-                personService.updatePassword(authenticatedUser, newPassword);
+                personService.updatePassword(authenticatedUser.getId(), newPassword);
                 FacesContext.getCurrentInstance().getExternalContext().redirect(nextUrl);
             } catch (InvalidPasswordException e) {
                 displayErrorMessage("commons.error.user.password.invalid");

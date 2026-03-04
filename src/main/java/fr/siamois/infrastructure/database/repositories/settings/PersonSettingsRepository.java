@@ -7,5 +7,5 @@ import org.springframework.data.repository.CrudRepository;
 import java.util.Optional;
 
 public interface PersonSettingsRepository extends CrudRepository<PersonSettings, Long> {
-    Optional<PersonSettings> findByPerson(Person person);
+    Optional<PersonSettings> findByPersonId(Long personId);
 }

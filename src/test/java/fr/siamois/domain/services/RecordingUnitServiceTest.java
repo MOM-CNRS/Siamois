@@ -6,11 +6,8 @@ import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.ark.Ark;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.exceptions.recordingunit.FailedRecordingUnitSaveException;
-import fr.siamois.domain.models.form.customform.CustomForm;
-import fr.siamois.domain.models.form.customformresponse.CustomFormResponse;
 import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
-import fr.siamois.domain.models.recordingunit.StratigraphicRelationship;
 import fr.siamois.domain.models.recordingunit.identifier.RecordingUnitIdInfo;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
@@ -18,7 +15,6 @@ import fr.siamois.domain.models.vocabulary.Vocabulary;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.form.CustomFormResponseService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
-import fr.siamois.domain.services.recordingunit.StratigraphicRelationshipService;
 import fr.siamois.domain.services.recordingunit.identifier.RuNumParentResolver;
 import fr.siamois.domain.services.recordingunit.identifier.RuNumResolver;
 import fr.siamois.domain.services.recordingunit.identifier.generic.RuIdentifierResolver;
@@ -647,14 +643,14 @@ class RecordingUnitServiceTest {
         // Arrange
         InstitutionDTO institution = new InstitutionDTO();
         institution.setId(1L);
-        when(recordingUnitRepository.countByCreatedByInstitution(any(Institution.class))).thenReturn(10L);
+        when(recordingUnitRepository.countByCreatedByInstitutionId(1L)).thenReturn(10L);
 
         // Act
-        long count = recordingUnitService.countByInstitution(institution);
+        long count = recordingUnitService.countByInstitutionId(1L);
 
         // Assert
         assertEquals(10L, count);
-        verify(recordingUnitRepository, times(1)).countByCreatedByInstitution(any(Institution.class));
+        verify(recordingUnitRepository, times(1)).countByCreatedByInstitutionId(any(Long.class));
     }
 
     @Test

@@ -80,7 +80,7 @@ public class RecordingUnitListPanel extends AbstractListPanel<RecordingUnitDTO> 
 
     @Override
     protected long countUnitsByInstitution() {
-        return recordingUnitService.countByInstitution(sessionSettingsBean.getSelectedInstitution());
+        return recordingUnitService.countByInstitutionId(sessionSettingsBean.getSelectedInstitution().getId());
     }
 
     /**

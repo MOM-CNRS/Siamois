@@ -162,7 +162,7 @@ public class InstitutionListSettingsBean implements Serializable {
     }
 
     public long numberOfRecordingUnitInInstitution(InstitutionDTO institution) {
-        return recordingUnitService.countByInstitution(institution);
+        return recordingUnitService.countByInstitutionId(institution.getId());
     }
 
     public String redirectToInstitution(Institution institution) {

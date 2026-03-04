@@ -75,7 +75,7 @@ public class WelcomePanel extends AbstractPanel implements Serializable {
         refreshName();
 
         try {
-            nbOfRecordingUnits = recordingUnitService.countByInstitution(sessionSettingsBean.getSelectedInstitution());
+            nbOfRecordingUnits = recordingUnitService.countByInstitutionId(sessionSettingsBean.getSelectedInstitution().getId());
             nbOfActionUnits = actionUnitService.countByInstitutionId(sessionSettingsBean.getSelectedInstitution().getId());
             nbOfSpatialUnits = spatialUnitService.countByInstitution(sessionSettingsBean.getSelectedInstitution());
             nbOfSpecimen = specimenService.countByInstitution(sessionSettingsBean.getSelectedInstitution());
