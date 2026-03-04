@@ -202,8 +202,9 @@
 
   // Chip
   .ui-chip {
-    background-color: var(--main-color);
-    color: white;
+    background-color: transparent;
+    color: var(--main-color);
+    border: 1px solid var(--main-color);
     font-size: 16px;
   }
 
@@ -384,9 +385,9 @@
     --light-color-200: #{$light200-color};
     --dark-color: #{$dark-color};
 
-    background-color: var(--main-color);
-    color: white;
-
+    background-color: transparent;
+    color: var(--main-color);
+    border: 1px solid var(--main-color);
 
 
 
