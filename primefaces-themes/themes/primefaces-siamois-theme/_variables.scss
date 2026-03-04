@@ -11,6 +11,7 @@ $primaryDarkerColor: color.scale($primaryColor, $lightness: -20%) !default;
 
 // Entity specific color
 $siamoisGreen: #80B480;
+$siamoisGreenActive: #669966;
 $siamoisPrimary: #BED730;
 $siamoisGreenUnknown: #f9fbf9;
 $siamoisPrimaryGreen: #BED730;
@@ -130,6 +131,7 @@ $highlightTextColor:#6B7280 !default;
     --siamois-green-light-200: #{$siamoisGreenLight200};
     --siamois-green-light-50: #{$siamoisGreenLight50};
     --siamois-over-grey: #{$siamoisOverGrey};
+    --siamois-green-active: #{$siamoisGreenActive};
 
     --main-color: #{$siamoisGreen};
     --light-color-50: #{$siamoisGreenLight50};
