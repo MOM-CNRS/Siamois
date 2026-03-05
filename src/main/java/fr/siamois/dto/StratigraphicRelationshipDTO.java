@@ -5,9 +5,11 @@ import fr.siamois.dto.entity.RecordingUnitSummaryDTO;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.io.Serializable;
+
 @Data
 @NoArgsConstructor
-public class StratigraphicRelationshipDTO  {
+public class StratigraphicRelationshipDTO implements Serializable {
 
     private RecordingUnitSummaryDTO unit1;
     private RecordingUnitSummaryDTO unit2;

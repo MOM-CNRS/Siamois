@@ -5,12 +5,14 @@ import fr.siamois.domain.models.auth.Person;
 import fr.siamois.dto.StratigraphicRelationshipDTO;
 import jakarta.persistence.Transient;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Set;
 
+@EqualsAndHashCode(callSuper = true)
 @Data
 @NoArgsConstructor
 public class RecordingUnitDTO extends AbstractEntityDTO {

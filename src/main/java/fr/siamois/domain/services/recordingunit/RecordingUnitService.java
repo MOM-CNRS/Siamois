@@ -259,7 +259,7 @@ public class RecordingUnitService implements ArkEntityService {
         try {
             RecordingUnit recordingUnit = recordingUnitRepository.findById(id)
                     .orElseThrow(() -> new RecordingUnitNotFoundException("RecordingUnit not found with ID: " + id));
-            return conversionService.convert(recordingUnit, RecordingUnitDTO.class);
+            return recordingUnitMapper.convert(recordingUnit);
         } catch (RuntimeException e) {
             log.error(e.getMessage(), e);
             throw e;
@@ -274,8 +274,8 @@ public class RecordingUnitService implements ArkEntityService {
 
     @Override
     public RecordingUnitDTO save(AbstractEntityDTO toSave) {
-        RecordingUnit toReturn = recordingUnitRepository.save(Objects.requireNonNull(conversionService.convert(toSave, RecordingUnit.class)));
-        return conversionService.convert(toReturn,RecordingUnitDTO.class);
+        RecordingUnit toReturn = recordingUnitRepository.save(Objects.requireNonNull(recordingUnitMapper.invertConvert((RecordingUnitDTO) toSave)));
+        return recordingUnitMapper.convert(toReturn);
     }
 
     /**
@@ -320,7 +320,7 @@ public class RecordingUnitService implements ArkEntityService {
 
         });
 
-        return res.map(recordingUnit -> conversionService.convert(recordingUnit, RecordingUnitDTO.class));
+        return res.map(recordingUnitMapper::convert);
     }
 
     /**
@@ -356,7 +356,7 @@ public class RecordingUnitService implements ArkEntityService {
             Hibernate.initialize(actionUnit.getChildren());
         });
 
-        return res.map(recordingUnit -> conversionService.convert(recordingUnit, RecordingUnitDTO.class));
+        return res.map(recordingUnitMapper::convert);
     }
 
     /**
@@ -433,7 +433,7 @@ public class RecordingUnitService implements ArkEntityService {
             Hibernate.initialize(actionUnit.getChildren());
         });
 
-        return res.map(recordingUnit -> conversionService.convert(recordingUnit, RecordingUnitDTO.class));
+        return res.map(recordingUnitMapper::convert);
     }
 
     /**
@@ -467,7 +467,7 @@ public class RecordingUnitService implements ArkEntityService {
         List<RecordingUnit> recordingUnits = recordingUnitRepository.findRootsByInstitution(institutionId);
         initializeRecordingUnitCollections(recordingUnits);
         return recordingUnits.stream()
-                .map(unit -> conversionService.convert(unit, RecordingUnitDTO.class))
+                .map(recordingUnitMapper::convert)
                 .collect(Collectors.toList());
     }
 
@@ -542,6 +542,9 @@ public class RecordingUnitService implements ArkEntityService {
 
         switch (config) {
             case UNIQUE -> {
+                return recordingUnitIdCounterRepository.ruNextValUnique(actionUnit.getId());
+            }
+            case NONE -> {
                 return recordingUnitIdCounterRepository.ruNextValUnique(actionUnit.getId());
             }
             case PARENT -> {
