@@ -9,6 +9,7 @@ import fr.siamois.domain.models.vocabulary.Vocabulary;
 import fr.siamois.domain.services.vocabulary.FieldConfigurationService;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.infrastructure.database.repositories.institution.InstitutionRepository;
+import fr.siamois.mapper.InstitutionMapper;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -35,6 +36,9 @@ class InstitutionSeederTest {
 
     @Mock
     ThesaurusSeeder thesaurusSeeder;
+
+    @Mock
+    InstitutionMapper institutionMapper;
 
     @Mock
     FieldConfigurationService fieldConfigurationService;
@@ -76,6 +80,7 @@ class InstitutionSeederTest {
         doReturn(null).when(fieldConfigurationService).setupFieldConfigurationForInstitution(any(InstitutionDTO.class), any(Vocabulary.class));
         when(thesaurusSeeder.findVocabularyOrReturnNull("https://thesaurus.mom.fr", "th240")).thenReturn(new Vocabulary());
         when(institutionRepository.findInstitutionByIdentifier(anyString())).thenReturn(Optional.of(i));
+        when(institutionMapper.convert(any(Institution.class))).thenReturn(new InstitutionDTO());
 
         institutionSeeder.seed(toInsert);
 
@@ -123,6 +128,7 @@ class InstitutionSeederTest {
         when(personSeeder.findPersonOrReturnNull(anyString())).thenReturn(p);
         when(institutionRepository.findInstitutionByIdentifier(anyString())).thenReturn(Optional.empty());
         when(institutionRepository.save(any(Institution.class))).thenReturn(new Institution());
+        when(institutionMapper.convert(any(Institution.class))).thenReturn(new InstitutionDTO());
 
         institutionSeeder.seed(toInsert);
 
