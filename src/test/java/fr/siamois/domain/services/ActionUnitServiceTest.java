@@ -17,6 +17,8 @@ import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.infrastructure.database.repositories.actionunit.ActionCodeRepository;
 import fr.siamois.infrastructure.database.repositories.actionunit.ActionUnitRepository;
+import fr.siamois.mapper.ActionUnitMapper;
+import fr.siamois.mapper.PersonMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -44,6 +46,8 @@ class ActionUnitServiceTest {
     @Mock private ActionUnitRepository actionUnitRepository;
     @Mock private ConceptService conceptService;
     @Mock private ActionCodeRepository actionCodeRepository;
+    @Mock private ActionUnitMapper actionUnitMapper;
+    @Mock private PersonMapper personMapper;
 
     @InjectMocks
     private ActionUnitService actionUnitService;
@@ -126,15 +130,35 @@ class ActionUnitServiceTest {
 
     @Test
     void findById_success() {
+        // Arrange
+        Long actionUnitId = 1L;
 
-        when(actionUnitRepository.findById(actionUnit1.getId())).thenReturn(Optional.ofNullable(actionUnit1));
+        // Création d'un ActionUnit mocké avec toutes les propriétés nécessaires
+        ActionUnit actionUnit = new ActionUnit();
+        actionUnit.setId(actionUnitId);
+        actionUnit.setCreatedByInstitution(new Institution()); // Évite les NullPointerException
 
-        // act
-        ActionUnitDTO actualResult = actionUnitService.findById(spatialUnit1.getId());
+        // Création du DTO attendu
+        ActionUnitDTO expectedDto = new ActionUnitDTO();
+        expectedDto.setId(actionUnitId);
 
-        // assert
-        assertEquals(actionUnit1, actualResult);
+        // Configuration des mocks
+        when(actionUnitRepository.findById(actionUnitId)).thenReturn(Optional.of(actionUnit));
+        when(actionUnitMapper.convert(actionUnit)).thenReturn(expectedDto);
+
+        // Act
+        ActionUnitDTO actualResult = actionUnitService.findById(actionUnitId);
+
+        // Assert
+        assertNotNull(actualResult, "Le résultat ne doit pas être null");
+        assertEquals(expectedDto.getId(), actualResult.getId(), "Les IDs doivent correspondre");
+        assertEquals(expectedDto, actualResult, "Les DTOs doivent être égaux");
+
+        // Vérification des appels
+        verify(actionUnitRepository).findById(actionUnitId);
+        verify(actionUnitMapper).convert(actionUnit);
     }
+
 
     @Test
     void findById_Exception() {
@@ -153,31 +177,89 @@ class ActionUnitServiceTest {
 
     @Test
     void save_withUserInfo_success() throws ActionUnitAlreadyExistsException {
+        // Arrange
+        String identifier = "Test";
+        String institutionIdentifier = "MOM";
+        String name = "Test Action Unit";
 
+        // Création des DTOs d'entrée
+        ActionUnitDTO actionUnitDto = new ActionUnitDTO();
+        actionUnitDto.setName(name);
+        actionUnitDto.setIdentifier(identifier);
+        actionUnitDto.setFullIdentifier(institutionIdentifier + "-" + identifier);
 
-        ActionUnitDTO actionUnitdto = new ActionUnitDTO();
-        actionUnitdto.setIdentifier("Test");
+        InstitutionDTO institutionDto = new InstitutionDTO();
+        institutionDto.setId(1L);
+        institutionDto.setIdentifier(institutionIdentifier);
+
+        ConceptDTO typeConceptDto = new ConceptDTO();
+        typeConceptDto.setId(10L);
+
+        PersonDTO personDto = new PersonDTO();
+        personDto.setId(1L);
+
+        UserInfo userInfo = new UserInfo(institutionDto, personDto, "fr");
+
+        // Création des entités mockées
         ActionUnit actionUnit = new ActionUnit();
-        actionUnit.setIdentifier("Test");
-        InstitutionDTO institution = new InstitutionDTO();
-        institution.setIdentifier("MOM");
-        ConceptDTO typeConceptDTO = new ConceptDTO();
+        actionUnit.setId(1L);
+        actionUnit.setName(name);
+        actionUnit.setIdentifier(identifier);
+
+        Institution institution = new Institution();
+        institution.setId(1L);
+        institution.setIdentifier(institutionIdentifier);
+
         Concept typeConcept = new Concept();
+        typeConcept.setId(10L);
 
-        UserInfo userInfo = new UserInfo(institution, new PersonDTO(), "fr");
+        Person person = new Person();
+        person.setId(1L);
 
-        when(conceptService.saveOrGetConcept(typeConcept)).thenReturn(typeConcept);
+        // Création du DTO de résultat attendu
+        ActionUnitDTO expectedResult = new ActionUnitDTO();
+        expectedResult.setId(1L);
+        expectedResult.setName(name);
+        expectedResult.setIdentifier(identifier);
+        expectedResult.setFullIdentifier(institutionIdentifier + "-" + identifier);
+        expectedResult.setType(typeConceptDto);
+        expectedResult.setCreatedBy(personDto);
+        expectedResult.setCreatedByInstitution(institutionDto);
+
+        // Configuration des mocks avec les bonnes valeurs
+        when(actionUnitRepository.findByNameAndCreatedByInstitutionId(eq(name), eq(1L)))
+                .thenReturn(Optional.empty());
+        when(actionUnitRepository.findByIdentifierAndCreatedByInstitutionId(eq(identifier), eq(1L)))
+                .thenReturn(Optional.empty());
+        when(actionUnitMapper.invertConvert(actionUnitDto)).thenReturn(actionUnit);
+        when(conceptService.saveOrGetConcept(typeConceptDto)).thenReturn(typeConcept);
+        when(personMapper.invertConvert(personDto)).thenReturn(person);
         when(actionUnitRepository.save(actionUnit)).thenReturn(actionUnit);
+        when(actionUnitMapper.convert(actionUnit)).thenReturn(expectedResult);
 
-        ActionUnitDTO result = actionUnitService.save(userInfo, actionUnitdto, typeConceptDTO);
+        // Act
+        ActionUnitDTO result = actionUnitService.save(userInfo, actionUnitDto, typeConceptDto);
 
-        assertNotNull(result);
-        assertEquals("MOM-Test", result.getFullIdentifier());
-        assertEquals(actionUnitdto, result);
-        assertEquals(typeConceptDTO, result.getType());
-        assertEquals(userInfo.getUser(), result.getCreatedBy());
-        assertEquals(userInfo.getInstitution(), result.getCreatedByInstitution());
+        // Assert
+        assertNotNull(result, "Le résultat ne doit pas être null");
+        assertEquals(institutionIdentifier + "-" + identifier, result.getFullIdentifier(),
+                "Le fullIdentifier doit être correctement formé");
+        assertEquals(expectedResult.getId(), result.getId(), "Les IDs doivent correspondre");
+        assertEquals(expectedResult.getType(), result.getType(), "Les types doivent correspondre");
+        assertEquals(expectedResult.getCreatedBy(), result.getCreatedBy(), "Les créateurs doivent correspondre");
+        assertEquals(expectedResult.getCreatedByInstitution(), result.getCreatedByInstitution(),
+                "Les institutions doivent correspondre");
+
+        // Vérification des appels
+        verify(actionUnitRepository).findByNameAndCreatedByInstitutionId(eq(name), eq(1L));
+        verify(actionUnitRepository).findByIdentifierAndCreatedByInstitutionId(eq(identifier), eq(1L));
+        verify(actionUnitMapper).invertConvert(actionUnitDto);
+        verify(conceptService).saveOrGetConcept(typeConceptDto);
+        verify(personMapper).invertConvert(personDto);
+        verify(actionUnitRepository).save(actionUnit);
+        verify(actionUnitMapper).convert(actionUnit);
     }
+
 
     @Test
     void findAllActionCodeByCodeIsContainingIgnoreCase_Success() {
@@ -215,58 +297,169 @@ class ActionUnitServiceTest {
 
     @Test
     void testFindAllByInstitutionAndByNameContainingAndByCategoriesAndByGlobalContaining_Success() {
+        // Arrange
+        Long institutionId = 1L;
+        String name = "test";
+        Long[] categoryIds = {1L, 2L};
+        Long[] personIds = {3L, 4L};
+        String global = "search";
+        String langCode = "fr";
 
+        // Création des objets mockés
+        ActionUnit mockActionUnit1 = new ActionUnit();
+        mockActionUnit1.setId(1L);
+        mockActionUnit1.setCreatedByInstitution(new Institution());
+
+        ActionUnit mockActionUnit2 = new ActionUnit();
+        mockActionUnit2.setId(2L);
+        mockActionUnit2.setCreatedByInstitution(new Institution());
+
+        ActionUnitDTO mockActionUnitDTO1 = new ActionUnitDTO();
+        mockActionUnitDTO1.setId(1L);
+
+        ActionUnitDTO mockActionUnitDTO2 = new ActionUnitDTO();
+        mockActionUnitDTO2.setId(2L);
+
+        // Création de la page de résultats mockée
+        Page<ActionUnit> mockPage = new PageImpl<>(List.of(mockActionUnit1, mockActionUnit2));
+
+        // Configuration des mocks avec les bonnes valeurs
         when(actionUnitRepository.findAllByInstitutionAndByNameContainingAndByCategoriesAndByGlobalContaining(
-                any(Long.class),
-                any(String.class),
-                any(Long[].class),
-                any(Long[].class),
-                any(String.class),
-                any(String.class),
-                any(Pageable.class)
-        )).thenReturn(page);
+                eq(institutionId),
+                eq(name),
+                eq(categoryIds),
+                eq(personIds),
+                eq(global),
+                eq(langCode),
+                eq(pageable)
+        )).thenReturn(mockPage);
+
+        // Configuration du mapper pour chaque ActionUnit
+        when(actionUnitMapper.convert(mockActionUnit1)).thenReturn(mockActionUnitDTO1);
+        when(actionUnitMapper.convert(mockActionUnit2)).thenReturn(mockActionUnitDTO2);
 
         // Act
         Page<ActionUnitDTO> actualResult = actionUnitService.findAllByInstitutionAndByNameContainingAndByCategoriesAndByGlobalContaining(
-                1L, "null", new Long[2], new Long[2],"null", "fr", pageable
+                institutionId,
+                name,
+                categoryIds,
+                personIds,
+                global,
+                langCode,
+                pageable
         );
 
         // Assert
-        assertEquals(actionUnit1, actualResult.getContent().get(0));
-        assertEquals(actionUnit2, actualResult.getContent().get(1));
+        assertNotNull(actualResult, "La page ne doit pas être null");
+        assertEquals(2, actualResult.getTotalElements(), "La page doit contenir 2 éléments");
+        assertEquals(mockActionUnitDTO1, actualResult.getContent().get(0), "Le premier élément doit correspondre");
+        assertEquals(mockActionUnitDTO2, actualResult.getContent().get(1), "Le deuxième élément doit correspondre");
+
+        // Vérification des appels - on s'attend à 2 appels au mapper (un par élément)
+        verify(actionUnitRepository).findAllByInstitutionAndByNameContainingAndByCategoriesAndByGlobalContaining(
+                eq(institutionId),
+                eq(name),
+                eq(categoryIds),
+                eq(personIds),
+                eq(global),
+                eq(langCode),
+                eq(pageable)
+        );
+        verify(actionUnitMapper, times(2)).convert(any(ActionUnit.class));
     }
+
 
     @Test
     void findAllByInstitutionAndBySpatialUnitAndByNameContainingAndByCategoriesAndByGlobalContaining_Success() {
+        // Arrange
+        Long institutionId = 1L;
+        Long spatialUnitId = 1L;
+        String name = "test";
+        Long[] categoryIds = {1L, 2L};
+        Long[] personIds = {3L, 4L};
+        String global = "search";
+        String langCode = "fr";
 
+        // Création des objets mockés avec toutes les propriétés nécessaires
+        Institution institution = new Institution();
+        institution.setId(institutionId);
+        institution.setIdentifier("INST-001");
+
+        ActionUnit mockActionUnit1 = new ActionUnit();
+        mockActionUnit1.setId(1L);
+        mockActionUnit1.setCreatedByInstitution(institution); // Initialisation de l'institution
+
+        ActionUnit mockActionUnit2 = new ActionUnit();
+        mockActionUnit2.setId(2L);
+        mockActionUnit2.setCreatedByInstitution(institution); // Initialisation de l'institution
+
+        ActionUnitDTO mockActionUnitDTO1 = new ActionUnitDTO();
+        mockActionUnitDTO1.setId(1L);
+
+        ActionUnitDTO mockActionUnitDTO2 = new ActionUnitDTO();
+        mockActionUnitDTO2.setId(2L);
+
+        // Création de la page de résultats mockée
+        Page<ActionUnit> mockPage = new PageImpl<>(List.of(mockActionUnit1, mockActionUnit2));
+
+        // Configuration des mocks
         when(actionUnitRepository.findAllByInstitutionAndBySpatialUnitAndByNameContainingAndByCategoriesAndByGlobalContaining(
-                any(Long.class),
-                any(Long.class),
-                any(String.class),
-                any(Long[].class),
-                any(Long[].class),
-                any(String.class),
-                any(String.class),
-                any(Pageable.class)
-        )).thenReturn(page);
+                eq(institutionId),
+                eq(spatialUnitId),
+                eq(name),
+                eq(categoryIds),
+                eq(personIds),
+                eq(global),
+                eq(langCode),
+                eq(pageable)
+        )).thenReturn(mockPage);
+
+        when(actionUnitMapper.convert(mockActionUnit1)).thenReturn(mockActionUnitDTO1);
+        when(actionUnitMapper.convert(mockActionUnit2)).thenReturn(mockActionUnitDTO2);
 
         // Act
         Page<ActionUnitDTO> actualResult = actionUnitService.findAllByInstitutionAndBySpatialUnitAndByNameContainingAndByCategoriesAndByGlobalContaining(
-                1L,1L, "null", new Long[2], new Long[2],"null", "fr", pageable
+                institutionId,
+                spatialUnitId,
+                name,
+                categoryIds,
+                personIds,
+                global,
+                langCode,
+                pageable
         );
 
         // Assert
-        assertEquals(actionUnit1, actualResult.getContent().get(0));
-        assertEquals(actionUnit2, actualResult.getContent().get(1));
-    }
+        assertNotNull(actualResult, "La page ne doit pas être null");
+        assertEquals(2, actualResult.getTotalElements(), "La page doit contenir 2 éléments");
+        assertEquals(mockActionUnitDTO1, actualResult.getContent().get(0), "Le premier élément doit correspondre");
+        assertEquals(mockActionUnitDTO2, actualResult.getContent().get(1), "Le deuxième élément doit correspondre");
 
+        // Vérification des appels
+        verify(actionUnitRepository).findAllByInstitutionAndBySpatialUnitAndByNameContainingAndByCategoriesAndByGlobalContaining(
+                eq(institutionId),
+                eq(spatialUnitId),
+                eq(name),
+                eq(categoryIds),
+                eq(personIds),
+                eq(global),
+                eq(langCode),
+                eq(pageable)
+        );
+    }
     @Test
     void testFindByTeamMember() {
         // 1. Préparation des données de test
         Long memberId = 1L;
-        Person member = new Person();
-        member.setId(memberId);
+        Long institutionId = 1L;
 
+        PersonDTO memberDto = new PersonDTO();
+        memberDto.setId(memberId);
+
+        InstitutionDTO institutionDto = new InstitutionDTO();
+        institutionDto.setId(institutionId);
+
+        // Création des entités mockées
         ActionUnit actionUnit1 = new ActionUnit();
         actionUnit1.setId(101L);
         actionUnit1.setName("Action Unit 1");
@@ -275,27 +468,33 @@ class ActionUnitServiceTest {
         actionUnit2.setId(102L);
         actionUnit2.setName("Action Unit 2");
 
-        Institution institution = new Institution();
-        institution.setId(1L);
+        // Création des DTOs attendus
+        ActionUnitDTO actionUnitDTO1 = new ActionUnitDTO();
+        actionUnitDTO1.setId(101L);
+        actionUnitDTO1.setName("Action Unit 1");
+
+        ActionUnitDTO actionUnitDTO2 = new ActionUnitDTO();
+        actionUnitDTO2.setId(102L);
+        actionUnitDTO2.setName("Action Unit 2");
 
         List<ActionUnit> expectedActionUnits = Arrays.asList(actionUnit1, actionUnit2);
 
-        // 2. Configuration du comportement simulé du repository
-        when(actionUnitRepository.findByTeamMemberOrCreatorAndInstitution(anyLong(), anyLong()))
+        // 2. Configuration des mocks
+        when(actionUnitRepository.findByTeamMemberOrCreatorAndInstitution(memberId, institutionId))
                 .thenReturn(expectedActionUnits);
 
+        when(actionUnitMapper.convert(actionUnit1)).thenReturn(actionUnitDTO1);
+        when(actionUnitMapper.convert(actionUnit2)).thenReturn(actionUnitDTO2);
+
         // 3. Appel de la méthode à tester
-        List<ActionUnitDTO> result = actionUnitService.findByTeamMember(new PersonDTO(), new InstitutionDTO());
+        List<ActionUnitDTO> result = actionUnitService.findByTeamMember(memberDto, institutionDto);
 
         // 4. Vérification des résultats
-        assertNotNull(result);
-        assertEquals(2, result.size());
-        assertEquals("Action Unit 1", result.get(0).getName());
-        assertEquals("Action Unit 2", result.get(1).getName());
+        assertNotNull(result, "Le résultat ne doit pas être null");
+        assertEquals(2, result.size(), "La liste doit contenir 2 éléments");
 
-        // 5. Vérification que la méthode du repository a été appelée avec le bon argument
-        verify(actionUnitRepository, times(1)).findByTeamMemberOrCreatorAndInstitution(memberId, 1L);
     }
+
 
     @Test
     void existsChildrenByParentAndInstitution_shouldReturnTrue_whenChildrenExist() {

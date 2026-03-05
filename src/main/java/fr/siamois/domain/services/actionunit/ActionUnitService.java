@@ -18,6 +18,8 @@ import fr.siamois.dto.entity.*;
 import fr.siamois.infrastructure.database.repositories.actionunit.ActionCodeRepository;
 import fr.siamois.infrastructure.database.repositories.actionunit.ActionUnitRepository;
 import fr.siamois.infrastructure.database.repositories.team.TeamMemberRepository;
+import fr.siamois.mapper.ActionUnitMapper;
+import fr.siamois.mapper.PersonMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.Hibernate;
@@ -50,7 +52,8 @@ public class ActionUnitService implements ArkEntityService {
     private final ActionCodeRepository actionCodeRepository;
     private final TeamMemberRepository teamMemberRepository;
     private final InstitutionService institutionService;
-    private final ConversionService conversionService;
+    private final ActionUnitMapper actionUnitMapper;
+    private final PersonMapper personMapper;
 
     /**
      * Find all Action Units by institution, name, categories, persons, and global search.
@@ -85,8 +88,7 @@ public class ActionUnitService implements ArkEntityService {
         });
 
 
-        return res.map(actionUnit ->
-                conversionService.convert(actionUnit, ActionUnitDTO.class)
+        return res.map(actionUnitMapper::convert
         );
     }
 
@@ -124,8 +126,7 @@ public class ActionUnitService implements ArkEntityService {
         });
 
 
-        return res.map(actionUnit ->
-                conversionService.convert(actionUnit, ActionUnitDTO.class)
+        return res.map(actionUnitMapper::convert
         );
     }
 
@@ -142,7 +143,7 @@ public class ActionUnitService implements ArkEntityService {
         try {
             ActionUnit actionUnit = actionUnitRepository.findById(id)
                     .orElseThrow(() -> new ActionUnitNotFoundException("ActionUnit not found with ID: " + id));
-            return conversionService.convert(actionUnit, ActionUnitDTO.class);
+            return actionUnitMapper.convert(actionUnit);
         } catch (RuntimeException e) {
             log.error(e.getMessage(), e);
             throw e;
@@ -186,10 +187,10 @@ public class ActionUnitService implements ArkEntityService {
         }
 
         // Add concept
-        ActionUnit actionUnit = conversionService.convert(actionUnitDTO, ActionUnit.class);
+        ActionUnit actionUnit = actionUnitMapper.invertConvert(actionUnitDTO);
         Concept type = conceptService.saveOrGetConcept(typeConceptDTO);
         actionUnit.setType(type);
-        Person user = conversionService.convert(info.getUser(), Person.class);
+        Person user = personMapper.invertConvert(info.getUser());
         actionUnit.setCreatedBy(user);
 
         try {
@@ -210,7 +211,7 @@ public class ActionUnitService implements ArkEntityService {
     @Transactional
     public ActionUnitDTO save(UserInfo info, ActionUnitDTO actionUnit, ConceptDTO typeConcept)
             throws ActionUnitAlreadyExistsException {
-        return conversionService.convert(saveNotTransactional(info, actionUnit, typeConcept), ActionUnitDTO.class);
+        return actionUnitMapper.convert(saveNotTransactional(info, actionUnit, typeConcept));
     }
 
     /**
@@ -253,9 +254,9 @@ public class ActionUnitService implements ArkEntityService {
     @Override
     public AbstractEntityDTO save(AbstractEntityDTO toSave) {
         try {
-            return conversionService.convert(
+            return actionUnitMapper.convert(
                     actionUnitRepository.save(Objects.requireNonNull(
-                            conversionService.convert(toSave, ActionUnit.class))),ActionUnitDTO.class);
+                            actionUnitMapper.invertConvert((ActionUnitDTO) toSave))));
         } catch (DataIntegrityViolationException e) {
             throw new FailedActionUnitSaveException(e.getMessage());
         }
@@ -339,7 +340,7 @@ public class ActionUnitService implements ArkEntityService {
         List<ActionUnit> res = actionUnitRepository.findRootsByInstitution(institutionId);
         initializeActionUnitCollections(res);
         return res.stream()
-                .map(actionUnit -> conversionService.convert(actionUnit, ActionUnitDTO.class))
+                .map(actionUnitMapper::convert)
                 .toList();
     }
 
@@ -354,7 +355,7 @@ public class ActionUnitService implements ArkEntityService {
         List<ActionUnit> res = actionUnitRepository.findChildrenByParentAndInstitution(parentId, institutionId);
         initializeActionUnitCollections(res);
         return res.stream()
-                .map(actionUnit -> conversionService.convert(actionUnit, ActionUnitDTO.class))
+                .map(actionUnitMapper::convert)
                 .toList();
     }
 
@@ -368,7 +369,7 @@ public class ActionUnitService implements ArkEntityService {
         List<ActionUnit> res = actionUnitRepository.findBySpatialContext(spatialId);
         initializeActionUnitCollections(res);
         return res.stream()
-                .map(actionUnit -> conversionService.convert(actionUnit, ActionUnitDTO.class))
+                .map(actionUnitMapper::convert)
                 .toList();
     }
 
@@ -384,7 +385,7 @@ public class ActionUnitService implements ArkEntityService {
     public List<ActionUnitDTO> findByTeamMember(PersonDTO member, InstitutionDTO institution) {
         List<ActionUnit> actionUnits = actionUnitRepository.findByTeamMemberOrCreatorAndInstitution(member.getId(), institution.getId());
         return actionUnits.stream()
-                .map(actionUnit -> conversionService.convert(actionUnit, ActionUnitDTO.class))
+                .map(actionUnitMapper::convert)
                 .toList();
     }
 
