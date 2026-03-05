@@ -1,6 +1,5 @@
 package fr.siamois.mapper;
 
-import fr.siamois.domain.models.specimen.Specimen;
 import fr.siamois.dto.entity.SpecimenDTO;
 import fr.siamois.infrastructure.database.projection.SpecimenProjection;
 import fr.siamois.ui.mapper.adapter.ConversionServiceAdapter;

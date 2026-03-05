@@ -1,8 +1,6 @@
 package fr.siamois.mapper;
 
-import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.specimen.Specimen;
-import fr.siamois.dto.entity.RecordingUnitDTO;
 import fr.siamois.dto.entity.SpecimenDTO;
 import fr.siamois.ui.mapper.adapter.ConversionServiceAdapter;
 import org.mapstruct.InheritInverseConfiguration;

@@ -1,17 +1,15 @@
 package fr.siamois.infrastructure.database.repositories.specimen;
+
 import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.specimen.Specimen;
-import fr.siamois.infrastructure.database.projection.SpecimenProjection;
 import jakarta.validation.constraints.NotNull;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.CrudRepository;
 import org.springframework.data.repository.history.RevisionRepository;
 import org.springframework.data.repository.query.Param;
-import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
