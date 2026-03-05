@@ -1,6 +1,5 @@
 package fr.siamois.ui.lazydatamodel;
 
-import fr.siamois.domain.models.specimen.Specimen;
 import fr.siamois.domain.services.specimen.SpecimenService;
 import fr.siamois.dto.entity.SpecimenDTO;
 import fr.siamois.ui.bean.LangBean;

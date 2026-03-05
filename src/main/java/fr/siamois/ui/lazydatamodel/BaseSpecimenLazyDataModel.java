@@ -3,8 +3,6 @@ package fr.siamois.ui.lazydatamodel;
 
 import fr.siamois.domain.models.exceptions.recordingunit.FailedRecordingUnitSaveException;
 import fr.siamois.domain.models.form.customfield.CustomFieldSelectOneFromFieldCode;
-import fr.siamois.domain.models.specimen.Specimen;
-import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.specimen.SpecimenService;
 import fr.siamois.dto.entity.ConceptDTO;
 import fr.siamois.dto.entity.SpecimenDTO;
@@ -12,7 +10,6 @@ import fr.siamois.ui.bean.LangBean;
 import fr.siamois.utils.MessageUtils;
 import lombok.Getter;
 import lombok.Setter;
-import org.hibernate.Hibernate;
 import org.primefaces.event.RowEditEvent;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;

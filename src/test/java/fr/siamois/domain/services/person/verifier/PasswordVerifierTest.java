@@ -1,8 +1,6 @@
 package fr.siamois.domain.services.person.verifier;
 
-import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.exceptions.auth.InvalidPasswordException;
-import fr.siamois.dto.entity.PersonDTO;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;

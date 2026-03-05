@@ -1,7 +1,6 @@
 package fr.siamois.ui.bean;
 
 import fr.siamois.domain.models.UserInfo;
-import fr.siamois.domain.models.auth.Person;
 import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.utils.AuthenticatedUserUtils;
 import jakarta.faces.context.FacesContext;

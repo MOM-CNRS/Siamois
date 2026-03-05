@@ -1,16 +1,11 @@
 package fr.siamois.dto.entity;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import io.swagger.models.auth.In;
-import jakarta.persistence.Transient;
-import lombok.Data;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.time.OffsetDateTime;
 import java.util.List;
-import java.util.Set;
 
 @Getter
 @Setter

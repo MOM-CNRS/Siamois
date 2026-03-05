@@ -2,7 +2,6 @@ package fr.siamois.ui.bean.panel.models.panel.list;
 
 
 import fr.siamois.domain.models.auth.Person;
-import fr.siamois.domain.models.specimen.Specimen;
 import fr.siamois.domain.services.authorization.writeverifier.RecordingUnitWriteVerifier;
 import fr.siamois.domain.services.form.FormService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitTreeService;

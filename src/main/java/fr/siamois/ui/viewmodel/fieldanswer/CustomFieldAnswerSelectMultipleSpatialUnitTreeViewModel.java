@@ -1,6 +1,5 @@
 package fr.siamois.ui.viewmodel.fieldanswer;
 
-import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.dto.entity.SpatialUnitDTO;
 import lombok.Getter;
 import lombok.NoArgsConstructor;

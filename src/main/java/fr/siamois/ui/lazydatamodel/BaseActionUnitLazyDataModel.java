@@ -1,6 +1,5 @@
 package fr.siamois.ui.lazydatamodel;
 
-import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.dto.entity.ActionUnitDTO;
 import lombok.Getter;
 import lombok.Setter;

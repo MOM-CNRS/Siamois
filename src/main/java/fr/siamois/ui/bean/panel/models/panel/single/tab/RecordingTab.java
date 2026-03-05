@@ -1,6 +1,5 @@
 package fr.siamois.ui.bean.panel.models.panel.single.tab;
 
-import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.dto.entity.RecordingUnitDTO;
 import fr.siamois.ui.table.RecordingUnitTableViewModel;
 import lombok.Data;

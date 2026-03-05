@@ -1,7 +1,6 @@
 package fr.siamois.ui.lazydatamodel;
 
 
-import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.dto.entity.SpatialUnitDTO;
 import lombok.Getter;
 import lombok.Setter;

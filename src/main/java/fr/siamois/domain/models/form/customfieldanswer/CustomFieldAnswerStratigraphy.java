@@ -1,9 +1,6 @@
 package fr.siamois.domain.models.form.customfieldanswer;
 
-import fr.siamois.domain.models.recordingunit.RecordingUnit;
-import fr.siamois.domain.models.recordingunit.StratigraphicRelationship;
 import fr.siamois.dto.StratigraphicRelationshipDTO;
-import fr.siamois.dto.entity.RecordingUnitDTO;
 import fr.siamois.dto.entity.RecordingUnitSummaryDTO;
 import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
 import jakarta.faces.context.FacesContext;

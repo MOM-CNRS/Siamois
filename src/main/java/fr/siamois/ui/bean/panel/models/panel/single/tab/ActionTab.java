@@ -1,6 +1,5 @@
 package fr.siamois.ui.bean.panel.models.panel.single.tab;
 
-import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.dto.entity.ActionUnitDTO;
 import fr.siamois.ui.table.ActionUnitTableViewModel;
 

@@ -1,7 +1,6 @@
 package fr.siamois.ui.form.savestrategy;
 
 import fr.siamois.domain.models.exceptions.actionunit.FailedActionUnitSaveException;
-import fr.siamois.domain.models.specimen.Specimen;
 import fr.siamois.domain.services.specimen.SpecimenService;
 import fr.siamois.dto.entity.SpecimenDTO;
 import fr.siamois.ui.bean.LangBean;

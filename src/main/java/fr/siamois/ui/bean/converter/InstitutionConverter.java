@@ -1,6 +1,5 @@
 package fr.siamois.ui.bean.converter;
 
-import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.dto.entity.InstitutionDTO;
 import jakarta.faces.component.UIComponent;

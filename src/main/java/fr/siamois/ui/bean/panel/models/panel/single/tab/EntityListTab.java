@@ -1,6 +1,5 @@
 package fr.siamois.ui.bean.panel.models.panel.single.tab;
 
-import fr.siamois.domain.models.TraceableEntity;
 import fr.siamois.dto.entity.AbstractEntityDTO;
 import fr.siamois.ui.lazydatamodel.BaseLazyDataModel;
 import fr.siamois.ui.table.EntityTableViewModel;

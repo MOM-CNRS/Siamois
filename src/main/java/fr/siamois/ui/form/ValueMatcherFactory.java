@@ -1,11 +1,9 @@
 package fr.siamois.ui.form;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswer;
 import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerSelectOneFromFieldCode;
 import fr.siamois.domain.models.form.customform.EnabledWhenJson;
 import fr.siamois.domain.models.form.customform.ValueMatcher;
-import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.dto.entity.ConceptDTO;
 import fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerSelectOneFromFieldCodeViewModel;
 import fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerViewModel;

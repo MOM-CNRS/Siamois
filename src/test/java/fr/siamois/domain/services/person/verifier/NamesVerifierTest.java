@@ -3,7 +3,6 @@ package fr.siamois.domain.services.person.verifier;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.exceptions.auth.*;
 import fr.siamois.dto.entity.PersonDTO;
-import fr.siamois.dto.entity.SpatialUnitDTO;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 

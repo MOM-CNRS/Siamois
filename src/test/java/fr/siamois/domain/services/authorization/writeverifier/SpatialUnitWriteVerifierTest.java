@@ -2,8 +2,6 @@ package fr.siamois.domain.services.authorization.writeverifier;
 
 import fr.siamois.domain.models.TraceableEntity;
 import fr.siamois.domain.models.UserInfo;
-import fr.siamois.domain.models.auth.Person;
-import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.dto.entity.InstitutionDTO;

@@ -1,7 +1,6 @@
 package fr.siamois.ui.table.definitions;
 
 import fr.siamois.domain.models.form.customfield.*;
-import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.dto.entity.RecordingUnitDTO;
 import fr.siamois.ui.table.*;

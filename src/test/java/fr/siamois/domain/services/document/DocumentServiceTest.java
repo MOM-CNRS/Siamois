@@ -1,23 +1,17 @@
 package fr.siamois.domain.services.document;
 
 import fr.siamois.domain.models.UserInfo;
-import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.document.Document;
 import fr.siamois.domain.models.exceptions.InvalidFileSizeException;
 import fr.siamois.domain.models.exceptions.InvalidFileTypeException;
 import fr.siamois.domain.models.institution.Institution;
-import fr.siamois.domain.models.recordingunit.RecordingUnit;
-import fr.siamois.domain.models.spatialunit.SpatialUnit;
-import fr.siamois.domain.models.specimen.Specimen;
 import fr.siamois.domain.services.document.compressor.FileCompressor;
 import fr.siamois.dto.entity.*;
 import fr.siamois.infrastructure.database.repositories.DocumentRepository;
 import fr.siamois.infrastructure.files.DocumentStorage;
 import fr.siamois.mapper.InstitutionMapper;
-import fr.siamois.mapper.InstitutionMapperImpl;
 import fr.siamois.mapper.PersonMapper;
-import fr.siamois.mapper.PersonMapperImpl;
 import fr.siamois.utils.DocumentUtils;
 import org.apache.tomcat.util.http.fileupload.InvalidFileNameException;
 import org.junit.jupiter.api.BeforeEach;
@@ -26,7 +20,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.core.convert.ConversionService;
 import org.springframework.util.MimeType;
 
 import java.io.ByteArrayInputStream;

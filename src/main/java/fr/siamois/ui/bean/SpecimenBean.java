@@ -1,10 +1,6 @@
 package fr.siamois.ui.bean;
 
-import fr.siamois.domain.models.TraceableEntity;
-import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
-import fr.siamois.dto.entity.AbstractEntityDTO;
-import fr.siamois.dto.entity.RecordingUnitDTO;
 import fr.siamois.ui.bean.panel.FlowBean;
 import org.springframework.stereotype.Component;
 import org.springframework.web.context.annotation.SessionScope;

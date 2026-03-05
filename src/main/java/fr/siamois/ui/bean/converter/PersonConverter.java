@@ -3,7 +3,6 @@ package fr.siamois.ui.bean.converter;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
-import fr.siamois.domain.models.auth.Person;
 import fr.siamois.dto.entity.PersonDTO;
 import jakarta.faces.component.UIComponent;
 import jakarta.faces.context.FacesContext;

@@ -1,9 +1,6 @@
 package fr.siamois.dto.entity;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import fr.siamois.domain.models.auth.Person;
 import fr.siamois.dto.StratigraphicRelationshipDTO;
-import jakarta.persistence.Transient;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;

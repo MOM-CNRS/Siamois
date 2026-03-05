@@ -1,8 +1,6 @@
 package fr.siamois.dto.entity;
 
 import fr.siamois.domain.models.actionunit.ActionCode;
-import jakarta.persistence.Column;
-import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
 import java.time.OffsetDateTime;
@@ -26,7 +24,6 @@ public class ActionUnitDTO extends AbstractEntityDTO {
     private Set<ActionUnitSummaryDTO> children;
     private Set<RecordingUnitSummaryDTO> recordingUnitList;
     protected String recordingUnitIdentifierLang;
-    private Boolean validated;
     private OffsetDateTime beginDate;
     private OffsetDateTime endDate;
     private ActionCode primaryActionCode;

@@ -1,12 +1,9 @@
 package fr.siamois.ui.bean.dialog.newunit.handler;
 
-import fr.siamois.domain.models.TraceableEntity;
 import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.exceptions.EntityAlreadyExistsException;
 import fr.siamois.domain.models.form.customform.CustomForm;
-import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.dto.entity.AbstractEntityDTO;
-import fr.siamois.dto.entity.SpatialUnitDTO;
 import fr.siamois.dto.entity.SpatialUnitSummaryDTO;
 import fr.siamois.ui.bean.dialog.newunit.GenericNewUnitDialogBean;
 import fr.siamois.ui.bean.dialog.newunit.NewUnitContext;

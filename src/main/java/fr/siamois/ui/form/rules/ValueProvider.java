@@ -1,7 +1,6 @@
 package fr.siamois.ui.form.rules;
 
 import fr.siamois.domain.models.form.customfield.CustomField;
-import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswer;
 import fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerViewModel;
 
 /**

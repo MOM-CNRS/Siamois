@@ -1,7 +1,5 @@
 package fr.siamois.ui.lazydatamodel;
 
-import fr.siamois.domain.models.actionunit.ActionUnit;
-import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.dto.entity.ActionUnitDTO;
 import fr.siamois.dto.entity.RecordingUnitDTO;

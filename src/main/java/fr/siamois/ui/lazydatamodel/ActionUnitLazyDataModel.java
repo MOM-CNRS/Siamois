@@ -1,6 +1,5 @@
 package fr.siamois.ui.lazydatamodel;
 
-import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.dto.entity.ActionUnitDTO;
 import fr.siamois.ui.bean.LangBean;

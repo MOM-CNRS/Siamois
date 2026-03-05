@@ -1,6 +1,5 @@
 package fr.siamois.domain.services.spatialunit;
 
-import fr.siamois.domain.models.ArkEntity;
 import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.ark.Ark;
 import fr.siamois.domain.models.exceptions.recordingunit.FailedRecordingUnitSaveException;

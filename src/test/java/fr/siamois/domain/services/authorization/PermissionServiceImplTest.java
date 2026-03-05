@@ -1,6 +1,5 @@
 package fr.siamois.domain.services.authorization;
 
-import fr.siamois.domain.models.TraceableEntity;
 import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.institution.Institution;

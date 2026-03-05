@@ -174,7 +174,6 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnitDTO> im
         }
 
 
-        //history = historyAuditService.findAllRevisionForEntity(ActionUnitDTO.class, unitId);
         documents = documentService.findForActionUnit(unit);
     }
 

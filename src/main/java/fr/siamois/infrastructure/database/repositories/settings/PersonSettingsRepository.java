@@ -1,6 +1,5 @@
 package fr.siamois.infrastructure.database.repositories.settings;
 
-import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.settings.PersonSettings;
 import org.springframework.data.repository.CrudRepository;
 

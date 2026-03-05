@@ -1,12 +1,14 @@
 package fr.siamois.ui.lazydatamodel.tree;
 
 import fr.siamois.annotations.ExecutionTimeLogger;
-import fr.siamois.domain.models.TraceableEntity;
 import fr.siamois.dto.entity.AbstractEntityDTO;
 import fr.siamois.ui.lazydatamodel.LazyModel;
 import lombok.Getter;
 import lombok.Setter;
-import org.primefaces.model.*;
+import org.primefaces.model.LazyDefaultTreeNode;
+import org.primefaces.model.SortMeta;
+import org.primefaces.model.TreeNode;
+import org.primefaces.model.TreeNodeChildren;
 import org.primefaces.util.Callbacks;
 
 import java.io.Serializable;

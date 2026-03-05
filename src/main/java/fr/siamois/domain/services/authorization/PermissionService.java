@@ -1,6 +1,5 @@
 package fr.siamois.domain.services.authorization;
 
-import fr.siamois.domain.models.TraceableEntity;
 import fr.siamois.domain.models.UserInfo;
 import fr.siamois.dto.entity.AbstractEntityDTO;
 import org.springframework.stereotype.Service;

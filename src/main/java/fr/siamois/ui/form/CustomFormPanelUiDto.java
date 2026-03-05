@@ -1,6 +1,5 @@
 package fr.siamois.ui.form;
 
-import fr.siamois.domain.models.form.customform.CustomRow;
 import lombok.Data;
 
 import java.io.Serializable;

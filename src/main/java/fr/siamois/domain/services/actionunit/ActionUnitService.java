@@ -29,7 +29,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.OffsetDateTime;
-import java.util.*;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -220,23 +223,6 @@ public class ActionUnitService implements ArkEntityService {
         return actionCodeRepository.findAllByCodeIsContainingIgnoreCase(query);
     }
 
-    private ActionCode saveOrGetActionCode(ActionCode actionCode) {
-        Optional<ActionCode> optActionCode = actionCodeRepository.findById(actionCode.getCode()); // We try to get the code
-        if (optActionCode.isPresent()) {
-            // We test if the type is the same because it's not possible to modify the type of code already in the system
-            if (actionCode.getType().equals(optActionCode.get().getType())) {
-                // If the type matches it's fine, we return it.
-                return optActionCode.get();
-            } else {
-                throw new FailedActionUnitSaveException("Code exists but type does not match");
-            }
-        } else {
-            // SAVE THE CODE
-            return actionCodeRepository.save(actionCode);
-        }
-    }
-
-
     /**
      * Find an ActionUnit by its ARK.
      *
@@ -354,7 +340,7 @@ public class ActionUnitService implements ArkEntityService {
         initializeActionUnitCollections(res);
         return res.stream()
                 .map(actionUnit -> conversionService.convert(actionUnit, ActionUnitDTO.class))
-                .collect(Collectors.toList());
+                .toList();
     }
 
     /**
@@ -369,7 +355,7 @@ public class ActionUnitService implements ArkEntityService {
         initializeActionUnitCollections(res);
         return res.stream()
                 .map(actionUnit -> conversionService.convert(actionUnit, ActionUnitDTO.class))
-                .collect(Collectors.toList());
+                .toList();
     }
 
     /**
@@ -383,7 +369,7 @@ public class ActionUnitService implements ArkEntityService {
         initializeActionUnitCollections(res);
         return res.stream()
                 .map(actionUnit -> conversionService.convert(actionUnit, ActionUnitDTO.class))
-                .collect(Collectors.toList());
+                .toList();
     }
 
     // Reusable method to initialize collections
@@ -399,7 +385,7 @@ public class ActionUnitService implements ArkEntityService {
         List<ActionUnit> actionUnits = actionUnitRepository.findByTeamMemberOrCreatorAndInstitution(member.getId(), institution.getId());
         return actionUnits.stream()
                 .map(actionUnit -> conversionService.convert(actionUnit, ActionUnitDTO.class))
-                .collect(Collectors.toList());
+                .toList();
     }
 
 

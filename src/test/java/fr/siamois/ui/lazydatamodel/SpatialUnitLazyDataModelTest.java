@@ -1,8 +1,6 @@
 package fr.siamois.ui.lazydatamodel;
 
 import fr.siamois.domain.models.auth.Person;
-import fr.siamois.domain.models.institution.Institution;
-import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.models.vocabulary.LocalizedConceptData;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;

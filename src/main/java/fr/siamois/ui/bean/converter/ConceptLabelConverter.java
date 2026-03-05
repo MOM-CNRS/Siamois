@@ -1,6 +1,5 @@
 package fr.siamois.ui.bean.converter;
 
-import fr.siamois.domain.models.vocabulary.label.ConceptLabel;
 import fr.siamois.dto.entity.ConceptLabelDTO;
 import fr.siamois.ui.bean.LabelBean;
 import jakarta.faces.component.UIComponent;

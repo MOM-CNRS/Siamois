@@ -1,7 +1,6 @@
 package fr.siamois.ui.form;
 
 import fr.siamois.domain.models.form.customfield.*;
-import fr.siamois.domain.models.form.customfieldanswer.*;
 import fr.siamois.ui.viewmodel.fieldanswer.*;
 
 import java.util.Map;

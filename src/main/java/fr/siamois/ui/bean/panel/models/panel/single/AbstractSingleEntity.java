@@ -2,9 +2,7 @@ package fr.siamois.ui.bean.panel.models.panel.single;
 
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.customfield.CustomFieldText;
-import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswer;
 import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerText;
-import fr.siamois.domain.models.form.customformresponse.CustomFormResponse;
 import fr.siamois.domain.models.vocabulary.Vocabulary;
 import fr.siamois.domain.models.vocabulary.VocabularyType;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
@@ -15,7 +13,6 @@ import fr.siamois.domain.services.spatialunit.SpatialUnitTreeService;
 import fr.siamois.domain.services.vocabulary.FieldConfigurationService;
 import fr.siamois.dto.entity.AbstractEntityDTO;
 import fr.siamois.dto.entity.ConceptDTO;
-import fr.siamois.dto.entity.SpatialUnitDTO;
 import fr.siamois.dto.entity.SpatialUnitSummaryDTO;
 import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
 import fr.siamois.ui.bean.LabelBean;
@@ -26,7 +23,6 @@ import fr.siamois.ui.bean.panel.models.panel.AbstractPanel;
 import fr.siamois.ui.form.*;
 import fr.siamois.ui.form.fieldsource.PanelFieldSource;
 import fr.siamois.ui.viewmodel.CustomFormResponseViewModel;
-import fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerViewModel;
 import fr.siamois.utils.DateUtils;
 import jakarta.faces.event.ActionEvent;
 import lombok.Data;
@@ -72,7 +68,7 @@ public abstract class AbstractSingleEntity<T extends AbstractEntityDTO> extends 
 
     protected transient T unit;
 
-    protected FormUiDto detailsForm;
+    protected transient FormUiDto detailsForm;
 
     /**
      * Per-entity form context. Holds answers, enabled rules, spatial tree state, etc.

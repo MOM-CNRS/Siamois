@@ -1,14 +1,12 @@
 package fr.siamois.infrastructure.database.repositories.vocabulary.dto;
 
-import fr.siamois.domain.models.vocabulary.Concept;
-import fr.siamois.domain.models.vocabulary.Vocabulary;
-import fr.siamois.domain.models.vocabulary.label.ConceptLabel;
-import fr.siamois.domain.models.vocabulary.label.ConceptPrefLabel;
 import fr.siamois.dto.entity.ConceptDTO;
 import fr.siamois.dto.entity.ConceptLabelDTO;
 import fr.siamois.dto.entity.ConceptPrefLabelDTO;
 import fr.siamois.dto.entity.VocabularyDTO;
-import lombok.*;
+import lombok.AccessLevel;
+import lombok.Builder;
+import lombok.Data;
 import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
 

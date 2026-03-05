@@ -1,6 +1,5 @@
 package fr.siamois.domain.models.form.customform;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import fr.siamois.domain.services.attributeconverter.CustomFormLayoutConverter;
 import jakarta.persistence.*;
 import lombok.Data;

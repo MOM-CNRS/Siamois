@@ -1,6 +1,5 @@
 package fr.siamois.ui.bean.panel.models.panel.single.tab;
 
-import fr.siamois.domain.models.specimen.Specimen;
 import fr.siamois.dto.entity.SpecimenDTO;
 import fr.siamois.ui.table.SpecimenTableViewModel;
 

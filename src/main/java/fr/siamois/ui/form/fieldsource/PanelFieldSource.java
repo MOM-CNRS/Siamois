@@ -1,7 +1,7 @@
 package fr.siamois.ui.form.fieldsource;
 
 import fr.siamois.domain.models.form.customfield.CustomField;
-import fr.siamois.domain.models.form.customform.*;
+import fr.siamois.domain.models.form.customform.EnabledWhenJson;
 import fr.siamois.ui.form.CustomColUiDto;
 import fr.siamois.ui.form.CustomFormPanelUiDto;
 import fr.siamois.ui.form.CustomRowUiDto;

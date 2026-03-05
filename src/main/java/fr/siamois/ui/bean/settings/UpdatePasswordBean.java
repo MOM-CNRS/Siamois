@@ -1,6 +1,5 @@
 package fr.siamois.ui.bean.settings;
 
-import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.exceptions.auth.InvalidPasswordException;
 import fr.siamois.domain.services.person.PersonService;
 import fr.siamois.dto.entity.PersonDTO;

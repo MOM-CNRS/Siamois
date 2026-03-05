@@ -1,6 +1,5 @@
 package fr.siamois.domain.services.spatialunit;
 
-import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.dto.entity.SpatialUnitDTO;
 import fr.siamois.ui.bean.SessionSettingsBean;
 import org.primefaces.model.CheckboxTreeNode;

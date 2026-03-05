@@ -1,10 +1,7 @@
 package fr.siamois.dto.entity;
 
-import fr.siamois.dto.StratigraphicRelationshipDTO;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.util.Set;
 
 @Data
 @NoArgsConstructor

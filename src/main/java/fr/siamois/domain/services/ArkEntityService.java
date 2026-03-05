@@ -3,7 +3,6 @@ package fr.siamois.domain.services;
 import fr.siamois.domain.models.ArkEntity;
 import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.dto.entity.AbstractEntityDTO;
-import org.springframework.core.convert.ConversionService;
 
 import java.util.List;
 
