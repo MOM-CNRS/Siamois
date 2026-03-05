@@ -27,7 +27,7 @@ public class SpatialUnitTreeTableLazyModel extends BaseTreeTableLazyModel<Spatia
     @Override
     protected List<SpatialUnitDTO> fetchRoots() {
         return switch (scope.getType()) {
-            case INSTITUTION -> spatialUnitService.findDTORootsOf(scope.getInstitutionId());
+            case INSTITUTION -> spatialUnitService.findRootsOf(scope.getInstitutionId());
             case CHILDREN_OF_SPATIAL_UNIT -> spatialUnitService.findDirectChildrensOf(scope.getSpatialUnitId());
         };
     }

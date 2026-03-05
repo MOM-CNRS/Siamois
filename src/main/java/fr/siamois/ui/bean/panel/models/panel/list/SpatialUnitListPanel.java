@@ -98,7 +98,7 @@ public class SpatialUnitListPanel extends AbstractListPanel<SpatialUnitDTO>  imp
 
     @Override
     protected long countUnitsByInstitution() {
-        return spatialUnitService.countByInstitution(sessionSettingsBean.getSelectedInstitution());
+        return spatialUnitService.countByInstitutionId(sessionSettingsBean.getSelectedInstitution().getId());
     }
 
 

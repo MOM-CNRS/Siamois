@@ -20,6 +20,10 @@ import fr.siamois.domain.services.person.PersonService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.dto.entity.*;
 import fr.siamois.infrastructure.database.repositories.SpatialUnitRepository;
+import fr.siamois.mapper.InstitutionMapper;
+import fr.siamois.mapper.RecordingUnitMapper;
+import fr.siamois.mapper.SpatialUnitMapper;
+import fr.siamois.mapper.SpatialUnitSummaryMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.Hibernate;
 import org.springframework.core.convert.ConversionService;
@@ -49,8 +53,12 @@ public class SpatialUnitService implements ArkEntityService {
     private final PersonService personService;
     private final PermissionServiceImpl permissionService;
     private final ConversionService conversionService;
+    private final SpatialUnitMapper spatialUnitMapper;
+    private final RecordingUnitMapper recordingUnitMapper;
+    private final SpatialUnitSummaryMapper spatialUnitSummaryMapper;
+    private final InstitutionMapper institutionMapper;
 
-    public SpatialUnitService(SpatialUnitRepository spatialUnitRepository, ConceptService conceptService, ArkService arkService, InstitutionService institutionService, PersonService personService, PermissionServiceImpl permissionService, ConversionService conversionService) {
+    public SpatialUnitService(SpatialUnitRepository spatialUnitRepository, ConceptService conceptService, ArkService arkService, InstitutionService institutionService, PersonService personService, PermissionServiceImpl permissionService, ConversionService conversionService, SpatialUnitMapper spatialUnitMapper, RecordingUnitMapper recordingUnitMapper, SpatialUnitSummaryMapper spatialUnitSummaryMapper, InstitutionMapper institutionMapper) {
         this.spatialUnitRepository = spatialUnitRepository;
         this.conceptService = conceptService;
         this.arkService = arkService;
@@ -58,6 +66,10 @@ public class SpatialUnitService implements ArkEntityService {
         this.personService = personService;
         this.permissionService = permissionService;
         this.conversionService = conversionService;
+        this.spatialUnitMapper = spatialUnitMapper;
+        this.recordingUnitMapper = recordingUnitMapper;
+        this.spatialUnitSummaryMapper = spatialUnitSummaryMapper;
+        this.institutionMapper = institutionMapper;
     }
 
 
@@ -75,7 +87,7 @@ public class SpatialUnitService implements ArkEntityService {
             SpatialUnit spatialUnit = spatialUnitRepository.findById(id)
                     .orElseThrow(() -> new SpatialUnitNotFoundException("SpatialUnit not found with ID: " + id));
             Hibernate.initialize(spatialUnit);
-            return conversionService.convert(spatialUnit, SpatialUnitDTO.class);
+            return spatialUnitMapper.convert(spatialUnit);
         } catch (RuntimeException e) {
             log.error(e.getMessage(), e);
             throw e;
@@ -127,7 +139,7 @@ public class SpatialUnitService implements ArkEntityService {
 
         initializeSpatialUnitLazyAttributes(res);
 
-        return res.map(spatialUnit -> conversionService.convert(spatialUnit, SpatialUnitDTO.class));
+        return res.map(spatialUnitMapper::convert);
     }
 
     /**
@@ -151,7 +163,7 @@ public class SpatialUnitService implements ArkEntityService {
 
         initializeSpatialUnitLazyAttributes(res);
 
-        return res.map(spatialUnit -> conversionService.convert(spatialUnit, SpatialUnitDTO.class));
+        return res.map(spatialUnitMapper::convert);
     }
 
     /**
@@ -174,7 +186,7 @@ public class SpatialUnitService implements ArkEntityService {
                 child.getId(), name, categoryIds, personIds, global, langCode, pageable);
 
         initializeSpatialUnitLazyAttributes(res);
-        return res.map(spatialUnit -> conversionService.convert(spatialUnit, SpatialUnitDTO.class));
+        return res.map(spatialUnitMapper::convert);
     }
 
     /**
@@ -186,7 +198,7 @@ public class SpatialUnitService implements ArkEntityService {
     public List<SpatialUnitDTO> findAllOfInstitution(Long id) {
         List<SpatialUnit> spatialUnits = spatialUnitRepository.findAllOfInstitution(id);
         return spatialUnits.stream()
-                .map(spatialUnit -> conversionService.convert(spatialUnit, SpatialUnitDTO.class))
+                .map(spatialUnitMapper::convert)
                 .collect(Collectors.toList());
     }
 
@@ -203,7 +215,7 @@ public class SpatialUnitService implements ArkEntityService {
     public SpatialUnitDTO save(UserInfo info, SpatialUnitDTO su) throws SpatialUnitAlreadyExistsException {
         String name = su.getName();
         Set<SpatialUnit> children = su.getChildren().stream()
-                .map(child -> conversionService.convert(child, SpatialUnit.class))
+                .map(spatialUnitSummaryMapper::invertConvert)
                 .collect(Collectors.toSet());
 
         Optional<SpatialUnit> optSpatialUnit = spatialUnitRepository.findByNameAndInstitution(name, info.getInstitution().getId());
@@ -215,7 +227,7 @@ public class SpatialUnitService implements ArkEntityService {
 
         SpatialUnit spatialUnit = new SpatialUnit();
         spatialUnit.setName(name);
-        spatialUnit.setCreatedByInstitution(conversionService.convert(institutionService.findById(info.getInstitution().getId()),Institution.class));
+        spatialUnit.setCreatedByInstitution(institutionMapper.invertConvert(institutionService.findById(info.getInstitution().getId())));
         spatialUnit.setCreatedBy(personService.findById(info.getUser().getId()));
         spatialUnit.setCategory(conceptService.saveOrGetConcept(su.getCategory()));
         spatialUnit.setCreationTime(OffsetDateTime.now(ZoneId.systemDefault()));
@@ -241,7 +253,7 @@ public class SpatialUnitService implements ArkEntityService {
 
         spatialUnit = spatialUnitRepository.save(spatialUnit);
 
-        return conversionService.convert(spatialUnit, SpatialUnitDTO.class);
+        return spatialUnitMapper.convert(spatialUnit);
     }
 
     /**
@@ -276,7 +288,7 @@ public class SpatialUnitService implements ArkEntityService {
     public AbstractEntityDTO save(AbstractEntityDTO toSave) {
         try {
             SpatialUnit managedSpatialUnit;
-            SpatialUnit spatialUnit = conversionService.convert(toSave, SpatialUnit.class);
+            SpatialUnit spatialUnit = spatialUnitMapper.invertConvert((SpatialUnitDTO) toSave);
             ConceptDTO conceptDTO = ((SpatialUnitDTO) toSave).getCategory();
 
             if (spatialUnit.getId() != null) {
@@ -297,7 +309,7 @@ public class SpatialUnitService implements ArkEntityService {
                     conceptDTO);
             managedSpatialUnit.setCategory(type);
 
-            return conversionService.convert(spatialUnitRepository.save(managedSpatialUnit), SpatialUnitDTO.class);
+            return spatialUnitMapper.convert(spatialUnitRepository.save(managedSpatialUnit));
 
         } catch (RuntimeException e) {
             throw new FailedRecordingUnitSaveException(e.getMessage());
@@ -307,12 +319,11 @@ public class SpatialUnitService implements ArkEntityService {
     /**
      * Count the number of SpatialUnits created by a specific institution
      *
-     * @param institution The institution to filter by
+     * @param id The institution to filter by
      * @return The count of SpatialUnits created in the institution
      */
-    public long countByInstitution(InstitutionDTO institution) {
-        Institution institutionEntity = conversionService.convert(institution, Institution.class);
-        return spatialUnitRepository.countByCreatedByInstitution(institutionEntity);
+    public long countByInstitutionId(Long id) {
+        return spatialUnitRepository.countByCreatedByInstitutionId(id);
     }
 
 
@@ -351,21 +362,16 @@ public class SpatialUnitService implements ArkEntityService {
      * @param id The institution id to filter by
      * @return A list of root SpatialUnit that have no parents
      */
-    public List<SpatialUnitDTO> findDTORootsOf(Long id) {
-        List<SpatialUnitDTO> roots = findRootsOf(id);
-        return roots.stream()
-                .map(spatialUnit -> conversionService.convert(spatialUnit, SpatialUnitDTO.class))
-                .collect(Collectors.toList());
-    }
-
     public List<SpatialUnitDTO> findRootsOf(Long id) {
-        List<SpatialUnitDTO> result = new ArrayList<>();
-        for (SpatialUnitDTO spatialUnit : findAllOfInstitution(id)) {
-            if (countParentsByChild(spatialUnit) == 0) {
+        List<SpatialUnit> result = new ArrayList<>();
+        for (SpatialUnit spatialUnit : spatialUnitRepository.findAllOfInstitution(id)) {
+            if (spatialUnitRepository.countParentsByChildId(spatialUnit.getId()) == 0) {
                 result.add(spatialUnit);
             }
         }
-        return result;
+        return result.stream()
+                .map(spatialUnitMapper::convert)
+                .collect(Collectors.toList());
     }
 
     /**
@@ -377,7 +383,7 @@ public class SpatialUnitService implements ArkEntityService {
     @Transactional(readOnly = true)
     public List<SpatialUnitDTO> findDirectChildrensOf(Long id) {
         return spatialUnitRepository.findChildrensOf(id).stream()
-                .map(spatialUnit -> conversionService.convert(spatialUnit, SpatialUnitDTO.class))
+                .map(spatialUnitMapper::convert)
                 .collect(Collectors.toList());
     }
 
@@ -391,7 +397,7 @@ public class SpatialUnitService implements ArkEntityService {
     @Transactional(readOnly = true)
     public List<SpatialUnitDTO> findDirectParentsOf(Long id) {
         return spatialUnitRepository.findParentsOf(id).stream()
-                .map(spatialUnit -> conversionService.convert(spatialUnit, SpatialUnitDTO.class))
+                .map(spatialUnitMapper::convert)
                 .collect(Collectors.toList());
     }
 
@@ -409,7 +415,7 @@ public class SpatialUnitService implements ArkEntityService {
     }
 
     public List<SpatialUnitSummaryDTO> getSpatialUnitOptionsFor(RecordingUnitDTO unitDTO) {
-        RecordingUnit unit = conversionService.convert(unitDTO, RecordingUnit.class);
+        RecordingUnit unit = recordingUnitMapper.invertConvert(unitDTO);
         assert unit != null;
         if (unit.getActionUnit() == null) return List.of();
 
@@ -425,8 +431,8 @@ public class SpatialUnitService implements ArkEntityService {
                 : spatialUnitRepository.findDescendantsUpToDepth(rootIds.toArray(Long[]::new), 10);
 
         LinkedHashMap<Long, SpatialUnitSummaryDTO> byId = new LinkedHashMap<>();
-        roots.forEach(su -> byId.put(su.getId(), conversionService.convert(su, SpatialUnitSummaryDTO.class)));
-        descendants.forEach(su -> byId.putIfAbsent(su.getId(), conversionService.convert(su, SpatialUnitSummaryDTO.class)));
+        roots.forEach(su -> byId.put(su.getId(), spatialUnitSummaryMapper.convert(su)));
+        descendants.forEach(su -> byId.putIfAbsent(su.getId(), spatialUnitSummaryMapper.convert(su)));
 
         return new ArrayList<>(byId.values());
     }

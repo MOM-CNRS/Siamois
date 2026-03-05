@@ -26,6 +26,8 @@ import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUn
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitIdInfoRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitRepository;
 import fr.siamois.infrastructure.database.repositories.team.TeamMemberRepository;
+import fr.siamois.mapper.ActionUnitMapper;
+import fr.siamois.mapper.ActionUnitSummaryMapper;
 import fr.siamois.mapper.RecordingUnitMapper;
 import fr.siamois.mapper.RecordingUnitMapperImpl;
 import jakarta.validation.constraints.NotNull;
@@ -68,6 +70,8 @@ public class RecordingUnitService implements ArkEntityService {
     private final RecordingUnitMapper recordingUnitMapper;
     private final ConversionService conversionService;
     private final ApplicationContext applicationContext;
+    private final ActionUnitMapper actionUnitMapper;
+    private final ActionUnitSummaryMapper actionUnitSummaryMapper;
 
     /**
      * Bulk update the type of multiple recording units.
@@ -391,7 +395,7 @@ public class RecordingUnitService implements ArkEntityService {
         });
 
         return res
-                .map(unit ->  conversionService.convert(unit, RecordingUnitDTO.class));
+                .map(recordingUnitMapper::convert);
     }
 
     public Page<RecordingUnitDTO> findAllByChildAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(Long childId,
@@ -409,7 +413,7 @@ public class RecordingUnitService implements ArkEntityService {
             Hibernate.initialize(actionUnit.getChildren());
         });
 
-        return res.map(recordingUnit -> conversionService.convert(recordingUnit, RecordingUnitDTO.class));
+        return res.map(recordingUnitMapper::convert);
     }
 
     public Page<RecordingUnitDTO> findAllBySpatialUnitAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(Long spatialUnitId,
@@ -479,7 +483,7 @@ public class RecordingUnitService implements ArkEntityService {
         List<RecordingUnit> res = recordingUnitRepository.findChildrenByParentAndInstitution(parentId, institutionId);
         initializeRecordingUnitCollections(res);
         return res.stream()
-                .map(unit -> conversionService.convert(unit, RecordingUnitDTO.class))
+                .map(recordingUnitMapper::convert)
                 .collect(Collectors.toList());
     }
 
@@ -521,7 +525,7 @@ public class RecordingUnitService implements ArkEntityService {
         List<RecordingUnit> res = recordingUnitRepository.findRootsByAction(actionId);
         initializeRecordingUnitCollections(res);
         return res.stream()
-                .map(unit -> conversionService.convert(unit, RecordingUnitDTO.class))
+                .map(recordingUnitMapper::convert)
                 .collect(Collectors.toList());
     }
 
@@ -593,8 +597,8 @@ public class RecordingUnitService implements ArkEntityService {
      */
     public String generateFullIdentifier(@NonNull ActionUnitSummaryDTO actionUnitDTO, @NonNull RecordingUnitDTO recordingUnitDTO) {
 
-        RecordingUnit recordingUnit = conversionService.convert(recordingUnitDTO, RecordingUnit.class);
-        ActionUnit actionUnit = conversionService.convert(actionUnitDTO, ActionUnit.class);
+        RecordingUnit recordingUnit = recordingUnitMapper.invertConvert(recordingUnitDTO);
+        ActionUnit actionUnit = actionUnitSummaryMapper.invertConvert(actionUnitDTO);
         log.trace("Generating full identifier for recording unit");
         assert actionUnit != null;
         String format = actionUnit.getRecordingUnitIdentifierFormat();
