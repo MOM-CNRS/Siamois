@@ -131,16 +131,6 @@ public class SpatialUnitListPanel extends AbstractListPanel<SpatialUnitDTO>  imp
         this.spatialUnitListErrorMessage = msg;
     }
 
-    public List<ConceptLabelDTO> categoriesAvailable() {
-        List<ConceptDTO> cList = conceptService.findAllBySpatialUnitOfInstitution(sessionSettingsBean.getSelectedInstitution());
-
-        return new ArrayList<>(cList.stream()
-                .map(concept -> labelService.findLabelOf(
-                        concept, langBean.getLanguageCode()
-                ))
-                .toList());
-
-    }
 
     public List<PersonDTO> authorsAvailable() {
         return personService.findAllAuthorsOfSpatialUnitByInstitution(sessionSettingsBean.getSelectedInstitution());

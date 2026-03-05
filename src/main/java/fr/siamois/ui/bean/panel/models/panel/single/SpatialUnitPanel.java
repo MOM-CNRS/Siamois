@@ -137,15 +137,6 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
     }
 
 
-    public List<ConceptLabelDTO> categoriesAvailable() {
-        List<ConceptDTO> cList = conceptService.findAllBySpatialUnitOfInstitution(sessionSettings.getSelectedInstitution());
-        return new ArrayList<>(cList.stream()
-                .map(concept -> labelService.findLabelOf(
-                        concept, langBean.getLanguageCode()
-                ))
-                .toList());
-
-    }
 
     @Override
     public String getAutocompleteClass() {

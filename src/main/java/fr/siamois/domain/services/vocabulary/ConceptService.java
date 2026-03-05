@@ -80,19 +80,6 @@ public class ConceptService {
         return optConcept.orElseGet(() -> conceptRepository.save(concept));
     }
 
-    /**
-     * Finds all concepts related to spatial units of a given institution.
-     *
-     * @param institution the institution for which to find concepts
-     * @return a list of concepts associated with spatial units of the institution
-     */
-    @NonNull
-    public List<ConceptDTO> findAllBySpatialUnitOfInstitution(@NonNull InstitutionDTO institution) {
-        List<Concept> concepts = conceptRepository.findAllBySpatialUnitOfInstitution(institution.getId());
-        return concepts.stream()
-                .map(concept -> conversionService.convert(concept, ConceptDTO.class))
-                .collect(Collectors.toList());
-    }
 
 
     /**

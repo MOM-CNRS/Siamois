@@ -135,41 +135,6 @@ class ConceptServiceTest {
     }
 
     @Test
-    void findAllBySpatialUnitConceptsByInstitution_Success() {
-
-        // Given
-        ConceptDTO concept1 = new ConceptDTO();
-        concept1.setId(1L);
-        concept1.setExternalId("concept1");
-        ConceptDTO concept2 = new ConceptDTO();
-        concept2.setId(2L);
-        concept2.setExternalId("concept2");
-
-        Concept concept1a = new Concept();
-        concept1.setId(1L);
-        concept1.setExternalId("concept1");
-        Concept concept2a = new Concept();
-        concept2.setId(2L);
-        concept2.setExternalId("concept2");
-
-
-        InstitutionDTO i = new InstitutionDTO();
-        i.setId(1L);
-
-
-        List<ConceptDTO> expectedConcepts = List.of(concept1, concept2);
-
-        when(conceptRepository.findAllBySpatialUnitOfInstitution(any(Long.class))).thenReturn(List.of(concept1a, concept2a));
-
-        List<ConceptDTO> result = conceptService.findAllBySpatialUnitOfInstitution(i);
-
-        // Then
-        assertNotNull(result);
-        assertEquals(expectedConcepts, result);
-
-    }
-
-    @Test
     void findAllByActionUnitConceptsByInstitution_Success() {
 
         // Given
