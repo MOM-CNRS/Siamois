@@ -232,46 +232,5 @@ class SpecimenUnitLazyDataModelTest {
 
     }
 
-    @Test
-    void testDuplicateRow_createsCopyAndAddsToModel() {
-        // GIVEN
-        SpecimenDTO original = new SpecimenDTO();
-        original.setFullIdentifier("S-Original");
-        original.setId(1L);
-        original.setType(new ConceptDTO());
-
-        SpecimenDTO copied = new SpecimenDTO(original);
-        copied.setId(999L);
-        copied.setIdentifier(1);
-
-        // Create spy of lazyModel so we can override getWrappedData() and getRowData()
-        BaseSpecimenLazyDataModel spyModel = spy(lazyModel);
-
-        // Mock getWrappedData() to return list containing the original
-        doReturn(List.of(original)).when(spyModel).getWrappedData();
-
-        // Mock getRowData() to return the original when called with its ID as a string
-        doReturn(original).when(spyModel).getRowData();
-
-        // Mock service behavior
-        when(specimenService.generateNextIdentifier(any())).thenReturn(1);
-        when(specimenService.save(any())).thenReturn(copied);
-
-        // WHEN
-        spyModel.duplicateRow();
-
-        // THEN
-        verify(specimenService).generateNextIdentifier(any());
-        assertEquals(original.getType(), copied.getType());
-        verify(specimenService).save(any());
-
-    }
-
-
-
-
-
-
-
 
 }

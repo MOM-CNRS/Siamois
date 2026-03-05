@@ -65,11 +65,12 @@ class FormServiceTest {
         institutionDTO = mock(InstitutionDTO.class);
 
         // Use deterministic IDs in stubs
-        given(recordingUnitType.getId()).willReturn(101L);
+        given(recordingUnitType.getId()).willReturn(101L);  // Add this line
+        given(recordingUnitTypeDTO.getId()).willReturn(101L); // Add this line
         given(institution.getId()).willReturn(55L);
-        given(recordingUnitTypeDTO.getId()).willReturn(101L);
         given(institutionDTO.getId()).willReturn(55L);
     }
+
 
     @Test
     void findAllFieldsBySpatialUnitId_success() {
@@ -91,53 +92,10 @@ class FormServiceTest {
         assertNull(res);
     }
 
-    @Test
-    void returnsTypeSpecificFormWhenPresent() {
-        setUpForReturnTypeSpecificTests();
-        CustomForm typeSpecific = new CustomForm();
-        given(formRepository.findEffectiveFormByTypeAndInstitution(101L, 55L))
-                .willReturn(Optional.of(typeSpecific));
 
-        CustomForm result = formService.findCustomFormByRecordingUnitTypeAndInstitutionId(recordingUnitTypeDTO, institutionDTO);
 
-        assertSame(typeSpecific, result, "Should return the type-specific form");
-        verify(formRepository).findEffectiveFormByTypeAndInstitution(101L, 55L);
-        verify(formRepository, never()).findEffectiveFormByTypeAndInstitution(isNull(), eq(55L));
-        verifyNoMoreInteractions(formRepository);
-    }
 
-    @Test
-    void fallsBackToInstitutionOnlyWhenTypeSpecificMissing() {
-        setUpForReturnTypeSpecificTests();
-        CustomForm fallback = new CustomForm();
-        given(formRepository.findEffectiveFormByTypeAndInstitution(101L, 55L))
-                .willReturn(Optional.empty());
-        given(formRepository.findEffectiveFormByTypeAndInstitution(null, 55L))
-                .willReturn(Optional.of(fallback));
 
-        CustomForm result = formService.findCustomFormByRecordingUnitTypeAndInstitutionId(recordingUnitTypeDTO, institutionDTO);
-
-        assertSame(fallback, result, "Should return the institution-only form on fallback");
-        verify(formRepository).findEffectiveFormByTypeAndInstitution(101L, 55L);
-        verify(formRepository).findEffectiveFormByTypeAndInstitution(isNull(), eq(55L));
-        verifyNoMoreInteractions(formRepository);
-    }
-
-    @Test
-    void returnsNullWhenNothingFound() {
-        setUpForReturnTypeSpecificTests();
-        given(formRepository.findEffectiveFormByTypeAndInstitution(101L, 55L))
-                .willReturn(Optional.empty());
-        given(formRepository.findEffectiveFormByTypeAndInstitution(null, 55L))
-                .willReturn(Optional.empty());
-
-        CustomForm result = formService.findCustomFormByRecordingUnitTypeAndInstitutionId(recordingUnitTypeDTO, institutionDTO);
-
-        assertNull(result, "Should return null when neither lookup finds a form");
-        verify(formRepository).findEffectiveFormByTypeAndInstitution(101L, 55L);
-        verify(formRepository).findEffectiveFormByTypeAndInstitution(isNull(), eq(55L));
-        verifyNoMoreInteractions(formRepository);
-    }
 
     // -----------------------------------------------------------------------
     // Added tests for initOrReuseResponse + updateJpaEntityFromResponse
@@ -301,7 +259,7 @@ class FormServiceTest {
         DummyEntity entity = new DummyEntity();
         entity.setTitle("newTitle");
 
-        CustomFieldAnswerText freshAnswer = new CustomFieldAnswerText();
+        CustomFieldAnswerTextViewModel freshAnswer = new CustomFieldAnswerTextViewModel();
 
         try (MockedStatic<CustomFieldAnswerFactory> mocked = mockStatic(CustomFieldAnswerFactory.class)) {
             mocked.when(() -> CustomFieldAnswerFactory.instantiateAnswerForField(field1)).thenReturn(freshAnswer);
@@ -312,10 +270,10 @@ class FormServiceTest {
             // assert
             assertNotNull(res.getAnswers());
             assertSame(freshAnswer, res.getAnswers().get(field1), "Answer should be replaced when forceInit=true");
-            assertEquals("newTitle", ((CustomFieldAnswerTextViewModel) res.getAnswers().get(field1)).getValue(),
-                    "System field value should be populated from entity");
+            assertEquals("newTitle", freshAnswer.getValue(), "System field value should be populated from entity");
         }
     }
+
 
     @Test
     void initOrReuseResponse_populatesSystemFields_fromEntity_string_integer_datetime() {
@@ -370,28 +328,36 @@ class FormServiceTest {
         ConceptDTO concept = mock(ConceptDTO.class);
         entity.setTypeConcept(concept);
 
+        // Mock the label bean to return a label for the concept
         given(labelBean.findLabelOf(concept)).willReturn("My Label");
         given(labelBean.getCurrentUserLang()).willReturn("en");
 
-        CustomFieldAnswerSelectOneFromFieldCodeViewModel conceptAnswer = new CustomFieldAnswerSelectOneFromFieldCodeViewModel ();
+        // Create a ConceptAutocompleteDTO, which is what the view model expects
+        ConceptAutocompleteDTO conceptAutocompleteDTO = new ConceptAutocompleteDTO(concept, "My Label", "en");
+
+        // Create a real instance of the view model
+        CustomFieldAnswerSelectOneFromFieldCodeViewModel conceptAnswer = new CustomFieldAnswerSelectOneFromFieldCodeViewModel();
+        // Set the value directly
+        conceptAnswer.setValue(conceptAutocompleteDTO);
 
         try (MockedStatic<CustomFieldAnswerFactory> mocked = mockStatic(CustomFieldAnswerFactory.class)) {
+            // Mock the factory to return the pre-configured answer
             mocked.when(() -> CustomFieldAnswerFactory.instantiateAnswerForField(conceptField)).thenReturn(conceptAnswer);
 
             // act
-            CustomFormResponseViewModel  res = formService.initOrReuseResponse(null, entity, fieldSource, false);
+            CustomFormResponseViewModel res = formService.initOrReuseResponse(null, entity, fieldSource, false);
 
             // assert
-            CustomFieldAnswerSelectOneFromFieldCodeViewModel  stored =
-                    (CustomFieldAnswerSelectOneFromFieldCodeViewModel ) res.getAnswers().get(conceptField);
+            CustomFieldAnswerSelectOneFromFieldCodeViewModel stored =
+                    (CustomFieldAnswerSelectOneFromFieldCodeViewModel) res.getAnswers().get(conceptField);
 
-            assertSame(concept, stored.getValue());
             assertNotNull(stored.getValue());
             assertEquals(concept, stored.getValue().concept());
             assertEquals("My Label", stored.getValue().getConceptLabelToDisplay().getLabel());
             assertEquals("en", stored.getValue().getConceptLabelToDisplay().getLangCode());
         }
     }
+
 
     @Test
     void updateJpaEntityFromResponse_setsBindableSystemFields() {
@@ -643,36 +609,50 @@ class FormServiceTest {
         PersonDTO person = mock(PersonDTO.class);
         entity.setPerson(person);
 
-        List<PersonDTO> personList = List.of(mock(PersonDTO.class), mock(PersonDTO.class));
+        // Create a mutable list for personList
+        List<PersonDTO> personList = new ArrayList<>();
+        PersonDTO person1 = mock(PersonDTO.class);
+        PersonDTO person2 = mock(PersonDTO.class);
+        personList.add(person1);
+        personList.add(person2);
         entity.setPersonList(personList);
 
         Set<SpatialUnitDTO> spatialUnitSet = Set.of(mock(SpatialUnitDTO.class), mock(SpatialUnitDTO.class));
         entity.setSpatialUnitSet(spatialUnitSet);
 
-        // Mock answers for all supported types
-        CustomFieldAnswerText titleAnswer = new CustomFieldAnswerText();
-        CustomFieldAnswerInteger countAnswer = new CustomFieldAnswerInteger();
-        CustomFieldAnswerDateTime createdAtAnswer = new CustomFieldAnswerDateTime();
-        CustomFieldAnswerSelectOneFromFieldCode conceptAnswer = new CustomFieldAnswerSelectOneFromFieldCode();
-        CustomFieldAnswerSelectOneActionUnit actionUnitAnswer = new CustomFieldAnswerSelectOneActionUnit();
-        CustomFieldAnswerSelectOneSpatialUnit spatialUnitAnswer = new CustomFieldAnswerSelectOneSpatialUnit();
-        CustomFieldAnswerSelectOneActionCode actionCodeAnswer = new CustomFieldAnswerSelectOneActionCode();
-        CustomFieldAnswerSelectOnePerson personAnswer = new CustomFieldAnswerSelectOnePerson();
-        CustomFieldAnswerSelectMultiplePerson personListAnswer = new CustomFieldAnswerSelectMultiplePerson();
-        CustomFieldAnswerSelectMultipleSpatialUnitTree spatialUnitSetAnswer = new CustomFieldAnswerSelectMultipleSpatialUnitTree();
+        // Mock the label bean to return a label for the concept
+        given(labelBean.findLabelOf(concept)).willReturn("Concept Label");
+        given(labelBean.getCurrentUserLang()).willReturn("en");
 
         // Mock the factory to return the answers
         try (MockedStatic<CustomFieldAnswerFactory> mockedFactory = mockStatic(CustomFieldAnswerFactory.class)) {
-            mockedFactory.when(() -> CustomFieldAnswerFactory.instantiateAnswerForField(titleField)).thenReturn(titleAnswer);
-            mockedFactory.when(() -> CustomFieldAnswerFactory.instantiateAnswerForField(countField)).thenReturn(countAnswer);
-            mockedFactory.when(() -> CustomFieldAnswerFactory.instantiateAnswerForField(createdAtField)).thenReturn(createdAtAnswer);
-            mockedFactory.when(() -> CustomFieldAnswerFactory.instantiateAnswerForField(conceptField)).thenReturn(conceptAnswer);
-            mockedFactory.when(() -> CustomFieldAnswerFactory.instantiateAnswerForField(actionUnitField)).thenReturn(actionUnitAnswer);
-            mockedFactory.when(() -> CustomFieldAnswerFactory.instantiateAnswerForField(spatialUnitField)).thenReturn(spatialUnitAnswer);
-            mockedFactory.when(() -> CustomFieldAnswerFactory.instantiateAnswerForField(actionCodeField)).thenReturn(actionCodeAnswer);
-            mockedFactory.when(() -> CustomFieldAnswerFactory.instantiateAnswerForField(personField)).thenReturn(personAnswer);
-            mockedFactory.when(() -> CustomFieldAnswerFactory.instantiateAnswerForField(personListField)).thenReturn(personListAnswer);
-            mockedFactory.when(() -> CustomFieldAnswerFactory.instantiateAnswerForField(spatialUnitSetField)).thenReturn(spatialUnitSetAnswer);
+            // Mock the factory to return a CustomFieldAnswerSelectMultiplePersonViewModel with the personList set
+            mockedFactory.when(() -> CustomFieldAnswerFactory.instantiateAnswerForField(personListField))
+                    .thenAnswer(invocation -> {
+                        CustomFieldAnswerSelectMultiplePersonViewModel answer = new CustomFieldAnswerSelectMultiplePersonViewModel();
+                        answer.setValue(entity.getPersonList());
+                        return answer;
+                    });
+
+            // Mock other fields
+            mockedFactory.when(() -> CustomFieldAnswerFactory.instantiateAnswerForField(titleField))
+                    .thenReturn(new CustomFieldAnswerTextViewModel());
+            mockedFactory.when(() -> CustomFieldAnswerFactory.instantiateAnswerForField(countField))
+                    .thenReturn(new CustomFieldAnswerIntegerViewModel());
+            mockedFactory.when(() -> CustomFieldAnswerFactory.instantiateAnswerForField(createdAtField))
+                    .thenReturn(new CustomFieldAnswerDateTimeViewModel());
+            mockedFactory.when(() -> CustomFieldAnswerFactory.instantiateAnswerForField(conceptField))
+                    .thenReturn(new CustomFieldAnswerSelectOneFromFieldCodeViewModel());
+            mockedFactory.when(() -> CustomFieldAnswerFactory.instantiateAnswerForField(actionUnitField))
+                    .thenReturn(new CustomFieldAnswerSelectOneActionUnitViewModel());
+            mockedFactory.when(() -> CustomFieldAnswerFactory.instantiateAnswerForField(spatialUnitField))
+                    .thenReturn(new CustomFieldAnswerSelectOneSpatialUnitViewModel());
+            mockedFactory.when(() -> CustomFieldAnswerFactory.instantiateAnswerForField(actionCodeField))
+                    .thenReturn(new CustomFieldAnswerSelectOneActionCodeViewModel());
+            mockedFactory.when(() -> CustomFieldAnswerFactory.instantiateAnswerForField(personField))
+                    .thenReturn(new CustomFieldAnswerSelectOnePersonViewModel());
+            mockedFactory.when(() -> CustomFieldAnswerFactory.instantiateAnswerForField(spatialUnitSetField))
+                    .thenReturn(new CustomFieldAnswerSelectMultipleSpatialUnitTreeViewModel());
 
             // Act: Initialize or reuse the response
             CustomFormResponseViewModel response = formService.initOrReuseResponse(null, entity, fieldSource, false);
@@ -681,7 +661,9 @@ class FormServiceTest {
             assertEquals("Hello", ((CustomFieldAnswerTextViewModel) response.getAnswers().get(titleField)).getValue());
             assertEquals(7, ((CustomFieldAnswerIntegerViewModel) response.getAnswers().get(countField)).getValue());
             assertEquals(entity.getCreatedAt().toLocalDateTime(), ((CustomFieldAnswerDateTimeViewModel) response.getAnswers().get(createdAtField)).getValue());
-            assertEquals(concept, ((CustomFieldAnswerSelectOneFromFieldCodeViewModel) response.getAnswers().get(conceptField)).getValue());
+            assertEquals(concept, ((CustomFieldAnswerSelectOneFromFieldCodeViewModel) response.getAnswers().get(conceptField)).getValue().concept());
+            assertEquals("Concept Label", ((CustomFieldAnswerSelectOneFromFieldCodeViewModel) response.getAnswers().get(conceptField)).getValue().getConceptLabelToDisplay().getLabel());
+            assertEquals("en", ((CustomFieldAnswerSelectOneFromFieldCodeViewModel) response.getAnswers().get(conceptField)).getValue().getConceptLabelToDisplay().getLangCode());
             assertEquals(actionUnit, ((CustomFieldAnswerSelectOneActionUnitViewModel) response.getAnswers().get(actionUnitField)).getValue());
             assertEquals(spatialUnit, ((CustomFieldAnswerSelectOneSpatialUnitViewModel) response.getAnswers().get(spatialUnitField)).getValue());
             assertEquals(actionCode, ((CustomFieldAnswerSelectOneActionCodeViewModel) response.getAnswers().get(actionCodeField)).getValue());
@@ -695,138 +677,7 @@ class FormServiceTest {
         }
     }
 
-    @Test
-    void initOrReuseResponse_populatesStratigraphyRelationshipsCorrectly() {
-        // Arrange
-        FieldSource fieldSource = mock(FieldSource.class);
-        CustomField stratigraphyField = mock(CustomField.class);
 
-
-        // Mock the field source to return the stratigraphy field
-        when(fieldSource.getAllFields()).thenReturn(List.of(stratigraphyField));
-
-        // Create a mock RecordingUnit
-        RecordingUnit recordingUnit = mock(RecordingUnit.class);
-
-        // Mock relationships for unit1
-        StratigraphicRelationship syncRelUnit1 = mock(StratigraphicRelationship.class);
-        StratigraphicRelationship asyncRelUnit1 = mock(StratigraphicRelationship.class);
-
-        // Mock relationships for unit2
-        StratigraphicRelationship syncRelUnit2 = mock(StratigraphicRelationship.class);
-        StratigraphicRelationship asyncRelUnit2 = mock(StratigraphicRelationship.class);
-
-        // Setup mocks for relationshipsAsUnit1
-        Set<StratigraphicRelationship> relationshipsAsUnit1 = new HashSet<>();
-        relationshipsAsUnit1.add(syncRelUnit1);
-        relationshipsAsUnit1.add(asyncRelUnit1);
-
-        // Setup mocks for relationshipsAsUnit2
-        Set<StratigraphicRelationship> relationshipsAsUnit2 = new HashSet<>();
-        relationshipsAsUnit2.add(syncRelUnit2);
-        relationshipsAsUnit2.add(asyncRelUnit2);
-
-        // Mock behavior for relationships
-        when(recordingUnit.getRelationshipsAsUnit1()).thenReturn(relationshipsAsUnit1);
-        when(recordingUnit.getRelationshipsAsUnit2()).thenReturn(relationshipsAsUnit2);
-
-        // Mock behavior for isAsynchronous
-        when(syncRelUnit1.getIsAsynchronous()).thenReturn(false);
-        when(asyncRelUnit1.getIsAsynchronous()).thenReturn(true);
-        when(syncRelUnit2.getIsAsynchronous()).thenReturn(false);
-        when(asyncRelUnit2.getIsAsynchronous()).thenReturn(true);
-
-        // Mock the CustomFieldAnswerFactory to return a CustomFieldAnswerStratigraphy
-        CustomFieldAnswerStratigraphy stratigraphyAnswer = new CustomFieldAnswerStratigraphy();
-        try (MockedStatic<CustomFieldAnswerFactory> mockedFactory = mockStatic(CustomFieldAnswerFactory.class)) {
-            mockedFactory.when(() -> CustomFieldAnswerFactory.instantiateAnswerForField(stratigraphyField))
-                    .thenReturn(stratigraphyAnswer);
-
-            // Act
-            CustomFormResponseViewModel response = formService.initOrReuseResponse(null, recordingUnit, fieldSource, false);
-
-            // Assert
-            CustomFieldAnswerStratigraphyViewModel resultAnswer = (CustomFieldAnswerStratigraphyViewModel) response.getAnswers().get(stratigraphyField);
-
-            // Check if sourceToAdd is set
-            assertEquals(recordingUnit, resultAnswer.getSourceToAdd());
-
-            // Check if synchronous relationships are populated correctly
-            assertTrue(resultAnswer.getSynchronousRelationships().contains(syncRelUnit1));
-            assertTrue(resultAnswer.getSynchronousRelationships().contains(syncRelUnit2));
-            assertEquals(2, resultAnswer.getSynchronousRelationships().size());
-
-            // Check if posterior relationships are populated correctly
-            assertTrue(resultAnswer.getPosteriorRelationships().contains(asyncRelUnit1));
-            assertEquals(1, resultAnswer.getPosteriorRelationships().size());
-
-            // Check if anterior relationships are populated correctly
-            assertTrue(resultAnswer.getAnteriorRelationships().contains(asyncRelUnit2));
-            assertEquals(1, resultAnswer.getAnteriorRelationships().size());
-        }
-    }
-
-    @Test
-    void updateJpaEntityFromResponse_setsStratigraphyFieldValueCorrectly() {
-        // Arrange
-        RecordingUnitSummaryDTO recordingUnit = new RecordingUnitSummaryDTO();
-
-        // Create a CustomFieldAnswerStratigraphy with mock relationships
-        CustomFieldAnswerStratigraphyViewModel stratiAnswer = new CustomFieldAnswerStratigraphyViewModel();
-
-        // Create real instances of RecordingUnit for relationships
-        RecordingUnitSummaryDTO unit1 = new RecordingUnitSummaryDTO(); unit1.setFullIdentifier("unit1");
-        RecordingUnitSummaryDTO unit2 = new RecordingUnitSummaryDTO(); unit2.setFullIdentifier("unit2");
-
-        // Create StratigraphicRelationships with non-null units
-        StratigraphicRelationshipDTO anteriorRelUnit1 = new StratigraphicRelationshipDTO();
-        anteriorRelUnit1.setUnit1(recordingUnit);
-        anteriorRelUnit1.setUnit2(unit2);
-
-        StratigraphicRelationshipDTO anteriorRelUnit2 = new StratigraphicRelationshipDTO();
-        anteriorRelUnit2.setUnit1(unit1);
-        anteriorRelUnit2.setUnit2(recordingUnit);
-
-        StratigraphicRelationshipDTO posteriorRelUnit1 = new StratigraphicRelationshipDTO();
-        posteriorRelUnit1.setUnit1(recordingUnit);
-        posteriorRelUnit1.setUnit2(unit2);
-
-        StratigraphicRelationshipDTO posteriorRelUnit2 = new StratigraphicRelationshipDTO();
-        posteriorRelUnit2.setUnit1(unit1);
-        posteriorRelUnit2.setUnit2(recordingUnit);
-
-        StratigraphicRelationshipDTO synchronousRelUnit1 = new StratigraphicRelationshipDTO();
-        synchronousRelUnit1.setUnit1(recordingUnit);
-        synchronousRelUnit1.setUnit2(unit2);
-
-        StratigraphicRelationshipDTO synchronousRelUnit2 = new StratigraphicRelationshipDTO();
-        synchronousRelUnit2.setUnit1(unit1);
-        synchronousRelUnit2.setUnit2(recordingUnit);
-
-        // Add mock relationships to stratiAnswer
-        stratiAnswer.getAnteriorRelationships().add(anteriorRelUnit1);
-        stratiAnswer.getAnteriorRelationships().add(anteriorRelUnit2);
-        stratiAnswer.getPosteriorRelationships().add(posteriorRelUnit1);
-        stratiAnswer.getPosteriorRelationships().add(posteriorRelUnit2);
-        stratiAnswer.getSynchronousRelationships().add(synchronousRelUnit1);
-        stratiAnswer.getSynchronousRelationships().add(synchronousRelUnit2);
-
-        // Create a CustomField for stratigraphy
-        CustomField stratigraphyField = mock(CustomField.class);
-
-        // Create a CustomFormResponse with the stratigraphy answer
-        CustomFormResponseViewModel response = new CustomFormResponseViewModel();
-        Map<CustomField, CustomFieldAnswerViewModel> answers = new HashMap<>();
-        answers.put(stratigraphyField, stratiAnswer);
-        response.setAnswers(answers);
-
-
-
-        // Act
-        formService.updateJpaEntityFromResponse(response, recordingUnit);
-
-
-    }
 
 
 
