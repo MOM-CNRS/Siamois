@@ -24,10 +24,6 @@ public class EntityDTORegistry {
         dtoToEntityMap.put(SpecimenDTO.class, Specimen.class);
         dtoToEntityMap.put(ActionUnitDTO.class, ActionUnit.class);
         dtoToEntityMap.put(SpatialUnitDTO.class, SpatialUnit.class);
-        dtoToEntityMap.put(RecordingUnitDTO.class, RecordingUnit.class);
-        dtoToEntityMap.put(SpecimenDTO.class, Specimen.class);
-        dtoToEntityMap.put(ActionUnitDTO.class, ActionUnit.class);
-        dtoToEntityMap.put(SpatialUnitDTO.class, SpatialUnit.class);
 
     }
 
