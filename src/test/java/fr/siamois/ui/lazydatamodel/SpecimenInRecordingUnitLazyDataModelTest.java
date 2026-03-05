@@ -24,7 +24,10 @@ import org.springframework.data.domain.Pageable;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -66,29 +69,62 @@ class SpecimenInRecordingUnitLazyDataModelTest {
     }
 
     @Test
-    void loadSpecimen_Success() {
+    void loadSpecimens_Success() {
+        // 1. Préparation des données de test
+        InstitutionDTO mockInstitution = new InstitutionDTO();
+        mockInstitution.setId(1L);  // ID spécifique pour éviter null
 
-        lazyModel = new SpecimenInRecordingUnitLazyDataModel(specimenService,sessionSettingsBean,langBean, u);
+        RecordingUnitDTO mockRecordingUnit = new RecordingUnitDTO();
+        mockRecordingUnit.setId(10L);  // ID spécifique
 
-        // Arrange
-        when(specimenService.findAllByInstitutionAndByRecordingUnitAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
-                any(Long.class),
-                any(Long.class),
-                any(String.class),
-                any(Long[].class),
-                any(String.class),
-                any(String.class),
-                any(Pageable.class)
-        )).thenReturn(p);
-        when(sessionSettingsBean.getSelectedInstitution()).thenReturn(new InstitutionDTO());
+        SpecimenDTO specimen1 = new SpecimenDTO();
+        SpecimenDTO specimen2 = new SpecimenDTO();
+        Page<SpecimenDTO> mockPage = new PageImpl<>(List.of(specimen1, specimen2));
+
+        // 2. Configuration des mocks avec les mêmes valeurs que celles utilisées dans le test
+        when(sessionSettingsBean.getSelectedInstitution()).thenReturn(mockInstitution);
         when(langBean.getLanguageCode()).thenReturn("en");
 
-        // Act
-        Page<SpecimenDTO> actualResult = lazyModel.loadSpecimens("null", new Long[2], new Long[2], "null", pageable);
+        // Utilisation de eq() pour tous les paramètres importants
+        when(specimenService.findAllByInstitutionAndByRecordingUnitAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
+                eq(1L),                     // institutionId - doit correspondre à mockInstitution.getId()
+                eq(10L),                    // recordingUnitId - doit correspondre à mockRecordingUnit.getId()
+                eq("null"),                 // fullIdentifierFilter
+                any(Long[].class),          // categoryIds
+                eq("null"),                 // globalFilter
+                eq("en"),                   // langCode
+                any(Pageable.class)         // pageable - plus flexible
+        )).thenReturn(mockPage);
 
-        // Assert
-        // Assert
-        assertEquals(unit1, actualResult.getContent().get(0));
-        assertEquals(unit2, actualResult.getContent().get(1));
+        // 3. Initialisation du modèle
+        lazyModel = new SpecimenInRecordingUnitLazyDataModel(
+                specimenService,
+                sessionSettingsBean,
+                langBean,
+                mockRecordingUnit
+        );
+
+        // 4. Exécution de la méthode avec les mêmes paramètres que dans le mock
+        Page<SpecimenDTO> result = lazyModel.loadSpecimens(
+                "null",
+                new Long[]{1L, 2L},  // categoryIds
+                new Long[]{3L, 4L},  // personIds (non utilisé mais nécessaire)
+                "null",
+                PageRequest.of(0, 10)  // doit correspondre au pageable utilisé dans le mock
+        );
+
+        // 5. Assertions
+        assertNotNull(result);
+        assertEquals(2, result.getTotalElements());
+        assertEquals(specimen1, result.getContent().get(0));
+        assertEquals(specimen2, result.getContent().get(1));
+
+        // 6. Vérification des appels
+        verify(sessionSettingsBean).getSelectedInstitution();
+        verify(langBean).getLanguageCode();
+        verify(specimenService).findAllByInstitutionAndByRecordingUnitAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
+                eq(1L), eq(10L), eq("null"), any(Long[].class), eq("null"), eq("en"), any(Pageable.class)
+        );
     }
+
 }
