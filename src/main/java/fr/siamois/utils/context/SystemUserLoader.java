@@ -9,6 +9,8 @@ import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.infrastructure.database.repositories.institution.InstitutionRepository;
 import fr.siamois.infrastructure.database.repositories.person.PersonRepository;
 
+import fr.siamois.mapper.InstitutionMapper;
+import fr.siamois.mapper.PersonMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.convert.ConversionService;
 import org.springframework.stereotype.Service;
@@ -20,14 +22,15 @@ public class SystemUserLoader {
 
     private final PersonRepository personRepository;
     private final InstitutionRepository institutionRepository;
-    private final ConversionService conversionService;
+    private final PersonMapper personMapper;
+    private final InstitutionMapper institutionMapper;
 
 
     @Transactional(readOnly = true)
     public UserInfo loadSystemUser() {
 
         // --- Personne système ---
-        PersonDTO admin = conversionService.convert(personRepository.findByUsernameIgnoreCase("system")
+        PersonDTO admin = personMapper.convert(personRepository.findByUsernameIgnoreCase("system")
                 .orElseGet(() -> {
                     Person p = new Person();
                     p.setUsername("system");
@@ -38,17 +41,17 @@ public class SystemUserLoader {
                     p.setPassword("SIAMOIS_UNHASHED");
                     p.setSuperAdmin(false);
                     return personRepository.save(p);
-                }), PersonDTO.class);
+                }));
 
         // --- Institution par défaut ---
-        InstitutionDTO defaultInsti = conversionService.convert(institutionRepository.findInstitutionByIdentifier("siamois")
+        InstitutionDTO defaultInsti = institutionMapper.convert(institutionRepository.findInstitutionByIdentifier("siamois")
                 .orElseGet(() -> {
                     Institution inst = new Institution();
                     inst.setName("Organisation par défaut");
                     inst.setDescription("DEFAULT");
                     inst.setIdentifier("siamois");
                     return institutionRepository.save(inst);
-                }),InstitutionDTO.class);
+                }));
 
         return new UserInfo(defaultInsti, admin, "en");
     }
