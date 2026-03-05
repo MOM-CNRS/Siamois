@@ -342,7 +342,7 @@ class EntityFormContextTest {
         // assert
         verify(ans).setHasBeenModified(false);
         assertFalse(ctx.isHasUnsavedModifications());
-        verify(enabledRulesEngine).onAnswerChange(eq(scopeField), eq(newConceptl), any(), any());
+        verify(enabledRulesEngine).onAnswerChange(eq(scopeField), eq(newValue), any(), any());
         verify(scopeCallback).accept(scopeField, newConcept);
     }
 
@@ -369,10 +369,7 @@ class EntityFormContextTest {
         ctx.init(false);
 
         ConceptAutocompleteDTO newValue = mock(ConceptAutocompleteDTO.class);
-        ConceptDTO newConcept = mock(ConceptDTO.class);
-        ConceptLabelDTO cL = mock(ConceptLabelDTO.class);
-        when(newValue.getConceptLabelToDisplay()).thenReturn(cL);
-        when(newValue.getConceptLabelToDisplay().getConcept()).thenReturn(newConcept);
+
 
         ctx.handleConceptChange(otherField, newValue);
 

@@ -9,6 +9,7 @@ import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.infrastructure.database.repositories.ArkRepository;
+import fr.siamois.mapper.InstitutionMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -31,13 +32,13 @@ class ArkServiceTest {
     @Mock private InstitutionService institutionService;
     @Mock private RecordingUnitService recordingUnitService;
     @Mock private ServletUriComponentsBuilder builder;
-    @Mock private ConversionService conversionService;
+    @Mock private InstitutionMapper mapper;
 
     private ArkService arkService;
 
     @BeforeEach
     void beforeEach() {
-        arkService = new ArkService(noidCheckService, arkRepository, institutionService, conversionService ,builder);
+        arkService = new ArkService(noidCheckService, arkRepository, institutionService, mapper ,builder);
     }
 
     @Test
@@ -98,6 +99,8 @@ class ArkServiceTest {
         settings.setArkNaan("12345");
         settings.setArkSize(3);
 
+
+
         when(noidCheckService.calculateCheckDigit(anyString())).thenReturn("X");
         when(arkRepository.findByInstitutionAndQualifier(anyLong(), anyString())).thenReturn(Optional.of(new Ark()));
 
@@ -124,6 +127,7 @@ class ArkServiceTest {
         ark.setCreatingInstitution(institution);
         ark.setQualifier("abcde-x");
 
+        when(mapper.convert(any(Institution.class))).thenReturn(institutionDTO);
         when(institutionService.createOrGetSettingsOf(institutionDTO)).thenReturn(settings);
         when(builder.cloneBuilder()).thenReturn(builder);
         when(builder.path(anyString())).thenReturn(builder);

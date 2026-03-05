@@ -8,6 +8,8 @@ import fr.siamois.domain.models.settings.InstitutionSettings;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.infrastructure.database.repositories.ArkRepository;
+import fr.siamois.mapper.InstitutionMapper;
+import fr.siamois.mapper.InstitutionMapperImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.convert.ConversionService;
 import org.springframework.stereotype.Service;
@@ -30,7 +32,7 @@ public class ArkService {
     private final NoidCheckService noidCheckService;
     private final ArkRepository arkRepository;
     private final InstitutionService institutionService;
-    private final ConversionService conversionService;
+    private final InstitutionMapper institutionMapper;
 
     private ServletUriComponentsBuilder builder;
 
@@ -44,11 +46,11 @@ public class ArkService {
     @Autowired
     public ArkService(NoidCheckService noidCheckService,
                       ArkRepository arkRepository,
-                      InstitutionService institutionService, ConversionService conversionService) {
+                      InstitutionService institutionService, ConversionService conversionService, InstitutionMapper institutionMapper) {
         this.noidCheckService = noidCheckService;
         this.arkRepository = arkRepository;
         this.institutionService = institutionService;
-        this.conversionService = conversionService;
+        this.institutionMapper = institutionMapper;
     }
 
     /**
@@ -61,12 +63,13 @@ public class ArkService {
      */
     public ArkService(NoidCheckService noidCheckService,
                       ArkRepository arkRepository,
-                      InstitutionService institutionService, ConversionService conversionService,
+                      InstitutionService institutionService,
+                      InstitutionMapper institutionMapper,
                       ServletUriComponentsBuilder builder) {
         this.noidCheckService = noidCheckService;
         this.arkRepository = arkRepository;
         this.institutionService = institutionService;
-        this.conversionService = conversionService;
+        this.institutionMapper = institutionMapper;
         this.builder = builder;
     }
 
@@ -149,7 +152,7 @@ public class ArkService {
     public String getUriOf(Ark ark) {
 
         InstitutionSettings settings = institutionService.createOrGetSettingsOf(
-                Objects.requireNonNull(conversionService.convert(ark.getCreatingInstitution(), InstitutionDTO.class)));
+                Objects.requireNonNull(institutionMapper.convert(ark.getCreatingInstitution())));
         if (!settings.hasEnabledArkConfig()) {
             throw new IllegalStateException(String.format("Institution n°%s should have ark settings.", settings.getId()));
         }
