@@ -4,7 +4,12 @@ import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.specimen.Specimen;
 import fr.siamois.domain.services.ArkEntityService;
 import fr.siamois.dto.entity.*;
+import fr.siamois.infrastructure.database.projection.SpecimenProjection;
 import fr.siamois.infrastructure.database.repositories.specimen.SpecimenRepository;
+import fr.siamois.mapper.InstitutionMapper;
+import fr.siamois.mapper.SpecimenMapper;
+import lombok.NoArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import org.springframework.core.convert.ConversionService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -14,15 +19,13 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 
 @Service
+@RequiredArgsConstructor
 public class SpecimenService implements ArkEntityService {
 
     private final SpecimenRepository specimenRepository;
-    private final ConversionService conversionService;
+    private final SpecimenMapper specimenMapper;
+    private final InstitutionMapper institutionMapper;
 
-    public SpecimenService(SpecimenRepository specimenRepository, ConversionService conversionService) {
-        this.specimenRepository = specimenRepository;
-        this.conversionService = conversionService;
-    }
 
     @Override
     public List<Specimen> findWithoutArk(Institution institution) {
@@ -59,20 +62,20 @@ public class SpecimenService implements ArkEntityService {
         }
 
         // Convertir SpecimenDTO en Specimen
-        Specimen specimen = conversionService.convert(toSave, Specimen.class);
+        Specimen specimen = specimenMapper.invertConvert(toSave);
 
         // Sauvegarder l'entité Specimen
         Specimen savedSpecimen = specimenRepository.save(specimen);
 
         // Convertir l'entité sauvegardée en SpecimenDTO et la retourner
-        return conversionService.convert(savedSpecimen, SpecimenDTO.class);
+        return specimenMapper.convert(savedSpecimen);
     }
 
     @Override
     public AbstractEntityDTO save(AbstractEntityDTO abstractEntityDTO) {
-        Specimen specimen = conversionService.convert(abstractEntityDTO, Specimen.class);
+        Specimen specimen = specimenMapper.invertConvert((SpecimenDTO) abstractEntityDTO);
         Specimen saved = specimenRepository.save(specimen);
-        return conversionService.convert(saved, abstractEntityDTO.getClass());
+        return specimenMapper.convert(saved);
     }
 
     /**
@@ -83,8 +86,8 @@ public class SpecimenService implements ArkEntityService {
      */
     @Transactional(readOnly = true)
     public SpecimenDTO findById(Long id) {
-        Specimen specimen = specimenRepository.findById(id).orElse(null);
-        return specimen != null ? conversionService.convert(specimen, SpecimenDTO.class) : null;
+        Specimen specimen = specimenRepository.findById(id, Specimen.class).orElse(null);
+        return specimen != null ? specimenMapper.convert(specimen) : null;
     }
 
 
@@ -112,7 +115,7 @@ public class SpecimenService implements ArkEntityService {
                 institutionId, fullIdentifier, categoryIds, global, langCode, pageable
         );
 
-        return specimenPage.map(specimen -> conversionService.convert(specimen, SpecimenDTO.class));
+        return specimenPage.map(specimenMapper::convert);
     }
 
 
@@ -142,7 +145,7 @@ public class SpecimenService implements ArkEntityService {
                 institutionId, recordingUnitId, fullIdentifier, categoryIds, global, langCode, pageable
         );
 
-        return specimenPage.map(specimen -> conversionService.convert(specimen, SpecimenDTO.class));
+        return specimenPage.map(specimenMapper::convert);
     }
 
 
@@ -159,7 +162,7 @@ public class SpecimenService implements ArkEntityService {
                 spatialUnitId, fullIdentifier, categoryIds, global, langCode, pageable
         );
 
-        return specimenPage.map(specimen -> conversionService.convert(specimen, SpecimenDTO.class));
+        return specimenPage.map(specimenMapper::convert);
     }
 
 
@@ -176,7 +179,7 @@ public class SpecimenService implements ArkEntityService {
                 actionUnitId, fullIdentifier, categoryIds, global, langCode, pageable
         );
 
-        return specimenPage.map(specimen -> conversionService.convert(specimen, SpecimenDTO.class));
+        return specimenPage.map(specimenMapper::convert);
     }
 
 
@@ -199,7 +202,7 @@ public class SpecimenService implements ArkEntityService {
      * @return the count of specimens created by the institution
      */
     public long countByInstitution(InstitutionDTO institution) {
-        Institution institutionEntity = conversionService.convert(institution, Institution.class);
+        Institution institutionEntity = institutionMapper.invertConvert(institution);
         return specimenRepository.countByCreatedByInstitution(institutionEntity);
     }
 
