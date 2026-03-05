@@ -18,6 +18,7 @@ import fr.siamois.infrastructure.database.repositories.DocumentRepository;
 import fr.siamois.infrastructure.files.DocumentStorage;
 import fr.siamois.mapper.InstitutionMapper;
 import fr.siamois.mapper.InstitutionMapperImpl;
+import fr.siamois.mapper.PersonMapper;
 import fr.siamois.mapper.PersonMapperImpl;
 import fr.siamois.utils.CodeUtils;
 import fr.siamois.utils.DocumentUtils;
@@ -47,8 +48,10 @@ public class DocumentService implements ArkEntityService {
 
 
     private final DocumentRepository documentRepository;
-    private final PersonMapperImpl personMapper;
-    private final InstitutionMapperImpl institutionMapper;
+
+
+    private final PersonMapper personMapper;
+    private final InstitutionMapper institutionMapper;
 
     private static final int MAX_GENERATIONS = 100;
     private final DocumentStorage documentStorage;

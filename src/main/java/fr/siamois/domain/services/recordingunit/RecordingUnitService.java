@@ -59,15 +59,13 @@ import java.util.stream.Collectors;
 public class RecordingUnitService implements ArkEntityService {
 
     private final RecordingUnitRepository recordingUnitRepository;
-    private final ConceptService conceptService;
-    private final CustomFormResponseService customFormResponseService;
     private final PersonRepository personRepository;
     private final InstitutionService institutionService;
     private final ActionUnitService actionUnitService;
     private final TeamMemberRepository teamMemberRepository;
     private final RecordingUnitIdCounterRepository recordingUnitIdCounterRepository;
     private final RecordingUnitIdInfoRepository recordingUnitIdInfoRepository;
-    private final RecordingUnitMapperImpl recordingUnitMapper;
+    private final RecordingUnitMapper recordingUnitMapper;
     private final ConversionService conversionService;
     private final ApplicationContext applicationContext;
 

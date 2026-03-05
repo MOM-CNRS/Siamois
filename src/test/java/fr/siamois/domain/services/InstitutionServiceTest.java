@@ -24,6 +24,8 @@ import fr.siamois.infrastructure.database.repositories.person.PersonRepository;
 import fr.siamois.infrastructure.database.repositories.settings.InstitutionSettingsRepository;
 import fr.siamois.infrastructure.database.repositories.team.ActionManagerRepository;
 import fr.siamois.infrastructure.database.repositories.team.TeamMemberRepository;
+import fr.siamois.mapper.InstitutionMapper;
+import fr.siamois.mapper.PersonMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -34,6 +36,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.*;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.in;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
@@ -54,6 +57,10 @@ class InstitutionServiceTest {
     private VocabularyService vocabularyService;
     @Mock
     private FieldConfigurationService fieldConfigurationService;
+    @Mock
+    private PersonMapper personMapper;
+    @Mock
+    private InstitutionMapper institutionMapper;
 
     @InjectMocks
     private InstitutionService institutionService;
@@ -91,6 +98,7 @@ class InstitutionServiceTest {
         institution1DTO.setId(-1L);
         institution1DTO.setName("First name");
         institution1DTO.setIdentifier("123456");
+        institution1DTO.setManagers(new HashSet<>());
         institution1DTO.getManagers().add(managerDTO);
 
         institution2DTO = new InstitutionDTO();
@@ -105,13 +113,27 @@ class InstitutionServiceTest {
     }
 
     @Test
-    void findAll() {
-        when(institutionRepository.findAll()).thenReturn(List.of(institution1, institution2));
+    void findAll_shouldReturnAllInstitutionsAsDTOs() {
 
+
+        when(institutionRepository.findAll()).thenReturn(List.of(institution1, institution2));
+        when(institutionMapper.convert(institution1)).thenReturn(institution1DTO);
+        when(institutionMapper.convert(institution2)).thenReturn(institution2DTO);
+
+        // Act
         Set<InstitutionDTO> result = institutionService.findAll();
 
-        assertThat(result).containsExactlyInAnyOrder(institution1DTO, institution2DTO);
+        // Assert
+        assertThat(result)
+                .isNotNull()
+                .hasSize(2)
+                .containsExactlyInAnyOrder(institution1DTO, institution2DTO);
+
+        verify(institutionRepository, times(1)).findAll();
+        verify(institutionMapper, times(1)).convert(institution1);
+        verify(institutionMapper, times(1)).convert(institution2);
     }
+
 
     @Test
     void createInstitution_throwsInstitutionAlreadyExist() {
@@ -123,7 +145,8 @@ class InstitutionServiceTest {
     void createInstitution_throwsFailedInstitutionSaveException() throws InvalidEndpointException {
 
         // Mock
-        when(institutionRepository.save(institution1)).thenThrow(new RuntimeException("Error while saving institution"));
+        when(institutionMapper.invertConvert(any(InstitutionDTO.class))).thenReturn(new Institution());
+        when(institutionRepository.save(any(Institution.class))).thenThrow(new RuntimeException("Error while saving institution"));
         Vocabulary fakeVocabulary = new Vocabulary();
         when(vocabularyService.findOrCreateVocabularyOfUri(anyString()))
                 .thenReturn(fakeVocabulary);
@@ -135,6 +158,7 @@ class InstitutionServiceTest {
     void createInstitution() throws InstitutionAlreadyExistException, FailedInstitutionSaveException, InvalidEndpointException, NotSiamoisThesaurusException, ErrorProcessingExpansionException {
 
         Vocabulary fakeVocabulary = new Vocabulary();
+        when(institutionMapper.invertConvert(any(InstitutionDTO.class))).thenReturn(institution1);
         when(vocabularyService.findOrCreateVocabularyOfUri(anyString()))
                 .thenReturn(fakeVocabulary);
         when(fieldConfigurationService
@@ -243,6 +267,7 @@ class InstitutionServiceTest {
 
     @Test
     void findInstitutionsOfPerson_shouldReturnAllInstitutions() {
+        // Arrange
         PersonDTO person = new PersonDTO();
         person.setId(1L);
 
@@ -250,10 +275,25 @@ class InstitutionServiceTest {
         when(institutionRepository.findAllAsActionManager(person.getId())).thenReturn(Set.of(institution2));
         when(institutionRepository.findAllAsInstitutionManager(person.getId())).thenReturn(Set.of(institution1, institution2));
 
+        when(institutionMapper.convert(institution1)).thenReturn(institution1DTO);
+        when(institutionMapper.convert(institution2)).thenReturn(institution2DTO);
+
+        // Act
         Set<InstitutionDTO> result = institutionService.findInstitutionsOfPerson(person);
 
-        assertThat(result).containsExactlyInAnyOrder(institution1DTO, institution2DTO);
+        // Assert
+        assertThat(result)
+                .isNotNull()
+                .hasSize(2)
+                .containsExactlyInAnyOrder(institution1DTO, institution2DTO);
+
+        verify(institutionRepository, times(1)).findAllAsMember(person.getId());
+        verify(institutionRepository, times(1)).findAllAsActionManager(person.getId());
+        verify(institutionRepository, times(1)).findAllAsInstitutionManager(person.getId());
+        verify(institutionMapper, times(1)).convert(institution1);
+        verify(institutionMapper, times(1)).convert(institution2);
     }
+
 
     @Test
     void findRelationsOf_shouldReturnAllRelations() {
@@ -360,7 +400,8 @@ class InstitutionServiceTest {
         person.setId(1L);
         PersonDTO personDto = new PersonDTO();
         person.setId(1L);
-
+        when(personMapper.invertConvert(any(PersonDTO.class))).thenReturn(person);
+        when(institutionMapper.invertConvert(any(InstitutionDTO.class))).thenReturn(institution);
         when(actionManagerRepository.findByPersonAndInstitution(person, institution))
                 .thenReturn(Optional.of(new ActionManagerRelation(institution, person)));
 
@@ -372,13 +413,14 @@ class InstitutionServiceTest {
     @Test
     void personIsInInstitution_shouldReturnTrueIfTeamMember() {
         Institution institution = new Institution();
-        institution.setId(1L);
+        institution.setId(-1L);
 
         Person person = new Person();
         person.setId(1L);
         PersonDTO personDto = new PersonDTO();
-        person.setId(1L);
-
+        personDto.setId(1L);
+        when(personMapper.invertConvert(any(PersonDTO.class))).thenReturn(person);
+        when(institutionMapper.invertConvert(any(InstitutionDTO.class))).thenReturn(institution);
         when(actionManagerRepository.findByPersonAndInstitution(person, institution)).thenReturn(Optional.empty());
         when(teamMemberRepository.personIsInInstitution(person.getId(), institution.getId())).thenReturn(true);
 
@@ -390,13 +432,14 @@ class InstitutionServiceTest {
     @Test
     void personIsInInstitution_shouldReturnFalseIfNotInInstitution() {
         Institution institution = new Institution();
-        institution.setId(1L);
+        institution.setId(-1L);
 
         Person person = new Person();
         person.setId(1L);
         PersonDTO personDto = new PersonDTO();
-        person.setId(1L);
-
+        personDto.setId(1L);
+        when(personMapper.invertConvert(any(PersonDTO.class))).thenReturn(person);
+        when(institutionMapper.invertConvert(any(InstitutionDTO.class))).thenReturn(institution);
         when(actionManagerRepository.findByPersonAndInstitution(person, institution)).thenReturn(Optional.empty());
         when(teamMemberRepository.personIsInInstitution(person.getId(), institution.getId())).thenReturn(false);
 
@@ -422,12 +465,12 @@ class InstitutionServiceTest {
     @Test
     void personIsInstitutionManager_shouldReturnTrueIfManager() {
         Institution institution = new Institution();
-        institution.setId(1L);
+        institution.setId(-1L);
 
         Person person = new Person();
         person.setId(1L);
         PersonDTO personDto = new PersonDTO();
-        person.setId(1L);
+        personDto.setId(1L);
 
         when(institutionRepository.personIsInstitutionManagerOf(institution.getId(), person.getId())).thenReturn(true);
 
@@ -439,13 +482,12 @@ class InstitutionServiceTest {
     @Test
     void personIsInstitutionManager_shouldReturnFalseIfNotManager() {
         Institution institution = new Institution();
-        institution.setId(1L);
+        institution.setId(-1L);
 
         Person person = new Person();
         person.setId(1L);
         PersonDTO personDto = new PersonDTO();
-        person.setId(1L);
-
+        personDto.setId(1L);
         when(institutionRepository.personIsInstitutionManagerOf(institution.getId(), person.getId())).thenReturn(false);
 
         boolean result = institutionService.personIsInstitutionManager(personDto, institution1DTO);
@@ -463,6 +505,8 @@ class InstitutionServiceTest {
         PersonDTO personDto = new PersonDTO();
         person.setId(1L);
 
+        when(personMapper.invertConvert(any(PersonDTO.class))).thenReturn(person);
+        when(institutionMapper.invertConvert(any(InstitutionDTO.class))).thenReturn(institution);
         when(actionManagerRepository.findByPersonAndInstitution(person, institution))
                 .thenReturn(Optional.of(new ActionManagerRelation(institution, person)));
 
@@ -480,7 +524,8 @@ class InstitutionServiceTest {
         person.setId(1L);
         PersonDTO personDto = new PersonDTO();
         person.setId(1L);
-
+        when(personMapper.invertConvert(any(PersonDTO.class))).thenReturn(person);
+        when(institutionMapper.invertConvert(any(InstitutionDTO.class))).thenReturn(institution);
         when(actionManagerRepository.findByPersonAndInstitution(person, institution)).thenReturn(Optional.empty());
 
         boolean result = institutionService.personIsActionManager(personDto, institution1DTO);
@@ -492,13 +537,13 @@ class InstitutionServiceTest {
     void personIsInstitutionManagerOrActionManager_shouldReturnTrueIfManager() {
         Institution institution = new Institution();
         institution.setId(1L);
-
+        institution1DTO.setId(1L);
         Person person = new Person();
         person.setId(1L);
         PersonDTO personDto = new PersonDTO();
-        person.setId(1L);
+        personDto.setId(1L);
 
-        when(institutionRepository.personIsInstitutionManagerOf(institution.getId(), person.getId())).thenReturn(true);
+        when(institutionRepository.personIsInstitutionManagerOf(1L, 1L)).thenReturn(true);
 
         boolean result = institutionService.personIsInstitutionManagerOrActionManager(personDto, institution1DTO);
 
@@ -508,13 +553,14 @@ class InstitutionServiceTest {
     @Test
     void personIsInstitutionManagerOrActionManager_shouldReturnTrueIfActionManager() {
         Institution institution = new Institution();
-        institution.setId(1L);
+        institution.setId(-1L);
 
         Person person = new Person();
         person.setId(1L);
         PersonDTO personDto = new PersonDTO();
-        person.setId(1L);
-
+        personDto.setId(1L);
+        when(personMapper.invertConvert(any(PersonDTO.class))).thenReturn(person);
+        when(institutionMapper.invertConvert(any(InstitutionDTO.class))).thenReturn(institution);
         when(institutionRepository.personIsInstitutionManagerOf(institution.getId(), person.getId())).thenReturn(false);
         when(actionManagerRepository.findByPersonAndInstitution(person, institution))
                 .thenReturn(Optional.of(new ActionManagerRelation(institution, person)));
@@ -527,13 +573,14 @@ class InstitutionServiceTest {
     @Test
     void personIsInstitutionManagerOrActionManager_shouldReturnFalseIfNeither() {
         Institution institution = new Institution();
-        institution.setId(1L);
+        institution.setId(-1L);
 
         Person person = new Person();
         person.setId(1L);
         PersonDTO personDto = new PersonDTO();
-        person.setId(1L);
-
+        personDto.setId(1L);
+        when(personMapper.invertConvert(any(PersonDTO.class))).thenReturn(person);
+        when(institutionMapper.invertConvert(any(InstitutionDTO.class))).thenReturn(institution);
         when(institutionRepository.personIsInstitutionManagerOf(institution.getId(), person.getId())).thenReturn(false);
         when(actionManagerRepository.findByPersonAndInstitution(person, institution)).thenReturn(Optional.empty());
 
@@ -645,12 +692,23 @@ class InstitutionServiceTest {
 
     @Test
     void findById_success() {
+        // Arrange
         Institution institution = new Institution();
         institution.setId(1L);
         when(institutionRepository.findById(1L)).thenReturn(Optional.of(institution));
-        InstitutionDTO res = institutionService.findById(1L);
-        assertThat(institution).isNotNull();
-        assertThat(res.getId()).isEqualTo(1L);
+
+        InstitutionDTO expectedDTO = new InstitutionDTO();
+        expectedDTO.setId(1L);
+        when(institutionMapper.convert(institution)).thenReturn(expectedDTO);
+
+        // Act
+        InstitutionDTO result = institutionService.findById(1L);
+
+        // Assert
+        assertThat(result).isNotNull();
+        assertThat(result.getId()).isEqualTo(1L);
+        verify(institutionRepository, times(1)).findById(1L);
+        verify(institutionMapper, times(1)).convert(institution);
     }
 
     @Test

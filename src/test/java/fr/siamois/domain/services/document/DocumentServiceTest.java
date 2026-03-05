@@ -14,7 +14,9 @@ import fr.siamois.domain.services.document.compressor.FileCompressor;
 import fr.siamois.dto.entity.*;
 import fr.siamois.infrastructure.database.repositories.DocumentRepository;
 import fr.siamois.infrastructure.files.DocumentStorage;
+import fr.siamois.mapper.InstitutionMapper;
 import fr.siamois.mapper.InstitutionMapperImpl;
+import fr.siamois.mapper.PersonMapper;
 import fr.siamois.mapper.PersonMapperImpl;
 import fr.siamois.utils.DocumentUtils;
 import org.apache.tomcat.util.http.fileupload.InvalidFileNameException;
@@ -50,8 +52,11 @@ class DocumentServiceTest {
     @Mock
     private FileCompressor fileCompressor;
 
-    private final PersonMapperImpl personMapper = new PersonMapperImpl();
-    private final InstitutionMapperImpl institutionMapper = new InstitutionMapperImpl();
+    @Mock
+    private PersonMapper personMapper;
+
+    @Mock
+    private InstitutionMapper institutionMapper;
 
     @InjectMocks
     private DocumentService documentService;
@@ -116,6 +121,8 @@ class DocumentServiceTest {
         document.setSize(1024L); // Set file size
         InputStream inputStream = new ByteArrayInputStream("test data".getBytes());
 
+        when(personMapper.invertConvert(any(PersonDTO.class))).thenReturn(new Person());
+        when(institutionMapper.invertConvert(any(InstitutionDTO.class))).thenReturn(new Institution());
         when(documentRepository.save(document)).thenReturn(document);
         when(documentStorage.supportedMimeTypes()).thenReturn(mimeTypes);
         when(documentStorage.getMaxUploadSize()).thenReturn("10MB");

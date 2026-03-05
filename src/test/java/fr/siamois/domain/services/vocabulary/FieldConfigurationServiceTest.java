@@ -23,6 +23,8 @@ import fr.siamois.infrastructure.database.repositories.vocabulary.AutocompleteRe
 import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptFieldConfigRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
+import fr.siamois.mapper.InstitutionMapper;
+import fr.siamois.mapper.PersonMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -58,6 +60,12 @@ class FieldConfigurationServiceTest {
 
     @Mock
     private ConceptFieldConfigRepository conceptFieldConfigRepository;
+
+    @Mock
+    private InstitutionMapper institutionMapper;
+
+    @Mock
+    private PersonMapper personMapper;
 
     @InjectMocks
     private FieldConfigurationService service;
@@ -162,6 +170,12 @@ class FieldConfigurationServiceTest {
             concept.setExternalId(dto.getIdentifier()[0].getValue());
             return concept;
         }).when(conceptService).saveOrGetConceptFromFullDTO(any(Vocabulary.class), any(FullInfoDTO.class), eq(null));
+
+        Institution institution  = new Institution();
+        institution.setId(12L);
+
+        when(institutionMapper.invertConvert(any(InstitutionDTO.class))).thenReturn(institution);
+        when(personMapper.invertConvert(any(PersonDTO.class))).thenReturn(new Person());
         when(conceptFieldConfigRepository.findOneByFieldCodeForUser(eq(userInfo.getUser().getId()), eq(userInfo.getInstitution().getId()),anyString())).thenReturn(Optional.empty());
         when(conceptFieldConfigRepository.save(any(ConceptFieldConfig.class))).thenAnswer(i -> i.getArgument(0));
 
@@ -189,9 +203,9 @@ class FieldConfigurationServiceTest {
         Concept c = new Concept();
         c.setVocabulary(vocabulary);
         c.setExternalId("12");
-        when(conceptRepository.findTopTermConfigForFieldCodeOfInstitution(anyLong(), SpatialUnit.CATEGORY_FIELD_CODE))
+        when(conceptRepository.findTopTermConfigForFieldCodeOfInstitution(1L, SpatialUnit.CATEGORY_FIELD_CODE))
                 .thenReturn(Optional.of(c));
-        Optional<String> result = service.findVocabularyUrlOfInstitution(new Institution());
+        Optional<String> result = service.findVocabularyUrlOfInstitutionId(1L);
 
         assertThat(result).isPresent()
                 .get()
@@ -201,9 +215,9 @@ class FieldConfigurationServiceTest {
 
     @Test
     void findVocabularyUrlOfInstitution_shouldReturnEmpty_whenConfigDoesNotExist() {
-        when(conceptRepository.findTopTermConfigForFieldCodeOfInstitution(anyLong(), SpatialUnit.CATEGORY_FIELD_CODE))
+        when(conceptRepository.findTopTermConfigForFieldCodeOfInstitution(1L, SpatialUnit.CATEGORY_FIELD_CODE))
                 .thenReturn(Optional.empty());
-        Optional<String> result = service.findVocabularyUrlOfInstitution(new Institution());
+        Optional<String> result = service.findVocabularyUrlOfInstitutionId(1L);
 
         assertThat(result).isEmpty();
     }

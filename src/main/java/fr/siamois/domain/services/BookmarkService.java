@@ -5,6 +5,8 @@ import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.infrastructure.database.repositories.BookmarkRepository;
+import fr.siamois.mapper.InstitutionMapper;
+import fr.siamois.mapper.PersonMapper;
 import fr.siamois.ui.bean.panel.models.panel.AbstractPanel;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.convert.ConversionService;
@@ -22,7 +24,9 @@ import java.util.List;
 public class BookmarkService {
 
     private final BookmarkRepository bookmarkRepository;
-    private final ConversionService conversionService;
+    private final PersonMapper personMapper;
+    private final InstitutionMapper institutionMapper;
+
 
     /**
      * Finds all bookmarks for a user.
@@ -32,8 +36,8 @@ public class BookmarkService {
      */
     @Transactional(readOnly = true)
     public List<Bookmark> findAll(UserInfo userInfo) {
-        Person person = conversionService.convert(userInfo.getUser(), Person.class);
-        Institution institution = conversionService.convert(userInfo.getInstitution(), Institution.class);
+        Person person = personMapper.invertConvert(userInfo.getUser());
+        Institution institution = institutionMapper.invertConvert(userInfo.getInstitution());
 
         return bookmarkRepository.findByPersonAndInstitution(person, institution);
     }
@@ -48,8 +52,8 @@ public class BookmarkService {
      */
     @Transactional
     public Bookmark save(UserInfo userInfo, AbstractPanel panel) {
-        Person person = conversionService.convert(userInfo.getUser(), Person.class);
-        Institution institution = conversionService.convert(userInfo.getInstitution(), Institution.class);
+        Person person = personMapper.invertConvert(userInfo.getUser());
+        Institution institution = institutionMapper.invertConvert(userInfo.getInstitution());
 
         Bookmark bookmark = new Bookmark();
         bookmark.setPerson(person);
@@ -68,8 +72,8 @@ public class BookmarkService {
      */
     @Transactional
     public void delete(UserInfo userInfo, AbstractPanel panel) {
-        Person person = conversionService.convert(userInfo.getUser(), Person.class);
-        Institution institution = conversionService.convert(userInfo.getInstitution(), Institution.class);
+        Person person = personMapper.invertConvert(userInfo.getUser());
+        Institution institution = institutionMapper.invertConvert(userInfo.getInstitution());
 
         bookmarkRepository.deleteBookmarkByPersonAndInstitutionAndResourceUri(
                 person,
@@ -88,8 +92,8 @@ public class BookmarkService {
      */
     @Transactional
     public Bookmark save(UserInfo userInfo, String ressourceUri, String titleCodeOrTitle) {
-        Person person = conversionService.convert(userInfo.getUser(), Person.class);
-        Institution institution = conversionService.convert(userInfo.getInstitution(), Institution.class);
+        Person person = personMapper.invertConvert(userInfo.getUser());
+        Institution institution = institutionMapper.invertConvert(userInfo.getInstitution());
 
         Bookmark bookmark = new Bookmark();
         bookmark.setPerson(person);
@@ -108,8 +112,8 @@ public class BookmarkService {
      */
     @Transactional(readOnly = true)
     public Boolean isRessourceBookmarkedByUser(UserInfo userInfo, String ressourceUri) {
-        Person person = conversionService.convert(userInfo.getUser(), Person.class);
-        Institution institution = conversionService.convert(userInfo.getInstitution(), Institution.class);
+        Person person = personMapper.invertConvert(userInfo.getUser());
+        Institution institution = institutionMapper.invertConvert(userInfo.getInstitution());
 
         return bookmarkRepository.countBookmarkByPersonAndInstitutionAndResourceUri(
                 person,
@@ -125,8 +129,8 @@ public class BookmarkService {
      */
     @Transactional
     public void deleteBookmark(UserInfo userInfo, String ressourceUri) {
-        Person person = conversionService.convert(userInfo.getUser(), Person.class);
-        Institution institution = conversionService.convert(userInfo.getInstitution(), Institution.class);
+        Person person = personMapper.invertConvert(userInfo.getUser());
+        Institution institution = institutionMapper.invertConvert(userInfo.getInstitution());
 
         bookmarkRepository.deleteBookmarkByPersonAndInstitutionAndResourceUri(
                 person,

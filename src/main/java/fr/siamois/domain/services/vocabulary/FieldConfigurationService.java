@@ -22,6 +22,8 @@ import fr.siamois.infrastructure.database.repositories.vocabulary.AutocompleteRe
 import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptFieldConfigRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
+import fr.siamois.mapper.InstitutionMapper;
+import fr.siamois.mapper.PersonMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.Hibernate;
@@ -53,7 +55,8 @@ public class FieldConfigurationService {
 
     private final ConceptFieldConfigRepository conceptFieldConfigRepository;
     private final AutocompleteRepository autocompleteRepository;
-    private final ConversionService conversionService;
+    private final InstitutionMapper institutionMapper;
+    private final PersonMapper personMapper;
 
     private boolean containsFieldCode(FullInfoDTO conceptDTO) {
         return conceptDTO.getFieldcode().isPresent();
@@ -190,8 +193,8 @@ public class FieldConfigurationService {
             }
 
             if (optConfig.isEmpty()) {
-                Institution institution = conversionService.convert(institutionDTO, Institution.class);
-                Person user = conversionService.convert(userDTO, Person.class);
+                Institution institution = institutionMapper.invertConvert(institutionDTO);
+                Person user = personMapper.invertConvert(userDTO);
                 fieldConfig = new ConceptFieldConfig();
                 fieldConfig.setInstitution(institution);
                 fieldConfig.setUser(user);
@@ -216,13 +219,13 @@ public class FieldConfigurationService {
     /**
      * Finds the vocabulary URL for a given institution.
      *
-     * @param institution the institution for which to find the vocabulary URL
+     * @param institutionId the institution for which to find the vocabulary URL
      * @return an Optional containing the vocabulary URL if found, otherwise empty
      */
     @NonNull
-    public Optional<String> findVocabularyUrlOfInstitution(@NonNull Institution institution) {
+    public Optional<String> findVocabularyUrlOfInstitutionId(@NonNull Long institutionId) {
         Optional<Concept> optConcept = conceptRepository
-                .findTopTermConfigForFieldCodeOfInstitution(institution.getId(), SpatialUnit.CATEGORY_FIELD_CODE);
+                .findTopTermConfigForFieldCodeOfInstitution(institutionId, SpatialUnit.CATEGORY_FIELD_CODE);
         if (optConcept.isEmpty()) return Optional.empty();
         Vocabulary vocabulary = optConcept.get().getVocabulary();
         return Optional.of(vocabulary.getBaseUri() + "/?idt=" + vocabulary.getExternalVocabularyId());

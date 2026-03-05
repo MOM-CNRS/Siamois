@@ -400,11 +400,6 @@
         </dependency>
 
         <dependency>
-            <groupId>org.mapstruct.extensions.spring</groupId>
-            <artifactId>mapstruct-spring-test-extensions</artifactId>
-            <version>${org.mapstruct.extensions.spring.version}</version>
-        </dependency>
-        <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
             <scope>test</scope>
@@ -426,6 +421,9 @@
                         </goals>
                     </execution>
                 </executions>
+                <configuration>
+                    <mainClass>fr.siamois.SiamoisApplication</mainClass>
+                </configuration>
             </plugin>
 
             <!-- Compile SCSS to CSS -->
@@ -499,14 +497,6 @@
                 </executions>
             </plugin>
 
-            <plugin>
-
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-maven-plugin</artifactId>
-                <configuration>
-                    <mainClass>fr.siamois.SiamoisApplication</mainClass>
-                </configuration>
-            </plugin>
 
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>

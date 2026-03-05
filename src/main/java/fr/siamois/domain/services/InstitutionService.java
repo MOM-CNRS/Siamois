@@ -21,6 +21,8 @@ import fr.siamois.infrastructure.database.repositories.person.PersonRepository;
 import fr.siamois.infrastructure.database.repositories.settings.InstitutionSettingsRepository;
 import fr.siamois.infrastructure.database.repositories.team.ActionManagerRepository;
 import fr.siamois.infrastructure.database.repositories.team.TeamMemberRepository;
+import fr.siamois.mapper.InstitutionMapper;
+import fr.siamois.mapper.PersonMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.Hibernate;
@@ -49,7 +51,8 @@ public class InstitutionService {
     private final ActionManagerRepository actionManagerRepository;
     private final VocabularyService vocabularyService;
     private final FieldConfigurationService fieldConfigurationService;
-    private final ConversionService conversionService;
+    private final PersonMapper personMapper;
+    private final InstitutionMapper institutionMapper;
 
     /**
      * Finds an institution by its identifier.
@@ -65,7 +68,7 @@ public class InstitutionService {
         }
 
         Institution institution = institutionOpt.get();
-        return conversionService.convert(institution, InstitutionDTO.class);
+        return institutionMapper.convert(institution);
     }
 
     /**
@@ -78,7 +81,7 @@ public class InstitutionService {
         Set<InstitutionDTO> institutionDTOs = new HashSet<>();
 
         institutions.forEach(institution ->
-                institutionDTOs.add(conversionService.convert(institution, InstitutionDTO.class))
+                institutionDTOs.add(institutionMapper.convert(institution))
         );
 
         return institutionDTOs;
@@ -98,7 +101,7 @@ public class InstitutionService {
 
         // Convert Set<Institution> to Set<InstitutionDTO>
         return institutions.stream()
-                .map(institution -> conversionService.convert(institution, InstitutionDTO.class))
+                .map(institutionMapper::convert)
                 .collect(Collectors.toSet());
     }
 
@@ -121,9 +124,9 @@ public class InstitutionService {
 
         try {
             // Création de l'institution et préparation des concepts du thésaurus sélectionnés
-            Institution i = institutionRepository.save(Objects.requireNonNull(conversionService.convert(institution, Institution.class)));
+            Institution i = institutionRepository.save(Objects.requireNonNull(institutionMapper.invertConvert(institution)));
             fieldConfigurationService.setupFieldConfigurationForInstitution(institution, vocabulary);
-            return conversionService.convert(i, InstitutionDTO.class);
+            return institutionMapper.convert(i);
         } catch (NotSiamoisThesaurusException e) {
             log.error("The thesaurus is not a siamois thesaurus : {}", thesaurusUrl, e);
             throw e;
@@ -262,8 +265,8 @@ public class InstitutionService {
      * @return true if the person is associated with the institution, false otherwise
      */
     public boolean personIsInInstitution(PersonDTO person, InstitutionDTO institution) {
-        Person personEntity = conversionService.convert(person, Person.class);
-        Institution institutionEntity = conversionService.convert(institution, Institution.class);
+        Person personEntity = personMapper.invertConvert(person);
+        Institution institutionEntity = institutionMapper.invertConvert(institution);
 
         Optional<ActionManagerRelation> optManager = actionManagerRepository.findByPersonAndInstitution(
                 personEntity, institutionEntity);
@@ -303,8 +306,8 @@ public class InstitutionService {
      * @return true if the person is an action manager, false otherwise
      */
     public boolean personIsActionManager(PersonDTO person, InstitutionDTO institution) {
-        Person personEntity = conversionService.convert(person, Person.class);
-        Institution institutionEntity = conversionService.convert(institution, Institution.class);
+        Person personEntity = personMapper.invertConvert(person);
+        Institution institutionEntity = institutionMapper.invertConvert(institution);
         return actionManagerRepository.findByPersonAndInstitution(personEntity, institutionEntity).isPresent();
     }
 
