@@ -25,14 +25,14 @@
 }
 
 .sidebar .nav-link:hover, .logout-button {
-    background: var(--siamois-green-light-50);
+    background: var(--siamois-green-active);
     border-radius: 10px;
-    border-color: var(--siamois-green-light-50);
+    border-color: var(--siamois-green-active);
 }
 
 .sidebar .nav-link i {
     font-size: 1.4rem;
-    color: var(--siamois-green-light);
+    color: var(--siamois-green-active);
     margin-right: 8px;
 }
 

@@ -21,7 +21,7 @@ import java.math.BigInteger;
 import static fr.siamois.ui.api.openapi.v1.jsonapi.JsonApiResponse.wrap;
 
 @RestController
-@RequestMapping("/api/organization")
+@RequestMapping("/api/v1/organization")
 @Tag(name = "Organization", description = "API des organisation")
 public class OrganizationControllerApi {
 
@@ -51,8 +51,7 @@ public class OrganizationControllerApi {
                 );
 
         return ResponseEntity.ok(
-                wrap(
-                        recordingUnitResourceMapper.convert(recordingUnit))
+                wrap(recordingUnitResourceMapper.convert(recordingUnit))
         );
     }
 

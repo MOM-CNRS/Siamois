@@ -23,7 +23,7 @@ public interface ResourceIdentifierMapper<D,E extends ResourceIdentifier>
             return null;
         }
         List<E> identifiers = dtoSet.stream()
-                .map(this::convert) // Assuming `convert` maps PersonDTO to PersonResourceIdentifier
+                .map(this::convert) // Assuming `convert` maps dto to resource identifier
                 .toList();
         return new Relationship<>(identifiers);
     }

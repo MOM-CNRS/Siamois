@@ -1,7 +1,7 @@
 @use 'sass:color';
 
 // Theme Specific Variables
-$primaryColor :#80B480;
+$primaryColor :#669966;
 $primaryTextColor: #ffffff;
 
 $primaryLightColor: color.scale($primaryColor, $lightness: 60%) !default;

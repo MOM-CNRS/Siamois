@@ -294,12 +294,12 @@
   --dark-color: #{$dark-color};
 
   &.ui-button {
-    background: var(--siamois-green-active);
-    border-color: var(--siamois-green-active);
+    background: var(--main-color);
+    border-color: var(--main-color);
 
     &:hover {
-      background: var(--siamois-green-light-350);
-      border-color: var(--siamois-green-light-350);
+      background: var(--dark-color);
+      border-color: var(--dark-color);
     }
   }
 }
