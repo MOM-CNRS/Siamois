@@ -416,15 +416,15 @@ class FormServiceTest {
         CustomFieldAnswerSelectOneFromFieldCodeViewModel  conceptAnswer = new CustomFieldAnswerSelectOneFromFieldCodeViewModel ();
         conceptAnswer.setValue(conceptAutocompleteDTO);
 
-        ActionUnitDTO actionUnit = mock(ActionUnitDTO.class);
+        ActionUnitSummaryDTO actionUnit = mock(ActionUnitSummaryDTO.class);
         CustomFieldAnswerSelectOneActionUnitViewModel  actionUnitAnswer = new CustomFieldAnswerSelectOneActionUnitViewModel ();
         actionUnitAnswer.setValue(actionUnit);
 
-        SpatialUnitDTO spatialUnit = mock(SpatialUnitDTO.class);
+        SpatialUnitSummaryDTO spatialUnit = mock(SpatialUnitSummaryDTO.class);
         CustomFieldAnswerSelectOneSpatialUnitViewModel  spatialUnitAnswer = new CustomFieldAnswerSelectOneSpatialUnitViewModel ();
         spatialUnitAnswer.setValue(spatialUnit);
 
-        ActionCode actionCode = mock(ActionCode.class);
+        ActionCodeDTO actionCode = mock(ActionCodeDTO.class);
         CustomFieldAnswerSelectOneActionCodeViewModel  actionCodeAnswer = new CustomFieldAnswerSelectOneActionCodeViewModel ();
         actionCodeAnswer.setValue(actionCode);
 
@@ -436,7 +436,7 @@ class FormServiceTest {
         CustomFieldAnswerSelectMultiplePersonViewModel  personListAnswer = new CustomFieldAnswerSelectMultiplePersonViewModel();
         personListAnswer.setValue(personList);
 
-        Set<SpatialUnitDTO> spatialUnitSet = Set.of(mock(SpatialUnitDTO.class), mock(SpatialUnitDTO.class));
+        Set<SpatialUnitSummaryDTO> spatialUnitSet = Set.of(mock(SpatialUnitSummaryDTO.class), mock(SpatialUnitSummaryDTO.class));
         CustomFieldAnswerSelectMultipleSpatialUnitTreeViewModel spatialUnitSetAnswer = new CustomFieldAnswerSelectMultipleSpatialUnitTreeViewModel();
         spatialUnitSetAnswer.setValue(spatialUnitSet);
 

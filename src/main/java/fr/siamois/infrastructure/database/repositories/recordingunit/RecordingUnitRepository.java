@@ -233,7 +233,7 @@ public interface RecordingUnitRepository extends CrudRepository<RecordingUnit, L
     )
     Optional<RecordingUnit> findByFullIdentifierAndInstitutionId(
             @Param("fullIdentifier") String fullIdentifier,
-            @Param("institutionId") BigInteger institutionId
+            @Param("institutionId") Long institutionId
     );
 
     Optional<RecordingUnit> findByFullIdentifier(@NotNull String fullIdentifier);

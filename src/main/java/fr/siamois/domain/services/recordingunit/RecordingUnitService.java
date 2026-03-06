@@ -573,7 +573,7 @@ public class RecordingUnitService implements ArkEntityService {
 
     public RecordingUnit findByFullIdentifierAndInstitutionId(
             String fullIdentifier,
-            BigInteger institutionIdentifier) {
+            Long institutionIdentifier) {
 
         return recordingUnitRepository
                 .findByFullIdentifierAndInstitutionId(fullIdentifier, institutionIdentifier)
@@ -583,6 +583,22 @@ public class RecordingUnitService implements ArkEntityService {
                                         + fullIdentifier +
                                         " and institutionIdentifier="
                                         + institutionIdentifier));
+    }
+
+    public RecordingUnitDTO findByFullIdentifierAndInstitutionIdDTO(
+            String fullIdentifier,
+            Long institutionId) {
+
+        var entity = recordingUnitRepository
+                .findByFullIdentifierAndInstitutionId(fullIdentifier, institutionId)
+                .orElseThrow(() ->
+                        new RecordingUnitNotFoundException(
+                                "RecordingUnit not found with fullIdentifier="
+                                        + fullIdentifier +
+                                        " and institutionId=" + institutionId));
+
+        // <<< Convert entity to DTO here
+        return recordingUnitMapper.convert(entity);
     }
 
     public RecordingUnitIdInfo createOrGetInfoOf(@NonNull RecordingUnit recordingUnit, @Nullable RecordingUnit parentRecordingUnit) {

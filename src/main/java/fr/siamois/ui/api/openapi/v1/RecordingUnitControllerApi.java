@@ -34,7 +34,7 @@ public class RecordingUnitControllerApi {
     })
     @GetMapping("/{institutionIdentifier}/{fullIdentifier}")
     public ResponseEntity<RecordingUnitResponse> getById(
-            @PathVariable BigInteger institutionIdentifier,
+            @PathVariable Long institutionIdentifier,
             @PathVariable String fullIdentifier) {
 
         RecordingUnit recordingUnit =
