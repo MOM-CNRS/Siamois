@@ -880,6 +880,103 @@ class FormServiceTest {
         assertEquals(1, answer.getAnteriorRelationships().size());
     }
 
+    @Test
+    void findCustomFormByRecordingUnitTypeAndInstitutionId_WithNullRecordingUnitType_ReturnsInstitutionForm() {
+        // Arrange
+        InstitutionDTO institutionDTO = new InstitutionDTO();
+        institutionDTO.setId(55L);
+
+        CustomForm institutionForm = new CustomForm();
+        given(formRepository.findEffectiveFormByTypeAndInstitution(null, 55L))
+                .willReturn(Optional.of(institutionForm));
+
+        // Act
+        CustomForm result = formService.findCustomFormByRecordingUnitTypeAndInstitutionId(null, institutionDTO);
+
+        // Assert
+        assertNotNull(result);
+        assertSame(institutionForm, result);
+    }
+
+    @Test
+    void findCustomFormByRecordingUnitTypeAndInstitutionId_WithRecordingUnitType_ReturnsTypeSpecificForm() {
+        // Arrange
+        ConceptDTO recordingUnitTypeDTO = new ConceptDTO();
+        recordingUnitTypeDTO.setId(101L);
+
+        InstitutionDTO institutionDTO = new InstitutionDTO();
+        institutionDTO.setId(55L);
+
+        CustomForm typeSpecificForm = new CustomForm();
+        given(formRepository.findEffectiveFormByTypeAndInstitution(101L, 55L))
+                .willReturn(Optional.of(typeSpecificForm));
+
+        // Act
+        CustomForm result = formService.findCustomFormByRecordingUnitTypeAndInstitutionId(recordingUnitTypeDTO, institutionDTO);
+
+        // Assert
+        assertNotNull(result);
+        assertSame(typeSpecificForm, result);
+    }
+
+    @Test
+    void findCustomFormByRecordingUnitTypeAndInstitutionId_WithRecordingUnitType_FallsBackToInstitutionForm() {
+        // Arrange
+        ConceptDTO recordingUnitTypeDTO = new ConceptDTO();
+        recordingUnitTypeDTO.setId(101L);
+
+        InstitutionDTO institutionDTO = new InstitutionDTO();
+        institutionDTO.setId(55L);
+
+        CustomForm institutionForm = new CustomForm();
+        given(formRepository.findEffectiveFormByTypeAndInstitution(101L, 55L))
+                .willReturn(Optional.empty());
+        given(formRepository.findEffectiveFormByTypeAndInstitution(null, 55L))
+                .willReturn(Optional.of(institutionForm));
+
+        // Act
+        CustomForm result = formService.findCustomFormByRecordingUnitTypeAndInstitutionId(recordingUnitTypeDTO, institutionDTO);
+
+        // Assert
+        assertNotNull(result);
+        assertSame(institutionForm, result);
+    }
+
+    @Test
+    void findCustomFormByRecordingUnitTypeAndInstitutionId_ReturnsNullWhenNothingFound() {
+        // Arrange
+        ConceptDTO recordingUnitTypeDTO = new ConceptDTO();
+        recordingUnitTypeDTO.setId(101L);
+
+        InstitutionDTO institutionDTO = new InstitutionDTO();
+        institutionDTO.setId(55L);
+
+        given(formRepository.findEffectiveFormByTypeAndInstitution(101L, 55L))
+                .willReturn(Optional.empty());
+        given(formRepository.findEffectiveFormByTypeAndInstitution(null, 55L))
+                .willReturn(Optional.empty());
+
+        // Act
+        CustomForm result = formService.findCustomFormByRecordingUnitTypeAndInstitutionId(recordingUnitTypeDTO, institutionDTO);
+
+        // Assert
+        assertNull(result);
+    }
+
+    @Test
+    void findCustomFormByRecordingUnitTypeAndInstitutionId_WithNullInstitution_ReturnsNull() {
+        // Arrange
+        ConceptDTO recordingUnitTypeDTO = new ConceptDTO();
+        recordingUnitTypeDTO.setId(101L);
+
+        // Act
+        CustomForm result = formService.findCustomFormByRecordingUnitTypeAndInstitutionId(recordingUnitTypeDTO,
+                new InstitutionDTO());
+
+        // Assert
+        assertNull(result);
+    }
+
 
 
 

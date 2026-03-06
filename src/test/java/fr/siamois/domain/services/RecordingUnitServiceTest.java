@@ -6,6 +6,7 @@ import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.ark.Ark;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.exceptions.recordingunit.FailedRecordingUnitSaveException;
+import fr.siamois.domain.models.exceptions.recordingunit.RecordingUnitNotFoundException;
 import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.recordingunit.StratigraphicRelationship;
@@ -17,6 +18,7 @@ import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.form.CustomFormResponseService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.recordingunit.identifier.generic.RuIdentifierResolver;
+import fr.siamois.domain.services.recordingunit.identifier.generic.RuNumericalIdentifierResolver;
 import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.dto.entity.*;
 import fr.siamois.infrastructure.api.dto.ConceptFieldDTO;
@@ -41,12 +43,14 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 
+import java.math.BigInteger;
 import java.util.*;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.*;
 
 
@@ -1234,5 +1238,102 @@ class RecordingUnitServiceTest {
         // Assert
         assertTrue(result, "La méthode doit retourner true si des enfants existent.");
     }
+
+    @Test
+    void findByFullIdentifierAndInstitutionIdentifier_Found_ReturnsRecordingUnit() {
+        // Arrange
+        String identifier = "TestIdentifier";
+        String institutionIdentifier = "TestInstitutionIdentifier";
+        RecordingUnit expectedUnit = new RecordingUnit();
+        expectedUnit.setFullIdentifier(identifier);
+
+        given(recordingUnitRepository.findByFullIdentifierAndInstitutionIdentifier(identifier, institutionIdentifier))
+                .willReturn(Optional.of(expectedUnit));
+
+        // Act
+        RecordingUnit result = recordingUnitService.findByFullIdentifierAndInstitutionIdentifier(identifier, institutionIdentifier);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(expectedUnit, result);
+    }
+
+    @Test
+    void findByFullIdentifierAndInstitutionIdentifier_NotFound_ReturnsNull() {
+        // Arrange
+        String identifier = "TestIdentifier";
+        String institutionIdentifier = "TestInstitutionIdentifier";
+
+        given(recordingUnitRepository.findByFullIdentifierAndInstitutionIdentifier(identifier, institutionIdentifier))
+                .willReturn(Optional.empty());
+
+        // Act
+        RecordingUnit result = recordingUnitService.findByFullIdentifierAndInstitutionIdentifier(identifier, institutionIdentifier);
+
+        // Assert
+        assertNull(result);
+    }
+
+    @Test
+    void findByFullIdentifierAndInstitutionId_Found_ReturnsRecordingUnit() {
+        // Arrange
+        String fullIdentifier = "TestFullIdentifier";
+        String institutionId = "test";
+        RecordingUnit expectedUnit = new RecordingUnit();
+        expectedUnit.setFullIdentifier(fullIdentifier);
+
+        given(recordingUnitRepository.findByFullIdentifierAndInstitutionIdentifier(fullIdentifier, institutionId))
+                .willReturn(Optional.of(expectedUnit));
+
+        // Act
+        RecordingUnit result = recordingUnitService.findByFullIdentifierAndInstitutionIdentifier(fullIdentifier, institutionId);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(expectedUnit, result);
+    }
+
+    @Test
+    void should_return_all_identifier_codes() {
+        // Given
+        Map<String, RuIdentifierResolver> mockMap = Map.of(
+                "ALPHA", mock(RuIdentifierResolver.class),
+                "NUM", mock(RuNumericalIdentifierResolver.class)
+        );
+        RecordingUnitService spiedService = spy(recordingUnitService);
+        doReturn(mockMap).when(spiedService).findAllIdentifierResolver();
+
+        // When
+        List<String> result = spiedService.findAllIdentifiersCode();
+
+
+        assertEquals(2, result.size(), "The list size is incorrect");
+        assertTrue(result.contains("ALPHA"));
+        assertTrue(result.contains("NUM"));
+    }
+
+    @Test
+    void should_filter_only_numerical_identifiers() {
+        // Given
+        RuIdentifierResolver alphaResolver = mock(RuIdentifierResolver.class);
+        RecordingUnitService spiedService = spy(recordingUnitService);
+        // We must mock the concrete Numerical class for isAssignableFrom to work
+        RuNumericalIdentifierResolver numResolver = mock(RuNumericalIdentifierResolver.class);
+        when(numResolver.getCode()).thenReturn("NUM_CODE");
+
+        Map<String, RuIdentifierResolver> mockMap = Map.of(
+                "ALPHA", alphaResolver,
+                "NUM", numResolver
+        );
+        doReturn(mockMap).when(spiedService).findAllIdentifierResolver();
+
+        // When
+        List<String> result = spiedService.findAllNumericalIdentifiersCode();
+
+        // Then
+        assertEquals(1, result.size(), "The list size is incorrect");
+        assertTrue(result.contains("NUM_CODE"), "The list should contain NUM_CODE");
+    }
+
 
 }
