@@ -1,11 +1,12 @@
 package fr.siamois.domain.services.history;
+
+import fr.siamois.domain.models.TraceableEntity;
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.history.InfoRevisionEntity;
 import fr.siamois.domain.models.history.RevisionWithInfo;
 import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
-import fr.siamois.domain.models.TraceableEntity;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.services.EntityDTORegistry;
 import fr.siamois.dto.entity.AbstractEntityDTO;
@@ -29,9 +30,7 @@ import org.springframework.core.convert.ConversionService;
 import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyBoolean;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -79,7 +78,7 @@ class HistoryAuditServiceTest {
         ActionUnit actionUnit = mock(ActionUnit.class);
         when(actionUnit.getSpatialContext()).thenReturn(new HashSet<>());
         when(actionUnit.getMainLocation()).thenReturn(mock(SpatialUnit.class));
-        when(registry.getEntityClass(eq(RecordingUnitDTO.class)))
+        when(registry.getEntityClass(RecordingUnitDTO.class))
                 .thenReturn((Class<TraceableEntity>) dtoToEntityMap.get(RecordingUnitDTO.class));
 
         // Create RecordingUnit instances with the mock ActionUnit
@@ -110,7 +109,7 @@ class HistoryAuditServiceTest {
         AuditQueryCreator queryCreator = mock(AuditQueryCreator.class);
         AuditQuery query = mock(AuditQuery.class);
         when(reader.createQuery()).thenReturn(queryCreator);
-        when(registry.getEntityClass(eq(RecordingUnitDTO.class)))
+        when(registry.getEntityClass(RecordingUnitDTO.class))
                 .thenReturn((Class<TraceableEntity>) dtoToEntityMap.get(RecordingUnitDTO.class));
         when(queryCreator.forRevisionsOfEntity(eq(RecordingUnit.class), anyBoolean(), anyBoolean())).thenReturn(query);
         when(query.add(any())).thenReturn(query);
@@ -131,7 +130,7 @@ class HistoryAuditServiceTest {
         when(reader.createQuery()).thenReturn(queryCreator);
         when(queryCreator.forRevisionsOfEntity(eq(RecordingUnit.class), anyBoolean(), anyBoolean())).thenReturn(query);
         when(query.add(any())).thenReturn(query);
-        when(registry.getEntityClass(eq(RecordingUnitDTO.class)))
+        when(registry.getEntityClass(RecordingUnitDTO.class))
                 .thenReturn((Class<TraceableEntity>) dtoToEntityMap.get(RecordingUnitDTO.class));
         Object[] row = new Object[] { new RecordingUnit(), mock(InfoRevisionEntity.class), RevisionType.DEL };
         when(query.getSingleResult()).thenReturn(row);
@@ -152,7 +151,7 @@ class HistoryAuditServiceTest {
         AuditQueryCreator queryCreator = mock(AuditQueryCreator.class);
         AuditQuery query = mock(AuditQuery.class);
         when(reader.createQuery()).thenReturn(queryCreator);
-        when(registry.getEntityClass(eq(RecordingUnitDTO.class)))
+        when(registry.getEntityClass(RecordingUnitDTO.class))
                 .thenReturn((Class<TraceableEntity>) dtoToEntityMap.get(RecordingUnitDTO.class));
         when(queryCreator.forRevisionsOfEntity(eq(RecordingUnit.class), anyBoolean(), anyBoolean())).thenReturn(query);
         when(query.add(any())).thenReturn(query);
@@ -196,7 +195,7 @@ class HistoryAuditServiceTest {
         when(queryCreator.forRevisionsOfEntity(eq(RecordingUnit.class), anyBoolean(), anyBoolean())).thenReturn(query);
         when(query.addProjection(any())).thenReturn(query);
         when(query.add(any())).thenReturn(query);
-        when(registry.getEntityClass(eq(RecordingUnitDTO.class)))
+        when(registry.getEntityClass(RecordingUnitDTO.class))
                 .thenReturn((Class<TraceableEntity>) dtoToEntityMap.get(RecordingUnitDTO.class));
         Person e1 = new Person();
         e1.setUsername("1"); e1.setPassword("1"); e1.setName("1"); e1.setLastname("1");

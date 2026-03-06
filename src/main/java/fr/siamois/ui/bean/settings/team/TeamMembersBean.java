@@ -45,7 +45,7 @@ public class TeamMembersBean implements SettingsDatatableBean {
     private final RedirectBean redirectBean;
     private final LangBean langBean;
     private ActionUnit actionUnit;
-    private final ConversionService conversionService;
+    private final transient ConversionService conversionService;
 
     private String searchInput;
 

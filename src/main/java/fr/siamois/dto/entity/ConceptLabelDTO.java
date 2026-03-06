@@ -1,13 +1,13 @@
 package fr.siamois.dto.entity;
 
 import fr.siamois.domain.models.vocabulary.label.LabelType;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 import java.io.Serializable;
 
-@Getter
-@Setter
+@EqualsAndHashCode(callSuper = true)
+@Data
 public abstract class ConceptLabelDTO extends AbstractEntityDTO implements Serializable {
 
     protected ConceptDTO concept;

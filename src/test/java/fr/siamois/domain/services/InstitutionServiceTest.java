@@ -70,7 +70,7 @@ class InstitutionServiceTest {
 
     private InstitutionDTO institution1DTO, institution2DTO;
     private PersonDTO managerDTO;
-    private ActionUnitDTO actionUnitDTO;
+
 
     @BeforeEach
     void setUp() {

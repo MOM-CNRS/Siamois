@@ -52,6 +52,7 @@ import static fr.siamois.utils.MessageUtils.displayErrorMessage;
 @Getter
 public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
 
+    public static final String CONTAINER = "-container');";
     @Setter
     protected String globalFilter = "";
 
@@ -323,7 +324,7 @@ public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
         final T casted;
         try {
             @SuppressWarnings("unchecked")
-            T tmp = (T) created;
+            T tmp = created;
             casted = tmp;
         } catch (ClassCastException e) {
             return; // pas gérable par cette table -> no-op
@@ -422,13 +423,13 @@ public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
 
     public String getOnCompleteJs(T unit) {
         if (unit instanceof RecordingUnitDTO) {
-            return "PF('buiContent').hide();onCompleteCallback('panel-recording-unit-" + unit.getId() + "-container');";
+            return "PF('buiContent').hide();onCompleteCallback('panel-recording-unit-" + unit.getId() + CONTAINER;
         } else if (unit instanceof SpecimenDTO) {
-            return "PF('buiContent').hide();onCompleteCallback('panel-specimen-" + unit.getId() + "-container');";
+            return "PF('buiContent').hide();onCompleteCallback('panel-specimen-" + unit.getId() + CONTAINER;
         } else if (unit instanceof ActionUnitDTO) {
-            return "PF('buiContent').hide();onCompleteCallback('panel-action-unit-" + unit.getId() + "-container');";
+            return "PF('buiContent').hide();onCompleteCallback('panel-action-unit-" + unit.getId() + CONTAINER;
         } else if (unit instanceof SpatialUnitDTO) {
-            return "PF('buiContent').hide();onCompleteCallback('panel-spatial-unit-" + unit.getId() + "-container');";
+            return "PF('buiContent').hide();onCompleteCallback('panel-spatial-unit-" + unit.getId() + CONTAINER;
         } else {
             throw new IllegalArgumentException("Non handled type  : " + unit.getClass().getName());
         }

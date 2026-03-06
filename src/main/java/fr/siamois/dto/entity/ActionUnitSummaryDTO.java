@@ -1,14 +1,14 @@
 package fr.siamois.dto.entity;
 
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.RequiredArgsConstructor;
 
 import java.time.OffsetDateTime;
 
-@Setter
-@Getter
-@NoArgsConstructor
+@EqualsAndHashCode(callSuper = true)
+@Data
+@RequiredArgsConstructor
 public class ActionUnitSummaryDTO extends AbstractEntityDTO {
 
     private String name;

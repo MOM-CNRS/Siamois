@@ -331,7 +331,6 @@ class EntityFormContextTest {
 
         ConceptAutocompleteDTO newValue = mock(ConceptAutocompleteDTO.class);
         ConceptDTO newConcept = mock(ConceptDTO.class);
-        ConceptAutocompleteDTO newConceptl = mock(ConceptAutocompleteDTO.class);
         ConceptLabelDTO cL = mock(ConceptLabelDTO.class);
         when(newValue.getConceptLabelToDisplay()).thenReturn(cL);
         when(newValue.getConceptLabelToDisplay().getConcept()).thenReturn(newConcept);

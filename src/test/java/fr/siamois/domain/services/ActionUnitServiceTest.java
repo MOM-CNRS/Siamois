@@ -227,9 +227,9 @@ class ActionUnitServiceTest {
         expectedResult.setCreatedByInstitution(institutionDto);
 
         // Configuration des mocks avec les bonnes valeurs
-        when(actionUnitRepository.findByNameAndCreatedByInstitutionId(eq(name), eq(1L)))
+        when(actionUnitRepository.findByNameAndCreatedByInstitutionId(name, 1L))
                 .thenReturn(Optional.empty());
-        when(actionUnitRepository.findByIdentifierAndCreatedByInstitutionId(eq(identifier), eq(1L)))
+        when(actionUnitRepository.findByIdentifierAndCreatedByInstitutionId(identifier, 1L))
                 .thenReturn(Optional.empty());
         when(actionUnitMapper.invertConvert(actionUnitDto)).thenReturn(actionUnit);
         when(conceptService.saveOrGetConcept(typeConceptDto)).thenReturn(typeConcept);
@@ -325,13 +325,13 @@ class ActionUnitServiceTest {
 
         // Configuration des mocks avec les bonnes valeurs
         when(actionUnitRepository.findAllByInstitutionAndByNameContainingAndByCategoriesAndByGlobalContaining(
-                eq(institutionId),
-                eq(name),
-                eq(categoryIds),
-                eq(personIds),
-                eq(global),
-                eq(langCode),
-                eq(pageable)
+                institutionId,
+                name,
+                categoryIds,
+                personIds,
+                global,
+                langCode,
+                pageable
         )).thenReturn(mockPage);
 
         // Configuration du mapper pour chaque ActionUnit
@@ -357,13 +357,13 @@ class ActionUnitServiceTest {
 
         // Vérification des appels - on s'attend à 2 appels au mapper (un par élément)
         verify(actionUnitRepository).findAllByInstitutionAndByNameContainingAndByCategoriesAndByGlobalContaining(
-                eq(institutionId),
-                eq(name),
-                eq(categoryIds),
-                eq(personIds),
-                eq(global),
-                eq(langCode),
-                eq(pageable)
+                institutionId,
+                name,
+                categoryIds,
+                personIds,
+                global,
+                langCode,
+                pageable
         );
         verify(actionUnitMapper, times(2)).convert(any(ActionUnit.class));
     }
@@ -460,13 +460,13 @@ class ActionUnitServiceTest {
         institutionDto.setId(institutionId);
 
         // Création des entités mockées
-        ActionUnit actionUnit1 = new ActionUnit();
-        actionUnit1.setId(101L);
-        actionUnit1.setName("Action Unit 1");
+        ActionUnit actionUnit11 = new ActionUnit();
+        actionUnit11.setId(101L);
+        actionUnit11.setName("Action Unit 1");
 
-        ActionUnit actionUnit2 = new ActionUnit();
-        actionUnit2.setId(102L);
-        actionUnit2.setName("Action Unit 2");
+        ActionUnit actionUnit22 = new ActionUnit();
+        actionUnit22.setId(102L);
+        actionUnit22.setName("Action Unit 2");
 
         // Création des DTOs attendus
         ActionUnitDTO actionUnitDTO1 = new ActionUnitDTO();
@@ -477,14 +477,14 @@ class ActionUnitServiceTest {
         actionUnitDTO2.setId(102L);
         actionUnitDTO2.setName("Action Unit 2");
 
-        List<ActionUnit> expectedActionUnits = Arrays.asList(actionUnit1, actionUnit2);
+        List<ActionUnit> expectedActionUnits = Arrays.asList(actionUnit11, actionUnit22);
 
         // 2. Configuration des mocks
         when(actionUnitRepository.findByTeamMemberOrCreatorAndInstitution(memberId, institutionId))
                 .thenReturn(expectedActionUnits);
 
-        when(actionUnitMapper.convert(actionUnit1)).thenReturn(actionUnitDTO1);
-        when(actionUnitMapper.convert(actionUnit2)).thenReturn(actionUnitDTO2);
+        when(actionUnitMapper.convert(actionUnit11)).thenReturn(actionUnitDTO1);
+        when(actionUnitMapper.convert(actionUnit22)).thenReturn(actionUnitDTO2);
 
         // 3. Appel de la méthode à tester
         List<ActionUnitDTO> result = actionUnitService.findByTeamMember(memberDto, institutionDto);

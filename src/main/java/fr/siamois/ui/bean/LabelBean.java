@@ -31,7 +31,7 @@ public class LabelBean implements Serializable {
     // Can't do it right now because of the JSF managed bean session scope.
     private final Map<String, Map<ConceptDTO, String>> prefLabelCache = new HashMap<>();
     private final Map<Long, ConceptLabelDTO> idToLabelCache = new HashMap<>();
-    private final ConversionService conversionService;
+    private final transient ConversionService conversionService;
 
     @EventListener(ConceptChangeEvent.class)
     public void resetCache() {

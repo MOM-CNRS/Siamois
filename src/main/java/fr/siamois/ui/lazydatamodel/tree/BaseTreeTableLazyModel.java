@@ -235,9 +235,7 @@ public abstract class BaseTreeTableLazyModel<T extends AbstractEntityDTO, ID> im
 
     @ExecutionTimeLogger
     protected List<T> loadFunction(T parentUnit) {
-        List<T> children = fetchChildren(parentUnit);
-
-        return children;
+        return fetchChildren(parentUnit);
     }
 
 

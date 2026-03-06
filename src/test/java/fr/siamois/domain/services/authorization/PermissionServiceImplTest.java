@@ -19,7 +19,6 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -111,17 +110,17 @@ class PermissionServiceImplTest {
     @Test
     void hasReadPermission_shouldReturnTrueWhenUserIsInInstitution() {
         // Arrange
-        InstitutionDTO institutionADto = new InstitutionDTO();
-        when(resource.getCreatedByInstitution()).thenReturn(institutionADto);
-        when(user.getInstitution()).thenReturn(institutionADto);
+        InstitutionDTO institutionADto2 = new InstitutionDTO();
+        when(resource.getCreatedByInstitution()).thenReturn(institutionADto2);
+        when(user.getInstitution()).thenReturn(institutionADto2);
         when(permissionService.isActionManager(user)).thenReturn(false);
         when(permissionService.isInstitutionManager(user)).thenReturn(false);
 
         // Mock the conversion of InstitutionDTO to InstitutionDTO (if needed)
-        when(conversionService.convert(institutionADto, InstitutionDTO.class)).thenReturn(institutionADto);
+        when(conversionService.convert(institutionADto2, InstitutionDTO.class)).thenReturn(institutionADto2);
 
         // Mock the institution check
-        when(institutionService.personIsInInstitution(user.getUser(), institutionADto)).thenReturn(true);
+        when(institutionService.personIsInInstitution(user.getUser(), institutionADto2)).thenReturn(true);
 
         // Act
         boolean result = permissionService.hasReadPermission(user, resource);

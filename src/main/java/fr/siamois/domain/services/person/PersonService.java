@@ -18,6 +18,8 @@ import fr.siamois.infrastructure.database.repositories.person.PendingInstitution
 import fr.siamois.infrastructure.database.repositories.person.PendingPersonRepository;
 import fr.siamois.infrastructure.database.repositories.person.PersonRepository;
 import fr.siamois.infrastructure.database.repositories.settings.PersonSettingsRepository;
+import jakarta.validation.constraints.NotNull;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.convert.ConversionService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -202,7 +204,7 @@ public class PersonService {
      * @throws InvalidUsernameException  if the username is invalid or already exists.
      * @throws InvalidEmailException     if the email is invalid or already exists.
      */
-    public void updatePerson(PersonDTO personDTO, String password) throws UserAlreadyExistException, InvalidNameException, InvalidPasswordException, InvalidUsernameException, InvalidEmailException {
+    public void updatePerson(@NotNull PersonDTO personDTO, String password) throws UserAlreadyExistException, InvalidNameException, InvalidPasswordException, InvalidUsernameException, InvalidEmailException {
         checkPersonData(personDTO, false);
         checkPassword(password);
         Person person = conversionService.convert(personDTO,Person.class);
@@ -219,9 +221,10 @@ public class PersonService {
      * @throws InvalidUsernameException  if the username is invalid or already exists.
      * @throws InvalidEmailException     if the email is invalid or already exists.
      */
-    public void updatePerson(PersonDTO personDTO) throws UserAlreadyExistException, InvalidNameException, InvalidPasswordException, InvalidUsernameException, InvalidEmailException {
+    public void updatePerson(@NonNull PersonDTO personDTO) throws UserAlreadyExistException, InvalidNameException, InvalidPasswordException, InvalidUsernameException, InvalidEmailException {
         checkPersonData(personDTO, false);
         Person person = conversionService.convert(personDTO,Person.class);
+        assert person != null;
         personRepository.save(person);
     }
 
@@ -238,7 +241,7 @@ public class PersonService {
 
     Optional<PasswordVerifier> findPasswordVerifier() {
         for (PasswordVerifier verifier : passVerifiers) {
-            if (verifier.getClass().equals(PasswordVerifier.class)) return Optional.of((PasswordVerifier) verifier);
+            if (verifier.getClass().equals(PasswordVerifier.class)) return Optional.of(verifier);
         }
         return Optional.empty();
     }
