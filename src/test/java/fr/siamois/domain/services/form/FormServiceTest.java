@@ -47,16 +47,11 @@ class FormServiceTest {
     @InjectMocks
     private FormService formService;
 
-    private Concept recordingUnitType;
-    private ConceptDTO recordingUnitTypeDTO;
-    private Institution institution;
-    private InstitutionDTO institutionDTO;
-
     void setUpForReturnTypeSpecificTests() {
-        recordingUnitType = mock(Concept.class);
-        institution = mock(Institution.class);
-        recordingUnitTypeDTO = mock(ConceptDTO.class);
-        institutionDTO = mock(InstitutionDTO.class);
+        Concept recordingUnitType = mock(Concept.class);
+        Institution institution = mock(Institution.class);
+        ConceptDTO recordingUnitTypeDTO = mock(ConceptDTO.class);
+        InstitutionDTO institutionDTO = mock(InstitutionDTO.class);
 
         // Use deterministic IDs in stubs
         given(recordingUnitType.getId()).willReturn(101L);  // Add this line
