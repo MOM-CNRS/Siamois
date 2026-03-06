@@ -809,8 +809,7 @@ class FormServiceTest {
         return rel;
     }
     private CustomField createStratigraphyField() {
-        CustomFieldStratigraphy field = new CustomFieldStratigraphy();
-        return field;
+        return new CustomFieldStratigraphy();
     }
     @Test
     void initOrReuseResponse_collectsSynchronousRelationships() {

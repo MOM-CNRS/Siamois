@@ -1,6 +1,8 @@
 package fr.siamois.dto.entity;
 
-import lombok.*;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
 
 import java.time.OffsetDateTime;
 import java.util.List;

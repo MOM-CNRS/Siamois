@@ -404,14 +404,14 @@ class ActionUnitServiceTest {
 
         // Configuration des mocks
         when(actionUnitRepository.findAllByInstitutionAndBySpatialUnitAndByNameContainingAndByCategoriesAndByGlobalContaining(
-                eq(institutionId),
-                eq(spatialUnitId),
-                eq(name),
-                eq(categoryIds),
-                eq(personIds),
-                eq(global),
-                eq(langCode),
-                eq(pageable)
+                institutionId,
+                spatialUnitId,
+                name,
+                categoryIds,
+                personIds,
+                global,
+                langCode,
+                pageable
         )).thenReturn(mockPage);
 
         when(actionUnitMapper.convert(mockActionUnit1)).thenReturn(mockActionUnitDTO1);
@@ -437,14 +437,14 @@ class ActionUnitServiceTest {
 
         // Vérification des appels
         verify(actionUnitRepository).findAllByInstitutionAndBySpatialUnitAndByNameContainingAndByCategoriesAndByGlobalContaining(
-                eq(institutionId),
-                eq(spatialUnitId),
-                eq(name),
-                eq(categoryIds),
-                eq(personIds),
-                eq(global),
-                eq(langCode),
-                eq(pageable)
+                institutionId,
+                spatialUnitId,
+                name,
+                categoryIds,
+                personIds,
+                global,
+                langCode,
+        pageable
         );
     }
     @Test

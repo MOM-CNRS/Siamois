@@ -166,7 +166,7 @@ class RecordingUnitLazyDataModelTest {
 
 
             // THEN
-            verify(recordingUnitService).save(eq(unit));
+            verify(recordingUnitService).save(unit);
 
             messageUtilsMock.verify(() ->
                     MessageUtils.displayInfoMessage(langBean, "common.entity.recordingUnits.updated", "RU123"));
@@ -189,7 +189,7 @@ class RecordingUnitLazyDataModelTest {
 
 
             // THEN
-            verify(recordingUnitService).save(eq(unit));
+            verify(recordingUnitService).save(unit);
 
             messageUtilsMock.verify(() ->
                     MessageUtils.displayErrorMessage(langBean, "common.entity.recordingUnits.updateFailed", "RU123"));

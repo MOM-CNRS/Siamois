@@ -202,8 +202,8 @@ class SpecimenServiceTest {
 
         // 2. Configuration des mocks
         when(specimenRepository.findAllByInstitutionAndByRecordingUnitIdAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
-                eq(institutionId), eq(recordingUnitId), eq(fullIdentifier),
-                eq(categoryIds), eq(globalFilter), eq(langCode), eq(pageable)))
+                institutionId, recordingUnitId, fullIdentifier,
+                categoryIds, globalFilter, langCode, pageable))
                 .thenReturn(mockPage);
 
         when(specimenMapper.convert(mockSpecimen))
@@ -221,8 +221,8 @@ class SpecimenServiceTest {
         // 5. Vérification des interactions
         verify(specimenRepository, times(1))
                 .findAllByInstitutionAndByRecordingUnitIdAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
-                        eq(institutionId), eq(recordingUnitId), eq(fullIdentifier),
-                        eq(categoryIds), eq(globalFilter), eq(langCode), eq(pageable));
+                        institutionId, recordingUnitId, fullIdentifier,
+                        categoryIds, globalFilter, langCode, pageable);
 
         verify(specimenMapper, times(1))
                 .convert(mockSpecimen);

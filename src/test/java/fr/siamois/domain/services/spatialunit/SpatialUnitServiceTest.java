@@ -701,12 +701,7 @@ class SpatialUnitServiceTest {
         // Vérifie que c’est bien le spatialUnit récupéré du history
         assert(captor.getValue() == spatialUnit);
     }
-
-    private static SpatialUnit su(long id) {
-        SpatialUnit su = mock(SpatialUnit.class);
-        when(su.getId()).thenReturn(id);
-        return su;
-    }
+    
 
     @Test
     void whenNoActionUnit_thenReturnsEmpty() {

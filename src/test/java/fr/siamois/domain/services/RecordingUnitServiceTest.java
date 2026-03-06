@@ -792,14 +792,14 @@ class RecordingUnitServiceTest {
     @Test
     void generatedNextIdentifier_UNIQUE_returnsUniqueId() {
         // Arrange
-        ActionUnit actionUnit = new ActionUnit();
-        actionUnit.setId(1L);
-        actionUnit.setRecordingUnitIdentifierFormat("{NUM_UE}"); // This will make resolveConfig() return UNIQUE
+        ActionUnit actionUnit2 = new ActionUnit();
+        actionUnit2.setId(1L);
+        actionUnit2.setRecordingUnitIdentifierFormat("{NUM_UE}"); // This will make resolveConfig() return UNIQUE
 
-        when(recordingUnitIdCounterRepository.ruNextValUnique(eq(1L))).thenReturn(100);
+        when(recordingUnitIdCounterRepository.ruNextValUnique(1L)).thenReturn(100);
 
         // Act
-        int result = recordingUnitService.generatedNextIdentifier(actionUnit, null, null);
+        int result = recordingUnitService.generatedNextIdentifier(actionUnit2, null, null);
 
         // Assert
         assertEquals(100, result, "The generated identifier should be 100");
@@ -1042,18 +1042,18 @@ class RecordingUnitServiceTest {
     @Test
     void createOrGetInfoOf_shouldCreateAndSaveNewInfo_whenNotFound() {
         // Arrange
-        ActionUnit actionUnit;
-        actionUnit = new ActionUnit();
-        actionUnit.setIdentifier("2025");
-        actionUnit.setMinRecordingUnitCode(5);
-        actionUnit.setId(1L);
-        actionUnit.setMaxRecordingUnitCode(5);
+        ActionUnit actionUnit2;
+        actionUnit2 = new ActionUnit();
+        actionUnit2.setIdentifier("2025");
+        actionUnit2.setMinRecordingUnitCode(5);
+        actionUnit2.setId(1L);
+        actionUnit2.setMaxRecordingUnitCode(5);
         Institution parentInstitution = new Institution();
         parentInstitution.setIdentifier("MOM");
-        actionUnit.setCreatedByInstitution(parentInstitution);
+        actionUnit2.setCreatedByInstitution(parentInstitution);
         RecordingUnit recordingUnit = new RecordingUnit();
         recordingUnit.setId(1L);
-        recordingUnit.setActionUnit(actionUnit);
+        recordingUnit.setActionUnit(actionUnit2);
         SpatialUnit su = new SpatialUnit();
         su.setId(99L);
         recordingUnit.setSpatialUnit(su);
@@ -1074,7 +1074,7 @@ class RecordingUnitServiceTest {
         assertEquals(1L, result.getRecordingUnitId());
         assertSame(recordingUnit, result.getRecordingUnit());
         assertEquals(99, result.getSpatialUnitNumber());
-        assertSame(actionUnit, result.getActionUnit());
+        assertSame(actionUnit2, result.getActionUnit());
         assertSame(parentUnit, result.getParent());
         assertSame(parentType, result.getRuParentType());
         verify(recordingUnitIdInfoRepository).save(result);

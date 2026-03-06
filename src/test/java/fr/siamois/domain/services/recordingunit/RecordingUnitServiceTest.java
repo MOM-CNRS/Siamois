@@ -46,10 +46,6 @@ class RecordingUnitServiceTest {
     @InjectMocks
     private RecordingUnitService recordingUnitService;
 
-    @BeforeEach
-    void setUp() {
-
-    }
 
 
     @Test
