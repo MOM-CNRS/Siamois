@@ -1,18 +1,21 @@
 package fr.siamois.ui.bean.panel.models.panel.single;
 
-import fr.siamois.domain.models.TraceableEntity;
 import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.document.Document;
 import fr.siamois.domain.models.exceptions.vocabulary.NoConfigForFieldException;
 import fr.siamois.domain.models.history.InfoRevisionEntity;
 import fr.siamois.domain.models.history.RevisionWithInfo;
+import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.settings.ConceptFieldConfig;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.models.vocabulary.Vocabulary;
+import fr.siamois.domain.services.EntityDTORegistry;
 import fr.siamois.domain.services.history.HistoryAuditService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.domain.services.vocabulary.FieldService;
+import fr.siamois.dto.entity.AbstractEntityDTO;
+import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.ui.bean.dialog.document.DocumentCreationBean;
 import fr.siamois.ui.bean.panel.FlowBean;
 import fr.siamois.ui.bean.panel.models.panel.single.tab.*;
@@ -43,7 +46,7 @@ import java.util.stream.Collectors;
 @Getter
 @Setter
 @Slf4j
-public abstract class AbstractSingleEntityPanel<T extends TraceableEntity> extends AbstractSingleEntity<T>  implements Serializable {
+public abstract class AbstractSingleEntityPanel<T extends AbstractEntityDTO> extends AbstractSingleEntity<T>  implements Serializable {
 
     public static final String RECORDING_UNIT_FORM_RECORDING_UNIT_TABS = "recordingUnitForm:recordingUnitTabs";
     // Deps
@@ -52,6 +55,7 @@ public abstract class AbstractSingleEntityPanel<T extends TraceableEntity> exten
     protected final transient FieldService fieldService;
     protected final transient ConceptService conceptService;
     protected final transient FlowBean flowBean;
+    private final transient EntityDTORegistry entityDTORegistry;
 
     //--------------- Locals
 
@@ -61,11 +65,10 @@ public abstract class AbstractSingleEntityPanel<T extends TraceableEntity> exten
     public static final String THIS = "@this";
 
     protected Integer activeTabIndex; // Keeping state of active tab
-    protected transient T backupClone;
     protected String errorMessage;
     protected transient List<RevisionWithInfo<T>> history;
     protected transient RevisionWithInfo<T> revisionToDisplay = null;
-    protected Long idunit;  // ID of the spatial unit
+    protected Long unitId;  // ID of the spatial unit
     protected transient List<Document> documents;
     protected transient Map<String, ConceptFieldConfig> fieldConfigs = new HashMap<>();
 
@@ -93,11 +96,9 @@ public abstract class AbstractSingleEntityPanel<T extends TraceableEntity> exten
         return "/panel/singleUnitPanel.xhtml";
     }
 
-
-
     public abstract void init();
 
-    public abstract List<Person> authorsAvailable();
+    public abstract List<PersonDTO> authorsAvailable();
 
     public static final Vocabulary SYSTEM_THESO;
 
@@ -131,7 +132,7 @@ Return the command that opens panel for the unit
         MenuModel breadcrumbModel = new DefaultMenuModel();
         breadcrumbModel.getElements().add(createHomeItem());
         breadcrumbModel.getElements().add(createRootTypeItem());
-        T currentUnit = findUnitById(idunit);
+        T currentUnit = findUnitById(unitId);
 
         if (currentUnit != null) {
             breadcrumbModel.getElements().add(createUnitItem(currentUnit));
@@ -174,6 +175,7 @@ Return the command that opens panel for the unit
         this.fieldService = context.getBean(FieldService.class);
         this.conceptService = context.getBean(ConceptService.class);
         this.flowBean = context.getBean(FlowBean.class);
+        this.entityDTORegistry = context.getBean(EntityDTORegistry.class);
 
         // Overview tab
         tabs = new ArrayList<>();
@@ -190,8 +192,6 @@ Return the command that opens panel for the unit
 
 
     public abstract void initForms(boolean forceInit);
-
-    public abstract void cancelChanges();
 
     public abstract void visualise(RevisionWithInfo<T> history);
 
@@ -280,14 +280,14 @@ Return the command that opens panel for the unit
 
     @SuppressWarnings("unchecked")
     private RevisionWithInfo<T> findLastRevisionForEntity() {
-        RevisionWithInfo<T> result = (RevisionWithInfo<T>) historyAuditService.findLastRevisionForEntity(unit.getClass(), idunit);
+        RevisionWithInfo<T> result = (RevisionWithInfo<T>) historyAuditService.findLastRevisionForEntity(unit.getClass(), unitId);
         if (result == null) {
             InfoRevisionEntity info = new InfoRevisionEntity();
             UserInfo userInfo = sessionSettingsBean.getUserInfo();
             info.setRevId(0L);
             info.setEpochTimestamp(OffsetDateTime.now().toEpochSecond());
-            info.setUpdatedBy(userInfo.getUser());
-            info.setUpdatedFrom(userInfo.getInstitution());
+            info.setUpdatedBy(conversionService.convert(userInfo.getUser(), Person.class));
+            info.setUpdatedFrom(conversionService.convert(userInfo.getInstitution(), Institution.class));
             result = new RevisionWithInfo<>(unit, info, RevisionType.MOD);
         }
         return result;
@@ -312,7 +312,7 @@ Return the command that opens panel for the unit
      * @return the list of contributors as a string
      */
     public String allUpdaters() {
-        return historyAuditService.findAllContributorsFor(unit.getClass(), idunit)
+        return historyAuditService.findAllContributorsFor(unit.getClass(), unitId)
                 .stream()
                 .map(Person::displayName)
                 .filter(Objects::nonNull)

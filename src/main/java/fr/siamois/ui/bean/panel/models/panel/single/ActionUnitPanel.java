@@ -2,12 +2,9 @@ package fr.siamois.ui.bean.panel.models.panel.single;
 
 import fr.siamois.domain.models.actionunit.ActionCode;
 import fr.siamois.domain.models.actionunit.ActionUnit;
-import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.document.Document;
 import fr.siamois.domain.models.exceptions.actionunit.ActionUnitNotFoundException;
-import fr.siamois.domain.models.exceptions.actionunit.FailedActionUnitSaveException;
 import fr.siamois.domain.models.history.RevisionWithInfo;
-import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.authorization.writeverifier.RecordingUnitWriteVerifier;
@@ -15,7 +12,10 @@ import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.recordingunit.identifier.generic.RuIdentifierResolver;
 import fr.siamois.domain.services.specimen.SpecimenService;
 import fr.siamois.domain.services.vocabulary.LabelService;
-import fr.siamois.ui.bean.LangBean;
+import fr.siamois.dto.entity.ActionUnitDTO;
+import fr.siamois.dto.entity.ConceptDTO;
+import fr.siamois.dto.entity.PersonDTO;
+import fr.siamois.dto.entity.RecordingUnitDTO;
 import fr.siamois.ui.bean.NavBean;
 import fr.siamois.ui.bean.RedirectBean;
 import fr.siamois.ui.bean.dialog.newunit.GenericNewUnitDialogBean;
@@ -25,10 +25,12 @@ import fr.siamois.ui.bean.panel.models.PanelBreadcrumb;
 import fr.siamois.ui.bean.panel.models.panel.single.tab.ActionSettingsTab;
 import fr.siamois.ui.bean.panel.models.panel.single.tab.RecordingTab;
 import fr.siamois.ui.bean.settings.team.TeamMembersBean;
+import fr.siamois.ui.form.FormUiDto;
 import fr.siamois.ui.lazydatamodel.RecordingUnitInActionUnitLazyDataModel;
 import fr.siamois.ui.lazydatamodel.SpecimenInActionUnitLazyDataModel;
 import fr.siamois.ui.lazydatamodel.scope.RecordingUnitScope;
 import fr.siamois.ui.lazydatamodel.tree.RecordingUnitTreeTableLazyModel;
+import fr.siamois.ui.mapper.FormMapper;
 import fr.siamois.ui.table.RecordingUnitTableViewModel;
 import fr.siamois.ui.table.ToolbarCreateConfig;
 import fr.siamois.ui.table.definitions.RecordingUnitTableDefinitionFactory;
@@ -51,7 +53,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 /**
  * <p>This bean handles the spatial unit page</p>
@@ -64,7 +65,7 @@ import java.util.stream.Collectors;
 @Setter
 @Component
 @Scope(BeanDefinition.SCOPE_PROTOTYPE)
-public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnit> implements Serializable {
+public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnitDTO> implements Serializable {
     public static final String INVALID_FORMAT_CODE = "actionUnit.settings.error.invalidIdentifierFormat";
 
     private final RedirectBean redirectBean;
@@ -76,6 +77,7 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnit> imple
     private final transient GenericNewUnitDialogBean<?> genericNewUnitDialogBean;
     private final transient InstitutionService institutionService;
     private final transient RecordingUnitWriteVerifier recordingUnitWriteVerifier;
+    private final transient FormMapper formMapper;
 
     // For entering new code
     private ActionCode newCode;
@@ -97,12 +99,12 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnit> imple
     private String format;
 
     @Override
-    protected boolean documentExistsInUnitByHash(ActionUnit unit, String hash) {
+    protected boolean documentExistsInUnitByHash(ActionUnitDTO unit, String hash) {
         return documentService.existInActionUnitByHash(unit, hash);
     }
 
     @Override
-    protected void addDocumentToUnit(Document doc, ActionUnit unit) {
+    protected void addDocumentToUnit(Document doc, ActionUnitDTO unit) {
         documentService.addToActionUnit(doc, unit);
     }
 
@@ -130,6 +132,7 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnit> imple
         this.genericNewUnitDialogBean = context.getBean(GenericNewUnitDialogBean.class);
         this.institutionService = context.getBean(InstitutionService.class);
         this.recordingUnitWriteVerifier = context.getBean(RecordingUnitWriteVerifier.class);
+        this.formMapper = context.getBean(FormMapper.class);
     }
 
 
@@ -150,12 +153,10 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnit> imple
 
         try {
 
-            unit = actionUnitService.findById(idunit);
+            unit = actionUnitService.findById(unitId);
             this.setTitleCodeOrTitle(unit.getName()); // Set panel title
-            backupClone = new ActionUnit(unit);
+
             this.titleCodeOrTitle = unit.getName();
-            secondaryActionCodes = new ArrayList<>(unit.getSecondaryActionCodes());
-            fType = this.unit.getType();
 
             initForms(true);
 
@@ -173,7 +174,6 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnit> imple
         }
 
 
-        history = historyAuditService.findAllRevisionForEntity(ActionUnit.class, idunit);
         documents = documentService.findForActionUnit(unit);
     }
 
@@ -181,7 +181,7 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnit> imple
     public void init() {
         try {
 
-            if (idunit == null) {
+            if (unitId == null) {
                 this.errorMessage = "The ID of the spatial unit must be defined";
                 return;
             }
@@ -224,7 +224,7 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnit> imple
 
         } catch (
                 ActionUnitNotFoundException e) {
-            log.error("Action unit with id {} not found", idunit);
+            log.error("Action unit with id {} not found", unitId);
             redirectBean.redirectTo(HttpStatus.NOT_FOUND);
         } catch (
                 RuntimeException e) {
@@ -238,30 +238,30 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnit> imple
     }
 
     @Override
-    public List<Person> authorsAvailable() {
+    public List<PersonDTO> authorsAvailable() {
         return List.of();
     }
 
     @Override
-    ActionUnit findUnitById(Long id) {
+    ActionUnitDTO findUnitById(Long id) {
         return actionUnitService.findById(id);
     }
 
     @Override
-    String findLabel(ActionUnit unit) {
+    String findLabel(ActionUnitDTO unit) {
         return unit.getName();
     }
 
 
     @Override
-    String getOpenPanelCommand(ActionUnit unit) {
+    String getOpenPanelCommand(ActionUnitDTO unit) {
         return "#{flowBean.addActionUnitPanel(".concat(unit.getId().toString()).concat(")}");
     }
 
     @Override
     public void initForms(boolean forceInit) {
 
-        detailsForm = ActionUnit.DETAILS_FORM;
+        detailsForm = formContextServices.getConversionService().convert(ActionUnit.DETAILS_FORM, FormUiDto.class);
         // Init system form answers
         initFormContext(forceInit);
 
@@ -273,22 +273,14 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnit> imple
     }
 
     @Override
-    protected void setFormScopePropertyValue(Concept concept) {
+    protected void setFormScopePropertyValue(ConceptDTO concept) {
         // to be implemented
     }
 
 
-    @Override
-    public void cancelChanges() {
-        unit.setName(backupClone.getName());
-        unit.setValidated(backupClone.getValidated());
-        unit.setType(backupClone.getType());
-        formContext.setHasUnsavedModifications(false);
-        initForms(true);
-    }
 
     @Override
-    public void visualise(RevisionWithInfo<ActionUnit> history) {
+    public void visualise(RevisionWithInfo<ActionUnitDTO> history) {
         // button is deactivated
     }
 
@@ -321,30 +313,6 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnit> imple
         newCode = new ActionCode();
     }
 
-    public void removeSecondaryCode(int index) {
-        secondaryActionCodes.remove(index);
-    }
-
-    public String getFormattedValue(Object value) {
-        if (value == null) {
-            return "";
-        }
-
-        if (value instanceof Number) {
-            // Integer or Number case
-            return value.toString();
-        } else if (value instanceof List<?> list) {
-            // Handle list of concepts
-            String langCode = sessionSettingsBean.getLanguageCode();
-            return list.stream()
-                    .map(item -> (item instanceof Concept concept) ? labelService.findLabelOf(concept, langCode).getLabel() : item.toString())
-                    .collect(Collectors.joining(", "));
-        }
-
-        return value.toString(); // Default case
-    }
-
-
     public static class ActionUnitPanelBuilder {
 
         private final ActionUnitPanel actionUnitPanel;
@@ -354,7 +322,7 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnit> imple
         }
 
         public ActionUnitPanelBuilder id(Long id) {
-            actionUnitPanel.setIdunit(id);
+            actionUnitPanel.setUnitId(id);
             return this;
         }
 
@@ -404,7 +372,7 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnit> imple
                 spatialUnitService,
                 navBean,
                 flowBean,
-                (GenericNewUnitDialogBean<RecordingUnit>) genericNewUnitDialogBean,
+                (GenericNewUnitDialogBean<RecordingUnitDTO>) genericNewUnitDialogBean,
                 recordingUnitWriteVerifier,
                 recordingUnitService,
                 rLazyTree,
@@ -550,7 +518,7 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnit> imple
 
     @Override
     public String getPanelIndex() {
-        return "action-unit-"+idunit;
+        return "action-unit-"+ unitId;
     }
 
     @Override

@@ -9,6 +9,7 @@ import fr.siamois.domain.services.specimen.SpecimenService;
 import fr.siamois.ui.bean.LangBean;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import org.springframework.core.convert.ConversionService;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -23,5 +24,6 @@ public class FormContextServices {
     private final SpecimenService specimenService;
     private final RecordingUnitService recordingUnitService;
     private final ActionUnitService actionUnitService;
+    private final ConversionService conversionService;
 
 }

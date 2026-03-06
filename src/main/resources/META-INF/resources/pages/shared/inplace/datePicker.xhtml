@@ -6,7 +6,7 @@
 >
 
     <cc:interface>
-        <cc:attribute name="answer" type="fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerDateTime" required="true"/>
+        <cc:attribute name="answer" type="fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerDateTimeViewModel" required="true"/>
         <cc:attribute name="hasBeenModified" type="Boolean" required="false" default="false"/>
         <cc:attribute name="field" type="fr.siamois.domain.models.form.customfield.CustomFieldDateTime"
                       required="true"/>
@@ -22,7 +22,7 @@
     </cc:interface>
 
     <cc:implementation>
-        <p:inplace mode="#{cc.attrs.mode}" toggleable="false">
+        <p:inplace id="inplace" mode="#{cc.attrs.mode}" toggleable="false">
             <f:facet name="output">
                 <p:inputText value="#{cc.attrs.answer.value}"
                              disabled="true"
@@ -32,6 +32,7 @@
             </f:facet>
             <f:facet name="input">
                 <p:datePicker id="datePicker"
+                              monthNavigator="true" yearNavigator="true"
                               mindate="#{cc.attrs.field.min}"
                               maxdate="#{cc.attrs.field.max}"
                               panelStyleClass="#{panelStyleClass}"
@@ -40,7 +41,7 @@
                               inputStyleClass="#{cc.attrs.answer.hasBeenModified ? 'track-change sia-modified-field': 'track-change'}"
                               required="#{cc.attrs.required}"
                               value="#{cc.attrs.answer.value}">
-                    <f:attribute name="field" value="#{cc.attrs.field}" />
+                    <f:attribute id="dateField" name="field" value="#{cc.attrs.field}" />
                     <p:ajax
                             update="#{cc.attrs.updateTargetsOnBlur}"
                             process="@this"

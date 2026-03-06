@@ -2,11 +2,11 @@ package fr.siamois.ui.bean.dialog.newunit.handler;
 
 import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.exceptions.EntityAlreadyExistsException;
-import fr.siamois.domain.models.recordingunit.RecordingUnit;
-import fr.siamois.domain.models.spatialunit.SpatialUnit;
-import fr.siamois.domain.models.specimen.Specimen;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.specimen.SpecimenService;
+import fr.siamois.dto.entity.RecordingUnitDTO;
+import fr.siamois.dto.entity.SpatialUnitSummaryDTO;
+import fr.siamois.dto.entity.SpecimenDTO;
 import fr.siamois.ui.bean.SessionSettingsBean;
 import fr.siamois.ui.bean.dialog.newunit.GenericNewUnitDialogBean;
 import fr.siamois.ui.bean.dialog.newunit.NewUnitContext;
@@ -18,7 +18,7 @@ import java.time.OffsetDateTime;
 import java.util.List;
 
 @Component
-public class SpecimenHandler implements INewUnitHandler<Specimen> {
+public class SpecimenHandler implements INewUnitHandler<SpecimenDTO> {
 
     private final SpecimenService specimenService;
     private final RecordingUnitService recordingUnitService;
@@ -31,7 +31,7 @@ public class SpecimenHandler implements INewUnitHandler<Specimen> {
     }
 
     @Override
-    public List<SpatialUnit> getSpatialUnitOptions(Specimen unit) {
+    public List<SpatialUnitSummaryDTO> getSpatialUnitOptions(SpecimenDTO unit) {
         return List.of();
     }
 
@@ -41,12 +41,12 @@ public class SpecimenHandler implements INewUnitHandler<Specimen> {
     }
 
     @Override
-    public Specimen newEmpty() {
-        return new Specimen();
+    public SpecimenDTO newEmpty() {
+        return new SpecimenDTO();
     }
 
     @Override
-    public Specimen save(UserInfo u, Specimen unit) throws EntityAlreadyExistsException {
+    public SpecimenDTO save(UserInfo u, SpecimenDTO unit) throws EntityAlreadyExistsException {
         return specimenService.save(unit);
     }
 
@@ -59,7 +59,7 @@ public class SpecimenHandler implements INewUnitHandler<Specimen> {
     @Override
     public void initFromContext(GenericNewUnitDialogBean<?> bean) throws CannotInitializeNewUnitDialogException {
 
-        Specimen unit = (Specimen) bean.getUnit();
+        SpecimenDTO unit = (SpecimenDTO) bean.getUnit();
         NewUnitContext ctx = bean.getNewUnitContext();
         if (ctx == null) throw new CannotInitializeNewUnitDialogException("Specimen cannot be created without a context");
 
@@ -74,7 +74,7 @@ public class SpecimenHandler implements INewUnitHandler<Specimen> {
 
     }
 
-    private void handleCellContext(NewUnitContext ctx, Specimen unit) {
+    private void handleCellContext(NewUnitContext ctx, SpecimenDTO unit) {
         NewUnitContext.Trigger trigger = ctx.getTrigger();
         if (trigger == null || trigger.getClickedId() == null || trigger.getColumnKey() == null) {
             return;
@@ -82,7 +82,7 @@ public class SpecimenHandler implements INewUnitHandler<Specimen> {
 
         Long clickedId = trigger.getClickedId();
         String key = trigger.getColumnKey();
-        RecordingUnit clicked = recordingUnitService.findById(clickedId);
+        RecordingUnitDTO clicked = recordingUnitService.findById(clickedId);
 
         if (clicked == null) {
             return;
@@ -99,7 +99,7 @@ public class SpecimenHandler implements INewUnitHandler<Specimen> {
 
     }
 
-    private void applyScope(Specimen unit, NewUnitContext ctx) throws CannotInitializeNewUnitDialogException {
+    private void applyScope(SpecimenDTO unit, NewUnitContext ctx) throws CannotInitializeNewUnitDialogException {
         NewUnitContext.Scope scope = ctx.getScope();
         if (scope == null || scope.getKey() == null || scope.getEntityId() == null) {
             throw new CannotInitializeNewUnitDialogException("Specimen cannot be created without a context");
@@ -107,7 +107,7 @@ public class SpecimenHandler implements INewUnitHandler<Specimen> {
 
 
         if ("RECORDING".equals(scope.getKey())) {
-            RecordingUnit ru = recordingUnitService.findById(scope.getEntityId()); // adapt Optional
+            RecordingUnitDTO ru = recordingUnitService.findById(scope.getEntityId()); // adapt Optional
             if (ru != null) {
                 unit.setCreatedByInstitution(ru.getCreatedByInstitution());
                 unit.setRecordingUnit(ru);
@@ -123,7 +123,7 @@ public class SpecimenHandler implements INewUnitHandler<Specimen> {
     }
 
     @Override
-    public String getName(Specimen unit) {
+    public String getName(SpecimenDTO unit) {
         return unit.getFullIdentifier();
     }
 

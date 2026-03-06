@@ -1,30 +1,28 @@
 package fr.siamois.ui.lazydatamodel.tree;
 
-import fr.siamois.domain.models.actionunit.ActionUnit;
-import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
+import fr.siamois.dto.entity.SpatialUnitDTO;
 import fr.siamois.ui.lazydatamodel.scope.SpatialUnitScope;
 import lombok.Getter;
 import lombok.Setter;
-import org.hibernate.Hibernate;
 
 import java.util.List;
 
 @Getter
 @Setter
-public class SpatialUnitTreeTableLazyModel extends BaseTreeTableLazyModel<SpatialUnit, Long> {
+public class SpatialUnitTreeTableLazyModel extends BaseTreeTableLazyModel<SpatialUnitDTO, Long> {
 
     private final transient SpatialUnitService spatialUnitService;
     private transient SpatialUnitScope scope;
 
     public SpatialUnitTreeTableLazyModel(SpatialUnitService spatialUnitService, SpatialUnitScope scope) {
-        super(SpatialUnit::getId);
+        super(SpatialUnitDTO::getId);
         this.spatialUnitService = spatialUnitService;
         this.scope = scope;
     }
 
     @Override
-    protected List<SpatialUnit> fetchRoots() {
+    protected List<SpatialUnitDTO> fetchRoots() {
         return switch (scope.getType()) {
             case INSTITUTION -> spatialUnitService.findRootsOf(scope.getInstitutionId());
             case CHILDREN_OF_SPATIAL_UNIT -> spatialUnitService.findDirectChildrensOf(scope.getSpatialUnitId());
@@ -32,7 +30,7 @@ public class SpatialUnitTreeTableLazyModel extends BaseTreeTableLazyModel<Spatia
     }
 
     @Override
-    protected List<SpatialUnit> fetchChildren(SpatialUnit parentUnit) {
+    protected List<SpatialUnitDTO> fetchChildren(SpatialUnitDTO parentUnit) {
         if(parentUnit != null) {
             return spatialUnitService.findDirectChildrensOf(parentUnit.getId());
         }
@@ -40,14 +38,7 @@ public class SpatialUnitTreeTableLazyModel extends BaseTreeTableLazyModel<Spatia
     }
 
     @Override
-    protected void initializeAssociations(SpatialUnit child) {
-        Hibernate.initialize(child.getChildren());
-        Hibernate.initialize(child.getParents());
-        Hibernate.initialize(child.getRelatedActionUnitList());
-    }
-
-    @Override
-    protected Boolean isLeaf(SpatialUnit node) {
+    protected Boolean isLeaf(SpatialUnitDTO node) {
         if(node!=null){
             return !spatialUnitService.existsChildrenByParentAndInstitution(node.getId(), node.getCreatedByInstitution().getId());
         }

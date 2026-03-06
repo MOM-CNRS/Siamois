@@ -7,6 +7,7 @@ import fr.siamois.domain.models.misc.ProgressWrapper;
 import fr.siamois.domain.models.settings.ConceptFieldConfig;
 import fr.siamois.domain.models.vocabulary.*;
 import fr.siamois.domain.models.vocabulary.label.ConceptLabel;
+import fr.siamois.dto.entity.ConceptDTO;
 import fr.siamois.infrastructure.api.ConceptApi;
 import fr.siamois.infrastructure.api.dto.ConceptBranchDTO;
 import fr.siamois.infrastructure.api.dto.FullInfoDTO;
@@ -18,9 +19,11 @@ import fr.siamois.infrastructure.database.repositories.vocabulary.LocalizedConce
 import fr.siamois.infrastructure.database.repositories.vocabulary.label.ConceptLabelRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.convert.ConversionService;
 import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 
@@ -42,6 +45,23 @@ public class ConceptService {
     private final ConceptChangeEventPublisher conceptChangeEventPublisher;
     private final ConceptLabelRepository conceptLabelRepository;
     private final ConceptHierarchyRepository conceptHierarchyRepository;
+    private final ConversionService conversionService;
+
+    /**
+     * Saves a concept if it does not already exist in the repository.
+     *
+     * @param conceptDTO the concept to save or retrieve
+     * @return the saved or existing concept
+     */
+    @NonNull
+    @Transactional
+    public Concept saveOrGetConcept(@NonNull ConceptDTO conceptDTO) {
+        Concept concept = conversionService.convert(conceptDTO, Concept.class);
+        Vocabulary vocabulary = concept.getVocabulary();
+        Optional<Concept> optConcept = conceptRepository.findConceptByExternalIdIgnoreCase(
+                vocabulary.getExternalVocabularyId(), concept.getExternalId());
+        return optConcept.orElseGet(() -> conceptRepository.save(concept));
+    }
 
     /**
      * Saves a concept if it does not already exist in the repository.
@@ -50,22 +70,15 @@ public class ConceptService {
      * @return the saved or existing concept
      */
     @NonNull
+    @Transactional
     public Concept saveOrGetConcept(@NonNull Concept concept) {
         Vocabulary vocabulary = concept.getVocabulary();
-        Optional<Concept> optConcept = conceptRepository.findConceptByExternalIdIgnoreCase(vocabulary.getExternalVocabularyId(), concept.getExternalId());
+        Optional<Concept> optConcept = conceptRepository.findConceptByExternalIdIgnoreCase(
+                vocabulary.getExternalVocabularyId(), concept.getExternalId());
         return optConcept.orElseGet(() -> conceptRepository.save(concept));
     }
 
-    /**
-     * Finds all concepts related to spatial units of a given institution.
-     *
-     * @param institution the institution for which to find concepts
-     * @return a list of concepts associated with spatial units of the institution
-     */
-    @NonNull
-    public List<Concept> findAllBySpatialUnitOfInstitution(@NonNull Institution institution) {
-        return conceptRepository.findAllBySpatialUnitOfInstitution(institution.getId());
-    }
+
 
     /**
      * Finds all concepts related to action units of a given institution.

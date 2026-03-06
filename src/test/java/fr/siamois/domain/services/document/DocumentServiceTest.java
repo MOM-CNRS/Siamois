@@ -1,18 +1,17 @@
 package fr.siamois.domain.services.document;
 
 import fr.siamois.domain.models.UserInfo;
-import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.document.Document;
 import fr.siamois.domain.models.exceptions.InvalidFileSizeException;
 import fr.siamois.domain.models.exceptions.InvalidFileTypeException;
 import fr.siamois.domain.models.institution.Institution;
-import fr.siamois.domain.models.recordingunit.RecordingUnit;
-import fr.siamois.domain.models.spatialunit.SpatialUnit;
-import fr.siamois.domain.models.specimen.Specimen;
 import fr.siamois.domain.services.document.compressor.FileCompressor;
+import fr.siamois.dto.entity.*;
 import fr.siamois.infrastructure.database.repositories.DocumentRepository;
 import fr.siamois.infrastructure.files.DocumentStorage;
+import fr.siamois.mapper.InstitutionMapper;
+import fr.siamois.mapper.PersonMapper;
 import fr.siamois.utils.DocumentUtils;
 import org.apache.tomcat.util.http.fileupload.InvalidFileNameException;
 import org.junit.jupiter.api.BeforeEach;
@@ -46,6 +45,11 @@ class DocumentServiceTest {
     @Mock
     private FileCompressor fileCompressor;
 
+    @Mock
+    private PersonMapper personMapper;
+
+    @Mock
+    private InstitutionMapper institutionMapper;
 
     @InjectMocks
     private DocumentService documentService;
@@ -54,7 +58,7 @@ class DocumentServiceTest {
 
     @BeforeEach
     void setUp() {
-        documentService = new DocumentService(documentRepository, documentStorage, List.of(fileCompressor));
+        documentService = new DocumentService(documentRepository, personMapper, institutionMapper, documentStorage, List.of(fileCompressor));
     }
 
     @Test
@@ -101,7 +105,7 @@ class DocumentServiceTest {
 
     @Test
     void saveFile() throws Exception {
-        UserInfo userInfo = new UserInfo(new Institution(), new Person(), "fr");
+        UserInfo userInfo = new UserInfo(new InstitutionDTO(), new PersonDTO(), "fr");
         userInfo.getInstitution().setId(1L);
         userInfo.getInstitution().setIdentifier("fr");
         Document document = new Document();
@@ -110,6 +114,8 @@ class DocumentServiceTest {
         document.setSize(1024L); // Set file size
         InputStream inputStream = new ByteArrayInputStream("test data".getBytes());
 
+        when(personMapper.invertConvert(any(PersonDTO.class))).thenReturn(new Person());
+        when(institutionMapper.invertConvert(any(InstitutionDTO.class))).thenReturn(new Institution());
         when(documentRepository.save(document)).thenReturn(document);
         when(documentStorage.supportedMimeTypes()).thenReturn(mimeTypes);
         when(documentStorage.getMaxUploadSize()).thenReturn("10MB");
@@ -152,7 +158,7 @@ class DocumentServiceTest {
 
     @Test
     void findForSpatialUnit() {
-        SpatialUnit spatialUnit = new SpatialUnit();
+        SpatialUnitDTO spatialUnit = new SpatialUnitDTO();
         spatialUnit.setId(1L);
         Document document = new Document();
 
@@ -170,7 +176,7 @@ class DocumentServiceTest {
     @Test
     void addToSpatialUnit() {
         Document document = new Document();
-        SpatialUnit spatialUnit = new SpatialUnit();
+        SpatialUnitDTO spatialUnit = new SpatialUnitDTO();
 
         documentService.addToSpatialUnit(document, spatialUnit);
 
@@ -181,7 +187,7 @@ class DocumentServiceTest {
     @Test
     void addToRecordingUnit() {
         Document document = new Document();
-        RecordingUnit recordingUnit = new RecordingUnit();
+        RecordingUnitDTO recordingUnit = new RecordingUnitDTO();
 
         documentService.addToRecordingUnit(document, recordingUnit);
 
@@ -235,7 +241,7 @@ class DocumentServiceTest {
 
     @Test
     void existInSpatialUnitByHash() {
-        SpatialUnit spatialUnit = new SpatialUnit();
+        SpatialUnitDTO spatialUnit = new SpatialUnitDTO();
         spatialUnit.setId(1L);
         String hash = "testhash";
         when(documentRepository.existsByHashInSpatialUnit(spatialUnit.getId(), hash)).thenReturn(true);
@@ -248,7 +254,7 @@ class DocumentServiceTest {
 
     @Test
     void existInRecordingUnitByHash() {
-        RecordingUnit recordingUnit = new RecordingUnit();
+        RecordingUnitDTO recordingUnit = new RecordingUnitDTO();
         recordingUnit.setId(1L);
         String hash = "testhash";
         when(documentRepository.existsByHashInRecordingUnit(recordingUnit.getId(), hash)).thenReturn(true);
@@ -321,7 +327,7 @@ class DocumentServiceTest {
     void existInSpecimenByHash_returnsTrue_whenRepositorySaysSo() {
         long specimenId = 101L;
         String hash = "abc123";
-        Specimen specimen = new Specimen();
+        SpecimenDTO specimen = new SpecimenDTO();
         specimen.setId(specimenId);
 
         when(documentRepository.existsByHashInSpecimen(specimenId, hash)).thenReturn(true);
@@ -337,7 +343,7 @@ class DocumentServiceTest {
     void existInSpecimenByHash_returnsFalse_whenRepositorySaysSo() {
         long specimenId = 101L;
         String hash = "missing";
-        Specimen specimen = new Specimen();
+        SpecimenDTO specimen = new SpecimenDTO();
         specimen.setId(specimenId);
         when(documentRepository.existsByHashInSpecimen(specimenId, hash)).thenReturn(false);
 
@@ -353,7 +359,7 @@ class DocumentServiceTest {
     void existInRecordingUnitByHash_returnsTrue_whenRepositorySaysSo() {
         long ruId = 202L;
         String hash = "rec-999";
-        RecordingUnit recordingUnit = new RecordingUnit();
+        RecordingUnitDTO recordingUnit = new RecordingUnitDTO();
         recordingUnit.setId(ruId);
 
         when(documentRepository.existsByHashInRecordingUnit(ruId, hash)).thenReturn(true);
@@ -370,7 +376,7 @@ class DocumentServiceTest {
     void existInRecordingUnitByHash_returnsFalse_whenRepositorySaysSo() {
         long ruId = 202L;
         String hash = "not-there";
-        RecordingUnit recordingUnit = new RecordingUnit();
+        RecordingUnitDTO recordingUnit = new RecordingUnitDTO();
 
         recordingUnit.setId(ruId);
         when(documentRepository.existsByHashInRecordingUnit(ruId, hash)).thenReturn(false);
@@ -387,7 +393,7 @@ class DocumentServiceTest {
     void existInActionUnitByHash_returnsTrue_whenRepositorySaysSo() {
         long auId = 303L;
         String hash = "act-111";
-        ActionUnit actionUnit = new ActionUnit();
+        ActionUnitDTO actionUnit = new ActionUnitDTO();
         actionUnit.setId(auId);
 
 
@@ -404,7 +410,7 @@ class DocumentServiceTest {
     void existInActionUnitByHash_returnsFalse_whenRepositorySaysSo() {
         long auId = 303L;
         String hash = "nope";
-        ActionUnit actionUnit = new ActionUnit();
+        ActionUnitDTO actionUnit = new ActionUnitDTO();
 
         actionUnit.setId(auId);
         when(documentRepository.existsByHashInActionUnit(auId, hash)).thenReturn(false);
@@ -422,7 +428,7 @@ class DocumentServiceTest {
         long docId = 1L;
         long specimenId = 42L;
         Document document = new Document();
-        Specimen specimen = new Specimen();
+        SpecimenDTO specimen = new SpecimenDTO();
         document.setId(docId);
         specimen.setId(specimenId);
 
@@ -438,7 +444,7 @@ class DocumentServiceTest {
         long actionUnitId = 88L;
         Document document = new Document();
         document.setId(docId);
-        ActionUnit actionUnit = new ActionUnit();
+        ActionUnitDTO actionUnit = new ActionUnitDTO();
         actionUnit.setId(actionUnitId);
 
 

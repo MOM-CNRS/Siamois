@@ -1,8 +1,8 @@
 package fr.siamois.ui.lazydatamodel;
 
-import fr.siamois.domain.models.institution.Institution;
-import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
+import fr.siamois.dto.entity.InstitutionDTO;
+import fr.siamois.dto.entity.SpatialUnitDTO;
 import fr.siamois.ui.bean.LangBean;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -33,20 +33,20 @@ class SpatialUnitParentsLazyDataModelTest {
     @InjectMocks
     private SpatialUnitParentsLazyDataModel lazyModel;
 
-    Page<SpatialUnit> p ;
+    Page<SpatialUnitDTO> p ;
     Pageable pageable;
-    SpatialUnit spatialUnit1;
-    SpatialUnit spatialUnit2;
-    SpatialUnit spatialUnit3;
-    Institution institution;
+    SpatialUnitDTO spatialUnit1;
+    SpatialUnitDTO spatialUnit2;
+    SpatialUnitDTO spatialUnit3;
+    InstitutionDTO institution;
 
 
     @BeforeEach
     void setUp() {
-        spatialUnit1 = new SpatialUnit();
-        spatialUnit2 = new SpatialUnit();
-        spatialUnit3 = new SpatialUnit();
-        institution = new Institution();
+        spatialUnit1 = new SpatialUnitDTO();
+        spatialUnit2 = new SpatialUnitDTO();
+        spatialUnit3 = new SpatialUnitDTO();
+        institution = new InstitutionDTO();
         institution.setId(1L);
         spatialUnit1.setId(1L);
         spatialUnit2.setId(2L);
@@ -61,7 +61,7 @@ class SpatialUnitParentsLazyDataModelTest {
 
         // Arrange
         when(spatialUnitService.findAllByChildAndByNameContainingAndByCategoriesAndByGlobalContaining(
-                ArgumentMatchers.any(SpatialUnit.class),
+                ArgumentMatchers.any(SpatialUnitDTO.class),
                 ArgumentMatchers.any(String.class),
                 ArgumentMatchers.any(Long[].class),
                 ArgumentMatchers.any(Long[].class),
@@ -72,7 +72,7 @@ class SpatialUnitParentsLazyDataModelTest {
         when(langBean.getLanguageCode()).thenReturn("en");
 
         // Act
-        Page<SpatialUnit> actualResult = lazyModel.loadSpatialUnits("null", new Long[2],new Long[2], "null", pageable);
+        Page<SpatialUnitDTO> actualResult = lazyModel.loadSpatialUnits("null", new Long[2],new Long[2], "null", pageable);
 
         // Assert
         // Assert

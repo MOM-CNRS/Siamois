@@ -22,7 +22,6 @@ import org.springframework.lang.Nullable;
 
 import java.time.OffsetDateTime;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -176,12 +175,6 @@ public class ActionUnit extends TraceableEntity implements ArkEntity {
         return String.format("Action Unit %s", displayFullIdentifier());
     }
 
-    @Transient
-    @JsonIgnore
-    @SuppressWarnings("unused")
-    public List<String> getBindableFieldNames() {
-        return List.of("type", "name", "identifier", "spatialContext", "beginDate", "endDate", "primaryActionCode", "mainLocation");
-    }
 
     @JsonIgnore
     public ActionUnitResolveConfig resolveConfig() {

@@ -2,6 +2,7 @@ package fr.siamois.ui.bean.panel.utils;
 
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
+import fr.siamois.dto.entity.SpatialUnitDTO;
 import jakarta.faces.context.FacesContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -48,7 +49,7 @@ class SpatialUnitHelperServiceTest {
 
     @Test
     void testReinitialize() {
-        Consumer<SpatialUnit> spatialUnitSetter = mock(Consumer.class);
+        Consumer<SpatialUnitDTO> spatialUnitSetter = mock(Consumer.class);
         Consumer<String> spatialUnitErrorMessageSetter = mock(Consumer.class);
         Consumer<String> spatialUnitListErrorMessageSetter = mock(Consumer.class);
         Consumer<List<SpatialUnit>> spatialUnitListSetter = mock(Consumer.class);

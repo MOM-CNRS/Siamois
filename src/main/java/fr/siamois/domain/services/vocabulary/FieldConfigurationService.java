@@ -13,6 +13,8 @@ import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.models.vocabulary.FeedbackFieldConfig;
 import fr.siamois.domain.models.vocabulary.Vocabulary;
+import fr.siamois.dto.entity.InstitutionDTO;
+import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.infrastructure.api.ConceptApi;
 import fr.siamois.infrastructure.api.dto.ConceptBranchDTO;
 import fr.siamois.infrastructure.api.dto.FullInfoDTO;
@@ -20,6 +22,8 @@ import fr.siamois.infrastructure.database.repositories.vocabulary.AutocompleteRe
 import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptFieldConfigRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
+import fr.siamois.mapper.InstitutionMapper;
+import fr.siamois.mapper.PersonMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.Hibernate;
@@ -49,6 +53,8 @@ public class FieldConfigurationService {
 
     private final ConceptFieldConfigRepository conceptFieldConfigRepository;
     private final AutocompleteRepository autocompleteRepository;
+    private final InstitutionMapper institutionMapper;
+    private final PersonMapper personMapper;
 
     private boolean containsFieldCode(FullInfoDTO conceptDTO) {
         return conceptDTO.getFieldcode().isPresent();
@@ -63,7 +69,9 @@ public class FieldConfigurationService {
      * @throws NotSiamoisThesaurusException      if the vocabulary is not a Siamois thesaurus
      * @throws ErrorProcessingExpansionException if there is an error processing the vocabulary expansion
      */
-    public Optional<FeedbackFieldConfig> setupFieldConfigurationForInstitution(UserInfo info, Vocabulary vocabulary, ProgressWrapper progressWrapper) throws NotSiamoisThesaurusException, ErrorProcessingExpansionException {
+    public Optional<FeedbackFieldConfig> setupFieldConfigurationForInstitution(UserInfo info,
+                                                                               Vocabulary vocabulary,
+                                                                               ProgressWrapper progressWrapper) throws NotSiamoisThesaurusException, ErrorProcessingExpansionException {
         return setupFieldConfigurationForInstitution(info.getInstitution(), vocabulary, progressWrapper);
     }
 
@@ -76,12 +84,12 @@ public class FieldConfigurationService {
      * @throws NotSiamoisThesaurusException      if the vocabulary is not a Siamois thesaurus
      * @throws ErrorProcessingExpansionException if there is an error processing the vocabulary expansion
      */
-    public Optional<FeedbackFieldConfig> setupFieldConfigurationForInstitution(Institution institution, Vocabulary vocabulary, ProgressWrapper progressWrapper) throws NotSiamoisThesaurusException, ErrorProcessingExpansionException {
+    public Optional<FeedbackFieldConfig> setupFieldConfigurationForInstitution(InstitutionDTO institution, Vocabulary vocabulary, ProgressWrapper progressWrapper) throws NotSiamoisThesaurusException, ErrorProcessingExpansionException {
         return setupFieldConfiguration(institution, null, vocabulary, progressWrapper);
     }
 
     /**
-     * Wrapper to call {@link #setupFieldConfigurationForInstitution(Institution, Vocabulary, ProgressWrapper)} without progress tracking.
+     * Wrapper to call {@link #setupFieldConfigurationForInstitution(InstitutionDTO, Vocabulary, ProgressWrapper)} without progress tracking.
      *
      * @param info       the user information containing institution details
      * @param vocabulary the vocabulary to use for configuration
@@ -95,7 +103,7 @@ public class FieldConfigurationService {
     }
 
     /**
-     * Wrapper to call {@link #setupFieldConfigurationForInstitution(Institution, Vocabulary, ProgressWrapper)} without progress tracking.
+     * Wrapper to call {@link #setupFieldConfigurationForInstitution(InstitutionDTO, Vocabulary, ProgressWrapper)} without progress tracking.
      *
      * @param institution the institution
      * @param vocabulary  the vocabulary to use for configuration
@@ -104,7 +112,7 @@ public class FieldConfigurationService {
      * @throws ErrorProcessingExpansionException if there is an error processing the vocabulary expansion
      */
     @NonNull
-    public Optional<FeedbackFieldConfig> setupFieldConfigurationForInstitution(@NonNull Institution institution, @NonNull Vocabulary vocabulary) throws NotSiamoisThesaurusException, ErrorProcessingExpansionException {
+    public Optional<FeedbackFieldConfig> setupFieldConfigurationForInstitution(@NonNull InstitutionDTO institution, @NonNull Vocabulary vocabulary) throws NotSiamoisThesaurusException, ErrorProcessingExpansionException {
         return setupFieldConfiguration(institution, null, vocabulary, new ProgressWrapper());
     }
 
@@ -159,8 +167,8 @@ public class FieldConfigurationService {
         return setupFieldConfiguration(info.getInstitution(), info.getUser(), vocabulary, progressWrapper);
     }
 
-    private Optional<FeedbackFieldConfig> setupFieldConfiguration(@NonNull Institution institution,
-                                                                  @Nullable Person user,
+    private Optional<FeedbackFieldConfig> setupFieldConfiguration(@NonNull InstitutionDTO institutionDTO,
+                                                                  @Nullable PersonDTO userDTO,
                                                                   @NonNull Vocabulary vocabulary,
                                                                   @NonNull ProgressWrapper progressWrapper) throws NotSiamoisThesaurusException, ErrorProcessingExpansionException {
         ConceptBranchDTO conceptBranchDTO = conceptApi.fetchFieldsBranch(vocabulary);
@@ -176,13 +184,15 @@ public class FieldConfigurationService {
             ConceptFieldConfig fieldConfig;
             Optional<ConceptFieldConfig> optConfig;
 
-            if (user == null) {
-                optConfig = conceptFieldConfigRepository.findOneByFieldCodeForInstitution(institution.getId(), fieldCode);
+            if (userDTO == null) {
+                optConfig = conceptFieldConfigRepository.findOneByFieldCodeForInstitution(institutionDTO.getId(), fieldCode);
             } else {
-                optConfig = conceptFieldConfigRepository.findOneByFieldCodeForUser(user.getId(), institution.getId(), fieldCode);
+                optConfig = conceptFieldConfigRepository.findOneByFieldCodeForUser(userDTO.getId(), institutionDTO.getId(), fieldCode);
             }
 
             if (optConfig.isEmpty()) {
+                Institution institution = institutionMapper.invertConvert(institutionDTO);
+                Person user = personMapper.invertConvert(userDTO);
                 fieldConfig = new ConceptFieldConfig();
                 fieldConfig.setInstitution(institution);
                 fieldConfig.setUser(user);
@@ -207,13 +217,13 @@ public class FieldConfigurationService {
     /**
      * Finds the vocabulary URL for a given institution.
      *
-     * @param institution the institution for which to find the vocabulary URL
+     * @param institutionId the institution for which to find the vocabulary URL
      * @return an Optional containing the vocabulary URL if found, otherwise empty
      */
     @NonNull
-    public Optional<String> findVocabularyUrlOfInstitution(@NonNull Institution institution) {
+    public Optional<String> findVocabularyUrlOfInstitutionId(@NonNull Long institutionId) {
         Optional<Concept> optConcept = conceptRepository
-                .findTopTermConfigForFieldCodeOfInstitution(institution.getId(), SpatialUnit.CATEGORY_FIELD_CODE);
+                .findTopTermConfigForFieldCodeOfInstitution(institutionId, SpatialUnit.CATEGORY_FIELD_CODE);
         if (optConcept.isEmpty()) return Optional.empty();
         Vocabulary vocabulary = optConcept.get().getVocabulary();
         return Optional.of(vocabulary.getBaseUri() + "/?idt=" + vocabulary.getExternalVocabularyId());

@@ -272,7 +272,7 @@ public interface SpatialUnitRepository extends JpaRepository<SpatialUnit, Long>,
 
     List<SpatialUnit> findAllByArkIsNullAndCreatedByInstitution(@NotNull Institution createdByInstitution);
 
-    long countByCreatedByInstitution(Institution institution);
+    long countByCreatedByInstitutionId(Long institutionId);
 
     @Query(
             nativeQuery = true,

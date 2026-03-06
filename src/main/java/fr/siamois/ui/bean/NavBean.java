@@ -2,14 +2,10 @@ package fr.siamois.ui.bean;
 
 import fr.siamois.domain.events.publisher.InstitutionChangeEventPublisher;
 import fr.siamois.domain.models.Bookmark;
-import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.events.LoginEvent;
-import fr.siamois.domain.models.institution.Institution;
-import fr.siamois.domain.models.recordingunit.RecordingUnit;
-import fr.siamois.domain.models.spatialunit.SpatialUnit;
-import fr.siamois.domain.models.specimen.Specimen;
 import fr.siamois.domain.services.BookmarkService;
 import fr.siamois.domain.services.InstitutionService;
+import fr.siamois.dto.entity.*;
 import fr.siamois.ui.bean.converter.InstitutionConverter;
 import fr.siamois.ui.bean.panel.FlowBean;
 import fr.siamois.ui.bean.panel.models.panel.AbstractPanel;
@@ -80,11 +76,11 @@ public class NavBean implements Serializable {
         this.langBean = langBean;
     }
 
-    public Institution getSelectedInstitution() {
+    public InstitutionDTO getSelectedInstitution() {
         return sessionSettingsBean.getSelectedInstitution();
     }
 
-    public Person currentUser() {
+    public PersonDTO currentUser() {
         return sessionSettingsBean.getAuthenticatedUser();
     }
 
@@ -145,19 +141,19 @@ public class NavBean implements Serializable {
     }
 
 
-    public void bookmarkRecordingUnit(RecordingUnit recordingUnit) {
+    public void bookmarkRecordingUnit(RecordingUnitDTO recordingUnit) {
 
         bookmarkUnit(recordingUnit.getId(),recordingUnit.getFullIdentifier(),RECORDING_UNIT_BASE_URI);
 
     }
 
-    public void unBookmarkRecordingUnit(RecordingUnit recordingUnit) {
+    public void unBookmarkRecordingUnit(RecordingUnitDTO recordingUnit) {
 
         unBookmark(RECORDING_UNIT_BASE_URI+recordingUnit.getId());
 
     }
 
-    public void bookmark(Specimen specimen) {
+    public void bookmark(SpecimenDTO specimen) {
 
         // Maybe check that ressource exists and user has access to it?
         bookmarkService.save(
@@ -168,7 +164,7 @@ public class NavBean implements Serializable {
         MessageUtils.displayInfoMessage(langBean, COMMON_BOOKMARK_SAVED);
     }
 
-    public void bookmark(SpatialUnit su) {
+    public void bookmark(SpatialUnitDTO su) {
 
         bookmarkService.save(
                 sessionSettingsBean.getUserInfo(),
@@ -190,7 +186,7 @@ public class NavBean implements Serializable {
         return bookmarkService.isRessourceBookmarkedByUser(sessionSettingsBean.getUserInfo(), ressourceUri);
     }
 
-    public void toggleRecordingUnitBookmark(RecordingUnit recordingUnit) {
+    public void toggleRecordingUnitBookmark(RecordingUnitDTO recordingUnit) {
         if(Boolean.TRUE.equals(isRessourceBookmarkedByUser(RECORDING_UNIT_BASE_URI + recordingUnit.getId()))) {
             unBookmarkRecordingUnit(recordingUnit);
         }
@@ -200,7 +196,7 @@ public class NavBean implements Serializable {
         reloadBookmarkedPanels();
     }
 
-    public void toggleSpatialUnitBookmark(SpatialUnit su) {
+    public void toggleSpatialUnitBookmark(SpatialUnitDTO su) {
         final String uri = SPATIAL_UNIT_BASE_URI + su.getId();
         if(Boolean.TRUE.equals(isRessourceBookmarkedByUser(uri))) {
             unBookmark(uri);
@@ -211,7 +207,7 @@ public class NavBean implements Serializable {
         reloadBookmarkedPanels();
     }
 
-    public void toggleSpecimenBookmark(Specimen specimen) {
+    public void toggleSpecimenBookmark(SpecimenDTO specimen) {
         if(Boolean.TRUE.equals(isRessourceBookmarkedByUser(SPECIMEN_BASE_URI + specimen.getId()))) {
             unBookmark(SPECIMEN_BASE_URI + specimen.getId());
         }

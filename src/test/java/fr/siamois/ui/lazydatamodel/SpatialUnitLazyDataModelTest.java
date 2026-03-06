@@ -1,11 +1,11 @@
 package fr.siamois.ui.lazydatamodel;
 
 import fr.siamois.domain.models.auth.Person;
-import fr.siamois.domain.models.institution.Institution;
-import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.models.vocabulary.LocalizedConceptData;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
+import fr.siamois.dto.entity.InstitutionDTO;
+import fr.siamois.dto.entity.SpatialUnitDTO;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
 import org.junit.jupiter.api.BeforeEach;
@@ -44,18 +44,18 @@ class SpatialUnitLazyDataModelTest {
     @InjectMocks
     private SpatialUnitLazyDataModel lazyModel;
 
-    Page<SpatialUnit> p ;
+    Page<SpatialUnitDTO> p ;
     Pageable pageable;
-    SpatialUnit spatialUnit1;
-    SpatialUnit spatialUnit2;
-    Institution institution;
+    SpatialUnitDTO spatialUnit1;
+    SpatialUnitDTO spatialUnit2;
+    InstitutionDTO institution;
 
 
     @BeforeEach
     void setUp() {
-        spatialUnit1 = new SpatialUnit();
-        spatialUnit2 = new SpatialUnit();
-        institution = new Institution();
+        spatialUnit1 = new SpatialUnitDTO();
+        spatialUnit2 = new SpatialUnitDTO();
+        institution = new InstitutionDTO();
         institution.setId(1L);
         spatialUnit1.setId(1L);
         spatialUnit1.setName("Unit 1");
@@ -83,7 +83,7 @@ class SpatialUnitLazyDataModelTest {
         when(langBean.getLanguageCode()).thenReturn("en");
 
         // Act
-        Page<SpatialUnit> actualResult = lazyModel.loadSpatialUnits("null", new Long[2], new Long[2], "null", pageable);
+        Page<SpatialUnitDTO> actualResult = lazyModel.loadSpatialUnits("null", new Long[2], new Long[2], "null", pageable);
 
         // Assert
         // Assert
@@ -113,7 +113,7 @@ class SpatialUnitLazyDataModelTest {
         )).thenReturn(true);
 
         // Act
-        List<SpatialUnit> result = lazyModel.load(0, 10, sortBy, filters);
+        List<SpatialUnitDTO> result = lazyModel.load(0, 10, sortBy, filters);
 
         // Assert loadSpatialUnit has not been called
         verify(lazyModel, never()).loadSpatialUnits(any(String.class),
@@ -170,13 +170,13 @@ class SpatialUnitLazyDataModelTest {
         sortBy.put("author", sortMeta2);
 
         // Mock data
-        List<SpatialUnit> spatialUnits = new ArrayList<>();
+        List<SpatialUnitDTO> spatialUnits = new ArrayList<>();
         spatialUnits.add(spatialUnit1);
         for (int i = 0; i < 29; i++) {
             spatialUnits.add(spatialUnit2);
         }
 
-        Page<SpatialUnit> page = new PageImpl<>(spatialUnits);
+        Page<SpatialUnitDTO> page = new PageImpl<>(spatialUnits);
 
         doReturn(page).when(lazyModel).loadSpatialUnits(
                 any(), any(), any(), any()
@@ -185,7 +185,7 @@ class SpatialUnitLazyDataModelTest {
         );
 
         // Act
-        List<SpatialUnit> result = lazyModel.load(first, pageSize, sortBy, filters);
+        List<SpatialUnitDTO> result = lazyModel.load(first, pageSize, sortBy, filters);
 
         // Assert
         assertEquals(30, result.size());

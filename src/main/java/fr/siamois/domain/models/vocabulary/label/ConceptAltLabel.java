@@ -20,9 +20,4 @@ public class ConceptAltLabel extends ConceptLabel {
         super();
     }
 
-    @Override
-    public LabelType getLabelType() {
-        return LabelType.ALT_LABEL;
-    }
-
 }

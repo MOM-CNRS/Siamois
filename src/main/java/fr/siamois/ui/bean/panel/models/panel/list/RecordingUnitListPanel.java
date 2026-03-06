@@ -2,12 +2,12 @@ package fr.siamois.ui.bean.panel.models.panel.list;
 
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.exceptions.recordingunit.FailedRecordingUnitSaveException;
-import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.authorization.writeverifier.RecordingUnitWriteVerifier;
 import fr.siamois.domain.services.form.FormService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitTreeService;
+import fr.siamois.dto.entity.RecordingUnitDTO;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.NavBean;
 import fr.siamois.ui.bean.dialog.newunit.GenericNewUnitDialogBean;
@@ -41,13 +41,13 @@ import java.util.List;
 @Setter
 @Component
 @Scope(BeanDefinition.SCOPE_PROTOTYPE)
-public class RecordingUnitListPanel extends AbstractListPanel<RecordingUnit> implements Serializable {
+public class RecordingUnitListPanel extends AbstractListPanel<RecordingUnitDTO> implements Serializable {
 
     private final transient RecordingUnitService recordingUnitService;
     private final transient FormService formService;
     private final transient SpatialUnitTreeService spatialUnitTreeService;
     private final transient FlowBean flowBean;
-    private final transient GenericNewUnitDialogBean<RecordingUnit> genericNewUnitDialogBean;
+    private final transient GenericNewUnitDialogBean<RecordingUnitDTO> genericNewUnitDialogBean;
     private final transient RecordingUnitWriteVerifier recordingUnitWriteVerifier;
     private final transient NavBean navBean;
     private final transient FormContextServices formContextServices;
@@ -79,7 +79,7 @@ public class RecordingUnitListPanel extends AbstractListPanel<RecordingUnit> imp
 
     @Override
     protected long countUnitsByInstitution() {
-        return recordingUnitService.countByInstitution(sessionSettingsBean.getSelectedInstitution());
+        return recordingUnitService.countByInstitutionId(sessionSettingsBean.getSelectedInstitution().getId());
     }
 
     /**
@@ -88,7 +88,7 @@ public class RecordingUnitListPanel extends AbstractListPanel<RecordingUnit> imp
      * Ensuite, cette classe n'utilise plus jamais le lazy directement.
      */
     @Override
-    protected BaseLazyDataModel<RecordingUnit> createLazyDataModel() {
+    protected BaseLazyDataModel<RecordingUnitDTO> createLazyDataModel() {
         BaseRecordingUnitLazyDataModel lazy =
                 new RecordingUnitLazyDataModel(recordingUnitService, sessionSettingsBean, langBean);
         RecordingUnitTreeTableLazyModel lazyTree = new RecordingUnitTreeTableLazyModel(recordingUnitService,
@@ -173,12 +173,12 @@ public class RecordingUnitListPanel extends AbstractListPanel<RecordingUnit> imp
         return "/recording-unit";
     }
 
-    public void handleRowEdit(RowEditEvent<RecordingUnit> event) {
+    public void handleRowEdit(RowEditEvent<RecordingUnitDTO> event) {
         handleRuRowEdit(event, recordingUnitService, langBean);
     }
 
-    public static void handleRuRowEdit(RowEditEvent<RecordingUnit> event, RecordingUnitService recordingUnitService, LangBean langBean) {
-        RecordingUnit toSave = event.getObject();
+    public static void handleRuRowEdit(RowEditEvent<RecordingUnitDTO> event, RecordingUnitService recordingUnitService, LangBean langBean) {
+        RecordingUnitDTO toSave = event.getObject();
 
         if (recordingUnitService.fullIdentifierAlreadyExistInAction(toSave)) {
             MessageUtils.displayWarnMessage(langBean, "recordingunit.error.identifier.alreadyExists");
@@ -186,7 +186,7 @@ public class RecordingUnitListPanel extends AbstractListPanel<RecordingUnit> imp
         }
 
         try {
-            recordingUnitService.save(toSave, toSave.getType());
+            recordingUnitService.save(toSave);
         } catch (FailedRecordingUnitSaveException e) {
             MessageUtils.displayErrorMessage(langBean, "common.entity.recordingUnits.updateFailed", toSave.getFullIdentifier());
             return;

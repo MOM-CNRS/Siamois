@@ -2,6 +2,7 @@ package fr.siamois.domain.services;
 
 import fr.siamois.domain.models.ArkEntity;
 import fr.siamois.domain.models.institution.Institution;
+import fr.siamois.dto.entity.AbstractEntityDTO;
 
 import java.util.List;
 
@@ -11,6 +12,8 @@ import java.util.List;
  * and to save an ArkEntity.
  */
 public interface ArkEntityService {
+
+
 
     /**
      * Finds all ArkEntities that are not associated with an Ark in the specified institution.
@@ -26,5 +29,5 @@ public interface ArkEntityService {
      * @param toSave the ArkEntity to save
      * @return the saved ArkEntity
      */
-    ArkEntity save(ArkEntity toSave);
+    AbstractEntityDTO save(AbstractEntityDTO toSave);
 }

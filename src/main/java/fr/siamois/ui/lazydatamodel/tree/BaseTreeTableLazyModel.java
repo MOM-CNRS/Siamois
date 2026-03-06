@@ -1,11 +1,14 @@
 package fr.siamois.ui.lazydatamodel.tree;
 
 import fr.siamois.annotations.ExecutionTimeLogger;
-import fr.siamois.domain.models.TraceableEntity;
+import fr.siamois.dto.entity.AbstractEntityDTO;
 import fr.siamois.ui.lazydatamodel.LazyModel;
 import lombok.Getter;
 import lombok.Setter;
-import org.primefaces.model.*;
+import org.primefaces.model.LazyDefaultTreeNode;
+import org.primefaces.model.SortMeta;
+import org.primefaces.model.TreeNode;
+import org.primefaces.model.TreeNodeChildren;
 import org.primefaces.util.Callbacks;
 
 import java.io.Serializable;
@@ -22,7 +25,7 @@ import java.util.function.Function;
  */
 @Getter
 @Setter
-public abstract class BaseTreeTableLazyModel<T extends TraceableEntity, ID> implements Serializable, LazyModel {
+public abstract class BaseTreeTableLazyModel<T extends AbstractEntityDTO, ID> implements Serializable, LazyModel {
 
     /** Filters (for later) */
     private String globalFilter;
@@ -217,9 +220,6 @@ public abstract class BaseTreeTableLazyModel<T extends TraceableEntity, ID> impl
 
     protected abstract List<T> fetchRoots();
     protected abstract List<T> fetchChildren(T parentUnit);
-    protected void initializeAssociations(T child) {
-        // empty default
-    }
 
     @ExecutionTimeLogger
     protected LazyDefaultTreeNode<T> buildTree() {
@@ -235,13 +235,7 @@ public abstract class BaseTreeTableLazyModel<T extends TraceableEntity, ID> impl
 
     @ExecutionTimeLogger
     protected List<T> loadFunction(T parentUnit) {
-        List<T> children = fetchChildren(parentUnit);
-
-        for (T child : children) {
-            initializeAssociations(child);
-        }
-
-        return children;
+        return fetchChildren(parentUnit);
     }
 
 

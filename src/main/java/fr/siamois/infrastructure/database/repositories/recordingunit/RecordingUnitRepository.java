@@ -1,7 +1,6 @@
 package fr.siamois.infrastructure.database.repositories.recordingunit;
 
 
-import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import jakarta.transaction.Transactional;
@@ -24,6 +23,7 @@ import java.util.Set;
 @Repository
 public interface RecordingUnitRepository extends CrudRepository<RecordingUnit, Long>, RevisionRepository<RecordingUnit, Long, Long> {
 
+
     @Query(
             value = "UPDATE recording_unit SET fk_type = :type WHERE recording_unit.recording_unit_id IN (:ids)",
             nativeQuery = true
@@ -42,7 +42,7 @@ public interface RecordingUnitRepository extends CrudRepository<RecordingUnit, L
     )
     List<RecordingUnit> findAllBySpatialUnitId(Long spatialUnitId);
 
-    List<RecordingUnit> findAllByActionUnit(ActionUnit actionUnit);
+    List<RecordingUnit> findAllByActionUnitId(Long actionUnitId);
 
     @Transactional
     @Modifying
@@ -73,7 +73,7 @@ public interface RecordingUnitRepository extends CrudRepository<RecordingUnit, L
     )
     List<RecordingUnit> findAllWithoutArkOfInstitution(Long institutionId);
 
-    long countByCreatedByInstitution(Institution institution);
+    long countByCreatedByInstitutionId(Long institutionId);
 
     @Query(
             nativeQuery = true,
@@ -492,7 +492,7 @@ public interface RecordingUnitRepository extends CrudRepository<RecordingUnit, L
 
 
     @NonNull
-    List<RecordingUnit> findByFullIdentifierAndActionUnit(String fullIdentifier, ActionUnit actionUnit);
+    List<RecordingUnit> findByFullIdentifierAndActionUnitId(String fullIdentifier, Long actionUnitId);
 
     @Query(value = """
     SELECT COUNT(1) > 0

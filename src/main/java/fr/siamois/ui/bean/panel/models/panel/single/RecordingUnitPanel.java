@@ -1,36 +1,24 @@
 package fr.siamois.ui.bean.panel.models.panel.single;
 
-import fr.siamois.domain.models.actionunit.ActionUnitFormMapping;
-import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.document.Document;
 import fr.siamois.domain.models.exceptions.actionunit.ActionUnitNotFoundException;
-import fr.siamois.domain.models.exceptions.recordingunit.FailedRecordingUnitSaveException;
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.customfield.CustomFieldDateTime;
 import fr.siamois.domain.models.form.customfield.CustomFieldInteger;
-import fr.siamois.domain.models.form.customfield.CustomFieldSelectMultiple;
-import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerInteger;
-import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerSelectMultiple;
-import fr.siamois.domain.models.form.customform.CustomCol;
 import fr.siamois.domain.models.form.customform.CustomForm;
-import fr.siamois.domain.models.form.customformresponse.CustomFormResponse;
 import fr.siamois.domain.models.history.RevisionWithInfo;
-import fr.siamois.domain.models.recordingunit.RecordingUnit;
-import fr.siamois.domain.models.spatialunit.SpatialUnit;
-import fr.siamois.domain.models.specimen.Specimen;
-import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.person.PersonService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.specimen.SpecimenService;
-import fr.siamois.ui.bean.LangBean;
+import fr.siamois.dto.entity.*;
 import fr.siamois.ui.bean.NavBean;
 import fr.siamois.ui.bean.RedirectBean;
 import fr.siamois.ui.bean.dialog.newunit.GenericNewUnitDialogBean;
 import fr.siamois.ui.bean.dialog.newunit.NewUnitContext;
 import fr.siamois.ui.bean.dialog.newunit.UnitKind;
-import fr.siamois.ui.bean.panel.FlowBean;
 import fr.siamois.ui.bean.panel.models.PanelBreadcrumb;
 import fr.siamois.ui.bean.panel.models.panel.single.tab.SpecimenTab;
+import fr.siamois.ui.form.FormUiDto;
 import fr.siamois.ui.lazydatamodel.RecordingUnitChildrenLazyDataModel;
 import fr.siamois.ui.lazydatamodel.RecordingUnitParentsLazyDataModel;
 import fr.siamois.ui.lazydatamodel.SpecimenInRecordingUnitLazyDataModel;
@@ -38,12 +26,10 @@ import fr.siamois.ui.table.RecordingUnitTableViewModel;
 import fr.siamois.ui.table.SpecimenTableViewModel;
 import fr.siamois.ui.table.ToolbarCreateConfig;
 import fr.siamois.ui.table.definitions.SpecimenTableDefinitionFactory;
-import fr.siamois.utils.MessageUtils;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import org.hibernate.Hibernate;
 import org.primefaces.model.menu.DefaultMenuItem;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.config.BeanDefinition;
@@ -54,8 +40,9 @@ import org.springframework.stereotype.Component;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
-import java.time.OffsetDateTime;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 @Slf4j
 @EqualsAndHashCode(callSuper = true, onlyExplicitlyIncluded = true)
@@ -63,7 +50,7 @@ import java.util.*;
 @Setter
 @Component
 @Scope(BeanDefinition.SCOPE_PROTOTYPE)
-public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel<RecordingUnit>  implements Serializable {
+public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel<RecordingUnitDTO>  implements Serializable {
 
 
     protected final transient RecordingUnitService recordingUnitService;
@@ -74,12 +61,6 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
     private final transient GenericNewUnitDialogBean<?> genericNewUnitDialogBean;
 
     // ---------- Locals
-    // RU
-    protected RecordingUnit recordingUnit;
-
-    // Form
-    protected CustomForm additionalForm;
-
     // Linked specimen
     private transient SpecimenInRecordingUnitLazyDataModel specimenListLazyDataModel ;
 
@@ -97,6 +78,7 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
 
 
 
+
     protected RecordingUnitPanel(ApplicationContext context)  {
 
         super("common.entity.recordingunit",
@@ -109,12 +91,13 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
         this.specimenService = context.getBean(SpecimenService.class);
         this.navBean = context.getBean(NavBean.class);
         this.genericNewUnitDialogBean = context.getBean(GenericNewUnitDialogBean.class);
+
     }
 
 
     @Override
     public String ressourceUri() {
-        return "/recording-unit/" + idunit;
+        return "/recording-unit/" + unitId;
     }
 
     @Override
@@ -124,10 +107,11 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
 
     /**
      * Returns all the spatial units a recording unit can be attached to
+     *
      * @return The list of spatial unit
      */
     @Override
-    public List<SpatialUnit> getSpatialUnitOptions() {
+    public List<SpatialUnitSummaryDTO> getSpatialUnitOptions() {
 
         if(unit == null) return Collections.emptyList();
         return spatialUnitService.getSpatialUnitOptionsFor(unit);
@@ -140,61 +124,10 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
     }
 
     @Override
-    protected void setFormScopePropertyValue(Concept concept) {
+    protected void setFormScopePropertyValue(ConceptDTO concept) {
         unit.setType(concept);
     }
 
-    public void initializeAnswer(CustomField field) {
-        if (recordingUnit.getFormResponse().getAnswers().get(field) == null) {
-            // Init missing parameters
-            if (field instanceof CustomFieldSelectMultiple) {
-                recordingUnit.getFormResponse().getAnswers().put(field, new CustomFieldAnswerSelectMultiple());
-            } else if (field instanceof CustomFieldInteger) {
-                recordingUnit.getFormResponse().getAnswers().put(field, new CustomFieldAnswerInteger());
-            }
-        }
-    }
-
-    public void changeCustomForm() {
-        // Do we have a form available for the selected type?
-        Set<ActionUnitFormMapping> formsAvailable = recordingUnit.getActionUnit().getFormsAvailable();
-        additionalForm = getFormForRecordingUnitType(recordingUnit.getType(), formsAvailable);
-        if (recordingUnit.getFormResponse() == null) {
-            recordingUnit.setFormResponse(new CustomFormResponse());
-            recordingUnit.getFormResponse().setAnswers(new HashMap<>());
-        }
-        recordingUnit.getFormResponse().setForm(additionalForm);
-        if (additionalForm != null) {
-            initFormResponseAnswers();
-        }
-
-
-    }
-
-    public CustomForm getFormForRecordingUnitType(Concept type, Set<ActionUnitFormMapping> availableForms) {
-        return availableForms.stream()
-                .filter(mapping -> mapping.getPk().getConcept().equals(type) // Vérifier le concept
-                        && "RECORDING_UNIT" .equals(mapping.getPk().getTableName())) // Vérifier le tableName
-                .map(mapping -> mapping.getPk().getForm())
-                .findFirst()
-                .orElse(null); // Retourner null si aucun match
-    }
-
-
-
-    public void initFormResponseAnswers() {
-
-
-        if (recordingUnit.getFormResponse().getForm() != null) {
-            recordingUnit.getFormResponse().getForm().getLayout().stream()
-                    .flatMap(section -> section.getRows().stream())      // Stream rows in each section
-                    .flatMap(row -> row.getColumns().stream())           // Stream columns in each row
-                    .map(CustomCol::getField)                    // Extract the field from each column
-                    .forEach(this::initializeAnswer);                    // Process each field
-        }
-
-
-    }
 
     public void refreshUnit() {
 
@@ -204,24 +137,8 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
 
         try {
 
-            unit = recordingUnitService.findById(idunit);
-            Hibernate.initialize(unit.getChildren());
-            Hibernate.initialize(unit.getParents());
-            Hibernate.initialize(unit.getRelationshipsAsUnit1());
-            Hibernate.initialize(unit.getRelationshipsAsUnit2());
+            unit = recordingUnitService.findById(unitId);
 
-            // For each relationship, initialize the other unit's fullIdentifier for equals/hashCode
-            unit.getRelationshipsAsUnit1().forEach(rel -> {
-                if (rel.getUnit2() != null) {
-                    Hibernate.initialize(rel.getUnit2().getFullIdentifier());
-                }
-            });
-
-            unit.getRelationshipsAsUnit2().forEach(rel -> {
-                if (rel.getUnit1() != null) {
-                    Hibernate.initialize(rel.getUnit1().getFullIdentifier());
-                }
-            });
 
             specimenListLazyDataModel = new SpecimenInRecordingUnitLazyDataModel(
                     specimenService,
@@ -231,7 +148,7 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
             );
             specimenListLazyDataModel.setSelectedUnits(new ArrayList<>());
 
-            backupClone = new RecordingUnit(unit);
+
             initForms(true);
             this.titleCodeOrTitle = unit.getFullIdentifier();
 
@@ -260,27 +177,27 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
         }
 
 
-        history = historyAuditService.findAllRevisionForEntity(RecordingUnit.class, idunit);
+        //history = historyAuditService.findAllRevisionForEntity(RecordingUnitDTO.class, unitId);
         documents = documentService.findForRecordingUnit(unit);
     }
 
     @Override
-    List<RecordingUnit> findDirectParentsOf(Long id) {
+    List<RecordingUnitDTO> findDirectParentsOf(Long id) {
         return recordingUnitService.findDirectParentsOf(id);
     }
 
     @Override
-    RecordingUnit findUnitById(Long id) {
+    RecordingUnitDTO findUnitById(Long id) {
         return recordingUnitService.findById(id);
     }
 
     @Override
-    String findLabel(RecordingUnit unit) {
+    String findLabel(RecordingUnitDTO unit) {
         return unit.getFullIdentifier();
     }
 
     @Override
-    String getOpenPanelCommand(RecordingUnit unit) {
+    String getOpenPanelCommand(RecordingUnitDTO unit) {
         return "#{flowBean.addRecordingUnitPanel(".concat(unit.getId().toString()).concat(")}");
     }
 
@@ -303,7 +220,7 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
     public void init() {
         try {
 
-            if (idunit == null) {
+            if (unitId == null) {
                 this.errorMessage = "The ID of the recording unit must be defined";
                 return;
             }
@@ -333,7 +250,7 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
 
         } catch (
                 ActionUnitNotFoundException e) {
-            log.error("Recording unit with id {} not found", idunit);
+            log.error("Recording unit with id {} not found", unitId);
             redirectBean.redirectTo(HttpStatus.NOT_FOUND);
         } catch (
                 RuntimeException e) {
@@ -344,37 +261,21 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
     }
 
     @Override
-    public List<Person> authorsAvailable() {
+    public List<PersonDTO> authorsAvailable() {
         return List.of();
     }
 
 
     @Override
     public void initForms(boolean forceInit) {
-        detailsForm = formService.findCustomFormByRecordingUnitTypeAndInstitutionId(unit.getType(), sessionSettingsBean.getSelectedInstitution());
+        CustomForm form = formService.findCustomFormByRecordingUnitTypeAndInstitutionId(unit.getType(), sessionSettingsBean.getSelectedInstitution());
+        detailsForm = formContextServices.getConversionService().convert(form, FormUiDto.class);
         configureSystemFieldsBeforeInit();
         // Init system form answers
         initFormContext(forceInit);
     }
 
-    @Override
-    public void cancelChanges() {
-        unit.setSpatialUnit(backupClone.getSpatialUnit());
-        unit.setThirdType(backupClone.getThirdType());
-        unit.setSecondaryType(backupClone.getSecondaryType());
-        unit.setArk(backupClone.getArk());
-        unit.setIdentifier(backupClone.getIdentifier());
-        unit.setType(backupClone.getType());
-        unit.setOpeningDate(backupClone.getOpeningDate());
-        unit.setClosingDate(backupClone.getClosingDate());
-        unit.setAuthor(backupClone.getAuthor());
-        unit.setCreatedBy(unit.getCreatedBy());
-        unit.setContributors(backupClone.getContributors());
-        unit.setGeomorphologicalCycle(backupClone.getGeomorphologicalCycle());
-        unit.setNormalizedInterpretation(backupClone.getNormalizedInterpretation());
-        formContext.setHasUnsavedModifications(false);
-        initForms(true);
-    }
+
 
     @Override
     protected void configureSystemFieldsBeforeInit() {
@@ -401,17 +302,17 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
 
 
     @Override
-    public void visualise(RevisionWithInfo<RecordingUnit> history) {
+    public void visualise(RevisionWithInfo<RecordingUnitDTO> history) {
         // todo: implement
     }
 
     @Override
-    protected boolean documentExistsInUnitByHash(RecordingUnit unit, String hash) {
+    protected boolean documentExistsInUnitByHash(RecordingUnitDTO unit, String hash) {
         return documentService.existInRecordingUnitByHash(unit, hash);
     }
 
     @Override
-    protected void addDocumentToUnit(Document doc, RecordingUnit unit) {
+    protected void addDocumentToUnit(Document doc, RecordingUnitDTO unit) {
         documentService.addToRecordingUnit(doc, unit);
     }
 
@@ -438,7 +339,7 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
         }
 
         public RecordingUnitPanel.RecordingUnitPanelBuilder id(Long id) {
-            recordingUnitPanel.setIdunit(id);
+            recordingUnitPanel.setUnitId(id);
             return this;
         }
 
@@ -482,7 +383,7 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
                 spatialUnitService,
                 navBean,
                 flowBean,
-                (GenericNewUnitDialogBean<Specimen>) genericNewUnitDialogBean,
+                (GenericNewUnitDialogBean<SpecimenDTO>) genericNewUnitDialogBean,
                 formContextServices
         );
 
@@ -504,7 +405,7 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
 
     @Override
     public String getPanelIndex() {
-        return "recording-unit-"+idunit;
+        return "recording-unit-"+ unitId;
     }
 
     @Override

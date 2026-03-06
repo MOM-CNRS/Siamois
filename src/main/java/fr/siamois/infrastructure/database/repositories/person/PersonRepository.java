@@ -106,4 +106,9 @@ public interface PersonRepository extends JpaRepository<Person, Long> {
               """,
             nativeQuery = true)
     Set<Person> findManagersOfInstitution(@Param("id") Long institutionId);
+
+    @Modifying
+    @Query("UPDATE Person p SET p.password = :password, p.passToModify = false WHERE p.id = :id")
+    int updatePasswordById(@Param("id") Long id,
+                           @Param("password") String password);
 }

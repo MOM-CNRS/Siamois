@@ -60,7 +60,7 @@ public class InstitutionThesaurusSettingsBean implements Serializable {
     public void init(Institution institution) {
         reset();
         this.institution = institution;
-        Optional<String> optVocab = fieldConfigurationService.findVocabularyUrlOfInstitution(institution);
+        Optional<String> optVocab = fieldConfigurationService.findVocabularyUrlOfInstitutionId(institution.getId());
         optVocab.ifPresent(s -> thesaurusUrl = s);
         progressWrapper.reset();
     }

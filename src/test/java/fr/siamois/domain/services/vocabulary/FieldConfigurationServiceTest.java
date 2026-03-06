@@ -13,6 +13,9 @@ import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.models.vocabulary.FeedbackFieldConfig;
 import fr.siamois.domain.models.vocabulary.Vocabulary;
 import fr.siamois.domain.models.vocabulary.VocabularyType;
+import fr.siamois.dto.entity.ConceptDTO;
+import fr.siamois.dto.entity.InstitutionDTO;
+import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.infrastructure.api.ConceptApi;
 import fr.siamois.infrastructure.api.dto.ConceptBranchDTO;
 import fr.siamois.infrastructure.api.dto.FullInfoDTO;
@@ -20,6 +23,8 @@ import fr.siamois.infrastructure.database.repositories.vocabulary.AutocompleteRe
 import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptFieldConfigRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
+import fr.siamois.mapper.InstitutionMapper;
+import fr.siamois.mapper.PersonMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -56,6 +61,12 @@ class FieldConfigurationServiceTest {
     @Mock
     private ConceptFieldConfigRepository conceptFieldConfigRepository;
 
+    @Mock
+    private InstitutionMapper institutionMapper;
+
+    @Mock
+    private PersonMapper personMapper;
+
     @InjectMocks
     private FieldConfigurationService service;
 
@@ -77,7 +88,7 @@ class FieldConfigurationServiceTest {
         vocabulary.setExternalVocabularyId("th2");
         vocabulary.setBaseUri("http://exemple.org");
 
-        userInfo = new UserInfo(new Institution(), new Person(), "fr");
+        userInfo = new UserInfo(new InstitutionDTO(), new PersonDTO(), "fr");
         userInfo.getInstitution().setId(12L);
         userInfo.getUser().setId(12L);
 
@@ -159,6 +170,12 @@ class FieldConfigurationServiceTest {
             concept.setExternalId(dto.getIdentifier()[0].getValue());
             return concept;
         }).when(conceptService).saveOrGetConceptFromFullDTO(any(Vocabulary.class), any(FullInfoDTO.class), eq(null));
+
+        Institution institution  = new Institution();
+        institution.setId(12L);
+
+        when(institutionMapper.invertConvert(any(InstitutionDTO.class))).thenReturn(institution);
+        when(personMapper.invertConvert(any(PersonDTO.class))).thenReturn(new Person());
         when(conceptFieldConfigRepository.findOneByFieldCodeForUser(eq(userInfo.getUser().getId()), eq(userInfo.getInstitution().getId()),anyString())).thenReturn(Optional.empty());
         when(conceptFieldConfigRepository.save(any(ConceptFieldConfig.class))).thenAnswer(i -> i.getArgument(0));
 
@@ -186,9 +203,9 @@ class FieldConfigurationServiceTest {
         Concept c = new Concept();
         c.setVocabulary(vocabulary);
         c.setExternalId("12");
-        when(conceptRepository.findTopTermConfigForFieldCodeOfInstitution(userInfo.getInstitution().getId(), SpatialUnit.CATEGORY_FIELD_CODE))
+        when(conceptRepository.findTopTermConfigForFieldCodeOfInstitution(1L, SpatialUnit.CATEGORY_FIELD_CODE))
                 .thenReturn(Optional.of(c));
-        Optional<String> result = service.findVocabularyUrlOfInstitution(userInfo.getInstitution());
+        Optional<String> result = service.findVocabularyUrlOfInstitutionId(1L);
 
         assertThat(result).isPresent()
                 .get()
@@ -198,9 +215,9 @@ class FieldConfigurationServiceTest {
 
     @Test
     void findVocabularyUrlOfInstitution_shouldReturnEmpty_whenConfigDoesNotExist() {
-        when(conceptRepository.findTopTermConfigForFieldCodeOfInstitution(userInfo.getInstitution().getId(), SpatialUnit.CATEGORY_FIELD_CODE))
+        when(conceptRepository.findTopTermConfigForFieldCodeOfInstitution(1L, SpatialUnit.CATEGORY_FIELD_CODE))
                 .thenReturn(Optional.empty());
-        Optional<String> result = service.findVocabularyUrlOfInstitution(userInfo.getInstitution());
+        Optional<String> result = service.findVocabularyUrlOfInstitutionId(1L);
 
         assertThat(result).isEmpty();
     }
@@ -311,8 +328,8 @@ class FieldConfigurationServiceTest {
                 .thenReturn(Optional.of(cfc));
 
         List<ConceptAutocompleteDTO> expectedResults = List.of(
-                new ConceptAutocompleteDTO(new Concept(), "Concept 100", "100"),
-                new ConceptAutocompleteDTO(new Concept(), "Concept 101", "101")
+                new ConceptAutocompleteDTO(new ConceptDTO(), "Concept 100", "100"),
+                new ConceptAutocompleteDTO(new ConceptDTO(), "Concept 101", "101")
         );
         when(autocompleteRepository.findMatchingConceptsFor(cfc.getConcept(), "fr",query, 200)).thenReturn(expectedResults);
 

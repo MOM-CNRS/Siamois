@@ -1,9 +1,9 @@
 package fr.siamois.ui.lazydatamodel;
 
 
-import fr.siamois.domain.models.institution.Institution;
-import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
+import fr.siamois.dto.entity.InstitutionDTO;
+import fr.siamois.dto.entity.RecordingUnitDTO;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
 import org.junit.jupiter.api.BeforeEach;
@@ -41,19 +41,19 @@ class RecordingUnitChildrenLazyDataModelTest {
     @InjectMocks
     private RecordingUnitChildrenLazyDataModel lazyModel;
 
-    Page<RecordingUnit> p ;
+    Page<RecordingUnitDTO> p ;
     Pageable pageable;
-    RecordingUnit unit1;
-    RecordingUnit unit2;
-    Institution institution;
-    RecordingUnit parent;
+    RecordingUnitDTO unit1;
+    RecordingUnitDTO unit2;
+    InstitutionDTO institution;
+    RecordingUnitDTO parent;
 
 
     @BeforeEach
     void setUp() {
-        unit1 = new RecordingUnit();
-        unit2 = new RecordingUnit();
-        institution = new Institution();
+        unit1 = new RecordingUnitDTO();
+        unit2 = new RecordingUnitDTO();
+        institution = new InstitutionDTO();
         institution.setId(1L);
         unit1.setId(1L);
         unit1.setFullIdentifier("sia-2025-1");
@@ -61,7 +61,7 @@ class RecordingUnitChildrenLazyDataModelTest {
         unit1.setFullIdentifier("sia-2025-2");
         p = new PageImpl<>(List.of(unit1, unit2));
         pageable = PageRequest.of(0, 10);
-        parent = new RecordingUnit();
+        parent = new RecordingUnitDTO();
         parent.setId(100L);
     }
 
@@ -82,7 +82,7 @@ class RecordingUnitChildrenLazyDataModelTest {
         when(langBean.getLanguageCode()).thenReturn("en");
 
         // Act
-        Page<RecordingUnit> actualResult = lazyModel.loadRecordingUnits("null",
+        Page<RecordingUnitDTO> actualResult = lazyModel.loadRecordingUnits("null",
                 new Long[2],new Long[2], "null", pageable);
 
         // Assert

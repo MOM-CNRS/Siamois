@@ -1,22 +1,18 @@
 package fr.siamois.ui.form;
 
-import fr.siamois.domain.models.TraceableEntity;
 import fr.siamois.domain.models.form.customfield.CustomField;
-import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswer;
-import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerSelectMultipleSpatialUnitTree;
-import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerSelectOneFromFieldCode;
-import fr.siamois.domain.models.form.customformresponse.CustomFormResponse;
-import fr.siamois.domain.models.recordingunit.RecordingUnit;
-import fr.siamois.domain.models.spatialunit.SpatialUnit;
-import fr.siamois.domain.models.vocabulary.Concept;
-import fr.siamois.domain.models.vocabulary.label.ConceptLabel;
 import fr.siamois.domain.services.form.FormService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitTreeService;
+import fr.siamois.dto.entity.*;
 import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
 import fr.siamois.ui.form.fieldsource.FieldSource;
 import fr.siamois.ui.form.rules.EnabledRulesEngine;
+import fr.siamois.ui.viewmodel.CustomFormResponseViewModel;
+import fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerSelectMultipleSpatialUnitTreeViewModel;
+import fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerSelectOneFromFieldCodeViewModel;
+import fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerViewModel;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -24,6 +20,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.primefaces.model.DefaultTreeNode;
 import org.primefaces.model.TreeNode;
+import org.springframework.core.convert.ConversionService;
 
 import java.util.*;
 import java.util.function.BiConsumer;
@@ -40,13 +37,15 @@ class EntityFormContextTest {
     @Mock private SpatialUnitTreeService spatialUnitTreeService;
     @Mock private SpatialUnitService spatialUnitService;
     @Mock private RecordingUnitService recordingUnitService;
+    private ConversionService conversionService;
 
     @Mock private EnabledRulesEngine enabledRulesEngine;
 
-    private BiConsumer<CustomField, Concept> scopeCallback;
+    private BiConsumer<CustomField, ConceptDTO> scopeCallback;
 
-    private TraceableEntity unit;
-    private RecordingUnit unit2;
+
+    private AbstractEntityDTO unit;
+    private RecordingUnitDTO unit2;
 
     @BeforeEach
     void setup() {
@@ -54,7 +53,7 @@ class EntityFormContextTest {
         when(formContextServices.getSpatialUnitTreeService()).thenReturn(spatialUnitTreeService);
         when(formContextServices.getSpatialUnitService()).thenReturn(spatialUnitService);
         when(formContextServices.getRecordingUnitService()).thenReturn(recordingUnitService);
-        unit = new TraceableEntity() {
+        unit = new AbstractEntityDTO() {
             @Override
             public Long getId() {
                 return 0L;
@@ -64,8 +63,8 @@ class EntityFormContextTest {
     }
 
 
-    private static SpatialUnit su(long id, String name) {
-        SpatialUnit su = mock(SpatialUnit.class);
+    private static SpatialUnitDTO su(long id, String name) {
+        SpatialUnitDTO su = mock(SpatialUnitDTO.class);
         when(su.getId()).thenReturn(id);
         when(su.getName()).thenReturn(name);
         return su;
@@ -74,25 +73,25 @@ class EntityFormContextTest {
     @Test
     void init_callsFormServiceAndBuildsEnabledEngineAndAppliesRules_andInitializesTreeStates() {
         // arrange
-        EntityFormContext<TraceableEntity> ctx = new EntityFormContext<>(
-                unit, fieldSource, formContextServices,
+        EntityFormContext<AbstractEntityDTO> ctx = new EntityFormContext<>(
+                unit, fieldSource, formContextServices, conversionService,
                 scopeCallback, "scopeBinding"
         );
 
         // build a response containing a spatial-unit-tree answer
-        CustomFieldAnswerSelectMultipleSpatialUnitTree treeAnswer = mock(CustomFieldAnswerSelectMultipleSpatialUnitTree.class);
-        Set<SpatialUnit> selected = new HashSet<>();
+        CustomFieldAnswerSelectMultipleSpatialUnitTreeViewModel treeAnswer = mock(CustomFieldAnswerSelectMultipleSpatialUnitTreeViewModel.class);
+        Set<SpatialUnitDTO> selected = new HashSet<>();
         when(treeAnswer.getValue()).thenReturn(selected);
 
-        CustomFormResponse response = new CustomFormResponse();
-        Map<CustomField, CustomFieldAnswer> answers = new HashMap<>();
+        CustomFormResponseViewModel response = new CustomFormResponseViewModel();
+        Map<CustomField, CustomFieldAnswerViewModel> answers = new HashMap<>();
         answers.put(mock(CustomField.class), treeAnswer);
         response.setAnswers(answers);
 
         when(formService.initOrReuseResponse(isNull(), eq(unit), eq(fieldSource), eq(false))).thenReturn(response);
         when(formService.buildEnabledEngine(fieldSource)).thenReturn(enabledRulesEngine);
 
-        TreeNode<SpatialUnit> root = new DefaultTreeNode<>(null, null);
+        TreeNode<SpatialUnitDTO> root = new DefaultTreeNode<>(null, null);
         when(spatialUnitTreeService.buildTree()).thenReturn(root);
 
         // act
@@ -111,8 +110,8 @@ class EntityFormContextTest {
 
     @Test
     void getFieldAnswer_returnsNull_whenNoResponseOrAnswers() {
-        EntityFormContext<TraceableEntity> ctx = new EntityFormContext<>(
-                unit, fieldSource, formContextServices,
+        EntityFormContext<AbstractEntityDTO> ctx = new EntityFormContext<>(
+                unit, fieldSource, formContextServices, conversionService,
                 scopeCallback, "scopeBinding"
         );
 
@@ -120,7 +119,7 @@ class EntityFormContextTest {
 
         assertNull(ctx.getFieldAnswer(f));
 
-        CustomFormResponse r = new CustomFormResponse();
+        CustomFormResponseViewModel r = new CustomFormResponseViewModel();
         r.setAnswers(null);
         // hack: set via init() stubbing
         when(formService.initOrReuseResponse(any(), any(), any(), anyBoolean())).thenReturn(r);
@@ -133,10 +132,11 @@ class EntityFormContextTest {
 
     @Test
     void isColumnEnabled_defaultsToTrue_whenNoRuleApplied() {
-        EntityFormContext<TraceableEntity> ctx = new EntityFormContext<>(
-                unit, fieldSource,formContextServices,
+        EntityFormContext<AbstractEntityDTO> ctx = new EntityFormContext<>(
+                unit, fieldSource, formContextServices, conversionService,
                 scopeCallback, "scopeBinding"
         );
+
         CustomField f = mock(CustomField.class);
         when(f.getId()).thenReturn(77L);
 
@@ -146,15 +146,16 @@ class EntityFormContextTest {
     @Test
     void markFieldModified_marksAnswerAndSetsGlobalFlag() {
         // arrange
-        EntityFormContext<TraceableEntity> ctx = new EntityFormContext<>(
-                unit, fieldSource, formContextServices,
+        EntityFormContext<AbstractEntityDTO> ctx = new EntityFormContext<>(
+                unit, fieldSource, formContextServices, conversionService,
                 scopeCallback, "scopeBinding"
         );
 
-        CustomField field = mock(CustomField.class);
-        CustomFieldAnswer ans = mock(CustomFieldAnswer.class);
 
-        CustomFormResponse response = new CustomFormResponse();
+        CustomField field = mock(CustomField.class);
+        CustomFieldAnswerViewModel ans = mock(CustomFieldAnswerViewModel.class);
+
+        CustomFormResponseViewModel response = new CustomFormResponseViewModel();
         response.setAnswers(new HashMap<>(Map.of(field, ans)));
 
         when(formService.initOrReuseResponse(any(), any(), any(), anyBoolean())).thenReturn(response);
@@ -172,12 +173,13 @@ class EntityFormContextTest {
 
     @Test
     void onConceptChanged_delegatesToEnabledEngine() {
-        EntityFormContext<TraceableEntity> ctx = new EntityFormContext<>(
-                unit, fieldSource, formContextServices,
+        EntityFormContext<AbstractEntityDTO> ctx = new EntityFormContext<>(
+                unit, fieldSource, formContextServices, conversionService,
                 scopeCallback, "scopeBinding"
         );
 
-        CustomFormResponse response = new CustomFormResponse();
+
+        CustomFormResponseViewModel response = new CustomFormResponseViewModel();
         response.setAnswers(new HashMap<>());
 
         when(formService.initOrReuseResponse(any(), any(), any(), anyBoolean())).thenReturn(response);
@@ -187,7 +189,7 @@ class EntityFormContextTest {
         ctx.init(false);
 
         CustomField f = mock(CustomField.class);
-        Concept c = mock(Concept.class);
+        ConceptAutocompleteDTO c = mock(ConceptAutocompleteDTO.class);
 
         ctx.onConceptChanged(f, c);
 
@@ -196,12 +198,13 @@ class EntityFormContextTest {
 
     @Test
     void flushBackToEntity_callsFormServiceUpdate() {
-        EntityFormContext<TraceableEntity> ctx = new EntityFormContext<>(
-                unit, fieldSource, formContextServices,
+        EntityFormContext<AbstractEntityDTO> ctx = new EntityFormContext<>(
+                unit, fieldSource, formContextServices, conversionService,
                 scopeCallback, "scopeBinding"
         );
 
-        CustomFormResponse response = new CustomFormResponse();
+
+        CustomFormResponseViewModel response = new CustomFormResponseViewModel();
         response.setAnswers(new HashMap<>());
 
         when(formService.initOrReuseResponse(any(), any(), any(), anyBoolean())).thenReturn(response);
@@ -217,15 +220,16 @@ class EntityFormContextTest {
     @Test
     void spatialTree_addAndRemove_marksModifiedAndUpdatesSelection() {
         // arrange
-        EntityFormContext<TraceableEntity> ctx = new EntityFormContext<>(
-                unit, fieldSource, formContextServices,
+        EntityFormContext<AbstractEntityDTO> ctx = new EntityFormContext<>(
+                unit, fieldSource, formContextServices, conversionService,
                 scopeCallback, "scopeBinding"
         );
 
-        CustomFieldAnswerSelectMultipleSpatialUnitTree treeAnswer = mock(CustomFieldAnswerSelectMultipleSpatialUnitTree.class);
+
+        CustomFieldAnswerSelectMultipleSpatialUnitTreeViewModel treeAnswer = mock(CustomFieldAnswerSelectMultipleSpatialUnitTreeViewModel.class);
         when(treeAnswer.getValue()).thenReturn(null); // force init set in addSUToSelection
 
-        CustomFormResponse response = new CustomFormResponse();
+        CustomFormResponseViewModel response = new CustomFormResponseViewModel();
         response.setAnswers(new HashMap<>(Map.of(mock(CustomField.class), treeAnswer)));
 
         when(formService.initOrReuseResponse(any(), any(), any(), anyBoolean())).thenReturn(response);
@@ -234,7 +238,7 @@ class EntityFormContextTest {
 
         ctx.init(false);
 
-        SpatialUnit su1 = mock(SpatialUnit.class);
+        SpatialUnitDTO su1 = mock(SpatialUnitDTO.class);
 
         // act: add
         ctx.addSUToSelection(treeAnswer, su1);
@@ -252,24 +256,25 @@ class EntityFormContextTest {
     @Test
     void getNormalizedSelectedUnits_removesDescendants_whenAncestorSelected() {
         // arrange: A is parent of B
-        EntityFormContext<TraceableEntity> ctx = new EntityFormContext<>(
-                unit, fieldSource, formContextServices,
+        EntityFormContext<AbstractEntityDTO> ctx = new EntityFormContext<>(
+                unit, fieldSource, formContextServices, conversionService,
                 scopeCallback, "scopeBinding"
         );
 
-        SpatialUnit a = mock(SpatialUnit.class);
+
+        SpatialUnitDTO a = mock(SpatialUnitDTO.class);
         when(a.getId()).thenReturn(1L);
-        SpatialUnit b = mock(SpatialUnit.class);
+        SpatialUnitDTO b = mock(SpatialUnitDTO.class);
         when(b.getId()).thenReturn(2L);
 
         // parents of B include A; parents of A none
         when(spatialUnitService.findDirectParentsOf(2L)).thenReturn(List.of(a));
         when(spatialUnitService.findDirectParentsOf(1L)).thenReturn(Collections.emptyList());
 
-        Set<SpatialUnit> selected = new LinkedHashSet<>(List.of(a, b));
+        Set<SpatialUnitDTO> selected = new LinkedHashSet<>(List.of(a, b));
 
         // act
-        List<SpatialUnit> chips = ctx.getNormalizedSelectedUnits(selected);
+        List<SpatialUnitDTO> chips = ctx.getNormalizedSelectedUnits(selected);
 
         // assert: only A remains (B removed because ancestor A selected)
         assertEquals(1, chips.size());
@@ -279,20 +284,21 @@ class EntityFormContextTest {
 
     @Test
     void getNormalizedSelectedUnits_sortsByName_caseInsensitive_nullsLast() {
-        EntityFormContext<TraceableEntity> ctx = new EntityFormContext<>(
-                unit, fieldSource, formContextServices,
+        EntityFormContext<AbstractEntityDTO> ctx = new EntityFormContext<>(
+                unit, fieldSource, formContextServices, conversionService,
                 scopeCallback, "scopeBinding"
         );
 
-        SpatialUnit b = su(2L, "beta");
-        SpatialUnit a = su(1L, "Alpha");
-        SpatialUnit n = su(3L, null);
+
+        SpatialUnitDTO b = su(2L, "beta");
+        SpatialUnitDTO a = su(1L, "Alpha");
+        SpatialUnitDTO n = su(3L, null);
 
         when(spatialUnitService.findDirectParentsOf(anyLong())).thenReturn(Collections.emptyList());
 
-        Set<SpatialUnit> selected = new LinkedHashSet<>(List.of(b, n, a));
+        Set<SpatialUnitDTO> selected = new LinkedHashSet<>(List.of(b, n, a));
 
-        List<SpatialUnit> chips = ctx.getNormalizedSelectedUnits(selected);
+        List<SpatialUnitDTO> chips = ctx.getNormalizedSelectedUnits(selected);
 
         assertEquals(List.of(a, b, n), chips);
     }
@@ -301,31 +307,31 @@ class EntityFormContextTest {
     void handleConceptChange_marksModified_reEvaluatesRules_andInvokesCallback_whenFormScopeField() {
         // arrange
         String scopeBinding = "scopeBinding";
-        unit2 = new RecordingUnit();
-        unit2.setType(new Concept());
-        EntityFormContext<RecordingUnit> ctx = new EntityFormContext<>(
-                unit2, fieldSource,formContextServices,
+        unit2 = new RecordingUnitDTO();
+        unit2.setType(new ConceptDTO());
+        EntityFormContext<RecordingUnitDTO> ctx = new EntityFormContext<>(
+                unit2, fieldSource, formContextServices, conversionService,
                 scopeCallback, scopeBinding
         );
 
         CustomField scopeField = mock(CustomField.class);
         when(scopeField.getIsSystemField()).thenReturn(true);
         when(scopeField.getValueBinding()).thenReturn(scopeBinding);
-        CustomFieldAnswerSelectOneFromFieldCode ans = mock(CustomFieldAnswerSelectOneFromFieldCode.class);
+        CustomFieldAnswerSelectOneFromFieldCodeViewModel ans = mock(CustomFieldAnswerSelectOneFromFieldCodeViewModel.class);
 
-        CustomFormResponse response = new CustomFormResponse();
+        CustomFormResponseViewModel response = new CustomFormResponseViewModel();
         response.setAnswers(new HashMap<>(Map.of(scopeField, ans)));
 
         when(formService.initOrReuseResponse(any(), any(), any(), anyBoolean())).thenReturn(response);
         when(formService.buildEnabledEngine(any())).thenReturn(enabledRulesEngine);
-        when(recordingUnitService.save(any(RecordingUnit.class), any(Concept.class))).thenReturn(new RecordingUnit());
-        when(recordingUnitService.fullIdentifierAlreadyExistInAction(any(RecordingUnit.class))).thenReturn(false);
+        when(recordingUnitService.save(any(RecordingUnitDTO.class))).thenReturn(new RecordingUnitDTO());
+        when(recordingUnitService.fullIdentifierAlreadyExistInAction(any(RecordingUnitDTO.class))).thenReturn(false);
 
         ctx.init(false);
 
         ConceptAutocompleteDTO newValue = mock(ConceptAutocompleteDTO.class);
-        Concept newConcept = mock(Concept.class);
-        ConceptLabel cL = mock(ConceptLabel.class);
+        ConceptDTO newConcept = mock(ConceptDTO.class);
+        ConceptLabelDTO cL = mock(ConceptLabelDTO.class);
         when(newValue.getConceptLabelToDisplay()).thenReturn(cL);
         when(newValue.getConceptLabelToDisplay().getConcept()).thenReturn(newConcept);
 
@@ -335,25 +341,25 @@ class EntityFormContextTest {
         // assert
         verify(ans).setHasBeenModified(false);
         assertFalse(ctx.isHasUnsavedModifications());
-        verify(enabledRulesEngine).onAnswerChange(eq(scopeField), eq(newConcept), any(), any());
+        verify(enabledRulesEngine).onAnswerChange(eq(scopeField), eq(newValue), any(), any());
         verify(scopeCallback).accept(scopeField, newConcept);
     }
 
     @Test
     void handleConceptChange_doesNotInvokeCallback_whenNotFormScopeField() {
-        unit2 = new RecordingUnit();
-        unit2.setType(new Concept());
-        EntityFormContext<RecordingUnit> ctx = new EntityFormContext<>(
-                unit2, fieldSource,formContextServices,
+        unit2 = new RecordingUnitDTO();
+        unit2.setType(new ConceptDTO());
+        EntityFormContext<RecordingUnitDTO> ctx = new EntityFormContext<>(
+                unit2, fieldSource, formContextServices, conversionService,
                 scopeCallback, "scopeBinding"
         );
 
         CustomField otherField = mock(CustomField.class);
         when(otherField.getIsSystemField()).thenReturn(true);
         when(otherField.getValueBinding()).thenReturn("otherBinding");
-        CustomFieldAnswerSelectOneFromFieldCode ans = mock(CustomFieldAnswerSelectOneFromFieldCode.class);
+        CustomFieldAnswerSelectOneFromFieldCodeViewModel ans = mock(CustomFieldAnswerSelectOneFromFieldCodeViewModel.class);
 
-        CustomFormResponse response = new CustomFormResponse();
+        CustomFormResponseViewModel response = new CustomFormResponseViewModel();
         response.setAnswers(new HashMap<>(Map.of(otherField, ans)));
 
         when(formService.initOrReuseResponse(any(), any(), any(), anyBoolean())).thenReturn(response);
@@ -362,10 +368,7 @@ class EntityFormContextTest {
         ctx.init(false);
 
         ConceptAutocompleteDTO newValue = mock(ConceptAutocompleteDTO.class);
-        Concept newConcept = mock(Concept.class);
-        ConceptLabel cL = mock(ConceptLabel.class);
-        when(newValue.getConceptLabelToDisplay()).thenReturn(cL);
-        when(newValue.getConceptLabelToDisplay().getConcept()).thenReturn(newConcept);
+
 
         ctx.handleConceptChange(otherField, newValue);
 
@@ -374,25 +377,25 @@ class EntityFormContextTest {
 
     @Test
     void getAutocompleteClass_returnsExpectedCssClass() {
-        EntityFormContext<TraceableEntity> ctx1 = new EntityFormContext<>(
-                mock(RecordingUnit.class), fieldSource, formContextServices,
+        EntityFormContext<AbstractEntityDTO> ctx1 = new EntityFormContext<>(
+                mock(RecordingUnitDTO.class), fieldSource, formContextServices, conversionService,
                 scopeCallback, "scopeBinding"
         );
         assertEquals("recording-unit-autocomplete", ctx1.getAutocompleteClass());
 
-        EntityFormContext<TraceableEntity> ctx2 = new EntityFormContext<>(
-                mock(SpatialUnit.class), fieldSource,formContextServices,
+        EntityFormContext<AbstractEntityDTO> ctx2 = new EntityFormContext<>(
+                mock(SpatialUnitDTO.class), fieldSource,formContextServices, conversionService,
                 scopeCallback, "scopeBinding"
         );
         assertEquals("spatial-unit-autocomplete", ctx2.getAutocompleteClass());
 
-        EntityFormContext<TraceableEntity> ctx3 = new EntityFormContext<>(
-                new TraceableEntity() {
+        EntityFormContext<AbstractEntityDTO> ctx3 = new EntityFormContext<>(
+                new AbstractEntityDTO() {
                     @Override
                     public Long getId() {
                         return 0L;
                     }
-                }, fieldSource, formContextServices,
+                }, fieldSource, formContextServices, conversionService,
                 scopeCallback, "scopeBinding"
         );
         assertEquals("", ctx3.getAutocompleteClass());
@@ -400,13 +403,13 @@ class EntityFormContextTest {
 
     @Test
     void getSpatialUnitOptions_returnsEmpty_whenUnitNotRecordingUnit() {
-        EntityFormContext<TraceableEntity> ctx = new EntityFormContext<>(
-                new TraceableEntity() {
+        EntityFormContext<AbstractEntityDTO> ctx = new EntityFormContext<>(
+                new AbstractEntityDTO() {
                     @Override
                     public Long getId() {
                         return 0L;
                     }
-                }, fieldSource, formContextServices,
+                }, fieldSource, formContextServices,conversionService,
                 scopeCallback, "scopeBinding"
         );
         assertTrue(ctx.getSpatialUnitOptions().isEmpty());
@@ -415,13 +418,13 @@ class EntityFormContextTest {
 
     @Test
     void getSpatialUnitOptions_delegatesToService_whenUnitIsRecordingUnit() {
-        RecordingUnit ru = mock(RecordingUnit.class);
-        EntityFormContext<TraceableEntity> ctx = new EntityFormContext<>(
-                ru, fieldSource, formContextServices,
+        RecordingUnitDTO ru = mock(RecordingUnitDTO.class);
+        EntityFormContext<AbstractEntityDTO> ctx = new EntityFormContext<>(
+                ru, fieldSource, formContextServices, conversionService,
                 scopeCallback, "scopeBinding"
         );
 
-        List<SpatialUnit> opts = List.of(mock(SpatialUnit.class));
+        List<SpatialUnitSummaryDTO> opts = List.of(mock(SpatialUnitSummaryDTO.class));
         when(spatialUnitService.getSpatialUnitOptionsFor(ru)).thenReturn(opts);
 
         assertSame(opts, ctx.getSpatialUnitOptions());

@@ -2,28 +2,25 @@ package fr.siamois.ui.bean.dialog.newunit;
 
 import fr.siamois.domain.models.TraceableEntity;
 import fr.siamois.domain.models.exceptions.EntityAlreadyExistsException;
-import fr.siamois.domain.models.form.customfield.CustomField;
-import fr.siamois.domain.models.spatialunit.SpatialUnit;
-import fr.siamois.domain.models.vocabulary.Concept;
-import fr.siamois.domain.models.vocabulary.label.ConceptLabel;
 import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.domain.services.vocabulary.FieldService;
-import fr.siamois.ui.bean.LangBean;
+import fr.siamois.dto.entity.AbstractEntityDTO;
+import fr.siamois.dto.entity.ConceptDTO;
+import fr.siamois.dto.entity.SpatialUnitSummaryDTO;
 import fr.siamois.ui.bean.RedirectBean;
 import fr.siamois.ui.bean.dialog.newunit.handler.INewUnitHandler;
 import fr.siamois.ui.bean.field.SpatialUnitFieldBean;
 import fr.siamois.ui.bean.panel.FlowBean;
 import fr.siamois.ui.bean.panel.models.panel.single.AbstractSingleEntity;
 import fr.siamois.ui.exceptions.CannotInitializeNewUnitDialogException;
+import fr.siamois.ui.form.FormUiDto;
 import fr.siamois.ui.lazydatamodel.BaseLazyDataModel;
 import fr.siamois.utils.MessageUtils;
-import jakarta.faces.component.UIComponent;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.primefaces.PrimeFaces;
-import org.primefaces.event.SelectEvent;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
@@ -39,7 +36,7 @@ import java.util.Set;
 @Getter
 @Setter
 @EqualsAndHashCode(callSuper = true)
-public class GenericNewUnitDialogBean<T extends TraceableEntity>
+public class GenericNewUnitDialogBean<T extends AbstractEntityDTO>
         extends AbstractSingleEntity<T> implements Serializable {
 
     private final transient FieldService fieldService;
@@ -61,12 +58,12 @@ public class GenericNewUnitDialogBean<T extends TraceableEntity>
     protected static final String ENTITY_ALREADY_EXIST_MESSAGE_CODE = "common.entity.alreadyExist";
 
     // ==== handlers ====
-    private transient Map<UnitKind, INewUnitHandler<? extends TraceableEntity>> handlers;
+    private transient Map<UnitKind, INewUnitHandler<? extends AbstractEntityDTO>> handlers;
     private UnitKind kind;
     private transient INewUnitHandler<T> handler;
 
     // creation  callback + contexte ====
-    private transient fr.siamois.ui.table.EntityTableViewModel<?, ?> sourceTableModel;
+    private transient fr.siamois.ui.table.EntityTableViewModel<T, ?> sourceTableModel;
     private transient NewUnitContext newUnitContext;
 
     public void refresh() {
@@ -74,7 +71,7 @@ public class GenericNewUnitDialogBean<T extends TraceableEntity>
     }
 
     public GenericNewUnitDialogBean(ApplicationContext context,
-                                    Set<INewUnitHandler<? extends TraceableEntity>> handlerSet) {
+                                    Set<INewUnitHandler<? extends AbstractEntityDTO>> handlerSet) {
         super(context);
         this.flowBean = context.getBean(FlowBean.class);
         this.redirectBean = context.getBean(RedirectBean.class);
@@ -89,7 +86,7 @@ public class GenericNewUnitDialogBean<T extends TraceableEntity>
     // Unique selectKind
     @SuppressWarnings("unchecked")
     public void selectKind(NewUnitContext ctx,
-                           fr.siamois.ui.table.EntityTableViewModel<?, ?> sourceTableModel)
+                           fr.siamois.ui.table.EntityTableViewModel<T, ?> sourceTableModel)
             throws CannotInitializeNewUnitDialogException {
 
         this.kind = ctx.getKindToCreate();
@@ -128,7 +125,8 @@ public class GenericNewUnitDialogBean<T extends TraceableEntity>
 
     @Override
     public void initForms(boolean forceInit) {
-        detailsForm = handler.formLayout();
+        detailsForm = formContextServices.getConversionService().convert(handler.formLayout(), FormUiDto.class);
+
         initFormContext(forceInit);
     }
 
@@ -170,10 +168,11 @@ public class GenericNewUnitDialogBean<T extends TraceableEntity>
 
     /**
      * Return the spatial unit options for spatial unit selection field
+     *
      * @return The list of selectable spatial unit
      */
     @Override
-    public List<SpatialUnit> getSpatialUnitOptions() {
+    public List<SpatialUnitSummaryDTO> getSpatialUnitOptions() {
         return handler.getSpatialUnitOptions(unit);
     }
 
@@ -183,7 +182,7 @@ public class GenericNewUnitDialogBean<T extends TraceableEntity>
     }
 
     @Override
-    protected void setFormScopePropertyValue(Concept concept) {
+    protected void setFormScopePropertyValue(ConceptDTO concept) {
         // Empty because new unit form don't change based on type.
         // Need refactoring? Wrong parent class
     }

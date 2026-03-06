@@ -1,11 +1,11 @@
 package fr.siamois.domain.services.vocabulary;
 
 import fr.siamois.domain.models.UserInfo;
-import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.exceptions.api.InvalidEndpointException;
-import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.vocabulary.Vocabulary;
 import fr.siamois.domain.models.vocabulary.VocabularyType;
+import fr.siamois.dto.entity.InstitutionDTO;
+import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.infrastructure.api.RequestFactory;
 import fr.siamois.infrastructure.api.ThesaurusApi;
 import fr.siamois.infrastructure.database.repositories.vocabulary.VocabularyRepository;
@@ -52,14 +52,13 @@ class VocabularyServiceIntTest {
     void findOrCreateVocabularyOfUri_withNativeLink() throws InvalidEndpointException {
         String nativeLink = "https://thesaurus.mom.fr/?idt=th227";
 
-        UserInfo info = new UserInfo(new Institution(), new Person(), "fr");
+        UserInfo info = new UserInfo(new InstitutionDTO(), new PersonDTO(), "fr");
         info.getInstitution().setId(1L);
         info.getInstitution().getManagers().add(info.getUser());
         info.getInstitution().setName("SiaDev");
 
         info.getUser().setId(1L);
         info.getUser().setUsername("username");
-        info.getUser().setPassword("password");
         info.getUser().setEmail("mail");
 
         VocabularyType vocabularyType = new VocabularyType();
@@ -84,14 +83,13 @@ class VocabularyServiceIntTest {
     void findOrCreateVocabularyOfUri_withArkLink() throws InvalidEndpointException {
         String nativeLink = "https://thesaurus.mom.fr/api/ark:/66666/SIA-TTDBMLCXLNL9Q93GK17L7-S";
 
-        UserInfo info = new UserInfo(new Institution(), new Person(), "fr");
+        UserInfo info = new UserInfo(new InstitutionDTO(), new PersonDTO(), "fr");
         info.getInstitution().setId(1L);
         info.getInstitution().getManagers().add(info.getUser());
         info.getInstitution().setName("SiaDev");
 
         info.getUser().setId(1L);
         info.getUser().setUsername("username");
-        info.getUser().setPassword("password");
         info.getUser().setEmail("mail");
 
         VocabularyType vocabularyType = new VocabularyType();

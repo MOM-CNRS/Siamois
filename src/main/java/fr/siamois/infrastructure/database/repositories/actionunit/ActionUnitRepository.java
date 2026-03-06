@@ -31,7 +31,7 @@ public interface ActionUnitRepository extends CrudRepository<ActionUnit, Long>, 
     )
     Integer countBySpatialContext(@Param("spatialUnitId") Long spatialUnitId);
 
-    long countByCreatedByInstitution(Institution institution);
+    long countByCreatedByInstitutionId(Long institutionId);
 
     @Query(
             nativeQuery = true,
@@ -189,8 +189,8 @@ public interface ActionUnitRepository extends CrudRepository<ActionUnit, Long>, 
             Pageable pageable);
 
     Set<ActionUnit> findByCreatedByInstitution(Institution createdByInstitution);
-    Optional<ActionUnit> findByNameAndCreatedByInstitution(String name, Institution institution);
-    Optional<ActionUnit> findByIdentifierAndCreatedByInstitution(String identifier, Institution institution);
+    Optional<ActionUnit> findByNameAndCreatedByInstitutionId(String name, Long institutionId);
+    Optional<ActionUnit> findByIdentifierAndCreatedByInstitutionId(String identifier, Long institutionId);
 
     @Query(value = """
     SELECT su.*

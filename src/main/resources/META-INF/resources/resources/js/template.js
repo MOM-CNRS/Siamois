@@ -152,7 +152,7 @@ function scrollToPanel(selector) {
                 panelHeader.trigger('click');
 
                 // Wait for the panel to expand before scrolling
-                setTimeout(function() {
+                setTimeout(function () {
                     scrollAfterExpand(selector);
                 }, 300); // Adjust delay to match the panel's animation duration
             } else {
@@ -166,8 +166,8 @@ function scrollToPanel(selector) {
 function scrollAfterExpand(selector) {
     const panel = $(selector);
     $('#flowContent').animate(
-        { scrollTop: panel.position().top + $('#flowContent').scrollTop() },
-        { duration: 500 }
+        {scrollTop: panel.position().top + $('#flowContent').scrollTop()},
+        {duration: 500}
     );
 }
 
@@ -184,6 +184,86 @@ function hideProgressBar(widgetVar) {
     const progressBarValue = widgetVar.jq.find('.ui-progressbar-value');
     progressBarValue.css('background-color', 'transparent').hide();
 }
+function loadPanel(t, data, s, xhr) {
+    console.log("Original Response:", t, data, s, xhr);
+
+    const updates = data.getElementsByTagName("update");
+    for (let update of updates) {
+        if (update.getAttribute("id") !== "flow-panels") {
+            continue;
+        }
+
+        const cdataNode = update.childNodes[0];
+        if (!cdataNode || cdataNode.nodeType !== 4) { // CDATA_SECTION_NODE
+            update.parentNode.removeChild(update);
+            break;
+        }
+
+        const html = cdataNode.nodeValue;
+        const divParser = new DOMParser();
+        const htmlDoc = divParser.parseFromString(html, "text/html");
+        const container = htmlDoc.body;
+        const allDivs = container.querySelectorAll("div");
+
+        if (allDivs.length === 0) {
+            update.parentNode.removeChild(update);
+            break;
+        }
+
+        const firstDiv = allDivs[0];
+        cdataNode.nodeValue = "";
+
+        const flowPanelsElement = document.getElementById("flow-panels");
+        if (flowPanelsElement) {
+            flowPanelsElement.innerHTML = firstDiv.outerHTML;
+        }
+
+        update.parentNode.removeChild(update);
+        break;
+    }
+
+    console.log("Modified Response:", data);
+    return true;
+}
+
+function onCompleteCallback(panelId) {
+
+    return;
+
+    const flowPanels = document.getElementById("flow-panels");
+    if (flowPanels) {
+
+        // Remove existing div with same id (if any)
+        const existing = document.getElementById(panelId);
+        if (existing) {
+            existing.remove();
+        }
+
+        const newDiv = document.createElement("div");
+        newDiv.id = panelId;
+
+        flowPanels.insertBefore(newDiv, flowPanels.firstChild);
+
+        // Scroll container to top
+        flowPanels.scrollIntoView({behavior: 'smooth', block: 'start'});
+
+        PrimeFaces.ajax.Request.handle({
+            source: panelId,
+            process: "flowContent",
+            update: panelId,
+            onsuccess: function (data) {
+                console.log("AJAX update for " + panelId + " completed");
+            },
+            onerror: function (xhr, status, error) {
+                console.error("AJAX error for " + panelId + ": ", status, error);
+            }
+        });
+    }
+}
+
+
+
+
 
 
 

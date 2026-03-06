@@ -42,6 +42,8 @@
         <mockito.version>5.14.2</mockito.version>
         <jacoco.version>0.8.12</jacoco.version>
         <jackson.version>2.19.1</jackson.version>
+        <org.mapstruct.version>1.6.3</org.mapstruct.version>
+        <org.mapstruct.extensions.spring.version>2.0.0</org.mapstruct.extensions.spring.version>
 
         <!-- Sonar -->
         <sonar.projectKey>MOM-CNRS_Siamois</sonar.projectKey>
@@ -373,6 +375,37 @@
             <artifactId>spring-boot-starter-aop</artifactId>
         </dependency>
 
+        <dependency>
+            <groupId>org.mapstruct</groupId>
+            <artifactId>mapstruct</artifactId>
+            <version>${org.mapstruct.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.mapstruct</groupId>
+            <artifactId>mapstruct-processor</artifactId>
+            <version>${org.mapstruct.version}</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.mapstruct.extensions.spring</groupId>
+            <artifactId>mapstruct-spring-extensions</artifactId>
+            <version>${org.mapstruct.extensions.spring.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.mapstruct.extensions.spring</groupId>
+            <artifactId>mapstruct-spring-annotations</artifactId>
+            <version>${org.mapstruct.extensions.spring.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+
     </dependencies>
 
     <build>
@@ -388,6 +421,9 @@
                         </goals>
                     </execution>
                 </executions>
+                <configuration>
+                    <mainClass>fr.siamois.SiamoisApplication</mainClass>
+                </configuration>
             </plugin>
 
             <!-- Compile SCSS to CSS -->
@@ -404,7 +440,8 @@
                         </goals>
                         <configuration>
                             <!-- adjust path if your scss lives elsewhere -->
-                            <inputFolder>${project.basedir}/primefaces-themes/themes/primefaces-siamois-theme</inputFolder>
+                            <inputFolder>${project.basedir}/primefaces-themes/themes/primefaces-siamois-theme
+                            </inputFolder>
                             <outputFolder>${project.build.directory}/generated-resources/css</outputFolder>
                             <update>true</update>
                             <noSourceMap>true</noSourceMap>
@@ -427,7 +464,8 @@
                             <goal>copy-resources</goal>
                         </goals>
                         <configuration>
-                            <outputDirectory>${project.build.outputDirectory}/META-INF/resources/resources</outputDirectory>
+                            <outputDirectory>${project.build.outputDirectory}/META-INF/resources/resources
+                            </outputDirectory>
                             <resources>
                                 <!-- theme.css for siamois -->
                                 <resource>
@@ -459,14 +497,6 @@
                 </executions>
             </plugin>
 
-            <plugin>
-
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-maven-plugin</artifactId>
-                <configuration>
-                    <mainClass>fr.siamois.SiamoisApplication</mainClass>
-                </configuration>
-            </plugin>
 
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -480,6 +510,16 @@
                             <groupId>org.projectlombok</groupId>
                             <artifactId>lombok</artifactId>
                             <version>${lombok.version}</version>
+                        </path>
+                        <path>
+                            <groupId>org.mapstruct</groupId>
+                            <artifactId>mapstruct-processor</artifactId>
+                            <version>${org.mapstruct.version}</version>
+                        </path>
+                        <path>
+                            <groupId>org.mapstruct.extensions.spring</groupId>
+                            <artifactId>mapstruct-spring-extensions</artifactId>
+                            <version>${org.mapstruct.extensions.spring.version}</version>
                         </path>
                     </annotationProcessorPaths>
                 </configuration>
@@ -545,7 +585,8 @@
                                     <goal>compile-sass</goal>
                                 </goals>
                                 <configuration>
-                                    <inputFolder>${project.basedir}/primefaces-themes/themes/primefaces-siamois-theme</inputFolder>
+                                    <inputFolder>${project.basedir}/primefaces-themes/themes/primefaces-siamois-theme
+                                    </inputFolder>
                                     <outputFolder>${project.build.directory}/generated-resources/css</outputFolder>
                                     <update>true</update>
                                     <noSourceMap>true</noSourceMap>
@@ -567,7 +608,8 @@
                                     <goal>copy-resources</goal>
                                 </goals>
                                 <configuration>
-                                    <outputDirectory>${project.build.outputDirectory}/META-INF/resources/resources</outputDirectory>
+                                    <outputDirectory>${project.build.outputDirectory}/META-INF/resources/resources
+                                    </outputDirectory>
                                     <resources>
                                         <resource>
                                             <directory>${project.build.directory}/generated-resources/css</directory>

@@ -4,7 +4,10 @@ import fr.siamois.domain.models.TraceableEntity;
 import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.authorization.writeverifier.WritePermissionVerifier;
+import fr.siamois.dto.entity.AbstractEntityDTO;
+import fr.siamois.dto.entity.InstitutionDTO;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.convert.ConversionService;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
@@ -16,12 +19,14 @@ import java.util.Map;
 public class PermissionServiceImpl implements PermissionService {
 
     private final InstitutionService institutionService;
+    private final ConversionService conversionService;
 
     private final Map<Class<? extends TraceableEntity>, WritePermissionVerifier> verifiers;
 
     public PermissionServiceImpl(InstitutionService institutionService,
-                                 List<WritePermissionVerifier> verifiers) {
+                                 List<WritePermissionVerifier> verifiers, ConversionService conversionService) {
         this.institutionService = institutionService;
+        this.conversionService = conversionService;
 
         this.verifiers = new HashMap<>();
 
@@ -31,7 +36,7 @@ public class PermissionServiceImpl implements PermissionService {
     }
 
     @Override
-    public boolean hasReadPermission(UserInfo user, TraceableEntity resource) {
+    public boolean hasReadPermission(UserInfo user, AbstractEntityDTO resource) {
         if (!resource.getCreatedByInstitution().equals(user.getInstitution()))
             return false;
 
@@ -39,11 +44,12 @@ public class PermissionServiceImpl implements PermissionService {
             return true;
         }
 
-        return institutionService.personIsInInstitution(user.getUser(), resource.getCreatedByInstitution());
+        return institutionService.personIsInInstitution(user.getUser(),
+                conversionService.convert(resource.getCreatedByInstitution(), InstitutionDTO.class));
     }
 
     @Override
-    public boolean hasWritePermission(UserInfo user, TraceableEntity resource) {
+    public boolean hasWritePermission(UserInfo user, AbstractEntityDTO resource) {
         if (!resource.getCreatedByInstitution().equals(user.getInstitution()))
             return false;
 

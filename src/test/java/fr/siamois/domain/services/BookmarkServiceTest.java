@@ -4,7 +4,11 @@ import fr.siamois.domain.models.Bookmark;
 import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.institution.Institution;
+import fr.siamois.dto.entity.InstitutionDTO;
+import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.infrastructure.database.repositories.BookmarkRepository;
+import fr.siamois.mapper.InstitutionMapper;
+import fr.siamois.mapper.PersonMapper;
 import fr.siamois.ui.bean.panel.models.panel.AbstractPanel;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -25,6 +29,10 @@ class BookmarkServiceTest {
 
     @Mock
     private BookmarkRepository bookmarkRepository;
+    @Mock
+    private PersonMapper personMapper;
+    @Mock
+    private InstitutionMapper institutionMapper;
 
     @InjectMocks
     private BookmarkService bookmarkService;
@@ -43,7 +51,7 @@ class BookmarkServiceTest {
         institution.setName("institution1");
         institution.setId(1L);
 
-        userInfo = new UserInfo(institution, person, "fr");
+        userInfo = new UserInfo(new InstitutionDTO(), new PersonDTO(), "fr");
 
     }
 
@@ -51,6 +59,9 @@ class BookmarkServiceTest {
     void testFindAllReturnsBookmarks() {
 
         Bookmark bookmark = new Bookmark();
+
+        when(personMapper.invertConvert(any(PersonDTO.class))).thenReturn(person);
+        when(institutionMapper.invertConvert(any(InstitutionDTO.class))).thenReturn(institution);
         when(bookmarkRepository.findByPersonAndInstitution(person, institution)).thenReturn(List.of(bookmark));
 
         List<Bookmark> result = bookmarkService.findAll(userInfo);
@@ -64,7 +75,8 @@ class BookmarkServiceTest {
 
     @Test
     void testFindAllReturnsEmptyList() {
-
+        when(personMapper.invertConvert(any(PersonDTO.class))).thenReturn(person);
+        when(institutionMapper.invertConvert(any(InstitutionDTO.class))).thenReturn(institution);
         when(bookmarkRepository.findByPersonAndInstitution(person, institution))
                 .thenReturn(Collections.emptyList());
 
@@ -81,7 +93,8 @@ class BookmarkServiceTest {
 
         AbstractPanel panel = mock(AbstractPanel.class);
         Bookmark savedBookmark = new Bookmark();
-
+        when(personMapper.invertConvert(any(PersonDTO.class))).thenReturn(person);
+        when(institutionMapper.invertConvert(any(InstitutionDTO.class))).thenReturn(institution);
         when(panel.ressourceUri()).thenReturn("resourceUri");
         when(panel.getTitleCodeOrTitle()).thenReturn("titleCode");
         when(bookmarkRepository.save(any(Bookmark.class))).thenReturn(savedBookmark);
@@ -99,7 +112,8 @@ class BookmarkServiceTest {
     void testSave_Success() {
         String uri = "resource-uri";
         String title = "title";
-
+        when(personMapper.invertConvert(any(PersonDTO.class))).thenReturn(person);
+        when(institutionMapper.invertConvert(any(InstitutionDTO.class))).thenReturn(institution);
         Bookmark expectedBookmark = new Bookmark();
         expectedBookmark.setResourceUri(uri);
         expectedBookmark.setTitleCode(title);
@@ -118,6 +132,8 @@ class BookmarkServiceTest {
 
     @Test
     void testIsRessourceBookmarkedByUser_ReturnsTrue() {
+        when(personMapper.invertConvert(any(PersonDTO.class))).thenReturn(person);
+        when(institutionMapper.invertConvert(any(InstitutionDTO.class))).thenReturn(institution);
         when(bookmarkRepository.countBookmarkByPersonAndInstitutionAndResourceUri(
                 person, institution, "resource-uri")).thenReturn(1L);
 
@@ -128,6 +144,8 @@ class BookmarkServiceTest {
 
     @Test
     void testIsRessourceBookmarkedByUser_ReturnsFalse() {
+        when(personMapper.invertConvert(any(PersonDTO.class))).thenReturn(person);
+        when(institutionMapper.invertConvert(any(InstitutionDTO.class))).thenReturn(institution);
         when(bookmarkRepository.countBookmarkByPersonAndInstitutionAndResourceUri(
                 person, institution, "resource-uri")).thenReturn(0L);
 
@@ -138,6 +156,8 @@ class BookmarkServiceTest {
 
     @Test
     void testDeleteBookmark_ExecutesSuccessfully() {
+        when(personMapper.invertConvert(any(PersonDTO.class))).thenReturn(person);
+        when(institutionMapper.invertConvert(any(InstitutionDTO.class))).thenReturn(institution);
         doNothing().when(bookmarkRepository).deleteBookmarkByPersonAndInstitutionAndResourceUri(
                 person, institution, "resource-uri");
 

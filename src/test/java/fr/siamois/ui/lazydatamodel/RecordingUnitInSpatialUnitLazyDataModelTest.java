@@ -1,9 +1,9 @@
 package fr.siamois.ui.lazydatamodel;
 
-import fr.siamois.domain.models.institution.Institution;
-import fr.siamois.domain.models.recordingunit.RecordingUnit;
-import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
+import fr.siamois.dto.entity.InstitutionDTO;
+import fr.siamois.dto.entity.RecordingUnitDTO;
+import fr.siamois.dto.entity.SpatialUnitDTO;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
 import org.junit.jupiter.api.BeforeEach;
@@ -41,20 +41,20 @@ class RecordingUnitInSpatialUnitLazyDataModelTest {
     @InjectMocks
     private RecordingUnitInSpatialUnitLazyDataModel lazyModel;
 
-    Page<RecordingUnit> p ;
+    Page<RecordingUnitDTO> p ;
     Pageable pageable;
-    RecordingUnit unit1;
-    RecordingUnit unit2;
-    SpatialUnit su;
-    Institution institution;
+    RecordingUnitDTO unit1;
+    RecordingUnitDTO unit2;
+    SpatialUnitDTO su;
+    InstitutionDTO institution;
 
     @BeforeEach
     void setUp() {
-        unit1 = new RecordingUnit();
-        unit2 = new RecordingUnit();
-        su = new SpatialUnit();
+        unit1 = new RecordingUnitDTO();
+        unit2 = new RecordingUnitDTO();
+        su = new SpatialUnitDTO();
         su.setId(1L);
-        institution = new Institution();
+        institution = new InstitutionDTO();
         institution.setId(1L);
         unit1.setId(1L);
         unit1.setFullIdentifier("Unit 1");
@@ -80,7 +80,7 @@ class RecordingUnitInSpatialUnitLazyDataModelTest {
         when(langBean.getLanguageCode()).thenReturn("en");
 
         // Act
-        Page<RecordingUnit> actualResult = lazyModel.loadRecordingUnits("null", new Long[2], new Long[2], "null", pageable);
+        Page<RecordingUnitDTO> actualResult = lazyModel.loadRecordingUnits("null", new Long[2], new Long[2], "null", pageable);
 
         // Assert
         // Assert

@@ -1,9 +1,8 @@
 package fr.siamois.domain.models.form.customfieldanswer;
 
-import fr.siamois.domain.models.vocabulary.Concept;
-import fr.siamois.domain.models.vocabulary.label.ConceptLabel;
-import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
-import jakarta.persistence.*;
+import jakarta.persistence.DiscriminatorValue;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Table;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
@@ -18,21 +17,6 @@ import java.util.Objects;
 @DiscriminatorValue("SELECT_ONE_FROM_FIELD_CODE")
 @Table(name = "custom_field_answer")
 public class CustomFieldAnswerSelectOneFromFieldCode extends CustomFieldAnswer {
-
-    @ManyToOne
-    @JoinColumn(name = "fk_value_as_concept")
-    private Concept value;
-
-    @Transient
-    private transient ConceptAutocompleteDTO uiVal;
-
-    public void setValue(ConceptLabel conceptLabel) {
-        this.value = conceptLabel.getConcept();
-    }
-
-    public void setValue(Concept concept) {
-        this.value = concept;
-    }
 
     @Override
     public boolean equals(Object o) {

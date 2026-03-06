@@ -1,0 +1,17 @@
+package fr.siamois.mapper;
+
+import fr.siamois.dto.entity.SpecimenDTO;
+import fr.siamois.infrastructure.database.projection.SpecimenProjection;
+import fr.siamois.ui.mapper.adapter.ConversionServiceAdapter;
+import org.mapstruct.InjectionStrategy;
+import org.mapstruct.Mapper;
+import org.mapstruct.MappingConstants;
+import org.springframework.core.convert.converter.Converter;
+
+@Mapper(uses = ConversionServiceAdapter.class,
+        injectionStrategy = InjectionStrategy.CONSTRUCTOR,
+        componentModel = MappingConstants.ComponentModel.SPRING)
+public interface SpecimenProjectionMapper extends Converter<SpecimenProjection, SpecimenDTO> {
+
+}
+

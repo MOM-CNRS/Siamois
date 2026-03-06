@@ -47,10 +47,6 @@ public abstract class RecordingUnitParent extends TraceableEntity {
     protected Concept type;
 
     @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "fk_secondary_type")
-    protected Concept secondaryType;
-
-    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "fk_geomorphological_cycle")
     protected Concept geomorphologicalCycle;
 
@@ -61,10 +57,6 @@ public abstract class RecordingUnitParent extends TraceableEntity {
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "fk_normalized_interpretation")
     protected Concept normalizedInterpretation;
-
-    @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "fk_third_type")
-    protected Concept thirdType;
 
     @Column(name = "start_date")
     protected OffsetDateTime openingDate;

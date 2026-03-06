@@ -4,6 +4,7 @@ import fr.siamois.domain.models.form.customfield.CustomFieldSelectOneFromFieldCo
 import fr.siamois.domain.models.form.customfield.CustomFieldText;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
+import fr.siamois.dto.entity.SpatialUnitDTO;
 import fr.siamois.ui.table.*;
 
 import static fr.siamois.ui.bean.panel.models.panel.single.AbstractSingleEntity.SYSTEM_THESO;
@@ -31,7 +32,7 @@ public final class SpatialUnitTableDefinitionFactory {
      * - Only sets column metadata + generic toolbar create policy.
      * - If you want per-screen overrides, call them AFTER this method.
      */
-    public static void applyTo(EntityTableViewModel<SpatialUnit, ?> tableModel) {
+    public static void applyTo(EntityTableViewModel<SpatialUnitDTO, ?> tableModel) {
         if (tableModel == null) {
             return;
         }

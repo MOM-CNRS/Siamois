@@ -1,19 +1,19 @@
 package fr.siamois.ui.table;
 
-import fr.siamois.domain.models.TraceableEntity;
 import fr.siamois.domain.models.form.customfield.CustomField;
-import fr.siamois.domain.models.form.customform.CustomCol;
-import fr.siamois.domain.models.form.customform.CustomForm;
 import fr.siamois.domain.services.form.FormService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitTreeService;
+import fr.siamois.dto.entity.*;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.NavBean;
 import fr.siamois.ui.bean.dialog.newunit.GenericNewUnitDialogBean;
 import fr.siamois.ui.bean.dialog.newunit.NewUnitContext;
+import fr.siamois.ui.form.CustomColUiDto;
 import fr.siamois.ui.form.EntityFormContext;
-import fr.siamois.ui.form.fieldsource.FieldSource;
 import fr.siamois.ui.form.FormContextServices;
+import fr.siamois.ui.form.FormUiDto;
+import fr.siamois.ui.form.fieldsource.FieldSource;
 import fr.siamois.ui.form.fieldsource.TableRowFieldSource;
 import fr.siamois.ui.lazydatamodel.BaseLazyDataModel;
 import fr.siamois.ui.lazydatamodel.tree.BaseTreeTableLazyModel;
@@ -50,8 +50,9 @@ import static fr.siamois.utils.MessageUtils.displayErrorMessage;
  *  - configureRowSystemFields(T entity, CustomForm form)
  */
 @Getter
-public abstract class EntityTableViewModel<T extends TraceableEntity, ID> {
+public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
 
+    public static final String CONTAINER = "-container');";
     @Setter
     protected String globalFilter = "";
 
@@ -185,7 +186,7 @@ public abstract class EntityTableViewModel<T extends TraceableEntity, ID> {
 
         return rowContexts.computeIfAbsent(id, key -> {
             // 1) Formulaire spécifique à cette entité (défini par la sous-classe)
-            CustomForm rowForm = resolveRowFormFor(entity);
+            FormUiDto rowForm = resolveRowFormFor(entity);
 
             // 2) Configuration min/max des champs système pour CETTE ligne
             configureRowSystemFields(entity, rowForm);
@@ -198,6 +199,7 @@ public abstract class EntityTableViewModel<T extends TraceableEntity, ID> {
                     entity,
                     fs,
                     formContextServices,
+                    formContextServices.getConversionService(),
                     null,                    // pas de callback form scope en mode table pour l’instant
                     formScopeValueBinding
             );
@@ -217,16 +219,16 @@ public abstract class EntityTableViewModel<T extends TraceableEntity, ID> {
     // ---------------------- Hooks à surcharger par les sous-classes ----------------------
 
     /**
-     * Détermine le CustomForm spécifique à une ligne d'entité T.
+     * Détermine le FormUiDto spécifique à une ligne d'entité T.
      * (ex: pour RecordingUnit, dépend du type + institution)
      */
-    protected abstract CustomForm resolveRowFormFor(T entity);
+    protected abstract FormUiDto resolveRowFormFor(T entity);
 
     /**
      * Applique la logique min/max sur les champs système pour une ligne donnée.
      * (ex: identifier, openingDate, closingDate pour RecordingUnit)
      */
-    protected abstract void configureRowSystemFields(T entity, CustomForm rowForm);
+    protected abstract void configureRowSystemFields(T entity, FormUiDto rowForm);
 
     // ---------------------- Helpers génériques ----------------------
 
@@ -234,7 +236,7 @@ public abstract class EntityTableViewModel<T extends TraceableEntity, ID> {
      * Helper : récupère tous les CustomField d'un CustomForm (panels → rows → cols).
      * Indépendant du type T, donc factorisé ici.
      */
-    protected List<CustomField> getAllFieldsFromForm(CustomForm form) {
+    protected List<CustomField> getAllFieldsFromForm(FormUiDto form) {
         if (form == null || form.getLayout() == null) {
             return List.of();
         }
@@ -244,7 +246,7 @@ public abstract class EntityTableViewModel<T extends TraceableEntity, ID> {
                 .flatMap(panel -> panel.getRows().stream())
                 .filter(row -> row.getColumns() != null)
                 .flatMap(row -> row.getColumns().stream())
-                .map(CustomCol::getField)
+                .map(CustomColUiDto::getField)
                 .filter(Objects::nonNull)
                 .toList();
     }
@@ -299,7 +301,7 @@ public abstract class EntityTableViewModel<T extends TraceableEntity, ID> {
     }
 
     public void openCreateDialog(NewUnitContext ctx,
-                                 fr.siamois.ui.bean.dialog.newunit.GenericNewUnitDialogBean<?> dialogBean) {
+                                 fr.siamois.ui.bean.dialog.newunit.GenericNewUnitDialogBean<T> dialogBean) {
         try {
             dialogBean.selectKind(ctx, this);
             org.primefaces.PrimeFaces.current().ajax().update("newUnitForm");
@@ -310,7 +312,7 @@ public abstract class EntityTableViewModel<T extends TraceableEntity, ID> {
     }
 
 
-    public void onAnyEntityCreated(fr.siamois.domain.models.TraceableEntity created, NewUnitContext ctx) {
+    public void onAnyEntityCreated(T created, NewUnitContext ctx) {
         if (created == null) return;
 
         NewUnitContext.UiInsertPolicy policy = ctx.getInsertPolicy();
@@ -322,7 +324,7 @@ public abstract class EntityTableViewModel<T extends TraceableEntity, ID> {
         final T casted;
         try {
             @SuppressWarnings("unchecked")
-            T tmp = (T) created;
+            T tmp = created;
             casted = tmp;
         } catch (ClassCastException e) {
             return; // pas gérable par cette table -> no-op
@@ -361,7 +363,7 @@ public abstract class EntityTableViewModel<T extends TraceableEntity, ID> {
     }
 
     // Handler when clicking on the create button on top of the table
-    public void openCreateFromToolbar(fr.siamois.ui.bean.dialog.newunit.GenericNewUnitDialogBean<?> dialogBean,
+    public void openCreateFromToolbar(fr.siamois.ui.bean.dialog.newunit.GenericNewUnitDialogBean<T> dialogBean,
                                       String updateOnCreate,
     String tableClientId) {
         if (toolbarCreateConfig == null) {
@@ -418,6 +420,21 @@ public abstract class EntityTableViewModel<T extends TraceableEntity, ID> {
     * Check if user has permission to edit the row data
      */
     public abstract boolean canUserEditRow(T unit);
+
+    public String getOnCompleteJs(T unit) {
+        if (unit instanceof RecordingUnitDTO) {
+            return "PF('buiContent').hide();onCompleteCallback('panel-recording-unit-" + unit.getId() + CONTAINER;
+        } else if (unit instanceof SpecimenDTO) {
+            return "PF('buiContent').hide();onCompleteCallback('panel-specimen-" + unit.getId() + CONTAINER;
+        } else if (unit instanceof ActionUnitDTO) {
+            return "PF('buiContent').hide();onCompleteCallback('panel-action-unit-" + unit.getId() + CONTAINER;
+        } else if (unit instanceof SpatialUnitDTO) {
+            return "PF('buiContent').hide();onCompleteCallback('panel-spatial-unit-" + unit.getId() + CONTAINER;
+        } else {
+            throw new IllegalArgumentException("Non handled type  : " + unit.getClass().getName());
+        }
+    }
+
 
 
 

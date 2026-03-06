@@ -14,11 +14,15 @@ import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.models.vocabulary.Vocabulary;
 import fr.siamois.domain.services.vocabulary.FieldConfigurationService;
 import fr.siamois.domain.services.vocabulary.VocabularyService;
+import fr.siamois.dto.entity.InstitutionDTO;
+import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.infrastructure.database.repositories.institution.InstitutionRepository;
 import fr.siamois.infrastructure.database.repositories.person.PersonRepository;
 import fr.siamois.infrastructure.database.repositories.settings.InstitutionSettingsRepository;
 import fr.siamois.infrastructure.database.repositories.team.ActionManagerRepository;
 import fr.siamois.infrastructure.database.repositories.team.TeamMemberRepository;
+import fr.siamois.mapper.InstitutionMapper;
+import fr.siamois.mapper.PersonMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.Hibernate;
@@ -26,6 +30,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -45,6 +50,8 @@ public class InstitutionService {
     private final ActionManagerRepository actionManagerRepository;
     private final VocabularyService vocabularyService;
     private final FieldConfigurationService fieldConfigurationService;
+    private final PersonMapper personMapper;
+    private final InstitutionMapper institutionMapper;
 
     /**
      * Finds an institution by its identifier.
@@ -53,36 +60,50 @@ public class InstitutionService {
      * @return the institution if found, or null if not found
      */
     @Transactional(readOnly = true)
-    public Institution findById(Long id) {
-        Optional<Institution> institution = institutionRepository.findById(id);
-        return institution.orElse(null);
+    public InstitutionDTO findById(Long id) {
+        Optional<Institution> institutionOpt = institutionRepository.findById(id);
+        if (institutionOpt.isEmpty()) {
+            return null;
+        }
+
+        Institution institution = institutionOpt.get();
+        return institutionMapper.convert(institution);
     }
 
     /**
      * Find all institutions in the system.
      *
-     * @return a set of all institutions
+     * @return a set of all institutions as DTOs
      */
-    public Set<Institution> findAll() {
-        Set<Institution> result = new HashSet<>();
-        for (Institution institution : institutionRepository.findAll())
-            result.add(institution);
-        return result;
+    public Set<InstitutionDTO> findAll() {
+        Iterable<Institution> institutions = institutionRepository.findAll();
+        Set<InstitutionDTO> institutionDTOs = new HashSet<>();
+
+        institutions.forEach(institution ->
+                institutionDTOs.add(institutionMapper.convert(institution))
+        );
+
+        return institutionDTOs;
     }
 
     /**
      * Finds all institutions that a person is associated with.
      *
      * @param person the person whose institutions to find
-     * @return a set of institutions associated with the person
+     * @return a set of institutions associated with the person as DTOs
      */
-    public Set<Institution> findInstitutionsOfPerson(Person person) {
+    public Set<InstitutionDTO> findInstitutionsOfPerson(PersonDTO person) {
         Set<Institution> institutions = new HashSet<>();
         institutions.addAll(institutionRepository.findAllAsMember(person.getId()));
         institutions.addAll(institutionRepository.findAllAsActionManager(person.getId()));
         institutions.addAll(institutionRepository.findAllAsInstitutionManager(person.getId()));
-        return institutions;
+
+        // Convert Set<Institution> to Set<InstitutionDTO>
+        return institutions.stream()
+                .map(institutionMapper::convert)
+                .collect(Collectors.toSet());
     }
+
 
     /**
      * Creates a new institution.
@@ -92,7 +113,7 @@ public class InstitutionService {
      * @throws InstitutionAlreadyExistException if an institution with the same identifier already exists
      * @throws FailedInstitutionSaveException   if there is an error while saving the institution
      */
-    public Institution createInstitution(Institution institution, String thesaurusUrl) throws InstitutionAlreadyExistException, FailedInstitutionSaveException, InvalidEndpointException, NotSiamoisThesaurusException {
+    public InstitutionDTO createInstitution(InstitutionDTO institution, String thesaurusUrl) throws InstitutionAlreadyExistException, FailedInstitutionSaveException, InvalidEndpointException, NotSiamoisThesaurusException {
         Optional<Institution> existing = institutionRepository.findInstitutionByIdentifier(institution.getIdentifier());
         if (existing.isPresent())
             throw new InstitutionAlreadyExistException("Institution with code " + institution.getIdentifier() + " already exists");
@@ -102,9 +123,9 @@ public class InstitutionService {
 
         try {
             // Création de l'institution et préparation des concepts du thésaurus sélectionnés
-            Institution i = institutionRepository.save(institution);
-            fieldConfigurationService.setupFieldConfigurationForInstitution(i, vocabulary);
-            return i;
+            Institution i = institutionRepository.save(Objects.requireNonNull(institutionMapper.invertConvert(institution)));
+            fieldConfigurationService.setupFieldConfigurationForInstitution(institution, vocabulary);
+            return institutionMapper.convert(i);
         } catch (NotSiamoisThesaurusException e) {
             log.error("The thesaurus is not a siamois thesaurus : {}", thesaurusUrl, e);
             throw e;
@@ -171,7 +192,7 @@ public class InstitutionService {
      * @param institution the institution for which to create or retrieve settings
      * @return the institution settings
      */
-    public InstitutionSettings createOrGetSettingsOf(Institution institution) {
+    public InstitutionSettings createOrGetSettingsOf(InstitutionDTO institution) {
         Optional<InstitutionSettings> opt = institutionSettingsRepository.findById(institution.getId());
         if (opt.isPresent()) return opt.get();
         InstitutionSettings empty = new InstitutionSettings();
@@ -211,7 +232,7 @@ public class InstitutionService {
      * @param person      the person to check
      * @return true if the person is a manager of the institution, false otherwise
      */
-    public boolean isManagerOf(Institution institution, Person person) {
+    public boolean isManagerOf(InstitutionDTO institution, PersonDTO person) {
         return institutionRepository.personIsInstitutionManagerOf(institution.getId(), person.getId());
     }
 
@@ -242,8 +263,12 @@ public class InstitutionService {
      * @param institution the institution to check against
      * @return true if the person is associated with the institution, false otherwise
      */
-    public boolean personIsInInstitution(Person person, Institution institution) {
-        Optional<ActionManagerRelation> optManager = actionManagerRepository.findByPersonAndInstitution(person, institution);
+    public boolean personIsInInstitution(PersonDTO person, InstitutionDTO institution) {
+        Person personEntity = personMapper.invertConvert(person);
+        Institution institutionEntity = institutionMapper.invertConvert(institution);
+
+        Optional<ActionManagerRelation> optManager = actionManagerRepository.findByPersonAndInstitution(
+                personEntity, institutionEntity);
         if (optManager.isPresent()) {
             return true;
         }
@@ -268,7 +293,7 @@ public class InstitutionService {
      * @param institution the institution to check against
      * @return true if the person is an institution manager, false otherwise
      */
-    public boolean personIsInstitutionManager(Person person, Institution institution) {
+    public boolean personIsInstitutionManager(PersonDTO person, InstitutionDTO institution) {
         return institutionRepository.personIsInstitutionManagerOf(institution.getId(), person.getId());
     }
 
@@ -279,8 +304,10 @@ public class InstitutionService {
      * @param institution the institution to check against
      * @return true if the person is an action manager, false otherwise
      */
-    public boolean personIsActionManager(Person person, Institution institution) {
-        return actionManagerRepository.findByPersonAndInstitution(person, institution).isPresent();
+    public boolean personIsActionManager(PersonDTO person, InstitutionDTO institution) {
+        Person personEntity = personMapper.invertConvert(person);
+        Institution institutionEntity = institutionMapper.invertConvert(institution);
+        return actionManagerRepository.findByPersonAndInstitution(personEntity, institutionEntity).isPresent();
     }
 
     /**
@@ -290,7 +317,7 @@ public class InstitutionService {
      * @param institution the institution to check against
      * @return true if the person is either an institution manager or an action manager, false otherwise
      */
-    public boolean personIsInstitutionManagerOrActionManager(Person person, Institution institution) {
+    public boolean personIsInstitutionManagerOrActionManager(PersonDTO person, InstitutionDTO institution) {
         return personIsInstitutionManager(person, institution) || personIsActionManager(person, institution);
     }
 

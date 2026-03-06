@@ -1,13 +1,13 @@
 package fr.siamois.domain.services.specimen;
 
-import fr.siamois.domain.models.ArkEntity;
-import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.institution.Institution;
-import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.specimen.Specimen;
-import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.ArkEntityService;
+import fr.siamois.dto.entity.*;
 import fr.siamois.infrastructure.database.repositories.specimen.SpecimenRepository;
+import fr.siamois.mapper.InstitutionMapper;
+import fr.siamois.mapper.SpecimenMapper;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -16,13 +16,13 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 
 @Service
+@RequiredArgsConstructor
 public class SpecimenService implements ArkEntityService {
 
     private final SpecimenRepository specimenRepository;
+    private final SpecimenMapper specimenMapper;
+    private final InstitutionMapper institutionMapper;
 
-    public SpecimenService(SpecimenRepository specimenRepository) {
-        this.specimenRepository = specimenRepository;
-    }
 
     @Override
     public List<Specimen> findWithoutArk(Institution institution) {
@@ -35,7 +35,7 @@ public class SpecimenService implements ArkEntityService {
      * @param specimen the specimen for which the identifier is being generated
      * @return the next identifier to be used for the specimen
      */
-    public int generateNextIdentifier(Specimen specimen) {
+    public int generateNextIdentifier(SpecimenDTO specimen) {
         // Generate next identifier
         Integer currentMaxIdentifier = specimenRepository.findMaxUsedIdentifierByRecordingUnit(specimen.getRecordingUnit().getId());
         return ((currentMaxIdentifier == null) ? 1 : currentMaxIdentifier + 1);
@@ -47,7 +47,7 @@ public class SpecimenService implements ArkEntityService {
      * @param toSave the specimen to save
      * @return the saved specimen
      */
-    public Specimen save(Specimen toSave) {
+    public SpecimenDTO save(SpecimenDTO toSave) {
 
         if (toSave.getFullIdentifier() == null) {
             if (toSave.getIdentifier() == null) {
@@ -55,15 +55,24 @@ public class SpecimenService implements ArkEntityService {
                 toSave.setIdentifier(generateNextIdentifier(toSave));
             }
             // Set full identifier
-            toSave.setFullIdentifier(toSave.displayFullIdentifier());
+            toSave.setFullIdentifier(toSave.getFullIdentifier());
         }
 
-        return specimenRepository.save(toSave);
+        // Convertir SpecimenDTO en Specimen
+        Specimen specimen = specimenMapper.invertConvert(toSave);
+
+        // Sauvegarder l'entité Specimen
+        Specimen savedSpecimen = specimenRepository.save(specimen);
+
+        // Convertir l'entité sauvegardée en SpecimenDTO et la retourner
+        return specimenMapper.convert(savedSpecimen);
     }
 
     @Override
-    public ArkEntity save(ArkEntity toSave) {
-        return specimenRepository.save((Specimen) toSave);
+    public AbstractEntityDTO save(AbstractEntityDTO abstractEntityDTO) {
+        Specimen specimen = specimenMapper.invertConvert((SpecimenDTO) abstractEntityDTO);
+        Specimen saved = specimenRepository.save(specimen);
+        return specimenMapper.convert(saved);
     }
 
     /**
@@ -72,10 +81,12 @@ public class SpecimenService implements ArkEntityService {
      * @param id the ID of the specimen to find
      * @return the specimen if found, or null if not found
      */
-    @Transactional
-    public Specimen findById(Long id) {
-        return specimenRepository.findById(id).orElse(null);
+    @Transactional(readOnly = true)
+    public SpecimenDTO findById(Long id) {
+        Specimen specimen = specimenRepository.findById(id, Specimen.class).orElse(null);
+        return specimen != null ? specimenMapper.convert(specimen) : null;
     }
+
 
     /**
      * Finds all specimens by institution and full identifier containing the specified string,
@@ -88,8 +99,8 @@ public class SpecimenService implements ArkEntityService {
      * @param pageable       the pagination information
      * @return a page of specimens matching the criteria
      */
-    @Transactional
-    public Page<Specimen> findAllByInstitutionAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
+    @Transactional(readOnly = true)
+    public Page<SpecimenDTO> findAllByInstitutionAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
             Long institutionId,
             String fullIdentifier,
             Long[] categoryIds,
@@ -97,10 +108,13 @@ public class SpecimenService implements ArkEntityService {
             String langCode,
             Pageable pageable
     ) {
-        return specimenRepository.findAllByInstitutionAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
+        Page<Specimen> specimenPage = specimenRepository.findAllByInstitutionAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
                 institutionId, fullIdentifier, categoryIds, global, langCode, pageable
         );
+
+        return specimenPage.map(specimenMapper::convert);
     }
+
 
     /**
      * Finds all specimens by institution, recording unit, full identifier containing the specified string,
@@ -114,8 +128,8 @@ public class SpecimenService implements ArkEntityService {
      * @param pageable        the pagination information
      * @return a page of specimens matching the criteria
      */
-    @Transactional
-    public Page<Specimen> findAllByInstitutionAndByRecordingUnitAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
+    @Transactional(readOnly = true)
+    public Page<SpecimenDTO> findAllByInstitutionAndByRecordingUnitAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
             Long institutionId,
             Long recordingUnitId,
             String fullIdentifier,
@@ -124,13 +138,16 @@ public class SpecimenService implements ArkEntityService {
             String langCode,
             Pageable pageable
     ) {
-        return specimenRepository.findAllByInstitutionAndByRecordingUnitIdAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
+        Page<Specimen> specimenPage = specimenRepository.findAllByInstitutionAndByRecordingUnitIdAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
                 institutionId, recordingUnitId, fullIdentifier, categoryIds, global, langCode, pageable
         );
+
+        return specimenPage.map(specimenMapper::convert);
     }
 
-    @Transactional
-    public Page<Specimen> findAllBySpatialUnitAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
+
+    @Transactional(readOnly = true)
+    public Page<SpecimenDTO> findAllBySpatialUnitAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
             Long spatialUnitId,
             String fullIdentifier,
             Long[] categoryIds,
@@ -138,24 +155,30 @@ public class SpecimenService implements ArkEntityService {
             String langCode,
             Pageable pageable
     ) {
-        return specimenRepository.findAllBySpatialUnitIdAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
+        Page<Specimen> specimenPage = specimenRepository.findAllBySpatialUnitIdAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
                 spatialUnitId, fullIdentifier, categoryIds, global, langCode, pageable
         );
+
+        return specimenPage.map(specimenMapper::convert);
     }
 
-    @Transactional
-    public Page<Specimen> findAllByActionUnitAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
+
+    @Transactional(readOnly = true)
+    public Page<SpecimenDTO> findAllByActionUnitAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
             Long actionUnitId,
             String fullIdentifier,
             Long[] categoryIds,
             String global,
             String langCode,
             Pageable pageable
-    ){
-        return specimenRepository.findAllByActionUnitIdAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
+    ) {
+        Page<Specimen> specimenPage = specimenRepository.findAllByActionUnitIdAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
                 actionUnitId, fullIdentifier, categoryIds, global, langCode, pageable
         );
+
+        return specimenPage.map(specimenMapper::convert);
     }
+
 
     /**
      * Updates the type of multiple specimens in bulk.
@@ -165,7 +188,7 @@ public class SpecimenService implements ArkEntityService {
      * @return the number of specimens updated
      */
     @Transactional
-    public int bulkUpdateType(List<Long> ids, Concept type) {
+    public int bulkUpdateType(List<Long> ids, ConceptDTO type) {
         return specimenRepository.updateTypeByIds(type.getId(), ids);
     }
 
@@ -175,15 +198,14 @@ public class SpecimenService implements ArkEntityService {
      * @param institution the institution for which to count the specimens
      * @return the count of specimens created by the institution
      */
-    public long countByInstitution(Institution institution) {
-        return specimenRepository.countByCreatedByInstitution(institution);
+    public long countByInstitution(InstitutionDTO institution) {
+        Institution institutionEntity = institutionMapper.invertConvert(institution);
+        return specimenRepository.countByCreatedByInstitution(institutionEntity);
     }
 
-    public Integer countBySpatialContext(SpatialUnit spatialUnit) {
-        return specimenRepository.countBySpatialContext(spatialUnit.getId());
-    }
 
-    public Integer countByActionContext(ActionUnit actionUnit) {
+
+    public Integer countByActionContext(ActionUnitDTO actionUnit) {
         return specimenRepository.countByActionContext(actionUnit.getId());
     }
 
