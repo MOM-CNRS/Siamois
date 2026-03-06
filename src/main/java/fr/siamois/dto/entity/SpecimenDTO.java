@@ -1,21 +1,18 @@
 package fr.siamois.dto.entity;
 
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 import java.time.OffsetDateTime;
 import java.util.List;
 
-@Getter
-@Setter
+@Data
 @NoArgsConstructor
+@EqualsAndHashCode(callSuper = true)
 public class SpecimenDTO extends AbstractEntityDTO {
 
     private Integer identifier;
     private ConceptDTO type;
     private String fullIdentifier;
-    private Boolean validated;
     private List<PersonDTO> authors;
     private List<PersonDTO> collectors;
     private RecordingUnitDTO recordingUnit;

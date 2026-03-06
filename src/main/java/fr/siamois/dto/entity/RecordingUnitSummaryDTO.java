@@ -1,10 +1,12 @@
 package fr.siamois.dto.entity;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
 @Data
 @NoArgsConstructor
+@EqualsAndHashCode(callSuper = true)
 public class RecordingUnitSummaryDTO extends AbstractEntityDTO {
 
     private String identifier;
@@ -19,6 +21,7 @@ public class RecordingUnitSummaryDTO extends AbstractEntityDTO {
 
     public RecordingUnitSummaryDTO(RecordingUnitDTO plain) {
         identifier = plain.getIdentifier();
+        id = plain.getId();
         fullIdentifier = plain.getFullIdentifier();
         type = plain.getType();
     }

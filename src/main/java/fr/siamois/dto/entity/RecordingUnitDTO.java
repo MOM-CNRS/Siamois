@@ -29,7 +29,6 @@ public class RecordingUnitDTO extends AbstractEntityDTO {
     private SpatialUnitSummaryDTO spatialUnit;
     private Set<StratigraphicRelationshipDTO> relationshipsAsUnit1 ;
     private Set<StratigraphicRelationshipDTO> relationshipsAsUnit2 ;
-    private Boolean validated;
 
     public RecordingUnitDTO(RecordingUnitDTO original) {
         identifier = original.getIdentifier();

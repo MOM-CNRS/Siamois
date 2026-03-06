@@ -184,55 +184,45 @@ function hideProgressBar(widgetVar) {
     const progressBarValue = widgetVar.jq.find('.ui-progressbar-value');
     progressBarValue.css('background-color', 'transparent').hide();
 }
-
 function loadPanel(t, data, s, xhr) {
     console.log("Original Response:", t, data, s, xhr);
 
-
-
-    // Find the update for flow-panels
     const updates = data.getElementsByTagName("update");
     for (let update of updates) {
-        if (update.getAttribute("id") === "flow-panels") {
-            // Extract CDATA content (if any)
-            const cdataNode = update.childNodes[0];
-            if (cdataNode && cdataNode.nodeType === 4) { // CDATA_SECTION_NODE
-                const html = cdataNode.nodeValue;
+        if (update.getAttribute("id") !== "flow-panels") {
+            continue;
+        }
 
-                // Parse the HTML to manipulate it
-                const divParser = new DOMParser();
-                const htmlDoc = divParser.parseFromString(html, "text/html");
-
-                // Get all direct child divs
-                const container = htmlDoc.body;
-                const allDivs = container.querySelectorAll("div");
-                if (allDivs.length > 0) {
-                    // Keep only the first div
-                    const firstDiv = allDivs[0];
-
-                    // Strip all content from flow-panels in the response
-                    cdataNode.nodeValue = "";
-
-                    // Manually insert the first div into the DOM
-                    const flowPanelsElement = document.getElementById("flow-panels");
-                    if (flowPanelsElement) {
-                        flowPanelsElement.innerHTML = firstDiv.outerHTML;
-                    }
-                }
-            }
-            // Prevent PrimeFaces from updating flow-panels (since we did it manually)
-            // by removing the update element from the response
-            update.parentNode.removeChild(update)
+        const cdataNode = update.childNodes[0];
+        if (!cdataNode || cdataNode.nodeType !== 4) { // CDATA_SECTION_NODE
+            update.parentNode.removeChild(update);
             break;
         }
 
+        const html = cdataNode.nodeValue;
+        const divParser = new DOMParser();
+        const htmlDoc = divParser.parseFromString(html, "text/html");
+        const container = htmlDoc.body;
+        const allDivs = container.querySelectorAll("div");
+
+        if (allDivs.length === 0) {
+            update.parentNode.removeChild(update);
+            break;
+        }
+
+        const firstDiv = allDivs[0];
+        cdataNode.nodeValue = "";
+
+        const flowPanelsElement = document.getElementById("flow-panels");
+        if (flowPanelsElement) {
+            flowPanelsElement.innerHTML = firstDiv.outerHTML;
+        }
+
+        update.parentNode.removeChild(update);
+        break;
     }
 
-
-    // Log the modified response (optional)
     console.log("Modified Response:", data);
-
-    // Let PrimeFaces handle the rest of the response
     return true;
 }
 

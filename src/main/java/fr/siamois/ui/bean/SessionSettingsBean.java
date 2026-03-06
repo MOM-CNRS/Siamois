@@ -46,7 +46,7 @@ public class SessionSettingsBean implements Serializable {
     private InstitutionSettings institutionSettings;
     private PersonSettings personSettings;
     private final FlowBean flowBean;
-    private final ConversionService conversionService;
+    private final transient ConversionService conversionService;
 
     @Getter(AccessLevel.NONE)
     @Setter(AccessLevel.NONE)

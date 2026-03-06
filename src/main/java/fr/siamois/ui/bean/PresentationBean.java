@@ -22,7 +22,7 @@ import java.util.Optional;
 public class PresentationBean implements Serializable {
 
     private final SessionSettingsBean sessionSettingsBean;
-    private final ConversionService conversionService;
+    private final transient ConversionService conversionService;
 
 
     public void continueToDashboardIfLogged() {

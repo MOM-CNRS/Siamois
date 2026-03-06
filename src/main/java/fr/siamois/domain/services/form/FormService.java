@@ -467,33 +467,34 @@ public class FormService {
         }
     }
 
-    private void setStratigraphyFieldValue(CustomFieldAnswerStratigraphyViewModel stratiAnswer, RecordingUnitDTO entity) {
+    private void setStratigraphyFieldValue(
+            CustomFieldAnswerStratigraphyViewModel stratiAnswer,
+            RecordingUnitDTO entity) {
         // Clear existing relationships to avoid duplicates
         entity.getRelationshipsAsUnit1().clear();
         entity.getRelationshipsAsUnit2().clear();
 
         // Helper method to add relationships to the correct set
-        // TODO : check equality method for recordingunit and recordingunitsummary
         for (StratigraphicRelationshipDTO rel : stratiAnswer.getAnteriorRelationships()) {
-            if (rel.getUnit1().equals(entity)) {
+            if (rel.getUnit1().getId().equals(entity.getId())) {
                 entity.getRelationshipsAsUnit1().add(rel);
-            } else if (rel.getUnit2().equals(entity)) {
+            } else if (rel.getUnit2().getId().equals(entity.getId())) {
                 entity.getRelationshipsAsUnit2().add(rel);
             }
         }
 
         for (StratigraphicRelationshipDTO rel : stratiAnswer.getPosteriorRelationships()) {
-            if (rel.getUnit1().equals(entity)) {
+            if (rel.getUnit1().getId().equals(entity.getId())) {
                 entity.getRelationshipsAsUnit1().add(rel);
-            } else if (rel.getUnit2().equals(entity)) {
+            } else if (rel.getUnit2().getId().equals(entity.getId())) {
                 entity.getRelationshipsAsUnit2().add(rel);
             }
         }
 
         for (StratigraphicRelationshipDTO rel : stratiAnswer.getSynchronousRelationships()) {
-            if (rel.getUnit1().equals(entity)) {
+            if (rel.getUnit1().getId().equals(entity.getId())) {
                 entity.getRelationshipsAsUnit1().add(rel);
-            } else if (rel.getUnit2().equals(entity)) {
+            } else if (rel.getUnit2().getId().equals(entity.getId())) {
                 entity.getRelationshipsAsUnit2().add(rel);
             }
         }

@@ -3,10 +3,12 @@ package fr.siamois.domain.services.form;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import fr.siamois.domain.models.actionunit.ActionCode;
 import fr.siamois.domain.models.form.customfield.CustomField;
+import fr.siamois.domain.models.form.customfield.CustomFieldStratigraphy;
 import fr.siamois.domain.models.form.customform.CustomForm;
 import fr.siamois.domain.models.form.customform.EnabledWhenJson;
 import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.vocabulary.Concept;
+import fr.siamois.dto.StratigraphicRelationshipDTO;
 import fr.siamois.dto.entity.*;
 import fr.siamois.infrastructure.database.repositories.form.FormRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
@@ -669,6 +671,219 @@ class FormServiceTest {
         }
     }
 
+    // Helper method to create a RecordingUnitDTO with a specific ID
+    private RecordingUnitDTO createRecordingUnitDTO(Long id) {
+        RecordingUnitDTO unit = new RecordingUnitDTO();
+        unit.setId(id);
+        unit.setRelationshipsAsUnit1(new HashSet<>());
+        unit.setRelationshipsAsUnit2(new HashSet<>());
+        return unit;
+    }
+
+    // Helper method to create a StratigraphicRelationshipDTO with specific units
+    private StratigraphicRelationshipDTO createStratigraphicRelationshipDTO(RecordingUnitDTO unit1, RecordingUnitDTO unit2) {
+        StratigraphicRelationshipDTO rel = new StratigraphicRelationshipDTO();
+        rel.setUnit1(new RecordingUnitSummaryDTO(unit1));
+        rel.setUnit2(new RecordingUnitSummaryDTO(unit2));
+        return rel;
+    }
+
+    private CustomFormResponseViewModel createResponse(CustomFieldAnswerStratigraphyViewModel stratiAnswer) {
+        CustomFormResponseViewModel response = new CustomFormResponseViewModel();
+
+        CustomFieldStratigraphy field = new CustomFieldStratigraphy();
+
+        Map<CustomField, CustomFieldAnswerViewModel> answers = new HashMap<>();
+        answers.put(field, stratiAnswer);
+
+        response.setAnswers(answers);
+
+        return response;
+    }
+
+    @Test
+    void updateJpaEntityFromResponse_AddsAnteriorRelationshipsCorrectly() {
+
+        RecordingUnitDTO entity = createRecordingUnitDTO(1L);
+        RecordingUnitDTO unit2 = createRecordingUnitDTO(2L);
+
+        CustomFieldAnswerStratigraphyViewModel stratiAnswer = new CustomFieldAnswerStratigraphyViewModel();
+
+        StratigraphicRelationshipDTO rel1 = createStratigraphicRelationshipDTO(entity, unit2);
+        StratigraphicRelationshipDTO rel2 = createStratigraphicRelationshipDTO(unit2, entity);
+
+        stratiAnswer.getAnteriorRelationships().add(rel1);
+        stratiAnswer.getPosteriorRelationships().add(rel2);
+
+        CustomFormResponseViewModel response = createResponse(stratiAnswer);
+
+        formService.updateJpaEntityFromResponse(response, entity);
+
+        assertEquals(1, entity.getRelationshipsAsUnit1().size());
+        assertTrue(entity.getRelationshipsAsUnit1().contains(rel1));
+
+        assertEquals(1, entity.getRelationshipsAsUnit2().size());
+        assertTrue(entity.getRelationshipsAsUnit2().contains(rel2));
+    }
+
+    @Test
+    void updateJpaEntityFromResponse_AddsPosteriorRelationshipsCorrectly() {
+        // Arrange
+        RecordingUnitDTO entity = createRecordingUnitDTO(1L);
+        RecordingUnitDTO unit2 = createRecordingUnitDTO(2L);
+
+        CustomFieldAnswerStratigraphyViewModel stratiAnswer = new CustomFieldAnswerStratigraphyViewModel();
+
+        StratigraphicRelationshipDTO rel1 = createStratigraphicRelationshipDTO(entity, unit2);
+        StratigraphicRelationshipDTO rel2 = createStratigraphicRelationshipDTO(unit2, entity);
+
+        stratiAnswer.getPosteriorRelationships().add(rel1);
+        stratiAnswer.getAnteriorRelationships().add(rel2);
+
+        CustomFormResponseViewModel response = createResponse(stratiAnswer);
+
+        // Act
+        formService.updateJpaEntityFromResponse(response, entity);
+
+        // Assert
+        assertEquals(1, entity.getRelationshipsAsUnit1().size());
+        assertTrue(entity.getRelationshipsAsUnit1().contains(rel1));
+
+        assertEquals(1, entity.getRelationshipsAsUnit2().size());
+        assertTrue(entity.getRelationshipsAsUnit2().contains(rel2));
+    }
+
+    @Test
+    void updateJpaEntityFromResponse_AddsSynchronousRelationshipsCorrectly() {
+
+        RecordingUnitDTO entity = createRecordingUnitDTO(1L);
+        RecordingUnitDTO unit2 = createRecordingUnitDTO(2L);
+
+        CustomFieldAnswerStratigraphyViewModel stratiAnswer = new CustomFieldAnswerStratigraphyViewModel();
+
+        StratigraphicRelationshipDTO rel1 = createStratigraphicRelationshipDTO(entity, unit2);
+        StratigraphicRelationshipDTO rel2 = createStratigraphicRelationshipDTO(unit2, entity);
+
+        stratiAnswer.getSynchronousRelationships().add(rel1);
+        stratiAnswer.getSynchronousRelationships().add(rel2);
+
+        CustomFormResponseViewModel response = createResponse(stratiAnswer);
+
+        formService.updateJpaEntityFromResponse(response, entity);
+
+        assertEquals(1, entity.getRelationshipsAsUnit1().size());
+        assertTrue(entity.getRelationshipsAsUnit1().contains(rel1));
+
+        assertEquals(1, entity.getRelationshipsAsUnit2().size());
+        assertTrue(entity.getRelationshipsAsUnit2().contains(rel2));
+    }
+
+    @Test
+    void updateJpaEntityFromResponse_ClearsExistingRelationships() {
+
+        RecordingUnitDTO entity = createRecordingUnitDTO(1L);
+        RecordingUnitDTO unit2 = createRecordingUnitDTO(2L);
+
+        StratigraphicRelationshipDTO existingRel = createStratigraphicRelationshipDTO(entity, unit2);
+        entity.getRelationshipsAsUnit1().add(existingRel);
+
+        CustomFieldAnswerStratigraphyViewModel stratiAnswer = new CustomFieldAnswerStratigraphyViewModel();
+
+        CustomFormResponseViewModel response = createResponse(stratiAnswer);
+
+        formService.updateJpaEntityFromResponse(response, entity);
+
+        assertTrue(entity.getRelationshipsAsUnit1().isEmpty());
+        assertTrue(entity.getRelationshipsAsUnit2().isEmpty());
+    }
+
+    private FieldSource fieldSourceWith(CustomField field) {
+        FieldSource fs = mock(FieldSource.class);
+        when(fs.getAllFields()).thenReturn(List.of(field));
+        return fs;
+    }
+    private StratigraphicRelationshipDTO createRelationship(
+            RecordingUnitDTO u1,
+            RecordingUnitDTO u2,
+            Boolean async
+    ) {
+        StratigraphicRelationshipDTO rel = new StratigraphicRelationshipDTO();
+        rel.setUnit1(new RecordingUnitSummaryDTO(u1));
+        rel.setUnit2(new RecordingUnitSummaryDTO(u2));
+        rel.setIsAsynchronous(async);
+        return rel;
+    }
+    private CustomField createStratigraphyField() {
+        CustomFieldStratigraphy field = new CustomFieldStratigraphy();
+        return field;
+    }
+    @Test
+    void initOrReuseResponse_collectsSynchronousRelationships() {
+
+        RecordingUnitDTO unit1 = createRecordingUnitDTO(1L);
+        RecordingUnitDTO unit2 = createRecordingUnitDTO(2L);
+
+        StratigraphicRelationshipDTO rel1 = createRelationship(unit1, unit2, false);
+        StratigraphicRelationshipDTO rel2 = createRelationship(unit2, unit1, false);
+
+        unit1.getRelationshipsAsUnit1().add(rel1);
+        unit1.getRelationshipsAsUnit2().add(rel2);
+
+        CustomField field = createStratigraphyField();
+        FieldSource fs = fieldSourceWith(field);
+
+        CustomFormResponseViewModel response =
+                formService.initOrReuseResponse(null, unit1, fs, false);
+
+        CustomFieldAnswerStratigraphyViewModel answer =
+                (CustomFieldAnswerStratigraphyViewModel) response.getAnswers().get(field);
+
+        assertEquals(2, answer.getSynchronousRelationships().size());
+        assertTrue(answer.getAnteriorRelationships().isEmpty());
+        assertTrue(answer.getPosteriorRelationships().isEmpty());
+    }
+    @Test
+    void initOrReuseResponse_addsPosteriorRelationships() {
+
+        RecordingUnitDTO unit1 = createRecordingUnitDTO(1L);
+        RecordingUnitDTO unit2 = createRecordingUnitDTO(2L);
+
+        StratigraphicRelationshipDTO rel = createRelationship(unit1, unit2, true);
+
+        unit1.getRelationshipsAsUnit1().add(rel);
+
+        CustomField field = createStratigraphyField();
+        FieldSource fs = fieldSourceWith(field);
+
+        CustomFormResponseViewModel response =
+                formService.initOrReuseResponse(null, unit1, fs, false);
+
+        CustomFieldAnswerStratigraphyViewModel answer =
+                (CustomFieldAnswerStratigraphyViewModel) response.getAnswers().get(field);
+
+        assertEquals(1, answer.getPosteriorRelationships().size());
+    }
+    @Test
+    void initOrReuseResponse_addsAnteriorRelationships() {
+
+        RecordingUnitDTO unit1 = createRecordingUnitDTO(1L);
+        RecordingUnitDTO unit2 = createRecordingUnitDTO(2L);
+
+        StratigraphicRelationshipDTO rel = createRelationship(unit2, unit1, true);
+
+        unit1.getRelationshipsAsUnit2().add(rel);
+
+        CustomField field = createStratigraphyField();
+        FieldSource fs = fieldSourceWith(field);
+
+        CustomFormResponseViewModel response =
+                formService.initOrReuseResponse(null, unit1, fs, false);
+
+        CustomFieldAnswerStratigraphyViewModel answer =
+                (CustomFieldAnswerStratigraphyViewModel) response.getAnswers().get(field);
+
+        assertEquals(1, answer.getAnteriorRelationships().size());
+    }
 
 
 
