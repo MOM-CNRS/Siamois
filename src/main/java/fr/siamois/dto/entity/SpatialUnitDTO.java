@@ -11,7 +11,8 @@ import java.util.Set;
 public class SpatialUnitDTO extends AbstractEntityDTO {
 
     public SpatialUnitDTO (SpatialUnitDTO spatialUnitDTO) {
-        new SpatialUnitDTO();
+        id = spatialUnitDTO.getId();
+        name = spatialUnitDTO.getName();
     }
 
     private String name;

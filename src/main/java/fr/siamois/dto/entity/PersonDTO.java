@@ -2,8 +2,6 @@ package fr.siamois.dto.entity;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.Setter;
 
 @EqualsAndHashCode(callSuper = true)
 @Data

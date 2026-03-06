@@ -251,8 +251,8 @@ class ActionUnitServiceTest {
                 "Les institutions doivent correspondre");
 
         // Vérification des appels
-        verify(actionUnitRepository).findByNameAndCreatedByInstitutionId(eq(name), eq(1L));
-        verify(actionUnitRepository).findByIdentifierAndCreatedByInstitutionId(eq(identifier), eq(1L));
+        verify(actionUnitRepository).findByNameAndCreatedByInstitutionId(name, 1L);
+        verify(actionUnitRepository).findByIdentifierAndCreatedByInstitutionId(identifier ,1L);
         verify(actionUnitMapper).invertConvert(actionUnitDto);
         verify(conceptService).saveOrGetConcept(typeConceptDto);
         verify(personMapper).invertConvert(personDto);

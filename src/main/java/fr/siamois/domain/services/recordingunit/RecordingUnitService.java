@@ -465,7 +465,7 @@ public class RecordingUnitService implements ArkEntityService {
         initializeRecordingUnitCollections(recordingUnits);
         return recordingUnits.stream()
                 .map(recordingUnitMapper::convert)
-                .collect(Collectors.toList());
+                .toList();
     }
 
 
@@ -481,7 +481,7 @@ public class RecordingUnitService implements ArkEntityService {
         initializeRecordingUnitCollections(res);
         return res.stream()
                 .map(recordingUnitMapper::convert)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     /**
@@ -523,7 +523,7 @@ public class RecordingUnitService implements ArkEntityService {
         initializeRecordingUnitCollections(res);
         return res.stream()
                 .map(recordingUnitMapper::convert)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     // Reusable method to initialize collections
@@ -686,7 +686,7 @@ public class RecordingUnitService implements ArkEntityService {
                 .findAllByActionUnitId(actionUnitId)
                 .stream()
                 .map(unit -> conversionService.convert(unit, RecordingUnitDTO.class))
-                .collect(Collectors.toList());
+                .toList();
     }
 
     /**
@@ -699,7 +699,7 @@ public class RecordingUnitService implements ArkEntityService {
     public List<RecordingUnitDTO> findDirectParentsOf(Long id) {
         return recordingUnitRepository.findParentsOf(id).stream()
                 .map(unit -> conversionService.convert(unit, RecordingUnitDTO.class))
-                .collect(Collectors.toList());
+                .toList();
     }
 
 

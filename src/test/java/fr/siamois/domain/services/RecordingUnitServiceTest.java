@@ -290,9 +290,9 @@ class RecordingUnitServiceTest {
     void save_shouldUpdateExistingUnit_whenIdIsProvided() {
         // Arrange
         long existingId = 42L;
-        RecordingUnitDTO recordingUnitToSave = new RecordingUnitDTO();
-        recordingUnitToSave.setId(existingId);
-        recordingUnitToSave.setDescription("Updated description");
+        RecordingUnitDTO recordingUnitToSave2 = new RecordingUnitDTO();
+        recordingUnitToSave2.setId(existingId);
+        recordingUnitToSave2.setDescription("Updated description");
 
         RecordingUnit foundUnit = new RecordingUnit();
         foundUnit.setId(existingId);
@@ -307,7 +307,7 @@ class RecordingUnitServiceTest {
         expectedDTO.setDescription("Updated description");
 
         // Mock the mapper to return a RecordingUnit when converting from DTO
-        when(recordingUnitMapper.invertConvert(recordingUnitToSave)).thenReturn(savedUnit);
+        when(recordingUnitMapper.invertConvert(recordingUnitToSave2)).thenReturn(savedUnit);
         // Mock the repository to return the found unit when searching by ID
         when(recordingUnitRepository.findById(existingId)).thenReturn(Optional.of(foundUnit));
         // Mock the repository to return the saved unit when saving
@@ -318,7 +318,7 @@ class RecordingUnitServiceTest {
         when(personRepository.findAllById(anyList())).thenReturn(List.of());
 
         // Act
-        RecordingUnitDTO result = recordingUnitService.save(recordingUnitToSave);
+        RecordingUnitDTO result = recordingUnitService.save(recordingUnitToSave2);
 
         // Assert
         assertNotNull(result);
@@ -404,41 +404,41 @@ class RecordingUnitServiceTest {
         String langCode = "fr";
 
         // Mock RecordingUnit objects
-        RecordingUnit recordingUnit1 = new RecordingUnit();
-        recordingUnit1.setId(1L);
-        recordingUnit1.setParents(new HashSet<>());
-        recordingUnit1.setChildren(new HashSet<>());
+        RecordingUnit recordingUnit11 = new RecordingUnit();
+        recordingUnit11.setId(1L);
+        recordingUnit11.setParents(new HashSet<>());
+        recordingUnit11.setChildren(new HashSet<>());
 
-        RecordingUnit recordingUnit2 = new RecordingUnit();
-        recordingUnit2.setId(2L);
-        recordingUnit2.setParents(new HashSet<>());
-        recordingUnit2.setChildren(new HashSet<>());
+        RecordingUnit recordingUnit22 = new RecordingUnit();
+        recordingUnit22.setId(2L);
+        recordingUnit22.setParents(new HashSet<>());
+        recordingUnit22.setChildren(new HashSet<>());
 
-        List<RecordingUnit> recordingUnits = Arrays.asList(recordingUnit1, recordingUnit2);
+        List<RecordingUnit> recordingUnits = Arrays.asList(recordingUnit11, recordingUnit22);
 
         // Mock Page<RecordingUnit>
-        Page<RecordingUnit> page = new PageImpl<>(recordingUnits);
+        Page<RecordingUnit> page2 = new PageImpl<>(recordingUnits);
 
         // Mock DTOs
-        RecordingUnitDTO recordingUnit1DTO = new RecordingUnitDTO();
-        recordingUnit1DTO.setId(1L);
+        RecordingUnitDTO recordingUnit1DTO2 = new RecordingUnitDTO();
+        recordingUnit1DTO2.setId(1L);
 
-        RecordingUnitDTO recordingUnit2DTO = new RecordingUnitDTO();
-        recordingUnit2DTO.setId(2L);
+        RecordingUnitDTO recordingUnit2DTO2 = new RecordingUnitDTO();
+        recordingUnit2DTO2.setId(2L);
 
         // Mock repository call
         when(recordingUnitRepository.findAllByInstitutionAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
-                eq(institutionId),
-                eq(fullIdentifier),
-                eq(categoryIds),
-                eq(global),
-                eq(langCode),
+                institutionId,
+                fullIdentifier,
+                categoryIds,
+                global,
+                langCode,
                 any(Pageable.class)
-        )).thenReturn(page);
+        )).thenReturn(page2);
 
         // Mock mapper conversion
-        when(recordingUnitMapper.convert(recordingUnit1)).thenReturn(recordingUnit1DTO);
-        when(recordingUnitMapper.convert(recordingUnit2)).thenReturn(recordingUnit2DTO);
+        when(recordingUnitMapper.convert(recordingUnit11)).thenReturn(recordingUnit1DTO2);
+        when(recordingUnitMapper.convert(recordingUnit22)).thenReturn(recordingUnit2DTO2);
 
         // Act
         Page<RecordingUnitDTO> actualResult = recordingUnitService.findAllByInstitutionAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
@@ -459,39 +459,38 @@ class RecordingUnitServiceTest {
         Long[] categoryIds = {1L, 2L};
         String global = "global";
         String langCode = "fr";
-        Pageable pageable = Pageable.unpaged();
+        Pageable pageable2 = Pageable.unpaged();
 
         RecordingUnit unit1 = new RecordingUnit();
         RecordingUnit unit2 = new RecordingUnit();
-        Page<RecordingUnit> page = new PageImpl<>(List.of(unit1, unit2));
+        Page<RecordingUnit> page2 = new PageImpl<>(List.of(unit1, unit2));
 
         RecordingUnitDTO dto1 = new RecordingUnitDTO();
         RecordingUnitDTO dto2 = new RecordingUnitDTO();
         Page<RecordingUnitDTO> expectedPageDto = new PageImpl<>(List.of(dto1, dto2));
 
         when(recordingUnitRepository.findAllByInstitutionAndByActionUnitAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
-                eq(institutionId), eq(actionId), eq(fullIdentifier), eq(categoryIds), eq(global), eq(langCode), eq(pageable)
-        )).thenReturn(page);
+                institutionId, actionId, fullIdentifier, categoryIds, global, langCode, pageable2
+        )).thenReturn(page2);
 
         when(recordingUnitMapper.convert(unit1)).thenReturn(dto1);
         when(recordingUnitMapper.convert(unit2)).thenReturn(dto2);
 
         // Act
         Page<RecordingUnitDTO> result = recordingUnitService.findAllByInstitutionAndByActionUnitAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
-                institutionId, actionId, fullIdentifier, categoryIds, global, langCode, pageable
+                institutionId, actionId, fullIdentifier, categoryIds, global, langCode, pageable2
         );
 
         // Assert
         assertThat(result).isEqualTo(expectedPageDto);
         verify(recordingUnitRepository).findAllByInstitutionAndByActionUnitAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
-                institutionId, actionId, fullIdentifier, categoryIds, global, langCode, pageable
+                institutionId, actionId, fullIdentifier, categoryIds, global, langCode, pageable2
         );
     }
 
     @Test
     void canCreateSpecimen_returnsTrue_whenUserIsManagerOfCreatingInstitution() {
-        RecordingUnit recordingUnit;
-        recordingUnit = mock(RecordingUnit.class);
+
 
         when(institutionService.isManagerOf(any(InstitutionDTO.class), any(PersonDTO.class))).thenReturn(true);
 
@@ -502,8 +501,7 @@ class RecordingUnitServiceTest {
 
     @Test
     void canCreateSpecimen_returnsTrue_whenUserIsActionUnitManager() {
-        RecordingUnit recordingUnit;
-        recordingUnit = mock(RecordingUnit.class);
+
 
         when(institutionService.isManagerOf(any(InstitutionDTO.class), any(PersonDTO.class))).thenReturn(false);
         when(actionUnitService.isManagerOf(a1, user)).thenReturn(true);
@@ -515,8 +513,7 @@ class RecordingUnitServiceTest {
 
     @Test
     void canCreateSpecimen_returnsTrue_whenUserIsTeamMember_andActionUnitIsOngoing() {
-        RecordingUnit recordingUnit;
-        recordingUnit = mock(RecordingUnit.class);
+
 
 
         when(institutionService.isManagerOf(any(InstitutionDTO.class), any(PersonDTO.class))).thenReturn(false);

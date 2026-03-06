@@ -26,10 +26,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -171,7 +168,7 @@ public class PersonService {
         List<Person> authors = personRepository.findAllAuthorsOfSpatialUnitByInstitution(institution.getId());
         return authors.stream()
                 .map(person -> conversionService.convert(person, PersonDTO.class))
-                .collect(Collectors.toList());
+                .toList();
     }
 
     /**
@@ -208,6 +205,7 @@ public class PersonService {
         checkPersonData(personDTO, false);
         checkPassword(password);
         Person person = conversionService.convert(personDTO,Person.class);
+        Objects.requireNonNull(person, "Conversion failed");
         personRepository.save(person);
     }
 

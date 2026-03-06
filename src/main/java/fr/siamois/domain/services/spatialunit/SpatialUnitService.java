@@ -23,6 +23,7 @@ import fr.siamois.mapper.InstitutionMapper;
 import fr.siamois.mapper.RecordingUnitMapper;
 import fr.siamois.mapper.SpatialUnitMapper;
 import fr.siamois.mapper.SpatialUnitSummaryMapper;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.Hibernate;
 import org.springframework.core.convert.ConversionService;
@@ -43,6 +44,7 @@ import java.util.stream.Collectors;
  */
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class SpatialUnitService implements ArkEntityService {
 
     private final SpatialUnitRepository spatialUnitRepository;
@@ -51,25 +53,11 @@ public class SpatialUnitService implements ArkEntityService {
     private final InstitutionService institutionService;
     private final PersonService personService;
     private final PermissionServiceImpl permissionService;
-    private final ConversionService conversionService;
     private final SpatialUnitMapper spatialUnitMapper;
     private final RecordingUnitMapper recordingUnitMapper;
     private final SpatialUnitSummaryMapper spatialUnitSummaryMapper;
     private final InstitutionMapper institutionMapper;
 
-    public SpatialUnitService(SpatialUnitRepository spatialUnitRepository, ConceptService conceptService, ArkService arkService, InstitutionService institutionService, PersonService personService, PermissionServiceImpl permissionService, ConversionService conversionService, SpatialUnitMapper spatialUnitMapper, RecordingUnitMapper recordingUnitMapper, SpatialUnitSummaryMapper spatialUnitSummaryMapper, InstitutionMapper institutionMapper) {
-        this.spatialUnitRepository = spatialUnitRepository;
-        this.conceptService = conceptService;
-        this.arkService = arkService;
-        this.institutionService = institutionService;
-        this.personService = personService;
-        this.permissionService = permissionService;
-        this.conversionService = conversionService;
-        this.spatialUnitMapper = spatialUnitMapper;
-        this.recordingUnitMapper = recordingUnitMapper;
-        this.spatialUnitSummaryMapper = spatialUnitSummaryMapper;
-        this.institutionMapper = institutionMapper;
-    }
 
 
     /**
@@ -198,7 +186,7 @@ public class SpatialUnitService implements ArkEntityService {
         List<SpatialUnit> spatialUnits = spatialUnitRepository.findAllOfInstitution(id);
         return spatialUnits.stream()
                 .map(spatialUnitMapper::convert)
-                .collect(Collectors.toList());
+                .toList();
     }
 
 
@@ -370,7 +358,7 @@ public class SpatialUnitService implements ArkEntityService {
         }
         return result.stream()
                 .map(spatialUnitMapper::convert)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     /**
@@ -383,7 +371,7 @@ public class SpatialUnitService implements ArkEntityService {
     public List<SpatialUnitDTO> findDirectChildrensOf(Long id) {
         return spatialUnitRepository.findChildrensOf(id).stream()
                 .map(spatialUnitMapper::convert)
-                .collect(Collectors.toList());
+                .toList();
     }
 
 
@@ -397,7 +385,7 @@ public class SpatialUnitService implements ArkEntityService {
     public List<SpatialUnitDTO> findDirectParentsOf(Long id) {
         return spatialUnitRepository.findParentsOf(id).stream()
                 .map(spatialUnitMapper::convert)
-                .collect(Collectors.toList());
+                .toList();
     }
 
 
