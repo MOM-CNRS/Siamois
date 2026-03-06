@@ -1,6 +1,7 @@
 package fr.siamois.ui.viewmodel.fieldanswer;
 
 import fr.siamois.domain.models.actionunit.ActionCode;
+import fr.siamois.dto.entity.ActionCodeDTO;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -9,5 +10,5 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 public class CustomFieldAnswerSelectOneActionCodeViewModel extends CustomFieldAnswerViewModel {
-     private ActionCode value;
+     private ActionCodeDTO value;
 }

@@ -26,7 +26,7 @@ public class ActionUnitDTO extends AbstractEntityDTO {
     protected String recordingUnitIdentifierLang;
     private OffsetDateTime beginDate;
     private OffsetDateTime endDate;
-    private ActionCode primaryActionCode;
+    private ActionCodeDTO primaryActionCode;
     private Set<ActionCode> secondaryActionCodes;
 
     public List<String> getBindableFieldNames() {

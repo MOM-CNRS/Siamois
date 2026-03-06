@@ -360,6 +360,18 @@ public class SpatialUnitService implements ArkEntityService {
                 .toList();
     }
 
+    public List<SpatialUnitSummaryDTO> findSummaryRootsOf(Long id) {
+        List<SpatialUnit> result = new ArrayList<>();
+        for (SpatialUnit spatialUnit : spatialUnitRepository.findAllOfInstitution(id)) {
+            if (spatialUnitRepository.countParentsByChildId(spatialUnit.getId()) == 0) {
+                result.add(spatialUnit);
+            }
+        }
+        return result.stream()
+                .map(spatialUnitSummaryMapper::convert)
+                .toList();
+    }
+
     /**
      * Find all direct children of a given SpatialUnit
      *
@@ -370,6 +382,13 @@ public class SpatialUnitService implements ArkEntityService {
     public List<SpatialUnitDTO> findDirectChildrensOf(Long id) {
         return spatialUnitRepository.findChildrensOf(id).stream()
                 .map(spatialUnitMapper::convert)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<SpatialUnitSummaryDTO> findDirectChildrensSummaryOf(Long id) {
+        return spatialUnitRepository.findChildrensOf(id).stream()
+                .map(spatialUnitSummaryMapper::convert)
                 .toList();
     }
 

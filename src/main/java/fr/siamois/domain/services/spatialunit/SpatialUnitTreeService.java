@@ -1,6 +1,7 @@
 package fr.siamois.domain.services.spatialunit;
 
 import fr.siamois.dto.entity.SpatialUnitDTO;
+import fr.siamois.dto.entity.SpatialUnitSummaryDTO;
 import fr.siamois.ui.bean.SessionSettingsBean;
 import org.primefaces.model.CheckboxTreeNode;
 import org.primefaces.model.TreeNode;
@@ -22,19 +23,19 @@ public class SpatialUnitTreeService {
     }
 
     /** Récursion avec détection de cycle par "chemin" */
-    private void buildChildren(TreeNode<SpatialUnitDTO> parentNode, SpatialUnitDTO parent, Set<Long> pathIds) {
-        List<SpatialUnitDTO> enfants = spatialUnitService.findDirectChildrensOf(parent.getId());
+    private void buildChildren(TreeNode<SpatialUnitSummaryDTO> parentNode, SpatialUnitSummaryDTO parent, Set<Long> pathIds) {
+        List<SpatialUnitSummaryDTO> enfants = spatialUnitService.findDirectChildrensSummaryOf(parent.getId());
         if (enfants == null || enfants.isEmpty()) {
             return;
         }
-        for (SpatialUnitDTO child : enfants) {
+        for (SpatialUnitSummaryDTO child : enfants) {
             if (pathIds.contains(child.getId())) {
                 // Cycle détecté : on l’affiche en grisé et non sélectionnable
-                TreeNode<SpatialUnitDTO> cycle = new CheckboxTreeNode<>("cycle", child, parentNode);
+                TreeNode<SpatialUnitSummaryDTO> cycle = new CheckboxTreeNode<>("cycle", child, parentNode);
                 cycle.setSelectable(false);
                 continue;
             }
-            TreeNode<SpatialUnitDTO> childNode = new CheckboxTreeNode<>("SpatialUnit", child, parentNode);
+            TreeNode<SpatialUnitSummaryDTO> childNode = new CheckboxTreeNode<>("SpatialUnit", child, parentNode);
             // nouveau "chemin" pour la branche (important avec multi-parents)
             Set<Long> nextPath = new HashSet<>(pathIds);
             nextPath.add(child.getId());
@@ -47,13 +48,13 @@ public class SpatialUnitTreeService {
      * Returns the tree node of all the spatial units in the active institution
      * @return The tree node
      */
-    public TreeNode<SpatialUnitDTO> buildTree() {
+    public TreeNode<SpatialUnitSummaryDTO> buildTree() {
 
-        TreeNode<SpatialUnitDTO> root = new CheckboxTreeNode<>(new SpatialUnitDTO(), null);
-        List<SpatialUnitDTO> racines = spatialUnitService.findRootsOf(sessionSettingsBean.getSelectedInstitution().getId());
+        TreeNode<SpatialUnitSummaryDTO> root = new CheckboxTreeNode<>(new SpatialUnitSummaryDTO(), null);
+        List<SpatialUnitSummaryDTO> racines = spatialUnitService.findSummaryRootsOf(sessionSettingsBean.getSelectedInstitution().getId());
 
-        for (SpatialUnitDTO r : racines) {
-            TreeNode<SpatialUnitDTO> rNode = new CheckboxTreeNode<>("SpatialUnit", r, root);
+        for (SpatialUnitSummaryDTO r : racines) {
+            TreeNode<SpatialUnitSummaryDTO> rNode = new CheckboxTreeNode<>("SpatialUnit", r, root);
             rNode.setExpanded(false);
             // we memorize path to avoid cycles
             Set<Long> path = new HashSet<>();

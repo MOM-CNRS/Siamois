@@ -294,7 +294,8 @@ public class FormService {
         answer.setPk(answerId);
         answer.setHasBeenModified(false);
 
-        if(answer instanceof CustomFieldAnswerStratigraphyViewModel stratiAnswer && jpaEntity instanceof RecordingUnitDTO ru) {
+        if(answer instanceof CustomFieldAnswerStratigraphyViewModel stratiAnswer
+                && jpaEntity instanceof RecordingUnitDTO ru) {
             // Special case
             handleStratigraphyRelationships(stratiAnswer, ru);
             return;
@@ -320,9 +321,9 @@ public class FormService {
         handlers.put(PersonDTO.class, this::handlePerson);
         handlers.put(List.class, this::handlePersonList);
         handlers.put(ConceptDTO.class, this::handleConcept);
-        handlers.put(ActionUnitDTO.class, this::handleActionUnit);
-        handlers.put(SpatialUnitDTO.class, this::handleSpatialUnit);
-        handlers.put(ActionCode.class, this::handleActionCode);
+        handlers.put(ActionUnitSummaryDTO.class, this::handleActionUnit);
+        handlers.put(SpatialUnitSummaryDTO.class, this::handleSpatialUnit);
+        handlers.put(ActionCodeDTO.class, this::handleActionCode);
         handlers.put(Integer.class, this::handleInteger);
         handlers.put(Set.class, this::handleSpatialUnitSet);
 
@@ -374,19 +375,19 @@ public class FormService {
 
     private void handleActionUnit(CustomFieldAnswerViewModel answer, Object value) {
         if (answer instanceof CustomFieldAnswerSelectOneActionUnitViewModel actionUnitAnswer) {
-            actionUnitAnswer.setValue((ActionUnitDTO) value);
+            actionUnitAnswer.setValue((ActionUnitSummaryDTO) value);
         }
     }
 
     private void handleSpatialUnit(CustomFieldAnswerViewModel answer, Object value) {
         if (answer instanceof CustomFieldAnswerSelectOneSpatialUnitViewModel spatialUnitAnswer) {
-            spatialUnitAnswer.setValue((SpatialUnitDTO) value);
+            spatialUnitAnswer.setValue((SpatialUnitSummaryDTO) value);
         }
     }
 
     private void handleActionCode(CustomFieldAnswerViewModel answer, Object value) {
         if (answer instanceof CustomFieldAnswerSelectOneActionCodeViewModel actionCodeAnswer) {
-            actionCodeAnswer.setValue((ActionCode) value);
+            actionCodeAnswer.setValue((ActionCodeDTO) value);
         }
     }
 
@@ -398,7 +399,7 @@ public class FormService {
     @SuppressWarnings("unchecked")
     private void handleSpatialUnitSet(CustomFieldAnswerViewModel answer, Object value) {
         if (answer instanceof CustomFieldAnswerSelectMultipleSpatialUnitTreeViewModel treeAnswer) {
-            treeAnswer.setValue((Set<SpatialUnitDTO>) value);
+            treeAnswer.setValue((Set<SpatialUnitSummaryDTO>) value);
         }
     }
 

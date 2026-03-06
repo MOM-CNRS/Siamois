@@ -232,7 +232,7 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
     /**
      * Returns the root TreeNode for a given spatial-unit-tree answer.
      */
-    public TreeNode<SpatialUnitDTO> getRoot(CustomFieldAnswerSelectMultipleSpatialUnitTreeViewModel answer) {
+    public TreeNode<SpatialUnitSummaryDTO> getRoot(CustomFieldAnswerSelectMultipleSpatialUnitTreeViewModel answer) {
         TreeUiStateViewModel ui = treeStates.get(answer);
         return ui != null ? ui.getRoot() : null;
     }
@@ -240,13 +240,13 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
     /**
      * Returns normalized selected spatial units (business-level "chips").
      */
-    public List<SpatialUnitDTO> getNormalizedSpatialUnits(CustomFieldAnswerSelectMultipleSpatialUnitTreeViewModel answer) {
+    public List<SpatialUnitSummaryDTO> getNormalizedSpatialUnits(CustomFieldAnswerSelectMultipleSpatialUnitTreeViewModel answer) {
         TreeUiStateViewModel ui = treeStates.get(answer);
         if (ui == null) return Collections.emptyList();
         return getNormalizedSelectedUnits(ui.getSelection());
     }
 
-    public void addSUToSelection(CustomFieldAnswerSelectMultipleSpatialUnitTreeViewModel answer, SpatialUnitDTO su) {
+    public void addSUToSelection(CustomFieldAnswerSelectMultipleSpatialUnitTreeViewModel answer, SpatialUnitSummaryDTO su) {
         TreeUiStateViewModel ui = treeStates.computeIfAbsent(answer, this::buildUiFor);
         if (ui.getSelection() == null) {
             ui.setSelection(new HashSet<>());
@@ -275,12 +275,12 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
      *
      * Keeps a minimal set where no selected node is a descendant of another selected node.
      */
-    public List<SpatialUnitDTO> getNormalizedSelectedUnits(Set<SpatialUnitDTO> selectedNodes) {
+    public List<SpatialUnitSummaryDTO> getNormalizedSelectedUnits(Set<SpatialUnitSummaryDTO> selectedNodes) {
         if (selectedNodes == null || selectedNodes.isEmpty()) return Collections.emptyList();
 
-        Map<Long, SpatialUnitDTO> byId = new HashMap<>();
+        Map<Long, SpatialUnitSummaryDTO> byId = new HashMap<>();
         Set<Long> selectedIds = new LinkedHashSet<>();
-        for (SpatialUnitDTO u : selectedNodes) {
+        for (SpatialUnitSummaryDTO u : selectedNodes) {
             if (u == null || u.getId() == null) continue;
             byId.putIfAbsent(u.getId(), u);
             selectedIds.add(u.getId());
@@ -300,12 +300,12 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
 
         selectedIds.removeAll(toRemove);
 
-        List<SpatialUnitDTO> chips = selectedIds.stream()
+        List<SpatialUnitSummaryDTO> chips = selectedIds.stream()
                 .map(byId::get)
                 .filter(Objects::nonNull)
                 .collect(Collectors.toCollection(ArrayList::new));
 
-        chips.sort(Comparator.comparing(SpatialUnitDTO::getName, Comparator.nullsLast(String::compareToIgnoreCase)));
+        chips.sort(Comparator.comparing(SpatialUnitSummaryDTO::getName, Comparator.nullsLast(String::compareToIgnoreCase)));
         return chips;
     }
 
