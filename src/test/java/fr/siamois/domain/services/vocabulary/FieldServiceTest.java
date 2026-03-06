@@ -33,5 +33,13 @@ class FieldServiceTest {
         assertThat(results).containsExactlyInAnyOrder("CODE1", "CODE2");
     }
 
+    private static class TestClass {
+        @FieldCode
+        public static final String FIELD_CODE_1 = "code1";
+
+        @FieldCode
+        public static final String FIELD_CODE_2 = "code2";
+
+    }
 
 }
