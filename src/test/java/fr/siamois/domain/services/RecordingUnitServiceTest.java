@@ -6,7 +6,6 @@ import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.ark.Ark;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.exceptions.recordingunit.FailedRecordingUnitSaveException;
-import fr.siamois.domain.models.exceptions.recordingunit.RecordingUnitNotFoundException;
 import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.recordingunit.StratigraphicRelationship;
@@ -43,7 +42,6 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 
-import java.math.BigInteger;
 import java.util.*;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
@@ -333,9 +331,9 @@ class RecordingUnitServiceTest {
     void save_shouldCreateNewUnit_whenIdIsProvidedButNotFound() {
         // Arrange
         long nonExistentId = 43L;
-        RecordingUnitDTO recordingUnitToSave = new RecordingUnitDTO();
-        recordingUnitToSave.setId(nonExistentId);
-        recordingUnitToSave.setDescription("New unit with given ID");
+        RecordingUnitDTO recordingUnitToSave2 = new RecordingUnitDTO();
+        recordingUnitToSave2.setId(nonExistentId);
+        recordingUnitToSave2.setDescription("New unit with given ID");
 
         RecordingUnit newUnit = new RecordingUnit();
         newUnit.setId(99L); // Simulate a new ID assigned by the repository
@@ -346,7 +344,7 @@ class RecordingUnitServiceTest {
         expectedDTO.setDescription("New unit with given ID");
 
         // Mock the mapper to return a RecordingUnit when converting from DTO
-        when(recordingUnitMapper.invertConvert(recordingUnitToSave)).thenReturn(newUnit);
+        when(recordingUnitMapper.invertConvert(recordingUnitToSave2)).thenReturn(newUnit);
         // Mock the repository to return empty for any ID (simulating "not found")
         when(recordingUnitRepository.findById(anyLong())).thenReturn(Optional.empty());
         // Mock the repository to return the new unit when saving
@@ -357,7 +355,7 @@ class RecordingUnitServiceTest {
         when(personRepository.findAllById(anyList())).thenReturn(List.of());
 
         // Act
-        RecordingUnitDTO result = recordingUnitService.save(recordingUnitToSave);
+        RecordingUnitDTO result = recordingUnitService.save(recordingUnitToSave2);
 
         // Assert
         assertNotNull(result);
@@ -373,11 +371,11 @@ class RecordingUnitServiceTest {
     @Test
     void save_shouldThrowFailedRecordingUnitSaveException_whenDependencyFails() {
         // Arrange
-        RecordingUnitDTO recordingUnitToSave = new RecordingUnitDTO();
+        RecordingUnitDTO recordingUnitToSave2 = new RecordingUnitDTO();
         RecordingUnit recordingUnit = new RecordingUnit();
 
         // Mock the mapper to return a RecordingUnit when converting from DTO
-        when(recordingUnitMapper.invertConvert(recordingUnitToSave)).thenReturn(recordingUnit);
+        when(recordingUnitMapper.invertConvert(recordingUnitToSave2)).thenReturn(recordingUnit);
 
         // Mock the repository save to avoid NullPointerException
         when(recordingUnitRepository.save(any(RecordingUnit.class)))
@@ -386,7 +384,7 @@ class RecordingUnitServiceTest {
         // Act & Assert
         FailedRecordingUnitSaveException exception = assertThrows(
                 FailedRecordingUnitSaveException.class,
-                () -> recordingUnitService.save(recordingUnitToSave)
+                () -> recordingUnitService.save(recordingUnitToSave2)
         );
 
         // Verify the exception message contains the expected error
@@ -428,11 +426,11 @@ class RecordingUnitServiceTest {
 
         // Mock repository call
         when(recordingUnitRepository.findAllByInstitutionAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
-                institutionId,
-                fullIdentifier,
-                categoryIds,
-                global,
-                langCode,
+                eq(institutionId),
+                eq(fullIdentifier),
+                eq(categoryIds),
+                eq(global),
+                eq(langCode),
                 any(Pageable.class)
         )).thenReturn(page2);
 
@@ -528,8 +526,7 @@ class RecordingUnitServiceTest {
 
     @Test
     void canCreateSpecimen_returnsFalse_whenUserIsTeamMember_butActionUnitIsNotOngoing() {
-        RecordingUnit recordingUnit;
-        recordingUnit = mock(RecordingUnit.class);
+
 
         when(institutionService.isManagerOf(any(InstitutionDTO.class), any(PersonDTO.class))).thenReturn(false);
         when(actionUnitService.isManagerOf(actionUnit, user)).thenReturn(false);
@@ -559,7 +556,7 @@ class RecordingUnitServiceTest {
     void testFindAllByChildAndByNameContainingAndByCategoriesAndByGlobalContaining_Success() {
         // Arrange
         Long[] categoryIds = new Long[]{1L, 2L}; // Example category IDs
-        Page<RecordingUnit> page = new PageImpl<>(Arrays.asList(recordingUnit1, recordingUnit2));
+        Page<RecordingUnit> page2 = new PageImpl<>(Arrays.asList(recordingUnit1, recordingUnit2));
 
         when(recordingUnitRepository.findAllByChildAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
                 any(Long.class),
@@ -568,7 +565,7 @@ class RecordingUnitServiceTest {
                 any(String.class),
                 any(String.class),
                 any(Pageable.class)
-        )).thenReturn(page);
+        )).thenReturn(page2);
 
         // Act
         Page<RecordingUnitDTO> actualResult = recordingUnitService.findAllByChildAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
@@ -735,21 +732,21 @@ class RecordingUnitServiceTest {
     @Test
     void fullIdentifierAlreadyExistInAction_returnFalse_whenIdentifierDoesntAlreadyExist() {
         // Arrange
-        RecordingUnitDTO recordingUnit1DTO = new RecordingUnitDTO();
-        recordingUnit1DTO.setId(1L);
+        RecordingUnitDTO recordingUnit1DTO2 = new RecordingUnitDTO();
+        recordingUnit1DTO2.setId(1L);
 
         ActionUnitSummaryDTO actionUnitSummaryDTO = new ActionUnitSummaryDTO();
         actionUnitSummaryDTO.setId(1L);
 
-        recordingUnit1DTO.setActionUnit(actionUnitSummaryDTO);
-        recordingUnit1DTO.setFullIdentifier("test");
+        recordingUnit1DTO2.setActionUnit(actionUnitSummaryDTO);
+        recordingUnit1DTO2.setFullIdentifier("test");
 
         // Mock the repository to return an empty list
-        when(recordingUnitRepository.findByFullIdentifierAndActionUnitId(eq("test"), eq(1L)))
+        when(recordingUnitRepository.findByFullIdentifierAndActionUnitId("test", 1L))
                 .thenReturn(Collections.emptyList());
 
         // Act
-        boolean exists = recordingUnitService.fullIdentifierAlreadyExistInAction(recordingUnit1DTO);
+        boolean exists = recordingUnitService.fullIdentifierAlreadyExistInAction(recordingUnit1DTO2);
 
         // Assert
         assertFalse(exists, "The identifier should not exist in the action");
@@ -926,10 +923,10 @@ class RecordingUnitServiceTest {
         Long nonExistentParentId = 999L;
 
         // 1. Préparation du DTO
-        RecordingUnitDTO recordingUnitToSave = new RecordingUnitDTO();
+        RecordingUnitDTO recordingUnitToSave2 = new RecordingUnitDTO();
         RecordingUnitSummaryDTO parentRefDto = new RecordingUnitSummaryDTO();
         parentRefDto.setId(nonExistentParentId);
-        recordingUnitToSave.setParents(new HashSet<>(Set.of(parentRefDto)));
+        recordingUnitToSave2.setParents(new HashSet<>(Set.of(parentRefDto)));
 
         // 2. Préparation de l'entité que le mapper va retourner
         RecordingUnit entityToSave = new RecordingUnit();
@@ -938,7 +935,7 @@ class RecordingUnitServiceTest {
         entityToSave.setParents(new HashSet<>(Set.of(parentEntityRef)));
 
         // 3. Mocks
-        when(recordingUnitMapper.invertConvert(recordingUnitToSave)).thenReturn(entityToSave);
+        when(recordingUnitMapper.invertConvert(recordingUnitToSave2)).thenReturn(entityToSave);
 
         // Simulation de l'échec de récupération du parent en base
         when(recordingUnitRepository.findById(nonExistentParentId)).thenReturn(Optional.empty());
@@ -946,7 +943,7 @@ class RecordingUnitServiceTest {
         // Act & Assert
         FailedRecordingUnitSaveException exception = assertThrows(
                 FailedRecordingUnitSaveException.class,
-                () -> recordingUnitService.save(recordingUnitToSave)
+                () -> recordingUnitService.save(recordingUnitToSave2)
         );
 
         // Vérification du message (encapsulé par le try/catch du service)
