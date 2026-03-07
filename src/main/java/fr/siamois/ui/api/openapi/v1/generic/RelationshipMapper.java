@@ -1,4 +1,4 @@
-package fr.siamois.ui.api.openapi.v1.jsonapi;
+package fr.siamois.ui.api.openapi.v1.generic;
 
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;

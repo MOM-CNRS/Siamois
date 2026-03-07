@@ -36,6 +36,7 @@ import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.core.convert.ConversionService;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
@@ -599,6 +600,12 @@ public class RecordingUnitService implements ArkEntityService {
 
         // <<< Convert entity to DTO here
         return recordingUnitMapper.convert(entity);
+    }
+
+    public Page<RecordingUnitDTO> findByInstitutionId(Long institutionId, int limit, int offset) {
+        Pageable pageable = PageRequest.of(offset, limit);
+        Page<RecordingUnit> page = recordingUnitRepository.findByCreatedByInstitutionId(institutionId, pageable);
+        return page.map(recordingUnitMapper::convert);
     }
 
     public RecordingUnitIdInfo createOrGetInfoOf(@NonNull RecordingUnit recordingUnit, @Nullable RecordingUnit parentRecordingUnit) {

@@ -1,11 +1,9 @@
 package fr.siamois.ui.api.openapi.v1.resource.recordingunit;
 
-import fr.siamois.ui.api.openapi.v1.jsonapi.ResourceIdentifier;
+import fr.siamois.ui.api.openapi.v1.generic.ResourceIdentifier;
 import io.swagger.v3.oas.annotations.media.Schema;
-import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.RequiredArgsConstructor;
 
 @Data
 @NoArgsConstructor
