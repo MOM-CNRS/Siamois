@@ -588,9 +588,10 @@ public class RecordingUnitService implements ArkEntityService {
 
     public RecordingUnitDTO findByFullIdentifierAndInstitutionIdDTO(
             String fullIdentifier,
-            Long institutionId) {
+            Long institutionId,
+            List<String> counts) {
 
-        var entity = recordingUnitRepository
+        RecordingUnit entity = recordingUnitRepository
                 .findByFullIdentifierAndInstitutionId(fullIdentifier, institutionId)
                 .orElseThrow(() ->
                         new RecordingUnitNotFoundException(
@@ -598,11 +599,22 @@ public class RecordingUnitService implements ArkEntityService {
                                         + fullIdentifier +
                                         " and institutionId=" + institutionId));
 
-        // <<< Convert entity to DTO here
-        return recordingUnitMapper.convert(entity);
+
+
+        RecordingUnitDTO dto = recordingUnitMapper.convert(entity);
+
+        // If "specimen" is in counts, fetch and set the specimen count
+        if (counts != null && counts.contains("specimen")) {
+            Long specimenCount = recordingUnitRepository.countSpecimensByRecordingUnitId(entity.getId());
+            dto.setSpecimenCount(specimenCount);
+        }
+
+        return dto;
     }
 
-    public Page<RecordingUnitDTO> findByInstitutionId(Long institutionId, int limit, int offset) {
+    public Page<RecordingUnitDTO> findByInstitutionId(Long institutionId,
+                                                      int limit,
+                                                      int offset) {
         Pageable pageable = PageRequest.of(offset, limit);
         Page<RecordingUnit> page = recordingUnitRepository.findByCreatedByInstitutionId(institutionId, pageable);
         return page.map(recordingUnitMapper::convert);

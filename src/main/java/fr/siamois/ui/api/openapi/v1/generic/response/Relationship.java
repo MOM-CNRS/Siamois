@@ -1,12 +1,14 @@
-package fr.siamois.ui.api.openapi.v1.generic;
+package fr.siamois.ui.api.openapi.v1.generic.response;
+
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
 
 @Data
 @AllArgsConstructor
-public class Response<T> {
+public class Relationship<T> {
 
     private T data;
+
 
 }

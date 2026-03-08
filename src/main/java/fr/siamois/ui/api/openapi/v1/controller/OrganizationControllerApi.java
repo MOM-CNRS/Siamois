@@ -3,15 +3,18 @@ package fr.siamois.ui.api.openapi.v1.controller;
 
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.dto.entity.RecordingUnitDTO;
-import fr.siamois.ui.api.openapi.v1.generic.ListMeta;
+import fr.siamois.ui.api.openapi.v1.generic.response.ListMeta;
 import fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitResource;
 import fr.siamois.ui.api.openapi.v1.response.RecordingUnitListResponse;
 import fr.siamois.ui.api.openapi.v1.response.RecordingUnitResponse;
 import fr.siamois.ui.api.openapi.v1.mapper.RecordingUnitResponseMapper;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.enums.ParameterIn;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.Parameter;
 
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
@@ -20,7 +23,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/v1/organization")
+@RequestMapping("/api/v1/organizations")
 @Tag(name = "Organization", description = "API des organisation")
 public class OrganizationControllerApi {
 
@@ -38,16 +41,28 @@ public class OrganizationControllerApi {
             @ApiResponse(responseCode = "404", description = "RecordingUnit non trouvée"),
             @ApiResponse(responseCode = "500", description = "Erreur interne")
     })
-    @GetMapping("/{id}/recording-unit/{recordingUnitFullIdentifier}")
+    @GetMapping("/{id}/recording-units/{recordingUnitFullIdentifier}")
     public ResponseEntity<RecordingUnitResponse> getById(
             @PathVariable Long id,
-            @RequestParam(required = false) List<String> includeCounts,
+            @Parameter(
+                    description = "Optional list of counts to include. " +
+                            "Only 'specimen' is allowed.",
+                    schema = @Schema(
+                            type = "array",
+                            allowableValues = {"specimen"},
+                            defaultValue = "specimen"
+                    ),
+                    in = ParameterIn.QUERY
+            )
+            @RequestParam(required = false)
+            List<String> counts,
             @PathVariable String recordingUnitFullIdentifier) {
 
         RecordingUnitDTO recordingUnit =
                 recordingUnitService.findByFullIdentifierAndInstitutionIdDTO(
                         recordingUnitFullIdentifier,
-                        id
+                        id,
+                        counts
                 );
 
         return ResponseEntity.ok(
@@ -80,7 +95,9 @@ public class OrganizationControllerApi {
         RecordingUnitListResponse response =
                 new RecordingUnitListResponse(resources, meta);
 
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok()
+                .header("X-Total-Count", String.valueOf(page.getTotalElements()))
+                .body(response);
     }
 
 }

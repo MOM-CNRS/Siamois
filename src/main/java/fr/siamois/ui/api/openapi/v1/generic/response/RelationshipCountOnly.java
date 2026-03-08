@@ -1,4 +1,4 @@
-package fr.siamois.ui.api.openapi.v1.generic;
+package fr.siamois.ui.api.openapi.v1.generic.response;
 
 
 import lombok.Data;
@@ -7,6 +7,6 @@ import lombok.Data;
 public class RelationshipCountOnly  {
     private Meta meta;
     public RelationshipCountOnly(Long count) {
-        meta.setCount(count);
+        meta = new Meta(count);
     }
 }

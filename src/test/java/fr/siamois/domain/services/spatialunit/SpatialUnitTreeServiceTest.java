@@ -3,6 +3,7 @@ package fr.siamois.domain.services.spatialunit;
 
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.SpatialUnitDTO;
+import fr.siamois.dto.entity.SpatialUnitSummaryDTO;
 import fr.siamois.ui.bean.SessionSettingsBean;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -54,17 +55,17 @@ class SpatialUnitTreeServiceTest {
         when(spatialUnitService.findDirectChildrensOf(root.getId())).thenReturn(List.of(child1, child2));
 
         // Act
-        TreeNode<SpatialUnitDTO> tree = spatialUnitTreeService.buildTree();
+        TreeNode<SpatialUnitSummaryDTO> tree = spatialUnitTreeService.buildTree();
 
         // Assert
         assertNotNull(tree);
         assertEquals(1, tree.getChildren().size()); // one root spatial unit
-        TreeNode<SpatialUnitDTO> rootNode = tree.getChildren().get(0);
+        TreeNode<SpatialUnitSummaryDTO> rootNode = tree.getChildren().get(0);
         assertEquals("Root", rootNode.getData().getName());
         assertEquals(2, rootNode.getChildren().size());
 
         Set<String> childNames = new HashSet<>();
-        for (TreeNode<SpatialUnitDTO> child : rootNode.getChildren()) {
+        for (TreeNode<SpatialUnitSummaryDTO> child : rootNode.getChildren()) {
             childNames.add(child.getData().getName());
         }
         assertTrue(childNames.contains("Child 1"));
@@ -98,14 +99,14 @@ class SpatialUnitTreeServiceTest {
 
 
         // Act
-        TreeNode<SpatialUnitDTO> tree = spatialUnitTreeService.buildTree();
+        TreeNode<SpatialUnitSummaryDTO> tree = spatialUnitTreeService.buildTree();
 
         // Assert
         assertNotNull(tree);
         assertEquals(2, tree.getChildren().size());
 
         Set<String> rootNames = new HashSet<>();
-        for (TreeNode<SpatialUnitDTO> node : tree.getChildren()) {
+        for (TreeNode<SpatialUnitSummaryDTO> node : tree.getChildren()) {
             rootNames.add(node.getData().getName());
         }
 
@@ -118,7 +119,7 @@ class SpatialUnitTreeServiceTest {
         InstitutionDTO mockInstitution = new InstitutionDTO();
         when(sessionSettingsBean.getSelectedInstitution()).thenReturn(mockInstitution);
 
-        TreeNode<SpatialUnitDTO> tree = spatialUnitTreeService.buildTree();
+        TreeNode<SpatialUnitSummaryDTO> tree = spatialUnitTreeService.buildTree();
 
         assertNotNull(tree);
         assertEquals(0, tree.getChildren().size());

@@ -80,7 +80,7 @@ class EntityFormContextTest {
 
         // build a response containing a spatial-unit-tree answer
         CustomFieldAnswerSelectMultipleSpatialUnitTreeViewModel treeAnswer = mock(CustomFieldAnswerSelectMultipleSpatialUnitTreeViewModel.class);
-        Set<SpatialUnitDTO> selected = new HashSet<>();
+        Set<SpatialUnitSummaryDTO> selected = new HashSet<>();
         when(treeAnswer.getValue()).thenReturn(selected);
 
         CustomFormResponseViewModel response = new CustomFormResponseViewModel();
@@ -91,7 +91,7 @@ class EntityFormContextTest {
         when(formService.initOrReuseResponse(isNull(), eq(unit), eq(fieldSource), eq(false))).thenReturn(response);
         when(formService.buildEnabledEngine(fieldSource)).thenReturn(enabledRulesEngine);
 
-        TreeNode<SpatialUnitDTO> root = new DefaultTreeNode<>(null, null);
+        TreeNode<SpatialUnitSummaryDTO> root = new DefaultTreeNode<>(null, null);
         when(spatialUnitTreeService.buildTree()).thenReturn(root);
 
         // act
@@ -238,7 +238,7 @@ class EntityFormContextTest {
 
         ctx.init(false);
 
-        SpatialUnitDTO su1 = mock(SpatialUnitDTO.class);
+        SpatialUnitSummaryDTO su1 = mock(SpatialUnitDTO.class);
 
         // act: add
         ctx.addSUToSelection(treeAnswer, su1);
@@ -274,7 +274,7 @@ class EntityFormContextTest {
         Set<SpatialUnitDTO> selected = new LinkedHashSet<>(List.of(a, b));
 
         // act
-        List<SpatialUnitDTO> chips = ctx.getNormalizedSelectedUnits(selected);
+        List<SpatialUnitSummaryDTO> chips = ctx.getNormalizedSelectedUnits(selected);
 
         // assert: only A remains (B removed because ancestor A selected)
         assertEquals(1, chips.size());
@@ -298,7 +298,7 @@ class EntityFormContextTest {
 
         Set<SpatialUnitDTO> selected = new LinkedHashSet<>(List.of(b, n, a));
 
-        List<SpatialUnitDTO> chips = ctx.getNormalizedSelectedUnits(selected);
+        List<SpatialUnitSummaryDTO> chips = ctx.getNormalizedSelectedUnits(selected);
 
         assertEquals(List.of(a, b, n), chips);
     }

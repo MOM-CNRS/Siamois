@@ -1,6 +1,7 @@
 package fr.siamois.ui.api.openapi.v1.resource.recordingunit;
 
-import fr.siamois.ui.api.openapi.v1.generic.ResourceIdentifier;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import fr.siamois.ui.api.openapi.v1.generic.response.ResourceIdentifier;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -12,7 +13,9 @@ public class RecordingUnitResourceIdentifier implements ResourceIdentifier {
     @Schema(description = "Resource type (always 'recording-unit')",
             example = "recording-unit",
             allowableValues = {"recording-unit"})
-    private String type;
-    private String id;
+    @JsonProperty("_type")
+    private String resourceType;
+    @JsonProperty("_id")
+    private String resourceId;
 
 }

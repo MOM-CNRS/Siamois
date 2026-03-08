@@ -255,7 +255,8 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
         markTreeAnswerModified(answer);
     }
 
-    public boolean removeSpatialUnit(CustomFieldAnswerSelectMultipleSpatialUnitTreeViewModel answer, SpatialUnitDTO su) {
+    public boolean removeSpatialUnit(CustomFieldAnswerSelectMultipleSpatialUnitTreeViewModel answer,
+                                     SpatialUnitSummaryDTO su) {
         TreeUiStateViewModel ui = treeStates.get(answer);
         if (ui == null || ui.getSelection() == null) return false;
         boolean removed = ui.getSelection().remove(su);

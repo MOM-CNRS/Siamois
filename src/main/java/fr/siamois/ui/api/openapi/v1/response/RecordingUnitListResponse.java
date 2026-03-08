@@ -1,7 +1,7 @@
 package fr.siamois.ui.api.openapi.v1.response;
 
-import fr.siamois.ui.api.openapi.v1.generic.ListResponse;
-import fr.siamois.ui.api.openapi.v1.generic.ListMeta;
+import fr.siamois.ui.api.openapi.v1.generic.response.ListResponse;
+import fr.siamois.ui.api.openapi.v1.generic.response.ListMeta;
 import fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitResource;
 import lombok.Data;
 import lombok.EqualsAndHashCode;

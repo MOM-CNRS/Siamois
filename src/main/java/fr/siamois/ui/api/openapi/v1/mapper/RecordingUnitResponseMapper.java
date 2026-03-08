@@ -20,10 +20,9 @@ import org.springframework.core.convert.converter.Converter;
 public interface RecordingUnitResponseMapper extends Converter<RecordingUnitDTO,
         RecordingUnitResource> {
 
-    @Mapping(target = "type", constant = "recording-unit")
-    @Mapping(target = "id", source = "id")
-    @Mapping(target = "attributes", source = ".")
-    @Mapping(target = "relationships", source = ".")
+    @Mapping(target = "resourceType", constant = "recording-unit")
+    @Mapping(target = "resourceId", constant = "id")
+    @Mapping(target = "specimen", source = "specimenCount")
     RecordingUnitResource convert(RecordingUnitDTO recordingUnitDTO);
 
 }
