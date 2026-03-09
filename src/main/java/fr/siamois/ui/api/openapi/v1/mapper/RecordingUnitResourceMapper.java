@@ -22,8 +22,6 @@ public interface RecordingUnitResourceMapper extends Converter<RecordingUnitDTO,
 
     @Mapping(target = "type", constant = "recording-unit")
     @Mapping(target = "id", source = "id")
-    @Mapping(target = "attributes", source = ".")
-    @Mapping(target = "relationships", source = ".")
     RecordingUnitResource convert(RecordingUnitDTO recordingUnitDTO);
 
 
