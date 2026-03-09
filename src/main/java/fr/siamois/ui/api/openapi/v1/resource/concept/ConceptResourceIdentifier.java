@@ -10,12 +10,11 @@ import lombok.Data;
 @AllArgsConstructor
 public class ConceptResourceIdentifier implements ResourceIdentifier {
 
-    @Schema(description = "Resource type (always 'concept')",
-            example = "concept",
-            allowableValues = {"concept"})
-    @JsonProperty("_type")
+    @Schema(description = "Resource type (always 'concepts')",
+            example = "concepts",
+            allowableValues = {"concepts"})
     private String resourceType;
-    @JsonProperty("_id")
-    private String resourceId;
+    @JsonProperty("resourceId")
+    private String id;
 
 }

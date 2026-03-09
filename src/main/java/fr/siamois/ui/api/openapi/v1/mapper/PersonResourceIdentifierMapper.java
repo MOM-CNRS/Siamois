@@ -17,8 +17,7 @@ public interface PersonResourceIdentifierMapper
         PersonResourceIdentifier> {
 
     @Override
-    @Mapping(target = "resourceType", constant = "person")
-    @Mapping(target = "resourceId", constant = "id")
+    @Mapping(target = "resourceType", constant = "persons")
     PersonResourceIdentifier convert(PersonDTO personDTO);
 
 

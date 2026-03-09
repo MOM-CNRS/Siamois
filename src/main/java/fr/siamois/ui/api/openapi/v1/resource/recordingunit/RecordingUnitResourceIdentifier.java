@@ -10,12 +10,11 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class RecordingUnitResourceIdentifier implements ResourceIdentifier {
 
-    @Schema(description = "Resource type (always 'recording-unit')",
-            example = "recording-unit",
-            allowableValues = {"recording-unit"})
-    @JsonProperty("_type")
+    @Schema(description = "Resource type",
+            example = "recording-units",
+            allowableValues = {"recording-units"})
     private String resourceType;
-    @JsonProperty("_id")
-    private String resourceId;
+
+    private String id;
 
 }

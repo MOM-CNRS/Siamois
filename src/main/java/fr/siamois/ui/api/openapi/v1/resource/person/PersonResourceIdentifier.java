@@ -10,11 +10,10 @@ import lombok.Data;
 @AllArgsConstructor
 public class PersonResourceIdentifier implements ResourceIdentifier {
 
-    @Schema(description = "Resource type (always 'person')",
-            example = "person",
-            allowableValues = {"person"})
-    @JsonProperty("_type")
+    @Schema(description = "Resource type (always 'persons')",
+            example = "persons",
+            allowableValues = {"persons"})
     private final String resourceType;
-    @JsonProperty("_id")
-    private String resourceId;
+    @JsonProperty("resourceId")
+    private String id;
 }

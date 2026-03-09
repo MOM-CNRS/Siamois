@@ -16,8 +16,7 @@ public interface ConceptResourceIdentifierMapper extends
         ResourceIdentifierMapper<ConceptDTO, ConceptResourceIdentifier>
 {
 
-    @Mapping(target = "resourceType", constant = "concept")
-    @Mapping(target = "resourceId", constant = "id")
+    @Mapping(target = "resourceType", constant = "concepts")
     ConceptResourceIdentifier convert(ConceptDTO conceptDTO);
 
 
