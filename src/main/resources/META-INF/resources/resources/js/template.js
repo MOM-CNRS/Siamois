@@ -95,17 +95,46 @@ document.addEventListener("visibilitychange", () => {
 
 // Show the spinner
 function showSpinner(panelId) {
-    const panel = document.getElementById(`panel-${panelId}`);
-    const spinner = panel.querySelector('#spinner');
-    spinner.style.display = 'inline-block'; // or 'flex' if using flexbox
+    try {
+        const panel = document.getElementById(`panel-${panelId}`);
+        if (!panel) {
+            console.warn(`Panel with ID "panel-${panelId}" not found.`);
+            return;
+        }
+
+        const spinner = panel.querySelector('#spinner');
+        if (!spinner) {
+            console.warn('Spinner element not found inside the panel.');
+            return;
+        }
+
+        spinner.style.display = 'inline-block'; // or 'flex' if using flexbox
+    } catch (error) {
+        console.error('Error showing spinner:', error);
+    }
 }
 
 // Hide the spinner
 function hideSpinner(panelId) {
-    const panel = document.getElementById(`panel-${panelId}`);
-    const spinner = panel.querySelector('#spinner');
-    spinner.style.display = 'none';
+    try {
+        const panel = document.getElementById(`panel-${panelId}`);
+        if (!panel) {
+            console.warn(`Panel with ID "panel-${panelId}" not found.`);
+            return;
+        }
+
+        const spinner = panel.querySelector('#spinner');
+        if (!spinner) {
+            console.warn('Spinner element not found inside the panel.');
+            return;
+        }
+
+        spinner.style.display = 'none';
+    } catch (error) {
+        console.error('Error hiding spinner:', error);
+    }
 }
+
 
 // Handle AJAX errors
 function handleAutoSaveError(xhr, status, panelId) {

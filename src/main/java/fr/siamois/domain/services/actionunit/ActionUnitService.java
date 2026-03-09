@@ -179,9 +179,10 @@ public class ActionUnitService implements ArkEntityService {
 
         // Generate unique identifier if not presents
         if (actionUnitDTO.getFullIdentifier() == null) {
-
+            if(actionUnitDTO.getIdentifier() == null) {
                 throw new NullActionUnitIdentifierException("ActionUnit identifier must be set");
-
+            }
+            actionUnitDTO.setFullIdentifier(actionUnitDTO.getIdentifier());
         }
 
         // Add concept

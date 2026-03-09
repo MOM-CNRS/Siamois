@@ -31,12 +31,12 @@
 
                                         <p:outputPanel style="display: flex; gap:1em;">
                                             <i class="bi bi-geo-alt" style="color:var(--context-main-color);"/>
-                                            <p:outputLabel value="#{actionUnit.spatialContextNames}"/>
+                                            <p:outputLabel value="#{actionUnit.mainLocation.name}"/>
                                         </p:outputPanel>
 
                                         <p:outputPanel style="display: flex; gap:1em;">
                                             <i class="bi bi-pencil-square" style="color:var(--ground-main-color);"/>
-                                            <p:outputLabel value="#{actionUnit.recordingUnitList.size} enregistrements"/>
+                                            <p:outputLabel value="#{actionUnit.recordingUnitList.size()} enregistrements"/>
                                         </p:outputPanel>
 
                                         <p:commandButton
