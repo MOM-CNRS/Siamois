@@ -163,22 +163,22 @@ body {
   }
 }
 
-body .ui-datepicker .ui-datepicker-calendar td>a.ui-state-active, body .ui-datepicker .ui-datepicker-calendar td>span.ui-state-active {
+body .ui-datepicker .ui-datepicker-calendar td > a.ui-state-active, body .ui-datepicker .ui-datepicker-calendar td > span.ui-state-active {
   background-color: var(--siamois-green);
 }
 
 body .ui-panel.panel-docked {
-  border-radius:0;
-  border:none;
+  border-radius: 0;
+  border: none;
 
   .ui-panel-titlebar {
-    border-radius:0;
-    border:none;
+    border-radius: 0;
+    border: none;
   }
 
   .ui-panel-content {
-    border-radius:0;
-    border:none;
+    border-radius: 0;
+    border: none;
   }
 }
 
@@ -208,7 +208,7 @@ body .ui-autocomplete .ui-autocomplete-dropdown {
 
   &:hover {
     background: var(--dark-color);
-    border: 1px solid  var(--dark-color);
+    border: 1px solid var(--dark-color);
   }
 
   &.sia-icon-btn {
@@ -224,6 +224,45 @@ body .ui-autocomplete .ui-autocomplete-dropdown {
   }
 
 }
+
+.ui-commandlink.ui-widget.sideview-topbar-button {
+  height: 24px;
+  border-radius: 3px;
+  width: 24px;
+  display: flex;          // Enable Flexbox
+  align-items: center;   // Center vertically
+  justify-content: center; // Center horizontally
+
+  .bi {
+    color: var(--text-color);
+  }
+
+  &:hover {
+    background: var(--siamois-green-light-200);
+  }
+}
+
+.sideview {
+  box-shadow: -2px 2px 4px 0px rgb(165, 163, 163);
+  border-radius: 1em 0em 0em 1em;
+  background-color: white;
+  height: 100%;
+  z-index: 1000;
+  border-left: 1px solid #ccc;
+
+  .sideview-titlebar {
+    padding: 0.5rem;
+    border-bottom: 1px solid var(--siamois-green-light-200);
+    background: var(--siamois-green-light-100);
+    color: var(--main-color);
+    display: flex;
+    font-weight: 600;
+    gap: 0.5em;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+}
+
 
 
 
