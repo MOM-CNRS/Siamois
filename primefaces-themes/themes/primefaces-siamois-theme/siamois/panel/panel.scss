@@ -247,6 +247,7 @@ body .ui-autocomplete .ui-autocomplete-dropdown {
   border-radius: 1em 0em 0em 1em;
   background-color: white;
   height: 100%;
+  border-top: 2px solid var(--main-color);
   z-index: 1000;
   border-left: 1px solid #ccc;
 
@@ -261,6 +262,16 @@ body .ui-autocomplete .ui-autocomplete-dropdown {
     align-items: center;
     flex-wrap: wrap;
   }
+}
+
+.panel-splitter-panel-r {
+  overflow: auto;
+  box-shadow: rgb(165, 163, 163) -2px 2px 6px 0px;
+  border-radius: 1em 0em 0em 1em;
+}
+
+.panel-splitter-panel-l {
+  overflow: auto;
 }
 
 
