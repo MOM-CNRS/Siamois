@@ -290,6 +290,28 @@ function onCompleteCallback(panelId) {
     }
 }
 
+function showSideview(panelId) {
+    const container = document.getElementById("panel-" + panelId);
+    if (container) {
+        const sideview = container.querySelector("#panel-splitter");
+        if (sideview) {
+
+            // Find and show the #overview_3 element inside the splitter
+            const overview3 = sideview.querySelector("#overview_3");
+            if (overview3) {
+                overview3.style.display = "block";
+            }
+
+            // Find and show the element with class .ui-splitter-gutter inside the splitter
+            const splitterGutter = sideview.querySelector(".ui-splitter-gutter");
+            if (splitterGutter) {
+                splitterGutter.style.display = "block";
+            }
+        }
+    }
+}
+
+
 
 
 

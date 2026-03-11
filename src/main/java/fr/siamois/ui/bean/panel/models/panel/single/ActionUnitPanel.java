@@ -379,6 +379,7 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnitDTO> im
                 langBean,
                 formContextServices
         );
+        recordingTabTableModel.setParentPanelId(this.getPanelIndex());
 
         RecordingUnitTableDefinitionFactory.applyTo(recordingTabTableModel);
 

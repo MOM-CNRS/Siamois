@@ -219,7 +219,7 @@ public class FlowBean implements Serializable {
             overviewPanel.setRoot(false);
             targetPanel.setOverview(overviewPanel);
             PrimeFaces.current().ajax().update("sideview");
-
+            PrimeFaces.current().executeScript("showSideview('"+panelId+"');");
         }
 
     }

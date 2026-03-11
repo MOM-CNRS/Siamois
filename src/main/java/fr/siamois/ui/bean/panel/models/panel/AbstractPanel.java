@@ -145,10 +145,10 @@ public abstract class AbstractPanel implements Serializable {
 
     public String getLeftSpltterSize() {
         if(overview == null) {
-            return "0";
+            return "none";
         }
         else {
-            return "50";
+            return "block";
         }
     }
 }

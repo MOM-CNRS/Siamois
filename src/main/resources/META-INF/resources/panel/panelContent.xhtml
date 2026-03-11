@@ -24,7 +24,7 @@
             </p:splitterPanel>
 
             <!-- Right Splitter Panel (dynamic) -->
-            <p:splitterPanel styleClass="panel-splitter-panel-r" size="#{panelModel.getLeftSpltterSize()}" id="overview">
+            <p:splitterPanel styleClass="panel-splitter-panel-r" style="display: #{panelModel.getLeftSpltterSize()}" id="overview">
                 <p:outputPanel id="sideview" styleClass="sideview #{panelModel.overview.panelClass}"
                                style="border-radius: 1em 0 0 0;">
                     <div class="sideview-titlebar" style="background: var(--siamois-green-light-100);">
