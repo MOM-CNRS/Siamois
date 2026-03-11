@@ -36,24 +36,25 @@
                                 </ui:include>
                             </div>
                             <h:form id="actionForm-${panelModel.prefixPanelIndex}-overview">
+                                <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
                                 <div style="display:flex;flex-direction: row;gap:0.5em;padding: 3px;
                                     border: 1px solid var(--siamois-green-light);
                                     border-radius: 15px;">
 
-                                    <p:commandLink styleClass="sideview-topbar-button">
+                                    <p:commandLink styleClass="sideview-topbar-button" action="#{panelModel.closeOverview()}">
                                         <h:outputText styleClass="bi bi-chevron-double-right"/>
                                     </p:commandLink>
-                                    |
-                                    <p:commandLink styleClass="sideview-topbar-button">
-                                        <h:outputText styleClass="bi bi-chevron-up"/>
-                                    </p:commandLink>
-                                    <p:commandLink styleClass="sideview-topbar-button">
-                                        <h:outputText styleClass="bi bi-chevron-down"/>
-                                    </p:commandLink>
-                                    |
-                                    <p:commandLink styleClass="sideview-topbar-button">
-                                        <h:outputText styleClass="bi bi-box-arrow-in-up"/>
-                                    </p:commandLink>
+<!--                                    |-->
+<!--                                    <p:commandLink styleClass="sideview-topbar-button">-->
+<!--                                        <h:outputText styleClass="bi bi-chevron-up"/>-->
+<!--                                    </p:commandLink>-->
+<!--                                    <p:commandLink styleClass="sideview-topbar-button">-->
+<!--                                        <h:outputText styleClass="bi bi-chevron-down"/>-->
+<!--                                    </p:commandLink>-->
+<!--                                    |-->
+<!--                                    <p:commandLink styleClass="sideview-topbar-button">-->
+<!--                                        <h:outputText styleClass="bi bi-box-arrow-in-up"/>-->
+<!--                                    </p:commandLink>-->
                                     <p:commandLink styleClass="sideview-topbar-button">
                                         <h:outputText styleClass="bi bi-arrows-angle-expand"/>
                                     </p:commandLink>
@@ -62,10 +63,13 @@
                             </h:form>
                         </div>
                     </div>
+                    <p:progressBar widgetVar="pbBarAjax_#{panelIndex}-overview" id="overviewProgressBar"
+                                   class="panel-progressbar"
+                                   style="height:3px" mode="indeterminate"/>
                     <!-- Include the reusable dynamic content for the right panel -->
-                    <ui:include src="#{panelModel.overview.display()}" id="panel-body">
+                    <ui:include src="#{panelModel.overview.display()}" id="overview-panel-body">
                         <ui:param name="panelModel" value="#{panelModel.overview}"/>
-                        <ui:param name="panelIndex" value="#{panelModel.overview.prefixPanelIndex}"/>
+                        <ui:param name="panelIndex" value="#{panelIndex}-overview"/>
                     </ui:include>
                 </p:outputPanel>
             </p:splitterPanel>

@@ -1,9 +1,11 @@
 package fr.siamois.ui.bean.panel.models.panel;
 
 import fr.siamois.ui.bean.panel.models.PanelBreadcrumb;
+import fr.siamois.ui.bean.panel.models.panel.single.RecordingUnitPanel;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
+import org.primefaces.PrimeFaces;
 
 import java.io.Serializable;
 import java.time.OffsetDateTime;
@@ -53,7 +55,7 @@ public abstract class AbstractPanel implements Serializable {
     public String formatUtcDateTime(OffsetDateTime dateTime, boolean showTime) {
         if (dateTime == null) return "";
         String pattern = "dd/MM/yyyy HH:mm";
-        if(!showTime) {
+        if (!showTime) {
             pattern = "dd/MM/yyyy";
         }
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern(pattern).withZone(ZoneOffset.UTC);
@@ -131,24 +133,32 @@ public abstract class AbstractPanel implements Serializable {
     public abstract String getPrefixPanelIndex();
 
     public String getPanelIndex() {
-        if(isRoot) {
+        if (isRoot) {
             return getPrefixPanelIndex();
         }
-        return getPrefixPanelIndex()+"-overview";
+        return getPrefixPanelIndex() + "-overview";
     }
 
     public String getPanelTypeClass() {
         return "";
     }
 
-    public abstract String resolveTitleOrTitleCode() ;
+    public abstract String resolveTitleOrTitleCode();
 
     public String getLeftSpltterSize() {
-        if(overview == null) {
+        if (overview == null) {
             return "none";
-        }
-        else {
+        } else {
             return "block";
         }
+    }
+
+    public void closeOverview() {
+
+        overview = null;
+        PrimeFaces.current().ajax().update("sideview");
+        PrimeFaces.current().executeScript("hideSideview('" + getPanelIndex() + "');");
+
+
     }
 }
