@@ -202,10 +202,6 @@ Return the command that opens panel for the unit
      */
     public abstract boolean save(Boolean validated);
 
-    public void saveAction(boolean validated) {
-        save(validated);
-    }
-
     public boolean contentIsImage(String mimeType) {
         MimeType currentMimeType = MimeType.valueOf(mimeType);
         return currentMimeType.getType().equals("image");

@@ -68,7 +68,7 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
 
     private T unit;
 
-    private boolean autoSave = false;
+    private boolean autoSave = true;
 
     private final FieldSource fieldSource;
     private final FormService formService;

@@ -36,6 +36,7 @@ import org.springframework.context.NoSuchMessageException;
 import org.springframework.context.annotation.Scope;
 import org.springframework.context.annotation.ScopedProxyMode;
 import org.springframework.context.event.EventListener;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Component;
 
 import java.io.Serializable;
@@ -205,21 +206,32 @@ public class FlowBean implements Serializable {
 
     }
 
-    public void addRecordingUnitToOverview(Long id, String panelId) {
-
+    @Nullable
+    private AbstractPanel findInFlowById(String panelId) {
         // Find the target panel
-        AbstractPanel targetPanel = this.panels.stream()
+        return this.panels.stream()
                 .filter(p -> String.valueOf(p.getPanelIndex()).equals(panelId))
                 .findFirst()
                 .orElse(null);
+
+    }
+
+    private void addPanelToOverview(AbstractPanel targetPanel, AbstractPanel overviewPanel) {
+        // todo : check if overview is overview or not
+        targetPanel.setOverview(overviewPanel);
+        PrimeFaces.current().ajax().update("sideview");
+        PrimeFaces.current().executeScript("showSideview('"+targetPanel.getPanelIndex()+"');");
+    }
+
+    public void addRecordingUnitToOverview(Long id, String panelId) {
+
+       AbstractPanel targetPanel = findInFlowById(panelId);
 
         if (targetPanel != null) {
             // Add the overview
             RecordingUnitPanel overviewPanel = panelFactory.createRecordingUnitPanel(id);
             overviewPanel.setRoot(false);
-            targetPanel.setOverview(overviewPanel);
-            PrimeFaces.current().ajax().update("sideview");
-            PrimeFaces.current().executeScript("showSideview('"+panelId+"');");
+            addPanelToOverview(targetPanel, overviewPanel);
         }
 
     }

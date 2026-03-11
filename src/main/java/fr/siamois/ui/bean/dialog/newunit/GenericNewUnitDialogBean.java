@@ -133,6 +133,7 @@ public class GenericNewUnitDialogBean<T extends AbstractEntityDTO>
                     null
             );
         }
+        formContext.setAutoSave(false); // IMPORTANT
         formContext.init(forceInit);
     }
 
