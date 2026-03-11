@@ -71,6 +71,8 @@ public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
 
     /** Fournit l'identifiant unique d'une entité T (ex: RecordingUnit::getId) */
     private final Function<T, ID> idExtractor;
+    @Setter
+    protected String parentPanelId ; // Id of the parent panel to open items in overview
 
     /**
      * Nom de la propriété de T utilisée comme "form scope" (ex: "type"),

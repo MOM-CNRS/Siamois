@@ -19,9 +19,6 @@ import java.util.Objects;
 @Setter
 public abstract class AbstractPanel implements Serializable {
 
-
-
-
     protected String titleCodeOrTitle;
     protected String panelClass;
     protected String icon;
@@ -31,6 +28,10 @@ public abstract class AbstractPanel implements Serializable {
     protected Boolean isBreadcrumbVisible = true;
     protected Boolean collapsed = false;
     protected Boolean loaded = false;
+    protected boolean isRoot = true; // Is the panel a root panel or an overview
+    protected AbstractPanel overview; // if root, the panel can display and overview
+    protected String errorMessage;
+
 
     public void loadData() {
         // deffer loading here ?
@@ -127,11 +128,27 @@ public abstract class AbstractPanel implements Serializable {
         return Objects.hash(ressourceUri());
     }
 
-    public abstract String getPanelIndex();
+    public abstract String getPrefixPanelIndex();
+
+    public String getPanelIndex() {
+        if(isRoot) {
+            return getPrefixPanelIndex();
+        }
+        return getPrefixPanelIndex()+"-overview";
+    }
 
     public String getPanelTypeClass() {
         return "";
     }
 
     public abstract String resolveTitleOrTitleCode() ;
+
+    public String getLeftSpltterSize() {
+        if(overview == null) {
+            return "0";
+        }
+        else {
+            return "50";
+        }
+    }
 }

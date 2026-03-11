@@ -18,7 +18,6 @@ import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAut
 import fr.siamois.ui.bean.LabelBean;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
-import fr.siamois.ui.bean.dialog.newunit.GenericNewUnitDialogBean;
 import fr.siamois.ui.bean.panel.EntityForm;
 import fr.siamois.ui.bean.panel.models.panel.AbstractPanel;
 import fr.siamois.ui.form.*;
@@ -138,12 +137,13 @@ public abstract class AbstractSingleEntity<T extends AbstractEntityDTO>
     }
 
     public String getConceptFieldsUpdateTargetsOnBlur() {
-            return "@form panel-" + getPanelIndex() + "-header";
+            return "@form panel-" + getPrefixPanelIndex() + "-header";
 
     }
 
     public String getPanelHeaderUpdateId() {
-            return "panel-" + getPanelIndex() + "-header singlePanelUnitForm-"+getPanelIndex()+":breadcrumbs";
+            //return "panel-" + getPanelIndex() + "-header singlePanelUnitForm-"+getPanelIndex()+":breadcrumbs";
+        return "";
 
     }
 

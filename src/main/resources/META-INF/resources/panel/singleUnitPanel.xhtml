@@ -9,221 +9,89 @@
 
 
     <!-- Content -->
-    <p:outputPanel id="unitContentPanel" rendered="#{panelModel.unit != null}" style="position: relative;">
-        <p:staticMessage severity="error" summary="Error" closable="false"
-                         detail="#{panelModel.errorMessage}"
-                         rendered="#{not empty panelModel.errorMessage}"/>
-        <p:progressBar widgetVar="pbBarAjax_#{panelIndex}" id="progressBar"
-                       class="panel-progressbar"
-                       style="height:3px" mode="indeterminate"/>
-        <p:splitter>
-            <p:splitterPanel styleClass="panel-splitter-panel-l">
-                <div>
-                    <h:form id="singlePanelUnitForm-#{panelIndex}">
-                        <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
 
+        <h:form id="singlePanelUnitForm-#{panelIndex}">
+            <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
 
+            <!-- breadcrumbs if exists -->
+            <p:outputPanel id="breadcrumbs">
+                <ui:repeat var="breadcrumbModel" value="#{panelModel.allParentBreadcrumbModels}">
+                    <p:breadCrumb lastItemDisabled="true" styleClass="panel-bc" homeDisplay="text"
+                                  model="#{breadcrumbModel}"/>
+                </ui:repeat>
+            </p:outputPanel>
 
-                        <!-- breadcrumbs if exists -->
-                        <p:outputPanel id="breadcrumbs">
-                            <ui:repeat var="breadcrumbModel" value="#{panelModel.allParentBreadcrumbModels}">
-                                <p:breadCrumb lastItemDisabled="true" styleClass="panel-bc" homeDisplay="text"
-                                              model="#{breadcrumbModel}"/>
-                            </ui:repeat>
-                        </p:outputPanel>
+            <!-- Tabs -->
+            <ui:include src="#{panelModel.getTabView()}"/>
 
-                        <!-- Tabs -->
-                        <ui:include src="#{panelModel.getTabView()}"/>
-
-                        <!-- Save/Cancel Toolbar -->
-                        <p:toolbar class="panel-footer">
-                            <p:toolbarGroup>
-                                <div style="flex-direction: row; display: flex; gap: 1em; align-items: center;">
-                                    <div style="display: flex; flex-direction: column">
-                                        <div style="display: flex; flex-direction: row; gap:1em">
-                                            <small>
-                                                <i>
-                                                    Créé le
-                                                    <span class="panel-history-colored-span">
+            <!-- Save/Cancel Toolbar -->
+            <p:toolbar class="panel-footer">
+                <p:toolbarGroup>
+                    <div style="flex-direction: row; display: flex; gap: 1em; align-items: center;">
+                        <div style="display: flex; flex-direction: column">
+                            <div style="display: flex; flex-direction: row; gap:1em">
+                                <small>
+                                    <i>
+                                        Créé le
+                                        <span class="panel-history-colored-span">
                                       #{panelModel.formatUtcDateTime(panelModel.unit.creationTime, false)}
                                     </span>
-                                                    par
-                                                    <span class="panel-history-colored-span">
+                                        par
+                                        <span class="panel-history-colored-span">
                                       #{panelModel.unit.createdBy.displayName()}
                                     </span>
-                                                </i>
-                                            </small>
-                                            <small>
-                                                <i>
-                                                    Modifié le
-                                                    <span class="panel-history-colored-span">
+                                    </i>
+                                </small>
+                                <small>
+                                    <i>
+                                        Modifié le
+                                        <span class="panel-history-colored-span">
                                       #{panelModel.lastUpdateDate()}
                                     </span>
-                                                    par
-                                                    <span class="panel-history-colored-span">
+                                        par
+                                        <span class="panel-history-colored-span">
                                       #{panelModel.lastUpdater()}
                                     </span>
-                                                </i>
-                                            </small>
-                                            <h:panelGroup rendered="#{panelModel.unit.validated}">
-                                                <small>
-                                                    <i>
-                                                        Validé le
-                                                        <span class="panel-history-colored-span">
+                                    </i>
+                                </small>
+                                <h:panelGroup rendered="#{panelModel.unit.validated}">
+                                    <small>
+                                        <i>
+                                            Validé le
+                                            <span class="panel-history-colored-span">
                                       #{panelModel.formatUtcDateTime(panelModel.unit.validatedAt, false)}
                                     </span>
-                                                        par
-                                                        <span class="panel-history-colored-span">
+                                            par
+                                            <span class="panel-history-colored-span">
                                       #{panelModel.unit.createdBy.displayName()}
                                     </span>
-                                                    </i>
-                                                </small>
-                                            </h:panelGroup>
-                                            <small>
-                                                <i>
-                                                    Contributeurs:
-                                                    <span class="panel-history-colored-span">
+                                        </i>
+                                    </small>
+                                </h:panelGroup>
+                                <small>
+                                    <i>
+                                        Contributeurs:
+                                        <span class="panel-history-colored-span">
                                       #{panelModel.allUpdaters()}
                                     </span>
-                                                </i>
-                                            </small>
-                                        </div>
-
-
-                                    </div>
-                                    <div>
-                                        <p:commandButton disabled="true" icon="bi bi-clock-history">
-
-                                        </p:commandButton>
-                                    </div>
-                                </div>
-
-                            </p:toolbarGroup>
-                        </p:toolbar>
-
-                    </h:form>
-                </div>
-            </p:splitterPanel>
-            <p:splitterPanel styleClass="panel-splitter-panel-r">
-
-                <p:outputPanel id="sideview" styleClass="sideview" style="  border-radius: 1em 0em 0em 0em;">
-
-                    <div class="sideview-titlebar" style="background: var(--siamois-green-light-100);">
-                        <div style="display: flex;justify-content: space-between;">
-                            <div>
-                                <ui:include rendered="#{panelModel.displayHeader() != null}"
-                                            src="#{panelModel.displayHeader()}">
-                                    <ui:param name="panelModel" value="#{panelModel}"/>
-                                </ui:include>
+                                    </i>
+                                </small>
                             </div>
 
-                            <div style="display:flex;flex-direction: row;gap:0.5em;"   >
-                                <p:commandLink styleClass="sideview-topbar-button">
-                                    <h:outputText styleClass="bi bi-chevron-double-right"/>
-                                </p:commandLink>
-                                <p:commandLink styleClass="sideview-topbar-button">
-                                    <h:outputText styleClass="bi bi-chevron-left"/>
-                                </p:commandLink>
-                                <p:commandLink styleClass="sideview-topbar-button">
-                                    <h:outputText styleClass="bi bi-chevron-right"/>
-                                </p:commandLink>
-                                <p:commandLink styleClass="sideview-topbar-button">
-                                    <h:outputText styleClass="bi bi-arrows-angle-expand"/>
-                                </p:commandLink>
-                            </div>
+
                         </div>
+                        <div>
+                            <p:commandButton disabled="true" icon="bi bi-clock-history">
 
+                            </p:commandButton>
+                        </div>
                     </div>
-                    <h:form id="singlePanelUnitForm-#{panelIndex}-overview">
-                        <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
 
-                        <p:progressBar widgetVar="pbBarAjax_#{panelIndex}" id="progressBar"
-                                       class="panel-progressbar"
-                                       style="height:3px" mode="indeterminate"/>
+                </p:toolbarGroup>
+            </p:toolbar>
 
-                        <!-- breadcrumbs if exists -->
-                        <p:outputPanel id="breadcrumbs">
-                            <ui:repeat var="breadcrumbModel" value="#{panelModel.allParentBreadcrumbModels}">
-                                <p:breadCrumb lastItemDisabled="true" styleClass="panel-bc" homeDisplay="text"
-                                              model="#{breadcrumbModel}"/>
-                            </ui:repeat>
-                        </p:outputPanel>
+        </h:form>
 
-                        <!-- Tabs -->
-                        <ui:include src="#{panelModel.getTabView()}"/>
-
-                        <!-- Save/Cancel Toolbar -->
-                        <p:toolbar class="panel-footer">
-                            <p:toolbarGroup>
-                                <div style="flex-direction: row; display: flex; gap: 1em; align-items: center;">
-                                    <div style="display: flex; flex-direction: column">
-                                        <div style="display: flex; flex-direction: row; gap:1em">
-                                            <small>
-                                                <i>
-                                                    Créé le
-                                                    <span class="panel-history-colored-span">
-                                      #{panelModel.formatUtcDateTime(panelModel.unit.creationTime, false)}
-                                    </span>
-                                                    par
-                                                    <span class="panel-history-colored-span">
-                                      #{panelModel.unit.createdBy.displayName()}
-                                    </span>
-                                                </i>
-                                            </small>
-                                            <small>
-                                                <i>
-                                                    Modifié le
-                                                    <span class="panel-history-colored-span">
-                                      #{panelModel.lastUpdateDate()}
-                                    </span>
-                                                    par
-                                                    <span class="panel-history-colored-span">
-                                      #{panelModel.lastUpdater()}
-                                    </span>
-                                                </i>
-                                            </small>
-                                            <h:panelGroup rendered="#{panelModel.unit.validated}">
-                                                <small>
-                                                    <i>
-                                                        Validé le
-                                                        <span class="panel-history-colored-span">
-                                      #{panelModel.formatUtcDateTime(panelModel.unit.validatedAt, false)}
-                                    </span>
-                                                        par
-                                                        <span class="panel-history-colored-span">
-                                      #{panelModel.unit.createdBy.displayName()}
-                                    </span>
-                                                    </i>
-                                                </small>
-                                            </h:panelGroup>
-                                            <small>
-                                                <i>
-                                                    Contributeurs:
-                                                    <span class="panel-history-colored-span">
-                                      #{panelModel.allUpdaters()}
-                                    </span>
-                                                </i>
-                                            </small>
-                                        </div>
-
-
-                                    </div>
-                                    <div>
-                                        <p:commandButton disabled="true" icon="bi bi-clock-history">
-
-                                        </p:commandButton>
-                                    </div>
-                                </div>
-
-                            </p:toolbarGroup>
-                        </p:toolbar>
-                    </h:form>
-                </p:outputPanel>
-            </p:splitterPanel>
-        </p:splitter>
-
-
-    </p:outputPanel>
 
 
 </ui:fragment>

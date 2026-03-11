@@ -442,10 +442,20 @@ body .ui-tabmenu.panel-menu-text {
 .flow {
     position: relative;
     flex: 1;
-    overflow-y: auto;
     margin-left: 0; /* No margin, menus are absolutely positioned */
     z-index: 1;
+
+}
+
+/* Flow div: not affected by menus */
+.fullscreen-flow {
+    padding-bottom: 0; // for scrolling from panel nav bar
+    overflow-y: hidden;
+}
+
+.panel-flow {
     padding-bottom: 30vh; // for scrolling from panel nav bar
+    overflow-y: auto;
 }
 
 body .ui-button.ui-button-flat.status-button {
@@ -453,6 +463,10 @@ body .ui-button.ui-button-flat.status-button {
     color: white;
     height:1.5em;
     width: 1.5em;
+}
+
+.focus {
+    height: 100%;
 }
 
 

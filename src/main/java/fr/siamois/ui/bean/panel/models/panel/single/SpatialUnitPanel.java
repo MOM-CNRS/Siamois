@@ -292,7 +292,7 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
     }
 
     @Override
-    public String getPanelIndex() {
+    public String getPrefixPanelIndex() {
         return "spatial-unit-"+ unitId;
     }
 

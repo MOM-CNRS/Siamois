@@ -404,7 +404,7 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
     }
 
     @Override
-    public String getPanelIndex() {
+    public String getPrefixPanelIndex() {
         return "recording-unit-"+ unitId;
     }
 

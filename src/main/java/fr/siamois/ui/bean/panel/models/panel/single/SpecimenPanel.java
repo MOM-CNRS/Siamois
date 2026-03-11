@@ -241,7 +241,7 @@ public class SpecimenPanel extends AbstractSingleEntityPanel<SpecimenDTO>  imple
     }
 
     @Override
-    public String getPanelIndex() {
+    public String getPrefixPanelIndex() {
         return "specimen-"+ unitId;
     }
 

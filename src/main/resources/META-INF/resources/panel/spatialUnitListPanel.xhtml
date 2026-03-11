@@ -7,9 +7,6 @@
     <!--@elvariable id="panelIndex" type="Integer"-->
     <!--@elvariable id="panelModel" type="fr.siamois.ui.bean.panel.models.panel.list.SpatialUnitListPanel"-->
     <!-- Conditionally render the message if it's set in the bean -->
-    <p:staticMessage severity="error" summary="Error" closable="false"
-                     detail="#{panelModel.spatialUnitListErrorMessage}"
-                     rendered="#{not empty panelModel.spatialUnitListErrorMessage}"/>
 
     <h:form id="spatialUnitListPanelForm">
         <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>

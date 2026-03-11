@@ -164,15 +164,17 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
                                      RecordingUnitDTO ru) {
 
         if (column.getAction() == GO_TO_RECORDING_UNIT) {
-            flowBean.goToRecordingUnitByIdNewPanel(
-                    ru.getId()
+            flowBean.addRecordingUnitToOverview(
+                    ru.getId(),
+                    parentPanelId
             );
+
+
         } else {
             throw new IllegalStateException(
                     "Unhandled action: " + column.getAction()
             );
         }
-
     }
 
     // resolving cell text based on value key

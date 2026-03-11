@@ -56,7 +56,7 @@ public class RecordingUnitListPanel extends AbstractListPanel<RecordingUnitDTO> 
     private String actionUnitListErrorMessage;
     private Concept bulkEditTypeValue;
 
-    public String getPanelIndex() {
+    public String getPrefixPanelIndex() {
         return "recording-unit-list";
     }
 
@@ -113,12 +113,13 @@ public class RecordingUnitListPanel extends AbstractListPanel<RecordingUnitDTO> 
                 langBean,
                 formContextServices
         );
+        tableModel.setParentPanelId(this.getPanelIndex());
 
         return lazy; // l'abstraite en a besoin, mais ce panel ne s'en sert plus ensuite
     }
 
     @Override
-    protected void setErrorMessage(String msg) {
+    public void setErrorMessage(String msg) {
         this.errorMessage = msg;
     }
 

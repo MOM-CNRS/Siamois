@@ -517,7 +517,7 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnitDTO> im
     }
 
     @Override
-    public String getPanelIndex() {
+    public String getPrefixPanelIndex() {
         return "action-unit-"+ unitId;
     }
 
