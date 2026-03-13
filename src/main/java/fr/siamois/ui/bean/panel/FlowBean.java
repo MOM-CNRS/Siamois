@@ -30,6 +30,7 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.math3.analysis.function.Abs;
 import org.primefaces.PrimeFaces;
 import org.primefaces.model.dashboard.DashboardModel;
 import org.springframework.context.NoSuchMessageException;
@@ -219,8 +220,9 @@ public class FlowBean implements Serializable {
 
     }
 
-    private void addPanelToOverview(AbstractPanel targetPanel, AbstractPanel overviewPanel) {
+    public void addPanelToOverview(AbstractPanel targetPanel, AbstractPanel overviewPanel) {
         // todo : check if overview is overview or not
+        overviewPanel.setRoot(true);
         targetPanel.setParentOrOverview(overviewPanel);
         overviewPanel.setParentOrOverview(targetPanel);
         String base64RootUri = Base64.getUrlEncoder().withoutPadding().encodeToString(targetPanel.ressourceUri().getBytes());
@@ -255,13 +257,19 @@ public class FlowBean implements Serializable {
 
     }
 
+
     public void addSpatialUnitToOverview(Long id, AbstractPanel targetPanel) {
 
         if (targetPanel != null) {
             // Add the overview
             SpatialUnitPanel overviewPanel = panelFactory.createSpatialUnitPanel(id);
             overviewPanel.setRoot(false);
-            addPanelToOverview(targetPanel, overviewPanel);
+            if(targetPanel.isRoot()) {
+                addPanelToOverview(targetPanel, overviewPanel);
+            }
+            else {
+                addPanelToOverview(targetPanel.getParentOrOverview(), overviewPanel);
+            }
         }
     }
 
@@ -271,7 +279,12 @@ public class FlowBean implements Serializable {
             // Add the overview
             ActionUnitPanel overviewPanel = panelFactory.createActionUnitPanel(id);
             overviewPanel.setRoot(false);
-            addPanelToOverview(targetPanel, overviewPanel);
+            if(targetPanel.isRoot()) {
+                addPanelToOverview(targetPanel, overviewPanel);
+            }
+            else {
+                addPanelToOverview(targetPanel.getParentOrOverview(), overviewPanel);
+            }
         }
     }
 
@@ -281,7 +294,12 @@ public class FlowBean implements Serializable {
             // Add the overview
             SpecimenPanel overviewPanel = panelFactory.createSpecimenPanel(id);
             overviewPanel.setRoot(false);
-            addPanelToOverview(targetPanel, overviewPanel);
+            if(targetPanel.isRoot()) {
+                addPanelToOverview(targetPanel, overviewPanel);
+            }
+            else {
+                addPanelToOverview(targetPanel.getParentOrOverview(), overviewPanel);
+            }
         }
     }
 

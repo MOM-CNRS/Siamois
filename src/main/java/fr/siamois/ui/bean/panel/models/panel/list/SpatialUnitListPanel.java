@@ -120,6 +120,7 @@ public class SpatialUnitListPanel extends AbstractListPanel<SpatialUnitDTO>  imp
                 institutionService,
                 formContextServices
         );
+        tableModel.setParentPanel(this);
 
         return lazy; // l'abstraite en a besoin, mais ce panel ne s'en sert plus ensuite
     }

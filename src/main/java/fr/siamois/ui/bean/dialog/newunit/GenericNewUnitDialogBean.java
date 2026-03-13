@@ -185,25 +185,16 @@ public class GenericNewUnitDialogBean<T extends AbstractEntityDTO>
             String js = "PF('newUnitDiag').hide();";
 
 
-            if (scrollToTop) {
-                js += "handleScrollToTop();";
-            }
-
             PrimeFaces.current().executeScript(js);
 
-            // Refresh commun
-            PrimeFaces.current().ajax().update(newUnitContext.getUpdateOnCreate());
-
-
-            // Message succès
-            MessageUtils.displayInfoMessage(langBean, getSuccessMessageCode(), unitName());
-
-            // update des compteurs du home panel
-            flowBean.updateHomePanel();
-
-            if (openAfter) {
-                redirectBean.redirectTo(handler.viewUrlFor(getUnitId()));
+            // Display the new unit in the overview
+            switch(kind) {
+                case SPATIAL -> flowBean.addSpatialUnitToOverview(getUnitId(),sourceTableModel.getParentPanel());
+                case RECORDING -> flowBean.addRecordingUnitToOverview(getUnitId(),sourceTableModel.getParentPanel());
+                case ACTION -> flowBean.addActionUnitToOverview(getUnitId(),sourceTableModel.getParentPanel());
+                case SPECIMEN -> flowBean.addSpecimenToOverview(getUnitId(),sourceTableModel.getParentPanel());
             }
+
 
         } catch (EntityAlreadyExistsException e) {
             log.error(e.getMessage(), e);

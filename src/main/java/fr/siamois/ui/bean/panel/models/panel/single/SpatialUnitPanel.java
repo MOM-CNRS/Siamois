@@ -408,6 +408,7 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
                 institutionService,
                 formContextServices
         );
+        childTableModel.setParentPanel(this);
         SpatialUnitTableDefinitionFactory.applyTo(childTableModel);
 
         // configuration du bouton creer

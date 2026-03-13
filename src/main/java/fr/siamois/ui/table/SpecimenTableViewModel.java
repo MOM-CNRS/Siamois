@@ -82,9 +82,7 @@ public class SpecimenTableViewModel extends EntityTableViewModel<SpecimenDTO, Lo
                                      SpecimenDTO s) {
 
         if (column.getAction() == GO_TO_SPECIMEN) {
-            flowBean.goToSpecimenByIdNewPanel(
-                    s.getId()
-            );
+            flowBean.addSpecimenToOverview(s.getId(), parentPanel);
         } else {
             throw new IllegalStateException(
                     "Unhandled action: " + column.getAction()
