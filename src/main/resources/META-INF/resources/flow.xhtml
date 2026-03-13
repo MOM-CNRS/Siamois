@@ -10,6 +10,10 @@
 
     <ui:define name="head">
 
+        <title>
+            Siamois - Flow
+        </title>
+
         <script>
 
 
@@ -223,7 +227,7 @@
                                         </ui:include>
                                     </p:outputPanel>
                                 </f:facet>
-                                <p:outputPanel id="panelContent" deferred="false" loaded="#{panel.loaded}"
+                                <p:outputPanel id="panelContent-${panel.prefixPanelIndex}" deferred="false" loaded="#{panel.loaded}"
                                                deferredMode="visible" styleClass="#{flowBean.fullscreenPanelIndex !=-1 ? 'focus' : ''}">
                                     <f:facet name="loading">
                                         <div class="field" style="padding: 2em 3em;">
@@ -249,6 +253,7 @@
                                     <p:ajax event="load" action="#{panel.loadData()}"
                                             update="panel-${panel.prefixPanelIndex}-container"/>
                                     <ui:include src="/panel/panelContent.xhtml" id="panel-body">
+                                        <ui:param name="mode" value="FLOW"/>
                                         <ui:param name="panelModel" value="#{panel}"/>
                                         <ui:param name="panelIndex" value="#{panel.panelIndex}"/>
                                     </ui:include>
@@ -276,18 +281,12 @@
                                                 <h:outputText styleClass="#{navBean.isPanelBookmarkedByUser(panel) ?
                             'ui-icon bi bi-bookmark-fill' : 'ui-icon bi bi-bookmark'}"/>
                                             </p:commandLink>
-                                            <p:commandLink rendered="#{flowBean.fullscreenPanelIndex ==-1}"
+                                            <p:commandLink
                                                            action="#{flowBean.fullScreen(panel)}"
+                                                           ajax="false"
                                                            id="focusButton"
-                                                           update="flow"
                                                            styleClass="ui-panel-titlebar-icon ui-corner-all ui-state-default">
                                                 <h:outputText styleClass="ui-icon bi bi-arrows-angle-expand"/>
-                                            </p:commandLink>
-                                            <p:commandLink rendered="#{flowBean.fullscreenPanelIndex == status.index}"
-                                                           action="#{flowBean.closeFullScreen()}"
-                                                           update="flow"
-                                                           styleClass="ui-panel-titlebar-icon ui-corner-all ui-state-default">
-                                                <h:outputText styleClass="ui-icon bi bi-arrows-angle-contract"/>
                                             </p:commandLink>
                                         </div>
 

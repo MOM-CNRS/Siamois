@@ -91,6 +91,7 @@ public class ActionUnitListPanel extends AbstractListPanel<ActionUnitDTO> implem
                 formContextServices
 
         );
+        tableModel.setParentPanel(this);
         return lazy;
     }
 

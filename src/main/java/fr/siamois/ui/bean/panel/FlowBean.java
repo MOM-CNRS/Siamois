@@ -39,7 +39,10 @@ import org.springframework.context.event.EventListener;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Component;
 
+import java.io.IOException;
 import java.io.Serializable;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -92,13 +95,13 @@ public class FlowBean implements Serializable {
 
     @Getter
     private transient List<AbstractPanel> panels = new ArrayList<>();
-    private transient int fullscreenPanelIndex = 0;
+    private transient int fullscreenPanelIndex = -1;
 
     private transient Set<AbstractSingleEntityPanel<?>> unsavedPanels = new HashSet<>();
 
 
     public void init() {
-        fullscreenPanelIndex = 0;
+        fullscreenPanelIndex = -1;
         panels = new ArrayList<>();
         addWelcomePanel();
         InstitutionDTO institution = sessionSettings.getSelectedInstitution();
@@ -218,23 +221,70 @@ public class FlowBean implements Serializable {
 
     private void addPanelToOverview(AbstractPanel targetPanel, AbstractPanel overviewPanel) {
         // todo : check if overview is overview or not
-        targetPanel.setOverview(overviewPanel);
-        PrimeFaces.current().ajax().update("sideview");
-        PrimeFaces.current().executeScript("showSideview('"+targetPanel.getPanelIndex()+"');");
+        targetPanel.setParentOrOverview(overviewPanel);
+        overviewPanel.setParentOrOverview(targetPanel);
+        String base64RootUri = Base64.getUrlEncoder().withoutPadding().encodeToString(targetPanel.ressourceUri().getBytes());
+        String base64OverviewUri = Base64.getUrlEncoder().withoutPadding().encodeToString(overviewPanel.ressourceUri().getBytes());
+        PrimeFaces.current().ajax().update("sideview-"+targetPanel.getPanelIndex());
+        PrimeFaces.current().executeScript(
+                String.format(
+                        "showSideview('%s', '%s', '%s');",
+                        targetPanel.getPanelIndex(),
+                        base64RootUri,
+                        base64OverviewUri
+                )
+        );
+
+        //FacesContext.getCurrentInstance().getExternalContext().getRequest().getRequestURI()
     }
 
-    public void addRecordingUnitToOverview(Long id, String panelId) {
-
-       AbstractPanel targetPanel = findInFlowById(panelId);
+    public void addRecordingUnitToOverview(Long id, AbstractPanel targetPanel) {
 
         if (targetPanel != null) {
             // Add the overview
             RecordingUnitPanel overviewPanel = panelFactory.createRecordingUnitPanel(id);
             overviewPanel.setRoot(false);
-            addPanelToOverview(targetPanel, overviewPanel);
+            if(targetPanel.isRoot()) {
+                addPanelToOverview(targetPanel, overviewPanel);
+            }
+            else {
+                addPanelToOverview(targetPanel.getParentOrOverview(), overviewPanel);
+            }
+
         }
 
     }
+
+    public void addSpatialUnitToOverview(Long id, AbstractPanel targetPanel) {
+
+        if (targetPanel != null) {
+            // Add the overview
+            SpatialUnitPanel overviewPanel = panelFactory.createSpatialUnitPanel(id);
+            overviewPanel.setRoot(false);
+            addPanelToOverview(targetPanel, overviewPanel);
+        }
+    }
+
+    public void addActionUnitToOverview(Long id, AbstractPanel targetPanel) {
+
+        if (targetPanel != null) {
+            // Add the overview
+            ActionUnitPanel overviewPanel = panelFactory.createActionUnitPanel(id);
+            overviewPanel.setRoot(false);
+            addPanelToOverview(targetPanel, overviewPanel);
+        }
+    }
+
+    public void addSpecimenToOverview(Long id, AbstractPanel targetPanel) {
+
+        if (targetPanel != null) {
+            // Add the overview
+            SpecimenPanel overviewPanel = panelFactory.createSpecimenPanel(id);
+            overviewPanel.setRoot(false);
+            addPanelToOverview(targetPanel, overviewPanel);
+        }
+    }
+
 
 
     public void goToRecordingUnitByIdNewPanel(Long id, Integer tabIndex) {
@@ -265,17 +315,49 @@ public class FlowBean implements Serializable {
         addPanel(newPanel);
     }
 
-
-    public void fullScreen(AbstractPanel panel) {
-        // Could use setter if we don't add more code
-        int index = panels.indexOf(panel);
-        if (index != -1) {
-            fullscreenPanelIndex = index;
-        }
+    public void redirectToFocus(String resourceUri) throws IOException {
+        redirectToFocus(resourceUri, null);
     }
 
-    public void closeFullScreen() {
-        fullscreenPanelIndex = -1;
+    public void redirectToFocus(String resourceUri, @Nullable String overviewResourceUri) throws IOException {
+        // Encode the URI in Base64
+        String encodedUri = Base64.getEncoder().encodeToString(resourceUri.getBytes(StandardCharsets.UTF_8));
+
+        // URL-encode the Base64 string to ensure it's safe for a URL
+        String safeEncodedUri = URLEncoder.encode(encodedUri, StandardCharsets.UTF_8);
+
+        FacesContext context = FacesContext.getCurrentInstance();
+        String basePath = context.getExternalContext().getRequestContextPath();
+
+        String sParam = "";
+        if(overviewResourceUri != null) {
+            sParam="?s="+URLEncoder.encode(
+                    Base64.getEncoder().encodeToString(overviewResourceUri.getBytes(StandardCharsets.UTF_8))
+                    , StandardCharsets.UTF_8);
+        }
+
+        String url = basePath + "/focus/" + safeEncodedUri + sParam;
+
+        context.getExternalContext().redirect(url);
+    }
+
+
+    public void fullScreen(AbstractPanel panel) throws IOException {
+        // Redirect to focus page
+        redirectToFocus(panel.ressourceUri(), panel.getParentOrOverview() != null ? panel.getParentOrOverview().ressourceUri() : null);
+
+    }
+
+    public void redirectToDashboard() throws IOException {
+        FacesContext context = FacesContext.getCurrentInstance();
+        String basePath = context.getExternalContext().getRequestContextPath();
+        String url = basePath + "/focus/L3dlbGNvbWU=";
+        context.getExternalContext().redirect(url);
+    }
+
+    public void closeFullScreen(AbstractPanel panel) throws IOException {
+        addPanel(panel);
+        redirectToDashboard();
     }
 
 

@@ -6,6 +6,7 @@
 >
     <!--@elvariable id="panelIndex" type="Integer"-->
     <!--@elvariable id="panelModel" type="fr.siamois.ui.bean.panel.models.panel.WelcomePanel"-->
+    <!--@elvariable id="mode" type="String"-->
 
     <div class="sia-panel-title">
         #{langBean.msg('homePanel.title', sessionSettingsBean.selectedInstitution.name)}
@@ -88,7 +89,7 @@
                                     btnLabel="#{langBean.msg('homePanel.see.actionUnit')}"
                                     label="#{langBean.msg('common.entity.actionUnits')}"
                                     count="#{panelModel.nbOfActionUnits}"
-                                    btnAction="#{flowBean.addActionUnitListPanel()}"
+                                    btnAction="#{navBean.goToActionUnitList(mode)}"
                                     btnNewActionUpdate="newUnitForm"
                                     btnNewActionOnComplete="PF('newUnitDiag').show();"
                                     btnNewActionOnStart=""
@@ -113,7 +114,7 @@
                                     panelModel="#{panelModel}"
                                     label="#{langBean.msg('common.entity.spatialUnits')}"
                                     count="#{panelModel.nbOfSpatialUnits}"
-                                    btnAction="#{flowBean.addSpatialUnitListPanel()}"
+                                    btnAction="#{navBean.goToSpatialUnitList(mode)}"
                                     btnNewActionUpdate="newUnitForm"
                                     btnNewActionOnComplete="PF('newUnitDiag').show();"
                                     btnNewActionOnStart=""
@@ -137,7 +138,7 @@
                                     btnLabel="#{langBean.msg('homePanel.see.recordingUnit')}"
                                     label="#{langBean.msg('common.entity.recordingUnits')}"
                                     count="#{panelModel.nbOfRecordingUnits}"
-                                    btnAction="#{flowBean.addRecordingUnitListPanel()}"
+                                    btnAction="#{navBean.goToRecordingUnitList(mode)}"
                                     description="Les unités d'enregistrement"
                                     newPanelId="panel-recording-unit-list-container"
                             />
@@ -154,7 +155,7 @@
                                     btnLabel="#{langBean.msg('homePanel.see.specimen')}"
                                     label="#{langBean.msg('common.entity.specimen')}"
                                     count="#{panelModel.nbOfSpecimen}"
-                                    btnAction="#{flowBean.addSpecimenListPanel()}"
+                                    btnAction="#{navBean.goToSpecimenList(mode)}"
                                     description="Mobiliers, prélèvements et VAB"
                                     newPanelId="panel-specimen-list-container"
                             />

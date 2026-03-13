@@ -1,7 +1,6 @@
 package fr.siamois.ui.bean.panel.models.panel;
 
 import fr.siamois.ui.bean.panel.models.PanelBreadcrumb;
-import fr.siamois.ui.bean.panel.models.panel.single.RecordingUnitPanel;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
@@ -31,7 +30,7 @@ public abstract class AbstractPanel implements Serializable {
     protected Boolean collapsed = false;
     protected Boolean loaded = false;
     protected boolean isRoot = true; // Is the panel a root panel or an overview
-    protected AbstractPanel overview; // if root, the panel can display and overview
+    protected AbstractPanel parentOrOverview; // if root, the panel can display and overview
     protected String errorMessage;
 
 
@@ -146,7 +145,7 @@ public abstract class AbstractPanel implements Serializable {
     public abstract String resolveTitleOrTitleCode();
 
     public String getLeftSpltterSize() {
-        if (overview == null) {
+        if (parentOrOverview == null) {
             return "none";
         } else {
             return "block";
@@ -155,7 +154,7 @@ public abstract class AbstractPanel implements Serializable {
 
     public void closeOverview() {
 
-        overview = null;
+        parentOrOverview = null;
         PrimeFaces.current().ajax().update("sideview");
         PrimeFaces.current().executeScript("hideSideview('" + getPanelIndex() + "');");
 

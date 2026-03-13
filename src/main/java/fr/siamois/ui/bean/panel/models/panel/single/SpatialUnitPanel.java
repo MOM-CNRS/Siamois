@@ -117,7 +117,7 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
 
     @Override
     String getOpenPanelCommand(SpatialUnitDTO unit) {
-        return "#{flowBean.addSpatialUnitPanel(".concat(unit.getId().toString()).concat(")}");
+        return "#{navBean.redirectToBookmarked('/spatial-unit/".concat(unit.getId().toString()).concat("')}");
     }
 
 
@@ -359,6 +359,7 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
                 institutionService,
                 formContextServices
         );
+        actionTabTableModel.setParentPanel(this);
 
         ActionUnitTableDefinitionFactory.applyTo(actionTabTableModel);
 
@@ -436,7 +437,7 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
         return DefaultMenuItem.builder()
                 .value(langBean.msg("panel.title.allspatialunit"))
                 .id("allSpatialUnits")
-                .command("#{flowBean.addSpatialUnitListPanel()}")
+                .command("#{navBean.redirectToBookmarked('/spatial-unit/')}")
                 .update("flow")
                 .onstart(PF_BUI_CONTENT_SHOW)
                 .oncomplete(PF_BUI_CONTENT_HIDE)

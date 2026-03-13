@@ -9,6 +9,7 @@ import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.NavBean;
 import fr.siamois.ui.bean.dialog.newunit.GenericNewUnitDialogBean;
 import fr.siamois.ui.bean.dialog.newunit.NewUnitContext;
+import fr.siamois.ui.bean.panel.models.panel.AbstractPanel;
 import fr.siamois.ui.form.CustomColUiDto;
 import fr.siamois.ui.form.EntityFormContext;
 import fr.siamois.ui.form.FormContextServices;
@@ -72,7 +73,7 @@ public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
     /** Fournit l'identifiant unique d'une entité T (ex: RecordingUnit::getId) */
     private final Function<T, ID> idExtractor;
     @Setter
-    protected String parentPanelId ; // Id of the parent panel to open items in overview
+    protected AbstractPanel parentPanel ; // the parent panel to open items in overview
 
     /**
      * Nom de la propriété de T utilisée comme "form scope" (ex: "type"),

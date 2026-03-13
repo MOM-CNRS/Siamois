@@ -113,7 +113,7 @@ public class RecordingUnitListPanel extends AbstractListPanel<RecordingUnitDTO> 
                 langBean,
                 formContextServices
         );
-        tableModel.setParentPanelId(this.getPanelIndex());
+        tableModel.setParentPanel(this);
 
         return lazy; // l'abstraite en a besoin, mais ce panel ne s'en sert plus ensuite
     }

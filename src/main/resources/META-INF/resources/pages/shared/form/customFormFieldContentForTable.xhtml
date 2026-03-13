@@ -25,7 +25,7 @@
 
     <p:outputPanel rendered="#{bean.isColumnEnabled(col.field)}"
                    styleClass="#{answer['class'].simpleName ne 'CustomFieldAnswerSelectMultipleSpatialUnitTree' ? 'ui-fluid' : ''}"
-                   id="field-#{prefix}-#{rowIndex}">
+                   >
         <ui:include src="/pages/shared/form/fieldCore.xhtml">
             <ui:param name="panelId" value="#{panelId}"/>
             <ui:param name="bean" value="#{bean}"/>

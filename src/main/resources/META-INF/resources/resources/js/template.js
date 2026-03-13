@@ -213,6 +213,7 @@ function hideProgressBar(widgetVar) {
     const progressBarValue = widgetVar.jq.find('.ui-progressbar-value');
     progressBarValue.css('background-color', 'transparent').hide();
 }
+
 function loadPanel(t, data, s, xhr) {
     console.log("Original Response:", t, data, s, xhr);
 
@@ -290,16 +291,16 @@ function onCompleteCallback(panelId) {
     }
 }
 
-function showSideview(panelId) {
+function showSideview(panelId, base64RootUri, base64OverviewUri) {
     const container = document.getElementById("panel-" + panelId);
     if (container) {
-        const sideview = container.querySelector("#panel-splitter");
+        const sideview = container.querySelector("#panel-splitter-" + panelId);
         if (sideview) {
 
             // Find and show the #overview_3 element inside the splitter
-            const overview3 = sideview.querySelector("#overview_3");
-            if (overview3) {
-                overview3.style.display = "block";
+            const children = sideview.children;
+            if (children.length >= 3) {
+                children[2].style.display = "block"; // Third child (index 2)
             }
 
             // Find and show the element with class .ui-splitter-gutter inside the splitter
@@ -309,17 +310,32 @@ function showSideview(panelId) {
             }
         }
     }
+    // Construct the new URL
+// Construct the new URL with the application context
+    const newUrl = `${APP_CTX}/focus/${base64RootUri}?s=${base64OverviewUri}`;
+
+// Push the new state
+    window.history.pushState(
+        {
+            root: base64RootUri,
+            overview: base64OverviewUri,
+            isCustomState: true
+        },
+        '',
+        newUrl
+    );
 }
 
 function hideSideview(panelId) {
     const container = document.getElementById("panel-" + panelId);
     if (container) {
-        const sideview = container.querySelector("#panel-splitter");
+        const sideview = container.querySelector("#panel-splitter-" + panelId);
         if (sideview) {
             // Hide the #overview_3 element inside the splitter
-            const overview3 = sideview.querySelector("#overview_3");
-            if (overview3) {
-                overview3.style.display = "none";
+
+            const children = sideview.children;
+            if (children.length >= 3) {
+                children[2].style.display = "none"; // Third child (index 2)
             }
 
             // Hide the element with class .ui-splitter-gutter inside the splitter
@@ -330,6 +346,12 @@ function hideSideview(panelId) {
         }
     }
 }
+
+$(window).on("popstate", function(e) {
+
+        location.reload()
+
+});
 
 
 

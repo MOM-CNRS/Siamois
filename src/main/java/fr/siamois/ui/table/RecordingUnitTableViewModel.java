@@ -166,7 +166,7 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
         if (column.getAction() == GO_TO_RECORDING_UNIT) {
             flowBean.addRecordingUnitToOverview(
                     ru.getId(),
-                    parentPanelId
+                    parentPanel
             );
 
 

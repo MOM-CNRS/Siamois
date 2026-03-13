@@ -19,6 +19,7 @@
     <!-- Row Context -->
     <ui:param name="rowContext" value="#{tableModel.getRowContext(item)}"/>
 
+
     <ui:fragment rendered="#{column.type eq 'FORM_FIELD'}" >
         <ui:include src="/pages/shared/form/customFormFieldContentForTable.xhtml">
             <ui:param name="panelId" value="#{panelId}"/>
@@ -50,7 +51,7 @@
                 icon="bi bi-layout-sidebar-inset-reverse"
                 oncomplete="#{tableModel.getOnCompleteJs(item)}"
                 >
-
+            <f:attribute name="mode" value="mode" />
         </p:commandButton>
         <p:contextMenu for="openRowLink">
             <p:menuitem value="Ouvrir dans un panel" disabled="true" icon="bi bi-box-arrow-in-up"/>

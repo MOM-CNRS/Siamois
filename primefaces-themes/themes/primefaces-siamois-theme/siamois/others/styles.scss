@@ -469,5 +469,13 @@ body .ui-button.ui-button-flat.status-button {
     height: 100%;
 }
 
+body .ui-treetable.ui-treetable-sm .ui-treetable-data>tr>td.small-cell {
+    padding: 0rem .5rem;
+}
+
+body .ui-inplace .ui-inplace-display {
+    padding: 0rem 0rem;
+}
+
 
 

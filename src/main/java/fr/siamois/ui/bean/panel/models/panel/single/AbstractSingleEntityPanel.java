@@ -146,7 +146,7 @@ Return the command that opens panel for the unit
                 .value("")
                 .id("home")
                 .icon("bi bi-house")
-                .command("#{flowBean.addWelcomePanel()}")
+                .command("#{flowBean.redirectToDashboard()}")
                 .update("flow")
                 .onstart(PF_BUI_CONTENT_SHOW)
                 .oncomplete(PF_BUI_CONTENT_HIDE)
