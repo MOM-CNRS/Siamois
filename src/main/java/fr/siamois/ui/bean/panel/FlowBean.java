@@ -362,7 +362,7 @@ public class FlowBean implements Serializable {
 
     public void fullScreen(AbstractPanel panel) throws IOException {
         // Redirect to focus page
-        redirectToFocus(panel.ressourceUri(), panel.getParentOrOverview() != null ? panel.getParentOrOverview().ressourceUri() : null);
+        redirectToFocus(panel.ressourceUri(), null);
 
     }
 
