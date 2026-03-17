@@ -238,7 +238,7 @@ class EntityFormContextTest {
 
         ctx.init(false);
 
-        SpatialUnitDTO su1 = mock(SpatialUnitDTO.class);
+        SpatialUnitSummaryDTO su1 = mock(SpatialUnitSummaryDTO.class);
 
         // act: add
         ctx.addSUToSelection(treeAnswer, su1);
