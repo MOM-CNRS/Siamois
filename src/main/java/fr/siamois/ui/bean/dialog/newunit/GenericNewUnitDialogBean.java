@@ -183,8 +183,6 @@ public class GenericNewUnitDialogBean<T extends AbstractEntityDTO>
             createUnit();
             // JS conditionnel (widgetVar fixe)
             String js = "PF('newUnitDiag').hide();";
-
-
             PrimeFaces.current().executeScript(js);
 
             // Display the new unit in the overview
