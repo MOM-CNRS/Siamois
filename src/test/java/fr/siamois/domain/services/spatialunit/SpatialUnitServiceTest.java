@@ -396,14 +396,12 @@ class SpatialUnitServiceTest {
                 .thenReturn(institutionDTO);
         when(personService.findById(anyLong()))
                 .thenReturn(new Person());
-        when(spatialUnitRepository.findById(anyLong()))
-                .thenReturn(Optional.of(spatialUnit1));
+
 
         // Mock the mappers
         when(spatialUnitMapper.convert(spatialUnit1))
                 .thenReturn(spatialUnit1DTO);
-        when(spatialUnitSummaryMapper.invertConvert(any(SpatialUnitSummaryDTO.class)))
-                .thenReturn(spatialUnit2);
+
 
 
         // Act

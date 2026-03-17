@@ -99,12 +99,12 @@ class FormServiceTest {
         private Integer count;
         private OffsetDateTime createdAt;
         private ConceptDTO typeConcept;
-        private ActionUnitDTO actionUnit;
-        private SpatialUnitDTO spatialUnit;
-        private ActionCode actionCode;
+        private ActionUnitSummaryDTO actionUnit;
+        private SpatialUnitSummaryDTO spatialUnit;
+        private ActionCodeDTO actionCode;
         private PersonDTO person;
         private List<PersonDTO> personList;
-        private Set<SpatialUnitDTO> spatialUnitSet;
+        private Set<SpatialUnitSummaryDTO> spatialUnitSet;
 
         public List<String> getBindableFieldNames() {
             return List.of(
@@ -147,27 +147,27 @@ class FormServiceTest {
             this.typeConcept = typeConcept;
         }
 
-        public ActionUnitDTO getActionUnit() {
+        public ActionUnitSummaryDTO getActionUnit() {
             return actionUnit;
         }
 
-        public void setActionUnit(ActionUnitDTO actionUnit) {
+        public void setActionUnit(ActionUnitSummaryDTO actionUnit) {
             this.actionUnit = actionUnit;
         }
 
-        public SpatialUnitDTO getSpatialUnit() {
+        public SpatialUnitSummaryDTO getSpatialUnit() {
             return spatialUnit;
         }
 
-        public void setSpatialUnit(SpatialUnitDTO spatialUnit) {
+        public void setSpatialUnit(SpatialUnitSummaryDTO spatialUnit) {
             this.spatialUnit = spatialUnit;
         }
 
-        public ActionCode getActionCode() {
+        public ActionCodeDTO getActionCode() {
             return actionCode;
         }
 
-        public void setActionCode(ActionCode actionCode) {
+        public void setActionCode(ActionCodeDTO actionCode) {
             this.actionCode = actionCode;
         }
 
@@ -187,11 +187,11 @@ class FormServiceTest {
             this.personList = personList;
         }
 
-        public Set<SpatialUnitDTO> getSpatialUnitSet() {
+        public Set<SpatialUnitSummaryDTO> getSpatialUnitSet() {
             return spatialUnitSet;
         }
 
-        public void setSpatialUnitSet(Set<SpatialUnitDTO> spatialUnitSet) {
+        public void setSpatialUnitSet(Set<SpatialUnitSummaryDTO> spatialUnitSet) {
             this.spatialUnitSet = spatialUnitSet;
         }
     }
@@ -586,13 +586,13 @@ class FormServiceTest {
         ConceptDTO concept = mock(ConceptDTO.class);
         entity.setTypeConcept(concept);
 
-        ActionUnitDTO actionUnit = mock(ActionUnitDTO.class);
+        ActionUnitSummaryDTO actionUnit = mock(ActionUnitSummaryDTO.class);
         entity.setActionUnit(actionUnit);
 
-        SpatialUnitDTO spatialUnit = mock(SpatialUnitDTO.class);
+        SpatialUnitSummaryDTO spatialUnit = mock(SpatialUnitSummaryDTO.class);
         entity.setSpatialUnit(spatialUnit);
 
-        ActionCode actionCode = mock(ActionCode.class);
+        ActionCodeDTO actionCode = mock(ActionCodeDTO.class);
         entity.setActionCode(actionCode);
 
         PersonDTO person = mock(PersonDTO.class);
@@ -606,7 +606,7 @@ class FormServiceTest {
         personList.add(person2);
         entity.setPersonList(personList);
 
-        Set<SpatialUnitDTO> spatialUnitSet = Set.of(mock(SpatialUnitDTO.class), mock(SpatialUnitDTO.class));
+        Set<SpatialUnitSummaryDTO> spatialUnitSet = Set.of(mock(SpatialUnitSummaryDTO.class), mock(SpatialUnitSummaryDTO.class));
         entity.setSpatialUnitSet(spatialUnitSet);
 
         // Mock the label bean to return a label for the concept
