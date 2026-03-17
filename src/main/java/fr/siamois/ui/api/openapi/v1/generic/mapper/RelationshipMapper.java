@@ -1,5 +1,7 @@
-package fr.siamois.ui.api.openapi.v1.jsonapi;
+package fr.siamois.ui.api.openapi.v1.generic.mapper;
 
+import fr.siamois.ui.api.openapi.v1.generic.response.Relationship;
+import fr.siamois.ui.api.openapi.v1.generic.response.ResourceIdentifier;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingConstants;

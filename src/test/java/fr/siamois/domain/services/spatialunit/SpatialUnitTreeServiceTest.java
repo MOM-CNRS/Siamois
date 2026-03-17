@@ -2,6 +2,7 @@ package fr.siamois.domain.services.spatialunit;
 
 
 import fr.siamois.dto.entity.InstitutionDTO;
+import fr.siamois.dto.entity.SpatialUnitDTO;
 import fr.siamois.dto.entity.SpatialUnitSummaryDTO;
 import fr.siamois.ui.bean.SessionSettingsBean;
 import org.junit.jupiter.api.Test;

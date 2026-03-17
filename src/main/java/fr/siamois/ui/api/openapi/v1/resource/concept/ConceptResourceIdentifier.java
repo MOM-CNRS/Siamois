@@ -1,6 +1,7 @@
 package fr.siamois.ui.api.openapi.v1.resource.concept;
 
-import fr.siamois.ui.api.openapi.v1.jsonapi.ResourceIdentifier;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import fr.siamois.ui.api.openapi.v1.generic.response.ResourceIdentifier;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -9,9 +10,11 @@ import lombok.Data;
 @AllArgsConstructor
 public class ConceptResourceIdentifier implements ResourceIdentifier {
 
-    @Schema(description = "Resource type (always 'concept')",
-            example = "concept",
-            allowableValues = {"concept"})
-    private final String type;
+    @Schema(description = "Resource type (always 'concepts')",
+            example = "concepts",
+            allowableValues = {"concepts"})
+    private String resourceType;
+    @JsonProperty("resourceId")
     private String id;
+
 }

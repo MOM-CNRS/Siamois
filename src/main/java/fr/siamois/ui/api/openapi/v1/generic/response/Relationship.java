@@ -1,4 +1,4 @@
-package fr.siamois.ui.api.openapi.v1.jsonapi;
+package fr.siamois.ui.api.openapi.v1.generic.response;
 
 
 import lombok.AllArgsConstructor;
@@ -9,5 +9,6 @@ import lombok.Data;
 public class Relationship<T> {
 
     private T data;
+
 
 }

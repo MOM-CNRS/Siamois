@@ -23,6 +23,7 @@ public class RecordingUnitDTO extends AbstractEntityDTO {
     private OffsetDateTime openingDate;
     private OffsetDateTime closingDate;
     private Set<SpecimenSummaryDTO> specimenList;
+    private Long specimenCount;
     private PersonDTO author;
     private String description;
     private List<PersonDTO> contributors;

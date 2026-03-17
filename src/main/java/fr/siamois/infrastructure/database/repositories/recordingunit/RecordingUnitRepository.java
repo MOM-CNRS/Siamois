@@ -23,6 +23,8 @@ import java.util.Set;
 @Repository
 public interface RecordingUnitRepository extends CrudRepository<RecordingUnit, Long>, RevisionRepository<RecordingUnit, Long, Long> {
 
+    @Query("SELECT COUNT(s) FROM Specimen s WHERE s.recordingUnit.id = :recordingUnitId")
+    Long countSpecimensByRecordingUnitId(@Param("recordingUnitId") Long recordingUnitId);
 
     @Query(
             value = "UPDATE recording_unit SET fk_type = :type WHERE recording_unit.recording_unit_id IN (:ids)",
@@ -527,4 +529,6 @@ public interface RecordingUnitRepository extends CrudRepository<RecordingUnit, L
       )
     """, nativeQuery = true)
     boolean existsRootChildrenByAction(Long actionId);
+
+    Page<RecordingUnit> findByCreatedByInstitutionId(Long institutionId, Pageable pageable);
 }

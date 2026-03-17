@@ -640,7 +640,6 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
 
     @SuppressWarnings("unchecked")
     public boolean save() {
-
         EntityFormContextSaveStrategy<T> strategy = (EntityFormContextSaveStrategy<T>) SAVE_STRATEGIES.get(unit.getClass());
         if (strategy != null) {
             return strategy.save(this);

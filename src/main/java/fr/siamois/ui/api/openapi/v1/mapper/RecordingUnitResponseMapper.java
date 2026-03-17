@@ -17,12 +17,11 @@ import org.springframework.core.convert.converter.Converter;
 },
         componentModel = MappingConstants.ComponentModel.SPRING,
         injectionStrategy = InjectionStrategy.CONSTRUCTOR)
-public interface RecordingUnitResourceMapper extends Converter<RecordingUnitDTO,
+public interface RecordingUnitResponseMapper extends Converter<RecordingUnitDTO,
         RecordingUnitResource> {
 
-    @Mapping(target = "type", constant = "recording-unit")
-    @Mapping(target = "id", source = "id")
+    @Mapping(target = "resourceType", constant = "recording-units")
+    @Mapping(target = "specimen", source = "specimenCount")
     RecordingUnitResource convert(RecordingUnitDTO recordingUnitDTO);
-
 
 }
