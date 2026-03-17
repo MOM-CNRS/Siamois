@@ -65,7 +65,6 @@ public abstract class AbstractSingleEntityPanel<T extends AbstractEntityDTO> ext
     public static final String THIS = "@this";
 
     protected Integer activeTabIndex; // Keeping state of active tab
-    protected String errorMessage;
     protected transient List<RevisionWithInfo<T>> history;
     protected transient RevisionWithInfo<T> revisionToDisplay = null;
     protected Long unitId;  // ID of the spatial unit

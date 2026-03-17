@@ -10,69 +10,6 @@
 
     <ui:define name="head">
 
-        <script>
-
-
-            function handleScrollToTop() {
-
-                const container = document.getElementById("content");
-                if (container) {
-                    container.firstElementChild.scrollIntoView({behavior: 'smooth', block: 'start'});
-                }
-
-            }
-
-            function setFormHasBeenModified(element) {
-                // Mark the form as modified and activate buttons
-                console.log(element)
-
-                element = (typeof element.closest === 'function') ? element : document.getElementById(element.id);
-
-                let inputEl;
-                // If not input, find first input to add border
-                if (element.tagName !== 'INPUT') {
-                    inputEl = element.querySelector('input');
-
-                } else {
-                    inputEl = element;
-                }
-
-                if (inputEl) {
-                    $(inputEl).addClass('sia-modified-field');
-                }
-
-                const form = element.closest('form');
-                const parent = form.parentElement;
-                const hiddenField = form.querySelector('input[id$="spatialUnitForm:hasUnsavedModifications"]')
-                if (hiddenField) {
-                    hiddenField.value = 'true';
-                    form.classList.add('form-modified'); // Feedback visuel optionnel
-                }
-
-                // if(parent) {
-                //     const saveAsDraftButton = parent.querySelector('button[id$="spatialUnitForm:saveButton"], input[id$="spatialUnitForm:saveButton"]');
-                //     const saveAndValidateButton = parent.querySelector('button[id$="spatialUnitForm:saveAndValidateButton"], input[id$="spatialUnitForm:saveAndValidateButton"]');
-                //     const cancelModificationsButton = parent.querySelector('[id$="spatialUnitForm\\:cancelButton"]');
-                //
-                //     // Activate buttons
-                //     if (saveAsDraftButton) {
-                //         $(saveAsDraftButton).removeAttr("disabled");
-                //         $(saveAsDraftButton).removeClass('ui-state-disabled');
-                //     }
-                //     if (saveAndValidateButton) {
-                //         $(saveAndValidateButton).removeAttr("disabled");
-                //         $(saveAndValidateButton).removeClass('ui-state-disabled');
-                //     }
-                //     if (cancelModificationsButton) {
-                //         $(cancelModificationsButton).removeClass('ui-state-disabled');
-                //     }
-                //
-                // }
-
-
-            }
-        </script>
-
         <title>#{focusViewBean.mainPanel.resolveTitleOrTitleCode()}</title>
 
         <link rel="icon"

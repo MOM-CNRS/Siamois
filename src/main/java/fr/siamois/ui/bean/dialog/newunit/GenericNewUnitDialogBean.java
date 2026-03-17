@@ -62,8 +62,8 @@ public class GenericNewUnitDialogBean<T extends AbstractEntityDTO>
     private final transient ConversionService conversionService;
 
     private T unit;
-    private FormUiDto detailsForm;
-    private EntityFormContext<T> formContext;
+    private transient FormUiDto detailsForm;
+    private transient EntityFormContext<T> formContext;
 
     protected static final String UPDATE_FAILED_MESSAGE_CODE = "common.entity.spatialUnits.updateFailed";
     protected static final String ENTITY_ALREADY_EXIST_MESSAGE_CODE = "common.entity.alreadyExist";
@@ -159,12 +159,8 @@ public class GenericNewUnitDialogBean<T extends AbstractEntityDTO>
 
     public void create() {
 
-        boolean isDifferentKind = newUnitContext.getTrigger().getType() == NewUnitContext.TriggerType.HOME_PANEL
-                || (newUnitContext.getTrigger().getType() == NewUnitContext.TriggerType.CELL &&
-                newUnitContext.getTrigger().getClickedKind() != newUnitContext.getKindToCreate());
 
-
-        performCreate(isDifferentKind, isDifferentKind);
+        performCreate();
 
     }
 
@@ -178,7 +174,7 @@ public class GenericNewUnitDialogBean<T extends AbstractEntityDTO>
         return handler.getSpatialUnitOptions(unit);
     }
 
-    private void performCreate(boolean openAfter, boolean scrollToTop) {
+    private void performCreate( ) {
         try {
             createUnit();
             // JS conditionnel (widgetVar fixe)

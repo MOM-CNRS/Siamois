@@ -320,7 +320,7 @@ public class NavBean implements Serializable {
                 .getExternalContext()
                 .getRequestParameterMap()
                 .get("id");
-        flowBean.redirectToFocus("/spatial-unit/" + id);
+        flowBean.redirectToFocus(SPATIAL_UNIT_BASE_URI + id);
     }
 
 }

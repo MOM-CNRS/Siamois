@@ -63,13 +63,6 @@ class EntityFormContextTest {
     }
 
 
-    private static SpatialUnitDTO su(long id, String name) {
-        SpatialUnitDTO su = mock(SpatialUnitDTO.class);
-        when(su.getId()).thenReturn(id);
-        when(su.getName()).thenReturn(name);
-        return su;
-    }
-
     private static SpatialUnitSummaryDTO suSummary(long id, String name) {
         SpatialUnitSummaryDTO su = mock(SpatialUnitSummaryDTO.class);
         when(su.getId()).thenReturn(id);

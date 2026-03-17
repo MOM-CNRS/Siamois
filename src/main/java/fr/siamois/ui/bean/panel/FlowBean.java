@@ -221,7 +221,7 @@ public class FlowBean implements Serializable {
     }
 
     public void addPanelToOverview(AbstractPanel targetPanel, AbstractPanel overviewPanel) {
-        // todo : check if overview is overview or not
+
         overviewPanel.setRoot(true);
         targetPanel.setParentOrOverview(overviewPanel);
         overviewPanel.setParentOrOverview(targetPanel);
@@ -237,7 +237,6 @@ public class FlowBean implements Serializable {
                 )
         );
 
-        //FacesContext.getCurrentInstance().getExternalContext().getRequest().getRequestURI()
     }
 
     public void addRecordingUnitToOverview(Long id, AbstractPanel targetPanel) {
