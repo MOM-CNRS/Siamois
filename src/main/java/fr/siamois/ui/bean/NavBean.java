@@ -23,8 +23,10 @@ import org.springframework.context.event.EventListener;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
+import java.io.IOException;
 import java.io.Serializable;
 import java.util.List;
+import java.util.Objects;
 
 
 /**
@@ -39,7 +41,7 @@ import java.util.List;
 @Scope(value = "session", proxyMode = ScopedProxyMode.TARGET_CLASS)
 public class NavBean implements Serializable {
 
-    public static final String COMMON_BOOKMARK_SAVED = "common.bookmark.saved";
+
     private final SessionSettingsBean sessionSettingsBean;
     private final transient InstitutionChangeEventPublisher institutionChangeEventPublisher;
     private final transient InstitutionConverter converter;
@@ -49,6 +51,10 @@ public class NavBean implements Serializable {
     private final transient BookmarkService bookmarkService;
     private final FlowBean flowBean;
     private final LangBean langBean;
+
+    public static final String COMMON_BOOKMARK_SAVED = "common.bookmark.saved";
+    public static final String FLOW = "FLOW";
+    public static final String FOCUS = "FOCUS";
 
     private ApplicationMode applicationMode = ApplicationMode.SIAMOIS;
 
@@ -251,6 +257,70 @@ public class NavBean implements Serializable {
     public enum ApplicationMode {
         SIAMOIS,
         SETTINGS
+    }
+
+    public void goToActionUnitList(String mode) throws IOException {
+        if(Objects.equals(mode, FLOW)) {
+            flowBean.addActionUnitListPanel();
+            flowBean.redirectToDashboard();
+        }
+        if(Objects.equals(mode, FOCUS)) {
+            flowBean.redirectToFocus("/action-unit");
+        }
+    }
+
+    public void goToRecordingUnitList(String mode) throws IOException {
+        if(Objects.equals(mode, FLOW)) {
+            flowBean.addRecordingUnitListPanel();
+            flowBean.redirectToDashboard();
+        }
+        if(Objects.equals(mode, FOCUS)) {
+            flowBean.redirectToFocus("/recording-unit");
+        }
+    }
+
+    public void goToSpatialUnitList(String mode) throws IOException {
+        if(Objects.equals(mode, FLOW)) {
+            flowBean.addSpatialUnitListPanel();
+            flowBean.redirectToDashboard();
+        }
+        if(Objects.equals(mode, FOCUS)) {
+            flowBean.redirectToFocus("/spatial-unit");
+        }
+    }
+
+    public void goToSpecimenList(String mode) throws IOException {
+        if(Objects.equals(mode, FLOW)) {
+            flowBean.addSpecimenListPanel();
+            flowBean.redirectToDashboard();
+        }
+        if(Objects.equals(mode, FOCUS)) {
+            flowBean.redirectToFocus("/specimen");
+        }
+    }
+
+    public void redirectToBookmarked(String resource) {
+        try {
+            flowBean.redirectToFocus(resource);
+        } catch (IOException e) {
+            log.error(e.getMessage(), e);
+        }
+    }
+
+    public void redirectToActionUnit() throws IOException {
+        String id = FacesContext.getCurrentInstance()
+                .getExternalContext()
+                .getRequestParameterMap()
+                .get("id");
+        flowBean.redirectToFocus("/action-unit/" + id);
+    }
+
+    public void redirectToSpatialUnit() throws IOException {
+        String id = FacesContext.getCurrentInstance()
+                .getExternalContext()
+                .getRequestParameterMap()
+                .get("id");
+        flowBean.redirectToFocus(SPATIAL_UNIT_BASE_URI + id);
     }
 
 }

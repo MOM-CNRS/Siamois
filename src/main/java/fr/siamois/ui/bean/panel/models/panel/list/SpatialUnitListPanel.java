@@ -54,7 +54,7 @@ public class SpatialUnitListPanel extends AbstractListPanel<SpatialUnitDTO>  imp
     // locals
     private String spatialUnitListErrorMessage;
 
-    public String getPanelIndex() {
+    public String getPrefixPanelIndex() {
         return "spatial-unit-list";
     }
 
@@ -120,12 +120,13 @@ public class SpatialUnitListPanel extends AbstractListPanel<SpatialUnitDTO>  imp
                 institutionService,
                 formContextServices
         );
+        tableModel.setParentPanel(this);
 
         return lazy; // l'abstraite en a besoin, mais ce panel ne s'en sert plus ensuite
     }
 
     @Override
-    protected void setErrorMessage(String msg) {
+    public void setErrorMessage(String msg) {
         this.spatialUnitListErrorMessage = msg;
     }
 

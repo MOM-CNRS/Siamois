@@ -198,7 +198,7 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
 
     @Override
     String getOpenPanelCommand(RecordingUnitDTO unit) {
-        return "#{flowBean.addRecordingUnitPanel(".concat(unit.getId().toString()).concat(")}");
+        return "#{navBean.redirectToBookmarked('/recording-unit/".concat(unit.getId().toString()).concat("')}");
     }
 
     @Override
@@ -207,7 +207,7 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
         return DefaultMenuItem.builder()
                 .value(langBean.msg("panel.title.allrecordingunit"))
                 .id("allRecordingUnits")
-                .command("#{flowBean.addRecordingUnitListPanel()}")
+                .command("#{navBean.redirectToBookmarked('/recording-unit/')}")
                 .update("flow")
                 .onstart(PF_BUI_CONTENT_SHOW)
                 .oncomplete(PF_BUI_CONTENT_HIDE)
@@ -404,7 +404,7 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
     }
 
     @Override
-    public String getPanelIndex() {
+    public String getPrefixPanelIndex() {
         return "recording-unit-"+ unitId;
     }
 

@@ -65,8 +65,10 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
     public static final String UNCERTAIN = "uncertain";
     public static final String VOCABULARY_LABEL = "vocabularyLabel";
     public static final String SELECT_RU = "selectRU";
-    @Getter
+
     private T unit;
+
+    private boolean autoSave = true;
 
     private final FieldSource fieldSource;
     private final FormService formService;
@@ -78,10 +80,9 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
     private final LangBean langBean;
     private final ConversionService conversionService;
 
-    @Getter
+
     private CustomFormResponseViewModel formResponse;
 
-    @Getter
     private boolean hasUnsavedModifications = false;
 
     private EnabledRulesEngine enabledEngine;
@@ -255,8 +256,7 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
         markTreeAnswerModified(answer);
     }
 
-    public boolean removeSpatialUnit(CustomFieldAnswerSelectMultipleSpatialUnitTreeViewModel answer,
-                                     SpatialUnitSummaryDTO su) {
+    public boolean removeSpatialUnit(CustomFieldAnswerSelectMultipleSpatialUnitTreeViewModel answer, SpatialUnitDTO su) {
         TreeUiStateViewModel ui = treeStates.get(answer);
         if (ui == null || ui.getSelection() == null) return false;
         boolean removed = ui.getSelection().remove(su);
@@ -344,14 +344,17 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
         CustomFieldAnswerSelectOneFromFieldCodeViewModel ans = (CustomFieldAnswerSelectOneFromFieldCodeViewModel) formResponse.getAnswers().get(field);
         ans.setValue(newValue);
 
-        // Save the change
-        boolean status = save();
-        if(status) {
-            markFieldNotModified(field);
+        if(autoSave) {
+            // Save the change
+            boolean status = save();
+            if(status) {
+                markFieldNotModified(field);
+            }
+            else {
+                setFieldAnswerHasBeenModified(field);
+            }
         }
-        else {
-            setFieldAnswerHasBeenModified(field);
-        }
+
 
         // Apply concept change logic
         onConceptChanged(field, newValue);
@@ -397,12 +400,15 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
 
     public void onFieldAnswerModifiedListener(AjaxBehaviorEvent event) {
         CustomField field = (CustomField) event.getComponent().getAttributes().get("field");
-        boolean status = save();
-        if(status) {
-            setHasUnsavedModifications(false);
-        }
-        else {
-            setFieldAnswerHasBeenModified(field);
+        if(autoSave) {
+            // Save the change
+            boolean status = save();
+            if(status) {
+                markFieldNotModified(field);
+            }
+            else {
+                setFieldAnswerHasBeenModified(field);
+            }
         }
     }
 

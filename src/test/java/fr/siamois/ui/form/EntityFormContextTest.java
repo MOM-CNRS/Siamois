@@ -63,8 +63,8 @@ class EntityFormContextTest {
     }
 
 
-    private static SpatialUnitDTO su(long id, String name) {
-        SpatialUnitDTO su = mock(SpatialUnitDTO.class);
+    private static SpatialUnitSummaryDTO suSummary(long id, String name) {
+        SpatialUnitSummaryDTO su = mock(SpatialUnitSummaryDTO.class);
         when(su.getId()).thenReturn(id);
         when(su.getName()).thenReturn(name);
         return su;
@@ -238,7 +238,7 @@ class EntityFormContextTest {
 
         ctx.init(false);
 
-        SpatialUnitSummaryDTO su1 = mock(SpatialUnitDTO.class);
+        SpatialUnitDTO su1 = mock(SpatialUnitDTO.class);
 
         // act: add
         ctx.addSUToSelection(treeAnswer, su1);
@@ -264,21 +264,23 @@ class EntityFormContextTest {
 
         SpatialUnitDTO a = mock(SpatialUnitDTO.class);
         when(a.getId()).thenReturn(1L);
-        SpatialUnitDTO b = mock(SpatialUnitDTO.class);
-        when(b.getId()).thenReturn(2L);
+        SpatialUnitSummaryDTO aSummary = mock(SpatialUnitSummaryDTO.class);
+        when(aSummary.getId()).thenReturn(1L);
+        SpatialUnitSummaryDTO bSummary = mock(SpatialUnitSummaryDTO.class);
+        when(bSummary.getId()).thenReturn(2L);
 
         // parents of B include A; parents of A none
         when(spatialUnitService.findDirectParentsOf(2L)).thenReturn(List.of(a));
         when(spatialUnitService.findDirectParentsOf(1L)).thenReturn(Collections.emptyList());
 
-        Set<SpatialUnitDTO> selected = new LinkedHashSet<>(List.of(a, b));
+        Set<SpatialUnitSummaryDTO> selected = new LinkedHashSet<>(List.of(aSummary, bSummary));
 
         // act
         List<SpatialUnitSummaryDTO> chips = ctx.getNormalizedSelectedUnits(selected);
 
         // assert: only A remains (B removed because ancestor A selected)
         assertEquals(1, chips.size());
-        assertSame(a, chips.get(0));
+        assertSame(aSummary, chips.get(0));
     }
 
 
@@ -290,13 +292,13 @@ class EntityFormContextTest {
         );
 
 
-        SpatialUnitDTO b = su(2L, "beta");
-        SpatialUnitDTO a = su(1L, "Alpha");
-        SpatialUnitDTO n = su(3L, null);
+        SpatialUnitSummaryDTO b = suSummary(2L, "beta");
+        SpatialUnitSummaryDTO a = suSummary(1L, "Alpha");
+        SpatialUnitSummaryDTO n = suSummary(3L, null);
 
         when(spatialUnitService.findDirectParentsOf(anyLong())).thenReturn(Collections.emptyList());
 
-        Set<SpatialUnitDTO> selected = new LinkedHashSet<>(List.of(b, n, a));
+        Set<SpatialUnitSummaryDTO> selected = new LinkedHashSet<>(List.of(b, n, a));
 
         List<SpatialUnitSummaryDTO> chips = ctx.getNormalizedSelectedUnits(selected);
 

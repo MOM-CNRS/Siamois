@@ -92,9 +92,11 @@ public class ActionUnitTableViewModel extends EntityTableViewModel<ActionUnitDTO
 
         if (column.getAction() == GO_TO_ACTION_UNIT) {
 
-            flowBean.goToActionUnitByIdNewPanel(
-                    au.getId()
+            flowBean.addActionUnitToOverview(
+                    au.getId(),
+                    parentPanel
             );
+
 
         } else {
             throw new IllegalStateException(

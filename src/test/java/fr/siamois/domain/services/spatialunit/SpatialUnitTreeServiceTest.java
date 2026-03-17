@@ -32,27 +32,27 @@ class SpatialUnitTreeServiceTest {
     @Test
     void testBuildTree_SingleRootWithChildren() {
         // Setup test data
-        SpatialUnitDTO root = new SpatialUnitDTO();
+        SpatialUnitSummaryDTO root = new SpatialUnitSummaryDTO();
         root.setId(1L);
         root.setName("Root");
 
-        SpatialUnitDTO child1 = new SpatialUnitDTO();
+        SpatialUnitSummaryDTO child1 = new SpatialUnitSummaryDTO();
         child1.setId(2L);
         child1.setName("Child 1");
 
-        SpatialUnitDTO child2 = new SpatialUnitDTO();
+        SpatialUnitSummaryDTO child2 = new SpatialUnitSummaryDTO();
         child2.setId(3L);
         child2.setName("Child 2");
 
-        Map<SpatialUnitDTO, List<SpatialUnitDTO>> mockMap = new HashMap<>();
+        Map<SpatialUnitSummaryDTO, List<SpatialUnitSummaryDTO>> mockMap = new HashMap<>();
         mockMap.put(root, List.of(child1, child2));
 
         // Institution mock
         InstitutionDTO mockInstitution = new InstitutionDTO();
         mockInstitution.setId(1L);
         when(sessionSettingsBean.getSelectedInstitution()).thenReturn(mockInstitution);
-            when(spatialUnitService.findRootsOf(any(Long.class))).thenReturn(List.of(root));
-        when(spatialUnitService.findDirectChildrensOf(root.getId())).thenReturn(List.of(child1, child2));
+            when(spatialUnitService.findSummaryRootsOf(any(Long.class))).thenReturn(List.of(root));
+        when(spatialUnitService.findDirectChildrensSummaryOf(root.getId())).thenReturn(List.of(child1, child2));
 
         // Act
         TreeNode<SpatialUnitSummaryDTO> tree = spatialUnitTreeService.buildTree();
@@ -75,19 +75,19 @@ class SpatialUnitTreeServiceTest {
     @Test
     void testBuildTree_MultipleRoots() {
         // Setup test data
-        SpatialUnitDTO root1 = new SpatialUnitDTO();
+        SpatialUnitSummaryDTO root1 = new SpatialUnitSummaryDTO();
         root1.setId(1L);
         root1.setName("Root1");
 
-        SpatialUnitDTO root2 = new SpatialUnitDTO();
+        SpatialUnitSummaryDTO root2 = new SpatialUnitSummaryDTO();
         root2.setId(2L);
         root2.setName("Root2");
 
-        SpatialUnitDTO child = new SpatialUnitDTO();
+        SpatialUnitSummaryDTO child = new SpatialUnitSummaryDTO();
         child.setId(3L);
         child.setName("Child");
 
-        Map<SpatialUnitDTO, List<SpatialUnitDTO>> mockMap = new HashMap<>();
+        Map<SpatialUnitSummaryDTO, List<SpatialUnitSummaryDTO>> mockMap = new HashMap<>();
         mockMap.put(root1, List.of(child));
         mockMap.put(root2, List.of());
 
@@ -95,7 +95,7 @@ class SpatialUnitTreeServiceTest {
         InstitutionDTO mockInstitution = new InstitutionDTO();
         mockInstitution.setId(1L);
         when(sessionSettingsBean.getSelectedInstitution()).thenReturn(mockInstitution);
-        when(spatialUnitService.findRootsOf(any(Long.class))).thenReturn(List.of(root1, root2));
+        when(spatialUnitService.findSummaryRootsOf(any(Long.class))).thenReturn(List.of(root1, root2));
 
 
         // Act

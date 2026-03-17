@@ -109,6 +109,7 @@ public class RecordingUnitService implements ArkEntityService {
             log.error(e.getMessage(), e);
             throw new FailedRecordingUnitSaveException(e.getMessage());
         }
+
     }
 
 
@@ -171,9 +172,34 @@ public class RecordingUnitService implements ArkEntityService {
 
     private static void setupOtherFields(RecordingUnit recordingUnit, RecordingUnit managedRecordingUnit) {
 
+        managedRecordingUnit.setAltitude(recordingUnit.getAltitude());
+        managedRecordingUnit.setArk(recordingUnit.getArk());
+        managedRecordingUnit.setDescription(recordingUnit.getDescription());
+        managedRecordingUnit.setType(recordingUnit.getType());
+        managedRecordingUnit.setAuthor(recordingUnit.getAuthor());
+        managedRecordingUnit.setClosingDate(recordingUnit.getClosingDate());
+        managedRecordingUnit.setOpeningDate(recordingUnit.getOpeningDate());
+        managedRecordingUnit.setSize(recordingUnit.getSize());
+        managedRecordingUnit.setGeomorphologicalCycle(recordingUnit.getGeomorphologicalCycle());
+        managedRecordingUnit.setNormalizedInterpretation(recordingUnit.getNormalizedInterpretation());
+        managedRecordingUnit.setValidated(recordingUnit.getValidated());
+        managedRecordingUnit.setValidatedAt(recordingUnit.getValidatedAt());
+        managedRecordingUnit.setValidatedBy(recordingUnit.getValidatedBy());
+        managedRecordingUnit.setTaq(recordingUnit.getTaq());
+        managedRecordingUnit.setTpq(recordingUnit.getTpq());
+        managedRecordingUnit.setMatrixColor(recordingUnit.getMatrixColor());
+        managedRecordingUnit.setMatrixComposition(recordingUnit.getMatrixComposition());
+        managedRecordingUnit.setMatrixTexture(recordingUnit.getMatrixTexture());
+        managedRecordingUnit.setErosionOrientation(recordingUnit.getErosionOrientation());
+        managedRecordingUnit.setErosionProfile(recordingUnit.getErosionProfile());
+        managedRecordingUnit.setErosionShape(recordingUnit.getErosionShape());
+
         if (managedRecordingUnit.getCreatedBy() == null) {
             managedRecordingUnit.setCreatedBy(recordingUnit.getCreatedBy());
         }
+
+        managedRecordingUnit.setChronologicalPhase(recordingUnit.getChronologicalPhase());
+        managedRecordingUnit.setGeomorphologicalAgent(recordingUnit.getGeomorphologicalAgent());
 
     }
 

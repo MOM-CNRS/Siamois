@@ -34,16 +34,12 @@
                 <!-- Single value -->
                 <h:panelGroup rendered="#{(not cc.attrs.multiple) and (not empty cc.attrs.answer.value)}">
                     <div style="display:flex;gap:0.5em;">
-
-
                         <p:commandLink
                                 styleClass="spatial-unit"
                                 value="#{cc.attrs.answer.value.name}"
-                                action="#{flowBean.goToSpatialUnitByIdNewPanel(cc.attrs.answer.value.id)}"
-                                onstart="PF('buiContent').show()"
-                                oncomplete="PF('buiContent').hide()"
-                                process="@this"
-                                update="flow">
+                                action="#{navBean.redirectToSpatialUnit}"
+                                ajax="false">
+                            <f:param name="id" value="#{cc.attrs.answer.value.id}" />
                         </p:commandLink>
 
                         <p:chip rendered="#{cc.attrs.displayType}"
@@ -61,7 +57,7 @@
                                  label="#{cc.attrs.label}"
                                  required="#{cc.attrs.required}"
                                  var="su"
-                                 converter="#{spatialUnitConverter}">
+                                 converter="#{spatialUnitSummaryConverter}">
                     <!-- Null / no selection -->
                     <f:selectItem
                             itemLabel="Choisir"

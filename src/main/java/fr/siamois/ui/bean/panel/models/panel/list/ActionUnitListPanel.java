@@ -58,7 +58,7 @@ public class ActionUnitListPanel extends AbstractListPanel<ActionUnitDTO> implem
     private String actionUnitListErrorMessage;
 
 
-    public String getPanelIndex() {
+    public String getPrefixPanelIndex() {
         return "action-unit-list";
     }
 
@@ -91,11 +91,12 @@ public class ActionUnitListPanel extends AbstractListPanel<ActionUnitDTO> implem
                 formContextServices
 
         );
+        tableModel.setParentPanel(this);
         return lazy;
     }
 
     @Override
-    protected void setErrorMessage(String msg) {
+    public void setErrorMessage(String msg) {
         this.actionUnitListErrorMessage = msg;
     }
 
