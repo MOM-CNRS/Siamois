@@ -19,6 +19,7 @@
     <!-- Row Context -->
     <ui:param name="rowContext" value="#{tableModel.getRowContext(item)}"/>
 
+
     <ui:fragment rendered="#{column.type eq 'FORM_FIELD'}" >
         <ui:include src="/pages/shared/form/customFormFieldContentForTable.xhtml">
             <ui:param name="panelId" value="#{panelId}"/>
@@ -47,11 +48,20 @@
                 styleClass="hidden-column"
                 action="#{tableModel.handleAction(column, item)}"
                 onstart="#{column.onstartJs}"
-                icon="bi bi-box-arrow-up-right"
+                icon="bi bi-layout-sidebar-inset-reverse"
                 oncomplete="#{tableModel.getOnCompleteJs(item)}"
-                update="flow"
                 >
+            <f:attribute name="mode" value="mode" />
         </p:commandButton>
+        <p:contextMenu for="openRowLink">
+            <p:menuitem value="Ouvrir dans un panel" disabled="true" icon="bi bi-box-arrow-in-up"/>
+            <p:menuitem value="Ouvrir en mode Focus" disabled="true" icon="bi bi-arrows-angle-expand"/>
+            <p:menuitem value="Ouvrir dans l'aperçu lateral" icon="bi bi-layout-sidebar-inset-reverse"
+                        action="#{tableModel.handleAction(column, item)}"
+                        onstart="#{column.onstartJs}"
+                        oncomplete="#{tableModel.getOnCompleteJs(item)}"
+            />
+        </p:contextMenu>
     </ui:fragment>
 
     <!-- RELATION Column -->

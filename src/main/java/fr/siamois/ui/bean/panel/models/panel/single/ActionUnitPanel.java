@@ -255,7 +255,7 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnitDTO> im
 
     @Override
     String getOpenPanelCommand(ActionUnitDTO unit) {
-        return "#{flowBean.addActionUnitPanel(".concat(unit.getId().toString()).concat(")}");
+        return "#{navBean.redirectToBookmarked('/action-unit/".concat(unit.getId().toString()).concat("')}");
     }
 
     @Override
@@ -379,6 +379,7 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnitDTO> im
                 langBean,
                 formContextServices
         );
+        recordingTabTableModel.setParentPanel(this);
 
         RecordingUnitTableDefinitionFactory.applyTo(recordingTabTableModel);
 
@@ -508,7 +509,7 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnitDTO> im
         return DefaultMenuItem.builder()
                 .value(langBean.msg("panel.title.allactionunit"))
                 .id("allActionUnits")
-                .command("#{flowBean.addActionUnitListPanel()}")
+                .command("#{navBean.redirectToBookmarked('/action-unit/')}")
                 .update("flow")
                 .onstart(PF_BUI_CONTENT_SHOW)
                 .oncomplete(PF_BUI_CONTENT_HIDE)
@@ -517,7 +518,7 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnitDTO> im
     }
 
     @Override
-    public String getPanelIndex() {
+    public String getPrefixPanelIndex() {
         return "action-unit-"+ unitId;
     }
 

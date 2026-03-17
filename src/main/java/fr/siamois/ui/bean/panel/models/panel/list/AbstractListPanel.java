@@ -51,7 +51,7 @@ public abstract class AbstractListPanel<T extends AbstractEntityDTO> extends Abs
     // local
     protected BaseLazyDataModel<T> lazyDataModel;
     protected long totalNumberOfUnits;
-    protected String errorMessage;
+
 
     /**
      * Modèle de vue pour la table :
@@ -127,7 +127,7 @@ public abstract class AbstractListPanel<T extends AbstractEntityDTO> extends Abs
 
 
 
-    protected abstract void setErrorMessage(String msg);
+
 
 
     public void init() {

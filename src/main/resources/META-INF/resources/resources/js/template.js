@@ -95,17 +95,46 @@ document.addEventListener("visibilitychange", () => {
 
 // Show the spinner
 function showSpinner(panelId) {
-    const panel = document.getElementById(`panel-${panelId}`);
-    const spinner = panel.querySelector('#spinner');
-    spinner.style.display = 'inline-block'; // or 'flex' if using flexbox
+    try {
+        const panel = document.getElementById(`panel-${panelId}`);
+        if (!panel) {
+            console.warn(`Panel with ID "panel-${panelId}" not found.`);
+            return;
+        }
+
+        const spinner = panel.querySelector('#spinner');
+        if (!spinner) {
+            console.warn('Spinner element not found inside the panel.');
+            return;
+        }
+
+        spinner.style.display = 'inline-block'; // or 'flex' if using flexbox
+    } catch (error) {
+        console.error('Error showing spinner:', error);
+    }
 }
 
 // Hide the spinner
 function hideSpinner(panelId) {
-    const panel = document.getElementById(`panel-${panelId}`);
-    const spinner = panel.querySelector('#spinner');
-    spinner.style.display = 'none';
+    try {
+        const panel = document.getElementById(`panel-${panelId}`);
+        if (!panel) {
+            console.warn(`Panel with ID "panel-${panelId}" not found.`);
+            return;
+        }
+
+        const spinner = panel.querySelector('#spinner');
+        if (!spinner) {
+            console.warn('Spinner element not found inside the panel.');
+            return;
+        }
+
+        spinner.style.display = 'none';
+    } catch (error) {
+        console.error('Error hiding spinner:', error);
+    }
 }
+
 
 // Handle AJAX errors
 function handleAutoSaveError(xhr, status, panelId) {
@@ -184,6 +213,7 @@ function hideProgressBar(widgetVar) {
     const progressBarValue = widgetVar.jq.find('.ui-progressbar-value');
     progressBarValue.css('background-color', 'transparent').hide();
 }
+
 function loadPanel(t, data, s, xhr) {
     console.log("Original Response:", t, data, s, xhr);
 
@@ -260,6 +290,69 @@ function onCompleteCallback(panelId) {
         });
     }
 }
+
+function showSideview(panelId, base64RootUri, base64OverviewUri) {
+    const container = document.getElementById("panel-" + panelId);
+    if (container) {
+        const sideview = container.querySelector("#panel-splitter-" + panelId);
+        if (sideview) {
+
+            // Find and show the #overview_3 element inside the splitter
+            const children = sideview.children;
+            if (children.length >= 3) {
+                children[2].style.display = "block"; // Third child (index 2)
+            }
+
+            // Find and show the element with class .ui-splitter-gutter inside the splitter
+            const splitterGutter = sideview.querySelector(".ui-splitter-gutter");
+            if (splitterGutter) {
+                splitterGutter.style.display = "block";
+            }
+        }
+    }
+    // Construct the new URL
+// Construct the new URL with the application context
+    const newUrl = `${APP_CTX}/focus/${base64RootUri}?s=${base64OverviewUri}`;
+
+// Push the new state
+    globalThis.history.pushState(
+        {
+            root: base64RootUri,
+            overview: base64OverviewUri,
+            isCustomState: true
+        },
+        '',
+        newUrl
+    );
+}
+
+function hideSideview(panelId) {
+    const container = document.getElementById("panel-" + panelId);
+    if (container) {
+        const sideview = container.querySelector("#panel-splitter-" + panelId);
+        if (sideview) {
+            // Hide the #overview_3 element inside the splitter
+
+            const children = sideview.children;
+            if (children.length >= 3) {
+                children[2].style.display = "none"; // Third child (index 2)
+            }
+
+            // Hide the element with class .ui-splitter-gutter inside the splitter
+            const splitterGutter = sideview.querySelector(".ui-splitter-gutter");
+            if (splitterGutter) {
+                splitterGutter.style.display = "none";
+            }
+        }
+    }
+}
+
+$(globalThis).on("popstate", function(e) {
+
+        location.reload()
+
+});
+
 
 
 

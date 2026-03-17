@@ -161,7 +161,7 @@ public class SpecimenPanel extends AbstractSingleEntityPanel<SpecimenDTO>  imple
         return DefaultMenuItem.builder()
                 .value(langBean.msg("panel.title.allspecimenunit"))
                 .id("allSpecimen")
-                .command("#{flowBean.addSpecimenListPanel()}")
+                .command("#{navBean.redirectToBookmarked('/specimen/')}")
                 .update("flow")
                 .onstart(PF_BUI_CONTENT_SHOW)
                 .oncomplete(PF_BUI_CONTENT_HIDE)
@@ -171,7 +171,7 @@ public class SpecimenPanel extends AbstractSingleEntityPanel<SpecimenDTO>  imple
 
     @Override
     String getOpenPanelCommand(SpecimenDTO unit) {
-        return "#{flowBean.addSpecimenPanel(".concat(unit.getId().toString()).concat(")}");
+        return "#{navBean.redirectToBookmarked('/specimen/".concat(unit.getId().toString()).concat("')}");
     }
 
 
@@ -241,7 +241,7 @@ public class SpecimenPanel extends AbstractSingleEntityPanel<SpecimenDTO>  imple
     }
 
     @Override
-    public String getPanelIndex() {
+    public String getPrefixPanelIndex() {
         return "specimen-"+ unitId;
     }
 

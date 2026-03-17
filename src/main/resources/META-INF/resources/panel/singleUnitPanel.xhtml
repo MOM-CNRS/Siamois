@@ -7,22 +7,14 @@
     <!--@elvariable id="panelIndex" type="String"-->
     <!--@elvariable id="panelModel" type="fr.siamois.ui.bean.panel.models.panel.single.AbstractSingleEntityPanel"-->
 
-    <!-- Content -->
-    <p:staticMessage severity="error" summary="Error" closable="false"
-                     detail="#{panelModel.errorMessage}"
-                     rendered="#{not empty panelModel.errorMessage}"/>
-    <h:panelGroup id="unitContentPanel" rendered="#{panelModel.unit != null}">
 
+    <!-- Content -->
 
         <h:form id="singlePanelUnitForm-#{panelIndex}">
             <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
 
-            <p:progressBar widgetVar="pbBarAjax_#{panelIndex}" id="progressBar"
-                           class="panel-progressbar"
-                           style="height:3px" mode="indeterminate"/>
-
             <!-- breadcrumbs if exists -->
-            <p:outputPanel id="breadcrumbs">
+            <p:outputPanel id="breadcrumbs" rendered="#{panelModel.isRoot()}">
                 <ui:repeat var="breadcrumbModel" value="#{panelModel.allParentBreadcrumbModels}">
                     <p:breadCrumb lastItemDisabled="true" styleClass="panel-bc" homeDisplay="text"
                                   model="#{breadcrumbModel}"/>
@@ -34,7 +26,7 @@
 
             <!-- Save/Cancel Toolbar -->
             <p:toolbar class="panel-footer">
-                <p:toolbarGroup >
+                <p:toolbarGroup>
                     <div style="flex-direction: row; display: flex; gap: 1em; align-items: center;">
                         <div style="display: flex; flex-direction: column">
                             <div style="display: flex; flex-direction: row; gap:1em">
@@ -87,7 +79,6 @@
                             </div>
 
 
-
                         </div>
                         <div>
                             <p:commandButton disabled="true" icon="bi bi-clock-history">
@@ -98,9 +89,9 @@
 
                 </p:toolbarGroup>
             </p:toolbar>
+
         </h:form>
 
-    </h:panelGroup>
 
 
 </ui:fragment>

@@ -49,7 +49,7 @@ public class SpecimenListPanel extends AbstractListPanel<SpecimenDTO>  implement
     // locals
     private String actionUnitListErrorMessage;
 
-    public String getPanelIndex() {
+    public String getPrefixPanelIndex() {
         return "specimen-list";
     }
 
@@ -79,7 +79,7 @@ public class SpecimenListPanel extends AbstractListPanel<SpecimenDTO>  implement
     }
 
     @Override
-    protected void setErrorMessage(String msg) {
+    public void setErrorMessage(String msg) {
         this.errorMessage = msg;
     }
 

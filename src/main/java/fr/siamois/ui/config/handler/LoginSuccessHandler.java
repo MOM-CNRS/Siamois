@@ -41,7 +41,9 @@ public class LoginSuccessHandler implements AuthenticationSuccessHandler {
      * @throws IOException If the redirection fails
      */
     @Override
-    public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException {
+    public void onAuthenticationSuccess(HttpServletRequest request,
+                                        HttpServletResponse response,
+                                        Authentication authentication) throws IOException {
         sessionSettingsBean.setupSession();
         loginEventPublisher.publishLoginEvent();
         if (sessionSettingsBean.getAuthenticatedUser().isPassToModify()) {
@@ -85,7 +87,8 @@ public class LoginSuccessHandler implements AuthenticationSuccessHandler {
             String targetUrl = savedRequest.getRedirectUrl();
             response.sendRedirect(targetUrl);
         } else {
-            response.sendRedirect(contextPath + "/");
+            // welcome panel
+            response.sendRedirect(contextPath + "/focus/L3dlbGNvbWU=");
         }
     }
 }

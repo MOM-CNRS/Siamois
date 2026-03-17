@@ -65,7 +65,6 @@ public abstract class AbstractSingleEntityPanel<T extends AbstractEntityDTO> ext
     public static final String THIS = "@this";
 
     protected Integer activeTabIndex; // Keeping state of active tab
-    protected String errorMessage;
     protected transient List<RevisionWithInfo<T>> history;
     protected transient RevisionWithInfo<T> revisionToDisplay = null;
     protected Long unitId;  // ID of the spatial unit
@@ -146,7 +145,7 @@ Return the command that opens panel for the unit
                 .value("")
                 .id("home")
                 .icon("bi bi-house")
-                .command("#{flowBean.addWelcomePanel()}")
+                .command("#{flowBean.redirectToDashboard()}")
                 .update("flow")
                 .onstart(PF_BUI_CONTENT_SHOW)
                 .oncomplete(PF_BUI_CONTENT_HIDE)
@@ -201,10 +200,6 @@ Return the command that opens panel for the unit
      * @return true if the entity has been saved, false if any error occurred
      */
     public abstract boolean save(Boolean validated);
-
-    public void saveAction(boolean validated) {
-        save(validated);
-    }
 
     public boolean contentIsImage(String mimeType) {
         MimeType currentMimeType = MimeType.valueOf(mimeType);

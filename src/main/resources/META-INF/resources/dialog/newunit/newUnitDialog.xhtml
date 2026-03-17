@@ -19,7 +19,7 @@
             <f:facet name="header">
                     <p:outputPanel style="display: flex;gap: 0.5em; align-items: center;
                             float:left;color: var(--main-color);">
-                        <i class="#{genericNewUnitDialogBean.handler.getIcon()}"/>
+                        <i class="#{genericNewUnitDialogBean.handler.getIcon()}" style="font-size:2rem;"/>
                         <span style="padding-right:0.5em;">#{genericNewUnitDialogBean.handler.getTitle(genericNewUnitDialogBean.newUnitContext)}</span>
                     </p:outputPanel>
             </f:facet>
@@ -40,7 +40,7 @@
 
             <!-- Save/Cancel Toolbar -->
             <f:facet name="footer">
-                <div>
+                <div  style="background-color: var(--siamois-green-light-100);">
                     <p:toolbar class="panel-footer">
                         <p:toolbarGroup align="right">
                             <p:commandLink value='#{langBean.msg("common.action.cancel")}'

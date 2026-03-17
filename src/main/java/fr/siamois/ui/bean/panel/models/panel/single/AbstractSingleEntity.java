@@ -18,7 +18,7 @@ import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAut
 import fr.siamois.ui.bean.LabelBean;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
-import fr.siamois.ui.bean.dialog.newunit.GenericNewUnitDialogBean;
+import fr.siamois.ui.bean.panel.EntityForm;
 import fr.siamois.ui.bean.panel.models.panel.AbstractPanel;
 import fr.siamois.ui.form.*;
 import fr.siamois.ui.form.fieldsource.PanelFieldSource;
@@ -45,7 +45,9 @@ import java.util.Set;
 @EqualsAndHashCode(callSuper = true, onlyExplicitlyIncluded = true)
 @Data
 @Slf4j
-public abstract class AbstractSingleEntity<T extends AbstractEntityDTO> extends AbstractPanel implements Serializable {
+public abstract class AbstractSingleEntity<T extends AbstractEntityDTO>
+        extends AbstractPanel
+        implements EntityForm<T>, Serializable {
 
     public static final String FIELD = "field";
     public static final String COLUMN_CLASS_NAME = "ui-g-12 ui-md-6 ui-lg-4";
@@ -135,21 +137,14 @@ public abstract class AbstractSingleEntity<T extends AbstractEntityDTO> extends 
     }
 
     public String getConceptFieldsUpdateTargetsOnBlur() {
-        // If new unit panel form, update only header when concept is selected, otherwise @form
-        if (this.getClass() == GenericNewUnitDialogBean.class) {
-            return "";
-        } else {
-            return "@form panel-" + getPanelIndex() + "-header";
-        }
+            return "@form panel-" + getPrefixPanelIndex() + "-header";
+
     }
 
     public String getPanelHeaderUpdateId() {
-        // If new unit panel form
-        if (this.getClass() == GenericNewUnitDialogBean.class) {
-            return "";
-        } else {
-            return "panel-" + getPanelIndex() + "-header singlePanelUnitForm-"+getPanelIndex()+":breadcrumbs";
-        }
+            //return "panel-" + getPanelIndex() + "-header singlePanelUnitForm-"+getPanelIndex()+":breadcrumbs";
+        return "";
+
     }
 
     public String getAutocompleteClass() {
@@ -184,7 +179,7 @@ public abstract class AbstractSingleEntity<T extends AbstractEntityDTO> extends 
      * Helper for children: once unit + detailsForm are set,
      * call this to initialize the EntityFormContext.
      */
-    protected void initFormContext(boolean forceInit) {
+    public void initFormContext(boolean forceInit) {
         if (unit == null) {
             log.warn("initFormContext called with null unit");
             return;

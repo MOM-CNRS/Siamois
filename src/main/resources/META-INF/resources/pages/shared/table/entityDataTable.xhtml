@@ -50,11 +50,30 @@
             </ui:include>
         </f:facet>
 
-        <p:column selectionBox="true" style="width:16px;text-align:center" toggleable="false"/>
+        <p:column styleClass="small-cell" selectionBox="true" style="width:16px;text-align:center" toggleable="false"/>
+
+        <!-- Actions Column -->
+        <p:column styleClass="small-cell" exportable="false" toggleable="false" style="min-width: 100px;">
+            <p:toolbar style="padding-top: 0;
+            padding-bottom: 0;">
+                <p:toolbarGroup styleClass="action-col">
+                    <ui:repeat value="#{tableModel.rowActions}" var="action">
+                        <p:commandButton
+                                rendered="#{tableModel.isRendered(action, item)}"
+                                icon="#{tableModel.resolveIcon(action, item)}"
+                                action="#{tableModel.handleRowAction(action, item)}"
+                                process="#{empty action.processExpr ? '@this' : action.processExpr}"
+                                update="#{action.updateSelfTable ? (':'.concat(cc.clientId).concat(':entityDatatable')) : action.updateExpr}"
+                                styleClass="#{action.styleClass}"/>
+                    </ui:repeat>
+                </p:toolbarGroup>
+            </p:toolbar>
+        </p:column>
 
         <!-- Dynamic Columns -->
         <p:columns style="min-width: #{column.type != 'COMMAND_LINK' ? '10em' : ''};"
                    id="form"
+                   styleClass="small-cell"
                    field="#{column.id}"
                    sortable="#{column.sortable}"
                    filterable="#{column.filterable}"
@@ -72,22 +91,7 @@
             </ui:include>
         </p:columns>
 
-        <!-- Actions Column -->
-        <p:column exportable="false" toggleable="false" style="min-width: 100px;">
-            <p:toolbar>
-                <p:toolbarGroup styleClass="action-col">
-                    <ui:repeat value="#{tableModel.rowActions}" var="action">
-                        <p:commandButton
-                                rendered="#{tableModel.isRendered(action, item)}"
-                                icon="#{tableModel.resolveIcon(action, item)}"
-                                action="#{tableModel.handleRowAction(action, item)}"
-                                process="#{empty action.processExpr ? '@this' : action.processExpr}"
-                                update="#{action.updateSelfTable ? (':'.concat(cc.clientId).concat(':entityDatatable')) : action.updateExpr}"
-                                styleClass="#{action.styleClass}"/>
-                    </ui:repeat>
-                </p:toolbarGroup>
-            </p:toolbar>
-        </p:column>
+
     </p:dataTable>
 
 

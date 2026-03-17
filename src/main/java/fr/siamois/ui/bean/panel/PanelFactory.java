@@ -37,7 +37,6 @@ public class PanelFactory {
             ObjectProvider<SpatialUnitListPanel> spatialUnitListPanelProvider,
             ObjectProvider<ActionUnitListPanel> actionUnitListPanelProvider,
             ObjectProvider<SpatialUnitPanel> spatialUnitPanelProvider,
-
             ObjectProvider<ActionUnitPanel> actionUnitPanelProvider,
             ObjectProvider<RecordingUnitPanel> recordingUnitPanelProvider,
             ObjectProvider<RecordingUnitListPanel> recordingUnitListPanelProvider, ObjectProvider<SpecimenListPanel> specimenListPanel,

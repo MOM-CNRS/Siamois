@@ -35,6 +35,8 @@ public class RedirectBean implements Serializable {
         }
     }
 
+
+
     public void redirectTo(HttpStatus errorStatus) {
         String errorCode = switch (errorStatus) {
             case NOT_FOUND -> "404";

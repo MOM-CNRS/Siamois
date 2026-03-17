@@ -11,6 +11,7 @@ public class SpatialUnitSummaryDTO extends AbstractEntityDTO {
     private ConceptDTO category;
 
     public SpatialUnitSummaryDTO(SpatialUnitDTO spatialUnitDTO) {
+        this.id = spatialUnitDTO.getId();
         this.name = spatialUnitDTO.getName();
         this.category = spatialUnitDTO.getCategory();
     }
