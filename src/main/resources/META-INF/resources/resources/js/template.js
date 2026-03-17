@@ -315,7 +315,7 @@ function showSideview(panelId, base64RootUri, base64OverviewUri) {
     const newUrl = `${APP_CTX}/focus/${base64RootUri}?s=${base64OverviewUri}`;
 
 // Push the new state
-    window.history.pushState(
+    globalThis.history.pushState(
         {
             root: base64RootUri,
             overview: base64OverviewUri,
@@ -347,7 +347,7 @@ function hideSideview(panelId) {
     }
 }
 
-$(window).on("popstate", function(e) {
+$(globalThis).on("popstate", function(e) {
 
         location.reload()
 
