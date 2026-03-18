@@ -14,6 +14,7 @@ import fr.siamois.domain.services.auth.PendingPersonService;
 import fr.siamois.domain.services.person.verifier.EmailVerifier;
 import fr.siamois.domain.services.person.verifier.PasswordVerifier;
 import fr.siamois.domain.services.person.verifier.PersonDataVerifier;
+import fr.siamois.dto.entity.ConceptDTO;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.infrastructure.database.repositories.person.PendingInstitutionInviteRepository;
@@ -21,7 +22,9 @@ import fr.siamois.infrastructure.database.repositories.person.PendingPersonRepos
 import fr.siamois.infrastructure.database.repositories.person.PersonRepository;
 import fr.siamois.infrastructure.database.repositories.settings.PersonSettingsRepository;
 import fr.siamois.mapper.ActionUnitMapper;
+import fr.siamois.mapper.ConceptMapper;
 import fr.siamois.mapper.InstitutionMapper;
+import fr.siamois.mapper.PersonMapper;
 import fr.siamois.ui.email.EmailManager;
 import jakarta.servlet.http.HttpServletRequest;
 import org.junit.jupiter.api.BeforeEach;
@@ -69,6 +72,12 @@ class PersonServiceTest {
     private InstitutionMapper institutionMapper;
     @Mock
     private ActionUnitMapper actionUnitMapper;
+    @Mock
+    private ConceptMapper conceptMapper;
+    @Mock
+    private PersonMapper personMapper;
+
+
 
     @Mock
     private PendingInstitutionInviteRepository pendingInstitutionInviteRepository;
@@ -106,7 +115,9 @@ class PersonServiceTest {
                 conversionService,
                 pendingInstitutionInviteRepository,
                 institutionMapper,
-                actionUnitMapper
+                actionUnitMapper,
+                personMapper,
+                conceptMapper
         );
     }
 
@@ -168,6 +179,7 @@ class PersonServiceTest {
         person.setId(1L);
         PersonSettings settings = new PersonSettings();
         settings.setPerson(person);
+        personDto.setId(1L);
 
         when(personSettingsRepository.findByPersonId(1L)).thenReturn(Optional.empty());
         when(personSettingsRepository.save(any(PersonSettings.class))).thenReturn(settings);
@@ -278,7 +290,9 @@ class PersonServiceTest {
                 conversionService,
                 pendingInstitutionInviteRepository,
                 institutionMapper,
-                actionUnitMapper
+                actionUnitMapper,
+                personMapper,
+                conceptMapper
         );
 
         // Act
@@ -414,9 +428,9 @@ class PersonServiceTest {
         PersonDTO created = personService.createPerson(newPersonDto,"password");
 
         // Assert
-        verify(institutionService).addToManagers(institutionDTO, newPerson);
-        verify(institutionService).addPersonToActionManager(institutionDTO, newPerson);
-        verify(institutionService).addPersonToActionUnit(null, newPerson, new Concept());
+        verify(institutionService).addToManagers(institutionDTO, newPersonDto);
+        verify(institutionService).addPersonToActionManager(institutionDTO, newPersonDto);
+        verify(institutionService).addPersonToActionUnit(null, newPersonDto, new ConceptDTO());
         verify(pendingPersonService).delete(attribution);
         verify(pendingPersonService).delete(invite);
         verify(pendingPersonRepository).delete(pendingPerson);
