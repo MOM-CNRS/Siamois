@@ -3,14 +3,13 @@ package fr.siamois.ui.lazydatamodel;
 
 import fr.siamois.domain.models.exceptions.recordingunit.FailedRecordingUnitSaveException;
 import fr.siamois.domain.models.form.customfield.CustomFieldSelectOneFromFieldCode;
-import fr.siamois.domain.models.specimen.Specimen;
-import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.specimen.SpecimenService;
+import fr.siamois.dto.entity.ConceptDTO;
+import fr.siamois.dto.entity.SpecimenDTO;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.utils.MessageUtils;
 import lombok.Getter;
 import lombok.Setter;
-import org.hibernate.Hibernate;
 import org.primefaces.event.RowEditEvent;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -22,14 +21,14 @@ import java.util.Map;
 
 @Getter
 @Setter
-public abstract class BaseSpecimenLazyDataModel extends BaseLazyDataModel<Specimen> {
+public abstract class BaseSpecimenLazyDataModel extends BaseLazyDataModel<SpecimenDTO> {
 
     // deps
     protected final transient SpecimenService specimenService;
     protected final transient LangBean langBean;
 
     private static final Map<String, String> FIELD_MAPPING;
-    private Concept bulkEditTypeValue;
+    private ConceptDTO bulkEditTypeValue;
 
     // Fields definition for cell/bulk edit
     CustomFieldSelectOneFromFieldCode typeField = new CustomFieldSelectOneFromFieldCode();
@@ -49,18 +48,11 @@ public abstract class BaseSpecimenLazyDataModel extends BaseLazyDataModel<Specim
     }
 
     @Override
-    protected Page<Specimen> loadData(String name, Long[] categoryIds, Long[] personIds, String globalFilter, Pageable pageable) {
-        Page<Specimen> page =  loadSpecimens(name, categoryIds, personIds, globalFilter, pageable);
-        page.forEach(specimen -> {
-            Hibernate.initialize(specimen.getDocuments());
-            Hibernate.initialize(specimen.getAuthors());
-            Hibernate.initialize(specimen.getCollectors());
-            Hibernate.initialize(specimen.getRecordingUnit());
-        });
-        return page;
+    protected Page<SpecimenDTO> loadData(String name, Long[] categoryIds, Long[] personIds, String globalFilter, Pageable pageable) {
+        return loadSpecimens(name, categoryIds, personIds, globalFilter, pageable);
     }
 
-    protected abstract Page<Specimen> loadSpecimens(
+    protected abstract Page<SpecimenDTO> loadSpecimens(
             String nameFilter, Long[] categoryIds, Long[] personIds,
             String globalFilter, Pageable pageable);
 
@@ -75,17 +67,17 @@ public abstract class BaseSpecimenLazyDataModel extends BaseLazyDataModel<Specim
     }
 
     @Override
-    public String getRowKey(Specimen specimen) {
+    public String getRowKey(SpecimenDTO specimen) {
         return specimen != null ? Long.toString(specimen.getId()) : null;
     }
 
 
     @Override
-    public Specimen getRowData(String rowKey) {
-        List<Specimen> units = getWrappedData();
+    public SpecimenDTO getRowData(String rowKey) {
+        List<SpecimenDTO> units = getWrappedData();
         Long value = Long.valueOf(rowKey);
 
-        for (Specimen unit : units) {
+        for (SpecimenDTO unit : units) {
             if (unit.getId().equals(value)) {
                 return unit;
             }
@@ -94,9 +86,9 @@ public abstract class BaseSpecimenLazyDataModel extends BaseLazyDataModel<Specim
         return null;
     }
 
-    public void handleRowEdit(RowEditEvent<Specimen> event) {
+    public void handleRowEdit(RowEditEvent<SpecimenDTO> event) {
 
-        Specimen toSave = event.getObject();
+        SpecimenDTO toSave = event.getObject();
 
         try {
             specimenService.save(toSave);
@@ -111,11 +103,11 @@ public abstract class BaseSpecimenLazyDataModel extends BaseLazyDataModel<Specim
 
     public void saveFieldBulk() {
         List<Long> ids = getSelectedUnits().stream()
-                .map(Specimen::getId)
+                .map(SpecimenDTO::getId)
                 .toList();
         int updateCount = specimenService.bulkUpdateType(ids, bulkEditTypeValue);
         // Update in-memory list (for UI sync)
-        for (Specimen s : getSelectedUnits()) {
+        for (SpecimenDTO s : getSelectedUnits()) {
             s.setType(bulkEditTypeValue);
         }
         MessageUtils.displayInfoMessage(langBean, "common.entity.recordingUnits.bulkUpdated", updateCount);
@@ -123,8 +115,8 @@ public abstract class BaseSpecimenLazyDataModel extends BaseLazyDataModel<Specim
 
     public void duplicateRow() {
         // Create a copy from selected row
-        Specimen original = getRowData();
-        Specimen newRec = new Specimen(original);
+        SpecimenDTO original = getRowData();
+        SpecimenDTO newRec = new SpecimenDTO(original);
         newRec.setIdentifier(specimenService.generateNextIdentifier(newRec));
 
         // Save it

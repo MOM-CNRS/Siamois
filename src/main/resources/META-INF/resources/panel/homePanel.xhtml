@@ -6,6 +6,7 @@
 >
     <!--@elvariable id="panelIndex" type="Integer"-->
     <!--@elvariable id="panelModel" type="fr.siamois.ui.bean.panel.models.panel.WelcomePanel"-->
+    <!--@elvariable id="mode" type="String"-->
 
     <div class="sia-panel-title">
         #{langBean.msg('homePanel.title', sessionSettingsBean.selectedInstitution.name)}
@@ -31,12 +32,12 @@
 
                                         <p:outputPanel style="display: flex; gap:1em;">
                                             <i class="bi bi-geo-alt" style="color:var(--context-main-color);"/>
-                                            <p:outputLabel value="#{actionUnit.spatialContextNames}"/>
+                                            <p:outputLabel value="#{actionUnit.mainLocation.name}"/>
                                         </p:outputPanel>
 
                                         <p:outputPanel style="display: flex; gap:1em;">
                                             <i class="bi bi-pencil-square" style="color:var(--ground-main-color);"/>
-                                            <p:outputLabel value="#{actionUnit.recordingUnitList.size} enregistrements"/>
+                                            <p:outputLabel value="#{actionUnit.recordingUnitList.size()} enregistrements"/>
                                         </p:outputPanel>
 
                                         <p:commandButton
@@ -81,6 +82,30 @@
                         <p:column styleClass="ui-g-12 ui-xs-12 ui-md-6 ui-lg-3">
 
                             <siaCard:welcomeCard
+                                    icon="bi bi-arrow-down-square"
+                                    cardStyleClass="sia-welcome-card sia-action-unit"
+                                    chipStyleClass="action-unit-count-chip-alt"
+                                    btnStyleClass="action-unit-btn"
+                                    btnLabel="#{langBean.msg('homePanel.see.actionUnit')}"
+                                    label="#{langBean.msg('common.entity.actionUnits')}"
+                                    count="#{panelModel.nbOfActionUnits}"
+                                    btnAction="#{navBean.goToActionUnitList(mode)}"
+                                    btnNewActionUpdate="newUnitForm"
+                                    btnNewActionOnComplete="PF('newUnitDiag').show();"
+                                    btnNewActionOnStart=""
+                                    btnNewAction="#{genericNewUnitDialogBean.openNewEntityDiag('ACTION')}"
+                                    isCreateAllowed="#{flowBean.isActionUnitCreateAllowed()}"
+                                    description="Interventions, opérations, fouilles, etc."
+                                    newPanelId="panel-action-unit-list-container"
+                            />
+
+
+                        </p:column>
+
+
+                        <p:column styleClass="ui-g-12 ui-xs-12 ui-md-6 ui-lg-3">
+
+                            <siaCard:welcomeCard
                                     icon="bi bi-geo-alt"
                                     cardStyleClass="sia-welcome-card sia-spatial-unit"
                                     chipStyleClass="spatial-unit-count-chip-alt"
@@ -89,38 +114,19 @@
                                     panelModel="#{panelModel}"
                                     label="#{langBean.msg('common.entity.spatialUnits')}"
                                     count="#{panelModel.nbOfSpatialUnits}"
-                                    btnAction="#{flowBean.addSpatialUnitListPanel()}"
+                                    btnAction="#{navBean.goToSpatialUnitList(mode)}"
                                     btnNewActionUpdate="newUnitForm"
                                     btnNewActionOnComplete="PF('newUnitDiag').show();"
                                     btnNewActionOnStart=""
                                     btnNewAction="#{genericNewUnitDialogBean.openNewEntityDiag('SPATIAL')}"
                                     isCreateAllowed="#{spatialUnitFieldBean.isCreateAllowed()}"
                                     description="Les lieux et leurs découpages spatiaux"
+                                    newPanelId="panel-spatial-unit-list-container"
                             />
 
                         </p:column>
 
-                        <p:column styleClass="ui-g-12 ui-xs-12 ui-md-6 ui-lg-3">
 
-                            <siaCard:welcomeCard
-                                    icon="bi bi-arrow-down-square"
-                                    cardStyleClass="sia-welcome-card sia-action-unit"
-                                    chipStyleClass="action-unit-count-chip-alt"
-                                    btnStyleClass="action-unit-btn"
-                                    btnLabel="#{langBean.msg('homePanel.see.actionUnit')}"
-                                    label="#{langBean.msg('common.entity.actionUnits')}"
-                                    count="#{panelModel.nbOfActionUnits}"
-                                    btnAction="#{flowBean.addActionUnitListPanel()}"
-                                    btnNewActionUpdate="newUnitForm"
-                                    btnNewActionOnComplete="PF('newUnitDiag').show();"
-                                    btnNewActionOnStart=""
-                                    btnNewAction="#{genericNewUnitDialogBean.openNewEntityDiag('ACTION')}"
-                                    isCreateAllowed="#{flowBean.isActionUnitCreateAllowed()}"
-                                    description="Interventions, opérations, fouilles, etc."
-                            />
-
-
-                        </p:column>
 
                         <p:column styleClass="ui-g-12 ui-xs-12 ui-md-6 ui-lg-3">
 
@@ -132,9 +138,9 @@
                                     btnLabel="#{langBean.msg('homePanel.see.recordingUnit')}"
                                     label="#{langBean.msg('common.entity.recordingUnits')}"
                                     count="#{panelModel.nbOfRecordingUnits}"
-                                    btnAction="#{flowBean.addRecordingUnitListPanel()}"
+                                    btnAction="#{navBean.goToRecordingUnitList(mode)}"
                                     description="Les unités d'enregistrement"
-
+                                    newPanelId="panel-recording-unit-list-container"
                             />
 
                         </p:column>
@@ -149,9 +155,9 @@
                                     btnLabel="#{langBean.msg('homePanel.see.specimen')}"
                                     label="#{langBean.msg('common.entity.specimen')}"
                                     count="#{panelModel.nbOfSpecimen}"
-                                    btnAction="#{flowBean.addSpecimenListPanel()}"
+                                    btnAction="#{navBean.goToSpecimenList(mode)}"
                                     description="Mobiliers, prélèvements et VAB"
-
+                                    newPanelId="panel-specimen-list-container"
                             />
 
                         </p:column>

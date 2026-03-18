@@ -6,7 +6,7 @@
 >
 
     <cc:interface>
-        <cc:attribute name="answer" type="fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerInteger"
+        <cc:attribute name="answer" type="fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerIntegerViewModel"
                       required="true"/>
         <cc:attribute name="panelModel" type="fr.siamois.ui.bean.panel.models.panel.single.AbstractSingleEntity"
                       required="true"/>
@@ -25,7 +25,7 @@
     </cc:interface>
 
     <cc:implementation>
-        <p:inplace mode="#{cc.attrs.mode}" toggleable="false">
+        <p:inplace id="inplace" mode="#{cc.attrs.mode}" toggleable="false">
             <f:facet name="output">
                 <p:inputNumber value="#{cc.attrs.answer.value}"
                                inputStyle="width: 100%"

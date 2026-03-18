@@ -2,20 +2,20 @@ package fr.siamois.domain.services.document;
 
 import fr.siamois.domain.models.ArkEntity;
 import fr.siamois.domain.models.UserInfo;
-import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.document.Document;
 import fr.siamois.domain.models.exceptions.InvalidFileSizeException;
 import fr.siamois.domain.models.exceptions.InvalidFileTypeException;
 import fr.siamois.domain.models.institution.Institution;
-import fr.siamois.domain.models.recordingunit.RecordingUnit;
-import fr.siamois.domain.models.spatialunit.SpatialUnit;
-import fr.siamois.domain.models.specimen.Specimen;
 import fr.siamois.domain.services.ArkEntityService;
 import fr.siamois.domain.services.document.compressor.FileCompressor;
+import fr.siamois.dto.entity.*;
 import fr.siamois.infrastructure.database.repositories.DocumentRepository;
 import fr.siamois.infrastructure.files.DocumentStorage;
+import fr.siamois.mapper.InstitutionMapper;
+import fr.siamois.mapper.PersonMapper;
 import fr.siamois.utils.CodeUtils;
 import fr.siamois.utils.DocumentUtils;
+import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.tomcat.util.http.fileupload.InvalidFileNameException;
@@ -35,29 +35,34 @@ import java.util.Optional;
 @Slf4j
 @Service
 @Setter
+@RequiredArgsConstructor
 public class DocumentService implements ArkEntityService {
 
 
     private final DocumentRepository documentRepository;
 
+
+    private final PersonMapper personMapper;
+    private final InstitutionMapper institutionMapper;
+
     private static final int MAX_GENERATIONS = 100;
     private final DocumentStorage documentStorage;
     private final Collection<FileCompressor> fileCompressors;
 
-    public DocumentService(DocumentRepository documentRepository, DocumentStorage documentStorage, Collection<FileCompressor> fileCompressors) {
-        this.documentRepository = documentRepository;
-        this.documentStorage = documentStorage;
-        this.fileCompressors = fileCompressors;
-    }
+
 
     @Override
     public List<Document> findWithoutArk(Institution institution) {
         return documentRepository.findAllByArkIsNullAndCreatedByInstitution(institution);
     }
 
-    @Override
     public ArkEntity save(ArkEntity toSave) {
         return documentRepository.save((Document) toSave);
+    }
+
+    @Override
+    public AbstractEntityDTO save(AbstractEntityDTO toSave) {
+        return null; // TODO IMPLEMENT
     }
 
     /**
@@ -103,8 +108,8 @@ public class DocumentService implements ArkEntityService {
 
             document.setMd5Sum(DocumentUtils.md5(bufferedInputStream));
             document.setFileCode(generateFileInternalCode());
-            document.setCreatedBy(userInfo.getUser());
-            document.setCreatedByInstitution(userInfo.getInstitution());
+            document.setCreatedBy(personMapper.invertConvert(userInfo.getUser()));
+            document.setCreatedByInstitution(institutionMapper.invertConvert(userInfo.getInstitution()));
             document.setUrl(String.format("%s/content/%s", contextPath, document.contentFileName()));
 
             documentStorage.save(userInfo, document, bufferedInputStream);
@@ -167,7 +172,7 @@ public class DocumentService implements ArkEntityService {
      * @param spatialUnit the spatial unit for which documents are to be found
      * @return a list of documents associated with the spatial unit
      */
-    public List<Document> findForSpatialUnit(SpatialUnit spatialUnit) {
+    public List<Document> findForSpatialUnit(SpatialUnitDTO spatialUnit) {
         return documentRepository.findDocumentsBySpatialUnit(spatialUnit.getId());
     }
 
@@ -177,7 +182,7 @@ public class DocumentService implements ArkEntityService {
      * @param actionUnit the action unit for which documents are to be found
      * @return a list of documents associated with the action unit
      */
-    public List<Document> findForActionUnit(ActionUnit actionUnit) {
+    public List<Document> findForActionUnit(ActionUnitDTO actionUnit) {
         return documentRepository.findDocumentsByActionUnit(actionUnit.getId());
     }
 
@@ -187,7 +192,7 @@ public class DocumentService implements ArkEntityService {
      * @param recordingUnit the recording unit for which documents are to be found
      * @return a list of documents associated with the recording unit
      */
-    public List<Document> findForRecordingUnit(RecordingUnit recordingUnit) {
+    public List<Document> findForRecordingUnit(RecordingUnitDTO recordingUnit) {
         return documentRepository.findDocumentsByRecordingUnit(recordingUnit.getId());
     }
 
@@ -197,7 +202,7 @@ public class DocumentService implements ArkEntityService {
      * @param specimen the specimen for which documents are to be found
      * @return a list of documents associated with the specimen
      */
-    public List<Document> findForSpecimen(Specimen specimen) {
+    public List<Document> findForSpecimen(SpecimenDTO specimen) {
         return documentRepository.findDocumentsBySpecimen(specimen.getId());
     }
 
@@ -207,7 +212,7 @@ public class DocumentService implements ArkEntityService {
      * @param document    the document to be added
      * @param spatialUnit the spatial unit to which the document is to be added
      */
-    public void addToSpatialUnit(Document document, SpatialUnit spatialUnit) {
+    public void addToSpatialUnit(Document document, SpatialUnitDTO spatialUnit) {
         documentRepository.addDocumentToSpatialUnit(document.getId(), spatialUnit.getId());
     }
 
@@ -217,7 +222,7 @@ public class DocumentService implements ArkEntityService {
      * @param document    the document to be added
      * @param specimen the spatial unit to which the document is to be added
      */
-    public void addToSpecimen(Document document, Specimen specimen) {
+    public void addToSpecimen(Document document, SpecimenDTO specimen) {
         documentRepository.addDocumentToSpecimen(document.getId(), specimen.getId());
     }
 
@@ -227,7 +232,7 @@ public class DocumentService implements ArkEntityService {
      * @param document    the document to be added
      * @param actionUnit the action unit to which the document is to be added
      */
-    public void addToActionUnit(Document document, ActionUnit actionUnit) {
+    public void addToActionUnit(Document document, ActionUnitDTO actionUnit) {
         documentRepository.addDocumentToActionUnit(document.getId(), actionUnit.getId());
     }
 
@@ -237,7 +242,7 @@ public class DocumentService implements ArkEntityService {
      * @param document    the document to be added
      * @param recordingUnit the recording unit to which the document is to be added
      */
-    public void addToRecordingUnit(Document document, RecordingUnit recordingUnit) {
+    public void addToRecordingUnit(Document document, RecordingUnitDTO recordingUnit) {
         documentRepository.addDocumentToRecordingUnit(document.getId(), recordingUnit.getId());
     }
 
@@ -299,7 +304,7 @@ public class DocumentService implements ArkEntityService {
      * @param hash        the hash of the document to check
      * @return true if the document exists in the spatial unit, false otherwise
      */
-    public boolean existInSpatialUnitByHash(SpatialUnit spatialUnit, String hash) {
+    public boolean existInSpatialUnitByHash(SpatialUnitDTO spatialUnit, String hash) {
         return documentRepository.existsByHashInSpatialUnit(spatialUnit.getId(), hash);
     }
 
@@ -310,7 +315,7 @@ public class DocumentService implements ArkEntityService {
      * @param hash        the hash of the document to check
      * @return true if the document exists in the spatial unit, false otherwise
      */
-    public boolean existInSpecimenByHash(Specimen specimen, String hash) {
+    public boolean existInSpecimenByHash(SpecimenDTO specimen, String hash) {
         return documentRepository.existsByHashInSpecimen(specimen.getId(), hash);
     }
 
@@ -321,7 +326,7 @@ public class DocumentService implements ArkEntityService {
      * @param hash        the hash of the document to check
      * @return true if the document exists in the spatial unit, false otherwise
      */
-    public boolean existInRecordingUnitByHash(RecordingUnit recordingUnit, String hash) {
+    public boolean existInRecordingUnitByHash(RecordingUnitDTO recordingUnit, String hash) {
         return documentRepository.existsByHashInRecordingUnit(recordingUnit.getId(), hash);
     }
 
@@ -332,7 +337,7 @@ public class DocumentService implements ArkEntityService {
      * @param hash        the hash of the document to check
      * @return true if the document exists in the spatial unit, false otherwise
      */
-    public boolean existInActionUnitByHash(ActionUnit actionUnit, String hash) {
+    public boolean existInActionUnitByHash(ActionUnitDTO actionUnit, String hash) {
         return documentRepository.existsByHashInActionUnit(actionUnit.getId(), hash);
     }
 

@@ -1,6 +1,5 @@
 package fr.siamois.ui.bean;
 
-import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.auth.pending.PendingPerson;
 import fr.siamois.domain.models.exceptions.auth.InvalidUserInformationException;
 import fr.siamois.domain.models.exceptions.auth.UserAlreadyExistException;
@@ -8,6 +7,7 @@ import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.auth.PendingPersonService;
 import fr.siamois.domain.services.person.PersonService;
+import fr.siamois.dto.entity.PersonDTO;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -73,15 +73,14 @@ public class RegisterBean {
             return;
         }
 
-        Person person = new Person();
+        PersonDTO person = new PersonDTO();
         person.setEmail(email);
         person.setName(firstName);
         person.setLastname(lastName);
-        person.setPassword(password);
         person.setUsername(username);
 
         try {
-            personService.createPerson(person);
+            personService.createPerson(person, password);
             log.trace("Person created");
 
             reset();

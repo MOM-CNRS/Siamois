@@ -2,27 +2,23 @@ package fr.siamois.domain.services.form;
 
 
 import fr.siamois.domain.models.actionunit.ActionCode;
-import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.form.customfield.*;
 import fr.siamois.domain.models.form.customfieldanswer.*;
 import fr.siamois.domain.models.form.customform.CustomForm;
 import fr.siamois.domain.models.form.customform.EnabledWhenJson;
 import fr.siamois.domain.models.form.customform.ValueMatcher;
-import fr.siamois.domain.models.form.customformresponse.CustomFormResponse;
-import fr.siamois.domain.models.institution.Institution;
-import fr.siamois.domain.models.recordingunit.RecordingUnit;
-import fr.siamois.domain.models.recordingunit.StratigraphicRelationship;
-import fr.siamois.domain.models.spatialunit.SpatialUnit;
-import fr.siamois.domain.models.vocabulary.Concept;
+import fr.siamois.dto.StratigraphicRelationshipDTO;
+import fr.siamois.dto.entity.*;
 import fr.siamois.infrastructure.database.repositories.form.FormRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
 import fr.siamois.ui.bean.LabelBean;
 import fr.siamois.ui.form.CustomFieldAnswerFactory;
-import fr.siamois.ui.form.rules.EnabledRulesEngine;
-import fr.siamois.ui.form.fieldsource.FieldSource;
 import fr.siamois.ui.form.ValueMatcherFactory;
+import fr.siamois.ui.form.fieldsource.FieldSource;
 import fr.siamois.ui.form.rules.*;
+import fr.siamois.ui.viewmodel.CustomFormResponseViewModel;
+import fr.siamois.ui.viewmodel.fieldanswer.*;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -72,7 +68,7 @@ public class FormService {
      * @return The form
      */
     @Transactional(readOnly = true)
-    public CustomForm findCustomFormByRecordingUnitTypeAndInstitutionId(Concept recordingUnitType, Institution institution) {
+    public CustomForm findCustomFormByRecordingUnitTypeAndInstitutionId(ConceptDTO recordingUnitType, InstitutionDTO institution) {
         Optional<CustomForm> optForm = formRepository.findEffectiveFormByTypeAndInstitution(recordingUnitType == null ? null : recordingUnitType.getId(), institution.getId());
         // If none found, try to find a form without specifying the type
         // Should we throw an error if none found?
@@ -103,13 +99,13 @@ public class FormService {
      * @param fieldSource abstraction over fields (single panel or row)
      * @param forceInit   if true, ignore existing answers and rebuild everything
      */
-    public CustomFormResponse initOrReuseResponse(CustomFormResponse existing,
+    public CustomFormResponseViewModel initOrReuseResponse(CustomFormResponseViewModel existing,
                                                   Object jpaEntity,
                                                   FieldSource fieldSource,
                                                   boolean forceInit) {
 
-        CustomFormResponse response;
-        Map<CustomField, CustomFieldAnswer> answers;
+        CustomFormResponseViewModel response;
+        Map<CustomField, CustomFieldAnswerViewModel> answers;
 
         if (existing != null && !forceInit) {
             response = existing;
@@ -118,7 +114,7 @@ public class FormService {
                 answers = new HashMap<>();
             }
         } else {
-            response = new CustomFormResponse();
+            response = new CustomFormResponseViewModel();
             answers = new HashMap<>();
         }
 
@@ -132,7 +128,7 @@ public class FormService {
                 continue;
             }
 
-            CustomFieldAnswer answer =
+            CustomFieldAnswerViewModel answer =
                     CustomFieldAnswerFactory.instantiateAnswerForField(field);
 
             if (answer != null) {
@@ -144,6 +140,29 @@ public class FormService {
 
         response.setAnswers(answers);
         return response;
+    }
+
+    /**
+     * Create or reuse a CustomFormResponse for the given entity + field source.
+     *
+     * @param answers    the answers
+     * @param jpaEntity   entity we bind system fields against
+     * @param field the fiels
+     */
+    public void initOneAnswer(CustomFormResponseViewModel answers,
+                                                           Object jpaEntity,
+                                                           CustomField field) {
+
+
+
+        List<String> bindableFields = getBindableFieldNames(jpaEntity);
+
+        CustomFieldAnswerViewModel answer = answers.getAnswers().get(field);
+
+        if (answer != null) {
+            initializeAnswer(answer, field, jpaEntity, bindableFields);
+        }
+
     }
 
     // ------------------- Enabled rules
@@ -201,16 +220,17 @@ public class FormService {
      * Apply all bindable system fields from the response back into the JPA entity.
      * This is basically your previous updateJpaEntityFromFormResponse method.
      */
-    public void updateJpaEntityFromResponse(CustomFormResponse response, Object jpaEntity) {
+    public void updateJpaEntityFromResponse(CustomFormResponseViewModel response, Object jpaEntity) {
         if (response == null || jpaEntity == null) return;
 
         List<String> bindableFields = getBindableFieldNames(jpaEntity);
 
-        for (Map.Entry<CustomField, CustomFieldAnswer> entry : response.getAnswers().entrySet()) {
+        for (Map.Entry<CustomField, CustomFieldAnswerViewModel> entry : response.getAnswers().entrySet()) {
             CustomField field = entry.getKey();
-            CustomFieldAnswer answer = entry.getValue();
+            CustomFieldAnswerViewModel answer = entry.getValue();
 
-            if (answer instanceof CustomFieldAnswerStratigraphy stratiAnswer && jpaEntity instanceof RecordingUnit ru) {
+            if (answer instanceof CustomFieldAnswerStratigraphyViewModel stratiAnswer &&
+                    jpaEntity instanceof RecordingUnitDTO ru) {
                 // Special case
                 setStratigraphyFieldValue(stratiAnswer, ru);
             } else if (isBindableSystemField(field, answer, bindableFields)) {
@@ -223,7 +243,7 @@ public class FormService {
     }
 
     private static boolean isBindableSystemField(CustomField field,
-                                                 CustomFieldAnswer answer,
+                                                 CustomFieldAnswerViewModel answer,
                                                  List<String> bindableFields) {
         return field != null
                 && answer != null
@@ -232,30 +252,30 @@ public class FormService {
                 && bindableFields.contains(field.getValueBinding());
     }
 
-    private static Object extractValueFromAnswer(CustomFieldAnswer answer) {
-        if (answer instanceof CustomFieldAnswerDateTime a && a.getValue() != null) {
+    private static Object extractValueFromAnswer(CustomFieldAnswerViewModel answer) {
+        if (answer instanceof CustomFieldAnswerDateTimeViewModel a && a.getValue() != null) {
             return a.getValue().atOffset(ZoneOffset.UTC);
-        } else if (answer instanceof CustomFieldAnswerText a) {
+        } else if (answer instanceof CustomFieldAnswerTextViewModel a) {
             return a.getValue();
-        } else if (answer instanceof CustomFieldAnswerSelectMultiplePerson a) {
+        } else if (answer instanceof CustomFieldAnswerSelectMultiplePersonViewModel a) {
             return a.getValue();
-        } else if (answer instanceof CustomFieldAnswerSelectOnePerson a) {
+        } else if (answer instanceof CustomFieldAnswerSelectOnePersonViewModel a) {
             return a.getValue();
-        } else if (answer instanceof CustomFieldAnswerSelectOneFromFieldCode a) {
+        } else if (answer instanceof CustomFieldAnswerSelectOneFromFieldCodeViewModel a) {
             try {
-                return a.getUiVal().concept();
+                return a.getValue().concept();
             } catch (NullPointerException e) {
                 return null;
             }
-        } else if (answer instanceof CustomFieldAnswerSelectOneActionUnit a) {
+        } else if (answer instanceof CustomFieldAnswerSelectOneActionUnitViewModel a) {
             return a.getValue();
-        } else if (answer instanceof CustomFieldAnswerSelectOneSpatialUnit a) {
+        } else if (answer instanceof CustomFieldAnswerSelectOneSpatialUnitViewModel a) {
             return a.getValue();
-        } else if (answer instanceof CustomFieldAnswerSelectMultipleSpatialUnitTree a) {
+        } else if (answer instanceof CustomFieldAnswerSelectMultipleSpatialUnitTreeViewModel a) {
             return a.getValue();
-        } else if (answer instanceof CustomFieldAnswerSelectOneActionCode a) {
+        } else if (answer instanceof CustomFieldAnswerSelectOneActionCodeViewModel a) {
             return a.getValue();
-        } else if (answer instanceof CustomFieldAnswerInteger a) {
+        } else if (answer instanceof CustomFieldAnswerIntegerViewModel a) {
             return a.getValue();
         }
 
@@ -264,7 +284,7 @@ public class FormService {
 
     // -------------- Internal helpers
 
-    private void initializeAnswer(CustomFieldAnswer answer,
+    private void initializeAnswer(CustomFieldAnswerViewModel answer,
                                   CustomField field,
                                   Object jpaEntity,
                                   List<String> bindableFields) {
@@ -274,7 +294,8 @@ public class FormService {
         answer.setPk(answerId);
         answer.setHasBeenModified(false);
 
-        if(answer instanceof CustomFieldAnswerStratigraphy stratiAnswer && jpaEntity instanceof RecordingUnit ru) {
+        if(answer instanceof CustomFieldAnswerStratigraphyViewModel stratiAnswer
+                && jpaEntity instanceof RecordingUnitDTO ru) {
             // Special case
             handleStratigraphyRelationships(stratiAnswer, ru);
             return;
@@ -292,17 +313,17 @@ public class FormService {
 
 
 
-    private void populateSystemFieldValue(CustomFieldAnswer answer, Object value) {
+    private void populateSystemFieldValue(CustomFieldAnswerViewModel answer, Object value) {
 
-        Map<Class<?>, BiConsumer<CustomFieldAnswer, Object>> handlers = new HashMap<>();
+        Map<Class<?>, BiConsumer<CustomFieldAnswerViewModel, Object>> handlers = new HashMap<>();
         handlers.put(OffsetDateTime.class, this::handleDateTime);
         handlers.put(String.class, this::handleString);
-        handlers.put(Person.class, this::handlePerson);
+        handlers.put(PersonDTO.class, this::handlePerson);
         handlers.put(List.class, this::handlePersonList);
-        handlers.put(Concept.class, this::handleConcept);
-        handlers.put(ActionUnit.class, this::handleActionUnit);
-        handlers.put(SpatialUnit.class, this::handleSpatialUnit);
-        handlers.put(ActionCode.class, this::handleActionCode);
+        handlers.put(ConceptDTO.class, this::handleConcept);
+        handlers.put(ActionUnitSummaryDTO.class, this::handleActionUnit);
+        handlers.put(SpatialUnitSummaryDTO.class, this::handleSpatialUnit);
+        handlers.put(ActionCodeDTO.class, this::handleActionCode);
         handlers.put(Integer.class, this::handleInteger);
         handlers.put(Set.class, this::handleSpatialUnitSet);
 
@@ -314,38 +335,37 @@ public class FormService {
     }
 
     // Méthodes dédiées pour chaque type de 'value'
-    private void handleDateTime(CustomFieldAnswer answer, Object value) {
-        if (answer instanceof CustomFieldAnswerDateTime dateTimeAnswer) {
+    private void handleDateTime(CustomFieldAnswerViewModel answer, Object value) {
+        if (answer instanceof CustomFieldAnswerDateTimeViewModel dateTimeAnswer) {
             dateTimeAnswer.setValue(((OffsetDateTime) value).toLocalDateTime());
         }
     }
 
-    private void handleString(CustomFieldAnswer answer, Object value) {
-        if (answer instanceof CustomFieldAnswerText textAnswer) {
+    private void handleString(CustomFieldAnswerViewModel answer, Object value) {
+        if (answer instanceof CustomFieldAnswerTextViewModel textAnswer) {
             textAnswer.setValue((String) value);
         }
     }
 
-    private void handlePerson(CustomFieldAnswer answer, Object value) {
-        if (answer instanceof CustomFieldAnswerSelectOnePerson singlePersonAnswer) {
-            singlePersonAnswer.setValue((Person) value);
+    private void handlePerson(CustomFieldAnswerViewModel answer, Object value) {
+        if (answer instanceof CustomFieldAnswerSelectOnePersonViewModel singlePersonAnswer) {
+            singlePersonAnswer.setValue((PersonDTO) value);
         }
     }
     @SuppressWarnings("unchecked")
-    private void handlePersonList(CustomFieldAnswer answer, Object value) {
-        if (answer instanceof CustomFieldAnswerSelectMultiplePerson multiplePersonAnswer) {
+    private void handlePersonList(CustomFieldAnswerViewModel answer, Object value) {
+        if (answer instanceof CustomFieldAnswerSelectMultiplePersonViewModel multiplePersonAnswer) {
             List<?> list = (List<?>) value;
             if (list.stream().allMatch(Person.class::isInstance)) {
-                multiplePersonAnswer.setValue((List<Person>) list);
+                multiplePersonAnswer.setValue((List<PersonDTO>) list);
             }
         }
     }
 
-    private void handleConcept(CustomFieldAnswer answer, Object value) {
-        if (answer instanceof CustomFieldAnswerSelectOneFromFieldCode codeAnswer) {
-            Concept c = (Concept) value;
-            codeAnswer.setValue(c);
-            codeAnswer.setUiVal(new ConceptAutocompleteDTO(
+    private void handleConcept(CustomFieldAnswerViewModel answer, Object value) {
+        if (answer instanceof CustomFieldAnswerSelectOneFromFieldCodeViewModel codeAnswer) {
+            ConceptDTO c = (ConceptDTO) value;
+            codeAnswer.setValue(new ConceptAutocompleteDTO(
                     c,
                     labelBean.findLabelOf(c),
                     labelBean.getCurrentUserLang()
@@ -353,39 +373,39 @@ public class FormService {
         }
     }
 
-    private void handleActionUnit(CustomFieldAnswer answer, Object value) {
-        if (answer instanceof CustomFieldAnswerSelectOneActionUnit actionUnitAnswer) {
-            actionUnitAnswer.setValue((ActionUnit) value);
+    private void handleActionUnit(CustomFieldAnswerViewModel answer, Object value) {
+        if (answer instanceof CustomFieldAnswerSelectOneActionUnitViewModel actionUnitAnswer) {
+            actionUnitAnswer.setValue((ActionUnitSummaryDTO) value);
         }
     }
 
-    private void handleSpatialUnit(CustomFieldAnswer answer, Object value) {
-        if (answer instanceof CustomFieldAnswerSelectOneSpatialUnit spatialUnitAnswer) {
-            spatialUnitAnswer.setValue((SpatialUnit) value);
+    private void handleSpatialUnit(CustomFieldAnswerViewModel answer, Object value) {
+        if (answer instanceof CustomFieldAnswerSelectOneSpatialUnitViewModel spatialUnitAnswer) {
+            spatialUnitAnswer.setValue((SpatialUnitSummaryDTO) value);
         }
     }
 
-    private void handleActionCode(CustomFieldAnswer answer, Object value) {
-        if (answer instanceof CustomFieldAnswerSelectOneActionCode actionCodeAnswer) {
-            actionCodeAnswer.setValue((ActionCode) value);
+    private void handleActionCode(CustomFieldAnswerViewModel answer, Object value) {
+        if (answer instanceof CustomFieldAnswerSelectOneActionCodeViewModel actionCodeAnswer) {
+            actionCodeAnswer.setValue((ActionCodeDTO) value);
         }
     }
 
-    private void handleInteger(CustomFieldAnswer answer, Object value) {
-        if (answer instanceof CustomFieldAnswerInteger integerAnswer) {
+    private void handleInteger(CustomFieldAnswerViewModel answer, Object value) {
+        if (answer instanceof CustomFieldAnswerIntegerViewModel integerAnswer) {
             integerAnswer.setValue((Integer) value);
         }
     }
     @SuppressWarnings("unchecked")
-    private void handleSpatialUnitSet(CustomFieldAnswer answer, Object value) {
-        if (answer instanceof CustomFieldAnswerSelectMultipleSpatialUnitTree treeAnswer) {
-            treeAnswer.setValue((Set<SpatialUnit>) value);
+    private void handleSpatialUnitSet(CustomFieldAnswerViewModel answer, Object value) {
+        if (answer instanceof CustomFieldAnswerSelectMultipleSpatialUnitTreeViewModel treeAnswer) {
+            treeAnswer.setValue((Set<SpatialUnitSummaryDTO>) value);
         }
     }
 
-    private void handleStratigraphyRelationships(CustomFieldAnswerStratigraphy answer, RecordingUnit unit) {
+    private void handleStratigraphyRelationships(CustomFieldAnswerStratigraphyViewModel answer, RecordingUnitDTO unit) {
         // Set the source unit for the answer
-        answer.setSourceToAdd(unit);
+        answer.setSourceToAdd(new RecordingUnitSummaryDTO(unit));
 
         // Clear existing lists to avoid duplicates
         answer.getAnteriorRelationships().clear();
@@ -393,7 +413,7 @@ public class FormService {
         answer.getSynchronousRelationships().clear();
 
         // Process relationships where unit is unit1
-        for (StratigraphicRelationship rel : unit.getRelationshipsAsUnit1()) {
+        for (StratigraphicRelationshipDTO rel : unit.getRelationshipsAsUnit1()) {
             if (Boolean.FALSE.equals(rel.getIsAsynchronous())) {
                 // Synchronous
                 answer.getSynchronousRelationships().add(rel);
@@ -404,7 +424,7 @@ public class FormService {
         }
 
         // Process relationships where unit is unit2
-        for (StratigraphicRelationship rel : unit.getRelationshipsAsUnit2()) {
+        for (StratigraphicRelationshipDTO rel : unit.getRelationshipsAsUnit2()) {
             if (Boolean.FALSE.equals(rel.getIsAsynchronous())) {
                 // Synchronous
                 answer.getSynchronousRelationships().add(rel);
@@ -448,32 +468,34 @@ public class FormService {
         }
     }
 
-    private void setStratigraphyFieldValue(CustomFieldAnswerStratigraphy stratiAnswer, RecordingUnit entity) {
+    private void setStratigraphyFieldValue(
+            CustomFieldAnswerStratigraphyViewModel stratiAnswer,
+            RecordingUnitDTO entity) {
         // Clear existing relationships to avoid duplicates
         entity.getRelationshipsAsUnit1().clear();
         entity.getRelationshipsAsUnit2().clear();
 
         // Helper method to add relationships to the correct set
-        for (StratigraphicRelationship rel : stratiAnswer.getAnteriorRelationships()) {
-            if (rel.getUnit1().equals(entity)) {
+        for (StratigraphicRelationshipDTO rel : stratiAnswer.getAnteriorRelationships()) {
+            if (rel.getUnit1().getId().equals(entity.getId())) {
                 entity.getRelationshipsAsUnit1().add(rel);
-            } else if (rel.getUnit2().equals(entity)) {
+            } else if (rel.getUnit2().getId().equals(entity.getId())) {
                 entity.getRelationshipsAsUnit2().add(rel);
             }
         }
 
-        for (StratigraphicRelationship rel : stratiAnswer.getPosteriorRelationships()) {
-            if (rel.getUnit1().equals(entity)) {
+        for (StratigraphicRelationshipDTO rel : stratiAnswer.getPosteriorRelationships()) {
+            if (rel.getUnit1().getId().equals(entity.getId())) {
                 entity.getRelationshipsAsUnit1().add(rel);
-            } else if (rel.getUnit2().equals(entity)) {
+            } else if (rel.getUnit2().getId().equals(entity.getId())) {
                 entity.getRelationshipsAsUnit2().add(rel);
             }
         }
 
-        for (StratigraphicRelationship rel : stratiAnswer.getSynchronousRelationships()) {
-            if (rel.getUnit1().equals(entity)) {
+        for (StratigraphicRelationshipDTO rel : stratiAnswer.getSynchronousRelationships()) {
+            if (rel.getUnit1().getId().equals(entity.getId())) {
                 entity.getRelationshipsAsUnit1().add(rel);
-            } else if (rel.getUnit2().equals(entity)) {
+            } else if (rel.getUnit2().getId().equals(entity.getId())) {
                 entity.getRelationshipsAsUnit2().add(rel);
             }
         }

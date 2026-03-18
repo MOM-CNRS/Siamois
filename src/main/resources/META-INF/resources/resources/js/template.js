@@ -95,17 +95,46 @@ document.addEventListener("visibilitychange", () => {
 
 // Show the spinner
 function showSpinner(panelId) {
-    const panel = document.getElementById(`panel-${panelId}`);
-    const spinner = panel.querySelector('#spinner');
-    spinner.style.display = 'inline-block'; // or 'flex' if using flexbox
+    try {
+        const panel = document.getElementById(`panel-${panelId}`);
+        if (!panel) {
+            console.warn(`Panel with ID "panel-${panelId}" not found.`);
+            return;
+        }
+
+        const spinner = panel.querySelector('#spinner');
+        if (!spinner) {
+            console.warn('Spinner element not found inside the panel.');
+            return;
+        }
+
+        spinner.style.display = 'inline-block'; // or 'flex' if using flexbox
+    } catch (error) {
+        console.error('Error showing spinner:', error);
+    }
 }
 
 // Hide the spinner
 function hideSpinner(panelId) {
-    const panel = document.getElementById(`panel-${panelId}`);
-    const spinner = panel.querySelector('#spinner');
-    spinner.style.display = 'none';
+    try {
+        const panel = document.getElementById(`panel-${panelId}`);
+        if (!panel) {
+            console.warn(`Panel with ID "panel-${panelId}" not found.`);
+            return;
+        }
+
+        const spinner = panel.querySelector('#spinner');
+        if (!spinner) {
+            console.warn('Spinner element not found inside the panel.');
+            return;
+        }
+
+        spinner.style.display = 'none';
+    } catch (error) {
+        console.error('Error hiding spinner:', error);
+    }
 }
+
 
 // Handle AJAX errors
 function handleAutoSaveError(xhr, status, panelId) {
@@ -152,7 +181,7 @@ function scrollToPanel(selector) {
                 panelHeader.trigger('click');
 
                 // Wait for the panel to expand before scrolling
-                setTimeout(function() {
+                setTimeout(function () {
                     scrollAfterExpand(selector);
                 }, 300); // Adjust delay to match the panel's animation duration
             } else {
@@ -166,8 +195,8 @@ function scrollToPanel(selector) {
 function scrollAfterExpand(selector) {
     const panel = $(selector);
     $('#flowContent').animate(
-        { scrollTop: panel.position().top + $('#flowContent').scrollTop() },
-        { duration: 500 }
+        {scrollTop: panel.position().top + $('#flowContent').scrollTop()},
+        {duration: 500}
     );
 }
 
@@ -185,33 +214,150 @@ function hideProgressBar(widgetVar) {
     progressBarValue.css('background-color', 'transparent').hide();
 }
 
-function measurePerformance() {
-    const startTime = performance.now();
+function loadPanel(t, data, s, xhr) {
+    console.log("Original Response:", t, data, s, xhr);
 
-    // Simulate or attach to your button click event
-    document.getElementById('openUnitListPanelButton').addEventListener('click', function() {
-        const requestStart = performance.now();
+    const updates = data.getElementsByTagName("update");
+    for (let update of updates) {
+        if (update.getAttribute("id") !== "flow-panels") {
+            continue;
+        }
 
-        // Listen to AJAX start/end events
-        $(document).on('ajaxStart', function() {
-            console.log('AJAX started at:', performance.now() - requestStart, 'ms');
-        });
+        const cdataNode = update.childNodes[0];
+        if (!cdataNode || cdataNode.nodeType !== 4) { // CDATA_SECTION_NODE
+            update.parentNode.removeChild(update);
+            break;
+        }
 
-        $(document).on('ajaxComplete', function() {
-            const requestEnd = performance.now();
-            console.log('AJAX completed in:', requestEnd - requestStart, 'ms');
+        const html = cdataNode.nodeValue;
+        const divParser = new DOMParser();
+        const htmlDoc = divParser.parseFromString(html, "text/html");
+        const container = htmlDoc.body;
+        const allDivs = container.querySelectorAll("div");
 
-            // Measure rendering time
-            const renderStart = performance.now();
-            setTimeout(() => {
-                const renderEnd = performance.now();
-                console.log('Rendering completed in:', renderEnd - renderStart, 'ms');
-                console.log('Total time (click to render):', renderEnd - startTime, 'ms');
-            }, 0);
-        });
-    });
+        if (allDivs.length === 0) {
+            update.parentNode.removeChild(update);
+            break;
+        }
+
+        const firstDiv = allDivs[0];
+        cdataNode.nodeValue = "";
+
+        const flowPanelsElement = document.getElementById("flow-panels");
+        if (flowPanelsElement) {
+            flowPanelsElement.innerHTML = firstDiv.outerHTML;
+        }
+
+        update.parentNode.removeChild(update);
+        break;
+    }
+
+    console.log("Modified Response:", data);
+    return true;
 }
 
-measurePerformance();
+function onCompleteCallback(panelId) {
+
+    return;
+
+    const flowPanels = document.getElementById("flow-panels");
+    if (flowPanels) {
+
+        // Remove existing div with same id (if any)
+        const existing = document.getElementById(panelId);
+        if (existing) {
+            existing.remove();
+        }
+
+        const newDiv = document.createElement("div");
+        newDiv.id = panelId;
+
+        flowPanels.insertBefore(newDiv, flowPanels.firstChild);
+
+        // Scroll container to top
+        flowPanels.scrollIntoView({behavior: 'smooth', block: 'start'});
+
+        PrimeFaces.ajax.Request.handle({
+            source: panelId,
+            process: "flowContent",
+            update: panelId,
+            onsuccess: function (data) {
+                console.log("AJAX update for " + panelId + " completed");
+            },
+            onerror: function (xhr, status, error) {
+                console.error("AJAX error for " + panelId + ": ", status, error);
+            }
+        });
+    }
+}
+
+function showSideview(panelId, base64RootUri, base64OverviewUri) {
+    const container = document.getElementById("panel-" + panelId);
+    if (container) {
+        const sideview = container.querySelector("#panel-splitter-" + panelId);
+        if (sideview) {
+
+            // Find and show the #overview_3 element inside the splitter
+            const children = sideview.children;
+            if (children.length >= 3) {
+                children[2].style.display = "block"; // Third child (index 2)
+            }
+
+            // Find and show the element with class .ui-splitter-gutter inside the splitter
+            const splitterGutter = sideview.querySelector(".ui-splitter-gutter");
+            if (splitterGutter) {
+                splitterGutter.style.display = "block";
+            }
+        }
+    }
+    // Construct the new URL
+// Construct the new URL with the application context
+    const newUrl = `${APP_CTX}/focus/${base64RootUri}?s=${base64OverviewUri}`;
+
+// Push the new state
+    globalThis.history.pushState(
+        {
+            root: base64RootUri,
+            overview: base64OverviewUri,
+            isCustomState: true
+        },
+        '',
+        newUrl
+    );
+}
+
+function hideSideview(panelId) {
+    const container = document.getElementById("panel-" + panelId);
+    if (container) {
+        const sideview = container.querySelector("#panel-splitter-" + panelId);
+        if (sideview) {
+            // Hide the #overview_3 element inside the splitter
+
+            const children = sideview.children;
+            if (children.length >= 3) {
+                children[2].style.display = "none"; // Third child (index 2)
+            }
+
+            // Hide the element with class .ui-splitter-gutter inside the splitter
+            const splitterGutter = sideview.querySelector(".ui-splitter-gutter");
+            if (splitterGutter) {
+                splitterGutter.style.display = "none";
+            }
+        }
+    }
+}
+
+$(globalThis).on("popstate", function(e) {
+
+        location.reload()
+
+});
+
+
+
+
+
+
+
 
 

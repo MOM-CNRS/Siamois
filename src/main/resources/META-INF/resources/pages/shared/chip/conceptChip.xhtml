@@ -7,7 +7,7 @@
 
     <cc:interface>
         <cc:attribute name="concept"
-                      type="fr.siamois.domain.models.vocabulary.Concept"
+                      type="fr.siamois.dto.entity.ConceptDTO"
                       shortDescription="The concept to display"
                       required="true"/>
         <cc:attribute name="styleClass"
@@ -21,6 +21,6 @@
                 rendered="#{not empty cc.attrs.concept}"
                 id="chip"
                 styleClass="#{cc.attrs.styleClass}" />
-        <p:tooltip for="chip" value="#{labelBean.findLabelOf(cc.attrs.concept)}" position="bottom"/>
+        <p:tooltip id="conceptTooltip" for="chip" value="#{labelBean.findLabelOf(cc.attrs.concept)}" position="bottom"/>
     </cc:implementation>
 </ui:composition>

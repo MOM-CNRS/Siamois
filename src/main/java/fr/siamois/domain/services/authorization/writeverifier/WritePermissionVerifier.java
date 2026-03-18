@@ -2,6 +2,7 @@ package fr.siamois.domain.services.authorization.writeverifier;
 
 import fr.siamois.domain.models.TraceableEntity;
 import fr.siamois.domain.models.UserInfo;
+import fr.siamois.dto.entity.AbstractEntityDTO;
 
 /**
  * Interface for verifying write permissions on resources.
@@ -24,5 +25,5 @@ public interface WritePermissionVerifier {
      * @param resource the resource to check permissions against
      * @return true if the user has write permission, false otherwise
      */
-    boolean hasSpecificWritePermission(UserInfo userInfo, TraceableEntity resource);
+    boolean hasSpecificWritePermission(UserInfo userInfo, AbstractEntityDTO resource);
 }

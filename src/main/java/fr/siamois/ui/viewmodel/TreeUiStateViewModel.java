@@ -1,6 +1,7 @@
 package fr.siamois.ui.viewmodel;
 
-import fr.siamois.domain.models.spatialunit.SpatialUnit;
+import fr.siamois.dto.entity.SpatialUnitDTO;
+import fr.siamois.dto.entity.SpatialUnitSummaryDTO;
 import lombok.Data;
 import org.primefaces.model.CheckboxTreeNode;
 import org.primefaces.model.TreeNode;
@@ -13,8 +14,8 @@ import java.util.Set;
 
 @Data
 public class TreeUiStateViewModel implements Serializable {
-    private transient TreeNode<SpatialUnit> root;
-    private Set<SpatialUnit> selection = new HashSet<>();
-    private Map<Long, CheckboxTreeNode<SpatialUnit>> index = new HashMap<>();
+    private transient TreeNode<SpatialUnitSummaryDTO> root;
+    private Set<SpatialUnitSummaryDTO> selection = new HashSet<>();
+    private Map<Long, CheckboxTreeNode<SpatialUnitSummaryDTO>> index = new HashMap<>();
     // getters/setters
 }

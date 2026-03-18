@@ -19,11 +19,9 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 import org.hibernate.envers.Audited;
-import org.hibernate.envers.NotAudited;
 import org.locationtech.jts.geom.MultiPolygon;
 
 import java.util.HashSet;
-import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
@@ -68,7 +66,6 @@ public class SpatialUnit extends TraceableEntity implements ArkEntity {
             joinColumns = { @JoinColumn(name = "fk_parent_id") },
             inverseJoinColumns = { @JoinColumn(name = "fk_child_id") }
     )
-    @NotAudited
     private Set<SpatialUnit> children = new HashSet<>();
 
     @ManyToMany(mappedBy = "children", fetch = FetchType.LAZY)
@@ -124,11 +121,6 @@ public class SpatialUnit extends TraceableEntity implements ArkEntity {
         return Objects.hash(id);  // Hash based on id
     }
 
-    @Transient
-    @JsonIgnore
-    public List<String> getBindableFieldNames() {
-        return List.of("category", "name");
-    }
 
     // ----------- Concepts for system fields
 

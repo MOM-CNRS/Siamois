@@ -10,6 +10,10 @@
 
     <ui:define name="head">
 
+        <title>
+            Siamois - Flow
+        </title>
+
         <script>
 
 
@@ -85,109 +89,6 @@
         <div style="display: flex; flex-direction: row; flex-shrink: 0">
             <div id="search-bar" class="hide-small-screen" style="flex:8">
                 <form:csrfform formId="searchBarForm" id="searchBarCsrfForm">
-                    <article>
-                        <h:panelGroup styleClass="ui-inputgroup">
-                            <h:panelGroup id="iconInstit" styleClass="ui-inputgroup-addon">
-                                <i class="bi bi-buildings"/>
-                            </h:panelGroup>
-                            <p:selectOneMenu
-                                    id="selectOneMenuInstitution"
-                                    value="#{flowBean.selectedInstitution}"
-                                    filter="true"
-                                    converter="#{institutionConverter}"
-                                    filterMatchMode="startsWith"
-                                    filterNormalize="true"
-                                    var="inst"
-                            >
-                                <f:selectItems value="#{flowBean.institutions}"
-                                               var="item"
-                                               itemValue="#{item}"
-                                               itemLabel="#{item.name}"
-                                />
-
-                                <p:column>
-                                    <h:outputText value="#{inst.name}"/>
-                                </p:column>
-
-                                <p:ajax event="change"
-                                        process="@this"
-                                        listener="#{flowBean.onInstitutionChange}"
-                                />
-
-                            </p:selectOneMenu>
-
-                        </h:panelGroup>
-                        <h:panelGroup styleClass="ui-inputgroup">
-                            <h:panelGroup id="iconSU" styleClass="ui-inputgroup-addon">
-                                <i class="bi bi-geo-alt"/>
-                            </h:panelGroup>
-                            <p:selectOneMenu
-                                    id="selectOneMenuIconSU"
-                                    value="#{flowBean.FSelectedSpatialUnit}"
-                                    filter="true"
-                                    filterMatchMode="startsWith"
-                                    filterNormalize="true"
-                                    var="su"
-                            >
-                                <f:selectItems value="#{flowBean.FSpatialUnits}"
-                                               var="item"
-                                               itemValue="#{item}"
-                                               itemLabel="#{item.name}"
-                                               itemDisabled="true"
-                                />
-
-                                <p:column>
-                                    <f:facet name="header">
-                                        <h:outputText value="ID"/>
-                                    </f:facet>
-                                    <h:outputText value="#{su.id}"/>
-                                </p:column>
-
-                                <p:column>
-                                    <f:facet name="header">
-                                        <h:outputText value="Name"/>
-                                    </f:facet>
-                                    <h:outputText value="#{su.name}"/>
-                                </p:column>
-
-                            </p:selectOneMenu>
-                        </h:panelGroup>
-                        <h:panelGroup styleClass="ui-inputgroup">
-                            <h:panelGroup id="iconAU" styleClass="ui-inputgroup-addon">
-                                <i class="bi bi-arrow-down-right-square"/>
-                            </h:panelGroup>
-                            <p:selectOneMenu
-                                    id="selectOneMenuIconAU"
-                                    value="#{flowBean.FSelectedActionUnit}"
-                                    filter="true"
-                                    filterMatchMode="startsWitch"
-                                    filterNormalize="true"
-                                    var="au"
-                            >
-                                <f:selectItems value="#{flowBean.FActionUnits}"
-                                               var="item"
-                                               itemValue="#{item}"
-                                               itemLabel="#{item.name}"
-                                />
-
-                                <p:column>
-                                    <f:facet name="header">
-                                        <h:outputText value="ID"/>
-                                    </f:facet>
-                                    <h:outputText value="#{au.id}"/>
-                                </p:column>
-
-                                <p:column>
-                                    <f:facet name="header">
-                                        <h:outputText value="Name"/>
-                                    </f:facet>
-                                    <h:outputText value="#{au.name}"/>
-                                </p:column>
-
-                            </p:selectOneMenu>
-                        </h:panelGroup>
-                        <p:button value="+" disabled="true"/>
-                    </article>
                     <article>
                     <span class="ui-input-icon-right">
                         <p:inputText styleClass="searchInput" placeholder="" value="🚧" disabled="true"/>
@@ -265,112 +166,142 @@
             </div>
         </div>
 
-        <p:outputPanel style="display: flex; flex-direction: row; overflow-y: hidden;" id="flow">
+        <p:outputPanel style="display: flex; flex-direction: row; overflow-y: hidden;" id="flow" styleClass="#{flowBean.fullscreenPanelIndex !=-1 ? 'focus' : ''}">
 
-            <h:form>
-            <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
+            <p:outputPanel id="flowSummary" rendered="#{flowBean.fullscreenPanelIndex ==-1}">
+                <h:form id="flowSummaryForm" >
+                    <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
 
-                <p:tabMenu id="panelTabMenu" class="panel-menu" orientation="left" activeIndex="-1">
-                    <c:forEach items="#{flowBean.panels}" var="panel" varStatus="tabStatus">
-                        <p:menuitem
-                                containerStyleClass="#{panel.panelTypeClass} menu-item"
-                                icon="#{panel.icon}"
-                                onclick="handleMenuItemClick('#panel-${panel.panelIndex}')"/>
-                    </c:forEach>
-                </p:tabMenu>
+                    <p:tabMenu id="panelTabMenu" class="panel-menu" orientation="left" activeIndex="-1">
+                        <c:forEach items="#{flowBean.panels}" var="panel" varStatus="tabStatus">
+                            <p:menuitem
+                                    containerStyleClass="#{panel.panelTypeClass} menu-item"
+                                    icon="#{panel.icon}"
+                                    onclick="handleMenuItemClick('#panel-${panel.panelIndex}')"/>
+                        </c:forEach>
+                    </p:tabMenu>
 
-                <p:tabMenu id="panelTabMenuText" class="panel-menu-text" orientation="left" activeIndex="-1">
-                    <c:forEach items="#{flowBean.panels}" var="panel" varStatus="tabStatus">
-                        <p:menuitem
-                                containerStyleClass="#{panel.panelTypeClass} menu-item"
-                                value="#{panel.resolveTitleOrTitleCode()}"
-                                onclick="handleMenuItemClick('#panel-${panel.panelIndex}')"/>
-                    </c:forEach>
-                </p:tabMenu>
+                    <p:tabMenu id="panelTabMenuText" class="panel-menu-text" orientation="left" activeIndex="-1">
+                        <c:forEach items="#{flowBean.panels}" var="panel" varStatus="tabStatus">
+                            <p:menuitem
+                                    containerStyleClass="#{panel.panelTypeClass} menu-item"
+                                    value="#{panel.resolveTitleOrTitleCode()}"
+                                    onclick="handleMenuItemClick('#panel-${panel.panelIndex}')"/>
+                        </c:forEach>
+                    </p:tabMenu>
 
-            </h:form>
-
-
-
-
-
-            <p:outputPanel id="flowContent" styleClass="flow">
+                </h:form>
+            </p:outputPanel>
 
 
+            <p:outputPanel id="flowContent" styleClass="#{flowBean.getFlowContentStyleClass()}">
                 <h:panelGroup
-                        style="#{flowBean.fullscreenPanelIndex == -1 ? 'display:flex;flex-direction: column;gap:3em;padding:1em;' : 'display:flex;flex-direction: column;gap:0em;padding:0em;border-radius:0px; border:0px;'}"
+                        style="#{flowBean.getFlowContentStyle()}"
+                        styleClass="#{flowBean.fullscreenPanelIndex !=-1 ? 'focus' : ''}"
                         id="flow-panels">
                     <c:forEach items="#{flowBean.panels}" var="panel" varStatus="status">
-                        <p:panel
-                                styleClass="#{panel.panelClass} #{flowBean.fullscreenPanelIndex == -1 ? '' : 'panel-docked'}"
-                                rendered="#{flowBean.fullscreenPanelIndex ==-1 || flowBean.fullscreenPanelIndex == status.index}"
-                                id="panel-${panel.panelIndex}"
-                                toggleable="#{flowBean.fullscreenPanelIndex ==-1}"
-                                closable="#{flowBean.fullscreenPanelIndex ==-1}"
-                                toggleableHeader="#{flowBean.fullscreenPanelIndex ==-1}"
-                                collapsed="#{flowBean.fullscreenPanelIndex != -1 or panel.collapsed}">
+                        <p:outputPanel id="panel-${panel.prefixPanelIndex}-container" styleClass="#{flowBean.fullscreenPanelIndex !=-1 ? 'focus' : ''}">
+                            <p:panel
+                                    styleClass="#{panel.panelClass} #{flowBean.fullscreenPanelIndex == -1 ? '' : 'panel-docked focus'}"
+                                    rendered="#{flowBean.fullscreenPanelIndex ==-1 || flowBean.fullscreenPanelIndex == status.index}"
+                                    id="panel-${panel.prefixPanelIndex}"
+                                    toggleable="#{flowBean.fullscreenPanelIndex ==-1}"
+                                    closable="#{flowBean.fullscreenPanelIndex ==-1}"
+                                    toggleableHeader="#{flowBean.fullscreenPanelIndex ==-1}"
+                                    collapsed="#{flowBean.fullscreenPanelIndex != -1 ? false : panel.collapsed}">
 
-                            <p:ajax event="close" listener="#{flowBean.closePanel(panel.panelIndex)}" update="flow"
-                                    onstart="PF('newUnitDiag').hide();PF('buiContent').show();"
-                                    oncomplete="PF('buiContent').hide()"
-                            />
-                            <p:ajax event="toggle" listener="#{flowBean.handleToggleOfPanel(panel.panelIndex)}"/>
+                                <p:ajax event="close" listener="#{flowBean.closePanel(panel.prefixPanelIndex)}"
+                                        update="flow"
+                                        onstart="PF('newUnitDiag').hide();PF('buiContent').show();"
+                                        oncomplete="PF('buiContent').hide()"
+                                />
+                                <p:ajax event="toggle"
+                                        listener="#{flowBean.handleToggleOfPanel(panel.prefixPanelIndex)}"/>
 
-                            <f:facet name="header">
-                                <p:outputPanel id="panel-${panel.panelIndex}-header" style="display: flex;gap: 0.5em; align-items: center;
+                                <f:facet name="header">
+                                    <p:outputPanel id="panel-${panel.prefixPanelIndex}-header" style="display: flex;gap: 0.5em; align-items: center;
                             flex-wrap: wrap; float:left;color: var(--main-color);">
-                                    <ui:include rendered="#{panel.displayHeader() != null}"
-                                                src="#{panel.displayHeader()}">
+                                        <ui:include rendered="#{panel.displayHeader() != null}"
+                                                    src="#{panel.displayHeader()}">
+                                            <ui:param name="panelModel" value="#{panel}"/>
+                                        </ui:include>
+                                    </p:outputPanel>
+                                </f:facet>
+                                <p:outputPanel id="panelContent-${panel.prefixPanelIndex}" deferred="false" loaded="#{panel.loaded}"
+                                               deferredMode="visible" styleClass="#{flowBean.fullscreenPanelIndex !=-1 ? 'focus' : ''}">
+                                    <f:facet name="loading">
+                                        <div class="field" style="padding: 2em 3em;">
+                                            <p:skeleton class="mb-2"/>
+                                            <p:skeleton width="10rem" class="mb-2"/>
+                                            <p:skeleton width="5rem" class="mb-2"/>
+                                            <p:skeleton height="2rem" class="mb-2"/>
+                                            <p:skeleton width="10rem" height="4rem"/>
+                                            <p:skeleton width="10rem" class="mb-2"/>
+                                            <p:skeleton width="5rem" class="mb-2"/>
+                                            <p:skeleton height="2rem" class="mb-2"/>
+                                            <p:skeleton width="10rem" height="4rem"/>
+                                            <p:skeleton width="10rem" class="mb-2"/>
+                                            <p:skeleton width="5rem" class="mb-2"/>
+                                            <p:skeleton height="2rem" class="mb-2"/>
+                                            <p:skeleton width="10rem" height="4rem"/>
+                                            <p:skeleton width="10rem" class="mb-2"/>
+                                            <p:skeleton width="5rem" class="mb-2"/>
+                                            <p:skeleton height="2rem" class="mb-2"/>
+                                            <p:skeleton width="10rem" height="4rem"/>
+                                        </div>
+                                    </f:facet>
+                                    <p:ajax event="load" action="#{panel.loadData()}"
+                                            update="panel-${panel.prefixPanelIndex}-container"/>
+                                    <ui:include src="/panel/panelContent.xhtml" id="panel-body">
+                                        <ui:param name="mode" value="FLOW"/>
                                         <ui:param name="panelModel" value="#{panel}"/>
+                                        <ui:param name="panelIndex" value="#{panel.panelIndex}"/>
                                     </ui:include>
                                 </p:outputPanel>
-                            </f:facet>
-                            <ui:include src="#{panel.display()}" id="panel-body">
-                                <ui:param name="panelModel" value="#{panel}"/>
-                                <ui:param name="panelIndex" value="#{panel.panelIndex}"/>
-                            </ui:include>
-                            <f:facet name="actions">
-                                <form:csrfform formId="actionsFormId">
-                                    <p:commandLink id="refreshPanelButton"
-                                                   styleClass="ui-panel-titlebar-icon ui-corner-all ui-state-default"
-                                                   action="#{panel.refresh()}"
-                                                   onstart="PF('buiPanel_${panel.panelIndex}').show();"
-                                                   oncomplete="PF('buiPanel_${panel.panelIndex}').hide();"
-                                                   onclick="event.stopPropagation();"
-                                                   update="panel-${panel.panelIndex}">
-                                        <h:outputText styleClass="bi bi-arrow-clockwise"/>
-                                    </p:commandLink>
-                                    <p:commandLink id="bookmarkToggleButton"
-                                                   styleClass="ui-panel-titlebar-icon ui-corner-all ui-state-default"
-                                                   action="#{navBean.togglePanelBookmark(panel)}"
-                                                   onclick="event.stopPropagation();"
-                                                   update="bookmarkToggleButton navBarCsrfForm:siamoisNavForm">
-                                        <h:outputText styleClass="#{navBean.isPanelBookmarkedByUser(panel) ?
+                                <f:facet name="actions">
+                                    <h:form id="actionForm-${panel.prefixPanelIndex}">
+                                        <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
+                                        <div style="padding: 3px;
+    border: 1px solid var(--siamois-green-light);
+    border-radius: 15px;">
+                                            <p:commandLink id="refreshPanelButton"
+                                                           styleClass="ui-panel-titlebar-icon ui-corner-all ui-state-default"
+                                                           action="#{panel.refresh()}"
+                                                           onstart="PF('buiPanel_${panel.prefixPanelIndex}').show();"
+                                                           oncomplete="PF('buiPanel_${panel.prefixPanelIndex}').hide();"
+                                                           onclick="event.stopPropagation();"
+                                                           update="panel-${panel.prefixPanelIndex}">
+                                                <h:outputText styleClass="bi bi-arrow-clockwise"/>
+                                            </p:commandLink>
+                                            <p:commandLink id="bookmarkToggleButton"
+                                                           styleClass="ui-panel-titlebar-icon ui-corner-all ui-state-default"
+                                                           action="#{navBean.togglePanelBookmark(panel)}"
+                                                           onclick="event.stopPropagation();"
+                                                           update="bookmarkToggleButton navBarCsrfForm:siamoisNavForm">
+                                                <h:outputText styleClass="#{navBean.isPanelBookmarkedByUser(panel) ?
                             'ui-icon bi bi-bookmark-fill' : 'ui-icon bi bi-bookmark'}"/>
-                                    </p:commandLink>
-                                    <p:commandLink rendered="#{flowBean.fullscreenPanelIndex ==-1}"
-                                                   action="#{flowBean.fullScreen(panel)}"
-                                                   update="flow"
-                                                   styleClass="ui-panel-titlebar-icon ui-corner-all ui-state-default">
-                                        <h:outputText styleClass="ui-icon bi bi-arrows-angle-expand"/>
-                                    </p:commandLink>
-                                    <p:commandLink rendered="#{flowBean.fullscreenPanelIndex == status.index}"
-                                                   action="#{flowBean.closeFullScreen()}"
-                                                   update="flow"
-                                                   styleClass="ui-panel-titlebar-icon ui-corner-all ui-state-default">
-                                        <h:outputText styleClass="ui-icon bi bi-arrows-angle-contract"/>
-                                    </p:commandLink>
-                                </form:csrfform>
-                            </f:facet>
-                        </p:panel>
-                        <p:blockUI block="panel-${panel.panelIndex}" widgetVar="buiPanel_${panel.panelIndex}">
-                            <i class="pi pi-spin pi-spinner" style="font-size: 3rem"/>
-                        </p:blockUI>
+                                            </p:commandLink>
+                                            <p:commandLink
+                                                           action="#{flowBean.fullScreen(panel)}"
+                                                           ajax="false"
+                                                           id="focusButton"
+                                                           styleClass="ui-panel-titlebar-icon ui-corner-all ui-state-default">
+                                                <h:outputText styleClass="ui-icon bi bi-arrows-angle-expand"/>
+                                            </p:commandLink>
+                                        </div>
+
+                                    </h:form>
+                                </f:facet>
+                            </p:panel>
+                            <p:blockUI block="panel-${panel.prefixPanelIndex}"
+                                       widgetVar="buiPanel_${panel.prefixPanelIndex}">
+                                <i class="pi pi-spin pi-spinner" style="font-size: 3rem"/>
+                            </p:blockUI>
+                        </p:outputPanel>
+
 
                     </c:forEach>
                 </h:panelGroup>
-
-
             </p:outputPanel>
         </p:outputPanel>
 

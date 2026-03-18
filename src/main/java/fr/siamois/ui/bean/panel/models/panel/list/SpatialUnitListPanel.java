@@ -1,13 +1,11 @@
 package fr.siamois.ui.bean.panel.models.panel.list;
 
-import fr.siamois.domain.models.auth.Person;
-import fr.siamois.domain.models.spatialunit.SpatialUnit;
-import fr.siamois.domain.models.vocabulary.Concept;
-import fr.siamois.domain.models.vocabulary.label.ConceptLabel;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.authorization.writeverifier.SpatialUnitWriteVerifier;
 import fr.siamois.domain.services.form.FormService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitTreeService;
+import fr.siamois.dto.entity.PersonDTO;
+import fr.siamois.dto.entity.SpatialUnitDTO;
 import fr.siamois.ui.bean.NavBean;
 import fr.siamois.ui.bean.dialog.newunit.GenericNewUnitDialogBean;
 import fr.siamois.ui.bean.dialog.newunit.NewUnitContext;
@@ -40,14 +38,14 @@ import static fr.siamois.ui.lazydatamodel.scope.SpatialUnitScope.Type.INSTITUTIO
 @Data
 @Component
 @Scope(BeanDefinition.SCOPE_PROTOTYPE)
-public class SpatialUnitListPanel extends AbstractListPanel<SpatialUnit>  implements Serializable {
+public class SpatialUnitListPanel extends AbstractListPanel<SpatialUnitDTO>  implements Serializable {
 
 
     //deps
     private final transient FormService formService;
     private final transient SpatialUnitTreeService spatialUnitTreeService;
     private final transient FlowBean flowBean;
-    private final transient GenericNewUnitDialogBean<SpatialUnit> genericNewUnitDialogBean;
+    private final transient GenericNewUnitDialogBean<SpatialUnitDTO> genericNewUnitDialogBean;
     private final transient SpatialUnitWriteVerifier spatialUnitWriteVerifier;
     private final transient NavBean navBean;
     private final transient InstitutionService institutionService;
@@ -56,7 +54,7 @@ public class SpatialUnitListPanel extends AbstractListPanel<SpatialUnit>  implem
     // locals
     private String spatialUnitListErrorMessage;
 
-    public String getPanelIndex() {
+    public String getPrefixPanelIndex() {
         return "spatial-unit-list";
     }
 
@@ -94,12 +92,12 @@ public class SpatialUnitListPanel extends AbstractListPanel<SpatialUnit>  implem
 
     @Override
     protected long countUnitsByInstitution() {
-        return spatialUnitService.countByInstitution(sessionSettingsBean.getSelectedInstitution());
+        return spatialUnitService.countByInstitutionId(sessionSettingsBean.getSelectedInstitution().getId());
     }
 
 
     @Override
-    protected BaseLazyDataModel<SpatialUnit> createLazyDataModel() {
+    protected BaseLazyDataModel<SpatialUnitDTO> createLazyDataModel() {
         SpatialUnitLazyDataModel lazy = new SpatialUnitLazyDataModel(spatialUnitService, sessionSettingsBean, langBean);
         SpatialUnitTreeTableLazyModel lazyTree = new SpatialUnitTreeTableLazyModel(spatialUnitService,
                 SpatialUnitScope.builder()
@@ -122,27 +120,18 @@ public class SpatialUnitListPanel extends AbstractListPanel<SpatialUnit>  implem
                 institutionService,
                 formContextServices
         );
+        tableModel.setParentPanel(this);
 
         return lazy; // l'abstraite en a besoin, mais ce panel ne s'en sert plus ensuite
     }
 
     @Override
-    protected void setErrorMessage(String msg) {
+    public void setErrorMessage(String msg) {
         this.spatialUnitListErrorMessage = msg;
     }
 
-    public List<ConceptLabel> categoriesAvailable() {
-        List<Concept> cList = conceptService.findAllBySpatialUnitOfInstitution(sessionSettingsBean.getSelectedInstitution());
 
-        return new ArrayList<>(cList.stream()
-                .map(concept -> labelService.findLabelOf(
-                        concept, langBean.getLanguageCode()
-                ))
-                .toList());
-
-    }
-
-    public List<Person> authorsAvailable() {
+    public List<PersonDTO> authorsAvailable() {
         return personService.findAllAuthorsOfSpatialUnitByInstitution(sessionSettingsBean.getSelectedInstitution());
     }
 

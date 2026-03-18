@@ -14,6 +14,8 @@ import fr.siamois.domain.services.auth.PendingPersonService;
 import fr.siamois.domain.services.person.verifier.EmailVerifier;
 import fr.siamois.domain.services.person.verifier.PasswordVerifier;
 import fr.siamois.domain.services.person.verifier.PersonDataVerifier;
+import fr.siamois.dto.entity.InstitutionDTO;
+import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.infrastructure.database.repositories.person.PendingInstitutionInviteRepository;
 import fr.siamois.infrastructure.database.repositories.person.PendingPersonRepository;
 import fr.siamois.infrastructure.database.repositories.person.PersonRepository;
@@ -25,6 +27,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.core.convert.ConversionService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 import java.util.List;
@@ -58,6 +61,8 @@ class PersonServiceTest {
     private HttpServletRequest httpServletRequest;
     @Mock
     private PendingPersonService pendingPersonService;
+    @Mock
+    private ConversionService conversionService;
 
     @Mock
     private PendingInstitutionInviteRepository pendingInstitutionInviteRepository;
@@ -65,6 +70,7 @@ class PersonServiceTest {
     private PersonService personService;
 
     Person person;
+    PersonDTO personDto;
 
     @BeforeEach
     void setUp() {
@@ -72,20 +78,26 @@ class PersonServiceTest {
         person.setId(1L);
         person.setPassword("password");
         person.setEmail("mail@localhost.com");
+        personDto = new PersonDTO();
+        personDto.setId(1L);
+        personDto.setEmail("mail@localhost.com");
 
         emailVerifier = new EmailVerifier(personRepository);
 
-        List<PersonDataVerifier> verifiers = List.of(passwordVerifier, emailVerifier);
+        List<PersonDataVerifier> verifiers = List.of(emailVerifier);
+        List<PasswordVerifier> passVerifiers = List.of(passwordVerifier);
 
         personService = new PersonService(
                 personRepository,
                 passwordEncoder,
                 verifiers,
+                passVerifiers,
                 personSettingsRepository,
                 institutionService,
                 langService,
                 pendingPersonRepository,
                 pendingPersonService,
+                conversionService,
                 pendingInstitutionInviteRepository
         );
     }
@@ -106,8 +118,10 @@ class PersonServiceTest {
         // Arrange
         when(personRepository.save(person)).thenReturn(person);
 
+        when(conversionService.convert(any(PersonDTO.class), eq(Person.class))).thenReturn(person);
+
         // Act
-        personService.updatePerson(person);
+        personService.updatePerson(personDto);
 
         // Assert
         verify(personRepository, times(1)).save(person);
@@ -133,10 +147,10 @@ class PersonServiceTest {
         when(passwordEncoder.encode("newPassword")).thenReturn("encodedNewPassword");
 
         // Act
-        personService.updatePassword(person, "newPassword");
+        personService.updatePassword(1L, "newPassword");
 
         // Assert
-        assertEquals("encodedNewPassword", person.getPassword());
+        verify(personRepository).updatePasswordById(1L, "encodedNewPassword");
     }
 
     @Test
@@ -146,10 +160,10 @@ class PersonServiceTest {
         PersonSettings settings = new PersonSettings();
         settings.setPerson(person);
 
-        when(personSettingsRepository.findByPerson(person)).thenReturn(Optional.empty());
+        when(personSettingsRepository.findByPersonId(1L)).thenReturn(Optional.empty());
         when(personSettingsRepository.save(any(PersonSettings.class))).thenReturn(settings);
 
-        PersonSettings result = personService.createOrGetSettingsOf(person);
+        PersonSettings result = personService.createOrGetSettingsOf(personDto);
 
         assertNotNull(result);
         assertEquals(person, result.getPerson());
@@ -173,7 +187,9 @@ class PersonServiceTest {
     void createPerson_Success() throws Exception {
         when(personRepository.save(any(Person.class))).thenReturn(person);
 
-        Person result = personService.createPerson(person);
+        when(conversionService.convert(any(PersonDTO.class), eq(Person.class))).thenReturn(person);
+
+        Person result = personService.createPerson(personDto, "password");
 
         assertNotNull(result);
         verify(personRepository, times(1)).save(person);
@@ -181,8 +197,8 @@ class PersonServiceTest {
 
     @Test
     void createPerson_ThrowsInvalidEmailException() {
-        person.setEmail("invalid-email");
-        assertThrows(InvalidEmailException.class, () -> personService.createPerson(person));
+        personDto.setEmail("invalid-email");
+        assertThrows(InvalidEmailException.class, () -> personService.createPerson(personDto, "password"));
     }
 
     @Test
@@ -239,15 +255,18 @@ class PersonServiceTest {
     void findPasswordVerifier_ShouldReturnEmpty_WhenNotPresent() {
         // Arrange
         List<PersonDataVerifier> verifiers = List.of(); // Liste vide
+        List<PasswordVerifier> passVerifiers = List.of();
         personService = new PersonService(
                 personRepository,
                 passwordEncoder,
                 verifiers,
+                passVerifiers,
                 personSettingsRepository,
                 institutionService,
                 langService,
                 pendingPersonRepository,
                 pendingPersonService,
+                conversionService,
                 pendingInstitutionInviteRepository
         );
 
@@ -261,15 +280,17 @@ class PersonServiceTest {
     @Test
     void findAllAuthorsOfSpatialUnitByInstitution_Success() {
 
-        Person p = new Person();
-        Institution i = new Institution();
+        PersonDTO p = new PersonDTO();
+        Person pjpa = new Person();
+        InstitutionDTO i = new InstitutionDTO();
         i.setId(1L);
 
         when(personRepository.findAllAuthorsOfSpatialUnitByInstitution(1L)).thenReturn(
-                List.of(p));
+                List.of(pjpa));
+        when(conversionService.convert(any(Person.class), eq(PersonDTO.class))).thenReturn(p);
 
         // Act
-        List<Person> res = personService.findAllAuthorsOfSpatialUnitByInstitution(i);
+        List<PersonDTO> res = personService.findAllAuthorsOfSpatialUnitByInstitution(i);
 
         // Assert
         assertEquals(1, res.size());
@@ -281,19 +302,20 @@ class PersonServiceTest {
     @Test
     void findAllAuthorsOfActionUnitByInstitution_Success() {
 
-        Person p = new Person();
-        Institution i = new Institution();
+
+        Person pjpa = new Person();
+        InstitutionDTO i = new InstitutionDTO();
         i.setId(1L);
 
         when(personRepository.findAllAuthorsOfActionUnitByInstitution(1L)).thenReturn(
-                List.of(p));
+                List.of(pjpa));
 
         // Act
         List<Person> res = personService.findAllAuthorsOfActionUnitByInstitution(i);
 
         // Assert
         assertEquals(1, res.size());
-        assertEquals(p, res.get(0));
+        assertEquals(pjpa, res.get(0));
     }
 
     @Test
@@ -340,6 +362,9 @@ class PersonServiceTest {
         // Arrange
         Person newPerson = new Person();
         newPerson.setId(42L);
+        PersonDTO newPersonDto = new PersonDTO();
+        newPersonDto.setId(42L);
+        newPersonDto.setEmail("mail@localhost.com");
         PendingPerson pendingPerson = new PendingPerson();
         pendingPerson.setEmail("mail@localhost.com");
 
@@ -366,12 +391,12 @@ class PersonServiceTest {
 
         // On mock le save du person
         when(personRepository.save(any(Person.class))).thenReturn(newPerson);
-
+        when(conversionService.convert(any(PersonDTO.class),eq(Person.class))).thenReturn(person);
         // Act
         person.setPassword("password");
         person.setEmail("mail@localhost.com");
         person.setId(-1L);
-        Person created = personService.createPerson(person);
+        Person created = personService.createPerson(newPersonDto,"password");
 
         // Assert
         verify(institutionService).addToManagers(institution, newPerson);
@@ -388,6 +413,8 @@ class PersonServiceTest {
         // Arrange
         Person newPerson = new Person();
         newPerson.setId(42L);
+        PersonDTO newPersonDto = new PersonDTO();
+        newPersonDto.setId(42L);
         PendingPerson pendingPerson = new PendingPerson();
         pendingPerson.setEmail("mail@localhost.com");
 
@@ -406,11 +433,13 @@ class PersonServiceTest {
         when(pendingPersonService.createOrGetPendingPerson(any())).thenReturn(pendingPerson);
         when(personRepository.save(any(Person.class))).thenReturn(newPerson);
 
+        when(conversionService.convert(any(PersonDTO.class),eq(Person.class))).thenReturn(newPerson);
+
         // Act
         person.setPassword("password");
         person.setEmail("mail@localhost.com");
         person.setId(-1L);
-        Person created = personService.createPerson(person);
+        Person created = personService.createPerson(personDto, "password");
 
         // Assert
         verify(institutionService, never()).addToManagers(any(), any());
@@ -429,16 +458,19 @@ class PersonServiceTest {
         newPerson.setId(42L);
         PendingPerson pendingPerson = new PendingPerson();
         pendingPerson.setEmail("mail@localhost.com");
+        PersonDTO newPersonDto = new PersonDTO();
+        newPersonDto.setId(42L);
+        newPersonDto.setEmail("mail@localhost.com");
 
         when(pendingInstitutionInviteRepository.findAllByPendingPerson(any())).thenReturn(Set.of());
         when(pendingPersonService.createOrGetPendingPerson(any())).thenReturn(pendingPerson);
         when(personRepository.save(any(Person.class))).thenReturn(newPerson);
-
+        when(conversionService.convert(any(PersonDTO.class),eq(Person.class))).thenReturn(person);
         // Act
         person.setPassword("password");
         person.setEmail("mail@localhost.com");
         person.setId(-1L);
-        Person created = personService.createPerson(person);
+        Person created = personService.createPerson(newPersonDto, "password");
 
         // Assert
         verify(institutionService, never()).addToManagers(any(), any());

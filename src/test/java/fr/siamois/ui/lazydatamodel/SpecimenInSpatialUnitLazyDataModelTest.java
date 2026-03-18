@@ -1,10 +1,10 @@
 package fr.siamois.ui.lazydatamodel;
 
 
-import fr.siamois.domain.models.institution.Institution;
-import fr.siamois.domain.models.spatialunit.SpatialUnit;
-import fr.siamois.domain.models.specimen.Specimen;
 import fr.siamois.domain.services.specimen.SpecimenService;
+import fr.siamois.dto.entity.InstitutionDTO;
+import fr.siamois.dto.entity.SpatialUnitDTO;
+import fr.siamois.dto.entity.SpecimenDTO;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
 import org.junit.jupiter.api.BeforeEach;
@@ -42,20 +42,20 @@ class SpecimenInSpatialUnitLazyDataModelTest {
     @InjectMocks
     private SpecimenInSpatialUnitLazyDataModel lazyModel;
 
-    Page<Specimen> p ;
+    Page<SpecimenDTO> p ;
     Pageable pageable;
-    Specimen unit1;
-    Specimen unit2;
-    SpatialUnit u;
-    Institution institution;
+    SpecimenDTO unit1;
+    SpecimenDTO unit2;
+    SpatialUnitDTO u;
+    InstitutionDTO institution;
 
     @BeforeEach
     void setUp() {
-        unit1 = new Specimen();
-        unit2 = new Specimen();
-        u = new SpatialUnit();
+        unit1 = new SpecimenDTO();
+        unit2 = new SpecimenDTO();
+        u = new SpatialUnitDTO();
         u.setId(1L);
-        institution = new Institution();
+        institution = new InstitutionDTO();
         institution.setId(1L);
         unit1.setId(1L);
         unit1.setFullIdentifier("Unit 1");
@@ -81,7 +81,7 @@ class SpecimenInSpatialUnitLazyDataModelTest {
         when(langBean.getLanguageCode()).thenReturn("en");
 
         // Act
-        Page<Specimen> actualResult = lazyModel.loadSpecimens("null", new Long[2], new Long[2], "null", pageable);
+        Page<SpecimenDTO> actualResult = lazyModel.loadSpecimens("null", new Long[2], new Long[2], "null", pageable);
 
         // Assert
         // Assert

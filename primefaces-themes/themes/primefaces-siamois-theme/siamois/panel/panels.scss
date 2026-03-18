@@ -6,6 +6,9 @@
 
   .#{$panel-selector} {
 
+
+
+
     // CSS custom properties for this panel
 
     // TODO : move this in a main css class $panel-selector and refactor classes
@@ -30,7 +33,7 @@
 
     // Tree table selection
     .ui-treetable .ui-treetable-data > tr.ui-state-highlight {
-      background: var(--light-color-200);
+      background: var(--siamois-green-light-100);
     }
 
     // Checkboxes
@@ -40,7 +43,7 @@
         background: var(--main-color);
 
         &.ui-state-hover {
-          background: hsl(var(--main-color),25,48);
+          background: var(--main-color);
         }
 
       }
@@ -56,7 +59,8 @@
   // Panel title bar
   &.ui-panel {
     .ui-panel-titlebar {
-      background: var(--light-color-100);
+      background: var(--siamois-green-light-100);
+      padding: 0.5rem;
     }
 
     // Single unit panels
@@ -65,13 +69,13 @@
 
       // content
       .ui-tabs-nav {
-        background: var(--light-color-50);
+        background: var(--siamois-green-light-50);
       }
 
       // breadcrumb
       .ui-breadcrumb {
         border: none;
-        background: var(--light-color-50);
+        background: var(--siamois-green-light-50);
       }
 
       // tabs
@@ -91,10 +95,10 @@
         &.ui-tabs-top > .ui-tabs-nav,
         .ui-tabs-nav {
           li.ui-tabs-header.ui-state-active {
-            border-color: var(--main-color);
+            border-color: var(--siamois-green);
 
             a {
-              color: var(--main-color);
+              color: var(--siamois-green);
             }
           }
         }
@@ -111,7 +115,7 @@
 
   &.siamois-panel {
     .sia-form-panel .ui-panel-titlebar {
-      border-bottom: 1px solid var(--light-color-200);
+      border-bottom: 1px solid var(--siamois-green-light-200);
     }
   }
 
@@ -119,23 +123,23 @@
 /* Combine selectors for datatable and treetable */
 .ui-datatable thead th,
 .ui-treetable thead th {
-  background: var(--light-color-100);
+  background: var(--siamois-green-light-100);
 
   &.ui-state-active {
-    color: var(--main-color);
-    background: var(--light-color-200);
+    color: var(--siamois-green-active);
+    background: var(--siamois-green-light-200);
 
     &.ui-state-hover {
-      color: var(--main-color);
-      background: var(--light-color-50);
+      color: var(--siamois-green-active);
+      background: var(--siamois-green-light-50);
     }
 
     .ui-column-title {
-      color: var(--main-color);
+      color: var(--siamois-green-active);
     }
 
     .ui-sortable-column-icon.ui-icon-carat-2-n-s {
-      color: var(--main-color);
+      color: var(--siamois-green-active);
     }
   }
 
@@ -144,18 +148,18 @@
 
     .ui-column-title,
     .ui-sortable-column-icon.ui-icon-carat-2-n-s {
-      color: var(--main-color);
+      color: var(--siamois-green-active);
     }
   }
 
   &.ui-sortable-column.ui-state-focus {
     outline: 0;
     outline-offset: 0;
-    box-shadow: inset 0 0 0 .2rem var(--main-color);
+    box-shadow: inset 0 0 0 .2rem var(--siamois-green-active);
   }
 
   .ui-sortable-column-badge {
-    background: var(--main-color);
+    background: var(--siamois-green-active);
   }
 }
 
@@ -166,7 +170,7 @@
 .ui-treetable-data td[role="gridcell"]:focus,
 .ui-treetable-data td[role="gridcell"] *:focus,
 .ui-treetable-data td[role="grid"] [tabindex="0"]:focus {
-  outline: var(--main-color);
+  outline: var(--siamois-green);
   outline-style: solid;
   outline-width: 2px;
 }
@@ -177,11 +181,11 @@
     .ui-paginator-pages {
       .ui-paginator-page {
         &.ui-state-active {
-          background: var(--main-color);
+          background: var(--siamois-green-active);
         }
 
         &.ui-state-focus {
-          box-shadow: 0 0 0 .2rem var(--light-color-200);
+          box-shadow: 0 0 0 .2rem var(--siamois-green-light-200);
         }
       }
     }
@@ -192,27 +196,28 @@
     .ui-paginator-next,
     .ui-paginator-last {
       &.ui-state-focus {
-        box-shadow: 0 0 0 .2rem var(--light-color-200);
+        box-shadow: 0 0 0 .2rem var(--siamois-green-light-200);
       }
     }
   }
 
   // Chip
   .ui-chip {
-    background-color: var(--main-color);
-    color: white;
+    background-color: transparent;
+    color: var(--main-color);
+    border: 1px solid var(--main-color);
     font-size: 16px;
   }
 
   // Input fields
   .ui-inputfield {
     &.ui-state-hover {
-      border-color: var(--light-color-200);
+      border-color: var(--siamois-green-light-200);
     }
 
     &.ui-state-focus {
       border-color: var(--light-color-200);
-      box-shadow: 0 0 0 .2em var(--light-color-100);
+      box-shadow: 0 0 0 .2em var(--siamois-green-light-200);
     }
   }
 
@@ -222,23 +227,23 @@
 
   // Buttons
   .ui-button {
-    background: var(--main-color);
-    border: 1px solid var(--main-color);
+    background: var(--siamois-green-active);
+    border: 1px solid var(--siamois-green-active);
 
     &:hover {
-      background: var(--dark-color);
-      border: 1px solid var(--dark-color);
+      background: var(--siamois-green-light-350);
+      border: 1px solid  var(--siamois-green-light-350);
     }
 
     &.sia-icon-btn {
       background: transparent;
       border: none;
-      color: var(--main-color);
+      color: var(--siamois-green-active);
 
       &:hover {
-        background: var(--light-color-50);
+        background: var(--siamois-green-light-50);
         border: none;
-        color: var(--dark-color);
+        color: var(--siamois-green-active);
       }
     }
 
@@ -252,26 +257,27 @@
   .ui-divider {
     &.ui-divider-horizontal {
       &:before {
-        border-top-color: var(--light-color-200);
+        border-top-color: var(--siamois-green-light-200);
       }
     }
   }
 
   // Panel footer
   .panel-footer {
-    background: var(--light-color-100);
+    background: transparent;
     border-radius: 0;
     border: none;
+    border-top: 1px solid var(--siamois-green-light-200);
   }
 
   // command links
   .ui-commandlink,
   .ui-link {
-    color: var(--main-color);
+    color:  var(--siamois-green-active);
   }
 
   .ui-autocomplete .ui-autocomplete-multiple-container .ui-autocomplete-token {
-    background-color: var(--main-color);
+    background-color: var(--siamois-green);
     color: white;
   }
 
@@ -311,12 +317,12 @@
 
   &.ui-autocomplete-panel {
     .ui-button {
-      background: var(--main-color);
-      border-color: var(--main-color);
+      background: var(--green-active);
+      border-color: var(--green-active);
     }
 
     .ui-autocomplete-items .ui-autocomplete-item.ui-state-highlight {
-      background: var(--dark-color);
+      background: var(--siamois-green-light-350);
     }
   }
 
@@ -380,13 +386,15 @@
     --light-color-200: #{$light200-color};
     --dark-color: #{$dark-color};
 
-    background-color: var(--main-color);
-    color: white;
-
+    background-color: transparent;
+    color: var(--main-color);
+    border: 1px solid var(--main-color);
 
 
 
   }
+
+
 
 }
 

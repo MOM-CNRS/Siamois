@@ -1,8 +1,8 @@
 package fr.siamois.ui.lazydatamodel;
 
-import fr.siamois.domain.models.actionunit.ActionUnit;
-import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
+import fr.siamois.dto.entity.ActionUnitDTO;
+import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
 import org.junit.jupiter.api.BeforeEach;
@@ -40,18 +40,18 @@ class ActionUnitLazyDataModelTest {
     @InjectMocks
     private ActionUnitLazyDataModel lazyModel;
 
-    Page<ActionUnit> p ;
+    Page<ActionUnitDTO> p ;
     Pageable pageable;
-    ActionUnit unit1;
-    ActionUnit unit2;
-    Institution institution;
+    ActionUnitDTO unit1;
+    ActionUnitDTO unit2;
+    InstitutionDTO institution;
 
 
     @BeforeEach
     void setUp() {
-        unit1 = new ActionUnit();
-        unit2 = new ActionUnit();
-        institution = new Institution();
+        unit1 = new ActionUnitDTO();
+        unit2 = new ActionUnitDTO();
+        institution = new InstitutionDTO();
         institution.setId(1L);
         unit1.setId(1L);
         unit1.setName("Unit 1");
@@ -79,7 +79,7 @@ class ActionUnitLazyDataModelTest {
         when(langBean.getLanguageCode()).thenReturn("en");
 
         // Act
-        Page<ActionUnit> actualResult = lazyModel.loadActionUnits("null", new Long[2], new Long[2], "null", pageable);
+        Page<ActionUnitDTO> actualResult = lazyModel.loadActionUnits("null", new Long[2], new Long[2], "null", pageable);
 
         // Assert
         // Assert

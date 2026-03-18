@@ -3,6 +3,7 @@ package fr.siamois.domain.services.person.verifier;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.exceptions.auth.EmailAlreadyExistException;
 import fr.siamois.domain.models.exceptions.auth.InvalidEmailException;
+import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.infrastructure.database.repositories.person.PersonRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -30,7 +31,7 @@ class EmailVerifierTest {
 
     @Test
     void verify_shouldNotThrowException_whenEmailIsValid() throws InvalidEmailException {
-        Person person = new Person();
+        PersonDTO person = new PersonDTO();
         person.setEmail("valid.email@example.com");
 
         emailVerifier.verify(person);
@@ -38,11 +39,11 @@ class EmailVerifierTest {
 
     @Test
     void verify_shouldThrowEmailAlreadyExistException_whenEmailAlreadyExists() {
-        Person person = new Person();
+        PersonDTO person = new PersonDTO();
         person.setEmail("existing.email@example.com");
         emailVerifier.isForCreation = true;
 
-        when(personRepository.findByEmailIgnoreCase("existing.email@example.com")).thenReturn(Optional.of(person));
+        when(personRepository.findByEmailIgnoreCase("existing.email@example.com")).thenReturn(Optional.of(new Person()));
 
         assertThrows(EmailAlreadyExistException.class, () -> emailVerifier.verify(person));
     }
@@ -50,7 +51,7 @@ class EmailVerifierTest {
     @ParameterizedTest
     @ValueSource(strings = {"invalid-email", ""})
     void verify_shouldThrowInvalidEmailException_forInvalidEmails(String email) {
-        Person person = new Person();
+        PersonDTO person = new PersonDTO();
 
         person.setEmail(email);
 

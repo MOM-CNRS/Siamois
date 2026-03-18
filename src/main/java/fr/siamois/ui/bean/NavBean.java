@@ -2,14 +2,10 @@ package fr.siamois.ui.bean;
 
 import fr.siamois.domain.events.publisher.InstitutionChangeEventPublisher;
 import fr.siamois.domain.models.Bookmark;
-import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.events.LoginEvent;
-import fr.siamois.domain.models.institution.Institution;
-import fr.siamois.domain.models.recordingunit.RecordingUnit;
-import fr.siamois.domain.models.spatialunit.SpatialUnit;
-import fr.siamois.domain.models.specimen.Specimen;
 import fr.siamois.domain.services.BookmarkService;
 import fr.siamois.domain.services.InstitutionService;
+import fr.siamois.dto.entity.*;
 import fr.siamois.ui.bean.converter.InstitutionConverter;
 import fr.siamois.ui.bean.panel.FlowBean;
 import fr.siamois.ui.bean.panel.models.panel.AbstractPanel;
@@ -27,8 +23,10 @@ import org.springframework.context.event.EventListener;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
+import java.io.IOException;
 import java.io.Serializable;
 import java.util.List;
+import java.util.Objects;
 
 
 /**
@@ -43,7 +41,7 @@ import java.util.List;
 @Scope(value = "session", proxyMode = ScopedProxyMode.TARGET_CLASS)
 public class NavBean implements Serializable {
 
-    public static final String COMMON_BOOKMARK_SAVED = "common.bookmark.saved";
+
     private final SessionSettingsBean sessionSettingsBean;
     private final transient InstitutionChangeEventPublisher institutionChangeEventPublisher;
     private final transient InstitutionConverter converter;
@@ -53,6 +51,10 @@ public class NavBean implements Serializable {
     private final transient BookmarkService bookmarkService;
     private final FlowBean flowBean;
     private final LangBean langBean;
+
+    public static final String COMMON_BOOKMARK_SAVED = "common.bookmark.saved";
+    public static final String FLOW = "FLOW";
+    public static final String FOCUS = "FOCUS";
 
     private ApplicationMode applicationMode = ApplicationMode.SIAMOIS;
 
@@ -80,11 +82,11 @@ public class NavBean implements Serializable {
         this.langBean = langBean;
     }
 
-    public Institution getSelectedInstitution() {
+    public InstitutionDTO getSelectedInstitution() {
         return sessionSettingsBean.getSelectedInstitution();
     }
 
-    public Person currentUser() {
+    public PersonDTO currentUser() {
         return sessionSettingsBean.getAuthenticatedUser();
     }
 
@@ -145,19 +147,19 @@ public class NavBean implements Serializable {
     }
 
 
-    public void bookmarkRecordingUnit(RecordingUnit recordingUnit) {
+    public void bookmarkRecordingUnit(RecordingUnitDTO recordingUnit) {
 
         bookmarkUnit(recordingUnit.getId(),recordingUnit.getFullIdentifier(),RECORDING_UNIT_BASE_URI);
 
     }
 
-    public void unBookmarkRecordingUnit(RecordingUnit recordingUnit) {
+    public void unBookmarkRecordingUnit(RecordingUnitDTO recordingUnit) {
 
         unBookmark(RECORDING_UNIT_BASE_URI+recordingUnit.getId());
 
     }
 
-    public void bookmark(Specimen specimen) {
+    public void bookmark(SpecimenDTO specimen) {
 
         // Maybe check that ressource exists and user has access to it?
         bookmarkService.save(
@@ -168,7 +170,7 @@ public class NavBean implements Serializable {
         MessageUtils.displayInfoMessage(langBean, COMMON_BOOKMARK_SAVED);
     }
 
-    public void bookmark(SpatialUnit su) {
+    public void bookmark(SpatialUnitDTO su) {
 
         bookmarkService.save(
                 sessionSettingsBean.getUserInfo(),
@@ -190,7 +192,7 @@ public class NavBean implements Serializable {
         return bookmarkService.isRessourceBookmarkedByUser(sessionSettingsBean.getUserInfo(), ressourceUri);
     }
 
-    public void toggleRecordingUnitBookmark(RecordingUnit recordingUnit) {
+    public void toggleRecordingUnitBookmark(RecordingUnitDTO recordingUnit) {
         if(Boolean.TRUE.equals(isRessourceBookmarkedByUser(RECORDING_UNIT_BASE_URI + recordingUnit.getId()))) {
             unBookmarkRecordingUnit(recordingUnit);
         }
@@ -200,7 +202,7 @@ public class NavBean implements Serializable {
         reloadBookmarkedPanels();
     }
 
-    public void toggleSpatialUnitBookmark(SpatialUnit su) {
+    public void toggleSpatialUnitBookmark(SpatialUnitDTO su) {
         final String uri = SPATIAL_UNIT_BASE_URI + su.getId();
         if(Boolean.TRUE.equals(isRessourceBookmarkedByUser(uri))) {
             unBookmark(uri);
@@ -211,7 +213,7 @@ public class NavBean implements Serializable {
         reloadBookmarkedPanels();
     }
 
-    public void toggleSpecimenBookmark(Specimen specimen) {
+    public void toggleSpecimenBookmark(SpecimenDTO specimen) {
         if(Boolean.TRUE.equals(isRessourceBookmarkedByUser(SPECIMEN_BASE_URI + specimen.getId()))) {
             unBookmark(SPECIMEN_BASE_URI + specimen.getId());
         }
@@ -255,6 +257,70 @@ public class NavBean implements Serializable {
     public enum ApplicationMode {
         SIAMOIS,
         SETTINGS
+    }
+
+    public void goToActionUnitList(String mode) throws IOException {
+        if(Objects.equals(mode, FLOW)) {
+            flowBean.addActionUnitListPanel();
+            flowBean.redirectToDashboard();
+        }
+        if(Objects.equals(mode, FOCUS)) {
+            flowBean.redirectToFocus("/action-unit");
+        }
+    }
+
+    public void goToRecordingUnitList(String mode) throws IOException {
+        if(Objects.equals(mode, FLOW)) {
+            flowBean.addRecordingUnitListPanel();
+            flowBean.redirectToDashboard();
+        }
+        if(Objects.equals(mode, FOCUS)) {
+            flowBean.redirectToFocus("/recording-unit");
+        }
+    }
+
+    public void goToSpatialUnitList(String mode) throws IOException {
+        if(Objects.equals(mode, FLOW)) {
+            flowBean.addSpatialUnitListPanel();
+            flowBean.redirectToDashboard();
+        }
+        if(Objects.equals(mode, FOCUS)) {
+            flowBean.redirectToFocus("/spatial-unit");
+        }
+    }
+
+    public void goToSpecimenList(String mode) throws IOException {
+        if(Objects.equals(mode, FLOW)) {
+            flowBean.addSpecimenListPanel();
+            flowBean.redirectToDashboard();
+        }
+        if(Objects.equals(mode, FOCUS)) {
+            flowBean.redirectToFocus("/specimen");
+        }
+    }
+
+    public void redirectToBookmarked(String resource) {
+        try {
+            flowBean.redirectToFocus(resource);
+        } catch (IOException e) {
+            log.error(e.getMessage(), e);
+        }
+    }
+
+    public void redirectToActionUnit() throws IOException {
+        String id = FacesContext.getCurrentInstance()
+                .getExternalContext()
+                .getRequestParameterMap()
+                .get("id");
+        flowBean.redirectToFocus("/action-unit/" + id);
+    }
+
+    public void redirectToSpatialUnit() throws IOException {
+        String id = FacesContext.getCurrentInstance()
+                .getExternalContext()
+                .getRequestParameterMap()
+                .get("id");
+        flowBean.redirectToFocus(SPATIAL_UNIT_BASE_URI + id);
     }
 
 }

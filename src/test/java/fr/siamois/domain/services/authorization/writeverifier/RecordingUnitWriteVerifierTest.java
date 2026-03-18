@@ -2,12 +2,13 @@ package fr.siamois.domain.services.authorization.writeverifier;
 
 import fr.siamois.domain.models.TraceableEntity;
 import fr.siamois.domain.models.UserInfo;
-import fr.siamois.domain.models.actionunit.ActionUnit;
-import fr.siamois.domain.models.auth.Person;
-import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
+import fr.siamois.dto.entity.ActionUnitSummaryDTO;
+import fr.siamois.dto.entity.InstitutionDTO;
+import fr.siamois.dto.entity.PersonDTO;
+import fr.siamois.dto.entity.RecordingUnitDTO;
 import fr.siamois.infrastructure.database.repositories.team.TeamMemberRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -33,11 +34,11 @@ class RecordingUnitWriteVerifierTest {
     private RecordingUnitWriteVerifier handler;
 
     @Mock private UserInfo userInfo;
-    @Mock private Person user; // or whatever type userInfo.getUser() returns
+    @Mock private PersonDTO user; // or whatever type userInfo.getUser() returns
 
-    @Mock private RecordingUnit recordingUnit;
-    @Mock private ActionUnit actionUnit;
-    @Mock private Institution institution;
+    @Mock private RecordingUnitDTO recordingUnit;
+    @Mock private ActionUnitSummaryDTO actionUnit;
+    @Mock private InstitutionDTO institution;
 
 
 
@@ -52,11 +53,11 @@ class RecordingUnitWriteVerifierTest {
 
     @BeforeEach
     void setUp() {
-        user = new Person();
+        user = new PersonDTO();
         user.setUsername("testUser");
         user.setId(1L);
 
-        institution = new Institution();
+        institution = new InstitutionDTO();
         institution.setId(1L);
         institution.setName("Test Institution");
 
@@ -87,7 +88,7 @@ class RecordingUnitWriteVerifierTest {
         // optional: ensure short-circuit means later checks needn't be called
         verify(institutionService).isManagerOf(institution, user);
         verify(actionUnitService, never()).isManagerOf(any(), any());
-        verify(teamMemberRepository, never()).existsByActionUnitAndPerson(any(), any());
+        verify(teamMemberRepository, never()).existsByActionUnitIdAndPerson(any(), any());
         verify(actionUnitService, never()).isActionUnitStillOngoing(any());
     }
 
@@ -105,7 +106,7 @@ class RecordingUnitWriteVerifierTest {
 
         verify(institutionService).isManagerOf(institution, user);
         verify(actionUnitService).isManagerOf(actionUnit, user);
-        verify(teamMemberRepository, never()).existsByActionUnitAndPerson(any(), any());
+        verify(teamMemberRepository, never()).existsByActionUnitIdAndPerson(any(), any());
         verify(actionUnitService, never()).isActionUnitStillOngoing(any());
     }
 
@@ -117,14 +118,14 @@ class RecordingUnitWriteVerifierTest {
         when(institutionService.isManagerOf(institution, user)).thenReturn(false);
         when(actionUnitService.isManagerOf(actionUnit, user)).thenReturn(false);
 
-        when(teamMemberRepository.existsByActionUnitAndPerson(actionUnit, user)).thenReturn(true);
+        when(teamMemberRepository.existsByActionUnitIdAndPerson(actionUnit.getId(), user)).thenReturn(true);
         when(actionUnitService.isActionUnitStillOngoing(actionUnit)).thenReturn(true);
 
         boolean result = handler.hasSpecificWritePermission(userInfo, recordingUnit);
 
         assertTrue(result);
 
-        verify(teamMemberRepository).existsByActionUnitAndPerson(actionUnit, user);
+        verify(teamMemberRepository).existsByActionUnitIdAndPerson(actionUnit.getId(), user);
         verify(actionUnitService).isActionUnitStillOngoing(actionUnit);
     }
 
@@ -136,7 +137,7 @@ class RecordingUnitWriteVerifierTest {
         when(institutionService.isManagerOf(institution, user)).thenReturn(false);
         when(actionUnitService.isManagerOf(actionUnit, user)).thenReturn(false);
 
-        when(teamMemberRepository.existsByActionUnitAndPerson(actionUnit, user)).thenReturn(true);
+        when(teamMemberRepository.existsByActionUnitIdAndPerson(actionUnit.getId(), user)).thenReturn(true);
         when(actionUnitService.isActionUnitStillOngoing(actionUnit)).thenReturn(false);
 
         boolean result = handler.hasSpecificWritePermission(userInfo, recordingUnit);

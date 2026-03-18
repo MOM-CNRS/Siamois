@@ -3,7 +3,7 @@ package fr.siamois.ui.bean.converter;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
-import fr.siamois.domain.models.auth.Person;
+import fr.siamois.dto.entity.PersonDTO;
 import jakarta.faces.component.UIComponent;
 import jakarta.faces.context.FacesContext;
 import jakarta.faces.convert.Converter;
@@ -16,7 +16,7 @@ import java.io.Serializable;
 @ManagedBean
 @Component
 @Slf4j
-public class PersonConverter implements Converter<Person>, Serializable {
+public class PersonConverter implements Converter<PersonDTO>, Serializable {
 
     private final ObjectMapper objectMapper;
 
@@ -27,9 +27,9 @@ public class PersonConverter implements Converter<Person>, Serializable {
 
 
     @Override
-    public Person getAsObject(FacesContext context, UIComponent component, String value) {
+    public PersonDTO getAsObject(FacesContext context, UIComponent component, String value) {
         try {
-            return objectMapper.readValue(value, Person.class);
+            return objectMapper.readValue(value, PersonDTO.class);
         } catch (JsonProcessingException e) {
             log.error("Error while converting string to Person object", e);
             return null;
@@ -37,7 +37,7 @@ public class PersonConverter implements Converter<Person>, Serializable {
     }
 
     @Override
-    public String getAsString(FacesContext context, UIComponent component, Person value) {
+    public String getAsString(FacesContext context, UIComponent component, PersonDTO value) {
         try {
             return objectMapper.writeValueAsString(value);
         } catch (JsonProcessingException e) {

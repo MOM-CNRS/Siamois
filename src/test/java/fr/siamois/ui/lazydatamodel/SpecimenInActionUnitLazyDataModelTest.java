@@ -1,10 +1,10 @@
 package fr.siamois.ui.lazydatamodel;
 
 
-import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.institution.Institution;
-import fr.siamois.domain.models.specimen.Specimen;
 import fr.siamois.domain.services.specimen.SpecimenService;
+import fr.siamois.dto.entity.ActionUnitDTO;
+import fr.siamois.dto.entity.SpecimenDTO;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
 import org.junit.jupiter.api.BeforeEach;
@@ -42,18 +42,18 @@ class SpecimenInActionUnitLazyDataModelTest {
     @InjectMocks
     private SpecimenInActionUnitLazyDataModel lazyModel;
 
-    Page<Specimen> p ;
+    Page<SpecimenDTO> p ;
     Pageable pageable;
-    Specimen unit1;
-    Specimen unit2;
-    ActionUnit u;
+    SpecimenDTO unit1;
+    SpecimenDTO unit2;
+    ActionUnitDTO u;
     Institution institution;
 
     @BeforeEach
     void setUp() {
-        unit1 = new Specimen();
-        unit2 = new Specimen();
-        u = new ActionUnit();
+        unit1 = new SpecimenDTO();
+        unit2 = new SpecimenDTO();
+        u = new ActionUnitDTO();
         u.setId(1L);
         institution = new Institution();
         institution.setId(1L);
@@ -81,7 +81,7 @@ class SpecimenInActionUnitLazyDataModelTest {
         when(langBean.getLanguageCode()).thenReturn("en");
 
         // Act
-        Page<Specimen> actualResult = lazyModel.loadData("null", new Long[2], new Long[2], "null", pageable);
+        Page<SpecimenDTO> actualResult = lazyModel.loadData("null", new Long[2], new Long[2], "null", pageable);
 
         // Assert
         // Assert

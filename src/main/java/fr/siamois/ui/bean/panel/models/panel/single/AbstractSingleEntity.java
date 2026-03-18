@@ -1,17 +1,8 @@
 package fr.siamois.ui.bean.panel.models.panel.single;
 
-import fr.siamois.domain.models.TraceableEntity;
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.customfield.CustomFieldText;
-import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswer;
 import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerText;
-import fr.siamois.domain.models.form.customform.CustomCol;
-import fr.siamois.domain.models.form.customform.CustomForm;
-import fr.siamois.domain.models.form.customform.CustomFormPanel;
-import fr.siamois.domain.models.form.customform.CustomRow;
-import fr.siamois.domain.models.form.customformresponse.CustomFormResponse;
-import fr.siamois.domain.models.spatialunit.SpatialUnit;
-import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.models.vocabulary.Vocabulary;
 import fr.siamois.domain.models.vocabulary.VocabularyType;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
@@ -20,21 +11,25 @@ import fr.siamois.domain.services.form.FormService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitTreeService;
 import fr.siamois.domain.services.vocabulary.FieldConfigurationService;
+import fr.siamois.dto.entity.AbstractEntityDTO;
+import fr.siamois.dto.entity.ConceptDTO;
+import fr.siamois.dto.entity.SpatialUnitSummaryDTO;
 import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
 import fr.siamois.ui.bean.LabelBean;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
-import fr.siamois.ui.bean.dialog.newunit.GenericNewUnitDialogBean;
+import fr.siamois.ui.bean.panel.EntityForm;
 import fr.siamois.ui.bean.panel.models.panel.AbstractPanel;
-import fr.siamois.ui.form.EntityFormContext;
-import fr.siamois.ui.form.FormContextServices;
+import fr.siamois.ui.form.*;
 import fr.siamois.ui.form.fieldsource.PanelFieldSource;
+import fr.siamois.ui.viewmodel.CustomFormResponseViewModel;
 import fr.siamois.utils.DateUtils;
 import jakarta.faces.event.ActionEvent;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationContext;
+import org.springframework.core.convert.ConversionService;
 
 import java.io.Serializable;
 import java.time.OffsetDateTime;
@@ -50,7 +45,9 @@ import java.util.Set;
 @EqualsAndHashCode(callSuper = true, onlyExplicitlyIncluded = true)
 @Data
 @Slf4j
-public abstract class AbstractSingleEntity<T extends TraceableEntity> extends AbstractPanel implements Serializable {
+public abstract class AbstractSingleEntity<T extends AbstractEntityDTO>
+        extends AbstractPanel
+        implements EntityForm<T>, Serializable {
 
     public static final String FIELD = "field";
     public static final String COLUMN_CLASS_NAME = "ui-g-12 ui-md-6 ui-lg-4";
@@ -67,12 +64,13 @@ public abstract class AbstractSingleEntity<T extends TraceableEntity> extends Ab
     protected final transient LangBean langBean;
     protected final transient FormService formService;
     protected final transient FormContextServices formContextServices;
+    protected final transient ConversionService conversionService;
 
     // -------------------- Local state ---------------------
 
     protected transient T unit;
 
-    protected CustomForm detailsForm;
+    protected transient FormUiDto detailsForm;
 
     /**
      * Per-entity form context. Holds answers, enabled rules, spatial tree state, etc.
@@ -106,6 +104,7 @@ public abstract class AbstractSingleEntity<T extends TraceableEntity> extends Ab
         this.formService = context.getBean(FormService.class);
         this.formContextServices = context.getBean(FormContextServices.class);
         this.langBean = context.getBean(LangBean.class);
+        this.conversionService = context.getBean(ConversionService.class);
     }
 
     protected AbstractSingleEntity(String titleCodeOrTitle,
@@ -123,6 +122,7 @@ public abstract class AbstractSingleEntity<T extends TraceableEntity> extends Ab
         this.formService = context.getBean(FormService.class);
         this.formContextServices = context.getBean(FormContextServices.class);
         this.langBean = context.getBean(LangBean.class);
+        this.conversionService = context.getBean(ConversionService.class);
     }
 
     // -------------------- Utility -------------------------
@@ -137,21 +137,14 @@ public abstract class AbstractSingleEntity<T extends TraceableEntity> extends Ab
     }
 
     public String getConceptFieldsUpdateTargetsOnBlur() {
-        // If new unit panel form, update only header when concept is selected, otherwise @form
-        if (this.getClass() == GenericNewUnitDialogBean.class) {
-            return "";
-        } else {
-            return "@form panel-" + getPanelIndex() + "-header";
-        }
+            return "@form panel-" + getPrefixPanelIndex() + "-header";
+
     }
 
     public String getPanelHeaderUpdateId() {
-        // If new unit panel form
-        if (this.getClass() == GenericNewUnitDialogBean.class) {
-            return "";
-        } else {
-            return "panel-" + getPanelIndex() + "-header singlePanelUnitForm-"+getPanelIndex()+":breadcrumbs";
-        }
+            //return "panel-" + getPanelIndex() + "-header singlePanelUnitForm-"+getPanelIndex()+":breadcrumbs";
+        return "";
+
     }
 
     public String getAutocompleteClass() {
@@ -171,12 +164,12 @@ public abstract class AbstractSingleEntity<T extends TraceableEntity> extends Ab
      */
     protected abstract String getFormScopePropertyName();
 
-    protected abstract void setFormScopePropertyValue(Concept concept);
+    protected abstract void setFormScopePropertyValue(ConceptDTO concept);
 
     /**
      * In list panels children may override this to provide options.
      */
-    public List<SpatialUnit> getSpatialUnitOptions() {
+    public List<SpatialUnitSummaryDTO> getSpatialUnitOptions() {
         return List.of();
     }
 
@@ -186,7 +179,7 @@ public abstract class AbstractSingleEntity<T extends TraceableEntity> extends Ab
      * Helper for children: once unit + detailsForm are set,
      * call this to initialize the EntityFormContext.
      */
-    protected void initFormContext(boolean forceInit) {
+    public void initFormContext(boolean forceInit) {
         if (unit == null) {
             log.warn("initFormContext called with null unit");
             return;
@@ -197,6 +190,7 @@ public abstract class AbstractSingleEntity<T extends TraceableEntity> extends Ab
                     unit,
                     fieldSource,
                     formContextServices,
+                    conversionService,
                     // callback appelé quand le champ de scope change
                     (field, concept) -> onFormScopeChanged(concept),
                     // nom de la propriété qui porte le scope (ex: "type")
@@ -209,7 +203,7 @@ public abstract class AbstractSingleEntity<T extends TraceableEntity> extends Ab
     /**
      * Expose the current CustomFormResponse via the context.
      */
-    public CustomFormResponse getFormResponse() {
+    public CustomFormResponseViewModel getFormResponse() {
         return formContext != null ? formContext.getFormResponse() : null;
     }
 
@@ -222,10 +216,6 @@ public abstract class AbstractSingleEntity<T extends TraceableEntity> extends Ab
 
     public boolean isColumnEnabled(CustomField field) {
         return formContext != null && formContext.isColumnEnabled(field);
-    }
-
-    public CustomFieldAnswer getFieldAnswer(CustomField field) {
-        return formContext != null ? formContext.getFieldAnswer(field) : null;
     }
 
     // -------------------- Auto-generation -----------------
@@ -256,7 +246,7 @@ public abstract class AbstractSingleEntity<T extends TraceableEntity> extends Ab
      * Called when the "scope" system concept field changes.
      * Flushes current answers to the entity, updates the entity scope, then re-inits forms.
      */
-    protected void onFormScopeChanged(Concept newVal) {
+    protected void onFormScopeChanged(ConceptDTO newVal) {
         if (formContext != null) {
             formContext.flushBackToEntity();
         }
@@ -269,7 +259,7 @@ public abstract class AbstractSingleEntity<T extends TraceableEntity> extends Ab
     // If you still use populateSystemFieldValue for Concepts in lists etc.,
     // you can keep convenience methods here that rely on labelBean:
 
-    protected ConceptAutocompleteDTO toAutocompleteDTO(Concept c) {
+    protected ConceptAutocompleteDTO toAutocompleteDTO(ConceptDTO c) {
         if (c == null) return null;
         return new ConceptAutocompleteDTO(
                 c,
@@ -282,71 +272,71 @@ public abstract class AbstractSingleEntity<T extends TraceableEntity> extends Ab
         // Default : nothing
     }
 
-    protected List<CustomField> getAllFieldsFrom(CustomForm... forms) {
+    protected List<CustomField> getAllFieldsFrom(FormUiDto... forms) {
         if (isEmpty(forms)) {
             return List.of();
         }
 
         Set<CustomField> fields = new LinkedHashSet<>();
-        for (CustomForm form : forms) {
+        for (FormUiDto form : forms) {
             addFieldsFromForm(fields, form);
         }
         return new ArrayList<>(fields);
     }
 
-    private boolean isEmpty(CustomForm[] forms) {
+    private boolean isEmpty(FormUiDto[] forms) {
         return forms == null || forms.length == 0;
     }
 
-    private void addFieldsFromForm(Set<CustomField> fields, CustomForm form) {
+    private void addFieldsFromForm(Set<CustomField> fields, FormUiDto form) {
         if (form == null) {
             return;
         }
         addFieldsFromLayout(fields, form.getLayout());
     }
 
-    private void addFieldsFromLayout(Set<CustomField> fields, List<CustomFormPanel> layout) {
+    private void addFieldsFromLayout(Set<CustomField> fields, List<CustomFormPanelUiDto> layout) {
         if (layout == null) {
             return;
         }
-        for (CustomFormPanel panel : layout) {
+        for (CustomFormPanelUiDto panel : layout) {
             addFieldsFromPanel(fields, panel);
         }
     }
 
-    private void addFieldsFromPanel(Set<CustomField> fields, CustomFormPanel panel) {
+    private void addFieldsFromPanel(Set<CustomField> fields, CustomFormPanelUiDto panel) {
         if (panel == null) {
             return;
         }
         addFieldsFromRows(fields, panel.getRows());
     }
 
-    private void addFieldsFromRows(Set<CustomField> fields, List<CustomRow> rows) {
+    private void addFieldsFromRows(Set<CustomField> fields, List<CustomRowUiDto> rows) {
         if (rows == null) {
             return;
         }
-        for (CustomRow row : rows) {
+        for (CustomRowUiDto row : rows) {
             addFieldsFromRow(fields, row);
         }
     }
 
-    private void addFieldsFromRow(Set<CustomField> fields, CustomRow row) {
+    private void addFieldsFromRow(Set<CustomField> fields, CustomRowUiDto row) {
         if (row == null) {
             return;
         }
         addFieldsFromColumns(fields, row.getColumns());
     }
 
-    private void addFieldsFromColumns(Set<CustomField> fields, List<CustomCol> columns) {
+    private void addFieldsFromColumns(Set<CustomField> fields, List<CustomColUiDto> columns) {
         if (columns == null) {
             return;
         }
-        for (CustomCol col : columns) {
+        for (CustomColUiDto col : columns) {
             addFieldFromColumn(fields, col);
         }
     }
 
-    private void addFieldFromColumn(Set<CustomField> fields, CustomCol col) {
+    private void addFieldFromColumn(Set<CustomField> fields, CustomColUiDto col) {
         if (col == null) {
             return;
         }

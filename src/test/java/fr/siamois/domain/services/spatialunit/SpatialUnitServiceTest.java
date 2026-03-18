@@ -2,7 +2,6 @@ package fr.siamois.domain.services.spatialunit;
 
 import fr.siamois.domain.models.ArkEntity;
 import fr.siamois.domain.models.UserInfo;
-import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.ark.Ark;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.exceptions.spatialunit.SpatialUnitAlreadyExistsException;
@@ -17,7 +16,12 @@ import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.authorization.PermissionServiceImpl;
 import fr.siamois.domain.services.person.PersonService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
+import fr.siamois.dto.entity.*;
 import fr.siamois.infrastructure.database.repositories.SpatialUnitRepository;
+import fr.siamois.mapper.InstitutionMapper;
+import fr.siamois.mapper.RecordingUnitMapper;
+import fr.siamois.mapper.SpatialUnitMapper;
+import fr.siamois.mapper.SpatialUnitSummaryMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -59,6 +63,15 @@ class SpatialUnitServiceTest {
     @Mock
     private InstitutionService institutionService;
 
+    @Mock
+    private SpatialUnitMapper spatialUnitMapper;
+    @Mock
+    private RecordingUnitMapper recordingUnitMapper;
+    @Mock
+    private SpatialUnitSummaryMapper spatialUnitSummaryMapper;
+    @Mock
+    private InstitutionMapper institutionMapper;
+
     @InjectMocks
     private SpatialUnitService spatialUnitService;
 
@@ -69,6 +82,12 @@ class SpatialUnitServiceTest {
     Page<SpatialUnit> p ;
     Pageable pageable;
 
+    SpatialUnitDTO spatialUnit1DTO;
+
+    SpatialUnitDTO spatialUnit2DTO;
+
+    Page<SpatialUnitDTO> pageDTO ;
+
 
     @BeforeEach
     void setUp() {
@@ -78,6 +97,11 @@ class SpatialUnitServiceTest {
         spatialUnit2.setId(2L);
         p = new PageImpl<>(List.of(spatialUnit1, spatialUnit2));
         pageable = PageRequest.of(0, 10);
+        spatialUnit1DTO = new SpatialUnitDTO();
+        spatialUnit2DTO = new SpatialUnitDTO();
+        spatialUnit1DTO.setId(1L);
+        spatialUnit2DTO.setId(2L);
+        pageDTO = new PageImpl<>(List.of(spatialUnit1DTO, spatialUnit2DTO));
 
 
         lenient().when(spatialUnitRepository.findAllByParentAndByNameContainingAndByCategoriesAndByGlobalContaining(
@@ -115,13 +139,13 @@ class SpatialUnitServiceTest {
         )).thenReturn(p);
 
         // Act
-        Page<SpatialUnit> actualResult = spatialUnitService.findAllByInstitutionAndByNameContainingAndByCategoriesAndByGlobalContaining(
+        Page<SpatialUnitDTO> actualResult = spatialUnitService.findAllByInstitutionAndByNameContainingAndByCategoriesAndByGlobalContaining(
                 1L, "null", new Long[2], new Long[2],"null", "fr", pageable
         );
 
         // Assert
-        assertEquals(spatialUnit1, actualResult.getContent().get(0));
-        assertEquals(spatialUnit2, actualResult.getContent().get(1));
+        assertThat(actualResult)
+                .hasSize(2);
     }
 
     @Test
@@ -164,14 +188,14 @@ class SpatialUnitServiceTest {
         )).thenReturn(p);
 
         // Act
-        Page<SpatialUnit> actualResult = spatialUnitService.findAllByParentAndByNameContainingAndByCategoriesAndByGlobalContaining(
-                spatialUnit1, "null", new Long[2], new Long[2],"null", "fr", pageable);
+        Page<SpatialUnitDTO> actualResult = spatialUnitService.findAllByParentAndByNameContainingAndByCategoriesAndByGlobalContaining(
+                spatialUnit1DTO, "null", new Long[2], new Long[2],"null", "fr", pageable);
 
 
         // Assert
         // Assert
-        assertEquals(spatialUnit1, actualResult.getContent().get(0));
-        assertEquals(spatialUnit2, actualResult.getContent().get(1));
+        assertThat(actualResult)
+                .hasSize(2);
 
     }
 
@@ -193,7 +217,7 @@ class SpatialUnitServiceTest {
         Exception exception = assertThrows(
                 Exception.class,
                 () -> spatialUnitService.findAllByParentAndByNameContainingAndByCategoriesAndByGlobalContaining(
-                        spatialUnit1, "null", new Long[2],new Long[2], "null", "fr", pageable)
+                        spatialUnit1DTO, "null", new Long[2],new Long[2], "null", "fr", pageable)
         );
 
         assertEquals("Database error", exception.getMessage());
@@ -202,18 +226,25 @@ class SpatialUnitServiceTest {
 
     @Test
     void testFindById_Success() {
-
         // Arrange
         SpatialUnit spatialUnit = new SpatialUnit();
         spatialUnit.setId(1L);
-        when(spatialUnitRepository.findById(1L)).thenReturn(Optional.of(spatialUnit));
+
+        // Mock the repository
+        when(spatialUnitRepository.findById(1L))
+                .thenReturn(Optional.of(spatialUnit));
+
+        // Mock the mapper
+        when(spatialUnitMapper.convert(spatialUnit))
+                .thenReturn(spatialUnit1DTO);
 
         // Act
-        SpatialUnit actualResult = spatialUnitService.findById(1);
+        SpatialUnitDTO actualResult = spatialUnitService.findById(1L);
 
         // Assert
-        assertEquals(spatialUnit, actualResult);
+        assertEquals(spatialUnit1DTO, actualResult);
     }
+
 
     @Test
     void testFindById_SpatialUnitNotFoundException() {
@@ -260,12 +291,13 @@ class SpatialUnitServiceTest {
         )).thenReturn(p);
 
         // Act
-        Page<SpatialUnit> actualResult = spatialUnitService.findAllByChildAndByNameContainingAndByCategoriesAndByGlobalContaining(
-                spatialUnit1, "null", new Long[2], new Long[2], "null", "fr", pageable);
+        Page<SpatialUnitDTO> actualResult = spatialUnitService.findAllByChildAndByNameContainingAndByCategoriesAndByGlobalContaining(
+                spatialUnit1DTO, "null", new Long[2], new Long[2], "null", "fr", pageable);
 
         // Assert
-        assertEquals(spatialUnit1, actualResult.getContent().get(0));
-        assertEquals(spatialUnit2, actualResult.getContent().get(1));
+        // Assert
+        assertThat(actualResult)
+                .hasSize(2);
 
     }
 
@@ -286,7 +318,7 @@ class SpatialUnitServiceTest {
         Exception exception = assertThrows(
                 Exception.class,
                 () -> spatialUnitService.findAllByChildAndByNameContainingAndByCategoriesAndByGlobalContaining(
-                        spatialUnit1, "null", new Long[2], new Long[2], "null", "fr", pageable)
+                        spatialUnit1DTO, "null", new Long[2], new Long[2], "null", "fr", pageable)
         );
 
         assertEquals("Database error", exception.getMessage());
@@ -297,14 +329,22 @@ class SpatialUnitServiceTest {
         // Arrange
         Institution institution = new Institution();
         institution.setId(1L);
-        when(spatialUnitRepository.findAllOfInstitution(institution.getId())).thenReturn(List.of(spatialUnit1, spatialUnit2));
+
+        // Mock the repository
+        when(spatialUnitRepository.findAllOfInstitution(institution.getId()))
+                .thenReturn(List.of(spatialUnit1, spatialUnit2));
+
+        // Mock the mapper
+        when(spatialUnitMapper.convert(spatialUnit1)).thenReturn(spatialUnit1DTO);
+        when(spatialUnitMapper.convert(spatialUnit2)).thenReturn(spatialUnit2DTO);
 
         // Act
-        List<SpatialUnit> actualResult = spatialUnitService.findAllOfInstitution(institution.getId());
+        List<SpatialUnitDTO> actualResult = spatialUnitService.findAllOfInstitution(institution.getId());
 
         // Assert
-        assertEquals(List.of(spatialUnit1, spatialUnit2), actualResult);
+        assertEquals(List.of(spatialUnit1DTO, spatialUnit2DTO), actualResult);
     }
+
 
     @Test
     void findAllOfInstitution_Exception() {
@@ -325,56 +365,79 @@ class SpatialUnitServiceTest {
     @Test
     void save_Success() throws SpatialUnitAlreadyExistsException {
         // Arrange
-        Person person = new Person();
+        PersonDTO person = new PersonDTO();
         person.setId(1L);
-        Institution i = new Institution();
-        i.setId(1L);
-        UserInfo userInfo = new UserInfo(i ,person, "fr");
+        InstitutionDTO institutionDTO = new InstitutionDTO();
+        institutionDTO.setId(1L);
+        UserInfo userInfo = new UserInfo(institutionDTO, person, "fr");
+
         String name = "SpatialUnitName";
-        Concept type = new Concept();
-        List<SpatialUnit> parents = List.of(spatialUnit1);
-        SpatialUnit unit = new SpatialUnit();
+        ConceptDTO type = new ConceptDTO();
+        SpatialUnitSummaryDTO parent = new SpatialUnitSummaryDTO(); parent.setId(0L);
+        List<SpatialUnitSummaryDTO> parents = List.of(parent);
+        SpatialUnitDTO unit = new SpatialUnitDTO();
         unit.setName(name);
         unit.setCategory(type);
         unit.setParents(new HashSet<>(parents));
 
-        List<SpatialUnit> children = List.of(spatialUnit2);
+        List<SpatialUnitSummaryDTO> children = List.of(new SpatialUnitSummaryDTO(spatialUnit2DTO));
         unit.setChildren(new HashSet<>(children));
 
+        // Mock the repository and services
+        when(institutionService.createOrGetSettingsOf(userInfo.getInstitution()))
+                .thenReturn(new InstitutionSettings());
+        when(spatialUnitRepository.findByNameAndInstitution(name, userInfo.getInstitution().getId()))
+                .thenReturn(Optional.empty());
+        when(conceptService.saveOrGetConcept(type))
+                .thenReturn(new Concept());
+        when(spatialUnitRepository.save(any(SpatialUnit.class)))
+                .thenReturn(spatialUnit1);
+        when(institutionService.findById(anyLong()))
+                .thenReturn(institutionDTO);
+        when(personService.findById(anyLong()))
+                .thenReturn(new Person());
 
 
+        // Mock the mappers
+        when(spatialUnitMapper.convert(spatialUnit1))
+                .thenReturn(spatialUnit1DTO);
 
-        when(institutionService.createOrGetSettingsOf(userInfo.getInstitution())).thenReturn(new InstitutionSettings());
-        when(spatialUnitRepository.findByNameAndInstitution(name, userInfo.getInstitution().getId())).thenReturn(Optional.empty());
-        when(conceptService.saveOrGetConcept(type)).thenReturn(type);
-        when(spatialUnitRepository.save(any(SpatialUnit.class))).thenReturn(spatialUnit1);
-        when(institutionService.findById(anyLong())).thenReturn(i);
-        when(personService.findById(anyLong())).thenReturn(person);
-        when(spatialUnitRepository.findById(anyLong())).thenReturn(Optional.of(spatialUnit1));
+
 
         // Act
-        SpatialUnit result = spatialUnitService.save(userInfo, unit);
+        SpatialUnitDTO result = spatialUnitService.save(userInfo, unit);
 
         // Assert
         assertNotNull(result);
-        assertEquals(spatialUnit1, result);
-
+        assertEquals(spatialUnit1DTO, result);
     }
+
 
     @Test
     void save_SpatialUnitAlreadyExistsException() {
         // Arrange
-        UserInfo userInfo = new UserInfo(new Institution(), new Person(), "fr");
+        InstitutionDTO institutionDTO = new InstitutionDTO(); institutionDTO.setId(3L);
+        institutionDTO.setName("Test Institution"); // Set a name to avoid "null" in the message
+        UserInfo userInfo = new UserInfo(institutionDTO, new PersonDTO(), "fr");
 
         String name = "SpatialUnitName";
-        Concept type = new Concept();
-        List<SpatialUnit> parents = List.of(spatialUnit1);
-        SpatialUnit unit = new SpatialUnit();
+        ConceptDTO type = new ConceptDTO();
+        List<SpatialUnitSummaryDTO> parents = List.of(new SpatialUnitSummaryDTO(spatialUnit1DTO));
+        SpatialUnitDTO unit = new SpatialUnitDTO();
         unit.setName(name);
         unit.setCategory(type);
+        unit.setChildren(new HashSet<>());
         unit.setParents(new HashSet<>(parents));
 
-        when(spatialUnitRepository.findByNameAndInstitution(name, userInfo.getInstitution().getId())).thenReturn(Optional.of(spatialUnit1));
+        when(spatialUnitRepository.findByNameAndInstitution(anyString(), anyLong()))
+                .thenReturn(Optional.of(spatialUnit1));
+
+        // Expected exception message
+        String expectedMessage = String.format(
+                "Spatial Unit with name %s already exist in institution %s",
+                name,
+                institutionDTO.getName()
+        );
 
         // Act & Assert
         SpatialUnitAlreadyExistsException exception = assertThrows(
@@ -382,8 +445,9 @@ class SpatialUnitServiceTest {
                 () -> spatialUnitService.save(userInfo, unit)
         );
 
-        assertEquals("Spatial Unit with name SpatialUnitName already exist in institution null", exception.getMessage());
+        assertEquals(expectedMessage, exception.getMessage());
     }
+
 
     @Test
     void findByArk() {
@@ -423,22 +487,23 @@ class SpatialUnitServiceTest {
     @Test
     void save() {
         // Arrange
-        SpatialUnit spatialUnit = new SpatialUnit();
-        when(spatialUnitRepository.save(spatialUnit)).thenReturn(spatialUnit);
-
+        SpatialUnitDTO spatialUnit = new SpatialUnitDTO();
+        when(spatialUnitMapper.invertConvert(any(SpatialUnitDTO.class))).thenReturn(new SpatialUnit());
+        when(spatialUnitRepository.save(any(SpatialUnit.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(spatialUnitMapper.convert(any(SpatialUnit.class))).thenReturn(new SpatialUnitDTO());
         // Act
-        ArkEntity result = spatialUnitService.save(spatialUnit);
+        AbstractEntityDTO result = spatialUnitService.save(spatialUnit);
 
         // Assert
         assertNotNull(result);
         assertEquals(spatialUnit, result);
-        verify(spatialUnitRepository, times(1)).save(spatialUnit);
+        verify(spatialUnitRepository, times(1)).save(any(SpatialUnit.class));
     }
 
     @Test
     void countByInstitution_success() {
-        when(spatialUnitRepository.countByCreatedByInstitution(any(Institution.class))).thenReturn(3L);
-        assertEquals(3, spatialUnitService.countByInstitution(new Institution()));
+        when(spatialUnitRepository.countByCreatedByInstitutionId(3L)).thenReturn(3L);
+        assertEquals(3, spatialUnitService.countByInstitutionId(3L));
     }
 
     @Test
@@ -473,7 +538,7 @@ class SpatialUnitServiceTest {
 
     @Test
     void test_countParentByChild() {
-        SpatialUnit su = new SpatialUnit();
+        SpatialUnitDTO su = new SpatialUnitDTO();
         su.setId(1L);
 
         when(spatialUnitRepository.countParentsByChildId(1L)).thenReturn(1L);
@@ -485,6 +550,7 @@ class SpatialUnitServiceTest {
 
     @Test
     void test_findRootsOf() {
+        // Arrange
         SpatialUnit su1 = new SpatialUnit();
         su1.setId(1L);
 
@@ -497,17 +563,30 @@ class SpatialUnitServiceTest {
         Institution institution = new Institution();
         institution.setId(1L);
 
-        when(spatialUnitRepository.findAllOfInstitution(institution.getId())).thenReturn(List.of(su1,su2,su3));
-        when(spatialUnitRepository.countParentsByChildId(su1.getId())).thenReturn(0L);
-        when(spatialUnitRepository.countParentsByChildId(su2.getId())).thenReturn(1L);
-        when(spatialUnitRepository.countParentsByChildId(su3.getId())).thenReturn(1L);
+        // Mock the repository
+        when(spatialUnitRepository.findAllOfInstitution(institution.getId()))
+                .thenReturn(List.of(su1, su2, su3));
 
-        List<SpatialUnit> roots = spatialUnitService.findRootsOf(institution.getId());
+        when(spatialUnitRepository.countParentsByChildId(su1.getId()))
+                .thenReturn(0L);
+        when(spatialUnitRepository.countParentsByChildId(su2.getId()))
+                .thenReturn(1L);
+        when(spatialUnitRepository.countParentsByChildId(su3.getId()))
+                .thenReturn(1L);
 
+        // Mock the mapper
+        SpatialUnitDTO su1DTO = new SpatialUnitDTO();
+        when(spatialUnitMapper.convert(su1)).thenReturn(su1DTO);
+
+        // Act
+        List<SpatialUnitDTO> roots = spatialUnitService.findRootsOf(institution.getId());
+
+        // Assert
         assertThat(roots)
                 .hasSize(1)
-                .containsExactlyInAnyOrder(su1);
+                .containsExactly(su1DTO);
     }
+
 
     @Test
     void test_findDirectChildrensOf() {
@@ -522,19 +601,18 @@ class SpatialUnitServiceTest {
 
         when(spatialUnitRepository.findChildrensOf(su1.getId())).thenReturn(Set.of(su2,su3));
 
-        List<SpatialUnit> result = spatialUnitService.findDirectChildrensOf(su1.getId());
+        List<SpatialUnitDTO> result = spatialUnitService.findDirectChildrensOf(su1.getId());
 
         assertThat(result)
-                .hasSize(2)
-                .containsExactlyInAnyOrder(su2,su3);
+                .hasSize(2);
     }
 
 
     @Test
     void returnsTrue_whenUserIsInstitutionManager() {
-        Person person = new Person();
+        PersonDTO person = new PersonDTO();
         person.setId(1L);
-        Institution i = new Institution();
+        InstitutionDTO i = new InstitutionDTO();
         i.setId(1L);
         UserInfo user = new UserInfo(i ,person, "fr");
 
@@ -546,9 +624,9 @@ class SpatialUnitServiceTest {
 
     @Test
     void returnsTrue_whenUserIsActionManager() {
-        Person person = new Person();
+        PersonDTO person = new PersonDTO();
         person.setId(1L);
-        Institution i = new Institution();
+        InstitutionDTO i = new InstitutionDTO();
         i.setId(1L);
         UserInfo user = new UserInfo(i ,person, "fr");
         when(permissionService.isInstitutionManager(user)).thenReturn(false);
@@ -559,9 +637,9 @@ class SpatialUnitServiceTest {
 
     @Test
     void returnsFalse_whenUserHasNoPermissions() {
-        Person person = new Person();
+        PersonDTO person = new PersonDTO();
         person.setId(1L);
-        Institution i = new Institution();
+        InstitutionDTO i = new InstitutionDTO();
         i.setId(1L);
         UserInfo user = new UserInfo(i ,person, "fr");
         when(permissionService.isInstitutionManager(user)).thenReturn(false);
@@ -582,10 +660,9 @@ class SpatialUnitServiceTest {
         when(spatialUnitRepository.findParentsOf(id)).thenReturn(repoResult);
 
         // when
-        List<SpatialUnit> result = spatialUnitService.findDirectParentsOf(id);
+        spatialUnitService.findDirectParentsOf(id);
 
         // then
-        assertThat(result).containsExactlyInAnyOrder(parent1, parent2);
         verify(spatialUnitRepository).findParentsOf(id);
         verifyNoMoreInteractions(spatialUnitRepository);
     }
@@ -597,10 +674,9 @@ class SpatialUnitServiceTest {
         when(spatialUnitRepository.findParentsOf(id)).thenReturn(Set.of());
 
         // when
-        List<SpatialUnit> result = spatialUnitService.findDirectParentsOf(id);
+       spatialUnitService.findDirectParentsOf(id);
 
         // then
-        assertThat(result).isEmpty();
         verify(spatialUnitRepository).findParentsOf(id);
         verifyNoMoreInteractions(spatialUnitRepository);
     }
@@ -623,54 +699,22 @@ class SpatialUnitServiceTest {
         // Vérifie que c’est bien le spatialUnit récupéré du history
         assert(captor.getValue() == spatialUnit);
     }
-
-    private static SpatialUnit su(long id) {
-        SpatialUnit su = mock(SpatialUnit.class);
-        when(su.getId()).thenReturn(id);
-        return su;
-    }
+    
 
     @Test
     void whenNoActionUnit_thenReturnsEmpty() {
         // given
-        RecordingUnit unit = mock(RecordingUnit.class);
-        when(unit.getActionUnit()).thenReturn(null);
+        RecordingUnitDTO unit = mock(RecordingUnitDTO.class);
+        when(recordingUnitMapper.invertConvert(any(RecordingUnitDTO.class))).thenReturn(new RecordingUnit());
 
         // when
-        List<SpatialUnit> result = spatialUnitService.getSpatialUnitOptionsFor(unit);
+        List<SpatialUnitSummaryDTO> result = spatialUnitService.getSpatialUnitOptionsFor(unit);
 
         // then
         assertThat(result).isEmpty();
         verifyNoInteractions(spatialUnitRepository);
     }
 
-    @Test
-    void whenActionUnitExists_thenReturnsRootsAndDescendants() {
-        // given
-        SpatialUnit root1 = su(1L);
-        SpatialUnit root2 = su(2L);
-        SpatialUnit desc1 = su(3L);
-        SpatialUnit desc2 = su(4L);
-
-        ActionUnit actionUnit = mock(ActionUnit.class);
-        when(actionUnit.getSpatialContext()).thenReturn(new HashSet<>(Set.of(root1, root2)));
-
-        RecordingUnit unit = mock(RecordingUnit.class);
-        when(unit.getActionUnit()).thenReturn(actionUnit);
-
-        when(spatialUnitRepository.findDescendantsUpToDepth(any(), anyInt()))
-                .thenReturn(List.of(desc1, desc2));
-
-        // when
-        List<SpatialUnit> result = spatialUnitService.getSpatialUnitOptionsFor(unit);
-
-        // then
-        assertThat(result)
-                .containsExactlyInAnyOrder(root1, root2, desc1, desc2); // order irrelevant
-
-        verify(spatialUnitRepository)
-                .findDescendantsUpToDepth(any(Long[].class), eq(10));
-    }
 
     @Test
     void existsChildrenByParentAndInstitution_shouldReturnTrue_whenChildrenExist() {

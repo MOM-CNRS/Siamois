@@ -43,7 +43,6 @@ public class RecordingUnit extends RecordingUnitParent implements ArkEntity, Ref
     public RecordingUnit(RecordingUnit recordingUnit) {
         setType(recordingUnit.getType());
         setActionUnit(recordingUnit.getActionUnit());
-        setSecondaryType(recordingUnit.getSecondaryType());
         setSize(recordingUnit.getSize());
         setAltitude(recordingUnit.getAltitude());
         setCreatedByInstitution(recordingUnit.getCreatedByInstitution());
@@ -157,23 +156,9 @@ public class RecordingUnit extends RecordingUnitParent implements ArkEntity, Ref
         return String.format("Recording Unit %s", displayFullIdentifier());
     }
 
-    /**
-     * Resets the full identifier to it's base format.
-     */
-    public void resetFullIdentifier() {
-        if (actionUnit == null) return;
-        fullIdentifier = actionUnit.getFullIdentifier();
-    }
 
-    @Transient
-    @JsonIgnore
-    public List<String> getBindableFieldNames() {
-        return List.of("creationTime", "openingDate", "closingDate", "description","identifier",
-                "contributors", "type", "secondaryType", "thirdType", "actionUnit", "spatialUnit",
-                "geomorphologicalCycle", "normalizedInterpretation", "author", "geomorphologicalAgent",
-                "matrixComposition", "matrixColor", "matrixTexture", "erosionShape", "erosionOrientation",
-                "erosionProfile", "taq", "tpq", "chronologicalPhase", "fullIdentifier");
-    }
+
+
 
     // ----------- Concepts for system fields
     // Authors

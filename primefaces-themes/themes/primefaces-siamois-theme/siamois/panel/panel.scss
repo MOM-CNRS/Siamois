@@ -25,7 +25,7 @@
   border-radius: 8px;
   font-family: 'Inter', sans-serif;
   border: 1px solid var(--siamois-green-light-100);
-  border-top: 2px solid var(--main-color)
+  border-top: 2px solid var(--main-color);
 }
 
 .siamois-panel .ui-datatable .ui-datatable-header {
@@ -131,7 +131,7 @@
 
 .sia-new-unit-dialog.ui-dialog .ui-dialog-titlebar {
   padding: 1em;
-  background: var(--light-color-100);
+  background: var(--siamois-green-light-100);
 }
 
 .sia-new-unit-dialog.ui-dialog .ui-dialog-footer {
@@ -150,38 +150,139 @@ body {
     }
   }
 
+
   .ui-selectonemenu-panel {
     .ui-button {
-      background: var(--main-color);
-      border-color: var(--main-color);
+      background: var(--siamois-green);
+      border-color: var(--siamois-green);
     }
 
     .ui-selectonemenu-items .ui-selectonemenu-item.ui-state-highlight {
-      background: var(--dark-color);
+      background: var(--siamois-green-light-350);
     }
   }
 }
 
-body .ui-datepicker .ui-datepicker-calendar td>a.ui-state-active, body .ui-datepicker .ui-datepicker-calendar td>span.ui-state-active {
-  background-color: var(--main-color);
+body .ui-datepicker .ui-datepicker-calendar td > a.ui-state-active, body .ui-datepicker .ui-datepicker-calendar td > span.ui-state-active {
+  background-color: var(--siamois-green);
 }
 
 body .ui-panel.panel-docked {
-  border-radius:0;
-  border:none;
+  border-radius: 0;
+
+  border: none;
 
   .ui-panel-titlebar {
-    border-radius:0;
-    border:none;
+    border-radius: 0;
   }
 
   .ui-panel-content {
-    border-radius:0;
-    border:none;
+    border-radius: 0;
+    border: none;
+    height: 100%;
   }
 }
 
+body .ui-autocomplete .ui-autocomplete-dropdown {
+  background: white;
+  border: 1px solid #ced4da;
 
+  .ui-icon {
+    color: black;
+  }
+
+  &.ui-state-hover {
+    background: var(--siamois-green-light-100);
+    border: 1px solid #ced4da;
+  }
+
+  &.ui-state-active {
+    background: var(--siamois-green-light-100);
+    border: 1px solid #ced4da;
+    outline: 3px solid var(--siamois-green-light-100);
+  }
+}
+
+.sia-welcome-card .ui-button {
+  background: var(--main-color);
+  border: 1px solid var(--main-color);
+
+  &:hover {
+    background: var(--dark-color);
+    border: 1px solid var(--dark-color);
+  }
+
+  &.sia-icon-btn {
+    background: transparent;
+    border: none;
+    color: var(--main-color);
+
+    &:hover {
+      background: var(--dark-color);
+      border: none;
+      color: var(--main-color);
+    }
+  }
+
+}
+
+.ui-commandlink.ui-widget.sideview-topbar-button {
+  height: 24px;
+  border-radius: 3px;
+  width: 24px;
+  display: flex;          // Enable Flexbox
+  align-items: center;   // Center vertically
+  justify-content: center; // Center horizontally
+
+  .bi {
+    color: var(--text-color);
+  }
+
+  &:hover {
+    background: var(--siamois-green-light-200);
+  }
+}
+
+.sideview {
+  box-shadow: -2px 2px 4px 0px rgb(165, 163, 163);
+  border-radius: 1em 0em 0em 1em;
+  background-color: white;
+  height: 100%;
+  border-top: 3px solid var(--main-color);
+  z-index: 1000;
+  border-left: 1px solid #ccc;
+
+  .sideview-titlebar {
+    padding: 0.5rem;
+    border-bottom: 1px solid var(--siamois-green-light-200);
+    background: var(--siamois-green-light-100);
+    color: var(--main-color);
+    display: flex;
+    font-weight: 600;
+    gap: 0.5em;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+}
+
+.panel-splitter-panel-r {
+  overflow: auto;
+  box-shadow: #a5a3a3 -4px 1px 6px 0px;
+  border-radius: 1em 0em 0em 1em;
+  z-index: 1;
+}
+
+.panel-splitter-panel-l {
+  overflow: auto;
+}
+
+.ui-splitter-gutter {
+  background: white;
+}
+
+.ui-splitter-gutter-handle {
+  background: white;
+}
 
 
 

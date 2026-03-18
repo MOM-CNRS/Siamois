@@ -9,7 +9,7 @@
 
     <cc:interface>
         <cc:attribute name="answer"
-                      type="fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerSelectOneFromFieldCode"
+                      type="fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerSelectOneFromFieldCodeViewModel"
                       required="true"/>
         <cc:attribute name="hasBeenModified" type="Boolean" required="false" default="false"/>
         <cc:attribute name="field" type="fr.siamois.domain.models.form.customfield.CustomFieldSelectOneFromFieldCode"
@@ -28,15 +28,15 @@
 
 
     <cc:implementation>
-        <p:inplace mode="#{cc.attrs.mode}" toggleable="false">
+        <p:inplace id="inplace" mode="#{cc.attrs.mode}" toggleable="false">
             <f:facet name="output">
-                <chip:conceptChip concept="#{cc.attrs.answer.value}" styleClass="#{cc.attrs.field.styleClass}"/>
+                <chip:conceptChip concept="#{cc.attrs.answer.value.concept()}" styleClass="#{cc.attrs.field.styleClass}"/>
             </f:facet>
             <f:facet name="input">
                 <sharedInput:conceptAutocompleteFieldCode id="typeComponent" rendered="#{not empty cc.attrs.answer}"
                                                           inputStyleClass="#{cc.attrs.answer.hasBeenModified ? 'track-change sia-modified-field': 'track-change'}"
                                                           panelStyleClass="#{cc.attrs.panelStyleClass}"
-                                                          selectedConcept="#{cc.attrs.answer.uiVal}"
+                                                          selectedConcept="#{cc.attrs.answer.value}"
                                                           field="#{cc.attrs.field}"
                                                           panelId="#{cc.attrs.panelId}"
                                                           label="#{cc.attrs.label}"

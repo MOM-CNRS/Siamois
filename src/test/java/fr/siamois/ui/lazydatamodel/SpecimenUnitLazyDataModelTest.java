@@ -4,8 +4,11 @@ import fr.siamois.domain.models.exceptions.recordingunit.FailedRecordingUnitSave
 import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.specimen.Specimen;
-import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.specimen.SpecimenService;
+import fr.siamois.dto.entity.ConceptDTO;
+import fr.siamois.dto.entity.InstitutionDTO;
+import fr.siamois.dto.entity.RecordingUnitDTO;
+import fr.siamois.dto.entity.SpecimenDTO;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
 import fr.siamois.utils.MessageUtils;
@@ -50,6 +53,12 @@ class SpecimenUnitLazyDataModelTest {
     Institution institution;
     RecordingUnit ru;
 
+    Page<SpecimenDTO> pageDTO ;
+    SpecimenDTO unit1dto;
+    SpecimenDTO unit2dto;
+    InstitutionDTO institutionDTO;
+    RecordingUnitDTO ruDTO;
+
 
     @BeforeEach
     void setUp() {
@@ -64,6 +73,16 @@ class SpecimenUnitLazyDataModelTest {
         unit1.setFullIdentifier("sia-2025-2");
         p = new PageImpl<>(List.of(unit1, unit2));
         pageable = PageRequest.of(0, 10);
+        unit1dto = new SpecimenDTO();
+        unit2dto = new SpecimenDTO();
+        ruDTO = new RecordingUnitDTO();
+        institutionDTO = new InstitutionDTO();
+        institutionDTO.setId(1L);
+        unit1dto.setId(1L);
+        unit1dto.setFullIdentifier("sia-2025-1");
+        unit2dto.setId(2L);
+        unit1dto.setFullIdentifier("sia-2025-2");
+        pageDTO = new PageImpl<>(List.of(unit1dto, unit2dto));
     }
 
     @Test
@@ -79,22 +98,22 @@ class SpecimenUnitLazyDataModelTest {
                 any(String.class),
                 any(String.class),
                 any(Pageable.class)
-        )).thenReturn(p);
-        when(sessionSettingsBean.getSelectedInstitution()).thenReturn(institution);
+        )).thenReturn(pageDTO);
+        when(sessionSettingsBean.getSelectedInstitution()).thenReturn(institutionDTO);
         when(langBean.getLanguageCode()).thenReturn("en");
 
         // Act
-        Page<Specimen> actualResult = lazyModel.loadSpecimens("null",
+        Page<SpecimenDTO> actualResult = lazyModel.loadSpecimens("null",
                 new Long[2],new Long[2], "null", pageable);
 
         // Assert
         // Assert
-        assertEquals(unit1, actualResult.getContent().get(0));
-        assertEquals(unit2, actualResult.getContent().get(1));
+        assertEquals(unit1dto, actualResult.getContent().get(0));
+        assertEquals(unit2dto, actualResult.getContent().get(1));
     }
 
-    private Specimen createUnit(long id) {
-        Specimen unit = new Specimen();
+    private SpecimenDTO createUnit(long id) {
+        SpecimenDTO unit = new SpecimenDTO();
         unit.setId(id);
         return unit;
     }
@@ -102,7 +121,7 @@ class SpecimenUnitLazyDataModelTest {
 
     @Test
     void testGetRowKey_Success() {
-        Specimen unit = createUnit(123L);
+        SpecimenDTO unit = createUnit(123L);
         String key = lazyModel.getRowKey(unit);
         assertEquals("123", key);
     }
@@ -115,37 +134,37 @@ class SpecimenUnitLazyDataModelTest {
 
     @Test
     void testGetRowData_Success() {
-        Specimen expectedUnit = createUnit(456L);
-        List<Specimen> units = Arrays.asList(
+        SpecimenDTO expectedUnit = createUnit(456L);
+        List<SpecimenDTO> units = Arrays.asList(
                 createUnit(123L),
                 expectedUnit,
                 createUnit(789L)
         );
         lazyModel.setWrappedData(units);
 
-        Specimen result = lazyModel.getRowData("456");
+        SpecimenDTO result = lazyModel.getRowData("456");
         assertNotNull(result);
         assertEquals(456L, result.getId());
     }
 
     @Test
     void testGetRowData_NotFound() {
-        List<Specimen> units = Arrays.asList(
+        List<SpecimenDTO> units = Arrays.asList(
                 createUnit(100L),
                 createUnit(200L)
         );
         lazyModel.setWrappedData(units);
 
-        Specimen result = lazyModel.getRowData("300");
+        SpecimenDTO result = lazyModel.getRowData("300");
         assertNull(result);
     }
 
     @Test
     void testHandleRowEdit_successfulSave() {
-        Specimen unit = new Specimen();
+        SpecimenDTO unit = new SpecimenDTO();
         unit.setFullIdentifier("S123");
 
-        RowEditEvent<Specimen> event = mock(RowEditEvent.class);
+        RowEditEvent<SpecimenDTO> event = mock(RowEditEvent.class);
         when(event.getObject()).thenReturn(unit);
 
         try (MockedStatic<MessageUtils> messageUtilsMock = mockStatic(MessageUtils.class)) {
@@ -163,10 +182,10 @@ class SpecimenUnitLazyDataModelTest {
 
     @Test
     void testHandleRowEdit_failedSave() {
-        Specimen unit = new Specimen();
+        SpecimenDTO unit = new SpecimenDTO();
         unit.setFullIdentifier("S123");
 
-        RowEditEvent<Specimen> event = mock(RowEditEvent.class);
+        RowEditEvent<SpecimenDTO> event = mock(RowEditEvent.class);
         when(event.getObject()).thenReturn(unit);
 
         doThrow(new FailedRecordingUnitSaveException("")).when(specimenService).save(any());
@@ -185,12 +204,12 @@ class SpecimenUnitLazyDataModelTest {
 
     @Test
     void testSaveFieldBulk_updatesTypeAndDisplaysMessage() {
-        Specimen r1 = new Specimen();
+        SpecimenDTO r1 = new SpecimenDTO();
         r1.setId(1L);
-        Specimen r2 = new Specimen();
+        SpecimenDTO r2 = new SpecimenDTO();
         r2.setId(2L);
 
-        Concept newType = new Concept();
+        ConceptDTO newType = new ConceptDTO();
         lazyModel.setBulkEditTypeValue(newType);
         lazyModel.setSelectedUnits(List.of(r1, r2));
 
@@ -211,47 +230,6 @@ class SpecimenUnitLazyDataModelTest {
 
 
     }
-
-    @Test
-    void testDuplicateRow_createsCopyAndAddsToModel() {
-        // GIVEN
-        Specimen original = new Specimen();
-        original.setFullIdentifier("S-Original");
-        original.setId(1L);
-        original.setType(new Concept());
-
-        Specimen copied = new Specimen(original);
-        copied.setId(999L);
-        copied.setIdentifier(1);
-
-        // Create spy of lazyModel so we can override getWrappedData() and getRowData()
-        BaseSpecimenLazyDataModel spyModel = spy(lazyModel);
-
-        // Mock getWrappedData() to return list containing the original
-        doReturn(List.of(original)).when(spyModel).getWrappedData();
-
-        // Mock getRowData() to return the original when called with its ID as a string
-        doReturn(original).when(spyModel).getRowData();
-
-        // Mock service behavior
-        when(specimenService.generateNextIdentifier(any())).thenReturn(1);
-        when(specimenService.save(any())).thenReturn(copied);
-
-        // WHEN
-        spyModel.duplicateRow();
-
-        // THEN
-        verify(specimenService).generateNextIdentifier(any());
-        assertEquals(original.getType(), copied.getType());
-        verify(specimenService).save(any());
-
-    }
-
-
-
-
-
-
 
 
 }

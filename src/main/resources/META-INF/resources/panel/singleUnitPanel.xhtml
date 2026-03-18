@@ -5,24 +5,16 @@
 >
 
     <!--@elvariable id="panelIndex" type="String"-->
-    <!--@elvariable id="panelModel" type="fr.siamois.ui.bean.panel.models.panel.single.AbstractSingleEntity"-->
+    <!--@elvariable id="panelModel" type="fr.siamois.ui.bean.panel.models.panel.single.AbstractSingleEntityPanel"-->
+
 
     <!-- Content -->
-    <p:staticMessage severity="error" summary="Error" closable="false"
-                     detail="#{panelModel.errorMessage}"
-                     rendered="#{not empty panelModel.errorMessage}"/>
-    <h:panelGroup id="unitContentPanel" rendered="#{panelModel.unit != null}">
-
 
         <h:form id="singlePanelUnitForm-#{panelIndex}">
             <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
 
-            <p:progressBar widgetVar="pbBarAjax_#{panelIndex}" id="progressBar"
-                           class="panel-progressbar"
-                           style="height:3px" mode="indeterminate"/>
-
             <!-- breadcrumbs if exists -->
-            <p:outputPanel id="breadcrumbs">
+            <p:outputPanel id="breadcrumbs" rendered="#{panelModel.isRoot()}">
                 <ui:repeat var="breadcrumbModel" value="#{panelModel.allParentBreadcrumbModels}">
                     <p:breadCrumb lastItemDisabled="true" styleClass="panel-bc" homeDisplay="text"
                                   model="#{breadcrumbModel}"/>
@@ -34,7 +26,7 @@
 
             <!-- Save/Cancel Toolbar -->
             <p:toolbar class="panel-footer">
-                <p:toolbarGroup align="left">
+                <p:toolbarGroup>
                     <div style="flex-direction: row; display: flex; gap: 1em; align-items: center;">
                         <div style="display: flex; flex-direction: column">
                             <div style="display: flex; flex-direction: row; gap:1em">
@@ -76,16 +68,16 @@
                                         </i>
                                     </small>
                                 </h:panelGroup>
-                            </div>
-
-                            <small>
-                                <i>
-                                    Contributeurs:
-                                    <span class="panel-history-colored-span">
+                                <small>
+                                    <i>
+                                        Contributeurs:
+                                        <span class="panel-history-colored-span">
                                       #{panelModel.allUpdaters()}
                                     </span>
-                                </i>
-                            </small>
+                                    </i>
+                                </small>
+                            </div>
+
 
                         </div>
                         <div>
@@ -97,9 +89,9 @@
 
                 </p:toolbarGroup>
             </p:toolbar>
+
         </h:form>
 
-    </h:panelGroup>
 
 
 </ui:fragment>

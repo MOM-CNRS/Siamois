@@ -40,7 +40,6 @@ class FieldServiceTest {
         @FieldCode
         public static final String FIELD_CODE_2 = "code2";
 
-        private final String NOT_A_FIELD_CODE = "notAFieldCode";
     }
 
 }

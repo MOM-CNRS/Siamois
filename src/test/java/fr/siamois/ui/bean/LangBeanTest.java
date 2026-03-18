@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.core.convert.ConversionService;
 
 import java.util.List;
 
@@ -24,9 +25,12 @@ class LangBeanTest {
     @Mock
     private PersonService personService;
 
+    @Mock
+    private ConversionService conversionService;
+
     @BeforeEach
     void setUp() {
-        langBean = new LangBean(langService, personService);
+        langBean = new LangBean(langService, personService, conversionService);
     }
 
     @Test

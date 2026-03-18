@@ -2,13 +2,13 @@ package fr.siamois.ui.table;
 
 import fr.siamois.domain.models.exceptions.recordingunit.FailedRecordingUnitSaveException;
 import fr.siamois.domain.models.exceptions.spatialunit.SpatialUnitAlreadyExistsException;
-import fr.siamois.domain.models.form.customform.CustomForm;
-import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.authorization.writeverifier.SpatialUnitWriteVerifier;
 import fr.siamois.domain.services.form.FormService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitTreeService;
+import fr.siamois.dto.entity.SpatialUnitDTO;
+import fr.siamois.dto.entity.SpatialUnitSummaryDTO;
 import fr.siamois.ui.bean.NavBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
 import fr.siamois.ui.bean.dialog.newunit.GenericNewUnitDialogBean;
@@ -17,6 +17,7 @@ import fr.siamois.ui.bean.dialog.newunit.UnitKind;
 import fr.siamois.ui.bean.panel.FlowBean;
 import fr.siamois.ui.form.EntityFormContext;
 import fr.siamois.ui.form.FormContextServices;
+import fr.siamois.ui.form.FormUiDto;
 import fr.siamois.ui.lazydatamodel.BaseSpatialUnitLazyDataModel;
 import fr.siamois.ui.lazydatamodel.tree.SpatialUnitTreeTableLazyModel;
 import fr.siamois.utils.MessageUtils;
@@ -41,7 +42,7 @@ import static fr.siamois.ui.table.TableColumnAction.GO_TO_SPATIAL_UNIT;
  *      - configureRowSystemFields
  */
 @Getter
-public class SpatialUnitTableViewModel extends EntityTableViewModel<SpatialUnit, Long> {
+public class SpatialUnitTableViewModel extends EntityTableViewModel<SpatialUnitDTO, Long> {
 
     public static final String PARENTS = "parents";
     public static final String CHILDREN = "children";
@@ -63,7 +64,7 @@ public class SpatialUnitTableViewModel extends EntityTableViewModel<SpatialUnit,
                                      SpatialUnitTreeService spatialUnitTreeService,
                                      SpatialUnitService spatialUnitService,
                                      NavBean navBean,
-                                     FlowBean flowBean, GenericNewUnitDialogBean<SpatialUnit> genericNewUnitDialogBean,
+                                     FlowBean flowBean, GenericNewUnitDialogBean<SpatialUnitDTO> genericNewUnitDialogBean,
                                      SpatialUnitWriteVerifier writeVerifier,
                                      SpatialUnitTreeTableLazyModel treeLazyModel,
                                      InstitutionService institutionService,
@@ -78,7 +79,7 @@ public class SpatialUnitTableViewModel extends EntityTableViewModel<SpatialUnit,
                 spatialUnitService,
                 navBean,
                 sessionSettingsBean.getLangBean(),
-                SpatialUnit::getId,   // idExtractor
+                SpatialUnitDTO::getId,   // idExtractor
                 "type"  ,         // formScopeValueBinding,
                 formContextService
         );
@@ -91,21 +92,21 @@ public class SpatialUnitTableViewModel extends EntityTableViewModel<SpatialUnit,
     }
 
     @Override
-    protected CustomForm resolveRowFormFor(SpatialUnit su) {
+    protected FormUiDto resolveRowFormFor(SpatialUnitDTO su) {
         return null;
     }
 
     @Override
-    protected void configureRowSystemFields(SpatialUnit su, CustomForm rowForm) {
+    protected void configureRowSystemFields(SpatialUnitDTO su, FormUiDto rowForm) {
        // no system field to configure
     }
 
     @Override
     protected void handleCommandLink(CommandLinkColumn column,
-                                     SpatialUnit su) {
+                                     SpatialUnitDTO su) {
 
         if (column.getAction() == GO_TO_SPATIAL_UNIT) {
-            flowBean.goToSpatialUnitByIdNewPanel(su.getId());
+            flowBean.addSpatialUnitToOverview(su.getId(), parentPanel);
         } else {
             throw new IllegalStateException("Unhandled action: " + column.getAction());
         }
@@ -114,7 +115,7 @@ public class SpatialUnitTableViewModel extends EntityTableViewModel<SpatialUnit,
 
     // resolving cell text based on value key
     @Override
-    public String resolveText(TableColumn column, SpatialUnit su) {
+    public String resolveText(TableColumn column, SpatialUnitDTO su) {
 
         if (column instanceof CommandLinkColumn linkColumn) {
 
@@ -130,7 +131,7 @@ public class SpatialUnitTableViewModel extends EntityTableViewModel<SpatialUnit,
     }
 
     @Override
-    public Integer resolveCount(TableColumn column, SpatialUnit su) {
+    public Integer resolveCount(TableColumn column, SpatialUnitDTO su) {
         if (column instanceof RelationColumn rel) {
             return switch (rel.getCountKey()) {
                 case PARENTS -> su.getParents() == null ? 0 : su.getParents().size();
@@ -144,7 +145,7 @@ public class SpatialUnitTableViewModel extends EntityTableViewModel<SpatialUnit,
     }
 
     @Override
-    public boolean isRendered(TableColumn column, String key, SpatialUnit su) {
+    public boolean isRendered(TableColumn column, String key, SpatialUnitDTO su) {
         return switch (key) {
             case "writeMode" -> flowBean.getIsWriteMode();
             case "spatialUnitCreateAllowed" -> spatialUnitWriteVerifier.hasSpecificWritePermission(flowBean.getSessionSettings().getUserInfo(), su);
@@ -206,7 +207,7 @@ public class SpatialUnitTableViewModel extends EntityTableViewModel<SpatialUnit,
 
 
     @Override
-    public void handleRelationAction(RelationColumn col, SpatialUnit su, TableColumnAction action) {
+    public void handleRelationAction(RelationColumn col, SpatialUnitDTO su, TableColumnAction action) {
         switch (action) {
 
             case VIEW_RELATION -> flowBean.goToSpatialUnitByIdNewPanel(su.getId());
@@ -249,7 +250,7 @@ public class SpatialUnitTableViewModel extends EntityTableViewModel<SpatialUnit,
         }
     }
 
-    public boolean isRendered(RowAction action, SpatialUnit su) {
+    public boolean isRendered(RowAction action, SpatialUnitDTO su) {
         // todo: display based on permissions
         return switch (action.getAction()) {
             case DUPLICATE_ROW, NEW_CHILDREN, NEW_PARENT -> flowBean.getIsWriteMode() && // perm to create spatial unit in orga and app is in write mode
@@ -263,7 +264,7 @@ public class SpatialUnitTableViewModel extends EntityTableViewModel<SpatialUnit,
     }
 
 
-    public String resolveIcon(RowAction action, SpatialUnit su) {
+    public String resolveIcon(RowAction action, SpatialUnitDTO su) {
             return switch (action.getAction()) {
                 case TOGGLE_BOOKMARK -> Boolean.TRUE.equals(navBean.isSpatialUnitBookmarkedByUser(su.getId()))
                         ? "bi bi-bookmark-x-fill"
@@ -276,7 +277,7 @@ public class SpatialUnitTableViewModel extends EntityTableViewModel<SpatialUnit,
             };
     }
 
-    public void handleRowAction(RowAction action, SpatialUnit su) {
+    public void handleRowAction(RowAction action, SpatialUnitDTO su) {
 
         switch (action.getAction()) {
 
@@ -333,7 +334,7 @@ public class SpatialUnitTableViewModel extends EntityTableViewModel<SpatialUnit,
     }
 
     @Override
-    public String getRowActionTooltipCode(RowAction action, SpatialUnit unit) {
+    public String getRowActionTooltipCode(RowAction action, SpatialUnitDTO unit) {
 
         return switch (action.getAction()) {
 
@@ -354,12 +355,12 @@ public class SpatialUnitTableViewModel extends EntityTableViewModel<SpatialUnit,
     }
 
     // actions specific to treetable
-    public void handleRowAction(RowAction action, TreeNode<SpatialUnit> node) {
-        SpatialUnit su = node.getData();
+    public void handleRowAction(RowAction action, TreeNode<SpatialUnitDTO> node) {
+        SpatialUnitDTO su = node.getData();
 
         if (action.getAction() == DUPLICATE_ROW) {
             if (!Objects.equals(node.getParent().getRowKey(), "root")) {
-                this.duplicateRow(node.getData(), node.getParent().getData());
+                this.duplicateRow(node.getData(), new SpatialUnitSummaryDTO(node.getParent().getData()));
                 return;
             }
             this.duplicateRow(node.getData(), null);
@@ -376,7 +377,7 @@ public class SpatialUnitTableViewModel extends EntityTableViewModel<SpatialUnit,
     @Override
     public void save() {
         // Determine the source of entities based on treeMode
-        Set<SpatialUnit> entities;
+        Set<SpatialUnitDTO> entities;
         if (treeMode) {
             entities = treeLazyModel.getAllEntitiesFromTree();
         } else {
@@ -384,9 +385,9 @@ public class SpatialUnitTableViewModel extends EntityTableViewModel<SpatialUnit,
         }
 
         // Iterate over all entities
-        for (SpatialUnit entity : entities) {
+        for (SpatialUnitDTO entity : entities) {
             Long entityId = entity.getId();
-            EntityFormContext<SpatialUnit> context = rowContexts.get(entityId);
+            EntityFormContext<SpatialUnitDTO> context = rowContexts.get(entityId);
 
             // Check if the entity has been modified
             if (context != null && context.isHasUnsavedModifications()) {
@@ -409,23 +410,23 @@ public class SpatialUnitTableViewModel extends EntityTableViewModel<SpatialUnit,
 
 
     @Override
-    public boolean canUserEditRow(SpatialUnit unit) {
+    public boolean canUserEditRow(SpatialUnitDTO unit) {
         return flowBean.getIsWriteMode() && // perm to create action unit in orga and app is in write mode
                 institutionService.personIsInstitutionManagerOrActionManager(sessionSettingsBean.getUserInfo().getUser(),
                         sessionSettingsBean.getSelectedInstitution());
     }
 
     @Override
-    public TreeNode<SpatialUnit> getTreeRoot() {
+    public TreeNode<SpatialUnitDTO> getTreeRoot() {
         return treeLazyModel.getRoot();
     }
 
     // Duplique une unité spatiale
     // Le place au même niveau dans la hierarchie mais ne copie pas les enfants
-    private void duplicateRow(SpatialUnit toDuplicate, SpatialUnit parent) {
+    private void duplicateRow(SpatialUnitDTO toDuplicate, SpatialUnitSummaryDTO parent) {
 
         // Create a copy from selected row
-        SpatialUnit newUnit = new SpatialUnit(toDuplicate);
+        SpatialUnitDTO newUnit = new SpatialUnitDTO(toDuplicate);
 
         if(parent != null) {
             newUnit.getParents().add(parent);

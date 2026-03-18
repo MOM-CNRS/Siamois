@@ -1,12 +1,12 @@
 package fr.siamois.infrastructure.database.repositories.vocabulary.dto;
 
-import fr.siamois.domain.models.vocabulary.Concept;
-import fr.siamois.domain.models.vocabulary.Vocabulary;
-import fr.siamois.domain.models.vocabulary.label.ConceptLabel;
-import fr.siamois.domain.models.vocabulary.label.ConceptPrefLabel;
+import fr.siamois.dto.entity.ConceptDTO;
+import fr.siamois.dto.entity.ConceptLabelDTO;
+import fr.siamois.dto.entity.ConceptPrefLabelDTO;
+import fr.siamois.dto.entity.VocabularyDTO;
 import lombok.AccessLevel;
 import lombok.Builder;
-import lombok.Getter;
+import lombok.Data;
 import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
 
@@ -14,18 +14,19 @@ import java.io.Serializable;
 import java.util.List;
 import java.util.Objects;
 
-@Getter
+
 @Builder(access = AccessLevel.PUBLIC)
+@Data
 public class ConceptAutocompleteDTO implements Serializable {
 
-    private final ConceptLabel conceptLabelToDisplay;
+    private final ConceptLabelDTO conceptLabelToDisplay;
     private final String originalPrefLabel;
     private final List<String> altLabels;
     private final String definition;
     private final String hierarchyPrefLabels;
 
     public ConceptAutocompleteDTO(
-            ConceptLabel conceptLabelToDisplay,
+            ConceptLabelDTO conceptLabelToDisplay,
             String originalPrefLabel,
             List<String> altLabels,
             String definition,
@@ -37,8 +38,8 @@ public class ConceptAutocompleteDTO implements Serializable {
         this.hierarchyPrefLabels = hierarchyPrefLabels;
     }
 
-    public ConceptAutocompleteDTO(Concept c, String prefLabel, String lang) {
-        this.conceptLabelToDisplay = new ConceptPrefLabel();
+    public ConceptAutocompleteDTO(ConceptDTO c, String prefLabel, String lang) {
+        this.conceptLabelToDisplay = new ConceptPrefLabelDTO();
         this.conceptLabelToDisplay.setConcept(c);
         this.conceptLabelToDisplay.setLabel(prefLabel);
         this.conceptLabelToDisplay.setLangCode(lang);
@@ -81,12 +82,12 @@ public class ConceptAutocompleteDTO implements Serializable {
     }
 
     @Nullable
-    public Vocabulary vocabulary() {
+    public VocabularyDTO vocabulary() {
         return conceptLabelToDisplay.getConcept().getVocabulary();
     }
 
     @Nullable
-    public Concept concept() {
+    public ConceptDTO concept() {
         return conceptLabelToDisplay.getConcept();
     }
 

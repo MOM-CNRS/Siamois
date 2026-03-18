@@ -3,29 +3,37 @@ package fr.siamois.ui.bean.dialog.newunit;
 import fr.siamois.domain.models.TraceableEntity;
 import fr.siamois.domain.models.exceptions.EntityAlreadyExistsException;
 import fr.siamois.domain.models.form.customfield.CustomField;
-import fr.siamois.domain.models.spatialunit.SpatialUnit;
-import fr.siamois.domain.models.vocabulary.Concept;
-import fr.siamois.domain.models.vocabulary.label.ConceptLabel;
 import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.domain.services.vocabulary.FieldService;
+import fr.siamois.dto.entity.AbstractEntityDTO;
+import fr.siamois.dto.entity.ConceptDTO;
+import fr.siamois.dto.entity.SpatialUnitSummaryDTO;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.RedirectBean;
+import fr.siamois.ui.bean.SessionSettingsBean;
 import fr.siamois.ui.bean.dialog.newunit.handler.INewUnitHandler;
 import fr.siamois.ui.bean.field.SpatialUnitFieldBean;
+import fr.siamois.ui.bean.panel.EntityForm;
 import fr.siamois.ui.bean.panel.FlowBean;
 import fr.siamois.ui.bean.panel.models.panel.single.AbstractSingleEntity;
 import fr.siamois.ui.exceptions.CannotInitializeNewUnitDialogException;
+import fr.siamois.ui.form.EntityFormContext;
+import fr.siamois.ui.form.FormContextServices;
+import fr.siamois.ui.form.FormUiDto;
+import fr.siamois.ui.form.fieldsource.PanelFieldSource;
 import fr.siamois.ui.lazydatamodel.BaseLazyDataModel;
+import fr.siamois.ui.viewmodel.CustomFormResponseViewModel;
 import fr.siamois.utils.MessageUtils;
-import jakarta.faces.component.UIComponent;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.codec.language.bm.Lang;
 import org.primefaces.PrimeFaces;
-import org.primefaces.event.SelectEvent;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Scope;
+import org.springframework.core.convert.ConversionService;
 import org.springframework.stereotype.Component;
 
 import java.io.Serializable;
@@ -38,58 +46,42 @@ import java.util.Set;
 @Component
 @Getter
 @Setter
-@EqualsAndHashCode(callSuper = true)
-public class GenericNewUnitDialogBean<T extends TraceableEntity>
-        extends AbstractSingleEntity<T> implements Serializable {
+@RequiredArgsConstructor
+public class GenericNewUnitDialogBean<T extends AbstractEntityDTO>
+        implements EntityForm<T>, Serializable {
 
     private final transient FieldService fieldService;
     private final transient ConceptService conceptService;
-    private final SpatialUnitFieldBean spatialUnitFieldBean;
-    // The sets to update after creation
-    protected BaseLazyDataModel<T> lazyDataModel;
-    protected transient Set<T> setToUpdate;
-    // Context of creation (parent)
-    protected TraceableEntity parent;
-    // Multi hierarchy parent/children
-    protected T multiHierarchyParent;
-    protected T multiHierarchyChild;
+    private final transient SpatialUnitFieldBean spatialUnitFieldBean;
+    private final transient FlowBean flowBean;
+    private final transient RedirectBean redirectBean;
+    private final transient FormContextServices formContextServices;
+    private final transient Map<UnitKind, INewUnitHandler<? extends AbstractEntityDTO>> handlers;
+    private final transient SessionSettingsBean sessionSettingsBean;
+    private final transient LangBean langBean;
+    private final transient ConversionService conversionService;
 
-    protected final FlowBean flowBean;
-    protected final RedirectBean redirectBean;
+    private T unit;
+    private transient FormUiDto detailsForm;
+    private transient EntityFormContext<T> formContext;
 
     protected static final String UPDATE_FAILED_MESSAGE_CODE = "common.entity.spatialUnits.updateFailed";
     protected static final String ENTITY_ALREADY_EXIST_MESSAGE_CODE = "common.entity.alreadyExist";
 
     // ==== handlers ====
-    private transient Map<UnitKind, INewUnitHandler<? extends TraceableEntity>> handlers;
+
     private UnitKind kind;
     private transient INewUnitHandler<T> handler;
 
     // creation  callback + contexte ====
-    private transient fr.siamois.ui.table.EntityTableViewModel<?, ?> sourceTableModel;
+    private transient fr.siamois.ui.table.EntityTableViewModel<T, ?> sourceTableModel;
     private transient NewUnitContext newUnitContext;
-
-    public void refresh() {
-        // NOTHING TO DO, I THINK THIS CLASS DOES NOT INHERIT FROM THE PROPER ONE
-    }
-
-    public GenericNewUnitDialogBean(ApplicationContext context,
-                                    Set<INewUnitHandler<? extends TraceableEntity>> handlerSet) {
-        super(context);
-        this.flowBean = context.getBean(FlowBean.class);
-        this.redirectBean = context.getBean(RedirectBean.class);
-        this.handlers = handlerSet.stream()
-                .collect(java.util.stream.Collectors.toMap(INewUnitHandler::kind, h -> h));
-        this.fieldService = context.getBean(FieldService.class);
-        this.conceptService = context.getBean(ConceptService.class);
-        this.spatialUnitFieldBean = context.getBean(SpatialUnitFieldBean.class);
-    }
 
 
     // Unique selectKind
     @SuppressWarnings("unchecked")
     public void selectKind(NewUnitContext ctx,
-                           fr.siamois.ui.table.EntityTableViewModel<?, ?> sourceTableModel)
+                           fr.siamois.ui.table.EntityTableViewModel<T, ?> sourceTableModel)
             throws CannotInitializeNewUnitDialogException {
 
         this.kind = ctx.getKindToCreate();
@@ -116,19 +108,38 @@ public class GenericNewUnitDialogBean<T extends TraceableEntity>
         return unit != null ? handler.getName(unit) : " Unnamed unit";
     }
 
-    @Override
-    public String ressourceUri() {
-        return handler != null ? handler.getResourceUri() : "generic-new-unit";
-    }
-
     public Long getUnitId() {
         return unit != null ? unit.getId() : null;
     }
 
+    /**
+     * call this to initialize the EntityFormContext.
+     */
+    public void initFormContext(boolean forceInit) {
+        if (unit == null) {
+            log.warn("initFormContext called with null unit");
+            return;
+        }
+        PanelFieldSource fieldSource = new PanelFieldSource(detailsForm);
+        if (formContext == null || forceInit) {
+            formContext = new EntityFormContext<>(
+                    unit,
+                    fieldSource,
+                    formContextServices,
+                    conversionService,
+                    // callback appelé quand le champ de scope change
+                    null,
+                    // nom de la propriété qui porte le scope (ex: "type")
+                    null
+            );
+        }
+        formContext.setAutoSave(false); // IMPORTANT
+        formContext.init(forceInit);
+    }
 
-    @Override
     public void initForms(boolean forceInit) {
-        detailsForm = handler.formLayout();
+        detailsForm = formContextServices.getConversionService().convert(handler.formLayout(), FormUiDto.class);
+
         initFormContext(forceInit);
     }
 
@@ -148,72 +159,36 @@ public class GenericNewUnitDialogBean<T extends TraceableEntity>
 
     public void create() {
 
-        boolean isDifferentKind = newUnitContext.getTrigger().getType() == NewUnitContext.TriggerType.HOME_PANEL
-                || ( newUnitContext.getTrigger().getType() == NewUnitContext.TriggerType.CELL  &&
-                newUnitContext.getTrigger().getClickedKind() != newUnitContext.getKindToCreate());
 
-
-        performCreate(isDifferentKind, isDifferentKind);
+        performCreate();
 
     }
 
-    @Override
-    public String display() {
-        return "";
-    }
-
-    @Override
-    public String getAutocompleteClass() {
-        // Default implementation
-        return handler.getAutocompleteClass();
-    }
 
     /**
      * Return the spatial unit options for spatial unit selection field
+     *
      * @return The list of selectable spatial unit
      */
-    @Override
-    public List<SpatialUnit> getSpatialUnitOptions() {
+    public List<SpatialUnitSummaryDTO> getSpatialUnitOptions() {
         return handler.getSpatialUnitOptions(unit);
     }
 
-    @Override
-    protected String getFormScopePropertyName() {
-        return "";
-    }
-
-    @Override
-    protected void setFormScopePropertyValue(Concept concept) {
-        // Empty because new unit form don't change based on type.
-        // Need refactoring? Wrong parent class
-    }
-
-    private void performCreate(boolean openAfter, boolean scrollToTop) {
+    private void performCreate( ) {
         try {
             createUnit();
             // JS conditionnel (widgetVar fixe)
             String js = "PF('newUnitDiag').hide();";
-
-
-            if (scrollToTop) {
-                js += "handleScrollToTop();";
-            }
-
             PrimeFaces.current().executeScript(js);
 
-            // Refresh commun
-            PrimeFaces.current().ajax().update(newUnitContext.getUpdateOnCreate());
-
-
-            // Message succès
-            MessageUtils.displayInfoMessage(langBean, getSuccessMessageCode(), unitName());
-
-            // update des compteurs du home panel
-            flowBean.updateHomePanel();
-
-            if (openAfter) {
-                redirectBean.redirectTo(handler.viewUrlFor(getUnitId()));
+            // Display the new unit in the overview
+            switch(kind) {
+                case SPATIAL -> flowBean.addSpatialUnitToOverview(getUnitId(),sourceTableModel.getParentPanel());
+                case RECORDING -> flowBean.addRecordingUnitToOverview(getUnitId(),sourceTableModel.getParentPanel());
+                case ACTION -> flowBean.addActionUnitToOverview(getUnitId(),sourceTableModel.getParentPanel());
+                case SPECIMEN -> flowBean.addSpecimenToOverview(getUnitId(),sourceTableModel.getParentPanel());
             }
+
 
         } catch (EntityAlreadyExistsException e) {
             log.error(e.getMessage(), e);
@@ -226,6 +201,25 @@ public class GenericNewUnitDialogBean<T extends TraceableEntity>
         }
     }
 
+    public boolean isColumnEnabled(CustomField field) {
+        return formContext != null && formContext.isColumnEnabled(field);
+    }
+
+    /**
+     * Expose "has unsaved modifications" via the context.
+     */
+    public boolean isHasUnsavedModifications() {
+        return false;
+    }
+
+    /**
+     * Expose the current CustomFormResponse via the context.
+     */
+    public CustomFormResponseViewModel getFormResponse() {
+        return formContext != null ? formContext.getFormResponse() : null;
+    }
+
+
     protected void createUnit() throws EntityAlreadyExistsException {
         formContext.flushBackToEntity();
         unit.setValidated(false);
@@ -235,6 +229,21 @@ public class GenericNewUnitDialogBean<T extends TraceableEntity>
         if (sourceTableModel != null && newUnitContext != null) {
             sourceTableModel.onAnyEntityCreated(unit, newUnitContext);
         }
+    }
+
+    public String getConceptFieldsUpdateTargetsOnBlur() {
+        return "";
+
+    }
+
+    public String getPanelHeaderUpdateId() {
+        return "";
+
+    }
+
+    public String getAutocompleteClass() {
+        return "";
+
     }
 
     /*

@@ -3,6 +3,7 @@ package fr.siamois.domain.services.person.verifier;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.exceptions.auth.EmailAlreadyExistException;
 import fr.siamois.domain.models.exceptions.auth.InvalidEmailException;
+import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.infrastructure.database.repositories.person.PersonRepository;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.core.annotation.Order;
@@ -21,7 +22,7 @@ public class EmailVerifier extends PersonDataVerifier {
     }
 
     @Override
-    public void verify(Person person) throws InvalidEmailException {
+    public void verify(PersonDTO person) throws InvalidEmailException {
         String email = person.getEmail();
 
         emailUsesValidChars(email);

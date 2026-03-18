@@ -1,6 +1,5 @@
 package fr.siamois.domain.services.spatialunit;
 
-import fr.siamois.domain.models.ArkEntity;
 import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.ark.Ark;
 import fr.siamois.domain.models.exceptions.recordingunit.FailedRecordingUnitSaveException;
@@ -18,7 +17,13 @@ import fr.siamois.domain.services.ark.ArkService;
 import fr.siamois.domain.services.authorization.PermissionServiceImpl;
 import fr.siamois.domain.services.person.PersonService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
+import fr.siamois.dto.entity.*;
 import fr.siamois.infrastructure.database.repositories.SpatialUnitRepository;
+import fr.siamois.mapper.InstitutionMapper;
+import fr.siamois.mapper.RecordingUnitMapper;
+import fr.siamois.mapper.SpatialUnitMapper;
+import fr.siamois.mapper.SpatialUnitSummaryMapper;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.Hibernate;
 import org.springframework.data.domain.Page;
@@ -29,6 +34,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Service to manage SpatialUnit
@@ -37,6 +43,7 @@ import java.util.*;
  */
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class SpatialUnitService implements ArkEntityService {
 
     private final SpatialUnitRepository spatialUnitRepository;
@@ -45,15 +52,11 @@ public class SpatialUnitService implements ArkEntityService {
     private final InstitutionService institutionService;
     private final PersonService personService;
     private final PermissionServiceImpl permissionService;
+    private final SpatialUnitMapper spatialUnitMapper;
+    private final RecordingUnitMapper recordingUnitMapper;
+    private final SpatialUnitSummaryMapper spatialUnitSummaryMapper;
+    private final InstitutionMapper institutionMapper;
 
-    public SpatialUnitService(SpatialUnitRepository spatialUnitRepository, ConceptService conceptService, ArkService arkService, InstitutionService institutionService, PersonService personService, PermissionServiceImpl permissionService) {
-        this.spatialUnitRepository = spatialUnitRepository;
-        this.conceptService = conceptService;
-        this.arkService = arkService;
-        this.institutionService = institutionService;
-        this.personService = personService;
-        this.permissionService = permissionService;
-    }
 
 
     /**
@@ -65,16 +68,18 @@ public class SpatialUnitService implements ArkEntityService {
      * @throws RuntimeException             If the repository method returns a RuntimeException
      */
     @Transactional(readOnly = true)
-    public SpatialUnit findById(long id) {
+    public SpatialUnitDTO findById(long id) {
         try {
-            SpatialUnit spatialUnit = spatialUnitRepository.findById(id).orElseThrow(() -> new SpatialUnitNotFoundException("SpatialUnit not found with ID: " + id));
+            SpatialUnit spatialUnit = spatialUnitRepository.findById(id)
+                    .orElseThrow(() -> new SpatialUnitNotFoundException("SpatialUnit not found with ID: " + id));
             Hibernate.initialize(spatialUnit);
-            return spatialUnit;
+            return spatialUnitMapper.convert(spatialUnit);
         } catch (RuntimeException e) {
             log.error(e.getMessage(), e);
             throw e;
         }
     }
+
 
     /**
      * Restore a spatial unit from its history
@@ -111,14 +116,16 @@ public class SpatialUnitService implements ArkEntityService {
      * @return A page of SpatialUnit matching the criteria
      */
     @Transactional(readOnly = true)
-    public Page<SpatialUnit> findAllByInstitutionAndByNameContainingAndByCategoriesAndByGlobalContaining(
+    public Page<SpatialUnitDTO> findAllByInstitutionAndByNameContainingAndByCategoriesAndByGlobalContaining(
             Long institutionId,
             String name, Long[] categoryIds, Long[] personIds, String global, String langCode, Pageable pageable) {
 
         Page<SpatialUnit> res = spatialUnitRepository.findAllByInstitutionAndByNameContainingAndByCategoriesAndByGlobalContaining(
                 institutionId, name, categoryIds, personIds, global, langCode, pageable);
 
-        return initializeSpatialUnitLazyAttributes(res);
+        initializeSpatialUnitLazyAttributes(res);
+
+        return res.map(spatialUnitMapper::convert);
     }
 
     /**
@@ -134,13 +141,15 @@ public class SpatialUnitService implements ArkEntityService {
      * @return A page of SpatialUnit matching the criteria
      */
     @Transactional(readOnly = true)
-    public Page<SpatialUnit> findAllByParentAndByNameContainingAndByCategoriesAndByGlobalContaining(
-            SpatialUnit parent,
+    public Page<SpatialUnitDTO> findAllByParentAndByNameContainingAndByCategoriesAndByGlobalContaining(
+            SpatialUnitDTO parent,
             String name, Long[] categoryIds, Long[] personIds, String global, String langCode, Pageable pageable) {
         Page<SpatialUnit> res = spatialUnitRepository.findAllByParentAndByNameContainingAndByCategoriesAndByGlobalContaining(
                 parent.getId(), name, categoryIds, personIds, global, langCode, pageable);
 
-        return initializeSpatialUnitLazyAttributes(res);
+        initializeSpatialUnitLazyAttributes(res);
+
+        return res.map(spatialUnitMapper::convert);
     }
 
     /**
@@ -156,13 +165,14 @@ public class SpatialUnitService implements ArkEntityService {
      * @return A page of SpatialUnit matching the criteria
      */
     @Transactional(readOnly = true)
-    public Page<SpatialUnit> findAllByChildAndByNameContainingAndByCategoriesAndByGlobalContaining(
-            SpatialUnit child,
+    public Page<SpatialUnitDTO> findAllByChildAndByNameContainingAndByCategoriesAndByGlobalContaining(
+            SpatialUnitDTO child,
             String name, Long[] categoryIds, Long[] personIds, String global, String langCode, Pageable pageable) {
         Page<SpatialUnit> res = spatialUnitRepository.findAllByChildAndByNameContainingAndByCategoriesAndByGlobalContaining(
                 child.getId(), name, categoryIds, personIds, global, langCode, pageable);
 
-        return initializeSpatialUnitLazyAttributes(res);
+        initializeSpatialUnitLazyAttributes(res);
+        return res.map(spatialUnitMapper::convert);
     }
 
     /**
@@ -171,9 +181,13 @@ public class SpatialUnitService implements ArkEntityService {
      * @param id The institution id to filter by
      * @return A list of SpatialUnit belonging to the given institution
      */
-    public List<SpatialUnit> findAllOfInstitution(Long id) {
-        return spatialUnitRepository.findAllOfInstitution(id);
+    public List<SpatialUnitDTO> findAllOfInstitution(Long id) {
+        List<SpatialUnit> spatialUnits = spatialUnitRepository.findAllOfInstitution(id);
+        return spatialUnits.stream()
+                .map(spatialUnitMapper::convert)
+                .toList();
     }
+
 
     /**
      * Save a new SpatialUnit
@@ -184,10 +198,8 @@ public class SpatialUnitService implements ArkEntityService {
      * @throws SpatialUnitAlreadyExistsException If a SpatialUnit with the same name already exists in the institution
      */
     @Transactional
-    public SpatialUnit save(UserInfo info, SpatialUnit su) throws SpatialUnitAlreadyExistsException {
+    public SpatialUnitDTO save(UserInfo info, SpatialUnitDTO su) throws SpatialUnitAlreadyExistsException {
         String name = su.getName();
-        Concept type = su.getCategory();
-        Set<SpatialUnit> children = su.getChildren();
 
         Optional<SpatialUnit> optSpatialUnit = spatialUnitRepository.findByNameAndInstitution(name, info.getInstitution().getId());
         if (optSpatialUnit.isPresent())
@@ -198,9 +210,9 @@ public class SpatialUnitService implements ArkEntityService {
 
         SpatialUnit spatialUnit = new SpatialUnit();
         spatialUnit.setName(name);
-        spatialUnit.setCreatedByInstitution(institutionService.findById(info.getInstitution().getId()));
+        spatialUnit.setCreatedByInstitution(institutionMapper.invertConvert(institutionService.findById(info.getInstitution().getId())));
         spatialUnit.setCreatedBy(personService.findById(info.getUser().getId()));
-        spatialUnit.setCategory(conceptService.saveOrGetConcept(type));
+        spatialUnit.setCategory(conceptService.saveOrGetConcept(su.getCategory()));
         spatialUnit.setCreationTime(OffsetDateTime.now(ZoneId.systemDefault()));
 
         InstitutionSettings settings = institutionService.createOrGetSettingsOf(info.getInstitution());
@@ -209,22 +221,10 @@ public class SpatialUnitService implements ArkEntityService {
             spatialUnit.setArk(ark);
         }
 
-        // Reattach parents
-        for (SpatialUnit parentRef : su.getParents()) {
-            SpatialUnit parent = spatialUnitRepository.findById(parentRef.getId())
-                    .orElseThrow(() -> new IllegalArgumentException("Parent not found: " + parentRef.getId()));
-
-            parent.getChildren().add(spatialUnit);
-            spatialUnit.getParents().add(parent);
-        }
-
-        for (SpatialUnit child : children) {
-            spatialUnit.getChildren().add(child);
-        }
 
         spatialUnit = spatialUnitRepository.save(spatialUnit);
 
-        return spatialUnit;
+        return spatialUnitMapper.convert(spatialUnit);
     }
 
     /**
@@ -256,10 +256,11 @@ public class SpatialUnitService implements ArkEntityService {
      */
     @Override
     @Transactional
-    public ArkEntity save(ArkEntity toSave) {
+    public AbstractEntityDTO save(AbstractEntityDTO toSave) {
         try {
             SpatialUnit managedSpatialUnit;
-            SpatialUnit spatialUnit = (SpatialUnit) toSave;
+            SpatialUnit spatialUnit = spatialUnitMapper.invertConvert((SpatialUnitDTO) toSave);
+            ConceptDTO conceptDTO = ((SpatialUnitDTO) toSave).getCategory();
 
             if (spatialUnit.getId() != null) {
                 Optional<SpatialUnit> optUnit = spatialUnitRepository.findById(spatialUnit.getId());
@@ -275,10 +276,11 @@ public class SpatialUnitService implements ArkEntityService {
             managedSpatialUnit.setGeom(spatialUnit.getGeom());
             managedSpatialUnit.setCreatedByInstitution(spatialUnit.getCreatedByInstitution());
             // Add concept
-            Concept type = conceptService.saveOrGetConcept(spatialUnit.getCategory());
+            Concept type = conceptService.saveOrGetConcept(
+                    conceptDTO);
             managedSpatialUnit.setCategory(type);
 
-            return spatialUnitRepository.save(managedSpatialUnit);
+            return spatialUnitMapper.convert(spatialUnitRepository.save(managedSpatialUnit));
 
         } catch (RuntimeException e) {
             throw new FailedRecordingUnitSaveException(e.getMessage());
@@ -288,12 +290,13 @@ public class SpatialUnitService implements ArkEntityService {
     /**
      * Count the number of SpatialUnits created by a specific institution
      *
-     * @param institution The institution to filter by
+     * @param id The institution to filter by
      * @return The count of SpatialUnits created in the institution
      */
-    public long countByInstitution(Institution institution) {
-        return spatialUnitRepository.countByCreatedByInstitution(institution);
+    public long countByInstitutionId(Long id) {
+        return spatialUnitRepository.countByCreatedByInstitutionId(id);
     }
+
 
     /**
      * Find all SpatialUnits in the system
@@ -320,7 +323,7 @@ public class SpatialUnitService implements ArkEntityService {
      * @param spatialUnit The SpatialUnit to count parents for
      * @return The count of parents for the given SpatialUnit
      */
-    public long countParentsByChild(SpatialUnit spatialUnit) {
+    public long countParentsByChild(SpatialUnitDTO spatialUnit) {
         return spatialUnitRepository.countParentsByChildId(spatialUnit.getId());
     }
 
@@ -330,36 +333,64 @@ public class SpatialUnitService implements ArkEntityService {
      * @param id The institution id to filter by
      * @return A list of root SpatialUnit that have no parents
      */
-    public List<SpatialUnit> findRootsOf(Long id) {
+    public List<SpatialUnitDTO> findRootsOf(Long id) {
         List<SpatialUnit> result = new ArrayList<>();
-        for (SpatialUnit spatialUnit : findAllOfInstitution(id)) {
-            if (countParentsByChild(spatialUnit) == 0) {
+        for (SpatialUnit spatialUnit : spatialUnitRepository.findAllOfInstitution(id)) {
+            if (spatialUnitRepository.countParentsByChildId(spatialUnit.getId()) == 0) {
                 result.add(spatialUnit);
             }
         }
-        return result;
+        return result.stream()
+                .map(spatialUnitMapper::convert)
+                .toList();
+    }
+
+    public List<SpatialUnitSummaryDTO> findSummaryRootsOf(Long id) {
+        List<SpatialUnit> result = new ArrayList<>();
+        for (SpatialUnit spatialUnit : spatialUnitRepository.findAllOfInstitution(id)) {
+            if (spatialUnitRepository.countParentsByChildId(spatialUnit.getId()) == 0) {
+                result.add(spatialUnit);
+            }
+        }
+        return result.stream()
+                .map(spatialUnitSummaryMapper::convert)
+                .toList();
     }
 
     /**
      * Find all direct children of a given SpatialUnit
      *
-     * @param id The id SpatialUnit to find children for
-     * @return A list of direct children SpatialUnit of the given SpatialUnit
+     * @param id The id of the SpatialUnit to find children for
+     * @return A list of direct children SpatialUnitDTO of the given SpatialUnit
      */
-    @Transactional
-    public List<SpatialUnit> findDirectChildrensOf(Long id) {
-        return spatialUnitRepository.findChildrensOf(id).stream().toList();
+    @Transactional(readOnly = true)
+    public List<SpatialUnitDTO> findDirectChildrensOf(Long id) {
+        return spatialUnitRepository.findChildrensOf(id).stream()
+                .map(spatialUnitMapper::convert)
+                .toList();
     }
+
+    @Transactional(readOnly = true)
+    public List<SpatialUnitSummaryDTO> findDirectChildrensSummaryOf(Long id) {
+        return spatialUnitRepository.findChildrensOf(id).stream()
+                .map(spatialUnitSummaryMapper::convert)
+                .toList();
+    }
+
 
     /**
      * Find all direct parents of a given SpatialUnit
      *
      * @param id The ID of the SpatialUnit to find parents for
-     * @return A list of direct parents SpatialUnit of the given SpatialUnit
+     * @return A list of direct parents SpatialUnitDTO of the given SpatialUnit
      */
-    public List<SpatialUnit> findDirectParentsOf(Long id) {
-        return spatialUnitRepository.findParentsOf(id).stream().toList();
+    @Transactional(readOnly = true)
+    public List<SpatialUnitDTO> findDirectParentsOf(Long id) {
+        return spatialUnitRepository.findParentsOf(id).stream()
+                .map(spatialUnitMapper::convert)
+                .toList();
     }
+
 
 
     /**
@@ -373,15 +404,11 @@ public class SpatialUnitService implements ArkEntityService {
                 || permissionService.isActionManager(user);
     }
 
-    /**
-     * Returns all the spatial units a recording unit can be attached to
-     * @param unit The recording unit
-     * @return The list of spatial unit
-     */
-    public List<SpatialUnit> getSpatialUnitOptionsFor(RecordingUnit unit) {
+    public List<SpatialUnitSummaryDTO> getSpatialUnitOptionsFor(RecordingUnitDTO unitDTO) {
+        RecordingUnit unit = recordingUnitMapper.invertConvert(unitDTO);
+        assert unit != null;
         if (unit.getActionUnit() == null) return List.of();
 
-        // Roots from the action’s spatial context
         List<SpatialUnit> roots = new ArrayList<>(unit.getActionUnit().getSpatialContext());
         List<Long> rootIds = roots.stream()
                 .map(SpatialUnit::getId)
@@ -393,10 +420,10 @@ public class SpatialUnitService implements ArkEntityService {
                 ? List.of()
                 : spatialUnitRepository.findDescendantsUpToDepth(rootIds.toArray(Long[]::new), 10);
 
+        LinkedHashMap<Long, SpatialUnitSummaryDTO> byId = new LinkedHashMap<>();
+        roots.forEach(su -> byId.put(su.getId(), spatialUnitSummaryMapper.convert(su)));
+        descendants.forEach(su -> byId.putIfAbsent(su.getId(), spatialUnitSummaryMapper.convert(su)));
 
-        LinkedHashMap<Long, SpatialUnit> byId = new LinkedHashMap<>();
-        roots.forEach(su -> byId.put(su.getId(), su));
-        descendants.forEach(su -> byId.putIfAbsent(su.getId(), su));
         return new ArrayList<>(byId.values());
     }
 

@@ -18,6 +18,11 @@ services:
       CONTEXT_PATH: /
     networks:
       - siamois-net
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
 
 networks:
   siamois-net:

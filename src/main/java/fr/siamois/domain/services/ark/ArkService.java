@@ -7,11 +7,14 @@ import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.settings.InstitutionSettings;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.infrastructure.database.repositories.ArkRepository;
+import fr.siamois.mapper.InstitutionMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.convert.ConversionService;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.security.SecureRandom;
+import java.util.Objects;
 
 /**
  * Service for managing ARK (Archival Resource Key) generation and validation.
@@ -27,6 +30,7 @@ public class ArkService {
     private final NoidCheckService noidCheckService;
     private final ArkRepository arkRepository;
     private final InstitutionService institutionService;
+    private final InstitutionMapper institutionMapper;
 
     private ServletUriComponentsBuilder builder;
 
@@ -40,10 +44,11 @@ public class ArkService {
     @Autowired
     public ArkService(NoidCheckService noidCheckService,
                       ArkRepository arkRepository,
-                      InstitutionService institutionService) {
+                      InstitutionService institutionService, ConversionService conversionService, InstitutionMapper institutionMapper) {
         this.noidCheckService = noidCheckService;
         this.arkRepository = arkRepository;
         this.institutionService = institutionService;
+        this.institutionMapper = institutionMapper;
     }
 
     /**
@@ -57,10 +62,12 @@ public class ArkService {
     public ArkService(NoidCheckService noidCheckService,
                       ArkRepository arkRepository,
                       InstitutionService institutionService,
+                      InstitutionMapper institutionMapper,
                       ServletUriComponentsBuilder builder) {
         this.noidCheckService = noidCheckService;
         this.arkRepository = arkRepository;
         this.institutionService = institutionService;
+        this.institutionMapper = institutionMapper;
         this.builder = builder;
     }
 
@@ -141,7 +148,9 @@ public class ArkService {
      * @return the URI of the ARK as a String
      */
     public String getUriOf(Ark ark) {
-        InstitutionSettings settings = institutionService.createOrGetSettingsOf(ark.getCreatingInstitution());
+
+        InstitutionSettings settings = institutionService.createOrGetSettingsOf(
+                Objects.requireNonNull(institutionMapper.convert(ark.getCreatingInstitution())));
         if (!settings.hasEnabledArkConfig()) {
             throw new IllegalStateException(String.format("Institution n°%s should have ark settings.", settings.getId()));
         }

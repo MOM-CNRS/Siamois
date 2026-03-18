@@ -22,6 +22,7 @@
         <cc:attribute name="btnNewAction" required="false" method-signature="java.lang.Void f()"/>
         <cc:attribute name="panelModel" required="false"/>
         <cc:attribute name="isCreateAllowed" required="false" type="java.lang.Boolean" default="false"/>
+        <cc:attribute name="newPanelId" required="true" type="java.lang.String" default="false"/>
     </cc:interface>
 
     <cc:implementation>
@@ -43,18 +44,9 @@
                 <div style="display: flex; flex-direction: row; gap: 1em; justify-content: center;">
                     <p:commandButton styleClass="#{cc.attrs.btnStyleClass}" value="#{cc.attrs.btnLabel}"
                                      id="openUnitListPanelButton"
-                                     onstart="PF('buiContent').show()" oncomplete="PF('buiContent').hide();handleScrollToTop();"
+                                     ajax="false"
+                                     onstart="PF('buiContent').show()" oncomplete="PF('buiContent').hide();onCompleteCallback('#{cc.attrs.newPanelId}');"
                                      action="#{cc.attrs.btnAction}" disabled="#{empty cc.attrs.btnAction}" update="flow"/>
-                    <p:commandButton value='#{langBean.msg("common.action.create")}' icon="bi bi-plus-square" styleClass="#{cc.attrs.btnStyleClass}"
-                                     actionListener="#{cc.attrs.btnNewAction}"
-                                     rendered="#{not empty cc.attrs.btnNewAction and flowBean.isWriteMode and cc.attrs.isCreateAllowed}"
-                                     update="#{cc.attrs.btnNewActionUpdate}"
-                                     onstart="#{cc.attrs.btnNewActionOnStart}"
-                                     oncomplete="#{cc.attrs.btnNewActionOnComplete}"
-                                     id="openNewUnitPanelButton"
-                                     disabled="#{empty cc.attrs.btnNewAction}"
-                                     style="margin-right: .5rem">
-                    </p:commandButton>
                 </div>
 
 

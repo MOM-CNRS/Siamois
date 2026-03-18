@@ -1,0 +1,76 @@
+<!-- panelTemplate.xhtml -->
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
+                xmlns:p="http://primefaces.org/ui"
+                xmlns:h="http://xmlns.jcp.org/jsf/html">
+
+    <!--@elvariable id="panelIndex" type="String"-->
+    <!--@elvariable id="mode" type="String"-->
+    <!--@elvariable id="panelModel" type="fr.siamois.ui.bean.panel.models.panel.AbstractPanel"-->
+
+    <p:staticMessage severity="error" summary="Error" closable="false"
+                     detail="#{panelModel.errorMessage}"
+                     rendered="#{not empty panelModel.errorMessage}"/>
+    <p:progressBar widgetVar="pbBarAjax_#{panelIndex}" id="progressBar"
+                   class="panel-progressbar"
+                   style="height:3px" mode="indeterminate"/>
+    <p:splitter id="panel-splitter-${panelIndex}" style="height: 100%" styleClass="#{flowBean.fullscreenPanelIndex !=-1 ? 'focus' : ''}">
+        <!-- Left Splitter Panel (dynamic) -->
+        <p:splitterPanel style="overflow:auto;" styleClass="panel-splitter-panel-l" id="mainView">
+            <!-- Include the reusable dynamic content for the right panel -->
+            <ui:include src="#{panelModel.display()}" id="panel-body">
+                <ui:param name="panelModel" value="#{panelModel}"/>
+                <ui:param name="panelIndex" value="#{panelIndex}"/>
+                <ui:param name="mode" value="#{mode}"/>
+            </ui:include>
+        </p:splitterPanel>
+
+        <!-- Right Splitter Panel (dynamic) -->
+        <p:splitterPanel styleClass="panel-splitter-panel-r"
+                         style="overflow:auto;display: #{panelModel.getLeftSpltterSize()}"
+                         id="overview">
+            <p:outputPanel id="sideview-${panelIndex}" styleClass="sideview #{panelModel.parentOrOverview.panelClass}"
+                           style="border-radius: 1em 0 0 0;">
+                <div class="sideview-titlebar" style="background: var(--siamois-green-light-100);">
+                    <div style="display: flex;justify-content: space-between;">
+                        <div>
+                            <ui:include rendered="#{panelModel.parentOrOverview.displayHeader() != null}"
+                                        src="#{panelModel.parentOrOverview.displayHeader()}">
+                                <ui:param name="panelModel" value="#{panelModel.parentOrOverview}"/>
+                            </ui:include>
+                        </div>
+                        <h:form id="actionForm-${panelModel.prefixPanelIndex}-overview">
+                            <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
+                            <div style="display:flex;flex-direction: row;gap:0.5em;padding: 3px;
+                                    border: 1px solid var(--siamois-green-light);
+                                    border-radius: 15px;">
+
+                                <p:commandLink styleClass="sideview-topbar-button"
+                                               action="#{panelModel.closeOverview()}">
+                                    <h:outputText styleClass="bi bi-chevron-double-right"/>
+                                </p:commandLink>
+                                <p:commandLink styleClass="sideview-topbar-button"
+                                               action="#{flowBean.fullScreen(panelModel.parentOrOverview)}"
+                                               ajax="false"
+                                               id="focusButton">
+                                    <h:outputText styleClass="bi bi-arrows-angle-expand"/>
+                                </p:commandLink>
+
+                            </div>
+                        </h:form>
+                    </div>
+                </div>
+                <p:progressBar widgetVar="pbBarAjax_#{panelIndex}-overview" id="overviewProgressBar"
+                               class="panel-progressbar"
+                               style="height:3px" mode="indeterminate"/>
+                <!-- Include the reusable dynamic content for the right panel -->
+                <ui:include src="#{panelModel.parentOrOverview.display()}" id="overview-panel-body">
+                    <ui:param name="panelModel" value="#{panelModel.parentOrOverview}"/>
+                    <ui:param name="panelIndex" value="#{panelIndex}-overview"/>
+                    <ui:param name="mode" value="#{mode}"/>
+                </ui:include>
+            </p:outputPanel>
+        </p:splitterPanel>
+    </p:splitter>
+
+</ui:composition>

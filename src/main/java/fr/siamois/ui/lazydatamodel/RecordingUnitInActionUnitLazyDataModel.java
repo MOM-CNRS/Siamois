@@ -1,8 +1,8 @@
 package fr.siamois.ui.lazydatamodel;
 
-import fr.siamois.domain.models.actionunit.ActionUnit;
-import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
+import fr.siamois.dto.entity.ActionUnitDTO;
+import fr.siamois.dto.entity.RecordingUnitDTO;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
 import lombok.Getter;
@@ -16,22 +16,22 @@ public class RecordingUnitInActionUnitLazyDataModel extends BaseRecordingUnitLaz
     private final transient SessionSettingsBean sessionSettings;
 
     @Getter
-    private final transient ActionUnit actionUnit;
+    private final transient ActionUnitDTO actionUnit;
 
     public RecordingUnitInActionUnitLazyDataModel(RecordingUnitService recordingUnitService,
                                                   SessionSettingsBean sessionSettings,
-                                                  LangBean langBean, ActionUnit actionUnit) {
+                                                  LangBean langBean, ActionUnitDTO actionUnit) {
         super(recordingUnitService,langBean);
         this.sessionSettings = sessionSettings;
         this.actionUnit = actionUnit;
     }
 
     @Override
-    protected Page<RecordingUnit> loadRecordingUnits(String fullIdentifierFilter,
-                                                     Long[] categoryIds,
-                                                     Long[] personIds,
-                                                     String globalFilter,
-                                                     Pageable pageable) {
+    protected Page<RecordingUnitDTO> loadRecordingUnits(String fullIdentifierFilter,
+                                                        Long[] categoryIds,
+                                                        Long[] personIds,
+                                                        String globalFilter,
+                                                        Pageable pageable) {
         return recordingUnitService.findAllByInstitutionAndByActionUnitAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
                 sessionSettings.getSelectedInstitution().getId(),
                 actionUnit.getId(),

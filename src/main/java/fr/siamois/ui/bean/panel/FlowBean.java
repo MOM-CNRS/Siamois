@@ -6,10 +6,6 @@ import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.events.InstitutionChangeEvent;
 import fr.siamois.domain.models.events.LoginEvent;
-import fr.siamois.domain.models.institution.Institution;
-import fr.siamois.domain.models.recordingunit.RecordingUnit;
-import fr.siamois.domain.models.spatialunit.SpatialUnit;
-import fr.siamois.domain.models.specimen.Specimen;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.authorization.PermissionService;
@@ -20,6 +16,7 @@ import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.domain.services.vocabulary.FieldConfigurationService;
 import fr.siamois.domain.services.vocabulary.FieldService;
+import fr.siamois.dto.entity.*;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.RedirectBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
@@ -33,15 +30,20 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.math3.analysis.function.Abs;
 import org.primefaces.PrimeFaces;
 import org.primefaces.model.dashboard.DashboardModel;
 import org.springframework.context.NoSuchMessageException;
 import org.springframework.context.annotation.Scope;
 import org.springframework.context.annotation.ScopedProxyMode;
 import org.springframework.context.event.EventListener;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Component;
 
+import java.io.IOException;
 import java.io.Serializable;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -85,12 +87,12 @@ public class FlowBean implements Serializable {
     private static final int MAX_NUMBER_OF_PANEL = 10;
 
     // Search bar
-    private List<SpatialUnit> fSpatialUnits = List.of();
-    private List<Institution> institutions = List.of();
+    private List<SpatialUnitDTO> fSpatialUnits = List.of();
+    private List<InstitutionDTO> institutions = List.of();
     private List<ActionUnit> fActionUnits = List.of();
-    private SpatialUnit fSelectedSpatialUnit;
-    private ActionUnit fSelectedActionUnit;
-    private Institution selectedInstitution;
+    private SpatialUnitDTO fSelectedSpatialUnit;
+    private ActionUnitDTO fSelectedActionUnit;
+    private InstitutionDTO selectedInstitution;
 
     @Getter
     private transient List<AbstractPanel> panels = new ArrayList<>();
@@ -103,7 +105,7 @@ public class FlowBean implements Serializable {
         fullscreenPanelIndex = -1;
         panels = new ArrayList<>();
         addWelcomePanel();
-        Institution institution = sessionSettings.getSelectedInstitution();
+        InstitutionDTO institution = sessionSettings.getSelectedInstitution();
         UserInfo info = sessionSettings.getUserInfo();
         institutions = new ArrayList<>();
         institutions.addAll(institutionService.findInstitutionsOfPerson(info.getUser()));
@@ -184,13 +186,14 @@ public class FlowBean implements Serializable {
     }
 
     public void addRecordingUnitPanel(Long recordingUnitId) {
-        addPanel(panelFactory.createRecordingUnitPanel(recordingUnitId));
+        RecordingUnitPanel mainPanel = panelFactory.createRecordingUnitPanel(recordingUnitId);
+
+        addPanel(mainPanel);
     }
 
     public void addSpecimenPanel(Long specimenId) {
         addPanel(panelFactory.createSpecimenPanel(specimenId));
     }
-
 
 
     public void goToSpatialUnitByIdNewPanel(Long id) {
@@ -206,6 +209,99 @@ public class FlowBean implements Serializable {
         addPanel(newPanel);
 
     }
+
+    @Nullable
+    private AbstractPanel findInFlowById(String panelId) {
+        // Find the target panel
+        return this.panels.stream()
+                .filter(p -> String.valueOf(p.getPanelIndex()).equals(panelId))
+                .findFirst()
+                .orElse(null);
+
+    }
+
+    public void addPanelToOverview(AbstractPanel targetPanel, AbstractPanel overviewPanel) {
+
+        overviewPanel.setRoot(true);
+        targetPanel.setParentOrOverview(overviewPanel);
+        overviewPanel.setParentOrOverview(targetPanel);
+        String base64RootUri = Base64.getUrlEncoder().withoutPadding().encodeToString(targetPanel.ressourceUri().getBytes());
+        String base64OverviewUri = Base64.getUrlEncoder().withoutPadding().encodeToString(overviewPanel.ressourceUri().getBytes());
+        PrimeFaces.current().ajax().update("sideview-"+targetPanel.getPanelIndex());
+        PrimeFaces.current().executeScript(
+                String.format(
+                        "showSideview('%s', '%s', '%s');",
+                        targetPanel.getPanelIndex(),
+                        base64RootUri,
+                        base64OverviewUri
+                )
+        );
+
+    }
+
+    public void addRecordingUnitToOverview(Long id, AbstractPanel targetPanel) {
+
+        if (targetPanel != null) {
+            // Add the overview
+            RecordingUnitPanel overviewPanel = panelFactory.createRecordingUnitPanel(id);
+            overviewPanel.setRoot(false);
+            if(targetPanel.isRoot()) {
+                addPanelToOverview(targetPanel, overviewPanel);
+            }
+            else {
+                addPanelToOverview(targetPanel.getParentOrOverview(), overviewPanel);
+            }
+
+        }
+
+    }
+
+
+    public void addSpatialUnitToOverview(Long id, AbstractPanel targetPanel) {
+
+        if (targetPanel != null) {
+            // Add the overview
+            SpatialUnitPanel overviewPanel = panelFactory.createSpatialUnitPanel(id);
+            overviewPanel.setRoot(false);
+            if(targetPanel.isRoot()) {
+                addPanelToOverview(targetPanel, overviewPanel);
+            }
+            else {
+                addPanelToOverview(targetPanel.getParentOrOverview(), overviewPanel);
+            }
+        }
+    }
+
+    public void addActionUnitToOverview(Long id, AbstractPanel targetPanel) {
+
+        if (targetPanel != null) {
+            // Add the overview
+            ActionUnitPanel overviewPanel = panelFactory.createActionUnitPanel(id);
+            overviewPanel.setRoot(false);
+            if(targetPanel.isRoot()) {
+                addPanelToOverview(targetPanel, overviewPanel);
+            }
+            else {
+                addPanelToOverview(targetPanel.getParentOrOverview(), overviewPanel);
+            }
+        }
+    }
+
+    public void addSpecimenToOverview(Long id, AbstractPanel targetPanel) {
+
+        if (targetPanel != null) {
+            // Add the overview
+            SpecimenPanel overviewPanel = panelFactory.createSpecimenPanel(id);
+            overviewPanel.setRoot(false);
+            if(targetPanel.isRoot()) {
+                addPanelToOverview(targetPanel, overviewPanel);
+            }
+            else {
+                addPanelToOverview(targetPanel.getParentOrOverview(), overviewPanel);
+            }
+        }
+    }
+
 
 
     public void goToRecordingUnitByIdNewPanel(Long id, Integer tabIndex) {
@@ -232,22 +328,53 @@ public class FlowBean implements Serializable {
 
     public void goToActionUnitByIdNewPanel(Long id, Integer tabIndex) {
 
-        ActionUnitPanel newPanel = panelFactory.createActionUnitPanel(id,tabIndex);
+        ActionUnitPanel newPanel = panelFactory.createActionUnitPanel(id, tabIndex);
         addPanel(newPanel);
     }
 
-
-
-    public void fullScreen(AbstractPanel panel) {
-        // Could use setter if we don't add more code
-        int index = panels.indexOf(panel);
-        if (index != -1) {
-            fullscreenPanelIndex = index;
-        }
+    public void redirectToFocus(String resourceUri) throws IOException {
+        redirectToFocus(resourceUri, null);
     }
 
-    public void closeFullScreen() {
-        fullscreenPanelIndex = -1;
+    public void redirectToFocus(String resourceUri, @Nullable String overviewResourceUri) throws IOException {
+        // Encode the URI in Base64
+        String encodedUri = Base64.getEncoder().encodeToString(resourceUri.getBytes(StandardCharsets.UTF_8));
+
+        // URL-encode the Base64 string to ensure it's safe for a URL
+        String safeEncodedUri = URLEncoder.encode(encodedUri, StandardCharsets.UTF_8);
+
+        FacesContext context = FacesContext.getCurrentInstance();
+        String basePath = context.getExternalContext().getRequestContextPath();
+
+        String sParam = "";
+        if(overviewResourceUri != null) {
+            sParam="?s="+URLEncoder.encode(
+                    Base64.getEncoder().encodeToString(overviewResourceUri.getBytes(StandardCharsets.UTF_8))
+                    , StandardCharsets.UTF_8);
+        }
+
+        String url = basePath + "/focus/" + safeEncodedUri + sParam;
+
+        context.getExternalContext().redirect(url);
+    }
+
+
+    public void fullScreen(AbstractPanel panel) throws IOException {
+        // Redirect to focus page
+        redirectToFocus(panel.ressourceUri(), null);
+
+    }
+
+    public void redirectToDashboard() throws IOException {
+        FacesContext context = FacesContext.getCurrentInstance();
+        String basePath = context.getExternalContext().getRequestContextPath();
+        String url = basePath + "/focus/L3dlbGNvbWU=";
+        context.getExternalContext().redirect(url);
+    }
+
+    public void closeFullScreen(AbstractPanel panel) throws IOException {
+        addPanel(panel);
+        redirectToDashboard();
     }
 
 
@@ -274,7 +401,7 @@ public class FlowBean implements Serializable {
 
     private int getPanelIndex(String panelId) {
         for (int i = 0; i < panels.size(); i++) {
-            if (panels.get(i).getPanelIndex().equals(panelId)) {
+            if (panels.get(i).getPrefixPanelIndex().equals(panelId)) {
                 return i;
             }
         }
@@ -298,7 +425,7 @@ public class FlowBean implements Serializable {
         // If only one panel is left, uncollapse it
         if (panels.size() == 1) {
             panels.get(0).setCollapsed(false);
-            PrimeFaces.current().ajax().update("panel-"+panels.get(0).getPanelIndex());
+            PrimeFaces.current().ajax().update("panel-" + panels.get(0).getPrefixPanelIndex());
         }
 
         // If no panel left, open the homepanel
@@ -374,7 +501,7 @@ public class FlowBean implements Serializable {
     }
 
     public void saveAllPanels() {
-        if(saveAllPanelsMethod()) {
+        if (saveAllPanelsMethod()) {
             isWriteMode = false;
             PrimeFaces.current().ajax().update("readWriteSwitchForm");
         }
@@ -382,22 +509,19 @@ public class FlowBean implements Serializable {
 
     private static String findMatchingTitle(AbstractSingleEntityPanel<?> panel) {
         String title = "UNKNOWN";
-        if (panel.getUnit() instanceof SpatialUnit su) {
+        if (panel.getUnit() instanceof SpatialUnitDTO su) {
             title = su.getName();
-        } else if (panel.getUnit() instanceof ActionUnit au) {
+        } else if (panel.getUnit() instanceof ActionUnitDTO au) {
             title = au.getFullIdentifier();
-        } else if (panel.getUnit() instanceof RecordingUnit ru) {
+        } else if (panel.getUnit() instanceof RecordingUnitDTO ru) {
             title = ru.getFullIdentifier();
-        } else if (panel.getUnit() instanceof Specimen sp) {
+        } else if (panel.getUnit() instanceof SpecimenDTO sp) {
             title = sp.getFullIdentifier();
         }
         return title;
     }
 
     public void undoChangesOnAllPanels() {
-        for (AbstractSingleEntityPanel<?> panel : unsavedPanels) {
-            panel.cancelChanges();
-        }
         isWriteMode = false;
         PrimeFaces.current().ajax().update("readWriteSwitchForm");
     }
@@ -452,7 +576,7 @@ public class FlowBean implements Serializable {
      *
      */
     public void changeInstitution(boolean withSave) {
-        if(withSave && !saveAllPanelsMethod()) {
+        if (withSave && !saveAllPanelsMethod()) {
             selectedInstitution = sessionSettings.getSelectedInstitution();
             return;
         }
@@ -497,19 +621,17 @@ public class FlowBean implements Serializable {
 
 
     public String getFieldOfficeSwitchTooltip() {
-        if(Boolean.TRUE.equals(isFieldMode)) {
+        if (Boolean.TRUE.equals(isFieldMode)) {
             return langBean.msg("common.label.switchToOfficeMode");
-        }
-        else {
+        } else {
             return langBean.msg("common.label.switchToFieldMode");
         }
     }
 
     public String getReadWriteSwitchTooltip() {
-        if(Boolean.TRUE.equals(isWriteMode)) {
+        if (Boolean.TRUE.equals(isWriteMode)) {
             return langBean.msg("common.label.switchToReadMode");
-        }
-        else {
+        } else {
             return langBean.msg("common.label.switchToWriteMode");
         }
     }
@@ -528,10 +650,25 @@ public class FlowBean implements Serializable {
     /**
      * Return the active actions units for which i'm a member
      */
-    public List<ActionUnit> getMyActionUnits() {
-        return actionUnitService.findByTeamMember(sessionSettings.getUserInfo().getUser(),  sessionSettings.getSelectedInstitution());
+    public List<ActionUnitDTO> getMyActionUnits() {
+        return actionUnitService.findByTeamMember(sessionSettings.getUserInfo().getUser(), sessionSettings.getSelectedInstitution());
     }
 
 
+    public String getFlowContentStyle() {
 
+        if (fullscreenPanelIndex == -1) {
+            return "display:flex;flex-direction: column;gap:3em;padding:1em;";
+        }
+
+        return "display:flex;flex-direction: column;gap:0em;padding:0em;border-radius:0px; border:0px;";
+    }
+
+    public String getFlowContentStyleClass() {
+        if (fullscreenPanelIndex == -1) {
+            return "flow panel-flow";
+        }
+
+        return "flow fullscreen-flow focus";
+    }
 }

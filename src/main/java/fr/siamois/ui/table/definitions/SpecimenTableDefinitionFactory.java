@@ -3,8 +3,8 @@ package fr.siamois.ui.table.definitions;
 
 import fr.siamois.domain.models.form.customfield.CustomFieldSelectOneFromFieldCode;
 import fr.siamois.domain.models.form.customfield.CustomFieldText;
-import fr.siamois.domain.models.specimen.Specimen;
 import fr.siamois.domain.models.vocabulary.Concept;
+import fr.siamois.dto.entity.SpecimenDTO;
 import fr.siamois.ui.table.CommandLinkColumn;
 import fr.siamois.ui.table.EntityTableViewModel;
 import fr.siamois.ui.table.FormFieldColumn;
@@ -29,7 +29,7 @@ public final class SpecimenTableDefinitionFactory {
      * - Only sets column metadata + generic toolbar create policy.
      * - If you want per-screen overrides, call them AFTER this method.
      */
-    public static void applyTo(EntityTableViewModel<Specimen, ?> tableModel) {
+    public static void applyTo(EntityTableViewModel<SpecimenDTO, ?> tableModel) {
         if (tableModel == null) {
             return;
         }

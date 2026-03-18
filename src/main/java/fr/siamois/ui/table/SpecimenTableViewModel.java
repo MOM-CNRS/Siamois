@@ -1,16 +1,16 @@
 package fr.siamois.ui.table;
 
-import fr.siamois.domain.models.form.customform.CustomForm;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
-import fr.siamois.domain.models.specimen.Specimen;
 import fr.siamois.domain.services.form.FormService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitTreeService;
+import fr.siamois.dto.entity.SpecimenDTO;
 import fr.siamois.ui.bean.NavBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
 import fr.siamois.ui.bean.dialog.newunit.GenericNewUnitDialogBean;
 import fr.siamois.ui.bean.panel.FlowBean;
 import fr.siamois.ui.form.FormContextServices;
+import fr.siamois.ui.form.FormUiDto;
 import fr.siamois.ui.lazydatamodel.BaseSpecimenLazyDataModel;
 import lombok.Getter;
 import org.primefaces.model.TreeNode;
@@ -29,7 +29,7 @@ import static fr.siamois.ui.table.TableColumnAction.GO_TO_SPECIMEN;
  *      - configureRowSystemFields
  */
 @Getter
-public class SpecimenTableViewModel extends EntityTableViewModel<Specimen, Long> {
+public class SpecimenTableViewModel extends EntityTableViewModel<SpecimenDTO, Long> {
 
     private final BaseSpecimenLazyDataModel specimenLazyDataModel;
     private final FlowBean flowBean;
@@ -44,7 +44,7 @@ public class SpecimenTableViewModel extends EntityTableViewModel<Specimen, Long>
                                   SpatialUnitService spatialUnitService,
                                   NavBean navBean,
                                   FlowBean flowBean,
-                                  GenericNewUnitDialogBean<Specimen> genericNewUnitDialogBean, FormContextServices formContextServices) {
+                                  GenericNewUnitDialogBean<SpecimenDTO> genericNewUnitDialogBean, FormContextServices formContextServices) {
 
         super(
                 lazyDataModel,
@@ -53,7 +53,7 @@ public class SpecimenTableViewModel extends EntityTableViewModel<Specimen, Long>
                 spatialUnitTreeService,
                 spatialUnitService,
                 navBean,
-                Specimen::getId,   // idExtractor
+                SpecimenDTO::getId,   // idExtractor
                 "type"   ,// formScopeValueBinding
                 sessionSettingsBean.getLangBean(),
                 formContextServices
@@ -68,23 +68,21 @@ public class SpecimenTableViewModel extends EntityTableViewModel<Specimen, Long>
     }
 
     @Override
-    protected CustomForm resolveRowFormFor(Specimen s) {
+    protected FormUiDto resolveRowFormFor(SpecimenDTO s) {
         return null;
     }
 
     @Override
-    protected void configureRowSystemFields(Specimen s, CustomForm rowForm) {
+    protected void configureRowSystemFields(SpecimenDTO s, FormUiDto rowForm) {
         // no specific configs
     }
 
     @Override
     protected void handleCommandLink(CommandLinkColumn column,
-                                     Specimen s) {
+                                     SpecimenDTO s) {
 
         if (column.getAction() == GO_TO_SPECIMEN) {
-            flowBean.goToSpecimenByIdNewPanel(
-                    s.getId()
-            );
+            flowBean.addSpecimenToOverview(s.getId(), parentPanel);
         } else {
             throw new IllegalStateException(
                     "Unhandled action: " + column.getAction()
@@ -95,12 +93,12 @@ public class SpecimenTableViewModel extends EntityTableViewModel<Specimen, Long>
 
     // resolving cell text based on value key
     @Override
-    public String resolveText(TableColumn column, Specimen s) {
+    public String resolveText(TableColumn column, SpecimenDTO s) {
 
         if (column instanceof CommandLinkColumn linkColumn) {
 
             if ("fullIdentifier".equals(linkColumn.getValueKey())) {
-                return s.displayFullIdentifier();
+                return s.getFullIdentifier();
             }
 
             throw new IllegalStateException(
@@ -112,12 +110,12 @@ public class SpecimenTableViewModel extends EntityTableViewModel<Specimen, Long>
     }
 
     @Override
-    public Integer resolveCount(TableColumn column, Specimen s) {
+    public Integer resolveCount(TableColumn column, SpecimenDTO s) {
         return null;
     }
 
     @Override
-    public boolean isRendered(TableColumn column, String key, Specimen s) {
+    public boolean isRendered(TableColumn column, String key, SpecimenDTO s) {
         return switch (key) {
             case "writeMode" -> flowBean.getIsWriteMode();
             default -> false;
@@ -151,14 +149,14 @@ public class SpecimenTableViewModel extends EntityTableViewModel<Specimen, Long>
 
 
     @Override
-    public void handleRelationAction(RelationColumn col, Specimen s, TableColumnAction action) {
+    public void handleRelationAction(RelationColumn col, SpecimenDTO s, TableColumnAction action) {
         throw new IllegalStateException(
                 "Unhandled relation action: " + action
         );
 
     }
 
-    public boolean isRendered(RowAction action, Specimen s) {
+    public boolean isRendered(RowAction action, SpecimenDTO s) {
         return switch (action.getAction()) {
             case DUPLICATE_ROW -> flowBean.getIsWriteMode();
             case TOGGLE_BOOKMARK -> true;
@@ -167,7 +165,7 @@ public class SpecimenTableViewModel extends EntityTableViewModel<Specimen, Long>
     }
 
 
-    public String resolveIcon(RowAction action, Specimen s) {
+    public String resolveIcon(RowAction action, SpecimenDTO s) {
         return switch (action.getAction()) {
             case TOGGLE_BOOKMARK -> Boolean.TRUE.equals(navBean.isSpecimenBookmarkedByUser(s.getFullIdentifier()))
                             ? "bi bi-bookmark-x-fill"
@@ -177,7 +175,7 @@ public class SpecimenTableViewModel extends EntityTableViewModel<Specimen, Long>
         };
     }
 
-    public void handleRowAction(RowAction action, Specimen s) {
+    public void handleRowAction(RowAction action, SpecimenDTO s) {
         if (action.getAction() == DUPLICATE_ROW) {
             specimenLazyDataModel.duplicateRow();
         } else {
@@ -185,7 +183,7 @@ public class SpecimenTableViewModel extends EntityTableViewModel<Specimen, Long>
         }
     }
 
-    public void handleRowAction(RowAction action, TreeNode<Specimen> node) {
+    public void handleRowAction(RowAction action, TreeNode<SpecimenDTO> node) {
         handleRowAction(action, node.getData());
     }
 
@@ -196,7 +194,7 @@ public class SpecimenTableViewModel extends EntityTableViewModel<Specimen, Long>
 
 
     @Override
-    public boolean canUserEditRow(Specimen unit) {
+    public boolean canUserEditRow(SpecimenDTO unit) {
         return true; // todo: implement permission
     }
 

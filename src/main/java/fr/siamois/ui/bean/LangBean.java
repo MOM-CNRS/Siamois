@@ -1,11 +1,11 @@
 package fr.siamois.ui.bean;
 
-import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.events.LangageChangeEvent;
 import fr.siamois.domain.models.events.LoginEvent;
 import fr.siamois.domain.models.settings.PersonSettings;
 import fr.siamois.domain.services.LangService;
 import fr.siamois.domain.services.person.PersonService;
+import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.utils.AuthenticatedUserUtils;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
@@ -14,6 +14,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Scope;
 import org.springframework.context.annotation.ScopedProxyMode;
 import org.springframework.context.event.EventListener;
+import org.springframework.core.convert.ConversionService;
 import org.springframework.stereotype.Component;
 
 import java.io.Serializable;
@@ -29,6 +30,7 @@ public class LangBean implements Serializable {
 
     private final transient LangService langService;
     private final transient PersonService personService;
+    private final transient ConversionService conversionService;
 
     @Value("${siamois.lang.default}")
     private String defaultLang;
@@ -86,7 +88,9 @@ public class LangBean implements Serializable {
 
     @EventListener({LangageChangeEvent.class, LoginEvent.class})
     public void loadUserLang() {
-        Person logged = AuthenticatedUserUtils.getAuthenticatedUser().orElseThrow(() -> new IllegalStateException("User not logged in"));
+        PersonDTO logged = AuthenticatedUserUtils.getAuthenticatedUser()
+                .map(user -> conversionService.convert(user, PersonDTO.class))
+                .orElseThrow(() -> new IllegalStateException("User not logged in"));
         PersonSettings settings = personService.createOrGetSettingsOf(logged);
         if (settings.getLangCode() != null) {
             locale = new Locale(settings.getLangCode());

@@ -1,12 +1,10 @@
 package fr.siamois.ui.bean.dialog.newunit.handler;
 
 import fr.siamois.domain.models.UserInfo;
-import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.exceptions.EntityAlreadyExistsException;
-import fr.siamois.domain.models.recordingunit.RecordingUnit;
-import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
+import fr.siamois.dto.entity.*;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
 import fr.siamois.ui.bean.dialog.newunit.GenericNewUnitDialogBean;
@@ -21,7 +19,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Component
-public class RecordingUnitHandler implements INewUnitHandler<RecordingUnit> {
+public class RecordingUnitHandler implements INewUnitHandler<RecordingUnitDTO> {
 
     public static final String CHILDREN = "children";
     public static final String PARENTS = "parents";
@@ -30,7 +28,10 @@ public class RecordingUnitHandler implements INewUnitHandler<RecordingUnit> {
     private final SessionSettingsBean sessionSettingsBean;
     private final LangBean langBean;
 
-    public RecordingUnitHandler(RecordingUnitService recordingUnitService, ActionUnitService actionUnitService, SessionSettingsBean sessionSettingsBean, LangBean langBean) {
+    public RecordingUnitHandler(RecordingUnitService recordingUnitService,
+                                ActionUnitService actionUnitService,
+                                SessionSettingsBean sessionSettingsBean,
+                                LangBean langBean) {
         this.recordingUnitService = recordingUnitService;
         this.actionUnitService = actionUnitService;
         this.sessionSettingsBean = sessionSettingsBean;
@@ -38,8 +39,8 @@ public class RecordingUnitHandler implements INewUnitHandler<RecordingUnit> {
     }
 
     @Override
-    public List<SpatialUnit> getSpatialUnitOptions(RecordingUnit unit) {
-        ActionUnit actionUnit = unit.getActionUnit();
+    public List<SpatialUnitSummaryDTO> getSpatialUnitOptions(RecordingUnitDTO unit) {
+        ActionUnitDTO actionUnit = actionUnitService.findById(unit.getActionUnit().getId());
         // Return the spatial context of the parent action
         if (actionUnit != null) {
             return new ArrayList<>(actionUnit.getSpatialContext());
@@ -49,13 +50,13 @@ public class RecordingUnitHandler implements INewUnitHandler<RecordingUnit> {
     }
 
     @Override public UnitKind kind() { return UnitKind.RECORDING; }
-    @Override public RecordingUnit newEmpty() {
-        RecordingUnit recordingUnit = new RecordingUnit();
+    @Override public RecordingUnitDTO newEmpty() {
+        RecordingUnitDTO recordingUnit = new RecordingUnitDTO();
         recordingUnit.setOpeningDate(OffsetDateTime.now());
         return recordingUnit;
     }
-    @Override public RecordingUnit save(UserInfo u, RecordingUnit unit) throws EntityAlreadyExistsException {
-        RecordingUnit created = recordingUnitService.save(unit, unit.getType());
+    @Override public RecordingUnitDTO save(UserInfo u, RecordingUnitDTO unit) throws EntityAlreadyExistsException {
+        RecordingUnitDTO created = recordingUnitService.save(unit);
         String generatedFullIdentifier = recordingUnitService.generateFullIdentifier(created.getActionUnit(), created);
         created.setFullIdentifier(generatedFullIdentifier);
 
@@ -73,7 +74,7 @@ public class RecordingUnitHandler implements INewUnitHandler<RecordingUnit> {
 
     @Override public void initFromContext(GenericNewUnitDialogBean<?> bean) throws CannotInitializeNewUnitDialogException {
 
-        RecordingUnit unit = (RecordingUnit) bean.getUnit();
+        RecordingUnitDTO unit = (RecordingUnitDTO) bean.getUnit();
         NewUnitContext ctx = bean.getNewUnitContext();
         if (ctx == null) throw new CannotInitializeNewUnitDialogException("Recording unit cannot be created without a context");
 
@@ -88,7 +89,7 @@ public class RecordingUnitHandler implements INewUnitHandler<RecordingUnit> {
 
     }
 
-    private void handleCellContext(NewUnitContext ctx, RecordingUnit unit) throws CannotInitializeNewUnitDialogException {
+    private void handleCellContext(NewUnitContext ctx, RecordingUnitDTO unit)  {
         NewUnitContext.Trigger trigger = ctx.getTrigger();
         if (trigger == null || trigger.getClickedId() == null || trigger.getColumnKey() == null) {
             return;
@@ -96,7 +97,7 @@ public class RecordingUnitHandler implements INewUnitHandler<RecordingUnit> {
 
         Long clickedId = trigger.getClickedId();
         String key = trigger.getColumnKey();
-        RecordingUnit clicked = recordingUnitService.findById(clickedId);
+        RecordingUnitDTO clicked = recordingUnitService.findById(clickedId);
 
         if (clicked == null) {
             return;
@@ -112,13 +113,13 @@ public class RecordingUnitHandler implements INewUnitHandler<RecordingUnit> {
         }
 
         switch (key) {
-            case PARENTS -> unit.getChildren().add(clicked);
-            case CHILDREN -> unit.getParents().add(clicked);
+            case PARENTS -> unit.getChildren().add(new RecordingUnitSummaryDTO(clicked));
+            case CHILDREN -> unit.getParents().add(new RecordingUnitSummaryDTO(clicked));
             default -> { /* no-op */ }
         }
     }
 
-    private void applyScope(RecordingUnit unit, NewUnitContext ctx) throws CannotInitializeNewUnitDialogException {
+    private void applyScope(RecordingUnitDTO unit, NewUnitContext ctx) throws CannotInitializeNewUnitDialogException {
         NewUnitContext.Scope scope = ctx.getScope();
         if (scope == null || scope.getKey() == null || scope.getEntityId() == null) {
             throw new CannotInitializeNewUnitDialogException("Recording unit cannot be created without a context");
@@ -126,10 +127,10 @@ public class RecordingUnitHandler implements INewUnitHandler<RecordingUnit> {
 
 
         if ("ACTION".equals(scope.getKey())) {
-            ActionUnit au = actionUnitService.findById(scope.getEntityId()); // adapt Optional
+            ActionUnitDTO au = actionUnitService.findById(scope.getEntityId()); // adapt Optional
             if (au != null) {
                 unit.setCreatedByInstitution(au.getCreatedByInstitution());
-                unit.setActionUnit(au);
+                unit.setActionUnit(new ActionUnitSummaryDTO(au));
                 unit.setAuthor(sessionSettingsBean.getAuthenticatedUser());
                 unit.setContributors(List.of(sessionSettingsBean.getAuthenticatedUser()));
                 unit.setOpeningDate(OffsetDateTime.now());
@@ -157,7 +158,7 @@ public class RecordingUnitHandler implements INewUnitHandler<RecordingUnit> {
                 && trigger.getClickedId() != null
                 && trigger.getColumnKey() != null) {
 
-            RecordingUnit clicked = recordingUnitService.findById(trigger.getClickedId());
+            RecordingUnitDTO clicked = recordingUnitService.findById(trigger.getClickedId());
             String name = clicked != null
                     ? clicked.getFullIdentifier()
                     : ("#" + trigger.getClickedId());
@@ -179,7 +180,7 @@ public class RecordingUnitHandler implements INewUnitHandler<RecordingUnit> {
         NewUnitContext.Scope scope = ctx.getScope();
         if (scope != null && "ACTION".equals(scope.getKey()) && scope.getEntityId() != null) {
 
-            ActionUnit scoped = actionUnitService.findById(scope.getEntityId());
+            ActionUnitDTO scoped = actionUnitService.findById(scope.getEntityId());
             String name = scoped != null ? scoped.getName() : ("#" + scope.getEntityId());
 
             return langBean.msg("dialog.label.title.recording.actionContext",name);
@@ -192,7 +193,7 @@ public class RecordingUnitHandler implements INewUnitHandler<RecordingUnit> {
     }
 
     @Override
-    public String getName(RecordingUnit unit) {
+    public String getName(RecordingUnitDTO unit) {
         return unit.getFullIdentifier();
     }
 

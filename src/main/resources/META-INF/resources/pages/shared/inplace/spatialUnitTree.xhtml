@@ -7,7 +7,7 @@
 
     <cc:interface>
         <cc:attribute name="answer"
-                      type="fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerSelectMultipleSpatialUnitTree"
+                      type="fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerSelectMultipleSpatialUnitTreeViewModel"
                       required="true"/>
         <cc:attribute name="formCtx" type="fr.siamois.ui.form.EntityFormContext"
                       required="true"/>
@@ -23,7 +23,7 @@
     </cc:interface>
 
     <cc:implementation>
-        <p:inplace mode="#{cc.attrs.mode}" toggleable="false">
+        <p:inplace id="inplace" mode="#{cc.attrs.mode}" toggleable="false">
             <f:facet name="output">
                 <!-- Affichage de la liste normalisé des USp séléctionnées -->
                 <h:panelGroup

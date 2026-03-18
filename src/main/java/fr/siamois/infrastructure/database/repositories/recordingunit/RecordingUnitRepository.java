@@ -1,7 +1,6 @@
 package fr.siamois.infrastructure.database.repositories.recordingunit;
 
 
-import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import jakarta.transaction.Transactional;
@@ -16,12 +15,16 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Repository;
 
+import java.math.BigInteger;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
 @Repository
 public interface RecordingUnitRepository extends CrudRepository<RecordingUnit, Long>, RevisionRepository<RecordingUnit, Long, Long> {
+
+    @Query("SELECT COUNT(s) FROM Specimen s WHERE s.recordingUnit.id = :recordingUnitId")
+    Long countSpecimensByRecordingUnitId(@Param("recordingUnitId") Long recordingUnitId);
 
     @Query(
             value = "UPDATE recording_unit SET fk_type = :type WHERE recording_unit.recording_unit_id IN (:ids)",
@@ -41,7 +44,7 @@ public interface RecordingUnitRepository extends CrudRepository<RecordingUnit, L
     )
     List<RecordingUnit> findAllBySpatialUnitId(Long spatialUnitId);
 
-    List<RecordingUnit> findAllByActionUnit(ActionUnit actionUnit);
+    List<RecordingUnit> findAllByActionUnitId(Long actionUnitId);
 
     @Transactional
     @Modifying
@@ -72,7 +75,7 @@ public interface RecordingUnitRepository extends CrudRepository<RecordingUnit, L
     )
     List<RecordingUnit> findAllWithoutArkOfInstitution(Long institutionId);
 
-    long countByCreatedByInstitution(Institution institution);
+    long countByCreatedByInstitutionId(Long institutionId);
 
     @Query(
             nativeQuery = true,
@@ -220,6 +223,19 @@ public interface RecordingUnitRepository extends CrudRepository<RecordingUnit, L
     Optional<RecordingUnit> findByFullIdentifierAndInstitutionIdentifier(
             @Param("fullIdentifier") String fullIdentifier,
             @Param("institutionIdentifier") String institutionIdentifier
+    );
+
+    @Query(
+            value = "SELECT ru.* " +
+                    "FROM recording_unit ru " +
+                    "JOIN institution i ON ru.fk_institution_id = i.institution_id " +
+                    "WHERE ru.full_identifier = :fullIdentifier " +
+                    "AND i.institution_id = :institutionId",
+            nativeQuery = true
+    )
+    Optional<RecordingUnit> findByFullIdentifierAndInstitutionId(
+            @Param("fullIdentifier") String fullIdentifier,
+            @Param("institutionId") Long institutionId
     );
 
     Optional<RecordingUnit> findByFullIdentifier(@NotNull String fullIdentifier);
@@ -478,7 +494,7 @@ public interface RecordingUnitRepository extends CrudRepository<RecordingUnit, L
 
 
     @NonNull
-    List<RecordingUnit> findByFullIdentifierAndActionUnit(String fullIdentifier, ActionUnit actionUnit);
+    List<RecordingUnit> findByFullIdentifierAndActionUnitId(String fullIdentifier, Long actionUnitId);
 
     @Query(value = """
     SELECT COUNT(1) > 0
@@ -513,4 +529,6 @@ public interface RecordingUnitRepository extends CrudRepository<RecordingUnit, L
       )
     """, nativeQuery = true)
     boolean existsRootChildrenByAction(Long actionId);
+
+    Page<RecordingUnit> findByCreatedByInstitutionId(Long institutionId, Pageable pageable);
 }

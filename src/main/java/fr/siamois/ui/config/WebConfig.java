@@ -1,5 +1,6 @@
 package fr.siamois.ui.config;
 
+
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.Ordered;
 import org.springframework.util.AntPathMatcher;
@@ -36,5 +37,6 @@ public class WebConfig implements WebMvcConfigurer {
         matcher.setCaseSensitive(false);
         configurer.setPathMatcher(matcher);
     }
+
 
 }

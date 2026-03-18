@@ -1,11 +1,11 @@
 package fr.siamois.ui.bean.panel.models.panel.list;
 
-import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.authorization.writeverifier.SpatialUnitWriteVerifier;
 import fr.siamois.domain.services.form.FormService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitTreeService;
+import fr.siamois.dto.entity.ActionUnitDTO;
 import fr.siamois.ui.bean.NavBean;
 import fr.siamois.ui.bean.dialog.newunit.GenericNewUnitDialogBean;
 import fr.siamois.ui.bean.dialog.newunit.NewUnitContext;
@@ -42,13 +42,13 @@ import static fr.siamois.ui.lazydatamodel.scope.ActionUnitScope.Type.INSTITUTION
 @Setter
 @Component
 @Scope(BeanDefinition.SCOPE_PROTOTYPE)
-public class ActionUnitListPanel extends AbstractListPanel<ActionUnit> implements Serializable {
+public class ActionUnitListPanel extends AbstractListPanel<ActionUnitDTO> implements Serializable {
 
     // deps
     private final transient FormService formService;
     private final transient SpatialUnitTreeService spatialUnitTreeService;
     private final transient FlowBean flowBean;
-    private final transient GenericNewUnitDialogBean<ActionUnit> genericNewUnitDialogBean;
+    private final transient GenericNewUnitDialogBean<ActionUnitDTO> genericNewUnitDialogBean;
     private final transient SpatialUnitWriteVerifier spatialUnitWriteVerifier;
     private final transient NavBean navBean;
     private final transient InstitutionService institutionService;
@@ -58,17 +58,17 @@ public class ActionUnitListPanel extends AbstractListPanel<ActionUnit> implement
     private String actionUnitListErrorMessage;
 
 
-    public String getPanelIndex() {
+    public String getPrefixPanelIndex() {
         return "action-unit-list";
     }
 
     @Override
     protected long countUnitsByInstitution() {
-        return actionUnitService.countByInstitution(sessionSettingsBean.getSelectedInstitution());
+        return actionUnitService.countByInstitutionId(sessionSettingsBean.getSelectedInstitution().getId());
     }
 
     @Override
-    protected BaseLazyDataModel<ActionUnit> createLazyDataModel() {
+    protected BaseLazyDataModel<ActionUnitDTO> createLazyDataModel() {
         ActionUnitLazyDataModel lazy =  new ActionUnitLazyDataModel(actionUnitService, sessionSettingsBean, langBean);
         ActionUnitTreeTableLazyModel lazyTree = new ActionUnitTreeTableLazyModel(actionUnitService,
                 ActionUnitScope.builder()
@@ -91,11 +91,12 @@ public class ActionUnitListPanel extends AbstractListPanel<ActionUnit> implement
                 formContextServices
 
         );
+        tableModel.setParentPanel(this);
         return lazy;
     }
 
     @Override
-    protected void setErrorMessage(String msg) {
+    public void setErrorMessage(String msg) {
         this.actionUnitListErrorMessage = msg;
     }
 

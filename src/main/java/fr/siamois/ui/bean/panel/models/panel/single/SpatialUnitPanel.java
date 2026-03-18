@@ -1,13 +1,8 @@
 package fr.siamois.ui.bean.panel.models.panel.single;
 
-import fr.siamois.domain.models.actionunit.ActionUnit;
-import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.document.Document;
-import fr.siamois.domain.models.exceptions.recordingunit.FailedRecordingUnitSaveException;
 import fr.siamois.domain.models.history.RevisionWithInfo;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
-import fr.siamois.domain.models.vocabulary.Concept;
-import fr.siamois.domain.models.vocabulary.label.ConceptLabel;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.authorization.writeverifier.SpatialUnitWriteVerifier;
 import fr.siamois.domain.services.form.CustomFieldService;
@@ -15,23 +10,26 @@ import fr.siamois.domain.services.person.PersonService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.specimen.SpecimenService;
 import fr.siamois.domain.services.vocabulary.LabelService;
-import fr.siamois.ui.bean.LangBean;
+import fr.siamois.dto.entity.ActionUnitDTO;
+import fr.siamois.dto.entity.ConceptDTO;
+import fr.siamois.dto.entity.PersonDTO;
+import fr.siamois.dto.entity.SpatialUnitDTO;
 import fr.siamois.ui.bean.NavBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
 import fr.siamois.ui.bean.dialog.newunit.GenericNewUnitDialogBean;
 import fr.siamois.ui.bean.dialog.newunit.NewUnitContext;
 import fr.siamois.ui.bean.dialog.newunit.UnitKind;
-import fr.siamois.ui.bean.panel.FlowBean;
 import fr.siamois.ui.bean.panel.models.PanelBreadcrumb;
 import fr.siamois.ui.bean.panel.models.panel.single.tab.ActionTab;
 import fr.siamois.ui.bean.panel.utils.SpatialUnitHelperService;
+import fr.siamois.ui.form.FormUiDto;
 import fr.siamois.ui.lazydatamodel.ActionUnitInSpatialUnitLazyDataModel;
 import fr.siamois.ui.lazydatamodel.SpatialUnitChildrenLazyDataModel;
-import fr.siamois.ui.lazydatamodel.SpatialUnitParentsLazyDataModel;
 import fr.siamois.ui.lazydatamodel.scope.ActionUnitScope;
 import fr.siamois.ui.lazydatamodel.scope.SpatialUnitScope;
 import fr.siamois.ui.lazydatamodel.tree.ActionUnitTreeTableLazyModel;
 import fr.siamois.ui.lazydatamodel.tree.SpatialUnitTreeTableLazyModel;
+import fr.siamois.ui.mapper.FormMapper;
 import fr.siamois.ui.table.ActionUnitTableViewModel;
 import fr.siamois.ui.table.SpatialUnitTableViewModel;
 import fr.siamois.ui.table.ToolbarCreateConfig;
@@ -51,7 +49,6 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
 import java.io.Serializable;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -69,7 +66,7 @@ import static fr.siamois.ui.lazydatamodel.scope.SpatialUnitScope.Type.CHILDREN_O
 @Setter
 @Component
 @Scope(BeanDefinition.SCOPE_PROTOTYPE)
-public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel<SpatialUnit> implements Serializable {
+public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel<SpatialUnitDTO> implements Serializable {
 
 
 
@@ -85,6 +82,7 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
     private final transient GenericNewUnitDialogBean<?> genericNewUnitDialogBean;
     private final transient InstitutionService institutionService;
     private final transient SpatialUnitWriteVerifier spatialUnitWriteVerifier;
+    private final transient FormMapper formMapper;
 
 
     private String spatialUnitErrorMessage;
@@ -103,23 +101,23 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
 
 
     @Override
-    List<SpatialUnit> findDirectParentsOf(Long id) {
+    List<SpatialUnitDTO> findDirectParentsOf(Long id) {
         return spatialUnitService.findDirectParentsOf(id);
     }
 
     @Override
-    SpatialUnit findUnitById(Long id) {
+    SpatialUnitDTO findUnitById(Long id) {
         return spatialUnitService.findById(id);
     }
 
     @Override
-    String findLabel(SpatialUnit unit) {
+    String findLabel(SpatialUnitDTO unit) {
         return unit.getName();
     }
 
     @Override
-    String getOpenPanelCommand(SpatialUnit unit) {
-        return "#{flowBean.addSpatialUnitPanel(".concat(unit.getId().toString()).concat(")}");
+    String getOpenPanelCommand(SpatialUnitDTO unit) {
+        return "#{navBean.redirectToBookmarked('/spatial-unit/".concat(unit.getId().toString()).concat("')}");
     }
 
 
@@ -137,18 +135,10 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
         this.genericNewUnitDialogBean = context.getBean(GenericNewUnitDialogBean.class);
         this.institutionService = context.getBean(InstitutionService.class);
         this.spatialUnitWriteVerifier = context.getBean(SpatialUnitWriteVerifier.class);
+        this.formMapper = context.getBean(FormMapper.class);
     }
 
 
-    public List<ConceptLabel> categoriesAvailable() {
-        List<Concept> cList = conceptService.findAllBySpatialUnitOfInstitution(sessionSettings.getSelectedInstitution());
-        return new ArrayList<>(cList.stream()
-                .map(concept -> labelService.findLabelOf(
-                        concept, langBean.getLanguageCode()
-                ))
-                .toList());
-
-    }
 
     @Override
     public String getAutocompleteClass() {
@@ -158,7 +148,7 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
 
     @Override
     public String ressourceUri() {
-        return "/spatial-unit/" + idunit;
+        return "/spatial-unit/" + unitId;
     }
 
     @Override
@@ -170,7 +160,7 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
 
 
     @Override
-    public List<Person> authorsAvailable() {
+    public List<PersonDTO> authorsAvailable() {
 
         return personService.findAllAuthorsOfSpatialUnitByInstitution(sessionSettings.getSelectedInstitution());
 
@@ -179,7 +169,7 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
     @Override
     public void initForms(boolean forceInit) {
 
-        detailsForm = SpatialUnit.DETAILS_FORM;
+        detailsForm =  formContextServices.getConversionService().convert(SpatialUnit.DETAILS_FORM, FormUiDto.class);
         // Init system form answers
         initFormContext(forceInit);
     }
@@ -190,7 +180,7 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
     }
 
     @Override
-    protected void setFormScopePropertyValue(Concept concept) {
+    protected void setFormScopePropertyValue(ConceptDTO concept) {
         unit.setCategory(concept);
     }
 
@@ -208,10 +198,9 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
 
         try {
 
-            this.unit = spatialUnitService.findById(idunit);
+            this.unit = spatialUnitService.findById(unitId);
             this.setTitleCodeOrTitle(unit.getName()); // Set panel title
 
-            backupClone = new SpatialUnit(unit);
 
             initForms(true);
 
@@ -227,25 +216,15 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
         }
 
 
-        history = historyAuditService.findAllRevisionForEntity(SpatialUnit.class, idunit);
+        //history = historyAuditService.findAllRevisionForEntity(SpatialUnitDTO.class, unitId);
         documents = documentService.findForSpatialUnit(unit);
     }
 
-    @Override
-    public void cancelChanges() {
-        unit.setGeom(backupClone.getGeom());
-        unit.setName(backupClone.getName());
-        unit.setValidated(backupClone.getValidated());
-        unit.setArk(backupClone.getArk());
-        unit.setCategory(backupClone.getCategory());
-        formContext.setHasUnsavedModifications(false);
-        initForms(true);
-    }
 
     @Override
     public void init() {
 
-        if (idunit == null) {
+        if (unitId == null) {
             this.spatialUnitErrorMessage = "The ID of the spatial unit must be defined";
             return;
         }
@@ -266,7 +245,7 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
     }
 
     @Override
-    public void visualise(RevisionWithInfo<SpatialUnit> history) {
+    public void visualise(RevisionWithInfo<SpatialUnitDTO> history) {
         // button is deactivated
     }
 
@@ -290,7 +269,7 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
             // Handle list of concepts
             String langCode = sessionSettings.getLanguageCode();
             return list.stream()
-                    .map(item -> (item instanceof Concept concept) ? labelService.findLabelOf(concept, langCode).getLabel() : item.toString())
+                    .map(item -> (item instanceof ConceptDTO concept) ? labelService.findLabelOf(concept, langCode).getLabel() : item.toString())
                     .collect(Collectors.joining(", "));
         }
 
@@ -298,12 +277,12 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
     }
 
     @Override
-    protected boolean documentExistsInUnitByHash(SpatialUnit unit, String hash) {
+    protected boolean documentExistsInUnitByHash(SpatialUnitDTO unit, String hash) {
         return documentService.existInSpatialUnitByHash(unit, hash);
     }
 
     @Override
-    protected void addDocumentToUnit(Document doc, SpatialUnit unit) {
+    protected void addDocumentToUnit(Document doc, SpatialUnitDTO unit) {
         documentService.addToSpatialUnit(doc, unit);
     }
 
@@ -313,8 +292,8 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
     }
 
     @Override
-    public String getPanelIndex() {
-        return "spatial-unit-"+idunit;
+    public String getPrefixPanelIndex() {
+        return "spatial-unit-"+ unitId;
     }
 
     @Override
@@ -331,7 +310,7 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
         }
 
         public SpatialUnitPanelBuilder id(Long id) {
-            spatialUnitPanel.setIdunit(id);
+            spatialUnitPanel.setUnitId(id);
             return this;
         }
 
@@ -375,11 +354,12 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
                 spatialUnitService,
                 navBean,
                 flowBean,
-                (GenericNewUnitDialogBean<ActionUnit>) genericNewUnitDialogBean,
+                (GenericNewUnitDialogBean<ActionUnitDTO>) genericNewUnitDialogBean,
                 actionLazyTree,
                 institutionService,
                 formContextServices
         );
+        actionTabTableModel.setParentPanel(this);
 
         ActionUnitTableDefinitionFactory.applyTo(actionTabTableModel);
 
@@ -422,12 +402,13 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
                 spatialUnitService,
                 navBean,
                 flowBean,
-                (GenericNewUnitDialogBean<SpatialUnit>) genericNewUnitDialogBean,
+                (GenericNewUnitDialogBean<SpatialUnitDTO>) genericNewUnitDialogBean,
                 spatialUnitWriteVerifier,
                 childLazyTree,
                 institutionService,
                 formContextServices
         );
+        childTableModel.setParentPanel(this);
         SpatialUnitTableDefinitionFactory.applyTo(childTableModel);
 
         // configuration du bouton creer
@@ -457,7 +438,7 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
         return DefaultMenuItem.builder()
                 .value(langBean.msg("panel.title.allspatialunit"))
                 .id("allSpatialUnits")
-                .command("#{flowBean.addSpatialUnitListPanel()}")
+                .command("#{navBean.redirectToBookmarked('/spatial-unit/')}")
                 .update("flow")
                 .onstart(PF_BUI_CONTENT_SHOW)
                 .oncomplete(PF_BUI_CONTENT_HIDE)
