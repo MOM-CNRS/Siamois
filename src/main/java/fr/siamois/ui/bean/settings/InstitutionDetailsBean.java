@@ -3,6 +3,7 @@ package fr.siamois.ui.bean.settings;
 import fr.siamois.domain.models.events.LoginEvent;
 import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.services.authorization.PermissionService;
+import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
 import fr.siamois.ui.bean.settings.components.OptionElement;
@@ -37,7 +38,7 @@ public class InstitutionDetailsBean implements Serializable {
     private final transient PermissionService permissionService;
     private final SessionSettingsBean sessionSettingsBean;
     private final TeamListBean teamListBean;
-    private Institution institution;
+    private InstitutionDTO institution;
     private transient List<OptionElement> elements;
 
     public InstitutionDetailsBean(InstitutionInfoSettingsBean institutionInfoSettingsBean,

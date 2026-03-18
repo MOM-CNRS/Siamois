@@ -188,7 +188,7 @@ public interface ActionUnitRepository extends CrudRepository<ActionUnit, Long>, 
             @Param("langCode") String langCode,
             Pageable pageable);
 
-    Set<ActionUnit> findByCreatedByInstitution(Institution createdByInstitution);
+    Set<ActionUnit> findByCreatedByInstitutionId(Long id);
     Optional<ActionUnit> findByNameAndCreatedByInstitutionId(String name, Long institutionId);
     Optional<ActionUnit> findByIdentifierAndCreatedByInstitutionId(String identifier, Long institutionId);
 

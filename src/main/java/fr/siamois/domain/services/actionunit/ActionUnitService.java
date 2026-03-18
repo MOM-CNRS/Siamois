@@ -34,6 +34,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * Service for managing Action Units.
@@ -287,8 +288,11 @@ public class ActionUnitService implements ArkEntityService {
      * @param institution The institution to find ActionUnits for
      * @return A set of ActionUnits created by the institution
      */
-    public Set<ActionUnit> findAllByInstitution(Institution institution) {
-        return actionUnitRepository.findByCreatedByInstitution(institution);
+    public Set<ActionUnitDTO> findAllByInstitution(InstitutionDTO institution) {
+        return actionUnitRepository.findByCreatedByInstitutionId(institution.getId())
+                .stream()
+                .map(actionUnitMapper::convert)
+                .collect(Collectors.toSet());
     }
 
 
