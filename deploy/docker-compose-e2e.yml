@@ -16,13 +16,14 @@ services:
       - "8099:8099"
     environment:
       CONTEXT_PATH: /
+      JAVA_TOOL_OPTIONS: -Xmx4g
     networks:
       - siamois-net
     deploy:
       resources:
         limits:
-          cpus: '1.0'
-          memory: 1G
+          cpus: '1.0'    
+          memory: 5G
 
 networks:
   siamois-net:
