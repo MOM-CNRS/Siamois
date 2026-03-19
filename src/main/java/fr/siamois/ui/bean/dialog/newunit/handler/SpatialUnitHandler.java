@@ -11,6 +11,7 @@ import fr.siamois.ui.bean.dialog.newunit.NewUnitContext;
 import fr.siamois.ui.bean.dialog.newunit.UnitKind;
 import org.springframework.stereotype.Component;
 
+import java.util.HashSet;
 import java.util.List;
 
 @Component
@@ -49,6 +50,8 @@ public class SpatialUnitHandler implements INewUnitHandler<SpatialUnitDTO> {
     @Override
     public void initFromContext(GenericNewUnitDialogBean<?> bean) {
         SpatialUnitDTO unit = (SpatialUnitDTO) bean.getUnit();
+        unit.setChildren(new HashSet<>());
+        unit.setParents(new HashSet<>());
         NewUnitContext ctx = bean.getNewUnitContext();
         if (ctx == null) {
             return;

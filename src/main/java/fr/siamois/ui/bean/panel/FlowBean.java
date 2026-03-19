@@ -222,7 +222,8 @@ public class FlowBean implements Serializable {
 
     public void addPanelToOverview(AbstractPanel targetPanel, AbstractPanel overviewPanel) {
 
-        overviewPanel.setRoot(true);
+        overviewPanel.setRoot(false);
+        targetPanel.setRoot(true);
         targetPanel.setParentOrOverview(overviewPanel);
         overviewPanel.setParentOrOverview(targetPanel);
         String base64RootUri = Base64.getUrlEncoder().withoutPadding().encodeToString(targetPanel.ressourceUri().getBytes());

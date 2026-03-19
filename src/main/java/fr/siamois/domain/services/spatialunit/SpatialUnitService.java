@@ -221,6 +221,32 @@ public class SpatialUnitService implements ArkEntityService {
             spatialUnit.setArk(ark);
         }
 
+        // Gestion des enfants et parents
+        if (su.getChildren() != null && !su.getChildren().isEmpty()) {
+            Set<SpatialUnit> children = new HashSet<>();
+            for (SpatialUnitSummaryDTO childDTO : su.getChildren()) {
+                SpatialUnit child = spatialUnitRepository.findById(childDTO.getId())
+                        .orElseThrow(() -> new SpatialUnitNotFoundException("Child SpatialUnit not found with id: " + childDTO.getId()));
+                children.add(child);
+                // Ajouter l'unité spatiale courante comme parent de l'enfant
+                child.getParents().add(spatialUnit);
+            }
+            spatialUnit.setChildren(children);
+        }
+
+        if (su.getParents() != null && !su.getParents().isEmpty()) {
+            Set<SpatialUnit> parents = new HashSet<>();
+            for (SpatialUnitSummaryDTO parentDTO : su.getParents()) {
+                SpatialUnit parent = spatialUnitRepository.findById(parentDTO.getId())
+                        .orElseThrow(() -> new SpatialUnitNotFoundException("Parent SpatialUnit not found with id: " + parentDTO.getId()));
+                parents.add(parent);
+                // Ajouter l'unité spatiale courante comme enfant du parent
+                parent.getChildren().add(spatialUnit);
+            }
+            spatialUnit.setParents(parents);
+        }
+
+
 
         spatialUnit = spatialUnitRepository.save(spatialUnit);
 

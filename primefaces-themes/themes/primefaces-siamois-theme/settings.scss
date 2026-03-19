@@ -104,7 +104,7 @@ main form:first-child .field-value-group {
 
 .addButton {
     grid-area: add;
-    background-color: var(--siamois-green-light);
+    background-color: var(--siamois-green-active);
     margin-left: auto !important;
     width: 50%;
     color: white;
@@ -115,8 +115,8 @@ main form:first-child .field-value-group {
 }
 
 .addButton button {
-    background-color: var(--siamois-green-light) !important;
-    border-color: var(--siamois-green-light) !important;
+    background-color: var(--siamois-green-active) !important;
+    border-color: var(--siamois-green-active) !important;
 }
 
 .addButton i {
