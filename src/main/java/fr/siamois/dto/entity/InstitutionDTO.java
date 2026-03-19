@@ -9,6 +9,7 @@ import java.util.Set;
 
 
 @Data
+@EqualsAndHashCode(callSuper = true)
 public class InstitutionDTO extends AbstractEntityDTO implements Serializable {
 
         private String name;

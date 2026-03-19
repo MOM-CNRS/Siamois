@@ -101,7 +101,7 @@ public class PersonService {
             for (PendingActionUnitAttribution attribution : attributions) {
                 ActionUnitDTO actionUnitDTO = actionUnitMapper.convert(attribution.getActionUnit());
                 institutionService.addPersonToActionUnit(actionUnitDTO,
-                        personMapper.convert(person),
+                        personDTO,
                         conceptMapper.convert(attribution.getRole()));
                 pendingPersonService.delete(attribution);
             }
@@ -300,7 +300,10 @@ public class PersonService {
 
         // Fetch Person
         Person person = personRepository.findById(personDTO.getId())
-                .orElseThrow(() -> new RuntimeException("Person not found"));
+                .orElseGet(() -> {
+                    Person newPerson = personMapper.invertConvert(personDTO);
+                    return personRepository.save(newPerson);
+                });
         toSave.setPerson(person);
 
         toSave.setPerson(person);

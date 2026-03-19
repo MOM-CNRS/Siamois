@@ -338,9 +338,10 @@ class InstitutionServiceTest {
         dto.setCreatedByInstitution(institution);
 
         TeamMemberRelation relation = new TeamMemberRelation(dto, managerDTO);
+        relation.getPerson().setUsername("Username");
         when(actionUnitMapper.invertConvert(any(ActionUnitDTO.class))).thenReturn(actionUnit);
         when(teamMemberRepository.findAllByActionUnitId(dto.getId())).thenReturn(new HashSet<>(Set.of(relation)));
-
+        when(personMapper.invertConvert(any(PersonDTO.class))).thenReturn(manager);
         Set<Person> result = institutionService.findMembersOf(dto);
 
         assertThat(result).containsExactlyInAnyOrder(manager);
@@ -367,7 +368,7 @@ class InstitutionServiceTest {
 
         // then
         assertTrue(added);                       // return value is true
-        assertTrue(inst.getManagers().contains(p)); // person is in managers set
+        assertTrue(inst.getManagers().stream().anyMatch(manager -> manager.getId() == 2)); // person is in managers set
     }
 
     @Test

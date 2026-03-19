@@ -152,7 +152,11 @@ public class InstitutionService {
         ActionUnit actionUnit = actionUnitMapper.invertConvert(actionUnitDTO);
         Set<TeamMemberRelation> result = teamMemberRepository.findAllByActionUnitId(actionUnit.getId());
         PersonDTO creator = actionUnitDTO.getCreatedBy();
-        result.add(new TeamMemberRelation(actionUnitDTO, creator));
+
+        // Add creator
+        TeamMemberRelation rel = new TeamMemberRelation(actionUnitDTO, creator);
+        rel.setPerson(personMapper.invertConvert(creator));
+        result.add(rel);
 
         for (TeamMemberRelation relation : result) {
             relation.setPerson(Hibernate.unproxy(relation.getPerson(), Person.class));
