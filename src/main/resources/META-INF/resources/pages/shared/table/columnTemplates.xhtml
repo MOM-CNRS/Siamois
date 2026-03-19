@@ -48,6 +48,8 @@
                 styleClass="hidden-column"
                 action="#{tableModel.handleAction(column, item)}"
                 onstart="#{column.onstartJs}"
+                immediate="true"
+                process="@this"
                 icon="bi bi-layout-sidebar-inset-reverse"
                 oncomplete="#{tableModel.getOnCompleteJs(item)}"
                 >

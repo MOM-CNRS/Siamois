@@ -172,8 +172,11 @@ public class PersonService {
      * @param nameOrLastname The string to look for in name or username
      * @return The Person list
      */
-    public List<Person> findAllByNameLastnameContaining(String nameOrLastname) {
-        return personRepository.findAllByNameOrLastname(nameOrLastname);
+    public List<PersonDTO> findAllByNameLastnameContaining(String nameOrLastname) {
+        List<Person> persons = personRepository.findAllByNameOrLastname(nameOrLastname);
+        return persons.stream()
+                .map(personMapper::convert)
+                .toList();
     }
 
 

@@ -126,7 +126,7 @@ class PersonServiceTest {
         when(personRepository.findAllByNameOrLastname("bob")).thenReturn(List.of(person));
 
         // Act
-        List<Person> actualResult = personService.findAllByNameLastnameContaining("bob");
+        List<PersonDTO> actualResult = personService.findAllByNameLastnameContaining("bob");
 
         // Assert
         assertEquals(List.of(person), actualResult);

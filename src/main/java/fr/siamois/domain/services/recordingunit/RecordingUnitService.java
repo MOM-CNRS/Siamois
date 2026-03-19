@@ -124,11 +124,18 @@ public class RecordingUnitService implements ArkEntityService {
 
             setupStratigraphicRelationships(recordingUnit, managedRecordingUnit);
             setupSpatialUnit(recordingUnit, managedRecordingUnit);
+            managedRecordingUnit.setActionUnit(recordingUnit.getActionUnit());
+            managedRecordingUnit.setCreatedByInstitution(recordingUnit.getCreatedByInstitution());
+            managedRecordingUnit.setFullIdentifier(recordingUnit.getFullIdentifier());
             setupOtherFields(recordingUnit, managedRecordingUnit);
+
+
+            RecordingUnit toReturn = recordingUnitRepository.save(managedRecordingUnit);
+
             setupParents(recordingUnit, managedRecordingUnit);
             setupChilds(recordingUnit, managedRecordingUnit);
 
-            return recordingUnitRepository.save(managedRecordingUnit);
+            return toReturn;
 
         } catch (RuntimeException e) {
             log.error(e.getMessage(), e);
@@ -161,7 +168,7 @@ public class RecordingUnitService implements ArkEntityService {
 
             // Ajout bidirectionnel
             parent.getChildren().add(managedRecordingUnit);
-            managedRecordingUnit.getParents().add(parent);
+            //managedRecordingUnit.getParents().add(parent);
 
             // Sauvegarde du parent
             recordingUnitRepository.save(parent);

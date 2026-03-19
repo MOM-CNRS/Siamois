@@ -121,7 +121,7 @@ public class SessionSettingsBean implements Serializable {
         userInfo = null;
     }
 
-    public List<Person> completePerson(String query) {
+    public List<PersonDTO> completePerson(String query) {
         if (query == null || query.isEmpty()) {
             return Collections.emptyList();
         }

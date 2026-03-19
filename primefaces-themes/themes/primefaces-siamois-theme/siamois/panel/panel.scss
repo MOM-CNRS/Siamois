@@ -58,7 +58,8 @@
 .ui-panel.siamois-panel .ui-panel-titlebar {
   font-family: 'Inter', sans-serif;
   background: var(--siamois-green-light-100);
-  color: var(--text-light)
+  color: var(--text-light);
+  border-bottom: none;
 }
 
 .siamois-panel .panel-top-section {
@@ -255,10 +256,10 @@ body .ui-autocomplete .ui-autocomplete-dropdown {
 
   .sideview-titlebar {
     padding: 0.5rem;
-    border-bottom: 1px solid var(--siamois-green-light-200);
     background: var(--siamois-green-light-100);
     color: var(--main-color);
     display: flex;
+    border-bottom: none;
     font-weight: 600;
     gap: 0.5em;
     align-items: center;

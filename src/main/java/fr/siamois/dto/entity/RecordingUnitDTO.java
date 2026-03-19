@@ -6,6 +6,8 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -18,18 +20,18 @@ public class RecordingUnitDTO extends AbstractEntityDTO {
     private String fullIdentifier;
     private ConceptDTO type;
     private ActionUnitSummaryDTO actionUnit;
-    private Set<RecordingUnitSummaryDTO> parents;
-    private Set<RecordingUnitSummaryDTO> children;
+    private Set<RecordingUnitSummaryDTO> parents = new HashSet<>();
+    private Set<RecordingUnitSummaryDTO> children= new HashSet<>();
     private OffsetDateTime openingDate;
     private OffsetDateTime closingDate;
-    private Set<SpecimenSummaryDTO> specimenList;
+    private Set<SpecimenSummaryDTO> specimenList = new HashSet<>();
     private Long specimenCount;
     private PersonDTO author;
     private String description;
-    private List<PersonDTO> contributors;
+    private List<PersonDTO> contributors = new ArrayList<>();
     private SpatialUnitSummaryDTO spatialUnit;
-    private Set<StratigraphicRelationshipDTO> relationshipsAsUnit1 ;
-    private Set<StratigraphicRelationshipDTO> relationshipsAsUnit2 ;
+    private Set<StratigraphicRelationshipDTO> relationshipsAsUnit1 = new HashSet<>();
+    private Set<StratigraphicRelationshipDTO> relationshipsAsUnit2 = new HashSet<>();
 
     public RecordingUnitDTO(RecordingUnitDTO original) {
         identifier = original.getIdentifier();
