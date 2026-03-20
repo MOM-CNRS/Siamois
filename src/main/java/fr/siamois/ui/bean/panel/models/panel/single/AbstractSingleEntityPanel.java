@@ -99,16 +99,38 @@ public abstract class AbstractSingleEntityPanel<T extends AbstractEntityDTO> ext
 
     public abstract List<PersonDTO> authorsAvailable();
 
-    /*
-    Method to do to previous unit in the current context
-     */
-    public abstract void goToPrevious() throws IOException;
+    // --- Abstract methods to override per type ---
 
-    /*
-   Method to do to next unit in the current context
-    */
-    public abstract void goToNext() throws IOException;
+    protected abstract String getFocusPath(Long id);
 
+    protected abstract void addToOverview(Long id, Object parentOrOverview);
+
+    protected abstract  T findNext();
+
+    protected abstract  T findPrevious();
+
+    protected abstract Long getId(Object dto);
+
+    // --- Common logic ---
+
+    public void redirectToFocusOrOverview(Long id) throws IOException {
+        if (isRoot) {
+            flowBean.redirectToFocus(getFocusPath(id));
+        } else {
+            // if not root, add unit to the overview of the parent
+            addToOverview(id, parentOrOverview);
+        }
+    }
+
+    public void goToNext() throws IOException {
+        Object next = findNext();
+        redirectToFocusOrOverview(getId(next));
+    }
+
+    public void goToPrevious() throws IOException {
+        Object previous = findPrevious();
+        redirectToFocusOrOverview(getId(previous));
+    }
 
     public static final Vocabulary SYSTEM_THESO;
 
