@@ -147,6 +147,16 @@ public class SpecimenPanel extends AbstractSingleEntityPanel<SpecimenDTO>  imple
     }
 
     @Override
+    public void goToPrevious() {
+
+    }
+
+    @Override
+    public void goToNext() {
+
+    }
+
+    @Override
     SpecimenDTO findUnitById(Long id) {
         return specimenService.findById(id);
     }

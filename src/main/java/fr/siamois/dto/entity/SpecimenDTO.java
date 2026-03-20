@@ -15,6 +15,7 @@ public class SpecimenDTO extends AbstractEntityDTO {
     private Integer identifier;
     private String fullIdentifier;
     private ConceptDTO type;
+    private ConceptDTO category;
     private List<PersonDTO> authors;
     private List<PersonDTO> collectors;
     private RecordingUnitDTO recordingUnit;

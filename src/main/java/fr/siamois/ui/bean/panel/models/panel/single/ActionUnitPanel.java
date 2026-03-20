@@ -243,6 +243,16 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnitDTO> im
     }
 
     @Override
+    public void goToPrevious() {
+
+    }
+
+    @Override
+    public void goToNext() {
+
+    }
+
+    @Override
     ActionUnitDTO findUnitById(Long id) {
         return actionUnitService.findById(id);
     }

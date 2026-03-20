@@ -459,10 +459,18 @@ body .ui-tabmenu.panel-menu-text {
 }
 
 body .ui-button.ui-button-flat.status-button {
-    background-color: var(--green-valid);
+
     color: white;
     height:1.5em;
     width: 1.5em;
+
+    &.validated {
+        background-color: var(--green-valid);
+    }
+
+    &.not-validated {
+        background-color: var(--error-main);
+    }
 }
 
 .focus {

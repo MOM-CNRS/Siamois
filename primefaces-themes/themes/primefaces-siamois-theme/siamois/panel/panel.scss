@@ -230,7 +230,7 @@ body .ui-autocomplete .ui-autocomplete-dropdown {
 
 .ui-commandlink.ui-widget.sideview-topbar-button {
   height: 24px;
-  border-radius: 3px;
+  border-radius: 10px;
   width: 24px;
   display: flex;          // Enable Flexbox
   align-items: center;   // Center vertically
@@ -254,17 +254,16 @@ body .ui-autocomplete .ui-autocomplete-dropdown {
   z-index: 1000;
   border-left: 1px solid #ccc;
 
-  .sideview-titlebar {
-    padding: 0.5rem;
-    background: var(--siamois-green-light-100);
-    color: var(--main-color);
-    display: flex;
-    border-bottom: none;
-    font-weight: 600;
-    gap: 0.5em;
-    align-items: center;
-    flex-wrap: wrap;
-  }
+
+}
+
+.sideview-titlebar {
+  padding: 0.5rem;
+  background: var(--siamois-green-light-100);
+  color: var(--main-color);
+  border-bottom: none;
+  font-weight: 600;
+  display: block;
 }
 
 .panel-splitter-panel-r {

@@ -23,7 +23,7 @@ public class SystemUserLoader {
     private final InstitutionMapper institutionMapper;
 
 
-    @Transactional(readOnly = true)
+    @Transactional
     public UserInfo loadSystemUser() {
 
         // --- Personne système ---

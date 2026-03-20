@@ -167,6 +167,16 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
     }
 
     @Override
+    public void goToPrevious() {
+
+    }
+
+    @Override
+    public void goToNext() {
+
+    }
+
+    @Override
     public void initForms(boolean forceInit) {
 
         detailsForm =  formContextServices.getConversionService().convert(SpatialUnit.DETAILS_FORM, FormUiDto.class);

@@ -99,6 +99,17 @@ public abstract class AbstractSingleEntityPanel<T extends AbstractEntityDTO> ext
 
     public abstract List<PersonDTO> authorsAvailable();
 
+    /*
+    Method to do to previous unit in the current context
+     */
+    public abstract void goToPrevious();
+
+    /*
+   Method to do to next unit in the current context
+    */
+    public abstract void goToNext();
+
+
     public static final Vocabulary SYSTEM_THESO;
 
     static {

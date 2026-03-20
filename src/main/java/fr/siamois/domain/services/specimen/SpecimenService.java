@@ -55,7 +55,7 @@ public class SpecimenService implements ArkEntityService {
                 toSave.setIdentifier(generateNextIdentifier(toSave));
             }
             // Set full identifier
-            toSave.setFullIdentifier(toSave.getFullIdentifier());
+            toSave.setFullIdentifier(toSave.getRecordingUnit().getFullIdentifier()+"_"+toSave.getIdentifier().toString());
         }
 
         // Convertir SpecimenDTO en Specimen

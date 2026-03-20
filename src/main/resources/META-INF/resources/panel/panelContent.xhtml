@@ -15,7 +15,8 @@
                    class="panel-progressbar"
                    style="height:3px" mode="indeterminate"/>
 
-    <p:splitter id="panel-splitter-${panelIndex}" style="height: 100%" styleClass="#{flowBean.fullscreenPanelIndex !=-1 ? 'focus' : ''}">
+    <p:splitter id="panel-splitter-${panelIndex}" style="height: 100%;border:none;"
+                styleClass="#{flowBean.fullscreenPanelIndex !=-1 ? 'focus' : ''}">
         <!-- Left Splitter Panel (dynamic) -->
         <p:splitterPanel style="overflow:auto;" styleClass="panel-splitter-panel-l" id="mainView">
             <!-- Include the reusable dynamic content for the right panel -->
@@ -30,17 +31,11 @@
         <p:splitterPanel styleClass="panel-splitter-panel-r"
                          style="overflow:auto;display: #{panelModel.getLeftSpltterSize()}"
                          id="overview">
-            <p:outputPanel id="sideview-${panelIndex}" styleClass="sideview #{panelModel.parentOrOverview.panelClass}"
+            <p:outputPanel  id="sideview-${panelIndex}" styleClass="sideview #{panelModel.parentOrOverview.panelClass}"
                            style="border-radius: 1em 0 0 0;">
-                <div class="sideview-titlebar" style="background: var(--siamois-green-light-100);">
-                    <div style="display: flex;justify-content: space-between;">
-                        <div>
-                            <ui:include rendered="#{panelModel.parentOrOverview.displayHeader() != null}"
-                                        src="#{panelModel.parentOrOverview.displayHeader()}">
-                                <ui:param name="panelModel" value="#{panelModel.parentOrOverview}"/>
-                            </ui:include>
-                        </div>
-                        <h:form id="actionForm-${panelModel.prefixPanelIndex}-overview">
+                <h:panelGroup rendered="#{not empty panelModel.parentOrOverview}">
+                    <div  class="sideview-titlebar" style="background: var(--siamois-green-light-100);">
+                        <h:form style="float:right;" id="actionForm-${panelModel.prefixPanelIndex}-overview">
                             <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
                             <div style="display:flex;flex-direction: row;gap:0.5em;padding: 3px;
                                     border: 1px solid var(--siamois-green-light);
@@ -56,20 +51,37 @@
                                                id="focusButton">
                                     <h:outputText styleClass="bi bi-arrows-angle-expand"/>
                                 </p:commandLink>
+                                <p:commandLink id="bookmarkToggleButton"
+                                               styleClass="sideview-topbar-button"
+                                               action="#{navBean.togglePanelBookmark(panelModel.parentOrOverview)}"
+                                               update="navBarCsrfForm:siamoisNavForm">
+                                    <h:outputText styleClass="#{navBean.isPanelBookmarkedByUser(panelModel.parentOrOverview) ?
+                            'ui-icon bi bi-bookmark-fill' : 'ui-icon bi bi-bookmark'}"/>
+                                </p:commandLink>
 
                             </div>
                         </h:form>
+                        <div style="display: flex;
+                                    gap: 0.5em;
+                                    align-items: center;
+                                    flex-wrap: wrap;">
+                            <ui:include rendered="#{panelModel.parentOrOverview.displayHeader() != null}"
+                                        src="#{panelModel.parentOrOverview.displayHeader()}">
+                                <ui:param name="panelModel" value="#{panelModel.parentOrOverview}"/>
+                            </ui:include>
+                        </div>
+
                     </div>
-                </div>
-                <p:progressBar widgetVar="pbBarAjax_#{panelIndex}-overview" id="overviewProgressBar"
-                               class="panel-progressbar"
-                               style="height:3px" mode="indeterminate"/>
-                <!-- Include the reusable dynamic content for the right panel -->
-                <ui:include src="#{panelModel.parentOrOverview.display()}" id="overview-panel-body">
-                    <ui:param name="panelModel" value="#{panelModel.parentOrOverview}"/>
-                    <ui:param name="panelIndex" value="#{panelIndex}-overview"/>
-                    <ui:param name="mode" value="#{mode}"/>
-                </ui:include>
+                    <p:progressBar widgetVar="pbBarAjax_#{panelIndex}-overview" id="overviewProgressBar"
+                                   class="panel-progressbar"
+                                   style="height:3px" mode="indeterminate"/>
+                    <!-- Include the reusable dynamic content for the right panel -->
+                    <ui:include src="#{panelModel.parentOrOverview.display()}" id="overview-panel-body">
+                        <ui:param name="panelModel" value="#{panelModel.parentOrOverview}"/>
+                        <ui:param name="panelIndex" value="#{panelIndex}-overview"/>
+                        <ui:param name="mode" value="#{mode}"/>
+                    </ui:include>
+                </h:panelGroup>
             </p:outputPanel>
         </p:splitterPanel>
     </p:splitter>

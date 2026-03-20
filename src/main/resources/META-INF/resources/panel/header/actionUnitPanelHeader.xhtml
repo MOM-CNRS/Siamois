@@ -1,21 +1,45 @@
 <ui:fragment xmlns="http://www.w3.org/1999/xhtml"
              xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
              xmlns:p="http://primefaces.org/ui"
-             xmlns:chip="http://xmlns.jcp.org/jsf/composite/pages/shared/chip"
+             xmlns:chip="http://xmlns.jcp.org/jsf/composite/pages/shared/chip" xmlns:h="http://java.sun.com/jsf/html"
 >
     <!--@elvariable id="panelModel" type="fr.siamois.ui.bean.panel.models.panel.single.RecordingUnitPanel"-->
+    <h:form id="validationButtonForm">
+        <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
+
+        <p:commandButton
+                type="button"
+                icon="#{panelModel.unit.validated ? 'pi pi-check' : 'pi pi-times'}"
+                styleClass="rounded-button ui-button-flat #{panelModel.unit.validated ? 'status-button validated' : 'status-button not-validated'}"
+                onclick="event.stopPropagation();"
+        />
+    </h:form>
+
+
     <i class="#{panelModel.icon}" style="font-size: 2rem; color:var(--main-color)"/>
 
     <span>#{panelModel.titleCodeOrTitle} - (#{panelModel.unit.fullIdentifier})</span>
+
+    <h:form id="nextPreviousForm" style="display:flex">
+        <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
+        <p:commandLink id="previous"
+                       styleClass="sideview-topbar-button">
+            <h:outputText styleClass='ui-icon bi bi-chevron-up'/>
+        </p:commandLink>
+        <p:commandLink id="next"
+                       styleClass="sideview-topbar-button">
+            <h:outputText styleClass='ui-icon bi bi-chevron-down'/>
+        </p:commandLink>
+    </h:form>
+
+
 
     <chip:conceptChip concept="#{panelModel.unit.type}" styleClass="mr-2 action-unit-type-chip"/>
 
     <p:chip rendered="#{not empty panelModel.unit.mainLocation}" label="#{panelModel.unit.mainLocation.name}"
             styleClass="mr-2 spatial-unit-chip" icon="bi bi-geo-alt"
     />
-    <p:chip rendered="#{not panelModel.unit.validated}" label="Non validé"
-            styleClass="mr-2 error-chip"
-            />
+
     <p:chip rendered="#{panelModel.hasUnsavedModifications}" label="Modifications non enregistré"
             styleClass="mr-2 error-chip"
     />

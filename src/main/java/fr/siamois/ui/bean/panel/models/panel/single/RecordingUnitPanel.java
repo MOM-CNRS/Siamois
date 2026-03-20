@@ -265,6 +265,16 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
         return List.of();
     }
 
+    @Override
+    public void goToPrevious() {
+
+    }
+
+    @Override
+    public void goToNext() {
+
+    }
+
 
     @Override
     public void initForms(boolean forceInit) {
@@ -386,7 +396,7 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
                 (GenericNewUnitDialogBean<SpecimenDTO>) genericNewUnitDialogBean,
                 formContextServices
         );
-
+        specimenTableModel.setParentPanel(this);
         SpecimenTableDefinitionFactory.applyTo(specimenTableModel);
 
         // configuration du bouton creer
