@@ -15,22 +15,27 @@
         />
     </h:form>
 
+    <h:form id="nextPreviousForm" style="display:flex;color: var(--main-color);
+    padding: 1px;
+    border: 1px solid var(--main-color);
+    border-radius: 15px;">
+        <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
+        <p:commandLink id="previous"
+                       styleClass="sideview-topbar-button">
+            <h:outputText styleClass='ui-icon bi bi-chevron-up' style="color: var(--main-color);"/>
+        </p:commandLink>
+        <p:commandLink id="next"
+                       styleClass="sideview-topbar-button">
+            <h:outputText styleClass='ui-icon bi bi-chevron-down' style="color: var(--main-color);"/>
+        </p:commandLink>
+    </h:form>
+
+
 
     <i class="#{panelModel.icon}" style="font-size: 2rem; color:var(--main-color)"/>
 
     <span>#{panelModel.titleCodeOrTitle} - (#{panelModel.unit.fullIdentifier})</span>
 
-    <h:form id="nextPreviousForm" style="display:flex">
-        <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
-        <p:commandLink id="previous"
-                       styleClass="sideview-topbar-button">
-            <h:outputText styleClass='ui-icon bi bi-chevron-up'/>
-        </p:commandLink>
-        <p:commandLink id="next"
-                       styleClass="sideview-topbar-button">
-            <h:outputText styleClass='ui-icon bi bi-chevron-down'/>
-        </p:commandLink>
-    </h:form>
 
 
 
