@@ -21,12 +21,14 @@
     border-radius: 15px;">
         <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
         <p:commandLink id="previous"
+                       action="#{panelModel.goToPrevious()}"
                        styleClass="sideview-topbar-button">
-            <h:outputText styleClass='ui-icon bi bi-chevron-up' style="color: var(--main-color);"/>
+            <h:outputText styleClass='ui-icon bi bi-caret-up' style="color: var(--main-color);"/>
         </p:commandLink>
         <p:commandLink id="next"
+                       action="#{panelModel.goToNext()}"
                        styleClass="sideview-topbar-button">
-            <h:outputText styleClass='ui-icon bi bi-chevron-down' style="color: var(--main-color);"/>
+            <h:outputText styleClass='ui-icon bi bi-caret-down' style="color: var(--main-color);"/>
         </p:commandLink>
     </h:form>
 

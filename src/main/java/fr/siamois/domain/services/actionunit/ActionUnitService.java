@@ -295,6 +295,46 @@ public class ActionUnitService implements ArkEntityService {
                 .collect(Collectors.toSet());
     }
 
+    /**
+     * Find the next ActionUnit created by a specific institution after the given one.
+     * If there is no next, returns the oldest one (wraps around).
+     *
+     * @param institution The institution to find ActionUnits for
+     * @param current The current ActionUnit to find the next one from
+     * @return The next ActionUnitDTO, or the oldest one if there is no next
+     */
+    public ActionUnitDTO findNextByInstitution(InstitutionDTO institution, ActionUnitDTO current) {
+        return actionUnitRepository
+                .findFirstByCreatedByInstitutionIdAndCreationTimeAfterOrderByCreationTimeAsc(
+                        institution.getId(), current.getCreationTime())
+                .map(actionUnitMapper::convert)
+                .orElseGet(() -> actionUnitRepository
+                        .findFirstByCreatedByInstitutionIdOrderByCreationTimeAsc(institution.getId())
+                        .map(actionUnitMapper::convert)
+                        .orElseThrow(() -> new ActionUnitNotFoundException("No ActionUnit found for institution " + institution.getId()))
+                );
+    }
+
+    /**
+     * Find the previous ActionUnit created by a specific institution before the given one.
+     * If there is no previous, returns the most recent one (wraps around).
+     *
+     * @param institution The institution to find ActionUnits for
+     * @param current The current ActionUnit to find the previous one from
+     * @return The previous ActionUnitDTO, or the most recent one if there is no previous
+     */
+    public ActionUnitDTO findPreviousByInstitution(InstitutionDTO institution, ActionUnitDTO current) {
+        return actionUnitRepository
+                .findFirstByCreatedByInstitutionIdAndCreationTimeBeforeOrderByCreationTimeDesc(
+                        institution.getId(), current.getCreationTime())
+                .map(actionUnitMapper::convert)
+                .orElseGet(() -> actionUnitRepository
+                        .findFirstByCreatedByInstitutionIdOrderByCreationTimeDesc(institution.getId())
+                        .map(actionUnitMapper::convert)
+                        .orElseThrow(() -> new ActionUnitNotFoundException("No ActionUnit found for institution " + institution.getId()))
+                );
+    }
+
 
     /**
      * Verify if the action is still active

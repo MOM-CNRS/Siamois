@@ -47,6 +47,7 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 
+import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
@@ -242,14 +243,26 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnitDTO> im
         return List.of();
     }
 
-    @Override
-    public void goToPrevious() {
-
+    public void redirectToFocusOrOverview(Long actionUnitId) throws IOException {
+        if(isRoot) {
+            flowBean.redirectToFocus("/action-unit/"+actionUnitId);
+        }
+        else {
+            // update parent panel overview
+            flowBean.addActionUnitToOverview(actionUnitId,parentOrOverview);
+        }
     }
 
     @Override
-    public void goToNext() {
+    public void goToPrevious() throws IOException {
+        ActionUnitDTO previous = actionUnitService.findPreviousByInstitution(unit.getCreatedByInstitution(), unit);
+        redirectToFocusOrOverview(previous.getId());
+    }
 
+    @Override
+    public void goToNext() throws IOException {
+        ActionUnitDTO next = actionUnitService.findNextByInstitution(unit.getCreatedByInstitution(), unit);
+        redirectToFocusOrOverview(next.getId());
     }
 
     @Override

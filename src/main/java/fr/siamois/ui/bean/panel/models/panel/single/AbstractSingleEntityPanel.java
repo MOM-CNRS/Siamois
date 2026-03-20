@@ -102,12 +102,12 @@ public abstract class AbstractSingleEntityPanel<T extends AbstractEntityDTO> ext
     /*
     Method to do to previous unit in the current context
      */
-    public abstract void goToPrevious();
+    public abstract void goToPrevious() throws IOException;
 
     /*
    Method to do to next unit in the current context
     */
-    public abstract void goToNext();
+    public abstract void goToNext() throws IOException;
 
 
     public static final Vocabulary SYSTEM_THESO;
