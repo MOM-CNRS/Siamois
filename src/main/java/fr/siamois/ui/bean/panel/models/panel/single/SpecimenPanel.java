@@ -12,6 +12,7 @@ import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.dto.entity.SpecimenDTO;
 import fr.siamois.ui.bean.RedirectBean;
 import fr.siamois.ui.bean.panel.models.PanelBreadcrumb;
+import fr.siamois.ui.bean.panel.models.panel.AbstractPanel;
 import fr.siamois.ui.form.FormUiDto;
 import fr.siamois.ui.mapper.FormMapper;
 import lombok.EqualsAndHashCode;
@@ -144,6 +145,26 @@ public class SpecimenPanel extends AbstractSingleEntityPanel<SpecimenDTO>  imple
     @Override
     public List<PersonDTO> authorsAvailable() {
         return List.of();
+    }
+
+    @Override
+    protected String getFocusPath(Long id) {
+        return "";
+    }
+
+    @Override
+    protected void addToOverview(Long id, AbstractPanel parentOrOverview) {
+
+    }
+
+    @Override
+    protected SpecimenDTO findNext() {
+        return null;
+    }
+
+    @Override
+    protected SpecimenDTO findPrevious() {
+        return null;
     }
 
     @Override

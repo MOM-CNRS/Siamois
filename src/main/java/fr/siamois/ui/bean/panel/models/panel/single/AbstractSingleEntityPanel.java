@@ -18,6 +18,7 @@ import fr.siamois.dto.entity.AbstractEntityDTO;
 import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.ui.bean.dialog.document.DocumentCreationBean;
 import fr.siamois.ui.bean.panel.FlowBean;
+import fr.siamois.ui.bean.panel.models.panel.AbstractPanel;
 import fr.siamois.ui.bean.panel.models.panel.single.tab.*;
 import io.micrometer.common.lang.Nullable;
 import lombok.EqualsAndHashCode;
@@ -103,13 +104,11 @@ public abstract class AbstractSingleEntityPanel<T extends AbstractEntityDTO> ext
 
     protected abstract String getFocusPath(Long id);
 
-    protected abstract void addToOverview(Long id, Object parentOrOverview);
+    protected abstract void addToOverview(Long id, AbstractPanel parentOrOverview);
 
     protected abstract  T findNext();
 
     protected abstract  T findPrevious();
-
-    protected abstract Long getId(Object dto);
 
     // --- Common logic ---
 
@@ -123,13 +122,13 @@ public abstract class AbstractSingleEntityPanel<T extends AbstractEntityDTO> ext
     }
 
     public void goToNext() throws IOException {
-        Object next = findNext();
-        redirectToFocusOrOverview(getId(next));
+        AbstractEntityDTO next = findNext();
+        redirectToFocusOrOverview(next.getId());
     }
 
     public void goToPrevious() throws IOException {
-        Object previous = findPrevious();
-        redirectToFocusOrOverview(getId(previous));
+        AbstractEntityDTO previous = findPrevious();
+        redirectToFocusOrOverview(previous.getId());
     }
 
     public static final Vocabulary SYSTEM_THESO;

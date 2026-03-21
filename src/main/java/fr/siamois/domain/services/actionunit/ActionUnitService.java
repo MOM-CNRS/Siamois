@@ -335,6 +335,21 @@ public class ActionUnitService implements ArkEntityService {
                 );
     }
 
+    /**
+     * Toggle the validated status of an ActionUnit.
+     *
+     * @param actionUnitId The id of the ActionUnit to toggle
+     * @return The updated ActionUnitDTO
+     */
+    public ActionUnitDTO toggleValidated(Long actionUnitId) {
+        ActionUnit actionUnit = actionUnitRepository.findById(actionUnitId)
+                .orElseThrow(() -> new ActionUnitNotFoundException("ActionUnit not found with id: " + actionUnitId));
+
+        actionUnit.setValidated(!actionUnit.getValidated());
+
+        return actionUnitMapper.convert(actionUnitRepository.save(actionUnit));
+    }
+
 
     /**
      * Verify if the action is still active
