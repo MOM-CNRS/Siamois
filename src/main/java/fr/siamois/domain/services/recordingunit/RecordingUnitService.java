@@ -5,6 +5,7 @@ import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.actionunit.ActionUnitResolveConfig;
 import fr.siamois.domain.models.auth.Person;
+import fr.siamois.domain.models.exceptions.actionunit.ActionUnitNotFoundException;
 import fr.siamois.domain.models.exceptions.recordingunit.FailedRecordingUnitSaveException;
 import fr.siamois.domain.models.exceptions.recordingunit.RecordingUnitNotFoundException;
 import fr.siamois.domain.models.institution.Institution;
@@ -783,6 +784,62 @@ public class RecordingUnitService implements ArkEntityService {
         return recordingUnitRepository.findParentsOf(id).stream()
                 .map(unit -> conversionService.convert(unit, RecordingUnitDTO.class))
                 .toList();
+    }
+
+    /**
+     * Find the next Recordingunit created by a specific action after the given one.
+     * If there is no next, returns the oldest one (wraps around).
+     *
+     * @param action The action to find ActionUnits for
+     * @param current The current ActionUnit to find the next one from
+     * @return The next ActionUnitDTO, or the oldest one if there is no next
+     */
+    public RecordingUnitDTO findNextByActionUnit(ActionUnitSummaryDTO action, RecordingUnitDTO current) {
+        return recordingUnitRepository
+                .findFirstByActionUnitIdAndCreationTimeAfterOrderByCreationTimeAsc(
+                        action.getId(), current.getCreationTime())
+                .map(recordingUnitMapper::convert)
+                .orElseGet(() -> recordingUnitRepository
+                        .findFirstByActionUnitIdOrderByCreationTimeAsc(action.getId())
+                        .map(recordingUnitMapper::convert)
+                        .orElseThrow(() -> new ActionUnitNotFoundException("No ActionUnit found for institution " + action.getId()))
+                );
+    }
+
+    /**
+     * Find the previous Recordingunit created by a specific action before the given one.
+     * If there is no previous, returns the most recent one (wraps around).
+     *
+     * @param action The institution to find ActionUnits for
+     * @param current The current ActionUnit to find the previous one from
+     * @return The previous ActionUnitDTO, or the most recent one if there is no previous
+     */
+    public RecordingUnitDTO findPreviousByActionUnit(ActionUnitSummaryDTO action,
+                                                      RecordingUnitDTO current) {
+        return recordingUnitRepository
+                .findFirstByActionUnitIdAndCreationTimeBeforeOrderByCreationTimeDesc(
+                        action.getId(), current.getCreationTime())
+                .map(recordingUnitMapper::convert)
+                .orElseGet(() -> recordingUnitRepository
+                        .findFirstByActionUnitIdOrderByCreationTimeDesc(action.getId())
+                        .map(recordingUnitMapper::convert)
+                        .orElseThrow(() -> new ActionUnitNotFoundException("No ActionUnit found for institution " + action.getId()))
+                );
+    }
+
+    /**
+     * Toggle the validated status of an RecordingUnit.
+     *
+     * @param id The id of the Recording unit to toggle
+     * @return The updated RecordingUnitDTO
+     */
+    public RecordingUnitDTO toggleValidated(Long id) {
+        RecordingUnit unit = recordingUnitRepository.findById(id)
+                .orElseThrow(() -> new ActionUnitNotFoundException("ActionUnit not found with id: " + id));
+
+        unit.setValidated(!unit.getValidated());
+
+        return recordingUnitMapper.convert(recordingUnitRepository.save(unit));
     }
 
 

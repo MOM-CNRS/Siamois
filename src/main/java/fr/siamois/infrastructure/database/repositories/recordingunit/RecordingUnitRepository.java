@@ -3,6 +3,7 @@ package fr.siamois.infrastructure.database.repositories.recordingunit;
 
 import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
+import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import jakarta.transaction.Transactional;
 import jakarta.validation.constraints.NotNull;
 import org.springframework.data.domain.Page;
@@ -16,6 +17,7 @@ import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Repository;
 
 import java.math.BigInteger;
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -531,4 +533,16 @@ public interface RecordingUnitRepository extends CrudRepository<RecordingUnit, L
     boolean existsRootChildrenByAction(Long actionId);
 
     Page<RecordingUnit> findByCreatedByInstitutionId(Long institutionId, Pageable pageable);
+
+    Optional<RecordingUnit> findFirstByActionUnitIdAndCreationTimeAfterOrderByCreationTimeAsc(
+            Long actionUnitId,
+            OffsetDateTime createdAt);
+
+    Optional<RecordingUnit> findFirstByActionUnitIdAndCreationTimeBeforeOrderByCreationTimeDesc(
+            Long actionUnitId,
+            OffsetDateTime createdAt);
+
+    Optional<RecordingUnit> findFirstByActionUnitIdOrderByCreationTimeAsc(Long actionUnitId);  // oldest
+
+    Optional<RecordingUnit> findFirstByActionUnitIdOrderByCreationTimeDesc(Long actionUnitId);
 }

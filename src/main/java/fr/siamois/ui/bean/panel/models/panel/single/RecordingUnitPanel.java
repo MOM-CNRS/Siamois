@@ -268,37 +268,27 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
 
     @Override
     protected String getFocusPath(Long id) {
-        return "";
+        return "/recording-unit/"+id;
     }
 
     @Override
     protected void addToOverview(Long id, AbstractPanel parentOrOverview) {
-
+        flowBean.addRecordingUnitToOverview(id,parentOrOverview);
     }
 
     @Override
     protected RecordingUnitDTO findNext() {
-        return null;
+        return recordingUnitService.findNextByActionUnit(unit.getActionUnit(), unit);
     }
 
     @Override
     protected RecordingUnitDTO findPrevious() {
-        return null;
-    }
-
-    @Override
-    public void goToPrevious() {
-
+        return recordingUnitService.findPreviousByActionUnit(unit.getActionUnit(), unit);
     }
 
     @Override
     public void toggleValidate() {
-
-    }
-
-    @Override
-    public void goToNext() {
-
+        unit = recordingUnitService.toggleValidated(unit.getId());
     }
 
 
