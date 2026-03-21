@@ -45,7 +45,6 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 
-import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
@@ -261,6 +260,7 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnitDTO> im
         return actionUnitService.findPreviousByInstitution(unit.getCreatedByInstitution(), unit);
     }
 
+    @Override
     public void toggleValidate() {
         unit = actionUnitService.toggleValidated(unit.getId());
     }

@@ -4,37 +4,10 @@
              xmlns:chip="http://xmlns.jcp.org/jsf/composite/pages/shared/chip" xmlns:h="http://java.sun.com/jsf/html"
 >
     <!--@elvariable id="panelModel" type="fr.siamois.ui.bean.panel.models.panel.single.AbstractSingleEntityPanel"-->
-    <h:form id="validationButtonForm">
-        <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
 
-        <p:commandButton
-                action="#{panelModel.toggleValidate()}"
-                update="@this"
-                process="@this"
-                icon="#{panelModel.unit.validated ? 'pi pi-check' : 'pi pi-times'}"
-                styleClass="rounded-button ui-button-flat #{panelModel.unit.validated ? 'status-button validated' : 'status-button not-validated'}"
-                onclick="event.stopPropagation();"
-        />
-    </h:form>
+    <ui:include src="validationButton.xhtml" />
 
-    <h:form id="nextPreviousForm" style="display:flex;color: var(--main-color);
-    padding: 1px;
-    border: 1px solid var(--main-color);
-    border-radius: 15px;">
-        <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
-        <p:commandLink id="previous"
-                       action="#{panelModel.goToPrevious()}"
-                       styleClass="sideview-topbar-button">
-            <h:outputText styleClass='ui-icon bi bi-caret-up' style="color: var(--main-color);"/>
-        </p:commandLink>
-        <p:commandLink id="next"
-                       action="#{panelModel.goToNext()}"
-                       styleClass="sideview-topbar-button">
-            <h:outputText styleClass='ui-icon bi bi-caret-down' style="color: var(--main-color);"/>
-        </p:commandLink>
-    </h:form>
-
-
+    <ui:include src="nextPreviousButton.xhtml" />
 
     <i class="#{panelModel.icon}" style="font-size: 2rem; color:var(--main-color)"/>
 

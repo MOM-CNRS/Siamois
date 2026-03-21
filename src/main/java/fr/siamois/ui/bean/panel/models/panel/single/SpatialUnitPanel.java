@@ -174,27 +174,22 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
 
     @Override
     protected void addToOverview(Long id, AbstractPanel parentOrOverview) {
-
+        flowBean.addSpatialUnitToOverview(id,parentOrOverview);
     }
 
     @Override
     protected SpatialUnitDTO findNext() {
-        return null;
+        return spatialUnitService.findNextByInstitution(unit.getCreatedByInstitution(), unit);
     }
 
     @Override
     protected SpatialUnitDTO findPrevious() {
-        return null;
+        return spatialUnitService.findPreviousByInstitution(unit.getCreatedByInstitution(), unit);
     }
 
     @Override
-    public void goToPrevious() {
-
-    }
-
-    @Override
-    public void goToNext() {
-
+    public void toggleValidate() {
+        unit = spatialUnitService.toggleValidated(unit.getId());
     }
 
     @Override

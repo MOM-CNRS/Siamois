@@ -173,6 +173,11 @@ public class SpecimenPanel extends AbstractSingleEntityPanel<SpecimenDTO>  imple
     }
 
     @Override
+    public void toggleValidate() {
+
+    }
+
+    @Override
     public void goToNext() {
 
     }

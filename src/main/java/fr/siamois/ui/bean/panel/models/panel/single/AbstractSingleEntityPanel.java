@@ -141,9 +141,11 @@ public abstract class AbstractSingleEntityPanel<T extends AbstractEntityDTO> ext
 
     protected static final String COLUMN_CLASS_NAME = "ui-g-12 ui-md-6 ui-lg-4";
 
-        /*
-    Find unit by its ID
-     */
+    public abstract void toggleValidate();
+
+    /*
+        Find unit by its ID
+         */
     abstract T findUnitById(Long id);
 
     /*

@@ -25,6 +25,7 @@ public abstract class AbstractEntityDTO implements Serializable {
     protected InstitutionDTO createdByInstitution;
     protected Boolean validated;
     protected OffsetDateTime creationTime;
+    protected OffsetDateTime validatedAt;
     protected Person validatedBy ;
 
 }

@@ -292,6 +292,11 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
     }
 
     @Override
+    public void toggleValidate() {
+
+    }
+
+    @Override
     public void goToNext() {
 
     }

@@ -1,7 +1,9 @@
 package fr.siamois.domain.services.spatialunit;
 
 import fr.siamois.domain.models.UserInfo;
+import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.ark.Ark;
+import fr.siamois.domain.models.exceptions.actionunit.ActionUnitNotFoundException;
 import fr.siamois.domain.models.exceptions.recordingunit.FailedRecordingUnitSaveException;
 import fr.siamois.domain.models.exceptions.spatialunit.SpatialUnitAlreadyExistsException;
 import fr.siamois.domain.models.exceptions.spatialunit.SpatialUnitNotFoundException;
@@ -19,10 +21,7 @@ import fr.siamois.domain.services.person.PersonService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.dto.entity.*;
 import fr.siamois.infrastructure.database.repositories.SpatialUnitRepository;
-import fr.siamois.mapper.InstitutionMapper;
-import fr.siamois.mapper.RecordingUnitMapper;
-import fr.siamois.mapper.SpatialUnitMapper;
-import fr.siamois.mapper.SpatialUnitSummaryMapper;
+import fr.siamois.mapper.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.Hibernate;
@@ -56,7 +55,7 @@ public class SpatialUnitService implements ArkEntityService {
     private final RecordingUnitMapper recordingUnitMapper;
     private final SpatialUnitSummaryMapper spatialUnitSummaryMapper;
     private final InstitutionMapper institutionMapper;
-
+    private final SpatialUnitMapperImpl spatialUnitMapperImpl;
 
 
     /**
@@ -475,6 +474,61 @@ public class SpatialUnitService implements ArkEntityService {
 
     public boolean existsRootChildrenByParent(Long spatialUnitId) {
         return spatialUnitRepository.existsRootChildrenByParent(spatialUnitId);
+    }
+
+    /**
+     * Find the next place created by a specific institution after the given one.
+     * If there is no next, returns the oldest one (wraps around).
+     *
+     * @param institution The institution to find place for
+     * @param current The current place to find the next one from
+     * @return The next SpatialUnitDTO, or the oldest one if there is no next
+     */
+    public SpatialUnitDTO findNextByInstitution(InstitutionDTO institution, SpatialUnitDTO current) {
+        return spatialUnitRepository
+                .findFirstByCreatedByInstitutionIdAndCreationTimeAfterOrderByCreationTimeAsc(
+                        institution.getId(), current.getCreationTime())
+                .map(spatialUnitMapper::convert)
+                .orElseGet(() -> spatialUnitRepository
+                        .findFirstByCreatedByInstitutionIdOrderByCreationTimeAsc(institution.getId())
+                        .map(spatialUnitMapper::convert)
+                        .orElseThrow(() -> new ActionUnitNotFoundException("No ActionUnit found for institution " + institution.getId()))
+                );
+    }
+
+    /**
+     * Find the previous spatial unit created by a specific institution before the given one.
+     * If there is no previous, returns the most recent one (wraps around).
+     *
+     * @param institution The institution to find spatial unit for
+     * @param current The current spatial unit to find the previous one from
+     * @return The previous SpatialUnitDTO, or the most recent one if there is no previous
+     */
+    public SpatialUnitDTO findPreviousByInstitution(InstitutionDTO institution, SpatialUnitDTO current) {
+        return spatialUnitRepository
+                .findFirstByCreatedByInstitutionIdAndCreationTimeBeforeOrderByCreationTimeDesc(
+                        institution.getId(), current.getCreationTime())
+                .map(spatialUnitMapper::convert)
+                .orElseGet(() -> spatialUnitRepository
+                        .findFirstByCreatedByInstitutionIdOrderByCreationTimeDesc(institution.getId())
+                        .map(spatialUnitMapper::convert)
+                        .orElseThrow(() -> new ActionUnitNotFoundException("No ActionUnit found for institution " + institution.getId()))
+                );
+    }
+
+    /**
+     * Toggle the validated status of a spatial unit.
+     *
+     * @param id The id of the Place to toggle
+     * @return The updated SpatialUnitDTO
+     */
+    public SpatialUnitDTO toggleValidated(Long id) {
+        SpatialUnit unit = spatialUnitRepository.findById(id)
+                .orElseThrow(() -> new ActionUnitNotFoundException("SpatialUnit not found with id: " + id));
+
+        unit.setValidated(!unit.getValidated());
+
+        return spatialUnitMapper.convert(spatialUnitRepository.save(unit));
     }
 
 }
