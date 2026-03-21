@@ -17,6 +17,7 @@ import fr.siamois.ui.bean.dialog.newunit.GenericNewUnitDialogBean;
 import fr.siamois.ui.bean.dialog.newunit.NewUnitContext;
 import fr.siamois.ui.bean.dialog.newunit.UnitKind;
 import fr.siamois.ui.bean.panel.models.PanelBreadcrumb;
+import fr.siamois.ui.bean.panel.models.panel.AbstractPanel;
 import fr.siamois.ui.bean.panel.models.panel.single.tab.SpecimenTab;
 import fr.siamois.ui.form.FormUiDto;
 import fr.siamois.ui.lazydatamodel.RecordingUnitChildrenLazyDataModel;
@@ -265,6 +266,41 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
         return List.of();
     }
 
+    @Override
+    protected String getFocusPath(Long id) {
+        return "";
+    }
+
+    @Override
+    protected void addToOverview(Long id, AbstractPanel parentOrOverview) {
+
+    }
+
+    @Override
+    protected RecordingUnitDTO findNext() {
+        return null;
+    }
+
+    @Override
+    protected RecordingUnitDTO findPrevious() {
+        return null;
+    }
+
+    @Override
+    public void goToPrevious() {
+
+    }
+
+    @Override
+    public void toggleValidate() {
+
+    }
+
+    @Override
+    public void goToNext() {
+
+    }
+
 
     @Override
     public void initForms(boolean forceInit) {
@@ -386,7 +422,7 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
                 (GenericNewUnitDialogBean<SpecimenDTO>) genericNewUnitDialogBean,
                 formContextServices
         );
-
+        specimenTableModel.setParentPanel(this);
         SpecimenTableDefinitionFactory.applyTo(specimenTableModel);
 
         // configuration du bouton creer

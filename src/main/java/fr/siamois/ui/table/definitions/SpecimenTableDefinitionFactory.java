@@ -1,14 +1,17 @@
 package fr.siamois.ui.table.definitions;
 
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import fr.siamois.domain.models.form.customfield.CustomFieldSelectOneFromFieldCode;
 import fr.siamois.domain.models.form.customfield.CustomFieldText;
+import fr.siamois.domain.models.specimen.Specimen;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.dto.entity.SpecimenDTO;
 import fr.siamois.ui.table.CommandLinkColumn;
 import fr.siamois.ui.table.EntityTableViewModel;
 import fr.siamois.ui.table.FormFieldColumn;
 import fr.siamois.ui.table.TableColumnAction;
+import jakarta.persistence.Transient;
 
 import static fr.siamois.ui.bean.panel.models.panel.single.AbstractSingleEntity.SYSTEM_THESO;
 
@@ -54,14 +57,16 @@ public final class SpecimenTableDefinitionFactory {
 
 
         CustomFieldSelectOneFromFieldCode catField =  CustomFieldSelectOneFromFieldCode.builder()
-                .label("recordingunit.property.type")
+                .label("specimen.field.type")
                 .isSystemField(true)
                 .id(2L)
-                .valueBinding("category")
+                .valueBinding("type")
                 .concept(typeConcept)
-                .fieldCode("SIAS.CAT")
+                .fieldCode(Specimen.CATEGORY_FIELD)
                 .styleClass("mr-2 recording-unit-type-chip")
                 .build();
+
+
 
 
 
@@ -105,7 +110,7 @@ public final class SpecimenTableDefinitionFactory {
         tableModel.getTableDefinition().addColumn(
                 FormFieldColumn.builder()
                         .id("type")
-                        .headerKey("recordingunit.property.type")
+                        .headerKey("specimen.field.type")
                         .field(catField)
                         .sortable(false)
                         .filterable(false)

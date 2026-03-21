@@ -12,6 +12,8 @@ import org.springframework.data.repository.history.RevisionRepository;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.Instant;
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -188,7 +190,7 @@ public interface ActionUnitRepository extends CrudRepository<ActionUnit, Long>, 
             @Param("langCode") String langCode,
             Pageable pageable);
 
-    Set<ActionUnit> findByCreatedByInstitution(Institution createdByInstitution);
+    Set<ActionUnit> findByCreatedByInstitutionId(Long id);
     Optional<ActionUnit> findByNameAndCreatedByInstitutionId(String name, Long institutionId);
     Optional<ActionUnit> findByIdentifierAndCreatedByInstitutionId(String identifier, Long institutionId);
 
@@ -274,4 +276,11 @@ public interface ActionUnitRepository extends CrudRepository<ActionUnit, Long>, 
             """, nativeQuery = true)
     boolean existsRootChildrenByRelatedSpatialUnit(@Param("spatialUnitId") Long spatialUnitId);
 
+    Optional<ActionUnit> findFirstByCreatedByInstitutionIdAndCreationTimeAfterOrderByCreationTimeAsc(Long institutionId, OffsetDateTime createdAt);
+
+    Optional<ActionUnit> findFirstByCreatedByInstitutionIdAndCreationTimeBeforeOrderByCreationTimeDesc(Long institutionId, OffsetDateTime createdAt);
+
+    Optional<ActionUnit> findFirstByCreatedByInstitutionIdOrderByCreationTimeAsc(Long institutionId);  // oldest
+
+    Optional<ActionUnit> findFirstByCreatedByInstitutionIdOrderByCreationTimeDesc(Long institutionId); // most recent
 }

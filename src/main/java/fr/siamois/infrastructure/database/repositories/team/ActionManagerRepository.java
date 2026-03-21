@@ -11,7 +11,7 @@ import java.util.Set;
 
 @Repository
 public interface ActionManagerRepository extends CrudRepository<ActionManagerRelation, ActionManagerRelation.ActionManagerId> {
-    Set<ActionManagerRelation> findAllByInstitution(Institution institution);
+    Set<ActionManagerRelation> findAllByInstitutionId(Long id);
 
-    Optional<ActionManagerRelation> findByPersonAndInstitution(Person person, Institution institution);
+    Optional<ActionManagerRelation> findByPersonIdAndInstitutionId(Long personId, Long id);
 }

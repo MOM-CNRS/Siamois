@@ -13,8 +13,9 @@ import java.util.List;
 public class SpecimenDTO extends AbstractEntityDTO {
 
     private Integer identifier;
-    private ConceptDTO type;
     private String fullIdentifier;
+    private ConceptDTO type;
+    private ConceptDTO category;
     private List<PersonDTO> authors;
     private List<PersonDTO> collectors;
     private RecordingUnitDTO recordingUnit;

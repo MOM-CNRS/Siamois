@@ -2,9 +2,11 @@ package fr.siamois.dto.entity;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.ToString;
 
 @EqualsAndHashCode(callSuper = true)
 @Data
+@ToString(callSuper = true)
 public class PersonDTO extends AbstractEntityDTO {
 
     private boolean isSuperAdmin;
@@ -15,7 +17,7 @@ public class PersonDTO extends AbstractEntityDTO {
     private String username;
 
     public String displayName() {
-        return name + " " + lastname;
+        return name + " " + lastname + " ("+email+")";
     }
 
 }

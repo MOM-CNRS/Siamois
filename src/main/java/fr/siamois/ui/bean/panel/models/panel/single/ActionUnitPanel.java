@@ -12,16 +12,14 @@ import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.recordingunit.identifier.generic.RuIdentifierResolver;
 import fr.siamois.domain.services.specimen.SpecimenService;
 import fr.siamois.domain.services.vocabulary.LabelService;
-import fr.siamois.dto.entity.ActionUnitDTO;
-import fr.siamois.dto.entity.ConceptDTO;
-import fr.siamois.dto.entity.PersonDTO;
-import fr.siamois.dto.entity.RecordingUnitDTO;
+import fr.siamois.dto.entity.*;
 import fr.siamois.ui.bean.NavBean;
 import fr.siamois.ui.bean.RedirectBean;
 import fr.siamois.ui.bean.dialog.newunit.GenericNewUnitDialogBean;
 import fr.siamois.ui.bean.dialog.newunit.NewUnitContext;
 import fr.siamois.ui.bean.dialog.newunit.UnitKind;
 import fr.siamois.ui.bean.panel.models.PanelBreadcrumb;
+import fr.siamois.ui.bean.panel.models.panel.AbstractPanel;
 import fr.siamois.ui.bean.panel.models.panel.single.tab.ActionSettingsTab;
 import fr.siamois.ui.bean.panel.models.panel.single.tab.RecordingTab;
 import fr.siamois.ui.bean.settings.team.TeamMembersBean;
@@ -240,6 +238,31 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnitDTO> im
     @Override
     public List<PersonDTO> authorsAvailable() {
         return List.of();
+    }
+
+    @Override
+    protected String getFocusPath(Long id) {
+        return "/action-unit/"+id;
+    }
+
+    @Override
+    protected void addToOverview(Long id, AbstractPanel parentOrOverview) {
+        flowBean.addActionUnitToOverview(id,parentOrOverview);
+    }
+
+    @Override
+    protected ActionUnitDTO findNext() {
+        return actionUnitService.findNextByInstitution(unit.getCreatedByInstitution(), unit);
+    }
+
+    @Override
+    protected ActionUnitDTO findPrevious() {
+        return actionUnitService.findPreviousByInstitution(unit.getCreatedByInstitution(), unit);
+    }
+
+    @Override
+    public void toggleValidate() {
+        unit = actionUnitService.toggleValidated(unit.getId());
     }
 
     @Override

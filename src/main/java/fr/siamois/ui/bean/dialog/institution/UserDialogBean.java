@@ -9,6 +9,8 @@ import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.person.PersonService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.domain.services.vocabulary.FieldConfigurationService;
+import fr.siamois.dto.entity.ConceptDTO;
+import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.ui.bean.LabelBean;
 import fr.siamois.ui.bean.LangBean;
@@ -51,7 +53,7 @@ public class UserDialogBean implements Serializable {
     private final transient ConceptService conceptService;
 
     // Data storage
-    private Institution institution;
+    private InstitutionDTO institution;
     private transient ProcessPerson processPerson;
     private String title;
     private String buttonLabel;
@@ -64,8 +66,8 @@ public class UserDialogBean implements Serializable {
     private TabState tabState = TabState.SEARCH;
 
     // Search TAB
-    private Person selectedExistingPerson;
-    private Concept currentSelectedRole;
+    private PersonDTO selectedExistingPerson;
+    private ConceptDTO currentSelectedRole;
     private transient List<PersonRole> personSelectedList = new ArrayList<>();
 
     // Create TAB
@@ -76,7 +78,7 @@ public class UserDialogBean implements Serializable {
     private String password;
     private String confirmPassword;
 
-    public void init(String title, String buttonLabel, Institution institution, ProcessPerson processPerson) {
+    public void init(String title, String buttonLabel, InstitutionDTO institution, ProcessPerson processPerson) {
         reset();
         this.title = title;
         this.buttonLabel = buttonLabel;
@@ -87,7 +89,7 @@ public class UserDialogBean implements Serializable {
         PrimeFaces.current().ajax().update("newMemberDialog");
     }
 
-    public void init(String title, String buttonLabel, Institution institution, boolean shouldRenderRole, ProcessPerson processPerson) {
+    public void init(String title, String buttonLabel, InstitutionDTO institution, boolean shouldRenderRole, ProcessPerson processPerson) {
         reset();
         this.title = title;
         this.buttonLabel = buttonLabel;
@@ -223,8 +225,8 @@ public class UserDialogBean implements Serializable {
         BULK
     }
 
-    public List<Person> searchUser(String usernameOrMailInput) {
-        List<Person> result = new ArrayList<>(personService.findClosestByUsernameOrEmail(usernameOrMailInput));
+    public List<PersonDTO> searchUser(String usernameOrMailInput) {
+        List<PersonDTO> result = new ArrayList<>(personService.findClosestByUsernameOrEmail(usernameOrMailInput));
         for (Person person : alreadyExistingPersons) {
             result.remove(person);
         }

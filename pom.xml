@@ -6,7 +6,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>fr.siamois</groupId>
     <artifactId>siamois</artifactId>
-    <version>0.6.0-dev-0</version>
+    <version>0.7.0-dev.1</version>
     <packaging>jar</packaging>
     <name>siamois</name>
 
@@ -431,6 +431,10 @@
                 <groupId>io.github.cleydyr</groupId>
                 <artifactId>dart-sass-maven-plugin</artifactId>
                 <version>1.5.0</version>
+                <configuration>
+                    <!-- use a fixed version of dart-saas to ensure reproducible builds -->
+                    <version>1.98.0</version>
+                </configuration>
                 <executions>
                     <execution>
                         <id>generate-themes</id>
@@ -438,6 +442,7 @@
                         <goals>
                             <goal>compile-sass</goal>
                         </goals>
+
                         <configuration>
                             <!-- adjust path if your scss lives elsewhere -->
                             <inputFolder>${project.basedir}/primefaces-themes/themes/primefaces-siamois-theme
@@ -446,7 +451,7 @@
                             <update>true</update>
                             <noSourceMap>true</noSourceMap>
                             <style>COMPRESSED</style>
-                            <quiet>false</quiet>
+                            <quiet>true</quiet>
                         </configuration>
                     </execution>
                 </executions>
@@ -573,10 +578,15 @@
             <id>themes</id>
             <build>
                 <plugins>
+
                     <plugin>
                         <groupId>io.github.cleydyr</groupId>
                         <artifactId>dart-sass-maven-plugin</artifactId>
                         <version>1.5.0</version>
+                        <configuration>
+                            <!-- use a fixed version of dart-saas to ensure reproducible builds -->
+                            <version>1.98.0</version>
+                        </configuration>
                         <executions>
                             <execution>
                                 <id>generate-themes</id>
@@ -591,7 +601,7 @@
                                     <update>true</update>
                                     <noSourceMap>true</noSourceMap>
                                     <style>COMPRESSED</style>
-                                    <quiet>false</quiet>
+                                    <quiet>true</quiet>
                                 </configuration>
                             </execution>
                         </executions>

@@ -2,6 +2,7 @@ package fr.siamois.ui.redirection;
 
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
+import fr.siamois.dto.entity.ActionUnitDTO;
 import fr.siamois.ui.bean.NavBean;
 import fr.siamois.ui.bean.settings.InstitutionDetailsBean;
 import fr.siamois.ui.bean.settings.InstitutionListSettingsBean;
@@ -31,7 +32,7 @@ public class TeamRedirectController {
     @GetMapping("/settings/organisation/actionunit/{actionUnitId}/members")
     public String redirectToTeam(@PathVariable Long actionUnitId) {
         navBean.setApplicationMode(NavBean.ApplicationMode.SETTINGS);
-        ActionUnit actionUnit = conversionService.convert(actionUnitService.findById(actionUnitId), ActionUnit.class);
+        ActionUnitDTO actionUnit = actionUnitService.findById(actionUnitId);
         institutionListSettingsBean.init();
         institutionDetailsBean.setInstitution(actionUnit.getCreatedByInstitution());
         institutionDetailsBean.init();

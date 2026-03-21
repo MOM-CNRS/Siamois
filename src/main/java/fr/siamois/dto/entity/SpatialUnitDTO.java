@@ -11,8 +11,13 @@ import java.util.Set;
 public class SpatialUnitDTO extends AbstractEntityDTO {
 
     public SpatialUnitDTO (SpatialUnitDTO spatialUnitDTO) {
+        super(spatialUnitDTO);
         id = spatialUnitDTO.getId();
         name = spatialUnitDTO.getName();
+        category = spatialUnitDTO.getCategory();
+        parents = spatialUnitDTO.getParents();
+        recordingUnitList = spatialUnitDTO.getRecordingUnitList();
+        relatedActionUnitList = spatialUnitDTO.relatedActionUnitList;
     }
 
     private String name;

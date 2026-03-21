@@ -1,10 +1,12 @@
 package fr.siamois.dto.entity;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
 @Data
 @NoArgsConstructor
+@EqualsAndHashCode(callSuper = true)
 public class SpatialUnitSummaryDTO extends AbstractEntityDTO {
 
     private String name;

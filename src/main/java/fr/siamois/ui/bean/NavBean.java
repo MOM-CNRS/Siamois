@@ -12,6 +12,7 @@ import fr.siamois.ui.bean.panel.models.panel.AbstractPanel;
 import fr.siamois.ui.bean.settings.InstitutionListSettingsBean;
 import fr.siamois.utils.MessageUtils;
 import jakarta.faces.context.FacesContext;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
@@ -23,6 +24,7 @@ import org.springframework.context.event.EventListener;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
+import java.awt.event.ActionEvent;
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.List;
@@ -51,6 +53,8 @@ public class NavBean implements Serializable {
     private final transient BookmarkService bookmarkService;
     private final FlowBean flowBean;
     private final LangBean langBean;
+
+    private String urlToGoBack; // URL to go back from settings
 
     public static final String COMMON_BOOKMARK_SAVED = "common.bookmark.saved";
     public static final String FLOW = "FLOW";
@@ -252,6 +256,17 @@ public class NavBean implements Serializable {
     @EventListener(LoginEvent.class)
     public void reset() {
         bookmarkedPanels = null;
+    }
+
+    public void backFromSettings() throws IOException {
+        setApplicationMode(NavBean.ApplicationMode.SIAMOIS);
+        if (urlToGoBack != null && !urlToGoBack.isEmpty()) {
+            FacesContext.getCurrentInstance()
+                    .getExternalContext()
+                    .redirect(urlToGoBack);
+        } else {
+            redirectBean.redirectTo("/focus/L3dlbGNvbWU=");
+        }
     }
 
     public enum ApplicationMode {

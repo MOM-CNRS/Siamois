@@ -2,6 +2,8 @@ package fr.siamois.ui.redirection;
 
 import fr.siamois.ui.bean.NavBean;
 import fr.siamois.ui.bean.settings.InstitutionListSettingsBean;
+import lombok.Getter;
+import lombok.Setter;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -14,6 +16,8 @@ public class SettingsController {
 
     private final NavBean navBean;
     private final InstitutionListSettingsBean institutionListSettingsBean;
+
+
 
     public SettingsController(NavBean navBean, InstitutionListSettingsBean institutionListSettingsBean) {
         this.navBean = navBean;
@@ -56,7 +60,7 @@ public class SettingsController {
     @GetMapping("/focus/{mainToken}")
     public String goToFocus(@PathVariable("mainToken") String mainToken,
                             @RequestParam(value = "s", required = false) String secondaryToken) {
-
+        navBean.setApplicationMode(NavBean.ApplicationMode.SIAMOIS);
         return "forward:/pages/focus.xhtml?main=" + mainToken
                 + (secondaryToken != null ? "&s=" + secondaryToken : "");
     }

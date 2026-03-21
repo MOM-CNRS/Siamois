@@ -18,6 +18,7 @@ import fr.siamois.dto.entity.AbstractEntityDTO;
 import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.ui.bean.dialog.document.DocumentCreationBean;
 import fr.siamois.ui.bean.panel.FlowBean;
+import fr.siamois.ui.bean.panel.models.panel.AbstractPanel;
 import fr.siamois.ui.bean.panel.models.panel.single.tab.*;
 import io.micrometer.common.lang.Nullable;
 import lombok.EqualsAndHashCode;
@@ -99,6 +100,37 @@ public abstract class AbstractSingleEntityPanel<T extends AbstractEntityDTO> ext
 
     public abstract List<PersonDTO> authorsAvailable();
 
+    // --- Abstract methods to override per type ---
+
+    protected abstract String getFocusPath(Long id);
+
+    protected abstract void addToOverview(Long id, AbstractPanel parentOrOverview);
+
+    protected abstract  T findNext();
+
+    protected abstract  T findPrevious();
+
+    // --- Common logic ---
+
+    public void redirectToFocusOrOverview(Long id) throws IOException {
+        if (isRoot) {
+            flowBean.redirectToFocus(getFocusPath(id));
+        } else {
+            // if not root, add unit to the overview of the parent
+            addToOverview(id, parentOrOverview);
+        }
+    }
+
+    public void goToNext() throws IOException {
+        AbstractEntityDTO next = findNext();
+        redirectToFocusOrOverview(next.getId());
+    }
+
+    public void goToPrevious() throws IOException {
+        AbstractEntityDTO previous = findPrevious();
+        redirectToFocusOrOverview(previous.getId());
+    }
+
     public static final Vocabulary SYSTEM_THESO;
 
     static {
@@ -109,9 +141,11 @@ public abstract class AbstractSingleEntityPanel<T extends AbstractEntityDTO> ext
 
     protected static final String COLUMN_CLASS_NAME = "ui-g-12 ui-md-6 ui-lg-4";
 
-        /*
-    Find unit by its ID
-     */
+    public abstract void toggleValidate();
+
+    /*
+        Find unit by its ID
+         */
     abstract T findUnitById(Long id);
 
     /*

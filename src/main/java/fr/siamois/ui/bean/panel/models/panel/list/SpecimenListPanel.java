@@ -74,7 +74,7 @@ public class SpecimenListPanel extends AbstractListPanel<SpecimenDTO>  implement
                 genericNewUnitDialogBean,
                 formContextServices
         );
-
+        tableModel.setParentPanel(this);
         return lazyModel;
     }
 

@@ -11,9 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import javax.faces.bean.ManagedBean;
-import java.io.Serializable;
-
-@ManagedBean
+import java.io.Serializable;@ManagedBean
 @Component
 @Slf4j
 public class PersonConverter implements Converter<PersonDTO>, Serializable {

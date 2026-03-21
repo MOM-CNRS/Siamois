@@ -103,12 +103,20 @@
                                 </h:commandLink>
                             </li>
                             <li class="nav-item">
-                                <h:commandLink action="#{redirectBean.redirectTo('/settings')}" styleClass="nav-link"
+                                <h:inputHidden id="currentUrl" value="#{navBean.urlToGoBack}" />
+                                <h:commandLink action="#{redirectBean.redirectTo('/settings')}"
+                                               styleClass="nav-link"
+                                               onclick="captureUrl()"
                                                id="settingsLink">
                                     <i class="bi bi-gear-fill"/>
                                     <span class="menu-text">#{langBean.msg('nav.settings')}</span>
                                     <p:tooltip for="settingsLink" value="#{langBean.msg('nav.settings.hint')}"/>
                                 </h:commandLink>
+                                <script>
+                                    function captureUrl() {
+                                        document.getElementById('navBarCsrfForm:siamoisNavForm:currentUrl').value = window.location.href;
+                                    }
+                                </script>
                             </li>
                             <p:divider/>
                             <h:panelGroup id="bookmarkGroup" layout="none"
@@ -141,8 +149,9 @@
                         <li class="nav-item">
                             <h:outputLink id="linkOpenApi" value="#{request.contextPath}/swagger-ui/index.html" target="_blank" styleClass="nav-link">
                                 <img src="#{request.contextPath}/resources/img/openapi.png" style="height:20px; margin-right: 7px;" alt="Swagger UI"/>
+                                <span class="menu-text">Documentation de l'API</span>
+                                <p:tooltip value="Documentation de l'API" for="linkOpenApi" />
                             </h:outputLink>
-                            <p:tooltip value="OpenApi" for="linkOpenApi" />
                         </li>
 
                         <li class="nav-item">
@@ -202,7 +211,7 @@
                 <form:csrfform formId="settingsNavForm">
                     <ul class="nav flex-column">
                         <li class="nav-item">
-                            <h:commandLink action="#{redirectBean.redirectTo('/focus/L3dlbGNvbWU=')}" styleClass="nav-link"
+                            <h:commandLink action="#{navBean.backFromSettings()}" styleClass="nav-link"
                                            id="backToDashboardLink">
                                 <i class="bi bi-arrow-left"/>
                                 <span class="menu-text">#{langBean.msg('nav.header')}</span>

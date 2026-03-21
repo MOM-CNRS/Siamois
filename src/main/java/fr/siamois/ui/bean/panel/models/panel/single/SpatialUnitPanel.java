@@ -20,6 +20,7 @@ import fr.siamois.ui.bean.dialog.newunit.GenericNewUnitDialogBean;
 import fr.siamois.ui.bean.dialog.newunit.NewUnitContext;
 import fr.siamois.ui.bean.dialog.newunit.UnitKind;
 import fr.siamois.ui.bean.panel.models.PanelBreadcrumb;
+import fr.siamois.ui.bean.panel.models.panel.AbstractPanel;
 import fr.siamois.ui.bean.panel.models.panel.single.tab.ActionTab;
 import fr.siamois.ui.bean.panel.utils.SpatialUnitHelperService;
 import fr.siamois.ui.form.FormUiDto;
@@ -164,6 +165,31 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
 
         return personService.findAllAuthorsOfSpatialUnitByInstitution(sessionSettings.getSelectedInstitution());
 
+    }
+
+    @Override
+    protected String getFocusPath(Long id) {
+        return "";
+    }
+
+    @Override
+    protected void addToOverview(Long id, AbstractPanel parentOrOverview) {
+        flowBean.addSpatialUnitToOverview(id,parentOrOverview);
+    }
+
+    @Override
+    protected SpatialUnitDTO findNext() {
+        return spatialUnitService.findNextByInstitution(unit.getCreatedByInstitution(), unit);
+    }
+
+    @Override
+    protected SpatialUnitDTO findPrevious() {
+        return spatialUnitService.findPreviousByInstitution(unit.getCreatedByInstitution(), unit);
+    }
+
+    @Override
+    public void toggleValidate() {
+        unit = spatialUnitService.toggleValidated(unit.getId());
     }
 
     @Override

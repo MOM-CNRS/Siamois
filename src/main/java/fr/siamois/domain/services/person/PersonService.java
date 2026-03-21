@@ -12,12 +12,18 @@ import fr.siamois.domain.services.LangService;
 import fr.siamois.domain.services.auth.PendingPersonService;
 import fr.siamois.domain.services.person.verifier.PasswordVerifier;
 import fr.siamois.domain.services.person.verifier.PersonDataVerifier;
+import fr.siamois.dto.entity.ActionUnitDTO;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.infrastructure.database.repositories.person.PendingInstitutionInviteRepository;
 import fr.siamois.infrastructure.database.repositories.person.PendingPersonRepository;
 import fr.siamois.infrastructure.database.repositories.person.PersonRepository;
 import fr.siamois.infrastructure.database.repositories.settings.PersonSettingsRepository;
+import fr.siamois.mapper.ActionUnitMapper;
+import fr.siamois.mapper.ConceptMapper;
+import fr.siamois.mapper.InstitutionMapper;
+import fr.siamois.mapper.PersonMapper;
+import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.constraints.NotNull;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -27,6 +33,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Service to manage Person
@@ -46,6 +53,10 @@ public class PersonService {
     private final PendingPersonService pendingPersonService;
     private final ConversionService conversionService;
     private final fr.siamois.infrastructure.database.repositories.person.PendingInstitutionInviteRepository pendingInstitutionInviteRepository;
+    private final InstitutionMapper institutionMapper;
+    private final ActionUnitMapper actionUnitMapper;
+    private final PersonMapper personMapper;
+    private final ConceptMapper conceptMapper;
 
     public PersonService(PersonRepository personRepository,
                          BCryptPasswordEncoder passwordEncoder,
@@ -55,7 +66,7 @@ public class PersonService {
                          LangService langService,
                          PendingPersonRepository pendingPersonRepository,
                          PendingPersonService pendingPersonService, ConversionService conversionService,
-                         PendingInstitutionInviteRepository pendingInstitutionInviteRepository) {
+                         PendingInstitutionInviteRepository pendingInstitutionInviteRepository, InstitutionMapper institutionMapper, ActionUnitMapper actionUnitMapper, PersonMapper personMapper, ConceptMapper conceptMapper) {
         this.personRepository = personRepository;
         this.passwordEncoder = passwordEncoder;
         this.verifiers = verifiers;
@@ -67,22 +78,31 @@ public class PersonService {
         this.pendingPersonService = pendingPersonService;
         this.conversionService = conversionService;
         this.pendingInstitutionInviteRepository = pendingInstitutionInviteRepository;
+        this.institutionMapper = institutionMapper;
+        this.actionUnitMapper = actionUnitMapper;
+        this.personMapper = personMapper;
+        this.conceptMapper = conceptMapper;
     }
 
     private void createAndDeletePendingRelations(PendingPerson pendingPerson, Person person) {
         Set<PendingInstitutionInvite> institutionInvites = pendingInstitutionInviteRepository.findAllByPendingPerson(pendingPerson);
+        PersonDTO personDTO = personMapper.convert(person);
         for (PendingInstitutionInvite invite : institutionInvites) {
-            Institution institution = invite.getInstitution();
+            InstitutionDTO institution = institutionMapper.convert(invite.getInstitution());
+
             if (invite.isManager()) {
-                institutionService.addToManagers(institution, person);
+                institutionService.addToManagers(institution, personDTO);
             }
             if (invite.isActionManager()) {
-                institutionService.addPersonToActionManager(institution, person);
+                institutionService.addPersonToActionManager(institution, personDTO);
             }
 
             Set<PendingActionUnitAttribution> attributions = pendingPersonService.findActionAttributionsByPendingInvite(invite);
             for (PendingActionUnitAttribution attribution : attributions) {
-                institutionService.addPersonToActionUnit(attribution.getActionUnit(), person, attribution.getRole());
+                ActionUnitDTO actionUnitDTO = actionUnitMapper.convert(attribution.getActionUnit());
+                institutionService.addPersonToActionUnit(actionUnitDTO,
+                        personDTO,
+                        conceptMapper.convert(attribution.getRole()));
                 pendingPersonService.delete(attribution);
             }
 
@@ -107,7 +127,7 @@ public class PersonService {
      * @throws InvalidPasswordException  if the password does not meet the required criteria.
      * @throws InvalidNameException      if the name is invalid or does not meet the required criteria.
      */
-    public Person createPerson(PersonDTO personDTO, String password) throws InvalidUsernameException,
+    public PersonDTO createPerson(PersonDTO personDTO, String password) throws InvalidUsernameException,
             InvalidEmailException,
             UserAlreadyExistException,
             InvalidPasswordException,
@@ -125,7 +145,7 @@ public class PersonService {
 
         managePendingInvites(person);
 
-        return person;
+        return conversionService.convert(person, PersonDTO.class);
     }
 
     private void checkPersonData(PersonDTO person, boolean isForCreation)
@@ -152,8 +172,11 @@ public class PersonService {
      * @param nameOrLastname The string to look for in name or username
      * @return The Person list
      */
-    public List<Person> findAllByNameLastnameContaining(String nameOrLastname) {
-        return personRepository.findAllByNameOrLastname(nameOrLastname);
+    public List<PersonDTO> findAllByNameLastnameContaining(String nameOrLastname) {
+        List<Person> persons = personRepository.findAllByNameOrLastname(nameOrLastname);
+        return persons.stream()
+                .map(personMapper::convert)
+                .toList();
     }
 
 
@@ -220,8 +243,11 @@ public class PersonService {
      */
     public void updatePerson(@NonNull PersonDTO personDTO) throws UserAlreadyExistException, InvalidNameException, InvalidPasswordException, InvalidUsernameException, InvalidEmailException {
         checkPersonData(personDTO, false);
+        Person existingPerson = personRepository.findById(personDTO.getId())
+                .orElseThrow(() -> new EntityNotFoundException("Person not found"));
         Person person = conversionService.convert(personDTO,Person.class);
         assert person != null;
+        person.setPassword(existingPerson.getPassword()); // Keep existing password
         personRepository.save(person);
     }
 
@@ -274,7 +300,15 @@ public class PersonService {
         if (personSettings.isPresent()) return personSettings.get();
 
         PersonSettings toSave = new PersonSettings();
-        Person person = conversionService.convert(personDTO,Person.class);
+
+        // Fetch Person
+        Person person = personRepository.findById(personDTO.getId())
+                .orElseGet(() -> {
+                    Person newPerson = personMapper.invertConvert(personDTO);
+                    return personRepository.save(newPerson);
+                });
+        toSave.setPerson(person);
+
         toSave.setPerson(person);
         toSave.setDefaultInstitution(conversionService.convert(findDefaultInstitution(personDTO),Institution.class));
         toSave.setLangCode(findDefaultLang());
@@ -318,7 +352,7 @@ public class PersonService {
      * @param usernameOrMailInput The username or email of the person to find.
      * @return An Optional containing the Person if found, or empty if not found.
      */
-    public List<Person> findClosestByUsernameOrEmail(String usernameOrMailInput) {
+    public List<PersonDTO> findClosestByUsernameOrEmail(String usernameOrMailInput) {
         if (usernameOrMailInput == null || usernameOrMailInput.isBlank()) {
             return List.of();
         }
@@ -327,6 +361,8 @@ public class PersonService {
         result.addAll(personRepository.findClosestByEmailLimit10(usernameOrMailInput));
         result.addAll(personRepository.findClosestByUsernameLimit10(usernameOrMailInput));
 
-        return result.stream().toList();
+        return result.stream()
+                .map(personMapper::convert)
+                .toList();
     }
 }

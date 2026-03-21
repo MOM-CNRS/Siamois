@@ -2,6 +2,8 @@ package fr.siamois.domain.models.team;
 
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.institution.Institution;
+import fr.siamois.dto.entity.InstitutionDTO;
+import fr.siamois.dto.entity.PersonDTO;
 import jakarta.persistence.*;
 import jakarta.ws.rs.DefaultValue;
 import lombok.*;
@@ -32,10 +34,12 @@ public class ActionManagerRelation {
     @Column(name = "added_at", nullable = false, updatable = false)
     private OffsetDateTime addedAt = OffsetDateTime.now();
 
-    public ActionManagerRelation(Institution institution, Person person) {
-        this.id = new ActionManagerId(institution, person);
-        this.institution = institution;
-        this.person = person;
+    public ActionManagerRelation(InstitutionDTO institution, PersonDTO person) {
+        this.id = new ActionManagerId(institution.getId(), person.getId());
+        Institution inst = new Institution(); inst.setId(institution.getId());
+        Person p = new Person(); p.setId(person.getId());
+        this.institution = inst;
+        this.person = p;
     }
 
     @Embeddable
@@ -47,9 +51,9 @@ public class ActionManagerRelation {
         private Long institutionId;
         private Long personId;
 
-        public ActionManagerId(Institution institution, Person manager) {
-            this.institutionId = institution.getId();
-            this.personId = manager.getId();
+        public ActionManagerId(Long institutionId, Long managerId) {
+            this.institutionId = institutionId;
+            this.personId = managerId;
         }
 
     }

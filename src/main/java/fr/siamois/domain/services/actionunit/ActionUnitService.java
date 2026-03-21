@@ -34,6 +34,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * Service for managing Action Units.
@@ -287,8 +288,66 @@ public class ActionUnitService implements ArkEntityService {
      * @param institution The institution to find ActionUnits for
      * @return A set of ActionUnits created by the institution
      */
-    public Set<ActionUnit> findAllByInstitution(Institution institution) {
-        return actionUnitRepository.findByCreatedByInstitution(institution);
+    public Set<ActionUnitDTO> findAllByInstitution(InstitutionDTO institution) {
+        return actionUnitRepository.findByCreatedByInstitutionId(institution.getId())
+                .stream()
+                .map(actionUnitMapper::convert)
+                .collect(Collectors.toSet());
+    }
+
+    /**
+     * Find the next ActionUnit created by a specific institution after the given one.
+     * If there is no next, returns the oldest one (wraps around).
+     *
+     * @param institution The institution to find ActionUnits for
+     * @param current The current ActionUnit to find the next one from
+     * @return The next ActionUnitDTO, or the oldest one if there is no next
+     */
+    public ActionUnitDTO findNextByInstitution(InstitutionDTO institution, ActionUnitDTO current) {
+        return actionUnitRepository
+                .findFirstByCreatedByInstitutionIdAndCreationTimeAfterOrderByCreationTimeAsc(
+                        institution.getId(), current.getCreationTime())
+                .map(actionUnitMapper::convert)
+                .orElseGet(() -> actionUnitRepository
+                        .findFirstByCreatedByInstitutionIdOrderByCreationTimeAsc(institution.getId())
+                        .map(actionUnitMapper::convert)
+                        .orElseThrow(() -> new ActionUnitNotFoundException("No ActionUnit found for institution " + institution.getId()))
+                );
+    }
+
+    /**
+     * Find the previous ActionUnit created by a specific institution before the given one.
+     * If there is no previous, returns the most recent one (wraps around).
+     *
+     * @param institution The institution to find ActionUnits for
+     * @param current The current ActionUnit to find the previous one from
+     * @return The previous ActionUnitDTO, or the most recent one if there is no previous
+     */
+    public ActionUnitDTO findPreviousByInstitution(InstitutionDTO institution, ActionUnitDTO current) {
+        return actionUnitRepository
+                .findFirstByCreatedByInstitutionIdAndCreationTimeBeforeOrderByCreationTimeDesc(
+                        institution.getId(), current.getCreationTime())
+                .map(actionUnitMapper::convert)
+                .orElseGet(() -> actionUnitRepository
+                        .findFirstByCreatedByInstitutionIdOrderByCreationTimeDesc(institution.getId())
+                        .map(actionUnitMapper::convert)
+                        .orElseThrow(() -> new ActionUnitNotFoundException("No ActionUnit found for institution " + institution.getId()))
+                );
+    }
+
+    /**
+     * Toggle the validated status of an ActionUnit.
+     *
+     * @param actionUnitId The id of the ActionUnit to toggle
+     * @return The updated ActionUnitDTO
+     */
+    public ActionUnitDTO toggleValidated(Long actionUnitId) {
+        ActionUnit actionUnit = actionUnitRepository.findById(actionUnitId)
+                .orElseThrow(() -> new ActionUnitNotFoundException("ActionUnit not found with id: " + actionUnitId));
+
+        actionUnit.setValidated(!actionUnit.getValidated());
+
+        return actionUnitMapper.convert(actionUnitRepository.save(actionUnit));
     }
 
 
