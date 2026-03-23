@@ -199,17 +199,36 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
 
     @Override
     String getOpenPanelCommand(RecordingUnitDTO unit) {
-        return "#{navBean.redirectToBookmarked('/recording-unit/".concat(unit.getId().toString()).concat("')}");
+
+        if(isRoot) {
+            return "#{navBean.redirectToBookmarked('/recording-unit/".concat(unit.getId().toString()).concat("')}");
+        }
+        else {
+
+            return "#{flowBean.addRecordingUnitToOverview(" + unit.getId() + ", focusViewBean.mainPanel, null)}";
+        }
+
+
     }
 
     @Override
     protected DefaultMenuItem createRootTypeItem()
     {
+        String command ;
+        Long actionUnitId = unit.getActionUnit().getId();
+        if(isRoot) {
+            command = "#{navBean.redirectToBookmarked('/action-unit/'"+actionUnitId+")}";
+        }
+        else {
+
+            command = "#{flowBean.addActionUnitToOverview(" + actionUnitId + ", focusViewBean.mainPanel, 2)}";
+        }
+
         return DefaultMenuItem.builder()
-                .value(langBean.msg("panel.title.allrecordingunit"))
+                .value(unit.getActionUnit().getName())
                 .id("allRecordingUnits")
-                .command("#{navBean.redirectToBookmarked('/recording-unit/')}")
-                .update("flow")
+                .command(command)
+                .update("@this")
                 .onstart(PF_BUI_CONTENT_SHOW)
                 .oncomplete(PF_BUI_CONTENT_HIDE)
                 .process(THIS)

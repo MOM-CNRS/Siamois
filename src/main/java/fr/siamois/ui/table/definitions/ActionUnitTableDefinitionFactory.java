@@ -101,7 +101,7 @@ public final class ActionUnitTableDefinitionFactory {
                         .addRenderedKey("recordingUnitCreateAllowed")
 
                         .processExpr("@this")
-                        .updateExpr("flow")
+                        .updateExpr("@this")
                         .onstartJs("PF('buiContent').show()")
                         .oncompleteJs("PF('buiContent').hide();")
                         .build()
