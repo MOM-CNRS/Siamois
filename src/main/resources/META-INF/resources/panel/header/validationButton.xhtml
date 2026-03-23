@@ -6,14 +6,17 @@
       xmlns:ui="http://xmlns.jcp.org/jsf/facelets">
 
 <ui:composition>
-    <h:form id="validationButtonForm">
+
+    <!--@elvariable id="formSuffix" type="java.lang.String"-->
+
+    <h:form id="validationButtonForm#{formSuffix}" style="display:flex; align-items: center;">
         <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
 
         <p:commandButton
                 action="#{panelModel.toggleValidate()}"
                 update="@this"
                 process="@this"
-                icon="#{panelModel.unit.validated ? 'pi pi-check' : 'pi pi-times'}"
+                icon="#{panelModel.unit.validated ? 'bi bi-check' : 'bi bi-exclamation'}"
                 styleClass="rounded-button ui-button-flat #{panelModel.unit.validated ? 'status-button validated' : 'status-button not-validated'}"
                 onclick="event.stopPropagation();"
         />

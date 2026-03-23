@@ -273,7 +273,7 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
 
     @Override
     protected void addToOverview(Long id, AbstractPanel parentOrOverview) {
-        flowBean.addRecordingUnitToOverview(id,parentOrOverview);
+        flowBean.addRecordingUnitToOverview(id,parentOrOverview, null);
     }
 
     @Override

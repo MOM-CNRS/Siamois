@@ -24,6 +24,7 @@ import fr.siamois.ui.bean.panel.models.panel.AbstractPanel;
 import fr.siamois.ui.bean.panel.models.panel.WelcomePanel;
 import fr.siamois.ui.bean.panel.models.panel.single.*;
 import fr.siamois.utils.MessageUtils;
+import io.swagger.models.auth.In;
 import jakarta.el.MethodExpression;
 import jakarta.faces.context.FacesContext;
 import lombok.Getter;
@@ -240,12 +241,17 @@ public class FlowBean implements Serializable {
 
     }
 
-    public void addRecordingUnitToOverview(Long id, AbstractPanel targetPanel) {
+    public void addRecordingUnitToOverview(Long id, AbstractPanel targetPanel, @Nullable Integer tabIndex) {
 
         if (targetPanel != null) {
             // Add the overview
             RecordingUnitPanel overviewPanel = panelFactory.createRecordingUnitPanel(id);
             overviewPanel.setRoot(false);
+
+            if(tabIndex!=null) {
+                overviewPanel.setActiveTabIndex(tabIndex);
+            }
+
             if(targetPanel.isRoot()) {
                 addPanelToOverview(targetPanel, overviewPanel);
             }
@@ -258,11 +264,14 @@ public class FlowBean implements Serializable {
     }
 
 
-    public void addSpatialUnitToOverview(Long id, AbstractPanel targetPanel) {
+    public void addSpatialUnitToOverview(Long id, AbstractPanel targetPanel,  @Nullable Integer tabIndex) {
 
         if (targetPanel != null) {
             // Add the overview
             SpatialUnitPanel overviewPanel = panelFactory.createSpatialUnitPanel(id);
+            if(tabIndex!=null) {
+                overviewPanel.setActiveTabIndex(tabIndex);
+            }
             overviewPanel.setRoot(false);
             if(targetPanel.isRoot()) {
                 addPanelToOverview(targetPanel, overviewPanel);
@@ -273,11 +282,14 @@ public class FlowBean implements Serializable {
         }
     }
 
-    public void addActionUnitToOverview(Long id, AbstractPanel targetPanel) {
+    public void addActionUnitToOverview(Long id, AbstractPanel targetPanel, @Nullable Integer tabIndex) {
 
         if (targetPanel != null) {
             // Add the overview
             ActionUnitPanel overviewPanel = panelFactory.createActionUnitPanel(id);
+            if(tabIndex!=null) {
+                overviewPanel.setActiveTabIndex(tabIndex);
+            }
             overviewPanel.setRoot(false);
             if(targetPanel.isRoot()) {
                 addPanelToOverview(targetPanel, overviewPanel);
@@ -288,11 +300,14 @@ public class FlowBean implements Serializable {
         }
     }
 
-    public void addSpecimenToOverview(Long id, AbstractPanel targetPanel) {
+    public void addSpecimenToOverview(Long id, AbstractPanel targetPanel, @Nullable Integer tabIndex) {
 
         if (targetPanel != null) {
             // Add the overview
             SpecimenPanel overviewPanel = panelFactory.createSpecimenPanel(id);
+            if(tabIndex!=null) {
+                overviewPanel.setActiveTabIndex(tabIndex);
+            }
             overviewPanel.setRoot(false);
             if(targetPanel.isRoot()) {
                 addPanelToOverview(targetPanel, overviewPanel);

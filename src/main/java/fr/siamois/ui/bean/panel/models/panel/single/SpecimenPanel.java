@@ -155,7 +155,7 @@ public class SpecimenPanel extends AbstractSingleEntityPanel<SpecimenDTO>  imple
 
     @Override
     protected void addToOverview(Long id, AbstractPanel parentOrOverview) {
-        flowBean.addSpecimenToOverview(id,parentOrOverview);
+        flowBean.addSpecimenToOverview(id,parentOrOverview, null);
     }
 
     @Override

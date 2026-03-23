@@ -183,10 +183,10 @@ public class GenericNewUnitDialogBean<T extends AbstractEntityDTO>
 
             // Display the new unit in the overview
             switch(kind) {
-                case SPATIAL -> flowBean.addSpatialUnitToOverview(getUnitId(),sourceTableModel.getParentPanel());
-                case RECORDING -> flowBean.addRecordingUnitToOverview(getUnitId(),sourceTableModel.getParentPanel());
-                case ACTION -> flowBean.addActionUnitToOverview(getUnitId(),sourceTableModel.getParentPanel());
-                case SPECIMEN -> flowBean.addSpecimenToOverview(getUnitId(),sourceTableModel.getParentPanel());
+                case SPATIAL -> flowBean.addSpatialUnitToOverview(getUnitId(),sourceTableModel.getParentPanel(), null);
+                case RECORDING -> flowBean.addRecordingUnitToOverview(getUnitId(),sourceTableModel.getParentPanel(), null);
+                case ACTION -> flowBean.addActionUnitToOverview(getUnitId(),sourceTableModel.getParentPanel(), null);
+                case SPECIMEN -> flowBean.addSpecimenToOverview(getUnitId(),sourceTableModel.getParentPanel(), null);
             }
 
 

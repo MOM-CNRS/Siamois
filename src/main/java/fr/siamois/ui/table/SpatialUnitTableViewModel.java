@@ -106,7 +106,7 @@ public class SpatialUnitTableViewModel extends EntityTableViewModel<SpatialUnitD
                                      SpatialUnitDTO su) {
 
         if (column.getAction() == GO_TO_SPATIAL_UNIT) {
-            flowBean.addSpatialUnitToOverview(su.getId(), parentPanel);
+            flowBean.addSpatialUnitToOverview(su.getId(), parentPanel, null);
         } else {
             throw new IllegalStateException("Unhandled action: " + column.getAction());
         }

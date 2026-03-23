@@ -94,7 +94,8 @@ public class ActionUnitTableViewModel extends EntityTableViewModel<ActionUnitDTO
 
             flowBean.addActionUnitToOverview(
                     au.getId(),
-                    parentPanel
+                    parentPanel,
+                    null
             );
 
 
@@ -179,7 +180,11 @@ public class ActionUnitTableViewModel extends EntityTableViewModel<ActionUnitDTO
         switch (action) {
 
             case VIEW_RELATION ->
-                    flowBean.goToActionUnitByIdNewPanel(au.getId());
+                    flowBean.addActionUnitToOverview(
+                            au.getId(),
+                            parentPanel,
+                            col.getViewTargetIndex()
+                    );
 
             case ADD_RELATION -> {
                 // Dispatch based on column.countKey (or add a dedicated "relationKey")

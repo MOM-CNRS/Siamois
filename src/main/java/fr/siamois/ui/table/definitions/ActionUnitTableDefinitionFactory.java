@@ -66,7 +66,7 @@ public final class ActionUnitTableDefinitionFactory {
                         .processExpr("@this")
                         .updateExpr("@none")
                         .onstartJs("PF('buiContent').show()")
-                        .oncompleteJs("PF('buiContent').hide();handleScrollToTop();")
+                        .oncompleteJs("PF('buiContent').hide();")
                         .build()
         );
 
@@ -103,7 +103,7 @@ public final class ActionUnitTableDefinitionFactory {
                         .processExpr("@this")
                         .updateExpr("flow")
                         .onstartJs("PF('buiContent').show()")
-                        .oncompleteJs("PF('buiContent').hide();handleScrollToTop();")
+                        .oncompleteJs("PF('buiContent').hide();")
                         .build()
         );
 

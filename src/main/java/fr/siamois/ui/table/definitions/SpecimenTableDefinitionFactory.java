@@ -91,7 +91,7 @@ public final class SpecimenTableDefinitionFactory {
                 .processExpr("@this")
                 .updateExpr("flow")
                 .onstartJs("PF('buiContent').show()")
-                .oncompleteJs("PF('buiContent').hide();handleScrollToTop();")
+                .oncompleteJs("PF('buiContent').hide();")
                 .build()
         );
 

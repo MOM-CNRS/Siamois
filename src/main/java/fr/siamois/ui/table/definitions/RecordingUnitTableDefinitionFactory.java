@@ -16,7 +16,7 @@ public final class RecordingUnitTableDefinitionFactory {
 
     public static final String THIS = "@this";
     public static final String PF_BUI_CONTENT_SHOW = "PF('buiContent').show()";
-    public static final String PF_BUI_CONTENT_HIDE_HANDLE_SCROLL_TO_TOP = "PF('buiContent').hide();handleScrollToTop();";
+    public static final String PF_BUI_CONTENT_HIDE_HANDLE_SCROLL_TO_TOP = "PF('buiContent').hide()";
     public static final String BI_BI_EYE = "bi bi-eye";
     public static final String BI_BI_PLUS_SQUARE = "bi bi-plus-square";
 

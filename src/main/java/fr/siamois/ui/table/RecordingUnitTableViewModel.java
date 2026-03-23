@@ -166,7 +166,8 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
         if (column.getAction() == GO_TO_RECORDING_UNIT) {
             flowBean.addRecordingUnitToOverview(
                     ru.getId(),
-                    parentPanel
+                    parentPanel,
+                    null
             );
 
 
@@ -272,7 +273,11 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
         switch (action) {
 
             case VIEW_RELATION ->
-                    flowBean.goToRecordingUnitByIdNewPanel(ru.getId(), col.getViewTargetIndex());
+                    flowBean.addRecordingUnitToOverview(
+                            ru.getId(),
+                            parentPanel,
+                            col.getViewTargetIndex()
+                    );
 
             case ADD_RELATION -> {
                 // Dispatch based on column.countKey (or add a dedicated "relationKey")

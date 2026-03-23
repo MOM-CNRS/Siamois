@@ -40,6 +40,11 @@ public class WelcomePanel extends AbstractPanel implements Serializable {
     private long nbOfRecordingUnits;
     private long nbOfSpecimen;
 
+
+    public boolean hasPreviousNext() {
+        return false;
+    }
+
     public String getPrefixPanelIndex() {
         return "welcome-panel";
     }

@@ -85,6 +85,7 @@ public abstract class AbstractSingleEntityPanel<T extends AbstractEntityDTO> ext
 
     protected transient RevisionWithInfo<T> bufferedLastRevision;
 
+
     public abstract void refreshUnit();
 
     public void refresh() {
@@ -379,6 +380,10 @@ Return the command that opens panel for the unit
     }
 
 
+    @Override
+    public boolean hasPreviousNext() {
+        return true;
+    }
 
 
 }
