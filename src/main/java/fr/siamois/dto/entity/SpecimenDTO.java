@@ -18,7 +18,7 @@ public class SpecimenDTO extends AbstractEntityDTO {
     private ConceptDTO category;
     private List<PersonDTO> authors;
     private List<PersonDTO> collectors;
-    private RecordingUnitDTO recordingUnit;
+    private RecordingUnitSummaryDTO recordingUnit;
     protected OffsetDateTime collectionDate;
 
 

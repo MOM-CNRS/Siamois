@@ -9,6 +9,7 @@ import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.specimen.SpecimenService;
 import fr.siamois.dto.entity.ConceptDTO;
 import fr.siamois.dto.entity.PersonDTO;
+import fr.siamois.dto.entity.RecordingUnitDTO;
 import fr.siamois.dto.entity.SpecimenDTO;
 import fr.siamois.ui.bean.RedirectBean;
 import fr.siamois.ui.bean.panel.models.PanelBreadcrumb;
@@ -149,37 +150,27 @@ public class SpecimenPanel extends AbstractSingleEntityPanel<SpecimenDTO>  imple
 
     @Override
     protected String getFocusPath(Long id) {
-        return "";
+        return "/specimen/"+id;
     }
 
     @Override
     protected void addToOverview(Long id, AbstractPanel parentOrOverview) {
-
+        flowBean.addSpecimenToOverview(id,parentOrOverview);
     }
 
     @Override
     protected SpecimenDTO findNext() {
-        return null;
+        return specimenService.findNextByActionUnit(unit.getRecordingUnit(), unit);
     }
 
     @Override
     protected SpecimenDTO findPrevious() {
-        return null;
-    }
-
-    @Override
-    public void goToPrevious() {
-
+        return specimenService.findPreviousByActionUnit(unit.getRecordingUnit(), unit);
     }
 
     @Override
     public void toggleValidate() {
-
-    }
-
-    @Override
-    public void goToNext() {
-
+        unit = specimenService.toggleValidated(unit.getId());
     }
 
     @Override

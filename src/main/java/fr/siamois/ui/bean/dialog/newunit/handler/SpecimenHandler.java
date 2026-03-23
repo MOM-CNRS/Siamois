@@ -5,6 +5,7 @@ import fr.siamois.domain.models.exceptions.EntityAlreadyExistsException;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.specimen.SpecimenService;
 import fr.siamois.dto.entity.RecordingUnitDTO;
+import fr.siamois.dto.entity.RecordingUnitSummaryDTO;
 import fr.siamois.dto.entity.SpatialUnitSummaryDTO;
 import fr.siamois.dto.entity.SpecimenDTO;
 import fr.siamois.ui.bean.SessionSettingsBean;
@@ -82,7 +83,7 @@ public class SpecimenHandler implements INewUnitHandler<SpecimenDTO> {
 
         Long clickedId = trigger.getClickedId();
         String key = trigger.getColumnKey();
-        RecordingUnitDTO clicked = recordingUnitService.findById(clickedId);
+        RecordingUnitSummaryDTO clicked = new RecordingUnitSummaryDTO(recordingUnitService.findById(clickedId));
 
         if (clicked == null) {
             return;
@@ -107,7 +108,7 @@ public class SpecimenHandler implements INewUnitHandler<SpecimenDTO> {
 
 
         if ("RECORDING".equals(scope.getKey())) {
-            RecordingUnitDTO ru = recordingUnitService.findById(scope.getEntityId()); // adapt Optional
+            RecordingUnitSummaryDTO ru = new RecordingUnitSummaryDTO(recordingUnitService.findById(scope.getEntityId()));
             if (ru != null) {
                 unit.setCreatedByInstitution(ru.getCreatedByInstitution());
                 unit.setRecordingUnit(ru);
