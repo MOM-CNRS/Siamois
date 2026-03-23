@@ -74,7 +74,7 @@ public final class SpatialUnitTableDefinitionFactory {
         // -------------------------
         // Name / identifier link col
         // -------------------------
-        tableModel.getTableDefinition().addColumn(
+        tableModel.getTableDefinition().setCommandLinkColumn(
                 CommandLinkColumn.builder()
                         .id("identifierCol")
                         .headerKey("table.spatialunit.column.name")

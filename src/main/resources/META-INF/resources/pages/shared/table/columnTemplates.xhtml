@@ -41,31 +41,6 @@
         </ui:include>
     </ui:fragment>
 
-    <!-- COMMAND_LINK Column -->
-    <ui:fragment rendered="#{column.type eq 'COMMAND_LINK'}">
-        <p:commandButton
-                id="openRowLink"
-                styleClass="hidden-column"
-                action="#{tableModel.handleAction(column, item)}"
-                onstart="#{column.onstartJs}"
-                immediate="true"
-                process="@this"
-                icon="bi bi-layout-sidebar-inset-reverse"
-                oncomplete="#{tableModel.getOnCompleteJs(item)}"
-                >
-            <f:attribute name="mode" value="mode" />
-        </p:commandButton>
-        <p:contextMenu for="openRowLink">
-            <p:menuitem value="Ouvrir dans un panel" disabled="true" icon="bi bi-box-arrow-in-up"/>
-            <p:menuitem value="Ouvrir en mode Focus" disabled="true" icon="bi bi-arrows-angle-expand"/>
-            <p:menuitem value="Ouvrir dans l'aperçu lateral" icon="bi bi-layout-sidebar-inset-reverse"
-                        action="#{tableModel.handleAction(column, item)}"
-                        onstart="#{column.onstartJs}"
-                        oncomplete="#{tableModel.getOnCompleteJs(item)}"
-            />
-        </p:contextMenu>
-    </ui:fragment>
-
     <!-- RELATION Column -->
     <ui:fragment rendered="#{column.type eq 'RELATION'}">
         <f:facet name="header">
@@ -81,13 +56,6 @@
                     update="#{column.updateExpr}"
                     onstart="#{column.onstartJs}"
                     oncomplete="#{column.oncompleteJs}"/>
-            <p:commandButton
-                    rendered="#{column.addEnabled and tableModel.isRendered(column, column.addRenderedKey, item)}"
-                    styleClass="sia-icon-btn"
-                    icon="#{column.addIcon}"
-                    action="#{tableModel.handleRelationAction(column, item, panelIndex, 'ADD_RELATION')}"
-                    oncomplete="PF('newUnitDiag').show()"
-                    update="newUnitForm"/>
         </div>
     </ui:fragment>
 </ui:composition>

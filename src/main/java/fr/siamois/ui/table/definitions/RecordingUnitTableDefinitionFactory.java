@@ -140,7 +140,7 @@ public final class RecordingUnitTableDefinitionFactory {
         contributorsField.setId(4L);
         actionField.setId(5L);
         spatialField.setId(6L);
-        tableModel.getTableDefinition().addColumn(
+        tableModel.getTableDefinition().setCommandLinkColumn(
                 CommandLinkColumn.builder()
                         .id("identifierCol")
                         .headerKey("table.recordingunit.column.identifier")

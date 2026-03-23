@@ -52,6 +52,33 @@
 
         <p:column styleClass="small-cell" selectionBox="true" style="width:16px;text-align:center" toggleable="false"/>
 
+        <!-- link -->
+        <p:column style="min-width: 10px;"
+                  styleClass="small-cell"
+                  id="linkCol" width="fit-content" toggleable="false">
+            <p:commandButton
+                    id="openRowLink"
+                    styleClass="hidden-column"
+                    action="#{tableModel.handleAction(tableModel.tableDefinition.commandLinkColumn, item)}"
+                    onstart="#{tableModel.tableDefinition.commandLinkColumn.onstartJs}"
+                    immediate="true"
+                    process="@this"
+                    icon="bi bi-layout-sidebar-inset-reverse"
+                    oncomplete="#{tableModel.getOnCompleteJs(item)}"
+            >
+                <f:attribute name="mode" value="mode"/>
+            </p:commandButton>
+            <p:contextMenu for="openRowLink">
+                <p:menuitem value="Ouvrir dans un panel" disabled="true" icon="bi bi-box-arrow-in-up"/>
+                <p:menuitem value="Ouvrir en mode Focus" disabled="true" icon="bi bi-arrows-angle-expand"/>
+                <p:menuitem value="Ouvrir dans l'aperçu lateral" icon="bi bi-layout-sidebar-inset-reverse"
+                            action="#{tableModel.handleAction(tableModel.tableDefinition.commandLinkColumn, item)}"
+                            onstart="#{tableModel.tableDefinition.commandLinkColumn.onstartJs}"
+                            oncomplete="#{tableModel.getOnCompleteJs(item)}"
+                />
+            </p:contextMenu>
+        </p:column>
+
         <!-- Actions Column -->
         <p:column styleClass="small-cell" exportable="false" toggleable="false" style="min-width: 100px;">
             <p:toolbar style="padding-top: 0;

@@ -69,32 +69,32 @@ public final class SpecimenTableDefinitionFactory {
 
 
 
-
-        tableModel.getTableDefinition().addColumn(
+        tableModel.getTableDefinition().setCommandLinkColumn(
                 CommandLinkColumn.builder()
-                        .id("identifierCol")
-                        .headerKey("table.recordingunit.column.identifier")
-                        .visible(true)
+                .id("identifierCol")
+                .headerKey("table.recordingunit.column.identifier")
+                .visible(true)
 
-                        // PrimeFaces metadata equivalents
-                        .toggleable(false)
-                        .sortable(false)
-                        .filterable(false)
-                        .sortField("full_identifier")
+                // PrimeFaces metadata equivalents
+                .toggleable(false)
+                .sortable(false)
+                .filterable(false)
+                .sortField("full_identifier")
 
-                        // What to display inside <h:outputText>
-                        .valueKey("fullIdentifier")
+                // What to display inside <h:outputText>
+                .valueKey("fullIdentifier")
 
-                        // What to do on click (Pattern A key)
-                        .action(TableColumnAction.GO_TO_SPECIMEN)
+                // What to do on click (Pattern A key)
+                .action(TableColumnAction.GO_TO_SPECIMEN)
 
-                        // CommandLink behavior
-                        .processExpr("@this")
-                        .updateExpr("flow")
-                        .onstartJs("PF('buiContent').show()")
-                        .oncompleteJs("PF('buiContent').hide();handleScrollToTop();")
-                        .build()
+                // CommandLink behavior
+                .processExpr("@this")
+                .updateExpr("flow")
+                .onstartJs("PF('buiContent').show()")
+                .oncompleteJs("PF('buiContent').hide();handleScrollToTop();")
+                .build()
         );
+
 
         tableModel.getTableDefinition().addColumn(
                 FormFieldColumn.builder()
