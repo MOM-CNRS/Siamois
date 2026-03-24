@@ -118,7 +118,14 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
 
     @Override
     String getOpenPanelCommand(SpatialUnitDTO unit) {
-        return "#{navBean.redirectToBookmarked('/spatial-unit/".concat(unit.getId().toString()).concat("')}");
+
+        if(isRoot) {
+            return "#{navBean.redirectToBookmarked('/spatial-unit/".concat(unit.getId().toString()).concat("')}");
+        }
+        else {
+
+            return "#{flowBean.addSpatialUnitToOverview(" + unit.getId() + ", focusViewBean.mainPanel, null)}";
+        }
     }
 
 

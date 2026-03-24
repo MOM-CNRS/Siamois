@@ -151,10 +151,15 @@ function handleAutoSaveError(xhr, status, panelId) {
 $(document).ready(function () {
     $(document).on('mouseenter', '.panel-menu', function () {
         $(this).addClass('panel-menu-hover');
+        // Add ui-button-icon-only to all buttons inside .panel-menu
+        $(this).find('button').removeClass('ui-button-icon-only');
     }).on('mouseleave', '.panel-menu', function () {
         $(this).removeClass('panel-menu-hover');
+        // Remove ui-button-icon-only from all buttons inside .panel-menu
+        $(this).find('button').addClass('ui-button-icon-only');
     });
 });
+
 
 function handleMenuItemClick(panelSelector) {
     // Remove 'active' class from all menu items

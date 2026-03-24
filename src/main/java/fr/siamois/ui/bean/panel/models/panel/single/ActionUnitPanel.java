@@ -278,7 +278,14 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnitDTO> im
 
     @Override
     String getOpenPanelCommand(ActionUnitDTO unit) {
-        return "#{navBean.redirectToBookmarked('/action-unit/".concat(unit.getId().toString()).concat("')}");
+
+        if(isRoot) {
+            return "#{navBean.redirectToBookmarked('/action-unit/".concat(unit.getId().toString()).concat("')}");
+        }
+        else {
+
+            return "#{flowBean.addActionUnitToOverview(" + unit.getId() + ", focusViewBean.mainPanel, null)}";
+        }
     }
 
     @Override
@@ -529,6 +536,7 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnitDTO> im
     @Override
     protected DefaultMenuItem createRootTypeItem()
     {
+
         return DefaultMenuItem.builder()
                 .value(langBean.msg("panel.title.allactionunit"))
                 .id("allActionUnits")

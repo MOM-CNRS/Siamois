@@ -2,6 +2,7 @@ package fr.siamois.ui.bean;
 
 import fr.siamois.ui.bean.panel.PanelFactory;
 import fr.siamois.ui.bean.panel.models.panel.AbstractPanel;
+import fr.siamois.ui.bean.panel.models.panel.list.AbstractListPanel;
 import fr.siamois.ui.bean.panel.models.panel.single.AbstractSingleEntity;
 import fr.siamois.ui.bean.panel.models.panel.single.AbstractSingleEntityPanel;
 import jakarta.faces.view.ViewScoped;
@@ -19,6 +20,9 @@ import java.util.Base64;
 public class FocusViewBean implements Serializable {
 
     private final transient PanelFactory panelFactory;
+    private final HistoryBean historyBean;
+    private final LangBean langBean;
+
 
     private AbstractPanel mainPanel;
 
@@ -92,20 +96,49 @@ public class FocusViewBean implements Serializable {
 
 
     public void beforeInit() {
+        HistoryBean.HistoryItem newEntry = new HistoryBean.HistoryItem();
 
         if (mainToken != null) {
+            HistoryBean.HistoryItemComponent main = new HistoryBean.HistoryItemComponent();
             String decoded = decodeToken(mainToken);
             mainPanel = resolvePanel(decoded);
             mainPanel.setRoot(true);
+            main.setIcon(mainPanel.getIcon());
+            if(mainPanel instanceof AbstractListPanel<?>) {
+                main.setTitle(langBean.msg(mainPanel.getTitleCodeOrTitle()));
+            }
+            else {
+                main.setTitle(mainPanel.getTitleCodeOrTitle());
+            }
+
+            main.setUri(mainPanel.ressourceUri());
+            main.setStyleClass(mainPanel.getPanelClass());
+            newEntry.setMain(main);
         }
 
         if (secondaryToken != null && !secondaryToken.isEmpty()) {
+            HistoryBean.HistoryItemComponent side = new HistoryBean.HistoryItemComponent();
+
             String decoded = decodeToken(secondaryToken);
             AbstractPanel overviewPanel = resolvePanel(decoded);
             overviewPanel.setRoot(false);
             mainPanel.setParentOrOverview(overviewPanel);
             overviewPanel.setParentOrOverview(mainPanel);
+            side.setIcon(overviewPanel.getIcon());
+            if(overviewPanel instanceof AbstractListPanel<?>) {
+                side.setTitle(langBean.msg(overviewPanel.getTitleCodeOrTitle()));
+            }
+            else {
+                side.setTitle(overviewPanel.getTitleCodeOrTitle());
+            }
+
+            side.setUri(overviewPanel.ressourceUri());
+            side.setStyleClass(overviewPanel.getPanelClass());
+            newEntry.setSecondary(side);
         }
+
+        historyBean.getItems().add(0, newEntry);
+
     }
 
 

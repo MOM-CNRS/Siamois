@@ -111,7 +111,32 @@
         </div>
 
         <p:outputPanel style="display: flex;flex:1; flex-direction: row; overflow-y: hidden;" id="flow"
-                       styleClass="#{flowBean.fullscreenPanelIndex !=-1 ? 'focus' : ''}">
+                       styleClass="focus">
+
+            <h:form id="historyForm" style="height: 100%">
+            <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
+            <p:outputPanel id="history" styleClass="history" style="height: 100%">
+                <p:dataScroller value="#{historyBean.items}"
+                                mode="inline"
+                                buffer="50"
+                                style="height: 100%"
+                                styleClass="panel-menu"
+                                var="item" chunkSize="20">
+                    <f:facet name="loader">
+                        <p:commandButton type="button" value="+" />
+                    </f:facet>
+                    <p:commandButton id="historyLink"
+                                     action="#{historyBean.redirectToEntry(item)}"
+                                   icon="#{item.icon}"
+                                     value="#{item.title}"
+                                   styleClass="#{item.styleClass} nav-link ui-button-flat ui-button-icon-only">
+                    </p:commandButton>
+
+
+
+                </p:dataScroller>
+            </p:outputPanel>
+            </h:form>
 
             <p:outputPanel id="flowContent" styleClass="flow fullscreen-flow focus">
                 <h:panelGroup

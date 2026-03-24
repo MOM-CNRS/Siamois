@@ -17,11 +17,13 @@ import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.domain.services.vocabulary.FieldConfigurationService;
 import fr.siamois.domain.services.vocabulary.FieldService;
 import fr.siamois.dto.entity.*;
+import fr.siamois.ui.bean.HistoryBean;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.RedirectBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
 import fr.siamois.ui.bean.panel.models.panel.AbstractPanel;
 import fr.siamois.ui.bean.panel.models.panel.WelcomePanel;
+import fr.siamois.ui.bean.panel.models.panel.list.AbstractListPanel;
 import fr.siamois.ui.bean.panel.models.panel.single.*;
 import fr.siamois.utils.MessageUtils;
 import io.swagger.models.auth.In;
@@ -76,6 +78,7 @@ public class FlowBean implements Serializable {
     private final transient PermissionService permissionService;
     private final transient InstitutionService institutionService;
     private final transient InstitutionChangeEventPublisher institutionChangeEventPublisher;
+    private final transient HistoryBean historyBean;
 
     private final RedirectBean redirectBean;
     private final transient LoginEventPublisher loginEventPublisher;
@@ -223,13 +226,43 @@ public class FlowBean implements Serializable {
 
     public void addPanelToOverview(AbstractPanel targetPanel, AbstractPanel overviewPanel) {
 
+        HistoryBean.HistoryItem newEntry = new HistoryBean.HistoryItem();
+        HistoryBean.HistoryItemComponent main = new HistoryBean.HistoryItemComponent();
+        HistoryBean.HistoryItemComponent side = new HistoryBean.HistoryItemComponent();
+
         overviewPanel.setRoot(false);
         targetPanel.setRoot(true);
         targetPanel.setParentOrOverview(overviewPanel);
         overviewPanel.setParentOrOverview(targetPanel);
+
+        if(targetPanel instanceof AbstractListPanel<?>) {
+            main.setTitle(langBean.msg(targetPanel.getTitleCodeOrTitle()));
+        }
+        else {
+            main.setTitle(targetPanel.getTitleCodeOrTitle());
+        }
+        main.setIcon(targetPanel.getIcon());
+        main.setUri(targetPanel.ressourceUri());
+        main.setStyleClass(targetPanel.getPanelClass());
+        newEntry.setMain(main);
+
+
+        if(overviewPanel instanceof AbstractListPanel<?>) {
+            side.setTitle(langBean.msg(overviewPanel.getTitleCodeOrTitle()));
+        }
+        else {
+            side.setTitle(overviewPanel.getTitleCodeOrTitle());
+        }
+        side.setIcon(overviewPanel.getIcon());
+        side.setUri(overviewPanel.ressourceUri());
+        side.setStyleClass(overviewPanel.getPanelClass());
+        newEntry.setSecondary(side);
+
+        historyBean.getItems().add(0, newEntry);
+
         String base64RootUri = Base64.getUrlEncoder().withoutPadding().encodeToString(targetPanel.ressourceUri().getBytes());
         String base64OverviewUri = Base64.getUrlEncoder().withoutPadding().encodeToString(overviewPanel.ressourceUri().getBytes());
-        PrimeFaces.current().ajax().update("sideview-"+targetPanel.getPanelIndex());
+        PrimeFaces.current().ajax().update("sideview-"+targetPanel.getPanelIndex(), "historyForm");
         PrimeFaces.current().executeScript(
                 String.format(
                         "showSideview('%s', '%s', '%s');",

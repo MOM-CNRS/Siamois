@@ -403,6 +403,16 @@ body .panel-menu-text.ui-tabmenu .ui-tabmenu-nav .ui-tabmenuitem {
     }
 }
 
+body .panel-menu .ui-menuitem-icon{
+    color: var(--main-color);
+}
+
+body .history-menu-text.ui-tabmenu .ui-tabmenu-nav .ui-tabmenuitem {
+    a {
+        color: var(--main-color);
+    }
+}
+
 /* Primary menu: icons only, not overlaying */
 .panel-menu {
     position: relative;
@@ -427,15 +437,23 @@ body .ui-tabmenu.panel-menu-text {
     }
 }
 
+
 /* Hide immediately when not hovering either menu */
 .panel-menu-text {
     display: none;
 }
+/* Only show when hovering the primary menu OR the text menu */
+.panel-menu:hover + .body .history .ui-button-text {
+    display: block;
+}
 
 /* Only show when hovering the primary menu OR the text menu */
-.panel-menu:hover + .panel-menu-text,
-.panel-menu-text:hover {
+.panel-menu:hover .history-menu-text {
     display: block;
+}
+
+body .history .ui-button {
+    color: var(--main-color);
 }
 
 /* Flow div: not affected by menus */
@@ -483,6 +501,10 @@ body .ui-treetable.ui-treetable-sm .ui-treetable-data>tr>td.small-cell {
 
 body .ui-inplace .ui-inplace-display {
     padding: 0rem 0rem;
+}
+
+body .history .ui-datascroller-content {
+    height: 100%;
 }
 
 

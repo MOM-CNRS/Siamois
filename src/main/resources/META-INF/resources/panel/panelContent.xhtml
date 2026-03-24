@@ -34,10 +34,13 @@
             <p:outputPanel  id="sideview-${panelIndex}" styleClass="sideview #{panelModel.parentOrOverview.panelClass}"
                            style="border-radius: 1em 0 0 0;">
                 <h:panelGroup rendered="#{not empty panelModel.parentOrOverview}">
-                    <div  class="sideview-titlebar" style="background: var(--siamois-green-light-100);display: flex;
-                                    gap: 0.5em;
-                                    flex-direction: column;
-                                    flex-wrap: wrap;">
+                    <div  class="sideview-titlebar" style="
+                            background: var(--siamois-green-light-100);
+                            display: flex;
+                            flex-direction: column;
+                            flex-wrap: wrap;
+                            column-gap: 2em;
+                            row-gap: 0.5em;">
 
                         <h:form style="
                             width: fit-content;" id="actionForm-${panelModel.prefixPanelIndex}-overview">
@@ -47,15 +50,26 @@
                                                             border-radius: 15px;">
 
                                                         <p:commandLink styleClass="sideview-topbar-button"
+                                                                       id="closeSideview"
                                                                        action="#{panelModel.closeOverview()}">
                                                             <h:outputText styleClass="bi bi-chevron-double-right"/>
                                                         </p:commandLink>
+                                                        <p:tooltip
+                                                                autoHide="false" value="Fermer l'aperçu latéral"
+                                                                position="bottom"
+                                                                for="closeSideview"
+                                                        />
                                                         <p:commandLink styleClass="sideview-topbar-button"
                                                                        action="#{flowBean.fullScreen(panelModel.parentOrOverview)}"
                                                                        ajax="false"
                                                                        id="focusButton">
                                                             <h:outputText styleClass="bi bi-arrows-angle-expand"/>
                                                         </p:commandLink>
+                                                        <p:tooltip
+                                                                autoHide="false" value="Ouvrir en mode focus"
+                                                                position="bottom"
+                                                                for="focusButton"
+                                                        />
                                                         <p:commandLink id="bookmarkToggleButton"
                                                                        styleClass="sideview-topbar-button"
                                                                        action="#{navBean.togglePanelBookmark(panelModel.parentOrOverview)}"
@@ -69,13 +83,22 @@
                                                                        styleClass="sideview-topbar-button">
                                                             <h:outputText styleClass='ui-icon bi bi-caret-up'/>
                                                         </p:commandLink>
+                                                        <p:tooltip
+                                                                autoHide="false" value="Fiche précédente"
+                                                                position="bottom"
+                                                                for="previous"
+                                                        />
                                                         <p:commandLink id="next"
                                                                        rendered="#{panelModel.parentOrOverview.hasPreviousNext()}"
                                                                        action="#{panelModel.parentOrOverview.goToNext()}"
                                                                        styleClass="sideview-topbar-button">
                                                             <h:outputText styleClass='ui-icon bi bi-caret-down'/>
                                                         </p:commandLink>
-
+                                                        <p:tooltip
+                                                                autoHide="false" value="Fiche suivante"
+                                                                position="bottom"
+                                                                for="next"
+                                                        />
                                                     </div>
                                                 </h:form>
                         <div style="display: flex;

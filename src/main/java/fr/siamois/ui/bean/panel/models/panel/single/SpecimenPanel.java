@@ -185,11 +185,22 @@ public class SpecimenPanel extends AbstractSingleEntityPanel<SpecimenDTO>  imple
 
     @Override
     protected DefaultMenuItem createRootTypeItem() {
+
+        String command ;
+        Long id = unit.getRecordingUnit().getId();
+        if(isRoot) {
+            command = "#{navBean.redirectToBookmarked('/recording-unit/'"+id+")}";
+        }
+        else {
+
+            command = "#{flowBean.addRecordingUnitToOverview(" + id + ", focusViewBean.mainPanel, 2)}";
+        }
+
         return DefaultMenuItem.builder()
-                .value(langBean.msg("panel.title.allspecimenunit"))
+                .value(unit.getRecordingUnit().getFullIdentifier())
+                .command(command)
+                .update("@this")
                 .id("allSpecimen")
-                .command("#{navBean.redirectToBookmarked('/specimen/')}")
-                .update("flow")
                 .onstart(PF_BUI_CONTENT_SHOW)
                 .oncomplete(PF_BUI_CONTENT_HIDE)
                 .process(THIS)
@@ -198,7 +209,14 @@ public class SpecimenPanel extends AbstractSingleEntityPanel<SpecimenDTO>  imple
 
     @Override
     String getOpenPanelCommand(SpecimenDTO unit) {
-        return "#{navBean.redirectToBookmarked('/specimen/".concat(unit.getId().toString()).concat("')}");
+
+        if(isRoot) {
+            return "#{navBean.redirectToBookmarked('/specimen/".concat(unit.getId().toString()).concat("')}");
+        }
+        else {
+
+            return "#{flowBean.addSpecimenToOverview(" + unit.getId() + ", focusViewBean.mainPanel, null)}";
+        }
     }
 
 
