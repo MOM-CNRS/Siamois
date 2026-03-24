@@ -421,7 +421,10 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
             toSave.setCategory(answer.getNewType().concept());
             toSave = spatialUnitService.save(sessionSettingsBean.getUserInfo(), toSave);
             answer.setValue(new SpatialUnitSummaryDTO(toSave));
-            this.save();
+            if(unit.getId() != null) {
+                this.save();
+            }
+
         }
         catch(Exception e) {
             MessageUtils.displayErrorMessage(langBean, "dialog.unsaved.error", e.getMessage());
@@ -437,7 +440,9 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
             toSave.setCategory(answer.getNewType().concept());
             toSave = spatialUnitService.save(sessionSettingsBean.getUserInfo(), toSave);
             answer.getValue().add(new SpatialUnitSummaryDTO(toSave));
-            this.save();
+            if(unit.getId() != null) {
+                this.save();
+            }
         }
         catch(Exception e) {
             MessageUtils.displayErrorMessage(langBean, "dialog.unsaved.error", e.getMessage());

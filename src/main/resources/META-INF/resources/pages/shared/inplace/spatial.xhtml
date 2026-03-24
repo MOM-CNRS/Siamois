@@ -95,7 +95,7 @@
                             <p:commandButton
                                     id="btnNouveau"
                                     icon="bi bi-plus-lg"
-                                    oncomplete="PF('#{cc.clientId}_overlay').show(); PF('#{cc.clientId}_spatialUnitMenu').hide();"
+                                    oncomplete="PF('#{cc.clientId}_spatialUnitMenu').hide();var ov = PF('#{cc.clientId}_overlay'); ov.show(); ov.align();"
                                     value="Nouveau"
                                     update="#{cc.clientId}"/>
                         </div>
@@ -105,6 +105,7 @@
 
                 <p:overlayPanel for="#{cc.clientId}:select-one-spatial-unit" my="left top" at="left bottom" showEvent="none"
                                 widgetVar="#{cc.clientId}_overlay"
+
                                 dismissable="false"
                                 autoHide="true"
                                 showCloseIcon="true"
@@ -150,7 +151,7 @@
                                         )}"
                                 process="newGrid"
                                 onsuccess="PF('#{cc.clientId}_overlay').hide();"
-                                update="#{cc.clientId} templateFormCC:templateForm:templateGrowl @this"/>
+                                update="select-one-spatial-unit @this  overlayNouveau templateFormCC:templateForm:templateGrowl"/>
 
                     </h:panelGrid>
 
