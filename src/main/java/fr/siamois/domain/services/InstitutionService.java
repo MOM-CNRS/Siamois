@@ -27,16 +27,15 @@ import fr.siamois.mapper.ActionUnitMapper;
 import fr.siamois.mapper.ConceptMapper;
 import fr.siamois.mapper.InstitutionMapper;
 import fr.siamois.mapper.PersonMapper;
+import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.Hibernate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.HashSet;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
+import java.time.OffsetDateTime;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -121,6 +120,7 @@ public class InstitutionService {
      */
     public InstitutionDTO createInstitution(InstitutionDTO institution, String thesaurusUrl) throws InstitutionAlreadyExistException, FailedInstitutionSaveException, InvalidEndpointException, NotSiamoisThesaurusException {
         Optional<Institution> existing = institutionRepository.findInstitutionByIdentifier(institution.getIdentifier());
+        institution.setCreationDate(OffsetDateTime.now());
         if (existing.isPresent())
             throw new InstitutionAlreadyExistException("Institution with code " + institution.getIdentifier() + " already exists");
 
@@ -130,7 +130,7 @@ public class InstitutionService {
         try {
             // Création de l'institution et préparation des concepts du thésaurus sélectionnés
             Institution i = institutionRepository.save(Objects.requireNonNull(institutionMapper.invertConvert(institution)));
-            fieldConfigurationService.setupFieldConfigurationForInstitution(institution, vocabulary);
+            fieldConfigurationService.setupFieldConfigurationForInstitution(institutionMapper.convert(i), vocabulary);
             return institutionMapper.convert(i);
         } catch (NotSiamoisThesaurusException e) {
             log.error("The thesaurus is not a siamois thesaurus : {}", thesaurusUrl, e);

@@ -69,7 +69,6 @@ public class InstitutionDialogBean implements Serializable {
         InstitutionDTO institution = new InstitutionDTO();
         institution.setName(institutionName);
         institution.setIdentifier(identifier);
-        institution.setId(-1L);
         institution.getManagers().add(sessionSettingsBean.getAuthenticatedUser());
         institution.setDescription(description);
 

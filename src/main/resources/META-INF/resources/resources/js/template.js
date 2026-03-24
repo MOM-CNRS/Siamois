@@ -24,6 +24,26 @@ function toggleCollapseSidebar() {
     }
 }
 
+function toggleCollapseHistory() {
+    const $history = $('#historyForm\\:history');
+    const $panelMenu = $history.find('.panel-menu');
+    const $buttons = $panelMenu.find('button');
+
+    // Vérifie si l'élément a déjà la classe "collapsed"
+    const isCollapsed = $history.hasClass('collapsed');
+
+    if (!isCollapsed) {
+        // Replier : ajoute la classe "collapsed" à #history
+        $history.addClass('collapsed');
+        $buttons.addClass('ui-button-icon-only');
+    } else {
+        // Déplier : retire la classe "collapsed" de #history
+        $history.removeClass('collapsed');
+        $buttons.removeClass('ui-button-icon-only');
+    }
+}
+
+
 function toggleSiamoisSidebar() {
     const sidebar = document.getElementById('siamoisNav');
     if (!sidebar) return;
@@ -147,18 +167,6 @@ function handleAutoSaveError(xhr, status, panelId) {
     });
 }
 
-// --------------- TAB MENU
-$(document).ready(function () {
-    $(document).on('mouseenter', '.panel-menu', function () {
-        $(this).addClass('panel-menu-hover');
-        // Add ui-button-icon-only to all buttons inside .panel-menu
-        $(this).find('button').removeClass('ui-button-icon-only');
-    }).on('mouseleave', '.panel-menu', function () {
-        $(this).removeClass('panel-menu-hover');
-        // Remove ui-button-icon-only from all buttons inside .panel-menu
-        $(this).find('button').addClass('ui-button-icon-only');
-    });
-});
 
 
 function handleMenuItemClick(panelSelector) {

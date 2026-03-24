@@ -5,16 +5,22 @@ import lombok.EqualsAndHashCode;
 
 import java.io.Serializable;
 import java.time.OffsetDateTime;
+import java.util.HashSet;
 import java.util.Set;
 
 
 @Data
-@EqualsAndHashCode(callSuper = true)
-public class InstitutionDTO extends AbstractEntityDTO implements Serializable {
+public class InstitutionDTO implements Serializable {
 
         private String name;
         private String description;
         private String identifier;
-        private Set<PersonDTO> managers;
+        private Long id;
+        private Set<PersonDTO> managers = new HashSet<>();
         private OffsetDateTime creationDate;
+
+        @Override
+        public String toString() {
+                return name;
+        }
 }
