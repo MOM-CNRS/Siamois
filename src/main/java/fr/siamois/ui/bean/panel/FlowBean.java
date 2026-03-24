@@ -653,8 +653,20 @@ public class FlowBean implements Serializable {
             changeInstitution(false);
             return;
         }
+        historyBean.getItems().clear(); // clear history
         PrimeFaces.current().executeScript("PF('confirmUnsavedOnInstitutionDialog').show();");
         PrimeFaces.current().ajax().update("unsavedUpdatesOnInstitutionChangeForm");
+    }
+
+    /**
+     * On institution select change
+     *
+     */
+    public void onFocusInstitutionChange() throws IOException {
+        changeInstitution(false);
+        historyBean.getItems().clear(); // clear history
+        redirectToDashboard();
+
     }
 
     /**

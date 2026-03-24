@@ -507,5 +507,12 @@ body .history .ui-datascroller-content {
     height: 100%;
 }
 
+.sidebar  .change-instit {
+    display: flex;
+}
+
+.sidebar.collapsed  .change-instit {
+    display: none;
+}
 
 

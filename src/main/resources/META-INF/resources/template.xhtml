@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/xhtml"
       xmlns:h="http://xmlns.jcp.org/jsf/html"
-      xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
+      xmlns:ui="http://xmlns.jcp.org/jsf/facelets" xmlns:f="http://java.sun.com/jsf/core"
       xml:lang="#{langBean.languageCode}"
       xmlns:form="http://java.sun.com/jsf/composite/pages/shared/form"
       xmlns:p="http://primefaces.org/ui"
@@ -12,7 +12,9 @@
     <meta name="viewport" content="user-scalable=no, width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.12.1/font/bootstrap-icons.css"/>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"/>
-    <script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js" integrity="sha384-CjloA8y00+1SDAUkjs099PVfnY2KmDC2BZnws9kh8D/lX1s46w6EPhpXdqMfjK6i" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"
+            integrity="sha384-CjloA8y00+1SDAUkjs099PVfnY2KmDC2BZnws9kh8D/lX1s46w6EPhpXdqMfjK6i"
+            crossorigin="anonymous"></script>
 
     <h:outputScript name="js/stratigraphy.js"/>
     <link rel="stylesheet"
@@ -80,7 +82,9 @@
         <!-- Barre latérale -->
         <h:panelGroup id="navBar" rendered="#{navBean.siamoisMode}" layout="none">
             <nav id="siamoisNav" class="sidebar collapsed" aria-label="General sidebar">
-                <div>
+                <div style="align-items: center;
+        display: flex;
+        flex-direction: column;">
                     <button id="toggle-btn" type="button"
                             class="btn btn-outline-light" onclick="toggleCollapseSidebar();"><i class="bi bi-list"/>
                     </button>
@@ -91,6 +95,41 @@
                                             library="img" name="siamois_logo.png" styleClass="logo"/>
                         </li>
                     </ul>
+
+                    <form:csrfform formId="institutionSelectForm" id="institutionCsrfSelectForm" style="width:90%">
+                        <article>
+                            <h:panelGroup styleClass="ui-inputgroup change-instit ui-fluid">
+                                <h:panelGroup id="iconInstit" styleClass="ui-inputgroup-addon">
+                                    <i class="bi bi-buildings"/>
+                                </h:panelGroup>
+                                <p:selectOneMenu
+                                        id="selectOneMenuInstitution"
+                                        value="#{flowBean.selectedInstitution}"
+                                        filter="true"
+                                        converter="#{institutionConverter}"
+                                        filterMatchMode="startsWith"
+                                        filterNormalize="true"
+                                        var="inst"
+                                >
+                                    <f:selectItems value="#{flowBean.institutions}"
+                                                   var="item"
+                                                   itemValue="#{item}"
+                                                   itemLabel="#{item.name}"
+                                    />
+
+                                    <p:column>
+                                        <h:outputText value="#{inst.name}"/>
+                                    </p:column>
+
+                                    <p:ajax event="change"
+                                            process="@this"
+                                            listener="#{flowBean.onFocusInstitutionChange}"
+                                    />
+
+                                </p:selectOneMenu>
+                            </h:panelGroup>
+                        </article>
+                    </form:csrfform>
 
                     <form:csrfform id="navBarCsrfForm" formId="siamoisNavForm">
                         <ul class="nav flex-column">
@@ -103,7 +142,7 @@
                                 </h:commandLink>
                             </li>
                             <li class="nav-item">
-                                <h:inputHidden id="currentUrl" value="#{navBean.urlToGoBack}" />
+                                <h:inputHidden id="currentUrl" value="#{navBean.urlToGoBack}"/>
                                 <h:commandLink action="#{redirectBean.redirectTo('/settings')}"
                                                styleClass="nav-link"
                                                onclick="captureUrl()"
@@ -147,17 +186,21 @@
                     <ul class="nav flex-column">
 
                         <li class="nav-item">
-                            <h:outputLink id="linkOpenApi" value="#{request.contextPath}/swagger-ui/index.html" target="_blank" styleClass="nav-link">
-                                <img src="#{request.contextPath}/resources/img/openapi.png" style="height:20px; margin-right: 7px;" alt="Swagger UI"/>
+                            <h:outputLink id="linkOpenApi" value="#{request.contextPath}/swagger-ui/index.html"
+                                          target="_blank" styleClass="nav-link">
+                                <img src="#{request.contextPath}/resources/img/openapi.png"
+                                     style="height:20px; margin-right: 7px;" alt="Swagger UI"/>
                                 <span class="menu-text">Documentation de l'API</span>
-                                <p:tooltip value="Documentation de l'API" for="linkOpenApi" />
+                                <p:tooltip value="Documentation de l'API" for="linkOpenApi"/>
                             </h:outputLink>
                         </li>
 
                         <li class="nav-item">
-                            <h:outputLink value="https://amplified-trampoline-ee0.notion.site/1de32b90b4818066a0dac416da8255e3?pvs=105" styleClass="nav-link" target="_blank"
-                                          id="bugLink">
-                                <i class="bi bi-bug-fill" />
+                            <h:outputLink
+                                    value="https://amplified-trampoline-ee0.notion.site/1de32b90b4818066a0dac416da8255e3?pvs=105"
+                                    styleClass="nav-link" target="_blank"
+                                    id="bugLink">
+                                <i class="bi bi-bug-fill"/>
                                 <span class="menu-text">#{langBean.msg('nav.bug')}</span>
                                 <p:tooltip for="bugLink" value="#{langBean.msg('nav.bug')}"/>
                             </h:outputLink>
@@ -270,7 +313,8 @@
         <!-- Contenu principal -->
         <div class="content" id="content">
             <form:csrfform formId="templateForm" id="templateFormCC">
-                <p:growl closable="true" id="templateGrowl" widgetVar="templateGrowlVar" showDetail="true" autoUpdate="true" showSummary="true">
+                <p:growl closable="true" id="templateGrowl" widgetVar="templateGrowlVar" showDetail="true"
+                         autoUpdate="true" showSummary="true">
                     <p:autoUpdate/>
                 </p:growl>
             </form:csrfform>
@@ -292,17 +336,17 @@
     <p:idleMonitor timeout="#{sessionSettingsBean.sessionTimeoutInMilliseconds}" onidle="handleSessionTimeout()"/>
     <h:outputScript>
         function handleSessionTimeout() {
-            window.location.href = '#{sessionSettingsBean.contextPath}';
+        window.location.href = '#{sessionSettingsBean.contextPath}';
         }
     </h:outputScript>
 
     <h:form id="contextForm">
         <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
         <!-- ID de l'institution actuelle -->
-        <h:inputHidden id="currentInstitutionId" value="#{sessionSettingsBean.selectedInstitution.id}" />
+        <h:inputHidden id="currentInstitutionId" value="#{sessionSettingsBean.selectedInstitution.id}"/>
 
         <!-- IDs des panels actuels (séparés par des virgules) -->
-        <h:inputHidden id="currentPanelIds" value="#{flowBean.currentPanelIdsAsString}" />
+        <h:inputHidden id="currentPanelIds" value="#{flowBean.currentPanelIdsAsString}"/>
 
     </h:form>
 
