@@ -3,7 +3,10 @@ package fr.siamois.ui.form;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import fr.siamois.domain.models.exceptions.spatialunit.SpatialUnitAlreadyExistsException;
 import fr.siamois.domain.models.form.customfield.CustomField;
+import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswer;
+import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerSelectOne;
 import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerStratigraphy;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.form.FormService;
@@ -15,6 +18,7 @@ import fr.siamois.dto.StratigraphicRelationshipDTO;
 import fr.siamois.dto.entity.*;
 import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
 import fr.siamois.ui.bean.LangBean;
+import fr.siamois.ui.bean.SessionSettingsBean;
 import fr.siamois.ui.form.fieldsource.FieldSource;
 import fr.siamois.ui.form.rules.ColumnApplier;
 import fr.siamois.ui.form.rules.EnabledRulesEngine;
@@ -27,7 +31,9 @@ import fr.siamois.ui.viewmodel.CustomFormResponseViewModel;
 import fr.siamois.ui.viewmodel.TreeUiStateViewModel;
 import fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerSelectMultipleSpatialUnitTreeViewModel;
 import fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerSelectOneFromFieldCodeViewModel;
+import fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerSelectOneSpatialUnitViewModel;
 import fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerViewModel;
+import fr.siamois.utils.MessageUtils;
 import jakarta.faces.application.FacesMessage;
 import jakarta.faces.component.UIComponent;
 import jakarta.faces.component.UIInput;
@@ -79,6 +85,9 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
     private final ActionUnitService actionUnitService;
     private final LangBean langBean;
     private final ConversionService conversionService;
+    private final SessionSettingsBean sessionSettingsBean;
+
+    private List<SpatialUnitSummaryDTO> options; // spatial unit options
 
 
     private CustomFormResponseViewModel formResponse;
@@ -130,6 +139,7 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
         this.recordingUnitService = services.getRecordingUnitService();
         this.langBean = services.getLangBean();
         this.conversionService = conversionService;
+        this.sessionSettingsBean = services.getSessionSettingsBean();
         this.formScopeChangeCallback = formScopeChangeCallback;
         this.formScopeValueBinding = formScopeValueBinding;
     }
@@ -386,16 +396,52 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
      */
     public List<SpatialUnitSummaryDTO> getSpatialUnitOptions() {
 
-        if (!(unit instanceof RecordingUnitDTO ru)) {
-            return Collections.emptyList();
+
+        if(unit instanceof ActionUnitDTO au) {
+            return spatialUnitService.findAllSummaryOfInstitution(au.getCreatedByInstitution().getId());
         }
 
-        return spatialUnitService.getSpatialUnitOptionsFor(ru);
+        if(unit instanceof RecordingUnitDTO ru) {
+            return spatialUnitService.getSpatialUnitOptionsFor(ru);
+        }
+
+        return Collections.emptyList();
+
     }
 
     public void setFieldAnswerHasBeenModified(CustomField field) {
         markFieldModified(field);
 
+    }
+
+    public void saveNewPlaceFromField(CustomFieldAnswerSelectOneSpatialUnitViewModel answer) {
+        try {
+            SpatialUnitDTO toSave = new SpatialUnitDTO();
+            toSave.setName(answer.getNewName());
+            toSave.setCategory(answer.getNewType().concept());
+            toSave = spatialUnitService.save(sessionSettingsBean.getUserInfo(), toSave);
+            answer.setValue(new SpatialUnitSummaryDTO(toSave));
+            this.save();
+        }
+        catch(Exception e) {
+            MessageUtils.displayErrorMessage(langBean, "dialog.unsaved.error", e.getMessage());
+        }
+
+    }
+
+    public void saveNewPlaceFromField(CustomFieldAnswerSelectMultipleSpatialUnitTreeViewModel answer)  {
+
+        try {
+            SpatialUnitDTO toSave = new SpatialUnitDTO();
+            toSave.setName(answer.getNewName());
+            toSave.setCategory(answer.getNewType().concept());
+            toSave = spatialUnitService.save(sessionSettingsBean.getUserInfo(), toSave);
+            answer.getValue().add(new SpatialUnitSummaryDTO(toSave));
+            this.save();
+        }
+        catch(Exception e) {
+            MessageUtils.displayErrorMessage(langBean, "dialog.unsaved.error", e.getMessage());
+        }
     }
 
     public void onFieldAnswerModifiedListener(AjaxBehaviorEvent event) {

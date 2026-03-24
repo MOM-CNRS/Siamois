@@ -187,6 +187,19 @@ public class SpatialUnitService implements ArkEntityService {
                 .toList();
     }
 
+    /**
+     * Find all spatial units of a given institution
+     *
+     * @param id The institution id to filter by
+     * @return A list of SpatialUnit belonging to the given institution
+     */
+    public List<SpatialUnitSummaryDTO> findAllSummaryOfInstitution(Long id) {
+        List<SpatialUnit> spatialUnits = spatialUnitRepository.findAllOfInstitution(id);
+        return spatialUnits.stream()
+                .map(spatialUnitSummaryMapper::convert)
+                .toList();
+    }
+
 
     /**
      * Save a new SpatialUnit

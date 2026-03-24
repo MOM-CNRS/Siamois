@@ -57,7 +57,7 @@
                 <ui:param name="panelStyleClass" value="#{bean.getAutocompleteClass()}"/>
                 <ui:param name="conceptFieldsUpdateTargetsOnBlur" value="#{bean.getConceptFieldsUpdateTargetsOnBlur()}"/>
                 <ui:param name="updateTargetsOnBlur" value="#{bean.getPanelHeaderUpdateId()}"/>
-                <ui:param name="spatialUnitOptions" value="#{bean.getSpatialUnitOptions()}" />
+                <ui:param name="spatialUnitOptions" value="#{bean.formContext.getSpatialUnitOptions()}" />
                 <ui:param name="mode" value="#{(col.readOnly) ? 'output' : flowBean.getInPlaceFieldMode()}"/>
             </ui:include>
 

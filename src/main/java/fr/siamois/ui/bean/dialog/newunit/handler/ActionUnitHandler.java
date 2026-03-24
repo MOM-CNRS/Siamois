@@ -97,7 +97,7 @@ public class ActionUnitHandler implements INewUnitHandler<ActionUnitDTO> {
 
     @Override
     public List<SpatialUnitSummaryDTO> getSpatialUnitOptions(ActionUnitDTO unit) {
-        return List.of();
+        return spatialUnitService.findAllSummaryOfInstitution(unit.getCreatedByInstitution().getId());
     }
 
     @Override

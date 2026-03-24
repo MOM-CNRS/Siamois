@@ -7,6 +7,7 @@ import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitTreeService;
 import fr.siamois.domain.services.specimen.SpecimenService;
 import fr.siamois.ui.bean.LangBean;
+import fr.siamois.ui.bean.SessionSettingsBean;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.convert.ConversionService;
@@ -25,5 +26,6 @@ public class FormContextServices {
     private final RecordingUnitService recordingUnitService;
     private final ActionUnitService actionUnitService;
     private final ConversionService conversionService;
+    private final SessionSettingsBean sessionSettingsBean;
 
 }

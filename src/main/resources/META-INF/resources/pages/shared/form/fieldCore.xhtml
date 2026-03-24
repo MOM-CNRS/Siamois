@@ -110,6 +110,7 @@
             rendered="#{col.field['class'].simpleName eq 'CustomFieldSelectOneSpatialUnit'}"
             hasBeenModified="#{hasBeenModified}"
             field="#{col.field}"
+            formCtx="#{formCtx}"
             mode="#{mode}"
             panelId="#{panelId}"
             onModified="#{formCtx.onFieldAnswerModifiedListener}"
@@ -153,16 +154,23 @@
             answer="#{answer}"/>
 
 
-    <!-- Select spatial unit from tree -->
-    <siaInplace:spatialUnitTree
-            id="spatialUnitTree"
+
+    <siaInplace:spatialMultiple
+            id="spatialMultiple"
             rendered="#{col.field['class'].simpleName eq 'CustomFieldSelectMultipleSpatialUnitTree'}"
             hasBeenModified="#{hasBeenModified}"
             field="#{col.field}"
-            mode="#{mode}"
             formCtx="#{formCtx}"
-            updateTargetsOnBlur="#{updateTargetsOnBlur}"
-            answer="#{answer}"/>
+            multiple="true"
+            mode="#{mode}"
+            panelId="#{panelId}"
+            onModified="#{formCtx.onFieldAnswerModifiedListener}"
+            updateTargetsOnBlur="#{panelHeaderUpdateId}"
+            required="#{col.required}"
+            label="#{spatialUnitFieldBean.resolveCustomFieldLabel(col.field)}"
+            spatialUnitOptions="#{spatialUnitOptions}"
+            answer="#{answer}"
+    />
 
     <!-- Select one code OA -->
     <siaInplace:actionCode

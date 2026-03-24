@@ -7,10 +7,10 @@
 
     <cc:interface>
         <cc:attribute name="answer"
-                      type="fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerSelectOneSpatialUnitViewModel"
+                      type="fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerSelectMultipleSpatialUnitTreeViewModel"
                       required="true"/>
         <cc:attribute name="hasBeenModified" type="Boolean" required="false" default="false"/>
-        <cc:attribute name="field" type="fr.siamois.domain.models.form.customfield.CustomFieldSelectOneSpatialUnit"
+        <cc:attribute name="field" type="fr.siamois.domain.models.form.customfield.CustomFieldSelectMultipleSpatialUnitTree"
                       required="true"/>
         <cc:attribute name="label" type="String" required="false"/>
         <cc:attribute name="required" type="java.lang.Boolean" required="true"/>
@@ -51,23 +51,18 @@
                 </h:panelGroup>
             </f:facet>
             <f:facet name="input">
-                <p:selectOneMenu id="select-one-spatial-unit"
-                                 panelStyleClass="spatial-unit"
+                <p:selectCheckboxMenu id="select-multiple-spatial-unit"
+                                 panelStyleClass="spatial-unit" widgetVar="#{cc.clientId}_spatialUnitMultipleMenu"
                                  styleClass="spatial-unit #{cc.attrs.answer.hasBeenModified ? 'track-change sia-modified-field': 'track-change'}"
                                  value="#{cc.attrs.answer.value}"
                                  filterMatchMode="contains"
-                                 widgetVar="#{cc.clientId}_spatialUnitMenu"
-                                 dynamic="true"
+                                      multiple="true"
+                                      showSelectAll="false"
+                                      updateLabel="true"
                                  filter="true"
-                                 label="#{cc.attrs.label}"
                                  required="false"
                                  var="su"
                                  converter="#{spatialUnitSummaryConverter}">
-                    <!-- Null / no selection -->
-                    <f:selectItem
-                            itemLabel="Choisir"
-                            itemValue="#{null}"
-                            noSelectionOption="true"/>
                     <f:selectItems
                             var="unit"
                             itemValue="#{unit}"
@@ -83,7 +78,13 @@
                         </div>
                     </p:column>
                     <f:attribute name="field" value="#{cc.attrs.field}"/>
-                    <p:ajax update="#{cc.attrs.updateTargetsOnBlur}"
+                    <p:ajax event="itemSelect" update="#{cc.attrs.updateTargetsOnBlur}"
+                            process="@this"
+                            onstart="$(PrimeFaces.escapeClientId('#{cc.clientId}:input')).removeClass('sia-modified-field'); showSpinner('#{cc.attrs.panelId}')"
+                            oncomplete="hideSpinner('#{cc.attrs.panelId}')"
+                            onerror="handleAutoSaveError(xhr, status, '#{cc.attrs.panelId}'); $(PrimeFaces.escapeClientId('#{cc.clientId}:input')).addClass('sia-modified-field');"
+                            listener="#{cc.attrs.onModified}"/>
+                    <p:ajax event="itemUnselect" update="#{cc.attrs.updateTargetsOnBlur}"
                             process="@this"
                             onstart="$(PrimeFaces.escapeClientId('#{cc.clientId}:input')).removeClass('sia-modified-field'); showSpinner('#{cc.attrs.panelId}')"
                             oncomplete="hideSpinner('#{cc.attrs.panelId}')"
@@ -95,15 +96,15 @@
                             <p:commandButton
                                     id="btnNouveau"
                                     icon="bi bi-plus-lg"
-                                    oncomplete="PF('#{cc.clientId}_overlay').show(); PF('#{cc.clientId}_spatialUnitMenu').hide();"
+                                    oncomplete="PF('#{cc.clientId}_overlay').show(); PF('#{cc.clientId}_spatialUnitMultipleMenu').hide();"
                                     value="Nouveau"
                                     update="#{cc.clientId}"/>
                         </div>
                     </f:facet>
 
-                </p:selectOneMenu>
+                </p:selectCheckboxMenu>
 
-                <p:overlayPanel for="#{cc.clientId}:select-one-spatial-unit" my="left top" at="left bottom" showEvent="none"
+                <p:overlayPanel for="#{cc.clientId}:select-multiple-spatial-unit" my="left top" at="left bottom" showEvent="none"
                                 widgetVar="#{cc.clientId}_overlay"
                                 dismissable="false"
                                 autoHide="true"
