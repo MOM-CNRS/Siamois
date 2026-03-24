@@ -37,6 +37,25 @@ public class HistoryBean {
 
     }
 
+    public void addItem(HistoryItem item) {
+        // Remove any existing item with the same main URI and secondary URI
+        items.removeIf(existingItem ->
+                existingItem.getMain().getUri().equals(item.getMain().getUri()) &&
+                        ((existingItem.getSecondary() == null && item.getSecondary() == null) ||
+                                (existingItem.getSecondary() != null && item.getSecondary() != null &&
+                                        existingItem.getSecondary().getUri().equals(item.getSecondary().getUri())))
+        );
+
+        // Add the new item
+        items.add(0, item); // Add to the beginning to keep the most recent first
+
+        // Enforce max size
+        if (items.size() > 50) {
+            items = items.subList(0, 50);
+        }
+    }
+
+
     @Data
     public static class HistoryItem {
         private HistoryItemComponent main;

@@ -258,7 +258,7 @@ public class FlowBean implements Serializable {
         side.setStyleClass(overviewPanel.getPanelClass());
         newEntry.setSecondary(side);
 
-        historyBean.getItems().add(0, newEntry);
+        historyBean.addItem(newEntry);
 
         String base64RootUri = Base64.getUrlEncoder().withoutPadding().encodeToString(targetPanel.ressourceUri().getBytes());
         String base64OverviewUri = Base64.getUrlEncoder().withoutPadding().encodeToString(overviewPanel.ressourceUri().getBytes());

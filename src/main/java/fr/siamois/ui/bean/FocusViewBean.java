@@ -137,7 +137,7 @@ public class FocusViewBean implements Serializable {
             newEntry.setSecondary(side);
         }
 
-        historyBean.getItems().add(0, newEntry);
+        historyBean.addItem(newEntry);
 
     }
 
