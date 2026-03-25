@@ -222,6 +222,7 @@ public class SpatialUnitService implements ArkEntityService {
 
         SpatialUnit spatialUnit = new SpatialUnit();
         spatialUnit.setName(name);
+        spatialUnit.setAddress(su.getAddress());
         spatialUnit.setCreatedByInstitution(institutionMapper.invertConvert(institutionService.findById(info.getInstitution().getId())));
         spatialUnit.setCreatedBy(personService.findById(info.getUser().getId()));
         spatialUnit.setCategory(conceptService.saveOrGetConcept(su.getCategory()));
@@ -313,6 +314,7 @@ public class SpatialUnitService implements ArkEntityService {
             managedSpatialUnit.setCreatedBy(spatialUnit.getCreatedBy());
             managedSpatialUnit.setGeom(spatialUnit.getGeom());
             managedSpatialUnit.setCreatedByInstitution(spatialUnit.getCreatedByInstitution());
+            managedSpatialUnit.setAddress(spatialUnit.getAddress());
             // Add concept
             Concept type = conceptService.saveOrGetConcept(
                     conceptDTO);

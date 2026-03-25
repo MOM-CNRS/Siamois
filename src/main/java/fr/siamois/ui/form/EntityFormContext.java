@@ -8,6 +8,7 @@ import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswer;
 import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerSelectOne;
 import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerStratigraphy;
+import fr.siamois.domain.services.GeoPlatService;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.form.FormService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
@@ -86,6 +87,7 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
     private final LangBean langBean;
     private final ConversionService conversionService;
     private final SessionSettingsBean sessionSettingsBean;
+    private final GeoPlatService geoPlatService;
 
     private List<SpatialUnitSummaryDTO> options; // spatial unit options
 
@@ -133,6 +135,7 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
         this.fieldSource = fieldSource;
         this.formService = services.getFormService();
         this.actionUnitService = services.getActionUnitService();
+        this.geoPlatService = services.getGeoPlatService();
         this.spatialUnitTreeService = services.getSpatialUnitTreeService();
         this.specimenService = services.getSpecimenService();
         this.spatialUnitService = services.getSpatialUnitService();
@@ -699,6 +702,10 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
                     "No save strategy defined for type: " + unit.getClass().getSimpleName()
             );
         }
+    }
+
+    public List<FullAddress> completeAdresse(String query) {
+        return geoPlatService.search(query);
     }
 
 }

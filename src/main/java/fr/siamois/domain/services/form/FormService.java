@@ -34,10 +34,10 @@ import java.util.function.Supplier;
 
 /**
  * Stateless service containing reusable form logic:
- *  - initialize CustomFormResponse for a JPA entity
- *  - bind system fields to/from the entity
- *  - build enabled-when rules engines
- *
+ * - initialize CustomFormResponse for a JPA entity
+ * - bind system fields to/from the entity
+ * - build enabled-when rules engines
+ * <p>
  * It is agnostic of layout (single panel vs table row) thanks to FieldSource.
  */
 @Service
@@ -64,7 +64,7 @@ public class FormService {
      * Find the form to display for a given type of recording unit in the context of an institution
      *
      * @param recordingUnitType The type of recording unit
-     * @param institution The institution
+     * @param institution       The institution
      * @return The form
      */
     @Transactional(readOnly = true)
@@ -100,9 +100,9 @@ public class FormService {
      * @param forceInit   if true, ignore existing answers and rebuild everything
      */
     public CustomFormResponseViewModel initOrReuseResponse(CustomFormResponseViewModel existing,
-                                                  Object jpaEntity,
-                                                  FieldSource fieldSource,
-                                                  boolean forceInit) {
+                                                           Object jpaEntity,
+                                                           FieldSource fieldSource,
+                                                           boolean forceInit) {
 
         CustomFormResponseViewModel response;
         Map<CustomField, CustomFieldAnswerViewModel> answers;
@@ -145,14 +145,13 @@ public class FormService {
     /**
      * Create or reuse a CustomFormResponse for the given entity + field source.
      *
-     * @param answers    the answers
-     * @param jpaEntity   entity we bind system fields against
-     * @param field the fiels
+     * @param answers   the answers
+     * @param jpaEntity entity we bind system fields against
+     * @param field     the fiels
      */
     public void initOneAnswer(CustomFormResponseViewModel answers,
-                                                           Object jpaEntity,
-                                                           CustomField field) {
-
+                              Object jpaEntity,
+                              CustomField field) {
 
 
         List<String> bindableFields = getBindableFieldNames(jpaEntity);
@@ -277,6 +276,8 @@ public class FormService {
             return a.getValue();
         } else if (answer instanceof CustomFieldAnswerIntegerViewModel a) {
             return a.getValue();
+        } else if (answer instanceof CustomFieldAnswerSelectOneAddressViewModel a) {
+            return a.getValue();
         }
 
         return null;
@@ -294,7 +295,7 @@ public class FormService {
         answer.setPk(answerId);
         answer.setHasBeenModified(false);
 
-        if(answer instanceof CustomFieldAnswerStratigraphyViewModel stratiAnswer
+        if (answer instanceof CustomFieldAnswerStratigraphyViewModel stratiAnswer
                 && jpaEntity instanceof RecordingUnitDTO ru) {
             // Special case
             handleStratigraphyRelationships(stratiAnswer, ru);
@@ -311,8 +312,6 @@ public class FormService {
     }
 
 
-
-
     private void populateSystemFieldValue(CustomFieldAnswerViewModel answer, Object value) {
 
         Map<Class<?>, BiConsumer<CustomFieldAnswerViewModel, Object>> handlers = new HashMap<>();
@@ -325,6 +324,7 @@ public class FormService {
         handlers.put(SpatialUnitSummaryDTO.class, this::handleSpatialUnit);
         handlers.put(ActionCodeDTO.class, this::handleActionCode);
         handlers.put(Integer.class, this::handleInteger);
+        handlers.put(FullAddress.class, this::handleAddress);
         handlers.put(Set.class, this::handleSpatialUnitSet);
 
         // Execute appropriate handler
@@ -341,6 +341,12 @@ public class FormService {
         }
     }
 
+    private void handleAddress(CustomFieldAnswerViewModel answer, Object value) {
+        if (answer instanceof CustomFieldAnswerSelectOneAddressViewModel addressAnswer) {
+            addressAnswer.setValue((FullAddress) value);
+        }
+    }
+
     private void handleString(CustomFieldAnswerViewModel answer, Object value) {
         if (answer instanceof CustomFieldAnswerTextViewModel textAnswer) {
             textAnswer.setValue((String) value);
@@ -352,6 +358,7 @@ public class FormService {
             singlePersonAnswer.setValue((PersonDTO) value);
         }
     }
+
     @SuppressWarnings("unchecked")
     private void handlePersonList(CustomFieldAnswerViewModel answer, Object value) {
         if (answer instanceof CustomFieldAnswerSelectMultiplePersonViewModel multiplePersonAnswer) {
@@ -396,6 +403,7 @@ public class FormService {
             integerAnswer.setValue((Integer) value);
         }
     }
+
     @SuppressWarnings("unchecked")
     private void handleSpatialUnitSet(CustomFieldAnswerViewModel answer, Object value) {
         if (answer instanceof CustomFieldAnswerSelectMultipleSpatialUnitTreeViewModel treeAnswer) {
@@ -500,7 +508,6 @@ public class FormService {
             }
         }
     }
-
 
 
 }

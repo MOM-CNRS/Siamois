@@ -41,14 +41,14 @@
             </ui:include>
         </f:facet>
 
-        <p:column style="min-width: 10px;"
+        <p:column style="width: min-content;"
                   styleClass="small-cell"
-                  selectionBox="true" id="selectionCol" width="fit-content" toggleable="false"/>
+                  selectionBox="true" id="selectionCol"  toggleable="false"/>
 
         <!-- link -->
-        <p:column style="min-width: 10px;"
+        <p:column style="width: min-content;"
                   styleClass="small-cell"
-                  id="linkCol" width="fit-content" toggleable="false">
+                  id="linkCol" toggleable="false">
         <p:commandButton
                 id="openRowLink"
                 styleClass="hidden-column"
@@ -73,7 +73,7 @@
     </p:column>
 
     <!-- Actions Column -->
-    <p:column exportable="false" toggleable="false" id="actionsCol" styleClass="small-cell" style="min-width: 100px;">
+    <p:column exportable="false" toggleable="false" id="actionsCol" styleClass="small-cell" style="min-width: 1px;">
         <p:toolbar id="actionButtonToolbar" style="padding-top: 0;
             padding-bottom: 0;">
             <p:toolbarGroup id="actionButtonToolbarGroup" styleClass="action-col">

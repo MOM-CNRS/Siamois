@@ -1,0 +1,68 @@
+<ui:composition
+        xmlns="http://www.w3.org/1999/xhtml"
+        xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
+        xmlns:cc="http://java.sun.com/jsf/composite"
+        xmlns:sharedInput="http://xmlns.jcp.org/jsf/composite/pages/shared/input"
+        xmlns:chip="http://xmlns.jcp.org/jsf/composite/pages/shared/chip"
+        xmlns:p="http://primefaces.org/ui" xmlns:f="http://java.sun.com/jsf/core" xmlns:h="http://java.sun.com/jsf/html"
+>
+
+    <cc:interface>
+        <cc:attribute name="answer"
+                      type="fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerSelectOneAddressViewModel"
+                      required="true"/>
+        <cc:attribute name="hasBeenModified" type="Boolean" required="false" default="false"/>
+        <cc:attribute name="field" type="fr.siamois.domain.models.form.customfield.CustomFieldSelectOneAddress"
+                      required="true"/>
+        <cc:attribute name="mode" type="String" required="false" default="READ"/>
+        <cc:attribute name="updateTargetsOnBlur" type="String" required="false" default="@this"/>
+        <cc:attribute name="required" type="java.lang.Boolean" required="false" default="false"/>
+
+        <cc:attribute name="onConceptChanged"
+                      method-signature="void listener(org.primefaces.event.SelectEvent)"
+                      required="false"/>
+        <cc:attribute name="formCtx" type="fr.siamois.ui.form.EntityFormContext" required="true"/>
+        <cc:attribute name="onModified"
+                      method-signature="void setFieldAnswerHasBeenModified(javax.faces.event.AjaxBehaviorEvent)"
+                      required="false"/>
+    </cc:interface>
+
+
+    <cc:implementation>
+        <p:autoComplete
+                value="#{cc.attrs.answer.value}"
+                completeMethod="#{cc.attrs.formCtx.completeAdresse}"
+                var="addr"
+                required="#{cc.attrs.required}"
+                itemLabel="#{addr.label}"
+                itemValue="#{addr}"
+                converter="#{fullAddressConverter}"
+                forceSelection="false"
+                minQueryLength="3"
+                placeholder="Ex : 7 rue de la paix Lyon"
+                dropdown="false">
+
+            <p:column>
+                <h:outputText value="#{addr.label}" />
+            </p:column>
+            <p:column>
+                <h:outputText value="#{addr.postcode} #{addr.city}" />
+            </p:column>
+            <p:column>
+                <h:outputText value="#{addr.lon} #{addr.lat}" />
+            </p:column>
+
+            <f:attribute name="field" value="#{cc.attrs.field}" />
+            <p:ajax update="#{cc.attrs.updateTargetsOnBlur}"
+                    process="@this"
+                    event="itemSelect"
+                    onstart="$(PrimeFaces.escapeClientId('#{cc.clientId}:input')).removeClass('sia-modified-field'); showSpinner('#{cc.attrs.panelId}')"
+                    oncomplete="hideSpinner('#{cc.attrs.panelId}')"
+                    onerror="handleAutoSaveError(xhr, status, '#{cc.attrs.panelId}'); $(PrimeFaces.escapeClientId('#{cc.clientId}:input')).addClass('sia-modified-field');"
+                    listener="#{cc.attrs.onModified}"/>
+
+        </p:autoComplete>
+
+    </cc:implementation>
+
+</ui:composition>

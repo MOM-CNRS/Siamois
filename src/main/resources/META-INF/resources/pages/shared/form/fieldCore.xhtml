@@ -185,5 +185,18 @@
             updateTargetsOnBlur="#{updateTargetsOnBlur}"
     />
 
+    <siaInplace:address
+            id="address"
+            formCtx="#{formCtx}"
+            rendered="#{col.field['class'].simpleName eq 'CustomFieldSelectOneAddress'}"
+            hasBeenModified="#{hasBeenModified}"
+            field="#{col.field}"
+            mode="#{mode}"
+            onModified="#{formCtx.onFieldAnswerModifiedListener}"
+            updateTargetsOnBlur="#{updateTargetsOnBlur}"
+            required="#{col.required}"
+            answer="#{answer}"
+    />
+
 
 </ui:fragment>

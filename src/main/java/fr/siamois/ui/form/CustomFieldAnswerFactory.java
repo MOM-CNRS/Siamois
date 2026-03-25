@@ -14,6 +14,7 @@ public final class CustomFieldAnswerFactory {
     private static final Map<Class<? extends CustomField>, Supplier<? extends CustomFieldAnswerViewModel>> ANSWER_CREATORS =
             Map.ofEntries(
                     Map.entry(CustomFieldText.class, CustomFieldAnswerTextViewModel::new),
+                    Map.entry(CustomFieldSelectOneAddress.class, CustomFieldAnswerSelectOneAddressViewModel::new),
                     Map.entry(CustomFieldSelectOneFromFieldCode.class, CustomFieldAnswerSelectOneFromFieldCodeViewModel::new),
                     Map.entry(CustomFieldSelectMultiplePerson.class, CustomFieldAnswerSelectMultiplePersonViewModel::new),
                     Map.entry(CustomFieldDateTime.class, CustomFieldAnswerDateTimeViewModel::new),

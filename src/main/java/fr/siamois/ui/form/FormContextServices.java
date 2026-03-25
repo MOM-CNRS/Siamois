@@ -1,5 +1,6 @@
 package fr.siamois.ui.form;
 
+import fr.siamois.domain.services.GeoPlatService;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.form.FormService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
@@ -27,5 +28,6 @@ public class FormContextServices {
     private final ActionUnitService actionUnitService;
     private final ConversionService conversionService;
     private final SessionSettingsBean sessionSettingsBean;
+    private final GeoPlatService geoPlatService;
 
 }
