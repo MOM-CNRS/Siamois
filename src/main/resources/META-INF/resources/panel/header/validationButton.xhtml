@@ -16,13 +16,14 @@
         <p:commandButton
                 action="#{panelModel.toggleValidate()}"
                 update="@this"
+                disabled="#{disabled}"
                 process="@this"
-                icon="#{panelModel.unit.validated eq 'VALIDATED' ? 'bi bi-check' :
-                  panelModel.unit.validated eq 'COMPLETE' ? 'bi bi-check' :
+                icon="#{unit.validated eq 'VALIDATED' ? 'bi bi-check' :
+                  unit.validated eq 'COMPLETE' ? 'bi bi-check' :
                   'bi bi-exclamation'}"
                 styleClass="rounded-button ui-button-flat
-                #{panelModel.unit.validated eq 'VALIDATED' ? 'status-button validated' :
-                  panelModel.unit.validated eq 'COMPLETE' ? 'status-button complete' :
+                #{unit.validated eq 'VALIDATED' ? 'status-button validated' :
+                  unit.validated eq 'COMPLETE' ? 'status-button complete' :
                   'status-button incomplete'}"
                 onclick="event.stopPropagation();"
         />

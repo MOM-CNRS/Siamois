@@ -49,6 +49,9 @@
         <p:column style="width: min-content;"
                   styleClass="small-cell"
                   id="linkCol" toggleable="false">
+
+
+
         <p:commandButton
                 id="openRowLink"
                 styleClass="hidden-column"
@@ -71,6 +74,8 @@
             />
         </p:contextMenu>
     </p:column>
+
+
 
     <!-- Actions Column -->
     <p:column exportable="false" toggleable="false" id="actionsCol" styleClass="small-cell" style="min-width: 1px;">
@@ -95,6 +100,16 @@
                 </ui:repeat>
             </p:toolbarGroup>
         </p:toolbar>
+    </p:column>
+
+    <p:column style="width: min-content;"
+              styleClass="small-cell"
+              headerText="Statut"
+              id="statusCol" toggleable="false">
+        <ui:include src="/panel/header/validationButton.xhtml" >
+            <ui:param name="disabled" value="true"/>
+            <ui:param name="unit" value="#{item}"/>
+        </ui:include>
     </p:column>
 
     <c:forEach var="column" items="#{tableModel.columns}" varStatus="colStatus">
