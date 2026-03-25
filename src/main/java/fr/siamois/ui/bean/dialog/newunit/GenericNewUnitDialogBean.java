@@ -6,9 +6,8 @@ import fr.siamois.domain.models.exceptions.EntityAlreadyExistsException;
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.domain.services.vocabulary.FieldService;
-import fr.siamois.dto.entity.AbstractEntityDTO;
-import fr.siamois.dto.entity.ConceptDTO;
-import fr.siamois.dto.entity.SpatialUnitSummaryDTO;
+import fr.siamois.dto.entity.*;
+import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.RedirectBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
@@ -61,6 +60,12 @@ public class GenericNewUnitDialogBean<T extends AbstractEntityDTO>
     private final transient SessionSettingsBean sessionSettingsBean;
     private final transient LangBean langBean;
     private final transient ConversionService conversionService;
+
+    // Cache for values
+    private ConceptDTO placeType;
+    private ConceptDTO recordingUnitType;
+    private ConceptDTO projectType;
+    private SpatialUnitSummaryDTO recordingUnitLocation;
 
     private T unit;
     private transient FormUiDto detailsForm;
@@ -225,6 +230,15 @@ public class GenericNewUnitDialogBean<T extends AbstractEntityDTO>
         formContext.flushBackToEntity();
         unit.setValidated(ValidationStatus.INCOMPLETE);
         unit = handler.save(sessionSettingsBean.getUserInfo(), unit);
+
+        // Save cache for form
+        if (unit instanceof SpatialUnitDTO spatialUnit) {
+            placeType = spatialUnit.getCategory();
+        }
+        if (unit instanceof RecordingUnitDTO recordingUnit) {
+            recordingUnitType = recordingUnit.getType();
+            recordingUnitLocation = recordingUnit.getSpatialUnit();
+        }
 
         // Post-create: laisse la table décider quoi faire (liste/tree) selon ctx
         if (sourceTableModel != null && newUnitContext != null) {

@@ -20,6 +20,8 @@ public class SpatialUnitHandler implements INewUnitHandler<SpatialUnitDTO> {
     private final SpatialUnitService spatialUnitService;
     private final LangBean langBean;
 
+
+
     public SpatialUnitHandler(SpatialUnitService spatialUnitService, LangBean langBean
     ) {
         this.spatialUnitService = spatialUnitService;
@@ -39,6 +41,7 @@ public class SpatialUnitHandler implements INewUnitHandler<SpatialUnitDTO> {
 
     @Override
     public SpatialUnitDTO save(UserInfo u, SpatialUnitDTO unit) throws EntityAlreadyExistsException {
+
         return spatialUnitService.save(u, unit);
     }
 
@@ -52,6 +55,7 @@ public class SpatialUnitHandler implements INewUnitHandler<SpatialUnitDTO> {
         SpatialUnitDTO unit = (SpatialUnitDTO) bean.getUnit();
         unit.setChildren(new HashSet<>());
         unit.setParents(new HashSet<>());
+        unit.setCategory(bean.getPlaceType());
         NewUnitContext ctx = bean.getNewUnitContext();
         if (ctx == null) {
             return;

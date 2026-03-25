@@ -4,6 +4,7 @@ import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.exceptions.EntityAlreadyExistsException;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
+import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.dto.entity.*;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
@@ -25,15 +26,17 @@ public class RecordingUnitHandler implements INewUnitHandler<RecordingUnitDTO> {
     public static final String PARENTS = "parents";
     private final RecordingUnitService recordingUnitService;
     private final ActionUnitService actionUnitService;
+    private final SpatialUnitService spatialUnitService;
     private final SessionSettingsBean sessionSettingsBean;
     private final LangBean langBean;
 
     public RecordingUnitHandler(RecordingUnitService recordingUnitService,
-                                ActionUnitService actionUnitService,
+                                ActionUnitService actionUnitService, SpatialUnitService spatialUnitService,
                                 SessionSettingsBean sessionSettingsBean,
                                 LangBean langBean) {
         this.recordingUnitService = recordingUnitService;
         this.actionUnitService = actionUnitService;
+        this.spatialUnitService = spatialUnitService;
         this.sessionSettingsBean = sessionSettingsBean;
         this.langBean = langBean;
     }
@@ -72,9 +75,30 @@ public class RecordingUnitHandler implements INewUnitHandler<RecordingUnitDTO> {
 
     @Override public String dialogWidgetVar() { return "newUnitDiag"; }
 
+    private void initPlace(RecordingUnitDTO unit, GenericNewUnitDialogBean<?> bean) {
+
+        if(unit.getSpatialUnit() == null) {
+            List<SpatialUnitSummaryDTO> list = spatialUnitService.getSpatialUnitOptionsFor(unit);
+
+
+            if(!list.isEmpty()) {
+                if(bean.getRecordingUnitLocation() != null && list.contains(bean.getRecordingUnitLocation())) {
+                    unit.setSpatialUnit(bean.getRecordingUnitLocation());
+                }
+                else {
+                    unit.setSpatialUnit(list.get(0));
+                }
+
+            }
+        }
+
+
+    }
+
     @Override public void initFromContext(GenericNewUnitDialogBean<?> bean) throws CannotInitializeNewUnitDialogException {
 
         RecordingUnitDTO unit = (RecordingUnitDTO) bean.getUnit();
+        unit.setType(bean.getRecordingUnitType());
         NewUnitContext ctx = bean.getNewUnitContext();
         if (ctx == null) throw new CannotInitializeNewUnitDialogException("Recording unit cannot be created without a context");
 
@@ -82,10 +106,15 @@ public class RecordingUnitHandler implements INewUnitHandler<RecordingUnitDTO> {
         NewUnitContext.Trigger trigger = ctx.getTrigger();
         if (trigger != null && trigger.getType() == NewUnitContext.TriggerType.TOOLBAR) {
             applyScope(unit, ctx);
+            initPlace(unit, bean);
             return;
         }
 
         handleCellContext(ctx, unit);
+        initPlace(unit, bean);
+
+
+
 
     }
 
