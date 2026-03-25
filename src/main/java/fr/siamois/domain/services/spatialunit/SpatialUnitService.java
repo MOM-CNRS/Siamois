@@ -21,6 +21,7 @@ import fr.siamois.domain.services.person.PersonService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.dto.entity.*;
 import fr.siamois.infrastructure.database.repositories.SpatialUnitRepository;
+import fr.siamois.infrastructure.database.repositories.actionunit.ActionUnitRepository;
 import fr.siamois.mapper.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -56,7 +57,7 @@ public class SpatialUnitService implements ArkEntityService {
     private final SpatialUnitSummaryMapper spatialUnitSummaryMapper;
     private final InstitutionMapper institutionMapper;
     private final SpatialUnitMapperImpl spatialUnitMapperImpl;
-
+    private final ActionUnitRepository actionUnitRepository;
 
     /**
      * Find a spatial unit by its ID
@@ -449,7 +450,13 @@ public class SpatialUnitService implements ArkEntityService {
         assert unit != null;
         if (unit.getActionUnit() == null) return List.of();
 
-        List<SpatialUnit> roots = new ArrayList<>(unit.getActionUnit().getSpatialContext());
+        Optional<ActionUnit> au = actionUnitRepository.findById(unit.getActionUnit().getId());
+
+        if(au.isEmpty()) {
+            return List.of();
+        }
+
+        List<SpatialUnit> roots = new ArrayList<>(au.get().getSpatialContext());
         List<Long> rootIds = roots.stream()
                 .map(SpatialUnit::getId)
                 .filter(Objects::nonNull)
