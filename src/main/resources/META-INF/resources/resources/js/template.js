@@ -25,20 +25,21 @@ function toggleCollapseSidebar() {
 }
 
 function toggleCollapseHistory() {
+    const $historyForm = $('#historyForm');
     const $history = $('#historyForm\\:history');
     const $panelMenu = $history.find('.panel-menu');
     const $buttons = $panelMenu.find('button');
 
-    // Vérifie si l'élément a déjà la classe "collapsed"
-    const isCollapsed = $history.hasClass('collapsed');
+    // Check the current display style
+    const isVisible = $historyForm.css('display') !== 'none';
 
-    if (!isCollapsed) {
-        // Replier : ajoute la classe "collapsed" à #history
-        $history.addClass('collapsed');
+    if (isVisible) {
+        // Collapse: set display to none
+        $historyForm.css('display', 'none');
         $buttons.addClass('ui-button-icon-only');
     } else {
-        // Déplier : retire la classe "collapsed" de #history
-        $history.removeClass('collapsed');
+        // Expand: set display to flex
+        $historyForm.css('display', 'flex');
         $buttons.removeClass('ui-button-icon-only');
     }
 }

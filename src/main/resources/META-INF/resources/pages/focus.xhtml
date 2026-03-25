@@ -113,36 +113,35 @@
         <p:outputPanel style="display: flex;flex:1; flex-direction: row; overflow-y: hidden;" id="flow"
                        styleClass="focus">
 
-            <h:form id="historyForm" style="height: 100%; display: flex; flex-direction: column; align-items: center;">
+            <h:form id="historyForm" style="height: 100%; display: none; flex-direction: column; align-items: center;">
                 <div id="historyDiv" style="background: white;   width: 100%;  border: 1px solid #dee2e6;">
                     <button id="toggle-history-btn" type="button" style="width: 100%;"
                             class="btn" onclick="toggleCollapseHistory();"><i class="bi bi-clock-history"/>
                     </button>
                 </div>
 
-            <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
-            <p:outputPanel id="history" styleClass="history collapsed" style="height: 100%">
-                <p:dataScroller value="#{historyBean.items}"
-                                mode="inline"
-                                buffer="50"
-                                style="height: 100%"
-                                styleClass="panel-menu"
-                                var="item" chunkSize="20">
-                    <f:facet name="loader">
-                        <p:commandButton type="button" value="+" />
-                    </f:facet>
-                    <p:commandButton id="historyLink"
-                                     action="#{historyBean.redirectToEntry(item)}"
-                                   icon="#{item.icon}"
-                                     value="#{item.title}"
-                                   styleClass="#{item.styleClass} nav-link ui-button-flat ui-button-icon-only">
-                    </p:commandButton>
-                    <p:tooltip for="@previous" value="#{item.title}"/>
+                <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
+                <p:outputPanel id="history" styleClass="history collapsed" style="height: 100%">
+                    <p:dataScroller value="#{historyBean.items}"
+                                    mode="inline"
+                                    buffer="50"
+                                    style="height: 100%"
+                                    styleClass="panel-menu"
+                                    var="item" chunkSize="20">
+                        <f:facet name="loader">
+                            <p:commandButton type="button" value="+"/>
+                        </f:facet>
+                        <p:commandButton id="historyLink"
+                                         action="#{historyBean.redirectToEntry(item)}"
+                                         icon="#{item.icon}"
+                                         value="#{item.title}"
+                                         styleClass="#{item.styleClass} nav-link ui-button-flat ui-button-icon-only">
+                        </p:commandButton>
+                        <p:tooltip for="@previous" value="#{item.title}"/>
 
 
-
-                </p:dataScroller>
-            </p:outputPanel>
+                    </p:dataScroller>
+                </p:outputPanel>
             </h:form>
 
             <p:outputPanel id="flowContent" styleClass="flow fullscreen-flow focus">
@@ -156,7 +155,7 @@
                                 styleClass="#{focusViewBean.mainPanel.panelClass} panel-docked focus"
                                 style="border-radius: 0px; display: flex; flex-direction: column; border-top: 3px solid var(--main-color)"
                                 id="panel-${focusViewBean.mainPanel.prefixPanelIndex}">
-                            <div  class="sideview-titlebar" style="background: var(--siamois-green-light-100);">
+                            <div class="sideview-titlebar" style="background: var(--siamois-green-light-100);">
                                 <h:form style="float:right;" id="actionForm-${focusViewBean.mainPanel.panelIndex}">
                                     <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
                                     <div style="padding: 3px;
