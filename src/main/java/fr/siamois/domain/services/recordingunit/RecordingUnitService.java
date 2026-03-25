@@ -50,6 +50,8 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static fr.siamois.domain.models.ValidationStatus.*;
+
 /**
  * Service to manage RecordingUnit
  *
@@ -837,7 +839,20 @@ public class RecordingUnitService implements ArkEntityService {
         RecordingUnit unit = recordingUnitRepository.findById(id)
                 .orElseThrow(() -> new ActionUnitNotFoundException("ActionUnit not found with id: " + id));
 
-        unit.setValidated(!unit.getValidated());
+        // Cycle through the enum values
+        switch (unit.getValidated()) {
+            case INCOMPLETE:
+                unit.setValidated(COMPLETE);
+                break;
+            case COMPLETE:
+                unit.setValidated(VALIDATED);
+                break;
+            case VALIDATED:
+                unit.setValidated(INCOMPLETE);
+                break;
+            default:
+                throw new IllegalStateException("Unknown status: " + unit.getValidated());
+        }
 
         return recordingUnitMapper.convert(recordingUnitRepository.save(unit));
     }

@@ -9,6 +9,7 @@
 
     <!--@elvariable id="formSuffix" type="java.lang.String"-->
 
+
     <h:form id="validationButtonForm#{formSuffix}" style="display:flex; align-items: center;">
         <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
 
@@ -16,8 +17,13 @@
                 action="#{panelModel.toggleValidate()}"
                 update="@this"
                 process="@this"
-                icon="#{panelModel.unit.validated ? 'bi bi-check' : 'bi bi-exclamation'}"
-                styleClass="rounded-button ui-button-flat #{panelModel.unit.validated ? 'status-button validated' : 'status-button not-validated'}"
+                icon="#{panelModel.unit.validated eq 'VALIDATED' ? 'bi bi-check' :
+                  panelModel.unit.validated eq 'COMPLETE' ? 'bi bi-check' :
+                  'bi bi-exclamation'}"
+                styleClass="rounded-button ui-button-flat
+                #{panelModel.unit.validated eq 'VALIDATED' ? 'status-button validated' :
+                  panelModel.unit.validated eq 'COMPLETE' ? 'status-button complete' :
+                  'status-button incomplete'}"
                 onclick="event.stopPropagation();"
         />
     </h:form>

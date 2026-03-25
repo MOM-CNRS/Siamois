@@ -486,7 +486,11 @@ body .ui-button.ui-button-flat.status-button {
         background-color: var(--green-valid);
     }
 
-    &.not-validated {
+    &.complete {
+        background-color: #d9b036;
+    }
+
+    &.incomplete {
         background-color: var(--error-main);
     }
 }

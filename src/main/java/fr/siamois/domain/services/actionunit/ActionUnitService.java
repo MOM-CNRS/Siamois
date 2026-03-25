@@ -1,6 +1,7 @@
 package fr.siamois.domain.services.actionunit;
 
 import fr.siamois.domain.models.UserInfo;
+import fr.siamois.domain.models.ValidationStatus;
 import fr.siamois.domain.models.actionunit.ActionCode;
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.ark.Ark;
@@ -345,7 +346,21 @@ public class ActionUnitService implements ArkEntityService {
         ActionUnit actionUnit = actionUnitRepository.findById(actionUnitId)
                 .orElseThrow(() -> new ActionUnitNotFoundException("ActionUnit not found with id: " + actionUnitId));
 
-        actionUnit.setValidated(!actionUnit.getValidated());
+        // Cycle through the enum values
+        switch (actionUnit.getValidated()) {
+            case INCOMPLETE:
+                actionUnit.setValidated(ValidationStatus.COMPLETE);
+                break;
+            case COMPLETE:
+                actionUnit.setValidated(ValidationStatus.VALIDATED);
+                break;
+            case VALIDATED:
+                actionUnit.setValidated(ValidationStatus.INCOMPLETE);
+                break;
+            default:
+                throw new IllegalStateException("Unknown status: " + actionUnit.getValidated());
+        }
+
 
         return actionUnitMapper.convert(actionUnitRepository.save(actionUnit));
     }

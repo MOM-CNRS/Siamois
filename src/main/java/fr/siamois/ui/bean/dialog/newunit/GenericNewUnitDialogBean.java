@@ -1,6 +1,7 @@
 package fr.siamois.ui.bean.dialog.newunit;
 
 import fr.siamois.domain.models.TraceableEntity;
+import fr.siamois.domain.models.ValidationStatus;
 import fr.siamois.domain.models.exceptions.EntityAlreadyExistsException;
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.services.vocabulary.ConceptService;
@@ -222,7 +223,7 @@ public class GenericNewUnitDialogBean<T extends AbstractEntityDTO>
 
     protected void createUnit() throws EntityAlreadyExistsException {
         formContext.flushBackToEntity();
-        unit.setValidated(false);
+        unit.setValidated(ValidationStatus.INCOMPLETE);
         unit = handler.save(sessionSettingsBean.getUserInfo(), unit);
 
         // Post-create: laisse la table décider quoi faire (liste/tree) selon ctx

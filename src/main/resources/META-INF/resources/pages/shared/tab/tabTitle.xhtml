@@ -14,12 +14,6 @@
       <div style="display:flex; gap:0.2em;align-items: center;font-weight: bold;">
          <i class="#{icon}"/>
          <h:outputText value="#{title}"/>
-         <p:outputPanel rendered="#{emptyTab and (not validated)}">
-            <span><i class="bi bi-slash-circle-fill"/></span>
-         </p:outputPanel>
-         <p:outputPanel rendered="#{emptyTab and validated}">
-            <span><i class="bi bi-slash-circle"/></span>
-         </p:outputPanel>
       </div>
 
 

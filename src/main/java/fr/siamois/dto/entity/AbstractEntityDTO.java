@@ -1,5 +1,6 @@
 package fr.siamois.dto.entity;
 
+import fr.siamois.domain.models.ValidationStatus;
 import fr.siamois.domain.models.auth.Person;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -23,7 +24,7 @@ public abstract class AbstractEntityDTO implements Serializable {
     protected Long id;
     protected PersonDTO createdBy;
     protected InstitutionDTO createdByInstitution;
-    protected Boolean validated;
+    protected ValidationStatus validated;
     protected OffsetDateTime creationTime;
     protected OffsetDateTime validatedAt;
     protected Person validatedBy ;

@@ -1,6 +1,7 @@
 package fr.siamois.domain.services.spatialunit;
 
 import fr.siamois.domain.models.UserInfo;
+import fr.siamois.domain.models.ValidationStatus;
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.ark.Ark;
 import fr.siamois.domain.models.exceptions.actionunit.ActionUnitNotFoundException;
@@ -539,16 +540,29 @@ public class SpatialUnitService implements ArkEntityService {
     }
 
     /**
-     * Toggle the validated status of a spatial unit.
+     * Cycle the status of a spatial unit: INCOMPLETE -> COMPLETE -> VALIDATED -> INCOMPLETE.
      *
-     * @param id The id of the Place to toggle
+     * @param id The id of the SpatialUnit to update
      * @return The updated SpatialUnitDTO
      */
     public SpatialUnitDTO toggleValidated(Long id) {
         SpatialUnit unit = spatialUnitRepository.findById(id)
                 .orElseThrow(() -> new ActionUnitNotFoundException("SpatialUnit not found with id: " + id));
 
-        unit.setValidated(!unit.getValidated());
+        // Cycle through the enum values
+        switch (unit.getValidated()) {
+            case INCOMPLETE:
+                unit.setValidated(ValidationStatus.COMPLETE);
+                break;
+            case COMPLETE:
+                unit.setValidated(ValidationStatus.VALIDATED);
+                break;
+            case VALIDATED:
+                unit.setValidated(ValidationStatus.INCOMPLETE);
+                break;
+            default:
+                throw new IllegalStateException("Unknown status: " + unit.getValidated());
+        }
 
         return spatialUnitMapper.convert(spatialUnitRepository.save(unit));
     }

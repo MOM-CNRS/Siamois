@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import fr.siamois.domain.models.ArkEntity;
 import fr.siamois.domain.models.FieldCode;
 import fr.siamois.domain.models.TraceableEntity;
+import fr.siamois.domain.models.ValidationStatus;
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.ark.Ark;
 import fr.siamois.domain.models.document.Document;
@@ -43,7 +44,7 @@ public class SpatialUnit extends TraceableEntity implements ArkEntity {
         name = spatialUnit.getName();
         category = spatialUnit.getCategory();
         geom = spatialUnit.getGeom();
-        validated = false;
+        validated = ValidationStatus.INCOMPLETE;
     }
 
     @Id
