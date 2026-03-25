@@ -99,9 +99,15 @@ public class InstitutionService {
      */
     public Set<InstitutionDTO> findInstitutionsOfPerson(PersonDTO person) {
         Set<Institution> institutions = new HashSet<>();
-        institutions.addAll(institutionRepository.findAllAsMember(person.getId()));
-        institutions.addAll(institutionRepository.findAllAsActionManager(person.getId()));
-        institutions.addAll(institutionRepository.findAllAsInstitutionManager(person.getId()));
+
+        if(person.isSuperAdmin()) {
+            institutions.addAll((Collection<? extends Institution>) institutionRepository.findAll());
+        }
+        else {
+            institutions.addAll(institutionRepository.findAllAsMember(person.getId()));
+            institutions.addAll(institutionRepository.findAllAsActionManager(person.getId()));
+            institutions.addAll(institutionRepository.findAllAsInstitutionManager(person.getId()));
+        }
 
         // Convert Set<Institution> to Set<InstitutionDTO>
         return institutions.stream()
