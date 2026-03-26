@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
 import java.time.OffsetDateTime;
+import java.time.ZoneId;
 
 @Data
 @NoArgsConstructor
@@ -24,9 +25,9 @@ public abstract class AbstractEntityDTO implements Serializable {
     protected Long id;
     protected PersonDTO createdBy;
     protected InstitutionDTO createdByInstitution;
-    protected ValidationStatus validated;
-    protected OffsetDateTime creationTime;
-    protected OffsetDateTime validatedAt;
+    protected ValidationStatus validated = ValidationStatus.INCOMPLETE;
+    protected OffsetDateTime creationTime = OffsetDateTime.now(ZoneId.systemDefault());
+    protected OffsetDateTime validatedAt ;
     protected Person validatedBy ;
 
 }

@@ -28,7 +28,7 @@ import java.util.stream.Collectors;
 
 @Data
 @Entity
-@Table(name = "action_unit", uniqueConstraints = @UniqueConstraint(columnNames = "identifier"))
+@Table(name = "action_unit", uniqueConstraints = @UniqueConstraint(columnNames = {"identifier","fk_institution_id"}))
 @Audited
 public class ActionUnit extends TraceableEntity implements ArkEntity {
 

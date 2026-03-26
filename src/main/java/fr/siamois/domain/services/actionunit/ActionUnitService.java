@@ -31,6 +31,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -178,6 +179,9 @@ public class ActionUnitService implements ArkEntityService {
 
 
         actionUnitDTO.setCreatedByInstitution(info.getInstitution());
+        if(actionUnitDTO.getCreationTime() == null) {
+            actionUnitDTO.setCreationTime(OffsetDateTime.now(ZoneId.systemDefault()));
+        }
 
         // Generate unique identifier if not presents
         if (actionUnitDTO.getFullIdentifier() == null) {

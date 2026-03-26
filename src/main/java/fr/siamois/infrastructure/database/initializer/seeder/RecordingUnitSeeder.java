@@ -65,7 +65,6 @@ public class RecordingUnitSeeder {
     }
 
 
-
     public ActionUnit getActionUnitFromKey(ActionUnitSeeder.ActionUnitKey key) {
         return actionUnitRepository.findByFullIdentifier(key.fullIdentifier())
                 .orElseThrow(() -> new IllegalStateException("Action introuvable"));
