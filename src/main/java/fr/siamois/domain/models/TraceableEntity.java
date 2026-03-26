@@ -31,7 +31,7 @@ public abstract class TraceableEntity implements Serializable {
     protected Person createdBy;
 
     @ColumnDefault("NOW()")
-    @Column(name = "creation_time")
+    @Column(name = "creation_time", nullable = false)
     protected OffsetDateTime creationTime = OffsetDateTime.now(ZoneId.systemDefault());
 
     @NotNull

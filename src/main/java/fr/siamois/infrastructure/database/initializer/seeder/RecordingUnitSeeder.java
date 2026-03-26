@@ -57,7 +57,8 @@ public class RecordingUnitSeeder {
 
     private void getOrCreateRecordingUnit(RecordingUnit recordingUnit) {
 
-        Optional<RecordingUnit> opt = recordingUnitRepository.findByFullIdentifier(recordingUnit.getFullIdentifier());
+        Optional<RecordingUnit> opt = recordingUnitRepository.findByFullIdentifierAndInstitutionId(recordingUnit.getFullIdentifier(),
+                recordingUnit.getCreatedByInstitution().getId());
         if (opt.isEmpty()) {
             recordingUnitRepository.save(recordingUnit);
         }

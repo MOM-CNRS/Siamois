@@ -306,13 +306,13 @@ public class ActionUnitService implements ArkEntityService {
      */
     public ActionUnitDTO findNextByInstitution(InstitutionDTO institution, ActionUnitDTO current) {
         return actionUnitRepository
-                .findFirstByCreatedByInstitutionIdAndCreationTimeAfterOrderByCreationTimeAsc(
-                        institution.getId(), current.getCreationTime())
+                .findNext(
+                        institution.getId(), current.getCreationTime(),current.getId())
                 .map(actionUnitMapper::convert)
                 .orElseGet(() -> actionUnitRepository
-                        .findFirstByCreatedByInstitutionIdOrderByCreationTimeAsc(institution.getId())
+                        .findFirst(institution.getId())
                         .map(actionUnitMapper::convert)
-                        .orElseThrow(() -> new ActionUnitNotFoundException("No ActionUnit found for institution " + institution.getId()))
+                        .orElse(current)
                 );
     }
 
@@ -326,13 +326,13 @@ public class ActionUnitService implements ArkEntityService {
      */
     public ActionUnitDTO findPreviousByInstitution(InstitutionDTO institution, ActionUnitDTO current) {
         return actionUnitRepository
-                .findFirstByCreatedByInstitutionIdAndCreationTimeBeforeOrderByCreationTimeDesc(
-                        institution.getId(), current.getCreationTime())
+                .findPrevious(
+                        institution.getId(), current.getCreationTime(),current.getId())
                 .map(actionUnitMapper::convert)
                 .orElseGet(() -> actionUnitRepository
-                        .findFirstByCreatedByInstitutionIdOrderByCreationTimeDesc(institution.getId())
+                        .findLast(institution.getId())
                         .map(actionUnitMapper::convert)
-                        .orElseThrow(() -> new ActionUnitNotFoundException("No ActionUnit found for institution " + institution.getId()))
+                        .orElse(current)
                 );
     }
 
