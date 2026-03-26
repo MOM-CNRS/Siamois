@@ -4,6 +4,7 @@ import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.institution.Institution;
 import jakarta.persistence.*;
 import lombok.Data;
+import org.springframework.lang.NonNull;
 
 import java.io.Serializable;
 import java.util.Objects;
@@ -18,7 +19,7 @@ public class PersonSettings implements Serializable {
 
     @OneToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "fk_person_id", nullable = false)
-    @MapsId
+    @MapsId("id")
     private Person person;
 
     @ManyToOne(fetch = FetchType.EAGER)
@@ -48,6 +49,11 @@ public class PersonSettings implements Serializable {
     @Override
     public int hashCode() {
         return Objects.hash(person, defaultInstitution);
+    }
+
+    public void setPerson(@NonNull Person person) {
+        this.person = person;
+        this.id = person.getId();
     }
 
 }
