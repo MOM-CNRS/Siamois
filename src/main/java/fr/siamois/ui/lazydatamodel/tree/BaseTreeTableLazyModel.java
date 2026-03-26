@@ -111,23 +111,23 @@ public abstract class BaseTreeTableLazyModel<T extends AbstractEntityDTO, ID> im
     public void insertChildFirst(ID parentId, T created) {
 
         // Determine all parent occurrences
-        final List<LazyDefaultTreeNode<T>> parents;
+        List<LazyDefaultTreeNode<T>> parents = List.of();
         if (parentId == null) {
-            parents = List.of(getRoot());
+            //parents = List.of(getRoot());
         } else {
             parents = findNodesById(parentId);
         }
 
-        if (parents == null || parents.isEmpty()) {
-            // fallback: add under root
-            LazyDefaultTreeNode<T> newNode = new LazyDefaultTreeNode<>(created,
-                    (Callbacks.SerializableFunction<T, List<T>>) this::loadFunction,
-                    (Callbacks.SerializableFunction<T, Boolean>) this::isLeaf
-            );
-            newNode.setParent(getRoot());
-            registerNode(created, newNode);
-            return;
-        }
+//        if (parents == null || parents.isEmpty()) {
+//            // fallback: add under root
+//            LazyDefaultTreeNode<T> newNode = new LazyDefaultTreeNode<>(created,
+//                    (Callbacks.SerializableFunction<T, List<T>>) this::loadFunction,
+//                    (Callbacks.SerializableFunction<T, Boolean>) this::isLeaf
+//            );
+//            newNode.setParent(getRoot());
+//            registerNode(created, newNode);
+//            return;
+//        }
 
         // Insert under every occurrence of the parent entity
         for (LazyDefaultTreeNode<T> parent : parents) {

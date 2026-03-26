@@ -10,6 +10,15 @@
 
     >
         <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
+
+        <div style="padding:1em">La création d'UE n'est disponible que depuis
+            <p:commandLink
+                    action="#{navBean.goToActionUnitList('FOCUS')}"
+                    styleClass="action-unit"
+                    value="un projet"
+                    ajax="false"/>
+        </div>
+
         <table:entityTable
                 tableModel="#{panelModel.tableModel}"
                 panelIndex="#{panelIndex}"

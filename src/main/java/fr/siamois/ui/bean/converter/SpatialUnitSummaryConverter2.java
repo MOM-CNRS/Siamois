@@ -19,23 +19,25 @@ import java.io.Serializable;
 @ManagedBean
 @Component
 @Slf4j
-public class SpatialUnitSummaryConverter implements Converter<SpatialUnitSummaryDTO>, Serializable {
+public class SpatialUnitSummaryConverter2 implements Converter<SpatialUnitSummaryDTO>, Serializable {
 
     private final ObjectMapper objectMapper;
+    private final SpatialUnitService spatialUnitService;
 
-    public SpatialUnitSummaryConverter() {
+    public SpatialUnitSummaryConverter2(SpatialUnitService spatialUnitService) {
         objectMapper = new ObjectMapper();
         objectMapper.disable(SerializationFeature.FAIL_ON_EMPTY_BEANS);
         objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
         objectMapper.registerModule(new JavaTimeModule());
+        this.spatialUnitService = spatialUnitService;
     }
 
 
     @Override
     public SpatialUnitSummaryDTO getAsObject(FacesContext context, UIComponent component, String value) {
         try {
-            return objectMapper.readValue(value, SpatialUnitSummaryDTO.class);
-        } catch (JsonProcessingException e) {
+            return new SpatialUnitSummaryDTO(spatialUnitService.findById(Long.parseLong(value)));
+        } catch (NumberFormatException e) {
             log.error("Error while converting string to SpatialUnit object", e);
             return null;
         }
@@ -47,13 +49,10 @@ public class SpatialUnitSummaryConverter implements Converter<SpatialUnitSummary
             if (value == null) {
                 return "";
             }
-            return objectMapper.writeValueAsString(value);
+            return objectMapper.writeValueAsString(value.getId());
         } catch (JsonProcessingException e) {
             log.error("Error while converting SpatialUnit object to string", e);
             return null;
         }
     }
 }
-
-
-
