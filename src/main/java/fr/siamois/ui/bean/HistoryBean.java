@@ -30,6 +30,7 @@ public class HistoryBean {
     private final FlowBean flowBean;
 
     private List<HistoryItem> items = new ArrayList<>() ;
+    private boolean historyOpen = false;
 
     public void redirectToEntry(HistoryItem entry) throws IOException {
 
@@ -37,7 +38,16 @@ public class HistoryBean {
 
     }
 
+    public void toggleHistory() {
+        historyOpen = !historyOpen;
+    }
+
     public void addItem(HistoryItem item) {
+
+        if(item.getMain() == null) {
+            return;
+
+        }
         // Remove any existing item with the same main URI and secondary URI
         items.removeIf(existingItem ->
                 existingItem.getMain().getUri().equals(item.getMain().getUri()) &&
@@ -50,8 +60,8 @@ public class HistoryBean {
         items.add(0, item); // Add to the beginning to keep the most recent first
 
         // Enforce max size
-        if (items.size() > 50) {
-            items = items.subList(0, 50);
+        if (items.size() > 20) {
+            items = items.subList(0, 20);
         }
     }
 

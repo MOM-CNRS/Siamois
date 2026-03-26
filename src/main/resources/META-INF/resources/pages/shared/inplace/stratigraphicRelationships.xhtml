@@ -9,18 +9,14 @@
         <cc:attribute name="answer" type="fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerStratigraphyViewModel"
                       required="true"/>
         <cc:attribute name="hasBeenModified" type="Boolean" required="false" default="false"/>
-        <cc:attribute name="field" type="fr.siamois.domain.models.form.customfield.CustomFieldStratigraphy"
-                      required="true"/>
+        <cc:attribute name="panelModel" type="fr.siamois.ui.bean.panel.models.panel.single.RecordingUnitPanel" required="true" />
         <cc:attribute name="mode" type="String" required="false" default="READ"/>
         <cc:attribute name="updateTargetsOnBlur" type="String" required="false" default="@this"/>
         <cc:attribute
                 name="recordingUnitOptions"
                 type="java.util.List"
                 required="true"/>
-        <cc:attribute
-                name="onAddStratigraphicRelationship"
-                method-signature="void f(fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerStratigraphy)"
-                required="true"/>
+
         <cc:attribute
                 name="relationshipsAsJson"
                 type="java.lang.String"
@@ -38,6 +34,9 @@
                 <!-- just showing the diagram -->
             </f:facet>
             <f:facet name="input">
+
+                <div style="padding:2em">
+
                 <p:outputPanel id="newStratiRelForm">
                     <p:card styleClass="add-strati-rel"
                             style=" border: 1px dashed oklch(0.74 0 0);border-radius: 1em;background: #ffffff;">
@@ -50,7 +49,7 @@
                                          var="ru"
                                          disabled="true"
                                          label="ru.fullIdentifier"
-                                         converter="#{recordingUnitConverter}">
+                                         converter="#{recordingUnitSummaryConverter}">
                             <f:selectItems
                                     var="unit"
                                     itemValue="#{unit}"
@@ -63,7 +62,7 @@
 
                         </p:selectOneMenu>
 
-                        <p:autoComplete id="relationshipVocab" value="#{answer.conceptToAdd}"
+                        <p:autoComplete id="relationshipVocab" value="#{cc.attrs.answer.conceptToAdd}"
                                         style="width: 20em"
                                         completeMethod="#{spatialUnitFieldBean.completeWithFieldCode}"
                                         showEmptyMessage="false"
@@ -90,8 +89,7 @@
                                          panelStyleClass="recording-unit"
                                          value="#{cc.attrs.answer.targetToAdd}"
                                          var="ru"
-                                         label="ru.fullIdentifier"
-                                         converter="#{recordingUnitConverter}">
+                                         converter="#{recordingUnitSummaryConverter}">
                             <f:selectItems
                                     var="unit"
                                     itemValue="#{unit}"
@@ -112,7 +110,7 @@
                                 style="width: 10em"
                                 icon="bi bi-plus"
                                 value="Ajouter"
-                                action="#{cc.attrs.onAddStratigraphicRelationship}"
+                                action="#{cc.attrs.answer.addStratigraphicRelationship}"
                                 update="newStratiRelForm"
                                 process="newStratiRelForm"
                         />
@@ -131,12 +129,14 @@ margin-top: 1em;
 
                         <!-- Title -->
                         <h3 id="relationTitle" class="relation-title relation-edit-row">
-                            <h:commandLink action="#{flowBean.goToRecordingUnitByIdNewPanel(cc.attrs.answer.selectedRel.unit1.id)}" update="flow">
+                            <h:commandLink action="#{flowBean.addRecordingUnitToOverview(cc.attrs.answer.selectedRel.unit1.id, cc.attrs.panelModel, 3)}"
+                                           >
                                 #{cc.attrs.answer.selectedRel.unit1.fullIdentifier}
                             </h:commandLink>
 
                             #{labelBean.findLabelOf(cc.attrs.answer.selectedRel.concept)}
-                            <h:commandLink action="#{flowBean.goToRecordingUnitByIdNewPanel(cc.attrs.answer.selectedRel.unit2.id)}" update="flow">
+                            <h:commandLink action="#{flowBean.addRecordingUnitToOverview(cc.attrs.answer.selectedRel.unit2.id, cc.attrs.panelModel, 3)}"
+                                           >
                                 #{cc.attrs.answer.selectedRel.unit2.fullIdentifier}
                             </h:commandLink>
                         </h3>
@@ -207,7 +207,7 @@ margin-top: 1em;
                         }
 
                         // Trigger the AJAX call with the correct source and target
-                        updateSelectedRel_#{cc.attrs.panelIndex}([
+                        updateSelectedRel_overview([
                         { name: "source", value: source.id },
                         { name: "target", value: target.id },
                         { name: "typeRel", value: target.zone }
@@ -223,9 +223,9 @@ margin-top: 1em;
 
                 </p:outputPanel>
 
-                <p:remoteCommand name="updateSelectedRel_#{cc.attrs.panelIndex}" update="#{cc.clientId}:stratigraphyGraphContainer" action="#{cc.attrs.answer.updateSelectedRel}"/>
+                <p:remoteCommand name="updateSelectedRel_overview" update="#{cc.clientId}:stratigraphyGraphContainer" action="#{cc.attrs.answer.updateSelectedRel}"/>
 
-
+                </div>
             </f:facet>
         </p:inplace>
 

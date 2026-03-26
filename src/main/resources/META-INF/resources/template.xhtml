@@ -158,14 +158,19 @@
                                 </script>
                             </li>
                             <li class="nav-item">
-                                <button class="nav-link"
-                                               type="button"
-                                               onclick="toggleCollapseHistory();"
-                                               id="historyLink">
+                                <p:commandLink
+                                        id="historyLink"
+                                        type="button"
+                                        action="#{historyBean.toggleHistory}"
+                                        update="@none"
+                                        oncomplete="toggleCollapseHistory();"
+                                        styleClass="nav-link"
+                                >
                                     <i class="bi bi-clock-fill"/>
                                     <span class="menu-text">Historique</span>
-                                    <p:tooltip for="homeLink" value="Historique"/>
-                                </button>
+                                    <p:tooltip for="historyLink" value="Historique" />
+                                </p:commandLink>
+
                             </li>
                             <p:divider/>
                             <h:panelGroup id="bookmarkGroup" layout="none"

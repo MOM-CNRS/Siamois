@@ -377,6 +377,21 @@
     font-size: 16px;
   }
 
+  &.#{$panel-selector}-chip-alt {
+
+    // CSS custom properties for this panel
+    --main-color: #{$main-color};
+    --light-color-50: #{$light50-color};
+    --light-color-100: #{$light100-color};
+    --light-color-200: #{$light200-color};
+    --dark-color: #{$dark-color};
+
+    background-color: var(--main-color);
+    border: 1px solid var(--main-color);
+    color: white;
+    font-size: 16px;
+  }
+
   &.#{$panel-selector}-type-chip {
 
     // CSS custom properties for this panel

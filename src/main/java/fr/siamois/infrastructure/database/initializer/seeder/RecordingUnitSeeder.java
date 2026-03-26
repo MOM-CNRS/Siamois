@@ -75,8 +75,8 @@ public class RecordingUnitSeeder {
                 .orElseThrow(() -> new IllegalStateException("Spatial unit introuvable"));
     }
 
-    public RecordingUnit getRecordingUnitFromKey(RecordingUnitKey key) {
-        return recordingUnitRepository.findByFullIdentifier(key.fullIdentifier)
+    public RecordingUnit getRecordingUnitFromKey(RecordingUnitKey key, Long institutionId) {
+        return recordingUnitRepository.findByFullIdentifierAndInstitutionId(key.fullIdentifier, institutionId)
                 .orElseThrow(() -> new IllegalStateException("Recording unit introuvable"));
     }
 

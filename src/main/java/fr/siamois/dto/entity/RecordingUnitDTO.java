@@ -1,6 +1,8 @@
 package fr.siamois.dto.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import fr.siamois.dto.StratigraphicRelationshipDTO;
+import jakarta.persistence.Transient;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
@@ -34,10 +36,11 @@ public class RecordingUnitDTO extends AbstractEntityDTO {
     private Set<StratigraphicRelationshipDTO> relationshipsAsUnit2 = new HashSet<>();
 
     public RecordingUnitDTO(RecordingUnitDTO original) {
-        identifier = original.getIdentifier();
-        fullIdentifier = original.getFullIdentifier();
         type = original.getType();
         actionUnit = original.getActionUnit();
+        createdByInstitution = original.getCreatedByInstitution();
+        description = original.getDescription();
+        spatialUnit = original.getSpatialUnit();
     }
 
     /**
@@ -48,6 +51,8 @@ public class RecordingUnitDTO extends AbstractEntityDTO {
         fullIdentifier = actionUnit.getFullIdentifier();
     }
 
+    @JsonIgnore
+    @Transient
     public List<String> getBindableFieldNames() {
         return List.of("creationTime", "openingDate", "closingDate", "description","identifier",
                 "contributors", "type", "secondaryType", "thirdType", "actionUnit", "spatialUnit",

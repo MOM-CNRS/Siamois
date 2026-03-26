@@ -7,6 +7,7 @@ import fr.siamois.domain.models.form.customfield.CustomFieldDateTime;
 import fr.siamois.domain.models.form.customfield.CustomFieldInteger;
 import fr.siamois.domain.models.form.customform.CustomForm;
 import fr.siamois.domain.models.history.RevisionWithInfo;
+import fr.siamois.domain.services.form.FormService;
 import fr.siamois.domain.services.person.PersonService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.specimen.SpecimenService;
@@ -19,6 +20,7 @@ import fr.siamois.ui.bean.dialog.newunit.UnitKind;
 import fr.siamois.ui.bean.panel.models.PanelBreadcrumb;
 import fr.siamois.ui.bean.panel.models.panel.AbstractPanel;
 import fr.siamois.ui.bean.panel.models.panel.single.tab.SpecimenTab;
+import fr.siamois.ui.bean.panel.models.panel.single.tab.StratigraphyTab;
 import fr.siamois.ui.form.FormUiDto;
 import fr.siamois.ui.lazydatamodel.RecordingUnitChildrenLazyDataModel;
 import fr.siamois.ui.lazydatamodel.RecordingUnitParentsLazyDataModel;
@@ -27,6 +29,9 @@ import fr.siamois.ui.table.RecordingUnitTableViewModel;
 import fr.siamois.ui.table.SpecimenTableViewModel;
 import fr.siamois.ui.table.ToolbarCreateConfig;
 import fr.siamois.ui.table.definitions.SpecimenTableDefinitionFactory;
+import fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerStratigraphyViewModel;
+import jakarta.faces.component.UIComponent;
+import jakarta.faces.context.FacesContext;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
@@ -59,6 +64,7 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
     private final transient RedirectBean redirectBean;
     private final transient SpecimenService specimenService;
     private final transient NavBean navBean;
+    private final transient FormService formService;
     private final transient GenericNewUnitDialogBean<?> genericNewUnitDialogBean;
 
     // ---------- Locals
@@ -77,6 +83,9 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
 
     private transient SpecimenTableViewModel specimenTableModel;
 
+    // Strati
+    private CustomFieldAnswerStratigraphyViewModel stratigraphyViewModel;
+
 
 
 
@@ -92,6 +101,7 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
         this.specimenService = context.getBean(SpecimenService.class);
         this.navBean = context.getBean(NavBean.class);
         this.genericNewUnitDialogBean = context.getBean(GenericNewUnitDialogBean.class);
+        this.formService = context.getBean(FormService.class);
 
     }
 
@@ -171,6 +181,23 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
                     langBean,
                     unit
             );
+
+            // iniy stratigraphy module
+            stratigraphyViewModel = new CustomFieldAnswerStratigraphyViewModel();
+            formService.handleStratigraphyRelationships(stratigraphyViewModel, unit);
+            // --Define callbacks
+            stratigraphyViewModel.setOnDelete(() -> {
+                formService.setStratigraphyFieldValue(stratigraphyViewModel, unit);
+                recordingUnitService.updateStratigraphicRel(unit);
+            });
+
+
+            stratigraphyViewModel.setOnAdd((context, cc) -> {
+                formContext.addStratigraphicRelationship(stratigraphyViewModel, context, cc);
+                // update rels and save
+                formService.setStratigraphyFieldValue(stratigraphyViewModel, unit);
+                recordingUnitService.updateStratigraphicRel(unit);
+            });
 
 
         } catch (RuntimeException e) {
@@ -267,6 +294,14 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
 
             tabs.add(specimenTab);
 
+            StratigraphyTab stratiTab = new StratigraphyTab(
+                    "common.label.ruRelationships",
+                    "bi bi-diagram-2",
+                    "stratiTab"
+            );
+
+            tabs.add(stratiTab);
+
 
         } catch (
                 ActionUnitNotFoundException e) {
@@ -297,12 +332,12 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
 
     @Override
     protected RecordingUnitDTO findNext() {
-        return recordingUnitService.findNextByActionUnit(unit.getActionUnit(), unit);
+        return recordingUnitService.findPreviousByActionUnit(unit.getActionUnit(), unit);
     }
 
     @Override
     protected RecordingUnitDTO findPrevious() {
-        return recordingUnitService.findPreviousByActionUnit(unit.getActionUnit(), unit);
+        return recordingUnitService.findNextByActionUnit(unit.getActionUnit(), unit);
     }
 
     @Override

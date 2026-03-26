@@ -186,12 +186,12 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
 
     @Override
     protected SpatialUnitDTO findNext() {
-        return spatialUnitService.findNextByInstitution(unit.getCreatedByInstitution(), unit);
+        return spatialUnitService.findPreviousByInstitution(unit.getCreatedByInstitution(), unit);
     }
 
     @Override
     protected SpatialUnitDTO findPrevious() {
-        return spatialUnitService.findPreviousByInstitution(unit.getCreatedByInstitution(), unit);
+        return spatialUnitService.findNextByInstitution(unit.getCreatedByInstitution(), unit);
     }
 
     @Override

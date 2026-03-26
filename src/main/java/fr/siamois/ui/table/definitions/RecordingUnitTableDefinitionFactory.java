@@ -178,6 +178,19 @@ public final class RecordingUnitTableDefinitionFactory {
 
         tableModel.getTableDefinition().addColumn(
                 FormFieldColumn.builder()
+                        .id("action")
+                        .headerKey("recordingunit.field.actionUnit")
+                        .field(actionField)
+                        .sortable(false)
+                        .filterable(false)
+                        .visible(true)
+                        .readOnly(true)
+                        .required(true)
+                        .build()
+        );
+
+        tableModel.getTableDefinition().addColumn(
+                FormFieldColumn.builder()
                         .id("type")
                         .headerKey("recordingunit.property.type")
                         .field(typeField)
@@ -232,18 +245,7 @@ public final class RecordingUnitTableDefinitionFactory {
                         .required(false)
                         .build()
         );
-        tableModel.getTableDefinition().addColumn(
-                FormFieldColumn.builder()
-                        .id("action")
-                        .headerKey("recordingunit.field.actionUnit")
-                        .field(actionField)
-                        .sortable(false)
-                        .filterable(false)
-                        .visible(true)
-                        .readOnly(true)
-                        .required(true)
-                        .build()
-        );
+
         tableModel.getTableDefinition().addColumn(
                 FormFieldColumn.builder()
                         .id("spatial")

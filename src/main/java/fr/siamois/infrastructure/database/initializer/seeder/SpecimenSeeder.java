@@ -48,7 +48,7 @@ public class SpecimenSeeder {
     }
 
 
-    public void seed(List<SpecimenSpecs> specs) {
+    public void seed(List<SpecimenSpecs> specs, Long institutionId) {
 
         for (var s : specs) {
             // Find Type
@@ -78,7 +78,7 @@ public class SpecimenSeeder {
                 }
             }
 
-            RecordingUnit ru = recordingUnitSeeder.getRecordingUnitFromKey(s.recordingUnitKey);
+            RecordingUnit ru = recordingUnitSeeder.getRecordingUnitFromKey(s.recordingUnitKey, institutionId);
 
             Specimen toGetOrCreate = new Specimen();
             toGetOrCreate.setCreatedByInstitution(institution);

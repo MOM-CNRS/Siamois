@@ -11,7 +11,10 @@
 
     <i class="#{panelModel.icon}" style="font-size: 2rem; color:var(--main-color)"/>
 
-    <span>#{panelModel.titleCodeOrTitle}</span>
+
+    <p:chip label="#{panelModel.titleCodeOrTitle}"
+            styleClass="mr-2 action-unit-chip-alt"
+    />
 
     <chip:conceptChip concept="#{panelModel.unit.category}" styleClass="mr-2 spatial-unit-type-chip"/>
 

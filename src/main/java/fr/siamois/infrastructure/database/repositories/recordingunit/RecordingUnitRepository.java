@@ -459,6 +459,7 @@ public interface RecordingUnitRepository extends CrudRepository<RecordingUnit, L
           FROM recording_unit_hierarchy h
           WHERE h.fk_child_id = ru.recording_unit_id
       )
+    ORDER BY ru.creation_time DESC, ru.recording_unit_id DESC
     """, nativeQuery = true)
     List<RecordingUnit> findRootsByInstitution(@Param("institutionId") Long institutionId);
 
@@ -469,6 +470,7 @@ public interface RecordingUnitRepository extends CrudRepository<RecordingUnit, L
       ON h.fk_child_id = ru.recording_unit_id
     WHERE ru.fk_institution_id = :institutionId
       AND h.fk_parent_id = :parentId
+    ORDER BY ru.creation_time DESC, ru.recording_unit_id DESC
     """, nativeQuery = true)
     List<RecordingUnit> findChildrenByParentAndInstitution(@Param("parentId") Long parentId,
                                                            @Param("institutionId") Long institutionId);
@@ -491,6 +493,7 @@ public interface RecordingUnitRepository extends CrudRepository<RecordingUnit, L
           FROM recording_unit_hierarchy h
           WHERE h.fk_child_id = ru.recording_unit_id
       )
+    ORDER BY ru.creation_time DESC, ru.recording_unit_id DESC
     """, nativeQuery = true)
     List<RecordingUnit> findRootsByAction(@Param("actionId") Long actionId);
 

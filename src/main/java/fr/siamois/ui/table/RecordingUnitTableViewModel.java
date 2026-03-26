@@ -67,6 +67,7 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
     private final SessionSettingsBean sessionSettingsBean;
 
 
+
     public RecordingUnitTableViewModel(BaseRecordingUnitLazyDataModel lazyDataModel,
                                        FormService formService,
                                        SessionSettingsBean sessionSettingsBean,
@@ -398,6 +399,9 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
         if(parent != null) {
             newUnit.getParents().add(new RecordingUnitSummaryDTO(parent));
         }
+
+        newUnit.setAuthor(sessionSettingsBean.getAuthenticatedUser());
+        newUnit.setCreatedBy(sessionSettingsBean.getAuthenticatedUser());
 
         newUnit = recordingUnitService.save(newUnit);
 

@@ -11,7 +11,9 @@
     >
         <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
 
-        <div style="padding:1em">La création d'UE n'est disponible que depuis
+        <div
+                style="padding:1em;  margin-left: auto;
+  width: fit-content;">La création d'UE n'est disponible que depuis
             <p:commandLink
                     action="#{navBean.goToActionUnitList('FOCUS')}"
                     styleClass="action-unit"

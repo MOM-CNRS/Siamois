@@ -197,35 +197,38 @@ public interface ActionUnitRepository extends CrudRepository<ActionUnit, Long>, 
     Optional<ActionUnit> findByIdentifierAndCreatedByInstitutionId(String identifier, Long institutionId);
 
     @Query(value = """
-            SELECT su.*
-            FROM action_unit su
-            WHERE su.fk_institution_id = :institutionId
-              AND NOT EXISTS (
-                  SELECT 1
-                  FROM action_hierarchy h
-                  WHERE h.fk_child_id = su.action_unit_id
-              )
-            """, nativeQuery = true)
+    SELECT su.*
+    FROM action_unit su
+    WHERE su.fk_institution_id = :institutionId
+      AND NOT EXISTS (
+          SELECT 1
+          FROM action_hierarchy h
+          WHERE h.fk_child_id = su.action_unit_id
+      )
+    ORDER BY su.creation_time DESC, su.action_unit_id DESC
+    """, nativeQuery = true)
     List<ActionUnit> findRootsByInstitution(@Param("institutionId") Long institutionId);
 
     @Query(value = """
-            SELECT su.*
-            FROM action_unit su
-            JOIN action_hierarchy h
-              ON h.fk_child_id = su.action_unit_id
-            WHERE su.fk_institution_id = :institutionId
-              AND h.fk_parent_id = :parentId
-            """, nativeQuery = true)
+    SELECT su.*
+    FROM action_unit su
+    JOIN action_hierarchy h
+      ON h.fk_child_id = su.action_unit_id
+    WHERE su.fk_institution_id = :institutionId
+      AND h.fk_parent_id = :parentId
+    ORDER BY su.creation_time DESC, su.action_unit_id DESC
+    """, nativeQuery = true)
     List<ActionUnit> findChildrenByParentAndInstitution(@Param("parentId") Long parentId,
                                                         @Param("institutionId") Long institutionId);
 
     @Query(value = """
-            SELECT su.*
-            FROM action_unit su
-            JOIN action_unit_spatial_context h
-              ON h.fk_action_unit_id = su.action_unit_id
-            WHERE h.fk_spatial_unit_id = :spatialId
-            """, nativeQuery = true)
+    SELECT su.*
+    FROM action_unit su
+    JOIN action_unit_spatial_context h
+      ON h.fk_action_unit_id = su.action_unit_id
+    WHERE h.fk_spatial_unit_id = :spatialId
+    ORDER BY su.creation_time DESC, su.action_unit_id DESC
+    """, nativeQuery = true)
     List<ActionUnit> findBySpatialContext(@Param("spatialId") Long spatialId);
 
     @Query(

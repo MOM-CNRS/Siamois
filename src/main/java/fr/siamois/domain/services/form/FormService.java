@@ -411,7 +411,7 @@ public class FormService {
         }
     }
 
-    private void handleStratigraphyRelationships(CustomFieldAnswerStratigraphyViewModel answer, RecordingUnitDTO unit) {
+    public void handleStratigraphyRelationships(CustomFieldAnswerStratigraphyViewModel answer, RecordingUnitDTO unit) {
         // Set the source unit for the answer
         answer.setSourceToAdd(new RecordingUnitSummaryDTO(unit));
 
@@ -476,7 +476,7 @@ public class FormService {
         }
     }
 
-    private void setStratigraphyFieldValue(
+    public void setStratigraphyFieldValue(
             CustomFieldAnswerStratigraphyViewModel stratiAnswer,
             RecordingUnitDTO entity) {
         // Clear existing relationships to avoid duplicates

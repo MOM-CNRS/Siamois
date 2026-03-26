@@ -249,7 +249,11 @@ public interface SpatialUnitRepository extends JpaRepository<SpatialUnit, Long>,
 
     @Query(
             nativeQuery = true,
-            value = "SELECT su.* FROM spatial_unit su WHERE su.fk_institution_id = :institutionId"
+            value = """
+        SELECT su.* FROM spatial_unit su 
+        WHERE su.fk_institution_id = :institutionId
+        ORDER BY su.creation_time DESC, su.spatial_unit_id DESC
+        """
     )
     List<SpatialUnit> findAllOfInstitution(Long institutionId);
 
@@ -278,9 +282,12 @@ public interface SpatialUnitRepository extends JpaRepository<SpatialUnit, Long>,
 
     @Query(
             nativeQuery = true,
-            value = "SELECT DISTINCT su.* FROM spatial_unit su " +
-                    "JOIN spatial_hierarchy sh ON sh.fk_child_id = su.spatial_unit_id " +
-                    "WHERE sh.fk_parent_id = :spatialUnitId"
+            value = """
+        SELECT DISTINCT su.* FROM spatial_unit su 
+        JOIN spatial_hierarchy sh ON sh.fk_child_id = su.spatial_unit_id 
+        WHERE sh.fk_parent_id = :spatialUnitId
+        ORDER BY su.creation_time DESC, su.spatial_unit_id DESC
+        """
     )
     Set<SpatialUnit> findChildrensOf(Long spatialUnitId);
 

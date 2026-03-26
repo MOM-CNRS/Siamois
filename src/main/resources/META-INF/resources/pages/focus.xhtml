@@ -113,7 +113,10 @@
         <p:outputPanel style="display: flex;flex:1; flex-direction: row; overflow-y: hidden;" id="flow"
                        styleClass="focus">
 
-            <h:form id="historyForm" style="height: 100%; display: none; flex-direction: column; align-items: center;">
+            <h:form
+                    id="historyForm"
+                    style="height: 100%; #{historyBean.historyOpen ? 'display: flex;' : 'display: none;'} flex-direction: column; align-items: center;"
+            >
                 <div id="historyDiv" style="background: white;   width: 100%;  border: 1px solid #dee2e6;">
                     <button id="toggle-history-btn" type="button" style="width: 100%;"
 
@@ -136,7 +139,7 @@
                                          action="#{historyBean.redirectToEntry(item)}"
                                          icon="#{item.icon}"
                                          value="#{item.title}"
-                                         styleClass="#{item.styleClass} nav-link ui-button-flat ui-button-icon-only">
+                                         styleClass="#{item.styleClass} nav-link ui-button-flat">
                         </p:commandButton>
                         <p:tooltip for="@previous" value="#{item.title}"/>
 
@@ -160,6 +163,7 @@
                                 <h:form style="float:right;" id="actionForm-${focusViewBean.mainPanel.panelIndex}">
                                     <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
                                     <div style="padding: 3px;
+                                            display: flex;
                                             border: 1px solid var(--siamois-green-light);
                                             border-radius: 15px;">
                                         <p:commandLink id="bookmarkToggleButton"
@@ -168,6 +172,15 @@
                                                        update="bookmarkToggleButton navBarCsrfForm:siamoisNavForm">
                                             <h:outputText styleClass="#{navBean.isPanelBookmarkedByUser(focusViewBean.mainPanel) ?
                             'ui-icon bi bi-bookmark-fill' : 'ui-icon bi bi-bookmark'}"/>
+                                        </p:commandLink>
+                                        <p:commandLink id="refreshPanelButton"
+                                                       styleClass="sideview-topbar-button"
+                                                       action="#{focusViewBean.mainPanel.refresh()}"
+                                                       onstart="PF('buiPanel_${focusViewBean.mainPanel.panelIndex}').show();"
+                                                       oncomplete="PF('buiPanel_${focusViewBean.mainPanel.panelIndex}').hide();"
+                                                       onclick="event.stopPropagation();"
+                                                       update="panel-${focusViewBean.mainPanel.prefixPanelIndex}">
+                                            <h:outputText styleClass="bi bi-arrow-clockwise"/>
                                         </p:commandLink>
                                     </div>
 

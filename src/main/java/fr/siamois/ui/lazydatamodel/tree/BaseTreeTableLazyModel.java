@@ -81,20 +81,50 @@ public abstract class BaseTreeTableLazyModel<T extends AbstractEntityDTO, ID> im
 
 
     /** Lookup ALL nodes for a given entity id (multi-hierarchy) */
-    public List<LazyDefaultTreeNode<T>> findNodesById(ID id) {
+    public List<TreeNode<T>> findNodesById(ID id) {
         if (id == null) return List.of();
-        // ensure initialized
-        getRoot();
-        List<LazyDefaultTreeNode<T>> nodes = nodesById.get(id);
-        return (nodes == null) ? List.of() : Collections.unmodifiableList(nodes);
+
+        List<TreeNode<T>> result = new ArrayList<>();
+        LazyDefaultTreeNode<T> root = getRoot();
+
+        if (root != null) {
+            // 1. Check the root node itself first
+            if (root.getData() != null && id.equals(root.getData().getId())) {
+                result.add(root);
+            }
+
+            // 2. Start the recursion specifically on the children collection
+            searchInChildren(root.getChildren(), id, result);
+        }
+
+        return Collections.unmodifiableList(result);
+    }
+
+    /** Recursive function that strictly handles the TreeNodeChildren type */
+    private void searchInChildren(TreeNodeChildren<T> children, ID id, List<TreeNode<T>> result) {
+        if (children == null) return;
+
+        // Iterate through the collection wrapper
+        for (TreeNode<T> child : children) {
+            // Check the data of the current child node
+            if (child.getData() != null && id.equals(child.getData().getId())) {
+                result.add(child);
+            }
+
+            // Recurse into this child's own children collection
+            TreeNodeChildren<T> subChildren = child.getChildren();
+            if (subChildren != null) {
+                searchInChildren(subChildren, id, result);
+            }
+        }
     }
 
     /**
      * Convenience: returns the first node if you don't care which occurrence you get.
      * Prefer using findNodesById(...) when ambiguity matters.
      */
-    public LazyDefaultTreeNode<T> findAnyNodeById(ID id) {
-        List<LazyDefaultTreeNode<T>> nodes = findNodesById(id);
+    public TreeNode<T> findAnyNodeById(ID id) {
+        List<TreeNode<T>> nodes = findNodesById(id);
         return nodes.isEmpty() ? null : nodes.get(0);
     }
 
@@ -111,27 +141,42 @@ public abstract class BaseTreeTableLazyModel<T extends AbstractEntityDTO, ID> im
     public void insertChildFirst(ID parentId, T created) {
 
         // Determine all parent occurrences
-        List<LazyDefaultTreeNode<T>> parents = List.of();
+        List<TreeNode<T>> parents = List.of();
         if (parentId == null) {
-            //parents = List.of(getRoot());
+            parents = List.of(getRoot());
         } else {
             parents = findNodesById(parentId);
         }
 
-//        if (parents == null || parents.isEmpty()) {
-//            // fallback: add under root
-//            LazyDefaultTreeNode<T> newNode = new LazyDefaultTreeNode<>(created,
-//                    (Callbacks.SerializableFunction<T, List<T>>) this::loadFunction,
-//                    (Callbacks.SerializableFunction<T, Boolean>) this::isLeaf
-//            );
-//            newNode.setParent(getRoot());
-//            registerNode(created, newNode);
-//            return;
-//        }
+        if (parents == null || parents.isEmpty()) {
+            // fallback: add under root
+            LazyDefaultTreeNode<T> newNode = new LazyDefaultTreeNode<>(created,
+                    (Callbacks.SerializableFunction<T, List<T>>) this::loadFunction,
+                    (Callbacks.SerializableFunction<T, Boolean>) this::isLeaf
+            );
+            newNode.setParent(getRoot());
+            registerNode(created, newNode);
+            return;
+        }
 
         // Insert under every occurrence of the parent entity
-        for (LazyDefaultTreeNode<T> parent : parents) {
+        for (TreeNode<T> parent : parents) {
             if (parent == null) continue;
+
+            // --- Skip if the parent already contains this child ID ---
+            boolean alreadyExists = false;
+            TreeNodeChildren<T> existingChildren = parent.getChildren();
+
+            if (existingChildren != null) {
+                for (TreeNode<T> child : existingChildren) {
+                    if (child.getData() != null && created.getId().equals(child.getData().getId())) {
+                        alreadyExists = true;
+                        break;
+                    }
+                }
+            }
+
+            if (alreadyExists) continue;
 
             LazyDefaultTreeNode<T> newNode = new LazyDefaultTreeNode<>(created,
                     (Callbacks.SerializableFunction<T, List<T>>) this::loadFunction,
@@ -163,7 +208,7 @@ public abstract class BaseTreeTableLazyModel<T extends AbstractEntityDTO, ID> im
         registerNode(createdParent, newParentNode);
 
         // 2) pick a source occurrence to duplicate (any)
-        LazyDefaultTreeNode<T> source = findAnyNodeById(clickedId);
+        TreeNode<T> source = findAnyNodeById(clickedId);
         if (source == null) {
             newParentNode.setExpanded(true);
             return;

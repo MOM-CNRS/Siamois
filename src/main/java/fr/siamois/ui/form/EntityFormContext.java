@@ -30,10 +30,7 @@ import fr.siamois.ui.form.savestrategy.SpatialUnitSaveStrategy;
 import fr.siamois.ui.form.savestrategy.SpecimenSaveStrategy;
 import fr.siamois.ui.viewmodel.CustomFormResponseViewModel;
 import fr.siamois.ui.viewmodel.TreeUiStateViewModel;
-import fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerSelectMultipleSpatialUnitTreeViewModel;
-import fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerSelectOneFromFieldCodeViewModel;
-import fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerSelectOneSpatialUnitViewModel;
-import fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerViewModel;
+import fr.siamois.ui.viewmodel.fieldanswer.*;
 import fr.siamois.utils.MessageUtils;
 import jakarta.faces.application.FacesMessage;
 import jakarta.faces.component.UIComponent;
@@ -477,7 +474,7 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
      * Get all recording units of the same scope (action unit) as the current unit.
      * @return The list of recording units
      */
-    public List<RecordingUnitDTO> getRecordingUnitOptions() {
+    public List<RecordingUnitSummaryDTO> getRecordingUnitOptions() {
         if (unit instanceof RecordingUnitDTO recordingUnit) {
             return recordingUnitService.findAllByActionUnit(recordingUnit.getActionUnit().getId());
         }
@@ -485,9 +482,9 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
     }
 
 
-    public void addStratigraphicRelationship(CustomFieldAnswerStratigraphy answer) {
-        FacesContext context = FacesContext.getCurrentInstance();
-        UIComponent cc = UIComponent.getCurrentCompositeComponent(context);
+    public void addStratigraphicRelationship(CustomFieldAnswerStratigraphyViewModel answer,
+                                             FacesContext context,
+                                             UIComponent cc) {
 
         if (!validateInputs(answer, context, cc)) {
             context.validationFailed();
@@ -510,7 +507,7 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
         PrimeFaces.current().ajax().update(cc.getClientId().concat(":stratigraphyGraphContainer"));
     }
 
-    private boolean validateInputs(CustomFieldAnswerStratigraphy answer, FacesContext context, UIComponent cc) {
+    private boolean validateInputs(CustomFieldAnswerStratigraphyViewModel answer, FacesContext context, UIComponent cc) {
         boolean isValid = true;
 
         if (answer.getConceptToAdd() == null) {
@@ -536,13 +533,13 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
         context.addMessage(c.getClientId(context), msg);
     }
 
-    private boolean relationshipExists(CustomFieldAnswerStratigraphy answer) {
+    private boolean relationshipExists(CustomFieldAnswerStratigraphyViewModel answer) {
         return checkSynchronousRelationships(answer) ||
                 checkPosteriorRelationships(answer) ||
                 checkAnteriorRelationships(answer);
     }
 
-    private boolean checkSynchronousRelationships(CustomFieldAnswerStratigraphy answer) {
+    private boolean checkSynchronousRelationships(CustomFieldAnswerStratigraphyViewModel answer) {
         for (StratigraphicRelationshipDTO rel : answer.getSynchronousRelationships()) {
             if ((rel.getUnit1().equals(answer.getSourceToAdd()) && rel.getUnit2().equals(answer.getTargetToAdd())) ||
                     (rel.getUnit1().equals(answer.getTargetToAdd()) && rel.getUnit2().equals(answer.getSourceToAdd()))) {
@@ -552,7 +549,7 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
         return false;
     }
 
-    private boolean checkPosteriorRelationships(CustomFieldAnswerStratigraphy answer) {
+    private boolean checkPosteriorRelationships(CustomFieldAnswerStratigraphyViewModel answer) {
         for (StratigraphicRelationshipDTO rel : answer.getPosteriorRelationships()) {
             if (rel.getUnit1().equals(answer.getSourceToAdd()) && rel.getUnit2().equals(answer.getTargetToAdd())) {
                 return true;
@@ -561,7 +558,7 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
         return false;
     }
 
-    private boolean checkAnteriorRelationships(CustomFieldAnswerStratigraphy answer) {
+    private boolean checkAnteriorRelationships(CustomFieldAnswerStratigraphyViewModel answer) {
         for (StratigraphicRelationshipDTO rel : answer.getAnteriorRelationships()) {
             if (rel.getUnit1().equals(answer.getTargetToAdd()) && rel.getUnit2().equals(answer.getSourceToAdd())) {
                 return true;
@@ -570,7 +567,7 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
         return false;
     }
 
-    private void addNewStratigraphicRelationship(CustomFieldAnswerStratigraphy answer) {
+    private void addNewStratigraphicRelationship(CustomFieldAnswerStratigraphyViewModel answer) {
         StratigraphicRelationshipDTO newRel = new StratigraphicRelationshipDTO();
         String parentLabel = getParentLabel(answer);
 
@@ -583,13 +580,13 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
         }
     }
 
-    private String getParentLabel(CustomFieldAnswerStratigraphy answer) {
+    private String getParentLabel(CustomFieldAnswerStratigraphyViewModel answer) {
         return answer.getConceptToAdd().getHierarchyPrefLabels() == null ?
                 answer.getConceptToAdd().getOriginalPrefLabel() :
                 answer.getConceptToAdd().getHierarchyPrefLabels();
     }
 
-    private void setupSynchronousRelationship(CustomFieldAnswerStratigraphy answer,
+    private void setupSynchronousRelationship(CustomFieldAnswerStratigraphyViewModel answer,
                                               StratigraphicRelationshipDTO newRel) {
         newRel.setUnit1(answer.getSourceToAdd());
         newRel.setUnit2(answer.getTargetToAdd());
@@ -600,7 +597,7 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
         answer.getSynchronousRelationships().add(newRel);
     }
 
-    private void setupPosteriorRelationship(CustomFieldAnswerStratigraphy answer,
+    private void setupPosteriorRelationship(CustomFieldAnswerStratigraphyViewModel answer,
                                             StratigraphicRelationshipDTO newRel) {
         newRel.setUnit1(answer.getSourceToAdd());
         newRel.setUnit2(answer.getTargetToAdd());
@@ -611,7 +608,7 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
         answer.getPosteriorRelationships().add(newRel);
     }
 
-    private void setupAnteriorRelationship(CustomFieldAnswerStratigraphy answer,
+    private void setupAnteriorRelationship(CustomFieldAnswerStratigraphyViewModel answer,
                                            StratigraphicRelationshipDTO newRel) {
         newRel.setUnit1(answer.getTargetToAdd());
         newRel.setUnit2(answer.getSourceToAdd());
@@ -624,7 +621,7 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
 
 
 
-    public String getRelationshipsAsJson(CustomFieldAnswerStratigraphy answer) {
+    public String getRelationshipsAsJson(CustomFieldAnswerStratigraphyViewModel answer) {
 
         ObjectMapper mapper = new ObjectMapper();
         ObjectNode root = mapper.createObjectNode();

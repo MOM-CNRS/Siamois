@@ -28,6 +28,7 @@ import fr.siamois.infrastructure.database.repositories.team.TeamMemberRepository
 import fr.siamois.mapper.ActionUnitMapper;
 import fr.siamois.mapper.ActionUnitSummaryMapper;
 import fr.siamois.mapper.RecordingUnitMapper;
+import fr.siamois.ui.bean.SessionSettingsBean;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -74,6 +75,7 @@ public class RecordingUnitService implements ArkEntityService {
     private final ApplicationContext applicationContext;
     private final ActionUnitMapper actionUnitMapper;
     private final ActionUnitSummaryMapper actionUnitSummaryMapper;
+    private final SessionSettingsBean sessionSettingsBean;
 
     /**
      * Bulk update the type of multiple recording units.
@@ -112,6 +114,16 @@ public class RecordingUnitService implements ArkEntityService {
             log.error(e.getMessage(), e);
             throw new FailedRecordingUnitSaveException(e.getMessage());
         }
+
+    }
+
+    @Transactional
+    public void updateStratigraphicRel(RecordingUnitDTO recordingUnitDTO) {
+
+        RecordingUnit recordingUnit = recordingUnitMapper.invertConvert(recordingUnitDTO);
+        assert recordingUnit != null;
+        RecordingUnit managedRecordingUnit = newOrGetRecordingUnit(recordingUnit);
+        setupStratigraphicRelationships(recordingUnit, managedRecordingUnit);
 
     }
 
@@ -207,6 +219,7 @@ public class RecordingUnitService implements ArkEntityService {
         if (managedRecordingUnit.getCreatedBy() == null) {
             managedRecordingUnit.setCreatedBy(recordingUnit.getCreatedBy());
         }
+
 
         managedRecordingUnit.setChronologicalPhase(recordingUnit.getChronologicalPhase());
         managedRecordingUnit.setGeomorphologicalAgent(recordingUnit.getGeomorphologicalAgent());
@@ -766,12 +779,12 @@ public class RecordingUnitService implements ArkEntityService {
         return recordingUnitRepository.findByFullIdentifierAndActionUnitId(fullIdentifier, actionUnitId);
     }
 
-    public List<RecordingUnitDTO> findAllByActionUnit(@NotNull Long actionUnitId) {
+    public List<RecordingUnitSummaryDTO> findAllByActionUnit(@NotNull Long actionUnitId) {
 
         return recordingUnitRepository
                 .findAllByActionUnitId(actionUnitId)
                 .stream()
-                .map(unit -> conversionService.convert(unit, RecordingUnitDTO.class))
+                .map(unit -> conversionService.convert(unit, RecordingUnitSummaryDTO.class))
                 .toList();
     }
 

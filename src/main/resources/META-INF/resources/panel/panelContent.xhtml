@@ -99,6 +99,13 @@
                                                                 position="bottom"
                                                                 for="next"
                                                         />
+                                                        <p:commandLink id="refreshPanelButton"
+                                                                       styleClass="sideview-topbar-button"
+                                                                       action="#{panelModel.parentOrOverview.refresh()}"
+                                                                       onclick="event.stopPropagation();"
+                                                                       update="sideview-${panelIndex}">
+                                                            <h:outputText styleClass="bi bi-arrow-clockwise"/>
+                                                        </p:commandLink>
                                                     </div>
                                                 </h:form>
                         <div style="display: flex;

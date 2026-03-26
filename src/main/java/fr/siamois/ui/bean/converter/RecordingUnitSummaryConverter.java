@@ -4,8 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import fr.siamois.domain.models.recordingunit.RecordingUnit;
-import fr.siamois.dto.entity.RecordingUnitDTO;
+import fr.siamois.dto.entity.RecordingUnitSummaryDTO;
 import jakarta.faces.component.UIComponent;
 import jakarta.faces.context.FacesContext;
 import jakarta.faces.convert.Converter;
@@ -18,11 +17,11 @@ import java.io.Serializable;
 @ManagedBean
 @Component
 @Slf4j
-public class RecordingUnitConverter implements Converter<RecordingUnitDTO>, Serializable {
+public class RecordingUnitSummaryConverter implements Converter<RecordingUnitSummaryDTO>, Serializable {
 
     private final ObjectMapper objectMapper;
 
-    public RecordingUnitConverter() {
+    public RecordingUnitSummaryConverter() {
         objectMapper = new ObjectMapper();
         objectMapper.disable(SerializationFeature.FAIL_ON_EMPTY_BEANS);
         objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
@@ -31,9 +30,9 @@ public class RecordingUnitConverter implements Converter<RecordingUnitDTO>, Seri
 
 
     @Override
-    public RecordingUnitDTO getAsObject(FacesContext context, UIComponent component, String value) {
+    public RecordingUnitSummaryDTO getAsObject(FacesContext context, UIComponent component, String value) {
         try {
-            return objectMapper.readValue(value, RecordingUnitDTO.class);
+            return objectMapper.readValue(value, RecordingUnitSummaryDTO.class);
         } catch (JsonProcessingException e) {
             log.error("Error while converting string to RecordingUnit object", e);
             return null;
@@ -41,7 +40,7 @@ public class RecordingUnitConverter implements Converter<RecordingUnitDTO>, Seri
     }
 
     @Override
-    public String getAsString(FacesContext context, UIComponent component, RecordingUnitDTO value) {
+    public String getAsString(FacesContext context, UIComponent component, RecordingUnitSummaryDTO value) {
         try {
             if (value == null) {
                 return "";
