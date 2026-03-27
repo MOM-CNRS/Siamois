@@ -189,7 +189,7 @@ public class SpecimenPanel extends AbstractSingleEntityPanel<SpecimenDTO>  imple
         String command ;
         Long id = unit.getRecordingUnit().getId();
         if(isRoot) {
-            command = "#{navBean.redirectToBookmarked('/recording-unit/'"+id+")}";
+            command = "#{navBean.redirectToBookmarked('/recording-unit/"+id+"')}";
         }
         else {
 
