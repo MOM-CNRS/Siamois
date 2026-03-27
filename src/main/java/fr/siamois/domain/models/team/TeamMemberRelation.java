@@ -43,6 +43,10 @@ public class TeamMemberRelation implements Serializable{
     public TeamMemberRelation(ActionUnitDTO actionUnitDTO, PersonDTO personDTO) {
         ActionUnit au = new ActionUnit(); au.setId(actionUnitDTO.getId());
         Person p = new Person(); p.setId(personDTO.getId());
+        p.setUsername(personDTO.getUsername());
+        p.setEmail(personDTO.getEmail());
+        p.setLastname(personDTO.getLastname());
+        p.setName(personDTO.getName());
         this.id = new TeamMemberId(actionUnitDTO.getId(), personDTO.getId());
         this.actionUnit = au;
         this.person = p;

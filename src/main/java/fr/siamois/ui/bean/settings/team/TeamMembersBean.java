@@ -115,6 +115,6 @@ public class TeamMembersBean implements SettingsDatatableBean {
     }
 
     public void redirectToActionUnit() {
-        redirectBean.redirectTo(String.format("/actionunit/%s", actionUnit.getId()));
+        redirectBean.redirectTo(String.format("/focus/action-unit/%s", actionUnit.getId()));
     }
 }

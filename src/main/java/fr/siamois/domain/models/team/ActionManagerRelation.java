@@ -38,6 +38,10 @@ public class ActionManagerRelation {
         this.id = new ActionManagerId(institution.getId(), person.getId());
         Institution inst = new Institution(); inst.setId(institution.getId());
         Person p = new Person(); p.setId(person.getId());
+        p.setUsername(person.getUsername());
+        p.setEmail(person.getEmail());
+        p.setLastname(person.getLastname());
+        p.setName(person.getName());
         this.institution = inst;
         this.person = p;
     }

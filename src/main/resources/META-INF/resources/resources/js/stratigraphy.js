@@ -146,14 +146,14 @@ const zoom = d3.zoom()
             d3.forceLink(links)
                 .id(d => d.id)
                 .distance(140)
-                .strength(0.7)
+                .strength(0.8)
         )
         .force("charge", d3.forceManyBody().strength(-180))
         .force("collide", d3.forceCollide(45))
         .force("y",
             d3.forceY(d => {
-                if (d.zone === "anterior") return centerY - Y_OFFSET;
-                if (d.zone === "posterior") return centerY + Y_OFFSET;
+                if (d.zone === "anterior") return (centerY - Y_OFFSET) + (Math.random() * 100 - 20);
+                if (d.zone === "posterior") return (centerY + Y_OFFSET) + (Math.random() * 100 - 20);
                 return centerY;
             }).strength(d => d.zone === "central" ? 1 : 0.6)
         )
@@ -220,8 +220,7 @@ const linkLines = linkGroup.append("line")
     .style("cursor", "pointer"); // Add hover cursor to the line
 
 const linkLabels = linkGroup.append("text")
-    .text(d => d.label)
-    .attr("font-size", "12px")
+    .attr("font-size", "0.8125rem")
     .attr("fill", "#111827")
     .attr("text-anchor", "middle")
     .attr("dominant-baseline", "middle")
@@ -240,8 +239,8 @@ const linkLabels = linkGroup.append("text")
        Nodes
     ------------------------------------------------------------------ */
 
-    const NODE_WIDTH = 90;
-    const NODE_HEIGHT = 40;
+    const NODE_WIDTH = 60;
+    const NODE_HEIGHT = 25;
 
     const nodeGroup = zoomGroup.append("g")
         .attr("class", "nodes")
@@ -283,12 +282,13 @@ const linkLabels = linkGroup.append("text")
             }
         })
         .style("cursor", "pointer") // Add hover cursor to the group
-        .attr("stroke-width", d => d.main ? 3 : 2);
+        .attr("stroke-width", d => d.main ? 3 : 1);
 
     nodeGroup.append("text")
         .text(d => d.id)
         .attr("text-anchor", "middle")
         .attr("dominant-baseline", "middle")
+        .attr("font-size", "0.8125rem")
         .attr("font-weight", d => d.main ? "bold" : "normal")
         .style("pointer-events", "none");
 

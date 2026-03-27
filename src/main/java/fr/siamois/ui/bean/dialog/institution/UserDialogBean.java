@@ -239,7 +239,7 @@ public class UserDialogBean implements Serializable {
     }
 
     public void addToList() {
-        if (personSelectedIsValid() && roleFieldIsValid()) {
+        if (personSelectedIsValid()) {
             personSelectedList.add(new PersonRole(selectedExistingPerson, currentSelectedRole));
             selectedExistingPerson = null;
             currentSelectedRole = null;

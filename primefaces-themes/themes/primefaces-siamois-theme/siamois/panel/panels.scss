@@ -33,8 +33,10 @@
 
     // Tree table selection
     .ui-treetable .ui-treetable-data > tr.ui-state-highlight {
-      background: var(--siamois-green-light-100);
+      background: var(--light-color-100);
+      color: #2a2c30;
     }
+
 
     // Checkboxes
     .ui-chkbox {
