@@ -83,14 +83,15 @@ public class SpecimenHandler implements INewUnitHandler<SpecimenDTO> {
 
         Long clickedId = trigger.getClickedId();
         String key = trigger.getColumnKey();
-        RecordingUnitSummaryDTO clicked = new RecordingUnitSummaryDTO(recordingUnitService.findById(clickedId));
+        RecordingUnitDTO fullClicked = recordingUnitService.findById(clickedId);
+        RecordingUnitSummaryDTO clicked = new RecordingUnitSummaryDTO(fullClicked);
 
         if (clicked == null) {
             return;
         }
 
         if(key.equals("specimen")) {
-            unit.setCreatedByInstitution(clicked.getCreatedByInstitution());
+            unit.setCreatedByInstitution(fullClicked.getCreatedByInstitution());
             unit.setRecordingUnit(clicked);
             unit.setCreatedBy(sessionSettingsBean.getAuthenticatedUser());
             unit.setAuthors(List.of(sessionSettingsBean.getAuthenticatedUser()));
@@ -108,9 +109,10 @@ public class SpecimenHandler implements INewUnitHandler<SpecimenDTO> {
 
 
         if ("RECORDING".equals(scope.getKey())) {
-            RecordingUnitSummaryDTO ru = new RecordingUnitSummaryDTO(recordingUnitService.findById(scope.getEntityId()));
+            RecordingUnitDTO fullClicked = recordingUnitService.findById(scope.getEntityId());
+            RecordingUnitSummaryDTO ru = new RecordingUnitSummaryDTO(fullClicked);
             if (ru != null) {
-                unit.setCreatedByInstitution(ru.getCreatedByInstitution());
+                unit.setCreatedByInstitution(fullClicked.getCreatedByInstitution());
                 unit.setRecordingUnit(ru);
                 unit.setCreatedBy(sessionSettingsBean.getAuthenticatedUser());
                 unit.setAuthors(List.of(sessionSettingsBean.getAuthenticatedUser()));

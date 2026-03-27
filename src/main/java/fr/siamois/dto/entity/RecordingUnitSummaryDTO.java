@@ -11,7 +11,6 @@ import lombok.NoArgsConstructor;
 public class RecordingUnitSummaryDTO extends AbstractEntityDTO {
 
 
-
     private String identifier;
     private String fullIdentifier;
     private ConceptDTO type;
@@ -21,6 +20,7 @@ public class RecordingUnitSummaryDTO extends AbstractEntityDTO {
         fullIdentifier = original.getFullIdentifier();
         type = original.getType();
         id = original.getId();
+        createdByInstitution = original.getCreatedByInstitution();
     }
 
     public RecordingUnitSummaryDTO(RecordingUnitDTO plain) {
