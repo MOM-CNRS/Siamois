@@ -203,6 +203,31 @@ public final class RecordingUnitTableDefinitionFactory {
 
         tableModel.getTableDefinition().addColumn(
                 RelationColumn.builder()
+                        .id("relationships")
+                        .headerKey("common.label.ruRelationships")
+                        .headerIcon("bi bi-diagram-2")
+                        .visible(true)
+                        .toggleable(true)
+
+                        .countKey("relationships")
+                        .viewIcon(BI_BI_EYE)
+                        .viewAction(TableColumnAction.VIEW_RELATION)
+                        .viewTargetIndex(3)
+
+                        .addEnabled(false)
+                        .addIcon(BI_BI_PLUS_SQUARE)
+                        .addAction(TableColumnAction.ADD_RELATION)
+                        .addRenderedKey("specimenCreateAllowed")
+
+                        .processExpr(THIS)
+                        .updateExpr(THIS)
+                        .onstartJs(PF_BUI_CONTENT_SHOW)
+                        .oncompleteJs(PF_BUI_CONTENT_HIDE_HANDLE_SCROLL_TO_TOP)
+                        .build()
+        );
+
+        tableModel.getTableDefinition().addColumn(
+                RelationColumn.builder()
                         .id("specimen")
                         .headerKey("common.entity.specimen")
                         .headerIcon("bi bi-bucket")
