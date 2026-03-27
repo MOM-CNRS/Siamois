@@ -19,8 +19,8 @@ public class ActionUnitDTO extends AbstractEntityDTO {
     private SpatialUnitSummaryDTO mainLocation ;
     private String fullIdentifier;
     private Set<SpatialUnitSummaryDTO> spatialContext = new HashSet<>();
-    private Integer maxRecordingUnitCode=1;
-    private Integer minRecordingUnitCode=999;
+    private Integer maxRecordingUnitCode=999;
+    private Integer minRecordingUnitCode=1;
     private Set<ActionUnitSummaryDTO> parents;
     private Set<ActionUnitSummaryDTO> children;
     private Set<RecordingUnitSummaryDTO> recordingUnitList;
