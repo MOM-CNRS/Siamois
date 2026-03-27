@@ -291,6 +291,11 @@ public class SpecimenPanel extends AbstractSingleEntityPanel<SpecimenDTO>  imple
     }
 
     @Override
+    public String svgIcon() {
+        return "/resources/img/svg/bucket.svg";
+    }
+
+    @Override
     public String getPanelTypeClass() {
         return "specimen";
     }

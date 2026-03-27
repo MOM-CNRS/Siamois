@@ -330,6 +330,11 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
     }
 
     @Override
+    public String svgIcon() {
+        return "/resources/img/svg/geo-alt.svg";
+    }
+
+    @Override
     public boolean save(Boolean validated) {
         return formContext.save();
     }

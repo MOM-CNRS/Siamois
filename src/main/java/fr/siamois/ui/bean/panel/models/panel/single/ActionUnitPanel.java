@@ -555,6 +555,11 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnitDTO> im
     }
 
     @Override
+    public String svgIcon() {
+        return "/resources/img/svg/arrow-down-square.svg";
+    }
+
+    @Override
     public String getPanelTypeClass() {
         return "spatial-unit";
     }

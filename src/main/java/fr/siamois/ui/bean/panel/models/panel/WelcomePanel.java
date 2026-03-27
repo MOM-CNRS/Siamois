@@ -49,6 +49,11 @@ public class WelcomePanel extends AbstractPanel implements Serializable {
         return "welcome-panel";
     }
 
+    @Override
+    public String svgIcon() {
+        return "/resources/img/svg/house.svg";
+    }
+
     public WelcomePanel(SessionSettingsBean sessionSettingsBean,
                         RecordingUnitService recordingUnitService,
                         ActionUnitService actionUnitService,

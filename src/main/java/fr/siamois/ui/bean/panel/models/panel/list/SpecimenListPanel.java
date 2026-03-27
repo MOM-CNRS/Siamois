@@ -54,6 +54,11 @@ public class SpecimenListPanel extends AbstractListPanel<SpecimenDTO>  implement
     }
 
     @Override
+    public String svgIcon() {
+        return "/resources/img/svg/bucket.svg";
+    }
+
+    @Override
     protected long countUnitsByInstitution() {
         return specimenService.countByInstitution(sessionSettingsBean.getSelectedInstitution());
     }

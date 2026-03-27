@@ -130,6 +130,7 @@ public abstract class AbstractPanel implements Serializable {
     }
 
     public abstract String getPrefixPanelIndex();
+    public abstract String svgIcon();
 
     public String getPanelIndex() {
         if (isRoot) {

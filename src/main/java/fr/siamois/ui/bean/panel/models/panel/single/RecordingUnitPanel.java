@@ -489,6 +489,11 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
     }
 
     @Override
+    public String svgIcon() {
+        return "/resources/img/svg/pencil-square.svg";
+    }
+
+    @Override
     public String getPanelTypeClass() {
         return "recording-unit";
     }

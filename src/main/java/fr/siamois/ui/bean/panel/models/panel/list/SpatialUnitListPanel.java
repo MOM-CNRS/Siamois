@@ -58,6 +58,11 @@ public class SpatialUnitListPanel extends AbstractListPanel<SpatialUnitDTO>  imp
         return "spatial-unit-list";
     }
 
+    @Override
+    public String svgIcon() {
+        return "/resources/img/svg/geo-alt.svg";
+    }
+
     public SpatialUnitListPanel(ApplicationContext context) {
         super("panel.title.allspatialunit",
                 "bi bi-geo-alt",
