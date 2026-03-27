@@ -363,7 +363,7 @@ public class FormService {
     private void handlePersonList(CustomFieldAnswerViewModel answer, Object value) {
         if (answer instanceof CustomFieldAnswerSelectMultiplePersonViewModel multiplePersonAnswer) {
             List<?> list = (List<?>) value;
-            if (list.stream().allMatch(Person.class::isInstance)) {
+            if (list.stream().allMatch(PersonDTO.class::isInstance)) {
                 multiplePersonAnswer.setValue((List<PersonDTO>) list);
             }
         }
