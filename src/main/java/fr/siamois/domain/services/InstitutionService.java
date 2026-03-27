@@ -135,6 +135,8 @@ public class InstitutionService {
 
         try {
             // Création de l'institution et préparation des concepts du thésaurus sélectionnés
+            // Verifier que le thesaurus soit compatible
+            
             Institution i = institutionRepository.save(Objects.requireNonNull(institutionMapper.invertConvert(institution)));
             fieldConfigurationService.setupFieldConfigurationForInstitution(institutionMapper.convert(i), vocabulary);
             return institutionMapper.convert(i);

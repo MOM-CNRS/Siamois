@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 /**
@@ -89,22 +90,24 @@ public class VocabularyService {
         List<ThesaurusDTO> dtos = thesaurusApi.fetchAllPublicThesaurus(server);
         List<ThesaurusInfo> results = new ArrayList<>();
         for (ThesaurusDTO dto : dtos) {
-            String label;
-            String lang;
-            if (!dto.getLabels().isEmpty()) {
-                label = dto.getLabels().get(0).getTitle();
-                lang = dto.getLabels().get(0).getLang();
-                int i = 0;
-                while (i < dto.getLabels().size() && !dto.getLabels().get(i).getLang().equals(labelLang)) i++;
-                if (i < dto.getLabels().size()) {
-                    label = dto.getLabels().get(i).getTitle();
-                    lang = dto.getLabels().get(i).getLang();
+            if(Objects.equals(dto.getType(), "Siamois")) {
+                String label;
+                String lang;
+                if (!dto.getLabels().isEmpty()) {
+                    label = dto.getLabels().get(0).getTitle();
+                    lang = dto.getLabels().get(0).getLang();
+                    int i = 0;
+                    while (i < dto.getLabels().size() && !dto.getLabels().get(i).getLang().equals(labelLang)) i++;
+                    if (i < dto.getLabels().size()) {
+                        label = dto.getLabels().get(i).getTitle();
+                        lang = dto.getLabels().get(i).getLang();
+                    }
+                } else {
+                    label = "NULL";
+                    lang = labelLang;
                 }
-            } else {
-                label = "NULL";
-                lang = labelLang;
+                results.add(new ThesaurusInfo(server, dto.getIdTheso(), label, lang));
             }
-            results.add(new ThesaurusInfo(server, dto.getIdTheso(), label, lang));
         }
         return results;
     }

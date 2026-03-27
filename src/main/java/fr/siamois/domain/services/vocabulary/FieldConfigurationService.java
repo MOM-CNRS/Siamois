@@ -167,6 +167,7 @@ public class FieldConfigurationService {
         return setupFieldConfiguration(info.getInstitution(), info.getUser(), vocabulary, progressWrapper);
     }
 
+
     private Optional<FeedbackFieldConfig> setupFieldConfiguration(@NonNull InstitutionDTO institutionDTO,
                                                                   @Nullable PersonDTO userDTO,
                                                                   @NonNull Vocabulary vocabulary,
