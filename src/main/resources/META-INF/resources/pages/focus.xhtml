@@ -119,12 +119,19 @@
                     style="height: 100%; flex-direction: column; align-items: center;"
             >
                 <div id="historyDiv" style="background: white;   width: 100%;  border: 1px solid #dee2e6;">
-                    <button id="toggle-history-btn" type="button" style="width: 100%;justify-content: center;
-    display: flex;
-    gap: 0.5em;"
 
-                            class="btn" onclick="toggleCollapseHistory();"><i class="bi bi-chevron-double-left"/><span>Historique</span>
-                    </button>
+                    <p:commandButton
+                            id="toggle-history-btn"
+                            value="Historique"
+                            style="width: 100%"
+                            icon="bi bi-chevron-double-left"
+                            action="#{historyBean.toggleHistory}"
+                            update="@none"
+                            process="@this"
+                            oncomplete="toggleCollapseHistory();"
+                            styleClass="ui-button-flat"
+                    >
+                    </p:commandButton>
                 </div>
 
                 <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>

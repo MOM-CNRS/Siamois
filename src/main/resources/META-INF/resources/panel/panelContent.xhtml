@@ -71,6 +71,7 @@
                                                                 for="focusButton"
                                                         />
                                                         <p:commandLink id="bookmarkToggleButton"
+                                                                       process="@this"
                                                                        styleClass="sideview-topbar-button"
                                                                        action="#{navBean.togglePanelBookmark(panelModel.parentOrOverview)}"
                                                                        update="navBarCsrfForm:siamoisNavForm">
@@ -79,6 +80,7 @@
                                                         </p:commandLink>
 
                                                         <p:commandLink id="refreshPanelButton"
+                                                                       process="@this"
                                                                        styleClass="sideview-topbar-button"
                                                                        action="#{panelModel.parentOrOverview.refresh()}"
                                                                        onclick="event.stopPropagation();"
@@ -87,6 +89,7 @@
                                                         </p:commandLink>
 
                                                         <p:commandLink id="previous"
+                                                                       process="@this"
                                                                        rendered="#{panelModel.parentOrOverview.hasPreviousNext()}"
                                                                        action="#{panelModel.parentOrOverview.goToPrevious()}"
                                                                        styleClass="sideview-topbar-button">
@@ -98,6 +101,7 @@
                                                                 for="previous"
                                                         />
                                                         <p:commandLink id="next"
+                                                                       process="@this"
                                                                        rendered="#{panelModel.parentOrOverview.hasPreviousNext()}"
                                                                        action="#{panelModel.parentOrOverview.goToNext()}"
                                                                        styleClass="sideview-topbar-button">
