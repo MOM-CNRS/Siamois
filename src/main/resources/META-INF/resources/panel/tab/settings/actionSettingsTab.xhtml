@@ -26,8 +26,10 @@
         $(input).trigger('change'); // Notify JSF about the change
         }
         }
-    </h:outputScript>
 
+
+    </h:outputScript>
+    <div style="padding:1em">
     <p:panel
             toggleableHeader="true"
             header="#{langBean.msg('actionUnit.settings.title.identifierGeneration')}"
@@ -143,6 +145,6 @@
                 update="@all"
         />
     </div>
-
+    </div>
 
 </ui:fragment>

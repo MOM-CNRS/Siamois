@@ -77,6 +77,15 @@
                                                             <h:outputText styleClass="#{navBean.isPanelBookmarkedByUser(panelModel.parentOrOverview) ?
                                                     'ui-icon bi bi-bookmark-fill' : 'ui-icon bi bi-bookmark'}"/>
                                                         </p:commandLink>
+
+                                                        <p:commandLink id="refreshPanelButton"
+                                                                       styleClass="sideview-topbar-button"
+                                                                       action="#{panelModel.parentOrOverview.refresh()}"
+                                                                       onclick="event.stopPropagation();"
+                                                                       update="sideview-${panelIndex}">
+                                                            <h:outputText styleClass="bi bi-arrow-clockwise"/>
+                                                        </p:commandLink>
+
                                                         <p:commandLink id="previous"
                                                                        rendered="#{panelModel.parentOrOverview.hasPreviousNext()}"
                                                                        action="#{panelModel.parentOrOverview.goToPrevious()}"
@@ -99,13 +108,6 @@
                                                                 position="bottom"
                                                                 for="next"
                                                         />
-                                                        <p:commandLink id="refreshPanelButton"
-                                                                       styleClass="sideview-topbar-button"
-                                                                       action="#{panelModel.parentOrOverview.refresh()}"
-                                                                       onclick="event.stopPropagation();"
-                                                                       update="sideview-${panelIndex}">
-                                                            <h:outputText styleClass="bi bi-arrow-clockwise"/>
-                                                        </p:commandLink>
                                                     </div>
                                                 </h:form>
                         <div style="display: flex;

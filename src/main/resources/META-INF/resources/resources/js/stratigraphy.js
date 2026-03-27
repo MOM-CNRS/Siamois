@@ -1,6 +1,8 @@
 // Stratigraphy.js
 // ----------------
 // Requires D3.js v7+
+spacePressed = false;
+
 document.addEventListener("keydown", (e) => {
     if (e.code === "Space") spacePressed = true;
 });
@@ -8,7 +10,35 @@ document.addEventListener("keyup", (e) => {
     if (e.code === "Space") spacePressed = false;
 });
 
-function drawStratigraphyDiagram(svgId, centralUnitId, relationships, onEdgeSelected) {
+// Define the callback function
+const onEdgeSelected = function(selectedEdge) {
+    console.log("Selected relationship:", selectedEdge);
+
+
+    // Determine source and target based on zone
+    let source, target, typeRel;
+    if (selectedEdge.source.zone === "central") {
+        source = selectedEdge.source;
+        target = selectedEdge.target;
+    } else if (selectedEdge.target.zone === "central") {
+        source = selectedEdge.target;
+        target = selectedEdge.source;
+    } else {
+        // Handle unexpected cases (e.g., neither or both are "central")
+        console.error("Neither or both nodes are 'central'. Cannot determine source.");
+        return;
+    }
+
+    // Trigger the AJAX call with the correct source and target
+    updateSelectedRel_overview([
+        { name: "source", value: source.id },
+        { name: "target", value: target.id },
+        { name: "typeRel", value: target.zone }
+    ]);
+
+}
+
+function drawStratigraphyDiagram(svgId, centralUnitId, relationships, onEdgeSelected, onNodeClick) {
     // Validate inputs
     const svgEl = document.getElementById(svgId);
     if (!svgEl) {
@@ -86,7 +116,8 @@ const zoom = d3.zoom()
                 nodesMap[nodeId] = {
                     id: nodeId,
                     uncertain: rel.uncertain,
-                    zone: zone
+                    zone: zone,
+                    databaseId: rel.databaseId,
                 };
                 nodes.push(nodesMap[nodeId]);
             }
@@ -246,6 +277,12 @@ const linkLabels = linkGroup.append("text")
                     ? "#f59e0b"
                     : "var(--main-color)"
         )
+        .on("click", (event, d) => {
+            if (typeof onNodeClick === 'function') {
+                onNodeClick(d);
+            }
+        })
+        .style("cursor", "pointer") // Add hover cursor to the group
         .attr("stroke-width", d => d.main ? 3 : 2);
 
     nodeGroup.append("text")

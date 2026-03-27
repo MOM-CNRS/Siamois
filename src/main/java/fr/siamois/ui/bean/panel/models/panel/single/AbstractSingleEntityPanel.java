@@ -105,7 +105,7 @@ public abstract class AbstractSingleEntityPanel<T extends AbstractEntityDTO> ext
 
     protected abstract String getFocusPath(Long id);
 
-    protected abstract void addToOverview(Long id, AbstractPanel parentOrOverview);
+    protected abstract void addToOverview(Long id, AbstractPanel parentOrOverview, Integer activeTabIndex);
 
     protected abstract  T findNext();
 
@@ -113,23 +113,23 @@ public abstract class AbstractSingleEntityPanel<T extends AbstractEntityDTO> ext
 
     // --- Common logic ---
 
-    public void redirectToFocusOrOverview(Long id) throws IOException {
+    public void redirectToFocusOrOverview(Long id, Integer activeTabIndex) throws IOException {
         if (isRoot) {
             flowBean.redirectToFocus(getFocusPath(id));
         } else {
             // if not root, add unit to the overview of the parent
-            addToOverview(id, parentOrOverview);
+            addToOverview(id, parentOrOverview, activeTabIndex);
         }
     }
 
     public void goToNext() throws IOException {
         AbstractEntityDTO next = findNext();
-        redirectToFocusOrOverview(next.getId());
+        redirectToFocusOrOverview(next.getId(), activeTabIndex);
     }
 
     public void goToPrevious() throws IOException {
         AbstractEntityDTO previous = findPrevious();
-        redirectToFocusOrOverview(previous.getId());
+        redirectToFocusOrOverview(previous.getId(), activeTabIndex);
     }
 
     public static final Vocabulary SYSTEM_THESO;

@@ -1,6 +1,7 @@
 package fr.siamois.dto.entity;
 
 import fr.siamois.domain.models.actionunit.ActionCode;
+import fr.siamois.domain.models.document.Document;
 import lombok.Data;
 
 import java.time.OffsetDateTime;
@@ -23,6 +24,7 @@ public class ActionUnitDTO extends AbstractEntityDTO {
     private Set<ActionUnitSummaryDTO> parents;
     private Set<ActionUnitSummaryDTO> children;
     private Set<RecordingUnitSummaryDTO> recordingUnitList;
+    private Set<Document> documents;
     private String recordingUnitIdentifierLang;
     private OffsetDateTime beginDate;
     private OffsetDateTime endDate;

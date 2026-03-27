@@ -202,6 +202,49 @@ public final class RecordingUnitTableDefinitionFactory {
         );
 
         tableModel.getTableDefinition().addColumn(
+                RelationColumn.builder()
+                        .id("specimen")
+                        .headerKey("common.entity.specimen")
+                        .headerIcon("bi bi-bucket")
+                        .visible(true)
+                        .toggleable(true)
+
+                        .countKey("specimenList")
+
+                        .viewIcon(BI_BI_EYE)
+                        .viewAction(TableColumnAction.VIEW_RELATION)
+                        .viewTargetIndex(2)
+
+                        .addEnabled(false)
+                        .addIcon(BI_BI_PLUS_SQUARE)
+                        .addAction(TableColumnAction.ADD_RELATION)
+                        .addRenderedKey("specimenCreateAllowed")
+
+                        .processExpr(THIS)
+                        .updateExpr(THIS)
+                        .onstartJs(PF_BUI_CONTENT_SHOW)
+                        .oncompleteJs(PF_BUI_CONTENT_HIDE_HANDLE_SCROLL_TO_TOP)
+                        .build()
+        );
+
+        tableModel.getTableDefinition().addColumn(
+                FormFieldColumn.builder()
+                        .id("spatial")
+                        .headerKey("recordingunit.field.spatialUnit")
+                        .field(spatialField)
+                        .sortable(false)
+                        .filterable(false)
+                        .visible(true)
+                        .readOnly(false)
+                        .required(false)
+                        .build()
+        );
+
+
+
+
+
+        tableModel.getTableDefinition().addColumn(
                 FormFieldColumn.builder()
                         .id("matrixColor")
                         .headerKey("recordingunit.field.matrixColor")
@@ -246,46 +289,7 @@ public final class RecordingUnitTableDefinitionFactory {
                         .build()
         );
 
-        tableModel.getTableDefinition().addColumn(
-                FormFieldColumn.builder()
-                        .id("spatial")
-                        .headerKey("recordingunit.field.spatialUnit")
-                        .field(spatialField)
-                        .sortable(false)
-                        .filterable(false)
-                        .visible(true)
-                        .readOnly(false)
-                        .required(false)
-                        .build()
-        );
 
-
-
-        tableModel.getTableDefinition().addColumn(
-                RelationColumn.builder()
-                        .id("specimen")
-                        .headerKey("common.entity.specimen")
-                        .headerIcon("bi bi-bucket")
-                        .visible(true)
-                        .toggleable(true)
-
-                        .countKey("specimenList")
-
-                        .viewIcon(BI_BI_EYE)
-                        .viewAction(TableColumnAction.VIEW_RELATION)
-                        .viewTargetIndex(2)
-
-                        .addEnabled(false)
-                        .addIcon(BI_BI_PLUS_SQUARE)
-                        .addAction(TableColumnAction.ADD_RELATION)
-                        .addRenderedKey("specimenCreateAllowed")
-
-                        .processExpr(THIS)
-                        .updateExpr(THIS)
-                        .onstartJs(PF_BUI_CONTENT_SHOW)
-                        .oncompleteJs(PF_BUI_CONTENT_HIDE_HANDLE_SCROLL_TO_TOP)
-                        .build()
-        );
 
 
 

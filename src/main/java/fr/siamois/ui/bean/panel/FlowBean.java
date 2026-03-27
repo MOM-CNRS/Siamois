@@ -296,6 +296,19 @@ public class FlowBean implements Serializable {
 
     }
 
+    public void addRecordingUnitToOverviewFromStratiModule(AbstractPanel targetPanel) {
+        String idParam = FacesContext.getCurrentInstance()
+                .getExternalContext()
+                .getRequestParameterMap()
+                .get("clickedUnitId");
+
+        if (idParam != null) {
+            addRecordingUnitToOverview(Long.parseLong(idParam), targetPanel, 3);
+        }
+
+
+    }
+
 
     public void addSpatialUnitToOverview(Long id, AbstractPanel targetPanel,  @Nullable Integer tabIndex) {
 
