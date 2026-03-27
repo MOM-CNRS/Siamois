@@ -176,8 +176,14 @@ Return the command that opens panel for the unit
     }
 
     protected DefaultMenuItem createHomeItem() {
+
+        String instName = flowBean.getSelectedInstitution().getName();
+        String truncatedName = (instName != null && instName.length() > 23)
+                ? instName.substring(0, 20) + "..."
+                : instName;
+
         return DefaultMenuItem.builder()
-                .value("")
+                .value(" " + truncatedName)
                 .id("home")
                 .icon("bi bi-house")
                 .command("#{flowBean.redirectToDashboard()}")

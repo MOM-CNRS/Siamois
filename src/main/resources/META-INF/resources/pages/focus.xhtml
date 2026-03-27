@@ -115,17 +115,20 @@
 
             <h:form
                     id="historyForm"
-                    style="height: 100%; #{historyBean.historyOpen ? 'display: flex;' : 'display: none;'} flex-direction: column; align-items: center;"
+                    styleClass="#{historyBean.historyOpen ? '' : 'is-collapsed'}"
+                    style="height: 100%; flex-direction: column; align-items: center;"
             >
                 <div id="historyDiv" style="background: white;   width: 100%;  border: 1px solid #dee2e6;">
-                    <button id="toggle-history-btn" type="button" style="width: 100%;"
+                    <button id="toggle-history-btn" type="button" style="width: 100%;justify-content: center;
+    display: flex;
+    gap: 0.5em;"
 
-                            class="btn" onclick="toggleCollapseHistory();"><i class="bi bi-arrow-bar-left"/><span>Historique</span>
+                            class="btn" onclick="toggleCollapseHistory();"><i class="bi bi-chevron-double-left"/><span>Historique</span>
                     </button>
                 </div>
 
                 <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
-                <p:outputPanel id="history" styleClass="history collapsed" style="height: 100%">
+                <p:outputPanel id="history" styleClass="history collapsed" style="height: 100%;width: 100%;">
                     <p:dataScroller value="#{historyBean.items}"
                                     mode="inline"
                                     buffer="50"

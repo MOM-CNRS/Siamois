@@ -527,4 +527,26 @@ body .ui-tabs .ui-tabs-panels .ui-tabs-panel {
     padding: 1em 1.4em;
 }
 
+#historyForm {
+    display: flex; /* On garde le flex pour l'alignement interne */
+    width: 350px;
+    overflow: hidden;
+    white-space: nowrap;
+    transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 0.3s ease,
+    padding 0.4s ease;
+    opacity: 1;
+}
+
+/* État fermé */
+#historyForm.is-collapsed {
+    width: 0;
+    opacity: 0;
+    padding-left: 0;
+    padding-right: 0;
+    border: none;
+}
+
+
+
 
