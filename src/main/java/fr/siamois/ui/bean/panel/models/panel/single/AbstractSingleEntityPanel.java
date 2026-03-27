@@ -277,8 +277,8 @@ Return the command that opens panel for the unit
         documents.add(created);
         PrimeFaces.current().executeScript("PF('newDocumentDiag').hide()");
 
-        int pos = flowBean.getPanels().indexOf(this);
-        if(pos >=0) { PrimeFaces.current().ajax().update("panel-".concat(Integer.toString(pos))); }
+        String panelIndex = isRoot ? "panel-".concat(getPrefixPanelIndex()) : "sideview-".concat(parentOrOverview.getPrefixPanelIndex());
+        PrimeFaces.current().ajax().update(panelIndex);
 
 
     }
