@@ -38,26 +38,6 @@
 
     </h:panelGroup>
 
-    <!-- show tab view -->
-    <h:panelGroup rendered="#{flowBean.isFieldMode}">
-        <p:tabView id="customTabView-#{prefix}" dynamic="true" styleClass="fieldmode-tabview">
-            <c:forEach items="#{layout}" var="customFormPanel" varStatus="status">
-                <p:tab title="#{spatialUnitFieldBean.resolvePanelLabel(customFormPanel)}"
-                       titleStyleClass="fieldmode-tabtitle">
-                    <ui:include src="/pages/shared/form/customFormPanelContent.xhtml">
-                        <ui:param name="bean" value="#{panelModel}" />
-                        <ui:param name="customFormPanel" value="#{customFormPanel}" />
-                        <ui:param name="readOnly" value="#{readOnly}" />
-                        <ui:param name="prefix" value="#{prefix}" />
-                        <ui:param name="root" value="#{root}:customTabView-#{prefix}" />
-                        <ui:param name="updateTargetsOnBlur" value="#{panelId}" />
-                        <ui:param name="statusIndex" value="#{status.index}" />
-                        <ui:param name="ctx" value="#{ctx}" />
-                    </ui:include>
-                </p:tab>
-            </c:forEach>
-        </p:tabView>
-    </h:panelGroup>
 
 
 

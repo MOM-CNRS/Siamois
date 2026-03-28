@@ -99,8 +99,6 @@ public class AdminInitializer implements DatabaseInitializer {
         Person adminWithUsername = null;
         for (Person admin : admins) {
             if (isNotAskedAdmin(admin)) {
-                admin.setSuperAdmin(false);
-                personRepository.save(admin);
             } else {
                 adminWithUsername = admin;
             }

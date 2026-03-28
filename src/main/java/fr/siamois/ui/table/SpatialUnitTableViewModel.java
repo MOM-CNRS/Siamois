@@ -136,7 +136,7 @@ public class SpatialUnitTableViewModel extends EntityTableViewModel<SpatialUnitD
             return switch (rel.getCountKey()) {
                 case PARENTS -> su.getParents() == null ? 0 : su.getParents().size();
                 case CHILDREN -> su.getChildren() == null ? 0 : su.getChildren().size();
-                case "action" -> su.getRelatedActionUnitList() == null ? 0 : su.getRelatedActionUnitList().size();
+                case "actions" -> su.getRelatedActionUnitList() == null ? 0 : su.getRelatedActionUnitList().size();
                 case "recordingUnit" -> su.getRecordingUnitList() == null ? 0 : su.getRecordingUnitList().size();
                 default -> 0;
             };
