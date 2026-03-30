@@ -30,8 +30,6 @@ import fr.siamois.ui.table.SpecimenTableViewModel;
 import fr.siamois.ui.table.ToolbarCreateConfig;
 import fr.siamois.ui.table.definitions.SpecimenTableDefinitionFactory;
 import fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerStratigraphyViewModel;
-import jakarta.faces.component.UIComponent;
-import jakarta.faces.context.FacesContext;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;

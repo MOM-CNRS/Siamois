@@ -3,8 +3,6 @@ package fr.siamois.ui.api.openapi.v1.controller;
 
 import fr.siamois.ui.api.openapi.v1.response.ConceptListResponse;
 import fr.siamois.ui.api.openapi.v1.response.ConceptResponse;
-import fr.siamois.ui.api.openapi.v1.response.FindListResponse;
-import fr.siamois.ui.api.openapi.v1.response.FindResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;

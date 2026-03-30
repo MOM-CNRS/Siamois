@@ -2,7 +2,6 @@ package fr.siamois.ui.bean;
 
 
 import fr.siamois.ui.bean.panel.FlowBean;
-import jakarta.annotation.PostConstruct;
 import lombok.Data;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;

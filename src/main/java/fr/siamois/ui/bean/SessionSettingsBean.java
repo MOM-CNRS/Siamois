@@ -1,7 +1,6 @@
 package fr.siamois.ui.bean;
 
 import fr.siamois.domain.models.UserInfo;
-import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.events.InstitutionChangeEvent;
 import fr.siamois.domain.models.events.LangageChangeEvent;
 import fr.siamois.domain.models.settings.InstitutionSettings;

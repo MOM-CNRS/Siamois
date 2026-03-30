@@ -27,7 +27,6 @@ import fr.siamois.mapper.ActionUnitMapper;
 import fr.siamois.mapper.ConceptMapper;
 import fr.siamois.mapper.InstitutionMapper;
 import fr.siamois.mapper.PersonMapper;
-import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.Hibernate;
@@ -136,7 +135,7 @@ public class InstitutionService {
         try {
             // Création de l'institution et préparation des concepts du thésaurus sélectionnés
             // Verifier que le thesaurus soit compatible
-            
+
             Institution i = institutionRepository.save(Objects.requireNonNull(institutionMapper.invertConvert(institution)));
             fieldConfigurationService.setupFieldConfigurationForInstitution(institutionMapper.convert(i), vocabulary);
             return institutionMapper.convert(i);

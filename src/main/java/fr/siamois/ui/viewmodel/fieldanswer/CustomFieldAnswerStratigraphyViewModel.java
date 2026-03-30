@@ -14,8 +14,6 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.function.BiConsumer;
 
-import static fr.siamois.ui.form.EntityFormContext.SELECT_RU;
-
 @Getter
 @Setter
 @NoArgsConstructor

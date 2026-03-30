@@ -3,7 +3,6 @@ package fr.siamois.ui.bean;
 import fr.siamois.ui.bean.panel.PanelFactory;
 import fr.siamois.ui.bean.panel.models.panel.AbstractPanel;
 import fr.siamois.ui.bean.panel.models.panel.list.AbstractListPanel;
-import fr.siamois.ui.bean.panel.models.panel.single.AbstractSingleEntity;
 import fr.siamois.ui.bean.panel.models.panel.single.AbstractSingleEntityPanel;
 import jakarta.faces.view.ViewScoped;
 import jakarta.inject.Named;

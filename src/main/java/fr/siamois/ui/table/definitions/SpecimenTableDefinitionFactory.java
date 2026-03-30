@@ -1,7 +1,6 @@
 package fr.siamois.ui.table.definitions;
 
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import fr.siamois.domain.models.form.customfield.CustomFieldSelectOneFromFieldCode;
 import fr.siamois.domain.models.form.customfield.CustomFieldText;
 import fr.siamois.domain.models.specimen.Specimen;
@@ -11,7 +10,6 @@ import fr.siamois.ui.table.CommandLinkColumn;
 import fr.siamois.ui.table.EntityTableViewModel;
 import fr.siamois.ui.table.FormFieldColumn;
 import fr.siamois.ui.table.TableColumnAction;
-import jakarta.persistence.Transient;
 
 import static fr.siamois.ui.bean.panel.models.panel.single.AbstractSingleEntity.SYSTEM_THESO;
 

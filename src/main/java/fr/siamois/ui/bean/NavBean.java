@@ -13,8 +13,6 @@ import fr.siamois.ui.bean.settings.InstitutionListSettingsBean;
 import fr.siamois.utils.MessageUtils;
 import io.micrometer.common.lang.Nullable;
 import jakarta.faces.context.FacesContext;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.validation.constraints.Null;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
@@ -26,7 +24,6 @@ import org.springframework.context.event.EventListener;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
-import java.awt.event.ActionEvent;
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.List;

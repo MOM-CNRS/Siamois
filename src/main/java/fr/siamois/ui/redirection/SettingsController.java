@@ -2,8 +2,6 @@ package fr.siamois.ui.redirection;
 
 import fr.siamois.ui.bean.NavBean;
 import fr.siamois.ui.bean.settings.InstitutionListSettingsBean;
-import lombok.Getter;
-import lombok.Setter;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;

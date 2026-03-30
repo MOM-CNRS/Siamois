@@ -1,7 +1,5 @@
 package fr.siamois.infrastructure.database.repositories.team;
 
-import fr.siamois.domain.models.auth.Person;
-import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.team.ActionManagerRelation;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.stereotype.Repository;

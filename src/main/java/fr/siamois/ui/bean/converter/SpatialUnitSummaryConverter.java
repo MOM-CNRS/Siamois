@@ -4,8 +4,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import fr.siamois.domain.services.spatialunit.SpatialUnitService;
-import fr.siamois.dto.entity.SpatialUnitDTO;
 import fr.siamois.dto.entity.SpatialUnitSummaryDTO;
 import jakarta.faces.component.UIComponent;
 import jakarta.faces.context.FacesContext;

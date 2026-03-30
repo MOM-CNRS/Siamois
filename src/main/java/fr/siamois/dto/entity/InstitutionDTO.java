@@ -1,7 +1,6 @@
 package fr.siamois.dto.entity;
 
 import lombok.Data;
-import lombok.EqualsAndHashCode;
 
 import java.io.Serializable;
 import java.time.OffsetDateTime;

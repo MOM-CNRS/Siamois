@@ -1,7 +1,5 @@
 package fr.siamois.infrastructure.database.repositories.team;
 
-import fr.siamois.domain.models.actionunit.ActionUnit;
-import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.team.TeamMemberRelation;
 import fr.siamois.dto.entity.PersonDTO;
 import org.springframework.data.jpa.repository.Query;

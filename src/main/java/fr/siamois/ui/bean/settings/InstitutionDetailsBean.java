@@ -1,7 +1,6 @@
 package fr.siamois.ui.bean.settings;
 
 import fr.siamois.domain.models.events.LoginEvent;
-import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.authorization.PermissionService;
 import fr.siamois.dto.entity.InstitutionDTO;

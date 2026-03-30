@@ -11,7 +11,6 @@ import fr.siamois.ui.api.openapi.v1.resource.project.ProjectResourceIdentifier;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import org.locationtech.jts.geom.Geometry;
 
 import java.time.OffsetDateTime;
 

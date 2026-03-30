@@ -35,8 +35,6 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 
-import javax.faces.application.StateManager;
-import javax.swing.plaf.synth.SynthPainter;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;

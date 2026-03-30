@@ -1,6 +1,5 @@
 package fr.siamois.ui.viewmodel;
 
-import fr.siamois.dto.entity.SpatialUnitDTO;
 import fr.siamois.dto.entity.SpatialUnitSummaryDTO;
 import lombok.Data;
 import org.primefaces.model.CheckboxTreeNode;

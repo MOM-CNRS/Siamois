@@ -1,6 +1,5 @@
 package fr.siamois.infrastructure.database.initializer.seeder;
 
-import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitRepository;
 import lombok.RequiredArgsConstructor;

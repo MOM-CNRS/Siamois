@@ -1,6 +1,5 @@
 package fr.siamois.ui.bean.settings.team;
 
-import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.team.TeamMemberRelation;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.auth.PendingPersonService;

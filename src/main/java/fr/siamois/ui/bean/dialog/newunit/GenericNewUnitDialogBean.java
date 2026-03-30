@@ -1,13 +1,11 @@
 package fr.siamois.ui.bean.dialog.newunit;
 
-import fr.siamois.domain.models.TraceableEntity;
 import fr.siamois.domain.models.ValidationStatus;
 import fr.siamois.domain.models.exceptions.EntityAlreadyExistsException;
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.domain.services.vocabulary.FieldService;
 import fr.siamois.dto.entity.*;
-import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.RedirectBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
@@ -15,23 +13,18 @@ import fr.siamois.ui.bean.dialog.newunit.handler.INewUnitHandler;
 import fr.siamois.ui.bean.field.SpatialUnitFieldBean;
 import fr.siamois.ui.bean.panel.EntityForm;
 import fr.siamois.ui.bean.panel.FlowBean;
-import fr.siamois.ui.bean.panel.models.panel.single.AbstractSingleEntity;
 import fr.siamois.ui.exceptions.CannotInitializeNewUnitDialogException;
 import fr.siamois.ui.form.EntityFormContext;
 import fr.siamois.ui.form.FormContextServices;
 import fr.siamois.ui.form.FormUiDto;
 import fr.siamois.ui.form.fieldsource.PanelFieldSource;
-import fr.siamois.ui.lazydatamodel.BaseLazyDataModel;
 import fr.siamois.ui.viewmodel.CustomFormResponseViewModel;
 import fr.siamois.utils.MessageUtils;
-import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.codec.language.bm.Lang;
 import org.primefaces.PrimeFaces;
-import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Scope;
 import org.springframework.core.convert.ConversionService;
 import org.springframework.stereotype.Component;
@@ -39,7 +32,6 @@ import org.springframework.stereotype.Component;
 import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 @Slf4j
 @Scope("session")
