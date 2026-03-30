@@ -473,7 +473,7 @@ class PersonServiceTest {
         person.setPassword("password");
         person.setEmail("mail@localhost.com");
         person.setId(-1L);
-
+        personService.createPerson(personDto, "password");
 
         // Assert
         verify(institutionService, never()).addToManagers(any(), any());
@@ -503,7 +503,7 @@ class PersonServiceTest {
         person.setPassword("password");
         person.setEmail("mail@localhost.com");
         person.setId(-1L);
-
+        personService.createPerson(personDto, "password");
 
         // Assert
         verify(institutionService, never()).addToManagers(any(), any());
