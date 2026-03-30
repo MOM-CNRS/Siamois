@@ -1,17 +1,15 @@
 package fr.siamois.ui.bean.settings.team;
 
-import fr.siamois.domain.models.actionunit.ActionUnit;
-import fr.siamois.domain.models.auth.Person;
-import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
+import fr.siamois.dto.entity.ActionUnitDTO;
+import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.ui.bean.NavBean;
 import fr.siamois.ui.bean.dialog.institution.UserDialogBean;
 import fr.siamois.ui.bean.settings.SettingsDatatableBean;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
-import org.hibernate.Hibernate;
 import org.springframework.context.annotation.Scope;
 import org.springframework.context.annotation.ScopedProxyMode;
 import org.springframework.stereotype.Component;
@@ -30,14 +28,14 @@ public class TeamListBean implements SettingsDatatableBean {
     private final transient ActionUnitService actionUnitService;
     private final TeamMembersBean teamMembersBean;
     private final UserDialogBean userDialogBean;
-    private Institution institution;
+    private InstitutionDTO institution;
     private final NavBean navBean;
 
     private final transient InstitutionService institutionService;
     private String searchInput;
 
-    private Set<ActionUnit> actionUnits;
-    private List<ActionUnit> filteredActionUnits;
+    private Set<ActionUnitDTO> actionUnits;
+    private List<ActionUnitDTO> filteredActionUnits;
 
     @Override
     public void add() {
@@ -50,7 +48,7 @@ public class TeamListBean implements SettingsDatatableBean {
             filteredActionUnits = new ArrayList<>(actionUnits);
         } else {
             filteredActionUnits = new ArrayList<>();
-            for (ActionUnit actionUnit : actionUnits) {
+            for (ActionUnitDTO actionUnit : actionUnits) {
                 if (actionUnit.getName().toLowerCase().contains(searchInput.toLowerCase())) {
                     filteredActionUnits.add(actionUnit);
                 }
@@ -58,7 +56,7 @@ public class TeamListBean implements SettingsDatatableBean {
         }
     }
 
-    public int numberOfMemberInActionUnit(ActionUnit actionUnit) {
+    public int numberOfMemberInActionUnit(ActionUnitDTO actionUnit) {
         return institutionService.findMembersOf(actionUnit).size();
     }
 
@@ -69,19 +67,15 @@ public class TeamListBean implements SettingsDatatableBean {
         this.filteredActionUnits = null;
     }
 
-    public void init(Institution institution) {
+    public void init(InstitutionDTO institution) {
         reset();
         this.institution = institution;
         this.actionUnits = actionUnitService.findAllByInstitution(institution);
 
-        for (ActionUnit actionUnit : actionUnits) {
-            actionUnit.setCreatedBy(Hibernate.unproxy(actionUnit.getCreatedBy(), Person.class));
-        }
-
         this.filteredActionUnits = new ArrayList<>(actionUnits);
     }
 
-    public String manageTeamMember(ActionUnit actionUnit) {
+    public String manageTeamMember(ActionUnitDTO actionUnit) {
         teamMembersBean.init(actionUnit);
         navBean.setApplicationMode(NavBean.ApplicationMode.SETTINGS);
         return "/pages/settings/team/manageTeamMember.xhtml?faces-redirect=true";

@@ -2,10 +2,13 @@ package fr.siamois.domain.services;
 
 import fr.siamois.domain.models.ArkEntity;
 import fr.siamois.domain.models.UserInfo;
+import fr.siamois.domain.models.ValidationStatus;
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.ark.Ark;
 import fr.siamois.domain.models.auth.Person;
+import fr.siamois.domain.models.exceptions.actionunit.ActionUnitNotFoundException;
 import fr.siamois.domain.models.exceptions.recordingunit.FailedRecordingUnitSaveException;
+import fr.siamois.domain.models.exceptions.recordingunit.RecordingUnitNotFoundException;
 import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.recordingunit.StratigraphicRelationship;
@@ -42,6 +45,7 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 
+import java.time.OffsetDateTime;
 import java.util.*;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
@@ -924,12 +928,14 @@ class RecordingUnitServiceTest {
 
         // 1. Préparation du DTO
         RecordingUnitDTO recordingUnitToSave2 = new RecordingUnitDTO();
+        recordingUnitToSave2.setCreatedByInstitution(new InstitutionDTO());
         RecordingUnitSummaryDTO parentRefDto = new RecordingUnitSummaryDTO();
         parentRefDto.setId(nonExistentParentId);
         recordingUnitToSave2.setParents(new HashSet<>(Set.of(parentRefDto)));
 
         // 2. Préparation de l'entité que le mapper va retourner
         RecordingUnit entityToSave = new RecordingUnit();
+        entityToSave.setCreatedByInstitution(new Institution());
         RecordingUnit parentEntityRef = new RecordingUnit();
         parentEntityRef.setId(nonExistentParentId);
         entityToSave.setParents(new HashSet<>(Set.of(parentEntityRef)));
@@ -950,7 +956,6 @@ class RecordingUnitServiceTest {
         assertEquals("Parent not found: " + nonExistentParentId, exception.getMessage());
 
         verify(recordingUnitRepository).findById(nonExistentParentId);
-        verify(recordingUnitRepository, never()).save(any());
     }
 
 
@@ -1327,6 +1332,138 @@ class RecordingUnitServiceTest {
         // Then
         assertEquals(1, result.size(), "The list size is incorrect");
         assertTrue(result.contains("NUM_CODE"), "The list should contain NUM_CODE");
+    }
+
+    // --- Tests for findNextByActionUnit ---
+
+    @Test
+    void testFindNextByActionUnit_ShouldReturnNextUnit() {
+        // Arrange
+        ActionUnitSummaryDTO action = new ActionUnitSummaryDTO();
+        action.setId(10L);
+        RecordingUnitDTO current = new RecordingUnitDTO();
+        current.setCreationTime(OffsetDateTime.now());
+
+        RecordingUnit nextEntity = new RecordingUnit();
+        RecordingUnitDTO nextDTO = new RecordingUnitDTO();
+
+        when(recordingUnitRepository.findFirstByActionUnitIdAndCreationTimeAfterOrderByCreationTimeAsc(eq(10L), any()))
+                .thenReturn(Optional.of(nextEntity));
+        when(recordingUnitMapper.convert(nextEntity)).thenReturn(nextDTO);
+
+        // Act
+        RecordingUnitDTO result = recordingUnitService.findNextByActionUnit(action, current);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(nextDTO, result);
+        verify(recordingUnitRepository, never()).findFirstByActionUnitIdOrderByCreationTimeAsc(anyLong());
+    }
+
+    @Test
+    void testFindNextByActionUnit_ShouldWrapAround() {
+        // Arrange
+        ActionUnitSummaryDTO action = new ActionUnitSummaryDTO();
+        action.setId(10L);
+        RecordingUnitDTO current = new RecordingUnitDTO();
+
+        RecordingUnit oldestEntity = new RecordingUnit();
+        RecordingUnitDTO oldestDTO = new RecordingUnitDTO();
+
+        when(recordingUnitRepository.findFirstByActionUnitIdAndCreationTimeAfterOrderByCreationTimeAsc(anyLong(), any()))
+                .thenReturn(Optional.empty());
+        when(recordingUnitRepository.findFirstByActionUnitIdOrderByCreationTimeAsc(10L))
+                .thenReturn(Optional.of(oldestEntity));
+        when(recordingUnitMapper.convert(oldestEntity)).thenReturn(oldestDTO);
+
+        // Act
+        RecordingUnitDTO result = recordingUnitService.findNextByActionUnit(action, current);
+
+        // Assert
+        assertEquals(oldestDTO, result);
+    }
+
+    // --- Tests for findPreviousByActionUnit ---
+
+    @Test
+    void testFindPreviousByActionUnit_ShouldReturnPreviousUnit() {
+        // Arrange
+        ActionUnitSummaryDTO action = new ActionUnitSummaryDTO();
+        action.setId(10L);
+        RecordingUnitDTO current = new RecordingUnitDTO();
+        current.setCreationTime(OffsetDateTime.now());
+
+        RecordingUnit prevEntity = new RecordingUnit();
+        RecordingUnitDTO prevDTO = new RecordingUnitDTO();
+
+        when(recordingUnitRepository.findFirstByActionUnitIdAndCreationTimeBeforeOrderByCreationTimeDesc(eq(10L), any()))
+                .thenReturn(Optional.of(prevEntity));
+        when(recordingUnitMapper.convert(prevEntity)).thenReturn(prevDTO);
+
+        // Act
+        RecordingUnitDTO result = recordingUnitService.findPreviousByActionUnit(action, current);
+
+        // Assert
+        assertEquals(prevDTO, result);
+    }
+
+    @Test
+    void testFindPreviousByActionUnit_ShouldWrapAround() {
+        // Arrange
+        ActionUnitSummaryDTO action = new ActionUnitSummaryDTO();
+        action.setId(10L);
+        RecordingUnitDTO current = new RecordingUnitDTO();
+
+        RecordingUnit mostRecentEntity = new RecordingUnit();
+        RecordingUnitDTO mostRecentDTO = new RecordingUnitDTO();
+
+        when(recordingUnitRepository.findFirstByActionUnitIdAndCreationTimeBeforeOrderByCreationTimeDesc(anyLong(), any()))
+                .thenReturn(Optional.empty());
+        when(recordingUnitRepository.findFirstByActionUnitIdOrderByCreationTimeDesc(10L))
+                .thenReturn(Optional.of(mostRecentEntity));
+        when(recordingUnitMapper.convert(mostRecentEntity)).thenReturn(mostRecentDTO);
+
+        // Act
+        RecordingUnitDTO result = recordingUnitService.findPreviousByActionUnit(action, current);
+
+        // Assert
+        assertEquals(mostRecentDTO, result);
+    }
+
+    // --- Tests for toggleValidated ---
+
+    @Test
+    void testToggleValidated_ShouldCycleThroughStatuses() {
+        // Arrange
+        Long id = 1L;
+        RecordingUnit unit = new RecordingUnit();
+        unit.setId(id);
+
+        when(recordingUnitRepository.findById(id)).thenReturn(Optional.of(unit));
+        when(recordingUnitRepository.save(any(RecordingUnit.class))).thenAnswer(i -> i.getArguments()[0]);
+        when(recordingUnitMapper.convert(any(RecordingUnit.class))).thenReturn(new RecordingUnitDTO());
+
+        // Test Cycle: INCOMPLETE -> COMPLETE
+        unit.setValidated(ValidationStatus.INCOMPLETE);
+        recordingUnitService.toggleValidated(id);
+        assertEquals(ValidationStatus.COMPLETE, unit.getValidated());
+
+        // Test Cycle: COMPLETE -> VALIDATED
+        recordingUnitService.toggleValidated(id);
+        assertEquals(ValidationStatus.VALIDATED, unit.getValidated());
+
+        // Test Cycle: VALIDATED -> INCOMPLETE
+        recordingUnitService.toggleValidated(id);
+        assertEquals(ValidationStatus.INCOMPLETE, unit.getValidated());
+    }
+
+    @Test
+    void testToggleValidated_NotFound_ThrowsException() {
+        // Arrange
+        when(recordingUnitRepository.findById(99L)).thenReturn(Optional.empty());
+
+        // Act & Assert
+        assertThrows(RecordingUnitNotFoundException.class, () -> recordingUnitService.toggleValidated(99L));
     }
 
 

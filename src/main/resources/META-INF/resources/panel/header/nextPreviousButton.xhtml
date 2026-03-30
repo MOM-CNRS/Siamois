@@ -1,0 +1,26 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:h="http://xmlns.jcp.org/jsf/html"
+      xmlns:p="http://primefaces.org/ui"
+      xmlns:ui="http://xmlns.jcp.org/jsf/facelets">
+
+<ui:composition>
+    <h:form id="nextPreviousForm"
+            style="display:flex; color: var(--main-color); padding: 1px; border: 1px solid var(--main-color); border-radius: 15px;">
+        <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
+
+        <p:commandLink id="previous"
+                       action="#{panelModel.goToPrevious()}"
+                       styleClass="sideview-topbar-button">
+            <h:outputText styleClass='ui-icon bi bi-caret-up' style="color: var(--main-color);"/>
+        </p:commandLink>
+
+        <p:commandLink id="next"
+                       action="#{panelModel.goToNext()}"
+                       styleClass="sideview-topbar-button">
+            <h:outputText styleClass='ui-icon bi bi-caret-down' style="color: var(--main-color);"/>
+        </p:commandLink>
+    </h:form>
+</ui:composition>
+</html>

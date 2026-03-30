@@ -54,6 +54,7 @@
                     <ui:param name="icon" value="#{panelModel.tabs[1].icon}"/>
                     <ui:param name="emptyTab" value="#{panelModel.emptyTabFor(panelModel.tabs[1])}"/>
                     <ui:param name="validated" value="#{panelModel.unit.validated}"/>
+                    <ui:param name="count" value="#{panelModel.documents.size()}"/>
                 </ui:include>
             </f:facet>
 
@@ -76,6 +77,7 @@
                     <ui:param name="icon" value="#{panelModel.tabs[3].icon}"/>
                     <ui:param name="emptyTab" value="#{panelModel.emptyTabFor(panelModel.tabs[3])}"/>
                     <ui:param name="validated" value="#{panelModel.unit.validated}"/>
+                    <ui:param name="count" value="#{panelModel.unit.specimenList.size()}"/>
                 </ui:include>
             </f:facet>
 
@@ -83,6 +85,28 @@
                 <ui:param name="panelModel" value="#{panelModel}"/>
                 <ui:param name="panelIndex" value="#{panelIndex}"/>
                 <ui:param name="tabModel" value="#{panelModel.tabs[3]}"/>
+            </ui:include>
+
+        </p:tab>
+
+        <!-- strati tab -->
+        <p:tab>
+
+            <f:facet name="title">
+
+                <ui:include src="/pages/shared/tab/tabTitle.xhtml">
+                    <ui:param name="title" value='#{langBean.msg(panelModel.tabs[4].titleCode)}'/>
+                    <ui:param name="icon" value="#{panelModel.tabs[4].icon}"/>
+                    <ui:param name="emptyTab" value="#{panelModel.emptyTabFor(panelModel.tabs[4])}"/>
+                    <ui:param name="validated" value="#{panelModel.unit.validated}"/>
+                    <ui:param name="count" value="#{panelModel.unit.relationshipsAsUnit1.size() + panelModel.unit.relationshipsAsUnit2.size()}"/>
+                </ui:include>
+            </f:facet>
+
+            <ui:include src="#{panelModel.tabs[4].getViewName()}">
+                <ui:param name="panelModel" value="#{panelModel}"/>
+                <ui:param name="panelIndex" value="#{panelIndex}"/>
+                <ui:param name="tabModel" value="#{panelModel.tabs[4]}"/>
             </ui:include>
 
         </p:tab>

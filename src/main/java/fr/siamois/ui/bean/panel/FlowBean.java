@@ -17,11 +17,13 @@ import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.domain.services.vocabulary.FieldConfigurationService;
 import fr.siamois.domain.services.vocabulary.FieldService;
 import fr.siamois.dto.entity.*;
+import fr.siamois.ui.bean.HistoryBean;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.RedirectBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
 import fr.siamois.ui.bean.panel.models.panel.AbstractPanel;
 import fr.siamois.ui.bean.panel.models.panel.WelcomePanel;
+import fr.siamois.ui.bean.panel.models.panel.list.AbstractListPanel;
 import fr.siamois.ui.bean.panel.models.panel.single.*;
 import fr.siamois.utils.MessageUtils;
 import jakarta.el.MethodExpression;
@@ -30,7 +32,6 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.math3.analysis.function.Abs;
 import org.primefaces.PrimeFaces;
 import org.primefaces.model.dashboard.DashboardModel;
 import org.springframework.context.NoSuchMessageException;
@@ -75,6 +76,7 @@ public class FlowBean implements Serializable {
     private final transient PermissionService permissionService;
     private final transient InstitutionService institutionService;
     private final transient InstitutionChangeEventPublisher institutionChangeEventPublisher;
+    private final transient HistoryBean historyBean;
 
     private final RedirectBean redirectBean;
     private final transient LoginEventPublisher loginEventPublisher;
@@ -222,12 +224,43 @@ public class FlowBean implements Serializable {
 
     public void addPanelToOverview(AbstractPanel targetPanel, AbstractPanel overviewPanel) {
 
-        overviewPanel.setRoot(true);
+        HistoryBean.HistoryItem newEntry = new HistoryBean.HistoryItem();
+        HistoryBean.HistoryItemComponent main = new HistoryBean.HistoryItemComponent();
+        HistoryBean.HistoryItemComponent side = new HistoryBean.HistoryItemComponent();
+
+        overviewPanel.setRoot(false);
+        targetPanel.setRoot(true);
         targetPanel.setParentOrOverview(overviewPanel);
         overviewPanel.setParentOrOverview(targetPanel);
+
+        if(targetPanel instanceof AbstractListPanel<?>) {
+            main.setTitle(langBean.msg(targetPanel.getTitleCodeOrTitle()));
+        }
+        else {
+            main.setTitle(targetPanel.getTitleCodeOrTitle());
+        }
+        main.setIcon(targetPanel.getIcon());
+        main.setUri(targetPanel.ressourceUri());
+        main.setStyleClass(targetPanel.getPanelClass());
+        newEntry.setMain(main);
+
+
+        if(overviewPanel instanceof AbstractListPanel<?>) {
+            side.setTitle(langBean.msg(overviewPanel.getTitleCodeOrTitle()));
+        }
+        else {
+            side.setTitle(overviewPanel.getTitleCodeOrTitle());
+        }
+        side.setIcon(overviewPanel.getIcon());
+        side.setUri(overviewPanel.ressourceUri());
+        side.setStyleClass(overviewPanel.getPanelClass());
+        newEntry.setSecondary(side);
+
+        historyBean.addItem(newEntry);
+
         String base64RootUri = Base64.getUrlEncoder().withoutPadding().encodeToString(targetPanel.ressourceUri().getBytes());
         String base64OverviewUri = Base64.getUrlEncoder().withoutPadding().encodeToString(overviewPanel.ressourceUri().getBytes());
-        PrimeFaces.current().ajax().update("sideview-"+targetPanel.getPanelIndex());
+        PrimeFaces.current().ajax().update("sideview-"+targetPanel.getPanelIndex(), "historyForm");
         PrimeFaces.current().executeScript(
                 String.format(
                         "showSideview('%s', '%s', '%s');",
@@ -239,12 +272,17 @@ public class FlowBean implements Serializable {
 
     }
 
-    public void addRecordingUnitToOverview(Long id, AbstractPanel targetPanel) {
+    public void addRecordingUnitToOverview(Long id, AbstractPanel targetPanel, @Nullable Integer tabIndex) {
 
         if (targetPanel != null) {
             // Add the overview
             RecordingUnitPanel overviewPanel = panelFactory.createRecordingUnitPanel(id);
             overviewPanel.setRoot(false);
+
+            if(tabIndex!=null) {
+                overviewPanel.setActiveTabIndex(tabIndex);
+            }
+
             if(targetPanel.isRoot()) {
                 addPanelToOverview(targetPanel, overviewPanel);
             }
@@ -256,12 +294,28 @@ public class FlowBean implements Serializable {
 
     }
 
+    public void addRecordingUnitToOverviewFromStratiModule(AbstractPanel targetPanel) {
+        String idParam = FacesContext.getCurrentInstance()
+                .getExternalContext()
+                .getRequestParameterMap()
+                .get("clickedUnitId");
 
-    public void addSpatialUnitToOverview(Long id, AbstractPanel targetPanel) {
+        if (idParam != null) {
+            addRecordingUnitToOverview(Long.parseLong(idParam), targetPanel, 3);
+        }
+
+
+    }
+
+
+    public void addSpatialUnitToOverview(Long id, AbstractPanel targetPanel,  @Nullable Integer tabIndex) {
 
         if (targetPanel != null) {
             // Add the overview
             SpatialUnitPanel overviewPanel = panelFactory.createSpatialUnitPanel(id);
+            if(tabIndex!=null) {
+                overviewPanel.setActiveTabIndex(tabIndex);
+            }
             overviewPanel.setRoot(false);
             if(targetPanel.isRoot()) {
                 addPanelToOverview(targetPanel, overviewPanel);
@@ -272,11 +326,14 @@ public class FlowBean implements Serializable {
         }
     }
 
-    public void addActionUnitToOverview(Long id, AbstractPanel targetPanel) {
+    public void addActionUnitToOverview(Long id, AbstractPanel targetPanel, @Nullable Integer tabIndex) {
 
         if (targetPanel != null) {
             // Add the overview
             ActionUnitPanel overviewPanel = panelFactory.createActionUnitPanel(id);
+            if(tabIndex!=null) {
+                overviewPanel.setActiveTabIndex(tabIndex);
+            }
             overviewPanel.setRoot(false);
             if(targetPanel.isRoot()) {
                 addPanelToOverview(targetPanel, overviewPanel);
@@ -287,11 +344,14 @@ public class FlowBean implements Serializable {
         }
     }
 
-    public void addSpecimenToOverview(Long id, AbstractPanel targetPanel) {
+    public void addSpecimenToOverview(Long id, AbstractPanel targetPanel, @Nullable Integer tabIndex) {
 
         if (targetPanel != null) {
             // Add the overview
             SpecimenPanel overviewPanel = panelFactory.createSpecimenPanel(id);
+            if(tabIndex!=null) {
+                overviewPanel.setActiveTabIndex(tabIndex);
+            }
             overviewPanel.setRoot(false);
             if(targetPanel.isRoot()) {
                 addPanelToOverview(targetPanel, overviewPanel);
@@ -604,8 +664,20 @@ public class FlowBean implements Serializable {
             changeInstitution(false);
             return;
         }
+        historyBean.getItems().clear(); // clear history
         PrimeFaces.current().executeScript("PF('confirmUnsavedOnInstitutionDialog').show();");
         PrimeFaces.current().ajax().update("unsavedUpdatesOnInstitutionChangeForm");
+    }
+
+    /**
+     * On institution select change
+     *
+     */
+    public void onFocusInstitutionChange() throws IOException {
+        changeInstitution(false);
+        historyBean.getItems().clear(); // clear history
+        redirectToDashboard();
+
     }
 
     /**

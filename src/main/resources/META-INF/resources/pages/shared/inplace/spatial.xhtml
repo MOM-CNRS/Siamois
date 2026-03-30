@@ -26,6 +26,7 @@
                       shortDescription="List of SpatialUnit to display in the dropdown"/>
         <cc:attribute name="displayType" type="java.lang.Boolean" required="false" default="false"/>
         <cc:attribute name="panelId" type="String" required="false"/>
+        <cc:attribute name="formCtx" type="fr.siamois.ui.form.EntityFormContext" required="true"/>
     </cc:interface>
 
     <cc:implementation>
@@ -39,7 +40,7 @@
                                 value="#{cc.attrs.answer.value.name}"
                                 action="#{navBean.redirectToSpatialUnit}"
                                 ajax="false">
-                            <f:param name="id" value="#{cc.attrs.answer.value.id}" />
+                            <f:param name="id" value="#{cc.attrs.answer.value.id}"/>
                         </p:commandLink>
 
                         <p:chip rendered="#{cc.attrs.displayType}"
@@ -54,8 +55,12 @@
                                  panelStyleClass="spatial-unit"
                                  styleClass="spatial-unit #{cc.attrs.answer.hasBeenModified ? 'track-change sia-modified-field': 'track-change'}"
                                  value="#{cc.attrs.answer.value}"
+                                 filterMatchMode="contains"
+                                 widgetVar="#{cc.clientId}_spatialUnitMenu"
+                                 dynamic="true"
+                                 filter="true"
                                  label="#{cc.attrs.label}"
-                                 required="#{cc.attrs.required}"
+                                 required="false"
                                  var="su"
                                  converter="#{spatialUnitSummaryConverter}">
                     <!-- Null / no selection -->
@@ -77,14 +82,81 @@
                                     styleClass="mr-2 spatial-unit-type-chip"/>
                         </div>
                     </p:column>
-                    <f:attribute name="field" value="#{cc.attrs.field}" />
+                    <f:attribute name="field" value="#{cc.attrs.field}"/>
                     <p:ajax update="#{cc.attrs.updateTargetsOnBlur}"
                             process="@this"
                             onstart="$(PrimeFaces.escapeClientId('#{cc.clientId}:input')).removeClass('sia-modified-field'); showSpinner('#{cc.attrs.panelId}')"
                             oncomplete="hideSpinner('#{cc.attrs.panelId}')"
                             onerror="handleAutoSaveError(xhr, status, '#{cc.attrs.panelId}'); $(PrimeFaces.escapeClientId('#{cc.clientId}:input')).addClass('sia-modified-field');"
                             listener="#{cc.attrs.onModified}"/>
+                    <f:facet name="footer">
+
+                        <div id="footer" class="ui-fluid" style="padding:0.5rem 1rem 1rem 1rem">
+                            <p:commandButton
+                                    id="btnNouveau"
+                                    icon="bi bi-plus-lg"
+                                    oncomplete="PF('#{cc.clientId}_spatialUnitMenu').hide();var ov = PF('#{cc.clientId}_overlay'); ov.show(); ov.align();"
+                                    value="Nouveau"
+                                    update="#{cc.clientId}"/>
+                        </div>
+                    </f:facet>
+
                 </p:selectOneMenu>
+
+                <p:overlayPanel for="#{cc.clientId}:select-one-spatial-unit" my="left top" at="left bottom" showEvent="none"
+                                widgetVar="#{cc.clientId}_overlay"
+
+                                dismissable="false"
+                                autoHide="true"
+                                showCloseIcon="true"
+                                dynamic="true" id="overlayNouveau" appendTo="#{cc.clientId}"
+                                hideEffect="fade">
+
+
+                    <h:panelGrid columns="2" cellpadding="5" id="newGrid">
+                        <p:outputLabel for="newUnitName" value="Nom:"/>
+                        <p:inputText value="#{cc.attrs.answer.newName}"
+                                     id="newUnitName"
+                                     required="true"
+                        />
+
+                        <p:outputLabel for="newUnitTypeAutocomplete" value="Type:"/>
+                        <p:autoComplete value="#{cc.attrs.answer.newType}"
+                                        id="newUnitTypeAutocomplete"
+                                        completeMethod="#{spatialUnitFieldBean.completeWithFieldCode}"
+                                        var="autocompleteDto"
+                                        panelStyleClass="#{cc.attrs.panelStyleClass}"
+                                        itemValue="#{autocompleteDto}"
+                                        itemLabel="#{autocompleteDto.conceptLabelToDisplay.label}"
+                                        required="true"
+                                        onmousedown="event.stopPropagation();"
+                                        onclick="event.stopPropagation();"
+                                        converter="#{conceptAutocompleteDTOConverter}"
+                                        forceSelection="true"
+                                        scrollHeight="300"
+                                        dropdown="true"
+                                        placeholder="#{langBean.msg('common.action.chooseConcept')}"
+                                        showEmptyMessage="false"
+                                        maxResults="#{fieldConfigurationService.resultLimit()}"
+                        >
+                            <f:attribute name="fieldCode" value="SIASU.TYPE"/>
+                        </p:autoComplete>
+
+                        <p:commandButton
+                                style="background: var(--siamois-green-active);
+    border-color: var(--siamois-green-active);"
+                                value="Créer"
+                                action="#{cc.attrs.formCtx.saveNewPlaceFromField(
+                                            cc.attrs.answer
+                                        )}"
+                                process="newGrid"
+                                onsuccess="PF('#{cc.clientId}_overlay').hide();"
+                                update="select-one-spatial-unit @this  overlayNouveau templateFormCC:templateForm:templateGrowl"/>
+
+                    </h:panelGrid>
+
+                </p:overlayPanel>
+
             </f:facet>
         </p:inplace>
 

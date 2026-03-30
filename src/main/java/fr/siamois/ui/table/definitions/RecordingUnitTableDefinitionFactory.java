@@ -16,7 +16,7 @@ public final class RecordingUnitTableDefinitionFactory {
 
     public static final String THIS = "@this";
     public static final String PF_BUI_CONTENT_SHOW = "PF('buiContent').show()";
-    public static final String PF_BUI_CONTENT_HIDE_HANDLE_SCROLL_TO_TOP = "PF('buiContent').hide();handleScrollToTop();";
+    public static final String PF_BUI_CONTENT_HIDE_HANDLE_SCROLL_TO_TOP = "PF('buiContent').hide()";
     public static final String BI_BI_EYE = "bi bi-eye";
     public static final String BI_BI_PLUS_SQUARE = "bi bi-plus-square";
 
@@ -140,7 +140,7 @@ public final class RecordingUnitTableDefinitionFactory {
         contributorsField.setId(4L);
         actionField.setId(5L);
         spatialField.setId(6L);
-        tableModel.getTableDefinition().addColumn(
+        tableModel.getTableDefinition().setCommandLinkColumn(
                 CommandLinkColumn.builder()
                         .id("identifierCol")
                         .headerKey("table.recordingunit.column.identifier")
@@ -160,7 +160,7 @@ public final class RecordingUnitTableDefinitionFactory {
 
                         // CommandLink behavior
                         .processExpr(THIS)
-                        .updateExpr("flow")
+                        .updateExpr(THIS)
                         .onstartJs(PF_BUI_CONTENT_SHOW)
                         .oncompleteJs(PF_BUI_CONTENT_HIDE_HANDLE_SCROLL_TO_TOP)
                         .build()
@@ -178,6 +178,19 @@ public final class RecordingUnitTableDefinitionFactory {
 
         tableModel.getTableDefinition().addColumn(
                 FormFieldColumn.builder()
+                        .id("action")
+                        .headerKey("recordingunit.field.actionUnit")
+                        .field(actionField)
+                        .sortable(false)
+                        .filterable(false)
+                        .visible(true)
+                        .readOnly(true)
+                        .required(true)
+                        .build()
+        );
+
+        tableModel.getTableDefinition().addColumn(
+                FormFieldColumn.builder()
                         .id("type")
                         .headerKey("recordingunit.property.type")
                         .field(typeField)
@@ -187,6 +200,74 @@ public final class RecordingUnitTableDefinitionFactory {
                         .required(true)
                         .build()
         );
+
+        tableModel.getTableDefinition().addColumn(
+                RelationColumn.builder()
+                        .id("relationships")
+                        .headerKey("common.label.ruRelationships")
+                        .headerIcon("bi bi-diagram-2")
+                        .visible(true)
+                        .toggleable(true)
+
+                        .countKey("relationships")
+                        .viewIcon(BI_BI_EYE)
+                        .viewAction(TableColumnAction.VIEW_RELATION)
+                        .viewTargetIndex(3)
+
+                        .addEnabled(false)
+                        .addIcon(BI_BI_PLUS_SQUARE)
+                        .addAction(TableColumnAction.ADD_RELATION)
+                        .addRenderedKey("specimenCreateAllowed")
+
+                        .processExpr(THIS)
+                        .updateExpr(THIS)
+                        .onstartJs(PF_BUI_CONTENT_SHOW)
+                        .oncompleteJs(PF_BUI_CONTENT_HIDE_HANDLE_SCROLL_TO_TOP)
+                        .build()
+        );
+
+        tableModel.getTableDefinition().addColumn(
+                RelationColumn.builder()
+                        .id("specimen")
+                        .headerKey("common.entity.specimen")
+                        .headerIcon("bi bi-bucket")
+                        .visible(true)
+                        .toggleable(true)
+
+                        .countKey("specimenList")
+
+                        .viewIcon(BI_BI_EYE)
+                        .viewAction(TableColumnAction.VIEW_RELATION)
+                        .viewTargetIndex(2)
+
+                        .addEnabled(false)
+                        .addIcon(BI_BI_PLUS_SQUARE)
+                        .addAction(TableColumnAction.ADD_RELATION)
+                        .addRenderedKey("specimenCreateAllowed")
+
+                        .processExpr(THIS)
+                        .updateExpr(THIS)
+                        .onstartJs(PF_BUI_CONTENT_SHOW)
+                        .oncompleteJs(PF_BUI_CONTENT_HIDE_HANDLE_SCROLL_TO_TOP)
+                        .build()
+        );
+
+        tableModel.getTableDefinition().addColumn(
+                FormFieldColumn.builder()
+                        .id("spatial")
+                        .headerKey("recordingunit.field.spatialUnit")
+                        .field(spatialField)
+                        .sortable(false)
+                        .filterable(false)
+                        .visible(true)
+                        .readOnly(false)
+                        .required(false)
+                        .build()
+        );
+
+
+
+
 
         tableModel.getTableDefinition().addColumn(
                 FormFieldColumn.builder()
@@ -232,58 +313,8 @@ public final class RecordingUnitTableDefinitionFactory {
                         .required(false)
                         .build()
         );
-        tableModel.getTableDefinition().addColumn(
-                FormFieldColumn.builder()
-                        .id("action")
-                        .headerKey("recordingunit.field.actionUnit")
-                        .field(actionField)
-                        .sortable(false)
-                        .filterable(false)
-                        .visible(true)
-                        .readOnly(true)
-                        .required(true)
-                        .build()
-        );
-        tableModel.getTableDefinition().addColumn(
-                FormFieldColumn.builder()
-                        .id("spatial")
-                        .headerKey("recordingunit.field.spatialUnit")
-                        .field(spatialField)
-                        .sortable(false)
-                        .filterable(false)
-                        .visible(true)
-                        .readOnly(false)
-                        .required(false)
-                        .build()
-        );
 
 
-
-        tableModel.getTableDefinition().addColumn(
-                RelationColumn.builder()
-                        .id("specimen")
-                        .headerKey("common.entity.specimen")
-                        .headerIcon("bi bi-bucket")
-                        .visible(true)
-                        .toggleable(true)
-
-                        .countKey("specimenList")
-
-                        .viewIcon(BI_BI_EYE)
-                        .viewAction(TableColumnAction.VIEW_RELATION)
-                        .viewTargetIndex(2)
-
-                        .addEnabled(false)
-                        .addIcon(BI_BI_PLUS_SQUARE)
-                        .addAction(TableColumnAction.ADD_RELATION)
-                        .addRenderedKey("specimenCreateAllowed")
-
-                        .processExpr(THIS)
-                        .updateExpr("flow")
-                        .onstartJs(PF_BUI_CONTENT_SHOW)
-                        .oncompleteJs(PF_BUI_CONTENT_HIDE_HANDLE_SCROLL_TO_TOP)
-                        .build()
-        );
 
 
 

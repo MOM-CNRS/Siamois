@@ -26,7 +26,7 @@
                     rendered="#{not empty cc.attrs.onClickMethod}"
                     styleClass="#{cc.attrs.commandLinkStyleClass}"
                            onstart="PF('buiContent').show()"
-                           oncomplete="PF('buiContent').hide();handleScrollToTop();"
+                           oncomplete="PF('buiContent').hide();"
                            update="flow"
                            action="#{flowBean.invokeOnClick(cc.attrs.onClickMethod, item.id, cc.attrs.panelModel)}"
                            style="display: block; padding: 2px 0;"

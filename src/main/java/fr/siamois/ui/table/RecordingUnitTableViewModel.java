@@ -67,6 +67,7 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
     private final SessionSettingsBean sessionSettingsBean;
 
 
+
     public RecordingUnitTableViewModel(BaseRecordingUnitLazyDataModel lazyDataModel,
                                        FormService formService,
                                        SessionSettingsBean sessionSettingsBean,
@@ -166,7 +167,8 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
         if (column.getAction() == GO_TO_RECORDING_UNIT) {
             flowBean.addRecordingUnitToOverview(
                     ru.getId(),
-                    parentPanel
+                    parentPanel,
+                    null
             );
 
 
@@ -201,6 +203,8 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
                 case PARENTS -> ru.getParents() == null ? 0 : ru.getParents().size();
                 case "children" -> ru.getChildren() == null ? 0 : ru.getChildren().size();
                 case "specimenList" -> ru.getSpecimenList() == null ? 0 : ru.getSpecimenList().size();
+                case "relationships" -> ru.getRelationshipsAsUnit1() == null ? 0 :
+                    ru.getRelationshipsAsUnit1().size() + ru.getRelationshipsAsUnit2().size();
                 default -> 0;
             };
         }
@@ -272,7 +276,11 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
         switch (action) {
 
             case VIEW_RELATION ->
-                    flowBean.goToRecordingUnitByIdNewPanel(ru.getId(), col.getViewTargetIndex());
+                    flowBean.addRecordingUnitToOverview(
+                            ru.getId(),
+                            parentPanel,
+                            col.getViewTargetIndex()
+                    );
 
             case ADD_RELATION -> {
                 // Dispatch based on column.countKey (or add a dedicated "relationKey")
@@ -393,6 +401,9 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
         if(parent != null) {
             newUnit.getParents().add(new RecordingUnitSummaryDTO(parent));
         }
+
+        newUnit.setAuthor(sessionSettingsBean.getAuthenticatedUser());
+        newUnit.setCreatedBy(sessionSettingsBean.getAuthenticatedUser());
 
         newUnit = recordingUnitService.save(newUnit);
 

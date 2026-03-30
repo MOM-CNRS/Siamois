@@ -19,6 +19,7 @@ import java.util.Optional;
 public class TableDefinition {
 
     private List<TableColumn> columns;
+    private CommandLinkColumn commandLinkColumn;
 
     public TableDefinition() {
         this.columns = new ArrayList<>();

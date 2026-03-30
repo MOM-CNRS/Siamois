@@ -22,7 +22,9 @@ public class ActionUnitSummaryDTO extends AbstractEntityDTO {
     private String recordingUnitIdentifierFormat;
 
     public ActionUnitSummaryDTO(ActionUnitDTO dto) {
+        super(dto);
         this.id = dto.getId();
+        this.name = dto.getName();
     }
 
 

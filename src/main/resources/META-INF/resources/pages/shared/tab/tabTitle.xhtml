@@ -1,6 +1,5 @@
 <ui:fragment xmlns="http://www.w3.org/1999/xhtml"
              xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
-             xmlns:p="http://primefaces.org/ui"
              xmlns:h="http://java.sun.com/jsf/html"
 
 >
@@ -14,12 +13,9 @@
       <div style="display:flex; gap:0.2em;align-items: center;font-weight: bold;">
          <i class="#{icon}"/>
          <h:outputText value="#{title}"/>
-         <p:outputPanel rendered="#{emptyTab and (not validated)}">
-            <span><i class="bi bi-slash-circle-fill"/></span>
-         </p:outputPanel>
-         <p:outputPanel rendered="#{emptyTab and validated}">
-            <span><i class="bi bi-slash-circle"/></span>
-         </p:outputPanel>
+         <h:panelGroup rendered="#{count ne null}">
+            <h:outputText value=" (#{count})"/>
+         </h:panelGroup>
       </div>
 
 

@@ -14,6 +14,7 @@ import org.springframework.data.repository.history.RevisionRepository;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -247,7 +248,11 @@ public interface SpatialUnitRepository extends JpaRepository<SpatialUnit, Long>,
 
     @Query(
             nativeQuery = true,
-            value = "SELECT su.* FROM spatial_unit su WHERE su.fk_institution_id = :institutionId"
+            value = """
+        SELECT su.* FROM spatial_unit su 
+        WHERE su.fk_institution_id = :institutionId
+        ORDER BY su.creation_time DESC, su.spatial_unit_id DESC
+        """
     )
     List<SpatialUnit> findAllOfInstitution(Long institutionId);
 
@@ -276,9 +281,12 @@ public interface SpatialUnitRepository extends JpaRepository<SpatialUnit, Long>,
 
     @Query(
             nativeQuery = true,
-            value = "SELECT DISTINCT su.* FROM spatial_unit su " +
-                    "JOIN spatial_hierarchy sh ON sh.fk_child_id = su.spatial_unit_id " +
-                    "WHERE sh.fk_parent_id = :spatialUnitId"
+            value = """
+        SELECT DISTINCT su.* FROM spatial_unit su 
+        JOIN spatial_hierarchy sh ON sh.fk_child_id = su.spatial_unit_id 
+        WHERE sh.fk_parent_id = :spatialUnitId
+        ORDER BY su.creation_time DESC, su.spatial_unit_id DESC
+        """
     )
     Set<SpatialUnit> findChildrensOf(Long spatialUnitId);
 
@@ -346,5 +354,13 @@ public interface SpatialUnitRepository extends JpaRepository<SpatialUnit, Long>,
                 WHERE h.fk_parent_id = :spatialUnitId
             """, nativeQuery = true)
     boolean existsRootChildrenByParent(@Param("spatialUnitId") Long spatialUnitId);
+
+    Optional<SpatialUnit> findFirstByCreatedByInstitutionIdAndCreationTimeAfterOrderByCreationTimeAsc(Long institutionId, OffsetDateTime createdAt);
+
+    Optional<SpatialUnit> findFirstByCreatedByInstitutionIdAndCreationTimeBeforeOrderByCreationTimeDesc(Long institutionId, OffsetDateTime createdAt);
+
+    Optional<SpatialUnit> findFirstByCreatedByInstitutionIdOrderByCreationTimeAsc(Long institutionId);  // oldest
+
+    Optional<SpatialUnit> findFirstByCreatedByInstitutionIdOrderByCreationTimeDesc(Long institutionId);
 }
 

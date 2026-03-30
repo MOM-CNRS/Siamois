@@ -35,6 +35,7 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 
+import java.time.OffsetDateTime;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -392,6 +393,10 @@ class SpatialUnitServiceTest {
                 .thenReturn(new Concept());
         when(spatialUnitRepository.save(any(SpatialUnit.class)))
                 .thenReturn(spatialUnit1);
+        when(spatialUnitRepository.findById(2L))
+                .thenReturn(Optional.of(new SpatialUnit()));
+        when(spatialUnitRepository.findById(0L))
+                .thenReturn(Optional.of(new SpatialUnit()));
         when(institutionService.findById(anyLong()))
                 .thenReturn(institutionDTO);
         when(personService.findById(anyLong()))
@@ -759,6 +764,136 @@ class SpatialUnitServiceTest {
 
         // Assert
         assertTrue(result, "La méthode doit retourner true si des enfants existent.");
+    }
+
+    @Test
+    void testFindNextByInstitution_ShouldReturnNextSpatialUnit() {
+        // Arrange
+        InstitutionDTO institutionDTO = new InstitutionDTO();
+        institutionDTO.setId(1L);
+        SpatialUnitDTO currentDTO = new SpatialUnitDTO();
+        currentDTO.setCreationTime(OffsetDateTime.now());
+
+        SpatialUnit nextEntity = new SpatialUnit();
+        SpatialUnitDTO nextDTO = new SpatialUnitDTO();
+
+        when(spatialUnitRepository.findFirstByCreatedByInstitutionIdAndCreationTimeAfterOrderByCreationTimeAsc(eq(1L), any()))
+                .thenReturn(Optional.of(nextEntity));
+        when(spatialUnitMapper.convert(nextEntity)).thenReturn(nextDTO);
+
+        // Act
+        SpatialUnitDTO result = spatialUnitService.findNextByInstitution(institutionDTO, currentDTO);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(nextDTO, result);
+        verify(spatialUnitRepository, never()).findFirstByCreatedByInstitutionIdOrderByCreationTimeAsc(anyLong());
+    }
+
+    @Test
+    void testFindNextByInstitution_ShouldWrapAroundToOldest() {
+        // Arrange
+        InstitutionDTO institutionDTO = new InstitutionDTO();
+        institutionDTO.setId(1L);
+        SpatialUnitDTO currentDTO = new SpatialUnitDTO();
+
+        SpatialUnit oldestEntity = new SpatialUnit();
+        SpatialUnitDTO oldestDTO = new SpatialUnitDTO();
+
+        // No "next" found
+        when(spatialUnitRepository.findFirstByCreatedByInstitutionIdAndCreationTimeAfterOrderByCreationTimeAsc(anyLong(), any()))
+                .thenReturn(Optional.empty());
+        // Should trigger the wrap around call
+        when(spatialUnitRepository.findFirstByCreatedByInstitutionIdOrderByCreationTimeAsc(1L))
+                .thenReturn(Optional.of(oldestEntity));
+        when(spatialUnitMapper.convert(oldestEntity)).thenReturn(oldestDTO);
+
+        // Act
+        SpatialUnitDTO result = spatialUnitService.findNextByInstitution(institutionDTO, currentDTO);
+
+        // Assert
+        assertEquals(oldestDTO, result);
+    }
+
+    @Test
+    void testFindPreviousByInstitution_ShouldReturnPreviousSpatialUnit() {
+        // Arrange
+        InstitutionDTO institutionDTO = new InstitutionDTO();
+        institutionDTO.setId(1L);
+        SpatialUnitDTO currentDTO = new SpatialUnitDTO();
+        currentDTO.setCreationTime(OffsetDateTime.now());
+
+        SpatialUnit prevEntity = new SpatialUnit();
+        SpatialUnitDTO prevDTO = new SpatialUnitDTO();
+
+        when(spatialUnitRepository.findFirstByCreatedByInstitutionIdAndCreationTimeBeforeOrderByCreationTimeDesc(eq(1L), any()))
+                .thenReturn(Optional.of(prevEntity));
+        when(spatialUnitMapper.convert(prevEntity)).thenReturn(prevDTO);
+
+        // Act
+        SpatialUnitDTO result = spatialUnitService.findPreviousByInstitution(institutionDTO, currentDTO);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(prevDTO, result);
+    }
+
+    @Test
+    void testFindPreviousByInstitution_ShouldWrapAroundToMostRecent() {
+        // Arrange
+        InstitutionDTO institutionDTO = new InstitutionDTO();
+        institutionDTO.setId(1L);
+        SpatialUnitDTO currentDTO = new SpatialUnitDTO();
+
+        SpatialUnit mostRecentEntity = new SpatialUnit();
+        SpatialUnitDTO mostRecentDTO = new SpatialUnitDTO();
+
+        // No "previous" found
+        when(spatialUnitRepository.findFirstByCreatedByInstitutionIdAndCreationTimeBeforeOrderByCreationTimeDesc(anyLong(), any()))
+                .thenReturn(Optional.empty());
+        // Should trigger the wrap around call
+        when(spatialUnitRepository.findFirstByCreatedByInstitutionIdOrderByCreationTimeDesc(1L))
+                .thenReturn(Optional.of(mostRecentEntity));
+        when(spatialUnitMapper.convert(mostRecentEntity)).thenReturn(mostRecentDTO);
+
+        // Act
+        SpatialUnitDTO result = spatialUnitService.findPreviousByInstitution(institutionDTO, currentDTO);
+
+        // Assert
+        assertEquals(mostRecentDTO, result);
+    }
+
+    @Test
+    void testToggleValidated_CycleLogic() {
+        // Arrange
+        Long id = 1L;
+        SpatialUnit unit = new SpatialUnit();
+        when(spatialUnitRepository.findById(id)).thenReturn(Optional.of(unit));
+        when(spatialUnitRepository.save(any(SpatialUnit.class))).thenAnswer(i -> i.getArguments()[0]);
+        when(spatialUnitMapper.convert(any(SpatialUnit.class))).thenReturn(new SpatialUnitDTO());
+
+        // 1. Incomplete -> Complete
+        unit.setValidated(fr.siamois.domain.models.ValidationStatus.INCOMPLETE);
+        spatialUnitService.toggleValidated(id);
+        assertEquals(fr.siamois.domain.models.ValidationStatus.COMPLETE, unit.getValidated());
+
+        // 2. Complete -> Validated
+        spatialUnitService.toggleValidated(id);
+        assertEquals(fr.siamois.domain.models.ValidationStatus.VALIDATED, unit.getValidated());
+
+        // 3. Validated -> Incomplete
+        spatialUnitService.toggleValidated(id);
+        assertEquals(fr.siamois.domain.models.ValidationStatus.INCOMPLETE, unit.getValidated());
+    }
+
+    @Test
+    void testToggleValidated_NotFound_ThrowsException() {
+        // Arrange
+        when(spatialUnitRepository.findById(99L)).thenReturn(Optional.empty());
+
+        // Act & Assert
+        assertThrows(fr.siamois.domain.models.exceptions.actionunit.ActionUnitNotFoundException.class,
+                () -> spatialUnitService.toggleValidated(99L));
     }
 
 

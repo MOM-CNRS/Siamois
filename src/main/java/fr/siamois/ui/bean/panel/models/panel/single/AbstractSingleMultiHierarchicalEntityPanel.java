@@ -110,7 +110,7 @@ public abstract class AbstractSingleMultiHierarchicalEntityPanel<T extends Abstr
     public void init() {
         // Init tabs
         MultiHierarchyTab multiHierTab = new MultiHierarchyTab(
-                "panel.tab.hierarchy",
+                "common.entity.spatialUnits",
                 this.getIcon(),
                 "hierarchyTab",
                 getChildTableModel());

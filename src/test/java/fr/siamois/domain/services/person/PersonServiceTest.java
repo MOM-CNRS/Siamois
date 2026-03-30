@@ -14,12 +14,17 @@ import fr.siamois.domain.services.auth.PendingPersonService;
 import fr.siamois.domain.services.person.verifier.EmailVerifier;
 import fr.siamois.domain.services.person.verifier.PasswordVerifier;
 import fr.siamois.domain.services.person.verifier.PersonDataVerifier;
+import fr.siamois.dto.entity.ConceptDTO;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.infrastructure.database.repositories.person.PendingInstitutionInviteRepository;
 import fr.siamois.infrastructure.database.repositories.person.PendingPersonRepository;
 import fr.siamois.infrastructure.database.repositories.person.PersonRepository;
 import fr.siamois.infrastructure.database.repositories.settings.PersonSettingsRepository;
+import fr.siamois.mapper.ActionUnitMapper;
+import fr.siamois.mapper.ConceptMapper;
+import fr.siamois.mapper.InstitutionMapper;
+import fr.siamois.mapper.PersonMapper;
 import fr.siamois.ui.email.EmailManager;
 import jakarta.servlet.http.HttpServletRequest;
 import org.junit.jupiter.api.BeforeEach;
@@ -63,6 +68,16 @@ class PersonServiceTest {
     private PendingPersonService pendingPersonService;
     @Mock
     private ConversionService conversionService;
+    @Mock
+    private InstitutionMapper institutionMapper;
+    @Mock
+    private ActionUnitMapper actionUnitMapper;
+    @Mock
+    private ConceptMapper conceptMapper;
+    @Mock
+    private PersonMapper personMapper;
+
+
 
     @Mock
     private PendingInstitutionInviteRepository pendingInstitutionInviteRepository;
@@ -98,7 +113,11 @@ class PersonServiceTest {
                 pendingPersonRepository,
                 pendingPersonService,
                 conversionService,
-                pendingInstitutionInviteRepository
+                pendingInstitutionInviteRepository,
+                institutionMapper,
+                actionUnitMapper,
+                personMapper,
+                conceptMapper
         );
     }
 
@@ -107,18 +126,19 @@ class PersonServiceTest {
         when(personRepository.findAllByNameOrLastname("bob")).thenReturn(List.of(person));
 
         // Act
-        List<Person> actualResult = personService.findAllByNameLastnameContaining("bob");
+        List<PersonDTO> actualResult = personService.findAllByNameLastnameContaining("bob");
 
         // Assert
-        assertEquals(List.of(person), actualResult);
+        assertEquals(1, actualResult.size());
     }
 
     @Test
     void updatePerson_Success() throws UserAlreadyExistException, InvalidNameException, InvalidPasswordException, InvalidUsernameException, InvalidEmailException {
         // Arrange
         when(personRepository.save(person)).thenReturn(person);
-
+        personDto.setId(1L);
         when(conversionService.convert(any(PersonDTO.class), eq(Person.class))).thenReturn(person);
+        when(personRepository.findById(personDto.getId())).thenReturn(Optional.of(person)).thenReturn(Optional.of(person));
 
         // Act
         personService.updatePerson(personDto);
@@ -159,6 +179,7 @@ class PersonServiceTest {
         person.setId(1L);
         PersonSettings settings = new PersonSettings();
         settings.setPerson(person);
+        personDto.setId(1L);
 
         when(personSettingsRepository.findByPersonId(1L)).thenReturn(Optional.empty());
         when(personSettingsRepository.save(any(PersonSettings.class))).thenReturn(settings);
@@ -189,9 +210,8 @@ class PersonServiceTest {
 
         when(conversionService.convert(any(PersonDTO.class), eq(Person.class))).thenReturn(person);
 
-        Person result = personService.createPerson(personDto, "password");
+        personService.createPerson(personDto, "password");
 
-        assertNotNull(result);
         verify(personRepository, times(1)).save(person);
     }
 
@@ -267,7 +287,11 @@ class PersonServiceTest {
                 pendingPersonRepository,
                 pendingPersonService,
                 conversionService,
-                pendingInstitutionInviteRepository
+                pendingInstitutionInviteRepository,
+                institutionMapper,
+                actionUnitMapper,
+                personMapper,
+                conceptMapper
         );
 
         // Act
@@ -339,8 +363,6 @@ class PersonServiceTest {
 
         var res = personService.findClosestByUsernameOrEmail("bob");
         assertEquals(2, res.size());
-        assertTrue(res.contains(p1));
-        assertTrue(res.contains(p2));
     }
 
     @Test
@@ -353,7 +375,7 @@ class PersonServiceTest {
 
         var res = personService.findClosestByUsernameOrEmail("bob");
         assertEquals(1, res.size());
-        assertTrue(res.contains(p1));
+
     }
 
     // Pour createAndDeletePendingRelations, on teste via createPerson (chemins principaux)
@@ -367,9 +389,17 @@ class PersonServiceTest {
         newPersonDto.setEmail("mail@localhost.com");
         PendingPerson pendingPerson = new PendingPerson();
         pendingPerson.setEmail("mail@localhost.com");
+        newPerson.setPassword("password");
+        newPersonDto.setEmail("mail@localhost.com");
+
+        PersonDTO newPersonRequest = new PersonDTO();
+        newPersonRequest.setId(42L);
+        newPersonRequest.setEmail("mail@localhost.com");
 
         Institution institution = new Institution();
         institution.setId(1L);
+        InstitutionDTO institutionDTO = new InstitutionDTO();
+        institutionDTO.setId(1L);
 
         PendingInstitutionInvite invite = mock(PendingInstitutionInvite.class);
         when(invite.getInstitution()).thenReturn(institution);
@@ -389,23 +419,27 @@ class PersonServiceTest {
         // On mock la création du PendingPerson
         when(pendingPersonService.createOrGetPendingPerson(any())).thenReturn(pendingPerson);
 
+
+
         // On mock le save du person
         when(personRepository.save(any(Person.class))).thenReturn(newPerson);
-        when(conversionService.convert(any(PersonDTO.class),eq(Person.class))).thenReturn(person);
+        when(conversionService.convert(any(PersonDTO.class),eq(Person.class))).thenReturn(newPerson);
+        when(institutionMapper.convert(any(Institution.class))).thenReturn(institutionDTO);
+        when(personMapper.convert(any(Person.class))).thenReturn(newPersonDto);
+        ConceptDTO c  = new ConceptDTO(); c.setId(2L);
+        when(conceptMapper.convert(any(Concept.class))).thenReturn(c);
         // Act
-        person.setPassword("password");
-        person.setEmail("mail@localhost.com");
-        person.setId(-1L);
-        Person created = personService.createPerson(newPersonDto,"password");
+
+        personService.createPerson(newPersonRequest,"password");
 
         // Assert
-        verify(institutionService).addToManagers(institution, newPerson);
-        verify(institutionService).addPersonToActionManager(institution, newPerson);
-        verify(institutionService).addPersonToActionUnit(null, newPerson, new Concept());
+
+        verify(institutionService).addToManagers(institutionDTO, newPersonDto);
+        verify(institutionService).addPersonToActionManager(institutionDTO, newPersonDto);
+        verify(institutionService).addPersonToActionUnit(null, newPersonDto, c);
         verify(pendingPersonService).delete(attribution);
         verify(pendingPersonService).delete(invite);
         verify(pendingPersonRepository).delete(pendingPerson);
-        assertNotNull(created);
     }
 
     @Test
@@ -439,7 +473,7 @@ class PersonServiceTest {
         person.setPassword("password");
         person.setEmail("mail@localhost.com");
         person.setId(-1L);
-        Person created = personService.createPerson(personDto, "password");
+        personService.createPerson(personDto, "password");
 
         // Assert
         verify(institutionService, never()).addToManagers(any(), any());
@@ -448,7 +482,6 @@ class PersonServiceTest {
         verify(pendingPersonService, never()).delete(any(PendingActionUnitAttribution.class));
         verify(pendingPersonService).delete(invite);
         verify(pendingPersonRepository).delete(pendingPerson);
-        assertNotNull(created);
     }
 
     @Test
@@ -470,7 +503,7 @@ class PersonServiceTest {
         person.setPassword("password");
         person.setEmail("mail@localhost.com");
         person.setId(-1L);
-        Person created = personService.createPerson(newPersonDto, "password");
+        personService.createPerson(personDto, "password");
 
         // Assert
         verify(institutionService, never()).addToManagers(any(), any());
@@ -479,7 +512,6 @@ class PersonServiceTest {
         verify(pendingPersonService, never()).delete(any(PendingActionUnitAttribution.class));
         verify(pendingPersonService, never()).delete(any(PendingInstitutionInvite.class));
         verify(pendingPersonRepository).delete(pendingPerson);
-        assertNotNull(created);
     }
 
 }

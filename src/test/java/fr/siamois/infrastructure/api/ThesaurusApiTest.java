@@ -37,7 +37,7 @@ class ThesaurusApiTest {
     @Test
     void fetchAllPublicThesaurus_success() throws InvalidEndpointException {
         String server = "http://example.com";
-        ThesaurusDTO[] thesaurusArray = {new ThesaurusDTO("1", List.of(new LabelDTO("fr", "Label1")))};
+        ThesaurusDTO[] thesaurusArray = {new ThesaurusDTO("1", List.of(new LabelDTO("fr", "Label1")), "THESAURUS")};
         when(restTemplate.getForObject(server + "/openapi/v1/thesaurus", ThesaurusDTO[].class)).thenReturn(thesaurusArray);
 
         List<ThesaurusDTO> result = thesaurusApi.fetchAllPublicThesaurus(server);
@@ -74,7 +74,7 @@ class ThesaurusApiTest {
     void fetchThesaurusInfoByServerAndId_success() throws InvalidEndpointException {
         String server = "http://example.com";
         String idThesaurus = "123";
-        ThesaurusDTO expectedThesaurus = new ThesaurusDTO(idThesaurus, List.of(new LabelDTO("fr", "Label1")));
+        ThesaurusDTO expectedThesaurus = new ThesaurusDTO(idThesaurus, List.of(new LabelDTO("fr", "Label1")), "THESAURUS");
         when(restTemplate.getForObject(server + "/openapi/v1/thesaurus", ThesaurusDTO[].class))
                 .thenReturn(new ThesaurusDTO[]{expectedThesaurus});
 

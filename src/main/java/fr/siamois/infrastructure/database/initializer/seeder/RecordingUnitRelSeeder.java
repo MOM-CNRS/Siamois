@@ -21,13 +21,14 @@ public class RecordingUnitRelSeeder {
 
     }
 
-    public void seed(List<RecordingUnitDTO> specs) {
+    public void seed(List<RecordingUnitDTO> specs, Long institutionId) {
         // Step 1: Group children by parent identifier
         Map<String, List<RecordingUnit>> parentToChildren = new HashMap<>();
         for (var s : specs) {
             String parentKey = s.parent;
             RecordingUnit child = recordingUnitSeeder.getRecordingUnitFromKey(
-                    new RecordingUnitSeeder.RecordingUnitKey(s.child)
+                    new RecordingUnitSeeder.RecordingUnitKey(s.child),
+                    institutionId
             );
             if(child==null) continue;
             parentToChildren.computeIfAbsent(parentKey, k -> new ArrayList<>()).add(child);
@@ -37,7 +38,8 @@ public class RecordingUnitRelSeeder {
 
         for (Map.Entry<String, List<RecordingUnit>> entry : parentToChildren.entrySet()) {
             RecordingUnit parent = recordingUnitSeeder.getRecordingUnitFromKey(
-                    new RecordingUnitSeeder.RecordingUnitKey(entry.getKey())
+                    new RecordingUnitSeeder.RecordingUnitKey(entry.getKey()),
+                    institutionId
             );
             parent.getChildren().addAll(entry.getValue());
         }
@@ -45,7 +47,8 @@ public class RecordingUnitRelSeeder {
         // Step 3: Save all parents at once
         recordingUnitRepository.saveAll(parentToChildren.keySet().stream()
                 .map(key -> recordingUnitSeeder.getRecordingUnitFromKey(
-                        new RecordingUnitSeeder.RecordingUnitKey(key)
+                        new RecordingUnitSeeder.RecordingUnitKey(key),
+                        institutionId
                 ))
                 .toList());
     }

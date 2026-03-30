@@ -4,7 +4,6 @@
                 xmlns:h="http://xmlns.jcp.org/jsf/html"
                 xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
                 xmlns:p="http://primefaces.org/ui"
-                xmlns:c="http://java.sun.com/jsp/jstl/core"
                 xmlns:f="http://xmlns.jcp.org/jsf/core"
                 xmlns:form="http://java.sun.com/jsf/composite/pages/shared/form">
 
@@ -14,7 +13,7 @@
 
         <link rel="icon"
               type="image/svg+xml"
-              href="#{request.contextPath}/resources/img/svg/pencil-square.svg"/>
+              href="#{request.contextPath}#{focusViewBean.mainPanel.svgIcon()}"/>
 
 
     </ui:define>
@@ -111,7 +110,52 @@
         </div>
 
         <p:outputPanel style="display: flex;flex:1; flex-direction: row; overflow-y: hidden;" id="flow"
-                       styleClass="#{flowBean.fullscreenPanelIndex !=-1 ? 'focus' : ''}">
+                       styleClass="focus">
+
+            <h:form
+                    id="historyForm"
+                    styleClass="#{historyBean.historyOpen ? '' : 'is-collapsed'}"
+                    style="height: 100%; flex-direction: column; align-items: center;"
+            >
+                <div id="historyDiv" style="background: white;   width: 100%;  border: 1px solid #dee2e6;">
+
+                    <p:commandButton
+                            id="toggle-history-btn"
+                            value="Historique"
+                            style="width: 100%"
+                            icon="bi bi-chevron-double-left"
+                            action="#{historyBean.toggleHistory}"
+                            update="@none"
+                            process="@this"
+                            oncomplete="toggleCollapseHistory();"
+                            styleClass="ui-button-flat"
+                    >
+                    </p:commandButton>
+                </div>
+
+                <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
+                <p:outputPanel id="history" styleClass="history collapsed" style="height: 100%;width: 100%;">
+                    <p:dataScroller value="#{historyBean.items}"
+                                    mode="inline"
+                                    buffer="50"
+                                    style="height: 100%"
+                                    styleClass="panel-menu"
+                                    var="item" chunkSize="20">
+                        <f:facet name="loader">
+                            <p:commandButton type="button" value="+"/>
+                        </f:facet>
+                        <p:commandButton id="historyLink"
+                                         action="#{historyBean.redirectToEntry(item)}"
+                                         icon="#{item.icon}"
+                                         value="#{item.title}"
+                                         styleClass="#{item.styleClass} nav-link ui-button-flat">
+                        </p:commandButton>
+                        <p:tooltip for="@previous" value="#{item.title}"/>
+
+
+                    </p:dataScroller>
+                </p:outputPanel>
+            </h:form>
 
             <p:outputPanel id="flowContent" styleClass="flow fullscreen-flow focus">
                 <h:panelGroup
@@ -120,26 +164,49 @@
                         id="flow-panels">
 
                     <p:outputPanel id="panel-${focusViewBean.mainPanel.prefixPanelIndex}-container" styleClass="focus">
-                        <p:panel
+                        <h:panelGroup
                                 styleClass="#{focusViewBean.mainPanel.panelClass} panel-docked focus"
-                                style="display: flex; flex-direction: column; border-top: 3px solid var(--main-color)"
-                                id="panel-${focusViewBean.mainPanel.prefixPanelIndex}"
-                                toggleable="false"
-                                closable="false"
-                                toggleableHeader="false"
-                                collapsed="false">
+                                style="border-radius: 0px; display: flex; flex-direction: column; border-top: 3px solid var(--main-color)"
+                                id="panel-${focusViewBean.mainPanel.prefixPanelIndex}">
+                            <div class="sideview-titlebar" style="background: var(--siamois-green-light-100);">
+                                <h:form style="float:right;" id="actionForm-${focusViewBean.mainPanel.panelIndex}">
+                                    <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
+                                    <div style="padding: 3px;
+                                            display: flex;
+                                            border: 1px solid var(--siamois-green-light);
+                                            border-radius: 15px;">
+                                        <p:commandLink id="bookmarkToggleButton"
+                                                       styleClass="sideview-topbar-button"
+                                                       action="#{navBean.togglePanelBookmark(focusViewBean.mainPanel)}"
+                                                       update="bookmarkToggleButton navBarCsrfForm:siamoisNavForm">
+                                            <h:outputText styleClass="#{navBean.isPanelBookmarkedByUser(focusViewBean.mainPanel) ?
+                            'ui-icon bi bi-bookmark-fill' : 'ui-icon bi bi-bookmark'}"/>
+                                        </p:commandLink>
+                                        <p:commandLink id="refreshPanelButton"
+                                                       styleClass="sideview-topbar-button"
+                                                       action="#{focusViewBean.mainPanel.refresh()}"
+                                                       onstart="PF('buiPanel_${focusViewBean.mainPanel.panelIndex}').show();"
+                                                       oncomplete="PF('buiPanel_${focusViewBean.mainPanel.panelIndex}').hide();"
+                                                       onclick="event.stopPropagation();"
+                                                       update="panel-${focusViewBean.mainPanel.prefixPanelIndex}">
+                                            <h:outputText styleClass="bi bi-arrow-clockwise"/>
+                                        </p:commandLink>
+                                    </div>
 
-                            <f:facet name="header">
-                                <p:outputPanel id="panel-${focusViewBean.mainPanel.panelIndex}-header" style="display: flex;gap: 0.5em; align-items: center;
-                            flex-wrap: wrap; float:left;color: var(--main-color);">
+                                </h:form>
+                                <div style="display: flex;
+                                    gap: 0.5em;
+                                    align-items: center;
+                                    flex-wrap: wrap;">
                                     <ui:include rendered="#{focusViewBean.mainPanel.displayHeader() != null}"
                                                 src="#{focusViewBean.mainPanel.displayHeader()}">
                                         <ui:param name="panelModel" value="#{focusViewBean.mainPanel}"/>
                                     </ui:include>
-                                </p:outputPanel>
-                            </f:facet>
+                                </div>
+
+                            </div>
                             <p:outputPanel id="panelContent" deferred="false" loaded="#{focusViewBean.mainPanel.loaded}"
-                                           deferredMode="visible" styleClass="focus">
+                                           deferredMode="visible" styleClass="focus" style="min-height: 0">
                                 <f:facet name="loading">
                                     <div class="field" style="padding: 2em 3em;">
                                         <p:skeleton class="mb-2"/>
@@ -169,25 +236,7 @@
                                     <ui:param name="panelIndex" value="#{focusViewBean.mainPanel.panelIndex}"/>
                                 </ui:include>
                             </p:outputPanel>
-                            <f:facet name="actions">
-                                <h:form id="actionForm-${focusViewBean.mainPanel.panelIndex}">
-                                    <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
-                                    <div style="padding: 3px;
-                                            border: 1px solid var(--siamois-green-light);
-                                            border-radius: 15px;">
-                                        <p:commandLink id="bookmarkToggleButton"
-                                                       styleClass="ui-panel-titlebar-icon ui-corner-all ui-state-default"
-                                                       action="#{navBean.togglePanelBookmark(focusViewBean.mainPanel)}"
-                                                       onclick="event.stopPropagation();"
-                                                       update="bookmarkToggleButton navBarCsrfForm:siamoisNavForm">
-                                            <h:outputText styleClass="#{navBean.isPanelBookmarkedByUser(focusViewBean.mainPanel) ?
-                            'ui-icon bi bi-bookmark-fill' : 'ui-icon bi bi-bookmark'}"/>
-                                        </p:commandLink>
-                                    </div>
-
-                                </h:form>
-                            </f:facet>
-                        </p:panel>
+                        </h:panelGroup>
                         <p:blockUI block="panel-${focusViewBean.mainPanel.panelIndex}"
                                    widgetVar="buiPanel_${focusViewBean.mainPanel.panelIndex}">
                             <i class="pi pi-spin pi-spinner" style="font-size: 3rem"/>

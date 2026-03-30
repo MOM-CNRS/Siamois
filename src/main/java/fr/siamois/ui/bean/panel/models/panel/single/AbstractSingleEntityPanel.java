@@ -18,6 +18,7 @@ import fr.siamois.dto.entity.AbstractEntityDTO;
 import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.ui.bean.dialog.document.DocumentCreationBean;
 import fr.siamois.ui.bean.panel.FlowBean;
+import fr.siamois.ui.bean.panel.models.panel.AbstractPanel;
 import fr.siamois.ui.bean.panel.models.panel.single.tab.*;
 import io.micrometer.common.lang.Nullable;
 import lombok.EqualsAndHashCode;
@@ -84,6 +85,7 @@ public abstract class AbstractSingleEntityPanel<T extends AbstractEntityDTO> ext
 
     protected transient RevisionWithInfo<T> bufferedLastRevision;
 
+
     public abstract void refreshUnit();
 
     public void refresh() {
@@ -99,6 +101,37 @@ public abstract class AbstractSingleEntityPanel<T extends AbstractEntityDTO> ext
 
     public abstract List<PersonDTO> authorsAvailable();
 
+    // --- Abstract methods to override per type ---
+
+    protected abstract String getFocusPath(Long id);
+
+    protected abstract void addToOverview(Long id, AbstractPanel parentOrOverview, Integer activeTabIndex);
+
+    protected abstract  T findNext();
+
+    protected abstract  T findPrevious();
+
+    // --- Common logic ---
+
+    public void redirectToFocusOrOverview(Long id, Integer activeTabIndex) throws IOException {
+        if (isRoot) {
+            flowBean.redirectToFocus(getFocusPath(id));
+        } else {
+            // if not root, add unit to the overview of the parent
+            addToOverview(id, parentOrOverview, activeTabIndex);
+        }
+    }
+
+    public void goToNext() throws IOException {
+        AbstractEntityDTO next = findNext();
+        redirectToFocusOrOverview(next.getId(), activeTabIndex);
+    }
+
+    public void goToPrevious() throws IOException {
+        AbstractEntityDTO previous = findPrevious();
+        redirectToFocusOrOverview(previous.getId(), activeTabIndex);
+    }
+
     public static final Vocabulary SYSTEM_THESO;
 
     static {
@@ -109,9 +142,11 @@ public abstract class AbstractSingleEntityPanel<T extends AbstractEntityDTO> ext
 
     protected static final String COLUMN_CLASS_NAME = "ui-g-12 ui-md-6 ui-lg-4";
 
-        /*
-    Find unit by its ID
-     */
+    public abstract void toggleValidate();
+
+    /*
+        Find unit by its ID
+         */
     abstract T findUnitById(Long id);
 
     /*
@@ -141,12 +176,18 @@ Return the command that opens panel for the unit
     }
 
     protected DefaultMenuItem createHomeItem() {
+
+        String instName = flowBean.getSelectedInstitution().getName();
+        String truncatedName = (instName != null && instName.length() > 23)
+                ? instName.substring(0, 20) + "..."
+                : instName;
+
         return DefaultMenuItem.builder()
-                .value("")
+                .value(" " + truncatedName)
                 .id("home")
                 .icon("bi bi-house")
                 .command("#{flowBean.redirectToDashboard()}")
-                .update("flow")
+                .update("@this")
                 .onstart(PF_BUI_CONTENT_SHOW)
                 .oncomplete(PF_BUI_CONTENT_HIDE)
                 .process(THIS)
@@ -158,7 +199,7 @@ Return the command that opens panel for the unit
                 .value(findLabel(unit))
                 .id(String.valueOf(unit.getId()))
                 .command(getOpenPanelCommand(unit))
-                .update("flow")
+                .update("@this")
                 .onstart(PF_BUI_CONTENT_SHOW)
                 .oncomplete(PF_BUI_CONTENT_HIDE)
                 .process(THIS)
@@ -236,8 +277,8 @@ Return the command that opens panel for the unit
         documents.add(created);
         PrimeFaces.current().executeScript("PF('newDocumentDiag').hide()");
 
-        int pos = flowBean.getPanels().indexOf(this);
-        if(pos >=0) { PrimeFaces.current().ajax().update("panel-".concat(Integer.toString(pos))); }
+        String panelIndex = isRoot ? "panel-".concat(getPrefixPanelIndex()) : "sideview-".concat(parentOrOverview.getPrefixPanelIndex());
+        PrimeFaces.current().ajax().update(panelIndex);
 
 
     }
@@ -345,6 +386,10 @@ Return the command that opens panel for the unit
     }
 
 
+    @Override
+    public boolean hasPreviousNext() {
+        return true;
+    }
 
 
 }

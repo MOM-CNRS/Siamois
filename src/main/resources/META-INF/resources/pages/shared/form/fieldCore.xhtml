@@ -110,6 +110,7 @@
             rendered="#{col.field['class'].simpleName eq 'CustomFieldSelectOneSpatialUnit'}"
             hasBeenModified="#{hasBeenModified}"
             field="#{col.field}"
+            formCtx="#{formCtx}"
             mode="#{mode}"
             panelId="#{panelId}"
             onModified="#{formCtx.onFieldAnswerModifiedListener}"
@@ -153,16 +154,23 @@
             answer="#{answer}"/>
 
 
-    <!-- Select spatial unit from tree -->
-    <siaInplace:spatialUnitTree
-            id="spatialUnitTree"
+
+    <siaInplace:spatialMultiple
+            id="spatialMultiple"
             rendered="#{col.field['class'].simpleName eq 'CustomFieldSelectMultipleSpatialUnitTree'}"
             hasBeenModified="#{hasBeenModified}"
             field="#{col.field}"
-            mode="#{mode}"
             formCtx="#{formCtx}"
-            updateTargetsOnBlur="#{updateTargetsOnBlur}"
-            answer="#{answer}"/>
+            multiple="true"
+            mode="#{mode}"
+            panelId="#{panelId}"
+            onModified="#{formCtx.onFieldAnswerModifiedListener}"
+            updateTargetsOnBlur="#{panelHeaderUpdateId}"
+            required="#{col.required}"
+            label="#{spatialUnitFieldBean.resolveCustomFieldLabel(col.field)}"
+            spatialUnitOptions="#{spatialUnitOptions}"
+            answer="#{answer}"
+    />
 
     <!-- Select one code OA -->
     <siaInplace:actionCode
@@ -175,6 +183,19 @@
             answer="#{answer}"
             mode="#{mode}"
             updateTargetsOnBlur="#{updateTargetsOnBlur}"
+    />
+
+    <siaInplace:address
+            id="address"
+            formCtx="#{formCtx}"
+            rendered="#{col.field['class'].simpleName eq 'CustomFieldSelectOneAddress'}"
+            hasBeenModified="#{hasBeenModified}"
+            field="#{col.field}"
+            mode="#{mode}"
+            onModified="#{formCtx.onFieldAnswerModifiedListener}"
+            updateTargetsOnBlur="#{updateTargetsOnBlur}"
+            required="#{col.required}"
+            answer="#{answer}"
     />
 
 

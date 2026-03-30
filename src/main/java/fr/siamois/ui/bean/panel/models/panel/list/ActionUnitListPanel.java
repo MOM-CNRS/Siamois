@@ -63,6 +63,11 @@ public class ActionUnitListPanel extends AbstractListPanel<ActionUnitDTO> implem
     }
 
     @Override
+    public String svgIcon() {
+        return "/resources/img/svg/arrow-down-square.svg";
+    }
+
+    @Override
     protected long countUnitsByInstitution() {
         return actionUnitService.countByInstitutionId(sessionSettingsBean.getSelectedInstitution().getId());
     }

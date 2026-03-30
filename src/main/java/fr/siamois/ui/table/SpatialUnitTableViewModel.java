@@ -106,7 +106,7 @@ public class SpatialUnitTableViewModel extends EntityTableViewModel<SpatialUnitD
                                      SpatialUnitDTO su) {
 
         if (column.getAction() == GO_TO_SPATIAL_UNIT) {
-            flowBean.addSpatialUnitToOverview(su.getId(), parentPanel);
+            flowBean.addSpatialUnitToOverview(su.getId(), parentPanel, null);
         } else {
             throw new IllegalStateException("Unhandled action: " + column.getAction());
         }
@@ -136,7 +136,7 @@ public class SpatialUnitTableViewModel extends EntityTableViewModel<SpatialUnitD
             return switch (rel.getCountKey()) {
                 case PARENTS -> su.getParents() == null ? 0 : su.getParents().size();
                 case CHILDREN -> su.getChildren() == null ? 0 : su.getChildren().size();
-                case "action" -> su.getRelatedActionUnitList() == null ? 0 : su.getRelatedActionUnitList().size();
+                case "actions" -> su.getRelatedActionUnitList() == null ? 0 : su.getRelatedActionUnitList().size();
                 case "recordingUnit" -> su.getRecordingUnitList() == null ? 0 : su.getRecordingUnitList().size();
                 default -> 0;
             };
@@ -210,7 +210,7 @@ public class SpatialUnitTableViewModel extends EntityTableViewModel<SpatialUnitD
     public void handleRelationAction(RelationColumn col, SpatialUnitDTO su, TableColumnAction action) {
         switch (action) {
 
-            case VIEW_RELATION -> flowBean.goToSpatialUnitByIdNewPanel(su.getId());
+            case VIEW_RELATION -> flowBean.addSpatialUnitToOverview(su.getId(), parentPanel, 3);
 
             case ADD_RELATION -> {
                 // Dispatch based on column.countKey (or add a dedicated "relationKey")

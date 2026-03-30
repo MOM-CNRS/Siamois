@@ -3,6 +3,7 @@ package fr.siamois.ui.table.definitions;
 
 import fr.siamois.domain.models.form.customfield.CustomFieldSelectOneFromFieldCode;
 import fr.siamois.domain.models.form.customfield.CustomFieldText;
+import fr.siamois.domain.models.specimen.Specimen;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.dto.entity.SpecimenDTO;
 import fr.siamois.ui.table.CommandLinkColumn;
@@ -54,42 +55,44 @@ public final class SpecimenTableDefinitionFactory {
 
 
         CustomFieldSelectOneFromFieldCode catField =  CustomFieldSelectOneFromFieldCode.builder()
-                .label("recordingunit.property.type")
+                .label("specimen.field.type")
                 .isSystemField(true)
                 .id(2L)
-                .valueBinding("category")
+                .valueBinding("type")
                 .concept(typeConcept)
-                .fieldCode("SIAS.CAT")
+                .fieldCode(Specimen.CATEGORY_FIELD)
                 .styleClass("mr-2 recording-unit-type-chip")
                 .build();
 
 
 
-        tableModel.getTableDefinition().addColumn(
+
+        tableModel.getTableDefinition().setCommandLinkColumn(
                 CommandLinkColumn.builder()
-                        .id("identifierCol")
-                        .headerKey("table.recordingunit.column.identifier")
-                        .visible(true)
+                .id("identifierCol")
+                .headerKey("table.recordingunit.column.identifier")
+                .visible(true)
 
-                        // PrimeFaces metadata equivalents
-                        .toggleable(false)
-                        .sortable(false)
-                        .filterable(false)
-                        .sortField("full_identifier")
+                // PrimeFaces metadata equivalents
+                .toggleable(false)
+                .sortable(false)
+                .filterable(false)
+                .sortField("full_identifier")
 
-                        // What to display inside <h:outputText>
-                        .valueKey("fullIdentifier")
+                // What to display inside <h:outputText>
+                .valueKey("fullIdentifier")
 
-                        // What to do on click (Pattern A key)
-                        .action(TableColumnAction.GO_TO_SPECIMEN)
+                // What to do on click (Pattern A key)
+                .action(TableColumnAction.GO_TO_SPECIMEN)
 
-                        // CommandLink behavior
-                        .processExpr("@this")
-                        .updateExpr("flow")
-                        .onstartJs("PF('buiContent').show()")
-                        .oncompleteJs("PF('buiContent').hide();handleScrollToTop();")
-                        .build()
+                // CommandLink behavior
+                .processExpr("@this")
+                .updateExpr("flow")
+                .onstartJs("PF('buiContent').show()")
+                .oncompleteJs("PF('buiContent').hide();")
+                .build()
         );
+
 
         tableModel.getTableDefinition().addColumn(
                 FormFieldColumn.builder()
@@ -105,7 +108,7 @@ public final class SpecimenTableDefinitionFactory {
         tableModel.getTableDefinition().addColumn(
                 FormFieldColumn.builder()
                         .id("type")
-                        .headerKey("recordingunit.property.type")
+                        .headerKey("specimen.field.type")
                         .field(catField)
                         .sortable(false)
                         .filterable(false)

@@ -52,6 +52,7 @@
                     <ui:param name="icon" value="#{panelModel.tabs[1].icon}"/>
                     <ui:param name="emptyTab" value="#{panelModel.emptyTabFor(panelModel.tabs[1])}"/>
                     <ui:param name="validated" value="#{panelModel.unit.validated}"/>
+                    <ui:param name="count" value="#{panelModel.documents.size()}"/>
                 </ui:include>
             </f:facet>
 
@@ -73,6 +74,7 @@
                     <ui:param name="icon" value="#{panelModel.tabs[2].icon}"/>
                     <ui:param name="emptyTab" value="#{panelModel.emptyTabFor(panelModel.tabs[2])}"/>
                     <ui:param name="validated" value="#{panelModel.unit.validated}"/>
+                    <ui:param name="count" value="#{panelModel.unit.children.size()}"/>
                 </ui:include>
             </f:facet>
 
@@ -94,6 +96,7 @@
                     <ui:param name="icon" value="#{panelModel.tabs[3].icon}"/>
                     <ui:param name="emptyTab" value="#{panelModel.emptyTabFor(panelModel.tabs[3])}"/>
                     <ui:param name="validated" value="#{panelModel.unit.validated}"/>
+                    <ui:param name="count" value="#{panelModel.unit.relatedActionUnitList.size()}"/>
                 </ui:include>
             </f:facet>
 

@@ -20,6 +20,7 @@ import fr.siamois.ui.bean.dialog.newunit.GenericNewUnitDialogBean;
 import fr.siamois.ui.bean.dialog.newunit.NewUnitContext;
 import fr.siamois.ui.bean.dialog.newunit.UnitKind;
 import fr.siamois.ui.bean.panel.models.PanelBreadcrumb;
+import fr.siamois.ui.bean.panel.models.panel.AbstractPanel;
 import fr.siamois.ui.bean.panel.models.panel.single.tab.ActionTab;
 import fr.siamois.ui.bean.panel.utils.SpatialUnitHelperService;
 import fr.siamois.ui.form.FormUiDto;
@@ -117,7 +118,14 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
 
     @Override
     String getOpenPanelCommand(SpatialUnitDTO unit) {
-        return "#{navBean.redirectToBookmarked('/spatial-unit/".concat(unit.getId().toString()).concat("')}");
+
+        if(isRoot) {
+            return "#{navBean.redirectToBookmarked('/spatial-unit/".concat(unit.getId().toString()).concat("')}");
+        }
+        else {
+
+            return "#{flowBean.addSpatialUnitToOverview(" + unit.getId() + ", focusViewBean.mainPanel, null)}";
+        }
     }
 
 
@@ -164,6 +172,31 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
 
         return personService.findAllAuthorsOfSpatialUnitByInstitution(sessionSettings.getSelectedInstitution());
 
+    }
+
+    @Override
+    protected String getFocusPath(Long id) {
+        return "";
+    }
+
+    @Override
+    protected void addToOverview(Long id, AbstractPanel parentOrOverview, Integer activeTabIndex) {
+        flowBean.addSpatialUnitToOverview(id,parentOrOverview, activeTabIndex);
+    }
+
+    @Override
+    protected SpatialUnitDTO findNext() {
+        return spatialUnitService.findPreviousByInstitution(unit.getCreatedByInstitution(), unit);
+    }
+
+    @Override
+    protected SpatialUnitDTO findPrevious() {
+        return spatialUnitService.findNextByInstitution(unit.getCreatedByInstitution(), unit);
+    }
+
+    @Override
+    public void toggleValidate() {
+        unit = spatialUnitService.toggleValidated(unit.getId());
     }
 
     @Override
@@ -294,6 +327,11 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
     @Override
     public String getPrefixPanelIndex() {
         return "spatial-unit-"+ unitId;
+    }
+
+    @Override
+    public String svgIcon() {
+        return "/resources/img/svg/geo-alt.svg";
     }
 
     @Override

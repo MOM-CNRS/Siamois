@@ -6,7 +6,9 @@
 >
 
     <cc:interface>
-        <cc:attribute name="answer" type="fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerSelectOneActionUnitViewModel" required="true"/>
+        <cc:attribute name="answer"
+                      type="fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerSelectOneActionUnitViewModel"
+                      required="true"/>
         <cc:attribute name="hasBeenModified" type="Boolean" required="false" default="false"/>
         <cc:attribute name="field" type="fr.siamois.domain.models.form.customfield.CustomFieldSelectOneActionUnit"
                       required="true"/>
@@ -27,9 +29,13 @@
                         <p:commandLink
                                 styleClass="action-unit"
                                 value="#{cc.attrs.answer.value.name}"
-                                action="#{navBean.redirectToActionUnit}"
-                                ajax="false">
-                            <f:param name="id" value="#{cc.attrs.answer.value.id}" />
+                                action="#{flowBean.addActionUnitToOverview(cc.attrs.answer.value.id,
+                                focusViewBean.mainPanel,
+                                null
+                                )}"
+                                process="@this"
+                                update="@this">
+                            <f:param name="id" value="#{cc.attrs.answer.value.id}"/>
                         </p:commandLink>
                         <p:chip
                                 rendered="#{cc.attrs.displayType}"

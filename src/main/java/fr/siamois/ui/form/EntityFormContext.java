@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import fr.siamois.domain.models.form.customfield.CustomField;
-import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerStratigraphy;
+import fr.siamois.domain.services.GeoPlatService;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.form.FormService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
@@ -15,6 +15,7 @@ import fr.siamois.dto.StratigraphicRelationshipDTO;
 import fr.siamois.dto.entity.*;
 import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
 import fr.siamois.ui.bean.LangBean;
+import fr.siamois.ui.bean.SessionSettingsBean;
 import fr.siamois.ui.form.fieldsource.FieldSource;
 import fr.siamois.ui.form.rules.ColumnApplier;
 import fr.siamois.ui.form.rules.EnabledRulesEngine;
@@ -25,16 +26,14 @@ import fr.siamois.ui.form.savestrategy.SpatialUnitSaveStrategy;
 import fr.siamois.ui.form.savestrategy.SpecimenSaveStrategy;
 import fr.siamois.ui.viewmodel.CustomFormResponseViewModel;
 import fr.siamois.ui.viewmodel.TreeUiStateViewModel;
-import fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerSelectMultipleSpatialUnitTreeViewModel;
-import fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerSelectOneFromFieldCodeViewModel;
-import fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerViewModel;
+import fr.siamois.ui.viewmodel.fieldanswer.*;
+import fr.siamois.utils.MessageUtils;
 import jakarta.faces.application.FacesMessage;
 import jakarta.faces.component.UIComponent;
 import jakarta.faces.component.UIInput;
 import jakarta.faces.context.FacesContext;
 import jakarta.faces.event.AjaxBehaviorEvent;
 import lombok.Data;
-import lombok.Getter;
 import org.primefaces.PrimeFaces;
 import org.primefaces.event.SelectEvent;
 import org.primefaces.model.TreeNode;
@@ -65,6 +64,7 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
     public static final String UNCERTAIN = "uncertain";
     public static final String VOCABULARY_LABEL = "vocabularyLabel";
     public static final String SELECT_RU = "selectRU";
+    public static final String DATABASE_ID = "databaseId";
 
     private T unit;
 
@@ -79,6 +79,10 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
     private final ActionUnitService actionUnitService;
     private final LangBean langBean;
     private final ConversionService conversionService;
+    private final SessionSettingsBean sessionSettingsBean;
+    private final GeoPlatService geoPlatService;
+
+    private List<SpatialUnitSummaryDTO> options; // spatial unit options
 
 
     private CustomFormResponseViewModel formResponse;
@@ -124,12 +128,14 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
         this.fieldSource = fieldSource;
         this.formService = services.getFormService();
         this.actionUnitService = services.getActionUnitService();
+        this.geoPlatService = services.getGeoPlatService();
         this.spatialUnitTreeService = services.getSpatialUnitTreeService();
         this.specimenService = services.getSpecimenService();
         this.spatialUnitService = services.getSpatialUnitService();
         this.recordingUnitService = services.getRecordingUnitService();
         this.langBean = services.getLangBean();
         this.conversionService = conversionService;
+        this.sessionSettingsBean = services.getSessionSettingsBean();
         this.formScopeChangeCallback = formScopeChangeCallback;
         this.formScopeValueBinding = formScopeValueBinding;
     }
@@ -386,16 +392,57 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
      */
     public List<SpatialUnitSummaryDTO> getSpatialUnitOptions() {
 
-        if (!(unit instanceof RecordingUnitDTO ru)) {
-            return Collections.emptyList();
+
+        if(unit instanceof ActionUnitDTO au) {
+            return spatialUnitService.findAllSummaryOfInstitution(au.getCreatedByInstitution().getId());
         }
 
-        return spatialUnitService.getSpatialUnitOptionsFor(ru);
+        if(unit instanceof RecordingUnitDTO ru) {
+            return spatialUnitService.getSpatialUnitOptionsFor(ru);
+        }
+
+        return Collections.emptyList();
+
     }
 
     public void setFieldAnswerHasBeenModified(CustomField field) {
         markFieldModified(field);
 
+    }
+
+    public void saveNewPlaceFromField(CustomFieldAnswerSelectOneSpatialUnitViewModel answer) {
+        try {
+            SpatialUnitDTO toSave = new SpatialUnitDTO();
+            toSave.setName(answer.getNewName());
+            toSave.setCategory(answer.getNewType().concept());
+            toSave = spatialUnitService.save(sessionSettingsBean.getUserInfo(), toSave);
+            answer.setValue(new SpatialUnitSummaryDTO(toSave));
+            if(unit.getId() != null) {
+                this.save();
+            }
+
+        }
+        catch(Exception e) {
+            MessageUtils.displayErrorMessage(langBean, "dialog.unsaved.error", e.getMessage());
+        }
+
+    }
+
+    public void saveNewPlaceFromField(CustomFieldAnswerSelectMultipleSpatialUnitTreeViewModel answer)  {
+
+        try {
+            SpatialUnitDTO toSave = new SpatialUnitDTO();
+            toSave.setName(answer.getNewName());
+            toSave.setCategory(answer.getNewType().concept());
+            toSave = spatialUnitService.save(sessionSettingsBean.getUserInfo(), toSave);
+            answer.getValue().add(new SpatialUnitSummaryDTO(toSave));
+            if(unit.getId() != null) {
+                this.save();
+            }
+        }
+        catch(Exception e) {
+            MessageUtils.displayErrorMessage(langBean, "dialog.unsaved.error", e.getMessage());
+        }
     }
 
     public void onFieldAnswerModifiedListener(AjaxBehaviorEvent event) {
@@ -423,7 +470,7 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
      * Get all recording units of the same scope (action unit) as the current unit.
      * @return The list of recording units
      */
-    public List<RecordingUnitDTO> getRecordingUnitOptions() {
+    public List<RecordingUnitSummaryDTO> getRecordingUnitOptions() {
         if (unit instanceof RecordingUnitDTO recordingUnit) {
             return recordingUnitService.findAllByActionUnit(recordingUnit.getActionUnit().getId());
         }
@@ -431,9 +478,9 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
     }
 
 
-    public void addStratigraphicRelationship(CustomFieldAnswerStratigraphy answer) {
-        FacesContext context = FacesContext.getCurrentInstance();
-        UIComponent cc = UIComponent.getCurrentCompositeComponent(context);
+    public void addStratigraphicRelationship(CustomFieldAnswerStratigraphyViewModel answer,
+                                             FacesContext context,
+                                             UIComponent cc) {
 
         if (!validateInputs(answer, context, cc)) {
             context.validationFailed();
@@ -456,7 +503,7 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
         PrimeFaces.current().ajax().update(cc.getClientId().concat(":stratigraphyGraphContainer"));
     }
 
-    private boolean validateInputs(CustomFieldAnswerStratigraphy answer, FacesContext context, UIComponent cc) {
+    private boolean validateInputs(CustomFieldAnswerStratigraphyViewModel answer, FacesContext context, UIComponent cc) {
         boolean isValid = true;
 
         if (answer.getConceptToAdd() == null) {
@@ -482,13 +529,13 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
         context.addMessage(c.getClientId(context), msg);
     }
 
-    private boolean relationshipExists(CustomFieldAnswerStratigraphy answer) {
+    private boolean relationshipExists(CustomFieldAnswerStratigraphyViewModel answer) {
         return checkSynchronousRelationships(answer) ||
                 checkPosteriorRelationships(answer) ||
                 checkAnteriorRelationships(answer);
     }
 
-    private boolean checkSynchronousRelationships(CustomFieldAnswerStratigraphy answer) {
+    private boolean checkSynchronousRelationships(CustomFieldAnswerStratigraphyViewModel answer) {
         for (StratigraphicRelationshipDTO rel : answer.getSynchronousRelationships()) {
             if ((rel.getUnit1().equals(answer.getSourceToAdd()) && rel.getUnit2().equals(answer.getTargetToAdd())) ||
                     (rel.getUnit1().equals(answer.getTargetToAdd()) && rel.getUnit2().equals(answer.getSourceToAdd()))) {
@@ -498,7 +545,7 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
         return false;
     }
 
-    private boolean checkPosteriorRelationships(CustomFieldAnswerStratigraphy answer) {
+    private boolean checkPosteriorRelationships(CustomFieldAnswerStratigraphyViewModel answer) {
         for (StratigraphicRelationshipDTO rel : answer.getPosteriorRelationships()) {
             if (rel.getUnit1().equals(answer.getSourceToAdd()) && rel.getUnit2().equals(answer.getTargetToAdd())) {
                 return true;
@@ -507,7 +554,7 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
         return false;
     }
 
-    private boolean checkAnteriorRelationships(CustomFieldAnswerStratigraphy answer) {
+    private boolean checkAnteriorRelationships(CustomFieldAnswerStratigraphyViewModel answer) {
         for (StratigraphicRelationshipDTO rel : answer.getAnteriorRelationships()) {
             if (rel.getUnit1().equals(answer.getTargetToAdd()) && rel.getUnit2().equals(answer.getSourceToAdd())) {
                 return true;
@@ -516,7 +563,7 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
         return false;
     }
 
-    private void addNewStratigraphicRelationship(CustomFieldAnswerStratigraphy answer) {
+    private void addNewStratigraphicRelationship(CustomFieldAnswerStratigraphyViewModel answer) {
         StratigraphicRelationshipDTO newRel = new StratigraphicRelationshipDTO();
         String parentLabel = getParentLabel(answer);
 
@@ -529,13 +576,13 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
         }
     }
 
-    private String getParentLabel(CustomFieldAnswerStratigraphy answer) {
+    private String getParentLabel(CustomFieldAnswerStratigraphyViewModel answer) {
         return answer.getConceptToAdd().getHierarchyPrefLabels() == null ?
                 answer.getConceptToAdd().getOriginalPrefLabel() :
                 answer.getConceptToAdd().getHierarchyPrefLabels();
     }
 
-    private void setupSynchronousRelationship(CustomFieldAnswerStratigraphy answer,
+    private void setupSynchronousRelationship(CustomFieldAnswerStratigraphyViewModel answer,
                                               StratigraphicRelationshipDTO newRel) {
         newRel.setUnit1(answer.getSourceToAdd());
         newRel.setUnit2(answer.getTargetToAdd());
@@ -546,7 +593,7 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
         answer.getSynchronousRelationships().add(newRel);
     }
 
-    private void setupPosteriorRelationship(CustomFieldAnswerStratigraphy answer,
+    private void setupPosteriorRelationship(CustomFieldAnswerStratigraphyViewModel answer,
                                             StratigraphicRelationshipDTO newRel) {
         newRel.setUnit1(answer.getSourceToAdd());
         newRel.setUnit2(answer.getTargetToAdd());
@@ -557,7 +604,7 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
         answer.getPosteriorRelationships().add(newRel);
     }
 
-    private void setupAnteriorRelationship(CustomFieldAnswerStratigraphy answer,
+    private void setupAnteriorRelationship(CustomFieldAnswerStratigraphyViewModel answer,
                                            StratigraphicRelationshipDTO newRel) {
         newRel.setUnit1(answer.getTargetToAdd());
         newRel.setUnit2(answer.getSourceToAdd());
@@ -570,7 +617,7 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
 
 
 
-    public String getRelationshipsAsJson(CustomFieldAnswerStratigraphy answer) {
+    public String getRelationshipsAsJson(CustomFieldAnswerStratigraphyViewModel answer) {
 
         ObjectMapper mapper = new ObjectMapper();
         ObjectNode root = mapper.createObjectNode();
@@ -581,6 +628,7 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
         for (StratigraphicRelationshipDTO rel : answer.getAnteriorRelationships()) {
             ObjectNode node = mapper.createObjectNode();
             node.put(UNIT_1_ID, rel.getUnit1().getFullIdentifier());
+            node.put(DATABASE_ID, rel.getUnit1().getId());
             node.put(VOCABULARY_LABEL, formService.getLabelBean().findLabelOf(rel.getConcept()));
             node.put(VOCABULARY_DIRECTION, rel.getConceptDirection());
             node.put(UNCERTAIN, rel.getUncertain() != null && rel.getUncertain());
@@ -593,6 +641,7 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
         for (StratigraphicRelationshipDTO rel : answer.getPosteriorRelationships()) {
             ObjectNode node = mapper.createObjectNode();
             node.put(UNIT_1_ID, rel.getUnit2().getFullIdentifier());
+            node.put(DATABASE_ID, rel.getUnit2().getId());
             node.put(VOCABULARY_LABEL, formService.getLabelBean().findLabelOf(rel.getConcept()));
             node.put(VOCABULARY_DIRECTION, !rel.getConceptDirection());
             node.put(UNCERTAIN, rel.getUncertain() != null && rel.getUncertain());
@@ -621,6 +670,7 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
             }
 
             node.put(UNIT_1_ID, otherUnit.getFullIdentifier());
+            node.put(DATABASE_ID, otherUnit.getId());
             node.put(VOCABULARY_LABEL,
                     formService.getLabelBean().findLabelOf(rel.getConcept()));
             node.put(VOCABULARY_DIRECTION, direction);
@@ -648,6 +698,10 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
                     "No save strategy defined for type: " + unit.getClass().getSimpleName()
             );
         }
+    }
+
+    public List<FullAddress> completeAdresse(String query) {
+        return geoPlatService.search(query);
     }
 
 }

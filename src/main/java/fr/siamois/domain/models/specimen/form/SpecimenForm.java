@@ -111,9 +111,9 @@ public abstract class SpecimenForm {
     @Transient
     @JsonIgnore
     protected static CustomFieldSelectOneFromFieldCode specimenCategoryField =  CustomFieldSelectOneFromFieldCode.builder()
-            .label("specimen.field.category")
+            .label("specimen.field.type")
             .isSystemField(true)
-            .valueBinding("category")
+            .valueBinding("type")
             .id(5L)
             .styleClass("mr-2 specimen-type-chip")
             .iconClass("bi bi-bucket")

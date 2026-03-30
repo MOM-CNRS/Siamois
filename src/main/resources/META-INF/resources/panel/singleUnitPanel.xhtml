@@ -14,7 +14,7 @@
             <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
 
             <!-- breadcrumbs if exists -->
-            <p:outputPanel id="breadcrumbs" rendered="#{panelModel.isRoot()}">
+            <p:outputPanel id="xbreadcrumbs">
                 <ui:repeat var="breadcrumbModel" value="#{panelModel.allParentBreadcrumbModels}">
                     <p:breadCrumb lastItemDisabled="true" styleClass="panel-bc" homeDisplay="text"
                                   model="#{breadcrumbModel}"/>
@@ -54,7 +54,7 @@
                                     </span>
                                     </i>
                                 </small>
-                                <h:panelGroup rendered="#{panelModel.unit.validated}">
+                                <h:panelGroup rendered="#{panelModel.unit.validated == 'VALIDATED'}">
                                     <small>
                                         <i>
                                             Validé le

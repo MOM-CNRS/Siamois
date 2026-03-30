@@ -1,7 +1,5 @@
 package fr.siamois.infrastructure.database.repositories.team;
 
-import fr.siamois.domain.models.actionunit.ActionUnit;
-import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.team.TeamMemberRelation;
 import fr.siamois.dto.entity.PersonDTO;
 import org.springframework.data.jpa.repository.Query;
@@ -33,7 +31,7 @@ public interface TeamMemberRepository extends CrudRepository<TeamMemberRelation,
 
     boolean existsByActionUnitIdAndPerson(Long actionUnitId, PersonDTO person);
 
-    Set<TeamMemberRelation> findAllByActionUnit(ActionUnit actionUnit);
+    Set<TeamMemberRelation> findAllByActionUnitId(Long actionUnitId);
 
-    Optional<TeamMemberRelation> findByActionUnitAndPerson(ActionUnit actionUnit, Person person);
+    Optional<TeamMemberRelation> findByActionUnitIdAndPersonId(Long actionUnitId, Long personId);
 }

@@ -1,9 +1,11 @@
 package fr.siamois.infrastructure.database.initializer;
 
 import fr.siamois.domain.models.exceptions.database.DatabaseDataInitException;
+import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.infrastructure.database.initializer.seeder.*;
+import fr.siamois.infrastructure.database.repositories.institution.InstitutionRepository;
 import fr.siamois.infrastructure.dataimport.OOXMLImportService;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -28,6 +30,7 @@ public class ChartresDatasetInitializer implements DatabaseInitializer {
 
 
     public static final String VOCABULARY_ID = "th240";
+    private final InstitutionRepository institutionRepository;
 
 
     List<ThesaurusSeeder.ThesaurusSpec> thesauri = List.of(
@@ -92,14 +95,15 @@ public class ChartresDatasetInitializer implements DatabaseInitializer {
 
         personSeeder.seed(specs.getPersons());
         institutionSeeder.seed(specs.getInstitutions());
+        Institution ch = institutionRepository.findInstitutionByIdentifier("chartres").orElseThrow(() -> new RuntimeException("CHARTRES NOT FOUND"));
         spatialUnitSeeder.seed(specs.getSpatialUnits());
         actionCodeSeeder.seed(specs.getActionCodes());
         actionUnitSeeder.seed(specs.getActionUnits());
         recordingUnitSeeder.seed(specs.getRecordingUnits());
-        specimenSeeder.seed(specs.getSpecimenSpecs());
+        specimenSeeder.seed(specs.getSpecimenSpecs(), ch.getId());
         recordingUnitSeeder.seed(specs.getRecordingUnits());
-        recordingUnitRelSeeder.seed(specs.getRecordingUnitRelSpecs());
-        recordingUnitStratiRelSeeder.seed(specs.getRecordingUnitStratiRelSpecs());
+        recordingUnitRelSeeder.seed(specs.getRecordingUnitRelSpecs(), ch.getId());
+        recordingUnitStratiRelSeeder.seed(specs.getRecordingUnitStratiRelSpecs(), ch.getId());
 
 
     }

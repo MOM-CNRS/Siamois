@@ -60,6 +60,11 @@ public class RecordingUnitListPanel extends AbstractListPanel<RecordingUnitDTO> 
         return "recording-unit-list";
     }
 
+    @Override
+    public String svgIcon() {
+        return "/resources/img/svg/pencil-square.svg";
+    }
+
     @SuppressWarnings("unchecked")
     public RecordingUnitListPanel(ApplicationContext context) {
         super("panel.title.allrecordingunit",

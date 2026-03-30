@@ -12,6 +12,7 @@ import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.dto.entity.SpecimenDTO;
 import fr.siamois.ui.bean.RedirectBean;
 import fr.siamois.ui.bean.panel.models.PanelBreadcrumb;
+import fr.siamois.ui.bean.panel.models.panel.AbstractPanel;
 import fr.siamois.ui.form.FormUiDto;
 import fr.siamois.ui.mapper.FormMapper;
 import lombok.EqualsAndHashCode;
@@ -147,6 +148,31 @@ public class SpecimenPanel extends AbstractSingleEntityPanel<SpecimenDTO>  imple
     }
 
     @Override
+    protected String getFocusPath(Long id) {
+        return "/specimen/"+id;
+    }
+
+    @Override
+    protected void addToOverview(Long id, AbstractPanel parentOrOverview, Integer activeTabIndex) {
+        flowBean.addSpecimenToOverview(id,parentOrOverview, activeTabIndex);
+    }
+
+    @Override
+    protected SpecimenDTO findNext() {
+        return specimenService.findNextByActionUnit(unit.getRecordingUnit(), unit);
+    }
+
+    @Override
+    protected SpecimenDTO findPrevious() {
+        return specimenService.findPreviousByActionUnit(unit.getRecordingUnit(), unit);
+    }
+
+    @Override
+    public void toggleValidate() {
+        unit = specimenService.toggleValidated(unit.getId());
+    }
+
+    @Override
     SpecimenDTO findUnitById(Long id) {
         return specimenService.findById(id);
     }
@@ -158,11 +184,22 @@ public class SpecimenPanel extends AbstractSingleEntityPanel<SpecimenDTO>  imple
 
     @Override
     protected DefaultMenuItem createRootTypeItem() {
+
+        String command ;
+        Long id = unit.getRecordingUnit().getId();
+        if(isRoot) {
+            command = "#{navBean.redirectToBookmarked('/recording-unit/"+id+"')}";
+        }
+        else {
+
+            command = "#{flowBean.addRecordingUnitToOverview(" + id + ", focusViewBean.mainPanel, 2)}";
+        }
+
         return DefaultMenuItem.builder()
-                .value(langBean.msg("panel.title.allspecimenunit"))
+                .value(unit.getRecordingUnit().getFullIdentifier())
+                .command(command)
+                .update("@this")
                 .id("allSpecimen")
-                .command("#{navBean.redirectToBookmarked('/specimen/')}")
-                .update("flow")
                 .onstart(PF_BUI_CONTENT_SHOW)
                 .oncomplete(PF_BUI_CONTENT_HIDE)
                 .process(THIS)
@@ -171,7 +208,14 @@ public class SpecimenPanel extends AbstractSingleEntityPanel<SpecimenDTO>  imple
 
     @Override
     String getOpenPanelCommand(SpecimenDTO unit) {
-        return "#{navBean.redirectToBookmarked('/specimen/".concat(unit.getId().toString()).concat("')}");
+
+        if(isRoot) {
+            return "#{navBean.redirectToBookmarked('/specimen/".concat(unit.getId().toString()).concat("')}");
+        }
+        else {
+
+            return "#{flowBean.addSpecimenToOverview(" + unit.getId() + ", focusViewBean.mainPanel, null)}";
+        }
     }
 
 
@@ -243,6 +287,11 @@ public class SpecimenPanel extends AbstractSingleEntityPanel<SpecimenDTO>  imple
     @Override
     public String getPrefixPanelIndex() {
         return "specimen-"+ unitId;
+    }
+
+    @Override
+    public String svgIcon() {
+        return "/resources/img/svg/bucket.svg";
     }
 
     @Override

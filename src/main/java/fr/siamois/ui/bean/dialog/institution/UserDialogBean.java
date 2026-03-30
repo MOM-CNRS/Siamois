@@ -3,12 +3,13 @@ package fr.siamois.ui.bean.dialog.institution;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.events.LoginEvent;
 import fr.siamois.domain.models.exceptions.auth.*;
-import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.person.PersonService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.domain.services.vocabulary.FieldConfigurationService;
+import fr.siamois.dto.entity.ConceptDTO;
+import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.ui.bean.LabelBean;
 import fr.siamois.ui.bean.LangBean;
@@ -51,11 +52,11 @@ public class UserDialogBean implements Serializable {
     private final transient ConceptService conceptService;
 
     // Data storage
-    private Institution institution;
+    private InstitutionDTO institution;
     private transient ProcessPerson processPerson;
     private String title;
     private String buttonLabel;
-    private List<Person> alreadyExistingPersons = new ArrayList<>();
+    private List<PersonDTO> alreadyExistingPersons = new ArrayList<>();
     private String conceptCompleteUrl;
     private Concept parentConcept;
 
@@ -64,8 +65,8 @@ public class UserDialogBean implements Serializable {
     private TabState tabState = TabState.SEARCH;
 
     // Search TAB
-    private Person selectedExistingPerson;
-    private Concept currentSelectedRole;
+    private PersonDTO selectedExistingPerson;
+    private ConceptDTO currentSelectedRole;
     private transient List<PersonRole> personSelectedList = new ArrayList<>();
 
     // Create TAB
@@ -76,7 +77,7 @@ public class UserDialogBean implements Serializable {
     private String password;
     private String confirmPassword;
 
-    public void init(String title, String buttonLabel, Institution institution, ProcessPerson processPerson) {
+    public void init(String title, String buttonLabel, InstitutionDTO institution, ProcessPerson processPerson) {
         reset();
         this.title = title;
         this.buttonLabel = buttonLabel;
@@ -87,7 +88,7 @@ public class UserDialogBean implements Serializable {
         PrimeFaces.current().ajax().update("newMemberDialog");
     }
 
-    public void init(String title, String buttonLabel, Institution institution, boolean shouldRenderRole, ProcessPerson processPerson) {
+    public void init(String title, String buttonLabel, InstitutionDTO institution, boolean shouldRenderRole, ProcessPerson processPerson) {
         reset();
         this.title = title;
         this.buttonLabel = buttonLabel;
@@ -223,9 +224,9 @@ public class UserDialogBean implements Serializable {
         BULK
     }
 
-    public List<Person> searchUser(String usernameOrMailInput) {
-        List<Person> result = new ArrayList<>(personService.findClosestByUsernameOrEmail(usernameOrMailInput));
-        for (Person person : alreadyExistingPersons) {
+    public List<PersonDTO> searchUser(String usernameOrMailInput) {
+        List<PersonDTO> result = new ArrayList<>(personService.findClosestByUsernameOrEmail(usernameOrMailInput));
+        for (PersonDTO person : alreadyExistingPersons) {
             result.remove(person);
         }
 
@@ -237,7 +238,7 @@ public class UserDialogBean implements Serializable {
     }
 
     public void addToList() {
-        if (personSelectedIsValid() && roleFieldIsValid()) {
+        if (personSelectedIsValid()) {
             personSelectedList.add(new PersonRole(selectedExistingPerson, currentSelectedRole));
             selectedExistingPerson = null;
             currentSelectedRole = null;
@@ -250,9 +251,6 @@ public class UserDialogBean implements Serializable {
         return selectedExistingPerson != null;
     }
 
-    private boolean roleFieldIsValid() {
-        return !shouldRenderRoleField || currentSelectedRole != null;
-    }
 
     public void removeFromList(PersonRole personRole) {
         personSelectedList.remove(personRole);

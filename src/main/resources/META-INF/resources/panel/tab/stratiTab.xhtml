@@ -1,0 +1,26 @@
+<ui:fragment xmlns="http://www.w3.org/1999/xhtml"
+             xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
+             xmlns:siaInplace="http://java.sun.com/jsf/composite/pages/shared/inplace"
+
+>
+
+    <!--@elvariable id="tabModel" type="fr.siamois.ui.panel.models.panel.single.tab.RecordingTab"-->
+    <!--@elvariable id="panelModel" type="fr.siamois.ui.panel.models.panel.single.RecordingUnitPanel"-->
+    <!--@elvariable id="panelIndex" type="java.lang.Integer" -->
+
+    <!-- Strartigraphy -->
+    <siaInplace:stratigraphicRelationships
+            hasBeenModified="false"
+            panelModel="#{panelModel}"
+            answer="#{panelModel.stratigraphyViewModel}"
+            panelIndex="#{panelIndex}"
+            mode="input"
+            recordingUnitOptions="#{panelModel.formContext.getRecordingUnitOptions()}"
+            relationshipsAsJson="#{panelModel.formContext.getRelationshipsAsJson(panelModel.stratigraphyViewModel)}"
+
+    />
+
+
+
+
+</ui:fragment>

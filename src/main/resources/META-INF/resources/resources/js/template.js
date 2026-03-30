@@ -24,6 +24,23 @@ function toggleCollapseSidebar() {
     }
 }
 
+function toggleCollapseHistory() {
+    const $historyForm = $('#historyForm');
+    const $history = $('#historyForm\\:history');
+    const $buttons = $history.find('.panel-menu button');
+
+    // On bascule la classe
+    $historyForm.toggleClass('is-collapsed');
+
+    // On gère l'aspect visuel des boutons en fonction de l'état
+    if ($historyForm.hasClass('is-collapsed')) {
+        $buttons.addClass('ui-button-icon-only');
+    } else {
+        $buttons.removeClass('ui-button-icon-only');
+    }
+}
+
+
 function toggleSiamoisSidebar() {
     const sidebar = document.getElementById('siamoisNav');
     if (!sidebar) return;
@@ -147,14 +164,7 @@ function handleAutoSaveError(xhr, status, panelId) {
     });
 }
 
-// --------------- TAB MENU
-$(document).ready(function () {
-    $(document).on('mouseenter', '.panel-menu', function () {
-        $(this).addClass('panel-menu-hover');
-    }).on('mouseleave', '.panel-menu', function () {
-        $(this).removeClass('panel-menu-hover');
-    });
-});
+
 
 function handleMenuItemClick(panelSelector) {
     // Remove 'active' class from all menu items

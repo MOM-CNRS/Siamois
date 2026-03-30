@@ -2,7 +2,7 @@
 <ui:composition xmlns="http://www.w3.org/1999/xhtml"
                 xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
                 xmlns:p="http://primefaces.org/ui"
-                xmlns:f="http://java.sun.com/jsf/core"
+                xmlns:f="http://java.sun.com/jsf/core" xmlns:c="http://java.sun.com/jsp/jstl/core"
 >
 
     <p:dataTable paginator="true"
@@ -52,8 +52,35 @@
 
         <p:column styleClass="small-cell" selectionBox="true" style="width:16px;text-align:center" toggleable="false"/>
 
+        <!-- link -->
+        <p:column style="min-width: 10px;"
+                  styleClass="small-cell"
+                  id="linkCol" width="fit-content" toggleable="false">
+            <p:commandButton
+                    id="openRowLink"
+                    styleClass="hidden-column"
+                    action="#{tableModel.handleAction(tableModel.tableDefinition.commandLinkColumn, item)}"
+                    onstart="#{tableModel.tableDefinition.commandLinkColumn.onstartJs}"
+                    immediate="true"
+                    process="@this"
+                    icon="bi bi-layout-sidebar-inset-reverse"
+                    oncomplete="#{tableModel.getOnCompleteJs(item)}"
+            >
+                <f:attribute name="mode" value="mode"/>
+            </p:commandButton>
+            <p:contextMenu for="openRowLink">
+                <p:menuitem value="Ouvrir dans un panel" disabled="true" icon="bi bi-box-arrow-in-up"/>
+                <p:menuitem value="Ouvrir en mode Focus" disabled="true" icon="bi bi-arrows-angle-expand"/>
+                <p:menuitem value="Ouvrir dans l'aperçu lateral" icon="bi bi-layout-sidebar-inset-reverse"
+                            action="#{tableModel.handleAction(tableModel.tableDefinition.commandLinkColumn, item)}"
+                            onstart="#{tableModel.tableDefinition.commandLinkColumn.onstartJs}"
+                            oncomplete="#{tableModel.getOnCompleteJs(item)}"
+                />
+            </p:contextMenu>
+        </p:column>
+
         <!-- Actions Column -->
-        <p:column styleClass="small-cell" exportable="false" toggleable="false" style="min-width: 100px;">
+        <p:column styleClass="small-cell" exportable="false" toggleable="false" style="min-width: 10px;">
             <p:toolbar style="padding-top: 0;
             padding-bottom: 0;">
                 <p:toolbarGroup styleClass="action-col">
@@ -70,26 +97,27 @@
             </p:toolbar>
         </p:column>
 
-        <!-- Dynamic Columns -->
-        <p:columns style="min-width: #{column.type != 'COMMAND_LINK' ? '10em' : ''};"
-                   id="form"
-                   styleClass="small-cell"
-                   field="#{column.id}"
-                   sortable="#{column.sortable}"
-                   filterable="#{column.filterable}"
-                   toggleable="#{column.type != 'COMMAND_LINK' ? 'true' : 'false'}" value="#{tableModel.columns}"
-                   var="column" varStatus="colStatus">
-            <ui:include src="/pages/shared/table/columnTemplates.xhtml">
-                <ui:param name="tableModel" value="#{tableModel}" />
-                <ui:param name="column" value="#{column}" />
-                <ui:param name="item" value="#{item}" />
-                <ui:param name="status" value="#{status}" />
-                <ui:param name="rowIndex" value="#{item.id}" />
-                <ui:param name="colStatus" value="#{colStatus}" />
-                <ui:param name="updateTableString" value="@this #{updateTableString}"/>
-                <ui:param name="canUserEditRow" value="#{tableModel.canUserEditRow(item)}"/>
-            </ui:include>
-        </p:columns>
+        <c:forEach var="column" items="#{tableModel.columns}" varStatus="colStatus">
+            <p:column
+                    id="col_#{colStatus.index}"
+                    styleClass="small-cell"
+                    style="min-width: #{column.type != 'COMMAND_LINK' ? '10em' : ''};"
+                    sortable="#{column.sortable}"
+                    filterable="#{column.filterable}"
+                    toggleable="#{column.type != 'COMMAND_LINK'}"
+            >
+                <ui:include src="/pages/shared/table/columnTemplates.xhtml">
+                    <ui:param name="tableModel" value="#{tableModel}" />
+                    <ui:param name="column" value="#{column}" />
+                    <ui:param name="item" value="#{item}" />
+                    <ui:param name="status" value="#{status}" />
+                    <ui:param name="rowIndex" value="#{rowIndex}" />
+                    <ui:param name="colIndex" value="#{colStatus.index}" />
+                    <ui:param name="updateTableString" value="@this #{updateTableString}"/>
+                    <ui:param name="canUserEditRow" value="#{tableModel.canUserEditRow(item)}"/>
+                </ui:include>
+            </p:column>
+        </c:forEach>
 
 
     </p:dataTable>

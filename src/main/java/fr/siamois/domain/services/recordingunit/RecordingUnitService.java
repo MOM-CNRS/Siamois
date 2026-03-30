@@ -5,6 +5,7 @@ import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.actionunit.ActionUnitResolveConfig;
 import fr.siamois.domain.models.auth.Person;
+import fr.siamois.domain.models.exceptions.actionunit.ActionUnitNotFoundException;
 import fr.siamois.domain.models.exceptions.recordingunit.FailedRecordingUnitSaveException;
 import fr.siamois.domain.models.exceptions.recordingunit.RecordingUnitNotFoundException;
 import fr.siamois.domain.models.institution.Institution;
@@ -27,6 +28,7 @@ import fr.siamois.infrastructure.database.repositories.team.TeamMemberRepository
 import fr.siamois.mapper.ActionUnitMapper;
 import fr.siamois.mapper.ActionUnitSummaryMapper;
 import fr.siamois.mapper.RecordingUnitMapper;
+import fr.siamois.ui.bean.SessionSettingsBean;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -44,10 +46,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.lang.reflect.Modifier;
-import java.math.BigInteger;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+
+import static fr.siamois.domain.models.ValidationStatus.*;
 
 /**
  * Service to manage RecordingUnit
@@ -71,6 +74,7 @@ public class RecordingUnitService implements ArkEntityService {
     private final ApplicationContext applicationContext;
     private final ActionUnitMapper actionUnitMapper;
     private final ActionUnitSummaryMapper actionUnitSummaryMapper;
+    private final SessionSettingsBean sessionSettingsBean;
 
     /**
      * Bulk update the type of multiple recording units.
@@ -112,6 +116,16 @@ public class RecordingUnitService implements ArkEntityService {
 
     }
 
+    @Transactional
+    public void updateStratigraphicRel(RecordingUnitDTO recordingUnitDTO) {
+
+        RecordingUnit recordingUnit = recordingUnitMapper.invertConvert(recordingUnitDTO);
+        assert recordingUnit != null;
+        RecordingUnit managedRecordingUnit = newOrGetRecordingUnit(recordingUnit);
+        setupStratigraphicRelationships(recordingUnit, managedRecordingUnit);
+
+    }
+
 
     private RecordingUnit save(RecordingUnit recordingUnit) {
 
@@ -124,11 +138,18 @@ public class RecordingUnitService implements ArkEntityService {
 
             setupStratigraphicRelationships(recordingUnit, managedRecordingUnit);
             setupSpatialUnit(recordingUnit, managedRecordingUnit);
+            managedRecordingUnit.setActionUnit(recordingUnit.getActionUnit());
+            managedRecordingUnit.setCreatedByInstitution(recordingUnit.getCreatedByInstitution());
+            managedRecordingUnit.setFullIdentifier(recordingUnit.getFullIdentifier());
             setupOtherFields(recordingUnit, managedRecordingUnit);
+
+
+            RecordingUnit toReturn = recordingUnitRepository.save(managedRecordingUnit);
+
             setupParents(recordingUnit, managedRecordingUnit);
             setupChilds(recordingUnit, managedRecordingUnit);
 
-            return recordingUnitRepository.save(managedRecordingUnit);
+            return toReturn;
 
         } catch (RuntimeException e) {
             log.error(e.getMessage(), e);
@@ -161,7 +182,6 @@ public class RecordingUnitService implements ArkEntityService {
 
             // Ajout bidirectionnel
             parent.getChildren().add(managedRecordingUnit);
-            managedRecordingUnit.getParents().add(parent);
 
             // Sauvegarde du parent
             recordingUnitRepository.save(parent);
@@ -197,6 +217,7 @@ public class RecordingUnitService implements ArkEntityService {
         if (managedRecordingUnit.getCreatedBy() == null) {
             managedRecordingUnit.setCreatedBy(recordingUnit.getCreatedBy());
         }
+
 
         managedRecordingUnit.setChronologicalPhase(recordingUnit.getChronologicalPhase());
         managedRecordingUnit.setGeomorphologicalAgent(recordingUnit.getGeomorphologicalAgent());
@@ -756,12 +777,12 @@ public class RecordingUnitService implements ArkEntityService {
         return recordingUnitRepository.findByFullIdentifierAndActionUnitId(fullIdentifier, actionUnitId);
     }
 
-    public List<RecordingUnitDTO> findAllByActionUnit(@NotNull Long actionUnitId) {
+    public List<RecordingUnitSummaryDTO> findAllByActionUnit(@NotNull Long actionUnitId) {
 
         return recordingUnitRepository
                 .findAllByActionUnitId(actionUnitId)
                 .stream()
-                .map(unit -> conversionService.convert(unit, RecordingUnitDTO.class))
+                .map(unit -> conversionService.convert(unit, RecordingUnitSummaryDTO.class))
                 .toList();
     }
 
@@ -776,6 +797,75 @@ public class RecordingUnitService implements ArkEntityService {
         return recordingUnitRepository.findParentsOf(id).stream()
                 .map(unit -> conversionService.convert(unit, RecordingUnitDTO.class))
                 .toList();
+    }
+
+    /**
+     * Find the next Recordingunit created by a specific action after the given one.
+     * If there is no next, returns the oldest one (wraps around).
+     *
+     * @param action The action to find ActionUnits for
+     * @param current The current ActionUnit to find the next one from
+     * @return The next ActionUnitDTO, or the oldest one if there is no next
+     */
+    public RecordingUnitDTO findNextByActionUnit(ActionUnitSummaryDTO action, RecordingUnitDTO current) {
+        return recordingUnitRepository
+                .findFirstByActionUnitIdAndCreationTimeAfterOrderByCreationTimeAsc(
+                        action.getId(), current.getCreationTime())
+                .map(recordingUnitMapper::convert)
+                .orElseGet(() -> recordingUnitRepository
+                        .findFirstByActionUnitIdOrderByCreationTimeAsc(action.getId())
+                        .map(recordingUnitMapper::convert)
+                        .orElseThrow(() -> new ActionUnitNotFoundException("No ActionUnit found for institution " + action.getId()))
+                );
+    }
+
+    /**
+     * Find the previous Recordingunit created by a specific action before the given one.
+     * If there is no previous, returns the most recent one (wraps around).
+     *
+     * @param action The institution to find ActionUnits for
+     * @param current The current ActionUnit to find the previous one from
+     * @return The previous ActionUnitDTO, or the most recent one if there is no previous
+     */
+    public RecordingUnitDTO findPreviousByActionUnit(ActionUnitSummaryDTO action,
+                                                      RecordingUnitDTO current) {
+        return recordingUnitRepository
+                .findFirstByActionUnitIdAndCreationTimeBeforeOrderByCreationTimeDesc(
+                        action.getId(), current.getCreationTime())
+                .map(recordingUnitMapper::convert)
+                .orElseGet(() -> recordingUnitRepository
+                        .findFirstByActionUnitIdOrderByCreationTimeDesc(action.getId())
+                        .map(recordingUnitMapper::convert)
+                        .orElseThrow(() -> new ActionUnitNotFoundException("No ActionUnit found for institution " + action.getId()))
+                );
+    }
+
+    /**
+     * Toggle the validated status of an RecordingUnit.
+     *
+     * @param id The id of the Recording unit to toggle
+     * @return The updated RecordingUnitDTO
+     */
+    public RecordingUnitDTO toggleValidated(Long id) {
+        RecordingUnit unit = recordingUnitRepository.findById(id)
+                .orElseThrow(() -> new RecordingUnitNotFoundException("Recording not found with id: " + id));
+
+        // Cycle through the enum values
+        switch (unit.getValidated()) {
+            case INCOMPLETE:
+                unit.setValidated(COMPLETE);
+                break;
+            case COMPLETE:
+                unit.setValidated(VALIDATED);
+                break;
+            case VALIDATED:
+                unit.setValidated(INCOMPLETE);
+                break;
+            default:
+                throw new IllegalStateException("Unknown status: " + unit.getValidated());
+        }
+
+        return recordingUnitMapper.convert(recordingUnitRepository.save(unit));
     }
 
 

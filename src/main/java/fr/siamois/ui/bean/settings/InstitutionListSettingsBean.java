@@ -7,7 +7,6 @@ import fr.siamois.domain.models.exceptions.api.InvalidEndpointException;
 import fr.siamois.domain.models.exceptions.api.NotSiamoisThesaurusException;
 import fr.siamois.domain.models.exceptions.institution.FailedInstitutionSaveException;
 import fr.siamois.domain.models.exceptions.institution.InstitutionAlreadyExistException;
-import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.dto.entity.InstitutionDTO;
@@ -157,7 +156,7 @@ public class InstitutionListSettingsBean implements Serializable {
         PrimeFaces.current().executeScript("PF('newInstitutionDialog').hide();");
     }
 
-    public long numberOfMemberInInstitution(Institution institution) {
+    public long numberOfMemberInInstitution(InstitutionDTO institution) {
         return institutionService.countMembersInInstitution(institution);
     }
 
@@ -165,7 +164,7 @@ public class InstitutionListSettingsBean implements Serializable {
         return recordingUnitService.countByInstitutionId(institution.getId());
     }
 
-    public String redirectToInstitution(Institution institution) {
+    public String redirectToInstitution(InstitutionDTO institution) {
         institutionDetailsBean.setInstitution(institution);
         institutionDetailsBean.init();
         return "/pages/settings/institutionSettings.xhtml?faces-redirect=true";

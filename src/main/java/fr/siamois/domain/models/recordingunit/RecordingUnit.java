@@ -427,7 +427,6 @@ public class RecordingUnit extends RecordingUnitParent implements ArkEntity, Ref
     @JsonIgnore
     public void removeRelationshipAsUnit1(StratigraphicRelationship rel) {
         relationshipsAsUnit1.remove(rel);
-        rel.setUnit1(null); // orphanRemoval → DELETE
     }
     @JsonIgnore
     public void addRelationshipAsUnit2(StratigraphicRelationship rel) {
@@ -437,7 +436,6 @@ public class RecordingUnit extends RecordingUnitParent implements ArkEntity, Ref
     @JsonIgnore
     public void removeRelationshipAsUnit2(StratigraphicRelationship rel) {
         relationshipsAsUnit2.remove(rel);
-        rel.setUnit2(null);
     }
 
 }

@@ -1,10 +1,10 @@
 package fr.siamois.ui.bean.settings.team;
 
-import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.team.TeamMemberRelation;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.auth.PendingPersonService;
 import fr.siamois.domain.services.person.PersonService;
+import fr.siamois.dto.entity.ActionUnitDTO;
 import fr.siamois.dto.entity.ConceptDTO;
 import fr.siamois.ui.bean.LabelBean;
 import fr.siamois.ui.bean.LangBean;
@@ -44,7 +44,7 @@ public class TeamMembersBean implements SettingsDatatableBean {
     private final SessionSettingsBean sessionSettingsBean;
     private final RedirectBean redirectBean;
     private final LangBean langBean;
-    private ActionUnit actionUnit;
+    private ActionUnitDTO actionUnit;
     private final transient ConversionService conversionService;
 
     private String searchInput;
@@ -58,7 +58,7 @@ public class TeamMembersBean implements SettingsDatatableBean {
         this.filteredMemberRelations = null;
     }
 
-    public void init(ActionUnit actionUnit) {
+    public void init(ActionUnitDTO actionUnit) {
         this.actionUnit = actionUnit;
         this.memberRelations = institutionService.findRelationsOf(actionUnit);
         this.filteredMemberRelations = new ArrayList<>(memberRelations);
@@ -114,6 +114,6 @@ public class TeamMembersBean implements SettingsDatatableBean {
     }
 
     public void redirectToActionUnit() {
-        redirectBean.redirectTo(String.format("/actionunit/%s", actionUnit.getId()));
+        redirectBean.redirectTo(String.format("/focus/action-unit/%s", actionUnit.getId()));
     }
 }

@@ -1,6 +1,5 @@
 package fr.siamois.ui.api.openapi.v1.resource.recordingunit;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import fr.siamois.ui.api.openapi.v1.generic.response.ResourceIdentifier;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;

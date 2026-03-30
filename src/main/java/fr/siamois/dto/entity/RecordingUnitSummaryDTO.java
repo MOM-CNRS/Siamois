@@ -4,10 +4,12 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
+
 @Data
 @NoArgsConstructor
-@EqualsAndHashCode(callSuper = true)
+@EqualsAndHashCode(onlyExplicitlyIncluded = true, callSuper = true)
 public class RecordingUnitSummaryDTO extends AbstractEntityDTO {
+
 
     private String identifier;
     private String fullIdentifier;
@@ -17,6 +19,8 @@ public class RecordingUnitSummaryDTO extends AbstractEntityDTO {
         identifier = original.getIdentifier();
         fullIdentifier = original.getFullIdentifier();
         type = original.getType();
+        id = original.getId();
+        createdByInstitution = original.getCreatedByInstitution();
     }
 
     public RecordingUnitSummaryDTO(RecordingUnitDTO plain) {
@@ -25,5 +29,4 @@ public class RecordingUnitSummaryDTO extends AbstractEntityDTO {
         fullIdentifier = plain.getFullIdentifier();
         type = plain.getType();
     }
-
 }

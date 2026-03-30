@@ -5,11 +5,11 @@ import fr.siamois.domain.models.events.LoginEvent;
 import fr.siamois.domain.models.exceptions.ErrorProcessingExpansionException;
 import fr.siamois.domain.models.exceptions.api.InvalidEndpointException;
 import fr.siamois.domain.models.exceptions.api.NotSiamoisThesaurusException;
-import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.misc.ProgressWrapper;
 import fr.siamois.domain.models.vocabulary.Vocabulary;
 import fr.siamois.domain.services.vocabulary.FieldConfigurationService;
 import fr.siamois.domain.services.vocabulary.VocabularyService;
+import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
 import fr.siamois.utils.MessageUtils;
@@ -39,7 +39,7 @@ public class InstitutionThesaurusSettingsBean implements Serializable {
     private final transient VocabularyService vocabularyService;
     private final LangBean langBean;
     private String thesaurusUrl;
-    private Institution institution;
+    private InstitutionDTO institution;
 
     private ProgressWrapper progressWrapper = new ProgressWrapper();
 
@@ -57,7 +57,7 @@ public class InstitutionThesaurusSettingsBean implements Serializable {
         progressWrapper.reset();
     }
 
-    public void init(Institution institution) {
+    public void init(InstitutionDTO institution) {
         reset();
         this.institution = institution;
         Optional<String> optVocab = fieldConfigurationService.findVocabularyUrlOfInstitutionId(institution.getId());

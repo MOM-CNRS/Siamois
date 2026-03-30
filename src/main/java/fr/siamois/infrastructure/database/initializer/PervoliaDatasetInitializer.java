@@ -1,7 +1,9 @@
 package fr.siamois.infrastructure.database.initializer;
 
 import fr.siamois.domain.models.exceptions.database.DatabaseDataInitException;
+import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.infrastructure.database.initializer.seeder.*;
+import fr.siamois.infrastructure.database.repositories.institution.InstitutionRepository;
 import fr.siamois.infrastructure.dataimport.OOXMLImportService;
 import lombok.Getter;
 import lombok.Setter;
@@ -36,6 +38,7 @@ public class PervoliaDatasetInitializer  {
     private final SpecimenSeeder specimenSeeder;
     private final InstitutionSeeder institutionSeeder;
     private final OOXMLImportService ooxmlImportService;
+    private final InstitutionRepository institutionRepository;
 
 
     @Value("${siamois.admin.username}")
@@ -44,7 +47,7 @@ public class PervoliaDatasetInitializer  {
     public PervoliaDatasetInitializer(
             PersonSeeder personSeeder, ActionCodeSeeder actionCodeSeeder,
             ConceptSeeder conceptSeeder, ThesaurusSeeder thesaurusSeeder, SpatialUnitSeeder spatialUnitSeeder, ActionUnitSeeder actionUnitSeeder,
-            RecordingUnitSeeder recordingUnitSeeder, SpecimenSeeder specimenSeeder, InstitutionSeeder institutionSeeder, OOXMLImportService ooxmlImportService) {
+            RecordingUnitSeeder recordingUnitSeeder, SpecimenSeeder specimenSeeder, InstitutionSeeder institutionSeeder, OOXMLImportService ooxmlImportService, InstitutionRepository institutionRepository) {
 
 
 
@@ -58,6 +61,7 @@ public class PervoliaDatasetInitializer  {
         this.specimenSeeder = specimenSeeder;
         this.institutionSeeder = institutionSeeder;
         this.ooxmlImportService = ooxmlImportService;
+        this.institutionRepository = institutionRepository;
     }
 
     /**
@@ -85,11 +89,12 @@ public class PervoliaDatasetInitializer  {
         try {
             personSeeder.seed(specs.getPersons());
             institutionSeeder.seed(specs.getInstitutions());
+            Institution ch = institutionRepository.findInstitutionByIdentifier("pervolia").orElseThrow(() -> new RuntimeException("PERVOLIA NOT FOUND"));
             spatialUnitSeeder.seed(specs.getSpatialUnits());
             actionCodeSeeder.seed(specs.getActionCodes());
             actionUnitSeeder.seed(specs.getActionUnits());
             recordingUnitSeeder.seed(specs.getRecordingUnits());
-            specimenSeeder.seed(specs.getSpecimenSpecs());
+            specimenSeeder.seed(specs.getSpecimenSpecs(), ch.getId());
         }
         catch(Exception e){
             throw new IllegalStateException(e);

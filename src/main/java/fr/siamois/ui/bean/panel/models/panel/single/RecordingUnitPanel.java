@@ -7,6 +7,7 @@ import fr.siamois.domain.models.form.customfield.CustomFieldDateTime;
 import fr.siamois.domain.models.form.customfield.CustomFieldInteger;
 import fr.siamois.domain.models.form.customform.CustomForm;
 import fr.siamois.domain.models.history.RevisionWithInfo;
+import fr.siamois.domain.services.form.FormService;
 import fr.siamois.domain.services.person.PersonService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.specimen.SpecimenService;
@@ -17,7 +18,9 @@ import fr.siamois.ui.bean.dialog.newunit.GenericNewUnitDialogBean;
 import fr.siamois.ui.bean.dialog.newunit.NewUnitContext;
 import fr.siamois.ui.bean.dialog.newunit.UnitKind;
 import fr.siamois.ui.bean.panel.models.PanelBreadcrumb;
+import fr.siamois.ui.bean.panel.models.panel.AbstractPanel;
 import fr.siamois.ui.bean.panel.models.panel.single.tab.SpecimenTab;
+import fr.siamois.ui.bean.panel.models.panel.single.tab.StratigraphyTab;
 import fr.siamois.ui.form.FormUiDto;
 import fr.siamois.ui.lazydatamodel.RecordingUnitChildrenLazyDataModel;
 import fr.siamois.ui.lazydatamodel.RecordingUnitParentsLazyDataModel;
@@ -26,6 +29,7 @@ import fr.siamois.ui.table.RecordingUnitTableViewModel;
 import fr.siamois.ui.table.SpecimenTableViewModel;
 import fr.siamois.ui.table.ToolbarCreateConfig;
 import fr.siamois.ui.table.definitions.SpecimenTableDefinitionFactory;
+import fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerStratigraphyViewModel;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
@@ -75,6 +79,9 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
     private transient RecordingUnitTableViewModel childTableModel;
 
     private transient SpecimenTableViewModel specimenTableModel;
+
+    // Strati
+    private CustomFieldAnswerStratigraphyViewModel stratigraphyViewModel;
 
 
 
@@ -171,6 +178,23 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
                     unit
             );
 
+            // iniy stratigraphy module
+            stratigraphyViewModel = new CustomFieldAnswerStratigraphyViewModel();
+            formService.handleStratigraphyRelationships(stratigraphyViewModel, unit);
+            // --Define callbacks
+            stratigraphyViewModel.setOnDelete(() -> {
+                formService.setStratigraphyFieldValue(stratigraphyViewModel, unit);
+                recordingUnitService.updateStratigraphicRel(unit);
+            });
+
+
+            stratigraphyViewModel.setOnAdd((context, cc) -> {
+                formContext.addStratigraphicRelationship(stratigraphyViewModel, context, cc);
+                // update rels and save
+                formService.setStratigraphyFieldValue(stratigraphyViewModel, unit);
+                recordingUnitService.updateStratigraphicRel(unit);
+            });
+
 
         } catch (RuntimeException e) {
             this.errorMessage = "Failed to load recording unit: " + e.getMessage();
@@ -198,17 +222,36 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
 
     @Override
     String getOpenPanelCommand(RecordingUnitDTO unit) {
-        return "#{navBean.redirectToBookmarked('/recording-unit/".concat(unit.getId().toString()).concat("')}");
+
+        if(isRoot) {
+            return "#{navBean.redirectToBookmarked('/recording-unit/".concat(unit.getId().toString()).concat("')}");
+        }
+        else {
+
+            return "#{flowBean.addRecordingUnitToOverview(" + unit.getId() + ", focusViewBean.mainPanel, null)}";
+        }
+
+
     }
 
     @Override
     protected DefaultMenuItem createRootTypeItem()
     {
+        String command ;
+        Long actionUnitId = unit.getActionUnit().getId();
+        if(isRoot) {
+            command = "#{navBean.redirectToBookmarked('/action-unit/"+actionUnitId+"')}";
+        }
+        else {
+
+            command = "#{flowBean.addActionUnitToOverview(" + actionUnitId + ", focusViewBean.mainPanel, 2)}";
+        }
+
         return DefaultMenuItem.builder()
-                .value(langBean.msg("panel.title.allrecordingunit"))
+                .value(unit.getActionUnit().getName())
                 .id("allRecordingUnits")
-                .command("#{navBean.redirectToBookmarked('/recording-unit/')}")
-                .update("flow")
+                .command(command)
+                .update("@this")
                 .onstart(PF_BUI_CONTENT_SHOW)
                 .oncomplete(PF_BUI_CONTENT_HIDE)
                 .process(THIS)
@@ -247,6 +290,14 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
 
             tabs.add(specimenTab);
 
+            StratigraphyTab stratiTab = new StratigraphyTab(
+                    "common.label.ruRelationships",
+                    "bi bi-diagram-2",
+                    "stratiTab"
+            );
+
+            tabs.add(stratiTab);
+
 
         } catch (
                 ActionUnitNotFoundException e) {
@@ -263,6 +314,31 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
     @Override
     public List<PersonDTO> authorsAvailable() {
         return List.of();
+    }
+
+    @Override
+    protected String getFocusPath(Long id) {
+        return "/recording-unit/"+id;
+    }
+
+    @Override
+    protected void addToOverview(Long id, AbstractPanel parentOrOverview, Integer activeTabIndex) {
+        flowBean.addRecordingUnitToOverview(id,parentOrOverview, activeTabIndex);
+    }
+
+    @Override
+    protected RecordingUnitDTO findNext() {
+        return recordingUnitService.findPreviousByActionUnit(unit.getActionUnit(), unit);
+    }
+
+    @Override
+    protected RecordingUnitDTO findPrevious() {
+        return recordingUnitService.findNextByActionUnit(unit.getActionUnit(), unit);
+    }
+
+    @Override
+    public void toggleValidate() {
+        unit = recordingUnitService.toggleValidated(unit.getId());
     }
 
 
@@ -386,7 +462,7 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
                 (GenericNewUnitDialogBean<SpecimenDTO>) genericNewUnitDialogBean,
                 formContextServices
         );
-
+        specimenTableModel.setParentPanel(this);
         SpecimenTableDefinitionFactory.applyTo(specimenTableModel);
 
         // configuration du bouton creer
@@ -406,6 +482,11 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
     @Override
     public String getPrefixPanelIndex() {
         return "recording-unit-"+ unitId;
+    }
+
+    @Override
+    public String svgIcon() {
+        return "/resources/img/svg/pencil-square.svg";
     }
 
     @Override

@@ -1,6 +1,7 @@
 package fr.siamois.domain.services.actionunit;
 
 import fr.siamois.domain.models.UserInfo;
+import fr.siamois.domain.models.ValidationStatus;
 import fr.siamois.domain.models.actionunit.ActionCode;
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.ark.Ark;
@@ -30,10 +31,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * Service for managing Action Units.
@@ -176,6 +179,9 @@ public class ActionUnitService implements ArkEntityService {
 
 
         actionUnitDTO.setCreatedByInstitution(info.getInstitution());
+        if(actionUnitDTO.getCreationTime() == null) {
+            actionUnitDTO.setCreationTime(OffsetDateTime.now(ZoneId.systemDefault()));
+        }
 
         // Generate unique identifier if not presents
         if (actionUnitDTO.getFullIdentifier() == null) {
@@ -287,8 +293,80 @@ public class ActionUnitService implements ArkEntityService {
      * @param institution The institution to find ActionUnits for
      * @return A set of ActionUnits created by the institution
      */
-    public Set<ActionUnit> findAllByInstitution(Institution institution) {
-        return actionUnitRepository.findByCreatedByInstitution(institution);
+    public Set<ActionUnitDTO> findAllByInstitution(InstitutionDTO institution) {
+        return actionUnitRepository.findByCreatedByInstitutionId(institution.getId())
+                .stream()
+                .map(actionUnitMapper::convert)
+                .collect(Collectors.toSet());
+    }
+
+    /**
+     * Find the next ActionUnit created by a specific institution after the given one.
+     * If there is no next, returns the oldest one (wraps around).
+     *
+     * @param institution The institution to find ActionUnits for
+     * @param current The current ActionUnit to find the next one from
+     * @return The next ActionUnitDTO, or the oldest one if there is no next
+     */
+    public ActionUnitDTO findNextByInstitution(InstitutionDTO institution, ActionUnitDTO current) {
+        return actionUnitRepository
+                .findNext(
+                        institution.getId(), current.getCreationTime(),current.getId())
+                .map(actionUnitMapper::convert)
+                .orElseGet(() -> actionUnitRepository
+                        .findFirst(institution.getId())
+                        .map(actionUnitMapper::convert)
+                        .orElse(current)
+                );
+    }
+
+    /**
+     * Find the previous ActionUnit created by a specific institution before the given one.
+     * If there is no previous, returns the most recent one (wraps around).
+     *
+     * @param institution The institution to find ActionUnits for
+     * @param current The current ActionUnit to find the previous one from
+     * @return The previous ActionUnitDTO, or the most recent one if there is no previous
+     */
+    public ActionUnitDTO findPreviousByInstitution(InstitutionDTO institution, ActionUnitDTO current) {
+        return actionUnitRepository
+                .findPrevious(
+                        institution.getId(), current.getCreationTime(),current.getId())
+                .map(actionUnitMapper::convert)
+                .orElseGet(() -> actionUnitRepository
+                        .findLast(institution.getId())
+                        .map(actionUnitMapper::convert)
+                        .orElse(current)
+                );
+    }
+
+    /**
+     * Toggle the validated status of an ActionUnit.
+     *
+     * @param actionUnitId The id of the ActionUnit to toggle
+     * @return The updated ActionUnitDTO
+     */
+    public ActionUnitDTO toggleValidated(Long actionUnitId) {
+        ActionUnit actionUnit = actionUnitRepository.findById(actionUnitId)
+                .orElseThrow(() -> new ActionUnitNotFoundException("ActionUnit not found with id: " + actionUnitId));
+
+        // Cycle through the enum values
+        switch (actionUnit.getValidated()) {
+            case INCOMPLETE:
+                actionUnit.setValidated(ValidationStatus.COMPLETE);
+                break;
+            case COMPLETE:
+                actionUnit.setValidated(ValidationStatus.VALIDATED);
+                break;
+            case VALIDATED:
+                actionUnit.setValidated(ValidationStatus.INCOMPLETE);
+                break;
+            default:
+                throw new IllegalStateException("Unknown status: " + actionUnit.getValidated());
+        }
+
+
+        return actionUnitMapper.convert(actionUnitRepository.save(actionUnit));
     }
 
 

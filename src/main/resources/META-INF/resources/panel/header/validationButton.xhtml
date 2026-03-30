@@ -1,0 +1,32 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:h="http://xmlns.jcp.org/jsf/html"
+      xmlns:p="http://primefaces.org/ui"
+      xmlns:ui="http://xmlns.jcp.org/jsf/facelets">
+
+<ui:composition>
+
+    <!--@elvariable id="formSuffix" type="java.lang.String"-->
+
+
+    <h:form id="validationButtonForm#{formSuffix}" style="display:flex; align-items: center;">
+        <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
+
+        <p:commandButton
+                action="#{panelModel.toggleValidate()}"
+                update="@this"
+                disabled="#{disabled}"
+                process="@this"
+                icon="#{unit.validated eq 'VALIDATED' ? 'bi bi-check' :
+                  unit.validated eq 'COMPLETE' ? 'bi bi-check' :
+                  'bi bi-exclamation'}"
+                styleClass="rounded-button ui-button-flat
+                #{unit.validated eq 'VALIDATED' ? 'status-button validated' :
+                  unit.validated eq 'COMPLETE' ? 'status-button complete' :
+                  'status-button incomplete'}"
+                onclick="event.stopPropagation();"
+        />
+    </h:form>
+</ui:composition>
+</html>

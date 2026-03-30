@@ -1,13 +1,11 @@
 package fr.siamois.ui.bean.dialog.newunit;
 
-import fr.siamois.domain.models.TraceableEntity;
+import fr.siamois.domain.models.ValidationStatus;
 import fr.siamois.domain.models.exceptions.EntityAlreadyExistsException;
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.domain.services.vocabulary.FieldService;
-import fr.siamois.dto.entity.AbstractEntityDTO;
-import fr.siamois.dto.entity.ConceptDTO;
-import fr.siamois.dto.entity.SpatialUnitSummaryDTO;
+import fr.siamois.dto.entity.*;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.RedirectBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
@@ -15,23 +13,18 @@ import fr.siamois.ui.bean.dialog.newunit.handler.INewUnitHandler;
 import fr.siamois.ui.bean.field.SpatialUnitFieldBean;
 import fr.siamois.ui.bean.panel.EntityForm;
 import fr.siamois.ui.bean.panel.FlowBean;
-import fr.siamois.ui.bean.panel.models.panel.single.AbstractSingleEntity;
 import fr.siamois.ui.exceptions.CannotInitializeNewUnitDialogException;
 import fr.siamois.ui.form.EntityFormContext;
 import fr.siamois.ui.form.FormContextServices;
 import fr.siamois.ui.form.FormUiDto;
 import fr.siamois.ui.form.fieldsource.PanelFieldSource;
-import fr.siamois.ui.lazydatamodel.BaseLazyDataModel;
 import fr.siamois.ui.viewmodel.CustomFormResponseViewModel;
 import fr.siamois.utils.MessageUtils;
-import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.codec.language.bm.Lang;
 import org.primefaces.PrimeFaces;
-import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Scope;
 import org.springframework.core.convert.ConversionService;
 import org.springframework.stereotype.Component;
@@ -39,7 +32,6 @@ import org.springframework.stereotype.Component;
 import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 @Slf4j
 @Scope("session")
@@ -60,6 +52,12 @@ public class GenericNewUnitDialogBean<T extends AbstractEntityDTO>
     private final transient SessionSettingsBean sessionSettingsBean;
     private final transient LangBean langBean;
     private final transient ConversionService conversionService;
+
+    // Cache for values
+    private ConceptDTO placeType;
+    private ConceptDTO recordingUnitType;
+    private ConceptDTO projectType;
+    private SpatialUnitSummaryDTO recordingUnitLocation;
 
     private T unit;
     private transient FormUiDto detailsForm;
@@ -183,10 +181,10 @@ public class GenericNewUnitDialogBean<T extends AbstractEntityDTO>
 
             // Display the new unit in the overview
             switch(kind) {
-                case SPATIAL -> flowBean.addSpatialUnitToOverview(getUnitId(),sourceTableModel.getParentPanel());
-                case RECORDING -> flowBean.addRecordingUnitToOverview(getUnitId(),sourceTableModel.getParentPanel());
-                case ACTION -> flowBean.addActionUnitToOverview(getUnitId(),sourceTableModel.getParentPanel());
-                case SPECIMEN -> flowBean.addSpecimenToOverview(getUnitId(),sourceTableModel.getParentPanel());
+                case SPATIAL -> flowBean.addSpatialUnitToOverview(getUnitId(),sourceTableModel.getParentPanel(), null);
+                case RECORDING -> flowBean.addRecordingUnitToOverview(getUnitId(),sourceTableModel.getParentPanel(), null);
+                case ACTION -> flowBean.addActionUnitToOverview(getUnitId(),sourceTableModel.getParentPanel(), null);
+                case SPECIMEN -> flowBean.addSpecimenToOverview(getUnitId(),sourceTableModel.getParentPanel(), null);
             }
 
 
@@ -222,8 +220,17 @@ public class GenericNewUnitDialogBean<T extends AbstractEntityDTO>
 
     protected void createUnit() throws EntityAlreadyExistsException {
         formContext.flushBackToEntity();
-        unit.setValidated(false);
+        unit.setValidated(ValidationStatus.INCOMPLETE);
         unit = handler.save(sessionSettingsBean.getUserInfo(), unit);
+
+        // Save cache for form
+        if (unit instanceof SpatialUnitDTO spatialUnit) {
+            placeType = spatialUnit.getCategory();
+        }
+        if (unit instanceof RecordingUnitDTO recordingUnit) {
+            recordingUnitType = recordingUnit.getType();
+            recordingUnitLocation = recordingUnit.getSpatialUnit();
+        }
 
         // Post-create: laisse la table décider quoi faire (liste/tree) selon ctx
         if (sourceTableModel != null && newUnitContext != null) {

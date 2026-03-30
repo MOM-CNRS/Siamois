@@ -4,9 +4,11 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import fr.siamois.domain.models.ArkEntity;
 import fr.siamois.domain.models.FieldCode;
 import fr.siamois.domain.models.TraceableEntity;
+import fr.siamois.domain.models.ValidationStatus;
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.ark.Ark;
 import fr.siamois.domain.models.document.Document;
+import fr.siamois.domain.models.form.customfield.CustomFieldSelectOneAddress;
 import fr.siamois.domain.models.form.customfield.CustomFieldSelectOneFromFieldCode;
 import fr.siamois.domain.models.form.customfield.CustomFieldText;
 import fr.siamois.domain.models.form.customform.CustomCol;
@@ -15,9 +17,12 @@ import fr.siamois.domain.models.form.customform.CustomFormPanel;
 import fr.siamois.domain.models.form.customform.CustomRow;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
+import fr.siamois.domain.services.attributeconverter.FullAddressConverter;
+import fr.siamois.dto.entity.FullAddress;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
+import org.hibernate.annotations.ColumnTransformer;
 import org.hibernate.envers.Audited;
 import org.locationtech.jts.geom.MultiPolygon;
 
@@ -39,7 +44,7 @@ public class SpatialUnit extends TraceableEntity implements ArkEntity {
         name = spatialUnit.getName();
         category = spatialUnit.getCategory();
         geom = spatialUnit.getGeom();
-        validated = false;
+        validated = ValidationStatus.INCOMPLETE;
     }
 
     @Id
@@ -93,7 +98,10 @@ public class SpatialUnit extends TraceableEntity implements ArkEntity {
     @JsonIgnore
     protected MultiPolygon geom;
 
-
+    @Column(name = "address", columnDefinition = "jsonb")
+    @Convert(converter = FullAddressConverter.class)
+    @ColumnTransformer(write = "?::jsonb")
+    public FullAddress address;
 
     @ManyToMany(mappedBy = "spatialContext")
     @JsonIgnore
@@ -139,6 +147,13 @@ public class SpatialUnit extends TraceableEntity implements ArkEntity {
             .vocabulary(SYSTEM_THESO)
             .externalId("4285848")
             .build();
+    // address
+    @Transient
+    @JsonIgnore
+    public static final Concept ADDRESS_CONCEPT = new Concept.Builder()
+            .vocabulary(SYSTEM_THESO)
+            .externalId("4289231")
+            .build();
 
 
     // --------------- Fields
@@ -157,13 +172,26 @@ public class SpatialUnit extends TraceableEntity implements ArkEntity {
             .concept(SPATIAL_UNIT_TYPE_CONCEPT)
             .build();
 
+
+
     @Transient
     @JsonIgnore
     public static final CustomFieldText NAME_FIELD =  CustomFieldText.builder()
             .label("common.label.name")
             .isSystemField(true)
+            .id(2L)
             .valueBinding("name")
             .concept(NAME_CONCEPT)
+            .build();
+
+    @Transient
+    @JsonIgnore
+    public static final CustomFieldSelectOneAddress ADDRESS_FIELD =  CustomFieldSelectOneAddress.builder()
+            .label("common.label.address")
+            .isSystemField(true)
+            .valueBinding("address")
+            .concept(ADDRESS_CONCEPT)
+            .id(3L)
             .build();
 
     @Transient
@@ -188,6 +216,12 @@ public class SpatialUnit extends TraceableEntity implements ArkEntity {
                                                     .isRequired(true)
                                                     .className(COLUMN_CLASS_NAME)
                                                     .field(SPATIAL_UNIT_TYPE_FIELD)
+                                                    .build())
+                                            .addColumn(new CustomCol.Builder()
+                                                    .readOnly(false)
+                                                    .isRequired(false)
+                                                    .className(COLUMN_CLASS_NAME)
+                                                    .field(ADDRESS_FIELD)
                                                     .build())
                                             .build()
                             ).build()
@@ -217,6 +251,12 @@ public class SpatialUnit extends TraceableEntity implements ArkEntity {
                                                     .isRequired(true)
                                                     .className(COLUMN_CLASS_NAME)
                                                     .field(SPATIAL_UNIT_TYPE_FIELD)
+                                                    .build())
+                                            .addColumn(new CustomCol.Builder()
+                                                    .readOnly(false)
+                                                    .isRequired(false)
+                                                    .className(COLUMN_CLASS_NAME)
+                                                    .field(ADDRESS_FIELD)
                                                     .build())
                                             .build()
                             ).build()

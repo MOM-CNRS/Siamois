@@ -3,6 +3,8 @@ package fr.siamois.domain.models.team;
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.vocabulary.Concept;
+import fr.siamois.dto.entity.ActionUnitDTO;
+import fr.siamois.dto.entity.PersonDTO;
 import jakarta.persistence.*;
 import jakarta.ws.rs.DefaultValue;
 import lombok.*;
@@ -38,10 +40,16 @@ public class TeamMemberRelation implements Serializable{
     @Column(name = "added_at", nullable = false, updatable = false)
     private OffsetDateTime addedAt = OffsetDateTime.now();
 
-    public TeamMemberRelation(ActionUnit actionUnit, Person person) {
-        this.id = new TeamMemberId(actionUnit.getId(), person.getId());
-        this.actionUnit = actionUnit;
-        this.person = person;
+    public TeamMemberRelation(ActionUnitDTO actionUnitDTO, PersonDTO personDTO) {
+        ActionUnit au = new ActionUnit(); au.setId(actionUnitDTO.getId());
+        Person p = new Person(); p.setId(personDTO.getId());
+        p.setUsername(personDTO.getUsername());
+        p.setEmail(personDTO.getEmail());
+        p.setLastname(personDTO.getLastname());
+        p.setName(personDTO.getName());
+        this.id = new TeamMemberId(actionUnitDTO.getId(), personDTO.getId());
+        this.actionUnit = au;
+        this.person = p;
     }
 
     @Override

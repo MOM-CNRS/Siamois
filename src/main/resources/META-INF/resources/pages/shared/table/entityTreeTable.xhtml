@@ -35,64 +35,109 @@
 
         <f:facet name="header">
             <ui:include src="/pages/shared/table/tableToolbar.xhtml">
-                <ui:param name="tableModel" value="#{tableModel}" />
-                <ui:param name="updateTableString" value="#{updateTableString}" />
+                <ui:param name="tableModel" value="#{tableModel}"/>
+                <ui:param name="updateTableString" value="#{updateTableString}"/>
                 <ui:param name="tableId" value="entityTreeTable"/>
             </ui:include>
         </f:facet>
 
-        <p:column style="min-width: 10px;"
+        <p:column style="width: min-content;"
                   styleClass="small-cell"
-                  selectionBox="true" id="selectionCol" width="fit-content" toggleable="false"/>
+                  selectionBox="true" id="selectionCol"  toggleable="false"/>
 
-        <!-- Actions Column -->
-        <p:column exportable="false" toggleable="false"  id="actionsCol" styleClass="small-cell" style="min-width: 100px;">
-            <p:toolbar id="actionButtonToolbar" style="padding-top: 0;
+        <!-- link -->
+        <p:column style="width: min-content;"
+                  styleClass="small-cell"
+                  id="linkCol" toggleable="false">
+
+
+
+        <p:commandButton
+                id="openRowLink"
+                styleClass="hidden-column"
+                action="#{tableModel.handleAction(tableModel.tableDefinition.commandLinkColumn, item)}"
+                onstart="#{tableModel.tableDefinition.commandLinkColumn.onstartJs}"
+                immediate="true"
+                process="@this"
+                icon="bi bi-layout-sidebar-inset-reverse"
+                oncomplete="#{tableModel.getOnCompleteJs(item)}"
+        >
+            <f:attribute name="mode" value="mode"/>
+        </p:commandButton>
+        <p:contextMenu for="openRowLink">
+            <p:menuitem value="Ouvrir dans un panel" disabled="true" icon="bi bi-box-arrow-in-up"/>
+            <p:menuitem value="Ouvrir en mode Focus" disabled="true" icon="bi bi-arrows-angle-expand"/>
+            <p:menuitem value="Ouvrir dans l'aperçu lateral" icon="bi bi-layout-sidebar-inset-reverse"
+                        action="#{tableModel.handleAction(tableModel.tableDefinition.commandLinkColumn, item)}"
+                        onstart="#{tableModel.tableDefinition.commandLinkColumn.onstartJs}"
+                        oncomplete="#{tableModel.getOnCompleteJs(item)}"
+            />
+        </p:contextMenu>
+    </p:column>
+
+
+
+    <!-- Actions Column -->
+    <p:column exportable="false" toggleable="false" id="actionsCol" styleClass="small-cell" style="min-width: 1px;">
+        <p:toolbar id="actionButtonToolbar" style="padding-top: 0;
             padding-bottom: 0;">
-                <p:toolbarGroup id="actionButtonToolbarGroup"  styleClass="action-col">
-                    <ui:repeat id="buttons" value="#{tableModel.rowActions}" var="action" varStatus="status">
-                        <p:commandButton
-                                id="btnAction"
-                                rendered="#{tableModel.isRendered(action, item)}"
-                                icon="#{tableModel.resolveIcon(action, item)}"
-                                action="#{tableModel.handleRowAction(action, node)}"
-                                process="#{empty action.processExpr ? '@this' : action.processExpr}"
-                                update="#{action.updateSelfTable ? (':'.concat(cc.clientId).concat(':entityTreeTable')) : action.updateExpr}"
-                                styleClass="#{action.styleClass}"/>
-                        <p:tooltip
-                                id="btnActionTooltip"
-                                autoHide="false" value="#{tableModel.getRowActionTooltipCode(action,item)}" position="bottom"
-                                for="btnAction"
-                        />
-                    </ui:repeat>
-                </p:toolbarGroup>
-            </p:toolbar>
+            <p:toolbarGroup id="actionButtonToolbarGroup" styleClass="action-col">
+                <ui:repeat id="buttons" value="#{tableModel.rowActions}" var="action" varStatus="status">
+                    <p:commandButton
+                            id="btnAction"
+                            rendered="#{tableModel.isRendered(action, item)}"
+                            icon="#{tableModel.resolveIcon(action, item)}"
+                            action="#{tableModel.handleRowAction(action, node)}"
+                            process="#{empty action.processExpr ? '@this' : action.processExpr}"
+                            update="#{action.updateSelfTable ? (':'.concat(cc.clientId).concat(':entityTreeTable')) : action.updateExpr}"
+                            styleClass="#{action.styleClass}"/>
+                    <p:tooltip
+                            id="btnActionTooltip"
+                            autoHide="false" value="#{tableModel.getRowActionTooltipCode(action,item)}"
+                            position="bottom"
+                            for="btnAction"
+                    />
+
+
+                </ui:repeat>
+            </p:toolbarGroup>
+        </p:toolbar>
+    </p:column>
+
+    <p:column style="width: min-content;"
+              styleClass="small-cell"
+              headerText="Statut"
+              id="statusCol" toggleable="false">
+        <ui:include src="/panel/header/validationButton.xhtml" >
+            <ui:param name="disabled" value="true"/>
+            <ui:param name="unit" value="#{item}"/>
+        </ui:include>
+    </p:column>
+
+    <c:forEach var="column" items="#{tableModel.columns}" varStatus="colStatus">
+        <p:column
+                id="col_#{colStatus.index}"
+                styleClass="small-cell"
+                style="min-width: #{column.type != 'COMMAND_LINK' ? '10em' : ''};"
+                sortable="#{column.sortable}"
+                filterable="#{column.filterable}"
+                toggleable="#{column.type != 'COMMAND_LINK'}"
+        >
+            <ui:include src="/pages/shared/table/columnTemplates.xhtml">
+                <ui:param name="tableModel" value="#{tableModel}"/>
+                <ui:param name="column" value="#{column}"/>
+                <ui:param name="item" value="#{item}"/>
+                <ui:param name="status" value="#{status}"/>
+                <ui:param name="rowIndex" value="#{item.id}"/>
+                <ui:param name="colIndex" value="#{colStatus.index}"/>
+                <ui:param name="updateTableString" value="@this #{updateTableString}"/>
+                <ui:param name="canUserEditRow" value="#{tableModel.canUserEditRow(item)}"/>
+            </ui:include>
         </p:column>
-
-        <c:forEach var="column" items="#{tableModel.columns}" varStatus="colStatus">
-            <p:column
-                    id="col_#{colStatus.index}"
-                    styleClass="small-cell"
-                    style="min-width: #{column.type != 'COMMAND_LINK' ? '10em' : ''};"
-                    sortable="#{column.sortable}"
-                    filterable="#{column.filterable}"
-                    toggleable="#{column.type != 'COMMAND_LINK'}"
-            >
-                <ui:include src="/pages/shared/table/columnTemplates.xhtml">
-                    <ui:param name="tableModel" value="#{tableModel}" />
-                    <ui:param name="column" value="#{column}" />
-                    <ui:param name="item" value="#{item}" />
-                    <ui:param name="status" value="#{status}" />
-                    <ui:param name="rowIndex" value="#{item.id}" />
-                    <ui:param name="colIndex" value="#{colStatus.index}" />
-                    <ui:param name="updateTableString" value="@this #{updateTableString}"/>
-                    <ui:param name="canUserEditRow" value="#{tableModel.canUserEditRow(item)}"/>
-                </ui:include>
-            </p:column>
-        </c:forEach>
+    </c:forEach>
 
 
+</p:treeTable>
 
-    </p:treeTable>
 
-</ui:composition>
+        </ui:composition>

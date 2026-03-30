@@ -11,6 +11,16 @@
     <h:form id="specimenListForm"
 
     >
+        <div
+                style="padding:1em;  margin-left: auto;
+  width: fit-content;">La création de mobilier n'est disponible que depuis
+            <p:commandLink
+                    action="#{navBean.goToRecordingUnitList('FOCUS')}"
+                    styleClass="recording-unit"
+                    value="une UE"
+                    ajax="false"/>
+        </div>
+
         <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
         <table:entityTable
                 tableModel="#{panelModel.tableModel}"

@@ -14,6 +14,8 @@ import static fr.siamois.ui.bean.panel.models.panel.single.AbstractSingleEntity.
  */
 public final class ActionUnitTableDefinitionFactory {
 
+    public static final String THIS = "@this";
+
     private ActionUnitTableDefinitionFactory() {}
 
     /**
@@ -44,7 +46,7 @@ public final class ActionUnitTableDefinitionFactory {
         // -------------------------
         // Name / identifier link col
         // -------------------------
-        tableModel.getTableDefinition().addColumn(
+        tableModel.getTableDefinition().setCommandLinkColumn(
                 CommandLinkColumn.builder()
                         .id("identifierCol")
                         .headerKey("table.spatialunit.column.name")
@@ -63,10 +65,10 @@ public final class ActionUnitTableDefinitionFactory {
                         .action(TableColumnAction.GO_TO_ACTION_UNIT)
 
                         // CommandLink behavior
-                        .processExpr("@this")
+                        .processExpr(THIS)
                         .updateExpr("@none")
                         .onstartJs("PF('buiContent').show()")
-                        .oncompleteJs("PF('buiContent').hide();handleScrollToTop();")
+                        .oncompleteJs("PF('buiContent').hide();")
                         .build()
         );
 
@@ -100,10 +102,10 @@ public final class ActionUnitTableDefinitionFactory {
                         .addAction(TableColumnAction.ADD_RELATION)
                         .addRenderedKey("recordingUnitCreateAllowed")
 
-                        .processExpr("@this")
-                        .updateExpr("flow")
+                        .processExpr(THIS)
+                        .updateExpr(THIS)
                         .onstartJs("PF('buiContent').show()")
-                        .oncompleteJs("PF('buiContent').hide();handleScrollToTop();")
+                        .oncompleteJs("PF('buiContent').hide();")
                         .build()
         );
 

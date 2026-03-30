@@ -57,12 +57,12 @@ public class RecordingUnitSeeder {
 
     private void getOrCreateRecordingUnit(RecordingUnit recordingUnit) {
 
-        Optional<RecordingUnit> opt = recordingUnitRepository.findByFullIdentifier(recordingUnit.getFullIdentifier());
+        Optional<RecordingUnit> opt = recordingUnitRepository.findByFullIdentifierAndInstitutionId(recordingUnit.getFullIdentifier(),
+                recordingUnit.getCreatedByInstitution().getId());
         if (opt.isEmpty()) {
             recordingUnitRepository.save(recordingUnit);
         }
     }
-
 
 
     public ActionUnit getActionUnitFromKey(ActionUnitSeeder.ActionUnitKey key) {
@@ -75,8 +75,8 @@ public class RecordingUnitSeeder {
                 .orElseThrow(() -> new IllegalStateException("Spatial unit introuvable"));
     }
 
-    public RecordingUnit getRecordingUnitFromKey(RecordingUnitKey key) {
-        return recordingUnitRepository.findByFullIdentifier(key.fullIdentifier)
+    public RecordingUnit getRecordingUnitFromKey(RecordingUnitKey key, Long institutionId) {
+        return recordingUnitRepository.findByFullIdentifierAndInstitutionId(key.fullIdentifier, institutionId)
                 .orElseThrow(() -> new IllegalStateException("Recording unit introuvable"));
     }
 
