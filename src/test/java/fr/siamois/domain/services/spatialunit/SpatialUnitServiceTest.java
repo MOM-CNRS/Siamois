@@ -35,6 +35,8 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 
+import javax.faces.application.StateManager;
+import javax.swing.plaf.synth.SynthPainter;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -392,6 +394,10 @@ class SpatialUnitServiceTest {
                 .thenReturn(new Concept());
         when(spatialUnitRepository.save(any(SpatialUnit.class)))
                 .thenReturn(spatialUnit1);
+        when(spatialUnitRepository.findById(2L))
+                .thenReturn(Optional.of(new SpatialUnit()));
+        when(spatialUnitRepository.findById(0L))
+                .thenReturn(Optional.of(new SpatialUnit()));
         when(institutionService.findById(anyLong()))
                 .thenReturn(institutionDTO);
         when(personService.findById(anyLong()))

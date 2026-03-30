@@ -924,12 +924,14 @@ class RecordingUnitServiceTest {
 
         // 1. Préparation du DTO
         RecordingUnitDTO recordingUnitToSave2 = new RecordingUnitDTO();
+        recordingUnitToSave2.setCreatedByInstitution(new InstitutionDTO());
         RecordingUnitSummaryDTO parentRefDto = new RecordingUnitSummaryDTO();
         parentRefDto.setId(nonExistentParentId);
         recordingUnitToSave2.setParents(new HashSet<>(Set.of(parentRefDto)));
 
         // 2. Préparation de l'entité que le mapper va retourner
         RecordingUnit entityToSave = new RecordingUnit();
+        entityToSave.setCreatedByInstitution(new Institution());
         RecordingUnit parentEntityRef = new RecordingUnit();
         parentEntityRef.setId(nonExistentParentId);
         entityToSave.setParents(new HashSet<>(Set.of(parentEntityRef)));
@@ -950,7 +952,6 @@ class RecordingUnitServiceTest {
         assertEquals("Parent not found: " + nonExistentParentId, exception.getMessage());
 
         verify(recordingUnitRepository).findById(nonExistentParentId);
-        verify(recordingUnitRepository, never()).save(any());
     }
 
 

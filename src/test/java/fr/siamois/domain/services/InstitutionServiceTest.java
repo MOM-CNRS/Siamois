@@ -169,7 +169,9 @@ class InstitutionServiceTest {
         when(vocabularyService.findOrCreateVocabularyOfUri(anyString()))
                 .thenReturn(fakeVocabulary);
         when(fieldConfigurationService
-                .setupFieldConfigurationForInstitution(any(InstitutionDTO.class), any(Vocabulary.class))).thenReturn(Optional.of(mock(FeedbackFieldConfig.class)));
+                .setupFieldConfigurationForInstitution(any(InstitutionDTO.class), any(Vocabulary.class))).thenReturn(
+                        Optional.of(mock(FeedbackFieldConfig.class)));
+        when(institutionMapper.convert(any(Institution.class))).thenReturn(new InstitutionDTO());
         when(institutionRepository.save(any(Institution.class))).thenReturn(mock(Institution.class));
 
         institutionService.createInstitution(institution1DTO, "valid_url");

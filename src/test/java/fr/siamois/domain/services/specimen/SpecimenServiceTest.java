@@ -65,7 +65,7 @@ class SpecimenServiceTest {
     void save_ShouldGenerateIdentifierAndSaveSpecimen() {
         // Préparation des données
         SpecimenDTO specimenDTO = new SpecimenDTO();
-        RecordingUnitDTO recordingUnitDTO = new RecordingUnitDTO();
+        RecordingUnitSummaryDTO recordingUnitDTO = new RecordingUnitSummaryDTO();
         recordingUnitDTO.setId(1L);
         recordingUnitDTO.setFullIdentifier("test");
         specimenDTO.setRecordingUnit(recordingUnitDTO);
