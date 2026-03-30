@@ -62,7 +62,6 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
     private final transient RedirectBean redirectBean;
     private final transient SpecimenService specimenService;
     private final transient NavBean navBean;
-    private final transient FormService formService;
     private final transient GenericNewUnitDialogBean<?> genericNewUnitDialogBean;
 
     // ---------- Locals
@@ -99,7 +98,6 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
         this.specimenService = context.getBean(SpecimenService.class);
         this.navBean = context.getBean(NavBean.class);
         this.genericNewUnitDialogBean = context.getBean(GenericNewUnitDialogBean.class);
-        this.formService = context.getBean(FormService.class);
 
     }
 

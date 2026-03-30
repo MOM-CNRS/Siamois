@@ -19,7 +19,7 @@ import java.util.Base64;
 public class FocusViewBean implements Serializable {
 
     private final transient PanelFactory panelFactory;
-    private final HistoryBean historyBean;
+    private final transient HistoryBean historyBean;
     private final LangBean langBean;
 
 
@@ -86,8 +86,8 @@ public class FocusViewBean implements Serializable {
         };
 
         // Si c'est un panel unitaire et qu'un tab est spécifié, appliquer le paramètre
-        if (!isListPanel && tabParam != null && panel instanceof AbstractSingleEntityPanel) {
-            ((AbstractSingleEntityPanel) panel).setActiveTabIndex(tabParam);
+        if (!isListPanel && tabParam != null && panel instanceof AbstractSingleEntityPanel abstractSingleEntityPanel) {
+            abstractSingleEntityPanel.setActiveTabIndex(tabParam);
         }
 
         return panel;

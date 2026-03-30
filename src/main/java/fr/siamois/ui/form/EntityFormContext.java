@@ -64,6 +64,7 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
     public static final String UNCERTAIN = "uncertain";
     public static final String VOCABULARY_LABEL = "vocabularyLabel";
     public static final String SELECT_RU = "selectRU";
+    public static final String DATABASE_ID = "databaseId";
 
     private T unit;
 
@@ -627,7 +628,7 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
         for (StratigraphicRelationshipDTO rel : answer.getAnteriorRelationships()) {
             ObjectNode node = mapper.createObjectNode();
             node.put(UNIT_1_ID, rel.getUnit1().getFullIdentifier());
-            node.put("databaseId", rel.getUnit1().getId());
+            node.put(DATABASE_ID, rel.getUnit1().getId());
             node.put(VOCABULARY_LABEL, formService.getLabelBean().findLabelOf(rel.getConcept()));
             node.put(VOCABULARY_DIRECTION, rel.getConceptDirection());
             node.put(UNCERTAIN, rel.getUncertain() != null && rel.getUncertain());
@@ -640,7 +641,7 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
         for (StratigraphicRelationshipDTO rel : answer.getPosteriorRelationships()) {
             ObjectNode node = mapper.createObjectNode();
             node.put(UNIT_1_ID, rel.getUnit2().getFullIdentifier());
-            node.put("databaseId", rel.getUnit2().getId());
+            node.put(DATABASE_ID, rel.getUnit2().getId());
             node.put(VOCABULARY_LABEL, formService.getLabelBean().findLabelOf(rel.getConcept()));
             node.put(VOCABULARY_DIRECTION, !rel.getConceptDirection());
             node.put(UNCERTAIN, rel.getUncertain() != null && rel.getUncertain());
@@ -669,7 +670,7 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
             }
 
             node.put(UNIT_1_ID, otherUnit.getFullIdentifier());
-            node.put("databaseId", otherUnit.getId());
+            node.put(DATABASE_ID, otherUnit.getId());
             node.put(VOCABULARY_LABEL,
                     formService.getLabelBean().findLabelOf(rel.getConcept()));
             node.put(VOCABULARY_DIRECTION, direction);

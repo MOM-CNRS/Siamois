@@ -182,7 +182,6 @@ public class RecordingUnitService implements ArkEntityService {
 
             // Ajout bidirectionnel
             parent.getChildren().add(managedRecordingUnit);
-            //managedRecordingUnit.getParents().add(parent);
 
             // Sauvegarde du parent
             recordingUnitRepository.save(parent);

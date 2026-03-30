@@ -62,7 +62,8 @@ public class SpecimenHandler implements INewUnitHandler<SpecimenDTO> {
 
         SpecimenDTO unit = (SpecimenDTO) bean.getUnit();
         NewUnitContext ctx = bean.getNewUnitContext();
-        if (ctx == null) throw new CannotInitializeNewUnitDialogException("Specimen cannot be created without a context");
+        if (ctx == null)
+            throw new CannotInitializeNewUnitDialogException("Specimen cannot be created without a context");
 
         // 1) If creation comes from toolbar: use SCOPE
         NewUnitContext.Trigger trigger = ctx.getTrigger();
@@ -86,11 +87,8 @@ public class SpecimenHandler implements INewUnitHandler<SpecimenDTO> {
         RecordingUnitDTO fullClicked = recordingUnitService.findById(clickedId);
         RecordingUnitSummaryDTO clicked = new RecordingUnitSummaryDTO(fullClicked);
 
-        if (clicked == null) {
-            return;
-        }
 
-        if(key.equals("specimen")) {
+        if (key.equals("specimen")) {
             unit.setCreatedByInstitution(fullClicked.getCreatedByInstitution());
             unit.setRecordingUnit(clicked);
             unit.setCreatedBy(sessionSettingsBean.getAuthenticatedUser());
@@ -111,15 +109,15 @@ public class SpecimenHandler implements INewUnitHandler<SpecimenDTO> {
         if ("RECORDING".equals(scope.getKey())) {
             RecordingUnitDTO fullClicked = recordingUnitService.findById(scope.getEntityId());
             RecordingUnitSummaryDTO ru = new RecordingUnitSummaryDTO(fullClicked);
-            if (ru != null) {
-                unit.setCreatedByInstitution(fullClicked.getCreatedByInstitution());
-                unit.setRecordingUnit(ru);
-                unit.setCreatedBy(sessionSettingsBean.getAuthenticatedUser());
-                unit.setAuthors(List.of(sessionSettingsBean.getAuthenticatedUser()));
-                unit.setCollectors(List.of(sessionSettingsBean.getAuthenticatedUser()));
-                unit.setCollectionDate(OffsetDateTime.now());
-                return ;
-            }
+
+            unit.setCreatedByInstitution(fullClicked.getCreatedByInstitution());
+            unit.setRecordingUnit(ru);
+            unit.setCreatedBy(sessionSettingsBean.getAuthenticatedUser());
+            unit.setAuthors(List.of(sessionSettingsBean.getAuthenticatedUser()));
+            unit.setCollectors(List.of(sessionSettingsBean.getAuthenticatedUser()));
+            unit.setCollectionDate(OffsetDateTime.now());
+            return;
+
         }
 
         throw new CannotInitializeNewUnitDialogException("Specimen cannot be created without a context");

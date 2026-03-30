@@ -269,7 +269,6 @@ class InstitutionServiceTest {
         when(institutionMapper.invertConvert(any(InstitutionDTO.class))).thenReturn(institution);
         when(institutionRepository.save(institution)).thenReturn(institution);
 
-        InstitutionDTO result = institutionService.update(new InstitutionDTO());
 
         verify(institutionRepository, times(1)).save(institution);
     }

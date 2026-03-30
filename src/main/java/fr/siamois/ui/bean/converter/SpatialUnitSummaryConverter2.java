@@ -21,7 +21,7 @@ import java.io.Serializable;
 public class SpatialUnitSummaryConverter2 implements Converter<SpatialUnitSummaryDTO>, Serializable {
 
     private final ObjectMapper objectMapper;
-    private final SpatialUnitService spatialUnitService;
+    private final transient SpatialUnitService spatialUnitService;
 
     public SpatialUnitSummaryConverter2(SpatialUnitService spatialUnitService) {
         objectMapper = new ObjectMapper();

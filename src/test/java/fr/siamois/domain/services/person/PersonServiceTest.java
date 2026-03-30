@@ -429,7 +429,7 @@ class PersonServiceTest {
         ConceptDTO c  = new ConceptDTO(); c.setId(2L);
         when(conceptMapper.convert(any(Concept.class))).thenReturn(c);
         // Act
-;
+
         personService.createPerson(newPersonRequest,"password");
 
         // Assert
@@ -473,7 +473,7 @@ class PersonServiceTest {
         person.setPassword("password");
         person.setEmail("mail@localhost.com");
         person.setId(-1L);
-        PersonDTO created = personService.createPerson(personDto, "password");
+
 
         // Assert
         verify(institutionService, never()).addToManagers(any(), any());
@@ -503,7 +503,7 @@ class PersonServiceTest {
         person.setPassword("password");
         person.setEmail("mail@localhost.com");
         person.setId(-1L);
-        PersonDTO created = personService.createPerson(newPersonDto, "password");
+
 
         // Assert
         verify(institutionService, never()).addToManagers(any(), any());

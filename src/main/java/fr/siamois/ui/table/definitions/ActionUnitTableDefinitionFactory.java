@@ -14,6 +14,8 @@ import static fr.siamois.ui.bean.panel.models.panel.single.AbstractSingleEntity.
  */
 public final class ActionUnitTableDefinitionFactory {
 
+    public static final String THIS = "@this";
+
     private ActionUnitTableDefinitionFactory() {}
 
     /**
@@ -63,7 +65,7 @@ public final class ActionUnitTableDefinitionFactory {
                         .action(TableColumnAction.GO_TO_ACTION_UNIT)
 
                         // CommandLink behavior
-                        .processExpr("@this")
+                        .processExpr(THIS)
                         .updateExpr("@none")
                         .onstartJs("PF('buiContent').show()")
                         .oncompleteJs("PF('buiContent').hide();")
@@ -100,8 +102,8 @@ public final class ActionUnitTableDefinitionFactory {
                         .addAction(TableColumnAction.ADD_RELATION)
                         .addRenderedKey("recordingUnitCreateAllowed")
 
-                        .processExpr("@this")
-                        .updateExpr("@this")
+                        .processExpr(THIS)
+                        .updateExpr(THIS)
                         .onstartJs("PF('buiContent').show()")
                         .oncompleteJs("PF('buiContent').hide();")
                         .build()

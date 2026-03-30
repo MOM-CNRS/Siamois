@@ -141,7 +141,7 @@ public abstract class BaseTreeTableLazyModel<T extends AbstractEntityDTO, ID> im
     public void insertChildFirst(ID parentId, T created) {
 
         // Determine all parent occurrences
-        List<TreeNode<T>> parents = List.of();
+        List<TreeNode<T>> parents ;
         if (parentId == null) {
             parents = List.of(getRoot());
         } else {

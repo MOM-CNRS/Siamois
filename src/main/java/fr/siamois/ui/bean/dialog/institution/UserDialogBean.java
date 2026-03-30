@@ -56,7 +56,7 @@ public class UserDialogBean implements Serializable {
     private transient ProcessPerson processPerson;
     private String title;
     private String buttonLabel;
-    private List<Person> alreadyExistingPersons = new ArrayList<>();
+    private List<PersonDTO> alreadyExistingPersons = new ArrayList<>();
     private String conceptCompleteUrl;
     private Concept parentConcept;
 
@@ -226,7 +226,7 @@ public class UserDialogBean implements Serializable {
 
     public List<PersonDTO> searchUser(String usernameOrMailInput) {
         List<PersonDTO> result = new ArrayList<>(personService.findClosestByUsernameOrEmail(usernameOrMailInput));
-        for (Person person : alreadyExistingPersons) {
+        for (PersonDTO person : alreadyExistingPersons) {
             result.remove(person);
         }
 
@@ -251,9 +251,6 @@ public class UserDialogBean implements Serializable {
         return selectedExistingPerson != null;
     }
 
-    private boolean roleFieldIsValid() {
-        return !shouldRenderRoleField || currentSelectedRole != null;
-    }
 
     public void removeFromList(PersonRole personRole) {
         personSelectedList.remove(personRole);

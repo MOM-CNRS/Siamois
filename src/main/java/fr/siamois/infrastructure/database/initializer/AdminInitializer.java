@@ -98,8 +98,7 @@ public class AdminInitializer implements DatabaseInitializer {
         List<Person> admins = personRepository.findAllSuperAdmin();
         Person adminWithUsername = null;
         for (Person admin : admins) {
-            if (isNotAskedAdmin(admin)) {
-            } else {
+            if (!isNotAskedAdmin(admin)) {
                 adminWithUsername = admin;
             }
         }
