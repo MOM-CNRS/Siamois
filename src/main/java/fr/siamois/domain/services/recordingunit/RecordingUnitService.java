@@ -848,7 +848,7 @@ public class RecordingUnitService implements ArkEntityService {
      */
     public RecordingUnitDTO toggleValidated(Long id) {
         RecordingUnit unit = recordingUnitRepository.findById(id)
-                .orElseThrow(() -> new ActionUnitNotFoundException("ActionUnit not found with id: " + id));
+                .orElseThrow(() -> new RecordingUnitNotFoundException("Recording not found with id: " + id));
 
         // Cycle through the enum values
         switch (unit.getValidated()) {

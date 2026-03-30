@@ -2,10 +2,12 @@ package fr.siamois.domain.services;
 
 
 import fr.siamois.domain.models.UserInfo;
+import fr.siamois.domain.models.ValidationStatus;
 import fr.siamois.domain.models.actionunit.ActionCode;
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.exceptions.actionunit.ActionUnitAlreadyExistsException;
+import fr.siamois.domain.models.exceptions.actionunit.ActionUnitNotFoundException;
 import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
@@ -30,6 +32,7 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 
+import java.time.OffsetDateTime;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -525,6 +528,184 @@ class ActionUnitServiceTest {
 
         // Assert
         assertTrue(result, "La méthode doit retourner true si des enfants existent.");
+    }
+
+    // --- Tests for findNextByInstitution ---
+
+    @Test
+    void testFindNextByInstitution_ShouldReturnNextActionUnit() {
+        // Arrange
+        InstitutionDTO institution = new InstitutionDTO();
+        institution.setId(1L);
+        ActionUnitDTO current = new ActionUnitDTO();
+        current.setId(100L);
+        current.setCreationTime(OffsetDateTime.now());
+
+        ActionUnit nextEntity = new ActionUnit();
+        ActionUnitDTO nextDTO = new ActionUnitDTO();
+
+        when(actionUnitRepository.findNext(eq(1L), any(), eq(100L)))
+                .thenReturn(Optional.of(nextEntity));
+        when(actionUnitMapper.convert(nextEntity)).thenReturn(nextDTO);
+
+        // Act
+        ActionUnitDTO result = actionUnitService.findNextByInstitution(institution, current);
+
+        // Assert
+        assertEquals(nextDTO, result);
+        verify(actionUnitRepository, never()).findFirst(anyLong());
+    }
+
+    @Test
+    void testFindNextByInstitution_ShouldWrapAroundToFirst() {
+        // 1. Préparation des données avec des IDs cohérents
+        InstitutionDTO institution = new InstitutionDTO();
+        institution.setId(1L);
+
+        ActionUnitDTO current = new ActionUnitDTO();
+        current.setId(100L); // Évitez de laisser l'ID à null si possible
+        current.setCreationTime(OffsetDateTime.now());
+
+        ActionUnit firstEntity = new ActionUnit();
+        ActionUnitDTO firstDTO = new ActionUnitDTO();
+
+        // 2. Mocking avec des matchers flexibles
+        // On utilise eq(1L) pour l'institution, n'importe quelle date, et n'importe quel ID (ou null)
+        when(actionUnitRepository.findNext(eq(1L), any(), any()))
+                .thenReturn(Optional.empty());
+
+        when(actionUnitRepository.findFirst(1L))
+                .thenReturn(Optional.of(firstEntity));
+
+        when(actionUnitMapper.convert(firstEntity)).thenReturn(firstDTO);
+
+        // 3. Appel
+        ActionUnitDTO result = actionUnitService.findNextByInstitution(institution, current);
+
+        // 4. Assertions
+        assertEquals(firstDTO, result);
+    }
+    // --- Tests for findPreviousByInstitution ---
+
+    @Test
+    void testFindPreviousByInstitution_ShouldReturnPreviousActionUnit() {
+        // Arrange
+        InstitutionDTO institution = new InstitutionDTO();
+        institution.setId(1L);
+        ActionUnitDTO current = new ActionUnitDTO();
+        current.setId(100L);
+        current.setCreationTime(OffsetDateTime.now());
+
+        ActionUnit prevEntity = new ActionUnit();
+        ActionUnitDTO prevDTO = new ActionUnitDTO();
+
+        when(actionUnitRepository.findPrevious(eq(1L), any(), eq(100L)))
+                .thenReturn(Optional.of(prevEntity));
+        when(actionUnitMapper.convert(prevEntity)).thenReturn(prevDTO);
+
+        // Act
+        ActionUnitDTO result = actionUnitService.findPreviousByInstitution(institution, current);
+
+        // Assert
+        assertEquals(prevDTO, result);
+    }
+
+    @Test
+    void testFindPreviousByInstitution_ShouldWrapAroundToLast() {
+        // 1. Arrange - Préparation avec des IDs qui correspondent
+        InstitutionDTO institution = new InstitutionDTO();
+        institution.setId(1L); // L'ID utilisé par le service
+
+        ActionUnitDTO current = new ActionUnitDTO();
+        current.setId(100L); // Un ID pour éviter le null (ou utilisez any() dans le mock)
+        current.setCreationTime(OffsetDateTime.now());
+
+        ActionUnit lastEntity = new ActionUnit();
+        ActionUnitDTO lastDTO = new ActionUnitDTO();
+
+        // 2. Mocking - Utilisation de matchers flexibles
+        // eq(1L) pour l'institution, any() pour la date, any() pour l'ID de l'action unit
+        when(actionUnitRepository.findPrevious(eq(1L), any(), any()))
+                .thenReturn(Optional.empty());
+
+        // Le fallback vers le dernier élément
+        when(actionUnitRepository.findLast(1L))
+                .thenReturn(Optional.of(lastEntity));
+
+        when(actionUnitMapper.convert(lastEntity)).thenReturn(lastDTO);
+
+        // 3. Act
+        ActionUnitDTO result = actionUnitService.findPreviousByInstitution(institution, current);
+
+        // 4. Assert
+        assertNotNull(result);
+        assertEquals(lastDTO, result);
+    }
+
+    @Test
+    void testNavigation_ShouldReturnCurrentIfRepoIsEmpty() {
+        // 1. Arrange
+        InstitutionDTO institution = new InstitutionDTO();
+        institution.setId(1L); // On utilise 1L pour correspondre à l'erreur
+
+        ActionUnitDTO current = new ActionUnitDTO();
+        current.setId(100L);
+        current.setCreationTime(OffsetDateTime.now());
+
+        // Mock de findNext : on simule qu'aucune entité suivante n'existe
+        // On utilise eq(1L) et any() pour la flexibilité
+        when(actionUnitRepository.findNext(eq(1L), any(), any()))
+                .thenReturn(Optional.empty());
+
+        // Mock de findFirst : on simule que la liste globale est vide pour cette institution
+        when(actionUnitRepository.findFirst(1L))
+                .thenReturn(Optional.empty());
+
+        // 2. Act
+        ActionUnitDTO result = actionUnitService.findNextByInstitution(institution, current);
+
+        // 3. Assert
+        // Selon votre code, si findNext et findFirst échouent, on retourne 'current'
+        assertEquals(current, result);
+
+        // Vérification optionnelle pour s'assurer que le mapper n'a jamais été appelé
+        verifyNoInteractions(actionUnitMapper);
+    }
+
+    // --- Tests for toggleValidated ---
+
+    @Test
+    void testToggleValidated_ShouldCycleThroughStatuses() {
+        // Arrange
+        Long id = 50L;
+        ActionUnit actionUnit = new ActionUnit();
+        actionUnit.setId(id);
+
+        when(actionUnitRepository.findById(id)).thenReturn(Optional.of(actionUnit));
+        when(actionUnitRepository.save(any(ActionUnit.class))).thenAnswer(i -> i.getArguments()[0]);
+        when(actionUnitMapper.convert(any(ActionUnit.class))).thenReturn(new ActionUnitDTO());
+
+        // INCOMPLETE -> COMPLETE
+        actionUnit.setValidated(ValidationStatus.INCOMPLETE);
+        actionUnitService.toggleValidated(id);
+        assertEquals(ValidationStatus.COMPLETE, actionUnit.getValidated());
+
+        // COMPLETE -> VALIDATED
+        actionUnitService.toggleValidated(id);
+        assertEquals(ValidationStatus.VALIDATED, actionUnit.getValidated());
+
+        // VALIDATED -> INCOMPLETE
+        actionUnitService.toggleValidated(id);
+        assertEquals(ValidationStatus.INCOMPLETE, actionUnit.getValidated());
+    }
+
+    @Test
+    void testToggleValidated_NotFound_ThrowsException() {
+        // Arrange
+        when(actionUnitRepository.findById(anyLong())).thenReturn(Optional.empty());
+
+        // Act & Assert
+        assertThrows(ActionUnitNotFoundException.class, () -> actionUnitService.toggleValidated(999L));
     }
 
 
