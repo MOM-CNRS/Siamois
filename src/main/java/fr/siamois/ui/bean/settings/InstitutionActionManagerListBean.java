@@ -6,6 +6,7 @@ import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.auth.PendingPersonService;
 import fr.siamois.domain.services.person.PersonService;
 import fr.siamois.dto.entity.InstitutionDTO;
+import fr.siamois.mapper.PersonMapper;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
 import fr.siamois.ui.bean.dialog.institution.PersonRole;
@@ -43,6 +44,7 @@ public class InstitutionActionManagerListBean implements SettingsDatatableBean {
     private InstitutionDTO institution;
     private transient Set<ActionManagerRelation> refActionManagers;
     private transient List<ActionManagerRelation> filteredActionManagers;
+    private transient PersonMapper personMapper;
 
     private String searchInput;
 
@@ -76,9 +78,9 @@ public class InstitutionActionManagerListBean implements SettingsDatatableBean {
                 this::processPerson);
 
         userDialogBean.getAlreadyExistingPersons().addAll(
-                refActionManagers
-                        .stream()
-                        .map(ActionManagerRelation::getPerson)
+                refActionManagers.stream()
+                        .map(ActionManagerRelation::getPerson) // Gets the Person entity
+                        .map(personMapper::convert)            // Converts Person to PersonDto
                         .toList()
         );
 

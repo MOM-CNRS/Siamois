@@ -1,6 +1,8 @@
 package fr.siamois.domain.services.specimen;
 
 import fr.siamois.domain.models.ArkEntity;
+import fr.siamois.domain.models.ValidationStatus;
+import fr.siamois.domain.models.exceptions.actionunit.ActionUnitNotFoundException;
 import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.specimen.Specimen;
@@ -8,6 +10,7 @@ import fr.siamois.dto.entity.*;
 import fr.siamois.infrastructure.database.repositories.specimen.SpecimenRepository;
 import fr.siamois.mapper.InstitutionMapper;
 import fr.siamois.mapper.SpecimenMapper;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -18,6 +21,7 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 
+import java.time.OffsetDateTime;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -42,6 +46,8 @@ class SpecimenServiceTest {
 
     @InjectMocks
     private SpecimenService specimenService;
+
+
 
 
     @Test
@@ -355,5 +361,165 @@ class SpecimenServiceTest {
         verify(actionUnit).getId();
         verify(specimenRepository).countByActionContext(7L);
         verifyNoMoreInteractions(specimenRepository);
+    }
+
+    @Test
+    void testFindNextByActionUnit_ShouldReturnNextSpecimen() {
+        // Arrange
+        RecordingUnitSummaryDTO ruDTO = new RecordingUnitSummaryDTO();
+        ruDTO.setId(1L);
+        SpecimenDTO currentDTO = new SpecimenDTO();
+        currentDTO.setCreationTime(OffsetDateTime.now());
+
+        Specimen nextSpecimen = new Specimen();
+        SpecimenDTO nextDTO = new SpecimenDTO();
+
+        when(specimenRepository.findFirstByRecordingUnitIdAndCreationTimeAfterOrderByCreationTimeAsc(eq(1L), any()))
+                .thenReturn(Optional.of(nextSpecimen));
+        when(specimenMapper.convert(nextSpecimen)).thenReturn(nextDTO);
+
+        // Act
+        SpecimenDTO result = specimenService.findNextByActionUnit(ruDTO, currentDTO);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(nextDTO, result);
+        verify(specimenRepository, never()).findFirstByRecordingUnitIdOrderByCreationTimeAsc(anyLong());
+    }
+
+    @Test
+    void testFindNextByActionUnit_ShouldWrapAroundWhenNoNext() {
+        // Arrange
+        RecordingUnitSummaryDTO ruDTO = new RecordingUnitSummaryDTO();
+        ruDTO.setId(1L);
+        SpecimenDTO currentDTO = new SpecimenDTO();
+        currentDTO.setCreationTime(OffsetDateTime.now());
+
+        Specimen oldestSpecimen = new Specimen();
+        SpecimenDTO oldestDTO = new SpecimenDTO();
+
+        // No next specimen found
+        when(specimenRepository.findFirstByRecordingUnitIdAndCreationTimeAfterOrderByCreationTimeAsc(eq(1L), any()))
+                .thenReturn(Optional.empty());
+        // Return the oldest instead
+        when(specimenRepository.findFirstByRecordingUnitIdOrderByCreationTimeAsc(1L))
+                .thenReturn(Optional.of(oldestSpecimen));
+        when(specimenMapper.convert(oldestSpecimen)).thenReturn(oldestDTO);
+
+        // Act
+        SpecimenDTO result = specimenService.findNextByActionUnit(ruDTO, currentDTO);
+
+        // Assert
+        assertEquals(oldestDTO, result);
+    }
+
+    @Test
+    void testFindPreviousByActionUnit_ShouldReturnPreviousSpecimen() {
+        // Arrange
+        RecordingUnitSummaryDTO ruDTO = new RecordingUnitSummaryDTO();
+        ruDTO.setId(1L);
+        SpecimenDTO currentDTO = new SpecimenDTO();
+        currentDTO.setCreationTime(OffsetDateTime.now());
+
+        Specimen prevSpecimen = new Specimen();
+        SpecimenDTO prevDTO = new SpecimenDTO();
+
+        when(specimenRepository.findFirstByRecordingUnitIdAndCreationTimeBeforeOrderByCreationTimeDesc(eq(1L), any()))
+                .thenReturn(Optional.of(prevSpecimen));
+        when(specimenMapper.convert(prevSpecimen)).thenReturn(prevDTO);
+
+        // Act
+        SpecimenDTO result = specimenService.findPreviousByActionUnit(ruDTO, currentDTO);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(prevDTO, result);
+    }
+
+    @Test
+    void testFindPreviousByActionUnit_ShouldWrapAroundWhenNoPrevious() {
+        // Arrange
+        RecordingUnitSummaryDTO ruDTO = new RecordingUnitSummaryDTO();
+        ruDTO.setId(1L);
+        SpecimenDTO currentDTO = new SpecimenDTO();
+
+        Specimen mostRecentSpecimen = new Specimen();
+        SpecimenDTO mostRecentDTO = new SpecimenDTO();
+
+        when(specimenRepository.findFirstByRecordingUnitIdAndCreationTimeBeforeOrderByCreationTimeDesc(anyLong(), any()))
+                .thenReturn(Optional.empty());
+        when(specimenRepository.findFirstByRecordingUnitIdOrderByCreationTimeDesc(1L))
+                .thenReturn(Optional.of(mostRecentSpecimen));
+        when(specimenMapper.convert(mostRecentSpecimen)).thenReturn(mostRecentDTO);
+
+        // Act
+        SpecimenDTO result = specimenService.findPreviousByActionUnit(ruDTO, currentDTO);
+
+        // Assert
+        assertEquals(mostRecentDTO, result);
+    }
+
+    @Test
+    void testToggleValidated_IncompleteToComplete() {
+        // Arrange
+        Long id = 1L;
+        Specimen specimen = new Specimen();
+        specimen.setValidated(ValidationStatus.INCOMPLETE);
+
+        when(specimenRepository.findById(id)).thenReturn(Optional.of(specimen));
+        when(specimenRepository.save(any(Specimen.class))).thenAnswer(i -> i.getArguments()[0]);
+        when(specimenMapper.convert(any(Specimen.class))).thenReturn(new SpecimenDTO());
+
+        // Act
+        specimenService.toggleValidated(id);
+
+        // Assert
+        assertEquals(ValidationStatus.COMPLETE, specimen.getValidated());
+        verify(specimenRepository).save(specimen);
+    }
+
+    @Test
+    void testToggleValidated_CompleteToValidated() {
+        // Arrange
+        Long id = 1L;
+        Specimen specimen = new Specimen();
+        specimen.setValidated(ValidationStatus.COMPLETE);
+
+        when(specimenRepository.findById(id)).thenReturn(Optional.of(specimen));
+        when(specimenRepository.save(any(Specimen.class))).thenAnswer(i -> i.getArguments()[0]);
+        when(specimenMapper.convert(any(Specimen.class))).thenReturn(new SpecimenDTO());
+
+        // Act
+        specimenService.toggleValidated(id);
+
+        // Assert
+        assertEquals(ValidationStatus.VALIDATED, specimen.getValidated());
+    }
+
+    @Test
+    void testToggleValidated_ValidatedToIncomplete() {
+        // Arrange
+        Long id = 1L;
+        Specimen specimen = new Specimen();
+        specimen.setValidated(ValidationStatus.VALIDATED);
+
+        when(specimenRepository.findById(id)).thenReturn(Optional.of(specimen));
+        when(specimenRepository.save(any(Specimen.class))).thenAnswer(i -> i.getArguments()[0]);
+        when(specimenMapper.convert(any(Specimen.class))).thenReturn(new SpecimenDTO());
+
+        // Act
+        specimenService.toggleValidated(id);
+
+        // Assert
+        assertEquals(ValidationStatus.INCOMPLETE, specimen.getValidated());
+    }
+
+    @Test
+    void testToggleValidated_NotFound_ThrowsException() {
+        // Arrange
+        when(specimenRepository.findById(99L)).thenReturn(Optional.empty());
+
+        // Act & Assert
+        assertThrows(ActionUnitNotFoundException.class, () -> specimenService.toggleValidated(99L));
     }
 }
