@@ -24,6 +24,8 @@ import fr.siamois.mapper.PersonMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.Hibernate;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -51,8 +53,6 @@ public class ActionUnitService implements ArkEntityService {
     private final ActionUnitRepository actionUnitRepository;
     private final ConceptService conceptService;
     private final ActionCodeRepository actionCodeRepository;
-    private final TeamMemberRepository teamMemberRepository;
-    private final InstitutionService institutionService;
     private final ActionUnitMapper actionUnitMapper;
     private final PersonMapper personMapper;
 
@@ -257,6 +257,11 @@ public class ActionUnitService implements ArkEntityService {
      * @return The saved ActionUnit
      */
     @Override
+    @CacheEvict({
+            "InstitutionHasRootChildrenAU",
+            "InstitutionHasRootChildrenSU",
+            "ActionUnitHasChildrenInInstitution"
+    })
     public AbstractEntityDTO save(AbstractEntityDTO toSave) {
         try {
             return actionUnitMapper.convert(
@@ -474,6 +479,7 @@ public class ActionUnitService implements ArkEntityService {
      * @param institutionId the institution ID
      * @return True if they are children
      */
+    @Cacheable("ActionUnitHasChildrenInInstitution")
     public boolean existsChildrenByParentAndInstitution(Long parentId, Long institutionId) {
         return actionUnitRepository.existsChildrenByParentAndInstitution(parentId, institutionId);
     }
@@ -485,10 +491,12 @@ public class ActionUnitService implements ArkEntityService {
      * @param institutionId the institution ID
      * @return True if they are children
      */
+    @Cacheable("InstitutionHasRootChildrenAU")
     public boolean existsRootChildrenByInstitution(Long institutionId) {
         return actionUnitRepository.existsRootChildrenByInstitution(institutionId);
     }
 
+    @Cacheable("InstitutionHasRootChildrenSU")
     public boolean existsRootChildrenByRelatedSpatialUnit(Long spatialUnitId) {
         return actionUnitRepository.existsRootChildrenByRelatedSpatialUnit(spatialUnitId);
     }
