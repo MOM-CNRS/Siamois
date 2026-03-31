@@ -17,6 +17,7 @@ import org.hibernate.envers.RevisionType;
 import org.hibernate.envers.query.AuditEntity;
 import org.hibernate.envers.query.AuditQuery;
 import org.springframework.core.convert.ConversionService;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -114,6 +115,22 @@ public class HistoryAuditService {
         } catch (NoResultException e) {
             return null;
         }
+    }
+
+    @Nullable
+    public <D extends AbstractEntityDTO> InfoRevisionEntity findLastRevisionInfoFor(Class<D> dtoClass, Long entityId) {
+        Class<?> entityClass = registry.getEntityClass(dtoClass);
+        if (entityClass == null) {
+            throw new IllegalArgumentException("No JPA Entity mapped for DTO: " + dtoClass.getName());
+        }
+        Number maxRevisionNumber = (Number) auditReader.createQuery()
+                .forRevisionsOfEntity(entityClass, false, true)
+                .addProjection(AuditEntity.revisionNumber().max())
+                .getSingleResult();
+
+        if (maxRevisionNumber == null) return null;
+
+        return auditReader.findRevision(InfoRevisionEntity.class, maxRevisionNumber.longValue());
     }
 
     /**
