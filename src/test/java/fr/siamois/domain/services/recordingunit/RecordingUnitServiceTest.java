@@ -323,9 +323,7 @@ class RecordingUnitServiceTest {
         when(recordingUnitMapper.invertConvert(inputDto)).thenReturn(null);
 
         // Act & Assert
-        assertThrows(NullPointerException.class, () -> {
-            recordingUnitService.save((AbstractEntityDTO) inputDto);
-        });
+        assertThrows(NullPointerException.class, () -> recordingUnitService.save((AbstractEntityDTO) inputDto));
     }
 
     @Test
@@ -551,6 +549,7 @@ class RecordingUnitServiceTest {
     private RuIdentifierResolver identifierResolver;
 
     @Test
+    @SuppressWarnings("unchecked")
     void findAllIdentifierResolver_ShouldReturnCachedResolversIfNotEmpty() {
         // Arrange
         doReturn(identifierResolver).when(applicationContext).getBean(any(Class.class));
