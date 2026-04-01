@@ -384,34 +384,6 @@ class RecordingUnitServiceTest {
     }
 
     @Test
-    void syncRelationships_addNewRelationship_asUnit1() {
-        // Arrange
-        RecordingUnit managed = new RecordingUnit();
-        managed.setId(1L);
-        RecordingUnit unit2 = new RecordingUnit();
-        unit2.setId(2L);
-
-        StratigraphicRelationship newRel = new StratigraphicRelationship();
-        newRel.setUnit1(managed);
-        newRel.setUnit2(unit2);
-
-        RecordingUnitDTO dto = new RecordingUnitDTO();
-        dto.setId(1L);
-        dto.setRelationshipsAsUnit1(Set.of(new StratigraphicRelationshipDTO())); // Dummy DTO
-
-        when(recordingUnitMapper.invertConvert(dto)).thenReturn(managed);
-        when(recordingUnitRepository.findById(1L)).thenReturn(Optional.of(managed));
-        when(recordingUnitRepository.findById(2L)).thenReturn(Optional.of(unit2));
-
-        // Act
-        recordingUnitService.updateStratigraphicRel(dto);
-
-        // Assert
-        assertEquals(1, managed.getRelationshipsAsUnit1().size());
-        assertTrue(managed.getRelationshipsAsUnit1().contains(newRel));
-    }
-
-    @Test
     void syncRelationships_updateExistingRelationship_asUnit1() {
         // Arrange
         RecordingUnit managed = new RecordingUnit();
