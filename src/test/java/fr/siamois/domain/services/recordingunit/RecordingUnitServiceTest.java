@@ -1,10 +1,12 @@
 package fr.siamois.domain.services.recordingunit;
 
 import fr.siamois.domain.models.ArkEntity;
+import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.recordingunit.StratigraphicRelationship;
 import fr.siamois.domain.models.vocabulary.Concept;
+import fr.siamois.domain.services.recordingunit.identifier.generic.RuIdentifierResolver;
 import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.dto.StratigraphicRelationshipDTO;
 import fr.siamois.dto.entity.AbstractEntityDTO;
@@ -19,9 +21,12 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationContext;
+import org.springframework.core.convert.ConversionService;
 
 import java.util.*;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentCaptor.forClass;
 import static org.mockito.ArgumentMatchers.any;
@@ -42,7 +47,12 @@ class RecordingUnitServiceTest {
 
     @Mock
     private PersonRepository personRepository;
+    
+    @Mock
+    private ApplicationContext applicationContext;
 
+    @Mock
+    private ConversionService conversionService;
 
     @InjectMocks
     private RecordingUnitService recordingUnitService;
@@ -531,4 +541,74 @@ class RecordingUnitServiceTest {
         // Assert
         assertTrue(managed.getRelationshipsAsUnit1().isEmpty());
     }
+
+    @Mock
+    private RuIdentifierResolver identifierResolver;
+
+    @Test
+    void findAllIdentifierResolver_ShouldReturnCachedResolversIfNotEmpty() {
+        // Arrange
+        doReturn(identifierResolver).when(applicationContext).getBean(any(Class.class));
+
+        when(identifierResolver.getCode()).thenReturn("TEST_CODE");
+
+        // Act
+        Map<String, RuIdentifierResolver> resolversAgain = recordingUnitService.findAllIdentifierResolver();
+
+        assertThat(resolversAgain).hasSize(1);
+    }
+
+    @Test
+    void findAllByActionUnit_shouldReturnAllAU() {
+        ActionUnit a1 = new ActionUnit();
+        a1.setIdentifier("A1");
+        a1.setId(1L);
+        RecordingUnit r2 = new RecordingUnit();
+        r2.setFullIdentifier("A2");
+        RecordingUnit r3 = new RecordingUnit();
+        r3.setFullIdentifier("A3");
+        when(recordingUnitRepository.findAllByActionUnitId(1L)).thenReturn(List.of(r2, r3));
+        when(conversionService.convert(any(), eq(RecordingUnitSummaryDTO.class))).then(invocation -> {
+            RecordingUnitSummaryDTO dto = new RecordingUnitSummaryDTO();
+            RecordingUnit ru = invocation.getArgument(0,RecordingUnit.class);
+            dto.setFullIdentifier(ru.getFullIdentifier());
+            return dto;
+        });
+
+        List<RecordingUnitSummaryDTO> result = recordingUnitService.findAllByActionUnit(a1.getId());
+
+        assertThat(result).hasSize(2)
+                .allMatch(dto -> dto.getFullIdentifier().startsWith("A"));
+    }
+
+    @Test
+    void findDirectParentsOf_shouldReturnDirectParents() {
+        RecordingUnit recordingUnit = new RecordingUnit();
+        recordingUnit.setId(1L);
+        recordingUnit.setFullIdentifier("1L");
+        recordingUnit.setCreatedByInstitution(new Institution());
+        recordingUnit.getCreatedByInstitution().setId(1L);
+        recordingUnit.getCreatedByInstitution().setIdentifier("TEST_INST");
+        RecordingUnit parent1 = new RecordingUnit();
+        parent1.setId(2L);
+        parent1.setFullIdentifier("2L");
+        parent1.setCreatedByInstitution(recordingUnit.getCreatedByInstitution());
+        RecordingUnit parent2 = new RecordingUnit();
+        parent2.setId(3L);
+        parent2.setFullIdentifier("3L");
+        parent2.setCreatedByInstitution(recordingUnit.getCreatedByInstitution());
+
+        when(recordingUnitRepository.findParentsOf(1L)).thenReturn(Set.of(parent1, parent2));
+        when(conversionService.convert(any(), eq(RecordingUnitDTO.class))).then(invocation -> {
+            RecordingUnitDTO dto = new RecordingUnitDTO();
+            RecordingUnit ru = invocation.getArgument(0,RecordingUnit.class);
+            dto.setFullIdentifier(ru.getFullIdentifier());
+            return dto;
+        });
+
+        List<RecordingUnitDTO> dtos = recordingUnitService.findDirectParentsOf(recordingUnit.getId());
+
+        assertThat(dtos).hasSize(2);
+    }
+
 }
