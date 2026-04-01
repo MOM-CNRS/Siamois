@@ -72,9 +72,7 @@ public class RecordingUnitService implements ArkEntityService {
     private final RecordingUnitMapper recordingUnitMapper;
     private final ConversionService conversionService;
     private final ApplicationContext applicationContext;
-    private final ActionUnitMapper actionUnitMapper;
     private final ActionUnitSummaryMapper actionUnitSummaryMapper;
-    private final SessionSettingsBean sessionSettingsBean;
 
     /**
      * Bulk update the type of multiple recording units.
@@ -573,22 +571,11 @@ public class RecordingUnitService implements ArkEntityService {
                 .toList();
     }
 
-    // Reusable method to initialize collections
-    private void initializeRecordingUnitCollections(List<RecordingUnit> recordingUnits) {
-        recordingUnits.forEach(ru -> {
-            Hibernate.initialize(ru.getParents());
-            Hibernate.initialize(ru.getChildren());
-        });
-    }
-
     public int generatedNextIdentifier(@NonNull ActionUnit actionUnit, @Nullable Concept unitType, @Nullable RecordingUnit parentRu) {
         ActionUnitResolveConfig config = actionUnit.resolveConfig();
 
         switch (config) {
-            case UNIQUE -> {
-                return recordingUnitIdCounterRepository.ruNextValUnique(actionUnit.getId());
-            }
-            case NONE -> {
+            case UNIQUE, NONE -> {
                 return recordingUnitIdCounterRepository.ruNextValUnique(actionUnit.getId());
             }
             case PARENT -> {
@@ -649,7 +636,7 @@ public class RecordingUnitService implements ArkEntityService {
         RecordingUnitDTO dto = recordingUnitMapper.convert(entity);
 
         // If "specimen" is in counts, fetch and set the specimen count
-        if (counts != null && counts.contains("specimen")) {
+        if (counts != null && counts.contains("specimen") && dto != null) {
             Long specimenCount = recordingUnitRepository.countSpecimensByRecordingUnitId(entity.getId());
             dto.setSpecimenCount(specimenCount);
         }
