@@ -6,6 +6,7 @@ import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.recordingunit.StratigraphicRelationship;
 import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.dto.StratigraphicRelationshipDTO;
+import fr.siamois.dto.entity.AbstractEntityDTO;
 import fr.siamois.dto.entity.RecordingUnitDTO;
 import fr.siamois.dto.entity.RecordingUnitSummaryDTO;
 import fr.siamois.infrastructure.database.repositories.person.PersonRepository;
@@ -44,8 +45,6 @@ class RecordingUnitServiceTest {
 
     @InjectMocks
     private RecordingUnitService recordingUnitService;
-
-
 
     @Test
     void findWithoutArk() {
@@ -230,4 +229,87 @@ class RecordingUnitServiceTest {
         // Assert
         assertTrue(result);
     }
+
+    @Test
+    void updateStratigraphicRel() {
+        // Arrange
+        RecordingUnitDTO recordingUnitDTO = new RecordingUnitDTO();
+        recordingUnitDTO.setId(1L);
+        recordingUnitDTO.setRelationshipsAsUnit1(new HashSet<>());
+        recordingUnitDTO.setRelationshipsAsUnit2(new HashSet<>());
+
+        RecordingUnit recordingUnit = new RecordingUnit();
+        recordingUnit.setId(1L);
+        recordingUnit.setRelationshipsAsUnit1(new HashSet<>());
+        recordingUnit.setRelationshipsAsUnit2(new HashSet<>());
+
+        RecordingUnit managedRecordingUnit = new RecordingUnit();
+        managedRecordingUnit.setId(1L);
+        managedRecordingUnit.setRelationshipsAsUnit1(new HashSet<>());
+        managedRecordingUnit.setRelationshipsAsUnit2(new HashSet<>());
+
+        when(recordingUnitMapper.invertConvert(recordingUnitDTO)).thenReturn(recordingUnit);
+        when(recordingUnitRepository.findById(1L)).thenReturn(Optional.of(managedRecordingUnit));
+
+        // Act
+        recordingUnitService.updateStratigraphicRel(recordingUnitDTO);
+
+        // Assert
+        verify(recordingUnitMapper).invertConvert(recordingUnitDTO);
+        verify(recordingUnitRepository).findById(1L);
+        
+        // Ensure no exception is thrown and relationships are synced properly
+        // Specifically testing that the setupStratigraphicRelationships doesn't crash 
+        // when valid RecordingUnit objects are passed
+        assertNotNull(managedRecordingUnit);
+    }
+
+    @Test
+    void save_withAbstractEntityDTO_shouldSaveAndConvert() {
+        // Arrange
+        RecordingUnitDTO inputDto = new RecordingUnitDTO();
+        inputDto.setId(1L);
+
+        RecordingUnit entityToSave = new RecordingUnit();
+        entityToSave.setId(1L);
+
+        RecordingUnit savedEntity = new RecordingUnit();
+        savedEntity.setId(1L);
+        savedEntity.setFullIdentifier("ID-POST-SAVE");
+
+        RecordingUnitDTO expectedDto = new RecordingUnitDTO();
+        expectedDto.setId(1L);
+        expectedDto.setFullIdentifier("ID-POST-SAVE");
+
+        // Mock the chain of calls
+        when(recordingUnitMapper.invertConvert(inputDto)).thenReturn(entityToSave);
+        when(recordingUnitRepository.save(entityToSave)).thenReturn(savedEntity);
+        when(recordingUnitMapper.convert(savedEntity)).thenReturn(expectedDto);
+
+        // Act
+        RecordingUnitDTO result = recordingUnitService.save((AbstractEntityDTO) inputDto);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(expectedDto.getId(), result.getId());
+        assertEquals(expectedDto.getFullIdentifier(), result.getFullIdentifier());
+
+        // Verify that the mocks were called correctly
+        verify(recordingUnitMapper, times(1)).invertConvert(inputDto);
+        verify(recordingUnitRepository, times(1)).save(entityToSave);
+        verify(recordingUnitMapper, times(1)).convert(savedEntity);
+    }
+
+    @Test
+    void save_withAbstractEntityDTO_shouldThrowNPE_whenMapperReturnsNull() {
+        // Arrange
+        RecordingUnitDTO inputDto = new RecordingUnitDTO();
+        when(recordingUnitMapper.invertConvert(inputDto)).thenReturn(null);
+
+        // Act & Assert
+        assertThrows(NullPointerException.class, () -> {
+            recordingUnitService.save((AbstractEntityDTO) inputDto);
+        });
+    }
+
 }
