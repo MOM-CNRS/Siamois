@@ -27,6 +27,8 @@ import fr.siamois.mapper.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.Hibernate;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -211,6 +213,10 @@ public class SpatialUnitService implements ArkEntityService {
      * @throws SpatialUnitAlreadyExistsException If a SpatialUnit with the same name already exists in the institution
      */
     @Transactional
+    @CacheEvict({
+            "InstitutionHasRootChildrenSU",
+            "ParentHasRootChildrenSU"
+    })
     public SpatialUnitDTO save(UserInfo info, SpatialUnitDTO su) throws SpatialUnitAlreadyExistsException {
         String name = su.getName();
 
@@ -489,11 +495,12 @@ public class SpatialUnitService implements ArkEntityService {
      * @param institutionId the institution ID
      * @return True if they are children
      */
+    @Cacheable("InstitutionHasRootChildrenSU")
     public boolean existsRootChildrenByInstitution(Long institutionId) {
         return spatialUnitRepository.existsRootChildrenByInstitution(institutionId);
     }
 
-
+    @Cacheable("ParentHasRootChildrenSU")
     public boolean existsRootChildrenByParent(Long spatialUnitId) {
         return spatialUnitRepository.existsRootChildrenByParent(spatialUnitId);
     }
