@@ -361,13 +361,6 @@ public class RecordingUnitService implements ArkEntityService {
                 institutionId, fullIdentifier, categoryIds, global, langCode, pageable
         );
 
-        // load related entities
-        res.forEach(actionUnit -> {
-            Hibernate.initialize(actionUnit.getParents());
-            Hibernate.initialize(actionUnit.getChildren());
-
-        });
-
         return res.map(recordingUnitMapper::convert);
     }
 
@@ -396,13 +389,6 @@ public class RecordingUnitService implements ArkEntityService {
         Page<RecordingUnit> res = recordingUnitRepository.findAllByInstitutionAndByActionUnitAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
                 institutionId, actionId, fullIdentifier, categoryIds, global, langCode, pageable
         );
-
-
-        // load related entities
-        res.forEach(actionUnit -> {
-            Hibernate.initialize(actionUnit.getParents());
-            Hibernate.initialize(actionUnit.getChildren());
-        });
 
         return res.map(recordingUnitMapper::convert);
     }
@@ -434,14 +420,6 @@ public class RecordingUnitService implements ArkEntityService {
                 recordingUnitId, fullIdentifierFilter, categoryIds, globalFilter, languageCode, pageable
         );
 
-        res.forEach(unit -> {
-            Hibernate.initialize(unit.getDocuments());
-            Hibernate.initialize(unit.getRelationshipsAsUnit2());
-            Hibernate.initialize(unit.getRelationshipsAsUnit1());
-            Hibernate.initialize(unit.getParents());
-            Hibernate.initialize(unit.getChildren());
-        });
-
         return res
                 .map(recordingUnitMapper::convert);
     }
@@ -453,13 +431,6 @@ public class RecordingUnitService implements ArkEntityService {
         Page<RecordingUnit> res = recordingUnitRepository.findAllByChildAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
                 childId, fullIdentifierFilter, categoryIds, globalFilter, languageCode, pageable
         );
-
-
-        // load related entities
-        res.forEach(actionUnit -> {
-            Hibernate.initialize(actionUnit.getParents());
-            Hibernate.initialize(actionUnit.getChildren());
-        });
 
         return res.map(recordingUnitMapper::convert);
     }
@@ -473,13 +444,6 @@ public class RecordingUnitService implements ArkEntityService {
         Page<RecordingUnit> res = recordingUnitRepository.findAllBySpatialUnitAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
                 spatialUnitId, fullIdentifierFilter, categoryIds, globalFilter, languageCode, pageable
         );
-
-
-        // load related entities
-        res.forEach(actionUnit -> {
-            Hibernate.initialize(actionUnit.getParents());
-            Hibernate.initialize(actionUnit.getChildren());
-        });
 
         return res.map(recordingUnitMapper::convert);
     }
