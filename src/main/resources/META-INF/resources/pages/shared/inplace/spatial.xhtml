@@ -2,36 +2,31 @@
         xmlns="http://www.w3.org/1999/xhtml"
         xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
         xmlns:cc="http://java.sun.com/jsf/composite"
-        xmlns:p="http://primefaces.org/ui" xmlns:f="http://java.sun.com/jsf/core" xmlns:h="http://java.sun.com/jsf/html"
+        xmlns:p="http://primefaces.org/ui"
+        xmlns:f="http://java.sun.com/jsf/core"
+        xmlns:h="http://java.sun.com/jsf/html"
 >
 
     <cc:interface>
-        <cc:attribute name="answer"
-                      type="fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerSelectOneSpatialUnitViewModel"
-                      required="true"/>
+        <cc:attribute name="answer" type="fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerSelectOneSpatialUnitViewModel" required="true"/>
         <cc:attribute name="hasBeenModified" type="Boolean" required="false" default="false"/>
-        <cc:attribute name="field" type="fr.siamois.domain.models.form.customfield.CustomFieldSelectOneSpatialUnit"
-                      required="true"/>
+        <cc:attribute name="field" type="fr.siamois.domain.models.form.customfield.CustomFieldSelectOneSpatialUnit" required="true"/>
         <cc:attribute name="label" type="String" required="false"/>
         <cc:attribute name="required" type="java.lang.Boolean" required="true"/>
         <cc:attribute name="mode" type="String" required="false" default="READ"/>
         <cc:attribute name="updateTargetsOnBlur" type="String" required="false" default="@this"/>
         <cc:attribute name="multiple" type="Boolean" required="false" default="false"/>
-        <cc:attribute name="onModified"
-                      method-signature="void setFieldAnswerHasBeenModified(javax.faces.event.AjaxBehaviorEvent)"
-                      required="false"/>
-        <cc:attribute name="spatialUnitOptions"
-                      type="java.util.List"
-                      required="true"
-                      shortDescription="List of SpatialUnit to display in the dropdown"/>
+        <cc:attribute name="onModified" method-signature="void setFieldAnswerHasBeenModified(javax.faces.event.AjaxBehaviorEvent)" required="false"/>
+        <cc:attribute name="spatialUnitOptions" type="java.util.List" required="true" shortDescription="List of SpatialUnit to display in the dropdown"/>
         <cc:attribute name="displayType" type="java.lang.Boolean" required="false" default="false"/>
         <cc:attribute name="panelId" type="String" required="false"/>
         <cc:attribute name="formCtx" type="fr.siamois.ui.form.EntityFormContext" required="true"/>
     </cc:interface>
 
     <cc:implementation>
-        <p:inplace id="inplace" mode="#{cc.attrs.mode}" toggleable="false">
-            <f:facet name="output">
+        <p:outputPanel id="inplace">
+            <!-- ===== MODE DISPLAY ===== -->
+            <h:panelGroup rendered="#{cc.attrs.mode ne 'input'}">
                 <!-- Single value -->
                 <h:panelGroup rendered="#{(not cc.attrs.multiple) and (not empty cc.attrs.answer.value)}">
                     <div style="display:flex;gap:0.5em;">
@@ -47,10 +42,11 @@
                                 label="#{labelBean.findLabelOf(cc.attrs.answer.value.category)}"
                                 styleClass="mr-2 spatial-unit-type-chip"/>
                     </div>
-
                 </h:panelGroup>
-            </f:facet>
-            <f:facet name="input">
+            </h:panelGroup>
+
+            <!-- ===== MODE EDIT ===== -->
+            <h:panelGroup id="inputGroup" rendered="#{cc.attrs.mode eq 'input'}">
                 <p:selectOneMenu id="select-one-spatial-unit"
                                  panelStyleClass="spatial-unit"
                                  styleClass="spatial-unit #{cc.attrs.answer.hasBeenModified ? 'track-change sia-modified-field': 'track-change'}"
@@ -90,7 +86,6 @@
                             onerror="handleAutoSaveError(xhr, status, '#{cc.attrs.panelId}'); $(PrimeFaces.escapeClientId('#{cc.clientId}:input')).addClass('sia-modified-field');"
                             listener="#{cc.attrs.onModified}"/>
                     <f:facet name="footer">
-
                         <div id="footer" class="ui-fluid" style="padding:0.5rem 1rem 1rem 1rem">
                             <p:commandButton
                                     id="btnNouveau"
@@ -100,19 +95,15 @@
                                     update="#{cc.clientId}"/>
                         </div>
                     </f:facet>
-
                 </p:selectOneMenu>
 
                 <p:overlayPanel for="#{cc.clientId}:select-one-spatial-unit" my="left top" at="left bottom" showEvent="none"
                                 widgetVar="#{cc.clientId}_overlay"
-
                                 dismissable="false"
                                 autoHide="true"
                                 showCloseIcon="true"
                                 dynamic="true" id="overlayNouveau" appendTo="#{cc.clientId}"
                                 hideEffect="fade">
-
-
                     <h:panelGrid columns="2" cellpadding="5" id="newGrid">
                         <p:outputLabel for="newUnitName" value="Nom:"/>
                         <p:inputText value="#{cc.attrs.answer.newName}"
@@ -137,29 +128,20 @@
                                         dropdown="true"
                                         placeholder="#{langBean.msg('common.action.chooseConcept')}"
                                         showEmptyMessage="false"
-                                        maxResults="#{fieldConfigurationService.resultLimit()}"
-                        >
+                                        maxResults="#{fieldConfigurationService.resultLimit()}">
                             <f:attribute name="fieldCode" value="SIASU.TYPE"/>
                         </p:autoComplete>
 
                         <p:commandButton
-                                style="background: var(--siamois-green-active);
-    border-color: var(--siamois-green-active);"
+                                style="background: var(--siamois-green-active); border-color: var(--siamois-green-active);"
                                 value="Créer"
-                                action="#{cc.attrs.formCtx.saveNewPlaceFromField(
-                                            cc.attrs.answer
-                                        )}"
+                                action="#{cc.attrs.formCtx.saveNewPlaceFromField(cc.attrs.answer)}"
                                 process="newGrid"
                                 onsuccess="PF('#{cc.clientId}_overlay').hide();"
-                                update="select-one-spatial-unit @this  overlayNouveau templateFormCC:templateForm:templateGrowl"/>
-
+                                update="select-one-spatial-unit @this overlayNouveau templateFormCC:templateForm:templateGrowl"/>
                     </h:panelGrid>
-
                 </p:overlayPanel>
-
-            </f:facet>
-        </p:inplace>
-
+            </h:panelGroup>
+        </p:outputPanel>
     </cc:implementation>
-
 </ui:composition>

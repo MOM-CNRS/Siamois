@@ -2,14 +2,15 @@
         xmlns="http://www.w3.org/1999/xhtml"
         xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
         xmlns:cc="http://java.sun.com/jsf/composite"
-        xmlns:p="http://primefaces.org/ui" xmlns:f="http://java.sun.com/jsf/core" xmlns:h="http://java.sun.com/jsf/html"
+        xmlns:p="http://primefaces.org/ui"
+        xmlns:f="http://java.sun.com/jsf/core"
+        xmlns:h="http://java.sun.com/jsf/html"
 >
 
     <cc:interface>
         <cc:attribute name="answer" type="fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerSelectOneActionCodeViewModel" required="true"/>
         <cc:attribute name="hasBeenModified" type="Boolean" required="false" default="false"/>
-        <cc:attribute name="field" type="fr.siamois.domain.models.form.customfield.CustomFieldSelectOneActionCode"
-                      required="true"/>
+        <cc:attribute name="field" type="fr.siamois.domain.models.form.customfield.CustomFieldSelectOneActionCode" required="true"/>
         <cc:attribute name="mode" type="String" required="false" default="READ"/>
         <cc:attribute name="label" type="String" required="false"/>
         <cc:attribute name="required" type="java.lang.Boolean" required="true"/>
@@ -17,8 +18,9 @@
     </cc:interface>
 
     <cc:implementation>
-        <p:inplace id="inplace" mode="#{cc.attrs.mode}" toggleable="false">
-            <f:facet name="output">
+        <p:outputPanel id="inplace">
+            <!-- ===== MODE DISPLAY ===== -->
+            <h:panelGroup rendered="#{cc.attrs.mode ne 'input'}">
                 <!-- Cas où answer.value n'est PAS null -->
                 <ui:fragment rendered="#{not empty cc.attrs.answer.value}">
                     <h:outputText value="#{cc.attrs.answer.value.code}"/>
@@ -31,9 +33,10 @@
                 <ui:fragment rendered="#{empty cc.attrs.answer.value}">
                     <h:outputText value="Aucun code associé"/>
                 </ui:fragment>
-            </f:facet>
-            <f:facet name="input">
+            </h:panelGroup>
 
+            <!-- ===== MODE EDIT ===== -->
+            <h:panelGroup id="inputGroup" rendered="#{cc.attrs.mode eq 'input'}">
                 <!-- Cas où answer.value n'est PAS null -->
                 <ui:fragment rendered="#{not empty cc.attrs.answer.value}">
                     <h:outputText value="#{cc.attrs.answer.value.code}"/>
@@ -46,10 +49,7 @@
                 <ui:fragment rendered="#{empty cc.attrs.answer.value}">
                     <h:outputText value="Aucun code associé"/>
                 </ui:fragment>
-
-            </f:facet>
-
-        </p:inplace>
+            </h:panelGroup>
+        </p:outputPanel>
     </cc:implementation>
-
 </ui:composition>
