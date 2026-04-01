@@ -28,8 +28,7 @@
     <!-- @elvariable id="panelId" type="java.lang.String" -->
 
     <!-- TEXT -->
-
-    <c:if test="#{col['class'].simpleName eq 'FormFieldColumn'}">
+    <c:if test="#{(col['class'].simpleName eq 'FormFieldColumn') or col['class'].simpleName eq 'CustomColUiDto'}">
 
         <c:if test="#{col.field['class'].simpleName eq 'CustomFieldText'}">
             <siaInplace:text
