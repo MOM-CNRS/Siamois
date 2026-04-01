@@ -511,7 +511,6 @@ public class RecordingUnitService implements ArkEntityService {
     @Transactional(readOnly = true)
     public List<RecordingUnitDTO> findAllWithoutParentsByInstitution(Long institutionId) {
         List<RecordingUnit> recordingUnits = recordingUnitRepository.findRootsByInstitution(institutionId);
-        initializeRecordingUnitCollections(recordingUnits);
         return recordingUnits.stream()
                 .map(recordingUnitMapper::convert)
                 .toList();
@@ -527,7 +526,7 @@ public class RecordingUnitService implements ArkEntityService {
      */
     public List<RecordingUnitDTO> findChildrenByParentAndInstitution(Long parentId, Long institutionId) {
         List<RecordingUnit> res = recordingUnitRepository.findChildrenByParentAndInstitution(parentId, institutionId);
-        initializeRecordingUnitCollections(res);
+
         return res.stream()
                 .map(recordingUnitMapper::convert)
                 .toList();
@@ -569,7 +568,6 @@ public class RecordingUnitService implements ArkEntityService {
      */
     public List<RecordingUnitDTO> findAllWithoutParentsByAction(Long actionId) {
         List<RecordingUnit> res = recordingUnitRepository.findRootsByAction(actionId);
-        initializeRecordingUnitCollections(res);
         return res.stream()
                 .map(recordingUnitMapper::convert)
                 .toList();
