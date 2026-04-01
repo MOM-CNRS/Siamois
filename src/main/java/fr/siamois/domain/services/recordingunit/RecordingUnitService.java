@@ -226,7 +226,7 @@ public class RecordingUnitService implements ArkEntityService {
         syncRelationships(target, source.getRelationshipsAsUnit2(), false);
     }
 
-    private void syncRelationships(
+    void syncRelationships(
             RecordingUnit managed,
             Set<StratigraphicRelationship> relationships,
             boolean isUnit1

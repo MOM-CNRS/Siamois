@@ -4,6 +4,7 @@ import fr.siamois.domain.models.ArkEntity;
 import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.recordingunit.StratigraphicRelationship;
+import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.dto.StratigraphicRelationshipDTO;
 import fr.siamois.dto.entity.AbstractEntityDTO;
@@ -380,5 +381,182 @@ class RecordingUnitServiceTest {
         // 2. Vérifier que la relation parent/enfant a été mise à jour
         assertTrue(savedParentEntity.getChildren().contains(savedManagedEntity),
                 "L'entité managée doit être dans la liste des enfants du parent.");
+    }
+
+    @Test
+    void syncRelationships_addNewRelationship_asUnit1() {
+        // Arrange
+        RecordingUnit managed = new RecordingUnit();
+        managed.setId(1L);
+        RecordingUnit unit2 = new RecordingUnit();
+        unit2.setId(2L);
+
+        StratigraphicRelationship newRel = new StratigraphicRelationship();
+        newRel.setUnit1(managed);
+        newRel.setUnit2(unit2);
+
+        RecordingUnitDTO dto = new RecordingUnitDTO();
+        dto.setId(1L);
+        dto.setRelationshipsAsUnit1(Set.of(new StratigraphicRelationshipDTO())); // Dummy DTO
+
+        when(recordingUnitMapper.invertConvert(dto)).thenReturn(managed);
+        when(recordingUnitRepository.findById(1L)).thenReturn(Optional.of(managed));
+        when(recordingUnitRepository.findById(2L)).thenReturn(Optional.of(unit2));
+
+        // Act
+        recordingUnitService.updateStratigraphicRel(dto);
+
+        // Assert
+        assertEquals(1, managed.getRelationshipsAsUnit1().size());
+        assertTrue(managed.getRelationshipsAsUnit1().contains(newRel));
+    }
+
+    @Test
+    void syncRelationships_updateExistingRelationship_asUnit1() {
+        // Arrange
+        RecordingUnit managed = new RecordingUnit();
+        managed.setId(1L);
+        RecordingUnit unit2 = new RecordingUnit();
+        unit2.setId(2L);
+
+        Concept oldConcept = new Concept();
+        oldConcept.setId(10L);
+        Concept newConcept = new Concept();
+        newConcept.setId(20L);
+
+        StratigraphicRelationship existingRel = new StratigraphicRelationship();
+        existingRel.setUnit1(managed);
+        existingRel.setUnit2(unit2);
+        existingRel.setConcept(oldConcept);
+        managed.addRelationshipAsUnit1(existingRel);
+
+        StratigraphicRelationship updatedRelSource = new StratigraphicRelationship();
+        updatedRelSource.setUnit1(new RecordingUnit() {{ setId(1L); }});
+        updatedRelSource.setUnit2(new RecordingUnit() {{ setId(2L); }});
+        updatedRelSource.setConcept(newConcept);
+
+        RecordingUnit sourceEntity = new RecordingUnit();
+        sourceEntity.setId(1L);
+        sourceEntity.setRelationshipsAsUnit1(Set.of(updatedRelSource));
+
+        RecordingUnitDTO dto = new RecordingUnitDTO();
+        dto.setId(1L);
+
+        when(recordingUnitMapper.invertConvert(dto)).thenReturn(sourceEntity);
+        when(recordingUnitRepository.findById(1L)).thenReturn(Optional.of(managed));
+        when(recordingUnitRepository.findById(2L)).thenReturn(Optional.of(unit2));
+
+        // Act
+        recordingUnitService.updateStratigraphicRel(dto);
+
+        // Assert
+        assertEquals(1, managed.getRelationshipsAsUnit1().size());
+        StratigraphicRelationship finalRel = managed.getRelationshipsAsUnit1().iterator().next();
+        assertEquals(newConcept, finalRel.getConcept());
+    }
+
+    @Test
+    void syncRelationships_addNewRelationship_asUnit2() {
+        // Arrange
+        RecordingUnit managed = new RecordingUnit();
+        managed.setId(2L);
+        RecordingUnit unit1 = new RecordingUnit();
+        unit1.setId(1L);
+
+        StratigraphicRelationship newRel = new StratigraphicRelationship();
+        newRel.setUnit1(unit1);
+        newRel.setUnit2(managed);
+
+        RecordingUnit sourceEntity = new RecordingUnit();
+        sourceEntity.setId(2L);
+        sourceEntity.setRelationshipsAsUnit2(Set.of(newRel));
+
+        RecordingUnitDTO dto = new RecordingUnitDTO();
+        dto.setId(2L);
+
+        when(recordingUnitMapper.invertConvert(dto)).thenReturn(sourceEntity);
+        when(recordingUnitRepository.findById(2L)).thenReturn(Optional.of(managed));
+        when(recordingUnitRepository.findById(1L)).thenReturn(Optional.of(unit1));
+
+        // Act
+        recordingUnitService.updateStratigraphicRel(dto);
+
+        // Assert
+        assertEquals(1, managed.getRelationshipsAsUnit2().size());
+        assertTrue(managed.getRelationshipsAsUnit2().contains(newRel));
+    }
+
+    @Test
+    void syncRelationships_updateExistingRelationship_asUnit2() {
+        // Arrange
+        RecordingUnit managed = new RecordingUnit();
+        managed.setId(2L);
+        RecordingUnit unit1 = new RecordingUnit();
+        unit1.setId(1L);
+
+        Concept oldConcept = new Concept();
+        oldConcept.setId(10L);
+        Concept newConcept = new Concept();
+        newConcept.setId(20L);
+
+        StratigraphicRelationship existingRel = new StratigraphicRelationship();
+        existingRel.setUnit1(unit1);
+        existingRel.setUnit2(managed);
+        existingRel.setConcept(oldConcept);
+        managed.addRelationshipAsUnit2(existingRel);
+
+        StratigraphicRelationship updatedRelSource = new StratigraphicRelationship();
+        updatedRelSource.setUnit1(new RecordingUnit() {{ setId(1L); }});
+        updatedRelSource.setUnit2(new RecordingUnit() {{ setId(2L); }});
+        updatedRelSource.setConcept(newConcept);
+
+        RecordingUnit sourceEntity = new RecordingUnit();
+        sourceEntity.setId(2L);
+        sourceEntity.setRelationshipsAsUnit2(Set.of(updatedRelSource));
+
+        RecordingUnitDTO dto = new RecordingUnitDTO();
+        dto.setId(2L);
+
+        when(recordingUnitMapper.invertConvert(dto)).thenReturn(sourceEntity);
+        when(recordingUnitRepository.findById(2L)).thenReturn(Optional.of(managed));
+        when(recordingUnitRepository.findById(1L)).thenReturn(Optional.of(unit1));
+
+        // Act
+        recordingUnitService.updateStratigraphicRel(dto);
+
+        // Assert
+        assertEquals(1, managed.getRelationshipsAsUnit2().size());
+        StratigraphicRelationship finalRel = managed.getRelationshipsAsUnit2().iterator().next();
+        assertEquals(newConcept, finalRel.getConcept());
+    }
+
+    @Test
+    void syncRelationships_removeRelationship() {
+        // Arrange
+        RecordingUnit managed = new RecordingUnit();
+        managed.setId(1L);
+        RecordingUnit unit2 = new RecordingUnit();
+        unit2.setId(2L);
+
+        StratigraphicRelationship relToRemove = new StratigraphicRelationship();
+        relToRemove.setUnit1(managed);
+        relToRemove.setUnit2(unit2);
+        managed.addRelationshipAsUnit1(relToRemove);
+
+        // La source n'a aucune relation, ce qui doit entraîner la suppression de celle existante
+        RecordingUnit sourceEntity = new RecordingUnit();
+        sourceEntity.setId(1L);
+
+        RecordingUnitDTO dto = new RecordingUnitDTO();
+        dto.setId(1L);
+
+        when(recordingUnitMapper.invertConvert(dto)).thenReturn(sourceEntity);
+        when(recordingUnitRepository.findById(1L)).thenReturn(Optional.of(managed));
+
+        // Act
+        recordingUnitService.updateStratigraphicRel(dto);
+
+        // Assert
+        assertTrue(managed.getRelationshipsAsUnit1().isEmpty());
     }
 }
