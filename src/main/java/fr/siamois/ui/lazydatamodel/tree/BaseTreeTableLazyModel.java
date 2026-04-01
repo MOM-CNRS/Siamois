@@ -276,7 +276,7 @@ public abstract class BaseTreeTableLazyModel<T extends AbstractEntityDTO, ID> im
     }
 
     @ExecutionTimeLogger
-    protected abstract Boolean isLeaf( T node) ;
+    protected abstract Boolean isLeaf( T node);
 
     @ExecutionTimeLogger
     protected List<T> loadFunction(T parentUnit) {

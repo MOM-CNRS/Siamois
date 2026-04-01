@@ -13,17 +13,16 @@ import fr.siamois.domain.models.exceptions.actionunit.NullActionUnitIdentifierEx
 import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.ArkEntityService;
-import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.dto.entity.*;
 import fr.siamois.infrastructure.database.repositories.actionunit.ActionCodeRepository;
 import fr.siamois.infrastructure.database.repositories.actionunit.ActionUnitRepository;
-import fr.siamois.infrastructure.database.repositories.team.TeamMemberRepository;
 import fr.siamois.mapper.ActionUnitMapper;
 import fr.siamois.mapper.PersonMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.hibernate.Hibernate;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -51,8 +50,6 @@ public class ActionUnitService implements ArkEntityService {
     private final ActionUnitRepository actionUnitRepository;
     private final ConceptService conceptService;
     private final ActionCodeRepository actionCodeRepository;
-    private final TeamMemberRepository teamMemberRepository;
-    private final InstitutionService institutionService;
     private final ActionUnitMapper actionUnitMapper;
     private final PersonMapper personMapper;
 
@@ -77,16 +74,6 @@ public class ActionUnitService implements ArkEntityService {
                 institutionId, name, categoryIds, personIds, global, langCode, pageable);
 
         //wireChildrenAndParents(res.getContent());  // Load and attach spatial hierarchy relationships
-
-
-        // load related actions
-        res.forEach(actionUnit -> {
-            Hibernate.initialize(actionUnit.getSpatialContext());
-            Hibernate.initialize(actionUnit.getRecordingUnitList());
-            Hibernate.initialize(actionUnit.getParents());
-            Hibernate.initialize(actionUnit.getChildren());
-
-        });
 
 
         return res.map(actionUnitMapper::convert
@@ -117,14 +104,6 @@ public class ActionUnitService implements ArkEntityService {
         //wireChildrenAndParents(res.getContent());  // Load and attach spatial hierarchy relationships
 
 
-        // load related actions
-        res.forEach(actionUnit -> {
-            Hibernate.initialize(actionUnit.getSpatialContext());
-            Hibernate.initialize(actionUnit.getRecordingUnitList());
-            Hibernate.initialize(actionUnit.getParents());
-            Hibernate.initialize(actionUnit.getChildren());
-
-        });
 
 
         return res.map(actionUnitMapper::convert
@@ -257,6 +236,11 @@ public class ActionUnitService implements ArkEntityService {
      * @return The saved ActionUnit
      */
     @Override
+    @CacheEvict({
+            "InstitutionHasRootChildrenAU",
+            "InstitutionHasRootChildrenSU",
+            "ActionUnitHasChildrenInInstitution"
+    })
     public AbstractEntityDTO save(AbstractEntityDTO toSave) {
         try {
             return actionUnitMapper.convert(
@@ -415,7 +399,6 @@ public class ActionUnitService implements ArkEntityService {
      */
     public List<ActionUnitDTO> findAllWithoutParentsByInstitution(Long institutionId) {
         List<ActionUnit> res = actionUnitRepository.findRootsByInstitution(institutionId);
-        initializeActionUnitCollections(res);
         return res.stream()
                 .map(actionUnitMapper::convert)
                 .toList();
@@ -430,7 +413,6 @@ public class ActionUnitService implements ArkEntityService {
      */
     public List<ActionUnitDTO> findChildrenByParentAndInstitution(Long parentId, Long institutionId) {
         List<ActionUnit> res = actionUnitRepository.findChildrenByParentAndInstitution(parentId, institutionId);
-        initializeActionUnitCollections(res);
         return res.stream()
                 .map(actionUnitMapper::convert)
                 .toList();
@@ -444,20 +426,11 @@ public class ActionUnitService implements ArkEntityService {
      */
     public List<ActionUnitDTO> findBySpatialContext(Long spatialId) {
         List<ActionUnit> res = actionUnitRepository.findBySpatialContext(spatialId);
-        initializeActionUnitCollections(res);
         return res.stream()
                 .map(actionUnitMapper::convert)
                 .toList();
     }
 
-    // Reusable method to initialize collections
-    private void initializeActionUnitCollections(List<ActionUnit> actionUnits) {
-        actionUnits.forEach(au -> {
-            Hibernate.initialize(au.getParents());
-            Hibernate.initialize(au.getChildren());
-            Hibernate.initialize(au.getRecordingUnitList());
-        });
-    }
 
     public List<ActionUnitDTO> findByTeamMember(PersonDTO member, InstitutionDTO institution) {
         List<ActionUnit> actionUnits = actionUnitRepository.findByTeamMemberOrCreatorAndInstitution(member.getId(), institution.getId());
@@ -474,6 +447,7 @@ public class ActionUnitService implements ArkEntityService {
      * @param institutionId the institution ID
      * @return True if they are children
      */
+    @Cacheable("ActionUnitHasChildrenInInstitution")
     public boolean existsChildrenByParentAndInstitution(Long parentId, Long institutionId) {
         return actionUnitRepository.existsChildrenByParentAndInstitution(parentId, institutionId);
     }
@@ -485,10 +459,12 @@ public class ActionUnitService implements ArkEntityService {
      * @param institutionId the institution ID
      * @return True if they are children
      */
+    @Cacheable("InstitutionHasRootChildrenAU")
     public boolean existsRootChildrenByInstitution(Long institutionId) {
         return actionUnitRepository.existsRootChildrenByInstitution(institutionId);
     }
 
+    @Cacheable("InstitutionHasRootChildrenSU")
     public boolean existsRootChildrenByRelatedSpatialUnit(Long spatialUnitId) {
         return actionUnitRepository.existsRootChildrenByRelatedSpatialUnit(spatialUnitId);
     }

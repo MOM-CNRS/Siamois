@@ -52,17 +52,17 @@
             </f:facet>
             <f:facet name="input">
                 <p:selectCheckboxMenu id="select-multiple-spatial-unit"
-                                 panelStyleClass="spatial-unit" widgetVar="#{cc.clientId}_spatialUnitMultipleMenu"
-                                 styleClass="spatial-unit #{cc.attrs.answer.hasBeenModified ? 'track-change sia-modified-field': 'track-change'}"
-                                 value="#{cc.attrs.answer.value}"
-                                 filterMatchMode="contains"
+                                      panelStyleClass="spatial-unit" widgetVar="#{cc.clientId}_spatialUnitMultipleMenu"
+                                      styleClass="spatial-unit #{cc.attrs.answer.hasBeenModified ? 'track-change sia-modified-field': 'track-change'}"
+                                      value="#{cc.attrs.answer.value}"
+                                      filterMatchMode="contains"
                                       multiple="true"
                                       showSelectAll="false"
                                       updateLabel="true"
-                                 filter="true"
-                                 required="false"
-                                 var="su"
-                                 converter="#{spatialUnitSummaryConverter2}">
+                                      filter="true"
+                                      required="false"
+                                      var="su"
+                                      converter="#{spatialUnitSummaryConverter2}">
                     <f:selectItems
                             var="unit"
                             itemValue="#{unit}"

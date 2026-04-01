@@ -25,7 +25,6 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import org.hibernate.envers.RevisionType;
 import org.primefaces.PrimeFaces;
 import org.primefaces.event.TabChangeEvent;
 import org.primefaces.model.DefaultStreamedContent;
@@ -83,8 +82,7 @@ public abstract class AbstractSingleEntityPanel<T extends AbstractEntityDTO> ext
 
     protected transient List<PanelTab> tabs;
 
-    protected transient RevisionWithInfo<T> bufferedLastRevision;
-
+    protected transient InfoRevisionEntity lastRevisionInfo;
 
     public abstract void refreshUnit();
 
@@ -314,32 +312,30 @@ Return the command that opens panel for the unit
         return null; // N/A for others
     }
 
-    @SuppressWarnings("unchecked")
-    private RevisionWithInfo<T> findLastRevisionForEntity() {
-        RevisionWithInfo<T> result = (RevisionWithInfo<T>) historyAuditService.findLastRevisionForEntity(unit.getClass(), unitId);
-        if (result == null) {
+    private InfoRevisionEntity findLastRevisionInfo() {
+        InfoRevisionEntity revision = historyAuditService.findLastRevisionInfoFor(unit.getClass(), unitId);
+        if (revision == null) {
             InfoRevisionEntity info = new InfoRevisionEntity();
             UserInfo userInfo = sessionSettingsBean.getUserInfo();
             info.setRevId(0L);
             info.setEpochTimestamp(OffsetDateTime.now().toEpochSecond());
             info.setUpdatedBy(conversionService.convert(userInfo.getUser(), Person.class));
             info.setUpdatedFrom(conversionService.convert(userInfo.getInstitution(), Institution.class));
-            result = new RevisionWithInfo<>(unit, info, RevisionType.MOD);
         }
-        return result;
+        return revision;
     }
 
     public String lastUpdateDate() {
-        bufferedLastRevision = findLastRevisionForEntity();
-        return this.formatUtcDateTime(bufferedLastRevision.getDate());
+        lastRevisionInfo = findLastRevisionInfo();
+        return this.formatUtcDateTime(lastRevisionInfo.getRevisionDate());
     }
 
     public String lastUpdater() {
-        if (bufferedLastRevision == null) {
-            bufferedLastRevision = findLastRevisionForEntity();
+        if (lastRevisionInfo == null) {
+            lastRevisionInfo = findLastRevisionInfo();
         }
-        String result = bufferedLastRevision.revisionEntity().getUpdatedBy().displayName();
-        bufferedLastRevision = null;
+        String result = lastRevisionInfo.getUpdatedBy().displayName();
+        lastRevisionInfo = null;
         return result;
     }
 

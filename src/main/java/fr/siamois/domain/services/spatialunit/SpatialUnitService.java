@@ -23,10 +23,15 @@ import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.dto.entity.*;
 import fr.siamois.infrastructure.database.repositories.SpatialUnitRepository;
 import fr.siamois.infrastructure.database.repositories.actionunit.ActionUnitRepository;
-import fr.siamois.mapper.*;
+import fr.siamois.mapper.InstitutionMapper;
+import fr.siamois.mapper.RecordingUnitMapper;
+import fr.siamois.mapper.SpatialUnitMapper;
+import fr.siamois.mapper.SpatialUnitSummaryMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.Hibernate;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -56,7 +61,6 @@ public class SpatialUnitService implements ArkEntityService {
     private final RecordingUnitMapper recordingUnitMapper;
     private final SpatialUnitSummaryMapper spatialUnitSummaryMapper;
     private final InstitutionMapper institutionMapper;
-    private final SpatialUnitMapperImpl spatialUnitMapperImpl;
     private final ActionUnitRepository actionUnitRepository;
 
     /**
@@ -91,18 +95,6 @@ public class SpatialUnitService implements ArkEntityService {
         spatialUnitRepository.save(revision);
     }
 
-    private Page<SpatialUnit> initializeSpatialUnitLazyAttributes(Page<SpatialUnit> list) {
-        list.forEach(spatialUnit -> {
-            Hibernate.initialize(spatialUnit.getRelatedActionUnitList());
-            Hibernate.initialize(spatialUnit.getRecordingUnitList());
-            Hibernate.initialize(spatialUnit.getChildren());
-            Hibernate.initialize(spatialUnit.getParents());
-        });
-
-        return list;
-    }
-
-
     /**
      * Find all spatial units by institution and by name containing and by categories and by global containing
      *
@@ -122,8 +114,6 @@ public class SpatialUnitService implements ArkEntityService {
 
         Page<SpatialUnit> res = spatialUnitRepository.findAllByInstitutionAndByNameContainingAndByCategoriesAndByGlobalContaining(
                 institutionId, name, categoryIds, personIds, global, langCode, pageable);
-
-        initializeSpatialUnitLazyAttributes(res);
 
         return res.map(spatialUnitMapper::convert);
     }
@@ -147,8 +137,6 @@ public class SpatialUnitService implements ArkEntityService {
         Page<SpatialUnit> res = spatialUnitRepository.findAllByParentAndByNameContainingAndByCategoriesAndByGlobalContaining(
                 parent.getId(), name, categoryIds, personIds, global, langCode, pageable);
 
-        initializeSpatialUnitLazyAttributes(res);
-
         return res.map(spatialUnitMapper::convert);
     }
 
@@ -171,7 +159,6 @@ public class SpatialUnitService implements ArkEntityService {
         Page<SpatialUnit> res = spatialUnitRepository.findAllByChildAndByNameContainingAndByCategoriesAndByGlobalContaining(
                 child.getId(), name, categoryIds, personIds, global, langCode, pageable);
 
-        initializeSpatialUnitLazyAttributes(res);
         return res.map(spatialUnitMapper::convert);
     }
 
@@ -211,6 +198,10 @@ public class SpatialUnitService implements ArkEntityService {
      * @throws SpatialUnitAlreadyExistsException If a SpatialUnit with the same name already exists in the institution
      */
     @Transactional
+    @CacheEvict({
+            "InstitutionHasRootChildrenSU",
+            "ParentHasRootChildrenSU"
+    })
     public SpatialUnitDTO save(UserInfo info, SpatialUnitDTO su) throws SpatialUnitAlreadyExistsException {
         String name = su.getName();
 
@@ -489,11 +480,12 @@ public class SpatialUnitService implements ArkEntityService {
      * @param institutionId the institution ID
      * @return True if they are children
      */
+    @Cacheable("InstitutionHasRootChildrenSU")
     public boolean existsRootChildrenByInstitution(Long institutionId) {
         return spatialUnitRepository.existsRootChildrenByInstitution(institutionId);
     }
 
-
+    @Cacheable("ParentHasRootChildrenSU")
     public boolean existsRootChildrenByParent(Long spatialUnitId) {
         return spatialUnitRepository.existsRootChildrenByParent(spatialUnitId);
     }

@@ -49,6 +49,5 @@ public class ActionUnitTreeTableLazyModel extends BaseTreeTableLazyModel<ActionU
             case INSTITUTION -> !actionUnitService.existsRootChildrenByInstitution(scope.getInstitutionId());
             case LINKED_TO_SPATIAL_UNIT -> !actionUnitService.existsRootChildrenByRelatedSpatialUnit(scope.getSpatialUnitId());
         };
-
     }
 }

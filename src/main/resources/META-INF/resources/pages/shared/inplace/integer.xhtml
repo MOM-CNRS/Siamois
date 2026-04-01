@@ -2,22 +2,18 @@
         xmlns="http://www.w3.org/1999/xhtml"
         xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
         xmlns:cc="http://java.sun.com/jsf/composite"
-        xmlns:p="http://primefaces.org/ui" xmlns:f="http://java.sun.com/jsf/core"
+        xmlns:p="http://primefaces.org/ui"
+        xmlns:f="http://java.sun.com/jsf/core"
+        xmlns:h="http://java.sun.com/jsf/html"
 >
 
     <cc:interface>
-        <cc:attribute name="answer" type="fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerIntegerViewModel"
-                      required="true"/>
-        <cc:attribute name="panelModel" type="fr.siamois.ui.bean.panel.models.panel.single.AbstractSingleEntity"
-                      required="true"/>
+        <cc:attribute name="answer" type="fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerIntegerViewModel" required="true"/>
+        <cc:attribute name="panelModel" type="fr.siamois.ui.bean.panel.models.panel.single.AbstractSingleEntity" required="true"/>
         <cc:attribute name="panelId" type="String" required="false"/>
         <cc:attribute name="hasBeenModified" type="Boolean" required="false" default="false"/>
-        <cc:attribute name="field" type="fr.siamois.domain.models.form.customfield.CustomFieldInteger"
-                      required="true"/>
-        <!-- Callback appelé quand le champ est modifié -->
-        <cc:attribute name="onModified"
-                      method-signature="void setFieldAnswerHasBeenModified(javax.faces.event.AjaxBehaviorEvent)"
-                      required="false"/>
+        <cc:attribute name="field" type="fr.siamois.domain.models.form.customfield.CustomFieldInteger" required="true"/>
+        <cc:attribute name="onModified" method-signature="void setFieldAnswerHasBeenModified(javax.faces.event.AjaxBehaviorEvent)" required="false"/>
         <cc:attribute name="mode" type="String" required="false" default="READ"/>
         <cc:attribute name="label" type="String" required="false"/>
         <cc:attribute name="required" type="java.lang.Boolean" required="true"/>
@@ -25,15 +21,18 @@
     </cc:interface>
 
     <cc:implementation>
-        <p:inplace id="inplace" mode="#{cc.attrs.mode}" toggleable="false">
-            <f:facet name="output">
+        <p:outputPanel id="inplace">
+            <!-- ===== MODE DISPLAY ===== -->
+            <h:panelGroup rendered="#{cc.attrs.mode ne 'input'}">
                 <p:inputNumber value="#{cc.attrs.answer.value}"
                                inputStyle="width: 100%"
                                disabled="true"
                                label="#{cc.attrs.label}">
                 </p:inputNumber>
-            </f:facet>
-            <f:facet name="input">
+            </h:panelGroup>
+
+            <!-- ===== MODE EDIT ===== -->
+            <h:panelGroup id="inputGroup" rendered="#{cc.attrs.mode eq 'input'}">
                 <p:inputNumber value="#{cc.attrs.answer.value}"
                                inputStyle="width: 100%"
                                inputStyleClass="#{cc.attrs.answer.hasBeenModified ? 'track-change sia-modified-field': 'track-change'}"
@@ -41,7 +40,6 @@
                                minValue="#{cc.attrs.field.minValue}"
                                maxValue="#{cc.attrs.field.maxValue}"
                                required="#{cc.attrs.required}"
-
                                id="input">
                     <f:attribute name="field" value="#{cc.attrs.field}" />
                     <p:ajax event="keyup" delay="2000" update="#{cc.attrs.updateTargetsOnBlur}"
@@ -51,8 +49,7 @@
                             onerror="handleAutoSaveError(xhr, status, '#{cc.attrs.panelId}'); $(PrimeFaces.escapeClientId('#{cc.clientId}:input')).addClass('sia-modified-field');"
                             listener="#{cc.attrs.onModified}"/>
                 </p:inputNumber>
-            </f:facet>
-        </p:inplace>
+            </h:panelGroup>
+        </p:outputPanel>
     </cc:implementation>
-
 </ui:composition>

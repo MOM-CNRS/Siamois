@@ -58,10 +58,10 @@ public class ActionUnit extends TraceableEntity implements ArkEntity {
     )
     private Set<Document> documents = new HashSet<>();
 
-    @OneToMany(fetch = FetchType.EAGER, mappedBy = "pk.actionUnit")
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "pk.actionUnit")
     private Set<ActionUnitFormMapping> formsAvailable = new HashSet<>();
 
-    @ManyToMany(fetch = FetchType.EAGER)
+    @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
             name = "action_action_code",
             joinColumns = {@JoinColumn(name = "fk_action_id")},
