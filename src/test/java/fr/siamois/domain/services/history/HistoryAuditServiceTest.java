@@ -33,6 +33,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
+@SuppressWarnings({"unchecked", "rawtypes"})
 @ExtendWith(MockitoExtension.class)
 class HistoryAuditServiceTest {
 
@@ -48,11 +49,15 @@ class HistoryAuditServiceTest {
 
     private final Map<Class<? extends AbstractEntityDTO>, Class<? extends TraceableEntity>> dtoToEntityMap = new HashMap<>();
 
+    @Mock
+    private AuditQueryCreator auditQueryCreator;
+
+    @Mock
+    private AuditQuery auditQuery;
+
     @BeforeEach
-    @SuppressWarnings("unchecked")
     void setUp() {
         dtoToEntityMap.put(RecordingUnitDTO.class, RecordingUnit.class);
-
     }
 
     @AfterEach
@@ -79,7 +84,7 @@ class HistoryAuditServiceTest {
         when(actionUnit.getSpatialContext()).thenReturn(new HashSet<>());
         when(actionUnit.getMainLocation()).thenReturn(mock(SpatialUnit.class));
         when(registry.getEntityClass(RecordingUnitDTO.class))
-                .thenReturn((Class<TraceableEntity>) dtoToEntityMap.get(RecordingUnitDTO.class));
+                .thenReturn((Class) dtoToEntityMap.get(RecordingUnitDTO.class));
 
         // Create RecordingUnit instances with the mock ActionUnit
         RecordingUnit ru1 = new RecordingUnit();
@@ -215,9 +220,52 @@ class HistoryAuditServiceTest {
         verify(query).getResultList();
     }
 
+    @Test
+    void findLastRevisionInfoFor_shouldThrowWhenDtoNotInRegistry() {
+        when(registry.getEntityClass(FakeDTO.class))
+                .thenReturn(null);
+        assertThrows(IllegalArgumentException.class, () -> service.findLastRevisionInfoFor(FakeDTO.class, 1L));
+    }
+
+    @Test
+    void findLastRevisionInfoFor_shouldReturnLastRevision() {
+        InfoRevisionEntity revision = new InfoRevisionEntity();
+        when(reader.createQuery()).thenReturn(auditQueryCreator);
+        when(auditQueryCreator.forRevisionsOfEntity(eq(RecordingUnit.class), anyBoolean(), anyBoolean())).thenReturn(auditQuery);
+        when(auditQuery.add(any())).thenReturn(auditQuery);
+        when(auditQuery.addProjection(any())).thenReturn(auditQuery); // mock for addProjection
+        when(auditQuery.getSingleResult()).thenReturn(10L); // return max revision number
+
+        when(reader.findRevision(eq(InfoRevisionEntity.class), anyLong())).thenReturn(revision);
+        when(registry.getEntityClass(RecordingUnitDTO.class))
+                .thenReturn((Class) dtoToEntityMap.get(RecordingUnitDTO.class));
+        InfoRevisionEntity result = service.findLastRevisionInfoFor(RecordingUnitDTO.class, 1L);
+        assertEquals(revision, result);
+        verify(reader).findRevision(eq(InfoRevisionEntity.class), anyLong());
+    }
+
+    @Test
+    void findLastRevisionInfoFor_shouldReturnNullWhenNoRevisionExists() {
+        when(reader.createQuery()).thenReturn(auditQueryCreator);
+        when(auditQueryCreator.forRevisionsOfEntity(eq(RecordingUnit.class), anyBoolean(), anyBoolean())).thenReturn(auditQuery);
+        when(auditQuery.add(any())).thenReturn(auditQuery);
+        when(auditQuery.addProjection(any())).thenReturn(auditQuery);
+        when(auditQuery.getSingleResult()).thenReturn(null);
+
+        when(registry.getEntityClass(RecordingUnitDTO.class))
+                .thenReturn((Class) dtoToEntityMap.get(RecordingUnitDTO.class));
+        InfoRevisionEntity result = service.findLastRevisionInfoFor(RecordingUnitDTO.class, 1L);
+        assertNull(result);
+    }
+
     static class TestEntity {
         public String auditedField = "original";
         @NotAudited
         public String notAuditedField = "originalNotAudited";
     }
+
+    static class FakeDTO extends AbstractEntityDTO {
+
+    }
+
 }

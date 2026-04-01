@@ -117,6 +117,14 @@ public class HistoryAuditService {
         }
     }
 
+    /**
+     * Find the last revision info of the entity with the given ID.
+     *
+     * @param dtoClass The class of the entity
+     * @param entityId The ID of the entity
+     * @return The revision info
+     * @param <D> The type of the entity
+     */
     @Nullable
     public <D extends AbstractEntityDTO> InfoRevisionEntity findLastRevisionInfoFor(Class<D> dtoClass, Long entityId) {
         Class<?> entityClass = registry.getEntityClass(dtoClass);
@@ -125,6 +133,7 @@ public class HistoryAuditService {
         }
         Number maxRevisionNumber = (Number) auditReader.createQuery()
                 .forRevisionsOfEntity(entityClass, false, true)
+                .add(AuditEntity.id().eq(entityId))
                 .addProjection(AuditEntity.revisionNumber().max())
                 .getSingleResult();
 
