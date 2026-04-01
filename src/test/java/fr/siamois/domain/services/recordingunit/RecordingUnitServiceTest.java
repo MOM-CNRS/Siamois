@@ -2,6 +2,7 @@ package fr.siamois.domain.services.recordingunit;
 
 import fr.siamois.domain.models.ArkEntity;
 import fr.siamois.domain.models.actionunit.ActionUnit;
+import fr.siamois.domain.models.exceptions.recordingunit.RecordingUnitNotFoundException;
 import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.recordingunit.StratigraphicRelationship;
@@ -23,6 +24,10 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationContext;
 import org.springframework.core.convert.ConversionService;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 import java.util.*;
 
@@ -611,4 +616,167 @@ class RecordingUnitServiceTest {
         assertThat(dtos).hasSize(2);
     }
 
+    @Test
+    void findByFullIdentifierAndInstitutionId_shouldReturnRecordingUnit_whenFound() {
+        // Arrange
+        String fullIdentifier = "RU-001";
+        Long institutionId = 1L;
+        RecordingUnit expectedRecordingUnit = new RecordingUnit();
+        expectedRecordingUnit.setId(10L);
+        expectedRecordingUnit.setFullIdentifier(fullIdentifier);
+
+        when(recordingUnitRepository.findByFullIdentifierAndInstitutionId(fullIdentifier, institutionId))
+                .thenReturn(Optional.of(expectedRecordingUnit));
+
+        // Act
+        RecordingUnit result = recordingUnitService.findByFullIdentifierAndInstitutionId(fullIdentifier, institutionId);
+
+        // Assert
+        assertThat(result).isEqualTo(expectedRecordingUnit);
+        verify(recordingUnitRepository, times(1)).findByFullIdentifierAndInstitutionId(fullIdentifier, institutionId);
+    }
+
+    @Test
+    void findByFullIdentifierAndInstitutionId_shouldThrowException_whenNotFound() {
+        // Arrange
+        String fullIdentifier = "RU-001";
+        Long institutionId = 1L;
+
+        when(recordingUnitRepository.findByFullIdentifierAndInstitutionId(fullIdentifier, institutionId))
+                .thenReturn(Optional.empty());
+
+        // Act & Assert
+        RecordingUnitNotFoundException exception = assertThrows(RecordingUnitNotFoundException.class, () ->
+                recordingUnitService.findByFullIdentifierAndInstitutionId(fullIdentifier, institutionId)
+        );
+        assertThat(exception.getMessage()).contains("RecordingUnit not found with fullIdentifier=RU-001 and institutionIdentifier=1");
+        verify(recordingUnitRepository, times(1)).findByFullIdentifierAndInstitutionId(fullIdentifier, institutionId);
+    }
+
+    @Test
+    void findByFullIdentifierAndInstitutionIdDTO_shouldReturnRecordingUnitDTO_whenFoundWithoutSpecimenCount() {
+        // Arrange
+        String fullIdentifier = "RU-001";
+        Long institutionId = 1L;
+        RecordingUnit recordingUnit = new RecordingUnit();
+        recordingUnit.setId(10L);
+        recordingUnit.setFullIdentifier(fullIdentifier);
+        RecordingUnitDTO expectedDto = new RecordingUnitDTO();
+        expectedDto.setId(10L);
+        expectedDto.setFullIdentifier(fullIdentifier);
+
+        when(recordingUnitRepository.findByFullIdentifierAndInstitutionId(fullIdentifier, institutionId))
+                .thenReturn(Optional.of(recordingUnit));
+        when(recordingUnitMapper.convert(recordingUnit)).thenReturn(expectedDto);
+
+        // Act
+        RecordingUnitDTO result = recordingUnitService.findByFullIdentifierAndInstitutionIdDTO(fullIdentifier, institutionId, null);
+
+        // Assert
+        assertThat(result).isEqualTo(expectedDto);
+        assertThat(result.getSpecimenCount()).isNull();
+        verify(recordingUnitRepository, times(1)).findByFullIdentifierAndInstitutionId(fullIdentifier, institutionId);
+        verify(recordingUnitMapper, times(1)).convert(recordingUnit);
+        verify(recordingUnitRepository, never()).countSpecimensByRecordingUnitId(anyLong());
+    }
+
+    @Test
+    void findByFullIdentifierAndInstitutionIdDTO_shouldReturnRecordingUnitDTO_whenFoundWithSpecimenCount() {
+        // Arrange
+        String fullIdentifier = "RU-001";
+        Long institutionId = 1L;
+        Long specimenCount = 5L;
+        RecordingUnit recordingUnit = new RecordingUnit();
+        recordingUnit.setId(10L);
+        recordingUnit.setFullIdentifier(fullIdentifier);
+        RecordingUnitDTO expectedDto = new RecordingUnitDTO();
+        expectedDto.setId(10L);
+        expectedDto.setFullIdentifier(fullIdentifier);
+
+        when(recordingUnitRepository.findByFullIdentifierAndInstitutionId(fullIdentifier, institutionId))
+                .thenReturn(Optional.of(recordingUnit));
+        when(recordingUnitMapper.convert(recordingUnit)).thenReturn(expectedDto);
+        when(recordingUnitRepository.countSpecimensByRecordingUnitId(recordingUnit.getId())).thenReturn(specimenCount);
+
+        // Act
+        RecordingUnitDTO result = recordingUnitService.findByFullIdentifierAndInstitutionIdDTO(fullIdentifier, institutionId, List.of("specimen"));
+
+        // Assert
+        assertThat(result).isEqualTo(expectedDto);
+        assertThat(result.getSpecimenCount()).isEqualTo(specimenCount);
+        verify(recordingUnitRepository, times(1)).findByFullIdentifierAndInstitutionId(fullIdentifier, institutionId);
+        verify(recordingUnitMapper, times(1)).convert(recordingUnit);
+        verify(recordingUnitRepository, times(1)).countSpecimensByRecordingUnitId(recordingUnit.getId());
+    }
+
+    @Test
+    void findByFullIdentifierAndInstitutionIdDTO_shouldThrowException_whenNotFound() {
+        // Arrange
+        String fullIdentifier = "RU-001";
+        Long institutionId = 1L;
+
+        when(recordingUnitRepository.findByFullIdentifierAndInstitutionId(fullIdentifier, institutionId))
+                .thenReturn(Optional.empty());
+
+        // Act & Assert
+        RecordingUnitNotFoundException exception = assertThrows(RecordingUnitNotFoundException.class, () ->
+                recordingUnitService.findByFullIdentifierAndInstitutionIdDTO(fullIdentifier, institutionId, null)
+        );
+        assertThat(exception.getMessage()).contains("RecordingUnit not found with fullIdentifier=RU-001 and institutionId=1");
+        verify(recordingUnitRepository, times(1)).findByFullIdentifierAndInstitutionId(fullIdentifier, institutionId);
+        verify(recordingUnitMapper, never()).convert(any(RecordingUnit.class));
+    }
+
+    @Test
+    void findByInstitutionId_shouldReturnPaginatedRecordingUnits() {
+        // Arrange
+        Long institutionId = 1L;
+        int limit = 2;
+        int offset = 0;
+        Pageable pageable = PageRequest.of(offset, limit);
+
+        RecordingUnit ru1 = new RecordingUnit(); ru1.setId(1L); ru1.setFullIdentifier("RU-001");
+        RecordingUnit ru2 = new RecordingUnit(); ru2.setId(2L); ru2.setFullIdentifier("RU-002");
+        Page<RecordingUnit> recordingUnitPage = new PageImpl<>(List.of(ru1, ru2), pageable, 2);
+
+        RecordingUnitDTO dto1 = new RecordingUnitDTO(); dto1.setId(1L); dto1.setFullIdentifier("RU-001");
+        RecordingUnitDTO dto2 = new RecordingUnitDTO(); dto2.setId(2L); dto2.setFullIdentifier("RU-002");
+
+        when(recordingUnitRepository.findByCreatedByInstitutionId(institutionId, pageable)).thenReturn(recordingUnitPage);
+        when(recordingUnitMapper.convert(ru1)).thenReturn(dto1);
+        when(recordingUnitMapper.convert(ru2)).thenReturn(dto2);
+
+        // Act
+        Page<RecordingUnitDTO> result = recordingUnitService.findByInstitutionId(institutionId, limit, offset);
+
+        // Assert
+        assertThat(result).hasSize(2);
+        assertThat(result.getContent()).containsExactly(dto1, dto2);
+        assertThat(result.getTotalElements()).isEqualTo(2);
+        verify(recordingUnitRepository, times(1)).findByCreatedByInstitutionId(institutionId, pageable);
+        verify(recordingUnitMapper, times(1)).convert(ru1);
+        verify(recordingUnitMapper, times(1)).convert(ru2);
+    }
+
+    @Test
+    void findByInstitutionId_shouldReturnEmptyPage_whenNoRecordingUnitsFound() {
+        // Arrange
+        Long institutionId = 1L;
+        int limit = 2;
+        int offset = 0;
+        Pageable pageable = PageRequest.of(offset, limit);
+
+        Page<RecordingUnit> emptyPage = new PageImpl<>(Collections.emptyList(), pageable, 0);
+
+        when(recordingUnitRepository.findByCreatedByInstitutionId(institutionId, pageable)).thenReturn(emptyPage);
+
+        // Act
+        Page<RecordingUnitDTO> result = recordingUnitService.findByInstitutionId(institutionId, limit, offset);
+
+        // Assert
+        assertThat(result).isEmpty();
+        assertThat(result.getTotalElements()).isEqualTo(0);
+        verify(recordingUnitRepository, times(1)).findByCreatedByInstitutionId(institutionId, pageable);
+        verify(recordingUnitMapper, never()).convert(any(RecordingUnit.class));
+    }
 }
