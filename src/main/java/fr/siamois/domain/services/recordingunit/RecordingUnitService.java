@@ -104,9 +104,7 @@ public class RecordingUnitService implements ArkEntityService {
             "ActionHasRootChildrenRU"
     })
     public RecordingUnitDTO save(RecordingUnitDTO recordingUnitDTO) {
-
         try {
-
             RecordingUnit recordingUnit = recordingUnitMapper.invertConvert(recordingUnitDTO);
             return recordingUnitMapper.convert(save(recordingUnit));
 
@@ -129,9 +127,7 @@ public class RecordingUnitService implements ArkEntityService {
 
 
     private RecordingUnit save(RecordingUnit recordingUnit) {
-
         try {
-
             RecordingUnit managedRecordingUnit;
 
             assert recordingUnit != null;

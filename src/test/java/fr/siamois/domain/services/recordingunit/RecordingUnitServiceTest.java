@@ -312,4 +312,73 @@ class RecordingUnitServiceTest {
         });
     }
 
+    @Test
+    void save_throughPublicDtoMethod_correctlyAssemblesAndSavesEntity() {
+        // Ce test cible la logique de la méthode privée save(RecordingUnit)
+        // en passant par son wrapper public. Il vérifie que l'entité est correctement
+        // assemblée avant d'être persistée.
+
+        // Arrange
+        // DTO en entrée
+        RecordingUnitDTO inputDto = new RecordingUnitDTO();
+        inputDto.setId(1L);
+        inputDto.setDescription("Nouvelle Description");
+
+        // Entité source (résultat du mapping)
+        RecordingUnit sourceEntity = new RecordingUnit();
+        sourceEntity.setId(1L);
+        sourceEntity.setDescription("Nouvelle Description");
+        // Ajout d'un parent pour tester la mise à jour de la relation
+        RecordingUnit parentEntitySource = new RecordingUnit();
+        parentEntitySource.setId(2L);
+        sourceEntity.setParents(Collections.singleton(parentEntitySource));
+        sourceEntity.setChildren(new HashSet<>());
+        sourceEntity.setRelationshipsAsUnit1(new HashSet<>());
+        sourceEntity.setRelationshipsAsUnit2(new HashSet<>());
+        sourceEntity.setContributors(new ArrayList<>());
+
+        // Entité managée (existante en base) qui sera mise à jour
+        RecordingUnit managedEntity = new RecordingUnit();
+        managedEntity.setId(1L);
+        managedEntity.setDescription("Ancienne Description");
+        managedEntity.setChildren(new HashSet<>());
+
+        // Entité parente (existante en base)
+        RecordingUnit managedParentEntity = new RecordingUnit();
+        managedParentEntity.setId(2L);
+        managedParentEntity.setChildren(new HashSet<>());
+
+        // Mocks
+        when(recordingUnitMapper.invertConvert(inputDto)).thenReturn(sourceEntity);
+        when(recordingUnitRepository.findById(1L)).thenReturn(Optional.of(managedEntity));
+        when(recordingUnitRepository.findById(2L)).thenReturn(Optional.of(managedParentEntity));
+        when(recordingUnitRepository.save(any(RecordingUnit.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(recordingUnitMapper.convert(any(RecordingUnit.class))).thenReturn(new RecordingUnitDTO());
+
+        // Act
+        recordingUnitService.save(inputDto);
+
+        // Assert
+        // On capture les entités passées à la méthode save() du repository.
+        // On s'attend à 2 sauvegardes : l'entité principale et son parent.
+        ArgumentCaptor<RecordingUnit> savedEntityCaptor = ArgumentCaptor.forClass(RecordingUnit.class);
+        verify(recordingUnitRepository, times(2)).save(savedEntityCaptor.capture());
+
+        RecordingUnit savedManagedEntity = savedEntityCaptor.getAllValues().stream()
+                .filter(e -> e.getId().equals(1L))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("L'entité managée n'a pas été sauvegardée"));
+
+        RecordingUnit savedParentEntity = savedEntityCaptor.getAllValues().stream()
+                .filter(e -> e.getId().equals(2L))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("L'entité parente n'a pas été sauvegardée"));
+
+        // 1. Vérifier que les champs ont bien été copiés sur l'entité managée
+        assertEquals("Nouvelle Description", savedManagedEntity.getDescription());
+
+        // 2. Vérifier que la relation parent/enfant a été mise à jour
+        assertTrue(savedParentEntity.getChildren().contains(savedManagedEntity),
+                "L'entité managée doit être dans la liste des enfants du parent.");
+    }
 }
