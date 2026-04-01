@@ -40,6 +40,7 @@ import static fr.siamois.ui.bean.panel.models.panel.single.AbstractSingleEntity.
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class RecordingUnit extends RecordingUnitParent implements ArkEntity, ReferencableEntity {
 
+    @SuppressWarnings("CopyConstructorMissesField")
     public RecordingUnit(RecordingUnit recordingUnit) {
         setType(recordingUnit.getType());
         setActionUnit(recordingUnit.getActionUnit());

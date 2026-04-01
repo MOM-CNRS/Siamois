@@ -25,16 +25,15 @@ import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUn
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitIdInfoRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitRepository;
 import fr.siamois.infrastructure.database.repositories.team.TeamMemberRepository;
-import fr.siamois.mapper.ActionUnitMapper;
 import fr.siamois.mapper.ActionUnitSummaryMapper;
 import fr.siamois.mapper.RecordingUnitMapper;
-import fr.siamois.ui.bean.SessionSettingsBean;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.hibernate.Hibernate;
 import org.reflections.Reflections;
 import org.springframework.beans.BeansException;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.context.ApplicationContext;
 import org.springframework.core.convert.ConversionService;
 import org.springframework.data.domain.Page;
@@ -72,9 +71,7 @@ public class RecordingUnitService implements ArkEntityService {
     private final RecordingUnitMapper recordingUnitMapper;
     private final ConversionService conversionService;
     private final ApplicationContext applicationContext;
-    private final ActionUnitMapper actionUnitMapper;
     private final ActionUnitSummaryMapper actionUnitSummaryMapper;
-    private final SessionSettingsBean sessionSettingsBean;
 
     /**
      * Bulk update the type of multiple recording units.
@@ -102,6 +99,10 @@ public class RecordingUnitService implements ArkEntityService {
      * @return The saved RecordingUnit instance.
      */
     @Transactional
+    @CacheEvict({
+            "InstitutionHasRootChildrenRU",
+            "ActionHasRootChildrenRU"
+    })
     public RecordingUnitDTO save(RecordingUnitDTO recordingUnitDTO) {
 
         try {
@@ -359,13 +360,6 @@ public class RecordingUnitService implements ArkEntityService {
                 institutionId, fullIdentifier, categoryIds, global, langCode, pageable
         );
 
-        // load related entities
-        res.forEach(actionUnit -> {
-            Hibernate.initialize(actionUnit.getParents());
-            Hibernate.initialize(actionUnit.getChildren());
-
-        });
-
         return res.map(recordingUnitMapper::convert);
     }
 
@@ -394,13 +388,6 @@ public class RecordingUnitService implements ArkEntityService {
         Page<RecordingUnit> res = recordingUnitRepository.findAllByInstitutionAndByActionUnitAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
                 institutionId, actionId, fullIdentifier, categoryIds, global, langCode, pageable
         );
-
-
-        // load related entities
-        res.forEach(actionUnit -> {
-            Hibernate.initialize(actionUnit.getParents());
-            Hibernate.initialize(actionUnit.getChildren());
-        });
 
         return res.map(recordingUnitMapper::convert);
     }
@@ -432,14 +419,6 @@ public class RecordingUnitService implements ArkEntityService {
                 recordingUnitId, fullIdentifierFilter, categoryIds, globalFilter, languageCode, pageable
         );
 
-        res.forEach(unit -> {
-            Hibernate.initialize(unit.getDocuments());
-            Hibernate.initialize(unit.getRelationshipsAsUnit2());
-            Hibernate.initialize(unit.getRelationshipsAsUnit1());
-            Hibernate.initialize(unit.getParents());
-            Hibernate.initialize(unit.getChildren());
-        });
-
         return res
                 .map(recordingUnitMapper::convert);
     }
@@ -451,13 +430,6 @@ public class RecordingUnitService implements ArkEntityService {
         Page<RecordingUnit> res = recordingUnitRepository.findAllByChildAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
                 childId, fullIdentifierFilter, categoryIds, globalFilter, languageCode, pageable
         );
-
-
-        // load related entities
-        res.forEach(actionUnit -> {
-            Hibernate.initialize(actionUnit.getParents());
-            Hibernate.initialize(actionUnit.getChildren());
-        });
 
         return res.map(recordingUnitMapper::convert);
     }
@@ -471,13 +443,6 @@ public class RecordingUnitService implements ArkEntityService {
         Page<RecordingUnit> res = recordingUnitRepository.findAllBySpatialUnitAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
                 spatialUnitId, fullIdentifierFilter, categoryIds, globalFilter, languageCode, pageable
         );
-
-
-        // load related entities
-        res.forEach(actionUnit -> {
-            Hibernate.initialize(actionUnit.getParents());
-            Hibernate.initialize(actionUnit.getChildren());
-        });
 
         return res.map(recordingUnitMapper::convert);
     }
@@ -511,7 +476,6 @@ public class RecordingUnitService implements ArkEntityService {
     @Transactional(readOnly = true)
     public List<RecordingUnitDTO> findAllWithoutParentsByInstitution(Long institutionId) {
         List<RecordingUnit> recordingUnits = recordingUnitRepository.findRootsByInstitution(institutionId);
-        initializeRecordingUnitCollections(recordingUnits);
         return recordingUnits.stream()
                 .map(recordingUnitMapper::convert)
                 .toList();
@@ -527,7 +491,7 @@ public class RecordingUnitService implements ArkEntityService {
      */
     public List<RecordingUnitDTO> findChildrenByParentAndInstitution(Long parentId, Long institutionId) {
         List<RecordingUnit> res = recordingUnitRepository.findChildrenByParentAndInstitution(parentId, institutionId);
-        initializeRecordingUnitCollections(res);
+
         return res.stream()
                 .map(recordingUnitMapper::convert)
                 .toList();
@@ -548,6 +512,7 @@ public class RecordingUnitService implements ArkEntityService {
      * @param institutionId the institution ID
      * @return True if they are children
      */
+    @Cacheable("InstitutionHasRootChildrenRU")
     public boolean existsRootChildrenByInstitution(Long institutionId) {
         return recordingUnitRepository.existsRootChildrenByInstitution(institutionId);
     }
@@ -557,6 +522,7 @@ public class RecordingUnitService implements ArkEntityService {
      * @param actionId the action ID
      * @return True if they are children
      */
+    @Cacheable("ActionHasRootChildrenRU")
     public boolean existsRootChildrenByAction(Long actionId) {
         return recordingUnitRepository.existsRootChildrenByAction(actionId);
     }
@@ -569,28 +535,16 @@ public class RecordingUnitService implements ArkEntityService {
      */
     public List<RecordingUnitDTO> findAllWithoutParentsByAction(Long actionId) {
         List<RecordingUnit> res = recordingUnitRepository.findRootsByAction(actionId);
-        initializeRecordingUnitCollections(res);
         return res.stream()
                 .map(recordingUnitMapper::convert)
                 .toList();
-    }
-
-    // Reusable method to initialize collections
-    private void initializeRecordingUnitCollections(List<RecordingUnit> recordingUnits) {
-        recordingUnits.forEach(ru -> {
-            Hibernate.initialize(ru.getParents());
-            Hibernate.initialize(ru.getChildren());
-        });
     }
 
     public int generatedNextIdentifier(@NonNull ActionUnit actionUnit, @Nullable Concept unitType, @Nullable RecordingUnit parentRu) {
         ActionUnitResolveConfig config = actionUnit.resolveConfig();
 
         switch (config) {
-            case UNIQUE -> {
-                return recordingUnitIdCounterRepository.ruNextValUnique(actionUnit.getId());
-            }
-            case NONE -> {
+            case UNIQUE, NONE -> {
                 return recordingUnitIdCounterRepository.ruNextValUnique(actionUnit.getId());
             }
             case PARENT -> {
@@ -651,7 +605,7 @@ public class RecordingUnitService implements ArkEntityService {
         RecordingUnitDTO dto = recordingUnitMapper.convert(entity);
 
         // If "specimen" is in counts, fetch and set the specimen count
-        if (counts != null && counts.contains("specimen")) {
+        if (counts != null && counts.contains("specimen") && dto != null) {
             Long specimenCount = recordingUnitRepository.countSpecimensByRecordingUnitId(entity.getId());
             dto.setSpecimenCount(specimenCount);
         }
