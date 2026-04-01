@@ -775,7 +775,7 @@ class RecordingUnitServiceTest {
 
         // Assert
         assertThat(result).isEmpty();
-        assertThat(result.getTotalElements()).isEqualTo(0);
+        assertThat(result.getTotalElements()).isZero();
         verify(recordingUnitRepository, times(1)).findByCreatedByInstitutionId(institutionId, pageable);
         verify(recordingUnitMapper, never()).convert(any(RecordingUnit.class));
     }
