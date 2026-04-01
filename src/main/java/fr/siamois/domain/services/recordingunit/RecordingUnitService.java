@@ -30,7 +30,6 @@ import fr.siamois.mapper.RecordingUnitMapper;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.hibernate.Hibernate;
 import org.reflections.Reflections;
 import org.springframework.beans.BeansException;
 import org.springframework.cache.annotation.CacheEvict;
