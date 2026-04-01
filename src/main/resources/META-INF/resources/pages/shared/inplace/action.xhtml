@@ -2,16 +2,15 @@
         xmlns="http://www.w3.org/1999/xhtml"
         xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
         xmlns:cc="http://java.sun.com/jsf/composite"
-        xmlns:p="http://primefaces.org/ui" xmlns:f="http://java.sun.com/jsf/core" xmlns:h="http://java.sun.com/jsf/html"
+        xmlns:p="http://primefaces.org/ui"
+        xmlns:f="http://java.sun.com/jsf/core"
+        xmlns:h="http://java.sun.com/jsf/html"
 >
 
     <cc:interface>
-        <cc:attribute name="answer"
-                      type="fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerSelectOneActionUnitViewModel"
-                      required="true"/>
+        <cc:attribute name="answer" type="fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerSelectOneActionUnitViewModel" required="true"/>
         <cc:attribute name="hasBeenModified" type="Boolean" required="false" default="false"/>
-        <cc:attribute name="field" type="fr.siamois.domain.models.form.customfield.CustomFieldSelectOneActionUnit"
-                      required="true"/>
+        <cc:attribute name="field" type="fr.siamois.domain.models.form.customfield.CustomFieldSelectOneActionUnit" required="true"/>
         <cc:attribute name="mode" type="String" required="false" default="READ"/>
         <cc:attribute name="updateTargetsOnBlur" type="String" required="false" default="@this"/>
         <cc:attribute name="multiple" type="Boolean" required="false" default="false"/>
@@ -21,8 +20,9 @@
     </cc:interface>
 
     <cc:implementation>
-        <p:inplace id="inplace" mode="#{cc.attrs.mode}" toggleable="false">
-            <f:facet name="output">
+        <p:outputPanel id="inplace">
+            <!-- ===== MODE DISPLAY ===== -->
+            <h:panelGroup rendered="#{cc.attrs.mode ne 'input'}">
                 <!-- Single value -->
                 <h:panelGroup rendered="#{(not cc.attrs.multiple) and (not empty cc.attrs.answer.value)}">
                     <div style="display:flex;gap:0.5em;">
@@ -42,14 +42,13 @@
                                 label="#{labelBean.findLabelOf(cc.attrs.answer.value.type)}"
                                 styleClass="mr-2 action-unit-type-chip"/>
                     </div>
-
                 </h:panelGroup>
-            </f:facet>
-            <f:facet name="input">
+            </h:panelGroup>
 
-            </f:facet>
-        </p:inplace>
+            <!-- ===== MODE EDIT ===== -->
+            <h:panelGroup id="inputGroup" rendered="#{cc.attrs.mode eq 'input'}">
 
+            </h:panelGroup>
+        </p:outputPanel>
     </cc:implementation>
-
 </ui:composition>

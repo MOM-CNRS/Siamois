@@ -4,35 +4,33 @@
         xmlns:cc="http://java.sun.com/jsf/composite"
         xmlns:sharedInput="http://xmlns.jcp.org/jsf/composite/pages/shared/input"
         xmlns:chip="http://xmlns.jcp.org/jsf/composite/pages/shared/chip"
-        xmlns:p="http://primefaces.org/ui" xmlns:f="http://java.sun.com/jsf/core"
+        xmlns:p="http://primefaces.org/ui"
+        xmlns:f="http://java.sun.com/jsf/core"
+        xmlns:h="http://java.sun.com/jsf/html"
 >
 
     <cc:interface>
-        <cc:attribute name="answer"
-                      type="fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerSelectOneFromFieldCodeViewModel"
-                      required="true"/>
+        <cc:attribute name="answer" type="fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerSelectOneFromFieldCodeViewModel" required="true"/>
         <cc:attribute name="hasBeenModified" type="Boolean" required="false" default="false"/>
-        <cc:attribute name="field" type="fr.siamois.domain.models.form.customfield.CustomFieldSelectOneFromFieldCode"
-                      required="true"/>
+        <cc:attribute name="field" type="fr.siamois.domain.models.form.customfield.CustomFieldSelectOneFromFieldCode" required="true"/>
         <cc:attribute name="panelId" type="String" required="false"/>
         <cc:attribute name="label" type="String" required="false"/>
         <cc:attribute name="mode" type="String" required="false" default="READ"/>
         <cc:attribute name="updateTargetsOnBlur" type="String" required="false" default="@this"/>
         <cc:attribute name="required" type="java.lang.Boolean" required="false" default="false"/>
-
-        <cc:attribute name="onConceptChanged"
-                      method-signature="void listener(org.primefaces.event.SelectEvent)"
-                      required="false"/>
+        <cc:attribute name="onConceptChanged" method-signature="void listener(org.primefaces.event.SelectEvent)" required="false"/>
         <cc:attribute name="panelStyleClass" type="String" required="false" default=""/>
     </cc:interface>
 
-
     <cc:implementation>
-        <p:inplace id="inplace" mode="#{cc.attrs.mode}" toggleable="false">
-            <f:facet name="output">
+        <p:outputPanel id="inplace">
+            <!-- ===== MODE DISPLAY ===== -->
+            <h:panelGroup rendered="#{cc.attrs.mode ne 'input'}">
                 <chip:conceptChip concept="#{cc.attrs.answer.value.concept()}" styleClass="#{cc.attrs.field.styleClass}"/>
-            </f:facet>
-            <f:facet name="input">
+            </h:panelGroup>
+
+            <!-- ===== MODE EDIT ===== -->
+            <h:panelGroup id="inputGroup" rendered="#{cc.attrs.mode eq 'input'}">
                 <sharedInput:conceptAutocompleteFieldCode id="typeComponent" rendered="#{not empty cc.attrs.answer}"
                                                           inputStyleClass="#{cc.attrs.answer.hasBeenModified ? 'track-change sia-modified-field': 'track-change'}"
                                                           panelStyleClass="#{cc.attrs.panelStyleClass}"
@@ -44,9 +42,7 @@
                                                           required="#{cc.attrs.required}"
                                                           itemSelectListener="#{cc.attrs.onConceptChanged}"
                                                           editConceptUrl="#{spatialUnitFieldBean.getUrlForFieldCode(cc.attrs.field.fieldCode)}"/>
-            </f:facet>
-        </p:inplace>
-
+            </h:panelGroup>
+        </p:outputPanel>
     </cc:implementation>
-
 </ui:composition>

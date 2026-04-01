@@ -30,58 +30,68 @@
     </cc:interface>
 
     <cc:implementation>
-        <p:inplace id="inplace" mode="#{cc.attrs.mode}" toggleable="false">
-            <f:facet name="output">
+        <p:outputPanel id="inplace">
+
+            <!-- ===== MODE DISPLAY ===== -->
+            <h:panelGroup rendered="#{cc.attrs.mode ne 'input'}">
+
                 <h:panelGroup rendered="#{cc.attrs.field.isTextArea}">
                     <p:inputTextarea value="#{cc.attrs.answer.value}"
                                      style="width: 100%"
                                      disabled="true"
-                                     label="#{cc.attrs.label}"
-                    >
-                    </p:inputTextarea>
+                                     label="#{cc.attrs.label}" />
                 </h:panelGroup>
+
                 <h:panelGroup rendered="#{not cc.attrs.field.isTextArea}">
                     <span>#{cc.attrs.answer.value}</span>
                 </h:panelGroup>
-            </f:facet>
-            <f:facet name="input">
 
-                <h:panelGroup id="inputGroup" rendered="true">
-                    <h:panelGroup rendered="#{cc.attrs.field.isTextArea}">
-                        <p:inputTextarea value="#{cc.attrs.answer.value}"
-                                         style="width: 100%"
-                                         styleClass="#{cc.attrs.answer.hasBeenModified ? 'track-change sia-modified-field': 'track-change'}"
-                                         label="#{cc.attrs.label}"
-                                         onkeyup="this.classList.add('sia-modified-field')"
-                                         required="#{cc.attrs.required}"
-                        >
-                            <f:attribute name="field" value="#{cc.attrs.field}" />
-                            <p:ajax event="keyup" delay="1000" update="#{cc.attrs.updateTargetsOnBlur}"
-                                    process="@this"
+            </h:panelGroup>
 
-                                    listener="#{cc.attrs.onModified}"/>
-                        </p:inputTextarea>
-                    </h:panelGroup>
-                    <h:panelGroup id="inputPanelGroup" rendered="#{not cc.attrs.field.isTextArea}">
-                        <p:inputText value="#{cc.attrs.answer.value}"
+            <!-- ===== MODE EDIT ===== -->
+            <h:panelGroup id="inputGroup" rendered="#{cc.attrs.mode eq 'input'}">
+
+                <!-- TEXTAREA -->
+                <h:panelGroup rendered="#{cc.attrs.field.isTextArea}">
+                    <p:inputTextarea value="#{cc.attrs.answer.value}"
+                                     style="width: 100%"
                                      styleClass="#{cc.attrs.answer.hasBeenModified ? 'track-change sia-modified-field': 'track-change'}"
                                      label="#{cc.attrs.label}"
-                                     id="input"
-                                     required="#{cc.attrs.required}"
-                        >
-                            <f:attribute name="field" value="#{cc.attrs.field}" />
-                            <p:ajax event="keyup" delay="2000" update="#{cc.attrs.updateTargetsOnBlur}"
-                                    process="@this"
-                                    onstart="$(PrimeFaces.escapeClientId('#{cc.clientId}:input')).removeClass('sia-modified-field'); showSpinner('#{cc.attrs.panelId}')"
-                                    oncomplete="hideSpinner('#{cc.attrs.panelId}')"
-                                    onerror="handleAutoSaveError(xhr, status, '#{cc.attrs.panelId}'); $(PrimeFaces.escapeClientId('#{cc.clientId}:input')).addClass('sia-modified-field');"
-                                    listener="#{cc.attrs.onModified}"/>
-                        </p:inputText>
-                    </h:panelGroup>
+                                     onkeyup="this.classList.add('sia-modified-field')"
+                                     required="#{cc.attrs.required}">
+
+                        <f:attribute name="field" value="#{cc.attrs.field}" />
+
+                        <p:ajax event="keyup" delay="1000"
+                                update="#{cc.attrs.updateTargetsOnBlur}"
+                                process="@this"
+                                listener="#{cc.attrs.onModified}"/>
+                    </p:inputTextarea>
                 </h:panelGroup>
 
-            </f:facet>
-        </p:inplace>
+                <!-- INPUT TEXT -->
+                <h:panelGroup rendered="#{not cc.attrs.field.isTextArea}">
+                    <p:inputText value="#{cc.attrs.answer.value}"
+                                 id="input"
+                                 styleClass="#{cc.attrs.answer.hasBeenModified ? 'track-change sia-modified-field': 'track-change'}"
+                                 label="#{cc.attrs.label}"
+                                 required="#{cc.attrs.required}">
+
+                        <f:attribute name="field" value="#{cc.attrs.field}" />
+
+                        <p:ajax event="keyup" delay="2000"
+                                update="#{cc.attrs.updateTargetsOnBlur}"
+                                process="@this"
+                                onstart="$(PrimeFaces.escapeClientId('#{cc.clientId}:input')).removeClass('sia-modified-field'); showSpinner('#{cc.attrs.panelId}')"
+                                oncomplete="hideSpinner('#{cc.attrs.panelId}')"
+                                onerror="handleAutoSaveError(xhr, status, '#{cc.attrs.panelId}'); $(PrimeFaces.escapeClientId('#{cc.clientId}:input')).addClass('sia-modified-field');"
+                                listener="#{cc.attrs.onModified}"/>
+                    </p:inputText>
+                </h:panelGroup>
+
+            </h:panelGroup>
+
+        </p:outputPanel>
     </cc:implementation>
 
 </ui:composition>

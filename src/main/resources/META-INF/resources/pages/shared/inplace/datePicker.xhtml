@@ -2,40 +2,41 @@
         xmlns="http://www.w3.org/1999/xhtml"
         xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
         xmlns:cc="http://java.sun.com/jsf/composite"
-        xmlns:p="http://primefaces.org/ui" xmlns:f="http://java.sun.com/jsf/core"
+        xmlns:p="http://primefaces.org/ui"
+        xmlns:f="http://java.sun.com/jsf/core"
+        xmlns:h="http://java.sun.com/jsf/html"
 >
 
     <cc:interface>
         <cc:attribute name="answer" type="fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerDateTimeViewModel" required="true"/>
         <cc:attribute name="hasBeenModified" type="Boolean" required="false" default="false"/>
-        <cc:attribute name="field" type="fr.siamois.domain.models.form.customfield.CustomFieldDateTime"
-                      required="true"/>
+        <cc:attribute name="field" type="fr.siamois.domain.models.form.customfield.CustomFieldDateTime" required="true"/>
         <cc:attribute name="panelId" type="String" required="false"/>
         <cc:attribute name="label" type="String" required="false"/>
         <cc:attribute name="required" type="java.lang.Boolean" required="true"/>
         <cc:attribute name="mode" type="String" required="false" default="READ"/>
         <cc:attribute name="updateTargetsOnBlur" type="String" required="false" default="@this"/>
         <cc:attribute name="panelStyleClass" type="String" required="false" default=""/>
-        <cc:attribute name="onModified"
-                      method-signature="void setFieldAnswerHasBeenModified(javax.faces.event.AjaxBehaviorEvent)"
-                      required="false"/>
+        <cc:attribute name="onModified" method-signature="void setFieldAnswerHasBeenModified(javax.faces.event.AjaxBehaviorEvent)" required="false"/>
     </cc:interface>
 
     <cc:implementation>
-        <p:inplace id="inplace" mode="#{cc.attrs.mode}" toggleable="false">
-            <f:facet name="output">
+        <p:outputPanel id="inplace">
+            <!-- ===== MODE DISPLAY ===== -->
+            <h:panelGroup rendered="#{cc.attrs.mode ne 'input'}">
                 <p:inputText value="#{cc.attrs.answer.value}"
                              disabled="true"
-                             label="#{cc.attrs.label}"
-                >
+                             label="#{cc.attrs.label}">
                 </p:inputText>
-            </f:facet>
-            <f:facet name="input">
+            </h:panelGroup>
+
+            <!-- ===== MODE EDIT ===== -->
+            <h:panelGroup id="inputGroup" rendered="#{cc.attrs.mode eq 'input'}">
                 <p:datePicker id="datePicker"
                               monthNavigator="true" yearNavigator="true"
                               mindate="#{cc.attrs.field.min}"
                               maxdate="#{cc.attrs.field.max}"
-                              panelStyleClass="#{panelStyleClass}"
+                              panelStyleClass="#{cc.attrs.panelStyleClass}"
                               showTime="#{cc.attrs.field.showTime}"
                               label="#{cc.attrs.label}"
                               inputStyleClass="#{cc.attrs.answer.hasBeenModified ? 'track-change sia-modified-field': 'track-change'}"
@@ -50,8 +51,7 @@
                             onerror="handleAutoSaveError(xhr, status, '#{cc.attrs.panelId}'); $(PrimeFaces.escapeClientId('#{cc.clientId}:input')).addClass('sia-modified-field');"
                             listener="#{cc.attrs.onModified}"/>
                 </p:datePicker>
-            </f:facet>
-        </p:inplace>
+            </h:panelGroup>
+        </p:outputPanel>
     </cc:implementation>
-
 </ui:composition>
