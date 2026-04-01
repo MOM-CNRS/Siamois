@@ -33,6 +33,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.hibernate.Hibernate;
 import org.reflections.Reflections;
 import org.springframework.beans.BeansException;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.context.ApplicationContext;
 import org.springframework.core.convert.ConversionService;
 import org.springframework.data.domain.Page;
@@ -98,6 +100,10 @@ public class RecordingUnitService implements ArkEntityService {
      * @return The saved RecordingUnit instance.
      */
     @Transactional
+    @CacheEvict({
+            "InstitutionHasRootChildrenRU",
+            "ActionHasRootChildrenRU"
+    })
     public RecordingUnitDTO save(RecordingUnitDTO recordingUnitDTO) {
 
         try {
@@ -543,6 +549,7 @@ public class RecordingUnitService implements ArkEntityService {
      * @param institutionId the institution ID
      * @return True if they are children
      */
+    @Cacheable("InstitutionHasRootChildrenRU")
     public boolean existsRootChildrenByInstitution(Long institutionId) {
         return recordingUnitRepository.existsRootChildrenByInstitution(institutionId);
     }
@@ -552,6 +559,7 @@ public class RecordingUnitService implements ArkEntityService {
      * @param actionId the action ID
      * @return True if they are children
      */
+    @Cacheable("ActionHasRootChildrenRU")
     public boolean existsRootChildrenByAction(Long actionId) {
         return recordingUnitRepository.existsRootChildrenByAction(actionId);
     }
