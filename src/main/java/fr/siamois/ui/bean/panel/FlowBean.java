@@ -87,14 +87,8 @@ public class FlowBean implements Serializable {
     private Boolean isWriteMode = true;
     private Boolean isFieldMode = false;
     private static final int MAX_NUMBER_OF_PANEL = 10;
-
-    // Search bar
-    private List<SpatialUnitDTO> fSpatialUnits = List.of();
-    private List<InstitutionDTO> institutions = List.of();
-    private List<ActionUnit> fActionUnits = List.of();
-    private SpatialUnitDTO fSelectedSpatialUnit;
-    private ActionUnitDTO fSelectedActionUnit;
-    private InstitutionDTO selectedInstitution;
+    private transient List<InstitutionDTO> institutions;
+    private transient InstitutionDTO selectedInstitution;
 
     @Getter
     private transient List<AbstractPanel> panels = new ArrayList<>();
@@ -111,7 +105,6 @@ public class FlowBean implements Serializable {
         UserInfo info = sessionSettings.getUserInfo();
         institutions = new ArrayList<>();
         institutions.addAll(institutionService.findInstitutionsOfPerson(info.getUser()));
-        fSpatialUnits = spatialUnitService.findAllOfInstitution(institution.getId());
         selectedInstitution = institution;
     }
 

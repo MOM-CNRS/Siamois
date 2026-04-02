@@ -31,7 +31,7 @@ import java.util.Set;
 @Data
 @Entity
 @Table(name = "specimen", indexes = {
-        @Index(columnList = "identifier", name = "idx_specimen_identifier")
+        @Index(columnList = "full_identifier", name = "idx_specimen_full_identifier")
 })
 @Audited
 @NoArgsConstructor

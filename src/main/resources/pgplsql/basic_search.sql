@@ -29,14 +29,14 @@ BEGIN
                resultats.recording_unit_id,
                resultats.specimen_id,
                resultats.similarity_score::REAL
-        FROM (SELECT au.identifier                      AS matching_term,
+        FROM (SELECT au.full_identifier                      AS matching_term,
                      au.action_unit_id                  AS action_unit_id,
                      NULL::BIGINT                       AS spatial_unit_id,
                      NULL::BIGINT                       AS recording_unit_id,
                      NULL::BIGINT                       AS specimen_id,
-                     similarity(au.identifier, p_input) AS similarity_score
+                     similarity(au.full_identifier, p_input) AS similarity_score
               FROM action_unit au
-              WHERE au.identifier ILIKE concat(left(p_input, 1), '%')
+              WHERE au.full_identifier ILIKE concat(left(p_input, 1), '%')
                 AND au.fk_institution_id = p_fk_institution_id
 
               UNION ALL

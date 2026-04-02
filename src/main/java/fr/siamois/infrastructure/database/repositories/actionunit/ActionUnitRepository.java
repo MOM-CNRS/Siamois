@@ -247,14 +247,18 @@ public interface ActionUnitRepository extends CrudRepository<ActionUnit, Long>, 
     @Query(
             nativeQuery = true,
             value = """
-                        SELECT DISTINCT au.*
-                        FROM action_unit au
-                        JOIN team_member tm ON au.action_unit_id = tm.fk_action_unit_id
-                        WHERE tm.fk_person_id = :personId AND au.fk_institution_id = :institutionId
-                        UNION
                         SELECT au.*
                         FROM action_unit au
-                        WHERE au.fk_created_by = :personId AND au.fk_institution_id = :institutionId
+                        WHERE au.fk_institution_id = :institutionId
+                        AND (
+                            au.fk_created_by = :personId
+                            OR EXISTS (
+                                SELECT 1 
+                                FROM team_member tm 
+                                WHERE tm.fk_action_unit_id = au.action_unit_id 
+                                AND tm.fk_person_id = :personId
+                            )
+                        )
                         LIMIT :limit
                     """
     )
