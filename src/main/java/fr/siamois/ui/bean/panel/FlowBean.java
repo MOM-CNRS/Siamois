@@ -723,7 +723,7 @@ public class FlowBean implements Serializable {
      * Return the active actions units for which i'm a member
      */
     public List<ActionUnitDTO> getMyActionUnits() {
-        return actionUnitService.findByTeamMember(sessionSettings.getUserInfo().getUser(), sessionSettings.getSelectedInstitution());
+        return actionUnitService.findByTeamMember(sessionSettings.getUserInfo().getUser(), sessionSettings.getSelectedInstitution(), 10);
     }
 
 

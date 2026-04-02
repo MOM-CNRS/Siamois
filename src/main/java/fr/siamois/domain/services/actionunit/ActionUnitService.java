@@ -432,8 +432,8 @@ public class ActionUnitService implements ArkEntityService {
     }
 
 
-    public List<ActionUnitDTO> findByTeamMember(PersonDTO member, InstitutionDTO institution) {
-        List<ActionUnit> actionUnits = actionUnitRepository.findByTeamMemberOrCreatorAndInstitution(member.getId(), institution.getId());
+    public List<ActionUnitDTO> findByTeamMember(PersonDTO member, InstitutionDTO institution, long limit) {
+        List<ActionUnit> actionUnits = actionUnitRepository.findByTeamMemberOrCreatorAndInstitutionLimit(member.getId(), institution.getId(), limit);
         return actionUnits.stream()
                 .map(actionUnitMapper::convert)
                 .toList();
