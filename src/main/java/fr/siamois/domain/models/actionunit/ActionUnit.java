@@ -32,7 +32,7 @@ import java.util.stream.Collectors;
         uniqueConstraints = @UniqueConstraint(columnNames = {"identifier", "fk_institution_id"}),
         indexes = {
                 @Index(columnList = "name", name = "idx_action_unit_name"),
-                @Index(columnList = "full_identifier", name = "idx_action_unit_full_identifier")
+                @Index(columnList = "identifier", name = "idx_action_unit_identifier")
         }
 )
 @Audited
