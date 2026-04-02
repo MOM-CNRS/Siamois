@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import fr.siamois.domain.models.form.customfield.CustomField;
+import fr.siamois.domain.services.GeoApiService;
 import fr.siamois.domain.services.GeoPlatService;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.form.FormService;
@@ -81,6 +82,7 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
     private final ConversionService conversionService;
     private final SessionSettingsBean sessionSettingsBean;
     private final GeoPlatService geoPlatService;
+    private final GeoApiService geoApiService;
 
     private List<SpatialUnitSummaryDTO> options; // spatial unit options
 
@@ -136,6 +138,7 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
         this.langBean = services.getLangBean();
         this.conversionService = conversionService;
         this.sessionSettingsBean = services.getSessionSettingsBean();
+        this.geoApiService = services.getGeoApiService();
         this.formScopeChangeCallback = formScopeChangeCallback;
         this.formScopeValueBinding = formScopeValueBinding;
     }
@@ -394,7 +397,7 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
 
 
         if(unit instanceof ActionUnitDTO au) {
-            return spatialUnitService.findAllSummaryOfInstitution(au.getCreatedByInstitution().getId());
+            return Collections.emptyList();
         }
 
         if(unit instanceof RecordingUnitDTO ru) {

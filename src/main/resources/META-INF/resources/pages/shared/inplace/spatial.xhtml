@@ -47,28 +47,24 @@
 
             <!-- ===== MODE EDIT ===== -->
             <h:panelGroup id="inputGroup" rendered="#{cc.attrs.mode eq 'input'}">
-                <p:selectOneMenu id="select-one-spatial-unit"
-                                 panelStyleClass="spatial-unit"
-                                 styleClass="spatial-unit #{cc.attrs.answer.hasBeenModified ? 'track-change sia-modified-field': 'track-change'}"
-                                 value="#{cc.attrs.answer.value}"
-                                 filterMatchMode="contains"
-                                 widgetVar="#{cc.clientId}_spatialUnitMenu"
-                                 dynamic="true"
-                                 filter="true"
-                                 label="#{cc.attrs.label}"
-                                 required="false"
-                                 var="su"
-                                 converter="#{spatialUnitSummaryConverter}">
-                    <!-- Null / no selection -->
-                    <f:selectItem
-                            itemLabel="Choisir"
-                            itemValue="#{null}"
-                            noSelectionOption="true"/>
-                    <f:selectItems
-                            var="unit"
-                            itemValue="#{unit}"
-                            itemLabel="#{unit.name}"
-                            value="#{cc.attrs.spatialUnitOptions}"/>
+
+                <p:autoComplete value="#{cc.attrs.answer.value}"
+                                id="select-one-spatial-unit"
+                                completeMethod="#{geoApiService.search}"
+                                panelStyleClass="spatial-unit"
+                                styleClass="spatial-unit #{cc.attrs.answer.hasBeenModified ? 'track-change sia-modified-field': 'track-change'}"
+                                required="false"
+                                var="su"
+                                itemValue="#{su}"
+                                itemLabel="#{su.name}"
+                                onmousedown="event.stopPropagation();"
+                                onclick="event.stopPropagation();"
+                                converter="#{spatialUnitSummaryConverter}"
+                                forceSelection="true"
+                                scrollHeight="300"
+                                dropdown="true"
+                                showEmptyMessage="false"
+                                maxResults="#{fieldConfigurationService.resultLimit()}">
                     <p:column>
                         <div style="display:flex;gap:0.5em;">
                             <p:outputLabel value="#{su.name}"/>
@@ -78,7 +74,6 @@
                                     styleClass="mr-2 spatial-unit-type-chip"/>
                         </div>
                     </p:column>
-                    <f:attribute name="field" value="#{cc.attrs.field}"/>
                     <p:ajax update="#{cc.attrs.updateTargetsOnBlur}"
                             process="@this"
                             onstart="$(PrimeFaces.escapeClientId('#{cc.clientId}:input')).removeClass('sia-modified-field'); showSpinner('#{cc.attrs.panelId}')"
@@ -95,7 +90,7 @@
                                     update="#{cc.clientId}"/>
                         </div>
                     </f:facet>
-                </p:selectOneMenu>
+                </p:autoComplete>
 
                 <p:overlayPanel for="#{cc.clientId}:select-one-spatial-unit" my="left top" at="left bottom" showEvent="none"
                                 widgetVar="#{cc.clientId}_overlay"

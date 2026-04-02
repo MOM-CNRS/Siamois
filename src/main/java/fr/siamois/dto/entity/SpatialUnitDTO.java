@@ -28,9 +28,10 @@ public class SpatialUnitDTO extends AbstractEntityDTO {
     private Set<SpatialUnitSummaryDTO> children;
     private Set<RecordingUnitSummaryDTO> recordingUnitList;
     private Set<ActionUnitSummaryDTO> relatedActionUnitList;
+    private String code;
 
     public List<String> getBindableFieldNames() {
-        return List.of("category", "name", "address");
+        return List.of("category", "name", "address", "code");
     }
 
 
