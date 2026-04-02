@@ -362,5 +362,15 @@ public interface SpatialUnitRepository extends JpaRepository<SpatialUnit, Long>,
     Optional<SpatialUnit> findFirstByCreatedByInstitutionIdOrderByCreationTimeAsc(Long institutionId);  // oldest
 
     Optional<SpatialUnit> findFirstByCreatedByInstitutionIdOrderByCreationTimeDesc(Long institutionId);
+
+    @Query(value = """
+       SELECT * FROM spatial_unit
+       WHERE name % :query
+       OR name ILIKE %:query%
+       ORDER BY similarity(name, :query) DESC
+       LIMIT 3
+       """, nativeQuery = true)
+    List<SpatialUnit> findTop3BySimilarity(@Param("query") String query);
+
 }
 

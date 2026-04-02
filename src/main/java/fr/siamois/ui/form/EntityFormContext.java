@@ -419,7 +419,7 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
             toSave.setName(answer.getNewName());
             toSave.setCategory(answer.getNewType().concept());
             toSave = spatialUnitService.save(sessionSettingsBean.getUserInfo(), toSave);
-            answer.setValue(new SpatialUnitSummaryDTO(toSave));
+            //todo answer.setValue(new SpatialUnitSummaryDTO(toSave));
             if(unit.getId() != null) {
                 this.save();
             }

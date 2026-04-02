@@ -59,19 +59,37 @@
                                 itemLabel="#{su.name}"
                                 onmousedown="event.stopPropagation();"
                                 onclick="event.stopPropagation();"
-                                converter="#{spatialUnitSummaryConverter}"
+                                converter="#{placeSuggestionConverter}"
                                 forceSelection="true"
                                 scrollHeight="300"
                                 dropdown="true"
                                 showEmptyMessage="false"
                                 maxResults="#{fieldConfigurationService.resultLimit()}">
                     <p:column>
-                        <div style="display:flex;gap:0.5em;">
-                            <p:outputLabel value="#{su.name}"/>
+                        <div style="display:flex;gap:0.5em;align-items: center">
+                            <i class="#{su.isExternal() ? 'bi bi-globe2' : 'bi bi-database'}"
+                               style="margin-right: 10px; color: #{su.isExternal() ? 'black' : 'var(--text-main)'};"/>
+                            <div style="display:flex; flex-direction: column">
+                                <div style="display:flex; gap:0.5em; align-items: center;">
+                                    <p:outputLabel value="#{su.name}"/>
+                                    <p:chip
+                                            label="#{labelBean.findLabelOf(su.category)}"
+                                            styleClass="mr-2 spatial-unit-type-chip"/>
+
+                                </div>
+
+                                <small>#{su.code}</small>
+                            </div>
+
                             <p:chip
-                                    label="#{labelBean.findLabelOf(su.category)}"
-                                    icon="bi bi-geo-alt"
-                                    styleClass="mr-2 spatial-unit-type-chip"/>
+                                    style="
+                                    background: transparent;
+                                    border: 1px solid #{su.isExternal() ? 'var(--text-main)' : 'var(--siamois-green)'};
+                                    color: #{su.isExternal() ? 'var(--text-main)' : 'var(--siamois-green)'};
+                                    margin-left:auto;"
+                                    label="#{su.sourceName}"
+                            />
+
                         </div>
                     </p:column>
                     <p:ajax update="#{cc.attrs.updateTargetsOnBlur}"
@@ -85,6 +103,7 @@
                             <p:commandButton
                                     id="btnNouveau"
                                     icon="bi bi-plus-lg"
+                                    process="@this"
                                     oncomplete="PF('#{cc.clientId}_spatialUnitMenu').hide();var ov = PF('#{cc.clientId}_overlay'); ov.show(); ov.align();"
                                     value="Nouveau"
                                     update="#{cc.clientId}"/>

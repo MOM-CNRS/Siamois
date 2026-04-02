@@ -6,6 +6,7 @@ import fr.siamois.domain.models.form.customfieldanswer.*;
 import fr.siamois.domain.models.form.customform.CustomForm;
 import fr.siamois.domain.models.form.customform.EnabledWhenJson;
 import fr.siamois.domain.models.form.customform.ValueMatcher;
+import fr.siamois.dto.PlaceSuggestionDTO;
 import fr.siamois.dto.StratigraphicRelationshipDTO;
 import fr.siamois.dto.entity.*;
 import fr.siamois.infrastructure.database.repositories.form.FormRepository;
@@ -267,7 +268,14 @@ public class FormService {
         } else if (answer instanceof CustomFieldAnswerSelectOneActionUnitViewModel a) {
             return a.getValue();
         } else if (answer instanceof CustomFieldAnswerSelectOneSpatialUnitViewModel a) {
-            return a.getValue();
+            // Convert back to place dto
+            PlaceSuggestionDTO ans = a.getValue();
+            SpatialUnitSummaryDTO dto = new SpatialUnitSummaryDTO();
+            dto.setId(Long.parseLong(ans.getId()));
+            dto.setName(ans.getName());
+            dto.setCode(ans.getCode());
+            dto.setCategory(ans.getCategory());
+            return dto;
         } else if (answer instanceof CustomFieldAnswerSelectMultipleSpatialUnitTreeViewModel a) {
             return a.getValue();
         } else if (answer instanceof CustomFieldAnswerSelectOneActionCodeViewModel a) {
@@ -386,7 +394,15 @@ public class FormService {
 
     private void handleSpatialUnit(CustomFieldAnswerViewModel answer, Object value) {
         if (answer instanceof CustomFieldAnswerSelectOneSpatialUnitViewModel spatialUnitAnswer) {
-            spatialUnitAnswer.setValue((SpatialUnitSummaryDTO) value);
+            // Convert to place suggestion
+            SpatialUnitSummaryDTO val = (SpatialUnitSummaryDTO) value;
+            PlaceSuggestionDTO dto = new PlaceSuggestionDTO();
+            dto.setId(val.getId().toString());
+            dto.setName(val.getName());
+            dto.setCode(val.getCode());
+            dto.setSourceName("INTERNAL");
+            dto.setCategory(val.getCategory());
+            spatialUnitAnswer.setValue(dto);
         }
     }
 
