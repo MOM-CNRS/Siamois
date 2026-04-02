@@ -84,7 +84,7 @@ public class SpatialUnit extends TraceableEntity implements ArkEntity {
     private Set<RecordingUnit> recordingUnitList;
 
     @NotNull
-    @Column(name = "name", nullable = false, length = Integer.MAX_VALUE)
+    @Column(name = "name", nullable = false, length = 200)
     protected String name;
 
     @NotNull
