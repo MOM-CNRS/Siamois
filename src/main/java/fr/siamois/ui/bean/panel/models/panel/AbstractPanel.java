@@ -1,16 +1,20 @@
 package fr.siamois.ui.bean.panel.models.panel;
 
+import fr.siamois.dto.entity.AbstractEntityDTO;
 import fr.siamois.ui.bean.panel.models.PanelBreadcrumb;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
 import org.primefaces.PrimeFaces;
+import org.primefaces.model.menu.DefaultMenuItem;
 
 import java.io.Serializable;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.Objects;
+
+import static fr.siamois.ui.bean.panel.models.panel.single.AbstractSingleEntityPanel.*;
 
 /**
  * Abstract class representing a panel in the UI.
@@ -161,6 +165,8 @@ public abstract class AbstractPanel implements Serializable {
 
 
     }
+
+
 
     public abstract boolean hasPreviousNext() ;
 }

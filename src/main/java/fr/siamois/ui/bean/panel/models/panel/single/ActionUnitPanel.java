@@ -12,10 +12,7 @@ import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.recordingunit.identifier.generic.RuIdentifierResolver;
 import fr.siamois.domain.services.specimen.SpecimenService;
 import fr.siamois.domain.services.vocabulary.LabelService;
-import fr.siamois.dto.entity.ActionUnitDTO;
-import fr.siamois.dto.entity.ConceptDTO;
-import fr.siamois.dto.entity.PersonDTO;
-import fr.siamois.dto.entity.RecordingUnitDTO;
+import fr.siamois.dto.entity.*;
 import fr.siamois.ui.bean.NavBean;
 import fr.siamois.ui.bean.RedirectBean;
 import fr.siamois.ui.bean.dialog.newunit.GenericNewUnitDialogBean;
@@ -274,23 +271,9 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnitDTO> im
         return actionUnitService.findById(id);
     }
 
-    @Override
-    String findLabel(ActionUnitDTO unit) {
-        return unit.getName();
-    }
 
 
-    @Override
-    String getOpenPanelCommand(ActionUnitDTO unit) {
 
-        if(isRoot) {
-            return "#{navBean.redirectToBookmarked('/action-unit/".concat(unit.getId().toString()).concat("')}");
-        }
-        else {
-
-            return "#{flowBean.addActionUnitToOverview(" + unit.getId() + ", focusViewBean.mainPanel, null)}";
-        }
-    }
 
     @Override
     public void initForms(boolean forceInit) {

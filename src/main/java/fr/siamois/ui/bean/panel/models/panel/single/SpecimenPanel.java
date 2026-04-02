@@ -3,12 +3,14 @@ package fr.siamois.ui.bean.panel.models.panel.single;
 import fr.siamois.domain.models.document.Document;
 import fr.siamois.domain.models.exceptions.actionunit.ActionUnitNotFoundException;
 import fr.siamois.domain.models.history.RevisionWithInfo;
+import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.specimen.Specimen;
 import fr.siamois.domain.services.person.PersonService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.specimen.SpecimenService;
 import fr.siamois.dto.entity.ConceptDTO;
 import fr.siamois.dto.entity.PersonDTO;
+import fr.siamois.dto.entity.RecordingUnitDTO;
 import fr.siamois.dto.entity.SpecimenDTO;
 import fr.siamois.ui.bean.RedirectBean;
 import fr.siamois.ui.bean.panel.models.PanelBreadcrumb;
@@ -20,6 +22,8 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.primefaces.model.menu.DefaultMenuItem;
+import org.primefaces.model.menu.DefaultMenuModel;
+import org.primefaces.model.menu.MenuModel;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.context.ApplicationContext;
@@ -28,6 +32,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 @Slf4j
@@ -177,9 +183,25 @@ public class SpecimenPanel extends AbstractSingleEntityPanel<SpecimenDTO>  imple
         return specimenService.findById(id);
     }
 
+
     @Override
-    String findLabel(SpecimenDTO unit) {
-        return unit.getFullIdentifier();
+    public List<MenuModel> getAllParentBreadcrumbModels() {
+
+        MenuModel breadcrumbModel = new DefaultMenuModel();
+        breadcrumbModel.getElements().add(createHomeItem());
+
+        // then add the action
+        breadcrumbModel.getElements().add(createRootTypeItem());
+
+        // then we find the recording unit parent
+        RecordingUnitDTO ru = recordingUnitService.findById(unit.getRecordingUnit().getId());
+        breadcrumbModel.getElements().add(createUnitItem(ru));
+
+        // then we add specimen
+        breadcrumbModel.getElements().add(createUnitItem(unit));
+
+
+        return List.of(breadcrumbModel);
     }
 
     @Override
@@ -187,36 +209,31 @@ public class SpecimenPanel extends AbstractSingleEntityPanel<SpecimenDTO>  imple
 
         String command ;
         Long id = unit.getRecordingUnit().getId();
+
+        RecordingUnitDTO recordingUnit = recordingUnitService.findById(id);
+        Long projectId = recordingUnit.getActionUnit().getId();
+
         if(isRoot) {
-            command = "#{navBean.redirectToBookmarked('/recording-unit/"+id+"')}";
+            command = "#{navBean.redirectToBookmarked('/action-unit/"+projectId+"')}";
         }
         else {
-
-            command = "#{flowBean.addRecordingUnitToOverview(" + id + ", focusViewBean.mainPanel, 2)}";
+            // todo : when mobilier tab will be put back in project, switch to tab mobilier tab
+            command = "#{flowBean.addActionUnitToOverview(" + projectId + ", focusViewBean.mainPanel, 0)}";
         }
 
         return DefaultMenuItem.builder()
-                .value(unit.getRecordingUnit().getFullIdentifier())
+                .value(recordingUnit.getActionUnit().getFullIdentifier())
                 .command(command)
                 .update("@this")
-                .id("allSpecimen")
+                .id("rootProject")
+                .icon("bi bi-arrow-down-square")
                 .onstart(PF_BUI_CONTENT_SHOW)
                 .oncomplete(PF_BUI_CONTENT_HIDE)
                 .process(THIS)
                 .build();
     }
 
-    @Override
-    String getOpenPanelCommand(SpecimenDTO unit) {
 
-        if(isRoot) {
-            return "#{navBean.redirectToBookmarked('/specimen/".concat(unit.getId().toString()).concat("')}");
-        }
-        else {
-
-            return "#{flowBean.addSpecimenToOverview(" + unit.getId() + ", focusViewBean.mainPanel, null)}";
-        }
-    }
 
 
     @Override

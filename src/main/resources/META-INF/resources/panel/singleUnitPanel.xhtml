@@ -14,7 +14,7 @@
             <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
 
             <!-- breadcrumbs if exists -->
-            <p:outputPanel id="xbreadcrumbs">
+            <p:outputPanel id="breadcrumbs">
                 <ui:repeat var="breadcrumbModel" value="#{panelModel.allParentBreadcrumbModels}">
                     <p:breadCrumb lastItemDisabled="true" styleClass="panel-bc" homeDisplay="text"
                                   model="#{breadcrumbModel}"/>

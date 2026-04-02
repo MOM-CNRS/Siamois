@@ -14,8 +14,7 @@ import fr.siamois.domain.services.EntityDTORegistry;
 import fr.siamois.domain.services.history.HistoryAuditService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.domain.services.vocabulary.FieldService;
-import fr.siamois.dto.entity.AbstractEntityDTO;
-import fr.siamois.dto.entity.PersonDTO;
+import fr.siamois.dto.entity.*;
 import fr.siamois.ui.bean.dialog.document.DocumentCreationBean;
 import fr.siamois.ui.bean.panel.FlowBean;
 import fr.siamois.ui.bean.panel.models.panel.AbstractPanel;
@@ -152,38 +151,85 @@ public abstract class AbstractSingleEntityPanel<T extends AbstractEntityDTO> ext
     /*
     Get label of unit to display in breadcrumn
      */
-    abstract String findLabel(T unit);
+    public static String findLabel(AbstractEntityDTO unit) {
+        if(unit instanceof ActionUnitDTO actionUnitDTO) {
+            return actionUnitDTO.getName();
+        }
+        else if(unit instanceof RecordingUnitDTO dto) {
+            return dto.getFullIdentifier();
+        }
+        else if(unit instanceof SpecimenDTO dto) {
+            return dto.getFullIdentifier();
+        }
+        else if(unit instanceof SpatialUnitDTO dto) {
+            return dto.getName();
+        }
+        else {
+            return "No name";
+        }
+    }
 
     protected abstract DefaultMenuItem createRootTypeItem();
 
-    /*
-Return the command that opens panel for the unit
- */
-    abstract String getOpenPanelCommand(T unit);
+
+    public static String getOpenPanelCommand(AbstractEntityDTO unit, boolean isPanelRoot) {
+
+        if(unit instanceof SpatialUnitDTO) {
+            if(isPanelRoot) {
+                return "#{navBean.redirectToBookmarked('/spatial-unit/".concat(unit.getId().toString()).concat("')}");
+            }
+            else {
+
+                return "#{flowBean.addSpatialUnitToOverview(" + unit.getId() + ", focusViewBean.mainPanel, null)}";
+            }
+        }
+        else if (unit instanceof ActionUnitDTO) {
+            if(isPanelRoot) {
+                return "#{navBean.redirectToBookmarked('/action-unit/".concat(unit.getId().toString()).concat("')}");
+            }
+            else {
+
+                return "#{flowBean.addActionUnitToOverview(" + unit.getId() + ", focusViewBean.mainPanel, null)}";
+            }
+        }
+        else if (unit instanceof SpecimenDTO) {
+            if(isPanelRoot) {
+                return "#{navBean.redirectToBookmarked('/specimen/".concat(unit.getId().toString()).concat("')}");
+            }
+            else {
+
+                return "#{flowBean.addSpecimenToOverview(" + unit.getId() + ", focusViewBean.mainPanel, null)}";
+            }
+        }
+        else if (unit instanceof RecordingUnitDTO) {
+            if(isPanelRoot) {
+                return "#{navBean.redirectToBookmarked('/recording-unit/".concat(unit.getId().toString()).concat("')}");
+            }
+            else {
+
+                return "#{flowBean.addRecordingUnitToOverview(" + unit.getId() + ", focusViewBean.mainPanel, null)}";
+            }
+        }
+        else {
+            return null;
+        }
+
+    }
 
     public List<MenuModel> getAllParentBreadcrumbModels() {
 
         MenuModel breadcrumbModel = new DefaultMenuModel();
         breadcrumbModel.getElements().add(createHomeItem());
         breadcrumbModel.getElements().add(createRootTypeItem());
-        T currentUnit = findUnitById(unitId);
-
-        if (currentUnit != null) {
-            breadcrumbModel.getElements().add(createUnitItem(currentUnit));
-        }
+        breadcrumbModel.getElements().add(createUnitItem(unit));
 
         return List.of(breadcrumbModel);
     }
 
     protected DefaultMenuItem createHomeItem() {
 
-        String instName = flowBean.getSelectedInstitution().getName();
-        String truncatedName = (instName != null && instName.length() > 23)
-                ? instName.substring(0, 20) + "..."
-                : instName;
 
         return DefaultMenuItem.builder()
-                .value(" " + truncatedName)
                 .id("home")
                 .icon("bi bi-house")
                 .command("#{flowBean.redirectToDashboard()}")
@@ -194,11 +240,30 @@ Return the command that opens panel for the unit
                 .build();
     }
 
-    protected DefaultMenuItem createUnitItem(T unit) {
+    protected String getIcon(AbstractEntityDTO unit) {
+        if(unit instanceof RecordingUnitDTO) {
+            return "bi bi-pencil-square";
+        }
+        else if(unit instanceof SpatialUnitDTO) {
+            return "bi bi-geo-alt";
+        }
+        else if(unit instanceof ActionUnitDTO) {
+            return "bi bi-arrow-down-square";
+        }
+        else if(unit instanceof SpecimenDTO) {
+            return "bi bi-bucket";
+        }
+        else {
+            return "";
+        }
+    }
+
+    public DefaultMenuItem createUnitItem(AbstractEntityDTO unit) {
         return DefaultMenuItem.builder()
                 .value(findLabel(unit))
                 .id(String.valueOf(unit.getId()))
-                .command(getOpenPanelCommand(unit))
+                .command(getOpenPanelCommand(unit, isRoot))
+                .icon(getIcon(unit))
                 .update("@this")
                 .onstart(PF_BUI_CONTENT_SHOW)
                 .oncomplete(PF_BUI_CONTENT_HIDE)

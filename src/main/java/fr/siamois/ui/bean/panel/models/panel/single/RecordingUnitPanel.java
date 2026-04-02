@@ -215,24 +215,9 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
         return recordingUnitService.findById(id);
     }
 
-    @Override
-    String findLabel(RecordingUnitDTO unit) {
-        return unit.getFullIdentifier();
-    }
-
-    @Override
-    String getOpenPanelCommand(RecordingUnitDTO unit) {
-
-        if(isRoot) {
-            return "#{navBean.redirectToBookmarked('/recording-unit/".concat(unit.getId().toString()).concat("')}");
-        }
-        else {
-
-            return "#{flowBean.addRecordingUnitToOverview(" + unit.getId() + ", focusViewBean.mainPanel, null)}";
-        }
 
 
-    }
+
 
     @Override
     protected DefaultMenuItem createRootTypeItem()
@@ -249,8 +234,9 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
 
         return DefaultMenuItem.builder()
                 .value(unit.getActionUnit().getName())
-                .id("allRecordingUnits")
+                .id("actionUnit")
                 .command(command)
+                .icon("bi bi-arrow-down-square")
                 .update("@this")
                 .onstart(PF_BUI_CONTENT_SHOW)
                 .oncomplete(PF_BUI_CONTENT_HIDE)

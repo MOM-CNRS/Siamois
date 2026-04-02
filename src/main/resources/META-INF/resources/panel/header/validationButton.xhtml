@@ -10,8 +10,6 @@
     <!--@elvariable id="formSuffix" type="java.lang.String"-->
 
 
-    <h:form id="validationButtonForm#{formSuffix}" style="display:flex; align-items: center;">
-        <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
 
         <p:commandButton
                 action="#{panelModel.toggleValidate()}"
@@ -27,6 +25,5 @@
                   'status-button incomplete'}"
                 onclick="event.stopPropagation();"
         />
-    </h:form>
 </ui:composition>
 </html>

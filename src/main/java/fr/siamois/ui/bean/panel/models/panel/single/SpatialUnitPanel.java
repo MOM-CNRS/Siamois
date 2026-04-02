@@ -111,22 +111,7 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
         return spatialUnitService.findById(id);
     }
 
-    @Override
-    String findLabel(SpatialUnitDTO unit) {
-        return unit.getName();
-    }
 
-    @Override
-    String getOpenPanelCommand(SpatialUnitDTO unit) {
-
-        if(isRoot) {
-            return "#{navBean.redirectToBookmarked('/spatial-unit/".concat(unit.getId().toString()).concat("')}");
-        }
-        else {
-
-            return "#{flowBean.addSpatialUnitToOverview(" + unit.getId() + ", focusViewBean.mainPanel, null)}";
-        }
-    }
 
 
     @Autowired
@@ -483,6 +468,8 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
                 .process(THIS)
                 .build();
     }
+
+
 
     @Override
     public String getPanelTypeClass() {
