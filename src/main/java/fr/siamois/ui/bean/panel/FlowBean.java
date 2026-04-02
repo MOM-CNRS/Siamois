@@ -3,7 +3,6 @@ package fr.siamois.ui.bean.panel;
 import fr.siamois.domain.events.publisher.InstitutionChangeEventPublisher;
 import fr.siamois.domain.events.publisher.LoginEventPublisher;
 import fr.siamois.domain.models.UserInfo;
-import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.events.InstitutionChangeEvent;
 import fr.siamois.domain.models.events.LoginEvent;
 import fr.siamois.domain.services.InstitutionService;
