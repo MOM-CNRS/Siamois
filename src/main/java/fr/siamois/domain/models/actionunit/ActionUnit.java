@@ -28,7 +28,13 @@ import java.util.stream.Collectors;
 
 @Data
 @Entity
-@Table(name = "action_unit", uniqueConstraints = @UniqueConstraint(columnNames = {"identifier","fk_institution_id"}))
+@Table(name = "action_unit",
+        uniqueConstraints = @UniqueConstraint(columnNames = {"identifier", "fk_institution_id"}),
+        indexes = {
+                @Index(columnList = "name", name = "idx_action_unit_name"),
+                @Index(columnList = "full_identifier", name = "idx_action_unit_full_identifier")
+        }
+)
 @Audited
 public class ActionUnit extends TraceableEntity implements ArkEntity {
 
@@ -86,7 +92,7 @@ public class ActionUnit extends TraceableEntity implements ArkEntity {
 
     @ManyToOne
     @JoinColumn(name = "fk_main_location")
-    private SpatialUnit mainLocation ;
+    private SpatialUnit mainLocation;
 
     @ManyToMany
     @JoinTable(
@@ -142,19 +148,19 @@ public class ActionUnit extends TraceableEntity implements ArkEntity {
     protected ActionCode primaryActionCode;
 
     @NotNull
-    @Column(name="identifier")
+    @Column(name = "identifier")
     protected String identifier;
 
     @NotNull
-    @Column(name="full_identifier")
+    @Column(name = "full_identifier")
     protected String fullIdentifier;
 
     @NotNull
-    @Column(name="max_recording_unit_code", nullable = false)
+    @Column(name = "max_recording_unit_code", nullable = false)
     protected Integer maxRecordingUnitCode;
 
     @NotNull
-    @Column(name="min_recording_unit_code")
+    @Column(name = "min_recording_unit_code")
     protected Integer minRecordingUnitCode;
 
     @Override
@@ -215,8 +221,6 @@ public class ActionUnit extends TraceableEntity implements ArkEntity {
                 .map(SpatialUnit::getName)
                 .collect(Collectors.joining(", "));
     }
-
-
 
 
 }

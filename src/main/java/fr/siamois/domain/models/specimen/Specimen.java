@@ -30,7 +30,9 @@ import java.util.Set;
 
 @Data
 @Entity
-@Table(name = "specimen")
+@Table(name = "specimen", indexes = {
+        @Index(columnList = "full_identifier", name = "idx_specimen_full_identifier")
+})
 @Audited
 @NoArgsConstructor
 public class Specimen extends TraceableEntity implements ArkEntity {
