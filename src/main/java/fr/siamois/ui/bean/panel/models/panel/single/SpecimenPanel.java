@@ -194,8 +194,6 @@ public class SpecimenPanel extends AbstractSingleEntityPanel<SpecimenDTO>  imple
         RecordingUnitDTO ru = recordingUnitService.findById(unit.getRecordingUnit().getId());
         breadcrumbModel.getElements().add(createUnitItem(ru));
 
-        // then we add specimen
-        breadcrumbModel.getElements().add(createUnitItem(unit));
 
 
         return List.of(breadcrumbModel);

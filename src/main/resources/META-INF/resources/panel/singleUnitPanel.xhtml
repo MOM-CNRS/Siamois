@@ -16,7 +16,7 @@
             <!-- breadcrumbs if exists -->
             <p:outputPanel id="breadcrumbs">
                 <ui:repeat var="breadcrumbModel" value="#{panelModel.allParentBreadcrumbModels}">
-                    <p:breadCrumb lastItemDisabled="true" styleClass="panel-bc" homeDisplay="text"
+                    <p:breadCrumb lastItemDisabled="false" styleClass="panel-bc" homeDisplay="text"
                                   model="#{breadcrumbModel}"/>
                 </ui:repeat>
             </p:outputPanel>
