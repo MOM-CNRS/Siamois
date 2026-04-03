@@ -22,6 +22,7 @@ import fr.siamois.infrastructure.database.repositories.SpatialUnitRepository;
 import fr.siamois.infrastructure.database.repositories.actionunit.ActionCodeRepository;
 import fr.siamois.infrastructure.database.repositories.actionunit.ActionUnitRepository;
 import fr.siamois.mapper.ActionUnitMapper;
+import fr.siamois.mapper.ConceptMapper;
 import fr.siamois.mapper.PersonMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -35,10 +36,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -57,6 +55,7 @@ public class ActionUnitService implements ArkEntityService {
     private final ActionUnitMapper actionUnitMapper;
     private final PersonMapper personMapper;
     private final SpatialUnitRepository spatialUnitRepository;
+    private final ConceptMapper conceptMapper;
 
     /**
      * Find all Action Units by institution, name, categories, persons, and global search.
@@ -193,6 +192,34 @@ public class ActionUnitService implements ArkEntityService {
             toSave.setCreatedByInstitution(actionUnit.getCreatedByInstitution());
             toSave = spatialUnitRepository.save(toSave);
             actionUnit.setMainLocation(toSave);
+        }
+        if (actionUnitDTO.getSpatialContext() != null) {
+            Set<SpatialUnit> persistentContext = new HashSet<>();
+
+            for (SpatialUnitSummaryDTO summary : actionUnitDTO.getSpatialContext()) {
+                if (summary.getId() == null) {
+                    // CAS : Nouveau lieu (ex: issu de l'API INSEE)
+                    SpatialUnit toSave = new SpatialUnit();
+                    toSave.setName(summary.getName());
+                    toSave.setCode(summary.getCode());
+                    toSave.setCategory(conceptMapper.invertConvert(summary.getCategory()));
+
+                    // On réutilise les métadonnées de l'unité parente
+                    toSave.setCreatedBy(actionUnit.getCreatedBy());
+                    toSave.setCreatedByInstitution(actionUnit.getCreatedByInstitution());
+
+                    // Sauvegarde immédiate pour obtenir un ID
+                    toSave = spatialUnitRepository.save(toSave);
+                    persistentContext.add(toSave);
+                } else {
+                    // CAS : Lieu existant en base
+                    spatialUnitRepository.findById(summary.getId())
+                            .ifPresent(persistentContext::add);
+                }
+            }
+
+            // Mise à jour de la relation ManyToMany ou OneToMany
+            actionUnit.setSpatialContext(persistentContext);
         }
 
 

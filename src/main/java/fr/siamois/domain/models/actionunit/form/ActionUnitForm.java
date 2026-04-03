@@ -123,6 +123,7 @@ public abstract class ActionUnitForm {
             .isSystemField(true)
             .id(3L)
             .valueBinding("spatialContext")
+            .source("GEOPLAT")
             .concept(SPATIAL_CONTEXT_CONCEPT)
             .build();
 
@@ -162,6 +163,7 @@ public abstract class ActionUnitForm {
             .label("common.label.mainLocation")
             .isSystemField(true)
             .id(10L)
+            .source("INSEE")
             .valueBinding("mainLocation")
             .concept(MAIN_LOCATION_CONCEPT)
             .build();

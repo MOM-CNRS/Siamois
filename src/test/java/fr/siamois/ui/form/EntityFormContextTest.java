@@ -414,7 +414,7 @@ class EntityFormContextTest {
                 }, fieldSource, formContextServices,conversionService,
                 scopeCallback, "scopeBinding"
         );
-        assertTrue(ctx.getSpatialUnitOptions().isEmpty());
+        assertTrue(ctx.getSpatialUnitOptions("").isEmpty());
         verifyNoInteractions(spatialUnitService);
     }
 
@@ -429,7 +429,7 @@ class EntityFormContextTest {
         List<SpatialUnitSummaryDTO> opts = List.of(mock(SpatialUnitSummaryDTO.class));
         when(spatialUnitService.getSpatialUnitOptionsFor(ru)).thenReturn(opts);
 
-        assertSame(opts, ctx.getSpatialUnitOptions());
+        assertSame(opts, ctx.getSpatialUnitOptions(""));
         verify(spatialUnitService).getSpatialUnitOptionsFor(ru);
     }
 }

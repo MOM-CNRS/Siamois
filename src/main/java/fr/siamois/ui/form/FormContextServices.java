@@ -8,6 +8,8 @@ import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitTreeService;
 import fr.siamois.domain.services.specimen.SpecimenService;
+import fr.siamois.domain.services.vocabulary.ConceptService;
+import fr.siamois.mapper.ConceptMapper;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
 import lombok.Getter;
@@ -31,5 +33,7 @@ public class FormContextServices {
     private final SessionSettingsBean sessionSettingsBean;
     private final GeoPlatService geoPlatService;
     private final GeoApiService geoApiService;
+    private final ConceptService conceptService;
+    private final ConceptMapper conceptMapper;
 
 }

@@ -271,7 +271,7 @@ public class FormService {
             // Convert back to place dto
             PlaceSuggestionDTO ans = a.getValue();
             SpatialUnitSummaryDTO dto = new SpatialUnitSummaryDTO();
-            dto.setId(Long.parseLong(ans.getId()));
+            dto.setId(ans.getId());
             dto.setName(ans.getName());
             dto.setCode(ans.getCode());
             dto.setCategory(ans.getCategory());
@@ -397,7 +397,7 @@ public class FormService {
             // Convert to place suggestion
             SpatialUnitSummaryDTO val = (SpatialUnitSummaryDTO) value;
             PlaceSuggestionDTO dto = new PlaceSuggestionDTO();
-            dto.setId(val.getId().toString());
+            dto.setId(val.getId());
             dto.setName(val.getName());
             dto.setCode(val.getCode());
             dto.setSourceName("INTERNAL");
@@ -421,7 +421,7 @@ public class FormService {
     @SuppressWarnings("unchecked")
     private void handleSpatialUnitSet(CustomFieldAnswerViewModel answer, Object value) {
         if (answer instanceof CustomFieldAnswerSelectMultipleSpatialUnitTreeViewModel treeAnswer) {
-            treeAnswer.setValue((Set<SpatialUnitSummaryDTO>) value);
+            treeAnswer.setValue(new ArrayList<>((Set<PlaceSuggestionDTO>) value));
         }
     }
 

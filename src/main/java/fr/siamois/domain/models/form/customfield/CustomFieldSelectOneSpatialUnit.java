@@ -18,5 +18,6 @@ import lombok.experimental.SuperBuilder;
 @NoArgsConstructor
 public class CustomFieldSelectOneSpatialUnit extends CustomField {
 
+    public String source;
 
 }

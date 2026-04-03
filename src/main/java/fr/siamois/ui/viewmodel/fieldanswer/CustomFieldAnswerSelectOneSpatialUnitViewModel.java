@@ -11,9 +11,17 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 public class CustomFieldAnswerSelectOneSpatialUnitViewModel extends CustomFieldAnswerViewModel {
+
     private PlaceSuggestionDTO value;
 
     // To create new :
     private String newName;
     private ConceptAutocompleteDTO newType;
+
+    // Sources
+    private String source;
+
+    public CustomFieldAnswerSelectOneSpatialUnitViewModel(String source) {
+        this.source = source;
+    }
 }

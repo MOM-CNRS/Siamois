@@ -4,34 +4,44 @@ import fr.siamois.domain.models.form.customfield.*;
 import fr.siamois.ui.viewmodel.fieldanswer.*;
 
 import java.util.Map;
-import java.util.function.Supplier;
+import java.util.function.Function;
 
 public final class CustomFieldAnswerFactory {
 
     private CustomFieldAnswerFactory() {
     }
 
-    private static final Map<Class<? extends CustomField>, Supplier<? extends CustomFieldAnswerViewModel>> ANSWER_CREATORS =
+    /**
+     * La Map accepte une Function qui prend le CustomField en entrée.
+     */
+    private static final Map<Class<? extends CustomField>, Function<CustomField, ? extends CustomFieldAnswerViewModel>> ANSWER_CREATORS =
             Map.ofEntries(
-                    Map.entry(CustomFieldText.class, CustomFieldAnswerTextViewModel::new),
-                    Map.entry(CustomFieldSelectOneAddress.class, CustomFieldAnswerSelectOneAddressViewModel::new),
-                    Map.entry(CustomFieldSelectOneFromFieldCode.class, CustomFieldAnswerSelectOneFromFieldCodeViewModel::new),
-                    Map.entry(CustomFieldSelectMultiplePerson.class, CustomFieldAnswerSelectMultiplePersonViewModel::new),
-                    Map.entry(CustomFieldDateTime.class, CustomFieldAnswerDateTimeViewModel::new),
-                    Map.entry(CustomFieldSelectOneActionUnit.class, CustomFieldAnswerSelectOneActionUnitViewModel::new),
-                    Map.entry(CustomFieldSelectOneSpatialUnit.class, CustomFieldAnswerSelectOneSpatialUnitViewModel::new),
-                    Map.entry(CustomFieldSelectMultipleSpatialUnitTree.class, CustomFieldAnswerSelectMultipleSpatialUnitTreeViewModel::new),
-                    Map.entry(CustomFieldSelectOneActionCode.class, CustomFieldAnswerSelectOneActionCodeViewModel::new),
-                    Map.entry(CustomFieldInteger.class, CustomFieldAnswerIntegerViewModel::new),
-                    Map.entry(CustomFieldSelectOnePerson.class, CustomFieldAnswerSelectOnePersonViewModel::new),
-                    Map.entry(CustomFieldStratigraphy.class, CustomFieldAnswerStratigraphyViewModel::new)
+                    // Constructeurs vides : on ignore l'argument 'f'
+                    Map.entry(CustomFieldText.class, f -> new CustomFieldAnswerTextViewModel()),
+                    Map.entry(CustomFieldSelectOneAddress.class, f -> new CustomFieldAnswerSelectOneAddressViewModel()),
+                    Map.entry(CustomFieldSelectOneFromFieldCode.class, f -> new CustomFieldAnswerSelectOneFromFieldCodeViewModel()),
+                    Map.entry(CustomFieldSelectMultiplePerson.class, f -> new CustomFieldAnswerSelectMultiplePersonViewModel()),
+                    Map.entry(CustomFieldDateTime.class, f -> new CustomFieldAnswerDateTimeViewModel()),
+                    Map.entry(CustomFieldSelectOneActionUnit.class, f -> new CustomFieldAnswerSelectOneActionUnitViewModel()),
+                    Map.entry(CustomFieldSelectOneSpatialUnit.class, f -> new CustomFieldAnswerSelectOneSpatialUnitViewModel(
+                                    ((CustomFieldSelectOneSpatialUnit) f).getSource())),
+                    Map.entry(CustomFieldSelectMultipleSpatialUnitTree.class, f ->
+                            new CustomFieldAnswerSelectMultipleSpatialUnitTreeViewModel(((CustomFieldSelectMultipleSpatialUnitTree) f).getSource())),
+                    Map.entry(CustomFieldSelectOneActionCode.class, f -> new CustomFieldAnswerSelectOneActionCodeViewModel()),
+                    Map.entry(CustomFieldInteger.class, f -> new CustomFieldAnswerIntegerViewModel()),
+                    Map.entry(CustomFieldSelectOnePerson.class, f -> new CustomFieldAnswerSelectOnePersonViewModel()),
+                    Map.entry(CustomFieldStratigraphy.class, f -> new CustomFieldAnswerStratigraphyViewModel())
             );
 
     public static CustomFieldAnswerViewModel instantiateAnswerForField(CustomField field) {
-        Supplier<? extends CustomFieldAnswerViewModel> creator = ANSWER_CREATORS.get(field.getClass());
+        if (field == null) return null;
+
+        Function<CustomField, ? extends CustomFieldAnswerViewModel> creator = ANSWER_CREATORS.get(field.getClass());
+
         if (creator != null) {
-            return creator.get();
+            return creator.apply(field);
         }
+
         throw new IllegalArgumentException("Unsupported CustomField type: " + field.getClass().getName());
     }
 }

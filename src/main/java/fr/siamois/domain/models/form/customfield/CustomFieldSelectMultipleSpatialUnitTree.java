@@ -4,6 +4,7 @@ import jakarta.persistence.DiscriminatorValue;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.SuperBuilder;
 
@@ -14,7 +15,9 @@ import lombok.experimental.SuperBuilder;
 @DiscriminatorValue("SELECT_MULTIPLE_SPATIAL_UNIT_TREE")
 @Table(name = "custom_field")
 @SuperBuilder
+@NoArgsConstructor
 public class CustomFieldSelectMultipleSpatialUnitTree extends CustomField {
 
+    public String source;
 
 }
