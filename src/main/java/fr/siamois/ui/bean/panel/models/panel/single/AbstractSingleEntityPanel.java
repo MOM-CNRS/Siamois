@@ -171,49 +171,35 @@ public abstract class AbstractSingleEntityPanel<T extends AbstractEntityDTO> ext
 
     protected abstract DefaultMenuItem createRootTypeItem();
 
-
     public static String getOpenPanelCommand(AbstractEntityDTO unit, boolean isPanelRoot) {
-
-        if(unit instanceof SpatialUnitDTO) {
-            if(isPanelRoot) {
-                return "#{navBean.redirectToBookmarked('/spatial-unit/".concat(unit.getId().toString()).concat("')}");
-            }
-            else {
-
-                return "#{flowBean.addSpatialUnitToOverview(" + unit.getId() + ", focusViewBean.mainPanel, null)}";
-            }
-        }
-        else if (unit instanceof ActionUnitDTO) {
-            if(isPanelRoot) {
-                return "#{navBean.redirectToBookmarked('/action-unit/".concat(unit.getId().toString()).concat("')}");
-            }
-            else {
-
-                return "#{flowBean.addActionUnitToOverview(" + unit.getId() + ", focusViewBean.mainPanel, null)}";
-            }
-        }
-        else if (unit instanceof SpecimenDTO) {
-            if(isPanelRoot) {
-                return "#{navBean.redirectToBookmarked('/specimen/".concat(unit.getId().toString()).concat("')}");
-            }
-            else {
-
-                return "#{flowBean.addSpecimenToOverview(" + unit.getId() + ", focusViewBean.mainPanel, null)}";
-            }
-        }
-        else if (unit instanceof RecordingUnitDTO) {
-            if(isPanelRoot) {
-                return "#{navBean.redirectToBookmarked('/recording-unit/".concat(unit.getId().toString()).concat("')}");
-            }
-            else {
-
-                return "#{flowBean.addRecordingUnitToOverview(" + unit.getId() + ", focusViewBean.mainPanel, null)}";
-            }
-        }
-        else {
+        if (unit == null) {
             return null;
         }
 
+        String path = null;
+        String method = null;
+
+        if (unit instanceof SpatialUnitDTO) {
+            path = "spatial-unit";
+            method = "addSpatialUnitToOverview";
+        } else if (unit instanceof ActionUnitDTO) {
+            path = "action-unit";
+            method = "addActionUnitToOverview";
+        } else if (unit instanceof SpecimenDTO) {
+            path = "specimen";
+            method = "addSpecimenToOverview";
+        } else if (unit instanceof RecordingUnitDTO) {
+            path = "recording-unit";
+            method = "addRecordingUnitToOverview";
+        } else {
+            return null;
+        }
+
+        if (isPanelRoot) {
+            return "#{navBean.redirectToBookmarked('/" + path + "/" + unit.getId() + "')}";
+        }
+
+        return "#{flowBean." + method + "(" + unit.getId() + ", focusViewBean.mainPanel, null)}";
     }
 
     public List<MenuModel> getAllParentBreadcrumbModels() {

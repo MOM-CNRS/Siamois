@@ -7,7 +7,6 @@ import fr.siamois.domain.models.form.customfield.CustomFieldDateTime;
 import fr.siamois.domain.models.form.customfield.CustomFieldInteger;
 import fr.siamois.domain.models.form.customform.CustomForm;
 import fr.siamois.domain.models.history.RevisionWithInfo;
-import fr.siamois.domain.services.form.FormService;
 import fr.siamois.domain.services.person.PersonService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.specimen.SpecimenService;

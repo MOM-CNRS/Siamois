@@ -3,7 +3,6 @@ package fr.siamois.ui.bean.panel.models.panel.single;
 import fr.siamois.domain.models.document.Document;
 import fr.siamois.domain.models.exceptions.actionunit.ActionUnitNotFoundException;
 import fr.siamois.domain.models.history.RevisionWithInfo;
-import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.specimen.Specimen;
 import fr.siamois.domain.services.person.PersonService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
@@ -32,8 +31,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 @Slf4j
@@ -217,7 +214,6 @@ public class SpecimenPanel extends AbstractSingleEntityPanel<SpecimenDTO>  imple
             command = "#{navBean.redirectToBookmarked('/action-unit/"+projectId+"')}";
         }
         else {
-            // todo : when mobilier tab will be put back in project, switch to tab mobilier tab
             command = "#{flowBean.addActionUnitToOverview(" + projectId + ", focusViewBean.mainPanel, 0)}";
         }
 
