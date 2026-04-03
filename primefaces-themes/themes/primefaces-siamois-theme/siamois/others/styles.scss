@@ -582,3 +582,8 @@ body .ui-tabs .ui-tabs-panels .ui-tabs-panel {
 .shortcut-label {
     font-weight: 500;
 }
+
+body .ui-menuitem-link {
+    display: flex;
+    gap: 0.3em;
+}
