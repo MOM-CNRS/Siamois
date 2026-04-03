@@ -59,7 +59,6 @@ public abstract class AbstractSingleMultiHierarchicalEntityPanel<T extends Abstr
     public List<MenuModel> getAllParentBreadcrumbModels() {
         List<List<T>> allPaths = findAllParentPathsToRoot();
         List<MenuModel> breadcrumbModels = new ArrayList<>();
-        T currentUnit = findUnitById(unitId);
 
         if (allPaths.isEmpty()) {
             MenuModel breadcrumbModel = new DefaultMenuModel();
