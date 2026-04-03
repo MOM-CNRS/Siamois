@@ -10,6 +10,7 @@ import fr.siamois.domain.services.spatialunit.SpatialUnitTreeService;
 import fr.siamois.domain.services.specimen.SpecimenService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.mapper.ConceptMapper;
+import fr.siamois.mapper.PlaceSuggestionMapper;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
 import lombok.Getter;
@@ -35,5 +36,5 @@ public class FormContextServices {
     private final GeoApiService geoApiService;
     private final ConceptService conceptService;
     private final ConceptMapper conceptMapper;
-
+    private final PlaceSuggestionMapper placeSuggestionMapper;
 }

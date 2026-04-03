@@ -95,6 +95,7 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
     private final GeoApiService geoApiService;
     private final ConceptService conceptService;
     private final ConceptMapper conceptMapper;
+    private final FormContextServices services;
 
 
     private List<SpatialUnitSummaryDTO> options; // spatial unit options
@@ -141,6 +142,7 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
                              String formScopeValueBinding) {
         this.unit = unit;
         this.fieldSource = fieldSource;
+        this.services = services;
         this.formService = services.getFormService();
         this.actionUnitService = services.getActionUnitService();
         this.geoPlatService = services.getGeoPlatService();
@@ -471,7 +473,7 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
             toSave.setName(answer.getNewName());
             toSave.setCategory(answer.getNewType().concept());
             toSave = spatialUnitService.save(sessionSettingsBean.getUserInfo(), toSave);
-            //todo answer.setValue(new SpatialUnitSummaryDTO(toSave));
+            answer.setValue(services.getPlaceSuggestionMapper().convert(toSave));
             if (unit.getId() != null) {
                 this.save();
             }
@@ -489,7 +491,7 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
             toSave.setName(answer.getNewName());
             toSave.setCategory(answer.getNewType().concept());
             toSave = spatialUnitService.save(sessionSettingsBean.getUserInfo(), toSave);
-            //answer.getValue().add(new PlaceSuggestionDTO(toSave));
+            answer.getValue().add(services.getPlaceSuggestionMapper().convert(toSave));
             if (unit.getId() != null) {
                 this.save();
             }

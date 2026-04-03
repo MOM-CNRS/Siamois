@@ -1,6 +1,8 @@
 package fr.siamois.ui.form.savestrategy;
 
+import fr.siamois.domain.models.exceptions.actionunit.ActionUnitAlreadyExistsException;
 import fr.siamois.domain.models.exceptions.actionunit.FailedActionUnitSaveException;
+import fr.siamois.domain.models.exceptions.spatialunit.SpatialUnitAlreadyExistsException;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.dto.entity.ActionUnitDTO;
 import fr.siamois.ui.bean.LangBean;
@@ -19,8 +21,8 @@ public class ActionUnitSaveStrategy implements EntityFormContextSaveStrategy<Act
         LangBean langBean = context.getLangBean();
 
         try {
-            service.save(unit);
-        } catch (FailedActionUnitSaveException e) {
+            service.save(context.getSessionSettingsBean().getUserInfo());
+        } catch (ActionUnitAlreadyExistsException e) {
             MessageUtils.displayErrorMessage(langBean, "common.entity.recordingUnits.updateFailed", unit);
             return false;
         }

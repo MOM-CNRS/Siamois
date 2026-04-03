@@ -143,7 +143,7 @@ public class ActionUnitService implements ArkEntityService {
      * @return The saved ActionUnit
      */
     public ActionUnit saveNotTransactional(UserInfo info, ActionUnitDTO actionUnitDTO, ConceptDTO typeConceptDTO)
-            throws ActionUnitAlreadyExistsException, SpatialUnitAlreadyExistsException {
+            throws ActionUnitAlreadyExistsException {
 
 
 
@@ -241,7 +241,7 @@ public class ActionUnitService implements ArkEntityService {
      */
     @Transactional
     public ActionUnitDTO save(UserInfo info, ActionUnitDTO actionUnit, ConceptDTO typeConcept)
-            throws ActionUnitAlreadyExistsException, SpatialUnitAlreadyExistsException {
+            throws ActionUnitAlreadyExistsException {
         return actionUnitMapper.convert(saveNotTransactional(info, actionUnit, typeConcept));
     }
 
