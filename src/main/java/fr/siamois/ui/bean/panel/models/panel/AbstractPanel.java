@@ -162,5 +162,7 @@ public abstract class AbstractPanel implements Serializable {
 
     }
 
+
+
     public abstract boolean hasPreviousNext() ;
 }
