@@ -223,10 +223,10 @@ class ActionUnitServiceTest {
         expectedResult.setCreatedBy(personDto);
         expectedResult.setCreatedByInstitution(institutionDto);
 
-        SpatialUnitSummaryDTO newMainLocation = new SpatialUnitSummaryDTO();
+        SpatialUnit newMainLocation = new SpatialUnit();
         newMainLocation.setName("New");
-        actionUnitDto.setMainLocation(newMainLocation);
-        actionUnitDto.setSpatialContext(Set.of(newMainLocation));
+        actionUnit.setMainLocation(newMainLocation);
+        actionUnit.setSpatialContext(Set.of(newMainLocation));
 
         // Configuration des mocks avec les bonnes valeurs
         when(actionUnitRepository.findByNameAndCreatedByInstitutionId(name, 1L))

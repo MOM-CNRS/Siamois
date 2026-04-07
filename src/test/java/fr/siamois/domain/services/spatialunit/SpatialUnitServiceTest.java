@@ -16,12 +16,10 @@ import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.authorization.PermissionServiceImpl;
 import fr.siamois.domain.services.person.PersonService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
+import fr.siamois.dto.PlaceSuggestionDTO;
 import fr.siamois.dto.entity.*;
 import fr.siamois.infrastructure.database.repositories.SpatialUnitRepository;
-import fr.siamois.mapper.InstitutionMapper;
-import fr.siamois.mapper.RecordingUnitMapper;
-import fr.siamois.mapper.SpatialUnitMapper;
-import fr.siamois.mapper.SpatialUnitSummaryMapper;
+import fr.siamois.mapper.*;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -72,6 +70,8 @@ class SpatialUnitServiceTest {
     private SpatialUnitSummaryMapper spatialUnitSummaryMapper;
     @Mock
     private InstitutionMapper institutionMapper;
+    @Mock
+    private ConceptMapper conceptMapper;
 
     @InjectMocks
     private SpatialUnitService spatialUnitService;
@@ -894,6 +894,51 @@ class SpatialUnitServiceTest {
         // Act & Assert
         assertThrows(fr.siamois.domain.models.exceptions.actionunit.ActionUnitNotFoundException.class,
                 () -> spatialUnitService.toggleValidated(99L));
+    }
+
+    @Test
+    void findTop3BySimilarity_ShouldReturnEmptyList_WhenQueryIsBlank() {
+        // Arrange
+        Long instId = 1L;
+
+        // Act
+        List<PlaceSuggestionDTO> resultNull = spatialUnitService.findTop3ByInstitutionIdBySimilarity(instId, null);
+        List<PlaceSuggestionDTO> resultEmpty = spatialUnitService.findTop3ByInstitutionIdBySimilarity(instId, "  ");
+
+        // Assert
+        assertTrue(resultNull.isEmpty());
+        assertTrue(resultEmpty.isEmpty());
+        verifyNoInteractions(spatialUnitRepository);
+    }
+
+    @Test
+    void findTop3BySimilarity_ShouldReturnMappedDtos_WhenResultsExist() {
+        // Arrange
+        Long instId = 1L;
+        String query = "Paris";
+
+        SpatialUnit unit = new SpatialUnit();
+        unit.setId(100L);
+        unit.setName("Paris Office");
+        unit.setCode("PAR-01");
+        // Mock category if necessary
+        unit.setCategory(new Concept());
+
+        when(spatialUnitRepository.findTop3ByInstitutionIdBySimilarity(instId, query))
+                .thenReturn(List.of(unit));
+        when(conceptMapper.convert(any())).thenReturn(new ConceptDTO());
+
+        // Act
+        List<PlaceSuggestionDTO> results = spatialUnitService.findTop3ByInstitutionIdBySimilarity(instId, query);
+
+        // Assert
+        assertEquals(1, results.size());
+        PlaceSuggestionDTO dto = results.get(0);
+        assertEquals(100L, dto.getId());
+        assertEquals("Paris Office", dto.getName());
+        assertEquals("PAR-01", dto.getCode());
+        assertEquals("SIAMOIS", dto.getSourceName());
+        assertNotNull(dto.getCategory());
     }
 
 
