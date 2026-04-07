@@ -21,7 +21,7 @@ public class ActionUnitSaveStrategy implements EntityFormContextSaveStrategy<Act
         LangBean langBean = context.getLangBean();
 
         try {
-            service.save(context.getSessionSettingsBean().getUserInfo());
+            service.save(context.getSessionSettingsBean().getUserInfo(), unit, unit.getType());
         } catch (ActionUnitAlreadyExistsException e) {
             MessageUtils.displayErrorMessage(langBean, "common.entity.recordingUnits.updateFailed", unit);
             return false;

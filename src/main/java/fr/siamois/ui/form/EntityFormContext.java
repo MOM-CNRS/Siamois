@@ -377,70 +377,35 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
         return "";
     }
 
-    /**
-     * Returns all the spatial units a recording unit can be attached to
-     *
-     * @return The list of spatial unit
-     */
-    public List<PlaceSuggestionDTO> getSpatialUnitOptions(String query) {
-
+    public List<PlaceSuggestionDTO> fetchSuggestions(String query, String source) {
         List<PlaceSuggestionDTO> results = new ArrayList<>();
 
-        String source = "";
-
-        UIComponent component = UIComponent.getCurrentComponent(FacesContext.getCurrentInstance());
-        Object attr = component.getAttributes().get(FIELD);
-
-        if (attr instanceof CustomFieldSelectOneSpatialUnit f) {
-            source = f.getSource();
-        } else if (attr instanceof CustomFieldSelectMultipleSpatialUnitTree f) {
-            source = f.getSource();
-        }
-
+        // Cas 1 : ActionUnit (Mix Interne / Externe)
         if (unit instanceof ActionUnitDTO au) {
 
             // 1. Priorité Base de données (Interne)
             List<PlaceSuggestionDTO> internal = spatialUnitService.findTop3ByInstitutionIdBySimilarity(
                     au.getCreatedByInstitution().getId(),
                     query);
-
             results.addAll(internal);
 
-            // 2. Appel API
-            List<PlaceSuggestionDTO> external = new ArrayList<>();
-            if (Objects.equals(source, "INSEE")) {
-                external = geoApiService.fetchCommunes(query);
-            }
-            else if (Objects.equals(source, "GEOPLAT")) {
-                Concept addressConcept = conceptService.findById(418).orElse(new Concept());
-                ConceptDTO conceptDTO = conceptMapper.convert(addressConcept);
-                List<FullAddress> fullAddressList = geoPlatService.search(query);
-                external = fullAddressList.stream()
-                        .map(r -> {
-                            PlaceSuggestionDTO dto = new PlaceSuggestionDTO();
-                            dto.setName(r.getLabel());
-                            dto.setCategory(conceptDTO);
-                            dto.setCode(r.getLabel());
-                            dto.setSourceName("GEOPLAT");
-                            return dto;
-                        })
-                        .toList();
-            }
+            // 2. Appel API Externe selon la source
+            List<PlaceSuggestionDTO> external = resolveExternalSuggestions(query, source);
 
-
-            // On ajoute les externes qui ne sont pas déjà en base (par code)
+            // 3. Fusion et filtrage (Unicité par code)
             Set<String> internalCodes = internal.stream()
                     .map(PlaceSuggestionDTO::getCode)
                     .collect(Collectors.toSet());
 
             external.stream()
                     .filter(e -> !internalCodes.contains(e.getCode()))
-                    .limit(7) // Pour garder un total raisonnable de ~10
+                    .limit(7)
                     .forEach(results::add);
 
             return results;
         }
 
+        // RecordingUnit (Hiérarchie pure)
         if (unit instanceof RecordingUnitDTO ru) {
             return spatialUnitService.getSpatialUnitOptionsFor(ru).stream()
                     .map(this::mapSummaryToSuggestion)
@@ -448,7 +413,52 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
         }
 
         return Collections.emptyList();
+    }
 
+    /** * Sous-méthode privée pour isoler les appels API
+     */
+    private List<PlaceSuggestionDTO> resolveExternalSuggestions(String query, String source) {
+        if (Objects.equals(source, "INSEE")) {
+            return geoApiService.fetchCommunes(query);
+        }
+
+        if (Objects.equals(source, "GEOPLAT")) {
+            Concept addressConcept = conceptService.findById(418).orElse(new Concept());
+            ConceptDTO conceptDTO = conceptMapper.convert(addressConcept);
+
+            return geoPlatService.search(query).stream()
+                    .map(r -> {
+                        PlaceSuggestionDTO dto = new PlaceSuggestionDTO();
+                        dto.setName(r.getLabel());
+                        dto.setCategory(conceptDTO);
+                        dto.setCode(r.getLabel());
+                        dto.setSourceName("GEOPLAT");
+                        return dto;
+                    })
+                    .toList();
+        }
+
+        return new ArrayList<>();
+    }
+
+    public List<PlaceSuggestionDTO> getSpatialUnitOptions(String query) {
+        String source = "";
+
+        // Extraction sécurisée du contexte JSF
+        FacesContext fc = FacesContext.getCurrentInstance();
+        if (fc != null) {
+            UIComponent component = UIComponent.getCurrentComponent(fc);
+            if (component != null) {
+                Object attr = component.getAttributes().get(FIELD);
+                if (attr instanceof CustomFieldSelectOneSpatialUnit f) {
+                    source = f.getSource();
+                } else if (attr instanceof CustomFieldSelectMultipleSpatialUnitTree f) {
+                    source = f.getSource();
+                }
+            }
+        }
+
+        return fetchSuggestions(query, source);
     }
 
 

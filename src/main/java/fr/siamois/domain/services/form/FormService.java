@@ -30,6 +30,7 @@ import java.time.ZoneOffset;
 import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 /**
  * Stateless service containing reusable form logic:
@@ -268,7 +269,7 @@ public class FormService {
         } else if (answer instanceof CustomFieldAnswerSelectOneActionUnitViewModel a) {
             return a.getValue();
         } else if (answer instanceof CustomFieldAnswerSelectOneSpatialUnitViewModel a) {
-            // Convert back to place dto
+            // Convert back to place dto (single selection)
             PlaceSuggestionDTO ans = a.getValue();
             SpatialUnitSummaryDTO dto = new SpatialUnitSummaryDTO();
             dto.setId(ans.getId());
@@ -277,7 +278,18 @@ public class FormService {
             dto.setCategory(ans.getCategory());
             return dto;
         } else if (answer instanceof CustomFieldAnswerSelectMultipleSpatialUnitTreeViewModel a) {
-            return a.getValue();
+            // Convert each PlaceSuggestionDTO in the list to SpatialUnitSummaryDTO
+            List<PlaceSuggestionDTO> placeSuggestionList = a.getValue();
+            return placeSuggestionList.stream()
+                    .map(place -> {
+                        SpatialUnitSummaryDTO dto = new SpatialUnitSummaryDTO();
+                        dto.setId(place.getId());
+                        dto.setName(place.getName());
+                        dto.setCode(place.getCode());
+                        dto.setCategory(place.getCategory());
+                        return dto;
+                    })
+                    .toList();
         } else if (answer instanceof CustomFieldAnswerSelectOneActionCodeViewModel a) {
             return a.getValue();
         } else if (answer instanceof CustomFieldAnswerIntegerViewModel a) {

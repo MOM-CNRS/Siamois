@@ -183,7 +183,7 @@ public class ActionUnitService implements ArkEntityService {
         Person user = personMapper.invertConvert(info.getUser());
         actionUnit.setCreatedBy(user);
 
-        if(actionUnitDTO.getMainLocation().getId() == null) {
+        if(actionUnitDTO.getMainLocation() != null && actionUnitDTO.getMainLocation().getId() == null) {
             SpatialUnit toSave = new SpatialUnit();
             toSave.setCategory(actionUnit.getMainLocation().getCategory());
             toSave.setName(actionUnitDTO.getMainLocation().getName());
