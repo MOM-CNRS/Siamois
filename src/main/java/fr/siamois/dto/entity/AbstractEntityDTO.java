@@ -22,6 +22,7 @@ public abstract class AbstractEntityDTO implements Serializable {
         validated = dto.getValidated();
         creationTime = dto.getCreationTime();
         validatedBy = dto.getValidatedBy();
+        validatedAt = dto.getValidatedAt();
     }
 
     @EqualsAndHashCode.Include

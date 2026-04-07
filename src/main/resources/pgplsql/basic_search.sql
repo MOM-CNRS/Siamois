@@ -18,7 +18,8 @@ CREATE TYPE basic_search_result AS
 -- Chercher avec un input dans la table des unités d'actions
 CREATE OR REPLACE FUNCTION base_search_action_unit(
     p_input VARCHAR,
-    p_fk_institution_id action_unit.fk_institution_id%type
+    p_fk_institution_id action_unit.fk_institution_id%type,
+    p_fk_person_id person.person_id%type
 ) RETURNS SETOF basic_search_result AS
 $$
 BEGIN
@@ -63,7 +64,6 @@ BEGIN
                        JOIN public.action_unit au ON aac.fk_action_id = au.action_unit_id
               WHERE aac.fk_action_code_id ILIKE concat(left(p_input, 1), '%')
                 AND au.fk_institution_id = p_fk_institution_id) AS resultats
-
         ORDER BY resultats.similarity_score DESC
         LIMIT 50;
 END;
@@ -72,7 +72,8 @@ $$ LANGUAGE plpgsql;
 -- Chercher avec un input dans la table des unités spatiales
 CREATE OR REPLACE FUNCTION base_search_spatial_unit(
     p_input VARCHAR,
-    p_fk_institution_id spatial_unit.fk_institution_id%type
+    p_fk_institution_id spatial_unit.fk_institution_id%type,
+    p_fk_person_id person.person_id%type
 ) RETURNS SETOF basic_search_result AS
 $$
 BEGIN
@@ -95,7 +96,8 @@ $$ language plpgsql;
 -- Chercher avec un input dans la table des unités d'enregistrement
 CREATE OR REPLACE FUNCTION base_search_recording_unit(
     p_input VARCHAR,
-    p_fk_institution_id recording_unit.fk_institution_id%type
+    p_fk_institution_id recording_unit.fk_institution_id%type,
+    p_fk_person_id person.person_id%type
 ) RETURNS SETOF basic_search_result AS
 $$
 BEGIN
@@ -117,7 +119,8 @@ $$ language plpgsql;
 -- Chercher avec un input dans la table des prélèvements
 CREATE OR REPLACE FUNCTION base_search_specimen(
     p_input VARCHAR,
-    p_fk_institution_id specimen.fk_institution_id%type
+    p_fk_institution_id specimen.fk_institution_id%type,
+    p_fk_person_id person.person_id%type
 ) RETURNS SETOF basic_search_result AS
 $$
 BEGIN
@@ -129,7 +132,7 @@ BEGIN
                s.specimen_id                          AS specimen_id,
                similarity(s.full_identifier, p_input) AS similarity_score
         FROM specimen s
-        WHERE s.full_identifier ILIKE concat(left(p_input, 1), '%')
+        WHERE s.full_identifier ILIKE concat(p_input, '%')
           AND s.fk_institution_id = p_fk_institution_id
         ORDER BY similarity_score DESC
         LIMIT 50;
@@ -139,23 +142,24 @@ $$ language plpgsql;
 -- Appliquer la recherche sur les 4 tables
 CREATE OR REPLACE FUNCTION basic_search(
     p_input VARCHAR,
-    p_fk_institution_id BIGINT
+    p_fk_institution_id BIGINT,
+    p_fk_person_id person.person_id%type
 ) RETURNS SETOF basic_search_result AS
 $$
 BEGIN
     RETURN QUERY
         SELECT *
         FROM (SELECT *
-              FROM base_search_action_unit(p_input, p_fk_institution_id)
+              FROM base_search_action_unit(p_input, p_fk_institution_id, p_fk_person_id)
               UNION
               SELECT *
-              FROM base_search_spatial_unit(p_input, p_fk_institution_id)
+              FROM base_search_spatial_unit(p_input, p_fk_institution_id, p_fk_person_id)
               UNION
               SELECT *
-              FROM base_search_recording_unit(p_input, p_fk_institution_id)
+              FROM base_search_recording_unit(p_input, p_fk_institution_id, p_fk_person_id)
               UNION
               SELECT *
-              FROM base_search_specimen(p_input, p_fk_institution_id)) AS results
+              FROM base_search_specimen(p_input, p_fk_institution_id, p_fk_person_id)) AS results
         ORDER BY results.similarity_score DESC
         LIMIT 50;
 end

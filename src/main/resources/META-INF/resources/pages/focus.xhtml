@@ -34,8 +34,16 @@
                 <form:csrfform formId="searchBarForm" id="searchBarCsrfForm">
                     <article>
                     <span class="ui-input-icon-right">
-                        <p:inputText styleClass="searchInput" placeholder="" value="🚧" disabled="true"/>
-                        <i class="bi bi-play-circle"/>
+                        <p:autoComplete id="searchAutocomplete"
+                                        styleClass="searchInput"
+                                        style="width: 100%"
+                                        value="#{searchBean.selected}"
+                                        var="result"
+                                        itemLabel="#{result.matchingTerm}"
+                                        itemValue="#{result}"
+                                        completeMethod="#{searchBean.completeText}"
+                                        scrollHeight="250"
+                        />
                     </span>
                     </article>
                 </form:csrfform>
