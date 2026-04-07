@@ -4,27 +4,16 @@ import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.dto.PlaceSuggestionDTO;
 import fr.siamois.dto.entity.ConceptDTO;
-import fr.siamois.dto.entity.FullAddress;
-import fr.siamois.dto.entity.SpatialUnitSummaryDTO;
-import fr.siamois.infrastructure.api.dto.GeoPlatResponse;
 import fr.siamois.infrastructure.api.dto.geoapi.CommuneListResponse;
-import fr.siamois.infrastructure.database.repositories.SpatialUnitRepository;
 import fr.siamois.mapper.ConceptMapper;
-import jakarta.faces.component.UIComponent;
-import jakarta.faces.context.FacesContext;
 import lombok.AllArgsConstructor;
-import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.net.URI;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 @AllArgsConstructor
 @Service

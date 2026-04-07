@@ -1,18 +1,14 @@
 package fr.siamois.ui.viewmodel.fieldanswer;
 
 import fr.siamois.dto.PlaceSuggestionDTO;
-import fr.siamois.dto.entity.SpatialUnitSummaryDTO;
 import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 @Getter
 @Setter

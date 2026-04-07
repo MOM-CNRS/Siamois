@@ -4,14 +4,13 @@ import fr.siamois.dto.entity.FullAddress;
 import fr.siamois.infrastructure.api.dto.GeoPlatResponse;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.net.URI;
 import java.util.Collections;
 import java.util.List;
-import org.springframework.web.client.HttpClientErrorException;
-import org.springframework.web.client.RestTemplate;
 @AllArgsConstructor
 @Service
 public class GeoPlatService {

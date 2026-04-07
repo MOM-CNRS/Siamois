@@ -6,7 +6,6 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.customfield.CustomFieldSelectMultipleSpatialUnitTree;
 import fr.siamois.domain.models.form.customfield.CustomFieldSelectOneSpatialUnit;
-import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.GeoApiService;
 import fr.siamois.domain.services.GeoPlatService;

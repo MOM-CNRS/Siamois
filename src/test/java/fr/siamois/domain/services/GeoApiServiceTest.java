@@ -5,9 +5,9 @@ import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.dto.PlaceSuggestionDTO;
 import fr.siamois.dto.entity.ConceptDTO;
 import fr.siamois.infrastructure.api.dto.geoapi.CommuneListResponse;
+import fr.siamois.infrastructure.api.dto.geoapi.CommuneResponse;
 import fr.siamois.mapper.ConceptMapper;
 import org.junit.jupiter.api.BeforeEach;
-import fr.siamois.infrastructure.api.dto.geoapi.CommuneResponse;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -21,7 +21,8 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
