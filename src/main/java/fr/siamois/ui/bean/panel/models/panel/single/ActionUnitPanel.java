@@ -274,23 +274,9 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnitDTO> im
         return actionUnitService.findById(id);
     }
 
-    @Override
-    String findLabel(ActionUnitDTO unit) {
-        return unit.getName();
-    }
 
 
-    @Override
-    String getOpenPanelCommand(ActionUnitDTO unit) {
 
-        if(isRoot) {
-            return "#{navBean.redirectToBookmarked('/action-unit/".concat(unit.getId().toString()).concat("')}");
-        }
-        else {
-
-            return "#{flowBean.addActionUnitToOverview(" + unit.getId() + ", focusViewBean.mainPanel, null)}";
-        }
-    }
 
     @Override
     public void initForms(boolean forceInit) {

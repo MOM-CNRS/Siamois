@@ -59,19 +59,16 @@ public abstract class AbstractSingleMultiHierarchicalEntityPanel<T extends Abstr
     public List<MenuModel> getAllParentBreadcrumbModels() {
         List<List<T>> allPaths = findAllParentPathsToRoot();
         List<MenuModel> breadcrumbModels = new ArrayList<>();
-        T currentUnit = findUnitById(unitId);
 
         if (allPaths.isEmpty()) {
             MenuModel breadcrumbModel = new DefaultMenuModel();
             breadcrumbModel.getElements().add(createHomeItem());
             breadcrumbModel.getElements().add(createRootTypeItem());
 
-            if (currentUnit != null) {
-                breadcrumbModel.getElements().add(createUnitItem(currentUnit));
-            }
 
             breadcrumbModels.add(breadcrumbModel);
-        } else {
+        }
+        else {
             for (List<T> path : allPaths) {
                 MenuModel breadcrumbModel = new DefaultMenuModel();
                 breadcrumbModel.getElements().add(createHomeItem());
@@ -84,9 +81,6 @@ public abstract class AbstractSingleMultiHierarchicalEntityPanel<T extends Abstr
                     breadcrumbModel.getElements().add(createUnitItem(unit));
                 }
 
-                if (currentUnit != null) {
-                    breadcrumbModel.getElements().add(createUnitItem(currentUnit));
-                }
 
                 breadcrumbModels.add(breadcrumbModel);
             }
