@@ -139,7 +139,6 @@ class EntityFormContextTest {
 
         // build a response containing a spatial-unit-tree answer
         CustomFieldAnswerSelectMultipleSpatialUnitTreeViewModel treeAnswer = mock(CustomFieldAnswerSelectMultipleSpatialUnitTreeViewModel.class);
-        List<PlaceSuggestionDTO> selected = new ArrayList<>();
 
         CustomFormResponseViewModel response = new CustomFormResponseViewModel();
         Map<CustomField, CustomFieldAnswerViewModel> answers = new HashMap<>();
@@ -149,7 +148,6 @@ class EntityFormContextTest {
         when(formService.initOrReuseResponse(isNull(), eq(unit), eq(fieldSource), eq(false))).thenReturn(response);
         when(formService.buildEnabledEngine(fieldSource)).thenReturn(enabledRulesEngine);
 
-        TreeNode<SpatialUnitSummaryDTO> root = new DefaultTreeNode<>(null, null);
 
         // act
         ctx.init(false);

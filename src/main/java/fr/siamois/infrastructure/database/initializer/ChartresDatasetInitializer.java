@@ -69,7 +69,6 @@ public class ChartresDatasetInitializer implements DatabaseInitializer {
     public void initialize() throws DatabaseDataInitException {
 
 
-
         // run only if not inserted
         RecordingUnit existing = recordingUnitService
                 .findByFullIdentifierAndInstitutionIdentifier("1000", "chartres");
