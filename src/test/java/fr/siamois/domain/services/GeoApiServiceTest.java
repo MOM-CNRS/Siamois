@@ -4,11 +4,10 @@ import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.dto.PlaceSuggestionDTO;
 import fr.siamois.dto.entity.ConceptDTO;
-import fr.siamois.infrastructure.api.RequestFactory;
 import fr.siamois.infrastructure.api.dto.geoapi.CommuneListResponse;
 import fr.siamois.mapper.ConceptMapper;
 import org.junit.jupiter.api.BeforeEach;
-import fr.siamois.infrastructure.api.dto.geoapi.CommuneReponse;
+import fr.siamois.infrastructure.api.dto.geoapi.CommuneResponse;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -69,7 +68,7 @@ class GeoApiServiceTest {
         String input = "Lyon";
 
         CommuneListResponse apiResponse = new CommuneListResponse();
-        CommuneReponse paris = new CommuneReponse();
+        CommuneResponse paris = new CommuneResponse();
         paris.setNom("Paris");
         paris.setCode("75056");
         apiResponse.add(paris);

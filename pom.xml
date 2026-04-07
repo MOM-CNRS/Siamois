@@ -59,7 +59,7 @@
             src/main/resources/META-INF/resources/resources/css/jquery*
         </sonar.exclusions>
         <sonar.coverage.exclusions>
-            **/infrastructure/api/dtos/**,
+            **/infrastructure/api/dto/**Response.*,
             **/models/**/*.*,
             **/config/**/*.*,
             **/*Exception.*,

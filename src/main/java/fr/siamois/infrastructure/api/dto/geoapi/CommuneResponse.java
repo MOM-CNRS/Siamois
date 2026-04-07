@@ -5,7 +5,7 @@ import lombok.Data;
 import java.util.List;
 
 @Data
-public class CommuneReponse {
+public class CommuneResponse {
     String nom;
     String code;
     String codeDepartement;
