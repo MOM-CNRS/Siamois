@@ -14,6 +14,7 @@ import jakarta.faces.component.UIComponent;
 import jakarta.faces.context.FacesContext;
 import lombok.AllArgsConstructor;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -33,7 +34,8 @@ public class GeoApiService {
     private final ConceptMapper conceptMapper;
 
     private static final String BASE_URL = "https://geo.api.gouv.fr/communes";
-    private final RestTemplate restTemplate = new RestTemplate();
+
+    private final RestTemplate restTemplate;
 
     public List<PlaceSuggestionDTO> fetchCommunes(String input) {
         if (input == null || input.trim().length() < 3) {
