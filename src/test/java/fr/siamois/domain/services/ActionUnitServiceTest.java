@@ -13,10 +13,7 @@ import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
-import fr.siamois.dto.entity.ActionUnitDTO;
-import fr.siamois.dto.entity.ConceptDTO;
-import fr.siamois.dto.entity.InstitutionDTO;
-import fr.siamois.dto.entity.PersonDTO;
+import fr.siamois.dto.entity.*;
 import fr.siamois.infrastructure.database.repositories.actionunit.ActionCodeRepository;
 import fr.siamois.infrastructure.database.repositories.actionunit.ActionUnitRepository;
 import fr.siamois.mapper.ActionUnitMapper;
@@ -33,10 +30,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 
 import java.time.OffsetDateTime;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
@@ -228,6 +222,11 @@ class ActionUnitServiceTest {
         expectedResult.setType(typeConceptDto);
         expectedResult.setCreatedBy(personDto);
         expectedResult.setCreatedByInstitution(institutionDto);
+
+        SpatialUnitSummaryDTO newMainLocation = new SpatialUnitSummaryDTO();
+        newMainLocation.setName("New");
+        actionUnitDto.setMainLocation(newMainLocation);
+        actionUnitDto.setSpatialContext(Set.of(newMainLocation));
 
         // Configuration des mocks avec les bonnes valeurs
         when(actionUnitRepository.findByNameAndCreatedByInstitutionId(name, 1L))
