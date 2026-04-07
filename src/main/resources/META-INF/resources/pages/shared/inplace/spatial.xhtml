@@ -47,38 +47,52 @@
 
             <!-- ===== MODE EDIT ===== -->
             <h:panelGroup id="inputGroup" rendered="#{cc.attrs.mode eq 'input'}">
-                <p:selectOneMenu id="select-one-spatial-unit"
-                                 panelStyleClass="spatial-unit"
-                                 styleClass="spatial-unit #{cc.attrs.answer.hasBeenModified ? 'track-change sia-modified-field': 'track-change'}"
-                                 value="#{cc.attrs.answer.value}"
-                                 filterMatchMode="contains"
-                                 widgetVar="#{cc.clientId}_spatialUnitMenu"
-                                 dynamic="true"
-                                 filter="true"
-                                 label="#{cc.attrs.label}"
-                                 required="false"
-                                 var="su"
-                                 converter="#{spatialUnitSummaryConverter}">
-                    <!-- Null / no selection -->
-                    <f:selectItem
-                            itemLabel="Choisir"
-                            itemValue="#{null}"
-                            noSelectionOption="true"/>
-                    <f:selectItems
-                            var="unit"
-                            itemValue="#{unit}"
-                            itemLabel="#{unit.name}"
-                            value="#{cc.attrs.spatialUnitOptions}"/>
+
+                <p:autoComplete value="#{cc.attrs.answer.value}"
+                                id="select-one-spatial-unit"
+                                completeMethod="#{cc.attrs.formCtx.getSpatialUnitOptions}"
+                                panelStyleClass="spatial-unit"
+                                styleClass="spatial-unit #{cc.attrs.answer.hasBeenModified ? 'track-change sia-modified-field': 'track-change'}"
+                                required="false"
+                                var="su"
+                                itemValue="#{su}"
+                                itemLabel="#{su.name}"
+                                onmousedown="event.stopPropagation();"
+                                onclick="event.stopPropagation();"
+                                converter="#{placeSuggestionConverter}"
+                                forceSelection="true"
+                                scrollHeight="300"
+                                dropdown="true"
+                                showEmptyMessage="false"
+                                maxResults="#{fieldConfigurationService.resultLimit()}">
+                    <f:attribute name="field" value="#{cc.attrs.field}" />
                     <p:column>
-                        <div style="display:flex;gap:0.5em;">
-                            <p:outputLabel value="#{su.name}"/>
+                        <div style="display:flex;gap:0.5em;align-items: center">
+                            <i class="#{su.isExternal() ? 'bi bi-globe2' : 'bi bi-database'}"
+                               style="color: #{su.isExternal() ? 'var(--text-main)' : 'var(--siamois-green)'};"/>
+                            <div style="display:flex; flex-direction: column">
+                                <div style="display:flex; gap:0.5em; align-items: center;">
+                                    <p:outputLabel value="#{su.name}"/>
+                                    <p:chip
+                                            label="#{labelBean.findLabelOf(su.category)}"
+                                            styleClass="mr-2 spatial-unit-type-chip"/>
+
+                                </div>
+
+                                <small>#{su.code}</small>
+                            </div>
+
                             <p:chip
-                                    label="#{labelBean.findLabelOf(su.category)}"
-                                    icon="bi bi-geo-alt"
-                                    styleClass="mr-2 spatial-unit-type-chip"/>
+                                    style="
+                                    background: transparent;
+                                    border: 1px solid #{su.isExternal() ? 'var(--text-main)' : 'var(--siamois-green)'};
+                                    color: #{su.isExternal() ? 'var(--text-main)' : 'var(--siamois-green)'};
+                                    margin-left:auto;"
+                                    label="#{su.sourceName}"
+                            />
+
                         </div>
                     </p:column>
-                    <f:attribute name="field" value="#{cc.attrs.field}"/>
                     <p:ajax update="#{cc.attrs.updateTargetsOnBlur}"
                             process="@this"
                             onstart="$(PrimeFaces.escapeClientId('#{cc.clientId}:input')).removeClass('sia-modified-field'); showSpinner('#{cc.attrs.panelId}')"
@@ -90,12 +104,13 @@
                             <p:commandButton
                                     id="btnNouveau"
                                     icon="bi bi-plus-lg"
+                                    process="@this"
                                     oncomplete="PF('#{cc.clientId}_spatialUnitMenu').hide();var ov = PF('#{cc.clientId}_overlay'); ov.show(); ov.align();"
                                     value="Nouveau"
                                     update="#{cc.clientId}"/>
                         </div>
                     </f:facet>
-                </p:selectOneMenu>
+                </p:autoComplete>
 
                 <p:overlayPanel for="#{cc.clientId}:select-one-spatial-unit" my="left top" at="left bottom" showEvent="none"
                                 widgetVar="#{cc.clientId}_overlay"

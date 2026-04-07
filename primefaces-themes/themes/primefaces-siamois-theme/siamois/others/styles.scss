@@ -583,6 +583,12 @@ body .ui-tabs .ui-tabs-panels .ui-tabs-panel {
     font-weight: 500;
 }
 
+body .ui-autocomplete-panel .ui-autocomplete-items .ui-autocomplete-item.ui-state-highlight {
+    background: var(--siamois-green-light-200);
+    color: var(--text-main);
+  
+}
+
 body .ui-menuitem-link {
     display: flex;
     gap: 0.3em;

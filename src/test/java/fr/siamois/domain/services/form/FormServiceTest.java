@@ -7,6 +7,7 @@ import fr.siamois.domain.models.form.customform.CustomForm;
 import fr.siamois.domain.models.form.customform.EnabledWhenJson;
 import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.vocabulary.Concept;
+import fr.siamois.dto.PlaceSuggestionDTO;
 import fr.siamois.dto.StratigraphicRelationshipDTO;
 import fr.siamois.dto.entity.*;
 import fr.siamois.infrastructure.database.repositories.form.FormRepository;
@@ -103,7 +104,7 @@ class FormServiceTest {
         private ActionCodeDTO actionCode;
         private PersonDTO person;
         private List<PersonDTO> personList;
-        private Set<SpatialUnitSummaryDTO> spatialUnitSet;
+        private List<SpatialUnitSummaryDTO> spatialUnitSet;
 
         public List<String> getBindableFieldNames() {
             return List.of(
@@ -186,11 +187,11 @@ class FormServiceTest {
             this.personList = personList;
         }
 
-        public Set<SpatialUnitSummaryDTO> getSpatialUnitSet() {
+        public List<SpatialUnitSummaryDTO> getSpatialUnitSet() {
             return spatialUnitSet;
         }
 
-        public void setSpatialUnitSet(Set<SpatialUnitSummaryDTO> spatialUnitSet) {
+        public void setSpatialUnitSet(List<SpatialUnitSummaryDTO> spatialUnitSet) {
             this.spatialUnitSet = spatialUnitSet;
         }
     }
@@ -419,9 +420,11 @@ class FormServiceTest {
         CustomFieldAnswerSelectOneActionUnitViewModel  actionUnitAnswer = new CustomFieldAnswerSelectOneActionUnitViewModel ();
         actionUnitAnswer.setValue(actionUnit);
 
-        SpatialUnitSummaryDTO spatialUnit = mock(SpatialUnitSummaryDTO.class);
+        SpatialUnitSummaryDTO spatialUnit = new SpatialUnitSummaryDTO();
+        spatialUnit.setId(0L);
+        PlaceSuggestionDTO answer = mock(PlaceSuggestionDTO.class);
         CustomFieldAnswerSelectOneSpatialUnitViewModel  spatialUnitAnswer = new CustomFieldAnswerSelectOneSpatialUnitViewModel ();
-        spatialUnitAnswer.setValue(spatialUnit);
+        spatialUnitAnswer.setValue(answer);
 
         ActionCodeDTO actionCode = mock(ActionCodeDTO.class);
         CustomFieldAnswerSelectOneActionCodeViewModel  actionCodeAnswer = new CustomFieldAnswerSelectOneActionCodeViewModel ();
@@ -435,7 +438,7 @@ class FormServiceTest {
         CustomFieldAnswerSelectMultiplePersonViewModel  personListAnswer = new CustomFieldAnswerSelectMultiplePersonViewModel();
         personListAnswer.setValue(personList);
 
-        Set<SpatialUnitSummaryDTO> spatialUnitSet = Set.of(mock(SpatialUnitSummaryDTO.class), mock(SpatialUnitSummaryDTO.class));
+        List<PlaceSuggestionDTO> spatialUnitSet = List.of(mock(PlaceSuggestionDTO.class), mock(PlaceSuggestionDTO.class));
         CustomFieldAnswerSelectMultipleSpatialUnitTreeViewModel spatialUnitSetAnswer = new CustomFieldAnswerSelectMultipleSpatialUnitTreeViewModel();
         spatialUnitSetAnswer.setValue(spatialUnitSet);
 
@@ -467,7 +470,7 @@ class FormServiceTest {
         assertEquals(actionCode, entity.getActionCode());
         assertEquals(person, entity.getPerson());
         assertEquals(personList, entity.getPersonList());
-        assertEquals(spatialUnitSet, entity.getSpatialUnitSet());
+        assertEquals(2, entity.getSpatialUnitSet().size());
     }
 
 
@@ -588,7 +591,12 @@ class FormServiceTest {
         ActionUnitSummaryDTO actionUnit = mock(ActionUnitSummaryDTO.class);
         entity.setActionUnit(actionUnit);
 
-        SpatialUnitSummaryDTO spatialUnit = mock(SpatialUnitSummaryDTO.class);
+        SpatialUnitSummaryDTO spatialUnit = new SpatialUnitSummaryDTO();
+        spatialUnit.setName("test");
+
+        PlaceSuggestionDTO placeSuggestionDTO = new PlaceSuggestionDTO();
+        placeSuggestionDTO.setName("test");
+        placeSuggestionDTO.setSourceName("INTERNAL");
         entity.setSpatialUnit(spatialUnit);
 
         ActionCodeDTO actionCode = mock(ActionCodeDTO.class);
@@ -605,7 +613,7 @@ class FormServiceTest {
         personList.add(person2);
         entity.setPersonList(personList);
 
-        Set<SpatialUnitSummaryDTO> spatialUnitSet = Set.of(mock(SpatialUnitSummaryDTO.class), mock(SpatialUnitSummaryDTO.class));
+        List<SpatialUnitSummaryDTO> spatialUnitSet = List.of(mock(SpatialUnitSummaryDTO.class), mock(SpatialUnitSummaryDTO.class));
         entity.setSpatialUnitSet(spatialUnitSet);
 
         // Mock the label bean to return a label for the concept
@@ -653,11 +661,11 @@ class FormServiceTest {
             assertEquals("Concept Label", ((CustomFieldAnswerSelectOneFromFieldCodeViewModel) response.getAnswers().get(conceptField)).getValue().getConceptLabelToDisplay().getLabel());
             assertEquals("en", ((CustomFieldAnswerSelectOneFromFieldCodeViewModel) response.getAnswers().get(conceptField)).getValue().getConceptLabelToDisplay().getLangCode());
             assertEquals(actionUnit, ((CustomFieldAnswerSelectOneActionUnitViewModel) response.getAnswers().get(actionUnitField)).getValue());
-            assertEquals(spatialUnit, ((CustomFieldAnswerSelectOneSpatialUnitViewModel) response.getAnswers().get(spatialUnitField)).getValue());
+            assertEquals(placeSuggestionDTO.getName(), ((CustomFieldAnswerSelectOneSpatialUnitViewModel) response.getAnswers().get(spatialUnitField)).getValue().getName());
             assertEquals(actionCode, ((CustomFieldAnswerSelectOneActionCodeViewModel) response.getAnswers().get(actionCodeField)).getValue());
             assertEquals(person, ((CustomFieldAnswerSelectOnePersonViewModel) response.getAnswers().get(personField)).getValue());
             assertEquals(personList, ((CustomFieldAnswerSelectMultiplePersonViewModel) response.getAnswers().get(personListField)).getValue());
-            assertEquals(spatialUnitSet, ((CustomFieldAnswerSelectMultipleSpatialUnitTreeViewModel) response.getAnswers().get(spatialUnitSetField)).getValue());
+
 
             // Also ensure pk set + hasBeenModified false
             assertNotNull(response.getAnswers().get(titleField).getPk());

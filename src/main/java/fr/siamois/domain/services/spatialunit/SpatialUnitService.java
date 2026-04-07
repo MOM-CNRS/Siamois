@@ -20,13 +20,11 @@ import fr.siamois.domain.services.ark.ArkService;
 import fr.siamois.domain.services.authorization.PermissionServiceImpl;
 import fr.siamois.domain.services.person.PersonService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
+import fr.siamois.dto.PlaceSuggestionDTO;
 import fr.siamois.dto.entity.*;
 import fr.siamois.infrastructure.database.repositories.SpatialUnitRepository;
 import fr.siamois.infrastructure.database.repositories.actionunit.ActionUnitRepository;
-import fr.siamois.mapper.InstitutionMapper;
-import fr.siamois.mapper.RecordingUnitMapper;
-import fr.siamois.mapper.SpatialUnitMapper;
-import fr.siamois.mapper.SpatialUnitSummaryMapper;
+import fr.siamois.mapper.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.Hibernate;
@@ -62,6 +60,7 @@ public class SpatialUnitService implements ArkEntityService {
     private final SpatialUnitSummaryMapper spatialUnitSummaryMapper;
     private final InstitutionMapper institutionMapper;
     private final ActionUnitRepository actionUnitRepository;
+    private final ConceptMapper conceptMapper;
 
     /**
      * Find a spatial unit by its ID
@@ -556,6 +555,34 @@ public class SpatialUnitService implements ArkEntityService {
         }
 
         return spatialUnitMapper.convert(spatialUnitRepository.save(unit));
+    }
+
+
+
+    /**
+     * Recherche les 3 meilleures unités spatiales en base par similarité de nom.
+     */
+    public List<PlaceSuggestionDTO> findTop3ByInstitutionIdBySimilarity(Long institutionId, String query) {
+        if (query == null || query.isBlank()) {
+            return Collections.emptyList();
+        }
+
+        return spatialUnitRepository.findTop3ByInstitutionIdBySimilarity(institutionId, query)
+                .stream()
+                .map(this::mapToSuggestion)
+                .toList();
+    }
+
+    private PlaceSuggestionDTO mapToSuggestion(SpatialUnit entity) {
+        PlaceSuggestionDTO dto = new PlaceSuggestionDTO();
+        dto.setId(entity.getId());
+        dto.setName(entity.getName());
+        dto.setCode(entity.getCode());
+        if (entity.getCategory() != null) {
+            dto.setCategory(conceptMapper.convert(entity.getCategory()));
+        }
+        dto.setSourceName("SIAMOIS");
+        return dto;
     }
 
 }
