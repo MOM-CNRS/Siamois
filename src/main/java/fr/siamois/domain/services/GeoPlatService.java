@@ -51,8 +51,6 @@ public class GeoPlatService {
                         return a;
                     })
                     .toList();
-        } catch (HttpClientErrorException e) {
-            return Collections.emptyList();
         } catch (Exception e) {
             return Collections.emptyList();
         }
