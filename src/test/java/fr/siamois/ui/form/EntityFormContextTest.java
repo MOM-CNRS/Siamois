@@ -28,8 +28,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.primefaces.model.DefaultTreeNode;
-import org.primefaces.model.TreeNode;
 import org.springframework.core.convert.ConversionService;
 
 import java.util.*;
@@ -486,7 +484,7 @@ class EntityFormContextTest {
         when(conceptService.findById(418)).thenReturn(Optional.of(concept));
         when(conceptMapper.convert(concept)).thenReturn(conceptDTO);
         when(geoPlatService.search(query))
-                .thenReturn(List.of(createFullAddress("2", "Lyon 1")));
+                .thenReturn(List.of(createFullAddress("Lyon 1")));
 
         // Exécution
         List<PlaceSuggestionDTO> results =  ctx.fetchSuggestions(query, "GEOPLAT");
@@ -558,7 +556,7 @@ class EntityFormContextTest {
         return dto;
     }
 
-    private FullAddress createFullAddress(String code, String label) {
+    private FullAddress createFullAddress(String label) {
         FullAddress address = new FullAddress();
         address.setLabel(label);
         return address;
