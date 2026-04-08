@@ -1,5 +1,6 @@
 package fr.siamois.infrastructure.database.initializer;
 
+import fr.siamois.annotations.IgnoreInitializer;
 import fr.siamois.domain.models.exceptions.database.DatabaseDataInitException;
 import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
@@ -26,17 +27,16 @@ import java.util.List;
 @Setter
 @Order
 @RequiredArgsConstructor
+@IgnoreInitializer
 public class ChartresDatasetInitializer implements DatabaseInitializer {
 
 
     public static final String VOCABULARY_ID = "th240";
     private final InstitutionRepository institutionRepository;
 
-
     List<ThesaurusSeeder.ThesaurusSpec> thesauri = List.of(
             new ThesaurusSeeder.ThesaurusSpec("https://thesaurus.mom.fr", VOCABULARY_ID)
     );
-
 
     @Value("${siamois.admin.email}")
     private String adminEmail;
@@ -67,8 +67,6 @@ public class ChartresDatasetInitializer implements DatabaseInitializer {
     @Override
     @Transactional
     public void initialize() throws DatabaseDataInitException {
-
-
         // run only if not inserted
         RecordingUnit existing = recordingUnitService
                 .findByFullIdentifierAndInstitutionIdentifier("1000", "chartres");
@@ -77,7 +75,6 @@ public class ChartresDatasetInitializer implements DatabaseInitializer {
         if(existing!=null) {
             //return; // do nothing
         }
-
 
         // Init vocabs
         thesaurusSeeder.seed(thesauri);
@@ -94,21 +91,17 @@ public class ChartresDatasetInitializer implements DatabaseInitializer {
             throw new DatabaseDataInitException(e.getMessage(), e);
         }
 
-        personSeeder.seed(specs.getPersons());
-        institutionSeeder.seed(specs.getInstitutions());
+        personSeeder.seed(specs.persons());
+        institutionSeeder.seed(specs.institutions());
         Institution ch = institutionRepository.findInstitutionByIdentifier("chartres").orElseThrow(() -> new RuntimeException("CHARTRES NOT FOUND"));
-        spatialUnitSeeder.seed(specs.getSpatialUnits());
-        actionCodeSeeder.seed(specs.getActionCodes());
-        actionUnitSeeder.seed(specs.getActionUnits());
-        recordingUnitSeeder.seed(specs.getRecordingUnits());
-        specimenSeeder.seed(specs.getSpecimenSpecs(), ch.getId());
-        recordingUnitSeeder.seed(specs.getRecordingUnits());
-        recordingUnitRelSeeder.seed(specs.getRecordingUnitRelSpecs(), ch.getId());
-        recordingUnitStratiRelSeeder.seed(specs.getRecordingUnitStratiRelSpecs(), ch.getId());
-
+        spatialUnitSeeder.seed(specs.spatialUnits());
+        actionCodeSeeder.seed(specs.actionCodes());
+        actionUnitSeeder.seed(specs.actionUnits());
+        recordingUnitSeeder.seed(specs.recordingUnits());
+        specimenSeeder.seed(specs.specimenSpecs(), ch.getId());
+        recordingUnitSeeder.seed(specs.recordingUnits());
+        recordingUnitRelSeeder.seed(specs.recordingUnitRelSpecs(), ch.getId());
+        recordingUnitStratiRelSeeder.seed(specs.recordingUnitStratiRelSpecs(), ch.getId());
 
     }
-
-
-
 }
