@@ -14,7 +14,6 @@ import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Component;
 
 import java.io.Serializable;
-import java.util.ArrayList;
 import java.util.List;
 
 @Component

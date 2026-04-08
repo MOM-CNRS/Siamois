@@ -1,7 +1,6 @@
 package fr.siamois.infrastructure.database.repositories.misc;
 
 import com.zaxxer.hikari.HikariDataSource;
-import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.dto.entity.SearchResultDTO;
