@@ -13,13 +13,12 @@ import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
-import fr.siamois.dto.entity.ActionUnitDTO;
-import fr.siamois.dto.entity.ConceptDTO;
-import fr.siamois.dto.entity.InstitutionDTO;
-import fr.siamois.dto.entity.PersonDTO;
+import fr.siamois.dto.entity.*;
+import fr.siamois.infrastructure.database.repositories.SpatialUnitRepository;
 import fr.siamois.infrastructure.database.repositories.actionunit.ActionCodeRepository;
 import fr.siamois.infrastructure.database.repositories.actionunit.ActionUnitRepository;
 import fr.siamois.mapper.ActionUnitMapper;
+import fr.siamois.mapper.ConceptMapper;
 import fr.siamois.mapper.PersonMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -33,10 +32,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 
 import java.time.OffsetDateTime;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
@@ -51,7 +47,8 @@ class ActionUnitServiceTest {
     @Mock private ActionCodeRepository actionCodeRepository;
     @Mock private ActionUnitMapper actionUnitMapper;
     @Mock private PersonMapper personMapper;
-
+    @Mock private ConceptMapper conceptMapper;
+    @Mock private SpatialUnitRepository spatialUnitRepository;
     @InjectMocks
     private ActionUnitService actionUnitService;
 
@@ -229,6 +226,15 @@ class ActionUnitServiceTest {
         expectedResult.setCreatedBy(personDto);
         expectedResult.setCreatedByInstitution(institutionDto);
 
+        SpatialUnit newMainLocation = new SpatialUnit();
+        newMainLocation.setName("New");
+        actionUnit.setMainLocation(newMainLocation);
+        actionUnit.setSpatialContext(Set.of(newMainLocation));
+        SpatialUnitSummaryDTO newMainLocationDto = new SpatialUnitSummaryDTO();
+        newMainLocationDto.setName("New");
+        actionUnitDto.setMainLocation(newMainLocationDto);
+        actionUnitDto.setSpatialContext(Set.of(newMainLocationDto));
+
         // Configuration des mocks avec les bonnes valeurs
         when(actionUnitRepository.findByNameAndCreatedByInstitutionId(name, 1L))
                 .thenReturn(Optional.empty());
@@ -239,6 +245,8 @@ class ActionUnitServiceTest {
         when(personMapper.invertConvert(personDto)).thenReturn(person);
         when(actionUnitRepository.save(actionUnit)).thenReturn(actionUnit);
         when(actionUnitMapper.convert(actionUnit)).thenReturn(expectedResult);
+        when(spatialUnitRepository.save(any(SpatialUnit.class))).thenReturn(new SpatialUnit());
+        when(conceptMapper.invertConvert(null)).thenReturn(null);
 
         // Act
         ActionUnitDTO result = actionUnitService.save(userInfo, actionUnitDto, typeConceptDto);

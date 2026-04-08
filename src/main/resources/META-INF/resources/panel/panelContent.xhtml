@@ -2,7 +2,7 @@
 <ui:composition xmlns="http://www.w3.org/1999/xhtml"
                 xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
                 xmlns:p="http://primefaces.org/ui"
-                xmlns:h="http://xmlns.jcp.org/jsf/html">
+                xmlns:h="http://xmlns.jcp.org/jsf/html" xmlns:c="http://java.sun.com/jsp/jstl/core">
 
     <!--@elvariable id="panelIndex" type="String"-->
     <!--@elvariable id="mode" type="String"-->
@@ -47,6 +47,7 @@
                                                     <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
                                                     <div style="display:flex;flex-direction: row;gap:0.5em;padding: 3px;
                                                             border: 1px solid var(--siamois-green-light);
+                                                            align-items: center;
                                                             border-radius: 15px;">
 
                                                         <p:commandLink styleClass="sideview-topbar-button"
@@ -112,6 +113,13 @@
                                                                 position="bottom"
                                                                 for="next"
                                                         />
+                                                        <c:if test="#{panelModel.parentOrOverview.hasPreviousNext()}">
+                                                            <ui:include src="/panel/header/validationButton.xhtml" >
+                                                                <ui:param name="disabled" value="false"/>
+                                                                <ui:param name="unit" value="#{panelModel.parentOrOverview.unit}"/>
+                                                                <ui:param name="panelModel" value="#{panelModel.parentOrOverview}"/>
+                                                            </ui:include>
+                                                        </c:if>
                                                     </div>
                                                 </h:form>
                         <div style="display: flex;

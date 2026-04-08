@@ -203,13 +203,6 @@
     }
   }
 
-  // Chip
-  .ui-chip {
-    background-color: transparent;
-    color: var(--main-color);
-    border: 1px solid var(--main-color);
-    font-size: 16px;
-  }
 
   // Input fields
   .ui-inputfield {
@@ -324,7 +317,8 @@
     }
 
     .ui-autocomplete-items .ui-autocomplete-item.ui-state-highlight {
-      background: var(--siamois-green-light-350);
+      background: var(--siamois-green-light-200);
+      color: var(--text-main);
     }
   }
 

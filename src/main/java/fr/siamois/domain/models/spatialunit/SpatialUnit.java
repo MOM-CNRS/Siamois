@@ -106,6 +106,9 @@ public class SpatialUnit extends TraceableEntity implements ArkEntity {
     @ColumnTransformer(write = "?::jsonb")
     public FullAddress address;
 
+    @Column(name = "code")
+    public String code;
+
     @ManyToMany(mappedBy = "spatialContext")
     @JsonIgnore
     private Set<ActionUnit> relatedActionUnitList = new HashSet<>();
@@ -150,6 +153,14 @@ public class SpatialUnit extends TraceableEntity implements ArkEntity {
             .vocabulary(SYSTEM_THESO)
             .externalId("4285848")
             .build();
+
+    @Transient
+    @JsonIgnore
+    public static final Concept CODE_CONCEPT = new Concept.Builder()
+            .vocabulary(SYSTEM_THESO)
+            .externalId("")
+            .build();
+
     // address
     @Transient
     @JsonIgnore
@@ -185,6 +196,16 @@ public class SpatialUnit extends TraceableEntity implements ArkEntity {
             .id(2L)
             .valueBinding("name")
             .concept(NAME_CONCEPT)
+            .build();
+
+    @Transient
+    @JsonIgnore
+    public static final CustomFieldText CODE_FIELD =  CustomFieldText.builder()
+            .label("common.label.code")
+            .isSystemField(true)
+            .id(9L)
+            .valueBinding("code")
+            .concept(CODE_CONCEPT)
             .build();
 
     @Transient
@@ -254,6 +275,12 @@ public class SpatialUnit extends TraceableEntity implements ArkEntity {
                                                     .isRequired(true)
                                                     .className(COLUMN_CLASS_NAME)
                                                     .field(SPATIAL_UNIT_TYPE_FIELD)
+                                                    .build())
+                                            .addColumn(new CustomCol.Builder()
+                                                    .readOnly(true)
+                                                    .isRequired(false)
+                                                    .className(COLUMN_CLASS_NAME)
+                                                    .field(CODE_FIELD)
                                                     .build())
                                             .addColumn(new CustomCol.Builder()
                                                     .readOnly(false)
