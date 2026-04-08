@@ -345,6 +345,7 @@ public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
         }
     }
 
+
     protected void applyTreeInsertion(T created, NewUnitContext ctx) {
         // si pas de clickedId => bouton global => root
         ID clickedId = (ctx.getTrigger() != null) ? (ID) ctx.getTrigger().getClickedId() : null;
