@@ -164,6 +164,15 @@ public class ActionUnit extends TraceableEntity implements ArkEntity {
     @Column(name = "min_recording_unit_code")
     protected Integer minRecordingUnitCode;
 
+    /**
+     * This field is set to true when the action unit has children in the institution.
+     * The variable change is triggered when a new row is inserted in action_hierarchy
+     * and when this action_unit's id is the parent.
+     * The trigger trg_after_insert_au_hierarchy executes mark_au_as_not_leaf
+     */
+    @Column(name = "has_childrens", columnDefinition = "boolean default false")
+    protected boolean hasChildrens = false;
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

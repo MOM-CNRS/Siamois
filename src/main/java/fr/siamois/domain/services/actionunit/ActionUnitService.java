@@ -443,7 +443,7 @@ public class ActionUnitService implements ArkEntityService {
      * @return The list of ActionUnit associated with the institution
      */
     public List<ActionUnitDTO> findAllWithoutParentsByInstitution(Long institutionId) {
-        List<ActionUnit> res = actionUnitRepository.findRootsByInstitution(institutionId);
+        List<ActionUnit> res = actionUnitRepository.findRootsByInstitution(institutionId, 50L);
         return res.stream()
                 .map(actionUnitMapper::convert)
                 .toList();

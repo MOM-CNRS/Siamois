@@ -197,15 +197,12 @@ public interface ActionUnitRepository extends CrudRepository<ActionUnit, Long>, 
     @Query(value = """
     SELECT su.*
     FROM action_unit su
-    WHERE su.fk_institution_id = :institutionId
-      AND NOT EXISTS (
-          SELECT 1
-          FROM action_hierarchy h
-          WHERE h.fk_child_id = su.action_unit_id
-      )
+    WHERE su.fk_institution_id = :institutionId AND NOT su.has_childrens
     ORDER BY su.creation_time DESC, su.action_unit_id DESC
+        LIMIT :limit
     """, nativeQuery = true)
-    List<ActionUnit> findRootsByInstitution(@Param("institutionId") Long institutionId);
+    List<ActionUnit> findRootsByInstitution(@Param("institutionId") Long institutionId,
+                                            @Param("limit") Long limit);
 
     @Query(value = """
     SELECT su.*
@@ -279,12 +276,7 @@ public interface ActionUnitRepository extends CrudRepository<ActionUnit, Long>, 
     @Query(value = """
             SELECT COUNT(1) > 0
             FROM action_unit au
-            WHERE au.fk_institution_id = :institutionId
-              AND NOT EXISTS (
-                  SELECT 1
-                  FROM action_hierarchy h
-                  WHERE h.fk_child_id = au.action_unit_id
-              )
+            WHERE au.fk_institution_id = :institutionId AND NOT has_childrens
             """, nativeQuery = true)
     boolean existsRootChildrenByInstitution(@Param("institutionId") Long institutionId);
 
