@@ -513,4 +513,12 @@ public class ActionUnitService implements ArkEntityService {
     public boolean existsRootChildrenByRelatedSpatialUnit(Long spatialUnitId) {
         return actionUnitRepository.existsRootChildrenByRelatedSpatialUnit(spatialUnitId);
     }
+
+    public int countRootsInInstitution(Long institutionId) {
+        return actionUnitRepository.countRootsInInstitution(institutionId);
+    }
+
+    public List<ActionUnit> findRootsByInstitution(Long institutionId, int first, int pageSize) {
+        return actionUnitRepository.findRootsByInstitution(institutionId, first, pageSize);
+    }
 }

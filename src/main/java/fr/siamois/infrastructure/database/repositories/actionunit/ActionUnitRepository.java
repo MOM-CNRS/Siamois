@@ -203,6 +203,17 @@ public interface ActionUnitRepository extends CrudRepository<ActionUnit, Long>, 
     """, nativeQuery = true)
     List<ActionUnit> findRootsByInstitution(@Param("institutionId") Long institutionId,
                                             @Param("limit") Long limit);
+    @Query(value = """
+    SELECT su.*
+    FROM action_unit su
+    WHERE su.fk_institution_id = :institutionId AND NOT su.has_childrens
+    ORDER BY su.creation_time DESC, su.action_unit_id DESC
+        LIMIT :pageSize OFFSET :first
+    """, nativeQuery = true)
+    List<ActionUnit> findRootsByInstitution(@Param("institutionId") Long institutionId,
+                                            @Param("first") int first,
+                                            @Param("pageSize") int pageSize
+                                            );
 
     @Query(value = """
     SELECT su.*
@@ -325,4 +336,12 @@ public interface ActionUnitRepository extends CrudRepository<ActionUnit, Long>, 
             "ORDER BY creation_time DESC, action_unit_id DESC LIMIT 1", nativeQuery = true)
     Optional<ActionUnit> findLast(@Param("instId") Long instId);
 
+    @Query(
+            value = """
+    SELECT COUNT(*)
+    FROM action_unit su
+    WHERE su.fk_institution_id = :institutionId AND NOT su.has_childrens
+"""
+    , nativeQuery = true)
+    int countRootsInInstitution(Long institutionId);
 }

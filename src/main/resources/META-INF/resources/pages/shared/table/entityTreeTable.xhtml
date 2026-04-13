@@ -9,7 +9,8 @@
 
     <custom:rowCountTreeTable id="entityTreeTable"
                  rendered="#{tableModel.treeMode}"
-                 value="#{tableModel.treeRoot}"
+                 lazyDataModel="#{tableModel.lazyMod}"
+                              lazy="true"
                  var="item"
                  nodeVar="node"
                  widgetVar="#{cc.clientId}_entityTreeTable"
@@ -31,8 +32,7 @@
                  style="overflow-x: auto;"
                  tableStyleClass="datatable-hoverable-table"
                  tableStyle="table-layout: auto;"
-                 class="#{tableClass}"
-                 rowCount="500" paginator="true"
+                 class="#{tableClass}" paginator="true"
     >
 
 

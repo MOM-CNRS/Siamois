@@ -2,22 +2,30 @@ package fr.siamois.ui.table;
 
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.services.InstitutionService;
+import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.form.FormService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitTreeService;
 import fr.siamois.dto.entity.ActionUnitDTO;
+import fr.siamois.mapper.ActionUnitMapper;
 import fr.siamois.ui.bean.NavBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
 import fr.siamois.ui.bean.dialog.newunit.GenericNewUnitDialogBean;
 import fr.siamois.ui.bean.dialog.newunit.NewUnitContext;
 import fr.siamois.ui.bean.dialog.newunit.UnitKind;
 import fr.siamois.ui.bean.panel.FlowBean;
+import fr.siamois.ui.custom.TestActionLazyDataModel;
 import fr.siamois.ui.form.FormContextServices;
 import fr.siamois.ui.form.FormUiDto;
 import fr.siamois.ui.lazydatamodel.BaseActionUnitLazyDataModel;
 import fr.siamois.ui.lazydatamodel.tree.ActionUnitTreeTableLazyModel;
+import jakarta.annotation.PostConstruct;
+import jakarta.faces.view.ViewScoped;
 import lombok.Getter;
+import org.primefaces.model.LazyDataModel;
 import org.primefaces.model.TreeNode;
+import org.springframework.context.annotation.Scope;
+import org.springframework.lang.Nullable;
 
 import java.util.List;
 
@@ -44,6 +52,8 @@ public class ActionUnitTableViewModel extends EntityTableViewModel<ActionUnitDTO
 
     private final SessionSettingsBean sessionSettingsBean;
 
+    private final ActionUnitService  actionUnitService;
+    private final ActionUnitMapper actionUnitMapper;
 
 
     public ActionUnitTableViewModel(BaseActionUnitLazyDataModel actionUnitLazyDataModel,
@@ -55,7 +65,7 @@ public class ActionUnitTableViewModel extends EntityTableViewModel<ActionUnitDTO
                                     FlowBean flowBean, GenericNewUnitDialogBean<ActionUnitDTO> genericNewUnitDialogBean,
                                     ActionUnitTreeTableLazyModel treeLazyModel,
                                     InstitutionService institutionService,
-                                    FormContextServices formContextServices) {
+                                    FormContextServices formContextServices, ActionUnitService actionUnitService, ActionUnitMapper actionUnitMapper) {
 
         super(
                 actionUnitLazyDataModel,
@@ -74,6 +84,8 @@ public class ActionUnitTableViewModel extends EntityTableViewModel<ActionUnitDTO
         this.sessionSettingsBean = sessionSettingsBean;
         this.flowBean = flowBean;
         this.institutionService = institutionService;
+        this.actionUnitService = actionUnitService;
+        this.actionUnitMapper = actionUnitMapper;
     }
 
     @Override
@@ -267,4 +279,16 @@ public class ActionUnitTableViewModel extends EntityTableViewModel<ActionUnitDTO
         return treeLazyModel.getRoot();
     }
 
+
+    // ZONE DE TEST ATTENTION ! ATTENTION !
+    @Nullable
+    @Getter
+    private TestActionLazyDataModel lazyDataModelEnMieux;
+
+    public LazyDataModel<TreeNode<ActionUnitDTO>> getLazyMod() {
+        if (lazyDataModelEnMieux == null) {
+            lazyDataModelEnMieux = new TestActionLazyDataModel(flowBean.getSessionSettings().getSelectedInstitution(), actionUnitService, actionUnitMapper);
+        }
+        return lazyDataModelEnMieux;
+    }
 }
