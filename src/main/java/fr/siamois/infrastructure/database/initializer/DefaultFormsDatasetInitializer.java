@@ -29,6 +29,7 @@ public class DefaultFormsDatasetInitializer implements DatabaseInitializer {
     public static final String UI_G_12_UI_MD_6_UI_LG_2 = "ui-g-12 ui-md-6 ui-lg-2";
     public static final String COMMON_HEADER_GENERAL = "common.header.general";
     public static final String UI_G_12_UI_MD_6_UI_LG_3 = "ui-g-12 ui-md-6 ui-lg-3";
+    public static final String UI_G_12_UI_MD_12_UI_LG_12 = "ui-g-12 ui-md-12 ui-lg-12";
     private final ConceptSeeder conceptSeeder;
     private final ThesaurusSeeder thesaurusSeeder;
     private final CustomFieldSeeder customFieldSeeder;
@@ -77,7 +78,9 @@ public class DefaultFormsDatasetInitializer implements DatabaseInitializer {
             new ConceptSeeder.ConceptSpec(DEFAULT_VOCABULARY_ID, "4287636", "Altération", "fr"),
             new ConceptSeeder.ConceptSpec(DEFAULT_VOCABULARY_ID, "4287637", "Composite", "fr"),
             new ConceptSeeder.ConceptSpec(DEFAULT_VOCABULARY_ID, "4287638", "Dépôt", "fr"),
-            new ConceptSeeder.ConceptSpec(DEFAULT_VOCABULARY_ID, "4287639", "Erosion", "fr")
+            new ConceptSeeder.ConceptSpec(DEFAULT_VOCABULARY_ID, "4287639", "Erosion", "fr"),
+            new ConceptSeeder.ConceptSpec(DEFAULT_VOCABULARY_ID, "4289277", "Fait partie de", "fr"),
+            new ConceptSeeder.ConceptSpec(DEFAULT_VOCABULARY_ID, "4289278", "Contient", "fr")
     );
 
     // Default Siamois field
@@ -180,7 +183,8 @@ public class DefaultFormsDatasetInitializer implements DatabaseInitializer {
                     "matrixComposition",
                     null,
                     null,
-                    null
+                    null,
+                    true
             ),
             new CustomFieldSeederSpec(
                     CustomFieldText.class,
@@ -210,7 +214,8 @@ public class DefaultFormsDatasetInitializer implements DatabaseInitializer {
                     "erosionShape",
                     null,
                     null,
-                    null
+                    null,
+                    true
             ),
             new CustomFieldSeederSpec(
                     CustomFieldText.class,
@@ -294,11 +299,21 @@ public class DefaultFormsDatasetInitializer implements DatabaseInitializer {
                     null
             ),
             new CustomFieldSeederSpec(
-                    CustomFieldStratigraphy.class,
+                    CustomFieldSelectMultipleRecordingUnit.class,
                     true,
-                    "recordingunit.field.stratigraphicRelationships",
-                    new ConceptSeeder.ConceptKey(DEFAULT_VOCABULARY_ID, "4287646"),
-                    "relationshipsAsUnit1",
+                    "common.field.parents",
+                    new ConceptSeeder.ConceptKey(DEFAULT_VOCABULARY_ID, "4289277"),
+                    "parents",
+                    null,
+                    null,
+                    null
+            ),
+            new CustomFieldSeederSpec(
+                    CustomFieldSelectMultipleRecordingUnit.class,
+                    true,
+                    "common.field.children",
+                    new ConceptSeeder.ConceptKey(DEFAULT_VOCABULARY_ID, "4289278"),
+                    "children",
                     null,
                     null,
                     null
@@ -352,7 +367,7 @@ public class DefaultFormsDatasetInitializer implements DatabaseInitializer {
             false,
             false,
             fields.get(9),
-            UI_G_12_UI_MD_6_UI_LG_3,
+            UI_G_12_UI_MD_12_UI_LG_12,
             matrixEnabledWhenDTO
     );
 
@@ -369,7 +384,7 @@ public class DefaultFormsDatasetInitializer implements DatabaseInitializer {
             false,
             false,
             fields.get(12),
-            UI_G_12_UI_MD_6_UI_LG_3,
+            UI_G_12_UI_MD_12_UI_LG_12,
             erosionEnabledWhenDTO
     );
 
@@ -494,25 +509,25 @@ public class DefaultFormsDatasetInitializer implements DatabaseInitializer {
                                                             new CustomColDTO(
                                                                     false,
                                                                     true,
-                                                                    fields.get(6),
-                                                                    UI_G_12_UI_MD_6_UI_LG_3
-                                                            ),
-                                                            new CustomColDTO(
-                                                                    false,
-                                                                    false,
-                                                                    fields.get(7),
+                                                                    fields.get(21),
                                                                     UI_G_12_UI_MD_6_UI_LG_3
                                                             ),
                                                             new CustomColDTO(
                                                                     false,
                                                                     true,
-                                                                    fields.get(19),
+                                                                    fields.get(22),
                                                                     UI_G_12_UI_MD_6_UI_LG_3
                                                             ),
                                                             new CustomColDTO(
                                                                     false,
+                                                                    true,
+                                                                    fields.get(3),
+                                                                    UI_G_12_UI_MD_6_UI_LG_3
+                                                            ),
+                                                            new CustomColDTO(
                                                                     false,
-                                                                    fields.get(20),
+                                                                    true,
+                                                                    fields.get(0),
                                                                     UI_G_12_UI_MD_6_UI_LG_3
                                                             )
                                                     )
@@ -521,28 +536,9 @@ public class DefaultFormsDatasetInitializer implements DatabaseInitializer {
                                                     List.of(
                                                             new CustomColDTO(
                                                                     false,
-                                                                    true,
-                                                                    fields.get(3),
-                                                                    UI_G_12_UI_MD_6_UI_LG_2
-                                                            ),
-                                                            new CustomColDTO(
-                                                                    false,
-                                                                    true,
-                                                                    fields.get(0),
-                                                                    UI_G_12_UI_MD_6_UI_LG_3
-                                                            ),
-
-                                                            new CustomColDTO(
-                                                                    false,
-                                                                    false,
-                                                                    fields.get(2),
-                                                                    UI_G_12_UI_MD_6_UI_LG_3
-                                                            ),
-                                                            new CustomColDTO(
-                                                                    false,
                                                                     false,
                                                                     fields.get(18),
-                                                                    "ui-g-12 ui-md-6 ui-lg-4"
+                                                                    UI_G_12_UI_MD_12_UI_LG_12
                                                             )
                                                     )
                                             )),
@@ -550,9 +546,10 @@ public class DefaultFormsDatasetInitializer implements DatabaseInitializer {
                             ),
                             new CustomFormPanelDTO(
                                     "",
-                                    "recordingunit.panel.geomorphology",
+                                    "recordingunit.panel.interpretation",
                                     List.of(new CustomRowDTO(
                                                     List.of(
+
                                                             new CustomColDTO(
                                                                     false,
                                                                     false,
@@ -564,38 +561,25 @@ public class DefaultFormsDatasetInitializer implements DatabaseInitializer {
                                                                     false,
                                                                     fields.get(8),
                                                                     UI_G_12_UI_MD_6_UI_LG_3
+                                                            ),
+                                                            new CustomColDTO(
+                                                                    false,
+                                                                    false,
+                                                                    fields.get(2),
+                                                                    UI_G_12_UI_MD_6_UI_LG_3
                                                             )
                                                     )
                                             ),
                                             new CustomRowDTO(
                                                     List.of(
-                                                            matrixCompositionColDTO,
-                                                            matrixColorColDTO,
-                                                            matrixTextureColDTO
+                                                            matrixCompositionColDTO
                                                     )
                                             ),
                                             new CustomRowDTO(
                                                     List.of(
-                                                            erosionShapeCol,
-                                                            erosionProfileCol,
-                                                            erosionOrientationCol
+                                                            erosionShapeCol
                                                     )
                                             )),
-                                    true
-                            ),
-                            new CustomFormPanelDTO(
-                                    "",
-                                    "recordingunit.panel.stratigraphy",
-                                    List.of(new CustomRowDTO(
-                                            List.of(
-                                                    new CustomColDTO(
-                                                            false,
-                                                            false,
-                                                            fields.get(21),
-                                                            "ui-g-12"
-                                                    )
-                                            )
-                                    )),
                                     true
                             ),
                             new CustomFormPanelDTO(
@@ -623,6 +607,39 @@ public class DefaultFormsDatasetInitializer implements DatabaseInitializer {
                                                     )
                                             )
                                     )),
+                                    true
+                            ),
+                            new CustomFormPanelDTO(
+                                    "",
+                                    COMMON_HEADER_GENERAL,
+                                    List.of(new CustomRowDTO(
+                                                    List.of(
+                                                            new CustomColDTO(
+                                                                    false,
+                                                                    true,
+                                                                    fields.get(19),
+                                                                    UI_G_12_UI_MD_6_UI_LG_3
+                                                            ),
+                                                            new CustomColDTO(
+                                                                    false,
+                                                                    false,
+                                                                    fields.get(20),
+                                                                    UI_G_12_UI_MD_6_UI_LG_3
+                                                            ),
+                                                            new CustomColDTO(
+                                                                    false,
+                                                                    true,
+                                                                    fields.get(6),
+                                                                    UI_G_12_UI_MD_6_UI_LG_3
+                                                            ),
+                                                            new CustomColDTO(
+                                                                    false,
+                                                                    false,
+                                                                    fields.get(7),
+                                                                    UI_G_12_UI_MD_6_UI_LG_3
+                                                            )
+                                                    )
+                                            )),
                                     true
                             )
                     )

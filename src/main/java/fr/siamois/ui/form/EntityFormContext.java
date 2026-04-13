@@ -541,6 +541,18 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
         return Collections.emptyList();
     }
 
+    /**
+     * Get all recording units of the same scope (action unit) as the current unit.
+     *
+     * @return The list of recording units
+     */
+    public List<RecordingUnitSummaryDTO> completeRecordingUnitOptions(String query) {
+        if (unit instanceof RecordingUnitDTO recordingUnit) {
+            return recordingUnitService.findAllByActionUnit(recordingUnit.getActionUnit().getId());
+        }
+        return Collections.emptyList();
+    }
+
 
     public void addStratigraphicRelationship(CustomFieldAnswerStratigraphyViewModel answer,
                                              FacesContext context,

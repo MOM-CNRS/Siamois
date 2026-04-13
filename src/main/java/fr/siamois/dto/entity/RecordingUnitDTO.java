@@ -56,6 +56,7 @@ public class RecordingUnitDTO extends AbstractEntityDTO {
     public List<String> getBindableFieldNames() {
         return List.of("creationTime", "openingDate", "closingDate", "description","identifier",
                 "contributors", "type", "secondaryType", "thirdType", "actionUnit", "spatialUnit",
+                "parents","children",
                 "geomorphologicalCycle", "normalizedInterpretation", "author", "geomorphologicalAgent",
                 "matrixComposition", "matrixColor", "matrixTexture", "erosionShape", "erosionOrientation",
                 "erosionProfile", "taq", "tpq", "chronologicalPhase", "fullIdentifier");

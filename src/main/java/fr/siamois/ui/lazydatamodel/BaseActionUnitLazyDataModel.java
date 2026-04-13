@@ -48,6 +48,4 @@ public abstract class BaseActionUnitLazyDataModel extends BaseLazyDataModel<Acti
         return actionUnit != null ? Long.toString(actionUnit.getId()) : null;
     }
 
-
-
 }

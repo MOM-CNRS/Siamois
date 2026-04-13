@@ -75,7 +75,7 @@ public class ChartresDatasetInitializer implements DatabaseInitializer {
 
         existing = new RecordingUnit();
         if(existing!=null) {
-            //return; // do nothing
+            return; // do nothing
         }
 
 

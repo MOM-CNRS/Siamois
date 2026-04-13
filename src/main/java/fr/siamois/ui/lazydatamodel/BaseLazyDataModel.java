@@ -24,8 +24,6 @@ import java.util.*;
 @Setter
 public abstract class BaseLazyDataModel<T> extends LazyDataModel<T> implements LazyModel {
 
-
-
     @Override
     public int count(Map<String, FilterMeta> map) {
         return 0;
@@ -47,8 +45,6 @@ public abstract class BaseLazyDataModel<T> extends LazyDataModel<T> implements L
     protected abstract String getDefaultSortField();
 
     protected abstract Page<T> loadData(String name, Long[] categoryIds, Long[] personIds, String globalFilter, Pageable pageable);
-
-
 
     // Filters
     private String globalFilter;

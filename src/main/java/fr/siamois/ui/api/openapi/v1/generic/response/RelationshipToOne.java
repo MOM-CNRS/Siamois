@@ -9,4 +9,5 @@ public class RelationshipToOne<T> extends Relationship<T> {
     public RelationshipToOne(T data) {
         super(data);
     }
+
 }
