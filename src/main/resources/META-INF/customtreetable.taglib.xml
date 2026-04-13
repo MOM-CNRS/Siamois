@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<facelet-taglib
+        xmlns="http://java.sun.com/xml/ns/javaee"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-facelettaglibrary_2_2.xsd"
+        version="2.2">
+
+    <!-- Namespace XML pour ton composant personnalisé -->
+    <namespace>http://siamois.fr/jsf/custom</namespace>
+
+    <!-- Déclaration de ton composant personnalisé -->
+    <tag>
+        <!-- Nom de la balise que tu utiliseras dans tes pages XHTML -->
+        <tag-name>rowCountTreeTable</tag-name>
+
+        <!-- Type du composant (doit correspondre à celui déclaré dans faces-config.xml) -->
+        <component>
+            <component-type>fr.siamois.ui.custom.RowCountTreeTable</component-type>
+            <component-class>fr.siamois.ui.custom.RowCountTreeTable</component-class>
+        </component>
+    </tag>
+</facelet-taglib>
