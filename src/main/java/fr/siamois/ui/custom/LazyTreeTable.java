@@ -3,6 +3,8 @@ package fr.siamois.ui.custom;
 import jakarta.faces.context.FacesContext;
 import org.primefaces.component.treetable.TreeTable;
 import org.primefaces.model.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.List;
@@ -10,6 +12,7 @@ import java.util.Map;
 
 public class LazyTreeTable extends TreeTable {
 
+    private static final Logger log = LoggerFactory.getLogger(LazyTreeTable.class);
     private transient TreeNode<?> lazyRoot;
 
     enum PropertyKeys {
@@ -68,14 +71,18 @@ public class LazyTreeTable extends TreeTable {
 
     @Override
     public void setFirst(int first) {
-        super.setFirst(first);
-        clearCache();
+        if (first != this.getFirst()) {
+            super.setFirst(first);
+            clearCache();
+        }
     }
 
     @Override
     public void setRows(int rows) {
-        super.setRows(rows);
-        clearCache();
+        if (rows != this.getRows()) {
+            super.setRows(rows);
+            clearCache();
+        }
     }
 
     @Override
@@ -95,8 +102,13 @@ public class LazyTreeTable extends TreeTable {
 
         if (params.containsKey(clientId + "_pagination")) {
             String firstParam = params.get(clientId + "_first");
+            String rowsParam = params.get(clientId + "_rows");
+
             if (firstParam != null) {
                 super.setFirst(Integer.parseInt(firstParam));
+            }
+            if (rowsParam != null) {
+                super.setRows(Integer.parseInt(rowsParam));
             }
         }
 
@@ -107,6 +119,9 @@ public class LazyTreeTable extends TreeTable {
             int rows = getRows() > 0 ? getRows() : 10;
             int first = getFirst();
 
+            Map<String, SortMeta> sortMetaMap = getSortByAsMap();
+            Map<String, FilterMeta> filterMetaMap = getFilterByAsMap();
+            log.trace("Load appelée avec {} et {}", sortMetaMap, filterMetaMap);
             List<TreeNode<?>> data = lazyModel.load(first, rows, getSortByAsMap(), getFilterByAsMap());
 
             setRowCount(lazyModel.getRowCount());

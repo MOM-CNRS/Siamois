@@ -34,7 +34,7 @@ public class TestActionLazyDataModel extends LazyDataModel<TreeNode<ActionUnitDT
     }
 
     private boolean isLeaf(ActionUnitDTO dto) {
-        return false;
+        return true;
     }
 
     private List<ActionUnitDTO> loadChildrens(ActionUnitDTO parent) {
