@@ -19,12 +19,9 @@ import fr.siamois.ui.form.FormContextServices;
 import fr.siamois.ui.form.FormUiDto;
 import fr.siamois.ui.lazydatamodel.BaseActionUnitLazyDataModel;
 import fr.siamois.ui.lazydatamodel.tree.ActionUnitTreeTableLazyModel;
-import jakarta.annotation.PostConstruct;
-import jakarta.faces.view.ViewScoped;
 import lombok.Getter;
 import org.primefaces.model.LazyDataModel;
 import org.primefaces.model.TreeNode;
-import org.springframework.context.annotation.Scope;
 import org.springframework.lang.Nullable;
 
 import java.util.List;
@@ -284,6 +281,8 @@ public class ActionUnitTableViewModel extends EntityTableViewModel<ActionUnitDTO
     @Nullable
     @Getter
     private TestActionLazyDataModel lazyDataModelEnMieux;
+    @Getter
+    private final Integer defaultPageSize = 10;
 
     public LazyDataModel<TreeNode<ActionUnitDTO>> getLazyMod() {
         if (lazyDataModelEnMieux == null) {

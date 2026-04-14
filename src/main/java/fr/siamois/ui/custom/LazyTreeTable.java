@@ -108,10 +108,11 @@ public class LazyTreeTable extends TreeTable {
             if (rowsParam != null) {
                 super.setRows(Integer.parseInt(rowsParam));
             }
+        } else {
+            super.setFirst(0);
         }
 
         LazyDataModel<TreeNode<?>> lazyModel = getLazyDataModel();
-        lazyRoot = new DefaultTreeNode<>(null, null);
 
         if (lazyModel != null) {
             int rows = getRows() > 0 ? getRows() : 10;
@@ -122,11 +123,13 @@ public class LazyTreeTable extends TreeTable {
             log.trace("Load appelée avec {} et {}", sortMetaMap, filterMetaMap);
             List<TreeNode<?>> data = lazyModel.load(first, rows, getSortByAsMap(), getFilterByAsMap());
 
+            lazyRoot = new RootTreeNode<>();
+
             setRowCount(lazyModel.getRowCount());
 
             if (data != null) {
                 while (lazyRoot.getChildren().size() < first) {
-                    lazyRoot.getChildren().add(new DefaultTreeNode(null, null));
+                    lazyRoot.getChildren().add(new DefaultTreeNode<>(null, null));
                 }
 
                 for (TreeNode elt : data) {

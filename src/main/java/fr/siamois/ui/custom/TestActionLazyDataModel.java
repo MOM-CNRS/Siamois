@@ -1,11 +1,13 @@
 package fr.siamois.ui.custom;
 
-import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.dto.entity.ActionUnitDTO;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.mapper.ActionUnitMapper;
-import org.primefaces.model.*;
+import org.primefaces.model.FilterMeta;
+import org.primefaces.model.LazyDataModel;
+import org.primefaces.model.SortMeta;
+import org.primefaces.model.TreeNode;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -48,7 +50,7 @@ public class TestActionLazyDataModel extends LazyDataModel<TreeNode<ActionUnitDT
         return actionUnitService.findRootsByInstitution(institution.getId(), first, pageSize)
                 .stream()
                 .map(actionUnitMapper::convert)
-                .map(r -> (TreeNode<ActionUnitDTO>) new LazyDefaultTreeNode<>(r, this::loadChildrens, this::isLeaf))
+                .map(r -> (TreeNode<ActionUnitDTO>) new ChildTreeNode<>(r, this::loadChildrens, this::isLeaf))
                 .toList();
     }
 }

@@ -35,4 +35,6 @@ public abstract class AbstractEntityDTO implements Serializable {
     protected OffsetDateTime validatedAt ;
     protected Person validatedBy ;
 
+
+
 }
