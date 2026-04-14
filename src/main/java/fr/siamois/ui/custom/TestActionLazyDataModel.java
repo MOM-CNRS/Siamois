@@ -32,6 +32,11 @@ public class TestActionLazyDataModel extends LazyDataModel<TreeNode<ActionUnitDT
 
     @Override
     public int count(Map<String, FilterMeta> filterBy) {
+        if (filterBy.containsKey("globalFilter")) {
+            String filterValue = (String) filterBy.get("globalFilter").getFilterValue();
+            return actionUnitService.countRootsByInstitutionAndName(institution.getId(), filterValue);
+        }
+
         return actionUnitService.countRootsInInstitution(institution.getId());
     }
 
@@ -47,6 +52,16 @@ public class TestActionLazyDataModel extends LazyDataModel<TreeNode<ActionUnitDT
 
     @Override
     public List<TreeNode<ActionUnitDTO>> load(int first, int pageSize, Map<String, SortMeta> sortBy, Map<String, FilterMeta> filterBy) {
+
+        if (filterBy.containsKey("globalFilter")) {
+            String filterValue = (String) filterBy.get("globalFilter").getFilterValue();
+            return actionUnitService.findRootsByInstitutionAndName(institution.getId(), filterValue,first, pageSize)
+                    .stream()
+                    .map(actionUnitMapper::convert)
+                    .map(r -> (TreeNode<ActionUnitDTO>) new ChildTreeNode<>(r, this::loadChildrens, this::isLeaf))
+                    .toList();
+        }
+
         return actionUnitService.findRootsByInstitution(institution.getId(), first, pageSize)
                 .stream()
                 .map(actionUnitMapper::convert)

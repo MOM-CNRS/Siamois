@@ -521,4 +521,12 @@ public class ActionUnitService implements ArkEntityService {
     public List<ActionUnit> findRootsByInstitution(Long institutionId, int first, int pageSize) {
         return actionUnitRepository.findRootsByInstitution(institutionId, first, pageSize);
     }
+
+    public List<ActionUnit> findRootsByInstitutionAndName(Long institutionId, String name, int first, int pageSize) {
+        return actionUnitRepository.findRootsByInstitutionAndName(institutionId, name, first, pageSize);
+    }
+
+    public int countRootsByInstitutionAndName(Long institutionId, String name) {
+        return actionUnitRepository.countRootsByInstitutionAndName(institutionId, name);
+    }
 }

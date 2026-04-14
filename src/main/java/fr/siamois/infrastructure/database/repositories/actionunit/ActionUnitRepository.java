@@ -218,6 +218,26 @@ public interface ActionUnitRepository extends CrudRepository<ActionUnit, Long>, 
     @Query(value = """
     SELECT su.*
     FROM action_unit su
+    WHERE su.fk_institution_id = :institutionId AND NOT su.has_childrens AND su.name ILIKE concat('%', :name, '%')
+    ORDER BY su.creation_time DESC, su.action_unit_id DESC
+        LIMIT :pageSize OFFSET :first
+    """, nativeQuery = true)
+    List<ActionUnit> findRootsByInstitutionAndName(@Param("institutionId") Long institutionId,
+                                                   @Param("name") String name,
+                                                   @Param("first") int first,
+                                                   @Param("pageSize") int pageSize);
+
+    @Query(value = """
+    SELECT COUNT(*)
+    FROM action_unit su
+    WHERE su.fk_institution_id = :institutionId AND NOT su.has_childrens AND su.name ILIKE concat('%', :name, '%')
+    """, nativeQuery = true)
+    int countRootsByInstitutionAndName(@Param("institutionId") Long institutionId,
+                                                   @Param("name") String name);
+
+    @Query(value = """
+    SELECT su.*
+    FROM action_unit su
     JOIN action_hierarchy h
       ON h.fk_child_id = su.action_unit_id
     WHERE su.fk_institution_id = :institutionId
