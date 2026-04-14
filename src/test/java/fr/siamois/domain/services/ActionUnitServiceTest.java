@@ -20,7 +20,7 @@ import fr.siamois.infrastructure.database.repositories.actionunit.ActionUnitRepo
 import fr.siamois.mapper.ActionUnitMapper;
 import fr.siamois.mapper.ConceptMapper;
 import fr.siamois.mapper.PersonMapper;
-import org.junit.Ignore;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -459,7 +459,7 @@ class ActionUnitServiceTest {
         pageable
         );
     }
-    @Ignore
+    @Disabled
     @Test
     void testFindByTeamMember() {
         // 1. Préparation des données de test

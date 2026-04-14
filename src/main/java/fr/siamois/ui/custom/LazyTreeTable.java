@@ -87,11 +87,9 @@ public class LazyTreeTable extends TreeTable {
 
     @Override
     public void encodeBegin(FacesContext context) throws IOException {
-        clearCache();
         super.encodeBegin(context);
     }
 
-    // 3. Une méthode de chargement ultra-lisible
     @SuppressWarnings({"unchecked", "rawtypes"})
     private void loadLazyData() {
         if (lazyRoot != null) return;
