@@ -74,7 +74,7 @@ public class FormService {
         return optForm.orElseGet(() -> formRepository.findEffectiveFormByTypeAndInstitution(null, institution.getId()).orElse(null));
     }
 
-    // --------- Answer creators (same mapping as in AbstractSingleEntity)
+    // --------- Answer creators
 
     private static final Map<Class<? extends CustomField>, Supplier<? extends CustomFieldAnswer>> ANSWER_CREATORS =
             Map.ofEntries(
@@ -268,14 +268,19 @@ public class FormService {
         } else if (answer instanceof CustomFieldAnswerSelectOneActionUnitViewModel a) {
             return a.getValue();
         } else if (answer instanceof CustomFieldAnswerSelectOneSpatialUnitViewModel a) {
-            // Convert back to place dto (single selection)
-            PlaceSuggestionDTO ans = a.getValue();
-            SpatialUnitSummaryDTO dto = new SpatialUnitSummaryDTO();
-            dto.setId(ans.getId());
-            dto.setName(ans.getName());
-            dto.setCode(ans.getCode());
-            dto.setCategory(ans.getCategory());
-            return dto;
+            if(a.getValue()!=null){
+                // Convert back to place dto (single selection)
+                PlaceSuggestionDTO ans = a.getValue();
+                SpatialUnitSummaryDTO dto = new SpatialUnitSummaryDTO();
+                dto.setId(ans.getId());
+                dto.setName(ans.getName());
+                dto.setCode(ans.getCode());
+                dto.setCategory(ans.getCategory());
+                return dto;
+            } else {
+                return null;
+            }
+
         } else if (answer instanceof CustomFieldAnswerSelectMultipleSpatialUnitTreeViewModel a) {
             // Convert each PlaceSuggestionDTO in the list to SpatialUnitSummaryDTO
             List<PlaceSuggestionDTO> placeSuggestionList = a.getValue();
@@ -295,6 +300,8 @@ public class FormService {
             return a.getValue();
         } else if (answer instanceof CustomFieldAnswerSelectOneAddressViewModel a) {
             return a.getValue();
+        } else if (answer instanceof CustomFieldAnswerSelectMultipleRecordingUnitViewModel a) {
+            return new HashSet<>(a.getValue());
         }
 
         return null;

@@ -42,6 +42,9 @@ public abstract class AbstractSingleMultiHierarchicalEntityPanel<T extends Abstr
     }
 
     private void findPathsRecursively(Long unitId, List<T> currentPath, List<List<T>> allPaths) {
+
+        // TODO : prevent infinite cycle
+
         List<T> parents = findDirectParentsOf(unitId);
 
         if (parents == null || parents.isEmpty()) {

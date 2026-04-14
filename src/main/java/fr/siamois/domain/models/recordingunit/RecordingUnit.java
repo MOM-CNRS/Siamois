@@ -121,6 +121,15 @@ public class RecordingUnit extends RecordingUnitParent implements ArkEntity, Ref
     @FieldCode
     public static final String STRATI_FIELD_CODE = "SIARU.STRATI";
 
+    @FieldCode
+    public static final String EROSION_SHAPE_FIELD_CODE = "SIARU.EROSIONSHAPE";
+
+    @FieldCode
+    public static final String EROSION_PROFILE_FIELD_CODE = "SIARU.EROSIONPROFILE";
+
+    @FieldCode
+    public static final String EROSION_ORIENTATION_FIELD_CODE = "SIARU.EROSIONORIENTATION";
+
     // Setters/Removers
     @Override
     public void setFormResponse(CustomFormResponse formResponse) {

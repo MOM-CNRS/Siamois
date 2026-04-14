@@ -4,6 +4,7 @@ import fr.siamois.domain.models.exceptions.database.DatabaseDataInitException;
 import fr.siamois.domain.models.form.customfield.*;
 import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerSelectOneFromFieldCode;
 import fr.siamois.domain.models.form.formscope.FormScope;
+import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.vocabulary.Vocabulary;
 import fr.siamois.infrastructure.database.initializer.seeder.ConceptSeeder;
 import fr.siamois.infrastructure.database.initializer.seeder.ThesaurusSeeder;
@@ -49,7 +50,7 @@ public class DefaultFormsDatasetInitializer implements DatabaseInitializer {
 
             // Champs
             new ConceptSeeder.ConceptSpec(DEFAULT_VOCABULARY_ID, "4287605", "Type d'unité", "fr"),
-            new ConceptSeeder.ConceptSpec(DEFAULT_VOCABULARY_ID, "4287606", "Cycle géomorphologique", "fr"),
+            new ConceptSeeder.ConceptSpec(DEFAULT_VOCABULARY_ID, "4287606", "Nature", "fr"),
             new ConceptSeeder.ConceptSpec(DEFAULT_VOCABULARY_ID, "4286197", "Interprétation normalisée", "fr"),
             new ConceptSeeder.ConceptSpec(DEFAULT_VOCABULARY_ID, "4287629", "Subdivision", "fr"),
             new ConceptSeeder.ConceptSpec(DEFAULT_VOCABULARY_ID, "4287627", "Unité élémentaire", "fr"),
@@ -73,14 +74,28 @@ public class DefaultFormsDatasetInitializer implements DatabaseInitializer {
             new ConceptSeeder.ConceptSpec(DEFAULT_VOCABULARY_ID, "4286198", "Date d'ouverture", "fr"),
             new ConceptSeeder.ConceptSpec(DEFAULT_VOCABULARY_ID, "4286199", "Date de fermeture", "fr"),
             new ConceptSeeder.ConceptSpec(DEFAULT_VOCABULARY_ID, "4287646", "Relation stratigrahique", "fr"),
+            new ConceptSeeder.ConceptSpec(DEFAULT_VOCABULARY_ID, "4289277", "Fait partie de", "fr"),
+            new ConceptSeeder.ConceptSpec(DEFAULT_VOCABULARY_ID, "4289278", "Contient", "fr"),
+            new ConceptSeeder.ConceptSpec(DEFAULT_VOCABULARY_ID, "4289279", "Commentaires", "fr"),
 
             // Réponses de champs
             new ConceptSeeder.ConceptSpec(DEFAULT_VOCABULARY_ID, "4287636", "Altération", "fr"),
             new ConceptSeeder.ConceptSpec(DEFAULT_VOCABULARY_ID, "4287637", "Composite", "fr"),
             new ConceptSeeder.ConceptSpec(DEFAULT_VOCABULARY_ID, "4287638", "Dépôt", "fr"),
-            new ConceptSeeder.ConceptSpec(DEFAULT_VOCABULARY_ID, "4287639", "Erosion", "fr"),
-            new ConceptSeeder.ConceptSpec(DEFAULT_VOCABULARY_ID, "4289277", "Fait partie de", "fr"),
-            new ConceptSeeder.ConceptSpec(DEFAULT_VOCABULARY_ID, "4289278", "Contient", "fr")
+            new ConceptSeeder.ConceptSpec(DEFAULT_VOCABULARY_ID, "4287639", "Erosion", "fr")
+
+    );
+
+    CustomFieldSeederSpec notesFields = new CustomFieldSeederSpec(
+            CustomFieldText.class,
+            true,
+            "common.field.comments",
+            new ConceptSeeder.ConceptKey(DEFAULT_VOCABULARY_ID, "4289279"),
+            "comments",
+            null,
+            null,
+            null,
+            true
     );
 
     // Default Siamois field
@@ -207,35 +222,35 @@ public class DefaultFormsDatasetInitializer implements DatabaseInitializer {
                     null
             ),
             new CustomFieldSeederSpec(
-                    CustomFieldText.class,
+                    CustomFieldSelectOneFromFieldCode.class,
                     true,
                     "recordingunit.field.erosionShape",
                     new ConceptSeeder.ConceptKey(DEFAULT_VOCABULARY_ID, "4287641"),
                     "erosionShape",
                     null,
                     null,
-                    null,
-                    true
+                    RecordingUnit.EROSION_SHAPE_FIELD_CODE,
+                    false
             ),
             new CustomFieldSeederSpec(
-                    CustomFieldText.class,
+                    CustomFieldSelectOneFromFieldCode.class,
                     true,
                     "recordingunit.field.erosionProfile",
                     new ConceptSeeder.ConceptKey(DEFAULT_VOCABULARY_ID, "4287642"),
                     "erosionProfile",
                     null,
                     null,
-                    null
+                    RecordingUnit.EROSION_PROFILE_FIELD_CODE
             ),
             new CustomFieldSeederSpec(
-                    CustomFieldText.class,
+                    CustomFieldSelectOneFromFieldCode.class,
                     true,
                     "recordingunit.field.erosionOrientation",
                     new ConceptSeeder.ConceptKey(DEFAULT_VOCABULARY_ID, "4287643"),
                     "erosionOrientation",
                     null,
                     null,
-                    null
+                    RecordingUnit.EROSION_ORIENTATION_FIELD_CODE
             ),
             new CustomFieldSeederSpec(
                     CustomFieldSelectOneFromFieldCode.class,
@@ -317,7 +332,8 @@ public class DefaultFormsDatasetInitializer implements DatabaseInitializer {
                     null,
                     null,
                     null
-            )
+            ),
+            notesFields
     );
 
 
@@ -384,7 +400,7 @@ public class DefaultFormsDatasetInitializer implements DatabaseInitializer {
             false,
             false,
             fields.get(12),
-            UI_G_12_UI_MD_12_UI_LG_12,
+            UI_G_12_UI_MD_6_UI_LG_3,
             erosionEnabledWhenDTO
     );
 
@@ -529,27 +545,7 @@ public class DefaultFormsDatasetInitializer implements DatabaseInitializer {
                                                                     true,
                                                                     fields.get(0),
                                                                     UI_G_12_UI_MD_6_UI_LG_3
-                                                            )
-                                                    )
-                                            ),
-                                            new CustomRowDTO(
-                                                    List.of(
-                                                            new CustomColDTO(
-                                                                    false,
-                                                                    false,
-                                                                    fields.get(18),
-                                                                    UI_G_12_UI_MD_12_UI_LG_12
-                                                            )
-                                                    )
-                                            )),
-                                    true
-                            ),
-                            new CustomFormPanelDTO(
-                                    "",
-                                    "recordingunit.panel.interpretation",
-                                    List.of(new CustomRowDTO(
-                                                    List.of(
-
+                                                            ),
                                                             new CustomColDTO(
                                                                     false,
                                                                     false,
@@ -572,14 +568,32 @@ public class DefaultFormsDatasetInitializer implements DatabaseInitializer {
                                             ),
                                             new CustomRowDTO(
                                                     List.of(
-                                                            matrixCompositionColDTO
+                                                            erosionShapeCol,
+                                                            erosionProfileCol,
+                                                            erosionOrientationCol
                                                     )
                                             ),
                                             new CustomRowDTO(
                                                     List.of(
-                                                            erosionShapeCol
+                                                            new CustomColDTO(
+                                                                    false,
+                                                                    false,
+                                                                    fields.get(18),
+                                                                    UI_G_12_UI_MD_12_UI_LG_12
+                                                            )
                                                     )
-                                            )),
+                                            ),
+                                            new CustomRowDTO(
+                                                    List.of(
+                                                            new CustomColDTO(
+                                                                    false,
+                                                                    false,
+                                                                    notesFields,
+                                                                    UI_G_12_UI_MD_12_UI_LG_12
+                                                            )
+                                                    )
+                                            )
+                                            ),
                                     true
                             ),
                             new CustomFormPanelDTO(
@@ -611,7 +625,7 @@ public class DefaultFormsDatasetInitializer implements DatabaseInitializer {
                             ),
                             new CustomFormPanelDTO(
                                     "",
-                                    COMMON_HEADER_GENERAL,
+                                    "common.header.metadata",
                                     List.of(new CustomRowDTO(
                                                     List.of(
                                                             new CustomColDTO(

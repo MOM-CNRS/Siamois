@@ -56,9 +56,6 @@ public class RecordingUnitControllerApi {
                 .matrixComposition(ru.getMatrixComposition())
                 .matrixColor(ru.getMatrixColor())
                 .matrixTexture(ru.getMatrixTexture())
-                .erosionShape(ru.getErosionShape())
-                .erosionOrientation(ru.getErosionOrientation())
-                .erosionProfile(ru.getErosionProfile())
                 .taq(ru.getTaq())
                 .tpq(ru.getTpq())
                 .build();

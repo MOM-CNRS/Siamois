@@ -744,6 +744,7 @@ public class RecordingUnitService implements ArkEntityService {
      */
     @Transactional(readOnly = true)
     public List<RecordingUnitDTO> findDirectParentsOf(Long id) {
+
         return recordingUnitRepository.findParentsOf(id).stream()
                 .map(unit -> conversionService.convert(unit, RecordingUnitDTO.class))
                 .toList();

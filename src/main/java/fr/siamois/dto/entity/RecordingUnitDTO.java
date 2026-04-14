@@ -32,6 +32,7 @@ public class RecordingUnitDTO extends AbstractEntityDTO {
     private String description;
     private List<PersonDTO> contributors = new ArrayList<>();
     private SpatialUnitSummaryDTO spatialUnit;
+    protected String comments;
     private Set<StratigraphicRelationshipDTO> relationshipsAsUnit1 = new HashSet<>();
     private Set<StratigraphicRelationshipDTO> relationshipsAsUnit2 = new HashSet<>();
 
@@ -56,7 +57,7 @@ public class RecordingUnitDTO extends AbstractEntityDTO {
     public List<String> getBindableFieldNames() {
         return List.of("creationTime", "openingDate", "closingDate", "description","identifier",
                 "contributors", "type", "secondaryType", "thirdType", "actionUnit", "spatialUnit",
-                "parents","children",
+                "parents","children", "comments",
                 "geomorphologicalCycle", "normalizedInterpretation", "author", "geomorphologicalAgent",
                 "matrixComposition", "matrixColor", "matrixTexture", "erosionShape", "erosionOrientation",
                 "erosionProfile", "taq", "tpq", "chronologicalPhase", "fullIdentifier");
