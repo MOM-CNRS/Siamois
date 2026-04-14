@@ -41,7 +41,6 @@ public class LazyTreeTable extends TreeTable {
     @Override
     public int getRowCount() {
         if (isLazy()) {
-            loadLazyData();
             return (Integer) getStateHelper().eval(PropertyKeys.rowCount, 0);
         }
         return super.getRowCount();
@@ -55,7 +54,6 @@ public class LazyTreeTable extends TreeTable {
     @Override
     public TreeNode getValue() {
         if (isLazy()) {
-            loadLazyData();
             return lazyRoot;
         }
         return super.getValue();
@@ -125,7 +123,7 @@ public class LazyTreeTable extends TreeTable {
 
             lazyRoot = new RootTreeNode<>();
 
-            setRowCount(lazyModel.getRowCount());
+            setRowCount(lazyModel.count(filterMetaMap));
 
             if (data != null) {
                 while (lazyRoot.getChildren().size() < first) {
@@ -138,4 +136,11 @@ public class LazyTreeTable extends TreeTable {
             }
         }
     }
+
+    @Override
+    protected void preEncode(FacesContext context) {
+        loadLazyData();
+        super.preEncode(context);
+    }
+
 }
