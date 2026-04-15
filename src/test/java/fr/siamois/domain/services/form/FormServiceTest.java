@@ -105,6 +105,7 @@ class FormServiceTest {
         private PersonDTO person;
         private List<PersonDTO> personList;
         private Set<SpatialUnitSummaryDTO> spatialUnitSet;
+        private Set<SpatialUnitSummaryDTO> spatialUnitSetNull;
 
         public List<String> getBindableFieldNames() {
             return List.of(
@@ -193,6 +194,14 @@ class FormServiceTest {
 
         public void setSpatialUnitSet(Set<SpatialUnitSummaryDTO> spatialUnitSet) {
             this.spatialUnitSet = spatialUnitSet;
+        }
+
+        public Set<SpatialUnitSummaryDTO> getSpatialUnitSetNull() {
+            return spatialUnitSetNull;
+        }
+
+        public void setSpatialUnitSetNull(Set<SpatialUnitSummaryDTO> spatialUnitSetNull) {
+            this.spatialUnitSetNull = spatialUnitSetNull;
         }
     }
 
@@ -399,6 +408,7 @@ class FormServiceTest {
         CustomField personField = mockSystemField(true, "person");
         CustomField personListField = mockSystemField(true, "personList");
         CustomField spatialUnitSetField = mockSystemField(true, "spatialUnitSet");
+        CustomField spatialUnitSetFieldNull = mockSystemField(true, "spatialUnitSetNull");
 
         // Mock answers for all supported types
         CustomFieldAnswerTextViewModel  titleAnswer = new CustomFieldAnswerTextViewModel();
@@ -447,6 +457,9 @@ class FormServiceTest {
         CustomFieldAnswerSelectMultipleSpatialUnitTreeViewModel spatialUnitSetAnswer = new CustomFieldAnswerSelectMultipleSpatialUnitTreeViewModel();
         spatialUnitSetAnswer.setValue(spatialUnitSet);
 
+        CustomFieldAnswerSelectMultipleSpatialUnitTreeViewModel spatialUnitSetAnswerNull = new CustomFieldAnswerSelectMultipleSpatialUnitTreeViewModel();
+        spatialUnitSetAnswerNull.setValue(null);
+
         // Create a response with all answers
         CustomFormResponseViewModel response = new CustomFormResponseViewModel();
         Map<CustomField, CustomFieldAnswerViewModel > answers = new HashMap<>();
@@ -460,6 +473,7 @@ class FormServiceTest {
         answers.put(personField, personAnswer);
         answers.put(personListField, personListAnswer);
         answers.put(spatialUnitSetField, spatialUnitSetAnswer);
+        answers.put(spatialUnitSetFieldNull, spatialUnitSetAnswerNull);
         response.setAnswers(answers);
 
         // Act: Update the JPA entity from the response
@@ -476,6 +490,7 @@ class FormServiceTest {
         assertEquals(person, entity.getPerson());
         assertEquals(personList, entity.getPersonList());
         assertEquals(2, entity.getSpatialUnitSet().size());
+        assertNull(entity.getSpatialUnitSetNull());
     }
 
 
