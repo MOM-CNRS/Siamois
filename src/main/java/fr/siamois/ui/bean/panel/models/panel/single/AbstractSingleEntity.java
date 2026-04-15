@@ -215,7 +215,7 @@ public abstract class AbstractSingleEntity<T extends AbstractEntityDTO>
     }
 
     public boolean isColumnEnabled(CustomField field) {
-        return formContext != null && formContext.isColumnEnabled(field);
+        return formContext != null && field != null && formContext.isColumnEnabled(field);
     }
 
     // -------------------- Auto-generation -----------------

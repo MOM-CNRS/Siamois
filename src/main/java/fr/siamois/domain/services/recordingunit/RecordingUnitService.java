@@ -210,6 +210,7 @@ public class RecordingUnitService implements ArkEntityService {
         managedRecordingUnit.setErosionOrientation(recordingUnit.getErosionOrientation());
         managedRecordingUnit.setErosionProfile(recordingUnit.getErosionProfile());
         managedRecordingUnit.setErosionShape(recordingUnit.getErosionShape());
+        managedRecordingUnit.setComments(recordingUnit.getComments());
 
         if (managedRecordingUnit.getCreatedBy() == null) {
             managedRecordingUnit.setCreatedBy(recordingUnit.getCreatedBy());

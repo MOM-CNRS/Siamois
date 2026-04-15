@@ -22,6 +22,9 @@
 
     <cc:implementation>
         <p:outputPanel id="inplace">
+
+            #{cc.attrs.answer}
+
             <!-- ===== MODE DISPLAY ===== -->
             <h:panelGroup rendered="#{cc.attrs.mode ne 'input'}">
                 <p:inputText value="#{cc.attrs.answer.value}"

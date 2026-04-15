@@ -1,8 +1,9 @@
 package fr.siamois.dto.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.dto.StratigraphicRelationshipDTO;
-import jakarta.persistence.Transient;
+import jakarta.persistence.*;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
@@ -26,15 +27,25 @@ public class RecordingUnitDTO extends AbstractEntityDTO {
     private Set<RecordingUnitSummaryDTO> children= new HashSet<>();
     private OffsetDateTime openingDate;
     private OffsetDateTime closingDate;
+    private ConceptDTO geomorphologicalCycle;
+    private ConceptDTO geomorphologicalAgent;
+    private ConceptDTO normalizedInterpretation;
     private Set<SpecimenSummaryDTO> specimenList = new HashSet<>();
     private Long specimenCount;
     private PersonDTO author;
     private String description;
     private List<PersonDTO> contributors = new ArrayList<>();
     private SpatialUnitSummaryDTO spatialUnit;
-    protected String comments;
+    private String comments;
     private Set<StratigraphicRelationshipDTO> relationshipsAsUnit1 = new HashSet<>();
     private Set<StratigraphicRelationshipDTO> relationshipsAsUnit2 = new HashSet<>();
+    private Integer taq;
+    private Integer tpq;
+    private ConceptDTO chronologicalPhase;
+    private ConceptDTO erosionShape;
+    private ConceptDTO erosionOrientation;
+    private ConceptDTO erosionProfile;
+
 
     public RecordingUnitDTO(RecordingUnitDTO original) {
         type = original.getType();
