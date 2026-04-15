@@ -30,6 +30,7 @@ import java.time.ZoneOffset;
 import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 /**
  * Stateless service containing reusable form logic:
@@ -293,7 +294,7 @@ public class FormService {
                         dto.setCategory(place.getCategory());
                         return dto;
                     })
-                    .toList();
+                    .collect(Collectors.toSet());
         } else if (answer instanceof CustomFieldAnswerSelectOneActionCodeViewModel a) {
             return a.getValue();
         } else if (answer instanceof CustomFieldAnswerIntegerViewModel a) {

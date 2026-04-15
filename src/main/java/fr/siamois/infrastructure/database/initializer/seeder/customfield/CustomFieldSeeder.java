@@ -47,14 +47,13 @@ public class CustomFieldSeeder {
             // Check if concept exists
             Concept c = conceptSeeder.findConceptOrThrow(s.conceptKey());
 
-            CustomField f = findFieldOrReturnNull(s,c);
-
+            CustomField field = findFieldOrReturnNull(s,c);
+            if(field == null) {
+                CustomField f = null;
                 try {
-                    if(f==null) {
-                        f = s.answerClass()
-                                .getDeclaredConstructor()
-                                .newInstance();
-                    }
+                    f = s.answerClass()
+                            .getDeclaredConstructor()
+                            .newInstance();
                 } catch (InstantiationException | IllegalAccessException | InvocationTargetException |
                          NoSuchMethodException e) {
                     throw new DatabaseDataInitException(e.getMessage(), e.getCause());
@@ -82,7 +81,7 @@ public class CustomFieldSeeder {
 
                 customFieldRepository.save(f);
             }
-
+        }
     }
 
 }

@@ -104,7 +104,7 @@ class FormServiceTest {
         private ActionCodeDTO actionCode;
         private PersonDTO person;
         private List<PersonDTO> personList;
-        private List<SpatialUnitSummaryDTO> spatialUnitSet;
+        private Set<SpatialUnitSummaryDTO> spatialUnitSet;
 
         public List<String> getBindableFieldNames() {
             return List.of(
@@ -187,11 +187,11 @@ class FormServiceTest {
             this.personList = personList;
         }
 
-        public List<SpatialUnitSummaryDTO> getSpatialUnitSet() {
+        public Set<SpatialUnitSummaryDTO> getSpatialUnitSet() {
             return spatialUnitSet;
         }
 
-        public void setSpatialUnitSet(List<SpatialUnitSummaryDTO> spatialUnitSet) {
+        public void setSpatialUnitSet(Set<SpatialUnitSummaryDTO> spatialUnitSet) {
             this.spatialUnitSet = spatialUnitSet;
         }
     }
@@ -438,7 +438,12 @@ class FormServiceTest {
         CustomFieldAnswerSelectMultiplePersonViewModel  personListAnswer = new CustomFieldAnswerSelectMultiplePersonViewModel();
         personListAnswer.setValue(personList);
 
-        List<PlaceSuggestionDTO> spatialUnitSet = List.of(mock(PlaceSuggestionDTO.class), mock(PlaceSuggestionDTO.class));
+        List<PlaceSuggestionDTO> spatialUnitSet = List.of(
+                mock(PlaceSuggestionDTO.class),
+                mock(PlaceSuggestionDTO.class)
+        );
+        when(spatialUnitSet.get(0).getName()).thenReturn("Place 1");
+        when(spatialUnitSet.get(1).getName()).thenReturn("Place 2");
         CustomFieldAnswerSelectMultipleSpatialUnitTreeViewModel spatialUnitSetAnswer = new CustomFieldAnswerSelectMultipleSpatialUnitTreeViewModel();
         spatialUnitSetAnswer.setValue(spatialUnitSet);
 
@@ -613,7 +618,7 @@ class FormServiceTest {
         personList.add(person2);
         entity.setPersonList(personList);
 
-        List<SpatialUnitSummaryDTO> spatialUnitSet = List.of(mock(SpatialUnitSummaryDTO.class), mock(SpatialUnitSummaryDTO.class));
+        Set<SpatialUnitSummaryDTO> spatialUnitSet = Set.of(mock(SpatialUnitSummaryDTO.class), mock(SpatialUnitSummaryDTO.class));
         entity.setSpatialUnitSet(spatialUnitSet);
 
         // Mock the label bean to return a label for the concept
