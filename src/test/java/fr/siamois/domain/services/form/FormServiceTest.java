@@ -3,6 +3,7 @@ package fr.siamois.domain.services.form;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.customfield.CustomFieldStratigraphy;
+import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerSelectOneSpatialUnit;
 import fr.siamois.domain.models.form.customform.CustomForm;
 import fr.siamois.domain.models.form.customform.EnabledWhenJson;
 import fr.siamois.domain.models.institution.Institution;
@@ -105,13 +106,14 @@ class FormServiceTest {
         private PersonDTO person;
         private List<PersonDTO> personList;
         private Set<SpatialUnitSummaryDTO> spatialUnitSet;
-        private Set<SpatialUnitSummaryDTO> spatialUnitSetNull;
+        private SpatialUnitSummaryDTO spatialUnitNull;
+        private Set<RecordingUnitSummaryDTO> parents;
 
         public List<String> getBindableFieldNames() {
             return List.of(
                     "title", "count", "createdAt", "typeConcept",
-                    "actionUnit", "spatialUnit", "actionCode",
-                    "person", "personList", "spatialUnitSet"
+                    "actionUnit", "spatialUnit", "actionCode","recordingUnitParents",
+                    "person", "personList", "spatialUnitSet", "spatialUnitNull"
             );
         }
 
@@ -196,12 +198,12 @@ class FormServiceTest {
             this.spatialUnitSet = spatialUnitSet;
         }
 
-        public Set<SpatialUnitSummaryDTO> getSpatialUnitSetNull() {
-            return spatialUnitSetNull;
+        public SpatialUnitSummaryDTO getSpatialUnitNull() {
+            return spatialUnitNull;
         }
 
-        public void setSpatialUnitSetNull(Set<SpatialUnitSummaryDTO> spatialUnitSetNull) {
-            this.spatialUnitSetNull = spatialUnitSetNull;
+        public void setSpatialUnitNull(SpatialUnitSummaryDTO spatialUnitNull) {
+            this.spatialUnitNull = spatialUnitNull;
         }
     }
 
@@ -408,7 +410,8 @@ class FormServiceTest {
         CustomField personField = mockSystemField(true, "person");
         CustomField personListField = mockSystemField(true, "personList");
         CustomField spatialUnitSetField = mockSystemField(true, "spatialUnitSet");
-        CustomField spatialUnitSetFieldNull = mockSystemField(true, "spatialUnitSetNull");
+        CustomField spatialUnitFieldNull = mockSystemField(true, "spatialUnitNull");
+        CustomField recordingUnitParentsField = mockSystemField(true, "recordingUnitParents");
 
         // Mock answers for all supported types
         CustomFieldAnswerTextViewModel  titleAnswer = new CustomFieldAnswerTextViewModel();
@@ -457,8 +460,11 @@ class FormServiceTest {
         CustomFieldAnswerSelectMultipleSpatialUnitTreeViewModel spatialUnitSetAnswer = new CustomFieldAnswerSelectMultipleSpatialUnitTreeViewModel();
         spatialUnitSetAnswer.setValue(spatialUnitSet);
 
-        CustomFieldAnswerSelectMultipleSpatialUnitTreeViewModel spatialUnitSetAnswerNull = new CustomFieldAnswerSelectMultipleSpatialUnitTreeViewModel();
-        spatialUnitSetAnswerNull.setValue(null);
+        CustomFieldAnswerSelectOneSpatialUnitViewModel spatialUnitAnswerNull = new CustomFieldAnswerSelectOneSpatialUnitViewModel();
+        spatialUnitAnswerNull.setValue(null);
+
+        CustomFieldAnswerSelectMultipleRecordingUnitViewModel recordingAnswer = new CustomFieldAnswerSelectMultipleRecordingUnitViewModel();
+        recordingAnswer.setValue(List.of(new RecordingUnitSummaryDTO()));
 
         // Create a response with all answers
         CustomFormResponseViewModel response = new CustomFormResponseViewModel();
@@ -473,7 +479,8 @@ class FormServiceTest {
         answers.put(personField, personAnswer);
         answers.put(personListField, personListAnswer);
         answers.put(spatialUnitSetField, spatialUnitSetAnswer);
-        answers.put(spatialUnitSetFieldNull, spatialUnitSetAnswerNull);
+        answers.put(spatialUnitFieldNull, spatialUnitAnswerNull);
+        answers.put(recordingUnitParentsField, recordingAnswer);
         response.setAnswers(answers);
 
         // Act: Update the JPA entity from the response
@@ -490,7 +497,7 @@ class FormServiceTest {
         assertEquals(person, entity.getPerson());
         assertEquals(personList, entity.getPersonList());
         assertEquals(2, entity.getSpatialUnitSet().size());
-        assertNull(entity.getSpatialUnitSetNull());
+        assertNull(entity.getSpatialUnitNull());
     }
 
 
