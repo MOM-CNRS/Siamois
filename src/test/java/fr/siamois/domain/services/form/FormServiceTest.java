@@ -104,13 +104,14 @@ class FormServiceTest {
         private ActionCodeDTO actionCode;
         private PersonDTO person;
         private List<PersonDTO> personList;
-        private List<SpatialUnitSummaryDTO> spatialUnitSet;
+        private Set<SpatialUnitSummaryDTO> spatialUnitSet;
+        private SpatialUnitSummaryDTO spatialUnitNull;
 
         public List<String> getBindableFieldNames() {
             return List.of(
                     "title", "count", "createdAt", "typeConcept",
-                    "actionUnit", "spatialUnit", "actionCode",
-                    "person", "personList", "spatialUnitSet"
+                    "actionUnit", "spatialUnit", "actionCode","recordingUnitParents",
+                    "person", "personList", "spatialUnitSet", "spatialUnitNull"
             );
         }
 
@@ -187,12 +188,20 @@ class FormServiceTest {
             this.personList = personList;
         }
 
-        public List<SpatialUnitSummaryDTO> getSpatialUnitSet() {
+        public Set<SpatialUnitSummaryDTO> getSpatialUnitSet() {
             return spatialUnitSet;
         }
 
-        public void setSpatialUnitSet(List<SpatialUnitSummaryDTO> spatialUnitSet) {
+        public void setSpatialUnitSet(Set<SpatialUnitSummaryDTO> spatialUnitSet) {
             this.spatialUnitSet = spatialUnitSet;
+        }
+
+        public SpatialUnitSummaryDTO getSpatialUnitNull() {
+            return spatialUnitNull;
+        }
+
+        public void setSpatialUnitNull(SpatialUnitSummaryDTO spatialUnitNull) {
+            this.spatialUnitNull = spatialUnitNull;
         }
     }
 
@@ -399,6 +408,8 @@ class FormServiceTest {
         CustomField personField = mockSystemField(true, "person");
         CustomField personListField = mockSystemField(true, "personList");
         CustomField spatialUnitSetField = mockSystemField(true, "spatialUnitSet");
+        CustomField spatialUnitFieldNull = mockSystemField(true, "spatialUnitNull");
+        CustomField recordingUnitParentsField = mockSystemField(true, "recordingUnitParents");
 
         // Mock answers for all supported types
         CustomFieldAnswerTextViewModel  titleAnswer = new CustomFieldAnswerTextViewModel();
@@ -438,9 +449,20 @@ class FormServiceTest {
         CustomFieldAnswerSelectMultiplePersonViewModel  personListAnswer = new CustomFieldAnswerSelectMultiplePersonViewModel();
         personListAnswer.setValue(personList);
 
-        List<PlaceSuggestionDTO> spatialUnitSet = List.of(mock(PlaceSuggestionDTO.class), mock(PlaceSuggestionDTO.class));
+        List<PlaceSuggestionDTO> spatialUnitSet = List.of(
+                mock(PlaceSuggestionDTO.class),
+                mock(PlaceSuggestionDTO.class)
+        );
+        when(spatialUnitSet.get(0).getName()).thenReturn("Place 1");
+        when(spatialUnitSet.get(1).getName()).thenReturn("Place 2");
         CustomFieldAnswerSelectMultipleSpatialUnitTreeViewModel spatialUnitSetAnswer = new CustomFieldAnswerSelectMultipleSpatialUnitTreeViewModel();
         spatialUnitSetAnswer.setValue(spatialUnitSet);
+
+        CustomFieldAnswerSelectOneSpatialUnitViewModel spatialUnitAnswerNull = new CustomFieldAnswerSelectOneSpatialUnitViewModel();
+        spatialUnitAnswerNull.setValue(null);
+
+        CustomFieldAnswerSelectMultipleRecordingUnitViewModel recordingAnswer = new CustomFieldAnswerSelectMultipleRecordingUnitViewModel();
+        recordingAnswer.setValue(List.of(new RecordingUnitSummaryDTO()));
 
         // Create a response with all answers
         CustomFormResponseViewModel response = new CustomFormResponseViewModel();
@@ -455,6 +477,8 @@ class FormServiceTest {
         answers.put(personField, personAnswer);
         answers.put(personListField, personListAnswer);
         answers.put(spatialUnitSetField, spatialUnitSetAnswer);
+        answers.put(spatialUnitFieldNull, spatialUnitAnswerNull);
+        answers.put(recordingUnitParentsField, recordingAnswer);
         response.setAnswers(answers);
 
         // Act: Update the JPA entity from the response
@@ -471,6 +495,7 @@ class FormServiceTest {
         assertEquals(person, entity.getPerson());
         assertEquals(personList, entity.getPersonList());
         assertEquals(2, entity.getSpatialUnitSet().size());
+        assertNull(entity.getSpatialUnitNull());
     }
 
 
@@ -613,7 +638,7 @@ class FormServiceTest {
         personList.add(person2);
         entity.setPersonList(personList);
 
-        List<SpatialUnitSummaryDTO> spatialUnitSet = List.of(mock(SpatialUnitSummaryDTO.class), mock(SpatialUnitSummaryDTO.class));
+        Set<SpatialUnitSummaryDTO> spatialUnitSet = Set.of(mock(SpatialUnitSummaryDTO.class), mock(SpatialUnitSummaryDTO.class));
         entity.setSpatialUnitSet(spatialUnitSet);
 
         // Mock the label bean to return a label for the concept

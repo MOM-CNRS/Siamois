@@ -42,6 +42,13 @@ public abstract class AbstractSingleMultiHierarchicalEntityPanel<T extends Abstr
     }
 
     private void findPathsRecursively(Long unitId, List<T> currentPath, List<List<T>> allPaths) {
+        // Check if the current unit is already in the current path (cycle detected)
+        for (T unit : currentPath) {
+            if (unit.getId().equals(unitId)) {
+                return; // Stop recursion for this branch
+            }
+        }
+
         List<T> parents = findDirectParentsOf(unitId);
 
         if (parents == null || parents.isEmpty()) {

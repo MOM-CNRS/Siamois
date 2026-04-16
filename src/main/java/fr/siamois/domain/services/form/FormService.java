@@ -30,6 +30,7 @@ import java.time.ZoneOffset;
 import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 /**
  * Stateless service containing reusable form logic:
@@ -74,7 +75,7 @@ public class FormService {
         return optForm.orElseGet(() -> formRepository.findEffectiveFormByTypeAndInstitution(null, institution.getId()).orElse(null));
     }
 
-    // --------- Answer creators (same mapping as in AbstractSingleEntity)
+    // --------- Answer creators
 
     private static final Map<Class<? extends CustomField>, Supplier<? extends CustomFieldAnswer>> ANSWER_CREATORS =
             Map.ofEntries(
@@ -268,14 +269,19 @@ public class FormService {
         } else if (answer instanceof CustomFieldAnswerSelectOneActionUnitViewModel a) {
             return a.getValue();
         } else if (answer instanceof CustomFieldAnswerSelectOneSpatialUnitViewModel a) {
-            // Convert back to place dto (single selection)
-            PlaceSuggestionDTO ans = a.getValue();
-            SpatialUnitSummaryDTO dto = new SpatialUnitSummaryDTO();
-            dto.setId(ans.getId());
-            dto.setName(ans.getName());
-            dto.setCode(ans.getCode());
-            dto.setCategory(ans.getCategory());
-            return dto;
+            if(a.getValue()!=null){
+                // Convert back to place dto (single selection)
+                PlaceSuggestionDTO ans = a.getValue();
+                SpatialUnitSummaryDTO dto = new SpatialUnitSummaryDTO();
+                dto.setId(ans.getId());
+                dto.setName(ans.getName());
+                dto.setCode(ans.getCode());
+                dto.setCategory(ans.getCategory());
+                return dto;
+            } else {
+                return null;
+            }
+
         } else if (answer instanceof CustomFieldAnswerSelectMultipleSpatialUnitTreeViewModel a) {
             // Convert each PlaceSuggestionDTO in the list to SpatialUnitSummaryDTO
             List<PlaceSuggestionDTO> placeSuggestionList = a.getValue();
@@ -288,13 +294,15 @@ public class FormService {
                         dto.setCategory(place.getCategory());
                         return dto;
                     })
-                    .toList();
+                    .collect(Collectors.toSet());
         } else if (answer instanceof CustomFieldAnswerSelectOneActionCodeViewModel a) {
             return a.getValue();
         } else if (answer instanceof CustomFieldAnswerIntegerViewModel a) {
             return a.getValue();
         } else if (answer instanceof CustomFieldAnswerSelectOneAddressViewModel a) {
             return a.getValue();
+        } else if (answer instanceof CustomFieldAnswerSelectMultipleRecordingUnitViewModel a) {
+            return new HashSet<>(a.getValue());
         }
 
         return null;
@@ -324,31 +332,35 @@ public class FormService {
                 && bindableFields.contains(field.getValueBinding())) {
 
             Object value = getFieldValue(jpaEntity, field.getValueBinding());
-            populateSystemFieldValue(answer, value);
+            if(value != null) {
+                populateSystemFieldValue(answer, value);
+            }
+
         }
     }
 
 
     private void populateSystemFieldValue(CustomFieldAnswerViewModel answer, Object value) {
 
-        Map<Class<?>, BiConsumer<CustomFieldAnswerViewModel, Object>> handlers = new HashMap<>();
-        handlers.put(OffsetDateTime.class, this::handleDateTime);
-        handlers.put(String.class, this::handleString);
-        handlers.put(PersonDTO.class, this::handlePerson);
-        handlers.put(List.class, this::handlePersonList);
-        handlers.put(ConceptDTO.class, this::handleConcept);
-        handlers.put(ActionUnitSummaryDTO.class, this::handleActionUnit);
-        handlers.put(SpatialUnitSummaryDTO.class, this::handleSpatialUnit);
-        handlers.put(ActionCodeDTO.class, this::handleActionCode);
-        handlers.put(Integer.class, this::handleInteger);
-        handlers.put(FullAddress.class, this::handleAddress);
-        handlers.put(Set.class, this::handleSpatialUnitSet);
+        Map<Class<? extends CustomFieldAnswerViewModel>, BiConsumer<CustomFieldAnswerViewModel, Object>> handlers = new HashMap<>();
+        handlers.put(CustomFieldAnswerDateTimeViewModel.class, this::handleDateTime);
+        handlers.put(CustomFieldAnswerTextViewModel.class, this::handleString);
+        handlers.put(CustomFieldAnswerSelectOnePersonViewModel.class, this::handlePerson);
+        handlers.put(CustomFieldAnswerSelectMultiplePersonViewModel.class, this::handlePersonList);
+        handlers.put(CustomFieldAnswerSelectOneFromFieldCodeViewModel.class, this::handleConcept);
+        handlers.put(CustomFieldAnswerSelectOneActionUnitViewModel.class, this::handleActionUnit);
+        handlers.put(CustomFieldAnswerSelectOneSpatialUnitViewModel.class, this::handleSpatialUnit);
+        handlers.put(CustomFieldAnswerSelectOneActionCodeViewModel.class, this::handleActionCode);
+        handlers.put(CustomFieldAnswerIntegerViewModel.class, this::handleInteger);
+        handlers.put(CustomFieldAnswerSelectOneAddressViewModel.class, this::handleAddress);
+        handlers.put(CustomFieldAnswerSelectMultipleSpatialUnitTreeViewModel.class, this::handleSpatialUnitSet);
+        handlers.put(CustomFieldAnswerSelectMultipleRecordingUnitViewModel.class, this::handleRecordingUnitSet);
 
-        // Execute appropriate handler
-        handlers.entrySet().stream()
-                .filter(entry -> entry.getKey().isInstance(value))
-                .findFirst()
-                .ifPresent(entry -> entry.getValue().accept(answer, value));
+        Class<? extends CustomFieldAnswerViewModel> answerClass = answer.getClass();
+        BiConsumer<CustomFieldAnswerViewModel, Object> handler = handlers.get(answerClass);
+        if (handler != null) {
+            handler.accept(answer, value);
+        }
     }
 
     // Méthodes dédiées pour chaque type de 'value'
@@ -433,6 +445,12 @@ public class FormService {
     private void handleSpatialUnitSet(CustomFieldAnswerViewModel answer, Object value) {
         if (answer instanceof CustomFieldAnswerSelectMultipleSpatialUnitTreeViewModel treeAnswer) {
             treeAnswer.setValue(new ArrayList<>((Set<PlaceSuggestionDTO>) value));
+        }
+    }
+
+    private void handleRecordingUnitSet(CustomFieldAnswerViewModel answer, Object value) {
+        if (answer instanceof CustomFieldAnswerSelectMultipleRecordingUnitViewModel ans) {
+            ans.setValue(new ArrayList<>((Set<RecordingUnitSummaryDTO>) value));
         }
     }
 

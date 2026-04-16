@@ -46,7 +46,7 @@ public class ConceptSeeder {
     public Concept findConceptOrThrow(ConceptKey key) {
         Concept c = findConceptOrReturnNull(key);
         if(c == null) {
-            throw new IllegalStateException("Concept introuvable");
+            throw new IllegalStateException("Concept "+key+" introuvable");
         }
         return c;
     }

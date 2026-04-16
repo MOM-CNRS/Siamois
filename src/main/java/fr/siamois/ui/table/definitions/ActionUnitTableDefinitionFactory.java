@@ -78,6 +78,7 @@ public final class ActionUnitTableDefinitionFactory {
                         .headerKey("spatialunit.field.name")
                         .field(nameField)
                         .sortable(true)
+                        .filterable(true)
                         .visible(true)
                         .required(true)
                         .build()

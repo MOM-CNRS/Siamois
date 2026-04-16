@@ -210,6 +210,7 @@ public class RecordingUnitService implements ArkEntityService {
         managedRecordingUnit.setErosionOrientation(recordingUnit.getErosionOrientation());
         managedRecordingUnit.setErosionProfile(recordingUnit.getErosionProfile());
         managedRecordingUnit.setErosionShape(recordingUnit.getErosionShape());
+        managedRecordingUnit.setComments(recordingUnit.getComments());
 
         if (managedRecordingUnit.getCreatedBy() == null) {
             managedRecordingUnit.setCreatedBy(recordingUnit.getCreatedBy());
@@ -744,6 +745,7 @@ public class RecordingUnitService implements ArkEntityService {
      */
     @Transactional(readOnly = true)
     public List<RecordingUnitDTO> findDirectParentsOf(Long id) {
+
         return recordingUnitRepository.findParentsOf(id).stream()
                 .map(unit -> conversionService.convert(unit, RecordingUnitDTO.class))
                 .toList();

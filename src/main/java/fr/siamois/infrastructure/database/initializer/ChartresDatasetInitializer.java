@@ -34,7 +34,8 @@ public class ChartresDatasetInitializer implements DatabaseInitializer {
 
 
     List<ThesaurusSeeder.ThesaurusSpec> thesauri = List.of(
-            new ThesaurusSeeder.ThesaurusSpec("https://thesaurus.mom.fr", VOCABULARY_ID)
+            new ThesaurusSeeder.ThesaurusSpec("https://thesaurus.mom.fr", VOCABULARY_ID),
+            new ThesaurusSeeder.ThesaurusSpec("https://thesaurus.mom.fr", "th258")
     );
 
 
@@ -73,9 +74,9 @@ public class ChartresDatasetInitializer implements DatabaseInitializer {
         RecordingUnit existing = recordingUnitService
                 .findByFullIdentifierAndInstitutionIdentifier("1000", "chartres");
 
-        existing = new RecordingUnit();
-        if(existing!=null) {
-            //return; // do nothing
+
+        if(existing != null) {
+            return; // ignore init
         }
 
 
