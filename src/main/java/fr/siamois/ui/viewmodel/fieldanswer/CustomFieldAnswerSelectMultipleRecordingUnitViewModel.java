@@ -1,7 +1,5 @@
 package fr.siamois.ui.viewmodel.fieldanswer;
 
-import fr.siamois.domain.models.recordingunit.RecordingUnit;
-import fr.siamois.dto.PlaceSuggestionDTO;
 import fr.siamois.dto.entity.RecordingUnitSummaryDTO;
 import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
 import lombok.Getter;

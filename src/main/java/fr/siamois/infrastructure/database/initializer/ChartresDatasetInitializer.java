@@ -74,7 +74,10 @@ public class ChartresDatasetInitializer implements DatabaseInitializer {
         RecordingUnit existing = recordingUnitService
                 .findByFullIdentifierAndInstitutionIdentifier("1000", "chartres");
 
-        existing = new RecordingUnit();
+
+        if(existing != null) {
+            return; // ignore init
+        }
 
 
         // Init vocabs

@@ -3,7 +3,6 @@ package fr.siamois.domain.services.form;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.customfield.CustomFieldStratigraphy;
-import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerSelectOneSpatialUnit;
 import fr.siamois.domain.models.form.customform.CustomForm;
 import fr.siamois.domain.models.form.customform.EnabledWhenJson;
 import fr.siamois.domain.models.institution.Institution;
@@ -107,7 +106,6 @@ class FormServiceTest {
         private List<PersonDTO> personList;
         private Set<SpatialUnitSummaryDTO> spatialUnitSet;
         private SpatialUnitSummaryDTO spatialUnitNull;
-        private Set<RecordingUnitSummaryDTO> parents;
 
         public List<String> getBindableFieldNames() {
             return List.of(
