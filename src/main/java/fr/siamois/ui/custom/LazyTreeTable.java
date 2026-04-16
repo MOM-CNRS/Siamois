@@ -11,6 +11,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+@SuppressWarnings("rawtypes")
 public class LazyTreeTable extends TreeTable {
 
     private static final Logger log = LoggerFactory.getLogger(LazyTreeTable.class);
