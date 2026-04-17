@@ -14,6 +14,7 @@ import fr.siamois.ui.bean.panel.FlowBean;
 import fr.siamois.ui.bean.panel.models.PanelBreadcrumb;
 import fr.siamois.ui.form.FormContextServices;
 import fr.siamois.ui.lazydatamodel.BaseLazyDataModel;
+import fr.siamois.ui.lazydatamodel.RecordingUnitLazyDataModel;
 import fr.siamois.ui.lazydatamodel.SpatialUnitLazyDataModel;
 import fr.siamois.ui.lazydatamodel.scope.SpatialUnitScope;
 import fr.siamois.ui.lazydatamodel.tree.SpatialUnitTreeTableLazyModel;
@@ -178,7 +179,9 @@ public class SpatialUnitListPanel extends AbstractListPanel<SpatialUnitDTO>  imp
         super.init();
 
         // initialiser la sélection via l'API du tableModel (pas accès direct au lazy)
-        tableModel.getLazyDataModel().setSelectedUnits(new ArrayList<>());
+        if (tableModel.getLazyDataModel() instanceof SpatialUnitLazyDataModel spatialUnitLazyDataModel)  {
+            spatialUnitLazyDataModel.setSelectedUnits(new ArrayList<>());
+        }
 
     }
 

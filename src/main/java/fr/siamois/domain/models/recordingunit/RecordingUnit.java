@@ -34,7 +34,10 @@ import static fr.siamois.ui.bean.panel.models.panel.single.AbstractSingleEntity.
 
 @Data
 @Entity
-@Table(name = "recording_unit")
+@Table(name = "recording_unit", indexes = {
+        @Index(columnList = "full_identifier", name = "idx_ru_full_identifier"),
+        @Index(columnList = "fk_institution_id", name = "idx_ru_institution")
+})
 @NoArgsConstructor
 @Audited
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})

@@ -22,12 +22,10 @@ import fr.siamois.ui.lazydatamodel.BaseSpatialUnitLazyDataModel;
 import fr.siamois.ui.lazydatamodel.tree.SpatialUnitTreeTableLazyModel;
 import fr.siamois.utils.MessageUtils;
 import lombok.Getter;
+import org.primefaces.model.LazyDataModel;
 import org.primefaces.model.TreeNode;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 
 import static fr.siamois.ui.bean.dialog.newunit.NewUnitContext.TreeInsert.ROOT;
 import static fr.siamois.ui.table.TableColumnAction.DUPLICATE_ROW;
@@ -414,6 +412,24 @@ public class SpatialUnitTableViewModel extends EntityTableViewModel<SpatialUnitD
         return flowBean.getIsWriteMode() && // perm to create action unit in orga and app is in write mode
                 institutionService.personIsInstitutionManagerOrActionManager(sessionSettingsBean.getUserInfo().getUser(),
                         sessionSettingsBean.getSelectedInstitution());
+    }
+
+    @Override
+    public LazyDataModel<SpatialUnitDTO> getLazyDataModel() {
+        return spatialUnitLazyDataModel;
+    }
+
+    @Override
+    protected boolean unitIsLeaf(SpatialUnitDTO unit) {
+        return !spatialUnitService.existsChildrenByParentAndInstitution(unit.getId(), sessionSettingsBean.getSelectedInstitution().getId());
+    }
+
+    @Override
+    protected List<SpatialUnitDTO> loadUnit(SpatialUnitDTO parentUnit) {
+        if (parentUnit != null) {
+            return spatialUnitService.findDirectChildrensOf(parentUnit.getId());
+        }
+        return new ArrayList<>();
     }
 
     @Override

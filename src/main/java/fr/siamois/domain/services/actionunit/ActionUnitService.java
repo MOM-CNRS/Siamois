@@ -443,7 +443,7 @@ public class ActionUnitService implements ArkEntityService {
      * @return The list of ActionUnit associated with the institution
      */
     public List<ActionUnitDTO> findAllWithoutParentsByInstitution(Long institutionId) {
-        List<ActionUnit> res = actionUnitRepository.findRootsByInstitution(institutionId);
+        List<ActionUnit> res = actionUnitRepository.findRootsByInstitution(institutionId, 50L);
         return res.stream()
                 .map(actionUnitMapper::convert)
                 .toList();
@@ -477,8 +477,8 @@ public class ActionUnitService implements ArkEntityService {
     }
 
 
-    public List<ActionUnitDTO> findByTeamMember(PersonDTO member, InstitutionDTO institution) {
-        List<ActionUnit> actionUnits = actionUnitRepository.findByTeamMemberOrCreatorAndInstitution(member.getId(), institution.getId());
+    public List<ActionUnitDTO> findByTeamMember(PersonDTO member, InstitutionDTO institution, long limit) {
+        List<ActionUnit> actionUnits = actionUnitRepository.findByTeamMemberOrCreatorAndInstitutionLimit(member.getId(), institution.getId(), limit);
         return actionUnits.stream()
                 .map(actionUnitMapper::convert)
                 .toList();
@@ -512,5 +512,25 @@ public class ActionUnitService implements ArkEntityService {
     @Cacheable("InstitutionHasRootChildrenSU")
     public boolean existsRootChildrenByRelatedSpatialUnit(Long spatialUnitId) {
         return actionUnitRepository.existsRootChildrenByRelatedSpatialUnit(spatialUnitId);
+    }
+
+    public int countRootsInInstitution(Long institutionId) {
+        return actionUnitRepository.countRootsInInstitution(institutionId);
+    }
+
+    public List<ActionUnit> findRootsByInstitution(Long institutionId, int first, int pageSize) {
+        return actionUnitRepository.findRootsByInstitution(institutionId, first, pageSize);
+    }
+
+    public List<ActionUnit> findRootsByInstitutionAndName(Long institutionId, String name, int first, int pageSize) {
+        return actionUnitRepository.findRootsByInstitutionAndName(institutionId, name, first, pageSize);
+    }
+
+    public int countRootsByInstitutionAndName(Long institutionId, String name) {
+        return actionUnitRepository.countRootsByInstitutionAndName(institutionId, name);
+    }
+
+    public boolean isRoot(Long actionUnitId, Long institutionId) {
+        return actionUnitRepository.isRoot(actionUnitId, institutionId);
     }
 }

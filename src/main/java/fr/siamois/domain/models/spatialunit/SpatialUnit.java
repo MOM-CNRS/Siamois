@@ -35,7 +35,10 @@ import static fr.siamois.ui.bean.panel.models.panel.single.AbstractSingleEntity.
 
 @Data
 @Entity
-@Table(name = "spatial_unit")
+@Table(name = "spatial_unit", indexes = {
+        @Index(columnList = "name", name = "idx_spatial_unit_name"),
+        @Index(columnList = "fk_institution_id", name = "idx_spatial_unit_institution")
+})
 @Audited
 public class SpatialUnit extends TraceableEntity implements ArkEntity {
 
@@ -82,7 +85,7 @@ public class SpatialUnit extends TraceableEntity implements ArkEntity {
     private Set<RecordingUnit> recordingUnitList;
 
     @NotNull
-    @Column(name = "name", nullable = false, length = Integer.MAX_VALUE)
+    @Column(name = "name", nullable = false, length = 200)
     protected String name;
 
     @NotNull

@@ -6,6 +6,7 @@ import fr.siamois.domain.services.authorization.writeverifier.SpatialUnitWriteVe
 import fr.siamois.domain.services.form.FormService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitTreeService;
 import fr.siamois.dto.entity.ActionUnitDTO;
+import fr.siamois.mapper.ActionUnitMapper;
 import fr.siamois.ui.bean.NavBean;
 import fr.siamois.ui.bean.dialog.newunit.GenericNewUnitDialogBean;
 import fr.siamois.ui.bean.dialog.newunit.NewUnitContext;
@@ -53,6 +54,7 @@ public class ActionUnitListPanel extends AbstractListPanel<ActionUnitDTO> implem
     private final transient NavBean navBean;
     private final transient InstitutionService institutionService;
     private final transient FormContextServices formContextServices;
+    private final ActionUnitMapper actionUnitMapper;
 
     // locals
     private String actionUnitListErrorMessage;
@@ -93,8 +95,9 @@ public class ActionUnitListPanel extends AbstractListPanel<ActionUnitDTO> implem
                 genericNewUnitDialogBean,
                 lazyTree,
                 institutionService,
-                formContextServices
-
+                formContextServices,
+                actionUnitService,
+                actionUnitMapper
         );
         tableModel.setParentPanel(this);
         return lazy;
@@ -106,7 +109,7 @@ public class ActionUnitListPanel extends AbstractListPanel<ActionUnitDTO> implem
     }
 
 
-    public ActionUnitListPanel(ApplicationContext context) {
+    public ActionUnitListPanel(ApplicationContext context, ActionUnitMapper actionUnitMapper) {
         super("panel.title.allactionunit",
                 "bi bi-arrow-down-square",
                 "siamois-panel action-unit-panel list-panel",
@@ -119,6 +122,7 @@ public class ActionUnitListPanel extends AbstractListPanel<ActionUnitDTO> implem
         this.navBean = context.getBean(NavBean.class);
         this.institutionService = context.getBean(InstitutionService.class);
         this.formContextServices = context.getBean(FormContextServices.class);
+        this.actionUnitMapper = actionUnitMapper;
     }
 
     @Override

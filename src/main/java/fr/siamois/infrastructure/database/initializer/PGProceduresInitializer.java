@@ -4,6 +4,7 @@ import com.zaxxer.hikari.HikariDataSource;
 import fr.siamois.domain.models.exceptions.database.DatabaseDataInitException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.jspecify.annotations.NonNull;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.stereotype.Component;
@@ -52,7 +53,7 @@ public class PGProceduresInitializer implements DatabaseInitializer {
         }
     }
 
-    private static void addProcedure(Resource resource, List<String> procedures) throws DatabaseDataInitException {
+    private static void addProcedure(@NonNull Resource resource, @NonNull List<String> procedures) throws DatabaseDataInitException {
         try (InputStream is = resource.getInputStream()) {
             procedures.add(new String(is.readAllBytes(), StandardCharsets.UTF_8));
         } catch (IOException e) {
