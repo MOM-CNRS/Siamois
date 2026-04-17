@@ -79,6 +79,9 @@ public class LazyTreeTable extends TreeTable {
     @Override
     public TreeNode getValue() {
         if (isLazy()) {
+            if (lazyRoot == null) {
+                loadLazyData();
+            }
             return lazyRoot;
         }
         return super.getValue();
