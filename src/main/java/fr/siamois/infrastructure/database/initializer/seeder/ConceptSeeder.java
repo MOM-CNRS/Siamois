@@ -4,7 +4,6 @@ import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.models.vocabulary.Vocabulary;
 import fr.siamois.domain.models.vocabulary.label.ConceptPrefLabel;
 import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRepository;
-import fr.siamois.infrastructure.database.repositories.vocabulary.LocalizedConceptDataRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.label.ConceptLabelRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -16,7 +15,6 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class ConceptSeeder {
     private final ConceptRepository conceptRepo;
-    private final LocalizedConceptDataRepository localizedConceptDataRepository;
     private final ConceptLabelRepository conceptLabelRepository;
 
     public record ConceptKey(String vocabularyExtId, String conceptExtId) {}

@@ -24,13 +24,12 @@ import lombok.Getter;
 import lombok.Setter;
 import org.primefaces.component.api.UIColumn;
 import org.primefaces.event.ColumnToggleEvent;
+import org.primefaces.model.LazyDataModel;
 import org.primefaces.model.TreeNode;
 import org.primefaces.model.Visibility;
+import org.primefaces.util.Callbacks;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.function.Function;
 
 import static fr.siamois.ui.bean.dialog.newunit.NewUnitContext.TreeInsert.ROOT;
@@ -60,6 +59,7 @@ public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
     /** Lazy model "pur data" (chargement, tri, filtres, sélection, etc.) */
     protected final BaseLazyDataModel<T> lazyDataModel;
     protected final BaseTreeTableLazyModel<T, ID> treeLazyModel;
+    public int defaultPageSize = 10;
 
     /** Services nécessaires pour la logique formulaire de ligne */
     protected final FormService formService;
@@ -345,6 +345,7 @@ public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
         }
     }
 
+
     protected void applyTreeInsertion(T created, NewUnitContext ctx) {
         // si pas de clickedId => bouton global => root
         ID clickedId = (ctx.getTrigger() != null) ? (ID) ctx.getTrigger().getClickedId() : null;
@@ -439,9 +440,19 @@ public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
         }
     }
 
+    public abstract LazyDataModel<T> getLazyDataModel();
 
+    @SuppressWarnings({"unchecked", "unused"})
+    public Callbacks.SerializableFunction<AbstractEntityDTO, Boolean> getIsLeafMethod() {
+        return (unitParam) -> unitIsLeaf((T) unitParam);
+    }
 
+    @SuppressWarnings({"unchecked", "unused"})
+    public Callbacks.SerializableFunction<AbstractEntityDTO, List<AbstractEntityDTO>> getLoadMethod() {
+        return (parentUnit) -> (List<AbstractEntityDTO>) loadUnit((T) parentUnit);
+    }
 
+    protected abstract boolean unitIsLeaf(T unit);
 
-
+    protected abstract List<T> loadUnit(T parentUnit);
 }

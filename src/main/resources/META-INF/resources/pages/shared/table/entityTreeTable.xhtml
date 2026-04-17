@@ -2,13 +2,16 @@
 <ui:composition xmlns="http://www.w3.org/1999/xhtml"
                 xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
                 xmlns:p="http://primefaces.org/ui"
-                xmlns:f="http://java.sun.com/jsf/core" xmlns:c="http://java.sun.com/jsp/jstl/core"
+                xmlns:f="http://java.sun.com/jsf/core"
+                xmlns:c="http://java.sun.com/jsp/jstl/core"
+                xmlns:custom="http://siamois.fr/jsf/custom"
 >
 
-
-    <p:treeTable id="entityTreeTable"
+    <custom:rowCountTreeTable id="entityTreeTable"
                  rendered="#{tableModel.treeMode}"
-                 value="#{tableModel.treeRoot}"
+                 lazyDataModel="#{tableModel.lazyDataModel}"
+                              lazy="true"
+                              rowCount="#{tableModel.lazyDataModel.rowCount}"
                  var="item"
                  nodeVar="node"
                  widgetVar="#{cc.clientId}_entityTreeTable"
@@ -26,11 +29,15 @@
                  sortMode="multiple"
                  partialUpdate="false"
                  emptyMessage="#{langBean.msg('recordingUnitList.empty')}"
-                 rowsPerPageTemplate="5,10,15,20,25"
+                 rowsPerPageTemplate="5,10,15,20,25,50,100"
+                              rows="#{tableModel.defaultPageSize}"
                  style="overflow-x: auto;"
                  tableStyleClass="datatable-hoverable-table"
                  tableStyle="table-layout: auto;"
-                 class="#{tableClass}">
+                 class="#{tableClass}" paginator="true"
+              isLeafMethod="#{tableModel.isLeafMethod}"
+              loadMethod="#{tableModel.loadMethod}"
+    >
 
 
         <f:facet name="header">
@@ -137,7 +144,7 @@
     </c:forEach>
 
 
-</p:treeTable>
+</custom:rowCountTreeTable>
 
 
         </ui:composition>
