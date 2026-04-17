@@ -35,6 +35,8 @@ import java.time.Month;
 import java.util.*;
 
 import static fr.siamois.ui.bean.dialog.newunit.NewUnitContext.TreeInsert.ROOT;
+import static fr.siamois.ui.lazydatamodel.scope.RecordingUnitScope.Type.ACTION;
+import static fr.siamois.ui.lazydatamodel.scope.RecordingUnitScope.Type.RU_IN_INSTITUTION;
 import static fr.siamois.ui.table.TableColumnAction.DUPLICATE_ROW;
 import static fr.siamois.ui.table.TableColumnAction.GO_TO_RECORDING_UNIT;
 
@@ -387,6 +389,22 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
     @Override
     public LazyDataModel<RecordingUnitDTO> getLazyDataModel() {
         return recordingUnitLazyDataModel;
+    }
+
+    @Override
+    protected boolean unitIsLeaf(RecordingUnitDTO unit) {
+        if(unit != null) {
+            return !recordingUnitService.existsChildrenByParentAndInstitution(unit.getId(),
+                    sessionSettingsBean.getSelectedInstitution().getId()
+            );
+        }
+
+        return !recordingUnitService.existsRootChildrenByInstitution(sessionSettingsBean.getSelectedInstitution().getId());
+    }
+
+    @Override
+    protected List<RecordingUnitDTO> loadUnit(RecordingUnitDTO parentUnit) {
+        return List.of();
     }
 
     @Override
