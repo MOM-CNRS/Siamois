@@ -98,7 +98,19 @@ public class RootChildList<T extends AbstractEntityDTO> extends DefaultTreeNodeC
     @Override
     @NonNull
     public Iterator<TreeNode<T>> iterator() {
-        return actualChildren.iterator();
+        return new Iterator<>() {
+            private int cursor = 0;
+
+            @Override
+            public boolean hasNext() {
+                return cursor < totalEntityCount;
+            }
+
+            @Override
+            public TreeNode<T> next() {
+                return get(cursor++);
+            }
+        };
     }
 
 }

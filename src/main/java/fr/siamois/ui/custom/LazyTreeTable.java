@@ -195,12 +195,6 @@ public class LazyTreeTable extends TreeTable {
     }
 
     @Override
-    protected void preEncode(FacesContext context) {
-        loadLazyData();
-        super.preEncode(context);
-    }
-
-    @Override
     public void filterAndSort() {
         // Laisser vide, c'est géré manuellement
     }
