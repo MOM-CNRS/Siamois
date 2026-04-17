@@ -4,6 +4,7 @@ import fr.siamois.dto.entity.AbstractEntityDTO;
 import org.primefaces.model.DefaultTreeNode;
 import org.primefaces.model.DefaultTreeNodeChildren;
 import org.primefaces.model.TreeNode;
+import org.springframework.lang.NonNull;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -84,13 +85,13 @@ public class RootChildList<T extends AbstractEntityDTO> extends DefaultTreeNodeC
 
         virtualNode.setParent(parent);
 
-        // LA MAGIE EST ICI : On grave le rowKey dans le marbre dès la création
         ensureRowKey(virtualNode, index);
 
         return virtualNode;
     }
 
     @Override
+    @NonNull
     public Stream<TreeNode<T>> stream() {
         List<TreeNode<T>> list = new ArrayList<>(totalEntityCount);
         for (int i = 0; i < totalEntityCount; i++) {
