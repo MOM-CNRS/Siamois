@@ -25,8 +25,8 @@ public class RootTreeNode<T extends AbstractEntityDTO> extends DefaultTreeNode<T
     @SuppressWarnings("unused")
     public RootTreeNode(@NonNull RootTreeNode<T> other) {
         super(other.type, other.data, other.parent);
-        this.totalEntityCount = 0; // Valeur par défaut pour le clone
-        this.childrens = new RootChildList<>(0, this, 10, 0); // Liste vide pour le clone
+        this.totalEntityCount = 0;
+        this.childrens = new RootChildList<>(0, this, 10, 0);
     }
 
     @Override
