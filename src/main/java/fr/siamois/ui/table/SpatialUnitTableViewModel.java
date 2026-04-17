@@ -420,6 +420,19 @@ public class SpatialUnitTableViewModel extends EntityTableViewModel<SpatialUnitD
     }
 
     @Override
+    protected boolean unitIsLeaf(SpatialUnitDTO unit) {
+        return !spatialUnitService.existsChildrenByParentAndInstitution(unit.getId(), sessionSettingsBean.getSelectedInstitution().getId());
+    }
+
+    @Override
+    protected List<SpatialUnitDTO> loadUnit(SpatialUnitDTO parentUnit) {
+        if (parentUnit != null) {
+            return spatialUnitService.findDirectChildrensOf(parentUnit.getId());
+        }
+        return new ArrayList<>();
+    }
+
+    @Override
     public TreeNode<SpatialUnitDTO> getTreeRoot() {
         return treeLazyModel.getRoot();
     }

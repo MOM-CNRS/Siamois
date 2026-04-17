@@ -205,4 +205,14 @@ public class SpecimenTableViewModel extends EntityTableViewModel<SpecimenDTO, Lo
         return specimenLazyDataModel;
     }
 
+    @Override
+    protected boolean unitIsLeaf(SpecimenDTO unit) {
+        return true;
+    }
+
+    @Override
+    protected List<SpecimenDTO> loadUnit(SpecimenDTO parentUnit) {
+        return new ArrayList<>();
+    }
+
 }
