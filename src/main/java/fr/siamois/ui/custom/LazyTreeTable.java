@@ -1,8 +1,10 @@
 package fr.siamois.ui.custom;
 
+import fr.siamois.dto.entity.AbstractEntityDTO;
 import jakarta.faces.context.FacesContext;
 import org.primefaces.component.treetable.TreeTable;
 import org.primefaces.model.*;
+import org.primefaces.util.Callbacks;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -21,7 +23,27 @@ public class LazyTreeTable extends TreeTable {
     enum PropertyKeys {
         lazy,
         rowCount,
-        lazyDataModel
+        lazyDataModel,
+        isLeafMethod,
+        loadMethod;
+    }
+
+    public void setIsLeafMethod(Callbacks.SerializableFunction<AbstractEntityDTO, Boolean> isLeafMethod) {
+        getStateHelper().put(PropertyKeys.isLeafMethod, isLeafMethod);
+    }
+
+    public void setLoadMethod(Callbacks.SerializableFunction<AbstractEntityDTO, List<AbstractEntityDTO>> loadMethod) {
+        getStateHelper().put(PropertyKeys.loadMethod, loadMethod);
+    }
+
+    @SuppressWarnings("unchecked")
+    public Callbacks.SerializableFunction<AbstractEntityDTO, Boolean> getIsLeafMethod() {
+        return (Callbacks.SerializableFunction<AbstractEntityDTO, Boolean>) getStateHelper().eval(PropertyKeys.isLeafMethod, null);
+    }
+
+    @SuppressWarnings("unchecked")
+    public Callbacks.SerializableFunction<AbstractEntityDTO, List<AbstractEntityDTO>> getLoadMethod() {
+        return (Callbacks.SerializableFunction<AbstractEntityDTO, List<AbstractEntityDTO>>) getStateHelper().eval(PropertyKeys.loadMethod, null);
     }
 
     public boolean isLazy() {
@@ -33,11 +55,11 @@ public class LazyTreeTable extends TreeTable {
     }
 
     @SuppressWarnings("unchecked")
-    public LazyDataModel<TreeNode<?>> getLazyDataModel() {
-        return (LazyDataModel<TreeNode<?>>) getStateHelper().eval(PropertyKeys.lazyDataModel, null);
+    public LazyDataModel<? extends AbstractEntityDTO> getLazyDataModel() {
+        return (LazyDataModel<? extends AbstractEntityDTO>) getStateHelper().eval(PropertyKeys.lazyDataModel, null);
     }
 
-    public void setLazyDataModel(LazyDataModel<TreeNode<?>> model) {
+    public void setLazyDataModel(LazyDataModel<? extends AbstractEntityDTO> model) {
         getStateHelper().put(PropertyKeys.lazyDataModel, model);
     }
 
@@ -116,7 +138,7 @@ public class LazyTreeTable extends TreeTable {
             }
         }
 
-        LazyDataModel<TreeNode<?>> lazyModel = getLazyDataModel();
+        LazyDataModel<? extends AbstractEntityDTO> lazyModel = getLazyDataModel();
 
         if (lazyModel != null) {
             int rows = getRows() > 0 ? getRows() : 10;
@@ -145,7 +167,7 @@ public class LazyTreeTable extends TreeTable {
 
             log.trace("Load appelée avec filtres actifs: {}", activeFilters);
 
-            List<TreeNode<?>> data = lazyModel.load(first, rows, sortMetaMap, activeFilters);
+            List<? extends AbstractEntityDTO> data = (List<? extends AbstractEntityDTO>) lazyModel.load(first, rows, sortMetaMap, activeFilters);
 
             if (activeFilters.isEmpty()) {
                 setRowCount(lazyModel.getRowCount());
@@ -155,9 +177,10 @@ public class LazyTreeTable extends TreeTable {
 
             if (data != null) {
                 lazyRoot = new RootTreeNode(getRowCount(), first);
-                for (TreeNode elt : data) {
-                    elt.setParent(lazyRoot);
-                    lazyRoot.getChildren().add(elt);
+                for (AbstractEntityDTO elt : data) {
+                    ChildTreeNode child = new ChildTreeNode(elt, getLoadMethod(), getIsLeafMethod());
+                    child.setParent(lazyRoot);
+                    lazyRoot.getChildren().add(child);
                 }
                 log.trace("Data generated");
                 setValue(lazyRoot);

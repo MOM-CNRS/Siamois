@@ -13,8 +13,10 @@ import fr.siamois.ui.form.FormContextServices;
 import fr.siamois.ui.form.FormUiDto;
 import fr.siamois.ui.lazydatamodel.BaseSpecimenLazyDataModel;
 import lombok.Getter;
+import org.primefaces.model.LazyDataModel;
 import org.primefaces.model.TreeNode;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import static fr.siamois.ui.table.TableColumnAction.DUPLICATE_ROW;
@@ -196,6 +198,11 @@ public class SpecimenTableViewModel extends EntityTableViewModel<SpecimenDTO, Lo
     @Override
     public boolean canUserEditRow(SpecimenDTO unit) {
         return true; // todo: implement permission
+    }
+
+    @Override
+    public LazyDataModel<SpecimenDTO> getLazyDataModel() {
+        return specimenLazyDataModel;
     }
 
 }

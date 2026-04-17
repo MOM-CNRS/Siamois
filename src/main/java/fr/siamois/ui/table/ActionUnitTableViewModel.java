@@ -6,6 +6,7 @@ import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.form.FormService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitTreeService;
+import fr.siamois.dto.entity.AbstractEntityDTO;
 import fr.siamois.dto.entity.ActionUnitDTO;
 import fr.siamois.mapper.ActionUnitMapper;
 import fr.siamois.ui.bean.NavBean;
@@ -14,7 +15,6 @@ import fr.siamois.ui.bean.dialog.newunit.GenericNewUnitDialogBean;
 import fr.siamois.ui.bean.dialog.newunit.NewUnitContext;
 import fr.siamois.ui.bean.dialog.newunit.UnitKind;
 import fr.siamois.ui.bean.panel.FlowBean;
-import fr.siamois.ui.custom.TestActionLazyDataModel;
 import fr.siamois.ui.form.FormContextServices;
 import fr.siamois.ui.form.FormUiDto;
 import fr.siamois.ui.lazydatamodel.BaseActionUnitLazyDataModel;
@@ -22,9 +22,12 @@ import fr.siamois.ui.lazydatamodel.tree.ActionUnitTreeTableLazyModel;
 import lombok.Getter;
 import org.primefaces.model.LazyDataModel;
 import org.primefaces.model.TreeNode;
+import org.primefaces.util.Callbacks;
 import org.springframework.lang.Nullable;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 import static fr.siamois.ui.table.TableColumnAction.GO_TO_ACTION_UNIT;
 
@@ -272,22 +275,8 @@ public class ActionUnitTableViewModel extends EntityTableViewModel<ActionUnitDTO
     }
 
     @Override
-    public TreeNode<ActionUnitDTO> getTreeRoot() {
-        return treeLazyModel.getRoot();
+    public LazyDataModel<ActionUnitDTO> getLazyDataModel() {
+        return actionUnitLazyDataModel;
     }
 
-
-    // ZONE DE TEST ATTENTION ! ATTENTION !
-    @Nullable
-    @Getter
-    private TestActionLazyDataModel lazyDataModelEnMieux;
-    @Getter
-    private final Integer defaultPageSize = 10;
-
-    public LazyDataModel<TreeNode<ActionUnitDTO>> getLazyMod() {
-        if (lazyDataModelEnMieux == null) {
-            lazyDataModelEnMieux = new TestActionLazyDataModel(flowBean.getSessionSettings().getSelectedInstitution(), actionUnitService, actionUnitMapper);
-        }
-        return lazyDataModelEnMieux;
-    }
 }

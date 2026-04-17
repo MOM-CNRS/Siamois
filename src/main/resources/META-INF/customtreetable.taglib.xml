@@ -22,5 +22,19 @@
             <name>lazy</name>
             <type>java.lang.Boolean</type>
         </attribute>
+
+        <attribute>
+            <description>Méthode retournant un boolean pour savoir si le nœud est une feuille.</description>
+            <name>isLeafMethod</name>
+            <required>false</required>
+            <type>javax.el.MethodExpression</type>
+        </attribute>
+
+        <attribute>
+            <description>Méthode appelée pour charger dynamiquement les enfants d'un nœud.</description>
+            <name>loadChildrenMethod</name>
+            <required>false</required>
+            <type>javax.el.MethodExpression</type>
+        </attribute>
     </tag>
 </facelet-taglib>
