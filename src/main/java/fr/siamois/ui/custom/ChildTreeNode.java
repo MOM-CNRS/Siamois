@@ -4,42 +4,22 @@ import fr.siamois.dto.entity.AbstractEntityDTO;
 import org.primefaces.model.LazyDefaultTreeNode;
 import org.primefaces.util.Callbacks;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
-/**
- * This class is used by the {@link org.primefaces.model.LazyDataModel#load(int, int, Map, Map)} function to return
- * the children and grandchildren of a node
- * @param <T> The type of DTOs contained
- */
-public class ChildTreeNode<T extends AbstractEntityDTO> extends LazyDefaultTreeNode<T> implements Cloneable {
+public class ChildTreeNode<T extends AbstractEntityDTO> extends LazyDefaultTreeNode<T> {
 
-    private final Callbacks.SerializableFunction<T, List<T>> catchedLoadFunction;
-    private final Callbacks.SerializableFunction<T, Boolean> catchedIsLeafFunction;
+    private final Callbacks.SerializableFunction<T, List<T>> catchedLoad;
+    private final Callbacks.SerializableFunction<T, Boolean> catchedIsLeaf;
 
-    public  ChildTreeNode(T data,
-                          Callbacks.SerializableFunction<T, List<T>> loadFunction,
-                          Callbacks.SerializableFunction<T, Boolean> isLeafFunction) {
-        super(data, loadFunction, isLeafFunction);
-        catchedLoadFunction = loadFunction;
-        catchedIsLeafFunction = isLeafFunction;
+    public ChildTreeNode(T data, Callbacks.SerializableFunction<T, List<T>> catchedLoad, Callbacks.SerializableFunction<T, Boolean> catchedIsLeaf) {
+        super(data, catchedLoad, catchedIsLeaf);
+        this.catchedLoad = catchedLoad;
+        this.catchedIsLeaf = catchedIsLeaf;
     }
 
-    @SuppressWarnings("unchecked")
-    @Override
-    public ChildTreeNode<T> clone() {
-        ChildTreeNode<T> copy;
-        try {
-            copy = (ChildTreeNode<T>) super.clone();
-        } catch (CloneNotSupportedException e) {
-            copy = new ChildTreeNode<>(getData(), catchedLoadFunction, catchedIsLeafFunction);
-        }
-        if (!isLeaf()) {
-            if (copy.getChildren() == null)
-                setChildren(new ArrayList<>());
-            copy.getChildren().addAll(this.getChildren());
-        }
-        return copy;
+    public ChildTreeNode(ChildTreeNode<T> other) {
+        super(other.data, other.catchedLoad, other.catchedIsLeaf);
+        this.catchedLoad = other.catchedLoad;
+        this.catchedIsLeaf = other.catchedIsLeaf;
     }
 }

@@ -2,33 +2,27 @@ package fr.siamois.ui.custom;
 
 import fr.siamois.dto.entity.AbstractEntityDTO;
 import org.primefaces.model.DefaultTreeNode;
+import org.primefaces.model.TreeNodeChildren;
 
-import java.util.ArrayList;
+public class RootTreeNode<T extends AbstractEntityDTO> extends DefaultTreeNode<T> {
 
-/**
- * This class is used by {@link LazyTreeTable} to implement pagination for the root nodes
- * @param <T> The type of DTOs contained
- */
-public class RootTreeNode<T extends AbstractEntityDTO> extends DefaultTreeNode<T> implements Cloneable {
+    private final int totalEntityCount;
+    private final RootChildList<T> childrens;
 
-    public RootTreeNode() {
-        super(null, null);
+    public RootTreeNode(int totalEntityCount, int pageSize, int first) {
+        super("root", null, null);
+        this.setRowKey("root");
+        this.totalEntityCount = totalEntityCount;
+        this.childrens = new RootChildList<>(totalEntityCount, this, pageSize, first);
     }
 
-    @SuppressWarnings("unchecked")
     @Override
-    public RootTreeNode<T> clone() {
-        RootTreeNode<T> copy;
-        try {
-            copy = (RootTreeNode<T>) super.clone();
-        } catch (CloneNotSupportedException e) {
-            copy = new RootTreeNode<>();
-        }
-        if (!isLeaf()) {
-            if (copy.getChildren() == null)
-                setChildren(new ArrayList<>());
-            copy.getChildren().addAll(this.getChildren());
-        }
-        return copy;
+    public int getChildCount() {
+        return totalEntityCount;
+    }
+
+    @Override
+    public TreeNodeChildren<T> getChildren() {
+        return childrens;
     }
 }

@@ -16,6 +16,7 @@ public class LazyTreeTable extends TreeTable {
 
     private static final Logger log = LoggerFactory.getLogger(LazyTreeTable.class);
     private transient TreeNode lazyRoot;
+    private transient boolean blockFiltering = false;
 
     enum PropertyKeys {
         lazy,
@@ -87,6 +88,7 @@ public class LazyTreeTable extends TreeTable {
     @Override
     public void encodeBegin(FacesContext context) throws IOException {
         super.encodeBegin(context);
+        this.blockFiltering = true;
     }
 
     @SuppressWarnings({"unchecked", "rawtypes"})
@@ -98,7 +100,9 @@ public class LazyTreeTable extends TreeTable {
         String clientId = getClientId(context);
 
         String behaviorEvent = params.get("javax.faces.behavior.event");
-        if ("filter".equals(behaviorEvent)) {
+        boolean isFilterJSCall = params.containsKey(clientId + "_filtering");
+
+        if ("filter".equals(behaviorEvent) || isFilterJSCall) {
             super.setFirst(0);
         } else if (params.containsKey(clientId + "_pagination")) {
             String firstParam = params.get(clientId + "_first");
@@ -139,7 +143,7 @@ public class LazyTreeTable extends TreeTable {
 
             List<TreeNode<?>> data = lazyModel.load(first, rows, sortMetaMap, activeFilters);
 
-            lazyRoot = new RootTreeNode<>();
+            lazyRoot = new RootTreeNode(getRowCount(), rows, first);
 
             if (activeFilters.isEmpty()) {
                 setRowCount(lazyModel.getRowCount());
@@ -148,16 +152,9 @@ public class LazyTreeTable extends TreeTable {
             }
 
             if (data != null) {
-                while (lazyRoot.getChildren().size() < first) {
-                    lazyRoot.getChildren().add(new DefaultTreeNode<>(null, null));
-                }
-
                 for (TreeNode elt : data) {
+                    elt.setParent(lazyRoot);
                     lazyRoot.getChildren().add(elt);
-                }
-
-                while (lazyRoot.getChildren().size() < getRowCount()) {
-                    lazyRoot.getChildren().add(new DefaultTreeNode<>(null, null));
                 }
                 log.trace("Data generated");
                 setValue(lazyRoot);
@@ -175,18 +172,34 @@ public class LazyTreeTable extends TreeTable {
     }
 
     @Override
+    public void filterAndSort() {
+        // Laisser vide, c'est géré manuellement
+    }
+
+    @Override
+    public boolean isFilteringCurrentlyActive() {
+        if (isLazy() && blockFiltering) return false;
+        return super.isFilteringCurrentlyActive();
+    }
+
+    @Override
     public boolean isFilteringEnabled() {
-        if (isLazy()) {
-            FacesContext context = getFacesContext();
-            if (context != null && context.getCurrentPhaseId() == jakarta.faces.event.PhaseId.RENDER_RESPONSE) {
-                return false;
-            }
+        if (isLazy() && blockFiltering) {
+            return false;
         }
         return super.isFilteringEnabled();
     }
 
     @Override
-    public void filterAndSort() {
-        // Laisser vide, c'est géré manuellement
+    public void encodeEnd(FacesContext context) throws IOException {
+        this.blockFiltering = true;
+
+        try {
+            super.encodeEnd(context);
+        } catch (RuntimeException e) {
+            log.error(e.getMessage(), e);
+        } finally {
+            this.blockFiltering = false;
+        }
     }
 }
