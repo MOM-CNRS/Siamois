@@ -139,6 +139,10 @@ public class LazyTreeTable extends TreeTable {
                 }
             }
 
+            if (activeFilters.isEmpty() && rawFilterMap != null) {
+                rawFilterMap.remove(rawFilterMap.keySet().stream().findFirst().orElse(null));
+            }
+
             log.trace("Load appelée avec filtres actifs: {}", activeFilters);
 
             List<TreeNode<?>> data = lazyModel.load(first, rows, sortMetaMap, activeFilters);
@@ -150,7 +154,7 @@ public class LazyTreeTable extends TreeTable {
             }
 
             if (data != null) {
-                lazyRoot = new RootTreeNode(getRowCount(), rows, first);
+                lazyRoot = new RootTreeNode(getRowCount(), first);
                 for (TreeNode elt : data) {
                     elt.setParent(lazyRoot);
                     lazyRoot.getChildren().add(elt);
@@ -199,6 +203,21 @@ public class LazyTreeTable extends TreeTable {
             log.error(e.getMessage(), e);
         } finally {
             this.blockFiltering = false;
+        }
+    }
+
+    @Override
+    public TreeNode getFilteredValue() {
+        if (isLazy()) {
+            return getValue();
+        }
+        return super.getFilteredValue();
+    }
+
+    @Override
+    public void setFilteredValue(TreeNode<?> filteredValue) {
+        if (!isLazy()) {
+            super.setFilteredValue(filteredValue);
         }
     }
 }

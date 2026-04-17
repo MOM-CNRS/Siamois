@@ -7,6 +7,7 @@ import org.primefaces.model.TreeNode;
 import org.springframework.lang.NonNull;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -15,13 +16,11 @@ public class RootChildList<T extends AbstractEntityDTO> extends DefaultTreeNodeC
     private final int totalEntityCount;
     private final List<TreeNode<T>> actualChildren;
     private final TreeNode<T> parent;
-    private final int pageSize;
     private final int first;
 
-    public RootChildList(int totalEntityCount, TreeNode<T> parent, int pageSize, int first) {
+    public RootChildList(int totalEntityCount, TreeNode<T> parent, int first) {
         this.totalEntityCount = totalEntityCount;
         this.parent = parent;
-        this.pageSize = pageSize;
         this.first = first;
         this.actualChildren = new ArrayList<>();
     }
@@ -46,7 +45,6 @@ public class RootChildList<T extends AbstractEntityDTO> extends DefaultTreeNodeC
             return createVirtualNode(index, null);
         }
 
-        // 1. C'est la page active (en mémoire)
         if (index >= first && index < first + actualChildren.size()) {
             // On renvoie l'objet persistant. S'il n'a pas de rowKey, on le sécurise.
             TreeNode<T> realNode = actualChildren.get(index - first);
@@ -54,12 +52,9 @@ public class RootChildList<T extends AbstractEntityDTO> extends DefaultTreeNodeC
             return realNode;
         }
 
-        // 2. C'est une autre page (virtuelle)
         TreeNode<T> safeRef = actualChildren.get(index % actualChildren.size());
         return createVirtualNode(index, safeRef);
     }
-
-    // --- Méthodes utilitaires pour la gestion parfaite des RowKeys ---
 
     private void ensureRowKey(TreeNode<T> node, int index) {
         if (node.getRowKey() == null) {
@@ -98,6 +93,12 @@ public class RootChildList<T extends AbstractEntityDTO> extends DefaultTreeNodeC
             list.add(get(i));
         }
         return list.stream();
+    }
+
+    @Override
+    @NonNull
+    public Iterator<TreeNode<T>> iterator() {
+        return actualChildren.iterator();
     }
 
 }
