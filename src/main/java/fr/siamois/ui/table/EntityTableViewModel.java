@@ -442,16 +442,17 @@ public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
 
     public abstract LazyDataModel<T> getLazyDataModel();
 
+    @SuppressWarnings({"unchecked", "unused"})
     public Callbacks.SerializableFunction<AbstractEntityDTO, Boolean> getIsLeafMethod() {
-        return (unitParam) -> {
-            return true;
-        };
+        return (unitParam) -> unitIsLeaf((T) unitParam);
     }
 
+    @SuppressWarnings({"unchecked", "unused"})
     public Callbacks.SerializableFunction<AbstractEntityDTO, List<AbstractEntityDTO>> getLoadMethod() {
-        return (parentUnit) -> {
-            return new ArrayList<>();
-        };
+        return (parentUnit) -> (List<AbstractEntityDTO>) loadUnit((T) parentUnit);
     }
 
+    protected abstract boolean unitIsLeaf(T unit);
+
+    protected abstract List<T> loadUnit(T parentUnit);
 }

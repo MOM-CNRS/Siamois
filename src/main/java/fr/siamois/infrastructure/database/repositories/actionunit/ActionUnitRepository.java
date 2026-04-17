@@ -364,4 +364,13 @@ public interface ActionUnitRepository extends CrudRepository<ActionUnit, Long>, 
 """
     , nativeQuery = true)
     int countRootsInInstitution(Long institutionId);
+
+    @Query(nativeQuery = true,
+            value = """
+SELECT COUNT(*) > 1
+FROM action_unit au
+WHERE au.fk_institution_id = :institutionId AND has_childrens IS FALSE AND action_unit_id = :actionUnitId
+"""
+    )
+    boolean isRoot(Long actionUnitId, Long institutionId);
 }

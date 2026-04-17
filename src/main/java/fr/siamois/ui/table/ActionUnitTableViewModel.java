@@ -6,7 +6,6 @@ import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.form.FormService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitTreeService;
-import fr.siamois.dto.entity.AbstractEntityDTO;
 import fr.siamois.dto.entity.ActionUnitDTO;
 import fr.siamois.mapper.ActionUnitMapper;
 import fr.siamois.ui.bean.NavBean;
@@ -22,12 +21,10 @@ import fr.siamois.ui.lazydatamodel.tree.ActionUnitTreeTableLazyModel;
 import lombok.Getter;
 import org.primefaces.model.LazyDataModel;
 import org.primefaces.model.TreeNode;
-import org.primefaces.util.Callbacks;
-import org.springframework.lang.Nullable;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
-import java.util.Objects;
 
 import static fr.siamois.ui.table.TableColumnAction.GO_TO_ACTION_UNIT;
 
@@ -277,6 +274,19 @@ public class ActionUnitTableViewModel extends EntityTableViewModel<ActionUnitDTO
     @Override
     public LazyDataModel<ActionUnitDTO> getLazyDataModel() {
         return actionUnitLazyDataModel;
+    }
+
+    @Override
+    protected boolean unitIsLeaf(ActionUnitDTO unit) {
+        return actionUnitService.isRoot(unit.getId(), sessionSettingsBean.getSelectedInstitution().getId());
+    }
+
+    @Override
+    protected List<ActionUnitDTO> loadUnit(ActionUnitDTO parentUnit) {
+        if (parentUnit == null)
+            return new ArrayList<>();
+
+        return actionUnitService.findChildrenByParentAndInstitution(parentUnit.getId(), sessionSettingsBean.getSelectedInstitution().getId());
     }
 
 }

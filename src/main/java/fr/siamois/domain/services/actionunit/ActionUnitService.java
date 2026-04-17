@@ -529,4 +529,8 @@ public class ActionUnitService implements ArkEntityService {
     public int countRootsByInstitutionAndName(Long institutionId, String name) {
         return actionUnitRepository.countRootsByInstitutionAndName(institutionId, name);
     }
+
+    public boolean isRoot(Long actionUnitId, Long institutionId) {
+        return actionUnitRepository.isRoot(actionUnitId, institutionId);
+    }
 }
