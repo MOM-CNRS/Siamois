@@ -143,8 +143,6 @@ public class LazyTreeTable extends TreeTable {
 
             List<TreeNode<?>> data = lazyModel.load(first, rows, sortMetaMap, activeFilters);
 
-            lazyRoot = new RootTreeNode(getRowCount(), rows, first);
-
             if (activeFilters.isEmpty()) {
                 setRowCount(lazyModel.getRowCount());
             } else {
@@ -152,6 +150,7 @@ public class LazyTreeTable extends TreeTable {
             }
 
             if (data != null) {
+                lazyRoot = new RootTreeNode(getRowCount(), rows, first);
                 for (TreeNode elt : data) {
                     elt.setParent(lazyRoot);
                     lazyRoot.getChildren().add(elt);
