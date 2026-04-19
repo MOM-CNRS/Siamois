@@ -128,6 +128,7 @@
                 style="min-width: #{column.type != 'COMMAND_LINK' ? '10em' : ''};"
                 sortable="#{column.sortable}"
                 filterable="#{column.filterable}"
+                filterBy="#{column.fakeField    }"
                 toggleable="#{column.type != 'COMMAND_LINK'}"
         >
             <ui:include src="/pages/shared/table/columnTemplates.xhtml">
