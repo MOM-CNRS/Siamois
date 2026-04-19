@@ -127,6 +127,7 @@ public class LazyTreeTable extends TreeTable {
         String behaviorEvent = params.get("javax.faces.behavior.event");
         boolean isFilterJSCall = params.containsKey(clientId + "_filtering");
 
+        // 1. Gestion des événements de Reset (retour page 1 sur filtre) ou Pagination
         if ("filter".equals(behaviorEvent) || isFilterJSCall) {
             super.setFirst(0);
         } else if (params.containsKey(clientId + "_pagination")) {
@@ -149,13 +150,21 @@ public class LazyTreeTable extends TreeTable {
 
             Map<String, SortMeta> sortMetaMap = getSortByAsMap();
             Map<String, FilterMeta> rawFilterMap = getFilterByAsMap();
-
             Map<String, FilterMeta> activeFilters = new HashMap<>();
+
+            // --------------------------------------------------------
+            // 2. GESTION DES FILTRES DE COLONNES (Pas de limite de texte)
+            // --------------------------------------------------------
             if (rawFilterMap != null) {
                 for (Map.Entry<String, FilterMeta> entry : rawFilterMap.entrySet()) {
+                    // On ignore le globalFilter ici, traité spécifiquement après
+                    if ("globalFilter".equals(entry.getKey())) {
+                        continue;
+                    }
+
                     Object val = entry.getValue().getFilterValue();
                     if (val instanceof String strVal) {
-                        if (strVal.trim().length() >= 3) {
+                        if (!strVal.trim().isEmpty()) {
                             activeFilters.put(entry.getKey(), entry.getValue());
                         }
                     } else if (val != null) {
@@ -164,20 +173,52 @@ public class LazyTreeTable extends TreeTable {
                 }
             }
 
+            // --------------------------------------------------------
+            // 3. GESTION DU FILTRE GLOBAL (Anti-lag + Limite 3 chars)
+            // --------------------------------------------------------
+            String globalVal = null;
+
+            // Tentative A : Valeur récupérée nativement par PrimeFaces
+            if (rawFilterMap != null && rawFilterMap.containsKey("globalFilter")) {
+                globalVal = (String) rawFilterMap.get("globalFilter").getFilterValue();
+            }
+
+            // Tentative B (Plan anti-lag) : Lecture directe dans la requête HTTP
+            String globalFilterParam = clientId + ":globalFilter";
+            if ((globalVal == null || globalVal.trim().isEmpty()) && params.containsKey(globalFilterParam)) {
+                globalVal = params.get(globalFilterParam);
+            }
+
+            // Application de la règle métier
+            if (globalVal != null && globalVal.trim().length() >= 3) {
+                FilterMeta globalMeta = FilterMeta.builder()
+                        .field("globalFilter")
+                        .filterValue(globalVal.trim())
+                        .matchMode(MatchMode.GLOBAL)
+                        .build();
+                activeFilters.put("globalFilter", globalMeta);
+            }
+
+            // Nettoyage de la map originelle si vide
             if (activeFilters.isEmpty() && rawFilterMap != null) {
                 rawFilterMap.remove(rawFilterMap.keySet().stream().findFirst().orElse(null));
             }
 
             log.trace("Load appelée avec filtres actifs: {}", activeFilters);
 
+            // --------------------------------------------------------
+            // 4. CHARGEMENT EN BASE ET MISE A JOUR DU CYCLE DE VIE
+            // --------------------------------------------------------
             List<? extends AbstractEntityDTO> data = (List<? extends AbstractEntityDTO>) lazyModel.load(first, rows, sortMetaMap, activeFilters);
 
+            // Mise à jour de la pagination (crucial pour l'affichage visuel)
             if (activeFilters.isEmpty()) {
                 setRowCount(lazyModel.getRowCount());
             } else {
                 setRowCount(lazyModel.count(activeFilters));
             }
 
+            // Construction de l'arbre des composants métier
             if (data != null) {
                 lazyRoot = new RootTreeNode(getRowCount(), first);
                 for (AbstractEntityDTO elt : data) {
@@ -197,6 +238,7 @@ public class LazyTreeTable extends TreeTable {
     @Override
     public void filterAndSort() {
         // Laisser vide, c'est géré manuellement
+        log.trace("Filter and sort");
     }
 
     @Override

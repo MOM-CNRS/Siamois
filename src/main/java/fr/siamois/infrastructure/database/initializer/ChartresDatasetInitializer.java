@@ -27,6 +27,7 @@ import java.util.List;
 @Setter
 @Order
 @RequiredArgsConstructor
+@IgnoreInitializer
 public class ChartresDatasetInitializer implements DatabaseInitializer {
 
 

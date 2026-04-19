@@ -49,7 +49,7 @@
                         <i class="bi bi-search"/>
                         <p:inputText id="globalFilter"
                                      value="#{tableModel.globalFilter}"
-                                     onkeyup="PrimeFaces.debounce(() => PF('#{cc.clientId}_#{tableId}').filter())"
+                                     onkeyup="PrimeFaces.debounce(() => PF('#{cc.clientId}_#{tableId}').filter(), 500)"
                                      placeholder="#{langBean.msg('common.action.search')}"/>
                     </span>
 
