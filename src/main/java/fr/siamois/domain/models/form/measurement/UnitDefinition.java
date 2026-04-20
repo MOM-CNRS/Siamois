@@ -19,7 +19,8 @@ public class UnitDefinition implements Serializable {
     private Long id;
 
     @ManyToOne(fetch = FetchType.EAGER)
-    private Concept conceptId;
+    @JoinColumn(name = "fk_concept_id", nullable = false)
+    private Concept concept;
 
     @Column(nullable = false)
     private String label;
