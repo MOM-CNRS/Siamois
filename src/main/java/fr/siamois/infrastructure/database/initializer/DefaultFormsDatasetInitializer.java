@@ -73,7 +73,7 @@ public class DefaultFormsDatasetInitializer implements DatabaseInitializer {
             new ConceptSeeder.ConceptSpec(DEFAULT_VOCABULARY_ID, "4286199", "Date de fermeture", "fr"),
             new ConceptSeeder.ConceptSpec(DEFAULT_VOCABULARY_ID, "4287646", "Relation stratigrahique", "fr"),
             new ConceptSeeder.ConceptSpec(DEFAULT_VOCABULARY_ID, "4289320", "Z inf", "fr"),
-            new ConceptSeeder.ConceptSpec(DEFAULT_VOCABULARY_ID, "4289321", "Z plus", "fr"),
+            new ConceptSeeder.ConceptSpec(DEFAULT_VOCABULARY_ID, "4289321", "Z sup", "fr"),
 
             // Réponses de champs
             new ConceptSeeder.ConceptSpec(DEFAULT_VOCABULARY_ID, "4287636", "Altération", "fr"),
