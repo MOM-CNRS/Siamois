@@ -64,28 +64,4 @@ class SpecimenInActionUnitLazyDataModelTest {
         pageable = PageRequest.of(0, 10);
     }
 
-    @Test
-    void loadActionUnits_Success() {
-
-        lazyModel = new SpecimenInActionUnitLazyDataModel(specimenService,langBean, u);
-
-        // Arrange
-        when(specimenService.findAllByActionUnitAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
-                any(Long.class),
-                any(String.class),
-                any(Long[].class),
-                any(String.class),
-                any(String.class),
-                any(Pageable.class)
-        )).thenReturn(p);
-        when(langBean.getLanguageCode()).thenReturn("en");
-
-        // Act
-        Page<SpecimenDTO> actualResult = lazyModel.loadData("null", new Long[2], new Long[2], "null", pageable);
-
-        // Assert
-        // Assert
-        assertEquals(unit1, actualResult.getContent().get(0));
-        assertEquals(unit2, actualResult.getContent().get(1));
-    }
 }

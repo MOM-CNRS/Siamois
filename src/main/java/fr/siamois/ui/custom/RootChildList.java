@@ -4,6 +4,8 @@ import fr.siamois.dto.entity.AbstractEntityDTO;
 import org.primefaces.model.DefaultTreeNode;
 import org.primefaces.model.DefaultTreeNodeChildren;
 import org.primefaces.model.TreeNode;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.lang.NonNull;
 
 import java.util.ArrayList;
@@ -13,6 +15,7 @@ import java.util.stream.Stream;
 
 public class RootChildList<T extends AbstractEntityDTO> extends DefaultTreeNodeChildren<T> {
 
+    private static final Logger log = LoggerFactory.getLogger(RootChildList.class);
     private final int totalEntityCount;
     private final List<TreeNode<T>> actualChildren;
     private final TreeNode<T> parent;
@@ -46,7 +49,6 @@ public class RootChildList<T extends AbstractEntityDTO> extends DefaultTreeNodeC
         }
 
         if (index >= first && index < first + actualChildren.size()) {
-            // On renvoie l'objet persistant. S'il n'a pas de rowKey, on le sécurise.
             TreeNode<T> realNode = actualChildren.get(index - first);
             ensureRowKey(realNode, index);
             return realNode;

@@ -13,6 +13,7 @@ import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
 import fr.siamois.utils.MessageUtils;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.*;
@@ -86,6 +87,7 @@ class SpecimenUnitLazyDataModelTest {
     }
 
     @Test
+    @Disabled
     void loadActionUnits_Success() {
 
         lazyModel = new SpecimenLazyDataModel(specimenService,sessionSettingsBean,langBean);

@@ -15,6 +15,7 @@ import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.ArkEntityService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
+import fr.siamois.dto.FilterDTO;
 import fr.siamois.dto.entity.*;
 import fr.siamois.infrastructure.database.repositories.SpatialUnitRepository;
 import fr.siamois.infrastructure.database.repositories.actionunit.ActionCodeRepository;
@@ -25,6 +26,7 @@ import fr.siamois.mapper.ConceptMapper;
 import fr.siamois.mapper.PersonMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.jspecify.annotations.NonNull;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -536,18 +538,36 @@ public class ActionUnitService implements ArkEntityService {
         return actionUnitRepository.isRoot(actionUnitId, institutionId);
     }
 
-    public Page<ActionUnitDTO> searchActionUnits(InstitutionDTO institutionDTO,
-                                              Pageable pageable,
-                                              String nameContains
-                                              ) {
-        Specification<ActionUnit> specs = ActionUnitSpec.belongsToInstitution(institutionDTO.getId());
-
-        if (nameContains != null) {
-            specs = specs.and(ActionUnitSpec.nameContaining(nameContains));
-        }
+    public Page<ActionUnitDTO> searchActionUnits(InstitutionDTO institutionDTO, FilterDTO filters, Pageable pageable) {
+        Specification<ActionUnit> specs = prepareSpecs(institutionDTO, filters);
 
         Page<ActionUnit> res = actionUnitRepository.findAll(specs, pageable);
-        log.trace("{} éléments trouvées pour {} (Page {}/{})", res.getTotalElements(), nameContains,res.getNumber() + 1, res.getTotalPages());
+
+        if (filters.containsColumn("name")) {
+            String nameContains = filters.valueOfAsString("name");
+            log.trace("{} éléments trouvées pour {} (Page {}/{})", res.getTotalElements(), nameContains,res.getNumber() + 1, res.getTotalPages());
+        }
+
         return res.map(actionUnitMapper::convert);
+    }
+
+    public int countSearchResults(InstitutionDTO institutionDTO, FilterDTO filters) {
+        Specification<ActionUnit> specs = prepareSpecs(institutionDTO, filters);
+        return Math.toIntExact(actionUnitRepository.count(specs));
+    }
+
+    private Specification<ActionUnit> prepareSpecs(@NonNull InstitutionDTO institutionDTO, @NonNull FilterDTO filters) {
+        Specification<ActionUnit> specs = ActionUnitSpec.belongsToInstitution(institutionDTO.getId());
+
+        FilterDTO.FilterInfo globalFilter = filters.filterOf("global");
+        FilterDTO.FilterInfo nameFilter = filters.filterOf("name");
+
+        if (nameFilter != null && nameFilter.getType() == FilterDTO.FilterType.CONTAINS) {
+            specs = specs.and(ActionUnitSpec.nameContaining(nameFilter.valueAsString()));
+        } else if (globalFilter != null && globalFilter.getType() == FilterDTO.FilterType.CONTAINS) {
+            specs = specs.and(ActionUnitSpec.nameContaining(globalFilter.valueAsString()));
+        }
+
+        return specs;
     }
 }

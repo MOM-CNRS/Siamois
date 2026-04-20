@@ -47,11 +47,6 @@ public abstract class BaseRecordingUnitLazyDataModel extends BaseLazyDataModel<R
         FIELD_MAPPING = Collections.unmodifiableMap(map); // Ensure immutability
     }
 
-    @Override
-    protected Page<RecordingUnitDTO> loadData(String name, Long[] categoryIds, Long[] personIds, String globalFilter, Pageable pageable) {
-        return loadRecordingUnits(name, categoryIds, personIds, globalFilter, pageable);
-    }
-
     protected abstract Page<RecordingUnitDTO> loadRecordingUnits(
             String nameFilter, Long[] categoryIds, Long[] personIds,
             String globalFilter, Pageable pageable);

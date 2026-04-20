@@ -1,6 +1,7 @@
 package fr.siamois.ui.lazydatamodel;
 
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
+import fr.siamois.dto.FilterDTO;
 import fr.siamois.dto.entity.ActionUnitDTO;
 import fr.siamois.dto.entity.RecordingUnitDTO;
 import fr.siamois.ui.bean.LangBean;
@@ -42,5 +43,19 @@ public class RecordingUnitInActionUnitLazyDataModel extends BaseRecordingUnitLaz
     }
 
 
+    @Override
+    protected Page<RecordingUnitDTO> loadData(FilterDTO filter, Pageable pageable) {
+        return recordingUnitService.findAllByInstitutionAndByActionUnitAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
+                sessionSettings.getSelectedInstitution().getId(),
+                actionUnit.getId(),
+                null, null, null,
+                langBean.getLanguageCode(),
+                pageable
+        );
+    }
 
+    @Override
+    protected int countWithFilter(FilterDTO filters) {
+        return 0;
+    }
 }

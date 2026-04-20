@@ -5,6 +5,7 @@ import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.models.vocabulary.LocalizedConceptData;
 import fr.siamois.domain.models.vocabulary.label.ConceptLabel;
+import fr.siamois.dto.FilterDTO;
 import lombok.Getter;
 import lombok.Setter;
 import org.primefaces.model.FilterMeta;
@@ -24,11 +25,6 @@ import java.util.*;
 @Setter
 public abstract class BaseLazyDataModel<T> extends LazyDataModel<T> implements LazyModel {
 
-    @Override
-    public int count(Map<String, FilterMeta> map) {
-        return 0;
-    }
-
     // Page, Sort and Filter state
     protected int first = 0;
     protected int pageSizeState = 10;
@@ -44,7 +40,7 @@ public abstract class BaseLazyDataModel<T> extends LazyDataModel<T> implements L
 
     protected abstract String getDefaultSortField();
 
-    protected abstract Page<T> loadData(String name, Long[] categoryIds, Long[] personIds, String globalFilter, Pageable pageable);
+    protected abstract Page<T> loadData(FilterDTO filter, Pageable pageable);
 
     // Filters
     private String globalFilter;
@@ -190,6 +186,21 @@ public abstract class BaseLazyDataModel<T> extends LazyDataModel<T> implements L
         return Objects.equals(value1, value2);
     }
 
+    protected abstract int countWithFilter(FilterDTO filters);
+
+    @Override
+    public int count(Map<String, FilterMeta> map) {
+        FilterDTO filterDTO = new FilterDTO();
+        for (Map.Entry<String, FilterMeta> entry : map.entrySet()) {
+            if (entry.getKey().equals("globalFilter") && entry.getValue() != null) {
+                filterDTO.add(FilterDTO.GLOBAL_FILTER_KEY, entry.getValue().getFilterValue(), FilterDTO.FilterType.CONTAINS);
+            } else {
+                filterDTO.add(entry.getKey(), entry.getValue().getFilterValue(), FilterDTO.FilterType.CONTAINS);
+            }
+        }
+        return countWithFilter(filterDTO);
+    }
+
     @Override
     @Transactional
     public List<T> load(int first, int pageSize, Map<String, SortMeta> sortBy, Map<String, FilterMeta> filterBy) {
@@ -217,10 +228,13 @@ public abstract class BaseLazyDataModel<T> extends LazyDataModel<T> implements L
         Long[] personIds = null;
         String localGlobalFilter = null;
 
+        FilterDTO filterDTO = new FilterDTO();
+
         if (filterBy != null) {
             FilterMeta nameMeta = filterBy.get("name");
             if (nameMeta != null && nameMeta.getFilterValue() != null) {
                 localNameFilter = nameMeta.getFilterValue().toString();
+                filterDTO.add("name", localNameFilter, FilterDTO.FilterType.CONTAINS);
             }
 
             FilterMeta categoryMeta = filterBy.get("category");
@@ -235,6 +249,7 @@ public abstract class BaseLazyDataModel<T> extends LazyDataModel<T> implements L
                         .map(Concept::getId)
                         .filter(Objects::nonNull)
                         .toArray(Long[]::new);
+                filterDTO.add("category", localNameFilter, FilterDTO.FilterType.EQUAL);
             }
 
             FilterMeta personMeta = filterBy.get("author");
@@ -246,15 +261,17 @@ public abstract class BaseLazyDataModel<T> extends LazyDataModel<T> implements L
                         .map(Person::getId)
                         .filter(Objects::nonNull)
                         .toArray(Long[]::new);
+                filterDTO.add("author", localNameFilter, FilterDTO.FilterType.EQUAL);
             }
 
             FilterMeta globalMeta = filterBy.get("globalFilter");
             if (globalMeta != null && globalMeta.getFilterValue() != null) {
                 localGlobalFilter = globalMeta.getFilterValue().toString();
+                filterDTO.add(FilterDTO.GLOBAL_FILTER_KEY, localGlobalFilter, FilterDTO.FilterType.CONTAINS);
             }
         }
 
-        Page<T> result = loadData(localNameFilter, categoryIds, personIds, localGlobalFilter, pageable);
+        Page<T> result = loadData(filterDTO, pageable);
         setRowCount((int) result.getTotalElements());
         updateCache(result, filterBy, sortBy, first, pageSize);
         this.sortBy = new HashSet<>(sortBy.values());

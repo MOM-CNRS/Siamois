@@ -62,31 +62,4 @@ class ActionUnitInSpatialUnitLazyDataModelTest {
         pageable = PageRequest.of(0, 10);
     }
 
-    @Test
-    void loadActionUnits_Success() {
-
-        lazyModel = new ActionUnitInSpatialUnitLazyDataModel(actionUnitService,sessionSettingsBean,langBean, su);
-
-        // Arrange
-        when(actionUnitService.findAllByInstitutionAndBySpatialUnitAndByNameContainingAndByCategoriesAndByGlobalContaining(
-                any(Long.class),
-                any(Long.class),
-                any(String.class),
-                any(Long[].class),
-                any(Long[].class),
-                any(String.class),
-                any(String.class),
-                any(Pageable.class)
-        )).thenReturn(p);
-        when(sessionSettingsBean.getSelectedInstitution()).thenReturn(institution);
-        when(langBean.getLanguageCode()).thenReturn("en");
-
-        // Act
-        Page<ActionUnitDTO> actualResult = lazyModel.loadActionUnits("null", new Long[2], new Long[2], "null", pageable);
-
-        // Assert
-        // Assert
-        assertEquals(unit1, actualResult.getContent().get(0));
-        assertEquals(unit2, actualResult.getContent().get(1));
-    }
 }

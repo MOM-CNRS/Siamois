@@ -4,9 +4,12 @@ import fr.siamois.dto.entity.AbstractEntityDTO;
 import org.jspecify.annotations.NonNull;
 import org.primefaces.model.DefaultTreeNode;
 import org.primefaces.model.TreeNodeChildren;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class RootTreeNode<T extends AbstractEntityDTO> extends DefaultTreeNode<T> {
 
+    private static final Logger log = LoggerFactory.getLogger(RootTreeNode.class);
     private final int totalEntityCount;
     private final RootChildList<T> childrens;
     private final int first;

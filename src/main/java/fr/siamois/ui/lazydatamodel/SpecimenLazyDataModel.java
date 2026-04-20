@@ -1,6 +1,7 @@
 package fr.siamois.ui.lazydatamodel;
 
 import fr.siamois.domain.services.specimen.SpecimenService;
+import fr.siamois.dto.FilterDTO;
 import fr.siamois.dto.entity.SpecimenDTO;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
@@ -26,14 +27,22 @@ public class SpecimenLazyDataModel extends BaseSpecimenLazyDataModel {
                                               Long[] personIds,
                                               String globalFilter,
                                               Pageable pageable) {
+        return Page.empty();
+    }
+
+
+    @Override
+    protected Page<SpecimenDTO> loadData(FilterDTO filter, Pageable pageable) {
         return specimenService.findAllByInstitutionAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
                 sessionSettings.getSelectedInstitution().getId(),
-                fullIdentifierFilter, categoryIds, globalFilter,
+                null, null, null,
                 langBean.getLanguageCode(),
                 pageable
         );
     }
 
-
-
+    @Override
+    protected int countWithFilter(FilterDTO filters) {
+        return 0;
+    }
 }

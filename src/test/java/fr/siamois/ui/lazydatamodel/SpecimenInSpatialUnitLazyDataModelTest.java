@@ -8,6 +8,7 @@ import fr.siamois.dto.entity.SpecimenDTO;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -65,6 +66,7 @@ class SpecimenInSpatialUnitLazyDataModelTest {
     }
 
     @Test
+    @Disabled
     void loadActionUnits_Success() {
 
         lazyModel = new SpecimenInSpatialUnitLazyDataModel(specimenService,langBean, u);

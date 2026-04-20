@@ -36,11 +36,6 @@ public abstract class BaseSpatialUnitLazyDataModel extends BaseLazyDataModel<Spa
     }
 
     @Override
-    protected Page<SpatialUnitDTO> loadData(String name, Long[] categoryIds, Long[] personIds, String globalFilter, Pageable pageable) {
-        return loadSpatialUnits(name, categoryIds, personIds, globalFilter, pageable);
-    }
-
-    @Override
     public String getRowKey(SpatialUnitDTO spatialUnit) {
         return spatialUnit != null ? Long.toString(spatialUnit.getId()) : null;
     }

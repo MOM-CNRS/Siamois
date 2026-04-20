@@ -25,15 +25,6 @@ public abstract class BaseActionUnitLazyDataModel extends BaseLazyDataModel<Acti
     }
 
     @Override
-    protected Page<ActionUnitDTO> loadData(String name, Long[] categoryIds, Long[] personIds, String globalFilter, Pageable pageable) {
-        return loadActionUnits(name, categoryIds, personIds, globalFilter, pageable);
-    }
-
-    protected abstract Page<ActionUnitDTO> loadActionUnits(
-            String nameFilter, Long[] categoryIds, Long[] personIds,
-            String globalFilter, Pageable pageable);
-
-    @Override
     protected String getDefaultSortField() {
         return "action_unit_id";
     }

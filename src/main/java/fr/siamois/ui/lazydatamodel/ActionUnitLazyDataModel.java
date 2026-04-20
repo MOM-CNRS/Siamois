@@ -1,11 +1,15 @@
 package fr.siamois.ui.lazydatamodel;
 
 import fr.siamois.domain.services.actionunit.ActionUnitService;
+import fr.siamois.dto.FilterDTO;
 import fr.siamois.dto.entity.ActionUnitDTO;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
+import org.primefaces.model.FilterMeta;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+
+import java.util.Map;
 
 
 public class ActionUnitLazyDataModel extends BaseActionUnitLazyDataModel {
@@ -20,14 +24,15 @@ public class ActionUnitLazyDataModel extends BaseActionUnitLazyDataModel {
         this.langBean = langBean;
     }
 
+
     @Override
-    protected Page<ActionUnitDTO> loadActionUnits(String nameFilter, Long[] categoryIds, Long[] personIds, String globalFilter, Pageable pageable) {
-        if ((nameFilter == null || nameFilter.isBlank())) {
-            actionUnitService.searchActionUnits(sessionSettings.getSelectedInstitution(), pageable, globalFilter);
-        }
-        return actionUnitService.searchActionUnits(sessionSettings.getSelectedInstitution(), pageable, nameFilter);
+    protected Page<ActionUnitDTO> loadData(FilterDTO filter, Pageable pageable) {
+        return actionUnitService.searchActionUnits(sessionSettings.getSelectedInstitution(), filter, pageable);
     }
 
-
+    @Override
+    protected int countWithFilter(FilterDTO filters) {
+        return actionUnitService.countSearchResults(sessionSettings.getSelectedInstitution(), filters);
+    }
 
 }

@@ -215,6 +215,11 @@ public class LazyTreeTable extends TreeTable {
                 }
                 log.trace("Data generated");
                 setValue(lazyRoot);
+
+                for (int i = 0; i < lazyModel.getRowCount(); i++) {
+                    log.trace("\t - {}", lazyRoot.getChildren().get(i));
+                }
+
                 log.trace("New root set");
             }
 
