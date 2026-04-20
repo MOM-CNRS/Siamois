@@ -162,7 +162,7 @@ public class LazyTreeTable extends TreeTable {
                     Object val = entry.getValue().getFilterValue();
                     if (val instanceof String strVal) {
                         if (!strVal.trim().isEmpty()) {
-                            activeFilters.put(entry.getKey(), entry.getValue());
+                            activeFilters.put(entry.getValue().getFilterBy().getValue(context.getELContext()), entry.getValue());
                         }
                     } else if (val != null) {
                         activeFilters.put(entry.getKey(), entry.getValue());
@@ -196,7 +196,7 @@ public class LazyTreeTable extends TreeTable {
 
             log.trace("Load appelée avec filtres actifs: {}", activeFilters);
             for (Map.Entry<String, FilterMeta> entry : activeFilters.entrySet()) {
-                log.trace("\tFiltre : {} : {}", entry.getValue().getField(), entry.getValue().getFilterValue());
+                log.trace("\tFiltre : {} : {}", entry.getKey(), entry.getValue().getFilterValue());
             }
 
             List<? extends AbstractEntityDTO> data = lazyModel.load(first, rows, sortMetaMap, activeFilters);

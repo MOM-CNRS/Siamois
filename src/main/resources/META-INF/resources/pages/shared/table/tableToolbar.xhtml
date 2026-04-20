@@ -4,6 +4,8 @@
                 xmlns:p="http://primefaces.org/ui"
 >
 
+    <!--@elvariable id="tableModel" type="fr.siamois.ui.table.EntityTableViewModel"-->
+
     <p:toolbar id="tableToolbar">
         <p:toolbarGroup>
             <p:toolbarGroup align="left">
@@ -69,7 +71,8 @@
                     cc.clientId.concat('_').concat(tableId)
                     )}"
                     oncomplete="PF('newUnitDiag').show();"
-                    update="newUnitForm">
+                    update="newUnitForm"
+            >
             </p:commandButton>
         </p:toolbarGroup>
     </p:toolbar>

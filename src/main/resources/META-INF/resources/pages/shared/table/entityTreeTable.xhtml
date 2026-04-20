@@ -7,6 +7,8 @@
                 xmlns:custom="http://siamois.fr/jsf/custom"
 >
 
+    <!--@elvariable id="tableModel" type="fr.siamois.ui.table.EntityTableViewModel"-->
+
     <custom:lazyTreeTable id="entityTreeTable"
                  rendered="#{tableModel.treeMode}"
                  lazyDataModel="#{tableModel.lazyDataModel}"
@@ -23,7 +25,6 @@
                  selectionRowMode="none"
                  propagateSelectionUp="false"
                  propagateSelectionDown="false"
-                 globalFilter="#{tableModel.globalFilter}"
                  allowUnsorting="true"
                  sortBy="#{tableModel.treeLazyModel.sortBy}"
                  sortMode="multiple"
