@@ -34,6 +34,7 @@ public class ChartresDatasetInitializer implements DatabaseInitializer {
 
 
     List<ThesaurusSeeder.ThesaurusSpec> thesauri = List.of(
+            new ThesaurusSeeder.ThesaurusSpec("https://thesaurus.mom.fr", "th230"),
             new ThesaurusSeeder.ThesaurusSpec("https://thesaurus.mom.fr", VOCABULARY_ID),
             new ThesaurusSeeder.ThesaurusSpec("https://thesaurus.mom.fr", "th258")
     );
