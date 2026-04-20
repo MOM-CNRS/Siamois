@@ -22,11 +22,10 @@ public class ActionUnitLazyDataModel extends BaseActionUnitLazyDataModel {
 
     @Override
     protected Page<ActionUnitDTO> loadActionUnits(String nameFilter, Long[] categoryIds, Long[] personIds, String globalFilter, Pageable pageable) {
-        return actionUnitService.findAllByInstitutionAndByNameContainingAndByCategoriesAndByGlobalContaining(
-                sessionSettings.getSelectedInstitution().getId(),
-                nameFilter, categoryIds, personIds, globalFilter,
-                langBean.getLanguageCode(),
-                pageable);
+        if ((nameFilter == null || nameFilter.isBlank())) {
+            actionUnitService.searchActionUnits(sessionSettings.getSelectedInstitution(), pageable, globalFilter);
+        }
+        return actionUnitService.searchActionUnits(sessionSettings.getSelectedInstitution(), pageable, nameFilter);
     }
 
 

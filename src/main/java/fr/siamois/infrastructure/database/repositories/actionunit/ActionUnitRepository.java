@@ -6,6 +6,7 @@ import fr.siamois.domain.models.institution.Institution;
 import jakarta.validation.constraints.NotNull;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.data.repository.history.RevisionRepository;
@@ -18,7 +19,7 @@ import java.util.Optional;
 import java.util.Set;
 
 @Repository
-public interface ActionUnitRepository extends CrudRepository<ActionUnit, Long>, RevisionRepository<ActionUnit, Long, Long> {
+public interface ActionUnitRepository extends CrudRepository<ActionUnit, Long>, RevisionRepository<ActionUnit, Long, Long>, JpaSpecificationExecutor<ActionUnit> {
 
     Optional<ActionUnit> findByFullIdentifier(String fullIdentifier);
 

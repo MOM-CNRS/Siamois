@@ -154,7 +154,6 @@ public class LazyTreeTable extends TreeTable {
 
             if (rawFilterMap != null) {
                 for (Map.Entry<String, FilterMeta> entry : rawFilterMap.entrySet()) {
-                    // On ignore le globalFilter ici, traité spécifiquement après
                     if ("globalFilter".equals(entry.getKey())) {
                         continue;
                     }
@@ -269,4 +268,5 @@ public class LazyTreeTable extends TreeTable {
             super.setFilteredValue(filteredValue);
         }
     }
+
 }

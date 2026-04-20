@@ -19,6 +19,7 @@ import fr.siamois.dto.entity.*;
 import fr.siamois.infrastructure.database.repositories.SpatialUnitRepository;
 import fr.siamois.infrastructure.database.repositories.actionunit.ActionCodeRepository;
 import fr.siamois.infrastructure.database.repositories.actionunit.ActionUnitRepository;
+import fr.siamois.infrastructure.database.repositories.specs.ActionUnitSpec;
 import fr.siamois.mapper.ActionUnitMapper;
 import fr.siamois.mapper.ConceptMapper;
 import fr.siamois.mapper.PersonMapper;
@@ -29,6 +30,7 @@ import org.springframework.cache.annotation.Cacheable;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -532,5 +534,20 @@ public class ActionUnitService implements ArkEntityService {
 
     public boolean isRoot(Long actionUnitId, Long institutionId) {
         return actionUnitRepository.isRoot(actionUnitId, institutionId);
+    }
+
+    public Page<ActionUnitDTO> searchActionUnits(InstitutionDTO institutionDTO,
+                                              Pageable pageable,
+                                              String nameContains
+                                              ) {
+        Specification<ActionUnit> specs = ActionUnitSpec.belongsToInstitution(institutionDTO.getId());
+
+        if (nameContains != null) {
+            specs = specs.and(ActionUnitSpec.nameContaining(nameContains));
+        }
+
+        Page<ActionUnit> res = actionUnitRepository.findAll(specs, pageable);
+        log.trace("{} éléments trouvées pour {} (Page {}/{})", res.getTotalElements(), nameContains,res.getNumber() + 1, res.getTotalPages());
+        return res.map(actionUnitMapper::convert);
     }
 }

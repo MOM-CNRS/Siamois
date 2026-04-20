@@ -39,8 +39,7 @@
               isLeafMethod="#{tableModel.isLeafMethod}"
               loadMethod="#{tableModel.loadMethod}"
     >
-
-
+        <p:ajax event="filter" process="@this" update="@this" />
         <f:facet name="header">
             <ui:include src="/pages/shared/table/tableToolbar.xhtml">
                 <ui:param name="tableModel" value="#{tableModel}"/>

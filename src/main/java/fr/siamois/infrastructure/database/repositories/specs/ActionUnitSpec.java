@@ -1,0 +1,24 @@
+package fr.siamois.infrastructure.database.repositories.specs;
+
+import fr.siamois.domain.models.actionunit.ActionUnit;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.lang.NonNull;
+import org.springframework.lang.Nullable;
+
+public class ActionUnitSpec {
+
+    @NonNull
+    public static Specification<ActionUnit> belongsToInstitution(long institutionId) {
+        return ((root, query, criteriaBuilder) -> criteriaBuilder.equal(root.get("createdByInstitution").get("id"), institutionId));
+    }
+
+    @NonNull
+    public static Specification<ActionUnit> nameContaining(@Nullable String name) {
+        return ((root, query, criteriaBuilder) -> {
+            if (name == null || name.isBlank())
+                return null;
+            return criteriaBuilder.like(root.get("name"), "%" + name + "%");
+        });
+    }
+
+}
