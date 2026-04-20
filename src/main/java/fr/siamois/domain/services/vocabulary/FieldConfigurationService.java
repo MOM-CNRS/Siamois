@@ -212,6 +212,8 @@ public class FieldConfigurationService {
             progressWrapper.incrementStep();
         }
 
+
+        if (config.isWrongConfig()) return Optional.of(config);
         return Optional.empty();
     }
 
