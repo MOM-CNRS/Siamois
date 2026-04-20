@@ -1,7 +1,6 @@
 package fr.siamois.domain.models.form.customfield;
 
 import fr.siamois.domain.models.auth.Person;
-import fr.siamois.domain.models.form.measurement.UnitDefinition;
 import fr.siamois.domain.models.vocabulary.Concept;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;

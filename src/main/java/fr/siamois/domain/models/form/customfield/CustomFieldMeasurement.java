@@ -1,11 +1,22 @@
 package fr.siamois.domain.models.form.customfield;
 
 import fr.siamois.domain.models.form.measurement.UnitDefinition;
-import jakarta.persistence.Column;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
+import jakarta.persistence.*;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.experimental.SuperBuilder;
+`
 
+@EqualsAndHashCode(callSuper = true)
+@Getter
+@Setter
+@Entity
+@DiscriminatorValue("MEASUREMENT")
+@Table(name = "custom_field")
+@SuperBuilder
+@NoArgsConstructor
 public class CustomFieldMeasurement extends CustomField {
 
     @Column(name = "min_value")
