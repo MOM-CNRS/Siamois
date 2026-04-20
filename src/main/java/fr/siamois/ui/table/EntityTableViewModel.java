@@ -28,6 +28,7 @@ import org.primefaces.model.LazyDataModel;
 import org.primefaces.model.TreeNode;
 import org.primefaces.model.Visibility;
 import org.primefaces.util.Callbacks;
+import org.springframework.lang.NonNull;
 
 import java.util.*;
 import java.util.function.Function;
@@ -444,15 +445,25 @@ public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
 
     @SuppressWarnings({"unchecked", "unused"})
     public Callbacks.SerializableFunction<AbstractEntityDTO, Boolean> getIsLeafMethod() {
-        return (unitParam) -> unitIsLeaf((T) unitParam);
+        return (abstractEntityDTO) -> {
+            if (abstractEntityDTO == null) return true;
+            return unitIsLeaf((T) abstractEntityDTO);
+        };
     }
 
     @SuppressWarnings({"unchecked", "unused"})
     public Callbacks.SerializableFunction<AbstractEntityDTO, List<AbstractEntityDTO>> getLoadMethod() {
-        return (parentUnit) -> (List<AbstractEntityDTO>) loadChildrensOfUnit((T) parentUnit);
+        return (parentUnit) -> {
+            if (parentUnit == null) {
+                return new ArrayList<>();
+            } else {
+                return (List<AbstractEntityDTO>) loadChildrensOfUnit((T) parentUnit);
+            }
+        };
     }
 
-    protected abstract boolean unitIsLeaf(T unit);
+    protected abstract boolean unitIsLeaf(@NonNull T unit);
 
-    protected abstract List<T> loadChildrensOfUnit(T parentUnit);
+    @NonNull
+    protected abstract List<T> loadChildrensOfUnit(@NonNull T parentUnit);
 }

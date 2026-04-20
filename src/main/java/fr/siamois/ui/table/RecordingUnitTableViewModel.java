@@ -29,14 +29,13 @@ import fr.siamois.utils.MessageUtils;
 import lombok.Getter;
 import org.primefaces.model.LazyDataModel;
 import org.primefaces.model.TreeNode;
+import org.springframework.lang.NonNull;
 
 import java.time.LocalDateTime;
 import java.time.Month;
 import java.util.*;
 
 import static fr.siamois.ui.bean.dialog.newunit.NewUnitContext.TreeInsert.ROOT;
-import static fr.siamois.ui.lazydatamodel.scope.RecordingUnitScope.Type.ACTION;
-import static fr.siamois.ui.lazydatamodel.scope.RecordingUnitScope.Type.RU_IN_INSTITUTION;
 import static fr.siamois.ui.table.TableColumnAction.DUPLICATE_ROW;
 import static fr.siamois.ui.table.TableColumnAction.GO_TO_RECORDING_UNIT;
 
@@ -392,19 +391,14 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
     }
 
     @Override
-    protected boolean unitIsLeaf(RecordingUnitDTO unit) {
-        if(unit != null) {
-            return !recordingUnitService.existsChildrenByParentAndInstitution(unit.getId(),
-                    sessionSettingsBean.getSelectedInstitution().getId()
-            );
-        }
-
-        return !recordingUnitService.existsRootChildrenByInstitution(sessionSettingsBean.getSelectedInstitution().getId());
+    protected boolean unitIsLeaf(@NonNull RecordingUnitDTO unit) {
+        return !recordingUnitService.existsChildrenByParentAndInstitution(unit.getId(),
+                sessionSettingsBean.getSelectedInstitution().getId()
+        );
     }
 
     @Override
-    protected List<RecordingUnitDTO> loadChildrensOfUnit(RecordingUnitDTO parentUnit) {
-        if (parentUnit == null) return List.of();
+    protected @org.springframework.lang.NonNull List<RecordingUnitDTO> loadChildrensOfUnit(@NonNull RecordingUnitDTO parentUnit) {
         return recordingUnitService.findAllByParentRecordingUnit(parentUnit.getId());
     }
 

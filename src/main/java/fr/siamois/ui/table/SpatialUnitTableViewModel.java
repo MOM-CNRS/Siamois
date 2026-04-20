@@ -22,6 +22,7 @@ import fr.siamois.ui.lazydatamodel.BaseSpatialUnitLazyDataModel;
 import fr.siamois.ui.lazydatamodel.tree.SpatialUnitTreeTableLazyModel;
 import fr.siamois.utils.MessageUtils;
 import lombok.Getter;
+import org.jspecify.annotations.NonNull;
 import org.primefaces.model.LazyDataModel;
 import org.primefaces.model.TreeNode;
 
@@ -420,16 +421,13 @@ public class SpatialUnitTableViewModel extends EntityTableViewModel<SpatialUnitD
     }
 
     @Override
-    protected boolean unitIsLeaf(SpatialUnitDTO unit) {
+    protected boolean unitIsLeaf(@NonNull SpatialUnitDTO unit) {
         return !spatialUnitService.existsChildrenByParentAndInstitution(unit.getId(), sessionSettingsBean.getSelectedInstitution().getId());
     }
 
     @Override
-    protected List<SpatialUnitDTO> loadChildrensOfUnit(SpatialUnitDTO parentUnit) {
-        if (parentUnit != null) {
-            return spatialUnitService.findDirectChildrensOf(parentUnit.getId());
-        }
-        return new ArrayList<>();
+    protected @NonNull List<SpatialUnitDTO> loadChildrensOfUnit(@NonNull SpatialUnitDTO parentUnit) {
+        return spatialUnitService.findDirectChildrensOf(parentUnit.getId());
     }
 
     @Override

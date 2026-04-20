@@ -13,6 +13,7 @@ import fr.siamois.ui.form.FormContextServices;
 import fr.siamois.ui.form.FormUiDto;
 import fr.siamois.ui.lazydatamodel.BaseSpecimenLazyDataModel;
 import lombok.Getter;
+import org.jspecify.annotations.NonNull;
 import org.primefaces.model.LazyDataModel;
 import org.primefaces.model.TreeNode;
 
@@ -206,12 +207,12 @@ public class SpecimenTableViewModel extends EntityTableViewModel<SpecimenDTO, Lo
     }
 
     @Override
-    protected boolean unitIsLeaf(SpecimenDTO unit) {
+    protected boolean unitIsLeaf(@NonNull SpecimenDTO unit) {
         return true;
     }
 
     @Override
-    protected List<SpecimenDTO> loadChildrensOfUnit(SpecimenDTO parentUnit) {
+    protected @NonNull List<SpecimenDTO> loadChildrensOfUnit(@NonNull SpecimenDTO parentUnit) {
         return new ArrayList<>();
     }
 

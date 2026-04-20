@@ -19,11 +19,11 @@ import fr.siamois.ui.form.FormUiDto;
 import fr.siamois.ui.lazydatamodel.BaseActionUnitLazyDataModel;
 import fr.siamois.ui.lazydatamodel.tree.ActionUnitTreeTableLazyModel;
 import lombok.Getter;
+import org.jspecify.annotations.NonNull;
 import org.primefaces.model.LazyDataModel;
 import org.primefaces.model.TreeNode;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 import static fr.siamois.ui.table.TableColumnAction.GO_TO_ACTION_UNIT;
@@ -277,15 +277,12 @@ public class ActionUnitTableViewModel extends EntityTableViewModel<ActionUnitDTO
     }
 
     @Override
-    protected boolean unitIsLeaf(ActionUnitDTO unit) {
+    protected boolean unitIsLeaf(@NonNull ActionUnitDTO unit) {
         return !actionUnitService.isRoot(unit.getId(), sessionSettingsBean.getSelectedInstitution().getId());
     }
 
     @Override
-    protected List<ActionUnitDTO> loadChildrensOfUnit(ActionUnitDTO parentUnit) {
-        if (parentUnit == null)
-            return new ArrayList<>();
-
+    protected @NonNull List<ActionUnitDTO> loadChildrensOfUnit(@NonNull ActionUnitDTO parentUnit) {
         return actionUnitService.findChildrenByParentAndInstitution(parentUnit.getId(), sessionSettingsBean.getSelectedInstitution().getId());
     }
 
