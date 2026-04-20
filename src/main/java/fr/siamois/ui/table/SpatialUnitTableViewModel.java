@@ -425,7 +425,7 @@ public class SpatialUnitTableViewModel extends EntityTableViewModel<SpatialUnitD
     }
 
     @Override
-    protected List<SpatialUnitDTO> loadUnit(SpatialUnitDTO parentUnit) {
+    protected List<SpatialUnitDTO> loadChildrensOfUnit(SpatialUnitDTO parentUnit) {
         if (parentUnit != null) {
             return spatialUnitService.findDirectChildrensOf(parentUnit.getId());
         }

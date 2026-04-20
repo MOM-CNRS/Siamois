@@ -546,4 +546,12 @@ public interface RecordingUnitRepository extends CrudRepository<RecordingUnit, L
     Optional<RecordingUnit> findFirstByActionUnitIdOrderByCreationTimeAsc(Long actionUnitId);  // oldest
 
     Optional<RecordingUnit> findFirstByActionUnitIdOrderByCreationTimeDesc(Long actionUnitId);
+
+    @Query(nativeQuery = true, value = """
+    SELECT ru.*
+    FROM recording_unit ru
+    JOIN recording_unit_hierarchy ruh ON ru.recording_unit_id = ruh.fk_child_id
+    WHERE ruh.fk_parent_id = :parentRecordingUnitId
+""")
+    List<RecordingUnit> findChildrensOf(Long parentRecordingUnitId);
 }

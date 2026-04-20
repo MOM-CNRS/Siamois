@@ -278,11 +278,11 @@ public class ActionUnitTableViewModel extends EntityTableViewModel<ActionUnitDTO
 
     @Override
     protected boolean unitIsLeaf(ActionUnitDTO unit) {
-        return actionUnitService.isRoot(unit.getId(), sessionSettingsBean.getSelectedInstitution().getId());
+        return !actionUnitService.isRoot(unit.getId(), sessionSettingsBean.getSelectedInstitution().getId());
     }
 
     @Override
-    protected List<ActionUnitDTO> loadUnit(ActionUnitDTO parentUnit) {
+    protected List<ActionUnitDTO> loadChildrensOfUnit(ActionUnitDTO parentUnit) {
         if (parentUnit == null)
             return new ArrayList<>();
 

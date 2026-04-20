@@ -403,8 +403,9 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
     }
 
     @Override
-    protected List<RecordingUnitDTO> loadUnit(RecordingUnitDTO parentUnit) {
-        return List.of();
+    protected List<RecordingUnitDTO> loadChildrensOfUnit(RecordingUnitDTO parentUnit) {
+        if (parentUnit == null) return List.of();
+        return recordingUnitService.findAllByParentRecordingUnit(parentUnit.getId());
     }
 
     @Override

@@ -449,10 +449,10 @@ public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
 
     @SuppressWarnings({"unchecked", "unused"})
     public Callbacks.SerializableFunction<AbstractEntityDTO, List<AbstractEntityDTO>> getLoadMethod() {
-        return (parentUnit) -> (List<AbstractEntityDTO>) loadUnit((T) parentUnit);
+        return (parentUnit) -> (List<AbstractEntityDTO>) loadChildrensOfUnit((T) parentUnit);
     }
 
     protected abstract boolean unitIsLeaf(T unit);
 
-    protected abstract List<T> loadUnit(T parentUnit);
+    protected abstract List<T> loadChildrensOfUnit(T parentUnit);
 }

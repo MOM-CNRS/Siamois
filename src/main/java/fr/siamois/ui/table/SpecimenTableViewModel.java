@@ -211,7 +211,7 @@ public class SpecimenTableViewModel extends EntityTableViewModel<SpecimenDTO, Lo
     }
 
     @Override
-    protected List<SpecimenDTO> loadUnit(SpecimenDTO parentUnit) {
+    protected List<SpecimenDTO> loadChildrensOfUnit(SpecimenDTO parentUnit) {
         return new ArrayList<>();
     }
 

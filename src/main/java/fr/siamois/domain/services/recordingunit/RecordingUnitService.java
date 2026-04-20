@@ -821,5 +821,12 @@ public class RecordingUnitService implements ArkEntityService {
     }
 
 
+    public List<RecordingUnitDTO> findAllByParentRecordingUnit(Long parentRecordingUnitId) {
+        List<RecordingUnit> results = recordingUnitRepository.findChildrensOf(parentRecordingUnitId);
 
+        return results
+                .stream()
+                .map(recordingUnitMapper::convert)
+                .collect(Collectors.toList());
+    }
 }
