@@ -7,7 +7,7 @@
                 xmlns:custom="http://siamois.fr/jsf/custom"
 >
 
-    <custom:rowCountTreeTable id="entityTreeTable"
+    <custom:lazyTreeTable id="entityTreeTable"
                  rendered="#{tableModel.treeMode}"
                  lazyDataModel="#{tableModel.lazyDataModel}"
                               lazy="true"
@@ -128,7 +128,7 @@
                 style="min-width: #{column.type != 'COMMAND_LINK' ? '10em' : ''};"
                 sortable="#{column.sortable}"
                 filterable="#{column.filterable}"
-                filterBy="#{column.fakeField    }"
+                filterBy="#{column.field.valueBinding}"
                 toggleable="#{column.type != 'COMMAND_LINK'}"
         >
             <ui:include src="/pages/shared/table/columnTemplates.xhtml">
@@ -145,7 +145,7 @@
     </c:forEach>
 
 
-</custom:rowCountTreeTable>
+</custom:lazyTreeTable>
 
 
         </ui:composition>

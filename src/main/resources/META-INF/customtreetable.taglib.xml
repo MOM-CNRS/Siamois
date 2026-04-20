@@ -11,7 +11,7 @@
     <!-- Déclaration de ton composant personnalisé -->
     <tag>
         <!-- Nom de la balise que tu utiliseras dans tes pages XHTML -->
-        <tag-name>rowCountTreeTable</tag-name>
+        <tag-name>lazyTreeTable</tag-name>
 
         <!-- Type du composant (doit correspondre à celui déclaré dans faces-config.xml) -->
         <component>
