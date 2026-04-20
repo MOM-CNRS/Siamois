@@ -1,0 +1,71 @@
+<ui:composition
+        xmlns="http://www.w3.org/1999/xhtml"
+        xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
+        xmlns:cc="http://java.sun.com/jsf/composite"
+        xmlns:p="http://primefaces.org/ui" xmlns:f="http://java.sun.com/jsf/core" xmlns:h="http://java.sun.com/jsf/html"
+>
+
+    <cc:interface>
+        <cc:attribute name="answer"
+                      type="fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerMeasurement"
+                      required="true"/>
+        <cc:attribute name="hasBeenModified" type="Boolean" required="false" default="false"/>
+        <cc:attribute name="field" type="fr.siamois.domain.models.form.customfield.CustomFieldMeasurement"
+                      required="true"/>
+        <cc:attribute name="mode" type="String" required="false" default="READ"/>
+        <cc:attribute name="updateTargetsOnBlur" type="String" required="false" default="@this"/>
+        <cc:attribute name="required" type="java.lang.Boolean" required="false" default="false"/>
+
+        <cc:attribute name="onConceptChanged"
+                      method-signature="void listener(org.primefaces.event.SelectEvent)"
+                      required="false"/>
+        <cc:attribute name="formCtx" type="fr.siamois.ui.form.EntityFormContext" required="true"/>
+        <cc:attribute name="onModified"
+                      method-signature="void setFieldAnswerHasBeenModified(javax.faces.event.AjaxBehaviorEvent)"
+                      required="false"/>
+    </cc:interface>
+
+
+    <cc:implementation>
+        <p:outputPanel id="inplace">
+
+            <!-- ===== MODE EDIT ===== -->
+            <h:panelGroup id="inputGroup" rendered="#{cc.attrs.mode eq 'input'}">
+                <p:inputNumber value="#{cc.attrs.answer.value.numericValue}"
+                               inputStyle="width: 100%"
+                               inputStyleClass="#{cc.attrs.answer.hasBeenModified ? 'track-change sia-modified-field': 'track-change'}"
+                               label="#{cc.attrs.label}"
+                               minValue="#{cc.attrs.field.minValue}"
+                               maxValue="#{cc.attrs.field.maxValue}"
+                               symbol="#{cc.attrs.field.unit.symbol}"
+                               required="#{cc.attrs.required}"
+                               id="measurement">
+                    <f:attribute name="field" value="#{cc.attrs.field}" />
+                    <p:ajax event="keyup" delay="2000" update="#{cc.attrs.updateTargetsOnBlur}"
+                            process="@this"
+                            onstart="$(PrimeFaces.escapeClientId('#{cc.clientId}:input')).removeClass('sia-modified-field'); showSpinner('#{cc.attrs.panelId}')"
+                            oncomplete="hideSpinner('#{cc.attrs.panelId}')"
+                            onerror="handleAutoSaveError(xhr, status, '#{cc.attrs.panelId}'); $(PrimeFaces.escapeClientId('#{cc.clientId}:input')).addClass('sia-modified-field');"
+                            listener="#{cc.attrs.onModified}"/>
+                </p:inputNumber>
+                <p:inputText value="#{cc.attrs.answer.value.comment}"
+                             id="input"
+                             label="#{cc.attrs.label}"
+                             required="#{cc.attrs.required}">
+
+                    <f:attribute name="field" value="#{cc.attrs.field}" />
+
+                    <p:ajax event="keyup" delay="2000"
+                            update="#{cc.attrs.updateTargetsOnBlur}"
+                            process="@this"
+                            onstart="$(PrimeFaces.escapeClientId('#{cc.clientId}:input')).removeClass('sia-modified-field'); showSpinner('#{cc.attrs.panelId}')"
+                            oncomplete="hideSpinner('#{cc.attrs.panelId}')"
+                            onerror="handleAutoSaveError(xhr, status, '#{cc.attrs.panelId}'); $(PrimeFaces.escapeClientId('#{cc.clientId}:input')).addClass('sia-modified-field');"
+                            listener="#{cc.attrs.onModified}"/>
+                </p:inputText>
+            </h:panelGroup>
+        </p:outputPanel>
+
+    </cc:implementation>
+
+</ui:composition>

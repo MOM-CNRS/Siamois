@@ -244,6 +244,21 @@
             />
         </c:if>
 
+        <c:if test="#{col.field['class'].simpleName eq 'CustomFieldMeasurement'}">
+            <siaInplace:measurement
+                    id="measurement"
+                    formCtx="#{formCtx}"
+                    rendered="#{col.field['class'].simpleName eq 'CustomFieldMeasurement'}"
+                    hasBeenModified="#{hasBeenModified}"
+                    field="#{col.field}"
+                    mode="#{mode}"
+                    onModified="#{formCtx.onFieldAnswerModifiedListener}"
+                    updateTargetsOnBlur="#{updateTargetsOnBlur}"
+                    required="#{col.required}"
+                    answer="#{answer}"
+            />
+        </c:if>
+
     </c:if>
 
 
