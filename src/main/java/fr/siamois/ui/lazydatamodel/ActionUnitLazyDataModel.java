@@ -5,11 +5,8 @@ import fr.siamois.dto.FilterDTO;
 import fr.siamois.dto.entity.ActionUnitDTO;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
-import org.primefaces.model.FilterMeta;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-
-import java.util.Map;
 
 
 public class ActionUnitLazyDataModel extends BaseActionUnitLazyDataModel {

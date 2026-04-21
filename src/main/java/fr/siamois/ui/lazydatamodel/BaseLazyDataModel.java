@@ -6,6 +6,7 @@ import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.models.vocabulary.LocalizedConceptData;
 import fr.siamois.domain.models.vocabulary.label.ConceptLabel;
 import fr.siamois.dto.FilterDTO;
+import fr.siamois.dto.SortDTO;
 import lombok.Getter;
 import lombok.Setter;
 import org.primefaces.model.FilterMeta;
@@ -16,6 +17,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.lang.NonNull;
+import org.springframework.lang.Nullable;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
@@ -220,17 +223,53 @@ public abstract class BaseLazyDataModel<T> extends LazyDataModel<T> implements L
         this.pageSizeState = pageSize;
         int pageNumber = first / pageSize;
 
-        Pageable pageable = PageRequest.of(pageNumber, pageSizeState, buildSort(sortBy, getDefaultSortField()));
+
 
         // Filter extraction
-        String localNameFilter = null;
-        Long[] categoryIds = null;
-        Long[] personIds = null;
-        String localGlobalFilter = null;
-
         FilterDTO filterDTO = new FilterDTO();
+        SortDTO sortDTO = new SortDTO();
 
-        if (filterBy != null) {
+        prepareFilterDTO(filterBy, filterDTO);
+        prepareSortDTO(sortBy, sortDTO);
+
+        Pageable pageable = PageRequest.of(pageNumber, pageSizeState, buildSort(sortDTO));
+
+        Page<T> result = loadData(filterDTO, pageable);
+        setRowCount((int) result.getTotalElements());
+        updateCache(result, filterBy, sortBy, first, pageSize);
+
+        return result.getContent();
+    }
+
+    @NonNull
+    private Sort buildSort(SortDTO sortDTO) {
+        for (String attribute : sortDTO.getAttributeNames()) {
+            switch (sortDTO.orderOf(attribute)) {
+                case ASC -> {
+                    return Sort.by(Sort.Direction.ASC, attribute);
+                }
+                case DESC -> {
+                    return Sort.by(Sort.Direction.DESC, attribute);
+                }
+            }
+        }
+
+        return Sort.unsorted();
+    }
+
+    private static void prepareSortDTO(@Nullable Map<String, SortMeta> sortBy, @NonNull SortDTO sortDTO) {
+        if (sortBy != null && !sortBy.isEmpty()) {
+            SortMeta sortMeta = sortBy.get("name");
+            if (sortMeta != null) {
+                sortDTO.add("name", sortMeta.getOrder());
+            }
+        }
+    }
+
+    private static void prepareFilterDTO(Map<String, FilterMeta> filterBy, FilterDTO filterDTO) {
+        String localNameFilter = null;
+        String localGlobalFilter;
+        if (filterBy != null && !filterBy.isEmpty()) {
             FilterMeta nameMeta = filterBy.get("name");
             if (nameMeta != null && nameMeta.getFilterValue() != null) {
                 localNameFilter = nameMeta.getFilterValue().toString();
@@ -244,11 +283,6 @@ public abstract class BaseLazyDataModel<T> extends LazyDataModel<T> implements L
                 List<Concept> selectedCategories = selectedCategoryLabels.stream()
                         .map(LocalizedConceptData::getConcept)
                         .toList();
-                categoryIds = selectedCategories.stream()
-                        .filter(Objects::nonNull)
-                        .map(Concept::getId)
-                        .filter(Objects::nonNull)
-                        .toArray(Long[]::new);
                 filterDTO.add("category", localNameFilter, FilterDTO.FilterType.EQUAL);
             }
 
@@ -256,11 +290,6 @@ public abstract class BaseLazyDataModel<T> extends LazyDataModel<T> implements L
             if (personMeta != null && personMeta.getFilterValue() != null) {
                 @SuppressWarnings("unchecked")
                 List<Person> selectedPerson = (List<Person>) personMeta.getFilterValue();
-                personIds = selectedPerson.stream()
-                        .filter(Objects::nonNull)
-                        .map(Person::getId)
-                        .filter(Objects::nonNull)
-                        .toArray(Long[]::new);
                 filterDTO.add("author", localNameFilter, FilterDTO.FilterType.EQUAL);
             }
 
@@ -270,13 +299,6 @@ public abstract class BaseLazyDataModel<T> extends LazyDataModel<T> implements L
                 filterDTO.add(FilterDTO.GLOBAL_FILTER_KEY, localGlobalFilter, FilterDTO.FilterType.CONTAINS);
             }
         }
-
-        Page<T> result = loadData(filterDTO, pageable);
-        setRowCount((int) result.getTotalElements());
-        updateCache(result, filterBy, sortBy, first, pageSize);
-        this.sortBy = new HashSet<>(sortBy.values());
-
-        return result.getContent();
     }
 
     public int getFirstIndexOnPage() {
