@@ -4,13 +4,22 @@ import fr.siamois.domain.models.exceptions.database.DatabaseDataInitException;
 import fr.siamois.domain.models.form.customfield.*;
 import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerSelectOneFromFieldCode;
 import fr.siamois.domain.models.form.formscope.FormScope;
+import fr.siamois.domain.models.form.measurement.UnitDefinition;
 import fr.siamois.domain.models.vocabulary.Vocabulary;
+import fr.siamois.domain.models.vocabulary.VocabularyType;
+import fr.siamois.dto.entity.ConceptDTO;
+import fr.siamois.dto.entity.UnitDefinitionDTO;
+import fr.siamois.dto.entity.VocabularyDTO;
 import fr.siamois.infrastructure.database.initializer.seeder.ConceptSeeder;
 import fr.siamois.infrastructure.database.initializer.seeder.ThesaurusSeeder;
+import fr.siamois.infrastructure.database.initializer.seeder.UnitDefinitionSeeder;
 import fr.siamois.infrastructure.database.initializer.seeder.customfield.CustomFieldAnswerDTO;
 import fr.siamois.infrastructure.database.initializer.seeder.customfield.CustomFieldSeeder;
 import fr.siamois.infrastructure.database.initializer.seeder.customfield.CustomFieldSeederSpec;
 import fr.siamois.infrastructure.database.initializer.seeder.customform.*;
+import fr.siamois.infrastructure.database.repositories.measurement.UnitDefinitionRepository;
+import fr.siamois.infrastructure.database.repositories.vocabulary.VocabularyRepository;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Service;
@@ -22,7 +31,16 @@ import java.util.Map;
 @Slf4j
 @Service
 @Order(0)
+@RequiredArgsConstructor
 public class DefaultFormsDatasetInitializer implements DatabaseInitializer {
+
+    private static final String UI_G_12_UI_MD_6_UI_LG_6 = "ui-g-12 ui-md-6 ui-lg-6";
+    private final UnitDefinitionSeeder unitDefinitionSeeder;
+    private final VocabularyRepository vocabularyRepository;
+    private final ConceptSeeder conceptSeeder;
+    private final ThesaurusSeeder thesaurusSeeder;
+    private final CustomFieldSeeder customFieldSeeder;
+    private final CustomFormScopeSeeder customFormScopeSeeder;
 
     public static final String BI_BI_PENCIL_SQUARE = "bi bi-pencil-square";
     public static final String MR_2_RECORDING_UNIT_TYPE_CHIP = "mr-2 recording-unit-type-chip";
@@ -30,10 +48,7 @@ public class DefaultFormsDatasetInitializer implements DatabaseInitializer {
     public static final String COMMON_HEADER_GENERAL = "common.header.general";
     public static final String UI_G_12_UI_MD_6_UI_LG_3 = "ui-g-12 ui-md-6 ui-lg-3";
     public static final String UI_G_12_UI_MD_12_UI_LG_12 = "ui-g-12 ui-md-12 ui-lg-12";
-    private final ConceptSeeder conceptSeeder;
-    private final ThesaurusSeeder thesaurusSeeder;
-    private final CustomFieldSeeder customFieldSeeder;
-    private final CustomFormScopeSeeder customFormScopeSeeder;
+
 
     static final String DEFAULT_VOCABULARY_INSTANCE_URI = "https://thesaurus.mom.fr";
     static final String DEFAULT_VOCABULARY_ID = "th230";
@@ -41,7 +56,8 @@ public class DefaultFormsDatasetInitializer implements DatabaseInitializer {
 
     // Default Siamois Thesaurus
     List<ThesaurusSeeder.ThesaurusSpec> thesauri = List.of(
-            new ThesaurusSeeder.ThesaurusSpec(DEFAULT_VOCABULARY_INSTANCE_URI, DEFAULT_VOCABULARY_ID)
+            new ThesaurusSeeder.ThesaurusSpec(DEFAULT_VOCABULARY_INSTANCE_URI, DEFAULT_VOCABULARY_ID),
+            new ThesaurusSeeder.ThesaurusSpec(DEFAULT_VOCABULARY_INSTANCE_URI, "th252")
     );
 
     // Default Siamois field concept
@@ -84,6 +100,57 @@ public class DefaultFormsDatasetInitializer implements DatabaseInitializer {
             new ConceptSeeder.ConceptSpec(DEFAULT_VOCABULARY_ID, "4289277", "Fait partie de", "fr"),
             new ConceptSeeder.ConceptSpec(DEFAULT_VOCABULARY_ID, "4289278", "Contient", "fr")
     );
+
+    CustomFieldSeederSpec zInfField = CustomFieldSeederSpec.builder()
+            .isSystemField(true)
+            .answerClass(CustomFieldMeasurement.class)
+            .label("recordingunit.property.zInf")
+            .valueBinding("zInf")
+            .conceptKey(new ConceptSeeder.ConceptKey(DEFAULT_VOCABULARY_ID, "4289320"))
+            .unitDefinitionDTO(
+                    UnitDefinitionDTO.builder()
+                            .id(0L)
+                            .label("Mètres")
+                            .concept(ConceptDTO.builder()
+                                    .externalId("4289327")
+                                    .vocabulary(
+                                            VocabularyDTO.builder()
+                                                    .baseUri(DEFAULT_VOCABULARY_INSTANCE_URI)
+                                                    .externalVocabularyId("th252")
+                                                    .build()
+                                    )
+                                    .build())
+                            .symbol("m")
+                            .factorToBase(1.0)
+                            .systemBase(true)
+                            .dimension(UnitDefinition.Dimension.LENGTH)
+                            .build()
+            ).build();
+    CustomFieldSeederSpec zSupField = CustomFieldSeederSpec.builder()
+            .isSystemField(true)
+            .answerClass(CustomFieldMeasurement.class)
+            .label("recordingunit.property.zSup")
+            .valueBinding("zSup")
+            .conceptKey(new ConceptSeeder.ConceptKey(DEFAULT_VOCABULARY_ID, "4289321"))
+            .unitDefinitionDTO(
+                    UnitDefinitionDTO.builder()
+                            .id(0L)
+                            .label("Mètres")
+                            .concept(ConceptDTO.builder()
+                                    .externalId("4289327")
+                                    .vocabulary(
+                                            VocabularyDTO.builder()
+                                                    .baseUri(DEFAULT_VOCABULARY_INSTANCE_URI)
+                                                    .externalVocabularyId("th252")
+                                                    .build()
+                                    )
+                                    .build())
+                            .symbol("m")
+                            .factorToBase(1.0)
+                            .systemBase(true)
+                            .dimension(UnitDefinition.Dimension.LENGTH)
+                            .build()
+            ).build();
 
     // Default Siamois field
     List<CustomFieldSeederSpec> fields = List.of(
@@ -186,7 +253,8 @@ public class DefaultFormsDatasetInitializer implements DatabaseInitializer {
                     null,
                     null,
                     null,
-                    true
+                    true,
+                    null
             ),
             new CustomFieldSeederSpec(
                     CustomFieldText.class,
@@ -217,7 +285,8 @@ public class DefaultFormsDatasetInitializer implements DatabaseInitializer {
                     null,
                     null,
                     null,
-                    true
+                    true,
+                    null
             ),
             new CustomFieldSeederSpec(
                     CustomFieldText.class,
@@ -278,7 +347,8 @@ public class DefaultFormsDatasetInitializer implements DatabaseInitializer {
                     null,
                     null,
                     null,
-                    true
+                    true,
+                    null
             ),
             new CustomFieldSeederSpec(
                     CustomFieldDateTime.class,
@@ -319,7 +389,9 @@ public class DefaultFormsDatasetInitializer implements DatabaseInitializer {
                     null,
                     null,
                     null
-            )
+            ),
+            zInfField,
+            zSupField
     );
 
 
@@ -335,7 +407,7 @@ public class DefaultFormsDatasetInitializer implements DatabaseInitializer {
                     )
             )
     );
-    EnabledWhenSpecSeedDTO  matrixEnabledWhenDTO = new EnabledWhenSpecSeedDTO(
+    EnabledWhenSpecSeedDTO matrixEnabledWhenDTO = new EnabledWhenSpecSeedDTO(
             EnabledWhenSpecSeedDTO.Operator.IN,
             fields.get(1),
             List.of(
@@ -613,6 +685,28 @@ public class DefaultFormsDatasetInitializer implements DatabaseInitializer {
                             ),
                             new CustomFormPanelDTO(
                                     "",
+                                    "recordingunit.panel.measurements",
+                                    List.of(new CustomRowDTO(
+                                            List.of(
+                                                    new CustomColDTO(
+                                                            false,
+                                                            false,
+                                                            zInfField,
+                                                            UI_G_12_UI_MD_6_UI_LG_6
+                                                    ),
+                                                    new CustomColDTO(
+                                                            false,
+                                                            false,
+                                                            zSupField,
+                                                            UI_G_12_UI_MD_6_UI_LG_6
+                                                    )
+                                            )
+                                    )),
+                                    true,
+                                    true
+                            ),
+                            new CustomFormPanelDTO(
+                                    "",
                                     COMMON_HEADER_GENERAL,
                                     List.of(new CustomRowDTO(
                                             List.of(
@@ -743,20 +837,39 @@ public class DefaultFormsDatasetInitializer implements DatabaseInitializer {
             )
     );
 
-    public DefaultFormsDatasetInitializer(ConceptSeeder conceptSeeder, ThesaurusSeeder thesaurusSeeder, CustomFieldSeeder customFieldSeeder, CustomFormScopeSeeder customFormScopeSeeder, CustomFormSeeder customFormSeeder) {
-        this.conceptSeeder = conceptSeeder;
-        this.thesaurusSeeder = thesaurusSeeder;
-        this.customFieldSeeder = customFieldSeeder;
-        this.customFormScopeSeeder = customFormScopeSeeder;
-        this.customFormSeeder = customFormSeeder;
-    }
 
     @Override
     public void initialize() throws DatabaseDataInitException {
+
         Map<String, Vocabulary> result = thesaurusSeeder.seed(thesauri);
+
+
+        Vocabulary vocabulary = result.get("th252");
+        VocabularyDTO vocabulary2 = new VocabularyDTO();
+        vocabulary2.setExternalVocabularyId("th252");
+        ConceptDTO meterConcept = new ConceptDTO();
+        meterConcept.setVocabulary(vocabulary2);
+        meterConcept.setExternalId("4289327");
+
+        // Define meter
+        UnitDefinitionDTO meter = UnitDefinitionDTO.builder()
+                .id(0L)
+                .label("Mètres")
+                .concept(meterConcept)
+                .symbol("m")
+                .factorToBase(1.0)
+                .systemBase(true)
+                .dimension(UnitDefinition.Dimension.LENGTH)
+                .build();
+
+        unitDefinitionSeeder.seed(vocabulary, List.of(meter));
+
+
         conceptSeeder.seed(result.get(DEFAULT_VOCABULARY_ID), concepts);
         customFieldSeeder.seed(fields);
         customFormSeeder.seed(forms);
         customFormScopeSeeder.seed(scopes);
+
+
     }
 }

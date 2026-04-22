@@ -1,10 +1,10 @@
 package fr.siamois.dto.entity;
 
-import fr.siamois.domain.models.form.measurement.UnitDefinition;
-import jakarta.persistence.*;
+import lombok.Data;
 
 import java.io.Serializable;
 
+@Data
 public class MeasurementAnswerDTO implements Serializable {
 
     private Long id;

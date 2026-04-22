@@ -62,6 +62,7 @@ public class CustomFormLayoutConverter implements AttributeConverter<List<Custom
         Map<String, Object> panelMap = new HashMap<>();
         panelMap.put(CLASS_NAME_KEY, panel.getClassName());
         panelMap.put("name", panel.getName());
+        panelMap.put("canUserAddFields", panel.getCanUserAddFields());
         panelMap.put("isSystemPanel", panel.getIsSystemPanel());
 
         List<Map<String, Object>> rows = Optional.ofNullable(panel.getRows()).orElse(List.of()).stream()
@@ -117,6 +118,7 @@ public class CustomFormLayoutConverter implements AttributeConverter<List<Custom
         panel.setClassName((String) panelMap.get(CLASS_NAME_KEY));
         panel.setName((String) panelMap.get("name"));
         panel.setIsSystemPanel((Boolean) panelMap.get("isSystemPanel"));
+        panel.setCanUserAddFields((Boolean) panelMap.get("canUserAddFields"));
 
         List<Map<String, Object>> rowsList = (List<Map<String, Object>>) panelMap.get("rows");
         List<CustomRow> rows = Optional.ofNullable(rowsList).orElse(List.of()).stream()

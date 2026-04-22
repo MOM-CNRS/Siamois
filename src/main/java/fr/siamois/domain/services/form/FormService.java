@@ -10,7 +10,9 @@ import fr.siamois.dto.PlaceSuggestionDTO;
 import fr.siamois.dto.StratigraphicRelationshipDTO;
 import fr.siamois.dto.entity.*;
 import fr.siamois.infrastructure.database.repositories.form.FormRepository;
+import fr.siamois.infrastructure.database.repositories.measurement.UnitDefinitionRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
+import fr.siamois.mapper.UnitDefinitionMapper;
 import fr.siamois.ui.bean.LabelBean;
 import fr.siamois.ui.form.CustomFieldAnswerFactory;
 import fr.siamois.ui.form.ValueMatcherFactory;
@@ -25,6 +27,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.beans.PropertyDescriptor;
 import java.lang.reflect.Method;
+import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.*;
@@ -47,6 +50,7 @@ public class FormService {
 
     private final LabelBean labelBean;
     private final FormRepository formRepository;
+    private final UnitDefinitionMapper unitDefinitionMapper;
 
 
     /**
@@ -260,6 +264,8 @@ public class FormService {
             return a.getValue();
         } else if (answer instanceof CustomFieldAnswerSelectOnePersonViewModel a) {
             return a.getValue();
+        } else if (answer instanceof CustomFieldAnswerMeasurementViewModel a) {
+            return a.getValue();
         } else if (answer instanceof CustomFieldAnswerSelectOneFromFieldCodeViewModel a) {
             try {
                 return a.getValue().concept();
@@ -269,7 +275,7 @@ public class FormService {
         } else if (answer instanceof CustomFieldAnswerSelectOneActionUnitViewModel a) {
             return a.getValue();
         } else if (answer instanceof CustomFieldAnswerSelectOneSpatialUnitViewModel a) {
-            if(a.getValue()!=null){
+            if (a.getValue() != null) {
                 // Convert back to place dto (single selection)
                 PlaceSuggestionDTO ans = a.getValue();
                 SpatialUnitSummaryDTO dto = new SpatialUnitSummaryDTO();
@@ -332,9 +338,19 @@ public class FormService {
                 && bindableFields.contains(field.getValueBinding())) {
 
             Object value = getFieldValue(jpaEntity, field.getValueBinding());
-            if(value != null) {
-                populateSystemFieldValue(answer, value);
+            populateSystemFieldValue(answer, value);
+
+            // POST INIT
+            if(field instanceof  CustomFieldMeasurement measField) {
+                if(answer instanceof CustomFieldAnswerMeasurementViewModel measAnswer) {
+                    if(measAnswer.getValue().getUnit() == null) {
+                        measAnswer.getValue().setUnit(
+                                unitDefinitionMapper.convert(measField.getUnit())
+                        );
+                    }
+                }
             }
+
 
         }
     }
@@ -355,6 +371,7 @@ public class FormService {
         handlers.put(CustomFieldAnswerSelectOneAddressViewModel.class, this::handleAddress);
         handlers.put(CustomFieldAnswerSelectMultipleSpatialUnitTreeViewModel.class, this::handleSpatialUnitSet);
         handlers.put(CustomFieldAnswerSelectMultipleRecordingUnitViewModel.class, this::handleRecordingUnitSet);
+        handlers.put(CustomFieldAnswerMeasurementViewModel.class, this::handleMeasurement);
 
         Class<? extends CustomFieldAnswerViewModel> answerClass = answer.getClass();
         BiConsumer<CustomFieldAnswerViewModel, Object> handler = handlers.get(answerClass);
@@ -363,11 +380,24 @@ public class FormService {
         }
     }
 
+
     // Méthodes dédiées pour chaque type de 'value'
     private void handleDateTime(CustomFieldAnswerViewModel answer, Object value) {
         if (answer instanceof CustomFieldAnswerDateTimeViewModel dateTimeAnswer) {
-            dateTimeAnswer.setValue(((OffsetDateTime) value).toLocalDateTime());
+            LocalDateTime dateTime = null;
+            if (value != null) {
+                dateTime = ((OffsetDateTime) value).toLocalDateTime();
+            }
+            dateTimeAnswer.setValue(dateTime);
         }
+    }
+
+    private void handleMeasurement(CustomFieldAnswerViewModel answer, Object value) {
+        MeasurementAnswerDTO meas = (MeasurementAnswerDTO) value;
+        if (meas == null) {
+            meas = new MeasurementAnswerDTO();
+        }
+        ((CustomFieldAnswerMeasurementViewModel) answer).setValue(meas);
     }
 
     private void handleAddress(CustomFieldAnswerViewModel answer, Object value) {
@@ -420,12 +450,15 @@ public class FormService {
             // Convert to place suggestion
             SpatialUnitSummaryDTO val = (SpatialUnitSummaryDTO) value;
             PlaceSuggestionDTO dto = new PlaceSuggestionDTO();
-            dto.setId(val.getId());
-            dto.setName(val.getName());
-            dto.setCode(val.getCode());
-            dto.setSourceName("INTERNAL");
-            dto.setCategory(val.getCategory());
-            spatialUnitAnswer.setValue(dto);
+            if (val != null) {
+                dto.setId(val.getId());
+                dto.setName(val.getName());
+                dto.setCode(val.getCode());
+                dto.setSourceName("INTERNAL");
+                dto.setCategory(val.getCategory());
+                spatialUnitAnswer.setValue(dto);
+            }
+
         }
     }
 

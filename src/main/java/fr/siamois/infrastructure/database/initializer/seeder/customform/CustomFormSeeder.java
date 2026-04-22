@@ -118,6 +118,7 @@ public class CustomFormSeeder {
 
         CustomFormPanel panel = new CustomFormPanel.Builder()
                 .isSystemPanel(dto.isSystemPanel())
+                .canUserAddField(dto.canUserAddFields())
                 .name(dto.name())
                 .className(dto.className())
                 .build();

@@ -7,7 +7,7 @@
 
     <cc:interface>
         <cc:attribute name="answer"
-                      type="fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerMeasurement"
+                      type="fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerMeasurementViewModel"
                       required="true"/>
         <cc:attribute name="hasBeenModified" type="Boolean" required="false" default="false"/>
         <cc:attribute name="field" type="fr.siamois.domain.models.form.customfield.CustomFieldMeasurement"
@@ -31,37 +31,42 @@
 
             <!-- ===== MODE EDIT ===== -->
             <h:panelGroup id="inputGroup" rendered="#{cc.attrs.mode eq 'input'}">
-                <p:inputNumber value="#{cc.attrs.answer.value.numericValue}"
-                               inputStyle="width: 100%"
-                               inputStyleClass="#{cc.attrs.answer.hasBeenModified ? 'track-change sia-modified-field': 'track-change'}"
-                               label="#{cc.attrs.label}"
-                               minValue="#{cc.attrs.field.minValue}"
-                               maxValue="#{cc.attrs.field.maxValue}"
-                               symbol="#{cc.attrs.field.unit.symbol}"
-                               required="#{cc.attrs.required}"
-                               id="measurement">
-                    <f:attribute name="field" value="#{cc.attrs.field}" />
-                    <p:ajax event="keyup" delay="2000" update="#{cc.attrs.updateTargetsOnBlur}"
-                            process="@this"
-                            onstart="$(PrimeFaces.escapeClientId('#{cc.clientId}:input')).removeClass('sia-modified-field'); showSpinner('#{cc.attrs.panelId}')"
-                            oncomplete="hideSpinner('#{cc.attrs.panelId}')"
-                            onerror="handleAutoSaveError(xhr, status, '#{cc.attrs.panelId}'); $(PrimeFaces.escapeClientId('#{cc.clientId}:input')).addClass('sia-modified-field');"
-                            listener="#{cc.attrs.onModified}"/>
-                </p:inputNumber>
-                <p:inputText value="#{cc.attrs.answer.value.comment}"
-                             id="input"
-                             label="#{cc.attrs.label}">
+                <div style="display: flex;gap: 0.5em">
+                    <p:inputNumber value="#{cc.attrs.answer.value.numericValue}"
+                                   style="flex:1"
+                                   inputStyle="width: 100%"
+                                   inputStyleClass="#{cc.attrs.answer.hasBeenModified ? 'track-change sia-modified-field': 'track-change'}"
+                                   label="#{cc.attrs.label}"
+                                   symbol="m"
+                                   symbolPosition="s"
+                                   required="#{cc.attrs.required}"
+                                   id="measurement">
+                        <f:attribute name="field" value="#{cc.attrs.field}" />
+                        <p:ajax event="keyup" delay="2000" update="#{cc.attrs.updateTargetsOnBlur}"
+                                process="@this"
+                                onstart="$(PrimeFaces.escapeClientId('#{cc.clientId}:input')).removeClass('sia-modified-field'); showSpinner('#{cc.attrs.panelId}')"
+                                oncomplete="hideSpinner('#{cc.attrs.panelId}')"
+                                onerror="handleAutoSaveError(xhr, status, '#{cc.attrs.panelId}'); $(PrimeFaces.escapeClientId('#{cc.clientId}:input')).addClass('sia-modified-field');"
+                                listener="#{cc.attrs.onModified}"/>
+                    </p:inputNumber>
+                    <p:inputText value="#{cc.attrs.answer.value.comment}"
+                                 id="input"
+                                 style="flex:2"
+                                 placeholder="Commentaire"
+                                 label="#{cc.attrs.label}">
 
-                    <f:attribute name="field" value="#{cc.attrs.field}" />
+                        <f:attribute name="field" value="#{cc.attrs.field}" />
 
-                    <p:ajax event="keyup" delay="2000"
-                            update="#{cc.attrs.updateTargetsOnBlur}"
-                            process="@this"
-                            onstart="$(PrimeFaces.escapeClientId('#{cc.clientId}:input')).removeClass('sia-modified-field'); showSpinner('#{cc.attrs.panelId}')"
-                            oncomplete="hideSpinner('#{cc.attrs.panelId}')"
-                            onerror="handleAutoSaveError(xhr, status, '#{cc.attrs.panelId}'); $(PrimeFaces.escapeClientId('#{cc.clientId}:input')).addClass('sia-modified-field');"
-                            listener="#{cc.attrs.onModified}"/>
-                </p:inputText>
+                        <p:ajax event="keyup" delay="2000"
+                                update="#{cc.attrs.updateTargetsOnBlur}"
+                                process="@this"
+                                onstart="$(PrimeFaces.escapeClientId('#{cc.clientId}:input')).removeClass('sia-modified-field'); showSpinner('#{cc.attrs.panelId}')"
+                                oncomplete="hideSpinner('#{cc.attrs.panelId}')"
+                                onerror="handleAutoSaveError(xhr, status, '#{cc.attrs.panelId}'); $(PrimeFaces.escapeClientId('#{cc.clientId}:input')).addClass('sia-modified-field');"
+                                listener="#{cc.attrs.onModified}"/>
+                    </p:inputText>
+                </div>
+
             </h:panelGroup>
         </p:outputPanel>
 

@@ -45,6 +45,8 @@ public class RecordingUnitDTO extends AbstractEntityDTO {
     private ConceptDTO erosionShape;
     private ConceptDTO erosionOrientation;
     private ConceptDTO erosionProfile;
+    private MeasurementAnswerDTO zInf;
+    private MeasurementAnswerDTO zSup;
 
 
     public RecordingUnitDTO(RecordingUnitDTO original) {
@@ -63,12 +65,19 @@ public class RecordingUnitDTO extends AbstractEntityDTO {
         fullIdentifier = actionUnit.getFullIdentifier();
     }
 
+    @Override
+    public String toString() {
+        return "RecordingUnitDTO{" +
+                ", fullIdentifier='" + fullIdentifier + '\'' +
+                '}';
+    }
+
     @JsonIgnore
     @Transient
     public List<String> getBindableFieldNames() {
         return List.of("creationTime", "openingDate", "closingDate", "description","identifier",
                 "contributors", "type", "secondaryType", "thirdType", "actionUnit", "spatialUnit",
-                "parents","children", "comments",
+                "parents","children", "comments", "zInf", "zSup",
                 "geomorphologicalCycle", "normalizedInterpretation", "author", "geomorphologicalAgent",
                 "matrixComposition", "matrixColor", "matrixTexture", "erosionShape", "erosionOrientation",
                 "erosionProfile", "taq", "tpq", "chronologicalPhase", "fullIdentifier");

@@ -212,6 +212,10 @@ public class RecordingUnitService implements ArkEntityService {
         managedRecordingUnit.setErosionShape(recordingUnit.getErosionShape());
         managedRecordingUnit.setComments(recordingUnit.getComments());
 
+        // altimetry
+        managedRecordingUnit.setZInf(recordingUnit.getZInf());
+        managedRecordingUnit.setZSup(recordingUnit.getZSup());
+
         if (managedRecordingUnit.getCreatedBy() == null) {
             managedRecordingUnit.setCreatedBy(recordingUnit.getCreatedBy());
         }

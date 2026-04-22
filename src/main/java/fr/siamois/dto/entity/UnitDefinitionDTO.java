@@ -1,9 +1,13 @@
 package fr.siamois.dto.entity;
 
 import fr.siamois.domain.models.form.measurement.UnitDefinition;
+import lombok.Builder;
+import lombok.Data;
 
 import java.io.Serializable;
 
+@Data
+@Builder
 public class UnitDefinitionDTO implements Serializable {
 
     private Long id;
