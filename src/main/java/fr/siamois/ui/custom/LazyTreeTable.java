@@ -235,10 +235,6 @@ public class LazyTreeTable extends TreeTable {
                 log.trace("Data generated");
                 setValue(lazyRoot);
 
-                for (int i = 0; i < lazyModel.getRowCount(); i++) {
-                    log.trace("\t - {}", lazyRoot.getChildren().get(i));
-                }
-
                 log.trace("New root set");
             }
 
@@ -296,7 +292,7 @@ public class LazyTreeTable extends TreeTable {
             boolean isFilterEvent = "filter".equals(behaviorEvent)
                     || params.containsKey(clientId + "_filtering");
             if (isFilterEvent) {
-                super.setFirst(0); // bypass le guard de setFirst()
+                super.setFirst(0);
             }
         }
     }
