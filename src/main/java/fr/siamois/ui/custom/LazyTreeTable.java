@@ -25,7 +25,16 @@ public class LazyTreeTable extends TreeTable {
         lazyDataModel,
         isLeafMethod,
         loadMethod,
-        expandedRowKeys
+        expandedRowKeys,
+        isColumnFilteringEnabled,
+    }
+
+    public void setColumnFilteringEnabled(boolean enabled) {
+        getStateHelper().put(PropertyKeys.isColumnFilteringEnabled, enabled);
+    }
+
+    public boolean isColumnFilteringEnabled() {
+        return (Boolean) getStateHelper().eval(PropertyKeys.isColumnFilteringEnabled, false);
     }
 
     public void setIsLeafMethod(Callbacks.SerializableFunction<AbstractEntityDTO, Boolean> isLeafMethod) {
@@ -166,58 +175,8 @@ public class LazyTreeTable extends TreeTable {
             Map<String, FilterMeta> activeFilters = new HashMap<>();
             Map<String, SortMeta> activeSorts = new HashMap<>();
 
-            if (rawFilterMap != null) {
-                for (Map.Entry<String, FilterMeta> entry : rawFilterMap.entrySet()) {
-                    if ("globalFilter".equals(entry.getKey())) {
-                        continue;
-                    }
-
-                    Object val = entry.getValue().getFilterValue();
-                    if (val instanceof String strVal) {
-                        if (!strVal.trim().isEmpty()) {
-                            activeFilters.put(entry.getValue().getFilterBy().getValue(context.getELContext()), entry.getValue());
-                        }
-                    } else if (val != null) {
-                        activeFilters.put(entry.getKey(), entry.getValue());
-                    }
-                }
-            }
-
-            String globalVal = null;
-
-            if (rawFilterMap != null && rawFilterMap.containsKey("globalFilter")) {
-                globalVal = (String) rawFilterMap.get("globalFilter").getFilterValue();
-            }
-
-            String globalFilterParam = clientId + ":globalFilter";
-            if ((globalVal == null || globalVal.trim().isEmpty()) && params.containsKey(globalFilterParam)) {
-                globalVal = params.get(globalFilterParam);
-            }
-
-            if (globalVal != null && globalVal.trim().length() >= 3) {
-                FilterMeta globalMeta = FilterMeta.builder()
-                        .field("globalFilter")
-                        .filterValue(globalVal.trim())
-                        .matchMode(MatchMode.GLOBAL)
-                        .build();
-                activeFilters.put("globalFilter", globalMeta);
-            }
-
-            log.trace("Load appelée avec {} filtre(s) actif(s):", activeFilters.size());
-            for (Map.Entry<String, FilterMeta> entry : activeFilters.entrySet()) {
-                log.trace("\tFiltre : {} : {}", entry.getKey(), entry.getValue().getFilterValue());
-            }
-
-            for (Map.Entry<String, SortMeta> entry : sortMetaMap.entrySet()) {
-                if (!entry.getValue().getOrder().isUnsorted()) {
-                    activeSorts.put(entry.getValue().getSortBy().getValue(context.getELContext()),  entry.getValue());
-                }
-            }
-
-            log.trace("Load appelée avec {} tri(s) actif(s):", activeSorts.size());
-            for (Map.Entry<String, SortMeta> entry : activeSorts.entrySet()) {
-                log.trace("\tTri : {} : {}", entry.getKey(), entry.getValue().getOrder());
-            }
+            prepareFilters(rawFilterMap, activeFilters, context, clientId, params);
+            prepareSorts(sortMetaMap, activeSorts, context);
 
             List<? extends AbstractEntityDTO> data = lazyModel.load(first, rows, activeSorts, activeFilters);
 
@@ -251,6 +210,68 @@ public class LazyTreeTable extends TreeTable {
             }
 
             log.trace("Il doit y avoir {} enfants", getRowCount());
+        }
+    }
+
+    private static void prepareSorts(Map<String, SortMeta> sortMetaMap, Map<String, SortMeta> activeSorts, FacesContext context) {
+        for (Map.Entry<String, SortMeta> entry : sortMetaMap.entrySet()) {
+            if (!entry.getValue().getOrder().isUnsorted()) {
+                activeSorts.put(entry.getValue().getSortBy().getValue(context.getELContext()),  entry.getValue());
+            }
+        }
+
+        log.trace("Load appelée avec {} tri(s) actif(s):", activeSorts.size());
+        for (Map.Entry<String, SortMeta> entry : activeSorts.entrySet()) {
+            log.trace("\tTri : {} : {}", entry.getKey(), entry.getValue().getOrder());
+        }
+    }
+
+    private void prepareFilters(Map<String, FilterMeta> rawFilterMap, Map<String, FilterMeta> activeFilters, FacesContext context, String clientId, Map<String, String> params) {
+        if (rawFilterMap != null) {
+            for (Map.Entry<String, FilterMeta> entry : rawFilterMap.entrySet()) {
+                if ("globalFilter".equals(entry.getKey())) {
+                    continue;
+                }
+
+                Object val = entry.getValue().getFilterValue();
+                if (val instanceof String strVal) {
+                    if (!strVal.trim().isEmpty()) {
+                        activeFilters.put(entry.getValue().getFilterBy().getValue(context.getELContext()), entry.getValue());
+                    }
+                } else if (val != null) {
+                    activeFilters.put(entry.getKey(), entry.getValue());
+                }
+            }
+        }
+
+        String globalVal = null;
+
+        if (rawFilterMap != null && rawFilterMap.containsKey("globalFilter")) {
+            globalVal = (String) rawFilterMap.get("globalFilter").getFilterValue();
+        }
+
+        String globalFilterParam = clientId + ":globalFilter";
+        if ((globalVal == null || globalVal.trim().isEmpty()) && params.containsKey(globalFilterParam)) {
+            globalVal = params.get(globalFilterParam);
+        }
+
+        if (globalVal != null && globalVal.trim().length() >= 3) {
+            FilterMeta globalMeta = FilterMeta.builder()
+                    .field("globalFilter")
+                    .filterValue(globalVal.trim())
+                    .matchMode(MatchMode.GLOBAL)
+                    .build();
+            activeFilters.put("globalFilter", globalMeta);
+        }
+
+        if (!isColumnFilteringEnabled()) {
+            activeFilters.clear();
+            log.trace("Filtres inactifs");
+        } else {
+            log.trace("Load appelée avec {} filtre(s) actif(s):", activeFilters.size());
+            for (Map.Entry<String, FilterMeta> entry : activeFilters.entrySet()) {
+                log.trace("\tFiltre : {} : {}", entry.getKey(), entry.getValue().getFilterValue());
+            }
         }
     }
 
@@ -354,4 +375,12 @@ public class LazyTreeTable extends TreeTable {
         super.calculateFirst();
     }
 
+    @Override
+    public String getStyleClass() {
+        String style = super.getStyleClass();
+        if (!isColumnFilteringEnabled()) {
+            style = style + " filter-table-column-hidden";
+        }
+        return style;
+    }
 }

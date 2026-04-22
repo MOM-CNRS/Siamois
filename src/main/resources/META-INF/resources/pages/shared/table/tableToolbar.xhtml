@@ -54,8 +54,14 @@
                                      onkeyup="PrimeFaces.debounce(() => PF('#{cc.clientId}_#{tableId}').filter(), 500)"
                                      placeholder="#{langBean.msg('common.action.search')}"/>
                     </span>
+                    <p:toggleSwitch
+                            id="manualColumnToggle"
+                            value="#{component.namingContainer.columnFilteringEnabled}"
+                            onIcon="pi pi-filter" offIcon="pi pi-filter-slash"
+                            styleClass="vertical-align-middle ml-3">
 
-
+                        <p:ajax update=":#{cc.clientId}:#{tableId}" />
+                    </p:toggleSwitch>
                 </div>
             </p:toolbarGroup>
         </p:toolbarGroup>

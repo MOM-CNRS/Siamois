@@ -9,6 +9,12 @@
 
     <!--@elvariable id="tableModel" type="fr.siamois.ui.table.EntityTableViewModel"-->
 
+    <style>
+        .filter-table-column-hidden .ui-column-filter {
+            display: none;
+        }
+    </style>
+
     <custom:lazyTreeTable id="entityTreeTable"
                  rendered="#{tableModel.treeMode}"
                  lazyDataModel="#{tableModel.lazyDataModel}"
