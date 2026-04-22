@@ -32,11 +32,13 @@ public class ChartresDatasetInitializer implements DatabaseInitializer {
 
 
     public static final String VOCABULARY_ID = "th240";
+    public static final String HTTPS_THESAURUS_MOM_FR = "https://thesaurus.mom.fr";
     private final InstitutionRepository institutionRepository;
 
     List<ThesaurusSeeder.ThesaurusSpec> thesauri = List.of(
-            new ThesaurusSeeder.ThesaurusSpec("https://thesaurus.mom.fr", VOCABULARY_ID),
-            new ThesaurusSeeder.ThesaurusSpec("https://thesaurus.mom.fr", "th258")
+            new ThesaurusSeeder.ThesaurusSpec(HTTPS_THESAURUS_MOM_FR, "th230"),
+            new ThesaurusSeeder.ThesaurusSpec(HTTPS_THESAURUS_MOM_FR, VOCABULARY_ID),
+            new ThesaurusSeeder.ThesaurusSpec(HTTPS_THESAURUS_MOM_FR, "th258")
     );
 
     @Value("${siamois.admin.email}")

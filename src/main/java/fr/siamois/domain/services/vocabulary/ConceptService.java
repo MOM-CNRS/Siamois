@@ -273,12 +273,18 @@ public class ConceptService {
         }
     }
 
-    private void createRelatedLinkAndSetRelatedConcepts(Vocabulary vocabulary, Concept concept, List<String> relatedUrl, Map<String, Concept> urlToSavedConceptMap) {
+    private void createRelatedLinkAndSetRelatedConcepts(Vocabulary vocabulary, Concept concept,
+                                                        List<String> relatedUrl, Map<String, Concept> urlToSavedConceptMap) {
         for (String url : relatedUrl) {
-            FullInfoDTO fetchedConceptDTO = conceptApi.fetchConceptInfoByUri(vocabulary, url);
-            if (fetchedConceptDTO != null) {
-                Concept relatedConcept = urlToSavedConceptMap.computeIfAbsent(url, currentUrl -> saveOrGetConceptFromFullDTO(vocabulary, fetchedConceptDTO, null));
-                conceptRelatedLinkRepository.save(new ConceptRelatedLink(concept, relatedConcept));
+            try {
+                FullInfoDTO fetchedConceptDTO = conceptApi.fetchConceptInfoByUri(vocabulary, url);
+                if (fetchedConceptDTO != null) {
+                    Concept relatedConcept = urlToSavedConceptMap.computeIfAbsent(url, currentUrl -> saveOrGetConceptFromFullDTO(vocabulary, fetchedConceptDTO, null));
+                    conceptRelatedLinkRepository.save(new ConceptRelatedLink(concept, relatedConcept));
+                }
+            }
+            catch(Exception e) {
+                log.error(url);
             }
         }
     }
