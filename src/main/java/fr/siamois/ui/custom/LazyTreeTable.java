@@ -9,9 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @SuppressWarnings("rawtypes")
 public class LazyTreeTable extends TreeTable {
@@ -25,7 +23,8 @@ public class LazyTreeTable extends TreeTable {
         rowCount,
         lazyDataModel,
         isLeafMethod,
-        loadMethod;
+        loadMethod,
+        expandedRowKeys
     }
 
     public void setIsLeafMethod(Callbacks.SerializableFunction<AbstractEntityDTO, Boolean> isLeafMethod) {
@@ -229,8 +228,14 @@ public class LazyTreeTable extends TreeTable {
 
             if (data != null) {
                 lazyRoot = new RootTreeNode(getRowCount(), first);
-                for (AbstractEntityDTO elt : data) {
+
+                Set<String> expandedKeys = getExpandedRowKeySet();
+                for (int i = 0; i < data.size(); i++) {
+                    AbstractEntityDTO elt = (AbstractEntityDTO) data.get(i);
                     ChildTreeNode child = new ChildTreeNode(elt, getLoadMethod(), getIsLeafMethod());
+                    String rowKey = String.valueOf(first + i);
+                    child.setRowKey(rowKey);
+                    child.setExpanded(expandedKeys.contains(rowKey));
                     child.setParent(lazyRoot);
                     lazyRoot.getChildren().add(child);
                 }
@@ -279,11 +284,26 @@ public class LazyTreeTable extends TreeTable {
     protected void preEncode(FacesContext context) {
         if (isLazy()) {
             this.lazyRoot = null;
+            Map<String, String> params = context.getExternalContext().getRequestParameterMap();
+            String clientId = getClientId(context);
+            String behaviorEvent = params.get("javax.faces.behavior.event");
+            if ("filter".equals(behaviorEvent) || params.containsKey(clientId + "_filtering")) {
+                super.setFirst(0);
+                getExpandedRowKeySet().clear();
+            }
+            loadLazyData();
         }
-        super.preEncode(context); // updatePaginationData() → calculateFirst() → first=0 pour les filtres
-        if (isLazy()) {
-            loadLazyData(); // lit maintenant le bon first=0, puis setRowCount(filteredCount)
+        super.preEncode(context);
+    }
+
+    @SuppressWarnings("unchecked")
+    private Set<String> getExpandedRowKeySet() {
+        Set<String> keys = (Set<String>) getStateHelper().eval(PropertyKeys.expandedRowKeys, null);
+        if (keys == null) {
+            keys = new LinkedHashSet<>();
+            getStateHelper().put(PropertyKeys.expandedRowKeys, keys);
         }
+        return keys;
     }
 
     @Override
@@ -298,6 +318,19 @@ public class LazyTreeTable extends TreeTable {
             if (isFilterEvent) {
                 super.setFirst(0);
             }
+        }
+    }
+
+    @Override
+    public void decode(FacesContext context) {
+        super.decode(context);
+        if (isLazy()) {
+            Map<String, String> params = context.getExternalContext().getRequestParameterMap();
+            String clientId = getClientId(context);
+            String expandKey   = params.get(clientId + "_expand");
+            String collapseKey = params.get(clientId + "_collapse");
+            if (expandKey   != null) getExpandedRowKeySet().add(expandKey);
+            if (collapseKey != null) getExpandedRowKeySet().remove(collapseKey);
         }
     }
 
