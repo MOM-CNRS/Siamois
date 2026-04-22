@@ -148,8 +148,8 @@ public final class RecordingUnitTableDefinitionFactory {
 
                         // PrimeFaces metadata equivalents
                         .toggleable(false)
-                        .sortable(false)
-                        .filterable(false)
+                        .sortable(true)
+                        .filterable(true)
                         .sortField("full_identifier")
 
                         // What to display inside <h:outputText>

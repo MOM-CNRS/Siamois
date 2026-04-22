@@ -261,7 +261,7 @@ public abstract class BaseLazyDataModel<T> extends LazyDataModel<T> implements L
      * @param sortDTO The domain DTO sort
      */
     protected void prepareSortDTO(@Nullable Map<String, SortMeta> sortBy, @NonNull SortDTO sortDTO) {
-        throw new UnsupportedOperationException("Not supported yet.");
+
     }
 
     /**
@@ -271,7 +271,7 @@ public abstract class BaseLazyDataModel<T> extends LazyDataModel<T> implements L
      * @param filterDTO The domain DTO filters
      */
     protected void prepareFilterDTO(Map<String, FilterMeta> filterBy, FilterDTO filterDTO) {
-        throw new UnsupportedOperationException("Not supported yet.");
+
     }
 
     public int getFirstIndexOnPage() {

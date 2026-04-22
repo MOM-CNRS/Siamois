@@ -28,19 +28,13 @@ public class RecordingUnitLazyDataModel extends BaseRecordingUnitLazyDataModel {
         return Page.empty();
     }
 
-
     @Override
     protected Page<RecordingUnitDTO> loadData(FilterDTO filter, Pageable pageable) {
-        return recordingUnitService.findAllByInstitutionAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
-                sessionSettings.getSelectedInstitution().getId(),
-                null, null, null,
-                langBean.getLanguageCode(),
-                pageable
-        );
+        return recordingUnitService.searchRecordingUnit(sessionSettings.getSelectedInstitution(), filter, pageable);
     }
 
     @Override
     protected int countWithFilter(FilterDTO filters) {
-        return 0;
+        return recordingUnitService.countSearchResults(sessionSettings.getSelectedInstitution(), filters);
     }
 }

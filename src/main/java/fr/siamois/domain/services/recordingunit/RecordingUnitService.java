@@ -19,11 +19,13 @@ import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.recordingunit.identifier.generic.RuIdentifierResolver;
 import fr.siamois.domain.services.recordingunit.identifier.generic.RuNumericalIdentifierResolver;
+import fr.siamois.dto.FilterDTO;
 import fr.siamois.dto.entity.*;
 import fr.siamois.infrastructure.database.repositories.person.PersonRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitIdCounterRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitIdInfoRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitRepository;
+import fr.siamois.infrastructure.database.repositories.specs.RecordingUnitSpec;
 import fr.siamois.infrastructure.database.repositories.team.TeamMemberRepository;
 import fr.siamois.mapper.ActionUnitSummaryMapper;
 import fr.siamois.mapper.RecordingUnitMapper;
@@ -39,6 +41,7 @@ import org.springframework.core.convert.ConversionService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
@@ -828,5 +831,28 @@ public class RecordingUnitService implements ArkEntityService {
                 .stream()
                 .map(recordingUnitMapper::convert)
                 .collect(Collectors.toList());
+    }
+
+    public Page<RecordingUnitDTO> searchRecordingUnit(InstitutionDTO institution, FilterDTO filters, Pageable pageable) {
+        Specification<RecordingUnit> specs = prepareSpecs(institution, filters);
+
+        Page<RecordingUnit> results = recordingUnitRepository.findAll(specs, pageable);
+
+        return results.map(recordingUnitMapper::convert);
+    }
+
+    public int countSearchResults(InstitutionDTO institution, FilterDTO filters) {
+        Specification<RecordingUnit> specs = prepareSpecs(institution, filters);
+        return Math.toIntExact(recordingUnitRepository.count(specs));
+    }
+
+    public static Specification<RecordingUnit> prepareSpecs(@Nullable InstitutionDTO institution, FilterDTO filters) {
+        Specification<RecordingUnit> specification = RecordingUnitSpec.recordingUnitInInstitution(institution.getId());
+
+        if (filters.containsColumn(RecordingUnitSpec.FULL_IDENTIFIER)) {
+            specification = specification.and(RecordingUnitSpec.fullIdentifierStartsWith(filters.valueOfAsString(RecordingUnitSpec.FULL_IDENTIFIER)));
+        }
+
+        return specification;
     }
 }
