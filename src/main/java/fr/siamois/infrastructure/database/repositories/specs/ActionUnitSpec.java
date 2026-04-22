@@ -17,7 +17,7 @@ public class ActionUnitSpec {
         return ((root, query, criteriaBuilder) -> {
             if (name == null || name.isBlank())
                 return null;
-            return criteriaBuilder.like(root.get("name"), "%" + name + "%");
+            return criteriaBuilder.like(criteriaBuilder.lower(root.get("name")), "%" + name.toLowerCase() + "%");
         });
     }
 

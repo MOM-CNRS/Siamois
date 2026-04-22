@@ -201,7 +201,7 @@ public class LazyTreeTable extends TreeTable {
                 activeFilters.put("globalFilter", globalMeta);
             }
 
-            log.trace("Load appelée avec filtres actifs: {}", activeFilters);
+            log.trace("Load appelée avec {} filtre(s) actif(s):", activeFilters.size());
             for (Map.Entry<String, FilterMeta> entry : activeFilters.entrySet()) {
                 log.trace("\tFiltre : {} : {}", entry.getKey(), entry.getValue().getFilterValue());
             }
@@ -212,9 +212,9 @@ public class LazyTreeTable extends TreeTable {
                 }
             }
 
-            log.trace("Load appelée avec tris actifs: {}", activeSorts);
+            log.trace("Load appelée avec {} tri(s) actif(s):", activeSorts.size());
             for (Map.Entry<String, SortMeta> entry : activeSorts.entrySet()) {
-                log.trace("\tTri : {} : {}", entry.getKey(), entry.getValue());
+                log.trace("\tTri : {} : {}", entry.getKey(), entry.getValue().getOrder());
             }
 
             List<? extends AbstractEntityDTO> data = lazyModel.load(first, rows, activeSorts, activeFilters);
@@ -255,7 +255,6 @@ public class LazyTreeTable extends TreeTable {
 
     @Override
     public boolean isFilteringEnabled() {
-        // NE PAS bloquer ici — nécessaire pour l'initialisation du widget JS dans encodeEnd
         return super.isFilteringEnabled();
     }
 
@@ -279,7 +278,10 @@ public class LazyTreeTable extends TreeTable {
         if (isLazy()) {
             this.lazyRoot = null;
         }
-        super.preEncode(context);
+        super.preEncode(context); // updatePaginationData() → calculateFirst() → first=0 pour les filtres
+        if (isLazy()) {
+            loadLazyData(); // lit maintenant le bon first=0, puis setRowCount(filteredCount)
+        }
     }
 
     @Override
@@ -295,5 +297,20 @@ public class LazyTreeTable extends TreeTable {
                 super.setFirst(0);
             }
         }
+    }
+
+    @Override
+    public void calculateFirst() {
+        if (isLazy()) {
+            FacesContext context = getFacesContext();
+            Map<String, String> params = context.getExternalContext().getRequestParameterMap();
+            String clientId = getClientId(context);
+            String behaviorEvent = params.get("javax.faces.behavior.event");
+            if ("filter".equals(behaviorEvent) || params.containsKey(clientId + "_filtering")) {
+                super.setFirst(0);
+                return;
+            }
+        }
+        super.calculateFirst();
     }
 }
