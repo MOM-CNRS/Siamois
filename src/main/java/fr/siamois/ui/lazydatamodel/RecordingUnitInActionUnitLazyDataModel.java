@@ -45,17 +45,11 @@ public class RecordingUnitInActionUnitLazyDataModel extends BaseRecordingUnitLaz
 
     @Override
     protected Page<RecordingUnitDTO> loadData(FilterDTO filter, Pageable pageable) {
-        return recordingUnitService.findAllByInstitutionAndByActionUnitAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
-                sessionSettings.getSelectedInstitution().getId(),
-                actionUnit.getId(),
-                null, null, null,
-                langBean.getLanguageCode(),
-                pageable
-        );
+        return recordingUnitService.searchRecordingUnitInActionUnit(sessionSettings.getSelectedInstitution(),  actionUnit, filter, pageable);
     }
 
     @Override
     protected int countWithFilter(FilterDTO filters) {
-        return 0;
+        return recordingUnitService.countSearchResultsInActionUnit(sessionSettings.getSelectedInstitution(), actionUnit, filters);
     }
 }

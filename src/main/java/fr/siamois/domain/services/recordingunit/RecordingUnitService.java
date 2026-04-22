@@ -841,6 +841,19 @@ public class RecordingUnitService implements ArkEntityService {
         return results.map(recordingUnitMapper::convert);
     }
 
+    public Page<RecordingUnitDTO> searchRecordingUnitInActionUnit(InstitutionDTO institutionDTO, ActionUnitDTO actionUnitDTO, FilterDTO filters, Pageable pageable) {
+        Specification<RecordingUnit> specs = prepareSpecs(institutionDTO, filters);
+        specs = specs.and(RecordingUnitSpec.recordingUnitInActionUnit(actionUnitDTO.getId()));
+        Page<RecordingUnit> results = recordingUnitRepository.findAll(specs, pageable);
+        return results.map(recordingUnitMapper::convert);
+    }
+
+    public int countSearchResultsInActionUnit(InstitutionDTO institutionDTO, ActionUnitDTO actionUnitDTO, FilterDTO filters) {
+        Specification<RecordingUnit> specs = prepareSpecs(institutionDTO, filters);
+        specs = specs.and(RecordingUnitSpec.recordingUnitInActionUnit(actionUnitDTO.getId()));
+        return Math.toIntExact(recordingUnitRepository.count(specs));
+    }
+
     public int countSearchResults(InstitutionDTO institution, FilterDTO filters) {
         Specification<RecordingUnit> specs = prepareSpecs(institution, filters);
         return Math.toIntExact(recordingUnitRepository.count(specs));

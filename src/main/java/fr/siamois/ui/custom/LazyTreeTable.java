@@ -178,6 +178,7 @@ public class LazyTreeTable extends TreeTable {
             prepareFilters(rawFilterMap, activeFilters, context, clientId, params);
             prepareSorts(sortMetaMap, activeSorts, context);
 
+            log.trace("Load appelé avec : {}", lazyModel.getClass().getSimpleName());
             List<? extends AbstractEntityDTO> data = lazyModel.load(first, rows, activeSorts, activeFilters);
 
             if (activeFilters.isEmpty()) {

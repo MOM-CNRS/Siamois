@@ -8,9 +8,11 @@ public class RecordingUnitSpec {
     public static final String FULL_IDENTIFIER = "fullIdentifier";
 
     public static Specification<RecordingUnit> recordingUnitInInstitution(long institutionId) {
-        return (root, query, criteriaBuilder) -> {
-            return criteriaBuilder.equal(root.get("createdByInstitution").get("id"), institutionId);
-        };
+        return (root, query, criteriaBuilder) -> criteriaBuilder.equal(root.get("createdByInstitution").get("id"), institutionId);
+    }
+
+    public static Specification<RecordingUnit> recordingUnitInActionUnit(long actionUnitId) {
+        return ((root, query, criteriaBuilder) -> criteriaBuilder.equal(root.get("actionUnit").get("id"), actionUnitId));
     }
 
     public static Specification<RecordingUnit> fullIdentifierStartsWith(String fullIdentifier) {
