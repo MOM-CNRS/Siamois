@@ -846,7 +846,7 @@ public class RecordingUnitService implements ArkEntityService {
         return Math.toIntExact(recordingUnitRepository.count(specs));
     }
 
-    public static Specification<RecordingUnit> prepareSpecs(@Nullable InstitutionDTO institution, FilterDTO filters) {
+    public static Specification<RecordingUnit> prepareSpecs(@NonNull InstitutionDTO institution, FilterDTO filters) {
         Specification<RecordingUnit> specification = RecordingUnitSpec.recordingUnitInInstitution(institution.getId());
 
         if (filters.containsColumn(RecordingUnitSpec.FULL_IDENTIFIER)) {

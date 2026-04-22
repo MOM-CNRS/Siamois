@@ -171,6 +171,7 @@ public final class RecordingUnitTableDefinitionFactory {
                         .headerKey("recordingunit.field.identifier")
                         .field(recordingUnitIdField)
                         .sortable(true)
+                        .filterable(true)
                         .visible(true)
                         .required(true)
                         .build()
