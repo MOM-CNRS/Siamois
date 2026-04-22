@@ -562,6 +562,7 @@ public class ActionUnitService implements ArkEntityService {
         FilterDTO.FilterInfo globalFilter = filters.filterOf("global");
         FilterDTO.FilterInfo nameFilter = filters.filterOf("name");
 
+
         if (nameFilter != null && nameFilter.getType() == FilterDTO.FilterType.CONTAINS) {
             specs = specs.and(ActionUnitSpec.nameContaining(nameFilter.valueAsString()));
         } else if (globalFilter != null && globalFilter.getType() == FilterDTO.FilterType.CONTAINS) {
