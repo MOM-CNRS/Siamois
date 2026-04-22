@@ -7,6 +7,9 @@ import org.springframework.lang.Nullable;
 
 public class ActionUnitSpec {
 
+    public static final String GLOBAL_FILTER = "global";
+    public static final String NAME_FILTER = "name";
+
     @NonNull
     public static Specification<ActionUnit> belongsToInstitution(long institutionId) {
         return ((root, query, criteriaBuilder) -> criteriaBuilder.equal(root.get("createdByInstitution").get("id"), institutionId));

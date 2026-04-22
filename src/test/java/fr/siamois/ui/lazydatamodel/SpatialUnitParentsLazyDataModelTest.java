@@ -4,7 +4,6 @@ import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.SpatialUnitDTO;
 import fr.siamois.ui.bean.LangBean;
-import org.junit.Ignore;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;

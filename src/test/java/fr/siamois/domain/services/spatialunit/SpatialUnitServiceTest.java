@@ -512,24 +512,6 @@ class SpatialUnitServiceTest {
     }
 
     @Test
-    void testFindAll_Success() {
-        // Arrange
-        spatialUnit1 = new SpatialUnit();
-        spatialUnit2 = new SpatialUnit();
-        when(spatialUnitRepository.findAll()).thenReturn(List.of(spatialUnit1, spatialUnit2));
-
-        // Act
-        List<SpatialUnit> actualResult = spatialUnitService.findAll();
-
-        // Assert
-        assertNotNull(actualResult);
-        assertEquals(2, actualResult.size());
-        assertTrue(actualResult.contains(spatialUnit1));
-        assertTrue(actualResult.contains(spatialUnit2));
-        verify(spatialUnitRepository, times(1)).findAll();
-    }
-
-    @Test
     void test_countChildrenByParent() {
         SpatialUnit su = new SpatialUnit();
         su.setId(1L);

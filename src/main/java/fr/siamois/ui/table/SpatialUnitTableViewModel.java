@@ -26,7 +26,10 @@ import org.jspecify.annotations.NonNull;
 import org.primefaces.model.LazyDataModel;
 import org.primefaces.model.TreeNode;
 
-import java.util.*;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
 
 import static fr.siamois.ui.bean.dialog.newunit.NewUnitContext.TreeInsert.ROOT;
 import static fr.siamois.ui.table.TableColumnAction.DUPLICATE_ROW;

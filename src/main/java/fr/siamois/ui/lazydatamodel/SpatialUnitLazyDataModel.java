@@ -22,26 +22,13 @@ public class SpatialUnitLazyDataModel extends BaseSpatialUnitLazyDataModel {
     }
 
     @Override
-    protected Page<SpatialUnitDTO> loadSpatialUnits(String nameFilter, Long[] categoryIds, Long[] personIds, String globalFilter, Pageable pageable) {
-        return spatialUnitService.findAllByInstitutionAndByNameContainingAndByCategoriesAndByGlobalContaining(
-                sessionSettings.getSelectedInstitution().getId(),
-                nameFilter, categoryIds, personIds, globalFilter,
-                langBean.getLanguageCode(),
-                pageable);
+    protected int countWithFilter(FilterDTO filters) {
+        return spatialUnitService.countSearchResults(sessionSettings.getSelectedInstitution(), filters);
     }
 
 
     @Override
     protected Page<SpatialUnitDTO> loadData(FilterDTO filter, Pageable pageable) {
-        return spatialUnitService.findAllByInstitutionAndByNameContainingAndByCategoriesAndByGlobalContaining(
-                sessionSettings.getSelectedInstitution().getId(),
-                nameFilter, null, null, null,
-                langBean.getLanguageCode(),
-                pageable);
-    }
-
-    @Override
-    protected int countWithFilter(FilterDTO filters) {
-        return 0;
+        return spatialUnitService.searchSpatialUnits(sessionSettings.getSelectedInstitution(), filter, pageable);
     }
 }

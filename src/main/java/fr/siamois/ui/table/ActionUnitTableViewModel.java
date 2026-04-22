@@ -23,7 +23,6 @@ import org.jspecify.annotations.NonNull;
 import org.primefaces.model.LazyDataModel;
 import org.primefaces.model.TreeNode;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import static fr.siamois.ui.table.TableColumnAction.GO_TO_ACTION_UNIT;

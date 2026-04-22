@@ -1,11 +1,16 @@
 package fr.siamois.ui.lazydatamodel;
 
 
+import fr.siamois.dto.FilterDTO;
+import fr.siamois.dto.SortDTO;
 import fr.siamois.dto.entity.SpatialUnitDTO;
+import fr.siamois.infrastructure.database.repositories.specs.SpatialUnitSpec;
 import lombok.Getter;
 import lombok.Setter;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
+import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
+import org.primefaces.model.FilterMeta;
+import org.primefaces.model.SortMeta;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -40,6 +45,24 @@ public abstract class BaseSpatialUnitLazyDataModel extends BaseLazyDataModel<Spa
         return spatialUnit != null ? Long.toString(spatialUnit.getId()) : null;
     }
 
-    protected abstract Page<SpatialUnitDTO> loadSpatialUnits(String nameFilter, Long[] categoryIds, Long[] personIds, String globalFilter, Pageable pageable);
+    @Override
+    protected void prepareFilterDTO(Map<String, FilterMeta> filterBy, FilterDTO filterDTO) {
+        if (filterBy != null && !filterBy.isEmpty()) {
+            FilterMeta nameMeta = filterBy.get(SpatialUnitSpec.NAME_FILTER);
+            if (nameMeta != null && nameMeta.getFilterValue() != null) {
+                filterDTO.add(SpatialUnitSpec.NAME_FILTER, nameMeta.getFilterValue().toString(), FilterDTO.FilterType.CONTAINS);
+            }
+        }
+    }
+
+    @Override
+    protected void prepareSortDTO(@Nullable Map<String, SortMeta> sortBy, @NonNull SortDTO sortDTO) {
+        if (sortBy != null && !sortBy.isEmpty()) {
+            SortMeta sortMeta = sortBy.get(SpatialUnitSpec.NAME_FILTER);
+            if (sortMeta != null) {
+                sortDTO.add(SpatialUnitSpec.NAME_FILTER, sortMeta.getOrder());
+            }
+        }
+    }
 
 }

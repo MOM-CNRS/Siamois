@@ -559,8 +559,8 @@ public class ActionUnitService implements ArkEntityService {
     private Specification<ActionUnit> prepareSpecs(@NonNull InstitutionDTO institutionDTO, @NonNull FilterDTO filters) {
         Specification<ActionUnit> specs = ActionUnitSpec.belongsToInstitution(institutionDTO.getId());
 
-        FilterDTO.FilterInfo globalFilter = filters.filterOf("global");
-        FilterDTO.FilterInfo nameFilter = filters.filterOf("name");
+        FilterDTO.FilterInfo globalFilter = filters.filterOf(ActionUnitSpec.GLOBAL_FILTER);
+        FilterDTO.FilterInfo nameFilter = filters.filterOf(ActionUnitSpec.NAME_FILTER);
 
 
         if (nameFilter != null && nameFilter.getType() == FilterDTO.FilterType.CONTAINS) {

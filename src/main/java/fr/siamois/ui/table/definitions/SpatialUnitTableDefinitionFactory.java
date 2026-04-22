@@ -81,8 +81,8 @@ public final class SpatialUnitTableDefinitionFactory {
                         .visible(true)
 
                         .toggleable(false)
-                        .sortable(false)
-                        .filterable(false)
+                        .sortable(true)
+                        .filterable(true)
                         .sortField("name")
 
                         .valueKey("name")
@@ -111,8 +111,8 @@ public final class SpatialUnitTableDefinitionFactory {
                         .id("type")
                         .headerKey("spatialunit.field.type")
                         .field(spatialUnitTypeField)
-                        .sortable(false)
-                        .filterable(false)
+                        .sortable(true)
+                        .filterable(true)
                         .visible(true)
                         .required(true)
                         .build()

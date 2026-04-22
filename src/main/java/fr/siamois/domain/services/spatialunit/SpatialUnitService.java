@@ -20,10 +20,12 @@ import fr.siamois.domain.services.ark.ArkService;
 import fr.siamois.domain.services.authorization.PermissionServiceImpl;
 import fr.siamois.domain.services.person.PersonService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
+import fr.siamois.dto.FilterDTO;
 import fr.siamois.dto.PlaceSuggestionDTO;
 import fr.siamois.dto.entity.*;
 import fr.siamois.infrastructure.database.repositories.SpatialUnitRepository;
 import fr.siamois.infrastructure.database.repositories.actionunit.ActionUnitRepository;
+import fr.siamois.infrastructure.database.repositories.specs.SpatialUnitSpec;
 import fr.siamois.mapper.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -32,6 +34,7 @@ import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -330,15 +333,6 @@ public class SpatialUnitService implements ArkEntityService {
 
 
     /**
-     * Find all SpatialUnits in the system
-     *
-     * @return A list of all SpatialUnit
-     */
-    public List<SpatialUnit> findAll() {
-        return new ArrayList<>(spatialUnitRepository.findAll());
-    }
-
-    /**
      * Count the number of children of a given SpatialUnit
      *
      * @param spatialUnit The SpatialUnit to count children for
@@ -583,6 +577,28 @@ public class SpatialUnitService implements ArkEntityService {
         }
         dto.setSourceName("SIAMOIS");
         return dto;
+    }
+
+    public Page<SpatialUnitDTO> searchSpatialUnits(InstitutionDTO institutionDTO, FilterDTO filterDTO, Pageable pageable) {
+        Specification<SpatialUnit> specs = prepareSpecs(institutionDTO, filterDTO);
+        Page<SpatialUnit> result = spatialUnitRepository.findAll(specs, pageable);
+        log.trace("Found {} SpatialUnits", result.getTotalElements());
+        return result.map(spatialUnitMapper::convert);
+    }
+
+    public int countSearchResults(InstitutionDTO institutionDTO, FilterDTO filterDTO) {
+        Specification<SpatialUnit> specs = prepareSpecs(institutionDTO, filterDTO);
+        return Math.toIntExact(spatialUnitRepository.count(specs));
+    }
+
+    private Specification<SpatialUnit> prepareSpecs(InstitutionDTO institutionDTO, FilterDTO filterDTO) {
+        Specification<SpatialUnit> specs = SpatialUnitSpec.belongsToInstitution(institutionDTO.getId());
+
+        if (filterDTO.containsColumn(SpatialUnitSpec.NAME_FILTER)) {
+            specs = specs.and(SpatialUnitSpec.nameContaining(filterDTO.valueOfAsString(SpatialUnitSpec.NAME_FILTER)));
+        }
+
+        return specs;
     }
 
 }

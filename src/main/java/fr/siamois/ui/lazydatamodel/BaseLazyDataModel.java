@@ -1,9 +1,6 @@
 package fr.siamois.ui.lazydatamodel;
 
 
-import fr.siamois.domain.models.auth.Person;
-import fr.siamois.domain.models.vocabulary.Concept;
-import fr.siamois.domain.models.vocabulary.LocalizedConceptData;
 import fr.siamois.domain.models.vocabulary.label.ConceptLabel;
 import fr.siamois.dto.FilterDTO;
 import fr.siamois.dto.SortDTO;
@@ -197,7 +194,7 @@ public abstract class BaseLazyDataModel<T> extends LazyDataModel<T> implements L
         for (Map.Entry<String, FilterMeta> entry : map.entrySet()) {
             if (entry.getKey().equals("globalFilter") && entry.getValue() != null) {
                 filterDTO.add(FilterDTO.GLOBAL_FILTER_KEY, entry.getValue().getFilterValue(), FilterDTO.FilterType.CONTAINS);
-            } else {
+            } else if (entry.getValue() != null) {
                 filterDTO.add(entry.getKey(), entry.getValue().getFilterValue(), FilterDTO.FilterType.CONTAINS);
             }
         }
@@ -257,48 +254,24 @@ public abstract class BaseLazyDataModel<T> extends LazyDataModel<T> implements L
         return Sort.unsorted();
     }
 
-    private static void prepareSortDTO(@Nullable Map<String, SortMeta> sortBy, @NonNull SortDTO sortDTO) {
-        if (sortBy != null && !sortBy.isEmpty()) {
-            SortMeta sortMeta = sortBy.get("name");
-            if (sortMeta != null) {
-                sortDTO.add("name", sortMeta.getOrder());
-            }
-        }
+    /**
+     * This method is called by the {@link BaseLazyDataModel#load(int, int, Map, Map)} method.
+     * It allows you to transfer the elements in the sortBy provided by PrimeFaces to a SortDTO
+     * @param sortBy The sort list provided by PrimeFaces
+     * @param sortDTO The domain DTO sort
+     */
+    protected void prepareSortDTO(@Nullable Map<String, SortMeta> sortBy, @NonNull SortDTO sortDTO) {
+        throw new UnsupportedOperationException("Not supported yet.");
     }
 
-    private static void prepareFilterDTO(Map<String, FilterMeta> filterBy, FilterDTO filterDTO) {
-        String localNameFilter = null;
-        String localGlobalFilter;
-        if (filterBy != null && !filterBy.isEmpty()) {
-            FilterMeta nameMeta = filterBy.get("name");
-            if (nameMeta != null && nameMeta.getFilterValue() != null) {
-                localNameFilter = nameMeta.getFilterValue().toString();
-                filterDTO.add("name", localNameFilter, FilterDTO.FilterType.CONTAINS);
-            }
-
-            FilterMeta categoryMeta = filterBy.get("category");
-            if (categoryMeta != null && categoryMeta.getFilterValue() != null) {
-                @SuppressWarnings("unchecked")
-                List<LocalizedConceptData> selectedCategoryLabels = (List<LocalizedConceptData>) categoryMeta.getFilterValue();
-                List<Concept> selectedCategories = selectedCategoryLabels.stream()
-                        .map(LocalizedConceptData::getConcept)
-                        .toList();
-                filterDTO.add("category", localNameFilter, FilterDTO.FilterType.EQUAL);
-            }
-
-            FilterMeta personMeta = filterBy.get("author");
-            if (personMeta != null && personMeta.getFilterValue() != null) {
-                @SuppressWarnings("unchecked")
-                List<Person> selectedPerson = (List<Person>) personMeta.getFilterValue();
-                filterDTO.add("author", localNameFilter, FilterDTO.FilterType.EQUAL);
-            }
-
-            FilterMeta globalMeta = filterBy.get("globalFilter");
-            if (globalMeta != null && globalMeta.getFilterValue() != null) {
-                localGlobalFilter = globalMeta.getFilterValue().toString();
-                filterDTO.add(FilterDTO.GLOBAL_FILTER_KEY, localGlobalFilter, FilterDTO.FilterType.CONTAINS);
-            }
-        }
+    /**
+     * This method is called by the {@link BaseLazyDataModel#load(int, int, Map, Map)} method.
+     * It allows you to transfer the elements in the filterBy provided by PrimeFaces to a FilterDTO
+     * @param filterBy The filter list provided by PrimeFaces
+     * @param filterDTO The domain DTO filters
+     */
+    protected void prepareFilterDTO(Map<String, FilterMeta> filterBy, FilterDTO filterDTO) {
+        throw new UnsupportedOperationException("Not supported yet.");
     }
 
     public int getFirstIndexOnPage() {
