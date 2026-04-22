@@ -201,10 +201,6 @@ public class LazyTreeTable extends TreeTable {
                 activeFilters.put("globalFilter", globalMeta);
             }
 
-            if (activeFilters.isEmpty() && rawFilterMap != null) {
-                rawFilterMap.remove(rawFilterMap.keySet().stream().findFirst().orElse(null));
-            }
-
             log.trace("Load appelée avec filtres actifs: {}", activeFilters);
             for (Map.Entry<String, FilterMeta> entry : activeFilters.entrySet()) {
                 log.trace("\tFiltre : {} : {}", entry.getKey(), entry.getValue().getFilterValue());
@@ -263,9 +259,7 @@ public class LazyTreeTable extends TreeTable {
 
     @Override
     public boolean isFilteringEnabled() {
-        if (isLazy() && blockFiltering) {
-            return false;
-        }
+        // NE PAS bloquer ici — nécessaire pour l'initialisation du widget JS dans encodeEnd
         return super.isFilteringEnabled();
     }
 
@@ -281,6 +275,29 @@ public class LazyTreeTable extends TreeTable {
     public void setFilteredValue(TreeNode<?> filteredValue) {
         if (!isLazy()) {
             super.setFilteredValue(filteredValue);
+        }
+    }
+
+    @Override
+    protected void preEncode(FacesContext context) {
+        if (isLazy()) {
+            this.lazyRoot = null;
+        }
+        super.preEncode(context);
+    }
+
+    @Override
+    public void processDecodes(FacesContext context) {
+        super.processDecodes(context);
+        if (isLazy()) {
+            Map<String, String> params = context.getExternalContext().getRequestParameterMap();
+            String clientId = getClientId(context);
+            String behaviorEvent = params.get("javax.faces.behavior.event");
+            boolean isFilterEvent = "filter".equals(behaviorEvent)
+                    || params.containsKey(clientId + "_filtering");
+            if (isFilterEvent) {
+                super.setFirst(0); // bypass le guard de setFirst()
+            }
         }
     }
 }
