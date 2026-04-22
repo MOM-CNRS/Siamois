@@ -11,7 +11,25 @@
 
     <style>
         .filter-table-column-hidden .ui-column-filter {
-            display: none;
+            display: none !important;
+        }
+
+        .ui-treetable thead th {
+            text-align: left;
+            vertical-align: top;
+        }
+
+        .ui-treetable thead th .ui-column-title,
+        .ui-treetable thead th .ui-sortable-column-icon {
+            display: inline-block;
+            vertical-align: middle;
+        }
+
+        .ui-treetable thead th .ui-column-filter {
+            display: block;
+            width: 100%;
+            margin-top: 0.5rem;
+            box-sizing: border-box;
         }
     </style>
 

@@ -52,7 +52,9 @@
                         <p:inputText id="globalFilter"
                                      value="#{tableModel.globalFilter}"
                                      onkeyup="PrimeFaces.debounce(() => PF('#{cc.clientId}_#{tableId}').filter(), 500)"
-                                     placeholder="#{langBean.msg('common.action.search')}"/>
+                                     placeholder="#{langBean.msg('common.action.search')}"
+                                     disabled="#{not component.namingContainer.columnFilteringEnabled}"
+                        />
                     </span>
                     <p:toggleSwitch
                             id="manualColumnToggle"

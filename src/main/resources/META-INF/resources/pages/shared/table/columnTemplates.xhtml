@@ -11,10 +11,10 @@
     
     <!-- Header -->
     <f:facet name="header">
-        <p:outputPanel rendered="#{column.type ne 'COMMAND_LINK'}">
+        <p:outputPanel rendered="#{column.type ne 'COMMAND_LINK'}" layout="inline">
             #{langBean.msg(column.headerKey)}
         </p:outputPanel>
-        <p:outputPanel rendered="#{column.type eq 'COMMAND_LINK'}">
+        <p:outputPanel rendered="#{column.type eq 'COMMAND_LINK'}" layout="inline">
 
         </p:outputPanel>
     </f:facet>
