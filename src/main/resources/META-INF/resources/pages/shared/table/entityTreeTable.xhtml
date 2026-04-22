@@ -13,7 +13,6 @@
                  rendered="#{tableModel.treeMode}"
                  lazyDataModel="#{tableModel.lazyDataModel}"
                               lazy="true"
-                              rowCount="#{tableModel.lazyDataModel.rowCount}"
                  var="item"
                  nodeVar="node"
                  widgetVar="#{cc.clientId}_entityTreeTable"
@@ -39,7 +38,7 @@
               isLeafMethod="#{tableModel.isLeafMethod}"
               loadMethod="#{tableModel.loadMethod}"
     >
-        <p:ajax event="filter" process="@this" update="@this" />
+        <p:ajax event="filter" process="@this" oncomplete="if (args &amp;&amp; args.newRowCount !== undefined) { PF('#{cc.clientId}_entityTreeTable').getPaginator().setTotalRecords(args.newRowCount); }" />
         <f:facet name="header">
             <ui:include src="/pages/shared/table/tableToolbar.xhtml">
                 <ui:param name="tableModel" value="#{tableModel}"/>

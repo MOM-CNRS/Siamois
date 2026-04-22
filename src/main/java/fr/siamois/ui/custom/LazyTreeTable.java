@@ -2,6 +2,7 @@ package fr.siamois.ui.custom;
 
 import fr.siamois.dto.entity.AbstractEntityDTO;
 import jakarta.faces.context.FacesContext;
+import org.primefaces.PrimeFaces;
 import org.primefaces.component.treetable.TreeTable;
 import org.primefaces.model.*;
 import org.primefaces.util.Callbacks;
@@ -226,12 +227,16 @@ public class LazyTreeTable extends TreeTable {
                 setRowCount(lazyModel.count(activeFilters));
             }
 
+            if (PrimeFaces.current() != null) {
+                 PrimeFaces.current().ajax().addCallbackParam("newRowCount", getRowCount());
+            }
+
             if (data != null) {
                 lazyRoot = new RootTreeNode(getRowCount(), first);
 
                 Set<String> expandedKeys = getExpandedRowKeySet();
                 for (int i = 0; i < data.size(); i++) {
-                    AbstractEntityDTO elt = (AbstractEntityDTO) data.get(i);
+                    AbstractEntityDTO elt = data.get(i);
                     ChildTreeNode child = new ChildTreeNode(elt, getLoadMethod(), getIsLeafMethod());
                     String rowKey = String.valueOf(first + i);
                     child.setRowKey(rowKey);
@@ -348,4 +353,5 @@ public class LazyTreeTable extends TreeTable {
         }
         super.calculateFirst();
     }
+
 }
