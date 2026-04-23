@@ -61,6 +61,7 @@
                  class="#{tableClass}" paginator="true"
               isLeafMethod="#{tableModel.isLeafMethod}"
               loadMethod="#{tableModel.loadMethod}"
+                          columnFilteringEnabled="#{tableModel.columnFilteringEnabled}"
     >
         <p:ajax event="filter" process="@this" oncomplete="if (args &amp;&amp; args.newRowCount !== undefined) { PF('#{cc.clientId}_entityTreeTable').getPaginator().setTotalRecords(args.newRowCount); }" />
         <f:facet name="header">

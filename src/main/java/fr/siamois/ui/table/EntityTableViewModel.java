@@ -71,6 +71,10 @@ public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
     protected final LangBean langBean;
     protected final FormContextServices formContextServices;
 
+    @Getter
+    @Setter
+    private boolean columnFilteringEnabled = false;
+
 
     /** Fournit l'identifiant unique d'une entité T (ex: RecordingUnit::getId) */
     private final Function<T, ID> idExtractor;

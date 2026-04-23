@@ -36,5 +36,13 @@
             <required>false</required>
             <type>javax.el.MethodExpression</type>
         </attribute>
+
+
+        <attribute>
+            <name>columnFilteringEnabled</name>
+            <required>true</required>
+            <type>java.lang.Boolean</type>
+        </attribute>
+
     </tag>
 </facelet-taglib>

@@ -26,15 +26,15 @@ public class LazyTreeTable extends TreeTable {
         isLeafMethod,
         loadMethod,
         expandedRowKeys,
-        isColumnFilteringEnabled,
-    }
-
-    public void setColumnFilteringEnabled(boolean enabled) {
-        getStateHelper().put(PropertyKeys.isColumnFilteringEnabled, enabled);
+        columnFilteringEnabled,
     }
 
     public boolean isColumnFilteringEnabled() {
-        return (Boolean) getStateHelper().eval(PropertyKeys.isColumnFilteringEnabled, false);
+        return (Boolean) getStateHelper().eval(PropertyKeys.columnFilteringEnabled, false);
+    }
+
+    public void setColumnFilteringEnabled(boolean enabled) {
+        getStateHelper().put(PropertyKeys.columnFilteringEnabled, enabled);
     }
 
     public void setIsLeafMethod(Callbacks.SerializableFunction<AbstractEntityDTO, Boolean> isLeafMethod) {

@@ -27,6 +27,7 @@ public class RecordingUnitInActionUnitLazyDataModel extends BaseRecordingUnitLaz
         this.actionUnit = actionUnit;
     }
 
+    @Deprecated
     @Override
     protected Page<RecordingUnitDTO> loadRecordingUnits(String fullIdentifierFilter,
                                                         Long[] categoryIds,

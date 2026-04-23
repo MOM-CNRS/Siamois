@@ -53,12 +53,12 @@
                                      value="#{tableModel.globalFilter}"
                                      onkeyup="PrimeFaces.debounce(() => PF('#{cc.clientId}_#{tableId}').filter(), 500)"
                                      placeholder="#{langBean.msg('common.action.search')}"
-                                     disabled="#{not component.namingContainer.columnFilteringEnabled}"
+                                     disabled="#{not tableModel.columnFilteringEnabled}"
                         />
                     </span>
                     <p:toggleSwitch
                             id="manualColumnToggle"
-                            value="#{component.namingContainer.columnFilteringEnabled}"
+                            value="#{tableModel.columnFilteringEnabled}"
                             onIcon="pi pi-filter" offIcon="pi pi-filter-slash"
                             styleClass="vertical-align-middle ml-3">
 

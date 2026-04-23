@@ -841,14 +841,14 @@ public class RecordingUnitService implements ArkEntityService {
         return results.map(recordingUnitMapper::convert);
     }
 
-    public Page<RecordingUnitDTO> searchRecordingUnitInActionUnit(InstitutionDTO institutionDTO, ActionUnitDTO actionUnitDTO, FilterDTO filters, Pageable pageable) {
+    public Page<RecordingUnitDTO> searchRecordingUnitInActionUnit(InstitutionDTO institutionDTO, @NonNull ActionUnitDTO actionUnitDTO, FilterDTO filters, Pageable pageable) {
         Specification<RecordingUnit> specs = prepareSpecs(institutionDTO, filters);
         specs = specs.and(RecordingUnitSpec.recordingUnitInActionUnit(actionUnitDTO.getId()));
         Page<RecordingUnit> results = recordingUnitRepository.findAll(specs, pageable);
         return results.map(recordingUnitMapper::convert);
     }
 
-    public int countSearchResultsInActionUnit(InstitutionDTO institutionDTO, ActionUnitDTO actionUnitDTO, FilterDTO filters) {
+    public int countSearchResultsInActionUnit(InstitutionDTO institutionDTO, @NonNull ActionUnitDTO actionUnitDTO, FilterDTO filters) {
         Specification<RecordingUnit> specs = prepareSpecs(institutionDTO, filters);
         specs = specs.and(RecordingUnitSpec.recordingUnitInActionUnit(actionUnitDTO.getId()));
         return Math.toIntExact(recordingUnitRepository.count(specs));
@@ -859,7 +859,7 @@ public class RecordingUnitService implements ArkEntityService {
         return Math.toIntExact(recordingUnitRepository.count(specs));
     }
 
-    public static Specification<RecordingUnit> prepareSpecs(@NonNull InstitutionDTO institution, FilterDTO filters) {
+    public static Specification<RecordingUnit> prepareSpecs(@NonNull InstitutionDTO institution, @NonNull FilterDTO filters) {
         Specification<RecordingUnit> specification = RecordingUnitSpec.recordingUnitInInstitution(institution.getId());
 
         if (filters.containsColumn(RecordingUnitSpec.FULL_IDENTIFIER)) {
