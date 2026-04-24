@@ -16,7 +16,10 @@ public class FilterDTO {
     public enum FilterType {
         START_WITH,
         CONTAINS,
-        EQUAL
+        EQUAL,
+        NOT_STARTS_WITH,
+        NOT_CONTAINS,
+        NOT_EQUAL
     }
 
     @Data
