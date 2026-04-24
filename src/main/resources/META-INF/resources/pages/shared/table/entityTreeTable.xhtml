@@ -157,6 +157,30 @@
                 sortBy="#{column.field.valueBinding}"
                 toggleable="#{column.type != 'COMMAND_LINK'}"
         >
+            <c:if test="#{tableModel.isConceptFilter(column) and tableModel.columnFilteringEnabled}">
+                <f:facet name="filter">
+                    <p:autoComplete value="#{tableModel.conceptFilterValues[column.field.valueBinding]}"
+                                    completeMethod="#{spatialUnitFieldBean.completeWithFieldCode}"
+                                    var="autocompleteDto"
+                                    itemValue="#{autocompleteDto}"
+                                    itemLabel="#{autocompleteDto.conceptLabelToDisplay.label}"
+                                    converter="#{conceptAutocompleteDTOConverter}"
+                                    multiple="true"
+                                    dropdown="true"
+                                    forceSelection="true"
+                                    scrollHeight="300"
+                                    showEmptyMessage="false"
+                                    appendTo="@(body)"
+                                    panelStyleClass="sia-autocomplete-panel"
+                                    placeholder="#{langBean.msg('common.action.chooseConcept')}">
+                        <f:attribute name="fieldCode" value="#{tableModel.getFieldCode(column)}"/>
+                        <p:ajax event="itemSelect" process="@this" update="@none" global="false"
+                                oncomplete="PF('#{cc.clientId}_entityTreeTable').filter()"/>
+                        <p:ajax event="itemUnselect" process="@this" update="@none" global="false"
+                                oncomplete="PF('#{cc.clientId}_entityTreeTable').filter()"/>
+                    </p:autoComplete>
+                </f:facet>
+            </c:if>
             <ui:include src="/pages/shared/table/columnTemplates.xhtml">
                 <ui:param name="tableModel" value="#{tableModel}"/>
                 <ui:param name="column" value="#{column}"/>

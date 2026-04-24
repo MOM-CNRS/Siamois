@@ -1,6 +1,8 @@
 package fr.siamois.ui.custom;
 
 import fr.siamois.dto.entity.AbstractEntityDTO;
+import fr.siamois.dto.entity.ConceptDTO;
+import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
 import jakarta.faces.context.FacesContext;
 import org.primefaces.PrimeFaces;
 import org.primefaces.component.treetable.TreeTable;
@@ -214,6 +216,31 @@ public class LazyTreeTable extends TreeTable {
         }
     }
 
+    private static FilterMeta normalizeFilterMeta(FilterMeta meta) {
+        Object val = meta.getFilterValue();
+        if (!(val instanceof Collection<?> col) || col.isEmpty()) {
+            return meta;
+        }
+        Object first = col.iterator().next();
+        if (!(first instanceof ConceptAutocompleteDTO)) {
+            return meta;
+        }
+        List<Long> ids = new ArrayList<>(col.size());
+        for (Object o : col) {
+            ConceptAutocompleteDTO dto = (ConceptAutocompleteDTO) o;
+            ConceptDTO concept = dto.concept();
+            if (concept != null) {
+                ids.add(concept.getId());
+            }
+        }
+        return FilterMeta.builder()
+                .field(meta.getField())
+                .filterBy(meta.getFilterBy())
+                .filterValue(ids)
+                .matchMode(meta.getMatchMode())
+                .build();
+    }
+
     private static void prepareSorts(Map<String, SortMeta> sortMetaMap, Map<String, SortMeta> activeSorts, FacesContext context) {
         for (Map.Entry<String, SortMeta> entry : sortMetaMap.entrySet()) {
             if (!entry.getValue().getOrder().isUnsorted()) {
@@ -234,13 +261,21 @@ public class LazyTreeTable extends TreeTable {
                     continue;
                 }
 
-                Object val = entry.getValue().getFilterValue();
+                FilterMeta meta = entry.getValue();
+                Object val = meta.getFilterValue();
+                boolean keep;
                 if (val instanceof String strVal) {
-                    if (!strVal.trim().isEmpty()) {
-                        activeFilters.put(entry.getValue().getFilterBy().getValue(context.getELContext()), entry.getValue());
-                    }
-                } else if (val != null) {
-                    activeFilters.put(entry.getKey(), entry.getValue());
+                    keep = !strVal.trim().isEmpty();
+                } else if (val instanceof Collection<?> col) {
+                    keep = !col.isEmpty();
+                } else {
+                    keep = val != null;
+                }
+                if (keep) {
+                    Object resolvedKey = meta.getFilterBy() != null
+                            ? meta.getFilterBy().getValue(context.getELContext())
+                            : entry.getKey();
+                    activeFilters.put(String.valueOf(resolvedKey), normalizeFilterMeta(meta));
                 }
             }
         }

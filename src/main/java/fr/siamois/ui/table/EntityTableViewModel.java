@@ -1,7 +1,9 @@
 package fr.siamois.ui.table;
 
 import fr.siamois.domain.models.form.customfield.CustomField;
+import fr.siamois.domain.models.form.customfield.CustomFieldSelectOneFromFieldCode;
 import fr.siamois.domain.services.form.FormService;
+import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitTreeService;
 import fr.siamois.dto.entity.*;
@@ -93,6 +95,9 @@ public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
     /** Contexte de formulaire par ligne (clé = ID de l'entité) */
     protected final Map<ID, EntityFormContext<T>> rowContexts = new HashMap<>();
 
+    /** Concepts sélectionnés pour le filtre d'une colonne (clé = valueBinding de la colonne). */
+    private final Map<String, List<ConceptAutocompleteDTO>> conceptFilterValues = new HashMap<>();
+
     // tree mode selection
     @Setter
     @Getter
@@ -178,6 +183,19 @@ public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
      */
     public List<TableColumn> getColumns() {
         return tableDefinition.getVisibleColumns();
+    }
+
+    public boolean isConceptFilter(TableColumn column) {
+        return column instanceof FormFieldColumn ffc
+                && ffc.getField() instanceof CustomFieldSelectOneFromFieldCode;
+    }
+
+    public String getFieldCode(TableColumn column) {
+        if (column instanceof FormFieldColumn ffc
+                && ffc.getField() instanceof CustomFieldSelectOneFromFieldCode cf) {
+            return cf.getFieldCode();
+        }
+        return null;
     }
 
     /**
