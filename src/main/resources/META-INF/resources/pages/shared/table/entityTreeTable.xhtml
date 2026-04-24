@@ -182,6 +182,92 @@
                     </p:autoComplete>
                 </f:facet>
             </c:if>
+
+            <c:if test="#{tableModel.isPersonFilter(column) and tableModel.columnFilteringEnabled}">
+                <f:facet name="filter">
+                    <p:autoComplete value="#{tableModel.personFilterValues[column.field.valueBinding]}"
+                                    completeMethod="#{tableModel.completePersonForFilter}"
+                                    var="personDto"
+                                    itemValue="#{personDto.id}"
+                                    itemLabel="#{personDto.displayName()}"
+                                    converter="jakarta.faces.Long"
+                                    multiple="true"
+                                    dropdown="true"
+                                    forceSelection="true"
+                                    scrollHeight="300"
+                                    showEmptyMessage="false"
+                                    appendTo="@(body)"
+                                    panelStyleClass="sia-autocomplete-panel">
+                        <p:ajax event="itemSelect" process="@this" update="@none" global="false" delay="500"
+                                oncomplete="PF('#{cc.clientId}_entityTreeTable').filter()"/>
+                        <p:ajax event="itemUnselect" process="@this" update="@none" global="false" delay="500"
+                                oncomplete="PF('#{cc.clientId}_entityTreeTable').filter()"/>
+                    </p:autoComplete>
+                </f:facet>
+            </c:if>
+
+            <c:if test="#{tableModel.isActionUnitFilter(column) and tableModel.columnFilteringEnabled}">
+                <f:facet name="filter">
+                    <p:autoComplete value="#{tableModel.actionUnitFilterValues[column.field.valueBinding]}"
+                                    completeMethod="#{tableModel.completeActionUnitForFilter}"
+                                    var="actionUnitDto"
+                                    itemValue="#{actionUnitDto.id}"
+                                    itemLabel="#{actionUnitDto.name}"
+                                    converter="jakarta.faces.Long"
+                                    multiple="true"
+                                    dropdown="true"
+                                    forceSelection="true"
+                                    scrollHeight="300"
+                                    showEmptyMessage="false"
+                                    appendTo="@(body)"
+                                    panelStyleClass="sia-autocomplete-panel">
+                        <p:ajax event="itemSelect" process="@this" update="@none" global="false" delay="500"
+                                oncomplete="PF('#{cc.clientId}_entityTreeTable').filter()"/>
+                        <p:ajax event="itemUnselect" process="@this" update="@none" global="false" delay="500"
+                                oncomplete="PF('#{cc.clientId}_entityTreeTable').filter()"/>
+                    </p:autoComplete>
+                </f:facet>
+            </c:if>
+
+            <c:if test="#{tableModel.isSpatialUnitFilter(column) and tableModel.columnFilteringEnabled}">
+                <f:facet name="filter">
+                    <p:autoComplete value="#{tableModel.spatialUnitFilterValues[column.field.valueBinding]}"
+                                    completeMethod="#{tableModel.completeSpatialUnitForFilter}"
+                                    var="spatialUnitDto"
+                                    itemValue="#{spatialUnitDto.id}"
+                                    itemLabel="#{spatialUnitDto.name}"
+                                    converter="jakarta.faces.Long"
+                                    multiple="true"
+                                    dropdown="true"
+                                    forceSelection="true"
+                                    scrollHeight="300"
+                                    showEmptyMessage="false"
+                                    appendTo="@(body)"
+                                    panelStyleClass="sia-autocomplete-panel">
+                        <p:ajax event="itemSelect" process="@this" update="@none" global="false" delay="500"
+                                oncomplete="PF('#{cc.clientId}_entityTreeTable').filter()"/>
+                        <p:ajax event="itemUnselect" process="@this" update="@none" global="false" delay="500"
+                                oncomplete="PF('#{cc.clientId}_entityTreeTable').filter()"/>
+                    </p:autoComplete>
+                </f:facet>
+            </c:if>
+
+            <c:if test="#{tableModel.isDateTimeFilter(column) and tableModel.columnFilteringEnabled}">
+                <f:facet name="filter">
+                    <p:datePicker value="#{tableModel.dateFilterValues[column.field.valueBinding]}"
+                                  selectionMode="range"
+                                  showIcon="true"
+                                  showTime="#{tableModel.isDateTimeShowTime(column)}"
+                                  showButtonBar="true"
+                                  appendTo="@(body)"
+                                  panelStyleClass="sia-autocomplete-panel">
+                        <p:ajax event="dateSelect" process="@this" update="@none" global="false" delay="500"
+                                oncomplete="PF('#{cc.clientId}_entityTreeTable').filter()"/>
+                        <p:ajax event="change" process="@this" update="@none" global="false" delay="500"
+                                oncomplete="PF('#{cc.clientId}_entityTreeTable').filter()"/>
+                    </p:datePicker>
+                </f:facet>
+            </c:if>
             <ui:include src="/pages/shared/table/columnTemplates.xhtml">
                 <ui:param name="tableModel" value="#{tableModel}"/>
                 <ui:param name="column" value="#{column}"/>

@@ -1,7 +1,11 @@
 package fr.siamois.ui.table;
 
 import fr.siamois.domain.models.form.customfield.CustomField;
+import fr.siamois.domain.models.form.customfield.CustomFieldDateTime;
+import fr.siamois.domain.models.form.customfield.CustomFieldSelectOneActionUnit;
 import fr.siamois.domain.models.form.customfield.CustomFieldSelectOneFromFieldCode;
+import fr.siamois.domain.models.form.customfield.CustomFieldSelectOneSpatialUnit;
+import fr.siamois.domain.models.form.customfield.CustomFieldSelectPerson;
 import fr.siamois.domain.services.form.FormService;
 import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
@@ -98,6 +102,19 @@ public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
     /** Concepts sélectionnés pour le filtre d'une colonne (clé = valueBinding de la colonne). */
     private final Map<String, List<ConceptAutocompleteDTO>> conceptFilterValues = new HashMap<>();
 
+    /** Personnes sélectionnées pour le filtre d'une colonne (clé = valueBinding de la colonne). */
+    private final Map<String, List<PersonDTO>> personFilterValues = new HashMap<>();
+
+    /** Action units sélectionnés pour le filtre d'une colonne (clé = valueBinding de la colonne). */
+    private final Map<String, List<ActionUnitDTO>> actionUnitFilterValues = new HashMap<>();
+
+    /** Unités spatiales sélectionnées pour le filtre d'une colonne (clé = valueBinding de la colonne). */
+    private final Map<String, List<SpatialUnitDTO>> spatialUnitFilterValues = new HashMap<>();
+
+    /** Bornes de dates sélectionnées pour le filtre d'une colonne (clé = valueBinding de la colonne).
+     *  Contient jusqu'à 2 éléments : [from, to]. */
+    private final Map<String, java.util.List<java.util.Date>> dateFilterValues = new HashMap<>();
+
     // tree mode selection
     @Setter
     @Getter
@@ -190,12 +207,62 @@ public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
                 && ffc.getField() instanceof CustomFieldSelectOneFromFieldCode;
     }
 
+    public boolean isPersonFilter(TableColumn column) {
+        return column instanceof FormFieldColumn ffc
+                && ffc.getField() instanceof CustomFieldSelectPerson;
+    }
+
+    public boolean isActionUnitFilter(TableColumn column) {
+        return column instanceof FormFieldColumn ffc
+                && ffc.getField() instanceof CustomFieldSelectOneActionUnit;
+    }
+
+    public boolean isSpatialUnitFilter(TableColumn column) {
+        return column instanceof FormFieldColumn ffc
+                && ffc.getField() instanceof CustomFieldSelectOneSpatialUnit;
+    }
+
+    public boolean isDateTimeFilter(TableColumn column) {
+        return column instanceof FormFieldColumn ffc
+                && ffc.getField() instanceof CustomFieldDateTime;
+    }
+
+    public boolean isDateTimeShowTime(TableColumn column) {
+        return column instanceof FormFieldColumn ffc
+                && ffc.getField() instanceof CustomFieldDateTime dt
+                && Boolean.TRUE.equals(dt.getShowTime());
+    }
+
     public String getFieldCode(TableColumn column) {
         if (column instanceof FormFieldColumn ffc
                 && ffc.getField() instanceof CustomFieldSelectOneFromFieldCode cf) {
             return cf.getFieldCode();
         }
         return null;
+    }
+
+    public List<PersonDTO> completePersonForFilter(String query) {
+        return formContextServices.getSessionSettingsBean().completePerson(query);
+    }
+
+    public List<ActionUnitDTO> completeActionUnitForFilter(String query) {
+        String normalized = query == null ? "" : query.toLowerCase();
+        return formContextServices.getActionUnitService()
+                .findAllByInstitution(formContextServices.getSessionSettingsBean().getSelectedInstitution())
+                .stream()
+                .filter(au -> au.getName() != null && au.getName().toLowerCase().contains(normalized))
+                .sorted(Comparator.comparing(ActionUnitDTO::getName, Comparator.nullsLast(String::compareToIgnoreCase)))
+                .toList();
+    }
+
+    public List<SpatialUnitDTO> completeSpatialUnitForFilter(String query) {
+        String normalized = query == null ? "" : query.toLowerCase();
+        return formContextServices.getSpatialUnitService()
+                .findAllOfInstitution(formContextServices.getSessionSettingsBean().getSelectedInstitution().getId())
+                .stream()
+                .filter(su -> su.getName() != null && su.getName().toLowerCase().contains(normalized))
+                .sorted(Comparator.comparing(SpatialUnitDTO::getName, Comparator.nullsLast(String::compareToIgnoreCase)))
+                .toList();
     }
 
     /**

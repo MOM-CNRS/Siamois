@@ -220,16 +220,28 @@ public class LazyTreeTable extends TreeTable {
             return meta;
         }
         Object first = col.iterator().next();
-        if (!(first instanceof ConceptAutocompleteDTO)) {
-            return meta;
-        }
-        List<Long> ids = new ArrayList<>(col.size());
-        for (Object o : col) {
-            ConceptAutocompleteDTO dto = (ConceptAutocompleteDTO) o;
-            ConceptDTO concept = dto.concept();
-            if (concept != null) {
-                ids.add(concept.getId());
+
+        List<Long> ids = null;
+        if (first instanceof ConceptAutocompleteDTO) {
+            ids = new ArrayList<>(col.size());
+            for (Object o : col) {
+                ConceptDTO concept = ((ConceptAutocompleteDTO) o).concept();
+                if (concept != null) {
+                    ids.add(concept.getId());
+                }
             }
+        } else if (first instanceof AbstractEntityDTO) {
+            ids = new ArrayList<>(col.size());
+            for (Object o : col) {
+                Long id = ((AbstractEntityDTO) o).getId();
+                if (id != null) {
+                    ids.add(id);
+                }
+            }
+        }
+
+        if (ids == null) {
+            return meta;
         }
         return FilterMeta.builder()
                 .field(meta.getField())

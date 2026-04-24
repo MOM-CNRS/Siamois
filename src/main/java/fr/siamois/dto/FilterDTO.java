@@ -4,6 +4,9 @@ import lombok.Data;
 import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
 
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -71,6 +74,34 @@ public class FilterDTO {
         }
         return (List<Long>) filter.get(column).filter;
     }
+
+    public DateRange valueAsDateRangeOf(@NonNull String column) {
+        if (!filter.containsKey(column)) {
+            throw new IllegalArgumentException("Column not found: " + column);
+        }
+        Object raw = filter.get(column).filter;
+        if (!(raw instanceof List<?> list) || list.isEmpty()) {
+            return new DateRange(null, null);
+        }
+        OffsetDateTime from = toOffsetDateTime(list.get(0));
+        OffsetDateTime to = list.size() > 1 ? toOffsetDateTime(list.get(1)) : null;
+        return new DateRange(from, to);
+    }
+
+    private static OffsetDateTime toOffsetDateTime(Object value) {
+        if (value == null) {
+            return null;
+        }
+        if (value instanceof OffsetDateTime odt) {
+            return odt;
+        }
+        if (value instanceof Date date) {
+            return date.toInstant().atZone(ZoneId.systemDefault()).toOffsetDateTime();
+        }
+        throw new IllegalArgumentException("Unsupported date value: " + value.getClass());
+    }
+
+    public record DateRange(OffsetDateTime from, OffsetDateTime to) {}
 
     public String valueOfAsString(@NonNull String column) {
         if (!filter.containsKey(column)) {

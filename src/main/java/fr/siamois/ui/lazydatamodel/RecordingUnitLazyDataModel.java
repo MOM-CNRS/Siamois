@@ -9,7 +9,6 @@ import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
-import org.primefaces.model.FilterMeta;
 import org.primefaces.model.SortMeta;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -52,16 +51,6 @@ public class RecordingUnitLazyDataModel extends BaseRecordingUnitLazyDataModel {
             SortMeta meta = sortBy.get(RecordingUnitSpec.FULL_IDENTIFIER);
             if (meta != null) {
                 sortDTO.add(RecordingUnitSpec.FULL_IDENTIFIER, meta.getOrder());
-            }
-        }
-    }
-
-    @Override
-    protected void prepareFilterDTO(Map<String, FilterMeta> filterBy, FilterDTO filterDTO) {
-        if (filterBy != null && !filterBy.isEmpty()) {
-            FilterMeta meta = filterBy.get(RecordingUnitSpec.FULL_IDENTIFIER);
-            if (meta != null && meta.getFilterValue() != null) {
-                filterDTO.add(RecordingUnitSpec.FULL_IDENTIFIER, meta.getFilterValue().toString(), FilterDTO.FilterType.START_WITH);
             }
         }
     }

@@ -3,18 +3,22 @@ package fr.siamois.ui.lazydatamodel;
 
 import fr.siamois.domain.models.form.customfield.CustomFieldSelectOneFromFieldCode;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
+import fr.siamois.dto.FilterDTO;
 import fr.siamois.dto.entity.ConceptDTO;
 import fr.siamois.dto.entity.RecordingUnitDTO;
+import fr.siamois.infrastructure.database.repositories.specs.RecordingUnitSpec;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.panel.models.panel.list.RecordingUnitListPanel;
 import fr.siamois.utils.MessageUtils;
 import lombok.Getter;
 import lombok.Setter;
 import org.primefaces.event.RowEditEvent;
+import org.primefaces.model.FilterMeta;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -97,6 +101,38 @@ public abstract class BaseRecordingUnitLazyDataModel extends BaseLazyDataModel<R
             s.setType(bulkEditTypeValue);
         }
         MessageUtils.displayInfoMessage(langBean, "common.entity.recordingUnits.bulkUpdated", updateCount);
+    }
+
+    @Override
+    protected void prepareFilterDTO(Map<String, FilterMeta> filterBy, FilterDTO filterDTO) {
+        if (filterBy == null || filterBy.isEmpty()) {
+            return;
+        }
+
+        FilterMeta meta = filterBy.get(RecordingUnitSpec.FULL_IDENTIFIER);
+        if (meta != null && meta.getFilterValue() != null) {
+            filterDTO.add(RecordingUnitSpec.FULL_IDENTIFIER, meta.getFilterValue().toString(), FilterDTO.FilterType.START_WITH);
+        }
+
+        for (String entityFilter : new String[]{RecordingUnitSpec.AUTHOR_FILTER, RecordingUnitSpec.ACTION_UNIT_FILTER, RecordingUnitSpec.SPATIAL_UNIT_FILTER}) {
+            FilterMeta entityMeta = filterBy.get(entityFilter);
+            if (entityMeta != null && entityMeta.getFilterValue() instanceof List<?> ids && !ids.isEmpty()) {
+                filterDTO.add(entityFilter, ids, FilterDTO.FilterType.CONTAINS);
+            }
+        }
+
+        for (String dateFilter : new String[]{RecordingUnitSpec.OPENING_DATE_FILTER, RecordingUnitSpec.CLOSING_DATE_FILTER}) {
+            FilterMeta dateMeta = filterBy.get(dateFilter);
+            if (dateMeta != null && dateMeta.getFilterValue() instanceof List<?> range && !range.isEmpty()) {
+                List<Date> dates = range.stream()
+                        .filter(Date.class::isInstance)
+                        .map(Date.class::cast)
+                        .toList();
+                if (!dates.isEmpty()) {
+                    filterDTO.add(dateFilter, dates, FilterDTO.FilterType.CONTAINS);
+                }
+            }
+        }
     }
 
     public void duplicateRow() {

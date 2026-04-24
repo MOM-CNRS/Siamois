@@ -866,6 +866,19 @@ public class RecordingUnitService implements ArkEntityService {
             specification = specification.and(RecordingUnitSpec.fullIdentifierStartsWith(filters.valueOfAsString(RecordingUnitSpec.FULL_IDENTIFIER)));
         }
 
+        for (String entityFilter : new String[]{RecordingUnitSpec.AUTHOR_FILTER, RecordingUnitSpec.ACTION_UNIT_FILTER, RecordingUnitSpec.SPATIAL_UNIT_FILTER}) {
+            if (filters.containsColumn(entityFilter)) {
+                specification = specification.and(RecordingUnitSpec.entityFieldIdIn(entityFilter, filters.valueAsIdListOf(entityFilter)));
+            }
+        }
+
+        for (String dateFilter : new String[]{RecordingUnitSpec.OPENING_DATE_FILTER, RecordingUnitSpec.CLOSING_DATE_FILTER}) {
+            if (filters.containsColumn(dateFilter)) {
+                FilterDTO.DateRange range = filters.valueAsDateRangeOf(dateFilter);
+                specification = specification.and(RecordingUnitSpec.dateFieldBetween(dateFilter, range.from(), range.to()));
+            }
+        }
+
         return specification;
     }
 }
