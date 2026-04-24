@@ -174,9 +174,10 @@
                                     panelStyleClass="sia-autocomplete-panel"
                                     placeholder="#{langBean.msg('common.action.chooseConcept')}">
                         <f:attribute name="fieldCode" value="#{tableModel.getFieldCode(column)}"/>
-                        <p:ajax event="itemSelect" process="@this" update="@none" global="false"
+                        <p:ajax event="itemSelect" process="@this" update="@none" global="false" delay="500"
                                 oncomplete="PF('#{cc.clientId}_entityTreeTable').filter()"/>
-                        <p:ajax event="itemUnselect" process="@this" update="@none" global="false"
+
+                        <p:ajax event="itemUnselect" process="@this" update="@none" global="false" delay="500"
                                 oncomplete="PF('#{cc.clientId}_entityTreeTable').filter()"/>
                     </p:autoComplete>
                 </f:facet>

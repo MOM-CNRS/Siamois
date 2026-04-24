@@ -90,29 +90,16 @@ public class RootChildList<T extends AbstractEntityDTO> extends DefaultTreeNodeC
     @Override
     @NonNull
     public Stream<TreeNode<T>> stream() {
-        List<TreeNode<T>> list = new ArrayList<>(totalEntityCount);
-        for (int i = 0; i < totalEntityCount; i++) {
-            list.add(get(i));
-        }
-        return list.stream();
+        // Only stream the real page nodes. size() still returns totalEntityCount
+        // so the paginator sees the full count, but we never materialize millions
+        // of virtual TreeNodes when JSF/PrimeFaces traverses children.
+        return actualChildren.stream();
     }
 
     @Override
     @NonNull
     public Iterator<TreeNode<T>> iterator() {
-        return new Iterator<>() {
-            private int cursor = 0;
-
-            @Override
-            public boolean hasNext() {
-                return cursor < totalEntityCount;
-            }
-
-            @Override
-            public TreeNode<T> next() {
-                return get(cursor++);
-            }
-        };
+        return actualChildren.iterator();
     }
 
 }

@@ -5,6 +5,7 @@ import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -61,6 +62,14 @@ public class FilterDTO {
             throw new IllegalArgumentException("Column not found: " + column);
         }
         return filter.get(column).filter;
+    }
+
+    @SuppressWarnings("unchecked")
+    public List<Long> valueAsIdListOf(@NonNull String column) {
+        if (!filter.containsKey(column)) {
+            throw new IllegalArgumentException("Column not found: " + column);
+        }
+        return (List<Long>) filter.get(column).filter;
     }
 
     public String valueOfAsString(@NonNull String column) {

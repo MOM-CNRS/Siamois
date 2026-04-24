@@ -14,6 +14,7 @@ import org.primefaces.model.SortMeta;
 
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @Getter
@@ -47,11 +48,18 @@ public abstract class BaseSpatialUnitLazyDataModel extends BaseLazyDataModel<Spa
 
     @Override
     protected void prepareFilterDTO(Map<String, FilterMeta> filterBy, FilterDTO filterDTO) {
-        if (filterBy != null && !filterBy.isEmpty()) {
-            FilterMeta nameMeta = filterBy.get(SpatialUnitSpec.NAME_FILTER);
-            if (nameMeta != null && nameMeta.getFilterValue() != null) {
-                filterDTO.add(SpatialUnitSpec.NAME_FILTER, nameMeta.getFilterValue().toString(), FilterDTO.FilterType.CONTAINS);
-            }
+        if (filterBy == null || filterBy.isEmpty()) {
+            return;
+        }
+
+        FilterMeta nameMeta = filterBy.get(SpatialUnitSpec.NAME_FILTER);
+        if (nameMeta != null && nameMeta.getFilterValue() != null) {
+            filterDTO.add(SpatialUnitSpec.NAME_FILTER, nameMeta.getFilterValue().toString(), FilterDTO.FilterType.CONTAINS);
+        }
+
+        FilterMeta categoryMeta = filterBy.get(SpatialUnitSpec.CATEGORY_FILTER);
+        if (categoryMeta != null && categoryMeta.getFilterValue() instanceof List<?> ids && !ids.isEmpty()) {
+            filterDTO.add(SpatialUnitSpec.CATEGORY_FILTER, ids, FilterDTO.FilterType.CONTAINS);
         }
     }
 

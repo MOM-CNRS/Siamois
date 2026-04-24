@@ -183,11 +183,9 @@ public class LazyTreeTable extends TreeTable {
             log.trace("Load appelé avec : {}", lazyModel.getClass().getSimpleName());
             List<? extends AbstractEntityDTO> data = lazyModel.load(first, rows, activeSorts, activeFilters);
 
-            if (activeFilters.isEmpty()) {
-                setRowCount(lazyModel.getRowCount());
-            } else {
-                setRowCount(lazyModel.count(activeFilters));
-            }
+            // load() a déjà positionné le rowCount via Page.getTotalElements() (filtres appliqués inclus) :
+            // inutile de relancer un second COUNT.
+            setRowCount(lazyModel.getRowCount());
 
             if (PrimeFaces.current() != null) {
                  PrimeFaces.current().ajax().addCallbackParam("newRowCount", getRowCount());

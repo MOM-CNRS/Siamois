@@ -598,6 +598,10 @@ public class SpatialUnitService implements ArkEntityService {
             specs = specs.and(SpatialUnitSpec.nameContaining(filterDTO.valueOfAsString(SpatialUnitSpec.NAME_FILTER)));
         }
 
+        if (filterDTO.containsColumn(SpatialUnitSpec.CATEGORY_FILTER)) {
+            specs = specs.and(SpatialUnitSpec.categoryIsIn(filterDTO.valueAsIdListOf(SpatialUnitSpec.CATEGORY_FILTER)));
+        }
+
         return specs;
     }
 

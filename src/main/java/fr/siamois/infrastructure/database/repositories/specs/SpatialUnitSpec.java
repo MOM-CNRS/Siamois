@@ -5,6 +5,8 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
 
+import java.util.List;
+
 public class SpatialUnitSpec {
 
     public static final String NAME_FILTER = "name";
@@ -25,4 +27,7 @@ public class SpatialUnitSpec {
         };
     }
 
+    public static Specification<SpatialUnit> categoryIsIn(List<Long> conceptIds) {
+        return (root, query, criteriaBuilder) -> criteriaBuilder.in(root.get(SpatialUnitSpec.CATEGORY_FILTER).get("id")).value(conceptIds);
+    }
 }
