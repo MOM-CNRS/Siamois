@@ -114,7 +114,11 @@ public abstract class BaseRecordingUnitLazyDataModel extends BaseLazyDataModel<R
             filterDTO.add(RecordingUnitSpec.FULL_IDENTIFIER, meta.getFilterValue().toString(), FilterDTO.FilterType.START_WITH);
         }
 
-        for (String entityFilter : new String[]{RecordingUnitSpec.AUTHOR_FILTER, RecordingUnitSpec.ACTION_UNIT_FILTER, RecordingUnitSpec.SPATIAL_UNIT_FILTER}) {
+        for (String entityFilter : new String[]{RecordingUnitSpec.AUTHOR_FILTER,
+                RecordingUnitSpec.ACTION_UNIT_FILTER,
+                RecordingUnitSpec.SPATIAL_UNIT_FILTER,
+                RecordingUnitSpec.CONTRIBUTORS_FILTER,
+                RecordingUnitSpec.TYPE_FILTER}) {
             FilterMeta entityMeta = filterBy.get(entityFilter);
             if (entityMeta != null && entityMeta.getFilterValue() instanceof List<?> ids && !ids.isEmpty()) {
                 filterDTO.add(entityFilter, ids, FilterDTO.FilterType.CONTAINS);

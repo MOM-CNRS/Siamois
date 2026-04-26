@@ -866,10 +866,32 @@ public class RecordingUnitService implements ArkEntityService {
             specification = specification.and(RecordingUnitSpec.fullIdentifierStartsWith(filters.valueOfAsString(RecordingUnitSpec.FULL_IDENTIFIER)));
         }
 
-        for (String entityFilter : new String[]{RecordingUnitSpec.AUTHOR_FILTER, RecordingUnitSpec.ACTION_UNIT_FILTER, RecordingUnitSpec.SPATIAL_UNIT_FILTER}) {
-            if (filters.containsColumn(entityFilter)) {
-                specification = specification.and(RecordingUnitSpec.entityFieldIdIn(entityFilter, filters.valueAsIdListOf(entityFilter)));
-            }
+        if (filters.containsColumn(RecordingUnitSpec.AUTHOR_FILTER)) {
+            specification = specification.and(RecordingUnitSpec.authorIsIn(filters.valueAsIdListOf(RecordingUnitSpec.AUTHOR_FILTER)));
+        }
+
+        if (filters.containsColumn(RecordingUnitSpec.MATRIX_FILTER)) {
+            specification = specification.and(RecordingUnitSpec.matrixContains(filters.valueOfAsString(RecordingUnitSpec.MATRIX_FILTER)));
+        }
+
+        // Spatial Units
+        if (filters.containsColumn(RecordingUnitSpec.SPATIAL_UNIT_FILTER)) {
+            specification = specification.and(RecordingUnitSpec.isInSpatialUnit(filters.valueAsIdListOf(RecordingUnitSpec.SPATIAL_UNIT_FILTER)));
+        }
+
+        // Action Units
+        if (filters.containsColumn(RecordingUnitSpec.ACTION_UNIT_FILTER)) {
+            specification = specification.and(RecordingUnitSpec.isInActionUnit(filters.valueAsIdListOf(RecordingUnitSpec.ACTION_UNIT_FILTER)));
+        }
+
+        // Contributors
+        if (filters.containsColumn(RecordingUnitSpec.CONTRIBUTORS_FILTER)) {
+            specification = specification.and(RecordingUnitSpec.isInContributors(filters.valueAsIdListOf(RecordingUnitSpec.CONTRIBUTORS_FILTER)));
+        }
+
+        // Type
+        if (filters.containsColumn(RecordingUnitSpec.TYPE_FILTER)) {
+            specification = specification.and(RecordingUnitSpec.typeIsIn(filters.valueAsIdListOf(RecordingUnitSpec.TYPE_FILTER)));
         }
 
         for (String dateFilter : new String[]{RecordingUnitSpec.OPENING_DATE_FILTER, RecordingUnitSpec.CLOSING_DATE_FILTER}) {
