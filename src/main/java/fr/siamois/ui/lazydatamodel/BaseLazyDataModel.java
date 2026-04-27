@@ -6,10 +6,7 @@ import fr.siamois.dto.FilterDTO;
 import fr.siamois.dto.SortDTO;
 import lombok.Getter;
 import lombok.Setter;
-import org.primefaces.model.FilterMeta;
-import org.primefaces.model.LazyDataModel;
-import org.primefaces.model.SortMeta;
-import org.primefaces.model.SortOrder;
+import org.primefaces.model.*;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -37,6 +34,9 @@ public abstract class BaseLazyDataModel<T> extends LazyDataModel<T> implements L
     protected transient Map<String, SortMeta> cachedSortBy = new HashMap<>() ;
     protected transient List<T> queryResult ; // cache for the result of the query
     protected int cachedRowCount;
+    @Getter
+    @Setter
+    protected TreeNode<T> lazyRoot;
 
     @Setter
     protected boolean rootOnly;

@@ -11,6 +11,7 @@ import org.primefaces.model.*;
 import org.primefaces.util.Callbacks;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.lang.Nullable;
 
 import java.io.IOException;
 import java.util.*;
@@ -19,7 +20,6 @@ import java.util.*;
 public class LazyTreeTable extends TreeTable {
 
     private static final Logger log = LoggerFactory.getLogger(LazyTreeTable.class);
-    private transient TreeNode lazyRoot;
     private transient boolean blockFiltering = false;
 
     enum PropertyKeys {
@@ -29,7 +29,23 @@ public class LazyTreeTable extends TreeTable {
         isLeafMethod,
         loadMethod,
         expandedRowKeys,
-        columnFilteringEnabled,
+        columnFilteringEnabled}
+
+    @Nullable
+    public TreeNode getLazyRoot() {
+        LazyDataModel lazyDataModel = getLazyDataModel();
+        if (lazyDataModel instanceof BaseLazyDataModel baseLazyDataModel) {
+            return baseLazyDataModel.getLazyRoot();
+        }
+        return null;
+    }
+
+    @SuppressWarnings("unchecked")
+    public void setLazyRoot(TreeNode lazyRoot) {
+        LazyDataModel lazyDataModel = getLazyDataModel();
+        if (lazyDataModel instanceof BaseLazyDataModel baseLazyDataModel) {
+            baseLazyDataModel.setLazyRoot(lazyRoot);
+        }
     }
 
     public boolean isColumnFilteringEnabled() {
@@ -91,17 +107,17 @@ public class LazyTreeTable extends TreeTable {
     @Override
     public TreeNode getValue() {
         if (isLazy()) {
-            if (lazyRoot == null) {
+            if (getLazyRoot() == null) {
                 loadLazyData();
             }
-            return lazyRoot;
+            return getLazyRoot();
         }
         return super.getValue();
     }
 
     private void clearCache() {
         if (isLazy()) {
-            this.lazyRoot = null;
+            setLazyRoot(null);
             this.setValue(null);
         }
     }
@@ -143,6 +159,7 @@ public class LazyTreeTable extends TreeTable {
 
     @SuppressWarnings({"unchecked", "rawtypes"})
     private void loadLazyData() {
+        TreeNode lazyRoot = getLazyRoot();
         if (lazyRoot != null) return;
 
         FacesContext context = getFacesContext();
@@ -194,6 +211,7 @@ public class LazyTreeTable extends TreeTable {
 
             if (data != null) {
                 lazyRoot = new RootTreeNode(getRowCount(), first);
+                setLazyRoot(lazyRoot);
 
                 Set<String> expandedKeys = getExpandedRowKeySet();
                 boolean filteredMode = lazyModel instanceof BaseLazyDataModel<?> blm
@@ -359,7 +377,7 @@ public class LazyTreeTable extends TreeTable {
     @Override
     protected void preEncode(FacesContext context) {
         if (isLazy()) {
-            this.lazyRoot = null;
+            setLazyRoot(null);
             Map<String, String> params = context.getExternalContext().getRequestParameterMap();
             String clientId = getClientId(context);
             String behaviorEvent = params.get("javax.faces.behavior.event");
