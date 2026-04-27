@@ -26,10 +26,10 @@
                             placeholder="#{langBean.msg('common.action.chooseConcept')}">
                 <f:attribute name="fieldCode" value="#{tableModel.getFieldCode(column)}"/>
                 <p:ajax event="itemSelect" process="@this" update="@none" global="false" delay="500"
-                        oncomplete="PF('#{cc.clientId}_entityTreeTable').filter()"/>
+                        oncomplete="PF('#{cc.clientId}_#{tableModel.treeMode ? 'entityTreeTable' : 'entityDatatable'}').filter()"/>
 
                 <p:ajax event="itemUnselect" process="@this" update="@none" global="false" delay="500"
-                        oncomplete="PF('#{cc.clientId}_entityTreeTable').filter()"/>
+                        oncomplete="PF('#{cc.clientId}_#{tableModel.treeMode ? 'entityTreeTable' : 'entityDatatable'}').filter()"/>
             </p:autoComplete>
         </f:facet>
     </c:if>
@@ -50,9 +50,9 @@
                             appendTo="@(body)"
                             panelStyleClass="sia-autocomplete-panel">
                 <p:ajax event="itemSelect" process="@this" update="@none" global="false" delay="500"
-                        oncomplete="PF('#{cc.clientId}_entityTreeTable').filter()"/>
+                        oncomplete="PF('#{cc.clientId}_#{tableModel.treeMode ? 'entityTreeTable' : 'entityDatatable'}').filter()"/>
                 <p:ajax event="itemUnselect" process="@this" update="@none" global="false" delay="500"
-                        oncomplete="PF('#{cc.clientId}_entityTreeTable').filter()"/>
+                        oncomplete="PF('#{cc.clientId}_#{tableModel.treeMode ? 'entityTreeTable' : 'entityDatatable'}').filter()"/>
             </p:autoComplete>
         </f:facet>
     </c:if>
@@ -73,9 +73,9 @@
                             appendTo="@(body)"
                             panelStyleClass="sia-autocomplete-panel">
                 <p:ajax event="itemSelect" process="@this" update="@none" global="false" delay="500"
-                        oncomplete="PF('#{cc.clientId}_entityTreeTable').filter()"/>
+                        oncomplete="PF('#{cc.clientId}_#{tableModel.treeMode ? 'entityTreeTable' : 'entityDatatable'}').filter()"/>
                 <p:ajax event="itemUnselect" process="@this" update="@none" global="false" delay="500"
-                        oncomplete="PF('#{cc.clientId}_entityTreeTable').filter()"/>
+                        oncomplete="PF('#{cc.clientId}_#{tableModel.treeMode ? 'entityTreeTable' : 'entityDatatable'}').filter()"/>
             </p:autoComplete>
         </f:facet>
     </c:if>
@@ -96,9 +96,9 @@
                             appendTo="@(body)"
                             panelStyleClass="sia-autocomplete-panel">
                 <p:ajax event="itemSelect" process="@this" update="@none" global="false" delay="500"
-                        oncomplete="PF('#{cc.clientId}_entityTreeTable').filter()"/>
+                        oncomplete="PF('#{cc.clientId}_#{tableModel.treeMode ? 'entityTreeTable' : 'entityDatatable'}').filter()"/>
                 <p:ajax event="itemUnselect" process="@this" update="@none" global="false" delay="500"
-                        oncomplete="PF('#{cc.clientId}_entityTreeTable').filter()"/>
+                        oncomplete="PF('#{cc.clientId}_#{tableModel.treeMode ? 'entityTreeTable' : 'entityDatatable'}').filter()"/>
             </p:autoComplete>
         </f:facet>
     </c:if>
@@ -113,9 +113,9 @@
                           appendTo="@(body)"
                           panelStyleClass="sia-autocomplete-panel">
                 <p:ajax event="dateSelect" process="@this" update="@none" global="false" delay="500"
-                        oncomplete="PF('#{cc.clientId}_entityTreeTable').filter()"/>
+                        oncomplete="PF('#{cc.clientId}_#{tableModel.treeMode ? 'entityTreeTable' : 'entityDatatable'}').filter()"/>
                 <p:ajax event="change" process="@this" update="@none" global="false" delay="500"
-                        oncomplete="PF('#{cc.clientId}_entityTreeTable').filter()"/>
+                        oncomplete="PF('#{cc.clientId}_#{tableModel.treeMode ? 'entityTreeTable' : 'entityDatatable'}').filter()"/>
             </p:datePicker>
         </f:facet>
     </c:if>

@@ -33,21 +33,16 @@ public class LazyTreeTable extends TreeTable {
 
     @Nullable
     public TreeNode getLazyRoot() {
-        LazyDataModel lazyDataModel = getLazyDataModel();
-        if (lazyDataModel instanceof BaseLazyDataModel baseLazyDataModel) {
-            return baseLazyDataModel.getLazyRoot();
-        }
-        return null;
+        return getLazyDataModel().getLazyRoot();
     }
 
     @SuppressWarnings("unchecked")
     public void setLazyRoot(TreeNode lazyRoot) {
-        LazyDataModel lazyDataModel = getLazyDataModel();
-        if (lazyDataModel instanceof BaseLazyDataModel baseLazyDataModel) {
-            baseLazyDataModel.setLazyRoot(lazyRoot);
-        }
+        BaseLazyDataModel baseLazyDataModel = getLazyDataModel();
+        baseLazyDataModel.setLazyRoot(lazyRoot);
     }
 
+    @SuppressWarnings("BooleanMethodIsAlwaysInverted")
     public boolean isColumnFilteringEnabled() {
         return (Boolean) getStateHelper().eval(PropertyKeys.columnFilteringEnabled, false);
     }
@@ -83,11 +78,11 @@ public class LazyTreeTable extends TreeTable {
     }
 
     @SuppressWarnings("unchecked")
-    public LazyDataModel<? extends AbstractEntityDTO> getLazyDataModel() {
-        return (LazyDataModel<? extends AbstractEntityDTO>) getStateHelper().eval(PropertyKeys.lazyDataModel, null);
+    public BaseLazyDataModel<? extends AbstractEntityDTO> getLazyDataModel() {
+        return (BaseLazyDataModel<? extends AbstractEntityDTO>) getStateHelper().eval(PropertyKeys.lazyDataModel, null);
     }
 
-    public void setLazyDataModel(LazyDataModel<? extends AbstractEntityDTO> model) {
+    public void setLazyDataModel(BaseLazyDataModel<? extends AbstractEntityDTO> model) {
         getStateHelper().put(PropertyKeys.lazyDataModel, model);
     }
 
