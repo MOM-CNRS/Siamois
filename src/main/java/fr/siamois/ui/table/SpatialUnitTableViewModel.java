@@ -420,6 +420,7 @@ public class SpatialUnitTableViewModel extends EntityTableViewModel<SpatialUnitD
 
     @Override
     public LazyDataModel<SpatialUnitDTO> getLazyDataModel() {
+        spatialUnitLazyDataModel.setRootOnly(treeMode);
         return spatialUnitLazyDataModel;
     }
 

@@ -901,6 +901,10 @@ public class RecordingUnitService implements ArkEntityService {
             }
         }
 
+        if (filters.isRootOnly()){
+            specification = specification.and(RecordingUnitSpec.unitIsRoot());
+        }
+
         return specification;
     }
 }

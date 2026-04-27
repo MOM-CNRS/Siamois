@@ -30,4 +30,8 @@ public class SpatialUnitSpec {
     public static Specification<SpatialUnit> categoryIsIn(List<Long> conceptIds) {
         return (root, query, criteriaBuilder) -> criteriaBuilder.in(root.get(SpatialUnitSpec.CATEGORY_FILTER).get("id")).value(conceptIds);
     }
+
+    public static Specification<SpatialUnit> unitIsRoot() {
+        return ((root, query, criteriaBuilder) -> criteriaBuilder.isEmpty(root.get("parents")));
+    }
 }

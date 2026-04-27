@@ -84,4 +84,9 @@ public class RecordingUnitSpec {
             return criteriaBuilder.in(root.get(RecordingUnitSpec.TYPE_FILTER).get("id")).value(conceptIds);
         };
     }
+
+    public static Specification<RecordingUnit> unitIsRoot() {
+        return ((root, query, criteriaBuilder) -> criteriaBuilder.isEmpty(root.get("parents")));
+    }
+
 }

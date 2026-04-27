@@ -1,6 +1,8 @@
 package fr.siamois.dto;
 
 import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
 
@@ -16,6 +18,10 @@ public class FilterDTO {
 
     private final Map<String, FilterInfo> filter;
     public static String GLOBAL_FILTER_KEY = "global";
+
+    @Setter
+    @Getter
+    private boolean rootOnly;
 
     public enum FilterType {
         START_WITH,
@@ -43,6 +49,12 @@ public class FilterDTO {
     }
 
     public FilterDTO() {
+        rootOnly = false;
+        this.filter = new HashMap<>();
+    }
+
+    public FilterDTO(boolean rootOnly) {
+        this.rootOnly = rootOnly;
         this.filter = new HashMap<>();
     }
 

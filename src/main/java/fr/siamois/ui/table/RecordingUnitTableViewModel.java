@@ -387,6 +387,7 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
 
     @Override
     public LazyDataModel<RecordingUnitDTO> getLazyDataModel() {
+        recordingUnitLazyDataModel.setRootOnly(treeMode);
         return recordingUnitLazyDataModel;
     }
 

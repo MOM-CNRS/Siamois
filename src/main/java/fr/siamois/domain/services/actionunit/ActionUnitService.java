@@ -569,6 +569,10 @@ public class ActionUnitService implements ArkEntityService {
             specs = specs.and(ActionUnitSpec.nameContaining(globalFilter.valueAsString()));
         }
 
+        if (filters.isRootOnly()) {
+            specs = specs.and(ActionUnitSpec.unitIsRoot());
+        }
+
         return specs;
     }
 }

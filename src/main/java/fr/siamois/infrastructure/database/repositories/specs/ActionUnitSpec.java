@@ -24,4 +24,8 @@ public class ActionUnitSpec {
         });
     }
 
+    public static Specification<ActionUnit> unitIsRoot() {
+        return ((root, query, criteriaBuilder) -> criteriaBuilder.equal(root.get("hasChildrens"), false));
+    }
+
 }

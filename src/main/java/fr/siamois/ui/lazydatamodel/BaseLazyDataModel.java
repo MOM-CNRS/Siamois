@@ -38,6 +38,9 @@ public abstract class BaseLazyDataModel<T> extends LazyDataModel<T> implements L
     protected transient List<T> queryResult ; // cache for the result of the query
     protected int cachedRowCount;
 
+    @Setter
+    protected boolean rootOnly;
+
     protected abstract String getDefaultSortField();
 
     protected abstract Page<T> loadData(FilterDTO filter, Pageable pageable);
@@ -190,7 +193,7 @@ public abstract class BaseLazyDataModel<T> extends LazyDataModel<T> implements L
 
     @Override
     public int count(Map<String, FilterMeta> map) {
-        FilterDTO filterDTO = new FilterDTO();
+        FilterDTO filterDTO = new FilterDTO(rootOnly);
         for (Map.Entry<String, FilterMeta> entry : map.entrySet()) {
             if (entry.getKey().equals("globalFilter") && entry.getValue() != null) {
                 filterDTO.add(FilterDTO.GLOBAL_FILTER_KEY, entry.getValue().getFilterValue(), FilterDTO.FilterType.CONTAINS);
@@ -223,7 +226,7 @@ public abstract class BaseLazyDataModel<T> extends LazyDataModel<T> implements L
 
 
         // Filter extraction
-        FilterDTO filterDTO = new FilterDTO();
+        FilterDTO filterDTO = new FilterDTO(rootOnly);
         SortDTO sortDTO = new SortDTO();
 
         prepareFilterDTO(filterBy, filterDTO);
@@ -261,7 +264,7 @@ public abstract class BaseLazyDataModel<T> extends LazyDataModel<T> implements L
      * @param sortDTO The domain DTO sort
      */
     protected void prepareSortDTO(@Nullable Map<String, SortMeta> sortBy, @NonNull SortDTO sortDTO) {
-
+        throw new UnsupportedOperationException("Not supported yet.");
     }
 
     /**
@@ -271,7 +274,7 @@ public abstract class BaseLazyDataModel<T> extends LazyDataModel<T> implements L
      * @param filterDTO The domain DTO filters
      */
     protected void prepareFilterDTO(Map<String, FilterMeta> filterBy, FilterDTO filterDTO) {
-
+        throw new UnsupportedOperationException("Not supported yet.");
     }
 
     public int getFirstIndexOnPage() {

@@ -272,6 +272,7 @@ public class ActionUnitTableViewModel extends EntityTableViewModel<ActionUnitDTO
 
     @Override
     public LazyDataModel<ActionUnitDTO> getLazyDataModel() {
+        actionUnitLazyDataModel.setRootOnly(treeMode);
         return actionUnitLazyDataModel;
     }
 
