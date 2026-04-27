@@ -33,6 +33,7 @@ import org.hibernate.Hibernate;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
@@ -646,4 +647,12 @@ public class SpatialUnitService implements ArkEntityService {
         return new HashSet<>(resolveAncestorClosure(institutionDTO, filterDTO));
     }
 
+    public List<SpatialUnitDTO> findMatchingInInstitutionByName(InstitutionDTO institutionDTO, String query, int limit) {
+        Specification<SpatialUnit> specs = SpatialUnitSpec.belongsToInstitution(institutionDTO.getId());
+        specs = specs.and(SpatialUnitSpec.nameContaining(query));
+        return spatialUnitRepository.findAll(specs, PageRequest.ofSize(limit))
+                .map(spatialUnitMapper::convert)
+                .stream()
+                .toList();
+    }
 }

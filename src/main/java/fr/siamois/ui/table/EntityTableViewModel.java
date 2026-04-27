@@ -61,6 +61,7 @@ import static fr.siamois.utils.MessageUtils.displayErrorMessage;
 public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
 
     public static final String CONTAINER = "-container');";
+    public static final int LIMIT = 100;
     @Setter
     protected String globalFilter = "";
 
@@ -247,23 +248,13 @@ public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
     }
 
     public List<ActionUnitDTO> completeActionUnitForFilter(String query) {
-        String normalized = query == null ? "" : query.toLowerCase();
         return formContextServices.getActionUnitService()
-                .findAllByInstitution(formContextServices.getSessionSettingsBean().getSelectedInstitution())
-                .stream()
-                .filter(au -> au.getName() != null && au.getName().toLowerCase().contains(normalized))
-                .sorted(Comparator.comparing(ActionUnitDTO::getName, Comparator.nullsLast(String::compareToIgnoreCase)))
-                .toList();
+                .findMatchingInInstitutionByName(formContextServices.getSessionSettingsBean().getSelectedInstitution(), query, LIMIT);
     }
 
     public List<SpatialUnitDTO> completeSpatialUnitForFilter(String query) {
-        String normalized = query == null ? "" : query.toLowerCase();
         return formContextServices.getSpatialUnitService()
-                .findAllOfInstitution(formContextServices.getSessionSettingsBean().getSelectedInstitution().getId())
-                .stream()
-                .filter(su -> su.getName() != null && su.getName().toLowerCase().contains(normalized))
-                .sorted(Comparator.comparing(SpatialUnitDTO::getName, Comparator.nullsLast(String::compareToIgnoreCase)))
-                .toList();
+                .findMatchingInInstitutionByName(formContextServices.getSessionSettingsBean().getSelectedInstitution(), query, LIMIT);
     }
 
     /**

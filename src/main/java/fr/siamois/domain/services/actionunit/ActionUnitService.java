@@ -31,6 +31,7 @@ import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
@@ -609,5 +610,15 @@ public class ActionUnitService implements ArkEntityService {
             return Collections.emptySet();
         }
         return new HashSet<>(resolveAncestorClosure(institutionDTO, filters));
+    }
+
+    public List<ActionUnitDTO> findMatchingInInstitutionByName(InstitutionDTO institution, String query, int limit) {
+        Specification<ActionUnit> specs = ActionUnitSpec.belongsToInstitution(institution.getId());
+        specs = specs.and(ActionUnitSpec.nameContaining(query));
+
+        return actionUnitRepository.findAll(specs, PageRequest.ofSize(limit))
+                .stream()
+                .map(actionUnitMapper::convert)
+                .collect(Collectors.toList());
     }
 }

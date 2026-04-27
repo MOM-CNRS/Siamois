@@ -172,7 +172,7 @@ public class PersonService {
      * @return The Person list
      */
     public List<PersonDTO> findAllByNameLastnameContaining(String nameOrLastname) {
-        List<Person> persons = personRepository.findAllByNameOrLastname(nameOrLastname);
+        List<Person> persons = personRepository.findAllByNameOrLastname(nameOrLastname, 100);
         return persons.stream()
                 .map(personMapper::convert)
                 .toList();
