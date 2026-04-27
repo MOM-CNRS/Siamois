@@ -24,6 +24,7 @@ import fr.siamois.ui.form.fieldsource.FieldSource;
 import fr.siamois.ui.form.fieldsource.TableRowFieldSource;
 import fr.siamois.ui.lazydatamodel.BaseLazyDataModel;
 import fr.siamois.ui.lazydatamodel.tree.BaseTreeTableLazyModel;
+import jakarta.el.MethodExpression;
 import jakarta.faces.application.FacesMessage;
 import jakarta.faces.context.FacesContext;
 import lombok.Getter;
@@ -561,4 +562,10 @@ public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
 
     @NonNull
     protected abstract List<T> loadChildrensOfUnit(@NonNull T parentUnit);
+
+    public void onSwitchTreeMode() {
+        this.lazyDataModel.setRootOnly(!this.lazyDataModel.isRootOnly());
+        this.lazyDataModel.setLazyRoot(null);
+        this.lazyDataModel.resetCache();
+    }
 }

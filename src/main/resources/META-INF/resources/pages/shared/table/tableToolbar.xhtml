@@ -29,6 +29,7 @@
                                     onIcon="bi bi-list-nested"
                                     offIcon="bi bi-list">
                                 <p:ajax process="@this" update=":#{cc.clientId}:tableContainer"
+                                        listener="#{tableModel.onSwitchTreeMode}"
                                         onstart="PF('#{cc.clientId}_buiTables').show()"
                                         oncomplete="PF('#{cc.clientId}_buiTables').hide()"/>
 

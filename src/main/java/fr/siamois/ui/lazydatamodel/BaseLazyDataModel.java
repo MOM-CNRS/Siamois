@@ -212,6 +212,10 @@ public abstract class BaseLazyDataModel<T> extends LazyDataModel<T> implements L
         return countWithFilter(filterDTO);
     }
 
+    public void resetCache() {
+        this.queryResult = null;
+    }
+
     @Override
     @Transactional
     public List<T> load(int first, int pageSize, Map<String, SortMeta> sortBy, Map<String, FilterMeta> filterBy) {
