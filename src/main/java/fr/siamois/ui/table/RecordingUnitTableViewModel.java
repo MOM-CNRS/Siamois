@@ -23,6 +23,7 @@ import fr.siamois.ui.bean.panel.FlowBean;
 import fr.siamois.ui.form.EntityFormContext;
 import fr.siamois.ui.form.FormContextServices;
 import fr.siamois.ui.form.FormUiDto;
+import fr.siamois.ui.lazydatamodel.BaseLazyDataModel;
 import fr.siamois.ui.lazydatamodel.BaseRecordingUnitLazyDataModel;
 import fr.siamois.ui.lazydatamodel.tree.RecordingUnitTreeTableLazyModel;
 import fr.siamois.utils.MessageUtils;
@@ -386,7 +387,7 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
     }
 
     @Override
-    public LazyDataModel<RecordingUnitDTO> getLazyDataModel() {
+    public BaseLazyDataModel<RecordingUnitDTO> getLazyDataModel() {
         recordingUnitLazyDataModel.setRootOnly(treeMode);
         return recordingUnitLazyDataModel;
     }

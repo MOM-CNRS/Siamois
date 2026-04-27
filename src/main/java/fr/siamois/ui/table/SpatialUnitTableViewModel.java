@@ -18,6 +18,7 @@ import fr.siamois.ui.bean.panel.FlowBean;
 import fr.siamois.ui.form.EntityFormContext;
 import fr.siamois.ui.form.FormContextServices;
 import fr.siamois.ui.form.FormUiDto;
+import fr.siamois.ui.lazydatamodel.BaseLazyDataModel;
 import fr.siamois.ui.lazydatamodel.BaseSpatialUnitLazyDataModel;
 import fr.siamois.ui.lazydatamodel.tree.SpatialUnitTreeTableLazyModel;
 import fr.siamois.utils.MessageUtils;
@@ -419,7 +420,7 @@ public class SpatialUnitTableViewModel extends EntityTableViewModel<SpatialUnitD
     }
 
     @Override
-    public LazyDataModel<SpatialUnitDTO> getLazyDataModel() {
+    public BaseLazyDataModel<SpatialUnitDTO> getLazyDataModel() {
         spatialUnitLazyDataModel.setRootOnly(treeMode);
         return spatialUnitLazyDataModel;
     }

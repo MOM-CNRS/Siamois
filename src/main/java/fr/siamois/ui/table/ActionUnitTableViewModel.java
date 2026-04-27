@@ -17,6 +17,7 @@ import fr.siamois.ui.bean.panel.FlowBean;
 import fr.siamois.ui.form.FormContextServices;
 import fr.siamois.ui.form.FormUiDto;
 import fr.siamois.ui.lazydatamodel.BaseActionUnitLazyDataModel;
+import fr.siamois.ui.lazydatamodel.BaseLazyDataModel;
 import fr.siamois.ui.lazydatamodel.tree.ActionUnitTreeTableLazyModel;
 import lombok.Getter;
 import org.jspecify.annotations.NonNull;
@@ -271,7 +272,7 @@ public class ActionUnitTableViewModel extends EntityTableViewModel<ActionUnitDTO
     }
 
     @Override
-    public LazyDataModel<ActionUnitDTO> getLazyDataModel() {
+    public BaseLazyDataModel<ActionUnitDTO> getLazyDataModel() {
         actionUnitLazyDataModel.setRootOnly(treeMode);
         return actionUnitLazyDataModel;
     }
