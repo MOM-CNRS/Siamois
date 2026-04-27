@@ -522,7 +522,7 @@ public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
         }
     }
 
-    public abstract LazyDataModel<T> getLazyDataModel();
+    public abstract BaseLazyDataModel<T> getLazyDataModel();
 
     @SuppressWarnings({"unchecked", "unused"})
     public Callbacks.SerializableFunction<AbstractEntityDTO, Boolean> getIsLeafMethod() {
