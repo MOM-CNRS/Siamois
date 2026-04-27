@@ -1,8 +1,6 @@
 package fr.siamois.ui.custom;
 
 import fr.siamois.dto.entity.AbstractEntityDTO;
-import fr.siamois.dto.entity.ConceptDTO;
-import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
 import fr.siamois.ui.lazydatamodel.BaseLazyDataModel;
 import jakarta.faces.context.FacesContext;
 import org.primefaces.PrimeFaces;
@@ -29,7 +27,8 @@ public class LazyTreeTable extends TreeTable {
         isLeafMethod,
         loadMethod,
         expandedRowKeys,
-        columnFilteringEnabled}
+        columnFilteringEnabled
+    }
 
     @Nullable
     public TreeNode getLazyRoot() {
@@ -187,21 +186,19 @@ public class LazyTreeTable extends TreeTable {
 
             Map<String, SortMeta> sortMetaMap = getSortByAsMap();
             Map<String, FilterMeta> rawFilterMap = getFilterByAsMap();
-            Map<String, FilterMeta> activeFilters = new HashMap<>();
-            Map<String, SortMeta> activeSorts = new HashMap<>();
 
-            prepareFilters(rawFilterMap, activeFilters, context, clientId, params);
-            prepareSorts(sortMetaMap, activeSorts, context);
+            // Si les filtres de colonnes sont désactivés, on passe une map vide au modèle
+            if (!isColumnFilteringEnabled()) {
+                rawFilterMap = new HashMap<>();
+            }
 
             log.trace("Load appelé avec : {}", lazyModel.getClass().getSimpleName());
-            List<? extends AbstractEntityDTO> data = lazyModel.load(first, rows, activeSorts, activeFilters);
+            List<? extends AbstractEntityDTO> data = lazyModel.load(first, rows, sortMetaMap, rawFilterMap);
 
-            // load() a déjà positionné le rowCount via Page.getTotalElements() (filtres appliqués inclus) :
-            // inutile de relancer un second COUNT.
             setRowCount(lazyModel.getRowCount());
 
             if (PrimeFaces.current() != null) {
-                 PrimeFaces.current().ajax().addCallbackParam("newRowCount", getRowCount());
+                PrimeFaces.current().ajax().addCallbackParam("newRowCount", getRowCount());
             }
 
             if (data != null) {
@@ -211,129 +208,17 @@ public class LazyTreeTable extends TreeTable {
                 Set<String> expandedKeys = getExpandedRowKeySet();
                 boolean filteredMode = lazyModel instanceof BaseLazyDataModel<?> blm
                         && blm.getAncestorClosure() != null;
+
                 for (int i = 0; i < data.size(); i++) {
                     AbstractEntityDTO elt = data.get(i);
                     ChildTreeNode child = new ChildTreeNode(elt, getLoadMethod(), getIsLeafMethod());
                     String rowKey = String.valueOf(first + i);
                     child.setRowKey(rowKey);
-                    // when filters are active, every displayed root is on a path to a match → auto-expand
                     child.setExpanded(filteredMode || expandedKeys.contains(rowKey));
                     child.setParent(lazyRoot);
                     lazyRoot.getChildren().add(child);
                 }
-                log.trace("Data generated");
                 setValue(lazyRoot);
-
-                log.trace("New root set");
-            }
-
-            log.trace("Il doit y avoir {} enfants", getRowCount());
-        }
-    }
-
-    private static FilterMeta normalizeFilterMeta(FilterMeta meta) {
-        Object val = meta.getFilterValue();
-        if (!(val instanceof Collection<?> col) || col.isEmpty()) {
-            return meta;
-        }
-        Object first = col.iterator().next();
-
-        List<Long> ids = null;
-        if (first instanceof ConceptAutocompleteDTO) {
-            ids = new ArrayList<>(col.size());
-            for (Object o : col) {
-                ConceptDTO concept = ((ConceptAutocompleteDTO) o).concept();
-                if (concept != null) {
-                    ids.add(concept.getId());
-                }
-            }
-        } else if (first instanceof AbstractEntityDTO) {
-            ids = new ArrayList<>(col.size());
-            for (Object o : col) {
-                Long id = ((AbstractEntityDTO) o).getId();
-                if (id != null) {
-                    ids.add(id);
-                }
-            }
-        }
-
-        if (ids == null) {
-            return meta;
-        }
-        return FilterMeta.builder()
-                .field(meta.getField())
-                .filterBy(meta.getFilterBy())
-                .filterValue(ids)
-                .matchMode(meta.getMatchMode())
-                .build();
-    }
-
-    private static void prepareSorts(Map<String, SortMeta> sortMetaMap, Map<String, SortMeta> activeSorts, FacesContext context) {
-        for (Map.Entry<String, SortMeta> entry : sortMetaMap.entrySet()) {
-            if (!entry.getValue().getOrder().isUnsorted()) {
-                activeSorts.put(entry.getValue().getSortBy().getValue(context.getELContext()),  entry.getValue());
-            }
-        }
-
-        log.trace("Load appelée avec {} tri(s) actif(s):", activeSorts.size());
-        for (Map.Entry<String, SortMeta> entry : activeSorts.entrySet()) {
-            log.trace("\tTri : {} : {}", entry.getKey(), entry.getValue().getOrder());
-        }
-    }
-
-    private void prepareFilters(Map<String, FilterMeta> rawFilterMap, Map<String, FilterMeta> activeFilters, FacesContext context, String clientId, Map<String, String> params) {
-        if (rawFilterMap != null) {
-            for (Map.Entry<String, FilterMeta> entry : rawFilterMap.entrySet()) {
-                if ("globalFilter".equals(entry.getKey())) {
-                    continue;
-                }
-
-                FilterMeta meta = entry.getValue();
-                Object val = meta.getFilterValue();
-                boolean keep;
-                if (val instanceof String strVal) {
-                    keep = !strVal.trim().isEmpty();
-                } else if (val instanceof Collection<?> col) {
-                    keep = !col.isEmpty();
-                } else {
-                    keep = val != null;
-                }
-                if (keep) {
-                    Object resolvedKey = meta.getFilterBy() != null
-                            ? meta.getFilterBy().getValue(context.getELContext())
-                            : entry.getKey();
-                    activeFilters.put(String.valueOf(resolvedKey), normalizeFilterMeta(meta));
-                }
-            }
-        }
-
-        String globalVal = null;
-
-        if (rawFilterMap != null && rawFilterMap.containsKey("globalFilter")) {
-            globalVal = (String) rawFilterMap.get("globalFilter").getFilterValue();
-        }
-
-        String globalFilterParam = clientId + ":globalFilter";
-        if ((globalVal == null || globalVal.trim().isEmpty()) && params.containsKey(globalFilterParam)) {
-            globalVal = params.get(globalFilterParam);
-        }
-
-        if (globalVal != null && globalVal.trim().length() >= 3) {
-            FilterMeta globalMeta = FilterMeta.builder()
-                    .field("globalFilter")
-                    .filterValue(globalVal.trim())
-                    .matchMode(MatchMode.GLOBAL)
-                    .build();
-            activeFilters.put("globalFilter", globalMeta);
-        }
-
-        if (!isColumnFilteringEnabled()) {
-            activeFilters.clear();
-            log.trace("Filtres inactifs");
-        } else {
-            log.trace("Load appelée avec {} filtre(s) actif(s):", activeFilters.size());
-            for (Map.Entry<String, FilterMeta> entry : activeFilters.entrySet()) {
-                log.trace("\tFiltre : {} : {}", entry.getKey(), entry.getValue().getFilterValue());
             }
         }
     }
