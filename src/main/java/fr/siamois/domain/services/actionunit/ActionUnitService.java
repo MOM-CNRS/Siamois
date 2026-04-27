@@ -557,11 +557,27 @@ public class ActionUnitService implements ArkEntityService {
     }
 
     private Specification<ActionUnit> prepareSpecs(@NonNull InstitutionDTO institutionDTO, @NonNull FilterDTO filters) {
-        Specification<ActionUnit> specs = ActionUnitSpec.belongsToInstitution(institutionDTO.getId());
+        Specification<ActionUnit> base = ActionUnitSpec.belongsToInstitution(institutionDTO.getId());
+
+        if (filters.isRootOnly()) {
+            if (filters.hasUserFilters()) {
+                Collection<Long> closure = resolveAncestorClosure(institutionDTO, filters);
+                if (closure.isEmpty()) {
+                    return base.and((root, q, cb) -> cb.disjunction());
+                }
+                return base.and(ActionUnitSpec.unitIsRoot()).and(ActionUnitSpec.idIn(closure));
+            }
+            return base.and(ActionUnitSpec.unitIsRoot());
+        }
+
+        return base.and(userFilterSpecs(filters));
+    }
+
+    private Specification<ActionUnit> userFilterSpecs(FilterDTO filters) {
+        Specification<ActionUnit> specs = Specification.where(null);
 
         FilterDTO.FilterInfo globalFilter = filters.filterOf(ActionUnitSpec.GLOBAL_FILTER);
         FilterDTO.FilterInfo nameFilter = filters.filterOf(ActionUnitSpec.NAME_FILTER);
-
 
         if (nameFilter != null && nameFilter.getType() == FilterDTO.FilterType.CONTAINS) {
             specs = specs.and(ActionUnitSpec.nameContaining(nameFilter.valueAsString()));
@@ -569,10 +585,29 @@ public class ActionUnitService implements ArkEntityService {
             specs = specs.and(ActionUnitSpec.nameContaining(globalFilter.valueAsString()));
         }
 
-        if (filters.isRootOnly()) {
-            specs = specs.and(ActionUnitSpec.unitIsRoot());
-        }
-
         return specs;
+    }
+
+    private Collection<Long> resolveAncestorClosure(InstitutionDTO institutionDTO, FilterDTO filters) {
+        if (filters.getAncestorClosure() != null) {
+            return filters.getAncestorClosure();
+        }
+        Specification<ActionUnit> matchSpecs = ActionUnitSpec.belongsToInstitution(institutionDTO.getId())
+                .and(userFilterSpecs(filters));
+        List<Long> matchIds = actionUnitRepository.findAll(matchSpecs).stream()
+                .map(ActionUnit::getId)
+                .toList();
+        Set<Long> closure = matchIds.isEmpty()
+                ? Collections.emptySet()
+                : new HashSet<>(actionUnitRepository.findAncestorClosure(matchIds.toArray(Long[]::new)));
+        filters.setAncestorClosure(closure);
+        return closure;
+    }
+
+    public Set<Long> computeAncestorClosure(InstitutionDTO institutionDTO, FilterDTO filters) {
+        if (!filters.isRootOnly() || !filters.hasUserFilters()) {
+            return Collections.emptySet();
+        }
+        return new HashSet<>(resolveAncestorClosure(institutionDTO, filters));
     }
 }

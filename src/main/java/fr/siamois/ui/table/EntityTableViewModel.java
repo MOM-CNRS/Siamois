@@ -545,9 +545,15 @@ public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
         return (parentUnit) -> {
             if (parentUnit == null) {
                 return new ArrayList<>();
-            } else {
-                return (List<AbstractEntityDTO>) loadChildrensOfUnit((T) parentUnit);
             }
+            List<T> children = loadChildrensOfUnit((T) parentUnit);
+            Set<Long> closure = lazyDataModel != null ? lazyDataModel.getAncestorClosure() : null;
+            if (closure != null) {
+                children = children.stream()
+                        .filter(c -> closure.contains(idExtractor.apply(c)))
+                        .toList();
+            }
+            return (List<AbstractEntityDTO>) children;
         };
     }
 

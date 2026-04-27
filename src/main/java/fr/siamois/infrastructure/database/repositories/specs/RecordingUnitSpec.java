@@ -89,4 +89,8 @@ public class RecordingUnitSpec {
         return ((root, query, criteriaBuilder) -> criteriaBuilder.isEmpty(root.get("parents")));
     }
 
+    public static Specification<RecordingUnit> idIn(java.util.Collection<Long> ids) {
+        return (root, query, criteriaBuilder) -> root.get("id").in(ids);
+    }
+
 }

@@ -8,6 +8,7 @@ import org.springframework.lang.Nullable;
 
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
+import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -22,6 +23,16 @@ public class FilterDTO {
     @Setter
     @Getter
     private boolean rootOnly;
+
+    /**
+     * Set by services when {@code rootOnly} is active and user filters are non-empty:
+     * union of (matches ∪ all their ancestors). The lazy model reads it after the call
+     * to constrain child-loading to the same closure (auto-expand branches that lead
+     * to a match). {@code null} otherwise.
+     */
+    @Setter
+    @Getter
+    private Collection<Long> ancestorClosure;
 
     public enum FilterType {
         START_WITH,
@@ -60,6 +71,10 @@ public class FilterDTO {
 
     public boolean containsColumn(@NonNull String column) {
         return filter.containsKey(column);
+    }
+
+    public boolean hasUserFilters() {
+        return !filter.isEmpty();
     }
 
     @NonNull

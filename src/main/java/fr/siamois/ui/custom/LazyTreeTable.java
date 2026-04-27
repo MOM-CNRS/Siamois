@@ -3,6 +3,7 @@ package fr.siamois.ui.custom;
 import fr.siamois.dto.entity.AbstractEntityDTO;
 import fr.siamois.dto.entity.ConceptDTO;
 import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
+import fr.siamois.ui.lazydatamodel.BaseLazyDataModel;
 import jakarta.faces.context.FacesContext;
 import org.primefaces.PrimeFaces;
 import org.primefaces.component.treetable.TreeTable;
@@ -195,12 +196,15 @@ public class LazyTreeTable extends TreeTable {
                 lazyRoot = new RootTreeNode(getRowCount(), first);
 
                 Set<String> expandedKeys = getExpandedRowKeySet();
+                boolean filteredMode = lazyModel instanceof BaseLazyDataModel<?> blm
+                        && blm.getAncestorClosure() != null;
                 for (int i = 0; i < data.size(); i++) {
                     AbstractEntityDTO elt = data.get(i);
                     ChildTreeNode child = new ChildTreeNode(elt, getLoadMethod(), getIsLeafMethod());
                     String rowKey = String.valueOf(first + i);
                     child.setRowKey(rowKey);
-                    child.setExpanded(expandedKeys.contains(rowKey));
+                    // when filters are active, every displayed root is on a path to a match → auto-expand
+                    child.setExpanded(filteredMode || expandedKeys.contains(rowKey));
                     child.setParent(lazyRoot);
                     lazyRoot.getChildren().add(child);
                 }

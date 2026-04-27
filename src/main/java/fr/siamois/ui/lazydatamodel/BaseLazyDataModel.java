@@ -41,6 +41,14 @@ public abstract class BaseLazyDataModel<T> extends LazyDataModel<T> implements L
     @Setter
     protected boolean rootOnly;
 
+    /**
+     * When `rootOnly` is active AND user filters are non-empty, the service computes
+     * the set of (matches ∪ ancestors) and stores it here so child-loading can restrict
+     * itself to the same closure (only branches leading to a match are visible).
+     * Null otherwise (no filter, or DataTable mode).
+     */
+    protected transient Set<Long> ancestorClosure;
+
     protected abstract String getDefaultSortField();
 
     protected abstract Page<T> loadData(FilterDTO filter, Pageable pageable);
@@ -235,10 +243,23 @@ public abstract class BaseLazyDataModel<T> extends LazyDataModel<T> implements L
         Pageable pageable = PageRequest.of(pageNumber, pageSizeState, buildSort(sortDTO));
 
         Page<T> result = loadData(filterDTO, pageable);
+        captureClosureSnapshot(filterDTO);
         setRowCount((int) result.getTotalElements());
         updateCache(result, filterBy, sortBy, first, pageSize);
 
         return result.getContent();
+    }
+
+    @SuppressWarnings("unchecked")
+    private void captureClosureSnapshot(FilterDTO filterDTO) {
+        Collection<Long> closure = filterDTO.getAncestorClosure();
+        if (closure instanceof Set<?> set) {
+            this.ancestorClosure = (Set<Long>) set;
+        } else if (closure != null) {
+            this.ancestorClosure = new HashSet<>(closure);
+        } else {
+            this.ancestorClosure = null;
+        }
     }
 
     @NonNull
@@ -264,7 +285,7 @@ public abstract class BaseLazyDataModel<T> extends LazyDataModel<T> implements L
      * @param sortDTO The domain DTO sort
      */
     protected void prepareSortDTO(@Nullable Map<String, SortMeta> sortBy, @NonNull SortDTO sortDTO) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        // no-op: subclasses override when they expose sortable columns
     }
 
     /**
@@ -274,7 +295,7 @@ public abstract class BaseLazyDataModel<T> extends LazyDataModel<T> implements L
      * @param filterDTO The domain DTO filters
      */
     protected void prepareFilterDTO(Map<String, FilterMeta> filterBy, FilterDTO filterDTO) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        // no-op: subclasses override when they expose filterable columns
     }
 
     public int getFirstIndexOnPage() {

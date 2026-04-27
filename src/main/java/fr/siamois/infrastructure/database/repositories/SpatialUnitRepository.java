@@ -378,5 +378,16 @@ public interface SpatialUnitRepository extends CrudRepository<SpatialUnit, Long>
             @Param("institutionId") Long institutionId,
             @Param("query") String query
     );
+
+    @Query(value = """
+            WITH RECURSIVE ascend(id) AS (
+                SELECT seed FROM unnest(CAST(:seedIds AS BIGINT[])) AS seed
+                UNION
+                SELECT h.fk_parent_id
+                FROM spatial_hierarchy h JOIN ascend a ON h.fk_child_id = a.id
+            )
+            SELECT id FROM ascend
+            """, nativeQuery = true)
+    List<Long> findAncestorClosure(@Param("seedIds") Long[] seedIds);
 }
 

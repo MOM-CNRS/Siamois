@@ -859,8 +859,25 @@ public class RecordingUnitService implements ArkEntityService {
         return Math.toIntExact(recordingUnitRepository.count(specs));
     }
 
-    public static Specification<RecordingUnit> prepareSpecs(@NonNull InstitutionDTO institution, @NonNull FilterDTO filters) {
-        Specification<RecordingUnit> specification = RecordingUnitSpec.recordingUnitInInstitution(institution.getId());
+    public Specification<RecordingUnit> prepareSpecs(@NonNull InstitutionDTO institution, @NonNull FilterDTO filters) {
+        Specification<RecordingUnit> base = RecordingUnitSpec.recordingUnitInInstitution(institution.getId());
+
+        if (filters.isRootOnly()) {
+            if (filters.hasUserFilters()) {
+                Collection<Long> closure = resolveAncestorClosure(institution, filters);
+                if (closure.isEmpty()) {
+                    return base.and((root, q, cb) -> cb.disjunction());
+                }
+                return base.and(RecordingUnitSpec.unitIsRoot()).and(RecordingUnitSpec.idIn(closure));
+            }
+            return base.and(RecordingUnitSpec.unitIsRoot());
+        }
+
+        return base.and(userFilterSpecs(filters));
+    }
+
+    public static Specification<RecordingUnit> userFilterSpecs(@NonNull FilterDTO filters) {
+        Specification<RecordingUnit> specification = Specification.where(null);
 
         if (filters.containsColumn(RecordingUnitSpec.FULL_IDENTIFIER)) {
             specification = specification.and(RecordingUnitSpec.fullIdentifierStartsWith(filters.valueOfAsString(RecordingUnitSpec.FULL_IDENTIFIER)));
@@ -874,22 +891,18 @@ public class RecordingUnitService implements ArkEntityService {
             specification = specification.and(RecordingUnitSpec.matrixContains(filters.valueOfAsString(RecordingUnitSpec.MATRIX_FILTER)));
         }
 
-        // Spatial Units
         if (filters.containsColumn(RecordingUnitSpec.SPATIAL_UNIT_FILTER)) {
             specification = specification.and(RecordingUnitSpec.isInSpatialUnit(filters.valueAsIdListOf(RecordingUnitSpec.SPATIAL_UNIT_FILTER)));
         }
 
-        // Action Units
         if (filters.containsColumn(RecordingUnitSpec.ACTION_UNIT_FILTER)) {
             specification = specification.and(RecordingUnitSpec.isInActionUnit(filters.valueAsIdListOf(RecordingUnitSpec.ACTION_UNIT_FILTER)));
         }
 
-        // Contributors
         if (filters.containsColumn(RecordingUnitSpec.CONTRIBUTORS_FILTER)) {
             specification = specification.and(RecordingUnitSpec.isInContributors(filters.valueAsIdListOf(RecordingUnitSpec.CONTRIBUTORS_FILTER)));
         }
 
-        // Type
         if (filters.containsColumn(RecordingUnitSpec.TYPE_FILTER)) {
             specification = specification.and(RecordingUnitSpec.typeIsIn(filters.valueAsIdListOf(RecordingUnitSpec.TYPE_FILTER)));
         }
@@ -901,10 +914,29 @@ public class RecordingUnitService implements ArkEntityService {
             }
         }
 
-        if (filters.isRootOnly()){
-            specification = specification.and(RecordingUnitSpec.unitIsRoot());
-        }
-
         return specification;
+    }
+
+    private Collection<Long> resolveAncestorClosure(InstitutionDTO institution, FilterDTO filters) {
+        if (filters.getAncestorClosure() != null) {
+            return filters.getAncestorClosure();
+        }
+        Specification<RecordingUnit> matchSpecs = RecordingUnitSpec.recordingUnitInInstitution(institution.getId())
+                .and(userFilterSpecs(filters));
+        List<Long> matchIds = recordingUnitRepository.findAll(matchSpecs).stream()
+                .map(RecordingUnit::getId)
+                .toList();
+        Set<Long> closure = matchIds.isEmpty()
+                ? Collections.emptySet()
+                : new HashSet<>(recordingUnitRepository.findAncestorClosure(matchIds.toArray(Long[]::new)));
+        filters.setAncestorClosure(closure);
+        return closure;
+    }
+
+    public Set<Long> computeAncestorClosure(InstitutionDTO institution, FilterDTO filters) {
+        if (!filters.isRootOnly() || !filters.hasUserFilters()) {
+            return Collections.emptySet();
+        }
+        return new HashSet<>(resolveAncestorClosure(institution, filters));
     }
 }

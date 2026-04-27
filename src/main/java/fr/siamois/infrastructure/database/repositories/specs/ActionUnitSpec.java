@@ -25,7 +25,11 @@ public class ActionUnitSpec {
     }
 
     public static Specification<ActionUnit> unitIsRoot() {
-        return ((root, query, criteriaBuilder) -> criteriaBuilder.equal(root.get("hasChildrens"), false));
+        return ((root, query, criteriaBuilder) -> criteriaBuilder.isEmpty(root.get("parents")));
+    }
+
+    public static Specification<ActionUnit> idIn(java.util.Collection<Long> ids) {
+        return (root, query, criteriaBuilder) -> root.get("id").in(ids);
     }
 
 }

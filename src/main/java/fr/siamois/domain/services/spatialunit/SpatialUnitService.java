@@ -592,7 +592,25 @@ public class SpatialUnitService implements ArkEntityService {
     }
 
     private Specification<SpatialUnit> prepareSpecs(InstitutionDTO institutionDTO, FilterDTO filterDTO) {
-        Specification<SpatialUnit> specs = SpatialUnitSpec.belongsToInstitution(institutionDTO.getId());
+        Specification<SpatialUnit> base = SpatialUnitSpec.belongsToInstitution(institutionDTO.getId());
+
+        // Tree-mode shortcut: only roots, possibly restricted to "ancestors of a match"
+        if (filterDTO.isRootOnly()) {
+            if (filterDTO.hasUserFilters()) {
+                Collection<Long> closure = resolveAncestorClosure(institutionDTO, filterDTO);
+                if (closure.isEmpty()) {
+                    return base.and((root, q, cb) -> cb.disjunction()); // no match → empty
+                }
+                return base.and(SpatialUnitSpec.unitIsRoot()).and(SpatialUnitSpec.idIn(closure));
+            }
+            return base.and(SpatialUnitSpec.unitIsRoot());
+        }
+
+        return base.and(userFilterSpecs(filterDTO));
+    }
+
+    private Specification<SpatialUnit> userFilterSpecs(FilterDTO filterDTO) {
+        Specification<SpatialUnit> specs = Specification.where(null);
 
         if (filterDTO.containsColumn(SpatialUnitSpec.NAME_FILTER)) {
             specs = specs.and(SpatialUnitSpec.nameContaining(filterDTO.valueOfAsString(SpatialUnitSpec.NAME_FILTER)));
@@ -602,11 +620,30 @@ public class SpatialUnitService implements ArkEntityService {
             specs = specs.and(SpatialUnitSpec.categoryIsIn(filterDTO.valueAsIdListOf(SpatialUnitSpec.CATEGORY_FILTER)));
         }
 
-        if (filterDTO.isRootOnly()) {
-            specs = specs.and(SpatialUnitSpec.unitIsRoot());
-        }
-
         return specs;
+    }
+
+    private Collection<Long> resolveAncestorClosure(InstitutionDTO institutionDTO, FilterDTO filterDTO) {
+        if (filterDTO.getAncestorClosure() != null) {
+            return filterDTO.getAncestorClosure();
+        }
+        Specification<SpatialUnit> matchSpecs = SpatialUnitSpec.belongsToInstitution(institutionDTO.getId())
+                .and(userFilterSpecs(filterDTO));
+        List<Long> matchIds = spatialUnitRepository.findAll(matchSpecs).stream()
+                .map(SpatialUnit::getId)
+                .toList();
+        Set<Long> closure = matchIds.isEmpty()
+                ? Collections.emptySet()
+                : new HashSet<>(spatialUnitRepository.findAncestorClosure(matchIds.toArray(Long[]::new)));
+        filterDTO.setAncestorClosure(closure);
+        return closure;
+    }
+
+    public Set<Long> computeAncestorClosure(InstitutionDTO institutionDTO, FilterDTO filterDTO) {
+        if (!filterDTO.isRootOnly() || !filterDTO.hasUserFilters()) {
+            return Collections.emptySet();
+        }
+        return new HashSet<>(resolveAncestorClosure(institutionDTO, filterDTO));
     }
 
 }

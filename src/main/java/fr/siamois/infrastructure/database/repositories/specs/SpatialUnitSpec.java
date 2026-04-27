@@ -34,4 +34,8 @@ public class SpatialUnitSpec {
     public static Specification<SpatialUnit> unitIsRoot() {
         return ((root, query, criteriaBuilder) -> criteriaBuilder.isEmpty(root.get("parents")));
     }
+
+    public static Specification<SpatialUnit> idIn(java.util.Collection<Long> ids) {
+        return (root, query, criteriaBuilder) -> root.get("id").in(ids);
+    }
 }
