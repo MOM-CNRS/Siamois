@@ -104,6 +104,7 @@ public class NewUnitContext implements Serializable {
         NONE, // pas d'insertion
         ROOT,              // bouton global -> racine
         CHILD_FIRST,       // ajouter un enfant en 1ère position sous clickedId
-        PARENT_AT_ROOT     // ajouter un parent à la racine et re-parent le clickedId dessous
+        PARENT_AT_ROOT,    // ajouter un parent à la racine et re-parent le clickedId dessous
+        SIBLING_BELOW      // dupliquer : ajouter juste en dessous de clickedId, comme frère
     }
 }

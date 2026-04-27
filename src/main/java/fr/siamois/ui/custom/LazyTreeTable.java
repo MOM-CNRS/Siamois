@@ -257,15 +257,29 @@ public class LazyTreeTable extends TreeTable {
     @Override
     protected void preEncode(FacesContext context) {
         if (isLazy()) {
-            setLazyRoot(null);
             Map<String, String> params = context.getExternalContext().getRequestParameterMap();
             String clientId = getClientId(context);
             String behaviorEvent = params.get("javax.faces.behavior.event");
-            if ("filter".equals(behaviorEvent) || params.containsKey(clientId + "_filtering")) {
+            boolean isFilterEvent = "filter".equals(behaviorEvent)
+                    || params.containsKey(clientId + "_filtering");
+            boolean isSortEvent = "sort".equals(behaviorEvent)
+                    || params.containsKey(clientId + "_sorting");
+            boolean isPaginationEvent = params.containsKey(clientId + "_pagination");
+
+            // Only data-changing events should throw away the existing tree.
+            // Otherwise we keep the current `lazyRoot` so manual mutations
+            // (insert as child / parent / sibling) survive across renders.
+            if (isFilterEvent) {
+                setLazyRoot(null);
                 super.setFirst(0);
                 getExpandedRowKeySet().clear();
+            } else if (isSortEvent || isPaginationEvent) {
+                setLazyRoot(null);
             }
-            loadLazyData();
+
+            if (getLazyRoot() == null) {
+                loadLazyData();
+            }
         }
         super.preEncode(context);
     }
@@ -321,6 +335,23 @@ public class LazyTreeTable extends TreeTable {
             }
         }
         super.calculateFirst();
+    }
+
+    /**
+     * Align the row keys produced during the visit phase with the absolute row
+     * keys we wrote into the rendered HTML in {@link #loadLazyData()} (`first + i`).
+     *
+     * Without this, PrimeFaces' visit walks children using just the iteration
+     * index (0..pageSize-1). On page 2 the visit keys would be "0".."9" while
+     * the DOM carries "10".."19" — visit never finds the clicked button and
+     * the action is silently dropped.
+     */
+    @Override
+    protected String childRowKey(String parentRowKey, int i) {
+        if (parentRowKey == null && isLazy()) {
+            return String.valueOf(getFirst() + i);
+        }
+        return super.childRowKey(parentRowKey, i);
     }
 
     @Override

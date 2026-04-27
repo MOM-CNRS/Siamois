@@ -10,14 +10,12 @@ import org.slf4j.LoggerFactory;
 public class RootTreeNode<T extends AbstractEntityDTO> extends DefaultTreeNode<T> {
 
     private static final Logger log = LoggerFactory.getLogger(RootTreeNode.class);
-    private final int totalEntityCount;
     private final RootChildList<T> childrens;
     private final int first;
 
     public RootTreeNode(int totalEntityCount, int first) {
         super("root", null, null);
         this.setRowKey("root");
-        this.totalEntityCount = totalEntityCount;
         this.first = first;
         this.childrens = new RootChildList<>(totalEntityCount, this, first);
     }
@@ -29,14 +27,13 @@ public class RootTreeNode<T extends AbstractEntityDTO> extends DefaultTreeNode<T
     @SuppressWarnings("unused")
     public RootTreeNode(@NonNull RootTreeNode<T> other) {
         super(other.type, other.data, other.parent);
-        this.totalEntityCount = 0;
         this.first = other.first;
         this.childrens = new RootChildList<>(0, this, other.first);
     }
 
     @Override
     public int getChildCount() {
-        return totalEntityCount;
+        return childrens.size();
     }
 
     @Override

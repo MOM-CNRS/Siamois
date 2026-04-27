@@ -433,21 +433,19 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
 
         newUnit = recordingUnitService.save(newUnit);
 
-        // Build the creation context (as child of the parent of the duplicated row, or root if no parent)
+        // The duplicate must appear right below the source row, as its sibling.
+        // We expose the SOURCE entity id (not the parent) as clickedId so the
+        // tree mutator can locate it and slot the new node just after it.
         NewUnitContext ctx = NewUnitContext.builder()
                 .kindToCreate(UnitKind.RECORDING)
-                .trigger(
-                        parent == null
-                                ? null
-                                : NewUnitContext.Trigger.cell(
-                                UnitKind.RECORDING,
-                                parent.getId(),
-                                PARENTS
-                        )
-                )
+                .trigger(NewUnitContext.Trigger.cell(
+                        UnitKind.RECORDING,
+                        toDuplicate.getId(),
+                        PARENTS
+                ))
                 .insertPolicy(NewUnitContext.UiInsertPolicy.builder()
                         .listInsert(NewUnitContext.ListInsert.TOP)
-                        .treeInsert(parent == null ? ROOT : NewUnitContext.TreeInsert.CHILD_FIRST)
+                        .treeInsert(NewUnitContext.TreeInsert.SIBLING_BELOW)
                         .build())
                 .build();
 

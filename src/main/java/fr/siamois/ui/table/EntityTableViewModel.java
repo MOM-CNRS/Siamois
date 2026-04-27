@@ -16,6 +16,7 @@ import fr.siamois.ui.bean.NavBean;
 import fr.siamois.ui.bean.dialog.newunit.GenericNewUnitDialogBean;
 import fr.siamois.ui.bean.dialog.newunit.NewUnitContext;
 import fr.siamois.ui.bean.panel.models.panel.AbstractPanel;
+import fr.siamois.ui.custom.LazyTreeMutator;
 import fr.siamois.ui.form.CustomColUiDto;
 import fr.siamois.ui.form.EntityFormContext;
 import fr.siamois.ui.form.FormContextServices;
@@ -406,45 +407,56 @@ public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
             return;
         }
 
-        // ⚠️ cast “best effort” sans entityClass
-        final T casted;
-        try {
-            @SuppressWarnings("unchecked")
-            T tmp = created;
-            casted = tmp;
-        } catch (ClassCastException e) {
-            return; // pas gérable par cette table -> no-op
-        }
-
-        // 1) List view: insert at top
-        if (lazyDataModel != null && policy.getListInsert() != NewUnitContext.ListInsert.NONE) {
-            lazyDataModel.addRowToModel(casted);
-        }
-
-        // 2) Tree view: manual insertion (si treeLazyModel présent)
-        if (treeLazyModel != null  && policy.getTreeInsert() != NewUnitContext.TreeInsert.NONE) {
-            applyTreeInsertion(casted, ctx);
+        if (treeMode) {
+            // Tree view: mutate the displayed lazy tree directly so the user's
+            // current page / expanded nodes are preserved. We deliberately
+            // skip addRowToModel here — it overwrites the lazy model's
+            // queryResult with just the new entity and would make the tree
+            // collapse to a single row.
+            if (policy.getTreeInsert() != NewUnitContext.TreeInsert.NONE) {
+                applyTreeInsertion(created, ctx);
+            }
+        } else if (lazyDataModel != null
+                && policy.getListInsert() != NewUnitContext.ListInsert.NONE) {
+            // List view: insert at the top of the page.
+            lazyDataModel.addRowToModel(created);
         }
     }
 
 
+    @SuppressWarnings("unchecked")
     protected void applyTreeInsertion(T created, NewUnitContext ctx) {
-        // si pas de clickedId => bouton global => root
-        ID clickedId = (ctx.getTrigger() != null) ? (ID) ctx.getTrigger().getClickedId() : null;
+        if (lazyDataModel == null) return;
 
+        TreeNode<T> root = (TreeNode<T>) lazyDataModel.getLazyRoot();
+        if (root == null) {
+            // Tree hasn't been rendered yet — let next render fetch the new
+            // entity from the database.
+            return;
+        }
+
+        Object clickedId = (ctx.getTrigger() != null) ? ctx.getTrigger().getClickedId() : null;
         var treeInsert = ctx.getInsertPolicy().getTreeInsert();
 
+        Callbacks.SerializableFunction<T, List<T>> loadFn =
+                (Callbacks.SerializableFunction<T, List<T>>) (Callbacks.SerializableFunction<?, ?>) getLoadMethod();
+        Callbacks.SerializableFunction<T, Boolean> isLeafFn =
+                (Callbacks.SerializableFunction<T, Boolean>) (Callbacks.SerializableFunction<?, ?>) getIsLeafMethod();
+
         if (clickedId == null || treeInsert == ROOT) {
-            treeLazyModel.insertChildFirst(null, created);
-        } else {
-            switch (treeInsert) {
-                case CHILD_FIRST ->
-                        treeLazyModel.insertChildFirst(clickedId, created);
-                case PARENT_AT_ROOT ->
-                        treeLazyModel.insertParentAtRoot(clickedId, created);
-                default -> {
-                    // no op
-                }
+            LazyTreeMutator.insertAtRoot(root, created, loadFn, isLeafFn);
+            return;
+        }
+
+        switch (treeInsert) {
+            case CHILD_FIRST ->
+                    LazyTreeMutator.insertChildFirst(root, clickedId, created, loadFn, isLeafFn);
+            case PARENT_AT_ROOT ->
+                    LazyTreeMutator.insertParentAndReparent(root, clickedId, created, loadFn, isLeafFn);
+            case SIBLING_BELOW ->
+                    LazyTreeMutator.insertSiblingBelow(root, clickedId, created, loadFn, isLeafFn);
+            default -> {
+                // no op (NONE)
             }
         }
     }

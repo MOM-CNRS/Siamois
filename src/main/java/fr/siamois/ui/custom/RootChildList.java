@@ -16,7 +16,7 @@ import java.util.stream.Stream;
 public class RootChildList<T extends AbstractEntityDTO> extends DefaultTreeNodeChildren<T> {
 
     private static final Logger log = LoggerFactory.getLogger(RootChildList.class);
-    private final int totalEntityCount;
+    private int totalEntityCount;
     private final List<TreeNode<T>> actualChildren;
     private final TreeNode<T> parent;
     private final int first;
@@ -33,6 +33,14 @@ public class RootChildList<T extends AbstractEntityDTO> extends DefaultTreeNodeC
         return totalEntityCount;
     }
 
+    public int actualSize() {
+        return actualChildren.size();
+    }
+
+    public void incrementTotalEntityCount(int delta) {
+        this.totalEntityCount = Math.max(0, this.totalEntityCount + delta);
+    }
+
     @Override
     public boolean add(TreeNode<T> node) {
         if (node == null) {
@@ -40,6 +48,32 @@ public class RootChildList<T extends AbstractEntityDTO> extends DefaultTreeNodeC
         }
         node.setParent(parent);
         return actualChildren.add(node);
+    }
+
+    @Override
+    public void add(int index, TreeNode<T> node) {
+        if (node == null) {
+            throw new IllegalArgumentException("node");
+        }
+        node.setParent(parent);
+        // Indices we receive from mutation calls are page-relative.
+        int safeIndex = Math.max(0, Math.min(index, actualChildren.size()));
+        actualChildren.add(safeIndex, node);
+    }
+
+    @Override
+    public boolean remove(Object node) {
+        return actualChildren.remove(node);
+    }
+
+    @Override
+    public TreeNode<T> remove(int index) {
+        return actualChildren.remove(index);
+    }
+
+    @Override
+    public int indexOf(Object o) {
+        return actualChildren.indexOf(o);
     }
 
     @Override
