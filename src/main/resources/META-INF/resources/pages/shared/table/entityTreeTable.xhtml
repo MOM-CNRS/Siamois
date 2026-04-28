@@ -31,6 +31,16 @@
             margin-top: 0.5rem;
             box-sizing: border-box;
         }
+
+        /* Highlight rows that actually matched the search; ancestors brought
+           in only to keep the path visible stay neutral. */
+        .ui-treetable tr.search-match > td {
+            background-color: rgba(255, 221, 87, 0.25);
+            font-weight: 600;
+        }
+        .ui-treetable tr.search-match:hover > td {
+            background-color: rgba(255, 221, 87, 0.4);
+        }
     </style>
 
     <p:blockUI block="entityTreeTable" trigger="#{cc.clientId}:entityTreeTable" widgetVar="#{cc.clientId}_buiTreeTables">
@@ -66,6 +76,7 @@
               isLeafMethod="#{tableModel.isLeafMethod}"
               loadMethod="#{tableModel.loadMethod}"
                           columnFilteringEnabled="#{tableModel.columnFilteringEnabled}"
+                          rowStyleClass="#{tableModel.getRowStyleClass(item)}"
     >
         <p:ajax event="filter" process="@this" oncomplete="if (args &amp;&amp; args.newRowCount !== undefined) { PF('#{cc.clientId}_entityTreeTable').getPaginator().setTotalRecords(args.newRowCount); }" />
         <f:facet name="header">

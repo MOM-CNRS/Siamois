@@ -580,6 +580,29 @@ public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
     }
 
     /**
+     * @return {@code true} if {@code item} is a row that actually matched the
+     * current search (its id is in the lazy model's {@code matchIds} set), as
+     * opposed to a pure ancestor brought in only to keep the path visible.
+     */
+    public boolean isSearchMatch(T item) {
+        if (item == null || lazyDataModel == null) return false;
+        Set<Long> matches = lazyDataModel.getMatchIds();
+        if (matches == null || matches.isEmpty()) return false;
+        ID id = idExtractor.apply(item);
+        return id != null && matches.contains(id);
+    }
+
+    /**
+     * Row CSS class for the TreeTable: {@code search-match} when the row's
+     * entity is one of the actual hits, empty otherwise. Bound from
+     * {@code rowStyleClass} on the tree table; the styling itself lives in
+     * {@code entityTreeTable.xhtml}.
+     */
+    public String getRowStyleClass(T item) {
+        return isSearchMatch(item) ? "search-match" : "";
+    }
+
+    /**
      * Re-render the table when {@code columnFilteringEnabled} flips. Without
      * this, {@code LazyTreeTable.preEncode} keeps the cached {@code lazyRoot},
      * so the previously-filtered result stays on screen even though
