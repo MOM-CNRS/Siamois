@@ -7,6 +7,7 @@ import org.primefaces.model.TreeNodeChildren;
 import org.primefaces.util.Callbacks;
 
 import java.util.List;
+import java.util.Set;
 
 /**
  * Lazy tree node that:
@@ -23,6 +24,7 @@ public class ChildTreeNode<T extends AbstractEntityDTO> extends DefaultTreeNode<
 
     private final Callbacks.SerializableFunction<T, List<T>> catchedLoad;
     private final Callbacks.SerializableFunction<T, Boolean> catchedIsLeaf;
+    private Set<Long> ancestorClosure;
     private boolean loaded = false;
 
     public ChildTreeNode(T data,
@@ -38,6 +40,17 @@ public class ChildTreeNode<T extends AbstractEntityDTO> extends DefaultTreeNode<
         super(other.getData());
         this.catchedLoad = other.catchedLoad;
         this.catchedIsLeaf = other.catchedIsLeaf;
+        this.ancestorClosure = other.ancestorClosure;
+    }
+
+    /**
+     * Set the ancestor closure shared with the whole filtered subtree. Any
+     * lazy-loaded child whose entity id is contained in {@code ancestorClosure}
+     * will be auto-expanded when {@link #lazyLoad()} fires, so a deep filter
+     * match opens the full ancestor chain — not just the top-level row.
+     */
+    public void setAncestorClosure(Set<Long> ancestorClosure) {
+        this.ancestorClosure = ancestorClosure;
     }
 
     public Callbacks.SerializableFunction<T, List<T>> getCatchedLoad() {
@@ -128,6 +141,10 @@ public class ChildTreeNode<T extends AbstractEntityDTO> extends DefaultTreeNode<
         for (T c : children) {
             ChildTreeNode<T> node = new ChildTreeNode<>(c, catchedLoad, catchedIsLeaf);
             node.setParent(this);
+            node.setAncestorClosure(ancestorClosure);
+            if (ancestorClosure != null && c != null && ancestorClosure.contains(c.getId())) {
+                node.setExpanded(true);
+            }
             childList.add(node);
         }
     }

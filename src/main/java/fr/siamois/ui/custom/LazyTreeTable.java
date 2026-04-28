@@ -247,12 +247,15 @@ public class LazyTreeTable extends TreeTable {
                 setLazyRoot(lazyRoot);
 
                 Set<String> expandedKeys = getExpandedRowKeySet();
-                boolean filteredMode = lazyModel instanceof BaseLazyDataModel<?> blm
-                        && blm.getAncestorClosure() != null;
+                Set<Long> ancestorClosure = (lazyModel instanceof BaseLazyDataModel<?> blm)
+                        ? blm.getAncestorClosure()
+                        : null;
+                boolean filteredMode = ancestorClosure != null;
 
                 for (int i = 0; i < data.size(); i++) {
                     AbstractEntityDTO elt = data.get(i);
                     ChildTreeNode child = new ChildTreeNode(elt, getLoadMethod(), getIsLeafMethod());
+                    child.setAncestorClosure(ancestorClosure);
                     String rowKey = String.valueOf(first + i);
                     child.setRowKey(rowKey);
                     child.setExpanded(filteredMode || expandedKeys.contains(rowKey));
