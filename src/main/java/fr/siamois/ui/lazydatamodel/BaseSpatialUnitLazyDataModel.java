@@ -70,6 +70,11 @@ public abstract class BaseSpatialUnitLazyDataModel extends BaseLazyDataModel<Spa
             if (sortMeta != null) {
                 sortDTO.add(SpatialUnitSpec.NAME_FILTER, sortMeta.getOrder());
             }
+
+            SortMeta categoryMeta = sortBy.get(SpatialUnitSpec.CATEGORY_FILTER);
+            if (categoryMeta != null) {
+                sortDTO.add(SpatialUnitSpec.CATEGORY_FILTER, categoryMeta.getOrder());
+            }
         }
     }
 

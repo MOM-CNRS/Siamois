@@ -48,9 +48,11 @@ public class RecordingUnitLazyDataModel extends BaseRecordingUnitLazyDataModel {
     @Override
     protected void prepareSortDTO(@Nullable Map<String, SortMeta> sortBy, @NonNull SortDTO sortDTO) {
         if (sortBy != null && !sortBy.isEmpty()) {
-            SortMeta meta = sortBy.get(RecordingUnitSpec.FULL_IDENTIFIER);
-            if (meta != null) {
-                sortDTO.add(RecordingUnitSpec.FULL_IDENTIFIER, meta.getOrder());
+            for (String column : RecordingUnitSpec.allColumns()) {
+                SortMeta meta = sortBy.get(column);
+                if (meta != null) {
+                    sortDTO.add(column, meta.getOrder());
+                }
             }
         }
     }

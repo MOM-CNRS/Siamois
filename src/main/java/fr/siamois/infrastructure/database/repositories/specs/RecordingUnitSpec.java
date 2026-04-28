@@ -18,6 +18,21 @@ public class RecordingUnitSpec {
     public static final String CONTRIBUTORS_FILTER = "contributors";
     public static final String TYPE_FILTER = "type";
 
+
+    public static List<String> allColumns() {
+        return List.of(
+                FULL_IDENTIFIER,
+                AUTHOR_FILTER,
+                MATRIX_FILTER,
+                ACTION_UNIT_FILTER,
+                SPATIAL_UNIT_FILTER,
+                OPENING_DATE_FILTER,
+                CLOSING_DATE_FILTER,
+                CONTRIBUTORS_FILTER,
+                TYPE_FILTER
+        );
+    }
+
     public static Specification<RecordingUnit> recordingUnitInInstitution(long institutionId) {
         return (root, query, criteriaBuilder) -> criteriaBuilder.equal(root.get("createdByInstitution").get("id"), institutionId);
     }
