@@ -1,4 +1,4 @@
-package fr.siamois.ui.form;
+package fr.siamois.ui.form.dto;
 
 import lombok.Data;
 

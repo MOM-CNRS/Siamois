@@ -41,6 +41,7 @@ import jakarta.faces.component.UIInput;
 import jakarta.faces.context.FacesContext;
 import jakarta.faces.event.AjaxBehaviorEvent;
 import lombok.Data;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.primefaces.PrimeFaces;
 import org.primefaces.event.SelectEvent;
@@ -79,6 +80,9 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
     private T unit;
 
     private boolean autoSave = true;
+
+    @Getter
+    private NewFieldManagerBean newFieldManager;
 
     private final FieldSource fieldSource;
     private final FormService formService;
@@ -178,6 +182,7 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
 
         this.enabledEngine = formService.buildEnabledEngine(fieldSource);
         this.enabledEngine.applyAll(vp, applier);
+        this.newFieldManager = new NewFieldManagerBean(this.formResponse);
 
     }
 
