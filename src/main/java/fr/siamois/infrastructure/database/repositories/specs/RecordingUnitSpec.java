@@ -72,7 +72,7 @@ public class RecordingUnitSpec {
 
     public static Specification<RecordingUnit> matrixContains(String matrixInput) {
         return (root, query, criteriaBuilder) -> {
-            return criteriaBuilder.like(criteriaBuilder.lower(root.get(RecordingUnitSpec.MATRIX_FILTER)), matrixInput.toLowerCase() + "%");
+            return criteriaBuilder.like(criteriaBuilder.lower(root.get(RecordingUnitSpec.MATRIX_FILTER)), "%" + matrixInput.toLowerCase() + "%");
         };
     }
 
