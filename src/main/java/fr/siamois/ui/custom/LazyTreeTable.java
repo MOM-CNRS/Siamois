@@ -88,6 +88,14 @@ public class LazyTreeTable extends TreeTable {
     @Override
     public int getRowCount() {
         if (isLazy()) {
+            // Prefer the live count tracked on the displayed tree: mutations
+            // (insertAtRoot, insertParentAndReparent, ...) bump it directly via
+            // the mutator's bumpRootCount, while the state helper would still
+            // show the count captured at the last full load.
+            TreeNode root = getLazyRoot();
+            if (root != null && root.getChildren() instanceof RootChildList<?> list) {
+                return list.size();
+            }
             return (Integer) getStateHelper().eval(PropertyKeys.rowCount, 0);
         }
         return super.getRowCount();
