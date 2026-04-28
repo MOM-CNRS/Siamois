@@ -143,11 +143,52 @@ public class LazyTreeTable extends TreeTable {
         this.blockFiltering = true;
 
         try {
+            rebuildLoadedRowKeys();
             super.encodeEnd(context);
         } catch (RuntimeException e) {
             log.error(e.getMessage(), e);
         } finally {
             this.blockFiltering = false;
+        }
+    }
+
+    /**
+     * Reassign row keys to every loaded node so they match each node's current
+     * position in the tree. Mutations like {@code insertParentAndReparent}
+     * shuffle nodes around without touching their previously-computed
+     * {@code rowKey}, and PrimeFaces reads that key directly during encoding —
+     * a stale or null key produces things like "null_0", which then explode
+     * inside {@code UITree.findTreeNode}'s {@code Integer.parseInt}.
+     *
+     * Walks only what is already loaded in memory: the page-sized actual
+     * children of the root, plus the subtrees of any expanded {@link ChildTreeNode}.
+     * Unloaded lazy children are left untouched so we never trigger a DB fetch
+     * here.
+     */
+    private void rebuildLoadedRowKeys() {
+        if (!isLazy()) return;
+        TreeNode lazyRoot = getLazyRoot();
+        if (lazyRoot == null) return;
+        if (!(lazyRoot.getChildren() instanceof RootChildList<?> list)) return;
+
+        int first = getFirst();
+        int idx = 0;
+        for (TreeNode<?> child : list) {
+            child.setRowKey(String.valueOf(first + idx));
+            rebuildSubtreeRowKeys(child);
+            idx++;
+        }
+    }
+
+    private void rebuildSubtreeRowKeys(TreeNode<?> node) {
+        if (node instanceof ChildTreeNode<?> ctn && !ctn.isLoaded()) return;
+        String parentKey = node.getRowKey();
+        if (parentKey == null) return;
+        int childCount = node.getChildCount();
+        for (int i = 0; i < childCount; i++) {
+            TreeNode<?> child = node.getChildren().get(i);
+            child.setRowKey(parentKey + "_" + i);
+            rebuildSubtreeRowKeys(child);
         }
     }
 

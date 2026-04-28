@@ -441,7 +441,7 @@ public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
         Callbacks.SerializableFunction<T, List<T>> loadFn =
                 (Callbacks.SerializableFunction<T, List<T>>) (Callbacks.SerializableFunction<?, ?>) getLoadMethod();
         Callbacks.SerializableFunction<T, Boolean> isLeafFn =
-                (Callbacks.SerializableFunction<T, Boolean>) (Callbacks.SerializableFunction<?, ?>) getIsLeafMethod();
+                (Callbacks.SerializableFunction<T, Boolean>) getIsLeafMethod();
 
         if (clickedId == null || treeInsert == ROOT) {
             LazyTreeMutator.insertAtRoot(root, created, loadFn, isLeafFn);
