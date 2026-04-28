@@ -1,6 +1,7 @@
 package fr.siamois.domain.models.form.customfield;
 
 import fr.siamois.domain.models.form.measurement.UnitDefinition;
+import fr.siamois.domain.models.vocabulary.Concept;
 import jakarta.persistence.*;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -28,5 +29,9 @@ public class CustomFieldMeasurement extends CustomField {
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "fk_unit")
     private UnitDefinition unit;
+
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "fk_nature")
+    private Concept measurementNature;
 
 }

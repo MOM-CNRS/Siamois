@@ -51,54 +51,80 @@
             <p:column styleClass="ui-g-12 ui-md-6 ui-lg-6" style="min-width: 250px;"
                       id="col-#{prefix}-#{statusIndex}-newFieldRow">
 
-                <p:commandButton value="Ajouter un champ" icon="pi pi-plus"
-                                 rendered="#{!bean.formContext.newFieldManager.showEditor}"
-                                 actionListener="#{bean.formContext.newFieldManager.prepareNewField(customFormPanel)}"
-                                 update="@parent"
-                                 styleClass="ui-button"/>
+                <p:outputPanel>
+                    <p:commandButton value="Ajouter un champ" icon="pi pi-plus"
+                                     rendered="#{!bean.formContext.newFieldManager.showEditor}"
+                                     actionListener="#{bean.formContext.newFieldManager.prepareNewField(customFormPanel)}"
+                                     update="@parent"
+                                     styleClass="ui-button"/>
 
-                <h:panelGroup  styleClass="ui-g-12 ui-md-6 ui-lg-6" style="display:flex;
+                    <h:panelGroup  styleClass="field-value-group" style=""
+                                   rendered="#{bean.formContext.newFieldManager.showEditor}" id="editorPanel" >
+                        <div>
+                            <p:outputLabel
+                                    for="#{cc.attrs.forId}"
+                                    indicateRequired="auto"
+                                    style="color: var(--text-light)"
+                                    value="Nouveau champ"/>
+                            <h:graphicImage rendered="#{cc.attrs.isTheso}"
+                                            library="img"
+                                            name="icon_opentheso2.png"
+                                            styleClass="label-icon"
+                                            alt="Opentheso Icon"/>
+                        </div>
+                        <div style="display:flex;
                 flex-direction: column; gap:0.5em; border-radius: 10px;border:1px dashed oklch(70.7% 0.022 261.325);
-                padding: 1rem; width: fit-content;"
-                              rendered="#{bean.formContext.newFieldManager.showEditor}" id="editorPanel" >
+                padding: 1rem; width: fit-content;">
+                            <div  style="display:flex;gap: 0.5em">
 
-                    <div  style="display:flex;gap: 0.5em">
+                                <div >
+                                    <p:outputLabel for="fieldType" value="Type de champ" style="color:var(--text-light);display:block;"  />
+                                    <p:selectOneMenu id="fieldType"  style="width:100%"
+                                                     disabled="true">
+                                        <f:selectItem itemLabel="Mesure" itemValue="STRING"/>
+                                    </p:selectOneMenu>
+                                </div>
 
-                        <div >
-                            <p:outputLabel for="fieldType" value="Type" style="color:var(--text-light);display:block;"  />
-                            <p:selectOneMenu id="fieldType"  style="width:100%"
-                            disabled="true">
-                                <f:selectItem itemLabel="Mesure" itemValue="STRING"/>
-                            </p:selectOneMenu>
+                                <div >
+                                    <p:outputLabel for="fieldConcept"  value="Type de mesure"
+                                                   style="display:block;color:var(--text-light);"/>
+                                    <p:autoComplete id="fieldConcept"
+                                                    value="Longueur"
+                                                    var="c" itemLabel="#{c}" itemValue="#{c}"
+                                                    forceSelection="true"
+                                                    style="width:100%" inputStyle="width:100%"/>
+                                </div>
+
+                                <div >
+                                    <p:outputLabel for="fieldNature"  value="Nature de la mesure"
+                                                   style="display:block;color:var(--text-light);"/>
+                                    <p:autoComplete id="fieldNature"
+                                                    value="Maximum"
+                                                    var="c" itemLabel="#{c}" itemValue="#{c}"
+                                                    forceSelection="true"
+                                                    style="width:100%" inputStyle="width:100%"/>
+                                </div>
+
+                                <div >
+                                    <p:outputLabel for="fieldUnit" value="Unité" style="color:var(--text-light);display:block;"  />
+                                    <p:selectOneMenu id="fieldUnit"  style="width:100%">
+                                        <f:selectItem itemLabel="m" itemValue="m"/>
+                                    </p:selectOneMenu>
+                                </div>
+                            </div>
+
+
+                            <div style="display:flex; align-items:flex-end; gap:5px;">
+                                <p:commandButton icon="pi pi-check" actionListener="#{bean.formContext.newFieldManager.saveNewField}"
+                                                 value="Ajouter le champ"
+                                                 update="@form" />
+                                <p:commandButton icon="pi pi-times" actionListener="#{customFormPanel.cancelNewField}"
+                                                 update="@parent" styleClass="ui-button-flat ui-button-plain ui-button-danger"/>
+                            </div>
                         </div>
+                    </h:panelGroup>
+                </p:outputPanel>
 
-                        <div >
-                            <p:outputLabel for="fieldConcept"  value="Label"
-                                           style="display:block;color:var(--text-light);"/>
-                            <p:autoComplete id="fieldConcept"
-                                            value="Longueur"
-                                            var="c" itemLabel="#{c}" itemValue="#{c}"
-                                            forceSelection="true"
-                                            style="width:100%" inputStyle="width:100%"/>
-                        </div>
-
-                        <div >
-                            <p:outputLabel for="fieldUnit" value="Unité" style="color:var(--text-light);display:block;"  />
-                            <p:selectOneMenu id="fieldUnit"  style="width:100%">
-                                <f:selectItem itemLabel="m" itemValue="m"/>
-                            </p:selectOneMenu>
-                        </div>
-                    </div>
-
-
-                    <div style="display:flex; align-items:flex-end; gap:5px;">
-                        <p:commandButton icon="pi pi-check" actionListener="#{bean.formContext.newFieldManager.saveNewField}"
-                                         value="Ajouter le champ"
-                                         update="@form" />
-                        <p:commandButton icon="pi pi-times" actionListener="#{customFormPanel.cancelNewField}"
-                                         update="@parent" styleClass="ui-button-flat ui-button-plain ui-button-danger"/>
-                    </div>
-                </h:panelGroup>
             </p:column>
         </p:row>
     </p:panelGrid>
