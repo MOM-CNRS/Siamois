@@ -38,6 +38,17 @@ public class FilterDTO {
     @Getter
     private Collection<Long> ancestorClosure;
 
+    /**
+     * Set alongside {@link #ancestorClosure}: ids of the entities that actually
+     * matched the user filter (without their ancestors). Used by the tree to
+     * decide whether closure-based child filtering still applies — when the
+     * parent IS a match, all its descendants belong to the result and the
+     * closure filter must be lifted.
+     */
+    @Setter
+    @Getter
+    private Set<Long> matchIds;
+
     public enum FilterType {
         START_WITH,
         CONTAINS,

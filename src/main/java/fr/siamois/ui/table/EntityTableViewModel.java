@@ -552,7 +552,14 @@ public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
             }
             List<T> children = loadChildrensOfUnit((T) parentUnit);
             Set<Long> closure = lazyDataModel != null ? lazyDataModel.getAncestorClosure() : null;
-            if (closure != null) {
+            // When the parent IS a search match, every descendant belongs to
+            // the result — don't filter to the closure (which only contains
+            // matches + their ancestors), or non-matching children silently
+            // disappear and the node looks like a leaf.
+            Set<Long> matches = lazyDataModel != null ? lazyDataModel.getMatchIds() : null;
+            ID parentId = idExtractor.apply((T) parentUnit);
+            boolean parentIsMatch = matches != null && parentId != null && matches.contains(parentId);
+            if (closure != null && !parentIsMatch) {
                 children = children.stream()
                         .filter(c -> closure.contains(idExtractor.apply(c)))
                         .toList();
@@ -570,5 +577,18 @@ public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
         this.lazyDataModel.setRootOnly(!this.lazyDataModel.isRootOnly());
         this.lazyDataModel.setLazyRoot(null);
         this.lazyDataModel.resetCache();
+    }
+
+    /**
+     * Re-render the table when {@code columnFilteringEnabled} flips. Without
+     * this, {@code LazyTreeTable.preEncode} keeps the cached {@code lazyRoot},
+     * so the previously-filtered result stays on screen even though
+     * {@code loadLazyData} would now skip the filter map.
+     */
+    public void onColumnFilteringToggle() {
+        if (lazyDataModel != null) {
+            lazyDataModel.setLazyRoot(null);
+            lazyDataModel.resetCache();
+        }
     }
 }

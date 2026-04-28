@@ -638,6 +638,7 @@ public class SpatialUnitService implements ArkEntityService {
                 ? Collections.emptySet()
                 : new HashSet<>(spatialUnitRepository.findAncestorClosure(matchIds.toArray(Long[]::new)));
         filterDTO.setAncestorClosure(closure);
+        filterDTO.setMatchIds(new HashSet<>(matchIds));
         return closure;
     }
 

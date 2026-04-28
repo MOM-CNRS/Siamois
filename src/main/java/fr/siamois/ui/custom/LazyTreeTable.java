@@ -258,15 +258,26 @@ public class LazyTreeTable extends TreeTable {
                 Set<Long> ancestorClosure = (lazyModel instanceof BaseLazyDataModel<?> blm)
                         ? blm.getAncestorClosure()
                         : null;
+                Set<Long> matchIds = (lazyModel instanceof BaseLazyDataModel<?> blm2)
+                        ? blm2.getMatchIds()
+                        : null;
                 boolean filteredMode = ancestorClosure != null;
 
                 for (int i = 0; i < data.size(); i++) {
                     AbstractEntityDTO elt = data.get(i);
                     ChildTreeNode child = new ChildTreeNode(elt, getLoadMethod(), getIsLeafMethod());
                     child.setAncestorClosure(ancestorClosure);
+                    child.setMatchIds(matchIds);
                     String rowKey = String.valueOf(first + i);
                     child.setRowKey(rowKey);
-                    child.setExpanded(filteredMode || expandedKeys.contains(rowKey));
+                    // In filtered mode, auto-expand only pure ancestors so a
+                    // deeper match becomes visible. A top-level row that is
+                    // itself a match stays collapsed — the user can expand it
+                    // to explore its children.
+                    boolean topLevelIsMatch = filteredMode && matchIds != null
+                            && elt != null && matchIds.contains(elt.getId());
+                    boolean autoExpand = filteredMode && !topLevelIsMatch;
+                    child.setExpanded(autoExpand || expandedKeys.contains(rowKey));
                     child.setParent(lazyRoot);
                     lazyRoot.getChildren().add(child);
                 }

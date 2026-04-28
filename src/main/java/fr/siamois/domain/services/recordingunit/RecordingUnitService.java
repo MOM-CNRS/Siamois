@@ -941,6 +941,7 @@ public class RecordingUnitService implements ArkEntityService {
                 ? Collections.emptySet()
                 : new HashSet<>(recordingUnitRepository.findAncestorClosure(matchIds.toArray(Long[]::new)));
         filters.setAncestorClosure(closure);
+        filters.setMatchIds(new HashSet<>(matchIds));
         return closure;
     }
 

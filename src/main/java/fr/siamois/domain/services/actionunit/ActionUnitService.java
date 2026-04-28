@@ -602,6 +602,7 @@ public class ActionUnitService implements ArkEntityService {
                 ? Collections.emptySet()
                 : new HashSet<>(actionUnitRepository.findAncestorClosure(matchIds.toArray(Long[]::new)));
         filters.setAncestorClosure(closure);
+        filters.setMatchIds(new HashSet<>(matchIds));
         return closure;
     }
 

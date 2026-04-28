@@ -49,6 +49,7 @@ public abstract class BaseLazyDataModel<T> extends LazyDataModel<T> implements L
     protected boolean rootOnly;
 
     protected transient Set<Long> ancestorClosure;
+    protected transient Set<Long> matchIds;
 
     protected abstract String getDefaultSortField();
 
@@ -343,6 +344,9 @@ public abstract class BaseLazyDataModel<T> extends LazyDataModel<T> implements L
         } else {
             this.ancestorClosure = null;
         }
+
+        Set<Long> matches = filterDTO.getMatchIds();
+        this.matchIds = matches != null ? matches : null;
     }
 
     @NonNull

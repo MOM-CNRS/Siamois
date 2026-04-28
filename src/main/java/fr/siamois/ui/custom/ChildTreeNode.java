@@ -25,6 +25,7 @@ public class ChildTreeNode<T extends AbstractEntityDTO> extends DefaultTreeNode<
     private final Callbacks.SerializableFunction<T, List<T>> catchedLoad;
     private final Callbacks.SerializableFunction<T, Boolean> catchedIsLeaf;
     private Set<Long> ancestorClosure;
+    private Set<Long> matchIds;
     private boolean loaded = false;
 
     public ChildTreeNode(T data,
@@ -41,16 +42,27 @@ public class ChildTreeNode<T extends AbstractEntityDTO> extends DefaultTreeNode<
         this.catchedLoad = other.catchedLoad;
         this.catchedIsLeaf = other.catchedIsLeaf;
         this.ancestorClosure = other.ancestorClosure;
+        this.matchIds = other.matchIds;
     }
 
     /**
-     * Set the ancestor closure shared with the whole filtered subtree. Any
-     * lazy-loaded child whose entity id is contained in {@code ancestorClosure}
-     * will be auto-expanded when {@link #lazyLoad()} fires, so a deep filter
-     * match opens the full ancestor chain — not just the top-level row.
+     * Set the ancestor closure shared with the whole filtered subtree. A
+     * lazy-loaded child is auto-expanded when its id is in {@code ancestorClosure}
+     * AND it is NOT itself a match (i.e. it's an ancestor on the path leading
+     * to a match). Match nodes stay collapsed so the user sees them as a
+     * single row in the result list and can opt into expanding them.
      */
     public void setAncestorClosure(Set<Long> ancestorClosure) {
         this.ancestorClosure = ancestorClosure;
+    }
+
+    /**
+     * Set the match-id set propagated down the filtered subtree. Used to
+     * decide whether a closure member is "just an ancestor" (auto-expanded)
+     * or "the match itself" (left collapsed by default).
+     */
+    public void setMatchIds(Set<Long> matchIds) {
+        this.matchIds = matchIds;
     }
 
     public Callbacks.SerializableFunction<T, List<T>> getCatchedLoad() {
@@ -142,7 +154,12 @@ public class ChildTreeNode<T extends AbstractEntityDTO> extends DefaultTreeNode<
             ChildTreeNode<T> node = new ChildTreeNode<>(c, catchedLoad, catchedIsLeaf);
             node.setParent(this);
             node.setAncestorClosure(ancestorClosure);
-            if (ancestorClosure != null && c != null && ancestorClosure.contains(c.getId())) {
+            node.setMatchIds(matchIds);
+            // Auto-expand only pure ancestors (in closure but not matches), so
+            // the path to a deeper match opens up while the match itself stays
+            // collapsed.
+            if (ancestorClosure != null && c != null && ancestorClosure.contains(c.getId())
+                    && (matchIds == null || !matchIds.contains(c.getId()))) {
                 node.setExpanded(true);
             }
             childList.add(node);
