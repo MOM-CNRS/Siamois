@@ -48,6 +48,17 @@ public abstract class BaseLazyDataModel<T> extends LazyDataModel<T> implements L
     @Setter
     protected boolean rootOnly;
 
+    /**
+     * Mirrors the table-toolbar toggle. When {@code false}, {@link #load} drops
+     * any column FilterMeta the dataTable still carries from a previous render
+     * (PrimeFaces preserves them across the toggle, only their inputs are CSS-
+     * hidden). The {@link LazyTreeTable} also honours this flag, but the plain
+     * dataTable has no equivalent layer and would otherwise keep applying
+     * stale filters.
+     */
+    @Setter
+    protected boolean columnFilteringEnabled = true;
+
     protected transient Set<Long> ancestorClosure;
     protected transient Set<Long> matchIds;
 
@@ -280,6 +291,9 @@ public abstract class BaseLazyDataModel<T> extends LazyDataModel<T> implements L
     @Override
     public int count(Map<String, FilterMeta> map) {
         FilterDTO filterDTO = new FilterDTO(rootOnly);
+        if (!columnFilteringEnabled) {
+            map = new HashMap<>();
+        }
         Map<String, FilterMeta> activeFilters = prepareFilters(map);
 
         for (Map.Entry<String, FilterMeta> entry : activeFilters.entrySet()) {
@@ -297,6 +311,9 @@ public abstract class BaseLazyDataModel<T> extends LazyDataModel<T> implements L
     public List<T> load(int first, int pageSize, Map<String, SortMeta> sortBy, Map<String, FilterMeta> filterBy) {
         // 1. Nettoyage et préparation des maps PrimeFaces brutes
         Map<String, SortMeta> activeSorts = prepareSorts(sortBy);
+        if (!columnFilteringEnabled) {
+            filterBy = new HashMap<>();
+        }
         Map<String, FilterMeta> activeFilters = prepareFilters(filterBy);
 
         // 2. Évaluation du cache avec les maps propres

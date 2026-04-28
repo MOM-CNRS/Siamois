@@ -583,10 +583,13 @@ public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
      * Re-render the table when {@code columnFilteringEnabled} flips. Without
      * this, {@code LazyTreeTable.preEncode} keeps the cached {@code lazyRoot},
      * so the previously-filtered result stays on screen even though
-     * {@code loadLazyData} would now skip the filter map.
+     * {@code loadLazyData} would now skip the filter map. The plain dataTable
+     * has no equivalent shell, so we also propagate the flag to the lazy
+     * model where {@code load}/{@code count} can short-circuit the filters.
      */
     public void onColumnFilteringToggle() {
         if (lazyDataModel != null) {
+            lazyDataModel.setColumnFilteringEnabled(columnFilteringEnabled);
             lazyDataModel.setLazyRoot(null);
             lazyDataModel.resetCache();
         }
