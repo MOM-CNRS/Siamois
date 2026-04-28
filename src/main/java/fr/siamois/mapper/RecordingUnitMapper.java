@@ -15,12 +15,6 @@ import org.springframework.lang.NonNull;
         injectionStrategy = InjectionStrategy.CONSTRUCTOR)
 public interface RecordingUnitMapper extends Converter<RecordingUnit, RecordingUnitDTO> {
 
-    @Mapping(target = "parents", ignore = true)
-    @Mapping(target = "children", ignore = true)
-    @Mapping(target = "specimenList", ignore = true)
-    @Mapping(target = "contributors", ignore = true)
-    @Mapping(target = "relationshipsAsUnit1", ignore = true)
-    @Mapping(target = "relationshipsAsUnit2", ignore = true)
     @Override
     @Nullable RecordingUnitDTO convert(@NonNull RecordingUnit source);
 

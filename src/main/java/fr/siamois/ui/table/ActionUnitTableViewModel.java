@@ -187,7 +187,6 @@ public class ActionUnitTableViewModel extends EntityTableViewModel<ActionUnitDTO
     @Override
     public void handleRelationAction(RelationColumn col, ActionUnitDTO au, TableColumnAction action) {
         switch (action) {
-
             case VIEW_RELATION ->
                     flowBean.addActionUnitToOverview(
                             au.getId(),

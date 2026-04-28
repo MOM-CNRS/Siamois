@@ -12,10 +12,6 @@ import org.springframework.lang.NonNull;
         injectionStrategy = InjectionStrategy.CONSTRUCTOR)
 public interface SpatialUnitMapper extends Converter<SpatialUnit, SpatialUnitDTO> {
 
-    @Mapping(target = "children", ignore = true)
-    @Mapping(target = "parents", ignore = true)
-    @Mapping(target = "recordingUnitList", ignore = true)
-    @Mapping(target = "relatedActionUnitList", ignore = true)
     SpatialUnitDTO convert(@NonNull SpatialUnit source);
 
     @InheritInverseConfiguration

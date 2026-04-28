@@ -12,12 +12,6 @@ import org.springframework.lang.NonNull;
         injectionStrategy = InjectionStrategy.CONSTRUCTOR)
 public interface ActionUnitMapper extends Converter<ActionUnit, ActionUnitDTO> {
 
-    @Mapping(target = "documents", ignore = true)
-    @Mapping(target = "spatialContext", ignore = true)
-    @Mapping(target = "recordingUnitList", ignore = true)
-    @Mapping(target = "secondaryActionCodes", ignore = true)
-    @Mapping(target = "parents", ignore = true)
-    @Mapping(target = "children", ignore = true)
     @Override
     ActionUnitDTO convert(@NonNull ActionUnit source);
 

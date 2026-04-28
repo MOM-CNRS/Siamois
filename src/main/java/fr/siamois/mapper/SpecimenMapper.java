@@ -14,8 +14,6 @@ import org.springframework.core.convert.converter.Converter;
 public interface SpecimenMapper extends Converter<Specimen, SpecimenDTO> {
 
 
-    @Mapping(target = "authors", ignore = true)
-    @Mapping(target = "collectors", ignore = true)
     @Override
     @Nullable SpecimenDTO convert(Specimen source);
 

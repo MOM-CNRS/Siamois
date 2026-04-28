@@ -640,13 +640,6 @@ public class SpatialUnitService implements ArkEntityService {
         return closure;
     }
 
-    public Set<Long> computeAncestorClosure(InstitutionDTO institutionDTO, FilterDTO filterDTO) {
-        if (!filterDTO.isRootOnly() || !filterDTO.hasUserFilters()) {
-            return Collections.emptySet();
-        }
-        return new HashSet<>(resolveAncestorClosure(institutionDTO, filterDTO));
-    }
-
     public List<SpatialUnitDTO> findMatchingInInstitutionByName(InstitutionDTO institutionDTO, String query, int limit) {
         Specification<SpatialUnit> specs = SpatialUnitSpec.belongsToInstitution(institutionDTO.getId());
         specs = specs.and(SpatialUnitSpec.nameContaining(query));

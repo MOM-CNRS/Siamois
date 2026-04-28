@@ -110,12 +110,10 @@ public class RecordingUnitService implements ArkEntityService {
         try {
             RecordingUnit recordingUnit = recordingUnitMapper.invertConvert(recordingUnitDTO);
             return recordingUnitMapper.convert(save(recordingUnit));
-
         } catch (RuntimeException e) {
             log.error(e.getMessage(), e);
             throw new FailedRecordingUnitSaveException(e.getMessage());
         }
-
     }
 
     @Transactional
@@ -168,9 +166,19 @@ public class RecordingUnitService implements ArkEntityService {
         return managedRecordingUnit;
     }
 
-    private static void setupChilds(RecordingUnit recordingUnit, RecordingUnit managedRecordingUnit) {
-        for (RecordingUnit child : recordingUnit.getChildren()) {
+    private void setupChilds(RecordingUnit recordingUnit, RecordingUnit managedRecordingUnit) {
+        // The owning side of the parent/child M:N is managedRecordingUnit.children
+        // (@JoinTable(recording_unit_hierarchy)). We must add MANAGED children
+        // here — adding the transient instances that come out of the DTO mapper
+        // would not produce a join-table row at flush.
+        for (RecordingUnit childRef : recordingUnit.getChildren()) {
+            if (childRef == null || childRef.getId() == null) continue;
+            RecordingUnit child = recordingUnitRepository.findById(childRef.getId())
+                    .orElseThrow(() -> new IllegalArgumentException("Child not found: " + childRef.getId()));
             managedRecordingUnit.getChildren().add(child);
+        }
+        if (!recordingUnit.getChildren().isEmpty()) {
+            recordingUnitRepository.save(managedRecordingUnit);
         }
     }
 
