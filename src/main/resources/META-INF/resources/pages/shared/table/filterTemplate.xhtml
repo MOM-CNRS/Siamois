@@ -7,6 +7,7 @@
 >
 
     <!--@elvariable id="tableModel" type="fr.siamois.ui.table.EntityTableViewModel"-->
+    <!--@elvariable id="column" type="fr.siamois.ui.table.TableColumn"-->
 
     <c:if test="#{tableModel.isConceptFilter(column) and tableModel.columnFilteringEnabled}">
         <f:facet name="filter">
@@ -42,9 +43,9 @@
                 <p:autoComplete value="#{tableModel.personFilterValues[column.field.valueBinding]}"
                                 completeMethod="#{tableModel.completePersonForFilter}"
                                 var="personDto"
-                                itemValue="#{personDto.id}"
+                                itemValue="#{personDto}"
                                 itemLabel="#{personDto.displayName()}"
-                                converter="jakarta.faces.Long"
+                                converter="#{personDTOConverter}"
                                 multiple="true"
                                 dropdown="true"
                                 forceSelection="true"
@@ -67,9 +68,9 @@
                 <p:autoComplete value="#{tableModel.actionUnitFilterValues[column.field.valueBinding]}"
                                 completeMethod="#{tableModel.completeActionUnitForFilter}"
                                 var="actionUnitDto"
-                                itemValue="#{actionUnitDto.id}"
+                                itemValue="#{actionUnitDto}"
                                 itemLabel="#{actionUnitDto.name}"
-                                converter="jakarta.faces.Long"
+                                converter="#{actionUnitDTOConverter}"
                                 multiple="true"
                                 dropdown="true"
                                 forceSelection="true"
@@ -92,9 +93,9 @@
                 <p:autoComplete value="#{tableModel.spatialUnitFilterValues[column.field.valueBinding]}"
                                 completeMethod="#{tableModel.completeSpatialUnitForFilter}"
                                 var="spatialUnitDto"
-                                itemValue="#{spatialUnitDto.id}"
+                                itemValue="#{spatialUnitDto}"
                                 itemLabel="#{spatialUnitDto.name}"
-                                converter="jakarta.faces.Long"
+                                converter="#{spatialUnitDTOConverter}"
                                 multiple="true"
                                 dropdown="true"
                                 forceSelection="true"
