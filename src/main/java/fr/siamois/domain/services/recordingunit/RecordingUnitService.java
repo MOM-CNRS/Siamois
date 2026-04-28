@@ -876,7 +876,6 @@ public class RecordingUnitService implements ArkEntityService {
                 if (closure.isEmpty()) {
                     return base.and((root, q, cb) -> cb.disjunction());
                 }
-                base = base.and(userFilterSpecs(filters));
                 return base.and(RecordingUnitSpec.unitIsRoot()).and(RecordingUnitSpec.idIn(closure));
             }
             return base.and(RecordingUnitSpec.unitIsRoot());
@@ -930,9 +929,12 @@ public class RecordingUnitService implements ArkEntityService {
         if (filters.getAncestorClosure() != null) {
             return filters.getAncestorClosure();
         }
-        Specification<RecordingUnit> matchSpecs = RecordingUnitSpec.recordingUnitInInstitution(institution.getId())
+        Specification<RecordingUnit> matchSpecs = RecordingUnitSpec
+                .recordingUnitInInstitution(institution.getId())
                 .and(userFilterSpecs(filters));
-        List<Long> matchIds = recordingUnitRepository.findAll(matchSpecs).stream()
+
+        List<Long> matchIds = recordingUnitRepository.findAll(matchSpecs)
+                .stream()
                 .map(RecordingUnit::getId)
                 .toList();
         Set<Long> closure = matchIds.isEmpty()

@@ -630,7 +630,8 @@ public class SpatialUnitService implements ArkEntityService {
         }
         Specification<SpatialUnit> matchSpecs = SpatialUnitSpec.belongsToInstitution(institutionDTO.getId())
                 .and(userFilterSpecs(filterDTO));
-        List<Long> matchIds = spatialUnitRepository.findAll(matchSpecs).stream()
+        List<Long> matchIds = spatialUnitRepository.findAll(matchSpecs)
+                .stream()
                 .map(SpatialUnit::getId)
                 .toList();
         Set<Long> closure = matchIds.isEmpty()
