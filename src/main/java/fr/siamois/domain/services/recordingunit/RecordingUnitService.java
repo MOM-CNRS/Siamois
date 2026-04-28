@@ -888,7 +888,7 @@ public class RecordingUnitService implements ArkEntityService {
         Specification<RecordingUnit> specification = Specification.where(null);
 
         if (filters.containsColumn(RecordingUnitSpec.FULL_IDENTIFIER)) {
-            specification = specification.and(RecordingUnitSpec.fullIdentifierStartsWith(filters.valueOfAsString(RecordingUnitSpec.FULL_IDENTIFIER)));
+            specification = specification.and(RecordingUnitSpec.fullIdentifierContains(filters.valueOfAsString(RecordingUnitSpec.FULL_IDENTIFIER)));
         }
 
         if (filters.containsColumn(RecordingUnitSpec.AUTHOR_FILTER)) {

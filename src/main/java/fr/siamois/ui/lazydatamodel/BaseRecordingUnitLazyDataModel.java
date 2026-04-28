@@ -113,7 +113,7 @@ public abstract class BaseRecordingUnitLazyDataModel extends BaseLazyDataModel<R
 
         FilterMeta meta = filterBy.get(RecordingUnitSpec.FULL_IDENTIFIER);
         if (meta != null && meta.getFilterValue() != null) {
-            filterDTO.add(RecordingUnitSpec.FULL_IDENTIFIER, meta.getFilterValue().toString(), FilterDTO.FilterType.START_WITH);
+            filterDTO.add(RecordingUnitSpec.FULL_IDENTIFIER, meta.getFilterValue().toString(), FilterDTO.FilterType.CONTAINS);
         }
 
         for (String entityFilter : new String[]{RecordingUnitSpec.AUTHOR_FILTER,

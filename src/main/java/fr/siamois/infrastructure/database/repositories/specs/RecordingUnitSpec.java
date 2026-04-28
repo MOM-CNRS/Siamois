@@ -41,12 +41,12 @@ public class RecordingUnitSpec {
         return ((root, query, criteriaBuilder) -> criteriaBuilder.equal(root.get("actionUnit").get("id"), actionUnitId));
     }
 
-    public static Specification<RecordingUnit> fullIdentifierStartsWith(String fullIdentifier) {
+    public static Specification<RecordingUnit> fullIdentifierContains(String fullIdentifier) {
         return (root, query, criteriaBuilder) -> {
             if (fullIdentifier == null || fullIdentifier.isEmpty()) {
                 return null;
             }
-            return criteriaBuilder.like(criteriaBuilder.lower(root.get(FULL_IDENTIFIER)), fullIdentifier.toLowerCase() + "%");
+            return criteriaBuilder.like(criteriaBuilder.lower(root.get(FULL_IDENTIFIER)), "%" + fullIdentifier.toLowerCase() + "%");
         };
     }
 
