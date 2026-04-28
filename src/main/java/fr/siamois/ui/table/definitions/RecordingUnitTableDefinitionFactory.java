@@ -312,7 +312,7 @@ public final class RecordingUnitTableDefinitionFactory {
                         .id("contributors")
                         .headerKey("recordingunit.field.contributors")
                         .field(contributorsField)
-                        .sortable(true)
+                        .sortable(false)
                         .filterable(true)
                         .visible(true)
                         .required(false)
