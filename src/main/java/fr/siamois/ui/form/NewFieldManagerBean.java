@@ -24,6 +24,7 @@ public class NewFieldManagerBean {
     public void prepareNewField(CustomFormPanelUiDto panel) {
         this.currentPanel = panel;
         this.showEditor = true;
+        this.newField = new CustomFieldMeasurement();
         newField.setIsSystemField(false);
     }
 

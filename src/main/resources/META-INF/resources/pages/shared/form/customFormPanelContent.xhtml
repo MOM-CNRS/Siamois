@@ -12,7 +12,7 @@
     <!--@elvariable id="root" type="String" -->
     <!--@elvariable id="updateTargetsOnBlur" type="String" -->
     <!--@elvariable id="statusIndex" type="Object" -->
-    <!--@elvariable id="ctx" type="package fr.siamois.ui.form.EntityFormContext" -->
+    <!--@elvariable id="formCtx" type="fr.siamois.ui.form.EntityFormContext" -->
 
 
     <p:panelGrid id="customFormPanelGrid-#{statusIndex}-#{prefix}"
@@ -36,7 +36,7 @@
                             <ui:param name="root" value="#{root}"/>
                             <ui:param name="panelIndex" value="#{panelIndex}"/>
                             <ui:param name="answer" value="#{bean.formResponse.answers.get(col.field)}"/>
-                            <ui:param name="onModified" value="#{ctx.onFieldAnswerModifiedListener}"/>
+                            <ui:param name="onModified" value="#{bean.formContext.onFieldAnswerModifiedListener}"/>
                             <ui:param name="panelHeaderUpdateId" value="#{bean.getPanelHeaderUpdateId()}"/>
                             <ui:param name="onGenerateValue" value="#{bean.generateValueForField}"/>
                             <ui:param name="hasAutoGenerationFunction"
@@ -52,15 +52,15 @@
                       id="col-#{prefix}-#{statusIndex}-newFieldRow">
 
                 <p:commandButton value="Ajouter un champ" icon="pi pi-plus"
-                                 rendered="#{!customFormPanel.showEditor}"
-                                 actionListener="#{ctx.newFieldManager.prepareNewField(customFormPanel)}"
+                                 rendered="#{!bean.formContext.newFieldManager.showEditor}"
+                                 actionListener="#{bean.formContext.newFieldManager.prepareNewField(customFormPanel)}"
                                  update="@parent"
                                  styleClass="ui-button"/>
 
                 <h:panelGroup  styleClass="ui-g-12 ui-md-6 ui-lg-6" style="display:flex;
                 flex-direction: column; gap:0.5em; border-radius: 10px;border:1px dashed oklch(70.7% 0.022 261.325);
                 padding: 1rem; width: fit-content;"
-                              rendered="#{customFormPanel.showEditor}" id="editorPanel" >
+                              rendered="#{bean.formContext.newFieldManager.showEditor}" id="editorPanel" >
 
                     <div  style="display:flex;gap: 0.5em">
 
@@ -92,7 +92,7 @@
 
 
                     <div style="display:flex; align-items:flex-end; gap:5px;">
-                        <p:commandButton icon="pi pi-check" actionListener="#{ctx.newFieldManager.saveNewField}"
+                        <p:commandButton icon="pi pi-check" actionListener="#{bean.formContext.newFieldManager.saveNewField}"
                                          value="Ajouter le champ"
                                          update="@form" />
                         <p:commandButton icon="pi pi-times" actionListener="#{customFormPanel.cancelNewField}"
