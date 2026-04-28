@@ -6,6 +6,7 @@ import lombok.Setter;
 import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
 
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.util.Collection;
@@ -128,6 +129,11 @@ public class FilterDTO {
         if (value instanceof Date date) {
             return date.toInstant().atZone(ZoneId.systemDefault()).toOffsetDateTime();
         }
+
+        if (value instanceof LocalDate date) {
+            return date.atStartOfDay(ZoneId.systemDefault()).toOffsetDateTime();
+        }
+
         throw new IllegalArgumentException("Unsupported date value: " + value.getClass());
     }
 

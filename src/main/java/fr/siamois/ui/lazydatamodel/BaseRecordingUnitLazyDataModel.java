@@ -17,6 +17,7 @@ import org.primefaces.model.FilterMeta;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
+import java.time.LocalDate;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
@@ -103,6 +104,7 @@ public abstract class BaseRecordingUnitLazyDataModel extends BaseLazyDataModel<R
         MessageUtils.displayInfoMessage(langBean, "common.entity.recordingUnits.bulkUpdated", updateCount);
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     protected void prepareFilterDTO(Map<String, FilterMeta> filterBy, FilterDTO filterDTO) {
         if (filterBy == null || filterBy.isEmpty()) {
@@ -128,13 +130,8 @@ public abstract class BaseRecordingUnitLazyDataModel extends BaseLazyDataModel<R
         for (String dateFilter : new String[]{RecordingUnitSpec.OPENING_DATE_FILTER, RecordingUnitSpec.CLOSING_DATE_FILTER}) {
             FilterMeta dateMeta = filterBy.get(dateFilter);
             if (dateMeta != null && dateMeta.getFilterValue() instanceof List<?> range && !range.isEmpty()) {
-                List<Date> dates = range.stream()
-                        .filter(Date.class::isInstance)
-                        .map(Date.class::cast)
-                        .toList();
-                if (!dates.isEmpty()) {
-                    filterDTO.add(dateFilter, dates, FilterDTO.FilterType.CONTAINS);
-                }
+                List<LocalDate> dates = (List<LocalDate>) range;
+                filterDTO.add(dateFilter, dates, FilterDTO.FilterType.CONTAINS);
             }
         }
     }
