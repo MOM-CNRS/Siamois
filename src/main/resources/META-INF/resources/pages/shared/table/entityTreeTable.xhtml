@@ -33,6 +33,10 @@
         }
     </style>
 
+    <p:blockUI block="entityTreeTable" trigger="#{cc.clientId}:entityTreeTable" widgetVar="#{cc.clientId}_buiTreeTables">
+        <i class="pi pi-spin pi-spinner" style="font-size: 3rem"/>
+    </p:blockUI>
+
     <custom:lazyTreeTable id="entityTreeTable"
                  rendered="#{tableModel.treeMode}"
                  lazyDataModel="#{tableModel.lazyDataModel}"

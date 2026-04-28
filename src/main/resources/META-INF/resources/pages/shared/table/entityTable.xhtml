@@ -33,7 +33,7 @@
             </ui:include>
         </p:outputPanel>
 
-        <p:blockUI block="tableContainer" trigger="#{cc.clientId}:#{cc.attrs.tableModel.treeMode ? 'entityTreeTable' : 'entityDatatable'}" widgetVar="#{cc.clientId}_buiTables">
+        <p:blockUI block="tableContainer"  widgetVar="#{cc.clientId}_buiTables">
             <i class="pi pi-spin pi-spinner" style="font-size: 3rem"/>
         </p:blockUI>
     </cc:implementation>

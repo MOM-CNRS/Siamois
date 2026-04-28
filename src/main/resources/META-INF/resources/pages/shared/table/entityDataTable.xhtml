@@ -31,6 +31,10 @@
         }
     </style>
 
+    <p:blockUI block="entityDatatable" trigger="#{cc.clientId}:entityDatatable" widgetVar="#{cc.clientId}_buiDataTables">
+        <i class="pi pi-spin pi-spinner" style="font-size: 3rem"/>
+    </p:blockUI>
+
     <p:dataTable paginator="true"
                  rendered="#{not tableModel.treeMode}"
                  cellNavigation="true"
