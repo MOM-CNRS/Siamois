@@ -4,26 +4,24 @@ import fr.siamois.dto.entity.AbstractEntityDTO;
 import org.primefaces.model.DefaultTreeNode;
 import org.primefaces.model.DefaultTreeNodeChildren;
 import org.primefaces.model.TreeNode;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.lang.NonNull;
 
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Stream;
 
 public class RootChildList<T extends AbstractEntityDTO> extends DefaultTreeNodeChildren<T> {
 
-    private static final Logger log = LoggerFactory.getLogger(RootChildList.class);
     private int totalEntityCount;
-    private final List<TreeNode<T>> actualChildren;
-    private final TreeNode<T> parent;
+    private transient final List<TreeNode<T>> actualChildren;
+    private transient final TreeNode<T> rootParent;
     private final int first;
 
-    public RootChildList(int totalEntityCount, TreeNode<T> parent, int first) {
+    public RootChildList(int totalEntityCount, TreeNode<T> rootParent, int first) {
         this.totalEntityCount = totalEntityCount;
-        this.parent = parent;
+        this.rootParent = rootParent;
         this.first = first;
         this.actualChildren = new ArrayList<>();
     }
@@ -31,10 +29,6 @@ public class RootChildList<T extends AbstractEntityDTO> extends DefaultTreeNodeC
     @Override
     public int size() {
         return totalEntityCount;
-    }
-
-    public int actualSize() {
-        return actualChildren.size();
     }
 
     public void incrementTotalEntityCount(int delta) {
@@ -46,7 +40,7 @@ public class RootChildList<T extends AbstractEntityDTO> extends DefaultTreeNodeC
         if (node == null) {
             throw new IllegalArgumentException("node");
         }
-        node.setParent(parent);
+        node.setParent(rootParent);
         return actualChildren.add(node);
     }
 
@@ -55,7 +49,7 @@ public class RootChildList<T extends AbstractEntityDTO> extends DefaultTreeNodeC
         if (node == null) {
             throw new IllegalArgumentException("node");
         }
-        node.setParent(parent);
+        node.setParent(rootParent);
         // Indices we receive from mutation calls are page-relative.
         int safeIndex = Math.max(0, Math.min(index, actualChildren.size()));
         actualChildren.add(safeIndex, node);
@@ -94,7 +88,7 @@ public class RootChildList<T extends AbstractEntityDTO> extends DefaultTreeNodeC
 
     private void ensureRowKey(TreeNode<T> node, int index) {
         if (node.getRowKey() == null) {
-            String parentKey = parent.getRowKey();
+            String parentKey = rootParent.getRowKey();
             if (parentKey == null || "root".equals(parentKey)) {
                 node.setRowKey(String.valueOf(index));
             } else {
@@ -114,7 +108,7 @@ public class RootChildList<T extends AbstractEntityDTO> extends DefaultTreeNodeC
             virtualNode = new DefaultTreeNode<>("dummy", null, null);
         }
 
-        virtualNode.setParent(parent);
+        virtualNode.setParent(rootParent);
 
         ensureRowKey(virtualNode, index);
 
@@ -136,4 +130,15 @@ public class RootChildList<T extends AbstractEntityDTO> extends DefaultTreeNodeC
         return actualChildren.iterator();
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (!(o instanceof RootChildList<?> that)) return false;
+        if (!super.equals(o)) return false;
+        return totalEntityCount == that.totalEntityCount && first == that.first && Objects.equals(actualChildren, that.actualChildren) && Objects.equals(rootParent, that.rootParent);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(super.hashCode(), totalEntityCount, actualChildren, rootParent, first);
+    }
 }
