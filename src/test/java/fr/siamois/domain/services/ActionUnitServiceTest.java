@@ -459,55 +459,6 @@ class ActionUnitServiceTest {
         pageable
         );
     }
-    @Disabled
-    @Test
-    void testFindByTeamMember() {
-        // 1. Préparation des données de test
-        Long memberId = 1L;
-        Long institutionId = 1L;
-
-        PersonDTO memberDto = new PersonDTO();
-        memberDto.setId(memberId);
-
-        InstitutionDTO institutionDto = new InstitutionDTO();
-        institutionDto.setId(institutionId);
-
-        // Création des entités mockées
-        ActionUnit actionUnit11 = new ActionUnit();
-        actionUnit11.setId(101L);
-        actionUnit11.setName("Action Unit 1");
-
-        ActionUnit actionUnit22 = new ActionUnit();
-        actionUnit22.setId(102L);
-        actionUnit22.setName("Action Unit 2");
-
-        // Création des DTOs attendus
-        ActionUnitDTO actionUnitDTO1 = new ActionUnitDTO();
-        actionUnitDTO1.setId(101L);
-        actionUnitDTO1.setName("Action Unit 1");
-
-        ActionUnitDTO actionUnitDTO2 = new ActionUnitDTO();
-        actionUnitDTO2.setId(102L);
-        actionUnitDTO2.setName("Action Unit 2");
-
-        List<ActionUnit> expectedActionUnits = Arrays.asList(actionUnit11, actionUnit22);
-
-        // 2. Configuration des mocks
-        when(actionUnitRepository.findByTeamMemberOrCreatorAndInstitution(memberId, institutionId))
-                .thenReturn(expectedActionUnits);
-
-        when(actionUnitMapper.convert(actionUnit11)).thenReturn(actionUnitDTO1);
-        when(actionUnitMapper.convert(actionUnit22)).thenReturn(actionUnitDTO2);
-
-        // 3. Appel de la méthode à tester
-        List<ActionUnitDTO> result = actionUnitService.findByTeamMember(memberDto, institutionDto, 10);
-
-        // 4. Vérification des résultats
-        assertNotNull(result, "Le résultat ne doit pas être null");
-        assertEquals(2, result.size(), "La liste doit contenir 2 éléments");
-
-    }
-
 
     @Test
     void existsChildrenByParentAndInstitution_shouldReturnTrue_whenChildrenExist() {

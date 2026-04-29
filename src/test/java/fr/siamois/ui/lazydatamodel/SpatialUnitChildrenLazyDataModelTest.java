@@ -56,31 +56,4 @@ class SpatialUnitChildrenLazyDataModelTest {
         spatialUnit2Dto.setId(2L);
         pageDto = new PageImpl<>(List.of(spatialUnit1Dto, spatialUnit2Dto));
     }
-
-    @Test
-    @Disabled
-    void loadSpatialUnits() {
-
-        lazyModel = new SpatialUnitChildrenLazyDataModel(spatialUnitService,langBean, spatialUnit3Dto);
-
-        // Arrange
-        when(spatialUnitService.findAllByParentAndByNameContainingAndByCategoriesAndByGlobalContaining(
-                ArgumentMatchers.any(SpatialUnitDTO.class),
-                ArgumentMatchers.any(String.class),
-                ArgumentMatchers.any(Long[].class),
-                ArgumentMatchers.any(Long[].class),
-                ArgumentMatchers.any(String.class),
-                ArgumentMatchers.any(String.class),
-                ArgumentMatchers.any(org.springframework.data.domain.Pageable.class)
-        )).thenReturn(pageDto);
-        when(langBean.getLanguageCode()).thenReturn("en");
-
-        // Act
-        // Page<SpatialUnitDTO> actualResult = lazyModel.loadSpatialUnits("null", new Long[2], new Long[2],"null", pageable);
-
-        // Assert
-        // Assert
-        // assertEquals(spatialUnit1Dto, actualResult.getContent().get(0));
-        // assertEquals(spatialUnit2Dto, actualResult.getContent().get(1));
-    }
 }

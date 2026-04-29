@@ -53,31 +53,4 @@ class SpatialUnitParentsLazyDataModelTest {
         p = new PageImpl<>(List.of(spatialUnit1, spatialUnit2));
         pageable = PageRequest.of(0, 10);
     }
-
-    @Test
-    @Disabled
-    void loadSpatialUnits() {
-
-        lazyModel = new SpatialUnitParentsLazyDataModel(spatialUnitService,langBean, spatialUnit3);
-
-        // Arrange
-        when(spatialUnitService.findAllByChildAndByNameContainingAndByCategoriesAndByGlobalContaining(
-                ArgumentMatchers.any(SpatialUnitDTO.class),
-                ArgumentMatchers.any(String.class),
-                ArgumentMatchers.any(Long[].class),
-                ArgumentMatchers.any(Long[].class),
-                ArgumentMatchers.any(String.class),
-                ArgumentMatchers.any(String.class),
-                ArgumentMatchers.any(org.springframework.data.domain.Pageable.class)
-        )).thenReturn(p);
-        when(langBean.getLanguageCode()).thenReturn("en");
-
-//        // Act
-//        Page<SpatialUnitDTO> actualResult = lazyModel.loadSpatialUnits("null", new Long[2],new Long[2], "null", pageable);
-//
-//        // Assert
-//        // Assert
-//        assertEquals(spatialUnit1, actualResult.getContent().get(0));
-//        assertEquals(spatialUnit2, actualResult.getContent().get(1));
-    }
 }

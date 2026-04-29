@@ -13,7 +13,6 @@ import org.springframework.data.domain.Pageable;
 
 public class RecordingUnitInActionUnitLazyDataModel extends BaseRecordingUnitLazyDataModel {
 
-
     private final transient SessionSettingsBean sessionSettings;
 
     @Getter
@@ -27,7 +26,6 @@ public class RecordingUnitInActionUnitLazyDataModel extends BaseRecordingUnitLaz
         this.actionUnit = actionUnit;
     }
 
-    @Deprecated
     @Override
     protected Page<RecordingUnitDTO> loadRecordingUnits(String fullIdentifierFilter,
                                                         Long[] categoryIds,

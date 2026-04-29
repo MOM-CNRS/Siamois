@@ -62,6 +62,8 @@ public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
     /** Lazy model "pur data" (chargement, tri, filtres, sélection, etc.) */
     protected final BaseLazyDataModel<T> lazyDataModel;
     protected final BaseTreeTableLazyModel<T, ID> treeLazyModel;
+
+    @Setter
     public int defaultPageSize = 10;
 
     /** Services nécessaires pour la logique formulaire de ligne */
@@ -421,7 +423,7 @@ public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
     protected void applyTreeInsertion(T created, NewUnitContext ctx) {
         if (lazyDataModel == null) return;
 
-        TreeNode<T> root = (TreeNode<T>) lazyDataModel.getLazyRoot();
+        TreeNode<T> root = lazyDataModel.getLazyRoot();
         if (root == null) {
             // Tree hasn't been rendered yet — let next render fetch the new
             // entity from the database.
@@ -531,7 +533,7 @@ public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
 
     @SuppressWarnings({"unchecked", "unused"})
     public Callbacks.SerializableFunction<AbstractEntityDTO, Boolean> getIsLeafMethod() {
-        return (abstractEntityDTO) -> {
+        return abstractEntityDTO -> {
             if (abstractEntityDTO == null) return true;
             return unitIsLeaf((T) abstractEntityDTO);
         };
@@ -539,7 +541,7 @@ public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
 
     @SuppressWarnings({"unchecked", "unused"})
     public Callbacks.SerializableFunction<AbstractEntityDTO, List<AbstractEntityDTO>> getLoadMethod() {
-        return (parentUnit) -> {
+        return parentUnit -> {
             if (parentUnit == null) {
                 return new ArrayList<>();
             }

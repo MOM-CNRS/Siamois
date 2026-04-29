@@ -64,28 +64,4 @@ class RecordingUnitInSpatialUnitLazyDataModelTest {
         pageable = PageRequest.of(0, 10);
     }
 
-    @Test
-    @Disabled
-    void loadUnits_Success() {
-        lazyModel = new RecordingUnitInSpatialUnitLazyDataModel(recordingUnitService,langBean, su);
-
-        // Arrange
-        when(recordingUnitService.findAllBySpatialUnitAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
-                any(Long.class),
-                any(String.class),
-                any(Long[].class),
-                any(String.class),
-                any(String.class),
-                any(Pageable.class)
-        )).thenReturn(p);
-        when(langBean.getLanguageCode()).thenReturn("en");
-
-        // Act
-        Page<RecordingUnitDTO> actualResult = lazyModel.loadRecordingUnits("null", new Long[2], new Long[2], "null", pageable);
-
-        // Assert
-        // Assert
-        assertEquals(unit1, actualResult.getContent().get(0));
-        assertEquals(unit2, actualResult.getContent().get(1));
-    }
 }
