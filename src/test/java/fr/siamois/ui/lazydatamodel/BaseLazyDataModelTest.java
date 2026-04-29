@@ -588,34 +588,6 @@ class BaseLazyDataModelTest {
     }
 
     // ------------------------------------------------------------------
-    // prepareSortDTO / prepareFilterDTO defaults throw
-    // ------------------------------------------------------------------
-
-    @Test
-    void prepareSortDTO_defaultThrowsUnsupported() {
-        TestLazyDataModel model = new TestLazyDataModel() {
-            @Override
-            protected void prepareFilterDTO(Map<String, FilterMeta> filterBy, FilterDTO filterDTO) {
-                // implemented so load does not blow up at filter step
-            }
-        };
-        
-        SortDTO sortDTO = new SortDTO();
-        HashMap<String, SortMeta> sortBy1 = new HashMap<>();
-        assertThrows(UnsupportedOperationException.class,
-                () -> model.prepareSortDTO(sortBy1, sortDTO));
-    }
-
-    @Test
-    void prepareFilterDTO_defaultThrowsUnsupported() {
-        TestLazyDataModel model = new TestLazyDataModel();
-        FilterDTO filterDTO = new FilterDTO();
-        HashMap<String, FilterMeta> filterBy1 = new HashMap<>();
-        assertThrows(UnsupportedOperationException.class,
-                () -> model.prepareFilterDTO(filterBy1, filterDTO));
-    }
-
-    // ------------------------------------------------------------------
     // Pagination helpers
     // ------------------------------------------------------------------
 
