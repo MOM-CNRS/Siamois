@@ -292,7 +292,7 @@ public abstract class BaseLazyDataModel<T> extends LazyDataModel<T> implements L
      * @param sortDTO The domain sort DTO
      */
     protected void prepareSortDTO(@Nullable Map<String, SortMeta> sortBy, @NonNull SortDTO sortDTO) {
-        throw new UnsupportedOperationException("prepareSortDTO not implemented yet in " + this.getClass().getSimpleName());
+
     }
 
     /**
@@ -301,7 +301,7 @@ public abstract class BaseLazyDataModel<T> extends LazyDataModel<T> implements L
      * @param filterDTO The domain filter DTO
      */
     protected void prepareFilterDTO(Map<String, FilterMeta> filterBy, FilterDTO filterDTO) {
-        throw new UnsupportedOperationException("prepareFilterDTO not implemented yet in " + this.getClass().getSimpleName());
+
     }
 
     public int getFirstIndexOnPage() {
