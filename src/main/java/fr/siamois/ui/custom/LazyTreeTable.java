@@ -21,6 +21,9 @@ import java.util.*;
 public class LazyTreeTable extends TreeTable {
 
     private static final Logger log = LoggerFactory.getLogger(LazyTreeTable.class);
+    public static final String JAVAX_FACES_BEHAVIOR_EVENT = "javax.faces.behavior.event";
+    public static final String EVENT_FILTERING = "_filtering";
+    public static final String FILTER_BEHAVIOR_EVENT = "filter";
     private boolean blockFiltering = false;
 
     enum PropertyKeys {
@@ -212,11 +215,11 @@ public class LazyTreeTable extends TreeTable {
         Map<String, String> params = context.getExternalContext().getRequestParameterMap();
         String clientId = getClientId(context);
 
-        String behaviorEvent = params.get("javax.faces.behavior.event");
-        boolean isFilterJSCall = params.containsKey(clientId + "_filtering");
+        String behaviorEvent = params.get(JAVAX_FACES_BEHAVIOR_EVENT);
+        boolean isFilterJSCall = params.containsKey(clientId + EVENT_FILTERING);
 
         // 1. Gestion des événements de Reset (retour page 1 sur filtre) ou Pagination
-        if ("filter".equals(behaviorEvent) || isFilterJSCall) {
+        if (FILTER_BEHAVIOR_EVENT.equals(behaviorEvent) || isFilterJSCall) {
             super.setFirst(0);
         } else if (params.containsKey(clientId + "_pagination")) {
             String firstParam = params.get(clientId + "_first");
@@ -325,9 +328,9 @@ public class LazyTreeTable extends TreeTable {
         if (isLazy()) {
             Map<String, String> params = context.getExternalContext().getRequestParameterMap();
             String clientId = getClientId(context);
-            String behaviorEvent = params.get("javax.faces.behavior.event");
-            boolean isFilterEvent = "filter".equals(behaviorEvent)
-                    || params.containsKey(clientId + "_filtering");
+            String behaviorEvent = params.get(JAVAX_FACES_BEHAVIOR_EVENT);
+            boolean isFilterEvent = FILTER_BEHAVIOR_EVENT.equals(behaviorEvent)
+                    || params.containsKey(clientId + EVENT_FILTERING);
             boolean isSortEvent = "sort".equals(behaviorEvent)
                     || params.containsKey(clientId + "_sorting");
             boolean isPaginationEvent = params.containsKey(clientId + "_pagination");
@@ -366,9 +369,9 @@ public class LazyTreeTable extends TreeTable {
         if (isLazy()) {
             Map<String, String> params = context.getExternalContext().getRequestParameterMap();
             String clientId = getClientId(context);
-            String behaviorEvent = params.get("javax.faces.behavior.event");
-            boolean isFilterEvent = "filter".equals(behaviorEvent)
-                    || params.containsKey(clientId + "_filtering");
+            String behaviorEvent = params.get(JAVAX_FACES_BEHAVIOR_EVENT);
+            boolean isFilterEvent = FILTER_BEHAVIOR_EVENT.equals(behaviorEvent)
+                    || params.containsKey(clientId + EVENT_FILTERING);
             if (isFilterEvent) {
                 super.setFirst(0);
             }
@@ -394,8 +397,8 @@ public class LazyTreeTable extends TreeTable {
             FacesContext context = getFacesContext();
             Map<String, String> params = context.getExternalContext().getRequestParameterMap();
             String clientId = getClientId(context);
-            String behaviorEvent = params.get("javax.faces.behavior.event");
-            if ("filter".equals(behaviorEvent) || params.containsKey(clientId + "_filtering")) {
+            String behaviorEvent = params.get(JAVAX_FACES_BEHAVIOR_EVENT);
+            if (FILTER_BEHAVIOR_EVENT.equals(behaviorEvent) || params.containsKey(clientId + EVENT_FILTERING)) {
                 super.setFirst(0);
                 return;
             }
