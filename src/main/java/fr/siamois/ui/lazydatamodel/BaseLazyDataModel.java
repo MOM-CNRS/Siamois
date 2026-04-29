@@ -62,10 +62,21 @@ public abstract class BaseLazyDataModel<T> extends LazyDataModel<T> implements L
     protected transient Set<Long> ancestorClosure;
     protected transient Set<Long> matchIds;
 
+    /**
+     * This method should specify the default sort when no user sort are activated.
+     * By default, it returns an empty {@link SortDTO} which {@link this#buildSort(SortDTO)} interprets as Sort.unsorted()
+     * @return The sort DTO object
+     */
     protected SortDTO getDefaultSortDTO() {
         return new SortDTO();
     }
 
+    /**
+     * This method should load the page data with the specified filters
+     * @param filter The filters to use for the {@link this#load(int, int, Map, Map)} method. {@link this#prepareFilterDTO(Map, FilterDTO)} must be implemented
+     * @param pageable The page object
+     * @return The specified data contained within a page
+     */
     protected abstract Page<T> loadData(FilterDTO filter, Pageable pageable);
 
     // Filters & Selection

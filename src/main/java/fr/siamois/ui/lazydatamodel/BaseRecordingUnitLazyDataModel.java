@@ -52,7 +52,17 @@ public abstract class BaseRecordingUnitLazyDataModel extends BaseLazyDataModel<R
         FIELD_MAPPING = Collections.unmodifiableMap(map); // Ensure immutability
     }
 
-    @Deprecated
+    /**
+     * This method was used with the previous implementation of load.
+     * Sub-lazy models should implement {@link BaseLazyDataModel#loadData(FilterDTO, Pageable)} with {@link BaseLazyDataModel#prepareFilterDTO(Map, FilterDTO)} and {@link BaseLazyDataModel#prepareSortDTO(Map, SortDTO)}
+     * @param nameFilter The filter for name
+     * @param categoryIds The IDs of the concepts for the category
+     * @param personIds The IDs of the persons
+     * @param globalFilter The input of the global filter
+     * @param pageable The page count
+     * @return Page with data
+     */
+    @Deprecated(forRemoval = true, since = "0.8.12-dev.0")
     protected abstract Page<RecordingUnitDTO> loadRecordingUnits(
             String nameFilter, Long[] categoryIds, Long[] personIds,
             String globalFilter, Pageable pageable);
