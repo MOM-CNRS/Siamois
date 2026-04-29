@@ -209,90 +209,8 @@ public class LazyTreeTable extends TreeTable {
         }
     }
 
-    @SuppressWarnings({"unchecked", "rawtypes"})
     private void loadLazyData() {
-        TreeNode lazyRoot = getLazyRoot();
-        if (lazyRoot != null) return;
-
-        FacesContext context = getFacesContext();
-        Map<String, String> params = context.getExternalContext().getRequestParameterMap();
-        String clientId = getClientId(context);
-
-        String behaviorEvent = params.get(JAVAX_FACES_BEHAVIOR_EVENT);
-        boolean isFilterJSCall = params.containsKey(clientId + EVENT_FILTERING);
-
-        // 1. Gestion des événements de Reset (retour page 1 sur filtre) ou Pagination
-        if (FILTER_BEHAVIOR_EVENT.equals(behaviorEvent) || isFilterJSCall) {
-            super.setFirst(0);
-        } else if (params.containsKey(clientId + "_pagination")) {
-            String firstParam = params.get(clientId + "_first");
-            String rowsParam = params.get(clientId + "_rows");
-
-            if (firstParam != null) {
-                super.setFirst(Integer.parseInt(firstParam));
-            }
-            if (rowsParam != null) {
-                super.setRows(Integer.parseInt(rowsParam));
-            }
-        }
-
-        LazyDataModel<? extends AbstractEntityDTO> lazyModel = getLazyDataModel();
-
-        if (lazyModel != null) {
-            int rows = getRows() > 0 ? getRows() : 10;
-            int first = getFirst();
-
-            Map<String, SortMeta> sortMetaMap = getSortByAsMap();
-            Map<String, FilterMeta> rawFilterMap = getFilterByAsMap();
-
-            // Si les filtres de colonnes sont désactivés, on passe une map vide au modèle
-            if (!isColumnFilteringEnabled()) {
-                rawFilterMap = new HashMap<>();
-            }
-
-            log.trace("Load appelé avec : {}", lazyModel.getClass().getSimpleName());
-            List<? extends AbstractEntityDTO> data = lazyModel.load(first, rows, sortMetaMap, rawFilterMap);
-
-            setRowCount(lazyModel.getRowCount());
-
-            if (PrimeFaces.current() != null) {
-                PrimeFaces.current().ajax().addCallbackParam("newRowCount", getRowCount());
-            }
-
-            if (data != null) {
-                lazyRoot = new RootTreeNode(getRowCount(), first);
-                setLazyRoot(lazyRoot);
-
-                Set<String> expandedKeys = getExpandedRowKeySet();
-                Set<Long> ancestorClosure = (lazyModel instanceof BaseLazyDataModel<?> blm)
-                        ? blm.getAncestorClosure()
-                        : null;
-                Set<Long> matchIds = (lazyModel instanceof BaseLazyDataModel<?> blm2)
-                        ? blm2.getMatchIds()
-                        : null;
-                boolean filteredMode = ancestorClosure != null;
-
-                for (int i = 0; i < data.size(); i++) {
-                    AbstractEntityDTO elt = data.get(i);
-                    ChildTreeNode child = new ChildTreeNode(elt, getLoadMethod(), getIsLeafMethod());
-                    child.setAncestorClosure(ancestorClosure);
-                    child.setMatchIds(matchIds);
-                    String rowKey = String.valueOf(first + i);
-                    child.setRowKey(rowKey);
-                    // In filtered mode, auto-expand only pure ancestors so a
-                    // deeper match becomes visible. A top-level row that is
-                    // itself a match stays collapsed — the user can expand it
-                    // to explore its children.
-                    boolean topLevelIsMatch = filteredMode && matchIds != null
-                            && elt != null && matchIds.contains(elt.getId());
-                    boolean autoExpand = filteredMode && !topLevelIsMatch;
-                    child.setExpanded(autoExpand || expandedKeys.contains(rowKey));
-                    child.setParent(lazyRoot);
-                    lazyRoot.getChildren().add(child);
-                }
-                setValue(lazyRoot);
-            }
-        }
+        LoadDataUtils.loadLazyData(this, getFacesContext());
     }
 
     @Override
@@ -357,7 +275,7 @@ public class LazyTreeTable extends TreeTable {
     }
 
     @SuppressWarnings("unchecked")
-    private Set<String> getExpandedRowKeySet() {
+    Set<String> getExpandedRowKeySet() {
         Set<String> keys = (Set<String>) getStateHelper().eval(PropertyKeys.expandedRowKeys, null);
         if (keys == null) {
             keys = new LinkedHashSet<>();
