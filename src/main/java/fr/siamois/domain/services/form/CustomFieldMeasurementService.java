@@ -1,18 +1,14 @@
 package fr.siamois.domain.services.form;
 
-import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.customfield.CustomFieldMeasurement;
 import fr.siamois.dto.field.CustomFieldMeasurementDTO;
 import fr.siamois.infrastructure.database.repositories.form.CustomFieldMeasurementRepository;
-import fr.siamois.infrastructure.database.repositories.form.CustomFieldRepository;
 import fr.siamois.mapper.CustomFieldMeasurementMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.stereotype.Service;
-
 import org.springframework.data.domain.Pageable;
-import java.util.List;
+import org.springframework.stereotype.Service;
 
 /**
  * Service for managing measurement field

@@ -1,6 +1,5 @@
 package fr.siamois.ui.form.dto;
 
-import fr.siamois.domain.models.form.customfield.CustomFieldMeasurement;
 import lombok.Data;
 
 import java.io.Serializable;

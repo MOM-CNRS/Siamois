@@ -1,8 +1,6 @@
 package fr.siamois.mapper;
 
-import fr.siamois.domain.models.actionunit.ActionCode;
 import fr.siamois.domain.models.form.customfield.CustomFieldMeasurement;
-import fr.siamois.dto.entity.ActionCodeDTO;
 import fr.siamois.dto.field.CustomFieldMeasurementDTO;
 import fr.siamois.ui.mapper.adapter.ConversionServiceAdapter;
 import org.mapstruct.InheritInverseConfiguration;

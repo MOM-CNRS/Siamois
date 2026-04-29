@@ -3,6 +3,7 @@ package fr.siamois.domain.models.form.measurement;
 import fr.siamois.domain.models.vocabulary.Concept;
 import jakarta.persistence.*;
 import lombok.*;
+
 import java.io.Serializable;
 
 @Entity

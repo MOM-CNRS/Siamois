@@ -7,7 +7,6 @@ import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.infrastructure.database.initializer.seeder.ConceptSeeder;
 import fr.siamois.infrastructure.database.initializer.seeder.UnitDefinitionSeeder;
 import fr.siamois.infrastructure.database.repositories.form.CustomFieldRepository;
-import fr.siamois.infrastructure.database.repositories.measurement.UnitDefinitionRepository;
 import fr.siamois.mapper.UnitDefinitionMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;

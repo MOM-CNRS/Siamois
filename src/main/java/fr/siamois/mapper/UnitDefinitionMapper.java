@@ -1,8 +1,6 @@
 package fr.siamois.mapper;
 
-import fr.siamois.domain.models.form.measurement.MeasurementAnswer;
 import fr.siamois.domain.models.form.measurement.UnitDefinition;
-import fr.siamois.dto.entity.MeasurementAnswerDTO;
 import fr.siamois.dto.entity.UnitDefinitionDTO;
 import fr.siamois.ui.mapper.adapter.ConversionServiceAdapter;
 import org.mapstruct.InheritInverseConfiguration;

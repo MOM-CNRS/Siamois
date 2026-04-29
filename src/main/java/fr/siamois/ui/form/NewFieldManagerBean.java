@@ -1,6 +1,5 @@
 package fr.siamois.ui.form;
 
-import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.customfield.CustomFieldMeasurement;
 import fr.siamois.domain.services.form.CustomFieldMeasurementService;
 import fr.siamois.dto.entity.MeasurementAnswerDTO;
@@ -12,10 +11,8 @@ import fr.siamois.ui.form.dto.CustomFormPanelUiDto;
 import fr.siamois.ui.form.dto.CustomRowUiDto;
 import fr.siamois.ui.viewmodel.CustomFormResponseViewModel;
 import fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerMeasurementViewModel;
-import jdk.jfr.DataAmount;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
-import org.primefaces.model.menu.MenuModel;
 
 import java.util.ArrayList;
 import java.util.Iterator;

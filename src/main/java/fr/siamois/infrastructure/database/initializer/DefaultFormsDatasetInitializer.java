@@ -7,7 +7,6 @@ import fr.siamois.domain.models.form.formscope.FormScope;
 import fr.siamois.domain.models.form.measurement.UnitDefinition;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.vocabulary.Vocabulary;
-import fr.siamois.domain.models.vocabulary.VocabularyType;
 import fr.siamois.dto.entity.ConceptDTO;
 import fr.siamois.dto.entity.UnitDefinitionDTO;
 import fr.siamois.dto.entity.VocabularyDTO;
@@ -18,7 +17,6 @@ import fr.siamois.infrastructure.database.initializer.seeder.customfield.CustomF
 import fr.siamois.infrastructure.database.initializer.seeder.customfield.CustomFieldSeeder;
 import fr.siamois.infrastructure.database.initializer.seeder.customfield.CustomFieldSeederSpec;
 import fr.siamois.infrastructure.database.initializer.seeder.customform.*;
-import fr.siamois.infrastructure.database.repositories.measurement.UnitDefinitionRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.VocabularyRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

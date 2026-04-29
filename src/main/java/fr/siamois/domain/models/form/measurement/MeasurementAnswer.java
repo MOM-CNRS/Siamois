@@ -2,6 +2,7 @@ package fr.siamois.domain.models.form.measurement;
 
 import jakarta.persistence.*;
 import lombok.*;
+
 import java.io.Serializable;
 
 @Entity
