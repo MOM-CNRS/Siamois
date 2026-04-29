@@ -10,6 +10,7 @@ import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.GeoApiService;
 import fr.siamois.domain.services.GeoPlatService;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
+import fr.siamois.domain.services.form.CustomFieldMeasurementService;
 import fr.siamois.domain.services.form.FormService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
@@ -101,6 +102,7 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
     private final FormContextServices services;
 
 
+
     private List<SpatialUnitSummaryDTO> options; // spatial unit options
 
 
@@ -154,6 +156,7 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
         this.spatialUnitService = services.getSpatialUnitService();
         this.recordingUnitService = services.getRecordingUnitService();
         this.langBean = services.getLangBean();
+
         this.conversionService = conversionService;
         this.sessionSettingsBean = services.getSessionSettingsBean();
         this.geoApiService = services.getGeoApiService();
@@ -182,7 +185,8 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
 
         this.enabledEngine = formService.buildEnabledEngine(fieldSource);
         this.enabledEngine.applyAll(vp, applier);
-        this.newFieldManager = new NewFieldManagerBean(this.formResponse);
+        this.newFieldManager = new NewFieldManagerBean(services.getCustomFieldMeasurementService(),
+                this.formResponse);
 
     }
 

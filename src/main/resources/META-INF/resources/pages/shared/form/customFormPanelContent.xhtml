@@ -84,7 +84,7 @@
                                 <div class="ui-fluid">
                                     <p:outputLabel for="newfieldTypeAutocomplete" value="Type de mesure"
                                                    style="display:block;color:var(--text-light);"/>
-                                    <p:autoComplete value="#{bean.formContext.newFieldManager.newField.concept}"
+                                    <p:autoComplete value="#{bean.formContext.newFieldManager.type}"
                                                     id="newfieldTypeAutocomplete"
                                                     completeMethod="#{spatialUnitFieldBean.completeWithFieldCode}"
                                                     var="autocompleteDto"
@@ -106,7 +106,7 @@
                                 <div class="ui-fluid">
                                     <p:outputLabel for="newfieldNatureAutocomplete" value="Nature de la mesure"
                                                    style="display:block;color:var(--text-light);"/>
-                                    <p:autoComplete value="#{bean.formContext.newFieldManager.newField.measurementNature}"
+                                    <p:autoComplete value="#{bean.formContext.newFieldManager.nature}"
                                                     id="newfieldNatureAutocomplete"
                                                     completeMethod="#{spatialUnitFieldBean.completeWithFieldCode}"
                                                     var="autocompleteDto"

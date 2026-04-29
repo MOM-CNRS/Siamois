@@ -3,6 +3,7 @@ package fr.siamois.ui.form;
 import fr.siamois.domain.services.GeoApiService;
 import fr.siamois.domain.services.GeoPlatService;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
+import fr.siamois.domain.services.form.CustomFieldMeasurementService;
 import fr.siamois.domain.services.form.FormService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
@@ -37,4 +38,5 @@ public class FormContextServices {
     private final ConceptService conceptService;
     private final ConceptMapper conceptMapper;
     private final PlaceSuggestionMapper placeSuggestionMapper;
+    private final CustomFieldMeasurementService customFieldMeasurementService;
 }
