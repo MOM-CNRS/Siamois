@@ -5,6 +5,7 @@ import fr.siamois.domain.models.auth.Person;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import org.springframework.lang.NonNull;
 
 import java.io.Serializable;
 import java.time.OffsetDateTime;
@@ -15,13 +16,14 @@ import java.time.ZoneId;
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public abstract class AbstractEntityDTO implements Serializable {
 
-    AbstractEntityDTO(AbstractEntityDTO dto) {
+    AbstractEntityDTO(@NonNull AbstractEntityDTO dto) {
         id = dto.getId();
         createdBy = dto.getCreatedBy();
         createdByInstitution = dto.getCreatedByInstitution();
         validated = dto.getValidated();
         creationTime = dto.getCreationTime();
         validatedBy = dto.getValidatedBy();
+        validatedAt = dto.getValidatedAt();
     }
 
     @EqualsAndHashCode.Include
@@ -32,5 +34,7 @@ public abstract class AbstractEntityDTO implements Serializable {
     protected OffsetDateTime creationTime = OffsetDateTime.now(ZoneId.systemDefault());
     protected OffsetDateTime validatedAt ;
     protected Person validatedBy ;
+
+
 
 }

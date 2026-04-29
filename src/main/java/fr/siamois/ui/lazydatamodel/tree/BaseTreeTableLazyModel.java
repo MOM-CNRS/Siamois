@@ -183,7 +183,9 @@ public abstract class BaseTreeTableLazyModel<T extends AbstractEntityDTO, ID> im
                     (Callbacks.SerializableFunction<T, Boolean>) this::isLeaf
             );
             newNode.setParent(parent);
-            parent.getChildren().add(0, newNode);
+            if (parent.getChildren() != null) {
+                parent.getChildren().add(0, newNode);
+            }
 
             parent.setExpanded(true);
 

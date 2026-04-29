@@ -380,8 +380,8 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
                 (GenericNewUnitDialogBean<ActionUnitDTO>) genericNewUnitDialogBean,
                 actionLazyTree,
                 institutionService,
-                formContextServices
-        );
+                formContextServices,
+                actionUnitService, null);
         actionTabTableModel.setParentPanel(this);
 
         ActionUnitTableDefinitionFactory.applyTo(actionTabTableModel);

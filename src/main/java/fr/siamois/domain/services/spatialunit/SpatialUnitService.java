@@ -20,10 +20,12 @@ import fr.siamois.domain.services.ark.ArkService;
 import fr.siamois.domain.services.authorization.PermissionServiceImpl;
 import fr.siamois.domain.services.person.PersonService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
+import fr.siamois.dto.FilterDTO;
 import fr.siamois.dto.PlaceSuggestionDTO;
 import fr.siamois.dto.entity.*;
 import fr.siamois.infrastructure.database.repositories.SpatialUnitRepository;
 import fr.siamois.infrastructure.database.repositories.actionunit.ActionUnitRepository;
+import fr.siamois.infrastructure.database.repositories.specs.SpatialUnitSpec;
 import fr.siamois.mapper.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -31,7 +33,9 @@ import org.hibernate.Hibernate;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -330,15 +334,6 @@ public class SpatialUnitService implements ArkEntityService {
 
 
     /**
-     * Find all SpatialUnits in the system
-     *
-     * @return A list of all SpatialUnit
-     */
-    public List<SpatialUnit> findAll() {
-        return new ArrayList<>(spatialUnitRepository.findAll());
-    }
-
-    /**
      * Count the number of children of a given SpatialUnit
      *
      * @param spatialUnit The SpatialUnit to count children for
@@ -585,4 +580,74 @@ public class SpatialUnitService implements ArkEntityService {
         return dto;
     }
 
+    public Page<SpatialUnitDTO> searchSpatialUnits(InstitutionDTO institutionDTO, FilterDTO filterDTO, Pageable pageable) {
+        Specification<SpatialUnit> specs = prepareSpecs(institutionDTO, filterDTO);
+        Page<SpatialUnit> result = spatialUnitRepository.findAll(specs, pageable);
+        log.trace("Found {} SpatialUnits", result.getTotalElements());
+        return result.map(spatialUnitMapper::convert);
+    }
+
+    public int countSearchResults(InstitutionDTO institutionDTO, FilterDTO filterDTO) {
+        Specification<SpatialUnit> specs = prepareSpecs(institutionDTO, filterDTO);
+        return Math.toIntExact(spatialUnitRepository.count(specs));
+    }
+
+    private Specification<SpatialUnit> prepareSpecs(InstitutionDTO institutionDTO, FilterDTO filterDTO) {
+        Specification<SpatialUnit> base = SpatialUnitSpec.belongsToInstitution(institutionDTO.getId());
+
+        // Tree-mode shortcut: only roots, possibly restricted to "ancestors of a match"
+        if (filterDTO.isRootOnly()) {
+            if (filterDTO.hasUserFilters()) {
+                Collection<Long> closure = resolveAncestorClosure(institutionDTO, filterDTO);
+                if (closure.isEmpty()) {
+                    return base.and((root, q, cb) -> cb.disjunction()); // no match → empty
+                }
+                return base.and(SpatialUnitSpec.unitIsRoot()).and(SpatialUnitSpec.idIn(closure));
+            }
+            return base.and(SpatialUnitSpec.unitIsRoot());
+        }
+
+        return base.and(userFilterSpecs(filterDTO));
+    }
+
+    private Specification<SpatialUnit> userFilterSpecs(FilterDTO filterDTO) {
+        Specification<SpatialUnit> specs = Specification.where(null);
+
+        if (filterDTO.containsColumn(SpatialUnitSpec.NAME_FILTER)) {
+            specs = specs.and(SpatialUnitSpec.nameContaining(filterDTO.valueOfAsString(SpatialUnitSpec.NAME_FILTER)));
+        }
+
+        if (filterDTO.containsColumn(SpatialUnitSpec.CATEGORY_FILTER)) {
+            specs = specs.and(SpatialUnitSpec.categoryIsIn(filterDTO.valueAsIdListOf(SpatialUnitSpec.CATEGORY_FILTER)));
+        }
+
+        return specs;
+    }
+
+    private Collection<Long> resolveAncestorClosure(InstitutionDTO institutionDTO, FilterDTO filterDTO) {
+        if (filterDTO.getAncestorClosure() != null) {
+            return filterDTO.getAncestorClosure();
+        }
+        Specification<SpatialUnit> matchSpecs = SpatialUnitSpec.belongsToInstitution(institutionDTO.getId())
+                .and(userFilterSpecs(filterDTO));
+        List<Long> matchIds = spatialUnitRepository.findAll(matchSpecs)
+                .stream()
+                .map(SpatialUnit::getId)
+                .toList();
+        Set<Long> closure = matchIds.isEmpty()
+                ? Collections.emptySet()
+                : new HashSet<>(spatialUnitRepository.findAncestorClosure(matchIds.toArray(Long[]::new)));
+        filterDTO.setAncestorClosure(closure);
+        filterDTO.setMatchIds(new HashSet<>(matchIds));
+        return closure;
+    }
+
+    public List<SpatialUnitDTO> findMatchingInInstitutionByName(InstitutionDTO institutionDTO, String query, int limit) {
+        Specification<SpatialUnit> specs = SpatialUnitSpec.belongsToInstitution(institutionDTO.getId());
+        specs = specs.and(SpatialUnitSpec.nameContaining(query));
+        return spatialUnitRepository.findAll(specs, PageRequest.ofSize(limit))
+                .map(spatialUnitMapper::convert)
+                .stream()
+                .toList();
+    }
 }

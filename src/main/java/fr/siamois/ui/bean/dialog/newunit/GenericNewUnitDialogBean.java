@@ -156,10 +156,7 @@ public class GenericNewUnitDialogBean<T extends AbstractEntityDTO>
     }
 
     public void create() {
-
-
         performCreate();
-
     }
 
 
@@ -186,7 +183,6 @@ public class GenericNewUnitDialogBean<T extends AbstractEntityDTO>
                 case ACTION -> flowBean.addActionUnitToOverview(getUnitId(),sourceTableModel.getParentPanel(), null);
                 case SPECIMEN -> flowBean.addSpecimenToOverview(getUnitId(),sourceTableModel.getParentPanel(), null);
             }
-
 
         } catch (EntityAlreadyExistsException e) {
             log.error(e.getMessage(), e);

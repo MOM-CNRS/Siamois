@@ -1,6 +1,7 @@
 package fr.siamois.ui.lazydatamodel;
 
 import fr.siamois.domain.services.specimen.SpecimenService;
+import fr.siamois.dto.FilterDTO;
 import fr.siamois.dto.entity.RecordingUnitDTO;
 import fr.siamois.dto.entity.SpecimenDTO;
 import fr.siamois.ui.bean.LangBean;
@@ -11,7 +12,6 @@ import org.springframework.data.domain.Pageable;
 
 
 public class SpecimenInRecordingUnitLazyDataModel extends BaseSpecimenLazyDataModel {
-
 
     private final transient SessionSettingsBean sessionSettings;
 
@@ -44,5 +44,19 @@ public class SpecimenInRecordingUnitLazyDataModel extends BaseSpecimenLazyDataMo
     }
 
 
+    @Override
+    protected Page<SpecimenDTO> loadData(FilterDTO filter, Pageable pageable) {
+        return specimenService.findAllByInstitutionAndByRecordingUnitAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
+                sessionSettings.getSelectedInstitution().getId(),
+                recordingUnit.getId(),
+                null, null, null,
+                langBean.getLanguageCode(),
+                pageable
+        );
+    }
 
+    @Override
+    protected int countWithFilter(FilterDTO filters) {
+        return 0;
+    }
 }

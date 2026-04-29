@@ -1,33 +1,31 @@
 package fr.siamois.ui.lazydatamodel;
 
-
-import fr.siamois.domain.models.auth.Person;
-import fr.siamois.domain.models.vocabulary.Concept;
-import fr.siamois.domain.models.vocabulary.LocalizedConceptData;
 import fr.siamois.domain.models.vocabulary.label.ConceptLabel;
+import fr.siamois.dto.FilterDTO;
+import fr.siamois.dto.SortDTO;
 import lombok.Getter;
 import lombok.Setter;
 import org.primefaces.model.FilterMeta;
 import org.primefaces.model.LazyDataModel;
 import org.primefaces.model.SortMeta;
-import org.primefaces.model.SortOrder;
+import org.primefaces.model.TreeNode;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.lang.NonNull;
+import org.springframework.lang.Nullable;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
-
 
 @Getter
 @Setter
 public abstract class BaseLazyDataModel<T> extends LazyDataModel<T> implements LazyModel {
 
-    @Override
-    public int count(Map<String, FilterMeta> map) {
-        return 0;
-    }
+    private static final Logger log = LoggerFactory.getLogger(BaseLazyDataModel.class);
 
     // Page, Sort and Filter state
     protected int first = 0;
@@ -35,75 +33,92 @@ public abstract class BaseLazyDataModel<T> extends LazyDataModel<T> implements L
     protected transient Set<SortMeta> sortBy = new HashSet<>();
 
     // Cache
-    protected transient Map<String, FilterMeta> cachedFilterBy = new HashMap<>() ;
-    protected int cachedFirst ;
-    protected int cachedPageSize ;
-    protected transient Map<String, SortMeta> cachedSortBy = new HashMap<>() ;
-    protected transient List<T> queryResult ; // cache for the result of the query
+    protected transient Map<String, FilterMeta> cachedFilterBy = new HashMap<>();
+    protected int cachedFirst;
+    protected int cachedPageSize;
+    protected transient Map<String, SortMeta> cachedSortBy = new HashMap<>();
+    protected transient List<T> queryResult;
     protected int cachedRowCount;
 
-    protected abstract String getDefaultSortField();
+    @Getter
+    @Setter
+    protected transient TreeNode<T> lazyRoot;
 
-    protected abstract Page<T> loadData(String name, Long[] categoryIds, Long[] personIds, String globalFilter, Pageable pageable);
+    @Setter
+    protected boolean rootOnly;
 
-    // Filters
+    /**
+     * Mirrors the table-toolbar toggle. When {@code false}, {@link #load(int, int, Map, Map)} drops
+     * any column FilterMeta the dataTable still carries from a previous render
+     * (PrimeFaces preserves them across the toggle, only their inputs are CSS-
+     * hidden). The {@link fr.siamois.ui.custom.LazyTreeTable} also honors this flag, but the plain
+     * dataTable has no equivalent layer and would otherwise keep applying
+     * stale filters.
+     */
+    @Setter
+    protected boolean columnFilteringEnabled = true;
+
+    protected transient Set<Long> ancestorClosure;
+    protected transient Set<Long> matchIds;
+
+    /**
+     * This method should specify the default sort when no user sort are activated.
+     * By default, it returns an empty {@link SortDTO} which {@link this#buildSort(SortDTO)} interprets as Sort.unsorted()
+     * @return The sort DTO object
+     */
+    protected SortDTO getDefaultSortDTO() {
+        return new SortDTO();
+    }
+
+    /**
+     * This method should load the page data with the specified filters
+     * @param filter The filters to use for the {@link this#load(int, int, Map, Map)} method. {@link this#prepareFilterDTO(Map, FilterDTO)} must be implemented
+     * @param pageable The page object
+     * @return The specified data contained within a page
+     */
+    protected abstract Page<T> loadData(FilterDTO filter, Pageable pageable);
+
+    // Filters & Selection
     private String globalFilter;
-    // Filters
     protected transient List<ConceptLabel> selectedTypes = new ArrayList<>();
     protected transient List<ConceptLabel> selectedAuthors = new ArrayList<>();
     protected String nameFilter;
-    // selection
-    protected transient List<T> selectedUnits ;
+    protected transient List<T> selectedUnits;
 
-    // Base implementation returns empty; override in child class
     protected Map<String, String> getFieldMapping() {
         return Collections.emptyMap();
     }
 
-    protected Sort buildSort(Map<String, SortMeta> sortBy, String tieBreaker) {
-
-        if (sortBy == null || sortBy.isEmpty()) {
-            return Sort.unsorted();
-        }
-
-        Map<String, String> fieldMapping = getFieldMapping();
-        List<Sort.Order> orders = new ArrayList<>();
-
-        for (Map.Entry<String, SortMeta> entry : sortBy.entrySet()) {
-            String field = fieldMapping.getOrDefault(entry.getKey(), entry.getKey());
-            SortMeta meta = entry.getValue();
-            Sort.Order order = new Sort.Order(
-                    meta.getOrder() == SortOrder.ASCENDING ? Sort.Direction.ASC : Sort.Direction.DESC,
-                    field
-            );
-            orders.add(order);
-        }
-
-        // Add tie breaker to make it deterministic
-        orders.add(new Sort.Order(Sort.Direction.ASC, tieBreaker));
-
-        return Sort.by(orders);
-    }
+    // --- UTILITY METHODS FOR CACHE & CLONING ---
 
     public static Map<String, FilterMeta> deepCopyFilterMetaMap(Map<String, FilterMeta> originalMap) {
         Map<String, FilterMeta> copiedMap = new HashMap<>();
         for (Map.Entry<String, FilterMeta> entry : originalMap.entrySet()) {
-            String key = entry.getKey();
             FilterMeta originalMeta = entry.getValue();
-
             FilterMeta copiedMeta = FilterMeta.builder()
                     .field(originalMeta.getField())
                     .filterValue(originalMeta.getFilterValue())
                     .matchMode(originalMeta.getMatchMode())
                     .build();
+            copiedMap.put(entry.getKey(), copiedMeta);
+        }
+        return copiedMap;
+    }
 
-            copiedMap.put(key, copiedMeta);
+    public static Map<String, SortMeta> deepCopySortMetaMap(Map<String, SortMeta> originalMap) {
+        Map<String, SortMeta> copiedMap = new HashMap<>();
+        for (Map.Entry<String, SortMeta> entry : originalMap.entrySet()) {
+            SortMeta originalMeta = entry.getValue();
+            SortMeta copiedMeta = SortMeta.builder()
+                    .field(originalMeta.getField())
+                    .order(originalMeta.getOrder())
+                    .build();
+            copiedMap.put(entry.getKey(), copiedMeta);
         }
         return copiedMap;
     }
 
     protected void updateCache(Page<T> result, Map<String, FilterMeta> filterBy, Map<String, SortMeta> sortBy, int first, int pageSize) {
-        // Update cache
         this.queryResult = result.getContent();
         this.cachedFilterBy = BaseLazyDataModel.deepCopyFilterMetaMap(filterBy);
         this.cachedSortBy = BaseLazyDataModel.deepCopySortMetaMap(sortBy);
@@ -112,89 +127,90 @@ public abstract class BaseLazyDataModel<T> extends LazyDataModel<T> implements L
         this.cachedRowCount = (int) result.getTotalElements();
     }
 
-    public static Map<String, SortMeta> deepCopySortMetaMap(Map<String, SortMeta> originalMap) {
-        Map<String, SortMeta> copiedMap = new HashMap<>();
-        for (Map.Entry<String, SortMeta> entry : originalMap.entrySet()) {
-            String key = entry.getKey();
-            SortMeta originalMeta = entry.getValue();
-
-            SortMeta copiedMeta = SortMeta.builder()
-                    .field(originalMeta.getField())
-                    .order(originalMeta.getOrder())
-                    .build();
-
-            copiedMap.put(key, copiedMeta);
-        }
-        return copiedMap;
-    }
-
-    // Deep comparison method for sort criteria
     public boolean isSortCriteriaSame(Map<String, SortMeta> existingSorts, Map<String, SortMeta> newSorts) {
-
-
-
         if (existingSorts == null && newSorts == null) return true;
         if (existingSorts == null || newSorts == null) return false;
-
         if (existingSorts.size() != newSorts.size()) return false;
-
-
 
         for (Map.Entry<String, SortMeta> existingEntry : existingSorts.entrySet()) {
             SortMeta newSortMeta = newSorts.get(existingEntry.getKey());
-            if (newSortMeta == null) return false;
-
-            // Compare filter metadata details
-            if (!areSortMetaOrderEqual(existingEntry.getValue(), newSortMeta)) {
+            if (newSortMeta == null || existingEntry.getValue().getOrder() != newSortMeta.getOrder()) {
                 return false;
             }
         }
         return true;
     }
 
-    // Deep comparison method for filter criteria
     public boolean isFilterCriteriaSame(Map<String, FilterMeta> existingFilters, Map<String, FilterMeta> newFilters) {
         if (existingFilters == null && newFilters == null) return true;
         if (existingFilters == null || newFilters == null) return false;
-
         if (existingFilters.size() != newFilters.size()) return false;
 
         for (Map.Entry<String, FilterMeta> existingEntry : existingFilters.entrySet()) {
             FilterMeta newFilterMeta = newFilters.get(existingEntry.getKey());
             if (newFilterMeta == null) return false;
 
-            // Compare filter metadata details
-            if (!areFilterMetaValueEqual(existingEntry.getValue(), newFilterMeta)) {
+            Object value1 = existingEntry.getValue().getFilterValue();
+            Object value2 = newFilterMeta.getFilterValue();
+
+            if (value1 instanceof Collection<?> col1 && value2 instanceof Collection<?> col2) {
+                if (!new HashSet<>(col1).equals(new HashSet<>(col2))) return false;
+            } else if (!Objects.equals(value1, value2)) {
                 return false;
             }
         }
         return true;
     }
 
-    // Helper method to compare SortMeta objects
-    private boolean areSortMetaOrderEqual(SortMeta sort1, SortMeta sort2) {
-        return (sort1.getOrder() == sort2.getOrder());
+    public void resetCache() {
+        this.queryResult = null;
     }
 
-    // Helper method to compare FilterMeta objects
-    private boolean areFilterMetaValueEqual(FilterMeta filter1, FilterMeta filter2) {
-        Object value1 = filter1.getFilterValue();
-        Object value2 = filter2.getFilterValue();
+    // --- PREPARATION AND CLEANING ---
 
-        if (value1 instanceof Collection<?> col1 && value2 instanceof Collection<?> col2) {
-            // Compare as sets to ignore order and duplicates
-            return new HashSet<>(col1).equals(new HashSet<>(col2));
+    protected Map<String, SortMeta> prepareSorts(Map<String, SortMeta> rawSortMap) {
+        return FilterAndSortUtils.prepareSorts(rawSortMap);
+    }
+
+    protected Map<String, FilterMeta> prepareFilters(Map<String, FilterMeta> rawFilterMap) {
+        return FilterAndSortUtils.prepareLoadFilters(rawFilterMap);
+    }
+
+    // --- CORE LOAD AND COUNT METHODS ---
+
+    protected abstract int countWithFilter(FilterDTO filters);
+
+    @Override
+    public int count(Map<String, FilterMeta> map) {
+        FilterDTO filterDTO = new FilterDTO(rootOnly);
+        if (!columnFilteringEnabled) {
+            map = new HashMap<>();
         }
+        Map<String, FilterMeta> activeFilters = prepareFilters(map);
 
-        // Fallback to standard equality
-        return Objects.equals(value1, value2);
+        for (Map.Entry<String, FilterMeta> entry : activeFilters.entrySet()) {
+            if (entry.getKey().equals("globalFilter") && entry.getValue() != null) {
+                filterDTO.add(FilterDTO.GLOBAL_FILTER_KEY, entry.getValue().getFilterValue(), FilterDTO.FilterType.CONTAINS);
+            } else if (entry.getValue() != null) {
+                filterDTO.add(entry.getKey(), entry.getValue().getFilterValue(), FilterDTO.FilterType.CONTAINS);
+            }
+        }
+        return countWithFilter(filterDTO);
     }
 
     @Override
     @Transactional
     public List<T> load(int first, int pageSize, Map<String, SortMeta> sortBy, Map<String, FilterMeta> filterBy) {
-        boolean isSortSame = isSortCriteriaSame(this.cachedSortBy, sortBy);
-        boolean isFilterSame = isFilterCriteriaSame(this.cachedFilterBy, filterBy);
+        // 1. Nettoyage et préparation des maps PrimeFaces brutes
+        Map<String, SortMeta> activeSorts = prepareSorts(sortBy);
+        if (!columnFilteringEnabled) {
+            filterBy = new HashMap<>();
+        }
+        Map<String, FilterMeta> activeFilters = prepareFilters(filterBy);
+
+        // 2. Évaluation du cache avec les maps propres
+        boolean isSortSame = isSortCriteriaSame(this.cachedSortBy, activeSorts);
+        boolean isFilterSame = isFilterCriteriaSame(this.cachedFilterBy, activeFilters);
 
         if (this.cachedFirst == first &&
                 this.cachedPageSize == pageSize &&
@@ -209,88 +225,111 @@ public abstract class BaseLazyDataModel<T> extends LazyDataModel<T> implements L
         this.pageSizeState = pageSize;
         int pageNumber = first / pageSize;
 
-        Pageable pageable = PageRequest.of(pageNumber, pageSizeState, buildSort(sortBy, getDefaultSortField()));
+        // 3. Traduction en DTO métier
+        FilterDTO filterDTO = new FilterDTO(rootOnly);
+        SortDTO sortDTO = new SortDTO();
 
-        // Filter extraction
-        String localNameFilter = null;
-        Long[] categoryIds = null;
-        Long[] personIds = null;
-        String localGlobalFilter = null;
+        prepareFilterDTO(activeFilters, filterDTO);
+        prepareSortDTO(activeSorts, sortDTO);
 
-        if (filterBy != null) {
-            FilterMeta nameMeta = filterBy.get("name");
-            if (nameMeta != null && nameMeta.getFilterValue() != null) {
-                localNameFilter = nameMeta.getFilterValue().toString();
-            }
+        Pageable pageable = PageRequest.of(pageNumber, pageSizeState, buildSort(sortDTO));
 
-            FilterMeta categoryMeta = filterBy.get("category");
-            if (categoryMeta != null && categoryMeta.getFilterValue() != null) {
-                @SuppressWarnings("unchecked")
-                List<LocalizedConceptData> selectedCategoryLabels = (List<LocalizedConceptData>) categoryMeta.getFilterValue();
-                List<Concept> selectedCategories = selectedCategoryLabels.stream()
-                        .map(LocalizedConceptData::getConcept)
-                        .toList();
-                categoryIds = selectedCategories.stream()
-                        .filter(Objects::nonNull)
-                        .map(Concept::getId)
-                        .filter(Objects::nonNull)
-                        .toArray(Long[]::new);
-            }
-
-            FilterMeta personMeta = filterBy.get("author");
-            if (personMeta != null && personMeta.getFilterValue() != null) {
-                @SuppressWarnings("unchecked")
-                List<Person> selectedPerson = (List<Person>) personMeta.getFilterValue();
-                personIds = selectedPerson.stream()
-                        .filter(Objects::nonNull)
-                        .map(Person::getId)
-                        .filter(Objects::nonNull)
-                        .toArray(Long[]::new);
-            }
-
-            FilterMeta globalMeta = filterBy.get("globalFilter");
-            if (globalMeta != null && globalMeta.getFilterValue() != null) {
-                localGlobalFilter = globalMeta.getFilterValue().toString();
-            }
-        }
-
-        Page<T> result = loadData(localNameFilter, categoryIds, personIds, localGlobalFilter, pageable);
+        // 4. Exécution de la requête
+        Page<T> result = loadData(filterDTO, pageable);
+        captureClosureSnapshot(filterDTO);
         setRowCount((int) result.getTotalElements());
-        updateCache(result, filterBy, sortBy, first, pageSize);
-        this.sortBy = new HashSet<>(sortBy.values());
+        updateCache(result, activeFilters, activeSorts, first, pageSize);
 
         return result.getContent();
     }
 
+    /**
+     * Used to capture the ancestor of filter results
+     * @param filterDTO The filters applied
+     */
+    @SuppressWarnings("unchecked")
+    private void captureClosureSnapshot(FilterDTO filterDTO) {
+        Collection<Long> closure = filterDTO.getAncestorClosure();
+        if (closure instanceof Set<?> set) {
+            this.ancestorClosure = (Set<Long>) set;
+        } else if (closure != null) {
+            this.ancestorClosure = new HashSet<>(closure);
+        } else {
+            this.ancestorClosure = null;
+        }
+
+        this.matchIds  = filterDTO.getMatchIds();
+    }
+
+    /**
+     * Translates the {@link SortDTO} to Spring's {@link Sort} object
+     * @param sortDTO The domain {@link SortDTO}
+     * @return Spring's {@link Sort} object
+     */
+    @NonNull
+    private Sort buildSort(SortDTO sortDTO) {
+        if (sortDTO.isEmpty()) {
+            sortDTO = getDefaultSortDTO();
+        }
+
+        for (String attribute : sortDTO.getAttributeNames()) {
+            switch (sortDTO.orderOf(attribute)) {
+                case ASC -> {
+                    return Sort.by(Sort.Direction.ASC, attribute);
+                }
+                case DESC -> {
+                    return Sort.by(Sort.Direction.DESC, attribute);
+                }
+            }
+        }
+
+        return Sort.unsorted();
+    }
+
+    /**
+     * This method should take the sortBy provided by PrimeFaces and add all relevant sorts to the sortDTO
+     * @param sortBy The sorts provided by PrimeFaces
+     * @param sortDTO The domain sort DTO
+     */
+    protected void prepareSortDTO(@Nullable Map<String, SortMeta> sortBy, @NonNull SortDTO sortDTO) {
+
+    }
+
+    /**
+     * This method should take the filterBy provided by PrimeFaces and add all relevant sorts to the filterDTO
+     * @param filterBy The filters provided by PrimeFaces
+     * @param filterDTO The domain filter DTO
+     */
+    protected void prepareFilterDTO(Map<String, FilterMeta> filterBy, FilterDTO filterDTO) {
+
+    }
+
     public int getFirstIndexOnPage() {
-        return first + 1; // Adding 1 because indexes are zero-based
+        return first + 1;
     }
 
     public int getLastIndexOnPage() {
         int last = first + pageSizeState;
         int total = this.getRowCount();
-        return Math.min(last, total); // Ensure it doesn’t exceed total records
+        return Math.min(last, total);
     }
 
     public void addRowToModel(T newUnit) {
-        // Create modifiable copy
+        // Increment the total against the previously known total — using the
+        // wrappedData size would replace the total with the page size and break
+        // the paginator after duplications/bulk creates.
+        int newTotal = getRowCount() + 1;
+        setRowCount(newTotal);
+        setCachedRowCount(newTotal);
+
         List<T> modifiableCopy = new ArrayList<>();
-
-        if(getWrappedData()!=null) {
-            modifiableCopy  = new ArrayList<>(getWrappedData());
+        if (getWrappedData() != null) {
+            modifiableCopy = new ArrayList<>(getWrappedData());
         }
-
-        // Insert new record at the top
         modifiableCopy.add(0, newUnit);
-
-        // Adjust row count
-        setRowCount(modifiableCopy.size());
-        setCachedRowCount(modifiableCopy.size());
-        // Update data
         setWrappedData(modifiableCopy);
         setQueryResult(modifiableCopy);
 
-        // Optional: remove last item if too many (pagination bound)
         if (modifiableCopy.size() > getPageSizeState()) {
             modifiableCopy.remove(modifiableCopy.size() - 1);
         }

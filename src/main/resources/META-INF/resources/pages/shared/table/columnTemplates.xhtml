@@ -6,16 +6,18 @@
                 xmlns:cellheader="http://java.sun.com/jsf/composite/pages/shared/cellheader"
 >
 
+    <!--@elvariable id="column" type="fr.siamois.ui.table.FormFieldColumn"-->
+    <!--@elvariable id="tableModel" type="fr.siamois.ui.table.EntityTableViewModel"-->
+    
     <!-- Header -->
     <f:facet name="header">
-        <p:outputPanel rendered="#{column.type ne 'COMMAND_LINK'}">
+        <p:outputPanel rendered="#{column.type ne 'COMMAND_LINK'}" layout="inline">
             #{langBean.msg(column.headerKey)}
         </p:outputPanel>
-        <p:outputPanel rendered="#{column.type eq 'COMMAND_LINK'}">
+        <p:outputPanel rendered="#{column.type eq 'COMMAND_LINK'}" layout="inline">
 
         </p:outputPanel>
     </f:facet>
-
     <!-- Row Context -->
     <ui:param name="rowContext" value="#{tableModel.getRowContext(item)}"/>
 
@@ -37,6 +39,7 @@
             <ui:param name="hasAutoGenerationFunction" value="false"/>
             <ui:param name="onGenerateValue" value="#{null}"/>
             <ui:param name="updateTargetsOnBlur" value="#{updateTableString}" />
+            <!--@elvariable id="canUserEditRow" type="java.lang.Boolean"-->
             <ui:param name="allowEdit" value="#{canUserEditRow}"/>
         </ui:include>
     </ui:fragment>

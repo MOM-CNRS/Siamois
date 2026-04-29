@@ -365,12 +365,12 @@ public abstract class AbstractSingleEntityPanel<T extends AbstractEntityDTO> ext
     private InfoRevisionEntity findLastRevisionInfo() {
         InfoRevisionEntity revision = historyAuditService.findLastRevisionInfoFor(unit.getClass(), unitId);
         if (revision == null) {
-            InfoRevisionEntity info = new InfoRevisionEntity();
+            revision = new InfoRevisionEntity();
             UserInfo userInfo = sessionSettingsBean.getUserInfo();
-            info.setRevId(0L);
-            info.setEpochTimestamp(OffsetDateTime.now().toEpochSecond());
-            info.setUpdatedBy(conversionService.convert(userInfo.getUser(), Person.class));
-            info.setUpdatedFrom(conversionService.convert(userInfo.getInstitution(), Institution.class));
+            revision.setRevId(0L);
+            revision.setEpochTimestamp(OffsetDateTime.now().toEpochSecond());
+            revision.setUpdatedBy(conversionService.convert(userInfo.getUser(), Person.class));
+            revision.setUpdatedFrom(conversionService.convert(userInfo.getInstitution(), Institution.class));
         }
         return revision;
     }

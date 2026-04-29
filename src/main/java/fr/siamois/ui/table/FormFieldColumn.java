@@ -43,4 +43,6 @@ public class FormFieldColumn extends TableColumn implements FieldColumn {
     public TableColumnType getType() {
         return TableColumnType.FORM_FIELD;
     }
+
+    private String fakeField;
 }

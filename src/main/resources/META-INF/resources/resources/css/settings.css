@@ -1,0 +1,19 @@
+/* Déclaration pour la version "Droite" (Normal) */
+@font-face {
+    font-family: 'Inter';
+    src: url("#{resource['fonts:Inter-VariableFont_opsz,wght.ttf']}") format('truetype');
+    /* Déclare que cette police supporte toutes les graisses de 100 à 900 */
+    font-weight: 100 900;
+    font-style: normal;
+    font-display: swap;
+}
+
+/* Déclaration pour la version "Italique" */
+@font-face {
+    font-family: 'Inter';
+    src: url("#{resource['fonts:Inter-Italic-VariableFont_opsz,wght.ttf']}") format('truetype');
+    /* Déclare que cette police supporte toutes les graisses de 100 à 900 */
+    font-weight: 100 900;
+    font-style: italic;
+    font-display: swap;
+}

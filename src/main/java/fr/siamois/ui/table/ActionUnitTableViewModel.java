@@ -2,10 +2,12 @@ package fr.siamois.ui.table;
 
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.services.InstitutionService;
+import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.form.FormService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitTreeService;
 import fr.siamois.dto.entity.ActionUnitDTO;
+import fr.siamois.mapper.ActionUnitMapper;
 import fr.siamois.ui.bean.NavBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
 import fr.siamois.ui.bean.dialog.newunit.GenericNewUnitDialogBean;
@@ -15,8 +17,10 @@ import fr.siamois.ui.bean.panel.FlowBean;
 import fr.siamois.ui.form.FormContextServices;
 import fr.siamois.ui.form.dto.FormUiDto;
 import fr.siamois.ui.lazydatamodel.BaseActionUnitLazyDataModel;
+import fr.siamois.ui.lazydatamodel.BaseLazyDataModel;
 import fr.siamois.ui.lazydatamodel.tree.ActionUnitTreeTableLazyModel;
 import lombok.Getter;
+import org.jspecify.annotations.NonNull;
 import org.primefaces.model.TreeNode;
 
 import java.util.List;
@@ -44,6 +48,8 @@ public class ActionUnitTableViewModel extends EntityTableViewModel<ActionUnitDTO
 
     private final SessionSettingsBean sessionSettingsBean;
 
+    private final ActionUnitService  actionUnitService;
+    private final ActionUnitMapper actionUnitMapper;
 
 
     public ActionUnitTableViewModel(BaseActionUnitLazyDataModel actionUnitLazyDataModel,
@@ -55,7 +61,7 @@ public class ActionUnitTableViewModel extends EntityTableViewModel<ActionUnitDTO
                                     FlowBean flowBean, GenericNewUnitDialogBean<ActionUnitDTO> genericNewUnitDialogBean,
                                     ActionUnitTreeTableLazyModel treeLazyModel,
                                     InstitutionService institutionService,
-                                    FormContextServices formContextServices) {
+                                    FormContextServices formContextServices, ActionUnitService actionUnitService, ActionUnitMapper actionUnitMapper) {
 
         super(
                 actionUnitLazyDataModel,
@@ -74,6 +80,8 @@ public class ActionUnitTableViewModel extends EntityTableViewModel<ActionUnitDTO
         this.sessionSettingsBean = sessionSettingsBean;
         this.flowBean = flowBean;
         this.institutionService = institutionService;
+        this.actionUnitService = actionUnitService;
+        this.actionUnitMapper = actionUnitMapper;
     }
 
     @Override
@@ -178,7 +186,6 @@ public class ActionUnitTableViewModel extends EntityTableViewModel<ActionUnitDTO
     @Override
     public void handleRelationAction(RelationColumn col, ActionUnitDTO au, TableColumnAction action) {
         switch (action) {
-
             case VIEW_RELATION ->
                     flowBean.addActionUnitToOverview(
                             au.getId(),
@@ -263,8 +270,19 @@ public class ActionUnitTableViewModel extends EntityTableViewModel<ActionUnitDTO
     }
 
     @Override
-    public TreeNode<ActionUnitDTO> getTreeRoot() {
-        return treeLazyModel.getRoot();
+    public BaseLazyDataModel<ActionUnitDTO> getLazyDataModel() {
+        actionUnitLazyDataModel.setRootOnly(treeMode);
+        return actionUnitLazyDataModel;
+    }
+
+    @Override
+    protected boolean unitIsLeaf(@NonNull ActionUnitDTO unit) {
+        return !actionUnitService.isRoot(unit.getId(), sessionSettingsBean.getSelectedInstitution().getId());
+    }
+
+    @Override
+    protected @NonNull List<ActionUnitDTO> loadChildrensOfUnit(@NonNull ActionUnitDTO parentUnit) {
+        return actionUnitService.findChildrenByParentAndInstitution(parentUnit.getId(), sessionSettingsBean.getSelectedInstitution().getId());
     }
 
 }
