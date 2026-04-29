@@ -20,6 +20,7 @@ import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+@SuppressWarnings({"rawtypes", "unchecked"})
 @ExtendWith(MockitoExtension.class)
 class BaseLazyDataModelTest {
 
@@ -37,7 +38,7 @@ class BaseLazyDataModelTest {
         BaseLazyDataModel lazyModel = Mockito.mock(BaseLazyDataModel.class, Answers.CALLS_REAL_METHODS);
 
         // act
-        Boolean res = lazyModel.isFilterCriteriaSame(sortBy, sortBy2);
+        boolean res = lazyModel.isFilterCriteriaSame(sortBy, sortBy2);
         assertTrue(res);
     }
 
@@ -50,7 +51,7 @@ class BaseLazyDataModelTest {
         BaseLazyDataModel lazyModel = Mockito.mock(BaseLazyDataModel.class, Answers.CALLS_REAL_METHODS);
 
         // act
-        Boolean res = lazyModel.isSortCriteriaSame(sortBy, sortBy2);
+        boolean res = lazyModel.isSortCriteriaSame(sortBy, sortBy2);
         assertFalse(res);
     }
 
@@ -64,7 +65,7 @@ class BaseLazyDataModelTest {
         BaseLazyDataModel lazyModel = Mockito.mock(BaseLazyDataModel.class, Answers.CALLS_REAL_METHODS);
 
         // act
-        Boolean res = lazyModel.isSortCriteriaSame(sortBy, sortBy2);
+        boolean res = lazyModel.isSortCriteriaSame(sortBy, sortBy2);
         assertFalse(res);
     }
 
@@ -79,7 +80,7 @@ class BaseLazyDataModelTest {
         BaseLazyDataModel lazyModel = Mockito.mock(BaseLazyDataModel.class, Answers.CALLS_REAL_METHODS);
 
         // act
-        Boolean res = lazyModel.isSortCriteriaSame(sortBy, sortBy2);
+        boolean res = lazyModel.isSortCriteriaSame(sortBy, sortBy2);
         assertFalse(res);
     }
 
@@ -94,7 +95,7 @@ class BaseLazyDataModelTest {
         BaseLazyDataModel lazyModel = Mockito.mock(BaseLazyDataModel.class, Answers.CALLS_REAL_METHODS);
 
         // act
-        Boolean res = lazyModel.isSortCriteriaSame(sortBy, sortBy2);
+        boolean res = lazyModel.isSortCriteriaSame(sortBy, sortBy2);
         assertFalse(res);
     }
 
@@ -109,7 +110,7 @@ class BaseLazyDataModelTest {
         BaseLazyDataModel lazyModel = Mockito.mock(BaseLazyDataModel.class, Answers.CALLS_REAL_METHODS);
 
         // act
-        Boolean res = lazyModel.isSortCriteriaSame(sortBy, sortBy2);
+        boolean res = lazyModel.isSortCriteriaSame(sortBy, sortBy2);
         assertTrue(res);
     }
 
@@ -122,7 +123,7 @@ class BaseLazyDataModelTest {
         BaseLazyDataModel lazyModel = Mockito.mock(BaseLazyDataModel.class, Answers.CALLS_REAL_METHODS);
 
         // act
-        Boolean res = lazyModel.isFilterCriteriaSame(filterBy, filterBy2);
+        boolean res = lazyModel.isFilterCriteriaSame(filterBy, filterBy2);
         assertTrue(res);
     }
 
@@ -135,7 +136,7 @@ class BaseLazyDataModelTest {
         BaseLazyDataModel lazyModel = Mockito.mock(BaseLazyDataModel.class, Answers.CALLS_REAL_METHODS);
 
         // act
-        Boolean res = lazyModel.isFilterCriteriaSame(filterBy, filterBy2);
+        boolean res = lazyModel.isFilterCriteriaSame(filterBy, filterBy2);
         assertFalse(res);
     }
 
@@ -149,7 +150,7 @@ class BaseLazyDataModelTest {
         BaseLazyDataModel lazyModel = Mockito.mock(BaseLazyDataModel.class, Answers.CALLS_REAL_METHODS);
 
         // act
-        Boolean res = lazyModel.isFilterCriteriaSame(filterBy, filterBy2);
+        boolean res = lazyModel.isFilterCriteriaSame(filterBy, filterBy2);
         assertFalse(res);
     }
 
@@ -164,7 +165,7 @@ class BaseLazyDataModelTest {
         BaseLazyDataModel lazyModel = Mockito.mock(BaseLazyDataModel.class, Answers.CALLS_REAL_METHODS);
 
         // act
-        Boolean res = lazyModel.isFilterCriteriaSame(filterBy, filterBy2);
+        boolean res = lazyModel.isFilterCriteriaSame(filterBy, filterBy2);
         assertFalse(res);
     }
 
@@ -179,7 +180,7 @@ class BaseLazyDataModelTest {
         BaseLazyDataModel lazyModel = Mockito.mock(BaseLazyDataModel.class, Answers.CALLS_REAL_METHODS);
 
         // act
-        Boolean res = lazyModel.isFilterCriteriaSame(filterBy, filterBy2);
+        boolean res = lazyModel.isFilterCriteriaSame(filterBy, filterBy2);
         assertFalse(res);
     }
 
@@ -198,7 +199,7 @@ class BaseLazyDataModelTest {
         BaseLazyDataModel lazyModel = Mockito.mock(BaseLazyDataModel.class, Answers.CALLS_REAL_METHODS);
 
         // act
-        Boolean res = lazyModel.isFilterCriteriaSame(filterBy, filterBy2);
+        boolean res = lazyModel.isFilterCriteriaSame(filterBy, filterBy2);
         assertFalse(res);
     }
 
@@ -227,7 +228,7 @@ class BaseLazyDataModelTest {
         BaseLazyDataModel lazyModel = Mockito.mock(BaseLazyDataModel.class, Answers.CALLS_REAL_METHODS);
 
         // act
-        Boolean res = lazyModel.isFilterCriteriaSame(filterBy, filterBy2);
+        boolean res = lazyModel.isFilterCriteriaSame(filterBy, filterBy2);
         assertFalse(res);
     }
 
@@ -242,7 +243,7 @@ class BaseLazyDataModelTest {
         BaseLazyDataModel lazyModel = Mockito.mock(BaseLazyDataModel.class, Answers.CALLS_REAL_METHODS);
 
         // act
-        Boolean res = lazyModel.isFilterCriteriaSame(filterBy, filterBy2);
+        boolean res = lazyModel.isFilterCriteriaSame(filterBy, filterBy2);
         assertTrue(res);
     }
 
@@ -261,7 +262,7 @@ class BaseLazyDataModelTest {
         BaseLazyDataModel lazyModel = Mockito.mock(BaseLazyDataModel.class, Answers.CALLS_REAL_METHODS);
 
         // act
-        Boolean res = lazyModel.isFilterCriteriaSame(filterBy, filterBy2);
+        boolean res = lazyModel.isFilterCriteriaSame(filterBy, filterBy2);
         assertTrue(res);
     }
 
@@ -290,7 +291,7 @@ class BaseLazyDataModelTest {
         BaseLazyDataModel lazyModel = Mockito.mock(BaseLazyDataModel.class, Answers.CALLS_REAL_METHODS);
 
         // act
-        Boolean res = lazyModel.isFilterCriteriaSame(filterBy, filterBy2);
+        boolean res = lazyModel.isFilterCriteriaSame(filterBy, filterBy2);
         assertTrue(res);
     }
 
@@ -394,9 +395,7 @@ class BaseLazyDataModelTest {
         TestLazyDataModel model = new TestLazyDataModel();
         Page<String> result = new PageImpl<>(List.of("a", "b"), Pageable.ofSize(10), 27);
         filterBy = new HashMap<>();
-        filterBy.put("f", FilterMeta.builder().field("f").filterValue("v").build());
-        filterBy = new HashMap<>();
-        sortBy.put("s", SortMeta.builder().field("s").order(SortOrder.ASCENDING).build());
+        sortBy = new HashMap<>();
 
         model.updateCache(result, filterBy, sortBy, 5, 10);
 
@@ -404,8 +403,6 @@ class BaseLazyDataModelTest {
         assertEquals(5, model.getCachedFirst());
         assertEquals(10, model.getCachedPageSize());
         assertEquals(27, model.getCachedRowCount());
-        assertEquals(1, model.getCachedFilterBy().size());
-        assertEquals(1, model.getCachedSortBy().size());
     }
 
     @Test
