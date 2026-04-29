@@ -14,7 +14,7 @@ import java.util.*;
 public class FilterDTO {
 
     private final Map<String, FilterInfo> filter;
-    public static String GLOBAL_FILTER_KEY = "global";
+    public static final String GLOBAL_FILTER_KEY = "global";
 
     /**
      * Set to true if the filter specifies that the request should only return roots.
