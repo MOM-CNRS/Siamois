@@ -61,33 +61,6 @@ public class ActionUnitService implements ArkEntityService {
     private final ConceptMapper conceptMapper;
 
     /**
-     * Find all Action Units by institution, name, categories, persons, and global search.
-     *
-     * @param institutionId The ID of the institution to filter by
-     * @param name          The name to search for in Action Units
-     * @param categoryIds   The IDs of categories to filter by
-     * @param personIds     The IDs of persons to filter by
-     * @param global        The global search term to filter by
-     * @param langCode      The language code to filter by
-     * @param pageable      The pagination information
-     * @return A page of Action Units matching the criteria
-     */
-    @Transactional(readOnly = true)
-    public Page<ActionUnitDTO> findAllByInstitutionAndByNameContainingAndByCategoriesAndByGlobalContaining(
-            Long institutionId,
-            String name, Long[] categoryIds, Long[] personIds, String global, String langCode, Pageable pageable) {
-
-        Page<ActionUnit> res = actionUnitRepository.findAllByInstitutionAndByNameContainingAndByCategoriesAndByGlobalContaining(
-                institutionId, name, categoryIds, personIds, global, langCode, pageable);
-
-        //wireChildrenAndParents(res.getContent());  // Load and attach spatial hierarchy relationships
-
-
-        return res.map(actionUnitMapper::convert
-        );
-    }
-
-    /**
      * Find all Action Units by institution, spatial unit, name, categories, persons, and global search.
      *
      * @param institutionId The ID of the institution to filter by
@@ -110,11 +83,7 @@ public class ActionUnitService implements ArkEntityService {
 
         //wireChildrenAndParents(res.getContent());  // Load and attach spatial hierarchy relationships
 
-
-
-
-        return res.map(actionUnitMapper::convert
-        );
+        return res.map(actionUnitMapper::convert);
     }
 
     /**
