@@ -7,8 +7,11 @@ import fr.siamois.infrastructure.database.repositories.form.CustomFieldMeasureme
 import fr.siamois.infrastructure.database.repositories.form.CustomFieldRepository;
 import fr.siamois.mapper.CustomFieldMeasurementMapper;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
+import org.springframework.data.domain.Pageable;
 import java.util.List;
 
 /**
@@ -27,5 +30,15 @@ public class CustomFieldMeasurementService {
     public CustomFieldMeasurement save(CustomFieldMeasurementDTO fieldMeasurementDTO) {
         return repository.save(mapper.invertConvert(fieldMeasurementDTO));
     }
+
+    /*
+     Find with a limit
+    */
+    public Page<CustomFieldMeasurement> find(int limit) {
+        Pageable pageable = PageRequest.of(0, limit);
+        return repository.findAll(pageable);
+    }
+
+
 
 }

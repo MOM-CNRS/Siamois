@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import fr.siamois.domain.models.form.customfield.CustomField;
+import fr.siamois.domain.models.form.customfield.CustomFieldMeasurement;
 import fr.siamois.domain.models.form.customfield.CustomFieldSelectMultipleSpatialUnitTree;
 import fr.siamois.domain.models.form.customfield.CustomFieldSelectOneSpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
@@ -47,7 +48,11 @@ import lombok.RequiredArgsConstructor;
 import org.primefaces.PrimeFaces;
 import org.primefaces.event.SelectEvent;
 import org.primefaces.model.TreeNode;
+import org.primefaces.model.menu.DefaultMenuItem;
+import org.primefaces.model.menu.DefaultMenuModel;
+import org.primefaces.model.menu.MenuModel;
 import org.springframework.core.convert.ConversionService;
+import org.springframework.data.domain.Page;
 
 import java.util.*;
 import java.util.function.BiConsumer;
@@ -185,8 +190,14 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
 
         this.enabledEngine = formService.buildEnabledEngine(fieldSource);
         this.enabledEngine.applyAll(vp, applier);
+
+        // Prepare new field manager
+        Page<CustomFieldMeasurement> customFieldMeasurements = services.getCustomFieldMeasurementService().find(10);
+        // find all
         this.newFieldManager = new NewFieldManagerBean(services.getCustomFieldMeasurementService(),
-                this.formResponse);
+                this.formResponse,
+                customFieldMeasurements.getContent()
+                );
 
     }
 

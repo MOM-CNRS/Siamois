@@ -11,6 +11,7 @@ public class CustomColUiDto implements Serializable {
 
     private boolean readOnly = false;
     private boolean isRequired = false;
+    private boolean canBeRemoved = false;
     private CustomField field;
     private String className;
     private EnabledWhenJson enabledWhenSpec;

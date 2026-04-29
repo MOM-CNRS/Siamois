@@ -10,12 +10,18 @@
         <cc:attribute name="forId" type="java.lang.String" required="false"/>
         <cc:attribute name="required" type="java.lang.Boolean" required="false" default="false"/>
         <cc:attribute name="fluid" type="java.lang.Boolean" required="false" default="true"/>
+        <cc:attribute name="canBeRemoved" type="java.lang.Boolean" required="false" default="false"/>
+        <cc:attribute name="onRemove"
+                      method-signature="void onRemove(java.lang.Object, java.lang.Object)"
+                      required="false"/>
     </cc:interface>
 
     <cc:implementation>
+
         <div
-             class="field-value-group #{cc.attrs.fluid ? 'field-value-group ui-fluid' : 'field-value-group'}"
-             id="fieldValueGroup">
+                class="field-value-group #{cc.attrs.fluid ? 'field-value-group ui-fluid' : 'field-value-group'}"
+                style="flex: 1 1 auto;"
+                id="fieldValueGroup">
             <div>
                 <p:outputLabel
                         for="#{cc.attrs.forId}"
@@ -30,7 +36,10 @@
                                 name="icon_opentheso2.png"
                                 styleClass="label-icon"
                                 alt="Opentheso Icon"/>
+
+
             </div>
+
             <div>
                 <cc:insertChildren/>
             </div>

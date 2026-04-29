@@ -27,6 +27,9 @@
                         <ui:include src="/pages/shared/form/customFormFieldContentForPanel.xhtml">
                             <ui:param name="bean" value="#{bean}"/>
                             <ui:param name="col" value="#{col}"/>
+                            <ui:param name="canBeRemoved" value="#{col.canBeRemoved}"/>
+                            <ui:param name="customFormPanel" value="#{customFormPanel}"/>
+                            <ui:param name="newFieldManagerBean" value="#{bean.formContext.newFieldManager}"/>
                             <ui:param name="hasBeenModified"
                                       value="#{bean.formResponse.answers.get(col.field).hasBeenModified}"/>
                             <ui:param name="prefix" value="#{prefix}"/>
@@ -52,11 +55,22 @@
                       id="col-#{prefix}-#{statusIndex}-newFieldRow">
 
                 <p:outputPanel>
-                    <p:commandButton value="Ajouter un champ" icon="pi pi-plus"
-                                     rendered="#{!bean.formContext.newFieldManager.showEditor}"
-                                     actionListener="#{bean.formContext.newFieldManager.prepareNewField(customFormPanel)}"
-                                     update="@parent"
-                                     styleClass="ui-button"/>
+
+                    <p:splitButton value="Ajouter un champ" icon="pi pi-plus"
+                                   filter="true"
+                                   rendered="#{!bean.formContext.newFieldManager.showEditor}"
+                                   actionListener="#{bean.formContext.newFieldManager.prepareNewField(customFormPanel)}"
+                                   update="@parent"
+                                   styleClass="ui-button" filterMatchMode="contains">
+                        <c:forEach items="#{bean.formContext.newFieldManager.addFieldOptions}" var="m">
+                            <p:menuitem value="#{spatialUnitFieldBean.resolveCustomFieldLabel(m)}"
+                                        icon="bi bi-rulers"
+                                        actionListener="#{bean.formContext.newFieldManager.addFieldFromMeasurement(customFormPanel,m)}"
+                                        process="@this"
+                                        update="@form" />
+                        </c:forEach>
+                    </p:splitButton>
+
 
                     <h:panelGroup styleClass="field-value-group" style=""
                                   rendered="#{bean.formContext.newFieldManager.showEditor}" id="editorPanel">
