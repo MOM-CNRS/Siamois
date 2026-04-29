@@ -16,6 +16,10 @@ public class FilterAndSortUtils {
 
     public static final String GLOBAL_FILTER = "globalFilter";
 
+    private FilterAndSortUtils() {
+        throw new UnsupportedOperationException("FilterAndSortUtils can't be instantiated");
+    }
+
     static FilterMeta normalizeFilterMeta(@NonNull FilterMeta meta) {
         Object val = meta.getFilterValue();
         if (!(val instanceof Collection<?> col) || col.isEmpty()) {
