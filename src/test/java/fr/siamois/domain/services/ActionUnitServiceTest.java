@@ -617,7 +617,7 @@ class ActionUnitServiceTest {
 
     @Test
     void saveNotTransactional_nameAlreadyExists_throws() {
-        UserInfo info = userInfo(1L);
+        info = userInfo(1L);
         ActionUnitDTO dto = new ActionUnitDTO();
         dto.setName("dup");
 
@@ -632,7 +632,7 @@ class ActionUnitServiceTest {
 
     @Test
     void saveNotTransactional_identifierAlreadyExists_throws() {
-        UserInfo info = userInfo(1L);
+        info = userInfo(1L);
         ActionUnitDTO dto = new ActionUnitDTO();
         dto.setName("name");
         dto.setIdentifier("id-1");
@@ -649,7 +649,7 @@ class ActionUnitServiceTest {
 
     @Test
     void saveNotTransactional_nullIdentifierAndNullFullIdentifier_throws() {
-        UserInfo info = userInfo(1L);
+        info = userInfo(1L);
         ActionUnitDTO dto = new ActionUnitDTO();
         dto.setName("name");
         // identifier and fullIdentifier are null
@@ -663,7 +663,7 @@ class ActionUnitServiceTest {
 
     @Test
     void saveNotTransactional_setsCreationTimeAndFullIdentifierFromIdentifier() throws ActionUnitAlreadyExistsException {
-        UserInfo info = userInfo(1L);
+        info = userInfo(1L);
         ActionUnitDTO dto = new ActionUnitDTO();
         dto.setName("name");
         dto.setIdentifier("ABC");
@@ -687,7 +687,7 @@ class ActionUnitServiceTest {
 
     @Test
     void saveNotTransactional_existingMainLocation_isNotReSaved() throws ActionUnitAlreadyExistsException {
-        UserInfo info = userInfo(1L);
+        info = userInfo(1L);
         ActionUnitDTO dto = new ActionUnitDTO();
         dto.setName("name");
         dto.setIdentifier("id");
@@ -710,7 +710,7 @@ class ActionUnitServiceTest {
 
     @Test
     void saveNotTransactional_newMainLocation_isSaved() throws ActionUnitAlreadyExistsException {
-        UserInfo info = userInfo(1L);
+        info = userInfo(1L);
         ActionUnitDTO dto = new ActionUnitDTO();
         dto.setName("name");
         dto.setIdentifier("id");
@@ -742,7 +742,7 @@ class ActionUnitServiceTest {
 
     @Test
     void saveNotTransactional_spatialContextWithNewAndExistingEntries_handlesBoth() throws ActionUnitAlreadyExistsException {
-        UserInfo info = userInfo(1L);
+        info = userInfo(1L);
         ActionUnitDTO dto = new ActionUnitDTO();
         dto.setName("n");
         dto.setIdentifier("i");
@@ -780,7 +780,7 @@ class ActionUnitServiceTest {
 
     @Test
     void saveNotTransactional_existingPlaceMissingInRepository_isOmitted() throws ActionUnitAlreadyExistsException {
-        UserInfo info = userInfo(1L);
+        info = userInfo(1L);
         ActionUnitDTO dto = new ActionUnitDTO();
         dto.setName("n");
         dto.setIdentifier("i");
@@ -805,7 +805,7 @@ class ActionUnitServiceTest {
 
     @Test
     void saveNotTransactional_repositorySaveFailure_wrapsAsFailedActionUnitSaveException() {
-        UserInfo info = userInfo(1L);
+        info = userInfo(1L);
         ActionUnitDTO dto = new ActionUnitDTO();
         dto.setName("n");
         dto.setIdentifier("i");
