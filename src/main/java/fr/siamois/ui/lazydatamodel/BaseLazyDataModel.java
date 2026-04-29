@@ -3,13 +3,12 @@ package fr.siamois.ui.lazydatamodel;
 import fr.siamois.domain.models.vocabulary.label.ConceptLabel;
 import fr.siamois.dto.FilterDTO;
 import fr.siamois.dto.SortDTO;
-import fr.siamois.dto.entity.AbstractEntityDTO;
-import fr.siamois.dto.entity.ConceptDTO;
-import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
-import jakarta.faces.context.FacesContext;
 import lombok.Getter;
 import lombok.Setter;
-import org.primefaces.model.*;
+import org.primefaces.model.FilterMeta;
+import org.primefaces.model.LazyDataModel;
+import org.primefaces.model.SortMeta;
+import org.primefaces.model.TreeNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
@@ -244,6 +243,10 @@ public abstract class BaseLazyDataModel<T> extends LazyDataModel<T> implements L
         return result.getContent();
     }
 
+    /**
+     * Used to capture the ancestor of filter results
+     * @param filterDTO The filters applied
+     */
     @SuppressWarnings("unchecked")
     private void captureClosureSnapshot(FilterDTO filterDTO) {
         Collection<Long> closure = filterDTO.getAncestorClosure();
@@ -258,6 +261,11 @@ public abstract class BaseLazyDataModel<T> extends LazyDataModel<T> implements L
         this.matchIds  = filterDTO.getMatchIds();
     }
 
+    /**
+     * Translates the {@link SortDTO} to Spring's {@link Sort} object
+     * @param sortDTO The domain {@link SortDTO}
+     * @return Spring's {@link Sort} object
+     */
     @NonNull
     private Sort buildSort(SortDTO sortDTO) {
         if (sortDTO.isEmpty()) {

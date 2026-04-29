@@ -4,8 +4,6 @@ import fr.siamois.dto.entity.AbstractEntityDTO;
 import org.jspecify.annotations.NonNull;
 import org.primefaces.model.DefaultTreeNode;
 import org.primefaces.model.TreeNodeChildren;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.Objects;
 

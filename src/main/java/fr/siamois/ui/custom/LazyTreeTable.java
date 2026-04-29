@@ -3,11 +3,7 @@ package fr.siamois.ui.custom;
 import fr.siamois.dto.entity.AbstractEntityDTO;
 import fr.siamois.ui.lazydatamodel.BaseLazyDataModel;
 import jakarta.faces.context.FacesContext;
-import org.primefaces.PrimeFaces;
 import org.primefaces.component.treetable.TreeTable;
-import org.primefaces.model.FilterMeta;
-import org.primefaces.model.LazyDataModel;
-import org.primefaces.model.SortMeta;
 import org.primefaces.model.TreeNode;
 import org.primefaces.util.Callbacks;
 import org.slf4j.Logger;
@@ -15,7 +11,10 @@ import org.slf4j.LoggerFactory;
 import org.springframework.lang.Nullable;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 @SuppressWarnings("rawtypes")
 public class LazyTreeTable extends TreeTable {

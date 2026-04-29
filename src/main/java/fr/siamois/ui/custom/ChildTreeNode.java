@@ -9,7 +9,6 @@ import org.primefaces.model.LazyTreeNode;
 import org.primefaces.model.TreeNodeChildren;
 import org.primefaces.util.Callbacks;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
