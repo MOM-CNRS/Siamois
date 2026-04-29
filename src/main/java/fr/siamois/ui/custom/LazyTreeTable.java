@@ -24,13 +24,13 @@ public class LazyTreeTable extends TreeTable {
     private boolean blockFiltering = false;
 
     enum PropertyKeys {
-        lazy,
-        rowCount,
-        lazyDataModel,
-        isLeafMethod,
-        loadMethod,
-        expandedRowKeys,
-        columnFilteringEnabled
+        LAZY,
+        ROW_COUNT,
+        LAZY_DATA_MODEL,
+        IS_LEAF_METHOD,
+        LOAD_METHOD,
+        EXPANDED_ROW_KEYS,
+        COLUMN_FILTERING_ENABLED
     }
 
     @Nullable
@@ -46,46 +46,46 @@ public class LazyTreeTable extends TreeTable {
 
     @SuppressWarnings("BooleanMethodIsAlwaysInverted")
     public boolean isColumnFilteringEnabled() {
-        return (Boolean) getStateHelper().eval(PropertyKeys.columnFilteringEnabled, false);
+        return (Boolean) getStateHelper().eval(PropertyKeys.COLUMN_FILTERING_ENABLED, false);
     }
 
     public void setColumnFilteringEnabled(boolean enabled) {
-        getStateHelper().put(PropertyKeys.columnFilteringEnabled, enabled);
+        getStateHelper().put(PropertyKeys.COLUMN_FILTERING_ENABLED, enabled);
     }
 
     public void setIsLeafMethod(Callbacks.SerializableFunction<AbstractEntityDTO, Boolean> isLeafMethod) {
-        getStateHelper().put(PropertyKeys.isLeafMethod, isLeafMethod);
+        getStateHelper().put(PropertyKeys.IS_LEAF_METHOD, isLeafMethod);
     }
 
     public void setLoadMethod(Callbacks.SerializableFunction<AbstractEntityDTO, List<AbstractEntityDTO>> loadMethod) {
-        getStateHelper().put(PropertyKeys.loadMethod, loadMethod);
+        getStateHelper().put(PropertyKeys.LOAD_METHOD, loadMethod);
     }
 
     @SuppressWarnings("unchecked")
     public Callbacks.SerializableFunction<AbstractEntityDTO, Boolean> getIsLeafMethod() {
-        return (Callbacks.SerializableFunction<AbstractEntityDTO, Boolean>) getStateHelper().eval(PropertyKeys.isLeafMethod, null);
+        return (Callbacks.SerializableFunction<AbstractEntityDTO, Boolean>) getStateHelper().eval(PropertyKeys.IS_LEAF_METHOD, null);
     }
 
     @SuppressWarnings("unchecked")
     public Callbacks.SerializableFunction<AbstractEntityDTO, List<AbstractEntityDTO>> getLoadMethod() {
-        return (Callbacks.SerializableFunction<AbstractEntityDTO, List<AbstractEntityDTO>>) getStateHelper().eval(PropertyKeys.loadMethod, null);
+        return (Callbacks.SerializableFunction<AbstractEntityDTO, List<AbstractEntityDTO>>) getStateHelper().eval(PropertyKeys.LOAD_METHOD, null);
     }
 
     public boolean isLazy() {
-        return (boolean) getStateHelper().eval(PropertyKeys.lazy, false);
+        return (boolean) getStateHelper().eval(PropertyKeys.LAZY, false);
     }
 
     public void setLazy(boolean lazy) {
-        getStateHelper().put(PropertyKeys.lazy, lazy);
+        getStateHelper().put(PropertyKeys.LAZY, lazy);
     }
 
     @SuppressWarnings("unchecked")
     public BaseLazyDataModel<? extends AbstractEntityDTO> getLazyDataModel() {
-        return (BaseLazyDataModel<? extends AbstractEntityDTO>) getStateHelper().eval(PropertyKeys.lazyDataModel, null);
+        return (BaseLazyDataModel<? extends AbstractEntityDTO>) getStateHelper().eval(PropertyKeys.LAZY_DATA_MODEL, null);
     }
 
     public void setLazyDataModel(BaseLazyDataModel<? extends AbstractEntityDTO> model) {
-        getStateHelper().put(PropertyKeys.lazyDataModel, model);
+        getStateHelper().put(PropertyKeys.LAZY_DATA_MODEL, model);
     }
 
     @Override
@@ -99,13 +99,13 @@ public class LazyTreeTable extends TreeTable {
             if (root != null && root.getChildren() instanceof RootChildList<?> list) {
                 return list.size();
             }
-            return (Integer) getStateHelper().eval(PropertyKeys.rowCount, 0);
+            return (Integer) getStateHelper().eval(PropertyKeys.ROW_COUNT, 0);
         }
         return super.getRowCount();
     }
 
     public void setRowCount(int rowCount) {
-        getStateHelper().put(PropertyKeys.rowCount, rowCount);
+        getStateHelper().put(PropertyKeys.ROW_COUNT, rowCount);
     }
 
     @SuppressWarnings("rawtypes")
@@ -352,10 +352,10 @@ public class LazyTreeTable extends TreeTable {
 
     @SuppressWarnings("unchecked")
     private Set<String> getExpandedRowKeySet() {
-        Set<String> keys = (Set<String>) getStateHelper().eval(PropertyKeys.expandedRowKeys, null);
+        Set<String> keys = (Set<String>) getStateHelper().eval(PropertyKeys.EXPANDED_ROW_KEYS, null);
         if (keys == null) {
             keys = new LinkedHashSet<>();
-            getStateHelper().put(PropertyKeys.expandedRowKeys, keys);
+            getStateHelper().put(PropertyKeys.EXPANDED_ROW_KEYS, keys);
         }
         return keys;
     }
