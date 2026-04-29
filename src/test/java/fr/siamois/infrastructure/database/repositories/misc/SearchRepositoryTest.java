@@ -85,9 +85,9 @@ class SearchRepositoryTest {
         when(statement.executeQuery()).thenReturn(resultSet);
         when(resultSet.next()).thenReturn(true, true, false);
         when(resultSet.getString("matching_term")).thenReturn("a", "b");
-        when(resultSet.getObject(eq("action_unit_id"), eq(Long.class))).thenReturn(1L, 2L);
-        when(resultSet.getObject(eq("spatial_unit_id"), eq(Long.class))).thenReturn(10L, 20L);
-        when(resultSet.getObject(eq("specimen_id"), eq(Long.class))).thenReturn(100L, 200L);
+        when(resultSet.getObject("action_unit_id", Long.class)).thenReturn(1L, 2L);
+        when(resultSet.getObject("spatial_unit_id", Long.class)).thenReturn(10L, 20L);
+        when(resultSet.getObject("specimen_id", Long.class)).thenReturn(100L, 200L);
         when(resultSet.getLong("similarity_score")).thenReturn(5L, 6L);
 
         List<SearchResultDTO> results = searchRepository.findResultsFor("foo", institution, person);
