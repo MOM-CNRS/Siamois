@@ -9,6 +9,7 @@ import org.primefaces.model.FilterMeta;
 import org.primefaces.model.LazyDataModel;
 import org.primefaces.model.SortMeta;
 import org.primefaces.model.TreeNode;
+import org.springframework.lang.NonNull;
 
 import java.util.HashMap;
 import java.util.List;
@@ -25,7 +26,7 @@ public class LoadDataUtils {
     }
 
     @SuppressWarnings({"rawtypes"})
-    public static void loadLazyData(LazyTreeTable baseTable, FacesContext context) {
+    public static void loadLazyData(@NonNull LazyTreeTable baseTable, FacesContext context) {
         TreeNode lazyRoot = baseTable.getLazyRoot();
         if (lazyRoot != null) return;
 
