@@ -393,9 +393,9 @@ class BaseLazyDataModelTest {
     void updateCache_storesPagingFilteringSortingAndContent() {
         TestLazyDataModel model = new TestLazyDataModel();
         Page<String> result = new PageImpl<>(List.of("a", "b"), Pageable.ofSize(10), 27);
-        Map<String, FilterMeta> filterBy = new HashMap<>();
+        filterBy = new HashMap<>();
         filterBy.put("f", FilterMeta.builder().field("f").filterValue("v").build());
-        Map<String, SortMeta> sortBy = new HashMap<>();
+        filterBy = new HashMap<>();
         sortBy.put("s", SortMeta.builder().field("s").order(SortOrder.ASCENDING).build());
 
         model.updateCache(result, filterBy, sortBy, 5, 10);
@@ -510,7 +510,7 @@ class BaseLazyDataModelTest {
             return new PageImpl<>(List.of());
         };
 
-        Map<String, FilterMeta> filterBy = new HashMap<>();
+        filterBy = new HashMap<>();
         filterBy.put("ignored", FilterMeta.builder().field("ignored").filterValue("v").build());
 
         model.load(0, 10, new HashMap<>(), filterBy);
@@ -602,15 +602,20 @@ class BaseLazyDataModelTest {
                 // implemented so load does not blow up at filter step
             }
         };
+        
+        SortDTO sortDTO = new SortDTO();
+        HashMap<String, SortMeta> sortBy1 = new HashMap<>();
         assertThrows(UnsupportedOperationException.class,
-                () -> model.prepareSortDTO(new HashMap<>(), new SortDTO()));
+                () -> model.prepareSortDTO(sortBy1, sortDTO));
     }
 
     @Test
     void prepareFilterDTO_defaultThrowsUnsupported() {
         TestLazyDataModel model = new TestLazyDataModel();
+        FilterDTO filterDTO = new FilterDTO();
+        HashMap<String, FilterMeta> filterBy1 = new HashMap<>();
         assertThrows(UnsupportedOperationException.class,
-                () -> model.prepareFilterDTO(new HashMap<>(), new FilterDTO()));
+                () -> model.prepareFilterDTO(filterBy1, filterDTO));
     }
 
     // ------------------------------------------------------------------

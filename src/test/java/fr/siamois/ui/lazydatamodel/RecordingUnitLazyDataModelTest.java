@@ -248,9 +248,9 @@ class RecordingUnitLazyDataModelTest {
         lazyModel.prepareFilterDTO(filterBy, filterDTO);
 
         // Vérifications
-        verify(filterDTO).add(eq(RecordingUnitSpec.FULL_IDENTIFIER), eq("sia-123"), eq(FilterDTO.FilterType.CONTAINS));
-        verify(filterDTO).add(eq(RecordingUnitSpec.AUTHOR_FILTER), eq(authorIds), eq(FilterDTO.FilterType.CONTAINS));
-        verify(filterDTO).add(eq(RecordingUnitSpec.OPENING_DATE_FILTER), eq(dates), eq(FilterDTO.FilterType.CONTAINS));
+        verify(filterDTO).add(RecordingUnitSpec.FULL_IDENTIFIER, "sia-123", FilterDTO.FilterType.CONTAINS);
+        verify(filterDTO).add(RecordingUnitSpec.AUTHOR_FILTER, authorIds, FilterDTO.FilterType.CONTAINS);
+        verify(filterDTO).add(RecordingUnitSpec.OPENING_DATE_FILTER, dates, FilterDTO.FilterType.CONTAINS);
     }
 
     @Test
