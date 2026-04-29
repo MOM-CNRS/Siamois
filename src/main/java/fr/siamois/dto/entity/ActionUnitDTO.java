@@ -1,6 +1,5 @@
 package fr.siamois.dto.entity;
 
-import fr.siamois.domain.models.actionunit.ActionCode;
 import fr.siamois.domain.models.document.Document;
 import lombok.Data;
 import lombok.NoArgsConstructor;

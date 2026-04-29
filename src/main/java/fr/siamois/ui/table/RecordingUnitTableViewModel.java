@@ -28,7 +28,6 @@ import fr.siamois.ui.lazydatamodel.BaseRecordingUnitLazyDataModel;
 import fr.siamois.ui.lazydatamodel.tree.RecordingUnitTreeTableLazyModel;
 import fr.siamois.utils.MessageUtils;
 import lombok.Getter;
-import org.primefaces.model.LazyDataModel;
 import org.primefaces.model.TreeNode;
 import org.springframework.lang.NonNull;
 
@@ -36,7 +35,6 @@ import java.time.LocalDateTime;
 import java.time.Month;
 import java.util.*;
 
-import static fr.siamois.ui.bean.dialog.newunit.NewUnitContext.TreeInsert.ROOT;
 import static fr.siamois.ui.table.TableColumnAction.DUPLICATE_ROW;
 import static fr.siamois.ui.table.TableColumnAction.GO_TO_RECORDING_UNIT;
 

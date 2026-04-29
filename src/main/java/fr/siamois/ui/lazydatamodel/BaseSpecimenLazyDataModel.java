@@ -4,7 +4,6 @@ package fr.siamois.ui.lazydatamodel;
 import fr.siamois.domain.models.exceptions.recordingunit.FailedRecordingUnitSaveException;
 import fr.siamois.domain.models.form.customfield.CustomFieldSelectOneFromFieldCode;
 import fr.siamois.domain.services.specimen.SpecimenService;
-import fr.siamois.dto.SortDTO;
 import fr.siamois.dto.entity.ConceptDTO;
 import fr.siamois.dto.entity.SpecimenDTO;
 import fr.siamois.ui.bean.LangBean;

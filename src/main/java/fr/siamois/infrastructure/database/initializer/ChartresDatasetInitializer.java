@@ -1,6 +1,5 @@
 package fr.siamois.infrastructure.database.initializer;
 
-import fr.siamois.annotations.IgnoreInitializer;
 import fr.siamois.domain.models.exceptions.database.DatabaseDataInitException;
 import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;

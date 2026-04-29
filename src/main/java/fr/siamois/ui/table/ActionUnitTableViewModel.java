@@ -21,7 +21,6 @@ import fr.siamois.ui.lazydatamodel.BaseLazyDataModel;
 import fr.siamois.ui.lazydatamodel.tree.ActionUnitTreeTableLazyModel;
 import lombok.Getter;
 import org.jspecify.annotations.NonNull;
-import org.primefaces.model.LazyDataModel;
 import org.primefaces.model.TreeNode;
 
 import java.util.List;

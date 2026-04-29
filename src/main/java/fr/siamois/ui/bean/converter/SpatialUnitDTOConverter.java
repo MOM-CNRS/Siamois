@@ -1,6 +1,5 @@
 package fr.siamois.ui.bean.converter;
 
-import fr.siamois.dto.entity.ActionUnitDTO;
 import fr.siamois.dto.entity.SpatialUnitDTO;
 import jakarta.faces.component.UIComponent;
 import jakarta.faces.context.FacesContext;
