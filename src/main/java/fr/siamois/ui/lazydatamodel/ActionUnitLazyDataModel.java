@@ -5,7 +5,6 @@ import fr.siamois.dto.FilterDTO;
 import fr.siamois.dto.SortDTO;
 import fr.siamois.dto.entity.ActionUnitDTO;
 import fr.siamois.infrastructure.database.repositories.specs.ActionUnitSpec;
-import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
@@ -22,7 +21,7 @@ public class ActionUnitLazyDataModel extends BaseActionUnitLazyDataModel {
     private final transient ActionUnitService actionUnitService;
     private final transient SessionSettingsBean sessionSettings;
 
-    public ActionUnitLazyDataModel(ActionUnitService actionUnitService, SessionSettingsBean sessionSettings, LangBean langBean) {
+    public ActionUnitLazyDataModel(ActionUnitService actionUnitService, SessionSettingsBean sessionSettings) {
         this.actionUnitService = actionUnitService;
         this.sessionSettings = sessionSettings;
     }

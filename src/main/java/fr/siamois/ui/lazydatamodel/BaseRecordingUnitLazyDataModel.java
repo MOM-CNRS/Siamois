@@ -54,7 +54,7 @@ public abstract class BaseRecordingUnitLazyDataModel extends BaseLazyDataModel<R
 
     /**
      * This method was used with the previous implementation of load.
-     * Sub-lazy models should implement {@link BaseLazyDataModel#loadData(FilterDTO, Pageable)} with {@link BaseLazyDataModel#prepareFilterDTO(Map, FilterDTO)} and {@link BaseLazyDataModel#prepareSortDTO(Map, SortDTO)}
+     * @deprecated  Sub-lazy models should implement {@link BaseLazyDataModel#loadData(FilterDTO, Pageable)} with {@link BaseLazyDataModel#prepareFilterDTO(Map, FilterDTO)} and {@link BaseLazyDataModel#prepareSortDTO(Map, SortDTO)}
      * @param nameFilter The filter for name
      * @param categoryIds The IDs of the concepts for the category
      * @param personIds The IDs of the persons

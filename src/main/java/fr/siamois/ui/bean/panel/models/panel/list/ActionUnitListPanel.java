@@ -76,7 +76,7 @@ public class ActionUnitListPanel extends AbstractListPanel<ActionUnitDTO> implem
 
     @Override
     protected BaseLazyDataModel<ActionUnitDTO> createLazyDataModel() {
-        ActionUnitLazyDataModel lazy =  new ActionUnitLazyDataModel(actionUnitService, sessionSettingsBean, langBean);
+        ActionUnitLazyDataModel lazy =  new ActionUnitLazyDataModel(actionUnitService, sessionSettingsBean);
         ActionUnitTreeTableLazyModel lazyTree = new ActionUnitTreeTableLazyModel(actionUnitService,
                 ActionUnitScope.builder()
                         .institutionId(sessionSettingsBean.getSelectedInstitution().getId())
