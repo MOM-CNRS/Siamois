@@ -620,6 +620,6 @@ public class ActionUnitService implements ArkEntityService {
         return actionUnitRepository.findAll(specs, PageRequest.ofSize(limit))
                 .stream()
                 .map(actionUnitMapper::convert)
-                .collect(Collectors.toList());
+                .toList();
     }
 }

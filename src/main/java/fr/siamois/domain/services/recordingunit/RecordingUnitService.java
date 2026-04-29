@@ -838,7 +838,7 @@ public class RecordingUnitService implements ArkEntityService {
         return results
                 .stream()
                 .map(recordingUnitMapper::convert)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     public Page<RecordingUnitDTO> searchRecordingUnit(InstitutionDTO institution, FilterDTO filters, Pageable pageable) {
