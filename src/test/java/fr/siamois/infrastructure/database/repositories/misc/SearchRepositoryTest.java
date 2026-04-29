@@ -169,7 +169,7 @@ class SearchRepositoryTest {
         // processResultSet still adds the (null) row produced by rowToDTO before
         // returning, so we observe the failure as a single null entry.
         assertEquals(1, results.size());
-        assertEquals(null, results.get(0));
+        assertNull(results.get(0));
     }
 
     @Test
