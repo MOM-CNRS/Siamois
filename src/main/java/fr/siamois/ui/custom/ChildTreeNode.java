@@ -1,6 +1,7 @@
 package fr.siamois.ui.custom;
 
 import fr.siamois.dto.entity.AbstractEntityDTO;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
 import org.primefaces.model.DefaultTreeNode;
@@ -10,6 +11,7 @@ import org.primefaces.model.TreeNodeChildren;
 import org.primefaces.util.Callbacks;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -23,6 +25,7 @@ import java.util.Set;
  *    already populated the children manually (used when inserting a new entity
  *    in the visible tree without re-querying the database).
  */
+@EqualsAndHashCode(callSuper=true)
 public class ChildTreeNode<T extends AbstractEntityDTO> extends DefaultTreeNode<T> implements LazyTreeNode {
 
     @Getter
@@ -159,4 +162,5 @@ public class ChildTreeNode<T extends AbstractEntityDTO> extends DefaultTreeNode<
             childList.add(node);
         }
     }
+
 }
