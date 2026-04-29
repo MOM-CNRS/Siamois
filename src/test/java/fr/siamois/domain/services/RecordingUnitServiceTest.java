@@ -23,13 +23,12 @@ import fr.siamois.domain.services.recordingunit.identifier.generic.RuNumericalId
 import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.dto.FilterDTO;
 import fr.siamois.dto.entity.*;
-import fr.siamois.infrastructure.database.repositories.specs.RecordingUnitSpec;
-import org.springframework.data.jpa.domain.Specification;
 import fr.siamois.infrastructure.api.dto.ConceptFieldDTO;
 import fr.siamois.infrastructure.database.repositories.person.PersonRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitIdCounterRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitIdInfoRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitRepository;
+import fr.siamois.infrastructure.database.repositories.specs.RecordingUnitSpec;
 import fr.siamois.infrastructure.database.repositories.team.TeamMemberRepository;
 import fr.siamois.mapper.ActionUnitSummaryMapper;
 import fr.siamois.mapper.RecordingUnitMapper;
@@ -46,6 +45,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 
 import java.time.OffsetDateTime;
 import java.util.*;
