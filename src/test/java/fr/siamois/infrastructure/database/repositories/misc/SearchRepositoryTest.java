@@ -184,4 +184,5 @@ class SearchRepositoryTest {
 
         assertTrue(results.isEmpty());
     }
+    
 }
