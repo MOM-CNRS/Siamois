@@ -916,16 +916,16 @@ class ActionUnitServiceTest {
     void findAllByInstitution_mapsToDtoSet() {
         InstitutionDTO inst = new InstitutionDTO();
         inst.setId(1L);
-        // ActionUnit#equals/ActionUnitDTO#equals key on fullIdentifier/id — give distinct
-        // values so Set dedup doesn't swallow rows.
+        // ActionUnit#equals keys on fullIdentifier; ActionUnitDTO#equals (Lombok @Data) keys
+        // on every own field so we differentiate via name + fullIdentifier.
         actionUnit1.setFullIdentifier("INST-1");
         actionUnit2.setFullIdentifier("INST-2");
-        actionUnit1dto.setId(1L);
-        actionUnit2dto.setId(2L);
+        actionUnit1dto.setName("dto-1");
+        actionUnit2dto.setName("dto-2");
         when(actionUnitRepository.findByCreatedByInstitutionId(1L))
                 .thenReturn(new HashSet<>(List.of(actionUnit1, actionUnit2)));
         when(actionUnitMapper.convert(any(ActionUnit.class)))
-                .thenAnswer(inv -> ((ActionUnit) inv.getArgument(0)) == actionUnit1 ? actionUnit1dto : actionUnit2dto);
+                .thenAnswer(inv -> inv.getArgument(0) == actionUnit1 ? actionUnit1dto : actionUnit2dto);
 
         Set<ActionUnitDTO> result = actionUnitService.findAllByInstitution(inst);
 
