@@ -49,10 +49,10 @@ public abstract class BaseLazyDataModel<T> extends LazyDataModel<T> implements L
     protected boolean rootOnly;
 
     /**
-     * Mirrors the table-toolbar toggle. When {@code false}, {@link #load} drops
+     * Mirrors the table-toolbar toggle. When {@code false}, {@link #load(int, int, Map, Map)} drops
      * any column FilterMeta the dataTable still carries from a previous render
      * (PrimeFaces preserves them across the toggle, only their inputs are CSS-
-     * hidden). The {@link LazyTreeTable} also honours this flag, but the plain
+     * hidden). The {@link fr.siamois.ui.custom.LazyTreeTable} also honors this flag, but the plain
      * dataTable has no equivalent layer and would otherwise keep applying
      * stale filters.
      */
@@ -362,8 +362,7 @@ public abstract class BaseLazyDataModel<T> extends LazyDataModel<T> implements L
             this.ancestorClosure = null;
         }
 
-        Set<Long> matches = filterDTO.getMatchIds();
-        this.matchIds = matches != null ? matches : null;
+        this.matchIds  = filterDTO.getMatchIds();
     }
 
     @NonNull
@@ -381,12 +380,22 @@ public abstract class BaseLazyDataModel<T> extends LazyDataModel<T> implements L
         return Sort.unsorted();
     }
 
+    /**
+     * This method should take the sortBy provided by PrimeFaces and add all relevant sorts to the sortDTO
+     * @param sortBy The sorts provided by PrimeFaces
+     * @param sortDTO The domain sort DTO
+     */
     protected void prepareSortDTO(@Nullable Map<String, SortMeta> sortBy, @NonNull SortDTO sortDTO) {
-        // no-op: subclasses override when they expose sortable columns
+        throw new UnsupportedOperationException("prepareSortDTO not implemented yet in " + this.getClass().getSimpleName());
     }
 
+    /**
+     * This method should take the filterBy provided by PrimeFaces and add all relevant sorts to the filterDTO
+     * @param filterBy The filters provided by PrimeFaces
+     * @param filterDTO The domain filter DTO
+     */
     protected void prepareFilterDTO(Map<String, FilterMeta> filterBy, FilterDTO filterDTO) {
-        // no-op: subclasses override when they expose filterable columns
+        throw new UnsupportedOperationException("prepareFilterDTO not implemented yet in " + this.getClass().getSimpleName());
     }
 
     public int getFirstIndexOnPage() {

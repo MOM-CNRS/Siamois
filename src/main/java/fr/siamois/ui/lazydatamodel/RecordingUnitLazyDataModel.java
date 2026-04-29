@@ -51,9 +51,25 @@ public class RecordingUnitLazyDataModel extends BaseRecordingUnitLazyDataModel {
             for (String column : RecordingUnitSpec.allColumns()) {
                 SortMeta meta = sortBy.get(column);
                 if (meta != null) {
-                    sortDTO.add(column, meta.getOrder());
+                    processColumn(sortDTO, column, meta);
                 }
             }
         }
     }
+
+    /**
+     * Sort a relation should sort an attribute and not by ID
+     * @param sortDTO The SortDTO information
+     * @param column The attribute name
+     * @param meta The SortMeta provided by Primefaces
+     */
+    private static void processColumn(@NonNull SortDTO sortDTO, @NonNull String column, SortMeta meta) {
+        String columnToSort = switch (column) {
+            case RecordingUnitSpec.SPATIAL_UNIT_FILTER ->  RecordingUnitSpec.SPATIAL_UNIT_FILTER + ".name";
+            case RecordingUnitSpec.AUTHOR_FILTER ->   RecordingUnitSpec.AUTHOR_FILTER + ".email";
+            default -> column;
+        };
+        sortDTO.add(columnToSort, meta.getOrder());
+    }
+
 }
