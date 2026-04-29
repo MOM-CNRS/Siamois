@@ -43,7 +43,7 @@ public abstract class BaseLazyDataModel<T> extends LazyDataModel<T> implements L
 
     @Getter
     @Setter
-    protected TreeNode<T> lazyRoot;
+    protected transient TreeNode<T> lazyRoot;
 
     @Setter
     protected boolean rootOnly;
@@ -156,112 +156,14 @@ public abstract class BaseLazyDataModel<T> extends LazyDataModel<T> implements L
         this.queryResult = null;
     }
 
-    // --- PREPARATION AND CLEANING (Moved from LazyTreeTable) ---
+    // --- PREPARATION AND CLEANING ---
 
     protected Map<String, SortMeta> prepareSorts(Map<String, SortMeta> rawSortMap) {
-        Map<String, SortMeta> activeSorts = new HashMap<>();
-        FacesContext context = FacesContext.getCurrentInstance();
-
-        if (rawSortMap != null) {
-            for (Map.Entry<String, SortMeta> entry : rawSortMap.entrySet()) {
-                if (!entry.getValue().getOrder().isUnsorted()) {
-                    String resolvedKey = (context != null && entry.getValue().getSortBy() != null)
-                            ? (String) entry.getValue().getSortBy().getValue(context.getELContext())
-                            : entry.getKey();
-                    activeSorts.put(resolvedKey, entry.getValue());
-                }
-            }
-        }
-        return activeSorts;
+        return FilterAndSortUtils.prepareSorts(rawSortMap);
     }
 
     protected Map<String, FilterMeta> prepareFilters(Map<String, FilterMeta> rawFilterMap) {
-        Map<String, FilterMeta> activeFilters = new HashMap<>();
-        FacesContext context = FacesContext.getCurrentInstance();
-        String globalVal = null;
-
-        if (rawFilterMap != null) {
-            for (Map.Entry<String, FilterMeta> entry : rawFilterMap.entrySet()) {
-                if ("globalFilter".equals(entry.getKey())) {
-                    globalVal = (String) entry.getValue().getFilterValue();
-                    continue;
-                }
-
-                FilterMeta meta = entry.getValue();
-                Object val = meta.getFilterValue();
-                boolean keep = false;
-
-                if (val instanceof String strVal) {
-                    keep = !strVal.trim().isEmpty();
-                } else if (val instanceof Collection<?> col) {
-                    keep = !col.isEmpty();
-                } else {
-                    keep = val != null;
-                }
-
-                if (keep) {
-                    String resolvedKey = (context != null && meta.getFilterBy() != null)
-                            ? meta.getFilterBy().getValue(context.getELContext())
-                            : entry.getKey();
-                    activeFilters.put(resolvedKey, normalizeFilterMeta(meta));
-                }
-            }
-        }
-
-        // Recherche du filtre global dans les requêtes HTTP si manquant de la map
-        if ((globalVal == null || globalVal.trim().isEmpty()) && context != null) {
-            Map<String, String> params = context.getExternalContext().getRequestParameterMap();
-            for (Map.Entry<String, String> param : params.entrySet()) {
-                if (param.getKey().endsWith(":globalFilter")) {
-                    globalVal = param.getValue();
-                    break;
-                }
-            }
-        }
-
-        if (globalVal != null && globalVal.trim().length() >= 3) {
-            FilterMeta globalMeta = FilterMeta.builder()
-                    .field("globalFilter")
-                    .filterValue(globalVal.trim())
-                    .matchMode(MatchMode.GLOBAL)
-                    .build();
-            activeFilters.put("globalFilter", globalMeta);
-        }
-
-        return activeFilters;
-    }
-
-    protected FilterMeta normalizeFilterMeta(FilterMeta meta) {
-        Object val = meta.getFilterValue();
-        if (!(val instanceof Collection<?> col) || col.isEmpty()) {
-            return meta;
-        }
-
-        Object firstItem = col.iterator().next();
-        List<Long> ids = null;
-
-        if (firstItem instanceof ConceptAutocompleteDTO) {
-            ids = new ArrayList<>(col.size());
-            for (Object o : col) {
-                ConceptDTO concept = ((ConceptAutocompleteDTO) o).concept();
-                if (concept != null) ids.add(concept.getId());
-            }
-        } else if (firstItem instanceof AbstractEntityDTO) {
-            ids = new ArrayList<>(col.size());
-            for (Object o : col) {
-                Long id = ((AbstractEntityDTO) o).getId();
-                if (id != null) ids.add(id);
-            }
-        }
-
-        if (ids == null) return meta;
-
-        return FilterMeta.builder()
-                .field(meta.getField())
-                .filterBy(meta.getFilterBy())
-                .filterValue(ids)
-                .matchMode(meta.getMatchMode())
-                .build();
+        return FilterAndSortUtils.prepareLoadFilters(rawFilterMap);
     }
 
     // --- CORE LOAD AND COUNT METHODS ---

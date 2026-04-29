@@ -21,12 +21,10 @@ public class ActionUnitLazyDataModel extends BaseActionUnitLazyDataModel {
 
     private final transient ActionUnitService actionUnitService;
     private final transient SessionSettingsBean sessionSettings;
-    private final transient LangBean langBean;
 
     public ActionUnitLazyDataModel(ActionUnitService actionUnitService, SessionSettingsBean sessionSettings, LangBean langBean) {
         this.actionUnitService = actionUnitService;
         this.sessionSettings = sessionSettings;
-        this.langBean = langBean;
     }
 
 

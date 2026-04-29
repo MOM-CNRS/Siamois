@@ -7,9 +7,10 @@ import org.primefaces.model.TreeNodeChildren;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Objects;
+
 public class RootTreeNode<T extends AbstractEntityDTO> extends DefaultTreeNode<T> {
 
-    private static final Logger log = LoggerFactory.getLogger(RootTreeNode.class);
     private final RootChildList<T> childrens;
     private final int first;
 
@@ -39,5 +40,17 @@ public class RootTreeNode<T extends AbstractEntityDTO> extends DefaultTreeNode<T
     @Override
     public TreeNodeChildren<T> getChildren() {
         return childrens;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (!(o instanceof RootTreeNode<?> that)) return false;
+        if (!super.equals(o)) return false;
+        return first == that.first && Objects.equals(childrens, that.childrens);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(super.hashCode(), childrens, first);
     }
 }
