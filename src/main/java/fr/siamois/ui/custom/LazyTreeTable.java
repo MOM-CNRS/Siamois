@@ -21,7 +21,7 @@ import java.util.*;
 public class LazyTreeTable extends TreeTable {
 
     private static final Logger log = LoggerFactory.getLogger(LazyTreeTable.class);
-    private transient boolean blockFiltering = false;
+    private boolean blockFiltering = false;
 
     enum PropertyKeys {
         lazy,

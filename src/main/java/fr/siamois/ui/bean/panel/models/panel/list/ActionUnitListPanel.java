@@ -54,7 +54,7 @@ public class ActionUnitListPanel extends AbstractListPanel<ActionUnitDTO> implem
     private final transient NavBean navBean;
     private final transient InstitutionService institutionService;
     private final transient FormContextServices formContextServices;
-    private final ActionUnitMapper actionUnitMapper;
+    private final transient ActionUnitMapper actionUnitMapper;
 
     // locals
     private String actionUnitListErrorMessage;

@@ -2,6 +2,7 @@ package fr.siamois.infrastructure.database.repositories.specs;
 
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.lang.NonNull;
 
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -20,6 +21,11 @@ public class RecordingUnitSpec {
     public static final String ID_FILTER = "id";
 
 
+    private RecordingUnitSpec() {
+        throw new UnsupportedOperationException("Spec should never be instantiated");
+    }
+
+    @NonNull
     public static List<String> allColumns() {
         return List.of(
                 FULL_IDENTIFIER,
@@ -34,14 +40,17 @@ public class RecordingUnitSpec {
         );
     }
 
+    @NonNull
     public static Specification<RecordingUnit> recordingUnitInInstitution(long institutionId) {
         return (root, query, criteriaBuilder) -> criteriaBuilder.equal(root.get("createdByInstitution").get("id"), institutionId);
     }
 
+    @NonNull
     public static Specification<RecordingUnit> recordingUnitInActionUnit(long actionUnitId) {
-        return ((root, query, criteriaBuilder) -> criteriaBuilder.equal(root.get("actionUnit").get("id"), actionUnitId));
+        return ((root, query, criteriaBuilder) -> criteriaBuilder.equal(root.get(ACTION_UNIT_FILTER).get("id"), actionUnitId));
     }
 
+    @NonNull
     public static Specification<RecordingUnit> fullIdentifierContains(String fullIdentifier) {
         return (root, query, criteriaBuilder) -> {
             if (fullIdentifier == null || fullIdentifier.isEmpty()) {
@@ -52,6 +61,7 @@ public class RecordingUnitSpec {
     }
 
 
+    @NonNull
     public static Specification<RecordingUnit> dateFieldBetween(String fieldName, OffsetDateTime from, OffsetDateTime to) {
         return (root, query, criteriaBuilder) -> {
             if (from != null && to != null) {
@@ -65,46 +75,42 @@ public class RecordingUnitSpec {
         };
     }
 
+    @NonNull
     public static Specification<RecordingUnit> authorIsIn(List<Long> personsIds) {
-        return (root, query, criteriaBuilder) -> {
-            return criteriaBuilder.in(root.get(RecordingUnitSpec.AUTHOR_FILTER).get("id")).value(personsIds);
-        };
+        return (root, query, criteriaBuilder) -> criteriaBuilder.in(root.get(RecordingUnitSpec.AUTHOR_FILTER).get("id")).value(personsIds);
     }
 
+    @NonNull
     public static Specification<RecordingUnit> matrixContains(String matrixInput) {
-        return (root, query, criteriaBuilder) -> {
-            return criteriaBuilder.like(criteriaBuilder.lower(root.get(RecordingUnitSpec.MATRIX_FILTER)), "%" + matrixInput.toLowerCase() + "%");
-        };
+        return (root, query, criteriaBuilder) -> criteriaBuilder.like(criteriaBuilder.lower(root.get(RecordingUnitSpec.MATRIX_FILTER)), "%" + matrixInput.toLowerCase() + "%");
     }
 
+    @NonNull
     public static Specification<RecordingUnit> isInSpatialUnit(List<Long> spatialUnitIds) {
-        return (root, query, criteriaBuilder) -> {
-            return criteriaBuilder.in(root.get(RecordingUnitSpec.SPATIAL_UNIT_FILTER).get("id")).value(spatialUnitIds);
-        };
+        return (root, query, criteriaBuilder) -> criteriaBuilder.in(root.get(RecordingUnitSpec.SPATIAL_UNIT_FILTER).get("id")).value(spatialUnitIds);
     }
 
+    @NonNull
     public static Specification<RecordingUnit> isInActionUnit(List<Long> actionUnitIds) {
-        return (root, query, criteriaBuilder) -> {
-            return criteriaBuilder.in(root.get(RecordingUnitSpec.ACTION_UNIT_FILTER).get("id")).value(actionUnitIds);
-        };
+        return (root, query, criteriaBuilder) -> criteriaBuilder.in(root.get(RecordingUnitSpec.ACTION_UNIT_FILTER).get("id")).value(actionUnitIds);
     }
 
+    @NonNull
     public static Specification<RecordingUnit> isInContributors(List<Long> personIds) {
-        return (root, query, criteriaBuilder) -> {
-            return criteriaBuilder.in(root.get(RecordingUnitSpec.CONTRIBUTORS_FILTER).get("id")).value(personIds);
-        };
+        return (root, query, criteriaBuilder) -> criteriaBuilder.in(root.get(RecordingUnitSpec.CONTRIBUTORS_FILTER).get("id")).value(personIds);
     }
 
+    @NonNull
     public static Specification<RecordingUnit> typeIsIn(List<Long> conceptIds) {
-        return (root, query, criteriaBuilder) -> {
-            return criteriaBuilder.in(root.get(RecordingUnitSpec.TYPE_FILTER).get("id")).value(conceptIds);
-        };
+        return (root, query, criteriaBuilder) -> criteriaBuilder.in(root.get(RecordingUnitSpec.TYPE_FILTER).get("id")).value(conceptIds);
     }
 
+    @NonNull
     public static Specification<RecordingUnit> unitIsRoot() {
         return ((root, query, criteriaBuilder) -> criteriaBuilder.isEmpty(root.get("parents")));
     }
 
+    @NonNull
     public static Specification<RecordingUnit> idIn(java.util.Collection<Long> ids) {
         return (root, query, criteriaBuilder) -> root.get("id").in(ids);
     }

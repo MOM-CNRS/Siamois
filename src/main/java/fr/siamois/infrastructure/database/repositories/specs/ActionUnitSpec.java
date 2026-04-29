@@ -11,6 +11,10 @@ public class ActionUnitSpec {
     public static final String NAME_FILTER = "name";
     public static final String ID_FILTER = "id";
 
+    private ActionUnitSpec() {
+        throw new UnsupportedOperationException("Spec should never be instantiated");
+    }
+
     @NonNull
     public static Specification<ActionUnit> belongsToInstitution(long institutionId) {
         return ((root, query, criteriaBuilder) -> criteriaBuilder.equal(root.get("createdByInstitution").get("id"), institutionId));

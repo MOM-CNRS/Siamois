@@ -24,7 +24,7 @@ import java.util.List;
 public class SearchBean implements Serializable {
 
     private final SessionSettingsBean sessionSettingsBean;
-    private final SearchRepository searchRepository;
+    private final transient SearchRepository searchRepository;
 
     @Nullable
     private SearchResultDTO selected;

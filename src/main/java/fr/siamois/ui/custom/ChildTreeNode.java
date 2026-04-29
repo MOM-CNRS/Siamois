@@ -1,11 +1,15 @@
 package fr.siamois.ui.custom;
 
 import fr.siamois.dto.entity.AbstractEntityDTO;
+import lombok.Getter;
+import lombok.Setter;
 import org.primefaces.model.DefaultTreeNode;
+import org.primefaces.model.DefaultTreeNodeChildren;
 import org.primefaces.model.LazyTreeNode;
 import org.primefaces.model.TreeNodeChildren;
 import org.primefaces.util.Callbacks;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
@@ -22,9 +26,27 @@ import java.util.Set;
  */
 public class ChildTreeNode<T extends AbstractEntityDTO> extends DefaultTreeNode<T> implements LazyTreeNode {
 
+    @Getter
     private final Callbacks.SerializableFunction<T, List<T>> catchedLoad;
+    @Getter
     private final Callbacks.SerializableFunction<T, Boolean> catchedIsLeaf;
+    /**
+     * -- SETTER --
+     *  Set the ancestor closure shared with the whole filtered subtree. A
+     *  lazy-loaded child is auto-expanded when its id is in
+     *  AND it is NOT itself a match (i.e. it's an ancestor on the path leading
+     *  to a match). Match nodes stay collapsed so the user sees them as a
+     *  single row in the result list and can opt into expanding them.
+     */
+    @Setter
     private Set<Long> ancestorClosure;
+    /**
+     * -- SETTER --
+     *  Set the match-id set propagated down the filtered subtree. Used to
+     *  decide whether a closure member is "just an ancestor" (auto-expanded)
+     *  or "the match itself" (left collapsed by default).
+     */
+    @Setter
     private Set<Long> matchIds;
     private boolean loaded = false;
 
@@ -43,34 +65,7 @@ public class ChildTreeNode<T extends AbstractEntityDTO> extends DefaultTreeNode<
         this.catchedIsLeaf = other.catchedIsLeaf;
         this.ancestorClosure = other.ancestorClosure;
         this.matchIds = other.matchIds;
-    }
-
-    /**
-     * Set the ancestor closure shared with the whole filtered subtree. A
-     * lazy-loaded child is auto-expanded when its id is in {@code ancestorClosure}
-     * AND it is NOT itself a match (i.e. it's an ancestor on the path leading
-     * to a match). Match nodes stay collapsed so the user sees them as a
-     * single row in the result list and can opt into expanding them.
-     */
-    public void setAncestorClosure(Set<Long> ancestorClosure) {
-        this.ancestorClosure = ancestorClosure;
-    }
-
-    /**
-     * Set the match-id set propagated down the filtered subtree. Used to
-     * decide whether a closure member is "just an ancestor" (auto-expanded)
-     * or "the match itself" (left collapsed by default).
-     */
-    public void setMatchIds(Set<Long> matchIds) {
-        this.matchIds = matchIds;
-    }
-
-    public Callbacks.SerializableFunction<T, List<T>> getCatchedLoad() {
-        return catchedLoad;
-    }
-
-    public Callbacks.SerializableFunction<T, Boolean> getCatchedIsLeaf() {
-        return catchedIsLeaf;
+        this.loaded = false;
     }
 
     /**
@@ -106,7 +101,7 @@ public class ChildTreeNode<T extends AbstractEntityDTO> extends DefaultTreeNode<
             return super.getChildren();
         }
         if (isLeaf()) {
-            return null;
+            return new DefaultTreeNodeChildren<>();
         }
         lazyLoad();
         return super.getChildren();
