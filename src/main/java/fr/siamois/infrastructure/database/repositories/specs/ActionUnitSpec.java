@@ -9,6 +9,7 @@ public class ActionUnitSpec {
 
     public static final String GLOBAL_FILTER = "global";
     public static final String NAME_FILTER = "name";
+    public static final String ID_FILTER = "id";
 
     @NonNull
     public static Specification<ActionUnit> belongsToInstitution(long institutionId) {

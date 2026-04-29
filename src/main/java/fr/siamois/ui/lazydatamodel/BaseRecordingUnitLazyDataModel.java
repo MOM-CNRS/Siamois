@@ -4,6 +4,7 @@ package fr.siamois.ui.lazydatamodel;
 import fr.siamois.domain.models.form.customfield.CustomFieldSelectOneFromFieldCode;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.dto.FilterDTO;
+import fr.siamois.dto.SortDTO;
 import fr.siamois.dto.entity.ConceptDTO;
 import fr.siamois.dto.entity.RecordingUnitDTO;
 import fr.siamois.infrastructure.database.repositories.specs.RecordingUnitSpec;
@@ -58,8 +59,10 @@ public abstract class BaseRecordingUnitLazyDataModel extends BaseLazyDataModel<R
             String globalFilter, Pageable pageable);
 
     @Override
-    protected String getDefaultSortField() {
-        return "recording_unit_id";
+    protected SortDTO getDefaultSortDTO() {
+        SortDTO sortDTO = new SortDTO();
+        sortDTO.add(RecordingUnitSpec.ID_FILTER, SortDTO.SortOrder.ASC);
+        return sortDTO;
     }
 
     @Override

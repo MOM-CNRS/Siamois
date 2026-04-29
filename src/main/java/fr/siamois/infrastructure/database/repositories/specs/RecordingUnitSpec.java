@@ -17,6 +17,7 @@ public class RecordingUnitSpec {
     public static final String CLOSING_DATE_FILTER = "closingDate";
     public static final String CONTRIBUTORS_FILTER = "contributors";
     public static final String TYPE_FILTER = "type";
+    public static final String ID_FILTER = "id";
 
 
     public static List<String> allColumns() {

@@ -62,7 +62,9 @@ public abstract class BaseLazyDataModel<T> extends LazyDataModel<T> implements L
     protected transient Set<Long> ancestorClosure;
     protected transient Set<Long> matchIds;
 
-    protected abstract String getDefaultSortField();
+    protected SortDTO getDefaultSortDTO() {
+        return new SortDTO();
+    }
 
     protected abstract Page<T> loadData(FilterDTO filter, Pageable pageable);
 
@@ -75,28 +77,6 @@ public abstract class BaseLazyDataModel<T> extends LazyDataModel<T> implements L
 
     protected Map<String, String> getFieldMapping() {
         return Collections.emptyMap();
-    }
-
-    protected Sort buildSort(Map<String, SortMeta> sortBy, String tieBreaker) {
-        if (sortBy == null || sortBy.isEmpty()) {
-            return Sort.unsorted();
-        }
-
-        Map<String, String> fieldMapping = getFieldMapping();
-        List<Sort.Order> orders = new ArrayList<>();
-
-        for (Map.Entry<String, SortMeta> entry : sortBy.entrySet()) {
-            String field = fieldMapping.getOrDefault(entry.getKey(), entry.getKey());
-            SortMeta meta = entry.getValue();
-            Sort.Order order = new Sort.Order(
-                    meta.getOrder() == SortOrder.ASCENDING ? Sort.Direction.ASC : Sort.Direction.DESC,
-                    field
-            );
-            orders.add(order);
-        }
-
-        orders.add(new Sort.Order(Sort.Direction.ASC, tieBreaker));
-        return Sort.by(orders);
     }
 
     // --- UTILITY METHODS FOR CACHE & CLONING ---
@@ -367,6 +347,10 @@ public abstract class BaseLazyDataModel<T> extends LazyDataModel<T> implements L
 
     @NonNull
     private Sort buildSort(SortDTO sortDTO) {
+        if (sortDTO.isEmpty()) {
+            sortDTO = getDefaultSortDTO();
+        }
+
         for (String attribute : sortDTO.getAttributeNames()) {
             switch (sortDTO.orderOf(attribute)) {
                 case ASC -> {
@@ -377,6 +361,7 @@ public abstract class BaseLazyDataModel<T> extends LazyDataModel<T> implements L
                 }
             }
         }
+
         return Sort.unsorted();
     }
 

@@ -11,6 +11,7 @@ public class SpatialUnitSpec {
 
     public static final String NAME_FILTER = "name";
     public static final String CATEGORY_FILTER = "category";
+    public static final String ID_FILTER = "id";
 
     @NonNull
     public static Specification<SpatialUnit> belongsToInstitution(long institutionId) {

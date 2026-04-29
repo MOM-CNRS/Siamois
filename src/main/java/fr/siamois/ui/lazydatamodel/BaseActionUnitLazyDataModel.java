@@ -1,6 +1,8 @@
 package fr.siamois.ui.lazydatamodel;
 
+import fr.siamois.dto.SortDTO;
 import fr.siamois.dto.entity.ActionUnitDTO;
+import fr.siamois.infrastructure.database.repositories.specs.ActionUnitSpec;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -23,8 +25,10 @@ public abstract class BaseActionUnitLazyDataModel extends BaseLazyDataModel<Acti
     }
 
     @Override
-    protected String getDefaultSortField() {
-        return "action_unit_id";
+    protected SortDTO getDefaultSortDTO() {
+        SortDTO sortDTO = new SortDTO();
+        sortDTO.add(ActionUnitSpec.ID_FILTER, SortDTO.SortOrder.ASC);
+        return sortDTO;
     }
 
     @Override
