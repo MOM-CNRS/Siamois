@@ -657,8 +657,10 @@ class ActionUnitServiceTest {
         when(actionUnitRepository.findByNameAndCreatedByInstitutionId(any(), any())).thenReturn(Optional.empty());
         when(actionUnitRepository.findByIdentifierAndCreatedByInstitutionId(any(), any())).thenReturn(Optional.empty());
 
+        ConceptDTO emptyConcept = new ConceptDTO();
+
         assertThrows(NullActionUnitIdentifierException.class,
-                () -> actionUnitService.saveNotTransactional(info, dto, new ConceptDTO()));
+                () -> actionUnitService.saveNotTransactional(info, dto, emptyConcept));
     }
 
     @Test
@@ -818,8 +820,10 @@ class ActionUnitServiceTest {
         when(personMapper.invertConvert(any())).thenReturn(new Person());
         when(actionUnitRepository.save(entity)).thenThrow(new RuntimeException("boom"));
 
+        ConceptDTO emptyDto = new ConceptDTO();
+
         assertThrows(FailedActionUnitSaveException.class,
-                () -> actionUnitService.saveNotTransactional(info, dto, new ConceptDTO()));
+                () -> actionUnitService.saveNotTransactional(info, dto, emptyDto));
     }
 
     // ------------------------------------------------------------------
