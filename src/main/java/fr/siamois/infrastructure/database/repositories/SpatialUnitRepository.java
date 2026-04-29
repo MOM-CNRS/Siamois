@@ -7,9 +7,10 @@ import jakarta.transaction.Transactional;
 import jakarta.validation.constraints.NotNull;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.CrudRepository;
 import org.springframework.data.repository.history.RevisionRepository;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -20,7 +21,7 @@ import java.util.Optional;
 import java.util.Set;
 
 @Repository
-public interface SpatialUnitRepository extends JpaRepository<SpatialUnit, Long>, RevisionRepository<SpatialUnit, Long, Long> {
+public interface SpatialUnitRepository extends CrudRepository<SpatialUnit, Long>, RevisionRepository<SpatialUnit, Long, Long>, JpaSpecificationExecutor<SpatialUnit> {
 
     @Query(
             value = "SELECT COUNT(*) FROM spatial_hierarchy WHERE fk_parent_id = :parentId",
@@ -377,5 +378,16 @@ public interface SpatialUnitRepository extends JpaRepository<SpatialUnit, Long>,
             @Param("institutionId") Long institutionId,
             @Param("query") String query
     );
+
+    @Query(value = """
+            WITH RECURSIVE ascend(id) AS (
+                SELECT seed FROM unnest(CAST(:seedIds AS BIGINT[])) AS seed
+                UNION
+                SELECT h.fk_parent_id
+                FROM spatial_hierarchy h JOIN ascend a ON h.fk_child_id = a.id
+            )
+            SELECT id FROM ascend
+            """, nativeQuery = true)
+    List<Long> findAncestorClosure(@Param("seedIds") Long[] seedIds);
 }
 

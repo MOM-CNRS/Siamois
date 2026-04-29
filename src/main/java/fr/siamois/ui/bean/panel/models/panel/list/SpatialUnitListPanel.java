@@ -103,7 +103,7 @@ public class SpatialUnitListPanel extends AbstractListPanel<SpatialUnitDTO>  imp
 
     @Override
     protected BaseLazyDataModel<SpatialUnitDTO> createLazyDataModel() {
-        SpatialUnitLazyDataModel lazy = new SpatialUnitLazyDataModel(spatialUnitService, sessionSettingsBean, langBean);
+        SpatialUnitLazyDataModel lazy = new SpatialUnitLazyDataModel(spatialUnitService, sessionSettingsBean);
         SpatialUnitTreeTableLazyModel lazyTree = new SpatialUnitTreeTableLazyModel(spatialUnitService,
                 SpatialUnitScope.builder()
                         .institutionId(sessionSettingsBean.getSelectedInstitution().getId())
@@ -178,7 +178,9 @@ public class SpatialUnitListPanel extends AbstractListPanel<SpatialUnitDTO>  imp
         super.init();
 
         // initialiser la sélection via l'API du tableModel (pas accès direct au lazy)
-        tableModel.getLazyDataModel().setSelectedUnits(new ArrayList<>());
+        if (tableModel.getLazyDataModel() instanceof SpatialUnitLazyDataModel spatialUnitLazyDataModel)  {
+            spatialUnitLazyDataModel.setSelectedUnits(new ArrayList<>());
+        }
 
     }
 

@@ -23,17 +23,18 @@ import fr.siamois.ui.bean.panel.FlowBean;
 import fr.siamois.ui.form.EntityFormContext;
 import fr.siamois.ui.form.FormContextServices;
 import fr.siamois.ui.form.FormUiDto;
+import fr.siamois.ui.lazydatamodel.BaseLazyDataModel;
 import fr.siamois.ui.lazydatamodel.BaseRecordingUnitLazyDataModel;
 import fr.siamois.ui.lazydatamodel.tree.RecordingUnitTreeTableLazyModel;
 import fr.siamois.utils.MessageUtils;
 import lombok.Getter;
 import org.primefaces.model.TreeNode;
+import org.springframework.lang.NonNull;
 
 import java.time.LocalDateTime;
 import java.time.Month;
 import java.util.*;
 
-import static fr.siamois.ui.bean.dialog.newunit.NewUnitContext.TreeInsert.ROOT;
 import static fr.siamois.ui.table.TableColumnAction.DUPLICATE_ROW;
 import static fr.siamois.ui.table.TableColumnAction.GO_TO_RECORDING_UNIT;
 
@@ -47,9 +48,6 @@ import static fr.siamois.ui.table.TableColumnAction.GO_TO_RECORDING_UNIT;
  */
 @Getter
 public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingUnitDTO, Long> {
-
-
-
 
     // Cache: key = (type, institutionId), value = CustomForm
     private final Map<ConceptDTO, FormUiDto> formCache = new HashMap<>();
@@ -387,6 +385,24 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
     }
 
     @Override
+    public BaseLazyDataModel<RecordingUnitDTO> getLazyDataModel() {
+        recordingUnitLazyDataModel.setRootOnly(treeMode);
+        return recordingUnitLazyDataModel;
+    }
+
+    @Override
+    protected boolean unitIsLeaf(@NonNull RecordingUnitDTO unit) {
+        return !recordingUnitService.existsChildrenByParentAndInstitution(unit.getId(),
+                sessionSettingsBean.getSelectedInstitution().getId()
+        );
+    }
+
+    @Override
+    protected @org.springframework.lang.NonNull List<RecordingUnitDTO> loadChildrensOfUnit(@NonNull RecordingUnitDTO parentUnit) {
+        return recordingUnitService.findAllByParentRecordingUnit(parentUnit.getId());
+    }
+
+    @Override
     public TreeNode<RecordingUnitDTO> getTreeRoot() {
         return treeLazyModel.getRoot();
     }
@@ -415,21 +431,19 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
 
         newUnit = recordingUnitService.save(newUnit);
 
-        // Build the creation context (as child of the parent of the duplicated row, or root if no parent)
+        // The duplicate must appear right below the source row, as its sibling.
+        // We expose the SOURCE entity id (not the parent) as clickedId so the
+        // tree mutator can locate it and slot the new node just after it.
         NewUnitContext ctx = NewUnitContext.builder()
                 .kindToCreate(UnitKind.RECORDING)
-                .trigger(
-                        parent == null
-                                ? null
-                                : NewUnitContext.Trigger.cell(
-                                UnitKind.RECORDING,
-                                parent.getId(),
-                                PARENTS
-                        )
-                )
+                .trigger(NewUnitContext.Trigger.cell(
+                        UnitKind.RECORDING,
+                        toDuplicate.getId(),
+                        PARENTS
+                ))
                 .insertPolicy(NewUnitContext.UiInsertPolicy.builder()
                         .listInsert(NewUnitContext.ListInsert.TOP)
-                        .treeInsert(parent == null ? ROOT : NewUnitContext.TreeInsert.CHILD_FIRST)
+                        .treeInsert(NewUnitContext.TreeInsert.SIBLING_BELOW)
                         .build())
                 .build();
 

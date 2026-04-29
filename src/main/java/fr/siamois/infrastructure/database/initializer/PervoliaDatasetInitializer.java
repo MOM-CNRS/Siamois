@@ -87,14 +87,14 @@ public class PervoliaDatasetInitializer  {
 
 
         try {
-            personSeeder.seed(specs.getPersons());
-            institutionSeeder.seed(specs.getInstitutions());
+            personSeeder.seed(specs.persons());
+            institutionSeeder.seed(specs.institutions());
             Institution ch = institutionRepository.findInstitutionByIdentifier("pervolia").orElseThrow(() -> new RuntimeException("PERVOLIA NOT FOUND"));
-            spatialUnitSeeder.seed(specs.getSpatialUnits());
-            actionCodeSeeder.seed(specs.getActionCodes());
-            actionUnitSeeder.seed(specs.getActionUnits());
-            recordingUnitSeeder.seed(specs.getRecordingUnits());
-            specimenSeeder.seed(specs.getSpecimenSpecs(), ch.getId());
+            spatialUnitSeeder.seed(specs.spatialUnits());
+            actionCodeSeeder.seed(specs.actionCodes());
+            actionUnitSeeder.seed(specs.actionUnits());
+            recordingUnitSeeder.seed(specs.recordingUnits());
+            specimenSeeder.seed(specs.specimenSpecs(), ch.getId());
         }
         catch(Exception e){
             throw new IllegalStateException(e);

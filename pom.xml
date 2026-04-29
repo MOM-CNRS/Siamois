@@ -72,6 +72,7 @@
             **/utils/ExecutionTimeAspect.java,
             **/ui/table/**,
             **/ui/form/**,
+            **/ui/custom/**,
             **/*ViewModel.*,
             **/*Converter.*,
             **/*Builder.*,
@@ -84,7 +85,8 @@
             **/**Listener.*,
             **/events/**/*.*,
             **/files/**/*.*,
-            **/resources/**/*.*
+            **/resources/**/*.*,
+            **/*Spec.*
         </sonar.coverage.exclusions>
 
 

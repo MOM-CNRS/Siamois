@@ -4,6 +4,8 @@
                 xmlns:p="http://primefaces.org/ui"
 >
 
+    <!--@elvariable id="tableModel" type="fr.siamois.ui.table.EntityTableViewModel"-->
+
     <p:toolbar id="tableToolbar">
         <p:toolbarGroup>
             <p:toolbarGroup align="left">
@@ -27,6 +29,7 @@
                                     onIcon="bi bi-list-nested"
                                     offIcon="bi bi-list">
                                 <p:ajax process="@this" update=":#{cc.clientId}:tableContainer"
+                                        listener="#{tableModel.onSwitchTreeMode}"
                                         onstart="PF('#{cc.clientId}_buiTables').show()"
                                         oncomplete="PF('#{cc.clientId}_buiTables').hide()"/>
 
@@ -49,11 +52,20 @@
                         <i class="bi bi-search"/>
                         <p:inputText id="globalFilter"
                                      value="#{tableModel.globalFilter}"
-                                     onkeyup="PrimeFaces.debounce(() => PF('#{cc.clientId}_#{tableId}').filter())"
-                                     placeholder="#{langBean.msg('common.action.search')}"/>
+                                     onkeyup="PrimeFaces.debounce(() => PF('#{cc.clientId}_#{tableId}').filter(), 500)"
+                                     placeholder="#{langBean.msg('common.action.search')}"
+                                     disabled="#{not tableModel.columnFilteringEnabled}"
+                        />
                     </span>
+                    <p:toggleSwitch
+                            id="manualColumnToggle"
+                            value="#{tableModel.columnFilteringEnabled}"
+                            onIcon="pi pi-filter" offIcon="pi pi-filter-slash"
+                            styleClass="vertical-align-middle ml-3">
 
-
+                        <p:ajax update=":#{cc.clientId}:#{tableId}"
+                                listener="#{tableModel.onColumnFilteringToggle}" />
+                    </p:toggleSwitch>
                 </div>
             </p:toolbarGroup>
         </p:toolbarGroup>
@@ -69,7 +81,8 @@
                     cc.clientId.concat('_').concat(tableId)
                     )}"
                     oncomplete="PF('newUnitDiag').show();"
-                    update="newUnitForm">
+                    update="newUnitForm"
+            >
             </p:commandButton>
         </p:toolbarGroup>
     </p:toolbar>

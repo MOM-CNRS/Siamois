@@ -1,6 +1,7 @@
 package fr.siamois.ui.lazydatamodel;
 
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
+import fr.siamois.dto.FilterDTO;
 import fr.siamois.dto.entity.ActionUnitDTO;
 import fr.siamois.dto.entity.RecordingUnitDTO;
 import fr.siamois.ui.bean.LangBean;
@@ -11,7 +12,6 @@ import org.springframework.data.domain.Pageable;
 
 
 public class RecordingUnitInActionUnitLazyDataModel extends BaseRecordingUnitLazyDataModel {
-
 
     private final transient SessionSettingsBean sessionSettings;
 
@@ -42,5 +42,13 @@ public class RecordingUnitInActionUnitLazyDataModel extends BaseRecordingUnitLaz
     }
 
 
+    @Override
+    protected Page<RecordingUnitDTO> loadData(FilterDTO filter, Pageable pageable) {
+        return recordingUnitService.searchRecordingUnitInActionUnit(sessionSettings.getSelectedInstitution(),  actionUnit, filter, pageable);
+    }
 
+    @Override
+    protected int countWithFilter(FilterDTO filters) {
+        return recordingUnitService.countSearchResultsInActionUnit(sessionSettings.getSelectedInstitution(), actionUnit, filters);
+    }
 }

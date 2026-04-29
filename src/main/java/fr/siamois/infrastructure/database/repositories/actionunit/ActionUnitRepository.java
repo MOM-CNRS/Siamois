@@ -6,6 +6,7 @@ import fr.siamois.domain.models.institution.Institution;
 import jakarta.validation.constraints.NotNull;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.data.repository.history.RevisionRepository;
@@ -18,7 +19,7 @@ import java.util.Optional;
 import java.util.Set;
 
 @Repository
-public interface ActionUnitRepository extends CrudRepository<ActionUnit, Long>, RevisionRepository<ActionUnit, Long, Long> {
+public interface ActionUnitRepository extends CrudRepository<ActionUnit, Long>, RevisionRepository<ActionUnit, Long, Long>, JpaSpecificationExecutor<ActionUnit> {
 
     Optional<ActionUnit> findByFullIdentifier(String fullIdentifier);
 
@@ -197,15 +198,43 @@ public interface ActionUnitRepository extends CrudRepository<ActionUnit, Long>, 
     @Query(value = """
     SELECT su.*
     FROM action_unit su
-    WHERE su.fk_institution_id = :institutionId
-      AND NOT EXISTS (
-          SELECT 1
-          FROM action_hierarchy h
-          WHERE h.fk_child_id = su.action_unit_id
-      )
+    WHERE su.fk_institution_id = :institutionId AND NOT su.has_childrens
     ORDER BY su.creation_time DESC, su.action_unit_id DESC
+        LIMIT :limit
     """, nativeQuery = true)
-    List<ActionUnit> findRootsByInstitution(@Param("institutionId") Long institutionId);
+    List<ActionUnit> findRootsByInstitution(@Param("institutionId") Long institutionId,
+                                            @Param("limit") Long limit);
+    @Query(value = """
+    SELECT su.*
+    FROM action_unit su
+    WHERE su.fk_institution_id = :institutionId AND NOT su.has_childrens
+    ORDER BY su.creation_time DESC, su.action_unit_id DESC
+        LIMIT :pageSize OFFSET :first
+    """, nativeQuery = true)
+    List<ActionUnit> findRootsByInstitution(@Param("institutionId") Long institutionId,
+                                            @Param("first") int first,
+                                            @Param("pageSize") int pageSize
+                                            );
+
+    @Query(value = """
+    SELECT su.*
+    FROM action_unit su
+    WHERE su.fk_institution_id = :institutionId AND NOT su.has_childrens AND su.name ILIKE concat('%', :name, '%')
+    ORDER BY su.creation_time DESC, su.action_unit_id DESC
+        LIMIT :pageSize OFFSET :first
+    """, nativeQuery = true)
+    List<ActionUnit> findRootsByInstitutionAndName(@Param("institutionId") Long institutionId,
+                                                   @Param("name") String name,
+                                                   @Param("first") int first,
+                                                   @Param("pageSize") int pageSize);
+
+    @Query(value = """
+    SELECT COUNT(*)
+    FROM action_unit su
+    WHERE su.fk_institution_id = :institutionId AND NOT su.has_childrens AND su.name ILIKE concat('%', :name, '%')
+    """, nativeQuery = true)
+    int countRootsByInstitutionAndName(@Param("institutionId") Long institutionId,
+                                                   @Param("name") String name);
 
     @Query(value = """
     SELECT su.*
@@ -244,6 +273,28 @@ public interface ActionUnitRepository extends CrudRepository<ActionUnit, Long>, 
     )
     List<ActionUnit> findByTeamMemberOrCreatorAndInstitution(@Param("personId") Long personId, @Param("institutionId") Long institutionId);
 
+    @Query(
+            nativeQuery = true,
+            value = """
+                        SELECT au.*
+                        FROM action_unit au
+                        WHERE au.fk_institution_id = :institutionId
+                        AND (
+                            au.fk_created_by = :personId
+                            OR EXISTS (
+                                SELECT 1 
+                                FROM team_member tm 
+                                WHERE tm.fk_action_unit_id = au.action_unit_id 
+                                AND tm.fk_person_id = :personId
+                            )
+                        )
+                        LIMIT :limit
+                    """
+    )
+    List<ActionUnit> findByTeamMemberOrCreatorAndInstitutionLimit(@Param("personId") Long personId,
+                                                                  @Param("institutionId") Long institutionId,
+                                                                  @Param("limit") long limit);
+
     @Query(value = """
             SELECT COUNT(1) > 0
             FROM action_unit au
@@ -257,12 +308,7 @@ public interface ActionUnitRepository extends CrudRepository<ActionUnit, Long>, 
     @Query(value = """
             SELECT COUNT(1) > 0
             FROM action_unit au
-            WHERE au.fk_institution_id = :institutionId
-              AND NOT EXISTS (
-                  SELECT 1
-                  FROM action_hierarchy h
-                  WHERE h.fk_child_id = au.action_unit_id
-              )
+            WHERE au.fk_institution_id = :institutionId AND NOT has_childrens
             """, nativeQuery = true)
     boolean existsRootChildrenByInstitution(@Param("institutionId") Long institutionId);
 
@@ -311,4 +357,32 @@ public interface ActionUnitRepository extends CrudRepository<ActionUnit, Long>, 
             "ORDER BY creation_time DESC, action_unit_id DESC LIMIT 1", nativeQuery = true)
     Optional<ActionUnit> findLast(@Param("instId") Long instId);
 
+    @Query(
+            value = """
+    SELECT COUNT(*)
+    FROM action_unit su
+    WHERE su.fk_institution_id = :institutionId AND NOT su.has_childrens
+"""
+    , nativeQuery = true)
+    int countRootsInInstitution(Long institutionId);
+
+    @Query(nativeQuery = true,
+            value = """
+SELECT COUNT(*) > 1
+FROM action_unit au
+WHERE au.fk_institution_id = :institutionId AND has_childrens IS FALSE AND action_unit_id = :actionUnitId
+"""
+    )
+    boolean isRoot(Long actionUnitId, Long institutionId);
+
+    @Query(value = """
+            WITH RECURSIVE ascend(id) AS (
+                SELECT seed FROM unnest(CAST(:seedIds AS BIGINT[])) AS seed
+                UNION
+                SELECT h.fk_parent_id
+                FROM action_hierarchy h JOIN ascend a ON h.fk_child_id = a.id
+            )
+            SELECT id FROM ascend
+            """, nativeQuery = true)
+    List<Long> findAncestorClosure(@Param("seedIds") Long[] seedIds);
 }

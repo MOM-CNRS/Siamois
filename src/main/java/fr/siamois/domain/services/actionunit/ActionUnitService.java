@@ -15,20 +15,25 @@ import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.ArkEntityService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
+import fr.siamois.dto.FilterDTO;
 import fr.siamois.dto.entity.*;
 import fr.siamois.infrastructure.database.repositories.SpatialUnitRepository;
 import fr.siamois.infrastructure.database.repositories.actionunit.ActionCodeRepository;
 import fr.siamois.infrastructure.database.repositories.actionunit.ActionUnitRepository;
+import fr.siamois.infrastructure.database.repositories.specs.ActionUnitSpec;
 import fr.siamois.mapper.ActionUnitMapper;
 import fr.siamois.mapper.ConceptMapper;
 import fr.siamois.mapper.PersonMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.jspecify.annotations.NonNull;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -56,33 +61,6 @@ public class ActionUnitService implements ArkEntityService {
     private final ConceptMapper conceptMapper;
 
     /**
-     * Find all Action Units by institution, name, categories, persons, and global search.
-     *
-     * @param institutionId The ID of the institution to filter by
-     * @param name          The name to search for in Action Units
-     * @param categoryIds   The IDs of categories to filter by
-     * @param personIds     The IDs of persons to filter by
-     * @param global        The global search term to filter by
-     * @param langCode      The language code to filter by
-     * @param pageable      The pagination information
-     * @return A page of Action Units matching the criteria
-     */
-    @Transactional(readOnly = true)
-    public Page<ActionUnitDTO> findAllByInstitutionAndByNameContainingAndByCategoriesAndByGlobalContaining(
-            Long institutionId,
-            String name, Long[] categoryIds, Long[] personIds, String global, String langCode, Pageable pageable) {
-
-        Page<ActionUnit> res = actionUnitRepository.findAllByInstitutionAndByNameContainingAndByCategoriesAndByGlobalContaining(
-                institutionId, name, categoryIds, personIds, global, langCode, pageable);
-
-        //wireChildrenAndParents(res.getContent());  // Load and attach spatial hierarchy relationships
-
-
-        return res.map(actionUnitMapper::convert
-        );
-    }
-
-    /**
      * Find all Action Units by institution, spatial unit, name, categories, persons, and global search.
      *
      * @param institutionId The ID of the institution to filter by
@@ -105,11 +83,7 @@ public class ActionUnitService implements ArkEntityService {
 
         //wireChildrenAndParents(res.getContent());  // Load and attach spatial hierarchy relationships
 
-
-
-
-        return res.map(actionUnitMapper::convert
-        );
+        return res.map(actionUnitMapper::convert);
     }
 
     /**
@@ -443,7 +417,7 @@ public class ActionUnitService implements ArkEntityService {
      * @return The list of ActionUnit associated with the institution
      */
     public List<ActionUnitDTO> findAllWithoutParentsByInstitution(Long institutionId) {
-        List<ActionUnit> res = actionUnitRepository.findRootsByInstitution(institutionId);
+        List<ActionUnit> res = actionUnitRepository.findRootsByInstitution(institutionId, 50L);
         return res.stream()
                 .map(actionUnitMapper::convert)
                 .toList();
@@ -477,8 +451,8 @@ public class ActionUnitService implements ArkEntityService {
     }
 
 
-    public List<ActionUnitDTO> findByTeamMember(PersonDTO member, InstitutionDTO institution) {
-        List<ActionUnit> actionUnits = actionUnitRepository.findByTeamMemberOrCreatorAndInstitution(member.getId(), institution.getId());
+    public List<ActionUnitDTO> findByTeamMember(PersonDTO member, InstitutionDTO institution, long limit) {
+        List<ActionUnit> actionUnits = actionUnitRepository.findByTeamMemberOrCreatorAndInstitutionLimit(member.getId(), institution.getId(), limit);
         return actionUnits.stream()
                 .map(actionUnitMapper::convert)
                 .toList();
@@ -512,5 +486,109 @@ public class ActionUnitService implements ArkEntityService {
     @Cacheable("InstitutionHasRootChildrenSU")
     public boolean existsRootChildrenByRelatedSpatialUnit(Long spatialUnitId) {
         return actionUnitRepository.existsRootChildrenByRelatedSpatialUnit(spatialUnitId);
+    }
+
+    public int countRootsInInstitution(Long institutionId) {
+        return actionUnitRepository.countRootsInInstitution(institutionId);
+    }
+
+    public List<ActionUnit> findRootsByInstitution(Long institutionId, int first, int pageSize) {
+        return actionUnitRepository.findRootsByInstitution(institutionId, first, pageSize);
+    }
+
+    public List<ActionUnit> findRootsByInstitutionAndName(Long institutionId, String name, int first, int pageSize) {
+        return actionUnitRepository.findRootsByInstitutionAndName(institutionId, name, first, pageSize);
+    }
+
+    public int countRootsByInstitutionAndName(Long institutionId, String name) {
+        return actionUnitRepository.countRootsByInstitutionAndName(institutionId, name);
+    }
+
+    public boolean isRoot(Long actionUnitId, Long institutionId) {
+        return actionUnitRepository.isRoot(actionUnitId, institutionId);
+    }
+
+    public Page<ActionUnitDTO> searchActionUnits(InstitutionDTO institutionDTO, FilterDTO filters, Pageable pageable) {
+        Specification<ActionUnit> specs = prepareSpecs(institutionDTO, filters);
+
+        Page<ActionUnit> res = actionUnitRepository.findAll(specs, pageable);
+
+        if (filters.containsColumn("name")) {
+            String nameContains = filters.valueOfAsString("name");
+            log.trace("{} éléments trouvées pour {} (Page {}/{})", res.getTotalElements(), nameContains,res.getNumber() + 1, res.getTotalPages());
+        }
+
+        return res.map(actionUnitMapper::convert);
+    }
+
+    public int countSearchResults(InstitutionDTO institutionDTO, FilterDTO filters) {
+        Specification<ActionUnit> specs = prepareSpecs(institutionDTO, filters);
+        return Math.toIntExact(actionUnitRepository.count(specs));
+    }
+
+    private Specification<ActionUnit> prepareSpecs(@NonNull InstitutionDTO institutionDTO, @NonNull FilterDTO filters) {
+        Specification<ActionUnit> base = ActionUnitSpec.belongsToInstitution(institutionDTO.getId());
+
+        if (filters.isRootOnly()) {
+            if (filters.hasUserFilters()) {
+                Collection<Long> closure = resolveAncestorClosure(institutionDTO, filters);
+                if (closure.isEmpty()) {
+                    return base.and((root, q, cb) -> cb.disjunction());
+                }
+                return base.and(ActionUnitSpec.unitIsRoot()).and(ActionUnitSpec.idIn(closure));
+            }
+            return base.and(ActionUnitSpec.unitIsRoot());
+        }
+
+        return base.and(userFilterSpecs(filters));
+    }
+
+    private Specification<ActionUnit> userFilterSpecs(FilterDTO filters) {
+        Specification<ActionUnit> specs = Specification.where(null);
+
+        FilterDTO.FilterInfo globalFilter = filters.filterOf(ActionUnitSpec.GLOBAL_FILTER);
+        FilterDTO.FilterInfo nameFilter = filters.filterOf(ActionUnitSpec.NAME_FILTER);
+
+        if (nameFilter != null && nameFilter.getType() == FilterDTO.FilterType.CONTAINS) {
+            specs = specs.and(ActionUnitSpec.nameContaining(nameFilter.valueAsString()));
+        } else if (globalFilter != null && globalFilter.getType() == FilterDTO.FilterType.CONTAINS) {
+            specs = specs.and(ActionUnitSpec.nameContaining(globalFilter.valueAsString()));
+        }
+
+        return specs;
+    }
+
+    private Collection<Long> resolveAncestorClosure(InstitutionDTO institutionDTO, FilterDTO filters) {
+        if (filters.getAncestorClosure() != null) {
+            return filters.getAncestorClosure();
+        }
+        Specification<ActionUnit> matchSpecs = ActionUnitSpec.belongsToInstitution(institutionDTO.getId())
+                .and(userFilterSpecs(filters));
+        List<Long> matchIds = actionUnitRepository.findAll(matchSpecs).stream()
+                .map(ActionUnit::getId)
+                .toList();
+        Set<Long> closure = matchIds.isEmpty()
+                ? Collections.emptySet()
+                : new HashSet<>(actionUnitRepository.findAncestorClosure(matchIds.toArray(Long[]::new)));
+        filters.setAncestorClosure(closure);
+        filters.setMatchIds(new HashSet<>(matchIds));
+        return closure;
+    }
+
+    public Set<Long> computeAncestorClosure(InstitutionDTO institutionDTO, FilterDTO filters) {
+        if (!filters.isRootOnly() || !filters.hasUserFilters()) {
+            return Collections.emptySet();
+        }
+        return new HashSet<>(resolveAncestorClosure(institutionDTO, filters));
+    }
+
+    public List<ActionUnitDTO> findMatchingInInstitutionByName(InstitutionDTO institution, String query, int limit) {
+        Specification<ActionUnit> specs = ActionUnitSpec.belongsToInstitution(institution.getId());
+        specs = specs.and(ActionUnitSpec.nameContaining(query));
+
+        return actionUnitRepository.findAll(specs, PageRequest.ofSize(limit))
+                .stream()
+                .map(actionUnitMapper::convert)
+                .toList();
     }
 }

@@ -1,6 +1,7 @@
 package fr.siamois.ui.lazydatamodel;
 
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
+import fr.siamois.dto.FilterDTO;
 import fr.siamois.dto.entity.SpatialUnitDTO;
 import fr.siamois.ui.bean.LangBean;
 import lombok.Getter;
@@ -25,11 +26,16 @@ public class SpatialUnitParentsLazyDataModel extends BaseSpatialUnitLazyDataMode
     }
 
     @Override
-    protected Page<SpatialUnitDTO> loadSpatialUnits(String nameFilter, Long[] categoryIds, Long[] personIds, String globalFilter, Pageable pageable) {
+    protected Page<SpatialUnitDTO> loadData(FilterDTO filter, Pageable pageable) {
         return spatialUnitService.findAllByChildAndByNameContainingAndByCategoriesAndByGlobalContaining(
                 spatialUnit,
-                nameFilter, categoryIds, personIds, globalFilter,
+                nameFilter, null, null, null,
                 langBean.getLanguageCode(),
                 pageable);
+    }
+
+    @Override
+    protected int countWithFilter(FilterDTO filters) {
+        return 0;
     }
 }

@@ -5,6 +5,36 @@
                 xmlns:f="http://java.sun.com/jsf/core" xmlns:c="http://java.sun.com/jsp/jstl/core"
 >
 
+    <!--@elvariable id="tableModel" type="fr.siamois.ui.table.EntityTableViewModel"-->
+
+    <style>
+        .filter-table-column-hidden .ui-column-filter {
+            display: none !important;
+        }
+
+        .ui-datatable thead th {
+            text-align: left;
+            vertical-align: top;
+        }
+
+        .ui-datatable thead th .ui-column-title,
+        .ui-datatable thead th .ui-sortable-column-icon {
+            display: inline-block;
+            vertical-align: middle;
+        }
+
+        .ui-datatable thead th .ui-column-filter {
+            display: block;
+            width: 100%;
+            margin-top: 0.5rem;
+            box-sizing: border-box;
+        }
+    </style>
+
+    <p:blockUI block="entityDatatable" trigger="#{cc.clientId}:entityDatatable" widgetVar="#{cc.clientId}_buiDataTables">
+        <i class="pi pi-spin pi-spinner" style="font-size: 3rem"/>
+    </p:blockUI>
+
     <p:dataTable paginator="true"
                  rendered="#{not tableModel.treeMode}"
                  cellNavigation="true"
@@ -34,7 +64,7 @@
                  tableStyle="table-layout: auto;"
                  tableStyleClass="datatable-hoverable-table"
                  value="#{tableModel.lazyDataModel}"
-                 class="#{tableClass}">
+                 styleClass="#{tableClass} #{not tableModel.columnFilteringEnabled ? 'filter-table-column-hidden' : ''}">
 
         <f:facet name="{RowReport}">
             <span class="ui-paginator-current">
@@ -47,6 +77,7 @@
                 <ui:param name="tableModel" value="#{tableModel}" />
                 <ui:param name="updateTableString" value="#{updateTableString}" />
                 <ui:param name="tableId" value="entityDatatable"/>
+                <ui:param name="columnFilteringEnabled" value="true"/>
             </ui:include>
         </f:facet>
 
@@ -104,8 +135,15 @@
                     style="min-width: #{column.type != 'COMMAND_LINK' ? '10em' : ''};"
                     sortable="#{column.sortable}"
                     filterable="#{column.filterable}"
+                    field="#{column.field.valueBinding}"
+                    filterBy="#{column.field.valueBinding}"
+                    sortBy="#{column.field.valueBinding}"
                     toggleable="#{column.type != 'COMMAND_LINK'}"
             >
+                <ui:include src="/pages/shared/table/filterTemplate.xhtml">
+                    <ui:param name="tableModel" value="#{tableModel}"/>
+                </ui:include>
+
                 <ui:include src="/pages/shared/table/columnTemplates.xhtml">
                     <ui:param name="tableModel" value="#{tableModel}" />
                     <ui:param name="column" value="#{column}" />

@@ -21,9 +21,10 @@ public interface PersonRepository extends JpaRepository<Person, Long> {
             nativeQuery = true,
             value = "SELECT p.* FROM person p " +
                     "WHERE LOWER(p.name) LIKE LOWER(CONCAT('%', :nameOrLastname, '%')) " +
-                    "OR LOWER(p.lastname) LIKE LOWER(CONCAT('%', :nameOrLastname, '%'))"
+                    "OR LOWER(p.lastname) LIKE LOWER(CONCAT('%', :nameOrLastname, '%')) " +
+                    "LIMIT :limit"
     )
-    List<Person> findAllByNameOrLastname(String nameOrLastname);
+    List<Person> findAllByNameOrLastname(String nameOrLastname, int limit);
 
 
     @Query(

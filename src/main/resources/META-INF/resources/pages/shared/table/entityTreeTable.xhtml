@@ -2,13 +2,55 @@
 <ui:composition xmlns="http://www.w3.org/1999/xhtml"
                 xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
                 xmlns:p="http://primefaces.org/ui"
-                xmlns:f="http://java.sun.com/jsf/core" xmlns:c="http://java.sun.com/jsp/jstl/core"
+                xmlns:f="http://java.sun.com/jsf/core"
+                xmlns:c="http://java.sun.com/jsp/jstl/core"
+                xmlns:custom="http://siamois.fr/jsf/custom"
 >
 
+    <!--@elvariable id="tableModel" type="fr.siamois.ui.table.EntityTableViewModel"-->
 
-    <p:treeTable id="entityTreeTable"
+    <style>
+        .filter-table-column-hidden .ui-column-filter {
+            display: none !important;
+        }
+
+        .ui-treetable thead th {
+            text-align: left;
+            vertical-align: top;
+        }
+
+        .ui-treetable thead th .ui-column-title,
+        .ui-treetable thead th .ui-sortable-column-icon {
+            display: inline-block;
+            vertical-align: middle;
+        }
+
+        .ui-treetable thead th .ui-column-filter {
+            display: block;
+            width: 100%;
+            margin-top: 0.5rem;
+            box-sizing: border-box;
+        }
+
+        /* Highlight rows that actually matched the search; ancestors brought
+           in only to keep the path visible stay neutral. */
+        .ui-treetable tr.search-match > td {
+            background-color: rgba(255, 221, 87, 0.25);
+            font-weight: 600;
+        }
+        .ui-treetable tr.search-match:hover > td {
+            background-color: rgba(255, 221, 87, 0.4);
+        }
+    </style>
+
+    <p:blockUI block="entityTreeTable" trigger="#{cc.clientId}:entityTreeTable" widgetVar="#{cc.clientId}_buiTreeTables">
+        <i class="pi pi-spin pi-spinner" style="font-size: 3rem"/>
+    </p:blockUI>
+
+    <custom:lazyTreeTable id="entityTreeTable"
                  rendered="#{tableModel.treeMode}"
-                 value="#{tableModel.treeRoot}"
+                 lazyDataModel="#{tableModel.lazyDataModel}"
+                              lazy="true"
                  var="item"
                  nodeVar="node"
                  widgetVar="#{cc.clientId}_entityTreeTable"
@@ -20,19 +62,23 @@
                  selectionRowMode="none"
                  propagateSelectionUp="false"
                  propagateSelectionDown="false"
-                 globalFilter="#{tableModel.globalFilter}"
                  allowUnsorting="true"
                  sortBy="#{tableModel.treeLazyModel.sortBy}"
                  sortMode="multiple"
                  partialUpdate="false"
                  emptyMessage="#{langBean.msg('recordingUnitList.empty')}"
-                 rowsPerPageTemplate="5,10,15,20,25"
+                 rowsPerPageTemplate="5,10,15,20,25,50,100"
+                              rows="#{tableModel.defaultPageSize}"
                  style="overflow-x: auto;"
                  tableStyleClass="datatable-hoverable-table"
                  tableStyle="table-layout: auto;"
-                 class="#{tableClass}">
-
-
+                 class="#{tableClass}" paginator="true"
+              isLeafMethod="#{tableModel.isLeafMethod}"
+              loadMethod="#{tableModel.loadMethod}"
+                          columnFilteringEnabled="#{tableModel.columnFilteringEnabled}"
+                          rowStyleClass="#{tableModel.getRowStyleClass(item)}"
+    >
+        <p:ajax event="filter" process="@this" oncomplete="if (args &amp;&amp; args.newRowCount !== undefined) { PF('#{cc.clientId}_entityTreeTable').getPaginator().setTotalRecords(args.newRowCount); }" />
         <f:facet name="header">
             <ui:include src="/pages/shared/table/tableToolbar.xhtml">
                 <ui:param name="tableModel" value="#{tableModel}"/>
@@ -107,7 +153,8 @@
     <p:column style="width: min-content;"
               styleClass="small-cell"
               headerText="Statut"
-              id="statusCol" toggleable="false">
+              id="statusCol" toggleable="false"
+    >
         <ui:include src="/panel/header/validationButton.xhtml" >
             <ui:param name="disabled" value="true"/>
             <ui:param name="unit" value="#{item}"/>
@@ -121,8 +168,17 @@
                 style="min-width: #{column.type != 'COMMAND_LINK' ? '10em' : ''};"
                 sortable="#{column.sortable}"
                 filterable="#{column.filterable}"
+                field="#{column.field == null ? null : column.field.valueBinding}"
+                filterBy="#{column.field.valueBinding}"
+                sortBy="#{column.field.valueBinding}"
                 toggleable="#{column.type != 'COMMAND_LINK'}"
         >
+
+            <ui:include src="/pages/shared/table/filterTemplate.xhtml">
+                <ui:param name="tableModel" value="#{tableModel}"/>
+                <ui:param name="column" value="#{column}"/>
+            </ui:include>
+
             <ui:include src="/pages/shared/table/columnTemplates.xhtml">
                 <ui:param name="tableModel" value="#{tableModel}"/>
                 <ui:param name="column" value="#{column}"/>
@@ -137,7 +193,7 @@
     </c:forEach>
 
 
-</p:treeTable>
+</custom:lazyTreeTable>
 
 
         </ui:composition>

@@ -19,11 +19,13 @@ import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.recordingunit.identifier.generic.RuIdentifierResolver;
 import fr.siamois.domain.services.recordingunit.identifier.generic.RuNumericalIdentifierResolver;
+import fr.siamois.dto.FilterDTO;
 import fr.siamois.dto.entity.*;
 import fr.siamois.infrastructure.database.repositories.person.PersonRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitIdCounterRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitIdInfoRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitRepository;
+import fr.siamois.infrastructure.database.repositories.specs.RecordingUnitSpec;
 import fr.siamois.infrastructure.database.repositories.team.TeamMemberRepository;
 import fr.siamois.mapper.ActionUnitSummaryMapper;
 import fr.siamois.mapper.RecordingUnitMapper;
@@ -39,6 +41,7 @@ import org.springframework.core.convert.ConversionService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
@@ -107,12 +110,10 @@ public class RecordingUnitService implements ArkEntityService {
         try {
             RecordingUnit recordingUnit = recordingUnitMapper.invertConvert(recordingUnitDTO);
             return recordingUnitMapper.convert(save(recordingUnit));
-
         } catch (RuntimeException e) {
             log.error(e.getMessage(), e);
             throw new FailedRecordingUnitSaveException(e.getMessage());
         }
-
     }
 
     @Transactional
@@ -165,9 +166,19 @@ public class RecordingUnitService implements ArkEntityService {
         return managedRecordingUnit;
     }
 
-    private static void setupChilds(RecordingUnit recordingUnit, RecordingUnit managedRecordingUnit) {
-        for (RecordingUnit child : recordingUnit.getChildren()) {
+    private void setupChilds(RecordingUnit recordingUnit, RecordingUnit managedRecordingUnit) {
+        // The owning side of the parent/child M:N is managedRecordingUnit.children
+        // (@JoinTable(recording_unit_hierarchy)). We must add MANAGED children
+        // here — adding the transient instances that come out of the DTO mapper
+        // would not produce a join-table row at flush.
+        for (RecordingUnit childRef : recordingUnit.getChildren()) {
+            if (childRef == null || childRef.getId() == null) continue;
+            RecordingUnit child = recordingUnitRepository.findById(childRef.getId())
+                    .orElseThrow(() -> new IllegalArgumentException("Child not found: " + childRef.getId()));
             managedRecordingUnit.getChildren().add(child);
+        }
+        if (!recordingUnit.getChildren().isEmpty()) {
+            recordingUnitRepository.save(managedRecordingUnit);
         }
     }
 
@@ -821,5 +832,123 @@ public class RecordingUnitService implements ArkEntityService {
     }
 
 
+    public List<RecordingUnitDTO> findAllByParentRecordingUnit(Long parentRecordingUnitId) {
+        List<RecordingUnit> results = recordingUnitRepository.findChildrensOf(parentRecordingUnitId);
 
+        return results
+                .stream()
+                .map(recordingUnitMapper::convert)
+                .toList();
+    }
+
+    public Page<RecordingUnitDTO> searchRecordingUnit(InstitutionDTO institution, FilterDTO filters, Pageable pageable) {
+        Specification<RecordingUnit> specs = prepareSpecs(institution, filters);
+
+        Page<RecordingUnit> results = recordingUnitRepository.findAll(specs, pageable);
+
+        return results.map(recordingUnitMapper::convert);
+    }
+
+    public Page<RecordingUnitDTO> searchRecordingUnitInActionUnit(InstitutionDTO institutionDTO, @NonNull ActionUnitDTO actionUnitDTO, FilterDTO filters, Pageable pageable) {
+        Specification<RecordingUnit> specs = prepareSpecs(institutionDTO, filters);
+        specs = specs.and(RecordingUnitSpec.recordingUnitInActionUnit(actionUnitDTO.getId()));
+        Page<RecordingUnit> results = recordingUnitRepository.findAll(specs, pageable);
+        return results.map(recordingUnitMapper::convert);
+    }
+
+    public int countSearchResultsInActionUnit(InstitutionDTO institutionDTO, @NonNull ActionUnitDTO actionUnitDTO, FilterDTO filters) {
+        Specification<RecordingUnit> specs = prepareSpecs(institutionDTO, filters);
+        specs = specs.and(RecordingUnitSpec.recordingUnitInActionUnit(actionUnitDTO.getId()));
+        return Math.toIntExact(recordingUnitRepository.count(specs));
+    }
+
+    public int countSearchResults(InstitutionDTO institution, FilterDTO filters) {
+        Specification<RecordingUnit> specs = prepareSpecs(institution, filters);
+        return Math.toIntExact(recordingUnitRepository.count(specs));
+    }
+
+    public Specification<RecordingUnit> prepareSpecs(@NonNull InstitutionDTO institution, @NonNull FilterDTO filters) {
+        Specification<RecordingUnit> base = RecordingUnitSpec.recordingUnitInInstitution(institution.getId());
+
+        if (filters.isRootOnly()) {
+            if (filters.hasUserFilters()) {
+                Collection<Long> closure = resolveAncestorClosure(institution, filters);
+                if (closure.isEmpty()) {
+                    return base.and((root, q, cb) -> cb.disjunction());
+                }
+                return base.and(RecordingUnitSpec.unitIsRoot()).and(RecordingUnitSpec.idIn(closure));
+            }
+            return base.and(RecordingUnitSpec.unitIsRoot());
+        }
+
+        return base.and(userFilterSpecs(filters));
+    }
+
+    public static Specification<RecordingUnit> userFilterSpecs(@NonNull FilterDTO filters) {
+        Specification<RecordingUnit> specification = Specification.where(null);
+
+        if (filters.containsColumn(RecordingUnitSpec.FULL_IDENTIFIER)) {
+            specification = specification.and(RecordingUnitSpec.fullIdentifierContains(filters.valueOfAsString(RecordingUnitSpec.FULL_IDENTIFIER)));
+        }
+
+        if (filters.containsColumn(RecordingUnitSpec.AUTHOR_FILTER)) {
+            specification = specification.and(RecordingUnitSpec.authorIsIn(filters.valueAsIdListOf(RecordingUnitSpec.AUTHOR_FILTER)));
+        }
+
+        if (filters.containsColumn(RecordingUnitSpec.MATRIX_FILTER)) {
+            specification = specification.and(RecordingUnitSpec.matrixContains(filters.valueOfAsString(RecordingUnitSpec.MATRIX_FILTER)));
+        }
+
+        if (filters.containsColumn(RecordingUnitSpec.SPATIAL_UNIT_FILTER)) {
+            specification = specification.and(RecordingUnitSpec.isInSpatialUnit(filters.valueAsIdListOf(RecordingUnitSpec.SPATIAL_UNIT_FILTER)));
+        }
+
+        if (filters.containsColumn(RecordingUnitSpec.ACTION_UNIT_FILTER)) {
+            specification = specification.and(RecordingUnitSpec.isInActionUnit(filters.valueAsIdListOf(RecordingUnitSpec.ACTION_UNIT_FILTER)));
+        }
+
+        if (filters.containsColumn(RecordingUnitSpec.CONTRIBUTORS_FILTER)) {
+            specification = specification.and(RecordingUnitSpec.isInContributors(filters.valueAsIdListOf(RecordingUnitSpec.CONTRIBUTORS_FILTER)));
+        }
+
+        if (filters.containsColumn(RecordingUnitSpec.TYPE_FILTER)) {
+            specification = specification.and(RecordingUnitSpec.typeIsIn(filters.valueAsIdListOf(RecordingUnitSpec.TYPE_FILTER)));
+        }
+
+        for (String dateFilter : new String[]{RecordingUnitSpec.OPENING_DATE_FILTER, RecordingUnitSpec.CLOSING_DATE_FILTER}) {
+            if (filters.containsColumn(dateFilter)) {
+                FilterDTO.DateRange range = filters.valueAsDateRangeOf(dateFilter);
+                specification = specification.and(RecordingUnitSpec.dateFieldBetween(dateFilter, range.from(), range.to()));
+            }
+        }
+
+        return specification;
+    }
+
+    private Collection<Long> resolveAncestorClosure(InstitutionDTO institution, FilterDTO filters) {
+        if (filters.getAncestorClosure() != null) {
+            return filters.getAncestorClosure();
+        }
+        Specification<RecordingUnit> matchSpecs = RecordingUnitSpec
+                .recordingUnitInInstitution(institution.getId())
+                .and(userFilterSpecs(filters));
+
+        List<Long> matchIds = recordingUnitRepository.findAll(matchSpecs)
+                .stream()
+                .map(RecordingUnit::getId)
+                .toList();
+        Set<Long> closure = matchIds.isEmpty()
+                ? Collections.emptySet()
+                : new HashSet<>(recordingUnitRepository.findAncestorClosure(matchIds.toArray(Long[]::new)));
+        filters.setAncestorClosure(closure);
+        filters.setMatchIds(new HashSet<>(matchIds));
+        return closure;
+    }
+
+    public Set<Long> computeAncestorClosure(InstitutionDTO institution, FilterDTO filters) {
+        if (!filters.isRootOnly() || !filters.hasUserFilters()) {
+            return Collections.emptySet();
+        }
+        return new HashSet<>(resolveAncestorClosure(institution, filters));
+    }
 }

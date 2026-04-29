@@ -123,7 +123,7 @@ class PersonServiceTest {
 
     @Test
     void findAllByNameLastnameContaining_Success() {
-        when(personRepository.findAllByNameOrLastname("bob")).thenReturn(List.of(person));
+        when(personRepository.findAllByNameOrLastname("bob", 100)).thenReturn(List.of(person));
 
         // Act
         List<PersonDTO> actualResult = personService.findAllByNameLastnameContaining("bob");

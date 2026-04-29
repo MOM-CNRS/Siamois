@@ -1,15 +1,17 @@
 package fr.siamois.ui.table;
 
-import fr.siamois.domain.models.form.customfield.CustomField;
+import fr.siamois.domain.models.form.customfield.*;
 import fr.siamois.domain.services.form.FormService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitTreeService;
 import fr.siamois.dto.entity.*;
+import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.NavBean;
 import fr.siamois.ui.bean.dialog.newunit.GenericNewUnitDialogBean;
 import fr.siamois.ui.bean.dialog.newunit.NewUnitContext;
 import fr.siamois.ui.bean.panel.models.panel.AbstractPanel;
+import fr.siamois.ui.custom.LazyTreeMutator;
 import fr.siamois.ui.form.CustomColUiDto;
 import fr.siamois.ui.form.EntityFormContext;
 import fr.siamois.ui.form.FormContextServices;
@@ -26,11 +28,10 @@ import org.primefaces.component.api.UIColumn;
 import org.primefaces.event.ColumnToggleEvent;
 import org.primefaces.model.TreeNode;
 import org.primefaces.model.Visibility;
+import org.primefaces.util.Callbacks;
+import org.springframework.lang.NonNull;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.function.Function;
 
 import static fr.siamois.ui.bean.dialog.newunit.NewUnitContext.TreeInsert.ROOT;
@@ -54,12 +55,16 @@ import static fr.siamois.utils.MessageUtils.displayErrorMessage;
 public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
 
     public static final String CONTAINER = "-container');";
+    public static final int LIMIT = 100;
     @Setter
     protected String globalFilter = "";
 
     /** Lazy model "pur data" (chargement, tri, filtres, sélection, etc.) */
     protected final BaseLazyDataModel<T> lazyDataModel;
     protected final BaseTreeTableLazyModel<T, ID> treeLazyModel;
+
+    @Setter
+    public int defaultPageSize = 10;
 
     /** Services nécessaires pour la logique formulaire de ligne */
     protected final FormService formService;
@@ -69,6 +74,10 @@ public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
     protected final GenericNewUnitDialogBean<T> genericNewUnitDialogBean;
     protected final LangBean langBean;
     protected final FormContextServices formContextServices;
+
+    @Getter
+    @Setter
+    private boolean columnFilteringEnabled = false;
 
 
     /** Fournit l'identifiant unique d'une entité T (ex: RecordingUnit::getId) */
@@ -87,6 +96,22 @@ public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
 
     /** Contexte de formulaire par ligne (clé = ID de l'entité) */
     protected final Map<ID, EntityFormContext<T>> rowContexts = new HashMap<>();
+
+    /** Concepts sélectionnés pour le filtre d'une colonne (clé = valueBinding de la colonne). */
+    private final Map<String, List<ConceptAutocompleteDTO>> conceptFilterValues = new HashMap<>();
+
+    /** Personnes sélectionnées pour le filtre d'une colonne (clé = valueBinding de la colonne). */
+    private final Map<String, List<PersonDTO>> personFilterValues = new HashMap<>();
+
+    /** Action units sélectionnés pour le filtre d'une colonne (clé = valueBinding de la colonne). */
+    private final Map<String, List<ActionUnitDTO>> actionUnitFilterValues = new HashMap<>();
+
+    /** Unités spatiales sélectionnées pour le filtre d'une colonne (clé = valueBinding de la colonne). */
+    private final Map<String, List<SpatialUnitDTO>> spatialUnitFilterValues = new HashMap<>();
+
+    /** Bornes de dates sélectionnées pour le filtre d'une colonne (clé = valueBinding de la colonne).
+     *  Contient jusqu'à 2 éléments : [from, to]. */
+    private final Map<String, java.util.List<java.util.Date>> dateFilterValues = new HashMap<>();
 
     // tree mode selection
     @Setter
@@ -173,6 +198,59 @@ public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
      */
     public List<TableColumn> getColumns() {
         return tableDefinition.getVisibleColumns();
+    }
+
+    public boolean isConceptFilter(TableColumn column) {
+        return column instanceof FormFieldColumn ffc
+                && ffc.getField() instanceof CustomFieldSelectOneFromFieldCode;
+    }
+
+    public boolean isPersonFilter(TableColumn column) {
+        return column instanceof FormFieldColumn ffc
+                && ffc.getField() instanceof CustomFieldSelectPerson;
+    }
+
+    public boolean isActionUnitFilter(TableColumn column) {
+        return column instanceof FormFieldColumn ffc
+                && ffc.getField() instanceof CustomFieldSelectOneActionUnit;
+    }
+
+    public boolean isSpatialUnitFilter(TableColumn column) {
+        return column instanceof FormFieldColumn ffc
+                && ffc.getField() instanceof CustomFieldSelectOneSpatialUnit;
+    }
+
+    public boolean isDateTimeFilter(TableColumn column) {
+        return column instanceof FormFieldColumn ffc
+                && ffc.getField() instanceof CustomFieldDateTime;
+    }
+
+    public boolean isDateTimeShowTime(TableColumn column) {
+        return column instanceof FormFieldColumn ffc
+                && ffc.getField() instanceof CustomFieldDateTime dt
+                && Boolean.TRUE.equals(dt.getShowTime());
+    }
+
+    public String getFieldCode(TableColumn column) {
+        if (column instanceof FormFieldColumn ffc
+                && ffc.getField() instanceof CustomFieldSelectOneFromFieldCode cf) {
+            return cf.getFieldCode();
+        }
+        return null;
+    }
+
+    public List<PersonDTO> completePersonForFilter(String query) {
+        return formContextServices.getSessionSettingsBean().completePerson(query);
+    }
+
+    public List<ActionUnitDTO> completeActionUnitForFilter(String query) {
+        return formContextServices.getActionUnitService()
+                .findMatchingInInstitutionByName(formContextServices.getSessionSettingsBean().getSelectedInstitution(), query, LIMIT);
+    }
+
+    public List<SpatialUnitDTO> completeSpatialUnitForFilter(String query) {
+        return formContextServices.getSpatialUnitService()
+                .findMatchingInInstitutionByName(formContextServices.getSessionSettingsBean().getSelectedInstitution(), query, LIMIT);
     }
 
     /**
@@ -324,44 +402,56 @@ public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
             return;
         }
 
-        // ⚠️ cast “best effort” sans entityClass
-        final T casted;
-        try {
-            @SuppressWarnings("unchecked")
-            T tmp = created;
-            casted = tmp;
-        } catch (ClassCastException e) {
-            return; // pas gérable par cette table -> no-op
-        }
-
-        // 1) List view: insert at top
-        if (lazyDataModel != null && policy.getListInsert() != NewUnitContext.ListInsert.NONE) {
-            lazyDataModel.addRowToModel(casted);
-        }
-
-        // 2) Tree view: manual insertion (si treeLazyModel présent)
-        if (treeLazyModel != null  && policy.getTreeInsert() != NewUnitContext.TreeInsert.NONE) {
-            applyTreeInsertion(casted, ctx);
+        if (treeMode) {
+            // Tree view: mutate the displayed lazy tree directly so the user's
+            // current page / expanded nodes are preserved. We deliberately
+            // skip addRowToModel here — it overwrites the lazy model's
+            // queryResult with just the new entity and would make the tree
+            // collapse to a single row.
+            if (policy.getTreeInsert() != NewUnitContext.TreeInsert.NONE) {
+                applyTreeInsertion(created, ctx);
+            }
+        } else if (lazyDataModel != null
+                && policy.getListInsert() != NewUnitContext.ListInsert.NONE) {
+            // List view: insert at the top of the page.
+            lazyDataModel.addRowToModel(created);
         }
     }
 
-    protected void applyTreeInsertion(T created, NewUnitContext ctx) {
-        // si pas de clickedId => bouton global => root
-        ID clickedId = (ctx.getTrigger() != null) ? (ID) ctx.getTrigger().getClickedId() : null;
 
+    @SuppressWarnings("unchecked")
+    protected void applyTreeInsertion(T created, NewUnitContext ctx) {
+        if (lazyDataModel == null) return;
+
+        TreeNode<T> root = lazyDataModel.getLazyRoot();
+        if (root == null) {
+            // Tree hasn't been rendered yet — let next render fetch the new
+            // entity from the database.
+            return;
+        }
+
+        Object clickedId = (ctx.getTrigger() != null) ? ctx.getTrigger().getClickedId() : null;
         var treeInsert = ctx.getInsertPolicy().getTreeInsert();
 
+        Callbacks.SerializableFunction<T, List<T>> loadFn =
+                (Callbacks.SerializableFunction<T, List<T>>) (Callbacks.SerializableFunction<?, ?>) getLoadMethod();
+        Callbacks.SerializableFunction<T, Boolean> isLeafFn =
+                (Callbacks.SerializableFunction<T, Boolean>) getIsLeafMethod();
+
         if (clickedId == null || treeInsert == ROOT) {
-            treeLazyModel.insertChildFirst(null, created);
-        } else {
-            switch (treeInsert) {
-                case CHILD_FIRST ->
-                        treeLazyModel.insertChildFirst(clickedId, created);
-                case PARENT_AT_ROOT ->
-                        treeLazyModel.insertParentAtRoot(clickedId, created);
-                default -> {
-                    // no op
-                }
+            LazyTreeMutator.insertAtRoot(root, created, loadFn, isLeafFn);
+            return;
+        }
+
+        switch (treeInsert) {
+            case CHILD_FIRST ->
+                    LazyTreeMutator.insertChildFirst(root, clickedId, created, loadFn, isLeafFn);
+            case PARENT_AT_ROOT ->
+                    LazyTreeMutator.insertParentAndReparent(root, clickedId, created, loadFn, isLeafFn);
+            case SIBLING_BELOW ->
+                    LazyTreeMutator.insertSiblingBelow(root, clickedId, created, loadFn, isLeafFn);
+            default -> {
+                // no op (NONE)
             }
         }
     }
@@ -439,9 +529,87 @@ public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
         }
     }
 
+    public abstract BaseLazyDataModel<T> getLazyDataModel();
 
+    @SuppressWarnings({"unchecked", "unused"})
+    public Callbacks.SerializableFunction<AbstractEntityDTO, Boolean> getIsLeafMethod() {
+        return abstractEntityDTO -> {
+            if (abstractEntityDTO == null) return true;
+            return unitIsLeaf((T) abstractEntityDTO);
+        };
+    }
 
+    @SuppressWarnings({"unchecked", "unused"})
+    public Callbacks.SerializableFunction<AbstractEntityDTO, List<AbstractEntityDTO>> getLoadMethod() {
+        return parentUnit -> {
+            if (parentUnit == null) {
+                return new ArrayList<>();
+            }
+            List<T> children = loadChildrensOfUnit((T) parentUnit);
+            Set<Long> closure = lazyDataModel != null ? lazyDataModel.getAncestorClosure() : null;
+            // When the parent IS a search match, every descendant belongs to
+            // the result — don't filter to the closure (which only contains
+            // matches + their ancestors), or non-matching children silently
+            // disappear and the node looks like a leaf.
+            Set<Long> matches = lazyDataModel != null ? lazyDataModel.getMatchIds() : null;
+            ID parentId = idExtractor.apply((T) parentUnit);
+            boolean parentIsMatch = matches != null && parentId != null && matches.contains(parentId);
+            if (closure != null && !parentIsMatch) {
+                children = children.stream()
+                        .filter(c -> closure.contains(idExtractor.apply(c)))
+                        .toList();
+            }
+            return (List<AbstractEntityDTO>) children;
+        };
+    }
 
+    protected abstract boolean unitIsLeaf(@NonNull T unit);
 
+    @NonNull
+    protected abstract List<T> loadChildrensOfUnit(@NonNull T parentUnit);
 
+    public void onSwitchTreeMode() {
+        this.lazyDataModel.setRootOnly(!this.lazyDataModel.isRootOnly());
+        this.lazyDataModel.setLazyRoot(null);
+        this.lazyDataModel.resetCache();
+    }
+
+    /**
+     * @return {@code true} if {@code item} is a row that actually matched the
+     * current search (its id is in the lazy model's {@code matchIds} set), as
+     * opposed to a pure ancestor brought in only to keep the path visible.
+     */
+    public boolean isSearchMatch(T item) {
+        if (item == null || lazyDataModel == null) return false;
+        Set<Long> matches = lazyDataModel.getMatchIds();
+        if (matches == null || matches.isEmpty()) return false;
+        ID id = idExtractor.apply(item);
+        return id != null && matches.contains(id);
+    }
+
+    /**
+     * Row CSS class for the TreeTable: {@code search-match} when the row's
+     * entity is one of the actual hits, empty otherwise. Bound from
+     * {@code rowStyleClass} on the tree table; the styling itself lives in
+     * {@code entityTreeTable.xhtml}.
+     */
+    public String getRowStyleClass(T item) {
+        return isSearchMatch(item) ? "search-match" : "";
+    }
+
+    /**
+     * Re-render the table when {@code columnFilteringEnabled} flips. Without
+     * this, {@code LazyTreeTable.preEncode} keeps the cached {@code lazyRoot},
+     * so the previously-filtered result stays on screen even though
+     * {@code loadLazyData} would now skip the filter map. The plain dataTable
+     * has no equivalent shell, so we also propagate the flag to the lazy
+     * model where {@code load}/{@code count} can short-circuit the filters.
+     */
+    public void onColumnFilteringToggle() {
+        if (lazyDataModel != null) {
+            lazyDataModel.setColumnFilteringEnabled(columnFilteringEnabled);
+            lazyDataModel.setLazyRoot(null);
+            lazyDataModel.resetCache();
+        }
+    }
 }
