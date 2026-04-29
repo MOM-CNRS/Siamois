@@ -224,11 +224,6 @@ public class LazyTreeTable extends TreeTable {
     }
 
     @Override
-    public boolean isFilteringEnabled() {
-        return super.isFilteringEnabled();
-    }
-
-    @Override
     public TreeNode getFilteredValue() {
         if (isLazy()) {
             return getValue();
