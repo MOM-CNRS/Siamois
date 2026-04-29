@@ -15,8 +15,8 @@ import java.util.stream.Stream;
 public class RootChildList<T extends AbstractEntityDTO> extends DefaultTreeNodeChildren<T> {
 
     private int totalEntityCount;
-    private transient final List<TreeNode<T>> actualChildren;
-    private transient final TreeNode<T> rootParent;
+    private final transient List<TreeNode<T>> actualChildren;
+    private final transient TreeNode<T> rootParent;
     private final int first;
 
     public RootChildList(int totalEntityCount, TreeNode<T> rootParent, int first) {
