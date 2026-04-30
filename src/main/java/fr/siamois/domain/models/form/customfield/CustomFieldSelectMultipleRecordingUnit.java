@@ -18,5 +18,9 @@ import lombok.experimental.SuperBuilder;
 @NoArgsConstructor
 public class CustomFieldSelectMultipleRecordingUnit extends CustomField {
 
+    @Override
+    public String getIcon() {
+        return "bi bi-pencil-square";
+    }
 
 }

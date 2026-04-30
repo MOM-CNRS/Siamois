@@ -22,4 +22,9 @@ public class CustomFieldSelectMultipleSpatialUnitTree extends CustomField {
 
     private String source;
 
+    @Override
+    public String getIcon() {
+        return "bi bi-geo-alt";
+    }
+
 }

@@ -1,11 +1,14 @@
 <ui:composition xmlns="http://www.w3.org/1999/xhtml"
                 xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
                 xmlns:cc="http://xmlns.jcp.org/jsf/composite"
-                xmlns:h="http://java.sun.com/jsf/html" xmlns:p="http://java.sun.com/jsf/html"
+                xmlns:h="http://java.sun.com/jsf/html"
+                xmlns:p="http://primefaces.org/ui"
 >
 
     <cc:interface>
         <cc:attribute name="title" type="java.lang.String" required="true"/>
+        <cc:attribute name="icon" type="java.lang.String" required="true"/>
+        <cc:attribute name="conceptUri" type="java.lang.String" required="true"/>
         <cc:attribute name="isTheso" type="java.lang.Boolean" required="false" default="false"/>
         <cc:attribute name="forId" type="java.lang.String" required="false"/>
         <cc:attribute name="required" type="java.lang.Boolean" required="false" default="false"/>
@@ -23,19 +26,33 @@
                 style="flex: 1 1 auto;"
                 id="fieldValueGroup">
             <div>
-                <p:outputLabel
-                        for="#{cc.attrs.forId}"
-                        indicateRequired="auto"
-                        style="color: var(--text-light)"
-                        value="#{cc.attrs.title}"/>
-                <p:outputLabel
-                        rendered="#{cc.attrs.required}"
-                        value="*"/>
-                <h:graphicImage rendered="#{cc.attrs.isTheso}"
-                                library="img"
-                                name="icon_opentheso2.png"
-                                styleClass="label-icon"
-                                alt="Opentheso Icon"/>
+                <p:commandButton
+                        styleClass="ui-button-flat ellipsis-btn #{cc.attrs.required ? 'required-btn' : ''}"
+                        icon="#{cc.attrs.icon}"
+                        type="button"
+                        id="btn"
+                        style="color: var(--text-light); display:flex; max-width: 180px; width: fit-content;"
+                        value="#{cc.attrs.title}">
+
+                </p:commandButton>
+                <p:menu overlay="true" trigger="btn" my="left top" at="left bottom">
+                    <p:menuitem value="Voir dans Opentheso" icon="bi bi-book"
+                                target="_blank" url="#{cc.attrs.conceptUri}"/>
+                    <p:divider rendered="#{cc.attrs.canBeRemoved}"/>
+
+                    <p:menuitem value="Supprimer"
+                                icon="bi bi-trash"
+                                rendered="#{cc.attrs.canBeRemoved}"
+                                actionListener="#{cc.attrs.onRemove}"
+                                update="@form"
+                                styleClass="ui-menuitem-danger"/>
+
+                </p:menu>
+
+                <p:tooltip
+                        for="btn"
+                        value="#{cc.attrs.title}"
+                        position="left" />
 
 
             </div>

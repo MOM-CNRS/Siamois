@@ -594,3 +594,31 @@ body .ui-menuitem-link {
     display: flex;
     gap: 0.3em;
 }
+
+body .ellipsis-btn {
+    position: relative;
+}
+
+body .ellipsis-btn .ui-button-text {
+    display: inline-block;
+    max-width: 100%;
+    padding-right: 10px; /* space for * */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+body .required-btn::after {
+    content: " *";
+    position: absolute;
+    right: 6px;
+}
+
+.si-opentheso {
+    display: inline-block;
+    width: 1rem;
+    height: 1rem;
+    background-image: url('/resources/img/svg/house.svg');
+    background-size: contain;
+    background-repeat: no-repeat;
+}

@@ -41,4 +41,11 @@ public class CustomFieldMeasurement extends CustomField {
     @FieldCode
     public static final String MEASUREMENT_NATURE_FIELD_CODE = "SIAMD.NATURE";
 
+    @Override
+    public String getIcon() {
+        return "bi bi-rulers";
+    }
+
+
+
 }
