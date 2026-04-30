@@ -35,7 +35,7 @@ public class DefaultFormsDatasetInitializer implements DatabaseInitializer {
 
     private static final String UI_G_12_UI_MD_6_UI_LG_6 = "ui-g-12 ui-md-6 ui-lg-6";
     public static final String TH_252 = "th252";
-    public static final String MÈTRES = "Mètres";
+    public static final String METRES = "Mètres";
     public static final String EXTERNAL_ID = "4289327";
     private final UnitDefinitionSeeder unitDefinitionSeeder;
     private final VocabularyRepository vocabularyRepository;
@@ -126,7 +126,7 @@ public class DefaultFormsDatasetInitializer implements DatabaseInitializer {
             .unitDefinitionDTO(
                     UnitDefinitionDTO.builder()
                             .id(0L)
-                            .label(MÈTRES)
+                            .label(METRES)
                             .concept(ConceptDTO.builder()
                                     .externalId(EXTERNAL_ID)
                                     .vocabulary(
@@ -151,7 +151,7 @@ public class DefaultFormsDatasetInitializer implements DatabaseInitializer {
             .unitDefinitionDTO(
                     UnitDefinitionDTO.builder()
                             .id(0L)
-                            .label(MÈTRES)
+                            .label(METRES)
                             .concept(ConceptDTO.builder()
                                     .externalId(EXTERNAL_ID)
                                     .vocabulary(
@@ -861,7 +861,7 @@ public class DefaultFormsDatasetInitializer implements DatabaseInitializer {
         // Define meter
         UnitDefinitionDTO meter = UnitDefinitionDTO.builder()
                 .id(0L)
-                .label(MÈTRES)
+                .label(METRES)
                 .concept(meterConcept)
                 .symbol("m")
                 .factorToBase(1.0)
