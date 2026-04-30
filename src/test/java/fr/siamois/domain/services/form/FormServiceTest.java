@@ -6,6 +6,7 @@ import fr.siamois.domain.models.form.customfield.CustomFieldMeasurement;
 import fr.siamois.domain.models.form.customfield.CustomFieldStratigraphy;
 import fr.siamois.domain.models.form.customform.CustomForm;
 import fr.siamois.domain.models.form.customform.EnabledWhenJson;
+import fr.siamois.domain.models.form.measurement.UnitDefinition;
 import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.dto.PlaceSuggestionDTO;
@@ -13,6 +14,7 @@ import fr.siamois.dto.StratigraphicRelationshipDTO;
 import fr.siamois.dto.entity.*;
 import fr.siamois.infrastructure.database.repositories.form.FormRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
+import fr.siamois.mapper.UnitDefinitionMapper;
 import fr.siamois.ui.bean.LabelBean;
 import fr.siamois.ui.form.CustomFieldAnswerFactory;
 import fr.siamois.ui.form.fieldsource.FieldSource;
@@ -44,6 +46,9 @@ class FormServiceTest {
 
     @Mock
     private LabelBean labelBean;
+
+    @Mock
+    private UnitDefinitionMapper unitDefinitionMapper;
 
     @InjectMocks
     private FormService formService;
@@ -615,7 +620,9 @@ class FormServiceTest {
         CustomField personField = mockSystemField(true, "person");
         CustomField personListField = mockSystemField(true, "personList");
         CustomField spatialUnitSetField = mockSystemField(true, "spatialUnitSet");
-        CustomField measurementField = mockSystemField(true, "meas");
+        CustomFieldMeasurement measurementField = mock(CustomFieldMeasurement.class);
+        when(measurementField.getIsSystemField()).thenReturn(true);
+        when(measurementField.getValueBinding()).thenReturn("meas");
 
         // Setup mocks for fieldSource
         when(fieldSource.getAllFields()).thenReturn(
@@ -668,6 +675,7 @@ class FormServiceTest {
         // Mock the label bean to return a label for the concept
         given(labelBean.findLabelOf(concept)).willReturn("Concept Label");
         given(labelBean.getCurrentUserLang()).willReturn("en");
+        when(unitDefinitionMapper.convert(null)).thenReturn(new UnitDefinitionDTO());
 
         // Mock the factory to return the answers
         try (MockedStatic<CustomFieldAnswerFactory> mockedFactory = mockStatic(CustomFieldAnswerFactory.class)) {
