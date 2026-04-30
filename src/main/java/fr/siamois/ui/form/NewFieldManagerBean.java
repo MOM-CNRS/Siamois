@@ -112,32 +112,36 @@ public class NewFieldManagerBean {
             return;
         }
 
-        // Use an Iterator to safely remove the row if it becomes empty
         Iterator<CustomRowUiDto> rowIterator = panel.getRows().iterator();
-
         while (rowIterator.hasNext()) {
-            CustomRowUiDto row = rowIterator.next();
-
-            if (row.getColumns() != null) {
-                // Find and remove the column
-                boolean removed = row.getColumns().removeIf(c -> c.equals(colToRemove));
-
-                if (removed) {
-                    // 1. Clean up the answer map to prevent data persistence/leaks
-                    if (formResponse != null && formResponse.getAnswers() != null) {
-                        formResponse.getAnswers().remove(colToRemove.getField());
-                    }
-
-                    // 2. If the row has no more columns, delete the row entirely
-                    if (row.getColumns().isEmpty()) {
-                        rowIterator.remove();
-                    }
-
-                    // Exit loop once found and handled
-                    break;
-                }
+            if (processRowRemoval(rowIterator, colToRemove)) {
+                break; // Exit once the specific column is handled
             }
         }
+    }
+
+    /**
+     * Helper to handle column removal and row cleanup.
+     * Returns true if the column was found and removed.
+     */
+    private boolean processRowRemoval(Iterator<CustomRowUiDto> rowIterator, CustomColUiDto colToRemove) {
+        CustomRowUiDto row = rowIterator.next();
+
+        if (row.getColumns() == null || !row.getColumns().removeIf(c -> c.equals(colToRemove))) {
+            return false;
+        }
+
+        // Clean up data source
+        if (formResponse != null && formResponse.getAnswers() != null) {
+            formResponse.getAnswers().remove(colToRemove.getField());
+        }
+
+        // Row cleanup
+        if (row.getColumns().isEmpty()) {
+            rowIterator.remove();
+        }
+
+        return true;
     }
 
 

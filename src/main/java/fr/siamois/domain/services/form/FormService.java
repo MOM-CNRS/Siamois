@@ -340,14 +340,13 @@ public class FormService {
             populateSystemFieldValue(answer, value);
 
             // POST INIT
-            if(field instanceof  CustomFieldMeasurement measField) {
-                if(answer instanceof CustomFieldAnswerMeasurementViewModel measAnswer) {
-                    if(measAnswer.getValue().getUnit() == null) {
-                        measAnswer.getValue().setUnit(
-                                unitDefinitionMapper.convert(measField.getUnit())
-                        );
-                    }
-                }
+            if (field instanceof CustomFieldMeasurement measField
+                    && answer instanceof CustomFieldAnswerMeasurementViewModel measAnswer
+                    && measAnswer.getValue().getUnit() == null) {
+
+                measAnswer.getValue().setUnit(
+                        unitDefinitionMapper.convert(measField.getUnit())
+                );
             }
 
 

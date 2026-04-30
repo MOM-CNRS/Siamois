@@ -34,6 +34,9 @@ import java.util.Map;
 public class DefaultFormsDatasetInitializer implements DatabaseInitializer {
 
     private static final String UI_G_12_UI_MD_6_UI_LG_6 = "ui-g-12 ui-md-6 ui-lg-6";
+    public static final String TH_252 = "th252";
+    public static final String MÈTRES = "Mètres";
+    public static final String EXTERNAL_ID = "4289327";
     private final UnitDefinitionSeeder unitDefinitionSeeder;
     private final VocabularyRepository vocabularyRepository;
     private final ConceptSeeder conceptSeeder;
@@ -56,7 +59,7 @@ public class DefaultFormsDatasetInitializer implements DatabaseInitializer {
     // Default Siamois Thesaurus
     List<ThesaurusSeeder.ThesaurusSpec> thesauri = List.of(
             new ThesaurusSeeder.ThesaurusSpec(DEFAULT_VOCABULARY_INSTANCE_URI, DEFAULT_VOCABULARY_ID),
-            new ThesaurusSeeder.ThesaurusSpec(DEFAULT_VOCABULARY_INSTANCE_URI, "th252")
+            new ThesaurusSeeder.ThesaurusSpec(DEFAULT_VOCABULARY_INSTANCE_URI, TH_252)
     );
 
     // Default Siamois field concept
@@ -123,13 +126,13 @@ public class DefaultFormsDatasetInitializer implements DatabaseInitializer {
             .unitDefinitionDTO(
                     UnitDefinitionDTO.builder()
                             .id(0L)
-                            .label("Mètres")
+                            .label(MÈTRES)
                             .concept(ConceptDTO.builder()
-                                    .externalId("4289327")
+                                    .externalId(EXTERNAL_ID)
                                     .vocabulary(
                                             VocabularyDTO.builder()
                                                     .baseUri(DEFAULT_VOCABULARY_INSTANCE_URI)
-                                                    .externalVocabularyId("th252")
+                                                    .externalVocabularyId(TH_252)
                                                     .build()
                                     )
                                     .build())
@@ -148,13 +151,13 @@ public class DefaultFormsDatasetInitializer implements DatabaseInitializer {
             .unitDefinitionDTO(
                     UnitDefinitionDTO.builder()
                             .id(0L)
-                            .label("Mètres")
+                            .label(MÈTRES)
                             .concept(ConceptDTO.builder()
-                                    .externalId("4289327")
+                                    .externalId(EXTERNAL_ID)
                                     .vocabulary(
                                             VocabularyDTO.builder()
                                                     .baseUri(DEFAULT_VOCABULARY_INSTANCE_URI)
-                                                    .externalVocabularyId("th252")
+                                                    .externalVocabularyId(TH_252)
                                                     .build()
                                     )
                                     .build())
@@ -848,17 +851,17 @@ public class DefaultFormsDatasetInitializer implements DatabaseInitializer {
         Map<String, Vocabulary> result = thesaurusSeeder.seed(thesauri);
 
 
-        Vocabulary vocabulary = result.get("th252");
+        Vocabulary vocabulary = result.get(TH_252);
         VocabularyDTO vocabulary2 = new VocabularyDTO();
-        vocabulary2.setExternalVocabularyId("th252");
+        vocabulary2.setExternalVocabularyId(TH_252);
         ConceptDTO meterConcept = new ConceptDTO();
         meterConcept.setVocabulary(vocabulary2);
-        meterConcept.setExternalId("4289327");
+        meterConcept.setExternalId(EXTERNAL_ID);
 
         // Define meter
         UnitDefinitionDTO meter = UnitDefinitionDTO.builder()
                 .id(0L)
-                .label("Mètres")
+                .label(MÈTRES)
                 .concept(meterConcept)
                 .symbol("m")
                 .factorToBase(1.0)
