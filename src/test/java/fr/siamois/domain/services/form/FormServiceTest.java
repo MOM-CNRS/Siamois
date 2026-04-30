@@ -2,6 +2,7 @@ package fr.siamois.domain.services.form;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import fr.siamois.domain.models.form.customfield.CustomField;
+import fr.siamois.domain.models.form.customfield.CustomFieldMeasurement;
 import fr.siamois.domain.models.form.customfield.CustomFieldStratigraphy;
 import fr.siamois.domain.models.form.customform.CustomForm;
 import fr.siamois.domain.models.form.customform.EnabledWhenJson;
@@ -106,12 +107,13 @@ class FormServiceTest {
         private List<PersonDTO> personList;
         private Set<SpatialUnitSummaryDTO> spatialUnitSet;
         private SpatialUnitSummaryDTO spatialUnitNull;
+        private MeasurementAnswerDTO meas;
 
         public List<String> getBindableFieldNames() {
             return List.of(
                     "title", "count", "createdAt", "typeConcept",
                     "actionUnit", "spatialUnit", "actionCode","recordingUnitParents",
-                    "person", "personList", "spatialUnitSet", "spatialUnitNull"
+                    "person", "personList", "spatialUnitSet", "spatialUnitNull", "meas"
             );
         }
 
@@ -122,6 +124,14 @@ class FormServiceTest {
 
         public void setTitle(String title) {
             this.title = title;
+        }
+
+        public MeasurementAnswerDTO getMeas() {
+            return meas;
+        }
+
+        public void setMeas(MeasurementAnswerDTO meas) {
+            this.meas = meas;
         }
 
         public Integer getCount() {
@@ -410,6 +420,7 @@ class FormServiceTest {
         CustomField spatialUnitSetField = mockSystemField(true, "spatialUnitSet");
         CustomField spatialUnitFieldNull = mockSystemField(true, "spatialUnitNull");
         CustomField recordingUnitParentsField = mockSystemField(true, "recordingUnitParents");
+        CustomField measurementField = mockSystemField(true, "meas");
 
         // Mock answers for all supported types
         CustomFieldAnswerTextViewModel  titleAnswer = new CustomFieldAnswerTextViewModel();
@@ -417,6 +428,11 @@ class FormServiceTest {
 
         CustomFieldAnswerIntegerViewModel  countAnswer = new CustomFieldAnswerIntegerViewModel ();
         countAnswer.setValue(42);
+
+        CustomFieldAnswerMeasurementViewModel measAnswer = new CustomFieldAnswerMeasurementViewModel();
+        measAnswer.setValue(MeasurementAnswerDTO.builder()
+                .numericValue(45.0)
+                .build());
 
         CustomFieldAnswerDateTimeViewModel  createdAtAnswer = new CustomFieldAnswerDateTimeViewModel ();
         createdAtAnswer.setValue(LocalDateTime.of(2023, 1, 1, 12, 0));
@@ -479,6 +495,7 @@ class FormServiceTest {
         answers.put(spatialUnitSetField, spatialUnitSetAnswer);
         answers.put(spatialUnitFieldNull, spatialUnitAnswerNull);
         answers.put(recordingUnitParentsField, recordingAnswer);
+        answers.put(measurementField, measAnswer);
         response.setAnswers(answers);
 
         // Act: Update the JPA entity from the response
@@ -495,6 +512,7 @@ class FormServiceTest {
         assertEquals(person, entity.getPerson());
         assertEquals(personList, entity.getPersonList());
         assertEquals(2, entity.getSpatialUnitSet().size());
+        assertEquals(45.0, entity.getMeas().getNumericValue());
         assertNull(entity.getSpatialUnitNull());
     }
 
@@ -597,11 +615,12 @@ class FormServiceTest {
         CustomField personField = mockSystemField(true, "person");
         CustomField personListField = mockSystemField(true, "personList");
         CustomField spatialUnitSetField = mockSystemField(true, "spatialUnitSet");
+        CustomField measurementField = mockSystemField(true, "meas");
 
         // Setup mocks for fieldSource
         when(fieldSource.getAllFields()).thenReturn(
                 List.of(titleField, countField, createdAtField, conceptField, actionUnitField,
-                        spatialUnitField, actionCodeField, personField, personListField, spatialUnitSetField)
+                        spatialUnitField, actionCodeField, personField, personListField, spatialUnitSetField, measurementField)
         );
 
         // Create a dummy entity with all types of values
@@ -637,6 +656,11 @@ class FormServiceTest {
         personList.add(person1);
         personList.add(person2);
         entity.setPersonList(personList);
+
+        // Measurement
+        MeasurementAnswerDTO measurement = mock(MeasurementAnswerDTO.class);
+        when(measurement.getNumericValue()).thenReturn(45.0);
+        entity.setMeas(measurement);
 
         Set<SpatialUnitSummaryDTO> spatialUnitSet = Set.of(mock(SpatialUnitSummaryDTO.class), mock(SpatialUnitSummaryDTO.class));
         entity.setSpatialUnitSet(spatialUnitSet);
@@ -674,6 +698,8 @@ class FormServiceTest {
                     .thenReturn(new CustomFieldAnswerSelectOnePersonViewModel());
             mockedFactory.when(() -> CustomFieldAnswerFactory.instantiateAnswerForField(spatialUnitSetField))
                     .thenReturn(new CustomFieldAnswerSelectMultipleSpatialUnitTreeViewModel());
+            mockedFactory.when(() -> CustomFieldAnswerFactory.instantiateAnswerForField(measurementField))
+                    .thenReturn(new CustomFieldAnswerMeasurementViewModel());
 
             // Act: Initialize or reuse the response
             CustomFormResponseViewModel response = formService.initOrReuseResponse(null, entity, fieldSource, false);
@@ -690,7 +716,7 @@ class FormServiceTest {
             assertEquals(actionCode, ((CustomFieldAnswerSelectOneActionCodeViewModel) response.getAnswers().get(actionCodeField)).getValue());
             assertEquals(person, ((CustomFieldAnswerSelectOnePersonViewModel) response.getAnswers().get(personField)).getValue());
             assertEquals(personList, ((CustomFieldAnswerSelectMultiplePersonViewModel) response.getAnswers().get(personListField)).getValue());
-
+            assertEquals(measurement.getNumericValue(), ((CustomFieldAnswerMeasurementViewModel) response.getAnswers().get(measurementField)).getValue().getNumericValue());
 
             // Also ensure pk set + hasBeenModified false
             assertNotNull(response.getAnswers().get(titleField).getPk());
