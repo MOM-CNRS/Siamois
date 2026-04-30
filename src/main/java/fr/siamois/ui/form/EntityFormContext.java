@@ -795,4 +795,8 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
         return geoPlatService.search(query);
     }
 
+    public void toggleUncertainty(CustomFieldAnswerViewModel answer) {
+        answer.setUncertain(!answer.isUncertain());
+    }
+
 }

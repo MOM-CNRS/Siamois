@@ -16,7 +16,7 @@
     <!--@elvariable id="root" type="java.lang.String" -->
     <!--@elvariable id="panelIndex" type="java.lang.Integer" -->
     <!--@elvariable id="hasBeenModified" type="java.lang.Boolean" -->
-    <!--@elvariable id="answer" type="fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswer" required="true" -->
+    <!--@elvariable id="answer" type="fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerViewModel" required="true" -->
     <!--@elvariable id="onModified" type="javax.el.MethodExpression" required="false" description="Callback method: void method(javax.faces.event.AjaxBehaviorEvent)" -->
     <!--@elvariable id="panelHeaderUpdateId" type="java.lang.String" required="false" -->
     <!--@elvariable id="hasAutoGenerationFunction" type="java.lang.Boolean" -->
@@ -31,9 +31,11 @@
 
         <sharedInput:panelField
                 icon="#{col.field.icon}"
+                uncertain="#{answer.uncertain}"
                 conceptUri="#{col.field.conceptUri}"
                 id="panelField-#{prefix}-#{statusIndex}-#{rowIndex}-#{colIndex}"
                 required="#{col.required}"
+                onToggle="#{bean.formContext.toggleUncertainty(answer)}"
                 title="#{spatialUnitFieldBean.resolveCustomFieldLabel(col.field)}"
                 forId="#{prefix}-#{statusIndex}-#{rowIndex}-#{colIndex}:input"
                 fluid="#{answer['class'].simpleName ne 'CustomFieldAnswerSelectMultipleSpatialUnitTree'}"

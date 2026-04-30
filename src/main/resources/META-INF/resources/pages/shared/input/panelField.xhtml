@@ -14,9 +14,11 @@
         <cc:attribute name="required" type="java.lang.Boolean" required="false" default="false"/>
         <cc:attribute name="fluid" type="java.lang.Boolean" required="false" default="true"/>
         <cc:attribute name="canBeRemoved" type="java.lang.Boolean" required="false" default="false"/>
+        <cc:attribute name="uncertain" type="java.lang.Boolean" required="false" default="false"/>
         <cc:attribute name="onRemove"
                       method-signature="void onRemove(java.lang.Object, java.lang.Object)"
                       required="false"/>
+        <cc:attribute name="onToggle" method-signature="void toggle()" required="true"/>
     </cc:interface>
 
     <cc:implementation>
@@ -25,7 +27,9 @@
                 class="field-value-group #{cc.attrs.fluid ? 'field-value-group ui-fluid' : 'field-value-group'}"
                 style="flex: 1 1 auto;"
                 id="fieldValueGroup">
-            <div>
+            <div style="    display: flex;
+            gap:0.5em;
+                    align-items: center;" class="header-toggle-container">
                 <p:commandButton
                         styleClass="ui-button-flat ellipsis-btn #{cc.attrs.required ? 'required-btn' : ''}"
                         icon="#{cc.attrs.icon}"
@@ -35,8 +39,18 @@
                         value="#{cc.attrs.title}">
 
                 </p:commandButton>
+
+                <!-- The Toggle Switch -->
+                <div class="toggle-wrapper #{cc.attrs.uncertain ? 'is-active' : 'is-hidden'}">
+                    <p:selectBooleanCheckbox value="#{cc.attrs.uncertain}"
+                                             itemLabel="Incertain"
+                                             styleClass="small-toggle">
+                        <p:ajax listener="#{cc.attrs.onToggle}" update="@parent" />
+
+                    </p:selectBooleanCheckbox>
+                </div>
                 <p:menu overlay="true" trigger="btn" my="left top" at="left bottom">
-                    <p:menuitem value="Voir dans Opentheso" icon="bi bi-book"
+                    <p:menuitem value="Voir dans Opentheso" icon="sia-icon-opentheso"
                                 target="_blank" url="#{cc.attrs.conceptUri}"/>
                     <p:divider rendered="#{cc.attrs.canBeRemoved}"/>
 

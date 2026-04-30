@@ -42,7 +42,7 @@ public class CustomFieldSelectOneFromFieldCode extends CustomField {
 
     @Override
     public String getIcon() {
-        return "bi bi-book";
+        return "sia-icon-opentheso";
     }
 
 }

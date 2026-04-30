@@ -217,10 +217,6 @@ body .strati-rel-card.ui-card .ui-chip .ui-chip-text {
     font-size:10px;
 }
 
-body .ui-chkbox .ui-chkbox-box.ui-state-active {
-    border-color: var(--main-color)
-}
-
 
 /* Side Panel Styling */
 .side-panel {
@@ -614,11 +610,64 @@ body .required-btn::after {
     right: 6px;
 }
 
-.si-opentheso {
+/* Container for the switch */
+.toggle-wrapper {
+    transition: all 0.2s ease-in-out;
+    font-size: 0.8rem;
+    opacity: 0; /* Hide by default */
+}
+
+/* State: Hovering parent OR checked (Sticky) */
+.header-toggle-container:hover .toggle-wrapper,
+.toggle-wrapper:has(input:checked),
+.toggle-wrapper.is-active {
+    opacity: 1 !important;
+    pointer-events: auto;
+    transform: translateX(0);
+}
+
+/* 1. The checkbox box itself (Unchecked state) */
+.small-toggle .ui-chkbox-box {
+    width: 14px !important;
+    height: 14px !important;
+    border-color: #d1d5db; /* Light grey border when off */
+    transition: background-color 0.2s, border-color 0.2s;
+}
+
+/* 2. The checkbox box when CHECKED (Orange background and border) */
+.small-toggle .ui-chkbox-box.ui-state-active {
+    background-color: orange !important;
+    border-color: orange !important;
+    color: #fff !important; /* Ensure the checkmark icon is white */
+}
+
+/* 3. Adjust the checkmark icon size to fit the smaller box */
+.small-toggle .ui-chkbox-icon {
+    font-size: 10px !important;
+    margin-top: -1px;
+}
+
+/* 4. The label style */
+.small-toggle .ui-chkbox-label {
+    color: var(--text-light);
+    font-style: italic;
+    cursor: pointer;
+}
+
+/* 5. Highlight the label color when checked (Optional) */
+.toggle-wrapper:has(input:checked) .ui-chkbox-label {
+    color: orange;
+}
+
+
+.sia-icon-opentheso {
+    content: "";
     display: inline-block;
-    width: 1rem;
-    height: 1rem;
-    background-image: url('/resources/img/svg/house.svg');
-    background-size: contain;
+    width: 16px;
+    height: 16px;
+    vertical-align: middle;
     background-repeat: no-repeat;
+    background-position: center;
+    background-size: contain;
+    background-image: url("data:image/svg+xml,%3Csvg version='1.1' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 232 227'%3E%3Cpath d='M0 0 C2.5998976 2.20595085 5.11283018 4.49073622 7.61962891 6.80224609 C8.28220703 7.38361328 8.94478516 7.96498047 9.62744141 8.56396484 C25.21805846 22.95809268 36.65460996 46.65988997 37.78076172 67.83154297 C38.15237427 96.05681229 38.15237427 96.05681229 34.61962891 106.80224609 C34.42626953 107.41890137 34.23291016 108.03555664 34.03369141 108.67089844 C28.86174834 124.90904375 20.5356493 137.74351887 8.61962891 149.80224609 C7.96478516 150.52927734 7.30994141 151.25630859 6.63525391 152.00537109 C-8.45107771 168.38113276 -33.95927735 178.89622065 -55.97607422 179.92333984 C-85.69276909 180.91720924 -112.97394537 173.95063544 -135.41943359 153.61083984 C-153.16258967 136.97591325 -167.33910512 113.7492434 -168.38037109 88.80224609 C-168.45771484 87.11808594 -168.45771484 87.11808594 -168.53662109 85.39990234 C-169.13062224 60.22910389 -162.29273412 33.0395903 -145.38037109 13.80224609 C-144.49285156 12.70203125 -144.49285156 12.70203125 -143.58740234 11.57958984 C-127.16184053 -8.16495147 -101.99990555 -17.16472503 -77.38037109 -21.19775391 C-76.23181641 -21.39498047 -76.23181641 -21.39498047 -75.06005859 -21.59619141 C-49.16081196 -25.47583564 -20.11333097 -16.421465 0 0 Z M-70.38037109 -10.19775391 C-76.62998138 14.44210304 -79.49054654 39.4885435 -81.38037109 64.80224609 C-82.51732422 64.85123047 -83.65427734 64.90021484 -84.82568359 64.95068359 C-94.46471165 65.40424794 -103.84615778 66.2681139 -113.38037109 67.80224609 C-114.03029306 97.52201087 -112.05246392 131.06695313 -91.37255859 154.72412109 C-90.71513672 155.40990234 -90.05771484 156.09568359 -89.38037109 156.80224609 C-88.74357422 157.46740234 -88.10677734 158.13255859 -87.45068359 158.81787109 C-80.93289671 165.04772362 -74.00945722 167.94315544 -65.00537109 168.42724609 C-54.10854807 168.01749482 -45.98393209 162.49080408 -38.69677734 154.70068359 C-18.80664337 129.81285998 -13.6792899 94.06579578 -16.91162109 63.14599609 C-19.82814092 38.82280743 -26.47520433 12.71470072 -46.17724609 -3.61181641 C-52.31135255 -8.02750297 -58.04394415 -10.36007531 -65.63037109 -10.26025391 C-66.52240234 -10.25123047 -67.41443359 -10.24220703 -68.33349609 -10.23291016 C-69.00896484 -10.22130859 -69.68443359 -10.20970703 -70.38037109 -10.19775391 Z ' fill='%236B7280' transform='translate(181.38,34.19)'/%3E%3Cpath d='M0 0 C0.66 0.33 1.32 0.66 2 1 C-3.94 6.94 -9.88 12.88 -16 19 C-16 14.80130728 -14.19810866 13.66463027 -11.375 10.625 C-10.9207666 10.13475342 -10.4665332 9.64450684 -9.99853516 9.1394043 C-6.85830473 5.79321137 -3.64356736 2.78061719 0 0 Z ' fill='%236B7280' transform='translate(50,34)'/%3E%3C/svg%3E");
 }
