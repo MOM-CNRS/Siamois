@@ -38,23 +38,6 @@
     }
 
 
-    // Checkboxes
-    .ui-chkbox {
-
-      .ui-chkbox-box.ui-state-active {
-        background: var(--main-color);
-
-        &.ui-state-hover {
-          background: var(--main-color);
-        }
-
-      }
-
-      .ui-chkbox-box.ui-state-hover {
-        border-color: var(--main-color);
-      }
-
-    }
 
 
 

@@ -1,6 +1,7 @@
 <!-- /pages/shared/field/fieldCore.xhtml -->
 <ui:fragment xmlns="http://www.w3.org/1999/xhtml"
              xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
+
              xmlns:siaInplace="http://xmlns.jcp.org/jsf/composite/pages/shared/inplace"
              xmlns:c="http://java.sun.com/jsp/jstl/core">
 
@@ -234,6 +235,21 @@
                     id="address"
                     formCtx="#{formCtx}"
                     rendered="#{col.field['class'].simpleName eq 'CustomFieldSelectOneAddress'}"
+                    hasBeenModified="#{hasBeenModified}"
+                    field="#{col.field}"
+                    mode="#{mode}"
+                    onModified="#{formCtx.onFieldAnswerModifiedListener}"
+                    updateTargetsOnBlur="#{updateTargetsOnBlur}"
+                    required="#{col.required}"
+                    answer="#{answer}"
+            />
+        </c:if>
+
+        <c:if test="#{col.field['class'].simpleName eq 'CustomFieldMeasurement'}">
+            <siaInplace:measurement
+                    id="measurement"
+                    formCtx="#{formCtx}"
+                    rendered="#{col.field['class'].simpleName eq 'CustomFieldMeasurement'}"
                     hasBeenModified="#{hasBeenModified}"
                     field="#{col.field}"
                     mode="#{mode}"

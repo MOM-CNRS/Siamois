@@ -1,6 +1,8 @@
 package fr.siamois.domain.models.form.customfield;
 
+import fr.siamois.domain.models.FieldCode;
 import fr.siamois.domain.models.form.measurement.UnitDefinition;
+import fr.siamois.domain.models.vocabulary.Concept;
 import jakarta.persistence.*;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -28,5 +30,22 @@ public class CustomFieldMeasurement extends CustomField {
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "fk_unit")
     private UnitDefinition unit;
+
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "fk_nature")
+    private Concept measurementNature;
+
+    @FieldCode
+    public static final String MEASUREMENT_TYPE_FIELD_CODE = "SIAMD.TYPE";
+
+    @FieldCode
+    public static final String MEASUREMENT_NATURE_FIELD_CODE = "SIAMD.NATURE";
+
+    @Override
+    public String getIcon() {
+        return "bi bi-rulers";
+    }
+
+
 
 }

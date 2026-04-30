@@ -15,5 +15,8 @@ import lombok.experimental.SuperBuilder;
 @DiscriminatorValue("SELECT_ONE_ACTION_CODE")
 @Table(name = "custom_field")
 public class CustomFieldSelectOneActionCode extends CustomField {
-
+    @Override
+    public String getIcon() {
+        return "bi bi-qr-code";
+    }
 }

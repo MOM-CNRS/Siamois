@@ -17,5 +17,8 @@ import lombok.experimental.SuperBuilder;
 @SuperBuilder
 @NoArgsConstructor
 public class CustomFieldSelectOneAddress extends CustomField {
-
+    @Override
+    public String getIcon() {
+        return "bi bi-mailbox";
+    }
 }

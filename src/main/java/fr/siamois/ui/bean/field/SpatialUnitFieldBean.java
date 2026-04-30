@@ -16,7 +16,7 @@ import fr.siamois.ui.bean.LabelBean;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.RedirectBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
-import fr.siamois.ui.form.CustomFormPanelUiDto;
+import fr.siamois.ui.form.dto.CustomFormPanelUiDto;
 import jakarta.faces.component.UIComponent;
 import jakarta.faces.context.FacesContext;
 import lombok.Getter;

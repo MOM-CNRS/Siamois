@@ -10,5 +10,10 @@ public record CustomFormPanelDTO (
     String className,
     String name,
     List<CustomRowDTO> rows,
-    boolean isSystemPanel // define by system or user?
-) implements Serializable {}
+    boolean isSystemPanel,// define by system or user?
+    boolean canUserAddFields
+) implements Serializable {
+    public CustomFormPanelDTO(String className, String name, List<CustomRowDTO> rows, boolean isSystemPanel) {
+        this(className, name, rows, isSystemPanel, false);
+    }
+}

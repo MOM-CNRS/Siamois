@@ -40,4 +40,9 @@ public class CustomFieldSelectOneFromFieldCode extends CustomField {
         return super.hashCode();
     }
 
+    @Override
+    public String getIcon() {
+        return "sia-icon-opentheso";
+    }
+
 }

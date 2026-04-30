@@ -18,5 +18,10 @@ import lombok.experimental.SuperBuilder;
 @NoArgsConstructor
 public class CustomFieldSelectMultiplePerson extends CustomFieldSelectPerson {
 
+    @Override
+    public String getIcon() {
+        return "bi bi-people";
+    }
+
 
 }

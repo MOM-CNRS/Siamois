@@ -14,7 +14,7 @@ import fr.siamois.dto.entity.SpecimenDTO;
 import fr.siamois.ui.bean.RedirectBean;
 import fr.siamois.ui.bean.panel.models.PanelBreadcrumb;
 import fr.siamois.ui.bean.panel.models.panel.AbstractPanel;
-import fr.siamois.ui.form.FormUiDto;
+import fr.siamois.ui.form.dto.FormUiDto;
 import fr.siamois.ui.mapper.FormMapper;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;

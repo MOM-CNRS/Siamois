@@ -2,6 +2,7 @@ package fr.siamois.domain.models.form.measurement;
 
 import jakarta.persistence.*;
 import lombok.*;
+
 import java.io.Serializable;
 
 @Entity
@@ -24,7 +25,7 @@ public class MeasurementAnswer implements Serializable {
     private Double numericValue;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "unit_id", nullable = false)
+    @JoinColumn(name = "fk_unit_id", nullable = false)
     private UnitDefinition unit;
 
     /**

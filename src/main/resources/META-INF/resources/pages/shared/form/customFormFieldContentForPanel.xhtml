@@ -16,52 +16,65 @@
     <!--@elvariable id="root" type="java.lang.String" -->
     <!--@elvariable id="panelIndex" type="java.lang.Integer" -->
     <!--@elvariable id="hasBeenModified" type="java.lang.Boolean" -->
-    <!--@elvariable id="answer" type="fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswer" required="true" -->
+    <!--@elvariable id="answer" type="fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerViewModel" required="true" -->
     <!--@elvariable id="onModified" type="javax.el.MethodExpression" required="false" description="Callback method: void method(javax.faces.event.AjaxBehaviorEvent)" -->
     <!--@elvariable id="panelHeaderUpdateId" type="java.lang.String" required="false" -->
     <!--@elvariable id="hasAutoGenerationFunction" type="java.lang.Boolean" -->
     <!--@elvariable id="onGenerateValue" type="javax.el.MethodExpression" -->
+    <!--@elvariable id="canBeRemoved" type="java.lang.Boolean" -->
+    <!--@elvariable id="newFieldManagerBean" type="fr.siamois.ui.form.NewFieldManagerBean" -->
 
     <p:outputPanel rendered="#{bean.isColumnEnabled(col.field)}"
+                   style="display: flex"
                    id="field-#{prefix}-#{statusIndex}-#{rowIndex}-#{colIndex}">
 
 
         <sharedInput:panelField
+                icon="#{col.field.icon}"
+                uncertain="#{answer.uncertain}"
+                conceptUri="#{col.field.conceptUri}"
                 id="panelField-#{prefix}-#{statusIndex}-#{rowIndex}-#{colIndex}"
                 required="#{col.required}"
+                onToggle="#{bean.formContext.toggleUncertainty(answer)}"
                 title="#{spatialUnitFieldBean.resolveCustomFieldLabel(col.field)}"
                 forId="#{prefix}-#{statusIndex}-#{rowIndex}-#{colIndex}:input"
                 fluid="#{answer['class'].simpleName ne 'CustomFieldAnswerSelectMultipleSpatialUnitTree'}"
+                canBeRemoved="#{canBeRemoved}"
+                onRemove="#{newFieldManagerBean.removeField(customFormPanel, col)}"
 
         >
+            <div >
 
-            <ui:include src="/pages/shared/form/fieldCore.xhtml">
-                <ui:param name="panelId" value="#{panelId}"/>
-                <ui:param name="bean" value="#{bean}"/>
-                <ui:param name="formCtx" value="#{bean.formContext}"/>
-                <ui:param name="col" value="#{col}"/>
-                <ui:param name="prefix" value="#{prefix}"/>
-                <ui:param name="statusIndex" value="#{statusIndex}"/>
-                <ui:param name="rowIndex" value="#{rowIndex}"/>
-                <ui:param name="colIndex" value="#{colIndex}"/>
-                <ui:param name="root" value="#{root}"/>
-                <ui:param name="panelIndex" value="#{panelIndex}"/>
-                <ui:param name="hasBeenModified" value="#{hasBeenModified}"/>
-                <ui:param name="answer" value="#{answer}"/>
-                <ui:param name="onModified" value="#{onModified}"/>
-                <ui:param name="panelHeaderUpdateId" value="#{panelHeaderUpdateId}"/>
-                <ui:param name="hasAutoGenerationFunction" value="#{hasAutoGenerationFunction}"/>
-                <ui:param name="onGenerateValue" value="#{onGenerateValue}"/>
-                <ui:param name="rowStatus" value="#{rowStatus}"/>
-                <ui:param name="colStatus" value="#{colStatus}"/>
-                <ui:param name="panelStyleClass" value="#{bean.getAutocompleteClass()}"/>
-                <ui:param name="conceptFieldsUpdateTargetsOnBlur" value="#{bean.getConceptFieldsUpdateTargetsOnBlur()}"/>
-                <ui:param name="updateTargetsOnBlur" value="#{bean.getPanelHeaderUpdateId()}"/>
-                <ui:param name="spatialUnitOptions" value="#{bean.formContext.getSpatialUnitOptions('')}" />
-                <ui:param name="mode" value="#{(col.readOnly) ? 'output' : flowBean.getInPlaceFieldMode()}"/>
-            </ui:include>
+                <ui:include src="/pages/shared/form/fieldCore.xhtml">
+                    <ui:param name="panelId" value="#{panelId}"/>
+                    <ui:param name="bean" value="#{bean}"/>
+                    <ui:param name="formCtx" value="#{bean.formContext}"/>
+                    <ui:param name="col" value="#{col}"/>
+                    <ui:param name="prefix" value="#{prefix}"/>
+                    <ui:param name="statusIndex" value="#{statusIndex}"/>
+                    <ui:param name="rowIndex" value="#{rowIndex}"/>
+                    <ui:param name="colIndex" value="#{colIndex}"/>
+                    <ui:param name="root" value="#{root}"/>
+                    <ui:param name="panelIndex" value="#{panelIndex}"/>
+                    <ui:param name="hasBeenModified" value="#{hasBeenModified}"/>
+                    <ui:param name="answer" value="#{answer}"/>
+                    <ui:param name="onModified" value="#{onModified}"/>
+                    <ui:param name="panelHeaderUpdateId" value="#{panelHeaderUpdateId}"/>
+                    <ui:param name="hasAutoGenerationFunction" value="#{hasAutoGenerationFunction}"/>
+                    <ui:param name="onGenerateValue" value="#{onGenerateValue}"/>
+                    <ui:param name="rowStatus" value="#{rowStatus}"/>
+                    <ui:param name="colStatus" value="#{colStatus}"/>
+                    <ui:param name="panelStyleClass" value="#{bean.getAutocompleteClass()}"/>
+                    <ui:param name="conceptFieldsUpdateTargetsOnBlur"
+                              value="#{bean.getConceptFieldsUpdateTargetsOnBlur()}"/>
+                    <ui:param name="updateTargetsOnBlur" value="#{bean.getPanelHeaderUpdateId()}"/>
+                    <ui:param name="spatialUnitOptions" value="#{bean.formContext.getSpatialUnitOptions('')}"/>
+                    <ui:param name="mode" value="#{(col.readOnly) ? 'output' : flowBean.getInPlaceFieldMode()}"/>
+                </ui:include>
+            </div>
 
         </sharedInput:panelField>
+
 
     </p:outputPanel>
 

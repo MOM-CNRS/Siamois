@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import fr.siamois.domain.models.form.customfield.CustomField;
+import fr.siamois.domain.models.form.customfield.CustomFieldMeasurement;
 import fr.siamois.domain.models.form.customfield.CustomFieldSelectMultipleSpatialUnitTree;
 import fr.siamois.domain.models.form.customfield.CustomFieldSelectOneSpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
@@ -41,11 +42,13 @@ import jakarta.faces.component.UIInput;
 import jakarta.faces.context.FacesContext;
 import jakarta.faces.event.AjaxBehaviorEvent;
 import lombok.Data;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.primefaces.PrimeFaces;
 import org.primefaces.event.SelectEvent;
 import org.primefaces.model.TreeNode;
 import org.springframework.core.convert.ConversionService;
+import org.springframework.data.domain.Page;
 
 import java.util.*;
 import java.util.function.BiConsumer;
@@ -80,6 +83,9 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
 
     private boolean autoSave = true;
 
+    @Getter
+    private NewFieldManagerBean newFieldManager;
+
     private final FieldSource fieldSource;
     private final FormService formService;
     private final SpatialUnitTreeService spatialUnitTreeService;
@@ -95,6 +101,7 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
     private final ConceptService conceptService;
     private final ConceptMapper conceptMapper;
     private final FormContextServices services;
+
 
 
     private List<SpatialUnitSummaryDTO> options; // spatial unit options
@@ -150,6 +157,7 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
         this.spatialUnitService = services.getSpatialUnitService();
         this.recordingUnitService = services.getRecordingUnitService();
         this.langBean = services.getLangBean();
+
         this.conversionService = conversionService;
         this.sessionSettingsBean = services.getSessionSettingsBean();
         this.geoApiService = services.getGeoApiService();
@@ -178,6 +186,14 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
 
         this.enabledEngine = formService.buildEnabledEngine(fieldSource);
         this.enabledEngine.applyAll(vp, applier);
+
+        // Prepare new field manager
+        Page<CustomFieldMeasurement> customFieldMeasurements = services.getCustomFieldMeasurementService().find(10);
+        // find all
+        this.newFieldManager = new NewFieldManagerBean(services.getCustomFieldMeasurementService(),
+                this.formResponse,
+                customFieldMeasurements.getContent()
+                );
 
     }
 
@@ -777,6 +793,10 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
 
     public List<FullAddress> completeAdresse(String query) {
         return geoPlatService.search(query);
+    }
+
+    public void toggleUncertainty(CustomFieldAnswerViewModel answer) {
+        answer.setUncertain(!answer.isUncertain());
     }
 
 }

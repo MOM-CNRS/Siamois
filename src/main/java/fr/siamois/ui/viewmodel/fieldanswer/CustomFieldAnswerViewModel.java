@@ -14,4 +14,5 @@ public abstract class CustomFieldAnswerViewModel implements Serializable {
 
     private CustomFieldAnswerId pk;
     private Boolean hasBeenModified ;
+    private boolean uncertain = false;
 }

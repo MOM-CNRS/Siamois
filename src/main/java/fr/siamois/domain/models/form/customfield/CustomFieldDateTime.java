@@ -28,4 +28,9 @@ public class CustomFieldDateTime extends CustomField {
 
     private LocalDateTime max;
 
+    @Override
+    public String getIcon() {
+        return "bi bi-calendar";
+    }
+
 }

@@ -15,7 +15,7 @@ import fr.siamois.ui.bean.dialog.newunit.NewUnitContext;
 import fr.siamois.ui.bean.dialog.newunit.UnitKind;
 import fr.siamois.ui.bean.panel.FlowBean;
 import fr.siamois.ui.form.FormContextServices;
-import fr.siamois.ui.form.FormUiDto;
+import fr.siamois.ui.form.dto.FormUiDto;
 import fr.siamois.ui.lazydatamodel.BaseActionUnitLazyDataModel;
 import fr.siamois.ui.lazydatamodel.BaseLazyDataModel;
 import fr.siamois.ui.lazydatamodel.tree.ActionUnitTreeTableLazyModel;

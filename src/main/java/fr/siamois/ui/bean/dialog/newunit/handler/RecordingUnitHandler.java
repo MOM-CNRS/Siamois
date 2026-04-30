@@ -58,6 +58,7 @@ public class RecordingUnitHandler implements INewUnitHandler<RecordingUnitDTO> {
         recordingUnit.setOpeningDate(OffsetDateTime.now());
         return recordingUnit;
     }
+
     @Override public RecordingUnitDTO save(UserInfo u, RecordingUnitDTO unit) throws EntityAlreadyExistsException {
         RecordingUnitDTO created = recordingUnitService.save(unit);
         String generatedFullIdentifier = recordingUnitService.generateFullIdentifier(created.getActionUnit(), created);
