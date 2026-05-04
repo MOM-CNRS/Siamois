@@ -447,7 +447,7 @@ public class FormService {
         if (answer instanceof CustomFieldAnswerSelectOneSpatialUnitViewModel spatialUnitAnswer) {
             // Convert to place suggestion
             SpatialUnitSummaryDTO val = (SpatialUnitSummaryDTO) value;
-            PlaceSuggestionDTO dto = new PlaceSuggestionDTO();
+            PlaceSuggestionDTO dto ;
             if (val != null) {
                 dto = mapToPlaceSuggestion(val);
                 spatialUnitAnswer.setValue(dto);
