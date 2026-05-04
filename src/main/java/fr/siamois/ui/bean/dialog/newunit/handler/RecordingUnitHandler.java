@@ -17,6 +17,7 @@ import org.springframework.stereotype.Component;
 
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 
 @Component
@@ -141,6 +142,9 @@ public class RecordingUnitHandler implements INewUnitHandler<RecordingUnitDTO> {
             unit.setOpeningDate(OffsetDateTime.now());
             unit.setSpatialUnit(clicked.getSpatialUnit());
         }
+
+        unit.setParents(new HashSet<>());
+        unit.setChildren(new HashSet<>());
 
         switch (key) {
             case PARENTS -> unit.getChildren().add(new RecordingUnitSummaryDTO(clicked));

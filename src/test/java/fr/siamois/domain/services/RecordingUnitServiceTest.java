@@ -153,8 +153,8 @@ class RecordingUnitServiceTest {
         recordingUnitToSave = new RecordingUnitDTO();
         recordingUnitToSave.setActionUnit(actionUnit);
         recordingUnitToSave.setCreatedByInstitution(parentInstitutionDto);
-        recordingUnitToSave.setParents(new HashSet<>());
-        recordingUnitToSave.setChildren(new HashSet<>());
+        recordingUnitToSave.setParentsCount(new HashSet<>());
+        recordingUnitToSave.setChildrenCount(new HashSet<>());
 
         page = new PageImpl<>(List.of(recordingUnit1, recordingUnit2));
         pageDto = new PageImpl<>(List.of(recordingUnit1DTO, recordingUnit2DTO));
@@ -933,7 +933,7 @@ class RecordingUnitServiceTest {
         recordingUnitToSave2.setCreatedByInstitution(new InstitutionDTO());
         RecordingUnitSummaryDTO parentRefDto = new RecordingUnitSummaryDTO();
         parentRefDto.setId(nonExistentParentId);
-        recordingUnitToSave2.setParents(new HashSet<>(Set.of(parentRefDto)));
+        recordingUnitToSave2.setParentsCount(new HashSet<>(Set.of(parentRefDto)));
 
         // 2. Préparation de l'entité que le mapper va retourner
         RecordingUnit entityToSave = new RecordingUnit();

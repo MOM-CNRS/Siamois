@@ -171,28 +171,32 @@ public class RecordingUnitService implements ArkEntityService {
         // (@JoinTable(recording_unit_hierarchy)). We must add MANAGED children
         // here — adding the transient instances that come out of the DTO mapper
         // would not produce a join-table row at flush.
-        for (RecordingUnit childRef : recordingUnit.getChildren()) {
-            if (childRef == null || childRef.getId() == null) continue;
-            RecordingUnit child = recordingUnitRepository.findById(childRef.getId())
-                    .orElseThrow(() -> new IllegalArgumentException("Child not found: " + childRef.getId()));
-            managedRecordingUnit.getChildren().add(child);
-        }
-        if (!recordingUnit.getChildren().isEmpty()) {
-            recordingUnitRepository.save(managedRecordingUnit);
+        if(managedRecordingUnit.getChildren() == null) {
+            for (RecordingUnit childRef : recordingUnit.getChildren()) {
+                if (childRef == null || childRef.getId() == null) continue;
+                RecordingUnit child = recordingUnitRepository.findById(childRef.getId())
+                        .orElseThrow(() -> new IllegalArgumentException("Child not found: " + childRef.getId()));
+                managedRecordingUnit.getChildren().add(child);
+            }
+            if (!recordingUnit.getChildren().isEmpty()) {
+                recordingUnitRepository.save(managedRecordingUnit);
+            }
         }
     }
 
     private void setupParents(RecordingUnit recordingUnit, RecordingUnit managedRecordingUnit) {
         // Gestion des parents
-        for (RecordingUnit parentRef : recordingUnit.getParents()) {
-            RecordingUnit parent = recordingUnitRepository.findById(parentRef.getId())
-                    .orElseThrow(() -> new IllegalArgumentException("Parent not found: " + parentRef.getId()));
+        if(recordingUnit.getParents() != null) {
+            for (RecordingUnit parentRef : recordingUnit.getParents()) {
+                RecordingUnit parent = recordingUnitRepository.findById(parentRef.getId())
+                        .orElseThrow(() -> new IllegalArgumentException("Parent not found: " + parentRef.getId()));
 
-            // Ajout bidirectionnel
-            parent.getChildren().add(managedRecordingUnit);
+                // Ajout bidirectionnel
+                parent.getChildren().add(managedRecordingUnit);
 
-            // Sauvegarde du parent
-            recordingUnitRepository.save(parent);
+                // Sauvegarde du parent
+                recordingUnitRepository.save(parent);
+            }
         }
     }
 
@@ -850,7 +854,7 @@ public class RecordingUnitService implements ArkEntityService {
 
         Page<RecordingUnit> results = recordingUnitRepository.findAll(specs, pageable);
 
-        return results.map(recordingUnitMapper::convert);
+        return results.map(recordingUnitMapper::toLightDto);
     }
 
     public Page<RecordingUnitDTO> searchRecordingUnitInActionUnit(InstitutionDTO institutionDTO, @NonNull ActionUnitDTO actionUnitDTO, FilterDTO filters, Pageable pageable) {
