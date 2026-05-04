@@ -70,7 +70,24 @@
                                 showEmptyMessage="false"
                                 maxResults="#{fieldConfigurationService.resultLimit()}">
                     <f:attribute name="field" value="#{cc.attrs.field}" />
+
+                    <p:ajax update="#{cc.attrs.updateTargetsOnBlur}"
+                            process="@this"
+                            onstart="$(PrimeFaces.escapeClientId('#{cc.clientId}:input')).removeClass('sia-modified-field'); showSpinner('#{cc.attrs.panelId}')"
+                            oncomplete="hideSpinner('#{cc.attrs.panelId}')"
+                            onerror="handleAutoSaveError(xhr, status, '#{cc.attrs.panelId}'); $(PrimeFaces.escapeClientId('#{cc.clientId}:input')).addClass('sia-modified-field');"
+                            listener="#{cc.attrs.onModified}"/>
+
+                    <p:ajax update="#{cc.attrs.updateTargetsOnBlur}"
+                            event="itemUnselect"
+                            process="@this"
+                            onstart="$(PrimeFaces.escapeClientId('#{cc.clientId}:input')).removeClass('sia-modified-field'); showSpinner('#{cc.attrs.panelId}')"
+                            oncomplete="hideSpinner('#{cc.attrs.panelId}')"
+                            onerror="handleAutoSaveError(xhr, status, '#{cc.attrs.panelId}'); $(PrimeFaces.escapeClientId('#{cc.clientId}:input')).addClass('sia-modified-field');"
+                            listener="#{cc.attrs.onModified}"/>
+
                     <p:column>
+
                         <div style="display:flex;gap:0.5em;align-items: center">
                             <i class="#{su.isExternal() ? 'bi bi-globe2' : 'bi bi-database'}"
                                style="color: #{su.isExternal() ? 'var(--text-main)' : 'var(--siamois-green)'};"/>
@@ -97,12 +114,7 @@
 
                         </div>
                     </p:column>
-                    <p:ajax update="#{cc.attrs.updateTargetsOnBlur}"
-                            process="@this"
-                            onstart="$(PrimeFaces.escapeClientId('#{cc.clientId}:input')).removeClass('sia-modified-field'); showSpinner('#{cc.attrs.panelId}')"
-                            oncomplete="hideSpinner('#{cc.attrs.panelId}')"
-                            onerror="handleAutoSaveError(xhr, status, '#{cc.attrs.panelId}'); $(PrimeFaces.escapeClientId('#{cc.clientId}:input')).addClass('sia-modified-field');"
-                            listener="#{cc.attrs.onModified}"/>
+
                     <f:facet name="footer">
                         <div id="footer" class="ui-fluid" style="padding:0.5rem 1rem 1rem 1rem">
                             <p:commandButton
