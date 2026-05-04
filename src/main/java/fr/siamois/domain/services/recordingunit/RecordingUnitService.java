@@ -167,37 +167,72 @@ public class RecordingUnitService implements ArkEntityService {
     }
 
     private void setupChilds(RecordingUnit recordingUnit, RecordingUnit managedRecordingUnit) {
-        // The owning side of the parent/child M:N is managedRecordingUnit.children
-        // (@JoinTable(recording_unit_hierarchy)). We must add MANAGED children
-        // here — adding the transient instances that come out of the DTO mapper
-        // would not produce a join-table row at flush.
-        if(managedRecordingUnit.getChildren() == null) {
-            for (RecordingUnit childRef : recordingUnit.getChildren()) {
-                if (childRef == null || childRef.getId() == null) continue;
-                RecordingUnit child = recordingUnitRepository.findById(childRef.getId())
-                        .orElseThrow(() -> new IllegalArgumentException("Child not found: " + childRef.getId()));
+        if (recordingUnit.getChildren() == null) {
+            managedRecordingUnit.getChildren().clear();
+            return;
+        }
+
+        // 1. Get the IDs of the children we WANT to have
+        Set<Long> incomingIds = recordingUnit.getChildren().stream()
+                .filter(c -> c != null && c.getId() != null)
+                .map(RecordingUnit::getId)
+                .collect(Collectors.toSet());
+
+        // 2. Remove children no longer in the list
+        // (Uses removeIf to avoid ConcurrentModificationException)
+        managedRecordingUnit.getChildren().removeIf(child ->
+                !incomingIds.contains(child.getId()));
+
+        // 3. Add new children
+        for (Long id : incomingIds) {
+            // Check if child is already managed to avoid redundant DB hits/duplicates
+            boolean alreadyPresent = managedRecordingUnit.getChildren().stream()
+                    .anyMatch(c -> c.getId().equals(id));
+
+            if (!alreadyPresent) {
+                RecordingUnit child = recordingUnitRepository.findById(id)
+                        .orElseThrow(() -> new IllegalArgumentException("Child not found: " + id));
                 managedRecordingUnit.getChildren().add(child);
             }
-            if (!recordingUnit.getChildren().isEmpty()) {
-                recordingUnitRepository.save(managedRecordingUnit);
-            }
         }
+
+        // 4. Save the parent (cascades the JoinTable changes)
+        recordingUnitRepository.save(managedRecordingUnit);
     }
 
     private void setupParents(RecordingUnit recordingUnit, RecordingUnit managedRecordingUnit) {
-        // Gestion des parents
-        if(recordingUnit.getParents() != null) {
+        // Fetch current parents of managedRecordingUnit
+        Set<RecordingUnit> currentParents = new HashSet<>(managedRecordingUnit.getParents());
+        Set<RecordingUnit> newParents = new HashSet<>();
+
+        // Build the set of new parents
+        if (recordingUnit.getParents() != null) {
             for (RecordingUnit parentRef : recordingUnit.getParents()) {
                 RecordingUnit parent = recordingUnitRepository.findById(parentRef.getId())
                         .orElseThrow(() -> new IllegalArgumentException("Parent not found: " + parentRef.getId()));
+                newParents.add(parent);
+            }
+        }
 
-                // Ajout bidirectionnel
+        // Find parents to add (in newParents but not in currentParents)
+        for (RecordingUnit parent : newParents) {
+            if (!currentParents.contains(parent)) {
                 parent.getChildren().add(managedRecordingUnit);
-
-                // Sauvegarde du parent
                 recordingUnitRepository.save(parent);
             }
         }
+
+        // Find parents to remove (in currentParents but not in newParents)
+        for (RecordingUnit parent : currentParents) {
+            if (!newParents.contains(parent)) {
+                parent.getChildren().remove(managedRecordingUnit);
+                recordingUnitRepository.save(parent);
+            }
+        }
+
+        // Update the parents list of managedRecordingUnit
+        managedRecordingUnit.getParents().clear();
+        managedRecordingUnit.getParents().addAll(newParents);
     }
 
 

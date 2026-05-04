@@ -264,7 +264,10 @@ public class FormService {
         } else if (answer instanceof CustomFieldAnswerSelectOnePersonViewModel a) {
             return a.getValue();
         } else if (answer instanceof CustomFieldAnswerMeasurementViewModel a) {
-            return a.getValue();
+            if (a.getValue() != null && a.getValue().getNumericValue() != null) {
+                return a.getValue();
+            }
+            return null;
         } else if (answer instanceof CustomFieldAnswerSelectOneFromFieldCodeViewModel a) {
             try {
                 return a.getValue().concept();
