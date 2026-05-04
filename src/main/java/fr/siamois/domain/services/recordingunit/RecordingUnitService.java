@@ -196,8 +196,6 @@ public class RecordingUnitService implements ArkEntityService {
             }
         }
 
-        // 4. Save the parent (cascades the JoinTable changes)
-        recordingUnitRepository.save(managedRecordingUnit);
     }
 
     private void setupParents(RecordingUnit recordingUnit, RecordingUnit managedRecordingUnit) {

@@ -153,8 +153,8 @@ class RecordingUnitServiceTest {
         recordingUnitToSave = new RecordingUnitDTO();
         recordingUnitToSave.setActionUnit(actionUnit);
         recordingUnitToSave.setCreatedByInstitution(parentInstitutionDto);
-        recordingUnitToSave.setParentsCount(new HashSet<>());
-        recordingUnitToSave.setChildrenCount(new HashSet<>());
+        recordingUnitToSave.setParents(new HashSet<>());
+        recordingUnitToSave.setChildren(new HashSet<>());
 
         page = new PageImpl<>(List.of(recordingUnit1, recordingUnit2));
         pageDto = new PageImpl<>(List.of(recordingUnit1DTO, recordingUnit2DTO));
@@ -933,7 +933,7 @@ class RecordingUnitServiceTest {
         recordingUnitToSave2.setCreatedByInstitution(new InstitutionDTO());
         RecordingUnitSummaryDTO parentRefDto = new RecordingUnitSummaryDTO();
         parentRefDto.setId(nonExistentParentId);
-        recordingUnitToSave2.setParentsCount(new HashSet<>(Set.of(parentRefDto)));
+        recordingUnitToSave2.setParents(new HashSet<>(Set.of(parentRefDto)));
 
         // 2. Préparation de l'entité que le mapper va retourner
         RecordingUnit entityToSave = new RecordingUnit();
@@ -1519,8 +1519,8 @@ class RecordingUnitServiceTest {
         inst.setId(1L);
         FilterDTO filters = new FilterDTO(false);
         when(recordingUnitRepository.findAll(any(Specification.class), eq(pageable))).thenReturn(page);
-        when(recordingUnitMapper.convert(recordingUnit1)).thenReturn(recordingUnit1DTO);
-        when(recordingUnitMapper.convert(recordingUnit2)).thenReturn(recordingUnit2DTO);
+        when(recordingUnitMapper.toLightDto(recordingUnit1)).thenReturn(recordingUnit1DTO);
+        when(recordingUnitMapper.toLightDto(recordingUnit2)).thenReturn(recordingUnit2DTO);
 
         Page<RecordingUnitDTO> result = recordingUnitService.searchRecordingUnit(inst, filters, pageable);
 
@@ -1533,7 +1533,7 @@ class RecordingUnitServiceTest {
         inst.setId(1L);
         FilterDTO filters = new FilterDTO(true);
         when(recordingUnitRepository.findAll(any(Specification.class), eq(pageable))).thenReturn(page);
-        when(recordingUnitMapper.convert(any(RecordingUnit.class))).thenReturn(recordingUnit1DTO);
+        when(recordingUnitMapper.toLightDto(any(RecordingUnit.class))).thenReturn(recordingUnit1DTO);
 
         Page<RecordingUnitDTO> result = recordingUnitService.searchRecordingUnit(inst, filters, pageable);
 
@@ -1550,7 +1550,7 @@ class RecordingUnitServiceTest {
         when(recordingUnitRepository.findAll(any(Specification.class))).thenReturn(List.of(recordingUnit1, recordingUnit2));
         when(recordingUnitRepository.findAncestorClosure(any(Long[].class))).thenReturn(List.of(1L, 2L));
         when(recordingUnitRepository.findAll(any(Specification.class), eq(pageable))).thenReturn(page);
-        when(recordingUnitMapper.convert(any(RecordingUnit.class))).thenReturn(recordingUnit1DTO);
+        when(recordingUnitMapper.toLightDto(any(RecordingUnit.class))).thenReturn(recordingUnit1DTO);
 
         Page<RecordingUnitDTO> result = recordingUnitService.searchRecordingUnit(inst, filters, pageable);
 
