@@ -447,13 +447,9 @@ public class FormService {
         if (answer instanceof CustomFieldAnswerSelectOneSpatialUnitViewModel spatialUnitAnswer) {
             // Convert to place suggestion
             SpatialUnitSummaryDTO val = (SpatialUnitSummaryDTO) value;
-            PlaceSuggestionDTO dto = new PlaceSuggestionDTO();
+            PlaceSuggestionDTO dto ;
             if (val != null) {
-                dto.setId(val.getId());
-                dto.setName(val.getName());
-                dto.setCode(val.getCode());
-                dto.setSourceName("INTERNAL");
-                dto.setCategory(val.getCategory());
+                dto = mapToPlaceSuggestion(val);
                 spatialUnitAnswer.setValue(dto);
             }
 
@@ -474,9 +470,26 @@ public class FormService {
 
     @SuppressWarnings("unchecked")
     private void handleSpatialUnitSet(CustomFieldAnswerViewModel answer, Object value) {
-        if (answer instanceof CustomFieldAnswerSelectMultipleSpatialUnitTreeViewModel treeAnswer) {
-            treeAnswer.setValue(new ArrayList<>((Set<PlaceSuggestionDTO>) value));
+        if (answer instanceof CustomFieldAnswerSelectMultipleSpatialUnitTreeViewModel treeAnswer && value instanceof Collection<?> values) {
+
+            List<PlaceSuggestionDTO> dtos = values.stream()
+                    .filter(SpatialUnitSummaryDTO.class::isInstance)
+                    .map(SpatialUnitSummaryDTO.class::cast)
+                    .map(this::mapToPlaceSuggestion) // Utilisation d'une méthode d'aide pour la clarté
+                    .toList();
+
+            treeAnswer.setValue(new ArrayList<>(dtos));
         }
+    }
+
+    private PlaceSuggestionDTO mapToPlaceSuggestion(SpatialUnitSummaryDTO val) {
+        PlaceSuggestionDTO dto = new PlaceSuggestionDTO();
+        dto.setId(val.getId());
+        dto.setName(val.getName());
+        dto.setCode(val.getCode());
+        dto.setSourceName("INTERNAL");
+        dto.setCategory(val.getCategory());
+        return dto;
     }
 
     private void handleRecordingUnitSet(CustomFieldAnswerViewModel answer, Object value) {

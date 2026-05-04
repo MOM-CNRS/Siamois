@@ -119,19 +119,19 @@ public class ActionUnitService implements ArkEntityService {
 
 
 
-
-        Optional<ActionUnit> opt = actionUnitRepository.findByNameAndCreatedByInstitutionId(actionUnitDTO.getName(), info.getInstitution().getId());
-        if (opt.isPresent())
+        Optional<ActionUnit> existingName = actionUnitRepository.findByNameAndCreatedByInstitutionId(actionUnitDTO.getName(), info.getInstitution().getId());
+        if (existingName.isPresent() && (actionUnitDTO.getId() == null || !existingName.get().getId().equals(actionUnitDTO.getId()))) {
             throw new ActionUnitAlreadyExistsException(
                     "name",
-                    String.format("Action unit with name %s already exist in institution %s", actionUnitDTO.getName(), info.getInstitution().getName()));
+                    String.format("Action unit with name %s already exist", actionUnitDTO.getName()));
+        }
 
-        opt = actionUnitRepository.findByIdentifierAndCreatedByInstitutionId(actionUnitDTO.getIdentifier(), info.getInstitution().getId());
-        if (opt.isPresent())
+        Optional<ActionUnit> existingId = actionUnitRepository.findByIdentifierAndCreatedByInstitutionId(actionUnitDTO.getIdentifier(), info.getInstitution().getId());
+        if (existingId.isPresent() && (actionUnitDTO.getId() == null || !existingId.get().getId().equals(actionUnitDTO.getId()))) {
             throw new ActionUnitAlreadyExistsException(
                     "identifier",
-                    String.format("Action unit with identifier %s already exist in institution %s", actionUnitDTO.getIdentifier(), info.getInstitution().getName()));
-
+                    String.format("Action unit with identifier %s already exist", actionUnitDTO.getIdentifier()));
+        }
 
 
 
