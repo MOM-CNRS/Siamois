@@ -18,34 +18,37 @@ import java.util.Set;
 @NoArgsConstructor
 public class RecordingUnitDTO extends AbstractEntityDTO {
 
-    private String identifier;
-    private String fullIdentifier;
-    private ConceptDTO type;
-    private ActionUnitSummaryDTO actionUnit;
-    private Set<RecordingUnitSummaryDTO> parents = new HashSet<>();
-    private Set<RecordingUnitSummaryDTO> children= new HashSet<>();
-    private OffsetDateTime openingDate;
-    private OffsetDateTime closingDate;
-    private ConceptDTO geomorphologicalCycle;
-    private ConceptDTO geomorphologicalAgent;
-    private ConceptDTO normalizedInterpretation;
-    private Set<SpecimenSummaryDTO> specimenList = new HashSet<>();
-    private Long specimenCount;
-    private PersonDTO author;
-    private String description;
-    private List<PersonDTO> contributors = new ArrayList<>();
-    private SpatialUnitSummaryDTO spatialUnit;
-    private String comments;
-    private Set<StratigraphicRelationshipDTO> relationshipsAsUnit1 = new HashSet<>();
-    private Set<StratigraphicRelationshipDTO> relationshipsAsUnit2 = new HashSet<>();
-    private Integer taq;
-    private Integer tpq;
-    private ConceptDTO chronologicalPhase;
-    private ConceptDTO erosionShape;
-    private ConceptDTO erosionOrientation;
-    private ConceptDTO erosionProfile;
-    private MeasurementAnswerDTO zInf;
-    private MeasurementAnswerDTO zSup;
+    protected String identifier;
+    protected String fullIdentifier;
+    protected ConceptDTO type;
+    protected ActionUnitSummaryDTO actionUnit;
+    protected Integer parentsCount;
+    protected Integer childrenCount;
+    protected OffsetDateTime openingDate;
+    protected OffsetDateTime closingDate;
+    protected ConceptDTO geomorphologicalCycle;
+    protected ConceptDTO geomorphologicalAgent;
+    protected ConceptDTO normalizedInterpretation;
+    protected Long specimenCount;
+    protected PersonDTO author;
+    protected String description;
+    protected List<PersonDTO> contributors = new ArrayList<>();
+    protected SpatialUnitSummaryDTO spatialUnit;
+    protected String comments;
+    protected Set<StratigraphicRelationshipDTO> relationshipsAsUnit1 = new HashSet<>();
+    protected Set<StratigraphicRelationshipDTO> relationshipsAsUnit2 = new HashSet<>();
+    protected Integer taq;
+    protected Integer tpq;
+    protected ConceptDTO chronologicalPhase;
+    protected ConceptDTO erosionShape;
+    protected ConceptDTO erosionOrientation;
+    protected ConceptDTO erosionProfile;
+    protected MeasurementAnswerDTO zInf;
+    protected MeasurementAnswerDTO zSup;
+
+    // Write dto
+    private Set<RecordingUnitSummaryDTO> parents;
+    private Set<RecordingUnitSummaryDTO> children;
 
 
     public RecordingUnitDTO(RecordingUnitDTO original) {
@@ -74,9 +77,9 @@ public class RecordingUnitDTO extends AbstractEntityDTO {
     @JsonIgnore
     @Transient
     public List<String> getBindableFieldNames() {
-        return List.of("creationTime", "openingDate", "closingDate", "description","identifier",
+        return List.of("creationTime", "openingDate", "closingDate", "description", "identifier",
                 "contributors", "type", "secondaryType", "thirdType", "actionUnit", "spatialUnit",
-                "parents","children", "comments", "zInf", "zSup",
+                "parents", "children", "comments", "zInf", "zSup",
                 "geomorphologicalCycle", "normalizedInterpretation", "author", "geomorphologicalAgent",
                 "matrixComposition", "matrixColor", "matrixTexture", "erosionShape", "erosionOrientation",
                 "erosionProfile", "taq", "tpq", "chronologicalPhase", "fullIdentifier");

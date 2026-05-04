@@ -197,10 +197,10 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
     @Override
     public Integer resolveCount(TableColumn column, RecordingUnitDTO ru) {
         if (column instanceof RelationColumn rel) {
-            return switch (rel.getCountKey()) {
-                case PARENTS -> ru.getParents() == null ? 0 : ru.getParents().size();
-                case "children" -> ru.getChildren() == null ? 0 : ru.getChildren().size();
-                case "specimenList" -> ru.getSpecimenList() == null ? 0 : ru.getSpecimenList().size();
+            return (int) switch (rel.getCountKey()) {
+                case PARENTS -> ru.getParentsCount() == null ? 0 : ru.getParentsCount();
+                case "children" -> ru.getChildrenCount() == null ? 0 : ru.getChildrenCount();
+                case "specimenList" -> ru.getSpecimenCount() == null ? 0 : ru.getSpecimenCount();
                 case "relationships" -> ru.getRelationshipsAsUnit1() == null ? 0 :
                     ru.getRelationshipsAsUnit1().size() + ru.getRelationshipsAsUnit2().size();
                 default -> 0;
@@ -413,6 +413,7 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
 
         // Create a copy from selected row
         RecordingUnitDTO newUnit = new RecordingUnitDTO(toDuplicate);
+        newUnit.setParents(new HashSet<>());
 
         if(parent != null) {
             newUnit.getParents().add(new RecordingUnitSummaryDTO(parent));

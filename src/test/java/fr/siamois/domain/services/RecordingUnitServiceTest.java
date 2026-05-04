@@ -1519,8 +1519,8 @@ class RecordingUnitServiceTest {
         inst.setId(1L);
         FilterDTO filters = new FilterDTO(false);
         when(recordingUnitRepository.findAll(any(Specification.class), eq(pageable))).thenReturn(page);
-        when(recordingUnitMapper.convert(recordingUnit1)).thenReturn(recordingUnit1DTO);
-        when(recordingUnitMapper.convert(recordingUnit2)).thenReturn(recordingUnit2DTO);
+        when(recordingUnitMapper.toLightDto(recordingUnit1)).thenReturn(recordingUnit1DTO);
+        when(recordingUnitMapper.toLightDto(recordingUnit2)).thenReturn(recordingUnit2DTO);
 
         Page<RecordingUnitDTO> result = recordingUnitService.searchRecordingUnit(inst, filters, pageable);
 
@@ -1533,7 +1533,7 @@ class RecordingUnitServiceTest {
         inst.setId(1L);
         FilterDTO filters = new FilterDTO(true);
         when(recordingUnitRepository.findAll(any(Specification.class), eq(pageable))).thenReturn(page);
-        when(recordingUnitMapper.convert(any(RecordingUnit.class))).thenReturn(recordingUnit1DTO);
+        when(recordingUnitMapper.toLightDto(any(RecordingUnit.class))).thenReturn(recordingUnit1DTO);
 
         Page<RecordingUnitDTO> result = recordingUnitService.searchRecordingUnit(inst, filters, pageable);
 
@@ -1550,7 +1550,7 @@ class RecordingUnitServiceTest {
         when(recordingUnitRepository.findAll(any(Specification.class))).thenReturn(List.of(recordingUnit1, recordingUnit2));
         when(recordingUnitRepository.findAncestorClosure(any(Long[].class))).thenReturn(List.of(1L, 2L));
         when(recordingUnitRepository.findAll(any(Specification.class), eq(pageable))).thenReturn(page);
-        when(recordingUnitMapper.convert(any(RecordingUnit.class))).thenReturn(recordingUnit1DTO);
+        when(recordingUnitMapper.toLightDto(any(RecordingUnit.class))).thenReturn(recordingUnit1DTO);
 
         Page<RecordingUnitDTO> result = recordingUnitService.searchRecordingUnit(inst, filters, pageable);
 
@@ -1733,6 +1733,164 @@ class RecordingUnitServiceTest {
         assertEquals(Set.of(7L, 8L), result);
         verify(recordingUnitRepository, never()).findAll(any(Specification.class));
         verify(recordingUnitRepository, never()).findAncestorClosure(any(Long[].class));
+    }
+
+    @Test
+    @DisplayName("Should remove child from parent's collection when DTO omits existing parent")
+    void save_ShouldRemoveLinkFromOldParent() {
+        // 1. SETUP: Identifiers
+        Long childId = 1L;
+        Long parentId = 99L;
+
+        // 2. SETUP: Existing state in the "database"
+        RecordingUnit parentEntity = new RecordingUnit();
+        parentEntity.setId(parentId);
+        parentEntity.setChildren(new HashSet<>());
+
+        RecordingUnit existingManagedUnit = new RecordingUnit();
+        existingManagedUnit.setId(childId);
+
+        // Establish bi-directional link
+        existingManagedUnit.setParents(new HashSet<>(Set.of(parentEntity)));
+        parentEntity.getChildren().add(existingManagedUnit);
+
+        // 3. SETUP: Incoming DTO and mapped entity
+        RecordingUnitDTO inputDto = new RecordingUnitDTO();
+        inputDto.setId(childId);
+        inputDto.setParents(new HashSet<>()); // Requesting removal of all parents
+
+        RecordingUnit mappedFromDto = new RecordingUnit();
+        mappedFromDto.setId(childId);
+        mappedFromDto.setParents(new HashSet<>());
+
+        // 4. MOCKING: Mapper
+        when(recordingUnitMapper.invertConvert(inputDto)).thenReturn(mappedFromDto);
+        when(recordingUnitMapper.convert(any(RecordingUnit.class))).thenReturn(inputDto);
+
+        // 5. MOCKING: Repository
+        // This is what newOrGetRecordingUnit calls
+        when(recordingUnitRepository.findById(childId)).thenReturn(Optional.of(existingManagedUnit));
+
+        // Final save mocks
+        when(recordingUnitRepository.save(any(RecordingUnit.class))).thenAnswer(i -> i.getArgument(0));
+
+        // 6. EXECUTE
+        recordingUnitService.save(inputDto);
+
+        // 7. VERIFY: The statement in the 'Remove' loop was executed
+        // Check that Parent A no longer has the child in its set
+        assertFalse(parentEntity.getChildren().contains(existingManagedUnit),
+                "Parent should have had the child removed from its collection");
+
+
+        verify(recordingUnitRepository, atLeastOnce()).save(any(RecordingUnit.class));
+
+
+        // Verify child unit's parent list is now empty in the managed entity
+        assertTrue(existingManagedUnit.getParents().isEmpty());
+    }
+    @Test
+    @DisplayName("Should remove child from managed unit when child ID is missing from incoming DTO")
+    void save_ShouldRemoveChildFromCollection() {
+        // 1. SETUP: Identifiers
+        Long parentId = 1L;
+        Long oldChildId = 55L;
+
+        // 2. SETUP: Existing state (Parent has one child)
+        RecordingUnit oldChild = new RecordingUnit();
+        oldChild.setId(oldChildId);
+
+        RecordingUnit existingManagedParent = new RecordingUnit();
+        existingManagedParent.setId(parentId);
+        existingManagedParent.setChildren(new HashSet<>(Set.of(oldChild)));
+        existingManagedParent.setParents(new HashSet<>()); // Initialize to avoid NPEs
+
+        // 3. INPUT: DTO with NO children (to trigger removeIf)
+        RecordingUnitDTO inputDto = new RecordingUnitDTO();
+        inputDto.setId(parentId);
+        inputDto.setChildren(new HashSet<>()); // Empty children list
+
+        RecordingUnit mappedFromDto = new RecordingUnit();
+        mappedFromDto.setId(parentId);
+        mappedFromDto.setChildren(new HashSet<>());
+
+        // 4. MOCKING
+        when(recordingUnitMapper.invertConvert(inputDto)).thenReturn(mappedFromDto);
+        when(recordingUnitMapper.convert(any(RecordingUnit.class))).thenReturn(inputDto);
+
+        // Mock finding the parent in the database
+        when(recordingUnitRepository.findById(parentId)).thenReturn(Optional.of(existingManagedParent));
+
+        // Mock the save calls
+        when(recordingUnitRepository.save(any(RecordingUnit.class))).thenAnswer(i -> i.getArgument(0));
+
+        // 5. EXECUTE
+        recordingUnitService.save(inputDto);
+
+        // 6. VERIFY: The removeIf statement was effective
+        assertTrue(existingManagedParent.getChildren().isEmpty(),
+                "The child should have been removed from the managed parent's collection");
+
+        // Ensure the old child is no longer present specifically
+        assertFalse(existingManagedParent.getChildren().stream()
+                .anyMatch(c -> c.getId().equals(oldChildId)));
+    }
+
+    @Test
+    @DisplayName("Should add new child to managed unit when ID is present in DTO but not in managed entity")
+    void save_ShouldAddNewChildToCollection() {
+        // 1. SETUP: Identifiers
+        Long parentId = 1L;
+        Long newChildId = 100L;
+
+        // 2. SETUP: Managed state (Parent starts with no children)
+        RecordingUnit managedParent = new RecordingUnit();
+        managedParent.setId(parentId);
+        managedParent.setChildren(new HashSet<>()); // Empty children set
+        managedParent.setParents(new HashSet<>());
+
+        // 3. SETUP: New Child (The one to be found in DB)
+        RecordingUnit newChildEntity = new RecordingUnit();
+        newChildEntity.setId(newChildId);
+
+        // 4. INPUT: DTO containing the new child ID
+        RecordingUnitDTO inputDto = new RecordingUnitDTO();
+        inputDto.setId(parentId);
+
+        RecordingUnitSummaryDTO childDto = new RecordingUnitSummaryDTO();
+        childDto.setId(newChildId);
+        inputDto.setChildren(new HashSet<>(Set.of(childDto)));
+
+        // Mapping setup
+        RecordingUnit mappedFromDto = new RecordingUnit();
+        mappedFromDto.setId(parentId);
+        mappedFromDto.setChildren(new HashSet<>(Set.of(newChildEntity)));
+
+        // 5. MOCKING
+        when(recordingUnitMapper.invertConvert(inputDto)).thenReturn(mappedFromDto);
+        when(recordingUnitMapper.convert(any(RecordingUnit.class))).thenReturn(inputDto);
+
+        // Mock finding the parent
+        when(recordingUnitRepository.findById(parentId)).thenReturn(Optional.of(managedParent));
+
+        // Mock finding the NEW child (This is the call inside the 'if (!alreadyPresent)' block)
+        when(recordingUnitRepository.findById(newChildId)).thenReturn(Optional.of(newChildEntity));
+
+        // Mock save
+        when(recordingUnitRepository.save(any(RecordingUnit.class))).thenAnswer(i -> i.getArgument(0));
+
+        // 6. EXECUTE
+        recordingUnitService.save(inputDto);
+
+        // 7. VERIFY: The "Add" logic was executed
+        // Check that the child was added to the managed collection
+        assertTrue(managedParent.getChildren().contains(newChildEntity),
+                "The new child should have been added to the parent's children collection");
+
+        assertEquals(1, managedParent.getChildren().size());
+
+        // Verify the repository was actually called to fetch the new child
+        verify(recordingUnitRepository).findById(newChildId);
     }
 
 }

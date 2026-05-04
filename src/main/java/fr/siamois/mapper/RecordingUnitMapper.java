@@ -4,10 +4,7 @@ import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.dto.entity.RecordingUnitDTO;
 import fr.siamois.ui.mapper.adapter.ConversionServiceAdapter;
 import org.jspecify.annotations.Nullable;
-import org.mapstruct.InheritInverseConfiguration;
-import org.mapstruct.InjectionStrategy;
-import org.mapstruct.Mapper;
-import org.mapstruct.MappingConstants;
+import org.mapstruct.*;
 import org.mapstruct.extensions.spring.DelegatingConverter;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.lang.NonNull;
@@ -21,9 +18,15 @@ public interface RecordingUnitMapper extends Converter<RecordingUnit, RecordingU
     @Override
     @Nullable RecordingUnitDTO convert(@NonNull RecordingUnit source);
 
-    @InheritInverseConfiguration
+    @InheritInverseConfiguration(name="convert")
     @DelegatingConverter
     RecordingUnit invertConvert(RecordingUnitDTO recordingUnitDTO);
+
+    @Mapping(target = "parents", ignore = true)
+    @Mapping(target = "children", ignore = true)
+    @Mapping(target = "relationshipsAsUnit1", ignore = true)
+    @Mapping(target = "relationshipsAsUnit2", ignore = true)
+    RecordingUnitDTO toLightDto(RecordingUnit source);
 
 }
 
