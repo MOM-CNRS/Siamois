@@ -1836,4 +1836,61 @@ class RecordingUnitServiceTest {
                 .anyMatch(c -> c.getId().equals(oldChildId)));
     }
 
+    @Test
+    @DisplayName("Should add new child to managed unit when ID is present in DTO but not in managed entity")
+    void save_ShouldAddNewChildToCollection() {
+        // 1. SETUP: Identifiers
+        Long parentId = 1L;
+        Long newChildId = 100L;
+
+        // 2. SETUP: Managed state (Parent starts with no children)
+        RecordingUnit managedParent = new RecordingUnit();
+        managedParent.setId(parentId);
+        managedParent.setChildren(new HashSet<>()); // Empty children set
+        managedParent.setParents(new HashSet<>());
+
+        // 3. SETUP: New Child (The one to be found in DB)
+        RecordingUnit newChildEntity = new RecordingUnit();
+        newChildEntity.setId(newChildId);
+
+        // 4. INPUT: DTO containing the new child ID
+        RecordingUnitDTO inputDto = new RecordingUnitDTO();
+        inputDto.setId(parentId);
+
+        RecordingUnitSummaryDTO childDto = new RecordingUnitSummaryDTO();
+        childDto.setId(newChildId);
+        inputDto.setChildren(new HashSet<>(Set.of(childDto)));
+
+        // Mapping setup
+        RecordingUnit mappedFromDto = new RecordingUnit();
+        mappedFromDto.setId(parentId);
+        mappedFromDto.setChildren(new HashSet<>(Set.of(newChildEntity)));
+
+        // 5. MOCKING
+        when(recordingUnitMapper.invertConvert(inputDto)).thenReturn(mappedFromDto);
+        when(recordingUnitMapper.convert(any(RecordingUnit.class))).thenReturn(inputDto);
+
+        // Mock finding the parent
+        when(recordingUnitRepository.findById(parentId)).thenReturn(Optional.of(managedParent));
+
+        // Mock finding the NEW child (This is the call inside the 'if (!alreadyPresent)' block)
+        when(recordingUnitRepository.findById(newChildId)).thenReturn(Optional.of(newChildEntity));
+
+        // Mock save
+        when(recordingUnitRepository.save(any(RecordingUnit.class))).thenAnswer(i -> i.getArgument(0));
+
+        // 6. EXECUTE
+        recordingUnitService.save(inputDto);
+
+        // 7. VERIFY: The "Add" logic was executed
+        // Check that the child was added to the managed collection
+        assertTrue(managedParent.getChildren().contains(newChildEntity),
+                "The new child should have been added to the parent's children collection");
+
+        assertEquals(1, managedParent.getChildren().size());
+
+        // Verify the repository was actually called to fetch the new child
+        verify(recordingUnitRepository).findById(newChildId);
+    }
+
 }
