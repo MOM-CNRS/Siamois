@@ -7,8 +7,8 @@
 
     <cc:interface>
         <cc:attribute name="title" type="java.lang.String" required="true"/>
-        <cc:attribute name="icon" type="java.lang.String" required="true"/>
-        <cc:attribute name="conceptUri" type="java.lang.String" required="true"/>
+        <cc:attribute name="icon" type="java.lang.String" required="false"/>
+        <cc:attribute name="conceptUri" type="java.lang.String" required="false"/>
         <cc:attribute name="isTheso" type="java.lang.Boolean" required="false" default="false"/>
         <cc:attribute name="forId" type="java.lang.String" required="false"/>
         <cc:attribute name="required" type="java.lang.Boolean" required="false" default="false"/>
@@ -18,7 +18,7 @@
         <cc:attribute name="onRemove"
                       method-signature="void onRemove(java.lang.Object, java.lang.Object)"
                       required="false"/>
-        <cc:attribute name="onToggle" method-signature="void toggle()" required="true"/>
+        <cc:attribute name="onToggle" method-signature="void toggle()" required="false"/>
     </cc:interface>
 
     <cc:implementation>

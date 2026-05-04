@@ -98,6 +98,7 @@ class EntityFormContextTest {
 
 
 
+
     private BiConsumer<CustomField, ConceptDTO> scopeCallback;
 
 

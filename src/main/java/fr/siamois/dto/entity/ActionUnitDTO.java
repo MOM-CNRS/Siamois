@@ -35,4 +35,9 @@ public class ActionUnitDTO extends AbstractEntityDTO {
         return List.of("type", "name", "identifier", "spatialContext", "beginDate", "endDate", "primaryActionCode", "mainLocation");
     }
 
+    @Override
+    public String toString() {
+        return name ;
+    }
+
 }
