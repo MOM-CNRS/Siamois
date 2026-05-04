@@ -168,7 +168,7 @@ public class RecordingUnitService implements ArkEntityService {
 
     private void setupChilds(RecordingUnit recordingUnit, RecordingUnit managedRecordingUnit) {
         if (recordingUnit.getChildren() == null) {
-            managedRecordingUnit.getChildren().clear();
+            // If null, no changes are made to the children.
             return;
         }
 
@@ -199,18 +199,22 @@ public class RecordingUnitService implements ArkEntityService {
     }
 
     private void setupParents(RecordingUnit recordingUnit, RecordingUnit managedRecordingUnit) {
+        if (recordingUnit.getParents() == null) {
+            // If null, no changes are made to the parents.
+            return;
+        }
+
         // Fetch current parents of managedRecordingUnit
         Set<RecordingUnit> currentParents = new HashSet<>(managedRecordingUnit.getParents());
         Set<RecordingUnit> newParents = new HashSet<>();
 
         // Build the set of new parents
-        if (recordingUnit.getParents() != null) {
-            for (RecordingUnit parentRef : recordingUnit.getParents()) {
-                RecordingUnit parent = recordingUnitRepository.findById(parentRef.getId())
-                        .orElseThrow(() -> new IllegalArgumentException("Parent not found: " + parentRef.getId()));
-                newParents.add(parent);
-            }
+        for (RecordingUnit parentRef : recordingUnit.getParents()) {
+            RecordingUnit parent = recordingUnitRepository.findById(parentRef.getId())
+                    .orElseThrow(() -> new IllegalArgumentException("Parent not found: " + parentRef.getId()));
+            newParents.add(parent);
         }
+
 
         // Find parents to add (in newParents but not in currentParents)
         for (RecordingUnit parent : newParents) {
