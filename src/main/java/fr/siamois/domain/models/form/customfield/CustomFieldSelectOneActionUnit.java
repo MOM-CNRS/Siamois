@@ -17,6 +17,9 @@ import lombok.experimental.SuperBuilder;
 @SuperBuilder
 @NoArgsConstructor
 public class CustomFieldSelectOneActionUnit extends CustomField {
-
+    @Override
+    public String getIcon() {
+        return "bi bi-arrow-down-square";
+    }
 
 }

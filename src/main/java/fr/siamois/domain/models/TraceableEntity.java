@@ -2,6 +2,7 @@ package fr.siamois.domain.models;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import fr.siamois.domain.models.auth.Person;
+import fr.siamois.domain.models.form.measurement.MeasurementAnswer;
 import fr.siamois.domain.models.institution.Institution;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
@@ -31,7 +32,7 @@ public abstract class TraceableEntity implements Serializable {
     protected Person createdBy;
 
     @ColumnDefault("NOW()")
-    @Column(name = "creation_time")
+    @Column(name = "creation_time", nullable = false)
     protected OffsetDateTime creationTime = OffsetDateTime.now(ZoneId.systemDefault());
 
     @NotNull
@@ -40,12 +41,20 @@ public abstract class TraceableEntity implements Serializable {
     @JoinColumn(name = "fk_institution_id", nullable = false)
     protected Institution createdByInstitution;
 
-    @NotNull
+    @Enumerated(EnumType.STRING) // Stores the enum name as a string in the database
     @Column(name = "validated", nullable = false)
-    protected Boolean validated = false;
+    protected ValidationStatus validated = ValidationStatus.INCOMPLETE;
 
     @Column(name = "validated_at")
     protected OffsetDateTime validatedAt ;
+
+    @OneToOne(cascade = CascadeType.ALL, orphanRemoval = true)
+    @JoinColumn(name = "fk_z_sup")
+    private MeasurementAnswer zInf;
+
+    @OneToOne(cascade = CascadeType.ALL, orphanRemoval = true)
+    @JoinColumn(name = "fk_z_inf")
+    private MeasurementAnswer zSup;
 
     @ManyToOne
     @JoinColumn(name = "fk_validated_by")

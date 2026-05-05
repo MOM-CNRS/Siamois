@@ -1,17 +1,18 @@
 <ui:fragment xmlns="http://www.w3.org/1999/xhtml"
              xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
              xmlns:p="http://primefaces.org/ui"
-             xmlns:c="http://java.sun.com/jsp/jstl/core"
+             xmlns:c="http://java.sun.com/jsp/jstl/core" xmlns:f="http://java.sun.com/jsf/core"
+             xmlns:h="http://java.sun.com/jsf/html"
 >
 
     <!--@elvariable id="bean" type="fr.siamois.ui.bean.panel.models.panel.single.AbstractSingleEntity"-->
-    <!--@elvariable id="customFormPanel" type="fr.siamois.domain.models.form.customform.CustomFormPanel" -->
+    <!--@elvariable id="customFormPanel" type="fr.siamois.domain.models.form.customform.CustomFormPanelUiDto" -->
     <!--@elvariable id="readOnly" type="java.lang.Boolean" -->
     <!--@elvariable id="prefix" type="String" -->
     <!--@elvariable id="root" type="String" -->
     <!--@elvariable id="updateTargetsOnBlur" type="String" -->
     <!--@elvariable id="statusIndex" type="Object" -->
-    <!--@elvariable id="ctx" type="package fr.siamois.ui.form.EntityFormContext" -->
+    <!--@elvariable id="formCtx" type="fr.siamois.ui.form.EntityFormContext" -->
 
 
     <p:panelGrid id="customFormPanelGrid-#{statusIndex}-#{prefix}"
@@ -26,6 +27,9 @@
                         <ui:include src="/pages/shared/form/customFormFieldContentForPanel.xhtml">
                             <ui:param name="bean" value="#{bean}"/>
                             <ui:param name="col" value="#{col}"/>
+                            <ui:param name="canBeRemoved" value="#{col.canBeRemoved}"/>
+                            <ui:param name="customFormPanel" value="#{customFormPanel}"/>
+                            <ui:param name="newFieldManagerBean" value="#{bean.formContext.newFieldManager}"/>
                             <ui:param name="hasBeenModified"
                                       value="#{bean.formResponse.answers.get(col.field).hasBeenModified}"/>
                             <ui:param name="prefix" value="#{prefix}"/>
@@ -35,7 +39,7 @@
                             <ui:param name="root" value="#{root}"/>
                             <ui:param name="panelIndex" value="#{panelIndex}"/>
                             <ui:param name="answer" value="#{bean.formResponse.answers.get(col.field)}"/>
-                            <ui:param name="onModified" value="#{ctx.onFieldAnswerModifiedListener}"/>
+                            <ui:param name="onModified" value="#{bean.formContext.onFieldAnswerModifiedListener}"/>
                             <ui:param name="panelHeaderUpdateId" value="#{bean.getPanelHeaderUpdateId()}"/>
                             <ui:param name="onGenerateValue" value="#{bean.generateValueForField}"/>
                             <ui:param name="hasAutoGenerationFunction"
@@ -45,6 +49,121 @@
                 </c:forEach>
             </p:row>
         </c:forEach>
+
+        <p:row id="row-#{prefix}-#{statusIndex}-newField" rendered="#{customFormPanel.canUserAddFields}">
+            <p:column styleClass="ui-g-12 ui-md-6 ui-lg-6" style="min-width: 250px;"
+                      id="col-#{prefix}-#{statusIndex}-newFieldRow">
+
+                <p:outputPanel>
+
+                    <p:splitButton value="Ajouter un champ" icon="pi pi-plus"
+                                   filter="true"
+                                   rendered="#{!bean.formContext.newFieldManager.showEditor}"
+                                   actionListener="#{bean.formContext.newFieldManager.prepareNewField(customFormPanel)}"
+                                   update="@parent"
+                                   styleClass="ui-button" filterMatchMode="contains">
+                        <c:forEach items="#{bean.formContext.newFieldManager.addFieldOptions}" var="m">
+                            <p:menuitem value="#{spatialUnitFieldBean.resolveCustomFieldLabel(m)}"
+                                        icon="bi bi-rulers"
+                                        actionListener="#{bean.formContext.newFieldManager.addFieldFromMeasurement(customFormPanel,m)}"
+                                        process="@this"
+                                        update="@form" />
+                        </c:forEach>
+                    </p:splitButton>
+
+
+                    <h:panelGroup styleClass="field-value-group"
+                                  rendered="#{bean.formContext.newFieldManager.showEditor}" id="editorPanel">
+                        <div>
+                            <p:outputLabel
+                                    for="#{cc.attrs.forId}"
+                                    indicateRequired="auto"
+                                    style="color: var(--text-light)"
+                                    value="Nouveau champ"/>
+                        </div>
+                        <div style="display:flex;
+                flex-direction: column; gap:0.5em; border-radius: 10px;border:1px dashed oklch(70.7% 0.022 261.325);
+                padding: 1rem; width: fit-content;">
+                            <div style="display:flex;gap: 0.5em">
+
+                                <div>
+                                    <p:outputLabel for="fieldType" value="Type de champ"
+                                                   style="color:var(--text-light);display:block;"/>
+                                    <p:selectOneMenu id="fieldType" style="width:100%"
+                                                     disabled="true">
+                                        <f:selectItem itemLabel="Mesure" itemValue="STRING"/>
+                                    </p:selectOneMenu>
+                                </div>
+
+                                <div class="ui-fluid">
+                                    <p:outputLabel for="newfieldTypeAutocomplete" value="Type de mesure"
+                                                   style="display:block;color:var(--text-light);"/>
+                                    <p:autoComplete value="#{bean.formContext.newFieldManager.type}"
+                                                    id="newfieldTypeAutocomplete"
+                                                    completeMethod="#{spatialUnitFieldBean.completeWithFieldCode}"
+                                                    var="autocompleteDto"
+                                                    panelStyleClass="#{cc.attrs.panelStyleClass}"
+                                                    itemValue="#{autocompleteDto}"
+                                                    itemLabel="#{autocompleteDto.conceptLabelToDisplay.label}"
+                                                    required="true"
+                                                    converter="#{conceptAutocompleteDTOConverter}"
+                                                    forceSelection="true"
+                                                    scrollHeight="300"
+                                                    dropdown="true"
+                                                    showEmptyMessage="false"
+                                                    maxResults="#{fieldConfigurationService.resultLimit()}"
+                                    >
+                                        <f:attribute name="fieldCode" value="SIAMD.TYPE"/>
+                                    </p:autoComplete>
+                                </div>
+
+                                <div class="ui-fluid">
+                                    <p:outputLabel for="newfieldNatureAutocomplete" value="Nature de la mesure"
+                                                   style="display:block;color:var(--text-light);"/>
+                                    <p:autoComplete value="#{bean.formContext.newFieldManager.nature}"
+                                                    id="newfieldNatureAutocomplete"
+                                                    completeMethod="#{spatialUnitFieldBean.completeWithFieldCode}"
+                                                    var="autocompleteDto"
+                                                    panelStyleClass="#{cc.attrs.panelStyleClass}"
+                                                    itemValue="#{autocompleteDto}"
+                                                    itemLabel="#{autocompleteDto.conceptLabelToDisplay.label}"
+                                                    required="false"
+                                                    converter="#{conceptAutocompleteDTOConverter}"
+                                                    forceSelection="true"
+                                                    scrollHeight="300"
+                                                    dropdown="true"
+                                                    showEmptyMessage="false"
+                                                    maxResults="#{fieldConfigurationService.resultLimit()}"
+                                    >
+                                        <f:attribute name="fieldCode" value="SIAMD.NATURE"/>
+                                    </p:autoComplete>
+                                </div>
+
+                                <div>
+                                    <p:outputLabel for="fieldUnit" value="Unité"
+                                                   style="color:var(--text-light);display:block;"/>
+                                    <p:selectOneMenu id="fieldUnit" style="width:100%">
+                                        <f:selectItem itemLabel="m" itemValue="m"/>
+                                    </p:selectOneMenu>
+                                </div>
+                            </div>
+
+
+                            <div style="display:flex; align-items:flex-end; gap:5px;">
+                                <p:commandButton icon="pi pi-check"
+                                                 actionListener="#{bean.formContext.newFieldManager.saveNewField}"
+                                                 value="Ajouter le champ"
+                                                 update="@form"/>
+                                <p:commandButton icon="pi pi-times" actionListener="#{customFormPanel.cancelNewField}"
+                                                 update="@parent"
+                                                 styleClass="ui-button-flat ui-button-plain ui-button-danger"/>
+                            </div>
+                        </div>
+                    </h:panelGroup>
+                </p:outputPanel>
+
+            </p:column>
+        </p:row>
     </p:panelGrid>
 
     <ui:fragment rendered="#{empty customFormPanel.rows}">

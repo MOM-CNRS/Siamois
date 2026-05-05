@@ -1,6 +1,5 @@
 package fr.siamois.ui.viewmodel.fieldanswer;
 
-import fr.siamois.dto.entity.ActionUnitDTO;
 import fr.siamois.dto.entity.ActionUnitSummaryDTO;
 import lombok.Getter;
 import lombok.NoArgsConstructor;

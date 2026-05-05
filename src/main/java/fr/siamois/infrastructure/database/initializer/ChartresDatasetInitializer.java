@@ -1,9 +1,11 @@
 package fr.siamois.infrastructure.database.initializer;
 
 import fr.siamois.domain.models.exceptions.database.DatabaseDataInitException;
+import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.infrastructure.database.initializer.seeder.*;
+import fr.siamois.infrastructure.database.repositories.institution.InstitutionRepository;
 import fr.siamois.infrastructure.dataimport.OOXMLImportService;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -28,12 +30,14 @@ public class ChartresDatasetInitializer implements DatabaseInitializer {
 
 
     public static final String VOCABULARY_ID = "th240";
-
+    public static final String HTTPS_THESAURUS_MOM_FR = "https://thesaurus.mom.fr";
+    private final InstitutionRepository institutionRepository;
 
     List<ThesaurusSeeder.ThesaurusSpec> thesauri = List.of(
-            new ThesaurusSeeder.ThesaurusSpec("https://thesaurus.mom.fr", VOCABULARY_ID)
+            new ThesaurusSeeder.ThesaurusSpec(HTTPS_THESAURUS_MOM_FR, "th230"),
+            new ThesaurusSeeder.ThesaurusSpec(HTTPS_THESAURUS_MOM_FR, VOCABULARY_ID),
+            new ThesaurusSeeder.ThesaurusSpec(HTTPS_THESAURUS_MOM_FR, "th258")
     );
-
 
     @Value("${siamois.admin.email}")
     private String adminEmail;
@@ -64,16 +68,14 @@ public class ChartresDatasetInitializer implements DatabaseInitializer {
     @Override
     @Transactional
     public void initialize() throws DatabaseDataInitException {
-
         // run only if not inserted
         RecordingUnit existing = recordingUnitService
                 .findByFullIdentifierAndInstitutionIdentifier("1000", "chartres");
 
 
-        if(existing!=null) {
-            //return; // do nothing
+        if(existing != null) {
+            return; // ignore init
         }
-
 
         // Init vocabs
         thesaurusSeeder.seed(thesauri);
@@ -90,20 +92,17 @@ public class ChartresDatasetInitializer implements DatabaseInitializer {
             throw new DatabaseDataInitException(e.getMessage(), e);
         }
 
-        personSeeder.seed(specs.getPersons());
-        institutionSeeder.seed(specs.getInstitutions());
-        spatialUnitSeeder.seed(specs.getSpatialUnits());
-        actionCodeSeeder.seed(specs.getActionCodes());
-        actionUnitSeeder.seed(specs.getActionUnits());
-        recordingUnitSeeder.seed(specs.getRecordingUnits());
-        specimenSeeder.seed(specs.getSpecimenSpecs());
-        recordingUnitSeeder.seed(specs.getRecordingUnits());
-        recordingUnitRelSeeder.seed(specs.getRecordingUnitRelSpecs());
-        recordingUnitStratiRelSeeder.seed(specs.getRecordingUnitStratiRelSpecs());
-
+        personSeeder.seed(specs.persons());
+        institutionSeeder.seed(specs.institutions());
+        Institution ch = institutionRepository.findInstitutionByIdentifier("chartres").orElseThrow(() -> new RuntimeException("CHARTRES NOT FOUND"));
+        spatialUnitSeeder.seed(specs.spatialUnits());
+        actionCodeSeeder.seed(specs.actionCodes());
+        actionUnitSeeder.seed(specs.actionUnits());
+        recordingUnitSeeder.seed(specs.recordingUnits());
+        specimenSeeder.seed(specs.specimenSpecs(), ch.getId());
+        recordingUnitSeeder.seed(specs.recordingUnits());
+        recordingUnitRelSeeder.seed(specs.recordingUnitRelSpecs(), ch.getId());
+        recordingUnitStratiRelSeeder.seed(specs.recordingUnitStratiRelSpecs(), ch.getId());
 
     }
-
-
-
 }

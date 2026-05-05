@@ -31,4 +31,9 @@ public class CustomFieldInteger extends CustomField {
         return super.hashCode();
     }
 
+    @Override
+    public String getIcon() {
+        return "bi bi-123";
+    }
+
 }

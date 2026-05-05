@@ -4,52 +4,68 @@
                 xmlns:p="http://primefaces.org/ui"
 >
 
+    <!--@elvariable id="tableModel" type="fr.siamois.ui.table.EntityTableViewModel"-->
+
     <p:toolbar id="tableToolbar">
         <p:toolbarGroup>
             <p:toolbarGroup align="left">
                 <div style="display: flex; flex-direction: row; flex-wrap: wrap; gap: 1em; align-items: center;">
-                    <!-- Toggle Switch -->
-                    <p:toggleSwitch
-                            rendered="#{tableModel.isSwitchVisible()}"
-                            value="#{tableModel.treeMode}"
-                            onIcon="bi bi-list-nested"
-                            offIcon="bi bi-list">
-                        <p:ajax process="@this" update=":#{cc.clientId}:tableContainer" onstart="PF('#{cc.clientId}_buiTables').show()"
-                                oncomplete="PF('#{cc.clientId}_buiTables').hide()"/>
 
-                    </p:toggleSwitch>
+
+                    <p:commandButton
+                            type="button"
+                            id="tableParam"
+                            styleClass="rounded-button ui-button-flat"
+                            icon="bi bi-gear"
+                    />
+                    <p:overlayPanel for="tableParam">
+                        <div style="display: flex;
+    flex-direction: column;
+    gap: 1em;">
+                            <!-- Toggle Switch -->
+                            <p:toggleSwitch
+                                    rendered="#{tableModel.isSwitchVisible()}"
+                                    value="#{tableModel.treeMode}"
+                                    onIcon="bi bi-list-nested"
+                                    offIcon="bi bi-list">
+                                <p:ajax process="@this" update=":#{cc.clientId}:tableContainer"
+                                        listener="#{tableModel.onSwitchTreeMode}"
+                                        onstart="PF('#{cc.clientId}_buiTables').show()"
+                                        oncomplete="PF('#{cc.clientId}_buiTables').hide()"/>
+
+                            </p:toggleSwitch>
+                            <!-- Column Toggler -->
+                            <p:commandButton
+                                    id="toggler" type="button"
+                                    value="#{langBean.msg('table.columnvisibility')}"
+                                    icon="pi pi-align-justify"/>
+                            <p:columnToggler
+                                    datasource=":#{cc.clientId}:#{tableId}"
+                                    trigger=":#{cc.clientId}:#{tableId}:toggler">
+                                <p:ajax event="toggle" listener="#{cc.attrs.tableModel.onToggle}"/>
+                            </p:columnToggler>
+                        </div>
+                    </p:overlayPanel>
 
                     <!-- Global Search -->
                     <span class="filter-container ui-input-icon-left">
                         <i class="bi bi-search"/>
                         <p:inputText id="globalFilter"
                                      value="#{tableModel.globalFilter}"
-                                     onkeyup="PrimeFaces.debounce(() => PF('#{cc.clientId}_#{tableId}').filter())"
-                                     placeholder="#{langBean.msg('common.action.search')}"/>
+                                     onkeyup="PrimeFaces.debounce(() => PF('#{cc.clientId}_#{tableId}').filter(), 500)"
+                                     placeholder="#{langBean.msg('common.action.search')}"
+                                     disabled="#{not tableModel.columnFilteringEnabled}"
+                        />
                     </span>
+                    <p:toggleSwitch
+                            id="manualColumnToggle"
+                            value="#{tableModel.columnFilteringEnabled}"
+                            onIcon="pi pi-filter" offIcon="pi pi-filter-slash"
+                            styleClass="vertical-align-middle ml-3">
 
-                    <!-- Column Toggler -->
-                    <p:commandButton
-                            id="toggler" type="button"
-                            value="#{langBean.msg('table.columnvisibility')}"
-                            icon="pi pi-align-justify"/>
-                    <p:columnToggler
-                            datasource=":#{cc.clientId}:#{tableId}"
-                            trigger=":#{cc.clientId}:#{tableId}:toggler">
-                        <p:ajax event="toggle" listener="#{cc.attrs.tableModel.onToggle}"/>
-                    </p:columnToggler>
-
-                    <!-- Save and Cancel Buttons -->
-                    <p:commandButton id="saveButton"
-                                     value="Sauvegarder"
-                                     rendered="#{tableModel.hasUnsavedModifications()}"
-                                     actionListener="#{tableModel.save()}"
-                                     update="#{updateTableString} templateFormCC:templateForm:templateGrowl"/>
-                    <p:commandLink value="Annuler les modifications" id="cancelButton"
-                                   rendered="#{tableModel.hasUnsavedModifications()}"
-                                   immediate="true"
-                                   action="#{tableModel.cancelModifications()}"
-                                   update="#{updateTableString}"/>
+                        <p:ajax update=":#{cc.clientId}:#{tableId}"
+                                listener="#{tableModel.onColumnFilteringToggle}" />
+                    </p:toggleSwitch>
                 </div>
             </p:toolbarGroup>
         </p:toolbarGroup>
@@ -65,7 +81,8 @@
                     cc.clientId.concat('_').concat(tableId)
                     )}"
                     oncomplete="PF('newUnitDiag').show();"
-                    update="newUnitForm">
+                    update="newUnitForm"
+            >
             </p:commandButton>
         </p:toolbarGroup>
     </p:toolbar>

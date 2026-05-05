@@ -1,5 +1,6 @@
 package fr.siamois.domain.services.specimen;
 
+import fr.siamois.domain.models.exceptions.actionunit.ActionUnitNotFoundException;
 import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.specimen.Specimen;
 import fr.siamois.domain.services.ArkEntityService;
@@ -14,6 +15,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+
+import static fr.siamois.domain.models.ValidationStatus.*;
 
 @Service
 @RequiredArgsConstructor
@@ -55,7 +58,7 @@ public class SpecimenService implements ArkEntityService {
                 toSave.setIdentifier(generateNextIdentifier(toSave));
             }
             // Set full identifier
-            toSave.setFullIdentifier(toSave.getFullIdentifier());
+            toSave.setFullIdentifier(toSave.getRecordingUnit().getFullIdentifier()+"_"+toSave.getIdentifier().toString());
         }
 
         // Convertir SpecimenDTO en Specimen
@@ -207,6 +210,75 @@ public class SpecimenService implements ArkEntityService {
 
     public Integer countByActionContext(ActionUnitDTO actionUnit) {
         return specimenRepository.countByActionContext(actionUnit.getId());
+    }
+
+    /**
+     * Find the next SpecimenDTO created by a specific action after the given one.
+     * If there is no next, returns the oldest one (wraps around).
+     *
+     * @param recordingUnit The recordingUnit to find ActionUnits for
+     * @param current The current SpecimenDTO to find the next one from
+     * @return The next ActionUnitDTO, or the oldest one if there is no next
+     */
+    public SpecimenDTO findNextByActionUnit(RecordingUnitSummaryDTO recordingUnit, SpecimenDTO current) {
+        return specimenRepository
+                .findFirstByRecordingUnitIdAndCreationTimeAfterOrderByCreationTimeAsc(
+                        recordingUnit.getId(), current.getCreationTime())
+                .map(specimenMapper::convert)
+                .orElseGet(() -> specimenRepository
+                        .findFirstByRecordingUnitIdOrderByCreationTimeAsc(recordingUnit.getId())
+                        .map(specimenMapper::convert)
+                        .orElseThrow(() -> new ActionUnitNotFoundException("No ActionUnit found for institution " + recordingUnit.getId()))
+                );
+    }
+
+    /**
+     * Find the previous SpecimenDTO created by a specific action before the given one.
+     * If there is no previous, returns the most recent one (wraps around).
+     *
+     * @param recordingUnit The ru to find SpecimenDTO for
+     * @param current The current ActionUnit to find the previous one from
+     * @return The previous ActionUnitDTO, or the most recent one if there is no previous
+     */
+    public SpecimenDTO findPreviousByActionUnit(RecordingUnitSummaryDTO recordingUnit,
+                                                SpecimenDTO current) {
+        return specimenRepository
+                .findFirstByRecordingUnitIdAndCreationTimeBeforeOrderByCreationTimeDesc(
+                        recordingUnit.getId(), current.getCreationTime())
+                .map(specimenMapper::convert)
+                .orElseGet(() -> specimenRepository
+                        .findFirstByRecordingUnitIdOrderByCreationTimeDesc(recordingUnit.getId())
+                        .map(specimenMapper::convert)
+                        .orElseThrow(() -> new ActionUnitNotFoundException("No ActionUnit found for institution " + recordingUnit.getId()))
+                );
+    }
+
+    /**
+     * Toggle the validated status of an RecordingUnit.
+     *
+     * @param id The id of the Recording unit to toggle
+     * @return The updated RecordingUnitDTO
+     */
+    public SpecimenDTO toggleValidated(Long id) {
+        Specimen unit = specimenRepository.findById(id)
+                .orElseThrow(() -> new ActionUnitNotFoundException("ActionUnit not found with id: " + id));
+
+        // Cycle through the enum values
+        switch (unit.getValidated()) {
+            case INCOMPLETE:
+                unit.setValidated(COMPLETE);
+                break;
+            case COMPLETE:
+                unit.setValidated(VALIDATED);
+                break;
+            case VALIDATED:
+                unit.setValidated(INCOMPLETE);
+                break;
+            default:
+                throw new IllegalStateException("Unknown status: " + unit.getValidated());
+        }
+
+        return specimenMapper.convert(specimenRepository.save(unit));
     }
 
 }

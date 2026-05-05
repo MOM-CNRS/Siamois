@@ -19,7 +19,7 @@ public final class SpatialUnitTableDefinitionFactory {
     public static final String BI_BI_EYE = "bi bi-eye";
     public static final String THIS = "@this";
     public static final String PF_BUI_CONTENT_SHOW = "PF('buiContent').show()";
-    public static final String PF_BUI_CONTENT_HIDE_HANDLE_SCROLL_TO_TOP = "PF('buiContent').hide();handleScrollToTop();";
+    public static final String PF_BUI_CONTENT_HIDE_HANDLE_SCROLL_TO_TOP = "PF('buiContent').hide();";
 
     private SpatialUnitTableDefinitionFactory() {
     }
@@ -74,15 +74,15 @@ public final class SpatialUnitTableDefinitionFactory {
         // -------------------------
         // Name / identifier link col
         // -------------------------
-        tableModel.getTableDefinition().addColumn(
+        tableModel.getTableDefinition().setCommandLinkColumn(
                 CommandLinkColumn.builder()
                         .id("identifierCol")
                         .headerKey("table.spatialunit.column.name")
                         .visible(true)
 
                         .toggleable(false)
-                        .sortable(false)
-                        .filterable(false)
+                        .sortable(true)
+                        .filterable(true)
                         .sortField("name")
 
                         .valueKey("name")
@@ -111,8 +111,8 @@ public final class SpatialUnitTableDefinitionFactory {
                         .id("type")
                         .headerKey("spatialunit.field.type")
                         .field(spatialUnitTypeField)
-                        .sortable(false)
-                        .filterable(false)
+                        .sortable(true)
+                        .filterable(true)
                         .visible(true)
                         .required(true)
                         .build()

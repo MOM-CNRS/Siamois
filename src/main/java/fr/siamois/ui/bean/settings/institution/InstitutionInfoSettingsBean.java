@@ -2,8 +2,8 @@ package fr.siamois.ui.bean.settings.institution;
 
 import fr.siamois.domain.events.publisher.InstitutionChangeEventPublisher;
 import fr.siamois.domain.models.events.LoginEvent;
-import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.services.InstitutionService;
+import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.utils.MessageUtils;
 import jakarta.faces.application.FacesMessage;
@@ -24,7 +24,7 @@ public class InstitutionInfoSettingsBean implements Serializable {
     private final transient InstitutionService institutionService;
     private final transient InstitutionChangeEventPublisher institutionChangeEventPublisher;
     private final LangBean langBean;
-    private Institution institution;
+    private InstitutionDTO institution;
     private String fName;
 
     public InstitutionInfoSettingsBean(InstitutionService institutionService,
@@ -34,7 +34,7 @@ public class InstitutionInfoSettingsBean implements Serializable {
         this.langBean = langBean;
     }
 
-    public void init(Institution institution) {
+    public void init(InstitutionDTO institution) {
         this.institution = institution;
         fName = institution.getName();
     }

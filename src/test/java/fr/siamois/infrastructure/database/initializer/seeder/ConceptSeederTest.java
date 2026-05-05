@@ -119,7 +119,7 @@ class ConceptSeederTest {
                 () -> seeder.findConceptOrThrow(key)
         );
 
-        assertEquals("Concept introuvable", exception.getMessage());
+        assertEquals("Concept ConceptKey[vocabularyExtId=VOCAB2, conceptExtId=CONCEPT2] introuvable", exception.getMessage());
         verify(conceptRepository).findConceptByExternalIdIgnoreCase("VOCAB2", "CONCEPT2");
     }
 

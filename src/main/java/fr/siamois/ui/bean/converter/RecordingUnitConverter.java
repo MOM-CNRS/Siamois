@@ -4,7 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import fr.siamois.domain.models.recordingunit.RecordingUnit;
+import fr.siamois.dto.entity.RecordingUnitDTO;
 import jakarta.faces.component.UIComponent;
 import jakarta.faces.context.FacesContext;
 import jakarta.faces.convert.Converter;
@@ -17,7 +17,7 @@ import java.io.Serializable;
 @ManagedBean
 @Component
 @Slf4j
-public class RecordingUnitConverter implements Converter<RecordingUnit>, Serializable {
+public class RecordingUnitConverter implements Converter<RecordingUnitDTO>, Serializable {
 
     private final ObjectMapper objectMapper;
 
@@ -30,9 +30,9 @@ public class RecordingUnitConverter implements Converter<RecordingUnit>, Seriali
 
 
     @Override
-    public RecordingUnit getAsObject(FacesContext context, UIComponent component, String value) {
+    public RecordingUnitDTO getAsObject(FacesContext context, UIComponent component, String value) {
         try {
-            return objectMapper.readValue(value, RecordingUnit.class);
+            return objectMapper.readValue(value, RecordingUnitDTO.class);
         } catch (JsonProcessingException e) {
             log.error("Error while converting string to RecordingUnit object", e);
             return null;
@@ -40,7 +40,7 @@ public class RecordingUnitConverter implements Converter<RecordingUnit>, Seriali
     }
 
     @Override
-    public String getAsString(FacesContext context, UIComponent component, RecordingUnit value) {
+    public String getAsString(FacesContext context, UIComponent component, RecordingUnitDTO value) {
         try {
             if (value == null) {
                 return "";

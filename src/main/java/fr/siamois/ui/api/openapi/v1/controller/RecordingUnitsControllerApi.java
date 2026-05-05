@@ -1,7 +1,9 @@
 package fr.siamois.ui.api.openapi.v1.controller;
 
 
-import fr.siamois.ui.api.openapi.v1.response.*;
+import fr.siamois.ui.api.openapi.v1.response.FindListResponse;
+import fr.siamois.ui.api.openapi.v1.response.RecordingUnitListResponse;
+import fr.siamois.ui.api.openapi.v1.response.RecordingUnitResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;

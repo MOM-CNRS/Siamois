@@ -16,7 +16,7 @@ public final class RecordingUnitTableDefinitionFactory {
 
     public static final String THIS = "@this";
     public static final String PF_BUI_CONTENT_SHOW = "PF('buiContent').show()";
-    public static final String PF_BUI_CONTENT_HIDE_HANDLE_SCROLL_TO_TOP = "PF('buiContent').hide();handleScrollToTop();";
+    public static final String PF_BUI_CONTENT_HIDE_HANDLE_SCROLL_TO_TOP = "PF('buiContent').hide()";
     public static final String BI_BI_EYE = "bi bi-eye";
     public static final String BI_BI_PLUS_SQUARE = "bi bi-plus-square";
 
@@ -140,7 +140,7 @@ public final class RecordingUnitTableDefinitionFactory {
         contributorsField.setId(4L);
         actionField.setId(5L);
         spatialField.setId(6L);
-        tableModel.getTableDefinition().addColumn(
+        tableModel.getTableDefinition().setCommandLinkColumn(
                 CommandLinkColumn.builder()
                         .id("identifierCol")
                         .headerKey("table.recordingunit.column.identifier")
@@ -148,8 +148,8 @@ public final class RecordingUnitTableDefinitionFactory {
 
                         // PrimeFaces metadata equivalents
                         .toggleable(false)
-                        .sortable(false)
-                        .filterable(false)
+                        .sortable(true)
+                        .filterable(true)
                         .sortField("full_identifier")
 
                         // What to display inside <h:outputText>
@@ -160,7 +160,7 @@ public final class RecordingUnitTableDefinitionFactory {
 
                         // CommandLink behavior
                         .processExpr(THIS)
-                        .updateExpr("flow")
+                        .updateExpr(THIS)
                         .onstartJs(PF_BUI_CONTENT_SHOW)
                         .oncompleteJs(PF_BUI_CONTENT_HIDE_HANDLE_SCROLL_TO_TOP)
                         .build()
@@ -171,7 +171,21 @@ public final class RecordingUnitTableDefinitionFactory {
                         .headerKey("recordingunit.field.identifier")
                         .field(recordingUnitIdField)
                         .sortable(true)
+                        .filterable(true)
                         .visible(true)
+                        .required(true)
+                        .build()
+        );
+
+        tableModel.getTableDefinition().addColumn(
+                FormFieldColumn.builder()
+                        .id("action")
+                        .headerKey("recordingunit.field.actionUnit")
+                        .field(actionField)
+                        .sortable(true)
+                        .filterable(true)
+                        .visible(true)
+                        .readOnly(true)
                         .required(true)
                         .build()
         );
@@ -181,83 +195,37 @@ public final class RecordingUnitTableDefinitionFactory {
                         .id("type")
                         .headerKey("recordingunit.property.type")
                         .field(typeField)
-                        .sortable(false)
-                        .filterable(false)
+                        .sortable(true)
+                        .filterable(true)
                         .visible(true)
                         .required(true)
                         .build()
         );
 
         tableModel.getTableDefinition().addColumn(
-                FormFieldColumn.builder()
-                        .id("matrixColor")
-                        .headerKey("recordingunit.field.matrixColor")
-                        .field(matrixColor)
-                        .sortable(false)
+                RelationColumn.builder()
+                        .id("relationships")
+                        .headerKey("common.label.ruRelationships")
+                        .headerIcon("bi bi-diagram-2")
                         .visible(true)
-                        .required(false)
-                        .build()
-        );
+                        .toggleable(true)
 
-        tableModel.getTableDefinition().addColumn(
-                FormFieldColumn.builder()
-                        .id("openingDate")
-                        .headerKey("recordingunit.field.openingDate")
-                        .field(dateField)
-                        .sortable(false)
-                        .filterable(false)
-                        .visible(true)
-                        .required(true)
-                        .build()
-        );
-        tableModel.getTableDefinition().addColumn(
-                FormFieldColumn.builder()
-                        .id("author")
-                        .headerKey("recordingunit.field.author")
-                        .field(authorField)
-                        .sortable(false)
-                        .filterable(false)
-                        .visible(true)
-                        .required(true)
-                        .build()
-        );
-        tableModel.getTableDefinition().addColumn(
-                FormFieldColumn.builder()
-                        .id("contributors")
-                        .headerKey("recordingunit.field.contributors")
-                        .field(contributorsField)
-                        .sortable(false)
-                        .filterable(false)
-                        .visible(true)
-                        .required(false)
-                        .build()
-        );
-        tableModel.getTableDefinition().addColumn(
-                FormFieldColumn.builder()
-                        .id("action")
-                        .headerKey("recordingunit.field.actionUnit")
-                        .field(actionField)
-                        .sortable(false)
-                        .filterable(false)
-                        .visible(true)
-                        .readOnly(true)
-                        .required(true)
-                        .build()
-        );
-        tableModel.getTableDefinition().addColumn(
-                FormFieldColumn.builder()
-                        .id("spatial")
-                        .headerKey("recordingunit.field.spatialUnit")
-                        .field(spatialField)
-                        .sortable(false)
-                        .filterable(false)
-                        .visible(true)
-                        .readOnly(false)
-                        .required(false)
-                        .build()
-        );
+                        .countKey("relationships")
+                        .viewIcon(BI_BI_EYE)
+                        .viewAction(TableColumnAction.VIEW_RELATION)
+                        .viewTargetIndex(3)
 
+                        .addEnabled(false)
+                        .addIcon(BI_BI_PLUS_SQUARE)
+                        .addAction(TableColumnAction.ADD_RELATION)
+                        .addRenderedKey("specimenCreateAllowed")
 
+                        .processExpr(THIS)
+                        .updateExpr(THIS)
+                        .onstartJs(PF_BUI_CONTENT_SHOW)
+                        .oncompleteJs(PF_BUI_CONTENT_HIDE_HANDLE_SCROLL_TO_TOP)
+                        .build()
+        );
 
         tableModel.getTableDefinition().addColumn(
                 RelationColumn.builder()
@@ -279,11 +247,79 @@ public final class RecordingUnitTableDefinitionFactory {
                         .addRenderedKey("specimenCreateAllowed")
 
                         .processExpr(THIS)
-                        .updateExpr("flow")
+                        .updateExpr(THIS)
                         .onstartJs(PF_BUI_CONTENT_SHOW)
                         .oncompleteJs(PF_BUI_CONTENT_HIDE_HANDLE_SCROLL_TO_TOP)
                         .build()
         );
+
+        tableModel.getTableDefinition().addColumn(
+                FormFieldColumn.builder()
+                        .id("spatial")
+                        .headerKey("recordingunit.field.spatialUnit")
+                        .field(spatialField)
+                        .sortable(false)
+                        .filterable(false)
+                        .visible(true)
+                        .readOnly(false)
+                        .required(false)
+                        .sortable(true)
+                        .filterable(true)
+
+                        .build()
+        );
+
+
+
+
+
+        tableModel.getTableDefinition().addColumn(
+                FormFieldColumn.builder()
+                        .id("matrixColor")
+                        .headerKey("recordingunit.field.matrixColor")
+                        .field(matrixColor)
+                        .sortable(true)
+                        .filterable(true)
+                        .visible(true)
+                        .required(false)
+                        .build()
+        );
+
+        tableModel.getTableDefinition().addColumn(
+                FormFieldColumn.builder()
+                        .id("openingDate")
+                        .headerKey("recordingunit.field.openingDate")
+                        .field(dateField)
+                        .sortable(true)
+                        .filterable(true)
+                        .visible(true)
+                        .required(true)
+                        .build()
+        );
+        tableModel.getTableDefinition().addColumn(
+                FormFieldColumn.builder()
+                        .id("author")
+                        .headerKey("recordingunit.field.author")
+                        .field(authorField)
+                        .sortable(true)
+                        .filterable(true)
+                        .visible(true)
+                        .required(true)
+                        .build()
+        );
+        tableModel.getTableDefinition().addColumn(
+                FormFieldColumn.builder()
+                        .id("contributors")
+                        .headerKey("recordingunit.field.contributors")
+                        .field(contributorsField)
+                        .sortable(false)
+                        .filterable(true)
+                        .visible(true)
+                        .required(false)
+                        .build()
+        );
+
+
 
 
 

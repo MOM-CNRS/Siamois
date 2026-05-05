@@ -3,17 +3,22 @@ package fr.siamois.ui.lazydatamodel;
 
 import fr.siamois.domain.models.form.customfield.CustomFieldSelectOneFromFieldCode;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
+import fr.siamois.dto.FilterDTO;
+import fr.siamois.dto.SortDTO;
 import fr.siamois.dto.entity.ConceptDTO;
 import fr.siamois.dto.entity.RecordingUnitDTO;
+import fr.siamois.infrastructure.database.repositories.specs.RecordingUnitSpec;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.panel.models.panel.list.RecordingUnitListPanel;
 import fr.siamois.utils.MessageUtils;
 import lombok.Getter;
 import lombok.Setter;
 import org.primefaces.event.RowEditEvent;
+import org.primefaces.model.FilterMeta;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
+import java.time.LocalDate;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -47,18 +52,26 @@ public abstract class BaseRecordingUnitLazyDataModel extends BaseLazyDataModel<R
         FIELD_MAPPING = Collections.unmodifiableMap(map); // Ensure immutability
     }
 
-    @Override
-    protected Page<RecordingUnitDTO> loadData(String name, Long[] categoryIds, Long[] personIds, String globalFilter, Pageable pageable) {
-        return loadRecordingUnits(name, categoryIds, personIds, globalFilter, pageable);
-    }
-
+    /**
+     * This method was used with the previous implementation of load.
+     * @deprecated  Sub-lazy models should implement {@link BaseLazyDataModel#loadData(FilterDTO, Pageable)} with {@link BaseLazyDataModel#prepareFilterDTO(Map, FilterDTO)} and {@link BaseLazyDataModel#prepareSortDTO(Map, SortDTO)}
+     * @param nameFilter The filter for name
+     * @param categoryIds The IDs of the concepts for the category
+     * @param personIds The IDs of the persons
+     * @param globalFilter The input of the global filter
+     * @param pageable The page count
+     * @return Page with data
+     */
+    @Deprecated(forRemoval = true, since = "0.8.12-dev.0")
     protected abstract Page<RecordingUnitDTO> loadRecordingUnits(
             String nameFilter, Long[] categoryIds, Long[] personIds,
             String globalFilter, Pageable pageable);
 
     @Override
-    protected String getDefaultSortField() {
-        return "recording_unit_id";
+    protected SortDTO getDefaultSortDTO() {
+        SortDTO sortDTO = new SortDTO();
+        sortDTO.add(RecordingUnitSpec.ID_FILTER, SortDTO.SortOrder.ASC);
+        return sortDTO;
     }
 
     @Override
@@ -103,6 +116,38 @@ public abstract class BaseRecordingUnitLazyDataModel extends BaseLazyDataModel<R
         MessageUtils.displayInfoMessage(langBean, "common.entity.recordingUnits.bulkUpdated", updateCount);
     }
 
+    @SuppressWarnings("unchecked")
+    @Override
+    protected void prepareFilterDTO(Map<String, FilterMeta> filterBy, FilterDTO filterDTO) {
+        if (filterBy == null || filterBy.isEmpty()) {
+            return;
+        }
+
+        FilterMeta meta = filterBy.get(RecordingUnitSpec.FULL_IDENTIFIER);
+        if (meta != null && meta.getFilterValue() != null) {
+            filterDTO.add(RecordingUnitSpec.FULL_IDENTIFIER, meta.getFilterValue().toString(), FilterDTO.FilterType.CONTAINS);
+        }
+
+        for (String entityFilter : new String[]{RecordingUnitSpec.AUTHOR_FILTER,
+                RecordingUnitSpec.ACTION_UNIT_FILTER,
+                RecordingUnitSpec.SPATIAL_UNIT_FILTER,
+                RecordingUnitSpec.CONTRIBUTORS_FILTER,
+                RecordingUnitSpec.TYPE_FILTER}) {
+            FilterMeta entityMeta = filterBy.get(entityFilter);
+            if (entityMeta != null && entityMeta.getFilterValue() instanceof List<?> ids && !ids.isEmpty()) {
+                filterDTO.add(entityFilter, ids, FilterDTO.FilterType.CONTAINS);
+            }
+        }
+
+        for (String dateFilter : new String[]{RecordingUnitSpec.OPENING_DATE_FILTER, RecordingUnitSpec.CLOSING_DATE_FILTER}) {
+            FilterMeta dateMeta = filterBy.get(dateFilter);
+            if (dateMeta != null && dateMeta.getFilterValue() instanceof List<?> range && !range.isEmpty()) {
+                List<LocalDate> dates = (List<LocalDate>) range;
+                filterDTO.add(dateFilter, dates, FilterDTO.FilterType.CONTAINS);
+            }
+        }
+    }
+
     public void duplicateRow() {
         // Create a copy from selected row
         RecordingUnitDTO original = getRowData();
@@ -122,4 +167,6 @@ public abstract class BaseRecordingUnitLazyDataModel extends BaseLazyDataModel<R
         // Add it to the model
         addRowToModel(newRec);
     }
+
+
 }

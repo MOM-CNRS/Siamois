@@ -1,7 +1,7 @@
 package fr.siamois.ui.mapper;
 
 import fr.siamois.domain.models.form.customform.CustomCol;
-import fr.siamois.ui.form.CustomColUiDto;
+import fr.siamois.ui.form.dto.CustomColUiDto;
 import fr.siamois.ui.mapper.adapter.ConversionServiceAdapter;
 import org.mapstruct.Mapper;
 import org.mapstruct.MappingConstants;

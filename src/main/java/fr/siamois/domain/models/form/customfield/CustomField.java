@@ -47,13 +47,6 @@ public abstract class CustomField implements Serializable {
     private String valueBinding; // e.g. "creationTime", "authors" to bind system field with JPA entities attributes
 
     @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "fk_unit_concept")
-    private Concept unitConcept;
-
-    @Column(name = "unit_label")
-    private String unitLabel;
-
-    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "fk_author")
     private Person author;
 
@@ -68,6 +61,16 @@ public abstract class CustomField implements Serializable {
     @Override
     public int hashCode() {
         return Objects.hash(concept);
+    }
+
+
+    public String getIcon() {
+        return "bi bi-question";
+    }
+
+    public String getConceptUri() {
+        String vocabularyUri = concept.getVocabulary().getUri();
+        return vocabularyUri+"&idc="+concept.getExternalId();
     }
 
 }

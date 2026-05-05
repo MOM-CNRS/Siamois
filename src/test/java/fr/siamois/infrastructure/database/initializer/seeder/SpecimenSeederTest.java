@@ -68,7 +68,7 @@ class SpecimenSeederTest {
 
         IllegalStateException ex = assertThrows(
                 IllegalStateException.class,
-                () -> seeder.seed(toInsert)
+                () -> seeder.seed(toInsert, 1L)
         );
 
         assertThat(ex.getMessage()).contains("Concept introuvable");
@@ -84,7 +84,7 @@ class SpecimenSeederTest {
 
         IllegalStateException ex = assertThrows(
                 IllegalStateException.class,
-                () -> seeder.seed(toInsert)
+                () -> seeder.seed(toInsert,1L)
         );
 
         assertThat(ex.getMessage()).contains("Person introuvable");
@@ -99,7 +99,7 @@ class SpecimenSeederTest {
 
         IllegalStateException ex = assertThrows(
                 IllegalStateException.class,
-                () -> seeder.seed(toInsert)
+                () -> seeder.seed(toInsert,1L)
         );
 
         assertThat(ex.getMessage()).contains("Institution introuvable");
@@ -112,12 +112,12 @@ class SpecimenSeederTest {
 
         when(institutionSeeder.findInstitutionOrReturnNull("chartres"))
                 .thenReturn(new Institution());
-        when(recordingUnitSeeder.getRecordingUnitFromKey(new RecordingUnitSeeder.RecordingUnitKey("chartres-C309_01-1100")))
+        when(recordingUnitSeeder.getRecordingUnitFromKey(new RecordingUnitSeeder.RecordingUnitKey("chartres-C309_01-1100"),1L))
                 .thenReturn(new RecordingUnit());
         when(specimenRepository.findByFullIdentifier("chartres-C309_01-1100-1"))
                 .thenReturn(Optional.of(new Specimen()));
 
-        seeder.seed(toInsert);
+        seeder.seed(toInsert,1L);
 
         verify(specimenRepository,never()).save(any(Specimen.class));
 
@@ -128,12 +128,12 @@ class SpecimenSeederTest {
 
         when(institutionSeeder.findInstitutionOrReturnNull("chartres"))
                 .thenReturn(new Institution());
-        when(recordingUnitSeeder.getRecordingUnitFromKey(new RecordingUnitSeeder.RecordingUnitKey("chartres-C309_01-1100")))
+        when(recordingUnitSeeder.getRecordingUnitFromKey(new RecordingUnitSeeder.RecordingUnitKey("chartres-C309_01-1100"),1L))
                 .thenReturn(new RecordingUnit());
         when(specimenRepository.findByFullIdentifier("chartres-C309_01-1100-1"))
                 .thenReturn(Optional.empty());
 
-        seeder.seed(toInsert);
+        seeder.seed(toInsert,1L);
 
         verify(specimenRepository,times(1)).save(any(Specimen.class));
 

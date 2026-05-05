@@ -1,6 +1,7 @@
 package fr.siamois.infrastructure.api;
 
 import org.springframework.boot.web.client.RestTemplateBuilder;
+import org.springframework.context.annotation.Bean;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
@@ -32,6 +33,11 @@ public class RequestFactory {
                 connection.setInstanceFollowRedirects(followRedirects);
             }
         }).build();
+    }
+
+    @Bean
+    public RestTemplate restTemplate(RestTemplateBuilder builder){
+        return builder.build();
     }
 
 }

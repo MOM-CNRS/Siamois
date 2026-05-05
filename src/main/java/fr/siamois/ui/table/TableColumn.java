@@ -1,7 +1,9 @@
 package fr.siamois.ui.table;
 
+import fr.siamois.domain.models.form.customfield.CustomField;
 import lombok.Data;
 import lombok.experimental.SuperBuilder;
+import org.springframework.lang.Nullable;
 
 /**
  * Base abstraction for all table columns.
@@ -37,6 +39,11 @@ public abstract class TableColumn {
 
     /** Optional CSS width (e.g. "150px") */
     private String width;
+
+    @Nullable
+    public CustomField getField() {
+        return null;
+    }
 
     /** Column kind discriminator */
     public abstract TableColumnType getType();

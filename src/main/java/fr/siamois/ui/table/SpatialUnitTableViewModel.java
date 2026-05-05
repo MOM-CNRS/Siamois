@@ -17,11 +17,13 @@ import fr.siamois.ui.bean.dialog.newunit.UnitKind;
 import fr.siamois.ui.bean.panel.FlowBean;
 import fr.siamois.ui.form.EntityFormContext;
 import fr.siamois.ui.form.FormContextServices;
-import fr.siamois.ui.form.FormUiDto;
+import fr.siamois.ui.form.dto.FormUiDto;
+import fr.siamois.ui.lazydatamodel.BaseLazyDataModel;
 import fr.siamois.ui.lazydatamodel.BaseSpatialUnitLazyDataModel;
 import fr.siamois.ui.lazydatamodel.tree.SpatialUnitTreeTableLazyModel;
 import fr.siamois.utils.MessageUtils;
 import lombok.Getter;
+import org.jspecify.annotations.NonNull;
 import org.primefaces.model.TreeNode;
 
 import java.util.HashSet;
@@ -29,7 +31,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
-import static fr.siamois.ui.bean.dialog.newunit.NewUnitContext.TreeInsert.ROOT;
 import static fr.siamois.ui.table.TableColumnAction.DUPLICATE_ROW;
 import static fr.siamois.ui.table.TableColumnAction.GO_TO_SPATIAL_UNIT;
 
@@ -106,7 +107,7 @@ public class SpatialUnitTableViewModel extends EntityTableViewModel<SpatialUnitD
                                      SpatialUnitDTO su) {
 
         if (column.getAction() == GO_TO_SPATIAL_UNIT) {
-            flowBean.addSpatialUnitToOverview(su.getId(), parentPanel);
+            flowBean.addSpatialUnitToOverview(su.getId(), parentPanel, null);
         } else {
             throw new IllegalStateException("Unhandled action: " + column.getAction());
         }
@@ -136,7 +137,7 @@ public class SpatialUnitTableViewModel extends EntityTableViewModel<SpatialUnitD
             return switch (rel.getCountKey()) {
                 case PARENTS -> su.getParents() == null ? 0 : su.getParents().size();
                 case CHILDREN -> su.getChildren() == null ? 0 : su.getChildren().size();
-                case "action" -> su.getRelatedActionUnitList() == null ? 0 : su.getRelatedActionUnitList().size();
+                case "actions" -> su.getRelatedActionUnitList() == null ? 0 : su.getRelatedActionUnitList().size();
                 case "recordingUnit" -> su.getRecordingUnitList() == null ? 0 : su.getRecordingUnitList().size();
                 default -> 0;
             };
@@ -210,7 +211,7 @@ public class SpatialUnitTableViewModel extends EntityTableViewModel<SpatialUnitD
     public void handleRelationAction(RelationColumn col, SpatialUnitDTO su, TableColumnAction action) {
         switch (action) {
 
-            case VIEW_RELATION -> flowBean.goToSpatialUnitByIdNewPanel(su.getId());
+            case VIEW_RELATION -> flowBean.addSpatialUnitToOverview(su.getId(), parentPanel, 3);
 
             case ADD_RELATION -> {
                 // Dispatch based on column.countKey (or add a dedicated "relationKey")
@@ -417,6 +418,22 @@ public class SpatialUnitTableViewModel extends EntityTableViewModel<SpatialUnitD
     }
 
     @Override
+    public BaseLazyDataModel<SpatialUnitDTO> getLazyDataModel() {
+        spatialUnitLazyDataModel.setRootOnly(treeMode);
+        return spatialUnitLazyDataModel;
+    }
+
+    @Override
+    protected boolean unitIsLeaf(@NonNull SpatialUnitDTO unit) {
+        return !spatialUnitService.existsChildrenByParentAndInstitution(unit.getId(), sessionSettingsBean.getSelectedInstitution().getId());
+    }
+
+    @Override
+    protected @NonNull List<SpatialUnitDTO> loadChildrensOfUnit(@NonNull SpatialUnitDTO parentUnit) {
+        return spatialUnitService.findDirectChildrensOf(parentUnit.getId());
+    }
+
+    @Override
     public TreeNode<SpatialUnitDTO> getTreeRoot() {
         return treeLazyModel.getRoot();
     }
@@ -463,21 +480,19 @@ public class SpatialUnitTableViewModel extends EntityTableViewModel<SpatialUnitD
             }
         }
 
-        // Build the creation context (as child of the parent of the duplicated row, or root if no parent)
+        // The duplicate must appear right below the source row, as its sibling.
+        // We expose the SOURCE entity id (not the parent) as clickedId so the
+        // tree mutator can locate it and slot the new node just after it.
         NewUnitContext ctx = NewUnitContext.builder()
                 .kindToCreate(UnitKind.SPATIAL)
-                .trigger(
-                        parent == null
-                                ? null
-                                : NewUnitContext.Trigger.cell(
-                                UnitKind.SPATIAL,
-                                parent.getId(),
-                                PARENTS
-                        )
-                )
+                .trigger(NewUnitContext.Trigger.cell(
+                        UnitKind.SPATIAL,
+                        toDuplicate.getId(),
+                        PARENTS
+                ))
                 .insertPolicy(NewUnitContext.UiInsertPolicy.builder()
                         .listInsert(NewUnitContext.ListInsert.TOP)
-                        .treeInsert(parent == null ? ROOT : NewUnitContext.TreeInsert.CHILD_FIRST)
+                        .treeInsert(NewUnitContext.TreeInsert.SIBLING_BELOW)
                         .build())
                 .build();
 

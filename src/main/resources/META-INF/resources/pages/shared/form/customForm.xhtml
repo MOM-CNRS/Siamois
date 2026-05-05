@@ -14,47 +14,30 @@
 
 
     <!-- show panel view -->
-    <h:panelGroup rendered="#{not flowBean.isFieldMode}">
-        <c:forEach items="#{layout}" var="customFormPanel" varStatus="status">
-            <p:panel
-                    header="#{spatialUnitFieldBean.resolvePanelLabel(customFormPanel)}"
-                    id="customFormPanel-#{status.index}-#{prefix}"
-                    class="sia-form-panel"
-                    toggleable="true">
-                <ui:include src="/pages/shared/form/customFormPanelContent.xhtml">
-                    <ui:param name="bean" value="#{panelModel}" />
-                    <ui:param name="customFormPanel" value="#{customFormPanel}" />
-                    <ui:param name="readOnly" value="#{readOnly}" />
-                    <ui:param name="prefix" value="#{prefix}" />
-                    <ui:param name="root" value="#{root}" />
-                    <ui:param name="updateTargetsOnBlur" value="#{panelId}" />
-                    <ui:param name="statusIndex" value="#{status.index}" />
-                    <ui:param name="ctx" value="#{ctx}" />
-                </ui:include>
-            </p:panel>
-        </c:forEach>
-    </h:panelGroup>
-
-    <!-- show tab view -->
-    <h:panelGroup rendered="#{flowBean.isFieldMode}">
-        <p:tabView id="customTabView-#{prefix}" dynamic="true" styleClass="fieldmode-tabview">
+    <h:panelGroup rendered="#{not flowBean.isFieldMode}" >
+        <div class="sia-form" >
             <c:forEach items="#{layout}" var="customFormPanel" varStatus="status">
-                <p:tab title="#{spatialUnitFieldBean.resolvePanelLabel(customFormPanel)}"
-                       titleStyleClass="fieldmode-tabtitle">
+                <p:panel
+                        header="#{spatialUnitFieldBean.resolvePanelLabel(customFormPanel)}"
+                        id="customFormPanel-#{status.index}-#{prefix}"
+                        class="sia-form-panel"
+                        toggleable="true">
                     <ui:include src="/pages/shared/form/customFormPanelContent.xhtml">
                         <ui:param name="bean" value="#{panelModel}" />
                         <ui:param name="customFormPanel" value="#{customFormPanel}" />
                         <ui:param name="readOnly" value="#{readOnly}" />
                         <ui:param name="prefix" value="#{prefix}" />
-                        <ui:param name="root" value="#{root}:customTabView-#{prefix}" />
+                        <ui:param name="root" value="#{root}" />
                         <ui:param name="updateTargetsOnBlur" value="#{panelId}" />
                         <ui:param name="statusIndex" value="#{status.index}" />
                         <ui:param name="ctx" value="#{ctx}" />
                     </ui:include>
-                </p:tab>
+                </p:panel>
             </c:forEach>
-        </p:tabView>
+        </div>
+
     </h:panelGroup>
+
 
 
 

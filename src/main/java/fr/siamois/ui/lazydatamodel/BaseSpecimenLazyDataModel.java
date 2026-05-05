@@ -47,19 +47,9 @@ public abstract class BaseSpecimenLazyDataModel extends BaseLazyDataModel<Specim
         FIELD_MAPPING = Collections.unmodifiableMap(map); // Ensure immutability
     }
 
-    @Override
-    protected Page<SpecimenDTO> loadData(String name, Long[] categoryIds, Long[] personIds, String globalFilter, Pageable pageable) {
-        return loadSpecimens(name, categoryIds, personIds, globalFilter, pageable);
-    }
-
     protected abstract Page<SpecimenDTO> loadSpecimens(
             String nameFilter, Long[] categoryIds, Long[] personIds,
             String globalFilter, Pageable pageable);
-
-    @Override
-    protected String getDefaultSortField() {
-        return "specimen_id";
-    }
 
     @Override
     protected Map<String, String> getFieldMapping() {

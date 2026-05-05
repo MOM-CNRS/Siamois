@@ -71,6 +71,10 @@ spring:
       max-file-size: 300MB
       max-request-size: 300MB
 
+  cache:
+    caffeine:
+      spec: expireAfterAccess=1h,maximumSize=500
+
 joinfaces:
   faces:
     project-stage: production

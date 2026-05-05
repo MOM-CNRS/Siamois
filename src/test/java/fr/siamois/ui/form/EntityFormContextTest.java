@@ -1,26 +1,36 @@
 package fr.siamois.ui.form;
 
 import fr.siamois.domain.models.form.customfield.CustomField;
+import fr.siamois.domain.models.form.customfield.CustomFieldSelectMultipleSpatialUnitTree;
+import fr.siamois.domain.models.form.customfield.CustomFieldSelectOneSpatialUnit;
+import fr.siamois.domain.models.vocabulary.Concept;
+import fr.siamois.domain.services.GeoApiService;
+import fr.siamois.domain.services.GeoPlatService;
+import fr.siamois.domain.services.form.CustomFieldMeasurementService;
 import fr.siamois.domain.services.form.FormService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitTreeService;
+import fr.siamois.domain.services.vocabulary.ConceptService;
+import fr.siamois.dto.PlaceSuggestionDTO;
 import fr.siamois.dto.entity.*;
 import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
+import fr.siamois.mapper.ConceptMapper;
 import fr.siamois.ui.form.fieldsource.FieldSource;
 import fr.siamois.ui.form.rules.EnabledRulesEngine;
 import fr.siamois.ui.viewmodel.CustomFormResponseViewModel;
 import fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerSelectMultipleSpatialUnitTreeViewModel;
 import fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerSelectOneFromFieldCodeViewModel;
 import fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerViewModel;
+import jakarta.faces.component.UIComponent;
+import jakarta.faces.context.FacesContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.primefaces.model.DefaultTreeNode;
-import org.primefaces.model.TreeNode;
 import org.springframework.core.convert.ConversionService;
+import org.springframework.data.domain.Page;
 
 import java.util.*;
 import java.util.function.BiConsumer;
@@ -39,7 +49,55 @@ class EntityFormContextTest {
     @Mock private RecordingUnitService recordingUnitService;
     private ConversionService conversionService;
 
+    @Mock
+    private GeoPlatService geoPlatService;
+    @Mock
+    private GeoApiService geoApiService;
+
+    @Mock
+    private ConceptService conceptService;
+    @Mock
+    private ConceptMapper conceptMapper;
+
+    @Mock
+    private UIComponent component;
+
+    @Mock
+    private FacesContext facesContext;
+
+    @Mock
+    private CustomFieldSelectOneSpatialUnit customFieldSelectOneSpatialUnit;
+
+    @Mock
+    private CustomFieldSelectMultipleSpatialUnitTree customFieldSelectMultipleSpatialUnitTree;
+
     @Mock private EnabledRulesEngine enabledRulesEngine;
+
+    @Mock private CustomFieldMeasurementService customFieldMeasurementService;
+
+    @Mock
+    private ActionUnitDTO actionUnitDTO;
+
+    @Mock
+    private RecordingUnitDTO recordingUnitDTO;
+
+    @Mock
+    private InstitutionDTO institutionDTO;
+
+    @Mock
+    private Concept concept;
+
+    @Mock
+    private ConceptDTO conceptDTO;
+
+    @Mock
+    private FullAddress fullAddress;
+
+    @Mock
+    private Map<String, Object> attributesMap;
+
+
+
 
     private BiConsumer<CustomField, ConceptDTO> scopeCallback;
 
@@ -50,9 +108,15 @@ class EntityFormContextTest {
     @BeforeEach
     void setup() {
         when(formContextServices.getFormService()).thenReturn(formService);
+        when(formContextServices.getGeoApiService()).thenReturn(geoApiService);
+        when(formContextServices.getGeoPlatService()).thenReturn(geoPlatService);
+        when(formContextServices.getConceptMapper()).thenReturn(conceptMapper);
+        when(formContextServices.getConceptService()).thenReturn(conceptService);
         when(formContextServices.getSpatialUnitTreeService()).thenReturn(spatialUnitTreeService);
         when(formContextServices.getSpatialUnitService()).thenReturn(spatialUnitService);
         when(formContextServices.getRecordingUnitService()).thenReturn(recordingUnitService);
+
+
         unit = new AbstractEntityDTO() {
             @Override
             public Long getId() {
@@ -80,9 +144,8 @@ class EntityFormContextTest {
 
         // build a response containing a spatial-unit-tree answer
         CustomFieldAnswerSelectMultipleSpatialUnitTreeViewModel treeAnswer = mock(CustomFieldAnswerSelectMultipleSpatialUnitTreeViewModel.class);
-        Set<SpatialUnitSummaryDTO> selected = new HashSet<>();
-        when(treeAnswer.getValue()).thenReturn(selected);
-
+        when(formContextServices.getCustomFieldMeasurementService()).thenReturn(customFieldMeasurementService);
+        when(formContextServices.getCustomFieldMeasurementService().find(any(int.class))).thenReturn(Page.empty());
         CustomFormResponseViewModel response = new CustomFormResponseViewModel();
         Map<CustomField, CustomFieldAnswerViewModel> answers = new HashMap<>();
         answers.put(mock(CustomField.class), treeAnswer);
@@ -91,8 +154,6 @@ class EntityFormContextTest {
         when(formService.initOrReuseResponse(isNull(), eq(unit), eq(fieldSource), eq(false))).thenReturn(response);
         when(formService.buildEnabledEngine(fieldSource)).thenReturn(enabledRulesEngine);
 
-        TreeNode<SpatialUnitSummaryDTO> root = new DefaultTreeNode<>(null, null);
-        when(spatialUnitTreeService.buildTree()).thenReturn(root);
 
         // act
         ctx.init(false);
@@ -103,8 +164,7 @@ class EntityFormContextTest {
         verify(formService).buildEnabledEngine(fieldSource);
         verify(enabledRulesEngine).applyAll(any(), any());
 
-        // tree UI state created
-        assertSame(root, ctx.getRoot(treeAnswer));
+
     }
 
 
@@ -122,9 +182,10 @@ class EntityFormContextTest {
         CustomFormResponseViewModel r = new CustomFormResponseViewModel();
         r.setAnswers(null);
         // hack: set via init() stubbing
+        when(formContextServices.getCustomFieldMeasurementService()).thenReturn(customFieldMeasurementService);
         when(formService.initOrReuseResponse(any(), any(), any(), anyBoolean())).thenReturn(r);
         when(formService.buildEnabledEngine(any())).thenReturn(enabledRulesEngine);
-
+        when(formContextServices.getCustomFieldMeasurementService().find(any(int.class))).thenReturn(Page.empty());
 
         ctx.init(false);
         assertNull(ctx.getFieldAnswer(f));
@@ -157,7 +218,8 @@ class EntityFormContextTest {
 
         CustomFormResponseViewModel response = new CustomFormResponseViewModel();
         response.setAnswers(new HashMap<>(Map.of(field, ans)));
-
+        when(formContextServices.getCustomFieldMeasurementService()).thenReturn(customFieldMeasurementService);
+        when(formContextServices.getCustomFieldMeasurementService().find(any(int.class))).thenReturn(Page.empty());
         when(formService.initOrReuseResponse(any(), any(), any(), anyBoolean())).thenReturn(response);
         when(formService.buildEnabledEngine(any())).thenReturn(enabledRulesEngine);
 
@@ -181,7 +243,8 @@ class EntityFormContextTest {
 
         CustomFormResponseViewModel response = new CustomFormResponseViewModel();
         response.setAnswers(new HashMap<>());
-
+        when(formContextServices.getCustomFieldMeasurementService()).thenReturn(customFieldMeasurementService);
+        when(formContextServices.getCustomFieldMeasurementService().find(any(int.class))).thenReturn(Page.empty());
         when(formService.initOrReuseResponse(any(), any(), any(), anyBoolean())).thenReturn(response);
         when(formService.buildEnabledEngine(any())).thenReturn(enabledRulesEngine);
 
@@ -206,7 +269,8 @@ class EntityFormContextTest {
 
         CustomFormResponseViewModel response = new CustomFormResponseViewModel();
         response.setAnswers(new HashMap<>());
-
+        when(formContextServices.getCustomFieldMeasurementService()).thenReturn(customFieldMeasurementService);
+        when(formContextServices.getCustomFieldMeasurementService().find(any(int.class))).thenReturn(Page.empty());
         when(formService.initOrReuseResponse(any(), any(), any(), anyBoolean())).thenReturn(response);
         when(formService.buildEnabledEngine(any())).thenReturn(enabledRulesEngine);
 
@@ -217,41 +281,6 @@ class EntityFormContextTest {
         verify(formService).updateJpaEntityFromResponse(response, unit);
     }
 
-    @Test
-    void spatialTree_addAndRemove_marksModifiedAndUpdatesSelection() {
-        // arrange
-        EntityFormContext<AbstractEntityDTO> ctx = new EntityFormContext<>(
-                unit, fieldSource, formContextServices, conversionService,
-                scopeCallback, "scopeBinding"
-        );
-
-
-        CustomFieldAnswerSelectMultipleSpatialUnitTreeViewModel treeAnswer = mock(CustomFieldAnswerSelectMultipleSpatialUnitTreeViewModel.class);
-        when(treeAnswer.getValue()).thenReturn(null); // force init set in addSUToSelection
-
-        CustomFormResponseViewModel response = new CustomFormResponseViewModel();
-        response.setAnswers(new HashMap<>(Map.of(mock(CustomField.class), treeAnswer)));
-
-        when(formService.initOrReuseResponse(any(), any(), any(), anyBoolean())).thenReturn(response);
-        when(formService.buildEnabledEngine(any())).thenReturn(enabledRulesEngine);
-        when(spatialUnitTreeService.buildTree()).thenReturn(new DefaultTreeNode<>(null, null));
-
-        ctx.init(false);
-
-        SpatialUnitSummaryDTO su1 = mock(SpatialUnitSummaryDTO.class);
-
-        // act: add
-        ctx.addSUToSelection(treeAnswer, su1);
-
-        // assert: marked modified + global flag
-        verify(treeAnswer).setHasBeenModified(true);
-        assertTrue(ctx.isHasUnsavedModifications());
-
-        // now selection exists in UI model, removal should work
-        boolean removed = ctx.removeSpatialUnit(treeAnswer, su1);
-        assertTrue(removed);
-        verify(treeAnswer, times(2)).setHasBeenModified(true); // add + remove
-    }
 
     @Test
     void getNormalizedSelectedUnits_removesDescendants_whenAncestorSelected() {
@@ -317,6 +346,8 @@ class EntityFormContextTest {
         );
 
         CustomField scopeField = mock(CustomField.class);
+        when(formContextServices.getCustomFieldMeasurementService()).thenReturn(customFieldMeasurementService);
+        when(formContextServices.getCustomFieldMeasurementService().find(any(int.class))).thenReturn(Page.empty());
         when(scopeField.getIsSystemField()).thenReturn(true);
         when(scopeField.getValueBinding()).thenReturn(scopeBinding);
         CustomFieldAnswerSelectOneFromFieldCodeViewModel ans = mock(CustomFieldAnswerSelectOneFromFieldCodeViewModel.class);
@@ -358,6 +389,8 @@ class EntityFormContextTest {
 
         CustomField otherField = mock(CustomField.class);
         when(otherField.getIsSystemField()).thenReturn(true);
+        when(formContextServices.getCustomFieldMeasurementService()).thenReturn(customFieldMeasurementService);
+        when(formContextServices.getCustomFieldMeasurementService().find(any(int.class))).thenReturn(Page.empty());
         when(otherField.getValueBinding()).thenReturn("otherBinding");
         CustomFieldAnswerSelectOneFromFieldCodeViewModel ans = mock(CustomFieldAnswerSelectOneFromFieldCodeViewModel.class);
 
@@ -403,33 +436,145 @@ class EntityFormContextTest {
         assertEquals("", ctx3.getAutocompleteClass());
     }
 
+
+
     @Test
-    void getSpatialUnitOptions_returnsEmpty_whenUnitNotRecordingUnit() {
+    void getSpatialUnitOptions_returnsInternalResults_whenSourceIsNotSpecifiedForActionUnit() {
+        // Préparation
         EntityFormContext<AbstractEntityDTO> ctx = new EntityFormContext<>(
-                new AbstractEntityDTO() {
-                    @Override
-                    public Long getId() {
-                        return 0L;
-                    }
-                }, fieldSource, formContextServices,conversionService,
+                actionUnitDTO, fieldSource, formContextServices,conversionService,
                 scopeCallback, "scopeBinding"
         );
-        assertTrue(ctx.getSpatialUnitOptions().isEmpty());
-        verifyNoInteractions(spatialUnitService);
+        String query = "test";
+        when(actionUnitDTO.getCreatedByInstitution()).thenReturn(institutionDTO);
+        when(institutionDTO.getId()).thenReturn(1L);
+        when(spatialUnitService.findTop3ByInstitutionIdBySimilarity(1L, query))
+                .thenReturn(List.of(new PlaceSuggestionDTO(), new PlaceSuggestionDTO()));
+
+        // Exécution
+        List<PlaceSuggestionDTO> results = ctx.fetchSuggestions(query, "UNKNOWN");
+
+        // Vérification
+        assertEquals(2, results.size());
+        verify(spatialUnitService).findTop3ByInstitutionIdBySimilarity(1L, query);
+        verifyNoInteractions(geoApiService, geoPlatService);
     }
 
     @Test
-    void getSpatialUnitOptions_delegatesToService_whenUnitIsRecordingUnit() {
-        RecordingUnitDTO ru = mock(RecordingUnitDTO.class);
+    void getSpatialUnitOptions_returnsMergedResults_whenSourceIsINSEEForActionUnit() {
+        // Préparation
         EntityFormContext<AbstractEntityDTO> ctx = new EntityFormContext<>(
-                ru, fieldSource, formContextServices, conversionService,
+                actionUnitDTO, fieldSource, formContextServices,conversionService,
+                scopeCallback, "scopeBinding"
+        );
+        String query = "Paris";
+        when(actionUnitDTO.getCreatedByInstitution()).thenReturn(institutionDTO);
+        when(institutionDTO.getId()).thenReturn(1L);
+        when(spatialUnitService.findTop3ByInstitutionIdBySimilarity(1L, query))
+                .thenReturn(List.of(createInternalDTO("1", "Paris")));
+        when(geoApiService.fetchCommunes(query))
+                .thenReturn(List.of(createExternalDTO("2", "Paris 1"), createExternalDTO("1", "Paris")));
+
+        // Exécution
+        List<PlaceSuggestionDTO> results =ctx.fetchSuggestions(query, "INSEE");
+
+        // Vérification
+        assertEquals(2, results.size());
+        assertTrue(results.stream().anyMatch(dto -> dto.getCode().equals("1")));
+        assertTrue(results.stream().anyMatch(dto -> dto.getCode().equals("2")));
+    }
+
+    @Test
+    void getSpatialUnitOptions_returnsMergedResults_whenSourceIsGEOPLATForActionUnit() {
+        // Préparation
+        EntityFormContext<AbstractEntityDTO> ctx = new EntityFormContext<>(
+                actionUnitDTO, fieldSource, formContextServices,conversionService,
+                scopeCallback, "scopeBinding"
+        );
+        String query = "Lyon";
+        when(actionUnitDTO.getCreatedByInstitution()).thenReturn(institutionDTO);
+        when(institutionDTO.getId()).thenReturn(1L);
+        when(spatialUnitService.findTop3ByInstitutionIdBySimilarity(1L, query))
+                .thenReturn(List.of(createInternalDTO("1", "Lyon")));
+        when(conceptService.findById(418)).thenReturn(Optional.of(concept));
+        when(conceptMapper.convert(concept)).thenReturn(conceptDTO);
+        when(geoPlatService.search(query))
+                .thenReturn(List.of(createFullAddress("Lyon 1")));
+
+        // Exécution
+        List<PlaceSuggestionDTO> results =  ctx.fetchSuggestions(query, "GEOPLAT");
+
+        // Vérification
+        assertEquals(2, results.size());
+
+    }
+
+    @Test
+    void getSpatialUnitOptions_returnsOnlyUniqueResults_whenDuplicatesExist() {
+        // Préparation
+
+        String query = "Marseille";
+        EntityFormContext<AbstractEntityDTO> ctx = new EntityFormContext<>(
+                actionUnitDTO, fieldSource, formContextServices,conversionService,
                 scopeCallback, "scopeBinding"
         );
 
-        List<SpatialUnitSummaryDTO> opts = List.of(mock(SpatialUnitSummaryDTO.class));
-        when(spatialUnitService.getSpatialUnitOptionsFor(ru)).thenReturn(opts);
+        when(actionUnitDTO.getCreatedByInstitution()).thenReturn(institutionDTO);
+        when(institutionDTO.getId()).thenReturn(1L);
+        when(spatialUnitService.findTop3ByInstitutionIdBySimilarity(1L, query))
+                .thenReturn(List.of(createInternalDTO("1", "Marseille")));
+        when(geoApiService.fetchCommunes(query))
+                .thenReturn(List.of(createExternalDTO("1", "Marseille"), createExternalDTO("1", "Marseille")));
 
-        assertSame(opts, ctx.getSpatialUnitOptions());
-        verify(spatialUnitService).getSpatialUnitOptionsFor(ru);
+        // Exécution
+        List<PlaceSuggestionDTO> results = ctx.fetchSuggestions(query, "INSEE");
+
+        // Vérification
+        assertEquals(1, results.size());
+    }
+
+    @Test
+    void getSpatialUnitOptions_returnsEmpty_whenNoResultsFound() {
+        // Préparation
+        String query = "Unknown";
+        EntityFormContext<AbstractEntityDTO> ctx = new EntityFormContext<>(
+                actionUnitDTO, fieldSource, formContextServices,conversionService,
+                scopeCallback, "scopeBinding"
+        );
+        when(actionUnitDTO.getCreatedByInstitution()).thenReturn(institutionDTO);
+        when(institutionDTO.getId()).thenReturn(1L);
+        when(spatialUnitService.findTop3ByInstitutionIdBySimilarity(1L, query))
+                .thenReturn(Collections.emptyList());
+        when(geoApiService.fetchCommunes(query))
+                .thenReturn(Collections.emptyList());
+
+        // Exécution
+        List<PlaceSuggestionDTO> results =  ctx.fetchSuggestions(query, "INSEE");
+
+        // Vérification
+        assertTrue(results.isEmpty());
+    }
+
+    // Méthodes utilitaires pour créer des objets de test
+    private PlaceSuggestionDTO createInternalDTO(String code, String name) {
+        PlaceSuggestionDTO dto = new PlaceSuggestionDTO();
+        dto.setCode(code);
+        dto.setName(name);
+        dto.setSourceName("SIAMOIS");
+        return dto;
+    }
+
+    private PlaceSuggestionDTO createExternalDTO(String code, String name) {
+        PlaceSuggestionDTO dto = new PlaceSuggestionDTO();
+        dto.setCode(code);
+        dto.setName(name);
+        dto.setSourceName("INSEE");
+        return dto;
+    }
+
+    private FullAddress createFullAddress(String label) {
+        FullAddress address = new FullAddress();
+        address.setLabel(label);
+        return address;
     }
 }

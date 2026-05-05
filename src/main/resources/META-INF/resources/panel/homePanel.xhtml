@@ -42,7 +42,7 @@
 
                                         <p:commandButton
                                                 value="Ajouter des enregistrements"
-                                                action="#{flowBean.goToActionUnitByIdNewPanel(actionUnit.id,2)}"
+                                                action="#{navBean.redirectToActionUnit(actionUnit.id,2)}"
                                                 onstart="PF('buiContent').show()"
                                                 oncomplete="PF('buiContent').hide()"
                                                 process="@this"

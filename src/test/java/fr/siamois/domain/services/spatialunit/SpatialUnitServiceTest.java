@@ -16,12 +16,12 @@ import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.authorization.PermissionServiceImpl;
 import fr.siamois.domain.services.person.PersonService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
+import fr.siamois.dto.FilterDTO;
+import fr.siamois.dto.PlaceSuggestionDTO;
 import fr.siamois.dto.entity.*;
 import fr.siamois.infrastructure.database.repositories.SpatialUnitRepository;
-import fr.siamois.mapper.InstitutionMapper;
-import fr.siamois.mapper.RecordingUnitMapper;
-import fr.siamois.mapper.SpatialUnitMapper;
-import fr.siamois.mapper.SpatialUnitSummaryMapper;
+import fr.siamois.infrastructure.database.repositories.specs.SpatialUnitSpec;
+import fr.siamois.mapper.*;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -34,11 +34,10 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.time.OffsetDateTime;
+import java.util.*;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
@@ -71,6 +70,14 @@ class SpatialUnitServiceTest {
     private SpatialUnitSummaryMapper spatialUnitSummaryMapper;
     @Mock
     private InstitutionMapper institutionMapper;
+    @Mock
+    private ConceptMapper conceptMapper;
+
+    @Mock
+    private fr.siamois.infrastructure.database.repositories.actionunit.ActionUnitRepository actionUnitRepository;
+
+    @Mock
+    private fr.siamois.domain.services.ark.ArkService arkService;
 
     @InjectMocks
     private SpatialUnitService spatialUnitService;
@@ -392,6 +399,10 @@ class SpatialUnitServiceTest {
                 .thenReturn(new Concept());
         when(spatialUnitRepository.save(any(SpatialUnit.class)))
                 .thenReturn(spatialUnit1);
+        when(spatialUnitRepository.findById(2L))
+                .thenReturn(Optional.of(new SpatialUnit()));
+        when(spatialUnitRepository.findById(0L))
+                .thenReturn(Optional.of(new SpatialUnit()));
         when(institutionService.findById(anyLong()))
                 .thenReturn(institutionDTO);
         when(personService.findById(anyLong()))
@@ -504,24 +515,6 @@ class SpatialUnitServiceTest {
     void countByInstitution_success() {
         when(spatialUnitRepository.countByCreatedByInstitutionId(3L)).thenReturn(3L);
         assertEquals(3, spatialUnitService.countByInstitutionId(3L));
-    }
-
-    @Test
-    void testFindAll_Success() {
-        // Arrange
-        spatialUnit1 = new SpatialUnit();
-        spatialUnit2 = new SpatialUnit();
-        when(spatialUnitRepository.findAll()).thenReturn(List.of(spatialUnit1, spatialUnit2));
-
-        // Act
-        List<SpatialUnit> actualResult = spatialUnitService.findAll();
-
-        // Assert
-        assertNotNull(actualResult);
-        assertEquals(2, actualResult.size());
-        assertTrue(actualResult.contains(spatialUnit1));
-        assertTrue(actualResult.contains(spatialUnit2));
-        verify(spatialUnitRepository, times(1)).findAll();
     }
 
     @Test
@@ -759,6 +752,457 @@ class SpatialUnitServiceTest {
 
         // Assert
         assertTrue(result, "La méthode doit retourner true si des enfants existent.");
+    }
+
+    @Test
+    void testFindNextByInstitution_ShouldReturnNextSpatialUnit() {
+        // Arrange
+        InstitutionDTO institutionDTO = new InstitutionDTO();
+        institutionDTO.setId(1L);
+        SpatialUnitDTO currentDTO = new SpatialUnitDTO();
+        currentDTO.setCreationTime(OffsetDateTime.now());
+
+        SpatialUnit nextEntity = new SpatialUnit();
+        SpatialUnitDTO nextDTO = new SpatialUnitDTO();
+
+        when(spatialUnitRepository.findFirstByCreatedByInstitutionIdAndCreationTimeAfterOrderByCreationTimeAsc(eq(1L), any()))
+                .thenReturn(Optional.of(nextEntity));
+        when(spatialUnitMapper.convert(nextEntity)).thenReturn(nextDTO);
+
+        // Act
+        SpatialUnitDTO result = spatialUnitService.findNextByInstitution(institutionDTO, currentDTO);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(nextDTO, result);
+        verify(spatialUnitRepository, never()).findFirstByCreatedByInstitutionIdOrderByCreationTimeAsc(anyLong());
+    }
+
+    @Test
+    void testFindNextByInstitution_ShouldWrapAroundToOldest() {
+        // Arrange
+        InstitutionDTO institutionDTO = new InstitutionDTO();
+        institutionDTO.setId(1L);
+        SpatialUnitDTO currentDTO = new SpatialUnitDTO();
+
+        SpatialUnit oldestEntity = new SpatialUnit();
+        SpatialUnitDTO oldestDTO = new SpatialUnitDTO();
+
+        // No "next" found
+        when(spatialUnitRepository.findFirstByCreatedByInstitutionIdAndCreationTimeAfterOrderByCreationTimeAsc(anyLong(), any()))
+                .thenReturn(Optional.empty());
+        // Should trigger the wrap around call
+        when(spatialUnitRepository.findFirstByCreatedByInstitutionIdOrderByCreationTimeAsc(1L))
+                .thenReturn(Optional.of(oldestEntity));
+        when(spatialUnitMapper.convert(oldestEntity)).thenReturn(oldestDTO);
+
+        // Act
+        SpatialUnitDTO result = spatialUnitService.findNextByInstitution(institutionDTO, currentDTO);
+
+        // Assert
+        assertEquals(oldestDTO, result);
+    }
+
+    @Test
+    void testFindPreviousByInstitution_ShouldReturnPreviousSpatialUnit() {
+        // Arrange
+        InstitutionDTO institutionDTO = new InstitutionDTO();
+        institutionDTO.setId(1L);
+        SpatialUnitDTO currentDTO = new SpatialUnitDTO();
+        currentDTO.setCreationTime(OffsetDateTime.now());
+
+        SpatialUnit prevEntity = new SpatialUnit();
+        SpatialUnitDTO prevDTO = new SpatialUnitDTO();
+
+        when(spatialUnitRepository.findFirstByCreatedByInstitutionIdAndCreationTimeBeforeOrderByCreationTimeDesc(eq(1L), any()))
+                .thenReturn(Optional.of(prevEntity));
+        when(spatialUnitMapper.convert(prevEntity)).thenReturn(prevDTO);
+
+        // Act
+        SpatialUnitDTO result = spatialUnitService.findPreviousByInstitution(institutionDTO, currentDTO);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(prevDTO, result);
+    }
+
+    @Test
+    void testFindPreviousByInstitution_ShouldWrapAroundToMostRecent() {
+        // Arrange
+        InstitutionDTO institutionDTO = new InstitutionDTO();
+        institutionDTO.setId(1L);
+        SpatialUnitDTO currentDTO = new SpatialUnitDTO();
+
+        SpatialUnit mostRecentEntity = new SpatialUnit();
+        SpatialUnitDTO mostRecentDTO = new SpatialUnitDTO();
+
+        // No "previous" found
+        when(spatialUnitRepository.findFirstByCreatedByInstitutionIdAndCreationTimeBeforeOrderByCreationTimeDesc(anyLong(), any()))
+                .thenReturn(Optional.empty());
+        // Should trigger the wrap around call
+        when(spatialUnitRepository.findFirstByCreatedByInstitutionIdOrderByCreationTimeDesc(1L))
+                .thenReturn(Optional.of(mostRecentEntity));
+        when(spatialUnitMapper.convert(mostRecentEntity)).thenReturn(mostRecentDTO);
+
+        // Act
+        SpatialUnitDTO result = spatialUnitService.findPreviousByInstitution(institutionDTO, currentDTO);
+
+        // Assert
+        assertEquals(mostRecentDTO, result);
+    }
+
+    @Test
+    void testToggleValidated_CycleLogic() {
+        // Arrange
+        Long id = 1L;
+        SpatialUnit unit = new SpatialUnit();
+        when(spatialUnitRepository.findById(id)).thenReturn(Optional.of(unit));
+        when(spatialUnitRepository.save(any(SpatialUnit.class))).thenAnswer(i -> i.getArguments()[0]);
+        when(spatialUnitMapper.convert(any(SpatialUnit.class))).thenReturn(new SpatialUnitDTO());
+
+        // 1. Incomplete -> Complete
+        unit.setValidated(fr.siamois.domain.models.ValidationStatus.INCOMPLETE);
+        spatialUnitService.toggleValidated(id);
+        assertEquals(fr.siamois.domain.models.ValidationStatus.COMPLETE, unit.getValidated());
+
+        // 2. Complete -> Validated
+        spatialUnitService.toggleValidated(id);
+        assertEquals(fr.siamois.domain.models.ValidationStatus.VALIDATED, unit.getValidated());
+
+        // 3. Validated -> Incomplete
+        spatialUnitService.toggleValidated(id);
+        assertEquals(fr.siamois.domain.models.ValidationStatus.INCOMPLETE, unit.getValidated());
+    }
+
+    @Test
+    void testToggleValidated_NotFound_ThrowsException() {
+        // Arrange
+        when(spatialUnitRepository.findById(99L)).thenReturn(Optional.empty());
+
+        // Act & Assert
+        assertThrows(fr.siamois.domain.models.exceptions.actionunit.ActionUnitNotFoundException.class,
+                () -> spatialUnitService.toggleValidated(99L));
+    }
+
+    @Test
+    void findTop3BySimilarity_ShouldReturnEmptyList_WhenQueryIsBlank() {
+        // Arrange
+        Long instId = 1L;
+
+        // Act
+        List<PlaceSuggestionDTO> resultNull = spatialUnitService.findTop3ByInstitutionIdBySimilarity(instId, null);
+        List<PlaceSuggestionDTO> resultEmpty = spatialUnitService.findTop3ByInstitutionIdBySimilarity(instId, "  ");
+
+        // Assert
+        assertTrue(resultNull.isEmpty());
+        assertTrue(resultEmpty.isEmpty());
+        verifyNoInteractions(spatialUnitRepository);
+    }
+
+    @Test
+    void findTop3BySimilarity_ShouldReturnMappedDtos_WhenResultsExist() {
+        // Arrange
+        Long instId = 1L;
+        String query = "Paris";
+
+        SpatialUnit unit = new SpatialUnit();
+        unit.setId(100L);
+        unit.setName("Paris Office");
+        unit.setCode("PAR-01");
+        // Mock category if necessary
+        unit.setCategory(new Concept());
+
+        when(spatialUnitRepository.findTop3ByInstitutionIdBySimilarity(instId, query))
+                .thenReturn(List.of(unit));
+        when(conceptMapper.convert(any())).thenReturn(new ConceptDTO());
+
+        // Act
+        List<PlaceSuggestionDTO> results = spatialUnitService.findTop3ByInstitutionIdBySimilarity(instId, query);
+
+        // Assert
+        assertEquals(1, results.size());
+        PlaceSuggestionDTO dto = results.get(0);
+        assertEquals(100L, dto.getId());
+        assertEquals("Paris Office", dto.getName());
+        assertEquals("PAR-01", dto.getCode());
+        assertEquals("SIAMOIS", dto.getSourceName());
+        assertNotNull(dto.getCategory());
+    }
+
+    // ------------------------------------------------------------------
+    // findTop3BySimilarity — null query branch
+    // ------------------------------------------------------------------
+
+    @Test
+    void findTop3BySimilarity_nullQuery_returnsEmpty() {
+        assertTrue(spatialUnitService.findTop3ByInstitutionIdBySimilarity(1L, null).isEmpty());
+        verify(spatialUnitRepository, never()).findTop3ByInstitutionIdBySimilarity(any(), any());
+    }
+
+    // ------------------------------------------------------------------
+    // Summary variants
+    // ------------------------------------------------------------------
+
+    @Test
+    void findAllSummaryOfInstitution_mapsToSummaryDtos() {
+        SpatialUnitSummaryDTO summary1 = new SpatialUnitSummaryDTO();
+        SpatialUnitSummaryDTO summary2 = new SpatialUnitSummaryDTO();
+        when(spatialUnitRepository.findAllOfInstitution(1L)).thenReturn(List.of(spatialUnit1, spatialUnit2));
+        when(spatialUnitSummaryMapper.convert(spatialUnit1)).thenReturn(summary1);
+        when(spatialUnitSummaryMapper.convert(spatialUnit2)).thenReturn(summary2);
+
+        List<SpatialUnitSummaryDTO> result = spatialUnitService.findAllSummaryOfInstitution(1L);
+
+        assertEquals(List.of(summary1, summary2), result);
+    }
+
+    @Test
+    void findSummaryRootsOf_returnsOnlyOrphans() {
+        SpatialUnitSummaryDTO summary = new SpatialUnitSummaryDTO();
+        when(spatialUnitRepository.findAllOfInstitution(1L)).thenReturn(List.of(spatialUnit1, spatialUnit2));
+        when(spatialUnitRepository.countParentsByChildId(1L)).thenReturn(0L);
+        when(spatialUnitRepository.countParentsByChildId(2L)).thenReturn(2L);
+        when(spatialUnitSummaryMapper.convert(spatialUnit1)).thenReturn(summary);
+
+        List<SpatialUnitSummaryDTO> result = spatialUnitService.findSummaryRootsOf(1L);
+
+        assertEquals(List.of(summary), result);
+    }
+
+    @Test
+    void findDirectChildrensSummaryOf_mapsToSummaryDtos() {
+        SpatialUnitSummaryDTO summary = new SpatialUnitSummaryDTO();
+        when(spatialUnitRepository.findChildrensOf(7L)).thenReturn(Set.of(spatialUnit1));
+        when(spatialUnitSummaryMapper.convert(spatialUnit1)).thenReturn(summary);
+
+        List<SpatialUnitSummaryDTO> result = spatialUnitService.findDirectChildrensSummaryOf(7L);
+
+        assertEquals(List.of(summary), result);
+    }
+
+    // ------------------------------------------------------------------
+    // existsXxx — false branches
+    // ------------------------------------------------------------------
+
+    @Test
+    void existsChildrenByParentAndInstitution_returnsFalseWhenRepositoryDoes() {
+        when(spatialUnitRepository.existsChildrenByParentAndInstitution(1L, 2L)).thenReturn(false);
+        assertFalse(spatialUnitService.existsChildrenByParentAndInstitution(1L, 2L));
+    }
+
+    @Test
+    void existsRootChildrenByInstitution_returnsFalseWhenRepositoryDoes() {
+        when(spatialUnitRepository.existsRootChildrenByInstitution(1L)).thenReturn(false);
+        assertFalse(spatialUnitService.existsRootChildrenByInstitution(1L));
+    }
+
+    @Test
+    void existsRootChildrenByParent_returnsFalseWhenRepositoryDoes() {
+        when(spatialUnitRepository.existsRootChildrenByParent(1L)).thenReturn(false);
+        assertFalse(spatialUnitService.existsRootChildrenByParent(1L));
+    }
+
+    // ------------------------------------------------------------------
+    // toggleValidated — IllegalStateException branch (validated == null)
+    // ------------------------------------------------------------------
+
+    @Test
+    void toggleValidated_unknownStatus_throwsNullPointer() {
+        SpatialUnit unit = new SpatialUnit();
+        unit.setId(1L);
+        unit.setValidated(null);
+        when(spatialUnitRepository.findById(1L)).thenReturn(Optional.of(unit));
+
+        assertThrows(NullPointerException.class, () -> spatialUnitService.toggleValidated(1L));
+    }
+
+    // ------------------------------------------------------------------
+    // getSpatialUnitOptionsFor — three branches
+    // ------------------------------------------------------------------
+
+    @Test
+    void getSpatialUnitOptionsFor_nullActionUnit_returnsEmpty() {
+        RecordingUnitDTO dto = new RecordingUnitDTO();
+        when(recordingUnitMapper.invertConvert(dto)).thenReturn(new RecordingUnit());
+
+        List<SpatialUnitSummaryDTO> result = spatialUnitService.getSpatialUnitOptionsFor(dto);
+
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    void getSpatialUnitOptionsFor_actionUnitNotInRepository_returnsEmpty() {
+        RecordingUnitDTO dto = new RecordingUnitDTO();
+        RecordingUnit ru = new RecordingUnit();
+        fr.siamois.domain.models.actionunit.ActionUnit au = new fr.siamois.domain.models.actionunit.ActionUnit();
+        au.setId(1L);
+        ru.setActionUnit(au);
+        when(recordingUnitMapper.invertConvert(dto)).thenReturn(ru);
+        when(actionUnitRepository.findById(1L)).thenReturn(Optional.empty());
+
+        List<SpatialUnitSummaryDTO> result = spatialUnitService.getSpatialUnitOptionsFor(dto);
+
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    void getSpatialUnitOptionsFor_returnsRootsAndDescendants_dedupedByInsertionOrder() {
+        RecordingUnitDTO dto = new RecordingUnitDTO();
+        RecordingUnit ru = new RecordingUnit();
+        fr.siamois.domain.models.actionunit.ActionUnit au = new fr.siamois.domain.models.actionunit.ActionUnit();
+        au.setId(1L);
+        SpatialUnit root = new SpatialUnit();
+        root.setId(10L);
+        au.setSpatialContext(Set.of(root));
+        SpatialUnit descendant = new SpatialUnit();
+        descendant.setId(20L);
+        ru.setActionUnit(au);
+
+        SpatialUnitSummaryDTO rootSummary = new SpatialUnitSummaryDTO();
+        rootSummary.setId(10L);
+        SpatialUnitSummaryDTO descSummary = new SpatialUnitSummaryDTO();
+        descSummary.setId(20L);
+
+        when(recordingUnitMapper.invertConvert(dto)).thenReturn(ru);
+        when(actionUnitRepository.findById(1L)).thenReturn(Optional.of(au));
+        when(spatialUnitRepository.findDescendantsUpToDepth(any(Long[].class), eq(10)))
+                .thenReturn(List.of(descendant));
+        when(spatialUnitSummaryMapper.convert(root)).thenReturn(rootSummary);
+        when(spatialUnitSummaryMapper.convert(descendant)).thenReturn(descSummary);
+
+        List<SpatialUnitSummaryDTO> result = spatialUnitService.getSpatialUnitOptionsFor(dto);
+
+        assertEquals(2, result.size());
+        assertEquals(10L, result.get(0).getId());
+        assertEquals(20L, result.get(1).getId());
+    }
+
+    @Test
+    void getSpatialUnitOptionsFor_emptyRoots_skipsDescendantLookup() {
+        RecordingUnitDTO dto = new RecordingUnitDTO();
+        RecordingUnit ru = new RecordingUnit();
+        fr.siamois.domain.models.actionunit.ActionUnit au = new fr.siamois.domain.models.actionunit.ActionUnit();
+        au.setId(1L);
+        au.setSpatialContext(Collections.emptySet());
+        ru.setActionUnit(au);
+
+        when(recordingUnitMapper.invertConvert(dto)).thenReturn(ru);
+        when(actionUnitRepository.findById(1L)).thenReturn(Optional.of(au));
+
+        List<SpatialUnitSummaryDTO> result = spatialUnitService.getSpatialUnitOptionsFor(dto);
+
+        assertTrue(result.isEmpty());
+        verify(spatialUnitRepository, never()).findDescendantsUpToDepth(any(Long[].class), anyInt());
+    }
+
+    // ------------------------------------------------------------------
+    // searchSpatialUnits / countSearchResults / prepareSpecs branches
+    // ------------------------------------------------------------------
+
+    @Test
+    void searchSpatialUnits_userMode_returnsMappedPage() {
+        InstitutionDTO inst = new InstitutionDTO();
+        inst.setId(1L);
+        FilterDTO filters = new FilterDTO(false);
+
+        when(spatialUnitRepository.findAll(any(Specification.class), eq(pageable))).thenReturn(p);
+        when(spatialUnitMapper.convert(any(SpatialUnit.class))).thenReturn(spatialUnit1DTO);
+
+        Page<SpatialUnitDTO> result = spatialUnitService.searchSpatialUnits(inst, filters, pageable);
+
+        assertEquals(2, result.getContent().size());
+    }
+
+    @Test
+    void searchSpatialUnits_rootOnlyWithoutFilters_runs() {
+        InstitutionDTO inst = new InstitutionDTO();
+        inst.setId(1L);
+        FilterDTO filters = new FilterDTO(true);
+
+        when(spatialUnitRepository.findAll(any(Specification.class), eq(pageable))).thenReturn(p);
+        when(spatialUnitMapper.convert(any(SpatialUnit.class))).thenReturn(spatialUnit1DTO);
+
+        Page<SpatialUnitDTO> result = spatialUnitService.searchSpatialUnits(inst, filters, pageable);
+
+        assertEquals(2, result.getContent().size());
+    }
+
+    @Test
+    void searchSpatialUnits_rootOnlyWithFiltersAndMatches_resolvesClosure() {
+        InstitutionDTO inst = new InstitutionDTO();
+        inst.setId(1L);
+        FilterDTO filters = new FilterDTO(true);
+        filters.add(SpatialUnitSpec.NAME_FILTER, "x", FilterDTO.FilterType.CONTAINS);
+
+        when(spatialUnitRepository.findAll(any(Specification.class))).thenReturn(List.of(spatialUnit1, spatialUnit2));
+        when(spatialUnitRepository.findAncestorClosure(any(Long[].class))).thenReturn(List.of(1L, 2L));
+        when(spatialUnitRepository.findAll(any(Specification.class), eq(pageable))).thenReturn(p);
+        when(spatialUnitMapper.convert(any(SpatialUnit.class))).thenReturn(spatialUnit1DTO);
+
+        Page<SpatialUnitDTO> result = spatialUnitService.searchSpatialUnits(inst, filters, pageable);
+
+        assertEquals(2, result.getContent().size());
+        assertEquals(java.util.Set.of(1L, 2L), filters.getMatchIds());
+    }
+
+    @Test
+    void searchSpatialUnits_rootOnlyWithFiltersNoMatches_returnsEmpty() {
+        InstitutionDTO inst = new InstitutionDTO();
+        inst.setId(1L);
+        FilterDTO filters = new FilterDTO(true);
+        filters.add(SpatialUnitSpec.NAME_FILTER, "nope", FilterDTO.FilterType.CONTAINS);
+
+        when(spatialUnitRepository.findAll(any(Specification.class))).thenReturn(List.of());
+        when(spatialUnitRepository.findAll(any(Specification.class), eq(pageable))).thenReturn(new PageImpl<>(List.of()));
+
+        Page<SpatialUnitDTO> result = spatialUnitService.searchSpatialUnits(inst, filters, pageable);
+
+        assertTrue(result.getContent().isEmpty());
+        verify(spatialUnitRepository, never()).findAncestorClosure(any(Long[].class));
+    }
+
+    @Test
+    void searchSpatialUnits_userModeWithCategoryFilter_runs() {
+        InstitutionDTO inst = new InstitutionDTO();
+        inst.setId(1L);
+        FilterDTO filters = new FilterDTO(false);
+        filters.add(SpatialUnitSpec.NAME_FILTER, "x", FilterDTO.FilterType.CONTAINS);
+        filters.add(SpatialUnitSpec.CATEGORY_FILTER, List.of(5L, 6L), FilterDTO.FilterType.CONTAINS);
+
+        when(spatialUnitRepository.findAll(any(Specification.class), eq(pageable)))
+                .thenReturn(new PageImpl<>(List.of()));
+
+        Page<SpatialUnitDTO> result = spatialUnitService.searchSpatialUnits(inst, filters, pageable);
+
+        assertTrue(result.getContent().isEmpty());
+    }
+
+    @Test
+    void countSearchResults_delegatesToRepository() {
+        InstitutionDTO inst = new InstitutionDTO();
+        inst.setId(1L);
+        FilterDTO filters = new FilterDTO(false);
+        when(spatialUnitRepository.count(any(Specification.class))).thenReturn(17L);
+
+        assertEquals(17, spatialUnitService.countSearchResults(inst, filters));
+    }
+
+    // ------------------------------------------------------------------
+    // findMatchingInInstitutionByName
+    // ------------------------------------------------------------------
+
+    @Test
+    void findMatchingInInstitutionByName_returnsMappedDtos() {
+        InstitutionDTO inst = new InstitutionDTO();
+        inst.setId(1L);
+
+        when(spatialUnitRepository.findAll(any(Specification.class), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(spatialUnit1)));
+        when(spatialUnitMapper.convert(spatialUnit1)).thenReturn(spatialUnit1DTO);
+
+        List<SpatialUnitDTO> result = spatialUnitService.findMatchingInInstitutionByName(inst, "q", 25);
+
+        assertEquals(List.of(spatialUnit1DTO), result);
     }
 
 

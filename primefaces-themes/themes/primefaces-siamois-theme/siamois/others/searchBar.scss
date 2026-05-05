@@ -25,6 +25,6 @@ span:has(.searchInput) {
     margin-right: 5px;
 }
 
-.searchInput {
+.searchInput > * {
     width: 100%;
 }

@@ -172,4 +172,8 @@ public abstract class AbstractListPanel<T extends AbstractEntityDTO> extends Abs
             return titleCodeOrTitle;
         }
     }
+
+    public boolean hasPreviousNext() {
+        return false;
+    }
 }

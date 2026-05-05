@@ -71,7 +71,7 @@ public class ActionUnitDetailsForm extends ActionUnitForm {
                                 .addRow(
                                         new CustomRow.Builder()
                                                 .addColumn(new CustomCol.Builder()
-                                                        .readOnly(true)
+                                                        .readOnly(false)
                                                         .className(COLUMN_CLASS_NAME)
                                                         .field(MAIN_LOCATION_FIELD)
                                                         .build())

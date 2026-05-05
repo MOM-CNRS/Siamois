@@ -26,7 +26,7 @@ public class RecordingUnitStratiRelSeeder {
             Boolean isUncertain) {
     }
 
-    public void seed(List<RecordingUnitStratiRelDTO> specs) {
+    public void seed(List<RecordingUnitStratiRelDTO> specs, Long institutionId) {
 
         for (var s : specs) {
             RecordingUnit us1;
@@ -34,10 +34,12 @@ public class RecordingUnitStratiRelSeeder {
             Optional<StratigraphicRelationship> toFind;
             try {
                 us1 = recordingUnitSeeder.getRecordingUnitFromKey(
-                        new RecordingUnitSeeder.RecordingUnitKey(s.us1)
+                        new RecordingUnitSeeder.RecordingUnitKey(s.us1),
+                        institutionId
                 );
                 us2 = recordingUnitSeeder.getRecordingUnitFromKey(
-                        new RecordingUnitSeeder.RecordingUnitKey(s.us2)
+                        new RecordingUnitSeeder.RecordingUnitKey(s.us2),
+                        institutionId
                 );
                 toFind = stratigraphicRelationshipRepository.findByUnit1AndUnit2(
                         us1, us2

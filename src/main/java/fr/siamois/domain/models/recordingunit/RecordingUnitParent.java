@@ -73,17 +73,23 @@ public abstract class RecordingUnitParent extends TraceableEntity {
     @Column(name = "matrix_color")
     protected String matrixColor;
 
+    @Column(name = "comments")
+    protected String comments;
+
     @Column(name = "matrix_texture")
     protected String matrixTexture;
 
-    @Column(name = "erosion_shape")
-    protected String erosionShape;
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "fk_erosion_shape")
+    protected Concept erosionShape;
 
-    @Column(name = "erosion_orientation")
-    protected String erosionOrientation;
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "fk_erosion_orientation")
+    protected Concept erosionOrientation;
 
-    @Column(name = "erosion_profile")
-    protected String erosionProfile;
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "fk_erosion_profile")
+    protected Concept erosionProfile;
 
     @Column(name = "taq")
     protected Integer taq;

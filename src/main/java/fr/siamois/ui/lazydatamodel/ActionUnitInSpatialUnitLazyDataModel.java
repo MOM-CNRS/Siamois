@@ -1,6 +1,7 @@
 package fr.siamois.ui.lazydatamodel;
 
 import fr.siamois.domain.services.actionunit.ActionUnitService;
+import fr.siamois.dto.FilterDTO;
 import fr.siamois.dto.entity.ActionUnitDTO;
 import fr.siamois.dto.entity.SpatialUnitDTO;
 import fr.siamois.ui.bean.LangBean;
@@ -27,16 +28,19 @@ public class ActionUnitInSpatialUnitLazyDataModel extends BaseActionUnitLazyData
         this.spatialUnit = spatialUnit;
     }
 
+
     @Override
-    protected Page<ActionUnitDTO> loadActionUnits(String nameFilter, Long[] categoryIds, Long[] personIds, String globalFilter, Pageable pageable) {
+    protected Page<ActionUnitDTO> loadData(FilterDTO filter, Pageable pageable) {
         return actionUnitService.findAllByInstitutionAndBySpatialUnitAndByNameContainingAndByCategoriesAndByGlobalContaining(
                 sessionSettings.getSelectedInstitution().getId(),
                 spatialUnit.getId(),
-                nameFilter, categoryIds, personIds, globalFilter,
+                nameFilter, null, null, null,
                 langBean.getLanguageCode(),
                 pageable);
     }
 
-
-
+    @Override
+    protected int countWithFilter(FilterDTO filters) {
+        return 0;
+    }
 }

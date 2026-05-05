@@ -307,7 +307,7 @@ class RecordingUnitSeederTest {
         when(actionUnitRepository.findByFullIdentifier("action-01"))
                 .thenReturn(Optional.of(new ActionUnit()));
 
-        when(recordingUnitRepository.findByFullIdentifier("chartres-C309_01-1100"))
+        when(recordingUnitRepository.findByFullIdentifierAndInstitutionId("chartres-C309_01-1100", null))
                 .thenReturn(Optional.of(new RecordingUnit()));
 
         seeder.seed(toInsert);
@@ -355,7 +355,7 @@ class RecordingUnitSeederTest {
         when(actionUnitRepository.findByFullIdentifier("action-01"))
                 .thenReturn(Optional.of(new ActionUnit()));
 
-        when(recordingUnitRepository.findByFullIdentifier("chartres-C309_01-1100"))
+        when(recordingUnitRepository.findByFullIdentifierAndInstitutionId("chartres-C309_01-1100",null))
                 .thenReturn(Optional.empty());
 
         seeder.seed(toInsert);
@@ -372,17 +372,17 @@ class RecordingUnitSeederTest {
 
         RecordingUnit recordingUnit = new RecordingUnit(); recordingUnit.setFullIdentifier("RU-001");
 
-        when(recordingUnitRepository.findByFullIdentifier("RU-001"))
+        when(recordingUnitRepository.findByFullIdentifierAndInstitutionId("RU-001", null))
                 .thenReturn(Optional.of(recordingUnit));
 
         // When
-        RecordingUnit result = seeder.getRecordingUnitFromKey(key);
+        RecordingUnit result = seeder.getRecordingUnitFromKey(key, null);
 
         // Then
         assertThat(result).isSameAs(recordingUnit);
 
         verify(recordingUnitRepository)
-                .findByFullIdentifier("RU-001");
+                .findByFullIdentifierAndInstitutionId("RU-001", null);
     }
 
     @Test
@@ -391,16 +391,16 @@ class RecordingUnitSeederTest {
         RecordingUnitSeeder.RecordingUnitKey key =
                 new RecordingUnitSeeder.RecordingUnitKey("RU-404");
 
-        when(recordingUnitRepository.findByFullIdentifier("RU-404"))
+        when(recordingUnitRepository.findByFullIdentifierAndInstitutionId("RU-404", 1L))
                 .thenReturn(Optional.empty());
 
         // When / Then
-        assertThatThrownBy(() -> seeder.getRecordingUnitFromKey(key))
+        assertThatThrownBy(() -> seeder.getRecordingUnitFromKey(key, 1L))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessage("Recording unit introuvable");
 
         verify(recordingUnitRepository)
-                .findByFullIdentifier("RU-404");
+                .findByFullIdentifierAndInstitutionId("RU-404", 1L);
     }
 
 

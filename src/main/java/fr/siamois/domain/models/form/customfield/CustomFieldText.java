@@ -32,4 +32,9 @@ public class CustomFieldText extends CustomField {
         return autoGenerationFunction != null ? autoGenerationFunction.get() : null;
     }// function to autogenerate the value
 
+    @Override
+    public String getIcon() {
+        return "bi bi-alphabet";
+    }
+
 }

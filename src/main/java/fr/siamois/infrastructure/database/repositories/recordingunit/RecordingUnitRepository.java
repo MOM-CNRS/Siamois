@@ -7,6 +7,7 @@ import jakarta.transaction.Transactional;
 import jakarta.validation.constraints.NotNull;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
@@ -15,13 +16,13 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Repository;
 
-import java.math.BigInteger;
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
 @Repository
-public interface RecordingUnitRepository extends CrudRepository<RecordingUnit, Long>, RevisionRepository<RecordingUnit, Long, Long> {
+public interface RecordingUnitRepository extends CrudRepository<RecordingUnit, Long>, RevisionRepository<RecordingUnit, Long, Long>, JpaSpecificationExecutor<RecordingUnit> {
 
     @Query("SELECT COUNT(s) FROM Specimen s WHERE s.recordingUnit.id = :recordingUnitId")
     Long countSpecimensByRecordingUnitId(@Param("recordingUnitId") Long recordingUnitId);
@@ -457,6 +458,7 @@ public interface RecordingUnitRepository extends CrudRepository<RecordingUnit, L
           FROM recording_unit_hierarchy h
           WHERE h.fk_child_id = ru.recording_unit_id
       )
+    ORDER BY ru.creation_time DESC, ru.recording_unit_id DESC
     """, nativeQuery = true)
     List<RecordingUnit> findRootsByInstitution(@Param("institutionId") Long institutionId);
 
@@ -467,6 +469,7 @@ public interface RecordingUnitRepository extends CrudRepository<RecordingUnit, L
       ON h.fk_child_id = ru.recording_unit_id
     WHERE ru.fk_institution_id = :institutionId
       AND h.fk_parent_id = :parentId
+    ORDER BY ru.creation_time DESC, ru.recording_unit_id DESC
     """, nativeQuery = true)
     List<RecordingUnit> findChildrenByParentAndInstitution(@Param("parentId") Long parentId,
                                                            @Param("institutionId") Long institutionId);
@@ -489,6 +492,7 @@ public interface RecordingUnitRepository extends CrudRepository<RecordingUnit, L
           FROM recording_unit_hierarchy h
           WHERE h.fk_child_id = ru.recording_unit_id
       )
+    ORDER BY ru.creation_time DESC, ru.recording_unit_id DESC
     """, nativeQuery = true)
     List<RecordingUnit> findRootsByAction(@Param("actionId") Long actionId);
 
@@ -531,4 +535,35 @@ public interface RecordingUnitRepository extends CrudRepository<RecordingUnit, L
     boolean existsRootChildrenByAction(Long actionId);
 
     Page<RecordingUnit> findByCreatedByInstitutionId(Long institutionId, Pageable pageable);
+
+    Optional<RecordingUnit> findFirstByActionUnitIdAndCreationTimeAfterOrderByCreationTimeAsc(
+            Long actionUnitId,
+            OffsetDateTime createdAt);
+
+    Optional<RecordingUnit> findFirstByActionUnitIdAndCreationTimeBeforeOrderByCreationTimeDesc(
+            Long actionUnitId,
+            OffsetDateTime createdAt);
+
+    Optional<RecordingUnit> findFirstByActionUnitIdOrderByCreationTimeAsc(Long actionUnitId);  // oldest
+
+    Optional<RecordingUnit> findFirstByActionUnitIdOrderByCreationTimeDesc(Long actionUnitId);
+
+    @Query(nativeQuery = true, value = """
+    SELECT ru.*
+    FROM recording_unit ru
+    JOIN recording_unit_hierarchy ruh ON ru.recording_unit_id = ruh.fk_child_id
+    WHERE ruh.fk_parent_id = :parentRecordingUnitId
+""")
+    List<RecordingUnit> findChildrensOf(Long parentRecordingUnitId);
+
+    @Query(value = """
+            WITH RECURSIVE ascend(id) AS (
+                SELECT seed FROM unnest(CAST(:seedIds AS BIGINT[])) AS seed
+                UNION
+                SELECT h.fk_parent_id
+                FROM recording_unit_hierarchy h JOIN ascend a ON h.fk_child_id = a.id
+            )
+            SELECT id FROM ascend
+            """, nativeQuery = true)
+    List<Long> findAncestorClosure(@Param("seedIds") Long[] seedIds);
 }

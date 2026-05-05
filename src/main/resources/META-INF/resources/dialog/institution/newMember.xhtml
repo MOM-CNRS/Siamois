@@ -2,9 +2,7 @@
              xmlns:ui="http://java.sun.com/jsf/facelets"
              xmlns:p="http://primefaces.org/ui"
              xmlns:form="http://xmlns.jcp.org/jsf/composite/pages/shared/form"
-             xmlns:f="http://java.sun.com/jsf/core"
              xmlns:h="http://java.sun.com/jsf/html"
-             xmlns:input="http://xmlns.jcp.org/jsf/composite/pages/shared/input"
 >
 
     <p:dialog
@@ -29,52 +27,17 @@
 
                             <p:outputPanel class="sia-settings-dialog-form" id="addExistingUserOuputPanel">
                                 <div class="form-group">
-                                    <p:outputLabel value="Email ou nom d'utilisateur" for="userSelect"
+                                    <p:outputLabel value="Email ou nom d'utilisateur"
                                                    class="col-lg-4 col-form-label"/>
-                                    <p:autoComplete id="userSelect" class="col-lg-4"
-                                                    autocomplete="off"
+                                    <p:autoComplete id="selectABC" class="col-lg-4"
+                                                    autocomplete="selectABC"
                                                     value="#{userDialogBean.selectedExistingPerson}"
                                                     completeMethod="#{userDialogBean.searchUser}"
-                                                    var="user"
-                                                    itemLabel="#{user.displayName()}"
-                                                    itemValue="#{user}"
+                                                    var="p"
+                                                    itemLabel="#{p.displayName()}"
+                                                    itemValue="#{p}"
                                                     converter="#{personConverter}">
-
-                                        <p:column>
-                                            <f:facet name="header">
-                                                <p:outputLabel value="ID"/>
-                                            </f:facet>
-                                            <h:outputText value="#{user.id}"/>
-                                        </p:column>
-
-                                        <p:column>
-                                            <f:facet name="header">
-                                                <p:outputLabel value="Username"/>
-                                            </f:facet>
-                                            <h:outputText value="#{user.username}"/>
-                                        </p:column>
-
-                                        <p:column>
-                                            <f:facet name="header">
-                                                <p:outputLabel value="Email"/>
-                                            </f:facet>
-                                            <h:outputText value="#{user.email}"/>
-                                        </p:column>
-
-
                                     </p:autoComplete>
-                                    <h:panelGroup rendered="#{userDialogBean.shouldRenderRoleField}">
-                                        <label class="col-lg-4 col-form-label" for="role">Votre rôle</label>
-                                        <div class="col-lg-6 ms-auto">
-                                            <input:conceptAutocomplete
-                                                    completeMethod="#{userDialogBean.completeRole}"
-                                                    id="role"
-                                                    editConceptUrl="#{userDialogBean.conceptCompleteUrl}"
-                                                    selectedConcept="#{userDialogBean.currentSelectedRole}"
-                                                    required="false"
-                                            />
-                                        </div>
-                                    </h:panelGroup>
                                     <p:commandButton action="#{userDialogBean.addToList()}"
                                                      process="userDialogFormCC:userDialogBeanForm:userDialogTabs:addExistingUserOuputPanel"
                                                      update="userDialogFormCC:userDialogBeanForm:userDialogTabs:addExistingUserOuputPanel"
@@ -86,7 +49,7 @@
                                     <ui:repeat value="#{userDialogBean.personSelectedList}" var="personRole">
                                         <article>
                                             <p:outputLabel
-                                                    value="#{personRole.person().displayName()} (#{personRole.person().username}) - #{labelBean.findLabelOf(personRole.role())}"/>
+                                                    value="#{personRole.person().displayName()}"/>
                                             <p:commandButton icon="bi bi-dash-circle"
                                                              immediate="true"
                                                              action="#{userDialogBean.removeFromList(personRole)}"
@@ -153,8 +116,6 @@
                             </h:panelGroup>
 
 
-                        </p:tab>
-                        <p:tab title="Importer un groupe d'utilisateur" disabled="true" id="importUserGroup">
                         </p:tab>
                     </p:tabView>
                 </section>

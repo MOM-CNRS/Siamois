@@ -2,10 +2,11 @@ package fr.siamois.ui.bean.settings.institution;
 
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.events.LoginEvent;
-import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.auth.PendingPersonService;
 import fr.siamois.domain.services.person.PersonService;
+import fr.siamois.dto.entity.InstitutionDTO;
+import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
 import fr.siamois.ui.bean.dialog.institution.PersonRole;
@@ -40,11 +41,11 @@ public class InstitutionManagerListBean implements SettingsDatatableBean {
     private final LangBean langBean;
     private final transient PendingPersonService pendingPersonService;
     private final SessionSettingsBean sessionSettingsBean;
-    private Institution institution;
+    private InstitutionDTO institution;
     private transient Map<Person, String> roles;
 
-    private transient Set<Person> members;
-    private transient Set<Person> refMembers;
+    private transient Set<PersonDTO> members;
+    private transient Set<PersonDTO> refMembers;
     private String searchInput;
 
     public InstitutionManagerListBean(InstitutionService institutionService,
@@ -61,7 +62,7 @@ public class InstitutionManagerListBean implements SettingsDatatableBean {
         this.sessionSettingsBean = sessionSettingsBean;
     }
 
-    public void init(Institution institution) {
+    public void init(InstitutionDTO institution) {
         this.institution = institution;
         refMembers = new HashSet<>(institutionService.findManagersOf(institution));
         roles = new HashMap<>();
@@ -75,12 +76,12 @@ public class InstitutionManagerListBean implements SettingsDatatableBean {
             members = new HashSet<>(refMembers);
         } else {
             members = new HashSet<>();
-            for (Person person : refMembers) {
+            for (PersonDTO person : refMembers) {
                 if (person.displayName().toLowerCase().contains(searchInput.toLowerCase())) {
                     members.add(person);
                 }
             }
-            for (Person person : refMembers) {
+            for (PersonDTO person : refMembers) {
                 if (person.getEmail().toLowerCase().contains(searchInput.toLowerCase())) {
                     members.add(person);
                 }

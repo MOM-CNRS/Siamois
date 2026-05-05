@@ -1,11 +1,12 @@
 package fr.siamois.ui.bean.settings;
 
 import fr.siamois.domain.models.events.LoginEvent;
-import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.team.ActionManagerRelation;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.auth.PendingPersonService;
 import fr.siamois.domain.services.person.PersonService;
+import fr.siamois.dto.entity.InstitutionDTO;
+import fr.siamois.mapper.PersonMapper;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
 import fr.siamois.ui.bean.dialog.institution.PersonRole;
@@ -40,9 +41,10 @@ public class InstitutionActionManagerListBean implements SettingsDatatableBean {
     private final transient PersonService personService;
     private final transient PendingPersonService pendingPersonService;
     private final SessionSettingsBean sessionSettingsBean;
-    private Institution institution;
+    private InstitutionDTO institution;
     private transient Set<ActionManagerRelation> refActionManagers;
     private transient List<ActionManagerRelation> filteredActionManagers;
+    private transient PersonMapper personMapper;
 
     private String searchInput;
 
@@ -62,7 +64,7 @@ public class InstitutionActionManagerListBean implements SettingsDatatableBean {
         this.filteredActionManagers = null;
     }
 
-    public void init(Institution institution) {
+    public void init(InstitutionDTO institution) {
         this.institution = institution;
         this.refActionManagers = institutionService.findAllActionManagersOf(institution);
         this.filteredActionManagers = new ArrayList<>(refActionManagers);
@@ -76,9 +78,9 @@ public class InstitutionActionManagerListBean implements SettingsDatatableBean {
                 this::processPerson);
 
         userDialogBean.getAlreadyExistingPersons().addAll(
-                refActionManagers
-                        .stream()
-                        .map(ActionManagerRelation::getPerson)
+                refActionManagers.stream()
+                        .map(ActionManagerRelation::getPerson) // Gets the Person entity
+                        .map(personMapper::convert)            // Converts Person to PersonDto
                         .toList()
         );
 

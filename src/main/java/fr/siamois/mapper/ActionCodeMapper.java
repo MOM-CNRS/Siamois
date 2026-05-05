@@ -1,9 +1,7 @@
 package fr.siamois.mapper;
 
 import fr.siamois.domain.models.actionunit.ActionCode;
-import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.dto.entity.ActionCodeDTO;
-import fr.siamois.dto.entity.ActionUnitDTO;
 import fr.siamois.ui.mapper.adapter.ConversionServiceAdapter;
 import org.mapstruct.InheritInverseConfiguration;
 import org.mapstruct.InjectionStrategy;

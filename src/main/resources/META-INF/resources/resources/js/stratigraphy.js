@@ -1,6 +1,8 @@
 // Stratigraphy.js
 // ----------------
 // Requires D3.js v7+
+spacePressed = false;
+
 document.addEventListener("keydown", (e) => {
     if (e.code === "Space") spacePressed = true;
 });
@@ -8,7 +10,35 @@ document.addEventListener("keyup", (e) => {
     if (e.code === "Space") spacePressed = false;
 });
 
-function drawStratigraphyDiagram(svgId, centralUnitId, relationships, onEdgeSelected) {
+// Define the callback function
+const onEdgeSelected = function(selectedEdge) {
+    console.log("Selected relationship:", selectedEdge);
+
+
+    // Determine source and target based on zone
+    let source, target, typeRel;
+    if (selectedEdge.source.zone === "central") {
+        source = selectedEdge.source;
+        target = selectedEdge.target;
+    } else if (selectedEdge.target.zone === "central") {
+        source = selectedEdge.target;
+        target = selectedEdge.source;
+    } else {
+        // Handle unexpected cases (e.g., neither or both are "central")
+        console.error("Neither or both nodes are 'central'. Cannot determine source.");
+        return;
+    }
+
+    // Trigger the AJAX call with the correct source and target
+    updateSelectedRel_overview([
+        { name: "source", value: source.id },
+        { name: "target", value: target.id },
+        { name: "typeRel", value: target.zone }
+    ]);
+
+}
+
+function drawStratigraphyDiagram(svgId, centralUnitId, relationships, onEdgeSelected, onNodeClick) {
     // Validate inputs
     const svgEl = document.getElementById(svgId);
     if (!svgEl) {
@@ -86,7 +116,8 @@ const zoom = d3.zoom()
                 nodesMap[nodeId] = {
                     id: nodeId,
                     uncertain: rel.uncertain,
-                    zone: zone
+                    zone: zone,
+                    databaseId: rel.databaseId,
                 };
                 nodes.push(nodesMap[nodeId]);
             }
@@ -115,14 +146,14 @@ const zoom = d3.zoom()
             d3.forceLink(links)
                 .id(d => d.id)
                 .distance(140)
-                .strength(0.7)
+                .strength(0.8)
         )
         .force("charge", d3.forceManyBody().strength(-180))
         .force("collide", d3.forceCollide(45))
         .force("y",
             d3.forceY(d => {
-                if (d.zone === "anterior") return centerY - Y_OFFSET;
-                if (d.zone === "posterior") return centerY + Y_OFFSET;
+                if (d.zone === "anterior") return (centerY - Y_OFFSET) + (Math.random() * 100 - 20);
+                if (d.zone === "posterior") return (centerY + Y_OFFSET) + (Math.random() * 100 - 20);
                 return centerY;
             }).strength(d => d.zone === "central" ? 1 : 0.6)
         )
@@ -189,8 +220,7 @@ const linkLines = linkGroup.append("line")
     .style("cursor", "pointer"); // Add hover cursor to the line
 
 const linkLabels = linkGroup.append("text")
-    .text(d => d.label)
-    .attr("font-size", "12px")
+    .attr("font-size", "0.8125rem")
     .attr("fill", "#111827")
     .attr("text-anchor", "middle")
     .attr("dominant-baseline", "middle")
@@ -209,8 +239,8 @@ const linkLabels = linkGroup.append("text")
        Nodes
     ------------------------------------------------------------------ */
 
-    const NODE_WIDTH = 90;
-    const NODE_HEIGHT = 40;
+    const NODE_WIDTH = 60;
+    const NODE_HEIGHT = 25;
 
     const nodeGroup = zoomGroup.append("g")
         .attr("class", "nodes")
@@ -246,12 +276,19 @@ const linkLabels = linkGroup.append("text")
                     ? "#f59e0b"
                     : "var(--main-color)"
         )
-        .attr("stroke-width", d => d.main ? 3 : 2);
+        .on("click", (event, d) => {
+            if (typeof onNodeClick === 'function') {
+                onNodeClick(d);
+            }
+        })
+        .style("cursor", "pointer") // Add hover cursor to the group
+        .attr("stroke-width", d => d.main ? 3 : 1);
 
     nodeGroup.append("text")
         .text(d => d.id)
         .attr("text-anchor", "middle")
         .attr("dominant-baseline", "middle")
+        .attr("font-size", "0.8125rem")
         .attr("font-weight", d => d.main ? "bold" : "normal")
         .style("pointer-events", "none");
 

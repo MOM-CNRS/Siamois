@@ -2,15 +2,18 @@ package fr.siamois.domain.services.form;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import fr.siamois.domain.models.form.customfield.CustomField;
+import fr.siamois.domain.models.form.customfield.CustomFieldMeasurement;
 import fr.siamois.domain.models.form.customfield.CustomFieldStratigraphy;
 import fr.siamois.domain.models.form.customform.CustomForm;
 import fr.siamois.domain.models.form.customform.EnabledWhenJson;
 import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.vocabulary.Concept;
+import fr.siamois.dto.PlaceSuggestionDTO;
 import fr.siamois.dto.StratigraphicRelationshipDTO;
 import fr.siamois.dto.entity.*;
 import fr.siamois.infrastructure.database.repositories.form.FormRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
+import fr.siamois.mapper.UnitDefinitionMapper;
 import fr.siamois.ui.bean.LabelBean;
 import fr.siamois.ui.form.CustomFieldAnswerFactory;
 import fr.siamois.ui.form.fieldsource.FieldSource;
@@ -42,6 +45,9 @@ class FormServiceTest {
 
     @Mock
     private LabelBean labelBean;
+
+    @Mock
+    private UnitDefinitionMapper unitDefinitionMapper;
 
     @InjectMocks
     private FormService formService;
@@ -104,12 +110,14 @@ class FormServiceTest {
         private PersonDTO person;
         private List<PersonDTO> personList;
         private Set<SpatialUnitSummaryDTO> spatialUnitSet;
+        private SpatialUnitSummaryDTO spatialUnitNull;
+        private MeasurementAnswerDTO meas;
 
         public List<String> getBindableFieldNames() {
             return List.of(
                     "title", "count", "createdAt", "typeConcept",
-                    "actionUnit", "spatialUnit", "actionCode",
-                    "person", "personList", "spatialUnitSet"
+                    "actionUnit", "spatialUnit", "actionCode","recordingUnitParents",
+                    "person", "personList", "spatialUnitSet", "spatialUnitNull", "meas"
             );
         }
 
@@ -120,6 +128,14 @@ class FormServiceTest {
 
         public void setTitle(String title) {
             this.title = title;
+        }
+
+        public MeasurementAnswerDTO getMeas() {
+            return meas;
+        }
+
+        public void setMeas(MeasurementAnswerDTO meas) {
+            this.meas = meas;
         }
 
         public Integer getCount() {
@@ -192,6 +208,14 @@ class FormServiceTest {
 
         public void setSpatialUnitSet(Set<SpatialUnitSummaryDTO> spatialUnitSet) {
             this.spatialUnitSet = spatialUnitSet;
+        }
+
+        public SpatialUnitSummaryDTO getSpatialUnitNull() {
+            return spatialUnitNull;
+        }
+
+        public void setSpatialUnitNull(SpatialUnitSummaryDTO spatialUnitNull) {
+            this.spatialUnitNull = spatialUnitNull;
         }
     }
 
@@ -398,6 +422,9 @@ class FormServiceTest {
         CustomField personField = mockSystemField(true, "person");
         CustomField personListField = mockSystemField(true, "personList");
         CustomField spatialUnitSetField = mockSystemField(true, "spatialUnitSet");
+        CustomField spatialUnitFieldNull = mockSystemField(true, "spatialUnitNull");
+        CustomField recordingUnitParentsField = mockSystemField(true, "recordingUnitParents");
+        CustomField measurementField = mockSystemField(true, "meas");
 
         // Mock answers for all supported types
         CustomFieldAnswerTextViewModel  titleAnswer = new CustomFieldAnswerTextViewModel();
@@ -405,6 +432,11 @@ class FormServiceTest {
 
         CustomFieldAnswerIntegerViewModel  countAnswer = new CustomFieldAnswerIntegerViewModel ();
         countAnswer.setValue(42);
+
+        CustomFieldAnswerMeasurementViewModel measAnswer = new CustomFieldAnswerMeasurementViewModel();
+        measAnswer.setValue(MeasurementAnswerDTO.builder()
+                .numericValue(45.0)
+                .build());
 
         CustomFieldAnswerDateTimeViewModel  createdAtAnswer = new CustomFieldAnswerDateTimeViewModel ();
         createdAtAnswer.setValue(LocalDateTime.of(2023, 1, 1, 12, 0));
@@ -419,9 +451,11 @@ class FormServiceTest {
         CustomFieldAnswerSelectOneActionUnitViewModel  actionUnitAnswer = new CustomFieldAnswerSelectOneActionUnitViewModel ();
         actionUnitAnswer.setValue(actionUnit);
 
-        SpatialUnitSummaryDTO spatialUnit = mock(SpatialUnitSummaryDTO.class);
+        SpatialUnitSummaryDTO spatialUnit = new SpatialUnitSummaryDTO();
+        spatialUnit.setId(0L);
+        PlaceSuggestionDTO answer = mock(PlaceSuggestionDTO.class);
         CustomFieldAnswerSelectOneSpatialUnitViewModel  spatialUnitAnswer = new CustomFieldAnswerSelectOneSpatialUnitViewModel ();
-        spatialUnitAnswer.setValue(spatialUnit);
+        spatialUnitAnswer.setValue(answer);
 
         ActionCodeDTO actionCode = mock(ActionCodeDTO.class);
         CustomFieldAnswerSelectOneActionCodeViewModel  actionCodeAnswer = new CustomFieldAnswerSelectOneActionCodeViewModel ();
@@ -435,9 +469,20 @@ class FormServiceTest {
         CustomFieldAnswerSelectMultiplePersonViewModel  personListAnswer = new CustomFieldAnswerSelectMultiplePersonViewModel();
         personListAnswer.setValue(personList);
 
-        Set<SpatialUnitSummaryDTO> spatialUnitSet = Set.of(mock(SpatialUnitSummaryDTO.class), mock(SpatialUnitSummaryDTO.class));
+        List<PlaceSuggestionDTO> spatialUnitSet = List.of(
+                mock(PlaceSuggestionDTO.class),
+                mock(PlaceSuggestionDTO.class)
+        );
+        when(spatialUnitSet.get(0).getName()).thenReturn("Place 1");
+        when(spatialUnitSet.get(1).getName()).thenReturn("Place 2");
         CustomFieldAnswerSelectMultipleSpatialUnitTreeViewModel spatialUnitSetAnswer = new CustomFieldAnswerSelectMultipleSpatialUnitTreeViewModel();
         spatialUnitSetAnswer.setValue(spatialUnitSet);
+
+        CustomFieldAnswerSelectOneSpatialUnitViewModel spatialUnitAnswerNull = new CustomFieldAnswerSelectOneSpatialUnitViewModel();
+        spatialUnitAnswerNull.setValue(null);
+
+        CustomFieldAnswerSelectMultipleRecordingUnitViewModel recordingAnswer = new CustomFieldAnswerSelectMultipleRecordingUnitViewModel();
+        recordingAnswer.setValue(List.of(new RecordingUnitSummaryDTO()));
 
         // Create a response with all answers
         CustomFormResponseViewModel response = new CustomFormResponseViewModel();
@@ -452,6 +497,9 @@ class FormServiceTest {
         answers.put(personField, personAnswer);
         answers.put(personListField, personListAnswer);
         answers.put(spatialUnitSetField, spatialUnitSetAnswer);
+        answers.put(spatialUnitFieldNull, spatialUnitAnswerNull);
+        answers.put(recordingUnitParentsField, recordingAnswer);
+        answers.put(measurementField, measAnswer);
         response.setAnswers(answers);
 
         // Act: Update the JPA entity from the response
@@ -467,7 +515,9 @@ class FormServiceTest {
         assertEquals(actionCode, entity.getActionCode());
         assertEquals(person, entity.getPerson());
         assertEquals(personList, entity.getPersonList());
-        assertEquals(spatialUnitSet, entity.getSpatialUnitSet());
+        assertEquals(2, entity.getSpatialUnitSet().size());
+        assertEquals(45.0, entity.getMeas().getNumericValue());
+        assertNull(entity.getSpatialUnitNull());
     }
 
 
@@ -569,11 +619,14 @@ class FormServiceTest {
         CustomField personField = mockSystemField(true, "person");
         CustomField personListField = mockSystemField(true, "personList");
         CustomField spatialUnitSetField = mockSystemField(true, "spatialUnitSet");
+        CustomFieldMeasurement measurementField = mock(CustomFieldMeasurement.class);
+        when(measurementField.getIsSystemField()).thenReturn(true);
+        when(measurementField.getValueBinding()).thenReturn("meas");
 
         // Setup mocks for fieldSource
         when(fieldSource.getAllFields()).thenReturn(
                 List.of(titleField, countField, createdAtField, conceptField, actionUnitField,
-                        spatialUnitField, actionCodeField, personField, personListField, spatialUnitSetField)
+                        spatialUnitField, actionCodeField, personField, personListField, spatialUnitSetField, measurementField)
         );
 
         // Create a dummy entity with all types of values
@@ -588,7 +641,12 @@ class FormServiceTest {
         ActionUnitSummaryDTO actionUnit = mock(ActionUnitSummaryDTO.class);
         entity.setActionUnit(actionUnit);
 
-        SpatialUnitSummaryDTO spatialUnit = mock(SpatialUnitSummaryDTO.class);
+        SpatialUnitSummaryDTO spatialUnit = new SpatialUnitSummaryDTO();
+        spatialUnit.setName("test");
+
+        PlaceSuggestionDTO placeSuggestionDTO = new PlaceSuggestionDTO();
+        placeSuggestionDTO.setName("test");
+        placeSuggestionDTO.setSourceName("INTERNAL");
         entity.setSpatialUnit(spatialUnit);
 
         ActionCodeDTO actionCode = mock(ActionCodeDTO.class);
@@ -605,12 +663,18 @@ class FormServiceTest {
         personList.add(person2);
         entity.setPersonList(personList);
 
+        // Measurement
+        MeasurementAnswerDTO measurement = mock(MeasurementAnswerDTO.class);
+        when(measurement.getNumericValue()).thenReturn(45.0);
+        entity.setMeas(measurement);
+
         Set<SpatialUnitSummaryDTO> spatialUnitSet = Set.of(mock(SpatialUnitSummaryDTO.class), mock(SpatialUnitSummaryDTO.class));
         entity.setSpatialUnitSet(spatialUnitSet);
 
         // Mock the label bean to return a label for the concept
         given(labelBean.findLabelOf(concept)).willReturn("Concept Label");
         given(labelBean.getCurrentUserLang()).willReturn("en");
+        when(unitDefinitionMapper.convert(null)).thenReturn(new UnitDefinitionDTO());
 
         // Mock the factory to return the answers
         try (MockedStatic<CustomFieldAnswerFactory> mockedFactory = mockStatic(CustomFieldAnswerFactory.class)) {
@@ -641,6 +705,8 @@ class FormServiceTest {
                     .thenReturn(new CustomFieldAnswerSelectOnePersonViewModel());
             mockedFactory.when(() -> CustomFieldAnswerFactory.instantiateAnswerForField(spatialUnitSetField))
                     .thenReturn(new CustomFieldAnswerSelectMultipleSpatialUnitTreeViewModel());
+            mockedFactory.when(() -> CustomFieldAnswerFactory.instantiateAnswerForField(measurementField))
+                    .thenReturn(new CustomFieldAnswerMeasurementViewModel());
 
             // Act: Initialize or reuse the response
             CustomFormResponseViewModel response = formService.initOrReuseResponse(null, entity, fieldSource, false);
@@ -653,11 +719,11 @@ class FormServiceTest {
             assertEquals("Concept Label", ((CustomFieldAnswerSelectOneFromFieldCodeViewModel) response.getAnswers().get(conceptField)).getValue().getConceptLabelToDisplay().getLabel());
             assertEquals("en", ((CustomFieldAnswerSelectOneFromFieldCodeViewModel) response.getAnswers().get(conceptField)).getValue().getConceptLabelToDisplay().getLangCode());
             assertEquals(actionUnit, ((CustomFieldAnswerSelectOneActionUnitViewModel) response.getAnswers().get(actionUnitField)).getValue());
-            assertEquals(spatialUnit, ((CustomFieldAnswerSelectOneSpatialUnitViewModel) response.getAnswers().get(spatialUnitField)).getValue());
+            assertEquals(placeSuggestionDTO.getName(), ((CustomFieldAnswerSelectOneSpatialUnitViewModel) response.getAnswers().get(spatialUnitField)).getValue().getName());
             assertEquals(actionCode, ((CustomFieldAnswerSelectOneActionCodeViewModel) response.getAnswers().get(actionCodeField)).getValue());
             assertEquals(person, ((CustomFieldAnswerSelectOnePersonViewModel) response.getAnswers().get(personField)).getValue());
             assertEquals(personList, ((CustomFieldAnswerSelectMultiplePersonViewModel) response.getAnswers().get(personListField)).getValue());
-            assertEquals(spatialUnitSet, ((CustomFieldAnswerSelectMultipleSpatialUnitTreeViewModel) response.getAnswers().get(spatialUnitSetField)).getValue());
+            assertEquals(measurement.getNumericValue(), ((CustomFieldAnswerMeasurementViewModel) response.getAnswers().get(measurementField)).getValue().getNumericValue());
 
             // Also ensure pk set + hasBeenModified false
             assertNotNull(response.getAnswers().get(titleField).getPk());

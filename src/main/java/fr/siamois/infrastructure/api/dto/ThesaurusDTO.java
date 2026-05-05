@@ -13,15 +13,17 @@ import java.util.List;
 @Data
 public class ThesaurusDTO {
     private String idTheso;
+    private String type;
     private List<LabelDTO> labels;
 
     public ThesaurusDTO() {
         labels = new ArrayList<>();
     }
 
-    public ThesaurusDTO(String idTheso, List<LabelDTO> labels) {
+    public ThesaurusDTO(String idTheso, List<LabelDTO> labels, String type) {
         this.idTheso = idTheso;
         this.labels = labels;
+        this.type = type;
     }
 
     @JsonIgnore

@@ -22,10 +22,11 @@ import fr.siamois.ui.bean.dialog.newunit.GenericNewUnitDialogBean;
 import fr.siamois.ui.bean.dialog.newunit.NewUnitContext;
 import fr.siamois.ui.bean.dialog.newunit.UnitKind;
 import fr.siamois.ui.bean.panel.models.PanelBreadcrumb;
+import fr.siamois.ui.bean.panel.models.panel.AbstractPanel;
 import fr.siamois.ui.bean.panel.models.panel.single.tab.ActionSettingsTab;
 import fr.siamois.ui.bean.panel.models.panel.single.tab.RecordingTab;
 import fr.siamois.ui.bean.settings.team.TeamMembersBean;
-import fr.siamois.ui.form.FormUiDto;
+import fr.siamois.ui.form.dto.FormUiDto;
 import fr.siamois.ui.lazydatamodel.RecordingUnitInActionUnitLazyDataModel;
 import fr.siamois.ui.lazydatamodel.SpecimenInActionUnitLazyDataModel;
 import fr.siamois.ui.lazydatamodel.scope.RecordingUnitScope;
@@ -243,20 +244,39 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnitDTO> im
     }
 
     @Override
+    protected String getFocusPath(Long id) {
+        return "/action-unit/"+id;
+    }
+
+    @Override
+    protected void addToOverview(Long id, AbstractPanel parentOrOverview, Integer activeTabIndex) {
+        flowBean.addActionUnitToOverview(id,parentOrOverview, activeTabIndex);
+    }
+
+    @Override
+    protected ActionUnitDTO findNext() {
+        return actionUnitService.findPreviousByInstitution(unit.getCreatedByInstitution(), unit);
+
+    }
+
+    @Override
+    protected ActionUnitDTO findPrevious() {
+        return actionUnitService.findNextByInstitution(unit.getCreatedByInstitution(), unit);
+    }
+
+    @Override
+    public void toggleValidate() {
+        unit = actionUnitService.toggleValidated(unit.getId());
+    }
+
+    @Override
     ActionUnitDTO findUnitById(Long id) {
         return actionUnitService.findById(id);
     }
 
-    @Override
-    String findLabel(ActionUnitDTO unit) {
-        return unit.getName();
-    }
 
 
-    @Override
-    String getOpenPanelCommand(ActionUnitDTO unit) {
-        return "#{navBean.redirectToBookmarked('/action-unit/".concat(unit.getId().toString()).concat("')}");
-    }
+
 
     @Override
     public void initForms(boolean forceInit) {
@@ -506,6 +526,7 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnitDTO> im
     @Override
     protected DefaultMenuItem createRootTypeItem()
     {
+
         return DefaultMenuItem.builder()
                 .value(langBean.msg("panel.title.allactionunit"))
                 .id("allActionUnits")
@@ -520,6 +541,11 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnitDTO> im
     @Override
     public String getPrefixPanelIndex() {
         return "action-unit-"+ unitId;
+    }
+
+    @Override
+    public String svgIcon() {
+        return "/resources/img/svg/arrow-down-square.svg";
     }
 
     @Override

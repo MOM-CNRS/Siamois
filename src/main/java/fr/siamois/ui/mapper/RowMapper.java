@@ -1,7 +1,7 @@
 package fr.siamois.ui.mapper;
 
 
-import fr.siamois.ui.form.CustomRowUiDto;
+import fr.siamois.ui.form.dto.CustomRowUiDto;
 import fr.siamois.ui.mapper.adapter.ConversionServiceAdapter;
 import org.mapstruct.Mapper;
 import org.mapstruct.MappingConstants;

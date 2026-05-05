@@ -105,7 +105,7 @@ class VocabularyServiceTest {
     void findAllPublicThesaurusOf_success_preferredLanguageFound() throws InvalidEndpointException {
         String server = "http://example.com";
         String lang = "fr";
-        ThesaurusDTO dto1 = new ThesaurusDTO("1", List.of(new LabelDTO("en", "English Label"), new LabelDTO("fr", "Label Français")));
+        ThesaurusDTO dto1 = new ThesaurusDTO("1", List.of(new LabelDTO("en", "English Label"), new LabelDTO("fr", "Label Français")),"Siamois" );
         when(thesaurusApi.fetchAllPublicThesaurus(server)).thenReturn(List.of(dto1));
 
         List<ThesaurusInfo> result = vocabularyService.findAllPublicThesaurusOf(server, lang);
@@ -120,7 +120,9 @@ class VocabularyServiceTest {
     void findAllPublicThesaurusOf_success_fallbackToDefaultLanguage() throws InvalidEndpointException {
         String server = "http://example.com";
         String lang = "es";
-        ThesaurusDTO dto1 = new ThesaurusDTO("1", List.of(new LabelDTO("en", "English Label"), new LabelDTO("fr", "Label Français")));
+        ThesaurusDTO dto1 = new ThesaurusDTO("1",
+                List.of(new LabelDTO("en", "English Label"),
+                        new LabelDTO("fr", "Label Français")), "Siamois" );
         when(thesaurusApi.fetchAllPublicThesaurus(server)).thenReturn(List.of(dto1));
 
         List<ThesaurusInfo> result = vocabularyService.findAllPublicThesaurusOf(server, lang);
@@ -135,7 +137,7 @@ class VocabularyServiceTest {
     void findAllPublicThesaurusOf_noLabels() throws InvalidEndpointException {
         String server = "http://example.com";
         String lang = "fr";
-        ThesaurusDTO dto1 = new ThesaurusDTO("1", Collections.emptyList());
+        ThesaurusDTO dto1 = new ThesaurusDTO("1", Collections.emptyList(),"Siamois" );
         when(thesaurusApi.fetchAllPublicThesaurus(server)).thenReturn(List.of(dto1));
 
         List<ThesaurusInfo> result = vocabularyService.findAllPublicThesaurusOf(server, lang);
@@ -170,9 +172,9 @@ class VocabularyServiceTest {
     void findAllPublicThesaurusOf_multipleThesaurus() throws InvalidEndpointException {
         String server = "http://example.com";
         String lang = "fr";
-        ThesaurusDTO dto1 = new ThesaurusDTO("1", List.of(new LabelDTO("fr", "Label 1")));
-        ThesaurusDTO dto2 = new ThesaurusDTO("2", List.of(new LabelDTO("en", "Label 2")));
-        ThesaurusDTO dto3 = new ThesaurusDTO("3", List.of(new LabelDTO("de", "Label 3"), new LabelDTO("fr", "Label 3 fr")));
+        ThesaurusDTO dto1 = new ThesaurusDTO("1", List.of(new LabelDTO("fr", "Label 1")),"Siamois" );
+        ThesaurusDTO dto2 = new ThesaurusDTO("2", List.of(new LabelDTO("en", "Label 2")),"Siamois" );
+        ThesaurusDTO dto3 = new ThesaurusDTO("3", List.of(new LabelDTO("de", "Label 3"), new LabelDTO("fr", "Label 3 fr")),"Siamois" );
         when(thesaurusApi.fetchAllPublicThesaurus(server)).thenReturn(List.of(dto1, dto2, dto3));
 
         List<ThesaurusInfo> result = vocabularyService.findAllPublicThesaurusOf(server, lang);

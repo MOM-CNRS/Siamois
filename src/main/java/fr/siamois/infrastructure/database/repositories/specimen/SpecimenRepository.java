@@ -11,6 +11,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.history.RevisionRepository;
 import org.springframework.data.repository.query.Param;
 
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -324,5 +325,13 @@ public interface SpecimenRepository extends JpaRepository<Specimen, Long>, Revis
             nativeQuery = true
     )
     Integer countByActionContext(@Param("actionUnitId") Long actionUnitId);
+
+    Optional<Specimen> findFirstByRecordingUnitIdAndCreationTimeAfterOrderByCreationTimeAsc(Long institutionId, OffsetDateTime createdAt);
+
+    Optional<Specimen> findFirstByRecordingUnitIdAndCreationTimeBeforeOrderByCreationTimeDesc(Long institutionId, OffsetDateTime createdAt);
+
+    Optional<Specimen> findFirstByRecordingUnitIdOrderByCreationTimeAsc(Long institutionId);  // oldest
+
+    Optional<Specimen> findFirstByRecordingUnitIdOrderByCreationTimeDesc(Long institutionId);
 }
 

@@ -3,6 +3,7 @@ package fr.siamois.ui.bean.converter;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import fr.siamois.dto.entity.PersonDTO;
 import jakarta.faces.component.UIComponent;
 import jakarta.faces.context.FacesContext;
@@ -23,6 +24,7 @@ public class PersonConverter implements Converter<PersonDTO>, Serializable {
     public PersonConverter() {
         objectMapper = new ObjectMapper();
         objectMapper.disable(SerializationFeature.FAIL_ON_EMPTY_BEANS);
+        objectMapper.registerModule(new JavaTimeModule());
     }
 
 

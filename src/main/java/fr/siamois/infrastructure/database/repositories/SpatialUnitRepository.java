@@ -7,19 +7,21 @@ import jakarta.transaction.Transactional;
 import jakarta.validation.constraints.NotNull;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.CrudRepository;
 import org.springframework.data.repository.history.RevisionRepository;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
 @Repository
-public interface SpatialUnitRepository extends JpaRepository<SpatialUnit, Long>, RevisionRepository<SpatialUnit, Long, Long> {
+public interface SpatialUnitRepository extends CrudRepository<SpatialUnit, Long>, RevisionRepository<SpatialUnit, Long, Long>, JpaSpecificationExecutor<SpatialUnit> {
 
     @Query(
             value = "SELECT COUNT(*) FROM spatial_hierarchy WHERE fk_parent_id = :parentId",
@@ -247,7 +249,11 @@ public interface SpatialUnitRepository extends JpaRepository<SpatialUnit, Long>,
 
     @Query(
             nativeQuery = true,
-            value = "SELECT su.* FROM spatial_unit su WHERE su.fk_institution_id = :institutionId"
+            value = """
+        SELECT su.* FROM spatial_unit su 
+        WHERE su.fk_institution_id = :institutionId
+        ORDER BY su.creation_time DESC, su.spatial_unit_id DESC
+        """
     )
     List<SpatialUnit> findAllOfInstitution(Long institutionId);
 
@@ -276,9 +282,12 @@ public interface SpatialUnitRepository extends JpaRepository<SpatialUnit, Long>,
 
     @Query(
             nativeQuery = true,
-            value = "SELECT DISTINCT su.* FROM spatial_unit su " +
-                    "JOIN spatial_hierarchy sh ON sh.fk_child_id = su.spatial_unit_id " +
-                    "WHERE sh.fk_parent_id = :spatialUnitId"
+            value = """
+        SELECT DISTINCT su.* FROM spatial_unit su 
+        JOIN spatial_hierarchy sh ON sh.fk_child_id = su.spatial_unit_id 
+        WHERE sh.fk_parent_id = :spatialUnitId
+        ORDER BY su.creation_time DESC, su.spatial_unit_id DESC
+        """
     )
     Set<SpatialUnit> findChildrensOf(Long spatialUnitId);
 
@@ -346,5 +355,39 @@ public interface SpatialUnitRepository extends JpaRepository<SpatialUnit, Long>,
                 WHERE h.fk_parent_id = :spatialUnitId
             """, nativeQuery = true)
     boolean existsRootChildrenByParent(@Param("spatialUnitId") Long spatialUnitId);
+
+    Optional<SpatialUnit> findFirstByCreatedByInstitutionIdAndCreationTimeAfterOrderByCreationTimeAsc(Long institutionId, OffsetDateTime createdAt);
+
+    Optional<SpatialUnit> findFirstByCreatedByInstitutionIdAndCreationTimeBeforeOrderByCreationTimeDesc(Long institutionId, OffsetDateTime createdAt);
+
+    Optional<SpatialUnit> findFirstByCreatedByInstitutionIdOrderByCreationTimeAsc(Long institutionId);  // oldest
+
+    Optional<SpatialUnit> findFirstByCreatedByInstitutionIdOrderByCreationTimeDesc(Long institutionId);
+
+    @Query(value = """
+            SELECT * FROM spatial_unit
+            WHERE fk_institution_id = :institutionId
+            AND (
+                name % :query
+                OR name ILIKE %:query%
+            )
+            ORDER BY similarity(name, :query) DESC
+            LIMIT 3
+            """, nativeQuery = true)
+    List<SpatialUnit> findTop3ByInstitutionIdBySimilarity(
+            @Param("institutionId") Long institutionId,
+            @Param("query") String query
+    );
+
+    @Query(value = """
+            WITH RECURSIVE ascend(id) AS (
+                SELECT seed FROM unnest(CAST(:seedIds AS BIGINT[])) AS seed
+                UNION
+                SELECT h.fk_parent_id
+                FROM spatial_hierarchy h JOIN ascend a ON h.fk_child_id = a.id
+            )
+            SELECT id FROM ascend
+            """, nativeQuery = true)
+    List<Long> findAncestorClosure(@Param("seedIds") Long[] seedIds);
 }
 

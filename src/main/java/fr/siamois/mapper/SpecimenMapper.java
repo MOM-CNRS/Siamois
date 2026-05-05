@@ -3,6 +3,7 @@ package fr.siamois.mapper;
 import fr.siamois.domain.models.specimen.Specimen;
 import fr.siamois.dto.entity.SpecimenDTO;
 import fr.siamois.ui.mapper.adapter.ConversionServiceAdapter;
+import org.jspecify.annotations.Nullable;
 import org.mapstruct.InheritInverseConfiguration;
 import org.mapstruct.InjectionStrategy;
 import org.mapstruct.Mapper;
@@ -14,6 +15,11 @@ import org.springframework.core.convert.converter.Converter;
         injectionStrategy = InjectionStrategy.CONSTRUCTOR,
         componentModel = MappingConstants.ComponentModel.SPRING)
 public interface SpecimenMapper extends Converter<Specimen, SpecimenDTO> {
+
+
+    @Override
+    @Nullable SpecimenDTO convert(Specimen source);
+
     @InheritInverseConfiguration
     @DelegatingConverter
     Specimen invertConvert(SpecimenDTO specimenDTO);

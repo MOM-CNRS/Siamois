@@ -4,9 +4,11 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import fr.siamois.domain.models.ArkEntity;
 import fr.siamois.domain.models.FieldCode;
 import fr.siamois.domain.models.TraceableEntity;
+import fr.siamois.domain.models.ValidationStatus;
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.ark.Ark;
 import fr.siamois.domain.models.document.Document;
+import fr.siamois.domain.models.form.customfield.CustomFieldSelectOneAddress;
 import fr.siamois.domain.models.form.customfield.CustomFieldSelectOneFromFieldCode;
 import fr.siamois.domain.models.form.customfield.CustomFieldText;
 import fr.siamois.domain.models.form.customform.CustomCol;
@@ -15,9 +17,12 @@ import fr.siamois.domain.models.form.customform.CustomFormPanel;
 import fr.siamois.domain.models.form.customform.CustomRow;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
+import fr.siamois.domain.services.attributeconverter.FullAddressConverter;
+import fr.siamois.dto.entity.FullAddress;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
+import org.hibernate.annotations.ColumnTransformer;
 import org.hibernate.envers.Audited;
 import org.locationtech.jts.geom.MultiPolygon;
 
@@ -30,7 +35,10 @@ import static fr.siamois.ui.bean.panel.models.panel.single.AbstractSingleEntity.
 
 @Data
 @Entity
-@Table(name = "spatial_unit")
+@Table(name = "spatial_unit", indexes = {
+        @Index(columnList = "name", name = "idx_spatial_unit_name"),
+        @Index(columnList = "fk_institution_id", name = "idx_spatial_unit_institution")
+})
 @Audited
 public class SpatialUnit extends TraceableEntity implements ArkEntity {
 
@@ -39,7 +47,7 @@ public class SpatialUnit extends TraceableEntity implements ArkEntity {
         name = spatialUnit.getName();
         category = spatialUnit.getCategory();
         geom = spatialUnit.getGeom();
-        validated = false;
+        validated = ValidationStatus.INCOMPLETE;
     }
 
     @Id
@@ -77,7 +85,7 @@ public class SpatialUnit extends TraceableEntity implements ArkEntity {
     private Set<RecordingUnit> recordingUnitList;
 
     @NotNull
-    @Column(name = "name", nullable = false, length = Integer.MAX_VALUE)
+    @Column(name = "name", nullable = false, length = 200)
     protected String name;
 
     @NotNull
@@ -93,7 +101,13 @@ public class SpatialUnit extends TraceableEntity implements ArkEntity {
     @JsonIgnore
     protected MultiPolygon geom;
 
+    @Column(name = "address", columnDefinition = "jsonb")
+    @Convert(converter = FullAddressConverter.class)
+    @ColumnTransformer(write = "?::jsonb")
+    public FullAddress address;
 
+    @Column(name = "code")
+    public String code;
 
     @ManyToMany(mappedBy = "spatialContext")
     @JsonIgnore
@@ -140,6 +154,21 @@ public class SpatialUnit extends TraceableEntity implements ArkEntity {
             .externalId("4285848")
             .build();
 
+    @Transient
+    @JsonIgnore
+    public static final Concept CODE_CONCEPT = new Concept.Builder()
+            .vocabulary(SYSTEM_THESO)
+            .externalId("")
+            .build();
+
+    // address
+    @Transient
+    @JsonIgnore
+    public static final Concept ADDRESS_CONCEPT = new Concept.Builder()
+            .vocabulary(SYSTEM_THESO)
+            .externalId("4289231")
+            .build();
+
 
     // --------------- Fields
 
@@ -157,13 +186,36 @@ public class SpatialUnit extends TraceableEntity implements ArkEntity {
             .concept(SPATIAL_UNIT_TYPE_CONCEPT)
             .build();
 
+
+
     @Transient
     @JsonIgnore
     public static final CustomFieldText NAME_FIELD =  CustomFieldText.builder()
             .label("common.label.name")
             .isSystemField(true)
+            .id(2L)
             .valueBinding("name")
             .concept(NAME_CONCEPT)
+            .build();
+
+    @Transient
+    @JsonIgnore
+    public static final CustomFieldText CODE_FIELD =  CustomFieldText.builder()
+            .label("common.label.code")
+            .isSystemField(true)
+            .id(9L)
+            .valueBinding("code")
+            .concept(CODE_CONCEPT)
+            .build();
+
+    @Transient
+    @JsonIgnore
+    public static final CustomFieldSelectOneAddress ADDRESS_FIELD =  CustomFieldSelectOneAddress.builder()
+            .label("common.label.address")
+            .isSystemField(true)
+            .valueBinding("address")
+            .concept(ADDRESS_CONCEPT)
+            .id(3L)
             .build();
 
     @Transient
@@ -188,6 +240,12 @@ public class SpatialUnit extends TraceableEntity implements ArkEntity {
                                                     .isRequired(true)
                                                     .className(COLUMN_CLASS_NAME)
                                                     .field(SPATIAL_UNIT_TYPE_FIELD)
+                                                    .build())
+                                            .addColumn(new CustomCol.Builder()
+                                                    .readOnly(false)
+                                                    .isRequired(false)
+                                                    .className(COLUMN_CLASS_NAME)
+                                                    .field(ADDRESS_FIELD)
                                                     .build())
                                             .build()
                             ).build()
@@ -217,6 +275,18 @@ public class SpatialUnit extends TraceableEntity implements ArkEntity {
                                                     .isRequired(true)
                                                     .className(COLUMN_CLASS_NAME)
                                                     .field(SPATIAL_UNIT_TYPE_FIELD)
+                                                    .build())
+                                            .addColumn(new CustomCol.Builder()
+                                                    .readOnly(true)
+                                                    .isRequired(false)
+                                                    .className(COLUMN_CLASS_NAME)
+                                                    .field(CODE_FIELD)
+                                                    .build())
+                                            .addColumn(new CustomCol.Builder()
+                                                    .readOnly(false)
+                                                    .isRequired(false)
+                                                    .className(COLUMN_CLASS_NAME)
+                                                    .field(ADDRESS_FIELD)
                                                     .build())
                                             .build()
                             ).build()

@@ -167,13 +167,14 @@ public class FieldConfigurationService {
         return setupFieldConfiguration(info.getInstitution(), info.getUser(), vocabulary, progressWrapper);
     }
 
+
     private Optional<FeedbackFieldConfig> setupFieldConfiguration(@NonNull InstitutionDTO institutionDTO,
                                                                   @Nullable PersonDTO userDTO,
                                                                   @NonNull Vocabulary vocabulary,
                                                                   @NonNull ProgressWrapper progressWrapper) throws NotSiamoisThesaurusException, ErrorProcessingExpansionException {
         ConceptBranchDTO conceptBranchDTO = conceptApi.fetchFieldsBranch(vocabulary);
         FeedbackFieldConfig config = createConfigOfThesaurus(conceptBranchDTO);
-        if (config.isWrongConfig()) return Optional.of(config);
+        if (config.isWrongConfig()) log.warn("Missing code in thesaurus configuration: "+config.missingFieldCode());
 
         progressWrapper.setTotalSteps((config.conceptWithValidFieldCode().size() * (NUMBER_OF_STEPS_IN_FIELD_CONFIG + NUMBER_OF_STEPS_IN_CONCEPT_UPDATE)));
 
@@ -211,6 +212,8 @@ public class FieldConfigurationService {
             progressWrapper.incrementStep();
         }
 
+
+        if (config.isWrongConfig()) return Optional.of(config);
         return Optional.empty();
     }
 

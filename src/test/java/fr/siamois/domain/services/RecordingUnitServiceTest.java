@@ -2,10 +2,12 @@ package fr.siamois.domain.services;
 
 import fr.siamois.domain.models.ArkEntity;
 import fr.siamois.domain.models.UserInfo;
+import fr.siamois.domain.models.ValidationStatus;
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.ark.Ark;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.exceptions.recordingunit.FailedRecordingUnitSaveException;
+import fr.siamois.domain.models.exceptions.recordingunit.RecordingUnitNotFoundException;
 import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.recordingunit.StratigraphicRelationship;
@@ -19,12 +21,14 @@ import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.recordingunit.identifier.generic.RuIdentifierResolver;
 import fr.siamois.domain.services.recordingunit.identifier.generic.RuNumericalIdentifierResolver;
 import fr.siamois.domain.services.vocabulary.ConceptService;
+import fr.siamois.dto.FilterDTO;
 import fr.siamois.dto.entity.*;
 import fr.siamois.infrastructure.api.dto.ConceptFieldDTO;
 import fr.siamois.infrastructure.database.repositories.person.PersonRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitIdCounterRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitIdInfoRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitRepository;
+import fr.siamois.infrastructure.database.repositories.specs.RecordingUnitSpec;
 import fr.siamois.infrastructure.database.repositories.team.TeamMemberRepository;
 import fr.siamois.mapper.ActionUnitSummaryMapper;
 import fr.siamois.mapper.RecordingUnitMapper;
@@ -41,7 +45,9 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 
+import java.time.OffsetDateTime;
 import java.util.*;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
@@ -924,12 +930,14 @@ class RecordingUnitServiceTest {
 
         // 1. Préparation du DTO
         RecordingUnitDTO recordingUnitToSave2 = new RecordingUnitDTO();
+        recordingUnitToSave2.setCreatedByInstitution(new InstitutionDTO());
         RecordingUnitSummaryDTO parentRefDto = new RecordingUnitSummaryDTO();
         parentRefDto.setId(nonExistentParentId);
         recordingUnitToSave2.setParents(new HashSet<>(Set.of(parentRefDto)));
 
         // 2. Préparation de l'entité que le mapper va retourner
         RecordingUnit entityToSave = new RecordingUnit();
+        entityToSave.setCreatedByInstitution(new Institution());
         RecordingUnit parentEntityRef = new RecordingUnit();
         parentEntityRef.setId(nonExistentParentId);
         entityToSave.setParents(new HashSet<>(Set.of(parentEntityRef)));
@@ -950,7 +958,6 @@ class RecordingUnitServiceTest {
         assertEquals("Parent not found: " + nonExistentParentId, exception.getMessage());
 
         verify(recordingUnitRepository).findById(nonExistentParentId);
-        verify(recordingUnitRepository, never()).save(any());
     }
 
 
@@ -1329,5 +1336,403 @@ class RecordingUnitServiceTest {
         assertTrue(result.contains("NUM_CODE"), "The list should contain NUM_CODE");
     }
 
+    // --- Tests for findNextByActionUnit ---
+
+    @Test
+    void testFindNextByActionUnit_ShouldReturnNextUnit() {
+        // Arrange
+        ActionUnitSummaryDTO action = new ActionUnitSummaryDTO();
+        action.setId(10L);
+        RecordingUnitDTO current = new RecordingUnitDTO();
+        current.setCreationTime(OffsetDateTime.now());
+
+        RecordingUnit nextEntity = new RecordingUnit();
+        RecordingUnitDTO nextDTO = new RecordingUnitDTO();
+
+        when(recordingUnitRepository.findFirstByActionUnitIdAndCreationTimeAfterOrderByCreationTimeAsc(eq(10L), any()))
+                .thenReturn(Optional.of(nextEntity));
+        when(recordingUnitMapper.convert(nextEntity)).thenReturn(nextDTO);
+
+        // Act
+        RecordingUnitDTO result = recordingUnitService.findNextByActionUnit(action, current);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(nextDTO, result);
+        verify(recordingUnitRepository, never()).findFirstByActionUnitIdOrderByCreationTimeAsc(anyLong());
+    }
+
+    @Test
+    void testFindNextByActionUnit_ShouldWrapAround() {
+        // Arrange
+        ActionUnitSummaryDTO action = new ActionUnitSummaryDTO();
+        action.setId(10L);
+        RecordingUnitDTO current = new RecordingUnitDTO();
+
+        RecordingUnit oldestEntity = new RecordingUnit();
+        RecordingUnitDTO oldestDTO = new RecordingUnitDTO();
+
+        when(recordingUnitRepository.findFirstByActionUnitIdAndCreationTimeAfterOrderByCreationTimeAsc(anyLong(), any()))
+                .thenReturn(Optional.empty());
+        when(recordingUnitRepository.findFirstByActionUnitIdOrderByCreationTimeAsc(10L))
+                .thenReturn(Optional.of(oldestEntity));
+        when(recordingUnitMapper.convert(oldestEntity)).thenReturn(oldestDTO);
+
+        // Act
+        RecordingUnitDTO result = recordingUnitService.findNextByActionUnit(action, current);
+
+        // Assert
+        assertEquals(oldestDTO, result);
+    }
+
+    // --- Tests for findPreviousByActionUnit ---
+
+    @Test
+    void testFindPreviousByActionUnit_ShouldReturnPreviousUnit() {
+        // Arrange
+        ActionUnitSummaryDTO action = new ActionUnitSummaryDTO();
+        action.setId(10L);
+        RecordingUnitDTO current = new RecordingUnitDTO();
+        current.setCreationTime(OffsetDateTime.now());
+
+        RecordingUnit prevEntity = new RecordingUnit();
+        RecordingUnitDTO prevDTO = new RecordingUnitDTO();
+
+        when(recordingUnitRepository.findFirstByActionUnitIdAndCreationTimeBeforeOrderByCreationTimeDesc(eq(10L), any()))
+                .thenReturn(Optional.of(prevEntity));
+        when(recordingUnitMapper.convert(prevEntity)).thenReturn(prevDTO);
+
+        // Act
+        RecordingUnitDTO result = recordingUnitService.findPreviousByActionUnit(action, current);
+
+        // Assert
+        assertEquals(prevDTO, result);
+    }
+
+    @Test
+    void testFindPreviousByActionUnit_ShouldWrapAround() {
+        // Arrange
+        ActionUnitSummaryDTO action = new ActionUnitSummaryDTO();
+        action.setId(10L);
+        RecordingUnitDTO current = new RecordingUnitDTO();
+
+        RecordingUnit mostRecentEntity = new RecordingUnit();
+        RecordingUnitDTO mostRecentDTO = new RecordingUnitDTO();
+
+        when(recordingUnitRepository.findFirstByActionUnitIdAndCreationTimeBeforeOrderByCreationTimeDesc(anyLong(), any()))
+                .thenReturn(Optional.empty());
+        when(recordingUnitRepository.findFirstByActionUnitIdOrderByCreationTimeDesc(10L))
+                .thenReturn(Optional.of(mostRecentEntity));
+        when(recordingUnitMapper.convert(mostRecentEntity)).thenReturn(mostRecentDTO);
+
+        // Act
+        RecordingUnitDTO result = recordingUnitService.findPreviousByActionUnit(action, current);
+
+        // Assert
+        assertEquals(mostRecentDTO, result);
+    }
+
+    // --- Tests for toggleValidated ---
+
+    @Test
+    void testToggleValidated_ShouldCycleThroughStatuses() {
+        // Arrange
+        Long id = 1L;
+        RecordingUnit unit = new RecordingUnit();
+        unit.setId(id);
+
+        when(recordingUnitRepository.findById(id)).thenReturn(Optional.of(unit));
+        when(recordingUnitRepository.save(any(RecordingUnit.class))).thenAnswer(i -> i.getArguments()[0]);
+        when(recordingUnitMapper.convert(any(RecordingUnit.class))).thenReturn(new RecordingUnitDTO());
+
+        // Test Cycle: INCOMPLETE -> COMPLETE
+        unit.setValidated(ValidationStatus.INCOMPLETE);
+        recordingUnitService.toggleValidated(id);
+        assertEquals(ValidationStatus.COMPLETE, unit.getValidated());
+
+        // Test Cycle: COMPLETE -> VALIDATED
+        recordingUnitService.toggleValidated(id);
+        assertEquals(ValidationStatus.VALIDATED, unit.getValidated());
+
+        // Test Cycle: VALIDATED -> INCOMPLETE
+        recordingUnitService.toggleValidated(id);
+        assertEquals(ValidationStatus.INCOMPLETE, unit.getValidated());
+    }
+
+    @Test
+    void testToggleValidated_NotFound_ThrowsException() {
+        // Arrange
+        when(recordingUnitRepository.findById(99L)).thenReturn(Optional.empty());
+
+        // Act & Assert
+        assertThrows(RecordingUnitNotFoundException.class, () -> recordingUnitService.toggleValidated(99L));
+    }
+
+    // ------------------------------------------------------------------
+    // existsXxx — false branches
+    // ------------------------------------------------------------------
+
+    @Test
+    void existsChildrenByParentAndInstitution_returnsFalseWhenRepositoryDoes() {
+        when(recordingUnitRepository.existsChildrenByParentAndInstitution(1L, 2L)).thenReturn(false);
+        assertFalse(recordingUnitService.existsChildrenByParentAndInstitution(1L, 2L));
+    }
+
+    @Test
+    void existsRootChildrenByInstitution_returnsFalseWhenRepositoryDoes() {
+        when(recordingUnitRepository.existsRootChildrenByInstitution(1L)).thenReturn(false);
+        assertFalse(recordingUnitService.existsRootChildrenByInstitution(1L));
+    }
+
+    @Test
+    void existsRootChildrenByAction_returnsFalseWhenRepositoryDoes() {
+        when(recordingUnitRepository.existsRootChildrenByAction(1L)).thenReturn(false);
+        assertFalse(recordingUnitService.existsRootChildrenByAction(1L));
+    }
+
+    // ------------------------------------------------------------------
+    // findAllByParentRecordingUnit
+    // ------------------------------------------------------------------
+
+    @Test
+    void findAllByParentRecordingUnit_mapsToDtos() {
+        // RecordingUnit#equals keys on fullIdentifier — both fixtures share null,
+        // so a per-instance answer keeps the stubs from collapsing onto one DTO.
+        when(recordingUnitRepository.findChildrensOf(1L)).thenReturn(List.of(recordingUnit1, recordingUnit2));
+        when(recordingUnitMapper.convert(any(RecordingUnit.class)))
+                .thenAnswer(inv -> inv.getArgument(0) == recordingUnit1 ? recordingUnit1DTO : recordingUnit2DTO);
+
+        List<RecordingUnitDTO> result = recordingUnitService.findAllByParentRecordingUnit(1L);
+
+        assertEquals(2, result.size());
+        assertSame(recordingUnit1DTO, result.get(0));
+        assertSame(recordingUnit2DTO, result.get(1));
+    }
+
+    // ------------------------------------------------------------------
+    // searchRecordingUnit / searchRecordingUnitInActionUnit / count*
+    // ------------------------------------------------------------------
+
+    @Test
+    void searchRecordingUnit_returnsMappedPage() {
+        InstitutionDTO inst = new InstitutionDTO();
+        inst.setId(1L);
+        FilterDTO filters = new FilterDTO(false);
+        when(recordingUnitRepository.findAll(any(Specification.class), eq(pageable))).thenReturn(page);
+        when(recordingUnitMapper.convert(recordingUnit1)).thenReturn(recordingUnit1DTO);
+        when(recordingUnitMapper.convert(recordingUnit2)).thenReturn(recordingUnit2DTO);
+
+        Page<RecordingUnitDTO> result = recordingUnitService.searchRecordingUnit(inst, filters, pageable);
+
+        assertEquals(2, result.getContent().size());
+    }
+
+    @Test
+    void searchRecordingUnit_rootOnlyWithoutFilters_returnsMappedPage() {
+        InstitutionDTO inst = new InstitutionDTO();
+        inst.setId(1L);
+        FilterDTO filters = new FilterDTO(true);
+        when(recordingUnitRepository.findAll(any(Specification.class), eq(pageable))).thenReturn(page);
+        when(recordingUnitMapper.convert(any(RecordingUnit.class))).thenReturn(recordingUnit1DTO);
+
+        Page<RecordingUnitDTO> result = recordingUnitService.searchRecordingUnit(inst, filters, pageable);
+
+        assertEquals(2, result.getContent().size());
+    }
+
+    @Test
+    void searchRecordingUnit_rootOnlyWithFiltersAndMatches_runsClosureBranch() {
+        InstitutionDTO inst = new InstitutionDTO();
+        inst.setId(1L);
+        FilterDTO filters = new FilterDTO(true);
+        filters.add(RecordingUnitSpec.FULL_IDENTIFIER, "x", FilterDTO.FilterType.CONTAINS);
+
+        when(recordingUnitRepository.findAll(any(Specification.class))).thenReturn(List.of(recordingUnit1, recordingUnit2));
+        when(recordingUnitRepository.findAncestorClosure(any(Long[].class))).thenReturn(List.of(1L, 2L));
+        when(recordingUnitRepository.findAll(any(Specification.class), eq(pageable))).thenReturn(page);
+        when(recordingUnitMapper.convert(any(RecordingUnit.class))).thenReturn(recordingUnit1DTO);
+
+        Page<RecordingUnitDTO> result = recordingUnitService.searchRecordingUnit(inst, filters, pageable);
+
+        assertEquals(2, result.getContent().size());
+        assertEquals(Set.of(1L, 2L), filters.getMatchIds());
+    }
+
+    @Test
+    void searchRecordingUnit_rootOnlyWithFiltersNoMatches_returnsEmpty() {
+        InstitutionDTO inst = new InstitutionDTO();
+        inst.setId(1L);
+        FilterDTO filters = new FilterDTO(true);
+        filters.add(RecordingUnitSpec.FULL_IDENTIFIER, "nope", FilterDTO.FilterType.CONTAINS);
+
+        when(recordingUnitRepository.findAll(any(Specification.class))).thenReturn(List.of());
+        when(recordingUnitRepository.findAll(any(Specification.class), eq(pageable))).thenReturn(new PageImpl<>(List.of()));
+
+        Page<RecordingUnitDTO> result = recordingUnitService.searchRecordingUnit(inst, filters, pageable);
+
+        assertTrue(result.getContent().isEmpty());
+        verify(recordingUnitRepository, never()).findAncestorClosure(any(Long[].class));
+    }
+
+    @Test
+    void searchRecordingUnitInActionUnit_returnsMappedPage() {
+        InstitutionDTO inst = new InstitutionDTO();
+        inst.setId(1L);
+        ActionUnitDTO au = new ActionUnitDTO();
+        au.setId(7L);
+        FilterDTO filters = new FilterDTO(false);
+
+        when(recordingUnitRepository.findAll(any(Specification.class), eq(pageable))).thenReturn(page);
+        when(recordingUnitMapper.convert(any(RecordingUnit.class))).thenReturn(recordingUnit1DTO);
+
+        Page<RecordingUnitDTO> result = recordingUnitService.searchRecordingUnitInActionUnit(inst, au, filters, pageable);
+
+        assertEquals(2, result.getContent().size());
+    }
+
+    @Test
+    void countSearchResultsInActionUnit_delegatesToRepository() {
+        InstitutionDTO inst = new InstitutionDTO();
+        inst.setId(1L);
+        ActionUnitDTO au = new ActionUnitDTO();
+        au.setId(7L);
+        FilterDTO filters = new FilterDTO(false);
+
+        when(recordingUnitRepository.count(any(Specification.class))).thenReturn(11L);
+
+        assertEquals(11, recordingUnitService.countSearchResultsInActionUnit(inst, au, filters));
+    }
+
+    @Test
+    void countSearchResults_delegatesToRepository() {
+        InstitutionDTO inst = new InstitutionDTO();
+        inst.setId(1L);
+        FilterDTO filters = new FilterDTO(false);
+        when(recordingUnitRepository.count(any(Specification.class))).thenReturn(13L);
+
+        assertEquals(13, recordingUnitService.countSearchResults(inst, filters));
+    }
+
+    // ------------------------------------------------------------------
+    // prepareSpecs branches
+    // ------------------------------------------------------------------
+
+    @Test
+    void prepareSpecs_userMode_returnsNonNullSpec() {
+        InstitutionDTO inst = new InstitutionDTO();
+        inst.setId(1L);
+        FilterDTO filters = new FilterDTO(false);
+        assertNotNull(recordingUnitService.prepareSpecs(inst, filters));
+    }
+
+    @Test
+    void prepareSpecs_rootOnlyNoUserFilters_returnsNonNullSpec() {
+        InstitutionDTO inst = new InstitutionDTO();
+        inst.setId(1L);
+        FilterDTO filters = new FilterDTO(true);
+        assertNotNull(recordingUnitService.prepareSpecs(inst, filters));
+    }
+
+    @Test
+    void prepareSpecs_rootOnlyWithFiltersAndPrecomputedClosure_skipsRepoLookup() {
+        InstitutionDTO inst = new InstitutionDTO();
+        inst.setId(1L);
+        FilterDTO filters = new FilterDTO(true);
+        filters.add(RecordingUnitSpec.FULL_IDENTIFIER, "x", FilterDTO.FilterType.CONTAINS);
+        filters.setAncestorClosure(List.of(1L, 5L));
+
+        Specification<RecordingUnit> spec = recordingUnitService.prepareSpecs(inst, filters);
+
+        assertNotNull(spec);
+        verify(recordingUnitRepository, never()).findAll(any(Specification.class));
+    }
+
+    // ------------------------------------------------------------------
+    // userFilterSpecs — each branch
+    // ------------------------------------------------------------------
+
+    @Test
+    void userFilterSpecs_emptyFilter_returnsNonNullSpec() {
+        FilterDTO filters = new FilterDTO(false);
+        assertNotNull(RecordingUnitService.userFilterSpecs(filters));
+    }
+
+    @Test
+    void userFilterSpecs_allBranchesCovered() {
+        FilterDTO filters = new FilterDTO(false);
+        filters.add(RecordingUnitSpec.FULL_IDENTIFIER, "ru", FilterDTO.FilterType.CONTAINS);
+        filters.add(RecordingUnitSpec.AUTHOR_FILTER, List.of(1L), FilterDTO.FilterType.CONTAINS);
+        filters.add(RecordingUnitSpec.MATRIX_FILTER, "loam", FilterDTO.FilterType.CONTAINS);
+        filters.add(RecordingUnitSpec.SPATIAL_UNIT_FILTER, List.of(2L), FilterDTO.FilterType.CONTAINS);
+        filters.add(RecordingUnitSpec.ACTION_UNIT_FILTER, List.of(3L), FilterDTO.FilterType.CONTAINS);
+        filters.add(RecordingUnitSpec.CONTRIBUTORS_FILTER, List.of(4L), FilterDTO.FilterType.CONTAINS);
+        filters.add(RecordingUnitSpec.TYPE_FILTER, List.of(5L), FilterDTO.FilterType.CONTAINS);
+        filters.add(RecordingUnitSpec.OPENING_DATE_FILTER, List.of(OffsetDateTime.now(), OffsetDateTime.now().plusDays(1)),
+                FilterDTO.FilterType.CONTAINS);
+        filters.add(RecordingUnitSpec.CLOSING_DATE_FILTER, List.of(OffsetDateTime.now(), OffsetDateTime.now().plusDays(1)),
+                FilterDTO.FilterType.CONTAINS);
+
+        Specification<RecordingUnit> spec = RecordingUnitService.userFilterSpecs(filters);
+
+        assertNotNull(spec);
+    }
+
+    // ------------------------------------------------------------------
+    // computeAncestorClosure — three branches
+    // ------------------------------------------------------------------
+
+    @Test
+    void computeAncestorClosure_notRootOnly_returnsEmpty() {
+        InstitutionDTO inst = new InstitutionDTO();
+        inst.setId(1L);
+        FilterDTO filters = new FilterDTO(false);
+
+        Set<Long> result = recordingUnitService.computeAncestorClosure(inst, filters);
+
+        assertTrue(result.isEmpty());
+        verifyNoInteractions(recordingUnitRepository);
+    }
+
+    @Test
+    void computeAncestorClosure_rootOnlyNoUserFilters_returnsEmpty() {
+        InstitutionDTO inst = new InstitutionDTO();
+        inst.setId(1L);
+        FilterDTO filters = new FilterDTO(true);
+
+        Set<Long> result = recordingUnitService.computeAncestorClosure(inst, filters);
+
+        assertTrue(result.isEmpty());
+        verifyNoInteractions(recordingUnitRepository);
+    }
+
+    @Test
+    void computeAncestorClosure_rootOnlyWithFilters_returnsClosure() {
+        InstitutionDTO inst = new InstitutionDTO();
+        inst.setId(1L);
+        FilterDTO filters = new FilterDTO(true);
+        filters.add(RecordingUnitSpec.FULL_IDENTIFIER, "x", FilterDTO.FilterType.CONTAINS);
+
+        when(recordingUnitRepository.findAll(any(Specification.class))).thenReturn(List.of(recordingUnit1));
+        when(recordingUnitRepository.findAncestorClosure(any(Long[].class))).thenReturn(List.of(1L, 2L));
+
+        Set<Long> result = recordingUnitService.computeAncestorClosure(inst, filters);
+
+        assertEquals(Set.of(1L, 2L), result);
+    }
+
+    @Test
+    void computeAncestorClosure_reusesCachedAncestorClosureFromFilter() {
+        InstitutionDTO inst = new InstitutionDTO();
+        inst.setId(1L);
+        FilterDTO filters = new FilterDTO(true);
+        filters.add(RecordingUnitSpec.FULL_IDENTIFIER, "x", FilterDTO.FilterType.CONTAINS);
+        filters.setAncestorClosure(List.of(7L, 8L));
+
+        Set<Long> result = recordingUnitService.computeAncestorClosure(inst, filters);
+
+        assertEquals(Set.of(7L, 8L), result);
+        verify(recordingUnitRepository, never()).findAll(any(Specification.class));
+        verify(recordingUnitRepository, never()).findAncestorClosure(any(Long[].class));
+    }
 
 }

@@ -14,17 +14,16 @@ import fr.siamois.domain.services.EntityDTORegistry;
 import fr.siamois.domain.services.history.HistoryAuditService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.domain.services.vocabulary.FieldService;
-import fr.siamois.dto.entity.AbstractEntityDTO;
-import fr.siamois.dto.entity.PersonDTO;
+import fr.siamois.dto.entity.*;
 import fr.siamois.ui.bean.dialog.document.DocumentCreationBean;
 import fr.siamois.ui.bean.panel.FlowBean;
+import fr.siamois.ui.bean.panel.models.panel.AbstractPanel;
 import fr.siamois.ui.bean.panel.models.panel.single.tab.*;
 import io.micrometer.common.lang.Nullable;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import org.hibernate.envers.RevisionType;
 import org.primefaces.PrimeFaces;
 import org.primefaces.event.TabChangeEvent;
 import org.primefaces.model.DefaultStreamedContent;
@@ -82,7 +81,7 @@ public abstract class AbstractSingleEntityPanel<T extends AbstractEntityDTO> ext
 
     protected transient List<PanelTab> tabs;
 
-    protected transient RevisionWithInfo<T> bufferedLastRevision;
+    protected transient InfoRevisionEntity lastRevisionInfo;
 
     public abstract void refreshUnit();
 
@@ -99,6 +98,37 @@ public abstract class AbstractSingleEntityPanel<T extends AbstractEntityDTO> ext
 
     public abstract List<PersonDTO> authorsAvailable();
 
+    // --- Abstract methods to override per type ---
+
+    protected abstract String getFocusPath(Long id);
+
+    protected abstract void addToOverview(Long id, AbstractPanel parentOrOverview, Integer activeTabIndex);
+
+    protected abstract  T findNext();
+
+    protected abstract  T findPrevious();
+
+    // --- Common logic ---
+
+    public void redirectToFocusOrOverview(Long id, Integer activeTabIndex) throws IOException {
+        if (isRoot) {
+            flowBean.redirectToFocus(getFocusPath(id));
+        } else {
+            // if not root, add unit to the overview of the parent
+            addToOverview(id, parentOrOverview, activeTabIndex);
+        }
+    }
+
+    public void goToNext() throws IOException {
+        AbstractEntityDTO next = findNext();
+        redirectToFocusOrOverview(next.getId(), activeTabIndex);
+    }
+
+    public void goToPrevious() throws IOException {
+        AbstractEntityDTO previous = findPrevious();
+        redirectToFocusOrOverview(previous.getId(), activeTabIndex);
+    }
+
     public static final Vocabulary SYSTEM_THESO;
 
     static {
@@ -109,56 +139,115 @@ public abstract class AbstractSingleEntityPanel<T extends AbstractEntityDTO> ext
 
     protected static final String COLUMN_CLASS_NAME = "ui-g-12 ui-md-6 ui-lg-4";
 
-        /*
-    Find unit by its ID
-     */
+    public abstract void toggleValidate();
+
+    /*
+        Find unit by its ID
+         */
     abstract T findUnitById(Long id);
 
     /*
     Get label of unit to display in breadcrumn
      */
-    abstract String findLabel(T unit);
+    public static String findLabel(AbstractEntityDTO unit) {
+        if(unit instanceof ActionUnitDTO actionUnitDTO) {
+            return actionUnitDTO.getName();
+        }
+        else if(unit instanceof RecordingUnitDTO dto) {
+            return dto.getFullIdentifier();
+        }
+        else if(unit instanceof SpecimenDTO dto) {
+            return dto.getFullIdentifier();
+        }
+        else if(unit instanceof SpatialUnitDTO dto) {
+            return dto.getName();
+        }
+        else {
+            return "No name";
+        }
+    }
 
     protected abstract DefaultMenuItem createRootTypeItem();
 
-    /*
-Return the command that opens panel for the unit
- */
-    abstract String getOpenPanelCommand(T unit);
+    public static String getOpenPanelCommand(AbstractEntityDTO unit, boolean isPanelRoot) {
+        if (unit == null) {
+            return null;
+        }
+
+        String path = null;
+        String method = null;
+
+        if (unit instanceof SpatialUnitDTO) {
+            path = "spatial-unit";
+            method = "addSpatialUnitToOverview";
+        } else if (unit instanceof ActionUnitDTO) {
+            path = "action-unit";
+            method = "addActionUnitToOverview";
+        } else if (unit instanceof SpecimenDTO) {
+            path = "specimen";
+            method = "addSpecimenToOverview";
+        } else if (unit instanceof RecordingUnitDTO) {
+            path = "recording-unit";
+            method = "addRecordingUnitToOverview";
+        } else {
+            return null;
+        }
+
+        if (isPanelRoot) {
+            return "#{navBean.redirectToBookmarked('/" + path + "/" + unit.getId() + "')}";
+        }
+
+        return "#{flowBean." + method + "(" + unit.getId() + ", focusViewBean.mainPanel, null)}";
+    }
 
     public List<MenuModel> getAllParentBreadcrumbModels() {
 
         MenuModel breadcrumbModel = new DefaultMenuModel();
         breadcrumbModel.getElements().add(createHomeItem());
         breadcrumbModel.getElements().add(createRootTypeItem());
-        T currentUnit = findUnitById(unitId);
-
-        if (currentUnit != null) {
-            breadcrumbModel.getElements().add(createUnitItem(currentUnit));
-        }
 
         return List.of(breadcrumbModel);
     }
 
     protected DefaultMenuItem createHomeItem() {
+
+
         return DefaultMenuItem.builder()
-                .value("")
                 .id("home")
                 .icon("bi bi-house")
                 .command("#{flowBean.redirectToDashboard()}")
-                .update("flow")
+                .update("@this")
                 .onstart(PF_BUI_CONTENT_SHOW)
                 .oncomplete(PF_BUI_CONTENT_HIDE)
                 .process(THIS)
                 .build();
     }
 
-    protected DefaultMenuItem createUnitItem(T unit) {
+    protected String getIcon(AbstractEntityDTO unit) {
+        if(unit instanceof RecordingUnitDTO) {
+            return "bi bi-pencil-square";
+        }
+        else if(unit instanceof SpatialUnitDTO) {
+            return "bi bi-geo-alt";
+        }
+        else if(unit instanceof ActionUnitDTO) {
+            return "bi bi-arrow-down-square";
+        }
+        else if(unit instanceof SpecimenDTO) {
+            return "bi bi-bucket";
+        }
+        else {
+            return "";
+        }
+    }
+
+    public DefaultMenuItem createUnitItem(AbstractEntityDTO unit) {
         return DefaultMenuItem.builder()
                 .value(findLabel(unit))
                 .id(String.valueOf(unit.getId()))
-                .command(getOpenPanelCommand(unit))
-                .update("flow")
+                .command(getOpenPanelCommand(unit, isRoot))
+                .icon(getIcon(unit))
+                .update("@this")
                 .onstart(PF_BUI_CONTENT_SHOW)
                 .oncomplete(PF_BUI_CONTENT_HIDE)
                 .process(THIS)
@@ -236,8 +325,8 @@ Return the command that opens panel for the unit
         documents.add(created);
         PrimeFaces.current().executeScript("PF('newDocumentDiag').hide()");
 
-        int pos = flowBean.getPanels().indexOf(this);
-        if(pos >=0) { PrimeFaces.current().ajax().update("panel-".concat(Integer.toString(pos))); }
+        String panelIndex = isRoot ? "panel-".concat(getPrefixPanelIndex()) : "sideview-".concat(parentOrOverview.getPrefixPanelIndex());
+        PrimeFaces.current().ajax().update(panelIndex);
 
 
     }
@@ -273,32 +362,30 @@ Return the command that opens panel for the unit
         return null; // N/A for others
     }
 
-    @SuppressWarnings("unchecked")
-    private RevisionWithInfo<T> findLastRevisionForEntity() {
-        RevisionWithInfo<T> result = (RevisionWithInfo<T>) historyAuditService.findLastRevisionForEntity(unit.getClass(), unitId);
-        if (result == null) {
-            InfoRevisionEntity info = new InfoRevisionEntity();
+    private InfoRevisionEntity findLastRevisionInfo() {
+        InfoRevisionEntity revision = historyAuditService.findLastRevisionInfoFor(unit.getClass(), unitId);
+        if (revision == null) {
+            revision = new InfoRevisionEntity();
             UserInfo userInfo = sessionSettingsBean.getUserInfo();
-            info.setRevId(0L);
-            info.setEpochTimestamp(OffsetDateTime.now().toEpochSecond());
-            info.setUpdatedBy(conversionService.convert(userInfo.getUser(), Person.class));
-            info.setUpdatedFrom(conversionService.convert(userInfo.getInstitution(), Institution.class));
-            result = new RevisionWithInfo<>(unit, info, RevisionType.MOD);
+            revision.setRevId(0L);
+            revision.setEpochTimestamp(OffsetDateTime.now().toEpochSecond());
+            revision.setUpdatedBy(conversionService.convert(userInfo.getUser(), Person.class));
+            revision.setUpdatedFrom(conversionService.convert(userInfo.getInstitution(), Institution.class));
         }
-        return result;
+        return revision;
     }
 
     public String lastUpdateDate() {
-        bufferedLastRevision = findLastRevisionForEntity();
-        return this.formatUtcDateTime(bufferedLastRevision.getDate());
+        lastRevisionInfo = findLastRevisionInfo();
+        return this.formatUtcDateTime(lastRevisionInfo.getRevisionDate());
     }
 
     public String lastUpdater() {
-        if (bufferedLastRevision == null) {
-            bufferedLastRevision = findLastRevisionForEntity();
+        if (lastRevisionInfo == null) {
+            lastRevisionInfo = findLastRevisionInfo();
         }
-        String result = bufferedLastRevision.revisionEntity().getUpdatedBy().displayName();
-        bufferedLastRevision = null;
+        String result = lastRevisionInfo.getUpdatedBy().displayName();
+        lastRevisionInfo = null;
         return result;
     }
 
@@ -345,6 +432,10 @@ Return the command that opens panel for the unit
     }
 
 
+    @Override
+    public boolean hasPreviousNext() {
+        return true;
+    }
 
 
 }

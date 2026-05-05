@@ -14,6 +14,10 @@ import org.hibernate.envers.RevisionEntity;
 import org.hibernate.envers.RevisionNumber;
 import org.hibernate.envers.RevisionTimestamp;
 
+import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
+
 /**
  * Custom revision entity to store additional information about revisions.
  * Note on Revtype : 0 -> ADD, 1 -> UPDATE, 2 -> DELETE
@@ -49,5 +53,7 @@ public class InfoRevisionEntity {
     @JoinColumn(name = "fk_institution_id", nullable = false)
     protected Institution updatedFrom;
 
-
+    public OffsetDateTime getRevisionDate() {
+        return OffsetDateTime.ofInstant(Instant.ofEpochMilli(epochTimestamp), ZoneId.systemDefault());
+    }
 }

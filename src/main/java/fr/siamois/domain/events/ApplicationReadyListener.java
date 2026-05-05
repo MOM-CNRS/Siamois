@@ -1,5 +1,6 @@
 package fr.siamois.domain.events;
 
+import fr.siamois.annotations.IgnoreInitializer;
 import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.exceptions.database.DatabaseDataInitException;
 import fr.siamois.infrastructure.database.initializer.DatabaseInitializer;
@@ -10,6 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.event.EventListener;
+import org.springframework.core.annotation.AnnotationUtils;
 
 import java.util.List;
 
@@ -38,6 +40,14 @@ public class ApplicationReadyListener {
         ExecutionContextHolder.set(systemUser);
 
         for (DatabaseInitializer initializer : databaseInitializer) {
+
+            IgnoreInitializer ignoreInitializer = AnnotationUtils.findAnnotation(initializer.getClass(), IgnoreInitializer.class);
+
+            if (ignoreInitializer != null) {
+                log.info("Ignored {} initializer", initializer.getClass().getName());
+                continue;
+            }
+
             try {
                 initializer.initialize();
             } catch (DatabaseDataInitException e) {

@@ -11,6 +11,7 @@ import fr.siamois.ui.bean.panel.FlowBean;
 import fr.siamois.ui.bean.panel.models.panel.AbstractPanel;
 import fr.siamois.ui.bean.settings.InstitutionListSettingsBean;
 import fr.siamois.utils.MessageUtils;
+import io.micrometer.common.lang.Nullable;
 import jakarta.faces.context.FacesContext;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -51,6 +52,8 @@ public class NavBean implements Serializable {
     private final transient BookmarkService bookmarkService;
     private final FlowBean flowBean;
     private final LangBean langBean;
+
+    private String urlToGoBack; // URL to go back from settings
 
     public static final String COMMON_BOOKMARK_SAVED = "common.bookmark.saved";
     public static final String FLOW = "FLOW";
@@ -254,6 +257,17 @@ public class NavBean implements Serializable {
         bookmarkedPanels = null;
     }
 
+    public void backFromSettings() throws IOException {
+        setApplicationMode(NavBean.ApplicationMode.SIAMOIS);
+        if (urlToGoBack != null && !urlToGoBack.isEmpty()) {
+            FacesContext.getCurrentInstance()
+                    .getExternalContext()
+                    .redirect(urlToGoBack);
+        } else {
+            redirectBean.redirectTo("/focus/L3dlbGNvbWU=");
+        }
+    }
+
     public enum ApplicationMode {
         SIAMOIS,
         SETTINGS
@@ -313,6 +327,21 @@ public class NavBean implements Serializable {
                 .getRequestParameterMap()
                 .get("id");
         flowBean.redirectToFocus("/action-unit/" + id);
+    }
+
+    public void redirectToActionUnit(Long actionUnitId, @Nullable Integer tabIndex) throws IOException {
+
+        // Construction de l'URL de base
+        StringBuilder url = new StringBuilder("/action-unit/");
+        url.append(actionUnitId);
+
+        // Ajout du paramètre d'onglet seulement s'il est présent
+        if (tabIndex != null) {
+            url.append("?tab=").append(tabIndex);
+        }
+
+        // Appel au flowBean pour la redirection finale
+        flowBean.redirectToFocus(url.toString());
     }
 
     public void redirectToSpatialUnit() throws IOException {

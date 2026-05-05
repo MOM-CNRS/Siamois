@@ -11,19 +11,27 @@ import java.util.Set;
 public class SpatialUnitDTO extends AbstractEntityDTO {
 
     public SpatialUnitDTO (SpatialUnitDTO spatialUnitDTO) {
+        super(spatialUnitDTO);
         id = spatialUnitDTO.getId();
         name = spatialUnitDTO.getName();
+        category = spatialUnitDTO.getCategory();
+        parents = spatialUnitDTO.getParents();
+        recordingUnitList = spatialUnitDTO.getRecordingUnitList();
+        relatedActionUnitList = spatialUnitDTO.relatedActionUnitList;
+        address = spatialUnitDTO.address;
     }
 
     private String name;
+    private FullAddress address;
     private ConceptDTO category;
     private Set<SpatialUnitSummaryDTO> parents;
     private Set<SpatialUnitSummaryDTO> children;
     private Set<RecordingUnitSummaryDTO> recordingUnitList;
     private Set<ActionUnitSummaryDTO> relatedActionUnitList;
+    private String code;
 
     public List<String> getBindableFieldNames() {
-        return List.of("category", "name");
+        return List.of("category", "name", "address", "code");
     }
 
 

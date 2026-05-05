@@ -11,6 +11,7 @@ import fr.siamois.ui.bean.dialog.newunit.NewUnitContext;
 import fr.siamois.ui.bean.dialog.newunit.UnitKind;
 import org.springframework.stereotype.Component;
 
+import java.util.HashSet;
 import java.util.List;
 
 @Component
@@ -18,6 +19,8 @@ public class SpatialUnitHandler implements INewUnitHandler<SpatialUnitDTO> {
 
     private final SpatialUnitService spatialUnitService;
     private final LangBean langBean;
+
+
 
     public SpatialUnitHandler(SpatialUnitService spatialUnitService, LangBean langBean
     ) {
@@ -38,6 +41,7 @@ public class SpatialUnitHandler implements INewUnitHandler<SpatialUnitDTO> {
 
     @Override
     public SpatialUnitDTO save(UserInfo u, SpatialUnitDTO unit) throws EntityAlreadyExistsException {
+
         return spatialUnitService.save(u, unit);
     }
 
@@ -49,6 +53,9 @@ public class SpatialUnitHandler implements INewUnitHandler<SpatialUnitDTO> {
     @Override
     public void initFromContext(GenericNewUnitDialogBean<?> bean) {
         SpatialUnitDTO unit = (SpatialUnitDTO) bean.getUnit();
+        unit.setChildren(new HashSet<>());
+        unit.setParents(new HashSet<>());
+        unit.setCategory(bean.getPlaceType());
         NewUnitContext ctx = bean.getNewUnitContext();
         if (ctx == null) {
             return;

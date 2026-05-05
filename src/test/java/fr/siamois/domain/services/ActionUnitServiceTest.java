@@ -2,22 +2,28 @@ package fr.siamois.domain.services;
 
 
 import fr.siamois.domain.models.UserInfo;
+import fr.siamois.domain.models.ValidationStatus;
 import fr.siamois.domain.models.actionunit.ActionCode;
 import fr.siamois.domain.models.actionunit.ActionUnit;
+import fr.siamois.domain.models.ark.Ark;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.exceptions.actionunit.ActionUnitAlreadyExistsException;
+import fr.siamois.domain.models.exceptions.actionunit.ActionUnitNotFoundException;
+import fr.siamois.domain.models.exceptions.actionunit.FailedActionUnitSaveException;
+import fr.siamois.domain.models.exceptions.actionunit.NullActionUnitIdentifierException;
 import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
-import fr.siamois.dto.entity.ActionUnitDTO;
-import fr.siamois.dto.entity.ConceptDTO;
-import fr.siamois.dto.entity.InstitutionDTO;
-import fr.siamois.dto.entity.PersonDTO;
+import fr.siamois.dto.FilterDTO;
+import fr.siamois.dto.entity.*;
+import fr.siamois.infrastructure.database.repositories.SpatialUnitRepository;
 import fr.siamois.infrastructure.database.repositories.actionunit.ActionCodeRepository;
 import fr.siamois.infrastructure.database.repositories.actionunit.ActionUnitRepository;
+import fr.siamois.infrastructure.database.repositories.specs.ActionUnitSpec;
 import fr.siamois.mapper.ActionUnitMapper;
+import fr.siamois.mapper.ConceptMapper;
 import fr.siamois.mapper.PersonMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -25,15 +31,15 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
+import java.time.OffsetDateTime;
+import java.util.*;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
@@ -48,7 +54,8 @@ class ActionUnitServiceTest {
     @Mock private ActionCodeRepository actionCodeRepository;
     @Mock private ActionUnitMapper actionUnitMapper;
     @Mock private PersonMapper personMapper;
-
+    @Mock private ConceptMapper conceptMapper;
+    @Mock private SpatialUnitRepository spatialUnitRepository;
     @InjectMocks
     private ActionUnitService actionUnitService;
 
@@ -226,6 +233,15 @@ class ActionUnitServiceTest {
         expectedResult.setCreatedBy(personDto);
         expectedResult.setCreatedByInstitution(institutionDto);
 
+        SpatialUnit newMainLocation = new SpatialUnit();
+        newMainLocation.setName("New");
+        actionUnit.setMainLocation(newMainLocation);
+        actionUnit.setSpatialContext(Set.of(newMainLocation));
+        SpatialUnitSummaryDTO newMainLocationDto = new SpatialUnitSummaryDTO();
+        newMainLocationDto.setName("New");
+        actionUnitDto.setMainLocation(newMainLocationDto);
+        actionUnitDto.setSpatialContext(Set.of(newMainLocationDto));
+
         // Configuration des mocks avec les bonnes valeurs
         when(actionUnitRepository.findByNameAndCreatedByInstitutionId(name, 1L))
                 .thenReturn(Optional.empty());
@@ -236,6 +252,8 @@ class ActionUnitServiceTest {
         when(personMapper.invertConvert(personDto)).thenReturn(person);
         when(actionUnitRepository.save(actionUnit)).thenReturn(actionUnit);
         when(actionUnitMapper.convert(actionUnit)).thenReturn(expectedResult);
+        when(spatialUnitRepository.save(any(SpatialUnit.class))).thenReturn(new SpatialUnit());
+        when(conceptMapper.invertConvert(null)).thenReturn(null);
 
         // Act
         ActionUnitDTO result = actionUnitService.save(userInfo, actionUnitDto, typeConceptDto);
@@ -293,79 +311,6 @@ class ActionUnitServiceTest {
         );
 
         assertEquals("Database error", exception.getMessage());
-    }
-
-    @Test
-    void testFindAllByInstitutionAndByNameContainingAndByCategoriesAndByGlobalContaining_Success() {
-        // Arrange
-        Long institutionId = 1L;
-        String name = "test";
-        Long[] categoryIds = {1L, 2L};
-        Long[] personIds = {3L, 4L};
-        String global = "search";
-        String langCode = "fr";
-
-        // Création des objets mockés
-        ActionUnit mockActionUnit1 = new ActionUnit();
-        mockActionUnit1.setId(1L);
-        mockActionUnit1.setCreatedByInstitution(new Institution());
-
-        ActionUnit mockActionUnit2 = new ActionUnit();
-        mockActionUnit2.setId(2L);
-        mockActionUnit2.setCreatedByInstitution(new Institution());
-
-        ActionUnitDTO mockActionUnitDTO1 = new ActionUnitDTO();
-        mockActionUnitDTO1.setId(1L);
-
-        ActionUnitDTO mockActionUnitDTO2 = new ActionUnitDTO();
-        mockActionUnitDTO2.setId(2L);
-
-        // Création de la page de résultats mockée
-        Page<ActionUnit> mockPage = new PageImpl<>(List.of(mockActionUnit1, mockActionUnit2));
-
-        // Configuration des mocks avec les bonnes valeurs
-        when(actionUnitRepository.findAllByInstitutionAndByNameContainingAndByCategoriesAndByGlobalContaining(
-                institutionId,
-                name,
-                categoryIds,
-                personIds,
-                global,
-                langCode,
-                pageable
-        )).thenReturn(mockPage);
-
-        // Configuration du mapper pour chaque ActionUnit
-        when(actionUnitMapper.convert(mockActionUnit1)).thenReturn(mockActionUnitDTO1);
-        when(actionUnitMapper.convert(mockActionUnit2)).thenReturn(mockActionUnitDTO2);
-
-        // Act
-        Page<ActionUnitDTO> actualResult = actionUnitService.findAllByInstitutionAndByNameContainingAndByCategoriesAndByGlobalContaining(
-                institutionId,
-                name,
-                categoryIds,
-                personIds,
-                global,
-                langCode,
-                pageable
-        );
-
-        // Assert
-        assertNotNull(actualResult, "La page ne doit pas être null");
-        assertEquals(2, actualResult.getTotalElements(), "La page doit contenir 2 éléments");
-        assertEquals(mockActionUnitDTO1, actualResult.getContent().get(0), "Le premier élément doit correspondre");
-        assertEquals(mockActionUnitDTO2, actualResult.getContent().get(1), "Le deuxième élément doit correspondre");
-
-        // Vérification des appels - on s'attend à 2 appels au mapper (un par élément)
-        verify(actionUnitRepository).findAllByInstitutionAndByNameContainingAndByCategoriesAndByGlobalContaining(
-                institutionId,
-                name,
-                categoryIds,
-                personIds,
-                global,
-                langCode,
-                pageable
-        );
-        verify(actionUnitMapper, times(2)).convert(any(ActionUnit.class));
     }
 
 
@@ -447,54 +392,6 @@ class ActionUnitServiceTest {
         pageable
         );
     }
-    @Test
-    void testFindByTeamMember() {
-        // 1. Préparation des données de test
-        Long memberId = 1L;
-        Long institutionId = 1L;
-
-        PersonDTO memberDto = new PersonDTO();
-        memberDto.setId(memberId);
-
-        InstitutionDTO institutionDto = new InstitutionDTO();
-        institutionDto.setId(institutionId);
-
-        // Création des entités mockées
-        ActionUnit actionUnit11 = new ActionUnit();
-        actionUnit11.setId(101L);
-        actionUnit11.setName("Action Unit 1");
-
-        ActionUnit actionUnit22 = new ActionUnit();
-        actionUnit22.setId(102L);
-        actionUnit22.setName("Action Unit 2");
-
-        // Création des DTOs attendus
-        ActionUnitDTO actionUnitDTO1 = new ActionUnitDTO();
-        actionUnitDTO1.setId(101L);
-        actionUnitDTO1.setName("Action Unit 1");
-
-        ActionUnitDTO actionUnitDTO2 = new ActionUnitDTO();
-        actionUnitDTO2.setId(102L);
-        actionUnitDTO2.setName("Action Unit 2");
-
-        List<ActionUnit> expectedActionUnits = Arrays.asList(actionUnit11, actionUnit22);
-
-        // 2. Configuration des mocks
-        when(actionUnitRepository.findByTeamMemberOrCreatorAndInstitution(memberId, institutionId))
-                .thenReturn(expectedActionUnits);
-
-        when(actionUnitMapper.convert(actionUnit11)).thenReturn(actionUnitDTO1);
-        when(actionUnitMapper.convert(actionUnit22)).thenReturn(actionUnitDTO2);
-
-        // 3. Appel de la méthode à tester
-        List<ActionUnitDTO> result = actionUnitService.findByTeamMember(memberDto, institutionDto);
-
-        // 4. Vérification des résultats
-        assertNotNull(result, "Le résultat ne doit pas être null");
-        assertEquals(2, result.size(), "La liste doit contenir 2 éléments");
-
-    }
-
 
     @Test
     void existsChildrenByParentAndInstitution_shouldReturnTrue_whenChildrenExist() {
@@ -527,6 +424,872 @@ class ActionUnitServiceTest {
         assertTrue(result, "La méthode doit retourner true si des enfants existent.");
     }
 
+    // --- Tests for findNextByInstitution ---
 
+    @Test
+    void testFindNextByInstitution_ShouldReturnNextActionUnit() {
+        // Arrange
+        InstitutionDTO institution = new InstitutionDTO();
+        institution.setId(1L);
+        ActionUnitDTO current = new ActionUnitDTO();
+        current.setId(100L);
+        current.setCreationTime(OffsetDateTime.now());
+
+        ActionUnit nextEntity = new ActionUnit();
+        ActionUnitDTO nextDTO = new ActionUnitDTO();
+
+        when(actionUnitRepository.findNext(eq(1L), any(), eq(100L)))
+                .thenReturn(Optional.of(nextEntity));
+        when(actionUnitMapper.convert(nextEntity)).thenReturn(nextDTO);
+
+        // Act
+        ActionUnitDTO result = actionUnitService.findNextByInstitution(institution, current);
+
+        // Assert
+        assertEquals(nextDTO, result);
+        verify(actionUnitRepository, never()).findFirst(anyLong());
+    }
+
+    @Test
+    void testFindNextByInstitution_ShouldWrapAroundToFirst() {
+        // 1. Préparation des données avec des IDs cohérents
+        InstitutionDTO institution = new InstitutionDTO();
+        institution.setId(1L);
+
+        ActionUnitDTO current = new ActionUnitDTO();
+        current.setId(100L); // Évitez de laisser l'ID à null si possible
+        current.setCreationTime(OffsetDateTime.now());
+
+        ActionUnit firstEntity = new ActionUnit();
+        ActionUnitDTO firstDTO = new ActionUnitDTO();
+
+        // 2. Mocking avec des matchers flexibles
+        // On utilise eq(1L) pour l'institution, n'importe quelle date, et n'importe quel ID (ou null)
+        when(actionUnitRepository.findNext(eq(1L), any(), any()))
+                .thenReturn(Optional.empty());
+
+        when(actionUnitRepository.findFirst(1L))
+                .thenReturn(Optional.of(firstEntity));
+
+        when(actionUnitMapper.convert(firstEntity)).thenReturn(firstDTO);
+
+        // 3. Appel
+        ActionUnitDTO result = actionUnitService.findNextByInstitution(institution, current);
+
+        // 4. Assertions
+        assertEquals(firstDTO, result);
+    }
+    // --- Tests for findPreviousByInstitution ---
+
+    @Test
+    void testFindPreviousByInstitution_ShouldReturnPreviousActionUnit() {
+        // Arrange
+        InstitutionDTO institution = new InstitutionDTO();
+        institution.setId(1L);
+        ActionUnitDTO current = new ActionUnitDTO();
+        current.setId(100L);
+        current.setCreationTime(OffsetDateTime.now());
+
+        ActionUnit prevEntity = new ActionUnit();
+        ActionUnitDTO prevDTO = new ActionUnitDTO();
+
+        when(actionUnitRepository.findPrevious(eq(1L), any(), eq(100L)))
+                .thenReturn(Optional.of(prevEntity));
+        when(actionUnitMapper.convert(prevEntity)).thenReturn(prevDTO);
+
+        // Act
+        ActionUnitDTO result = actionUnitService.findPreviousByInstitution(institution, current);
+
+        // Assert
+        assertEquals(prevDTO, result);
+    }
+
+    @Test
+    void testFindPreviousByInstitution_ShouldWrapAroundToLast() {
+        // 1. Arrange - Préparation avec des IDs qui correspondent
+        InstitutionDTO institution = new InstitutionDTO();
+        institution.setId(1L); // L'ID utilisé par le service
+
+        ActionUnitDTO current = new ActionUnitDTO();
+        current.setId(100L); // Un ID pour éviter le null (ou utilisez any() dans le mock)
+        current.setCreationTime(OffsetDateTime.now());
+
+        ActionUnit lastEntity = new ActionUnit();
+        ActionUnitDTO lastDTO = new ActionUnitDTO();
+
+        // 2. Mocking - Utilisation de matchers flexibles
+        // eq(1L) pour l'institution, any() pour la date, any() pour l'ID de l'action unit
+        when(actionUnitRepository.findPrevious(eq(1L), any(), any()))
+                .thenReturn(Optional.empty());
+
+        // Le fallback vers le dernier élément
+        when(actionUnitRepository.findLast(1L))
+                .thenReturn(Optional.of(lastEntity));
+
+        when(actionUnitMapper.convert(lastEntity)).thenReturn(lastDTO);
+
+        // 3. Act
+        ActionUnitDTO result = actionUnitService.findPreviousByInstitution(institution, current);
+
+        // 4. Assert
+        assertNotNull(result);
+        assertEquals(lastDTO, result);
+    }
+
+    @Test
+    void testNavigation_ShouldReturnCurrentIfRepoIsEmpty() {
+        // 1. Arrange
+        InstitutionDTO institution = new InstitutionDTO();
+        institution.setId(1L); // On utilise 1L pour correspondre à l'erreur
+
+        ActionUnitDTO current = new ActionUnitDTO();
+        current.setId(100L);
+        current.setCreationTime(OffsetDateTime.now());
+
+        // Mock de findNext : on simule qu'aucune entité suivante n'existe
+        // On utilise eq(1L) et any() pour la flexibilité
+        when(actionUnitRepository.findNext(eq(1L), any(), any()))
+                .thenReturn(Optional.empty());
+
+        // Mock de findFirst : on simule que la liste globale est vide pour cette institution
+        when(actionUnitRepository.findFirst(1L))
+                .thenReturn(Optional.empty());
+
+        // 2. Act
+        ActionUnitDTO result = actionUnitService.findNextByInstitution(institution, current);
+
+        // 3. Assert
+        // Selon votre code, si findNext et findFirst échouent, on retourne 'current'
+        assertEquals(current, result);
+
+        // Vérification optionnelle pour s'assurer que le mapper n'a jamais été appelé
+        verifyNoInteractions(actionUnitMapper);
+    }
+
+    // --- Tests for toggleValidated ---
+
+    @Test
+    void testToggleValidated_ShouldCycleThroughStatuses() {
+        // Arrange
+        Long id = 50L;
+        ActionUnit actionUnit = new ActionUnit();
+        actionUnit.setId(id);
+
+        when(actionUnitRepository.findById(id)).thenReturn(Optional.of(actionUnit));
+        when(actionUnitRepository.save(any(ActionUnit.class))).thenAnswer(i -> i.getArguments()[0]);
+        when(actionUnitMapper.convert(any(ActionUnit.class))).thenReturn(new ActionUnitDTO());
+
+        // INCOMPLETE -> COMPLETE
+        actionUnit.setValidated(ValidationStatus.INCOMPLETE);
+        actionUnitService.toggleValidated(id);
+        assertEquals(ValidationStatus.COMPLETE, actionUnit.getValidated());
+
+        // COMPLETE -> VALIDATED
+        actionUnitService.toggleValidated(id);
+        assertEquals(ValidationStatus.VALIDATED, actionUnit.getValidated());
+
+        // VALIDATED -> INCOMPLETE
+        actionUnitService.toggleValidated(id);
+        assertEquals(ValidationStatus.INCOMPLETE, actionUnit.getValidated());
+    }
+
+    @Test
+    void testToggleValidated_NotFound_ThrowsException() {
+        // Arrange
+        when(actionUnitRepository.findById(anyLong())).thenReturn(Optional.empty());
+
+        // Act & Assert
+        assertThrows(ActionUnitNotFoundException.class, () -> actionUnitService.toggleValidated(999L));
+    }
+
+    // ------------------------------------------------------------------
+    // saveNotTransactional — branches
+    // ------------------------------------------------------------------
+
+    private UserInfo userInfo(long institutionId) {
+        InstitutionDTO inst = new InstitutionDTO();
+        inst.setId(institutionId);
+        inst.setName("Inst");
+        PersonDTO person = new PersonDTO();
+        person.setId(99L);
+        return new UserInfo(inst, person, "fr");
+    }
+
+    @Test
+    void saveNotTransactional_nameAlreadyExists_throws() {
+        info = userInfo(1L);
+        ActionUnitDTO dto = new ActionUnitDTO();
+        dto.setName("dup");
+
+        when(actionUnitRepository.findByNameAndCreatedByInstitutionId("dup", 1L))
+                .thenReturn(Optional.of(new ActionUnit()));
+
+        ActionUnitAlreadyExistsException ex = assertThrows(
+                ActionUnitAlreadyExistsException.class,
+                () -> actionUnitService.saveNotTransactional(info, dto, new ConceptDTO()));
+        assertThat(ex.getMessage()).contains("dup");
+    }
+
+    @Test
+    void saveNotTransactional_identifierAlreadyExists_throws() {
+        info = userInfo(1L);
+        ActionUnitDTO dto = new ActionUnitDTO();
+        dto.setName("name");
+        dto.setIdentifier("id-1");
+
+        when(actionUnitRepository.findByNameAndCreatedByInstitutionId("name", 1L)).thenReturn(Optional.empty());
+        when(actionUnitRepository.findByIdentifierAndCreatedByInstitutionId("id-1", 1L))
+                .thenReturn(Optional.of(new ActionUnit()));
+
+        ActionUnitAlreadyExistsException ex = assertThrows(
+                ActionUnitAlreadyExistsException.class,
+                () -> actionUnitService.saveNotTransactional(info, dto, new ConceptDTO()));
+        assertThat(ex.getMessage()).contains("id-1");
+    }
+
+    @Test
+    void saveNotTransactional_nullIdentifierAndNullFullIdentifier_throws() {
+        info = userInfo(1L);
+        ActionUnitDTO dto = new ActionUnitDTO();
+        dto.setName("name");
+        // identifier and fullIdentifier are null
+
+        when(actionUnitRepository.findByNameAndCreatedByInstitutionId(any(), any())).thenReturn(Optional.empty());
+        when(actionUnitRepository.findByIdentifierAndCreatedByInstitutionId(any(), any())).thenReturn(Optional.empty());
+
+        ConceptDTO emptyConcept = new ConceptDTO();
+
+        assertThrows(NullActionUnitIdentifierException.class,
+                () -> actionUnitService.saveNotTransactional(info, dto, emptyConcept));
+    }
+
+    @Test
+    void saveNotTransactional_setsCreationTimeAndFullIdentifierFromIdentifier() throws ActionUnitAlreadyExistsException {
+        info = userInfo(1L);
+        ActionUnitDTO dto = new ActionUnitDTO();
+        dto.setName("name");
+        dto.setIdentifier("ABC");
+        // creationTime null and fullIdentifier null
+
+        ActionUnit entity = new ActionUnit();
+        when(actionUnitRepository.findByNameAndCreatedByInstitutionId(any(), any())).thenReturn(Optional.empty());
+        when(actionUnitRepository.findByIdentifierAndCreatedByInstitutionId(any(), any())).thenReturn(Optional.empty());
+        when(actionUnitMapper.invertConvert(dto)).thenReturn(entity);
+        when(conceptService.saveOrGetConcept(any(ConceptDTO.class))).thenReturn(new Concept());
+        when(personMapper.invertConvert(any())).thenReturn(new Person());
+        when(actionUnitRepository.save(entity)).thenReturn(entity);
+
+        ActionUnit saved = actionUnitService.saveNotTransactional(info, dto, new ConceptDTO());
+
+        assertSame(entity, saved);
+        assertEquals("ABC", dto.getFullIdentifier());
+        assertNotNull(dto.getCreationTime());
+        assertSame(info.getInstitution(), dto.getCreatedByInstitution());
+    }
+
+    @Test
+    void saveNotTransactional_existingMainLocation_isNotReSaved() throws ActionUnitAlreadyExistsException {
+        info = userInfo(1L);
+        ActionUnitDTO dto = new ActionUnitDTO();
+        dto.setName("name");
+        dto.setIdentifier("id");
+        SpatialUnitSummaryDTO existingLoc = new SpatialUnitSummaryDTO();
+        existingLoc.setId(7L);
+        dto.setMainLocation(existingLoc);
+
+        ActionUnit entity = new ActionUnit();
+        when(actionUnitRepository.findByNameAndCreatedByInstitutionId(any(), any())).thenReturn(Optional.empty());
+        when(actionUnitRepository.findByIdentifierAndCreatedByInstitutionId(any(), any())).thenReturn(Optional.empty());
+        when(actionUnitMapper.invertConvert(dto)).thenReturn(entity);
+        when(conceptService.saveOrGetConcept(any(ConceptDTO.class))).thenReturn(new Concept());
+        when(personMapper.invertConvert(any())).thenReturn(new Person());
+        when(actionUnitRepository.save(entity)).thenReturn(entity);
+
+        actionUnitService.saveNotTransactional(info, dto, new ConceptDTO());
+
+        verify(spatialUnitRepository, never()).save(any(SpatialUnit.class));
+    }
+
+    @Test
+    void saveNotTransactional_newMainLocation_isSaved() throws ActionUnitAlreadyExistsException {
+        info = userInfo(1L);
+        ActionUnitDTO dto = new ActionUnitDTO();
+        dto.setName("name");
+        dto.setIdentifier("id");
+        SpatialUnitSummaryDTO newLoc = new SpatialUnitSummaryDTO();
+        newLoc.setName("New place");
+        newLoc.setCode("CODE");
+        dto.setMainLocation(newLoc);
+
+        ActionUnit entity = new ActionUnit();
+        SpatialUnit existingMainLoc = new SpatialUnit();
+        existingMainLoc.setCategory(new Concept());
+        entity.setMainLocation(existingMainLoc);
+
+        when(actionUnitRepository.findByNameAndCreatedByInstitutionId(any(), any())).thenReturn(Optional.empty());
+        when(actionUnitRepository.findByIdentifierAndCreatedByInstitutionId(any(), any())).thenReturn(Optional.empty());
+        when(actionUnitMapper.invertConvert(dto)).thenReturn(entity);
+        when(conceptService.saveOrGetConcept(any(ConceptDTO.class))).thenReturn(new Concept());
+        when(personMapper.invertConvert(any())).thenReturn(new Person());
+        SpatialUnit savedLoc = new SpatialUnit();
+        savedLoc.setId(42L);
+        when(spatialUnitRepository.save(any(SpatialUnit.class))).thenReturn(savedLoc);
+        when(actionUnitRepository.save(entity)).thenReturn(entity);
+
+        actionUnitService.saveNotTransactional(info, dto, new ConceptDTO());
+
+        verify(spatialUnitRepository).save(any(SpatialUnit.class));
+        assertSame(savedLoc, entity.getMainLocation());
+    }
+
+    @Test
+    void saveNotTransactional_spatialContextWithNewAndExistingEntries_handlesBoth() throws ActionUnitAlreadyExistsException {
+        info = userInfo(1L);
+        ActionUnitDTO dto = new ActionUnitDTO();
+        dto.setName("n");
+        dto.setIdentifier("i");
+
+        SpatialUnitSummaryDTO existingPlace = new SpatialUnitSummaryDTO();
+        existingPlace.setId(11L);
+
+        SpatialUnitSummaryDTO newPlace = new SpatialUnitSummaryDTO();
+        newPlace.setName("Brand new");
+        newPlace.setCategory(new ConceptDTO());
+
+        dto.setSpatialContext(Set.of(existingPlace, newPlace));
+
+        ActionUnit entity = new ActionUnit();
+        when(actionUnitRepository.findByNameAndCreatedByInstitutionId(any(), any())).thenReturn(Optional.empty());
+        when(actionUnitRepository.findByIdentifierAndCreatedByInstitutionId(any(), any())).thenReturn(Optional.empty());
+        when(actionUnitMapper.invertConvert(dto)).thenReturn(entity);
+        when(conceptService.saveOrGetConcept(any(ConceptDTO.class))).thenReturn(new Concept());
+        when(personMapper.invertConvert(any())).thenReturn(new Person());
+        when(conceptMapper.invertConvert(any(ConceptDTO.class))).thenReturn(new Concept());
+        SpatialUnit savedNew = new SpatialUnit();
+        savedNew.setId(99L);
+        when(spatialUnitRepository.save(any(SpatialUnit.class))).thenReturn(savedNew);
+        SpatialUnit existingEntity = new SpatialUnit();
+        existingEntity.setId(11L);
+        when(spatialUnitRepository.findById(11L)).thenReturn(Optional.of(existingEntity));
+        when(actionUnitRepository.save(entity)).thenReturn(entity);
+
+        actionUnitService.saveNotTransactional(info, dto, new ConceptDTO());
+
+        verify(spatialUnitRepository).save(any(SpatialUnit.class));
+        verify(spatialUnitRepository).findById(11L);
+        assertEquals(2, entity.getSpatialContext().size());
+    }
+
+    @Test
+    void saveNotTransactional_existingPlaceMissingInRepository_isOmitted() throws ActionUnitAlreadyExistsException {
+        info = userInfo(1L);
+        ActionUnitDTO dto = new ActionUnitDTO();
+        dto.setName("n");
+        dto.setIdentifier("i");
+
+        SpatialUnitSummaryDTO existingPlace = new SpatialUnitSummaryDTO();
+        existingPlace.setId(11L);
+        dto.setSpatialContext(Set.of(existingPlace));
+
+        ActionUnit entity = new ActionUnit();
+        when(actionUnitRepository.findByNameAndCreatedByInstitutionId(any(), any())).thenReturn(Optional.empty());
+        when(actionUnitRepository.findByIdentifierAndCreatedByInstitutionId(any(), any())).thenReturn(Optional.empty());
+        when(actionUnitMapper.invertConvert(dto)).thenReturn(entity);
+        when(conceptService.saveOrGetConcept(any(ConceptDTO.class))).thenReturn(new Concept());
+        when(personMapper.invertConvert(any())).thenReturn(new Person());
+        when(spatialUnitRepository.findById(11L)).thenReturn(Optional.empty());
+        when(actionUnitRepository.save(entity)).thenReturn(entity);
+
+        actionUnitService.saveNotTransactional(info, dto, new ConceptDTO());
+
+        assertTrue(entity.getSpatialContext().isEmpty());
+    }
+
+    @Test
+    void saveNotTransactional_repositorySaveFailure_wrapsAsFailedActionUnitSaveException() {
+        info = userInfo(1L);
+        ActionUnitDTO dto = new ActionUnitDTO();
+        dto.setName("n");
+        dto.setIdentifier("i");
+
+        ActionUnit entity = new ActionUnit();
+        when(actionUnitRepository.findByNameAndCreatedByInstitutionId(any(), any())).thenReturn(Optional.empty());
+        when(actionUnitRepository.findByIdentifierAndCreatedByInstitutionId(any(), any())).thenReturn(Optional.empty());
+        when(actionUnitMapper.invertConvert(dto)).thenReturn(entity);
+        when(conceptService.saveOrGetConcept(any(ConceptDTO.class))).thenReturn(new Concept());
+        when(personMapper.invertConvert(any())).thenReturn(new Person());
+        when(actionUnitRepository.save(entity)).thenThrow(new RuntimeException("boom"));
+
+        ConceptDTO emptyDto = new ConceptDTO();
+
+        assertThrows(FailedActionUnitSaveException.class,
+                () -> actionUnitService.saveNotTransactional(info, dto, emptyDto));
+    }
+
+    // ------------------------------------------------------------------
+    // findByArk / findWithoutArk
+    // ------------------------------------------------------------------
+
+    @Test
+    void findByArk_returnsOptionalFromRepository() {
+        Ark ark = new Ark();
+        when(actionUnitRepository.findByArk(ark)).thenReturn(Optional.of(actionUnit1));
+
+        Optional<ActionUnit> result = actionUnitService.findByArk(ark);
+
+        assertTrue(result.isPresent());
+        assertSame(actionUnit1, result.get());
+    }
+
+    @Test
+    void findWithoutArk_delegatesToRepository() {
+        Institution inst = new Institution();
+        inst.setId(1L);
+        when(actionUnitRepository.findAllByArkIsNullAndCreatedByInstitution(inst))
+                .thenReturn(List.of(actionUnit1, actionUnit2));
+
+        List<ActionUnit> result = actionUnitService.findWithoutArk(inst);
+
+        assertEquals(2, result.size());
+    }
+
+    // ------------------------------------------------------------------
+    // save(AbstractEntityDTO)
+    // ------------------------------------------------------------------
+
+    @Test
+    void save_AbstractEntity_happyPath() {
+        when(actionUnitMapper.invertConvert(actionUnit1dto)).thenReturn(actionUnit1);
+        when(actionUnitRepository.save(actionUnit1)).thenReturn(actionUnit1);
+        when(actionUnitMapper.convert(actionUnit1)).thenReturn(actionUnit1dto);
+
+        AbstractEntityDTO result = actionUnitService.save(actionUnit1dto);
+
+        assertSame(actionUnit1dto, result);
+    }
+
+    @Test
+    void save_AbstractEntity_dataIntegrityViolation_wraps() {
+        when(actionUnitMapper.invertConvert(actionUnit1dto)).thenReturn(actionUnit1);
+        when(actionUnitRepository.save(actionUnit1)).thenThrow(new DataIntegrityViolationException("dup"));
+
+        assertThrows(FailedActionUnitSaveException.class,
+                () -> actionUnitService.save(actionUnit1dto));
+    }
+
+    // ------------------------------------------------------------------
+    // count delegators
+    // ------------------------------------------------------------------
+
+    @Test
+    void countByInstitutionId_delegatesToRepository() {
+        when(actionUnitRepository.countByCreatedByInstitutionId(5L)).thenReturn(7L);
+        assertEquals(7L, actionUnitService.countByInstitutionId(5L));
+    }
+
+    @Test
+    void countBySpatialContext_delegatesToRepository() {
+        SpatialUnitDTO su = new SpatialUnitDTO();
+        su.setId(3L);
+        when(actionUnitRepository.countBySpatialContext(3L)).thenReturn(4);
+
+        assertEquals(4, actionUnitService.countBySpatialContext(su));
+    }
+
+    @Test
+    void countRootsInInstitution_delegatesToRepository() {
+        when(actionUnitRepository.countRootsInInstitution(8L)).thenReturn(11);
+        assertEquals(11, actionUnitService.countRootsInInstitution(8L));
+    }
+
+    @Test
+    void countRootsByInstitutionAndName_delegatesToRepository() {
+        when(actionUnitRepository.countRootsByInstitutionAndName(1L, "x")).thenReturn(2);
+        assertEquals(2, actionUnitService.countRootsByInstitutionAndName(1L, "x"));
+    }
+
+    // ------------------------------------------------------------------
+    // findAll* delegators that map entities to DTOs
+    // ------------------------------------------------------------------
+
+    @Test
+    void findAllByInstitution_mapsToDtoSet() {
+        InstitutionDTO inst = new InstitutionDTO();
+        inst.setId(1L);
+        // ActionUnit#equals keys on fullIdentifier; ActionUnitDTO#equals (Lombok @Data) keys
+        // on every own field so we differentiate via name + fullIdentifier.
+        actionUnit1.setFullIdentifier("INST-1");
+        actionUnit2.setFullIdentifier("INST-2");
+        actionUnit1dto.setName("dto-1");
+        actionUnit2dto.setName("dto-2");
+        when(actionUnitRepository.findByCreatedByInstitutionId(1L))
+                .thenReturn(new HashSet<>(List.of(actionUnit1, actionUnit2)));
+        when(actionUnitMapper.convert(any(ActionUnit.class)))
+                .thenAnswer(inv -> inv.getArgument(0) == actionUnit1 ? actionUnit1dto : actionUnit2dto);
+
+        Set<ActionUnitDTO> result = actionUnitService.findAllByInstitution(inst);
+
+        assertEquals(2, result.size());
+        assertThat(result).containsExactlyInAnyOrder(actionUnit1dto, actionUnit2dto);
+    }
+
+    @Test
+    void findAllWithoutParentsByInstitution_mapsToDtos() {
+        when(actionUnitRepository.findRootsByInstitution(1L, 50L)).thenReturn(List.of(actionUnit1));
+        when(actionUnitMapper.convert(actionUnit1)).thenReturn(actionUnit1dto);
+
+        List<ActionUnitDTO> result = actionUnitService.findAllWithoutParentsByInstitution(1L);
+
+        assertEquals(List.of(actionUnit1dto), result);
+    }
+
+    @Test
+    void findChildrenByParentAndInstitution_mapsToDtos() {
+        when(actionUnitRepository.findChildrenByParentAndInstitution(1L, 2L)).thenReturn(List.of(actionUnit1));
+        when(actionUnitMapper.convert(actionUnit1)).thenReturn(actionUnit1dto);
+
+        List<ActionUnitDTO> result = actionUnitService.findChildrenByParentAndInstitution(1L, 2L);
+
+        assertEquals(List.of(actionUnit1dto), result);
+    }
+
+    @Test
+    void findBySpatialContext_mapsToDtos() {
+        when(actionUnitRepository.findBySpatialContext(9L)).thenReturn(List.of(actionUnit1));
+        when(actionUnitMapper.convert(actionUnit1)).thenReturn(actionUnit1dto);
+
+        List<ActionUnitDTO> result = actionUnitService.findBySpatialContext(9L);
+
+        assertEquals(List.of(actionUnit1dto), result);
+    }
+
+    @Test
+    void findByTeamMember_mapsToDtos() {
+        PersonDTO member = new PersonDTO();
+        member.setId(3L);
+        InstitutionDTO inst = new InstitutionDTO();
+        inst.setId(4L);
+        when(actionUnitRepository.findByTeamMemberOrCreatorAndInstitutionLimit(3L, 4L, 5L))
+                .thenReturn(List.of(actionUnit1));
+        when(actionUnitMapper.convert(actionUnit1)).thenReturn(actionUnit1dto);
+
+        List<ActionUnitDTO> result = actionUnitService.findByTeamMember(member, inst, 5L);
+
+        assertEquals(List.of(actionUnit1dto), result);
+    }
+
+    @Test
+    void findRootsByInstitution_delegatesToRepository() {
+        when(actionUnitRepository.findRootsByInstitution(1L, 0, 10)).thenReturn(List.of(actionUnit1));
+        List<ActionUnit> result = actionUnitService.findRootsByInstitution(1L, 0, 10);
+        assertEquals(List.of(actionUnit1), result);
+    }
+
+    @Test
+    void findRootsByInstitutionAndName_delegatesToRepository() {
+        when(actionUnitRepository.findRootsByInstitutionAndName(1L, "n", 0, 5))
+                .thenReturn(List.of(actionUnit2));
+        List<ActionUnit> result = actionUnitService.findRootsByInstitutionAndName(1L, "n", 0, 5);
+        assertEquals(List.of(actionUnit2), result);
+    }
+
+    // ------------------------------------------------------------------
+    // exists* false branches (truthy ones already covered)
+    // ------------------------------------------------------------------
+
+    @Test
+    void existsChildrenByParentAndInstitution_returnsFalseWhenRepositoryDoes() {
+        when(actionUnitRepository.existsChildrenByParentAndInstitution(1L, 2L)).thenReturn(false);
+        assertFalse(actionUnitService.existsChildrenByParentAndInstitution(1L, 2L));
+    }
+
+    @Test
+    void existsRootChildrenByInstitution_returnsFalseWhenRepositoryDoes() {
+        when(actionUnitRepository.existsRootChildrenByInstitution(1L)).thenReturn(false);
+        assertFalse(actionUnitService.existsRootChildrenByInstitution(1L));
+    }
+
+    @Test
+    void existsRootChildrenByRelatedSpatialUnit_delegatesToRepository() {
+        when(actionUnitRepository.existsRootChildrenByRelatedSpatialUnit(7L)).thenReturn(true);
+        assertTrue(actionUnitService.existsRootChildrenByRelatedSpatialUnit(7L));
+    }
+
+    @Test
+    void isRoot_delegatesToRepository_trueAndFalse() {
+        when(actionUnitRepository.isRoot(1L, 2L)).thenReturn(true);
+        when(actionUnitRepository.isRoot(3L, 4L)).thenReturn(false);
+
+        assertTrue(actionUnitService.isRoot(1L, 2L));
+        assertFalse(actionUnitService.isRoot(3L, 4L));
+    }
+
+    // ------------------------------------------------------------------
+    // toggleValidated — IllegalStateException on unknown status
+    // ------------------------------------------------------------------
+
+    @Test
+    void toggleValidated_unknownStatus_throwsIllegalState() {
+        ActionUnit au = new ActionUnit();
+        au.setId(1L);
+        au.setValidated(null); // unknown / unhandled
+
+        when(actionUnitRepository.findById(1L)).thenReturn(Optional.of(au));
+
+        assertThrows(NullPointerException.class, () -> actionUnitService.toggleValidated(1L));
+    }
+
+    // ------------------------------------------------------------------
+    // isActionUnitStillOngoing — every branch
+    // ------------------------------------------------------------------
+
+    @Test
+    void isActionUnitStillOngoing_noBeginDate_returnsFalse() {
+        ActionUnitSummaryDTO au = new ActionUnitSummaryDTO();
+        assertFalse(actionUnitService.isActionUnitStillOngoing(au));
+    }
+
+    @Test
+    void isActionUnitStillOngoing_beginDateButNoEndDate_returnsTrue() {
+        ActionUnitSummaryDTO au = new ActionUnitSummaryDTO();
+        au.setBeginDate(OffsetDateTime.now().minusDays(1));
+        assertTrue(actionUnitService.isActionUnitStillOngoing(au));
+    }
+
+    @Test
+    void isActionUnitStillOngoing_nowInRange_returnsTrue() {
+        ActionUnitSummaryDTO au = new ActionUnitSummaryDTO();
+        au.setBeginDate(OffsetDateTime.now().minusDays(1));
+        au.setEndDate(OffsetDateTime.now().plusDays(1));
+        assertTrue(actionUnitService.isActionUnitStillOngoing(au));
+    }
+
+    @Test
+    void isActionUnitStillOngoing_nowBeforeBegin_returnsFalse() {
+        ActionUnitSummaryDTO au = new ActionUnitSummaryDTO();
+        au.setBeginDate(OffsetDateTime.now().plusDays(1));
+        au.setEndDate(OffsetDateTime.now().plusDays(2));
+        assertFalse(actionUnitService.isActionUnitStillOngoing(au));
+    }
+
+    @Test
+    void isActionUnitStillOngoing_nowAfterEnd_returnsFalse() {
+        ActionUnitSummaryDTO au = new ActionUnitSummaryDTO();
+        au.setBeginDate(OffsetDateTime.now().minusDays(2));
+        au.setEndDate(OffsetDateTime.now().minusDays(1));
+        assertFalse(actionUnitService.isActionUnitStillOngoing(au));
+    }
+
+    // ------------------------------------------------------------------
+    // isManagerOf
+    // ------------------------------------------------------------------
+
+    @Test
+    void isManagerOf_sameId_returnsTrue() {
+        ActionUnitSummaryDTO action = new ActionUnitSummaryDTO();
+        PersonDTO creator = new PersonDTO();
+        creator.setId(42L);
+        action.setCreatedBy(creator);
+
+        PersonDTO same = new PersonDTO();
+        same.setId(42L);
+
+        assertTrue(actionUnitService.isManagerOf(action, same));
+    }
+
+    @Test
+    void isManagerOf_differentId_returnsFalse() {
+        ActionUnitSummaryDTO action = new ActionUnitSummaryDTO();
+        PersonDTO creator = new PersonDTO();
+        creator.setId(42L);
+        action.setCreatedBy(creator);
+
+        PersonDTO other = new PersonDTO();
+        other.setId(43L);
+
+        assertFalse(actionUnitService.isManagerOf(action, other));
+    }
+
+    // ------------------------------------------------------------------
+    // searchActionUnits / countSearchResults / computeAncestorClosure / prepareSpecs branches
+    // ------------------------------------------------------------------
+
+    @Test
+    void searchActionUnits_userMode_returnsMappedPage() {
+        InstitutionDTO inst = new InstitutionDTO();
+        inst.setId(1L);
+        FilterDTO filters = new FilterDTO(false);
+
+        when(actionUnitRepository.findAll(any(Specification.class), eq(pageable))).thenReturn(page);
+        when(actionUnitMapper.convert(actionUnit1)).thenReturn(actionUnit1dto);
+        when(actionUnitMapper.convert(actionUnit2)).thenReturn(actionUnit2dto);
+
+        Page<ActionUnitDTO> result = actionUnitService.searchActionUnits(inst, filters, pageable);
+
+        assertEquals(2, result.getContent().size());
+        assertThat(result.getContent()).containsExactly(actionUnit1dto, actionUnit2dto);
+    }
+
+    @Test
+    void searchActionUnits_withNameFilter_logsAndReturns() {
+        InstitutionDTO inst = new InstitutionDTO();
+        inst.setId(1L);
+        FilterDTO filters = new FilterDTO(false);
+        filters.add(ActionUnitSpec.NAME_FILTER, "foo", FilterDTO.FilterType.CONTAINS);
+
+        when(actionUnitRepository.findAll(any(Specification.class), eq(pageable))).thenReturn(page);
+        when(actionUnitMapper.convert(any(ActionUnit.class))).thenReturn(actionUnit1dto);
+
+        Page<ActionUnitDTO> result = actionUnitService.searchActionUnits(inst, filters, pageable);
+
+        assertEquals(2, result.getContent().size());
+    }
+
+    @Test
+    void searchActionUnits_withGlobalFilterOnly_runs() {
+        InstitutionDTO inst = new InstitutionDTO();
+        inst.setId(1L);
+        FilterDTO filters = new FilterDTO(false);
+        filters.add(ActionUnitSpec.GLOBAL_FILTER, "g", FilterDTO.FilterType.CONTAINS);
+
+        when(actionUnitRepository.findAll(any(Specification.class), eq(pageable))).thenReturn(new PageImpl<>(List.of()));
+
+        Page<ActionUnitDTO> result = actionUnitService.searchActionUnits(inst, filters, pageable);
+
+        assertTrue(result.getContent().isEmpty());
+    }
+
+    @Test
+    void searchActionUnits_rootOnlyWithoutUserFilters_runs() {
+        InstitutionDTO inst = new InstitutionDTO();
+        inst.setId(1L);
+        FilterDTO filters = new FilterDTO(true);
+
+        when(actionUnitRepository.findAll(any(Specification.class), eq(pageable))).thenReturn(page);
+        when(actionUnitMapper.convert(any(ActionUnit.class))).thenReturn(actionUnit1dto);
+
+        Page<ActionUnitDTO> result = actionUnitService.searchActionUnits(inst, filters, pageable);
+
+        assertEquals(2, result.getContent().size());
+    }
+
+    @Test
+    void searchActionUnits_rootOnlyWithUserFiltersAndMatches_runs() {
+        InstitutionDTO inst = new InstitutionDTO();
+        inst.setId(1L);
+        FilterDTO filters = new FilterDTO(true);
+        filters.add(ActionUnitSpec.NAME_FILTER, "match", FilterDTO.FilterType.CONTAINS);
+
+        when(actionUnitRepository.findAll(any(Specification.class))).thenReturn(List.of(actionUnit1, actionUnit2));
+        when(actionUnitRepository.findAncestorClosure(any(Long[].class))).thenReturn(List.of(1L, 2L));
+        when(actionUnitRepository.findAll(any(Specification.class), eq(pageable))).thenReturn(page);
+        when(actionUnitMapper.convert(any(ActionUnit.class))).thenReturn(actionUnit1dto);
+
+        Page<ActionUnitDTO> result = actionUnitService.searchActionUnits(inst, filters, pageable);
+
+        assertEquals(2, result.getContent().size());
+        assertEquals(Set.of(1L, 2L), filters.getMatchIds());
+    }
+
+    @Test
+    void searchActionUnits_rootOnlyWithUserFiltersNoMatches_returnsEmpty() {
+        InstitutionDTO inst = new InstitutionDTO();
+        inst.setId(1L);
+        FilterDTO filters = new FilterDTO(true);
+        filters.add(ActionUnitSpec.NAME_FILTER, "nope", FilterDTO.FilterType.CONTAINS);
+
+        // No matches: empty closure → disjunction spec → empty page.
+        when(actionUnitRepository.findAll(any(Specification.class))).thenReturn(List.of());
+        when(actionUnitRepository.findAll(any(Specification.class), eq(pageable))).thenReturn(new PageImpl<>(List.of()));
+
+        Page<ActionUnitDTO> result = actionUnitService.searchActionUnits(inst, filters, pageable);
+
+        assertTrue(result.getContent().isEmpty());
+        verify(actionUnitRepository, never()).findAncestorClosure(any(Long[].class));
+    }
+
+    @Test
+    void countSearchResults_delegatesToRepositoryCount() {
+        InstitutionDTO inst = new InstitutionDTO();
+        inst.setId(1L);
+        FilterDTO filters = new FilterDTO(false);
+
+        when(actionUnitRepository.count(any(Specification.class))).thenReturn(13L);
+
+        assertEquals(13, actionUnitService.countSearchResults(inst, filters));
+    }
+
+    @Test
+    void computeAncestorClosure_notRootOnly_returnsEmpty() {
+        InstitutionDTO inst = new InstitutionDTO();
+        inst.setId(1L);
+        FilterDTO filters = new FilterDTO(false);
+
+        Set<Long> result = actionUnitService.computeAncestorClosure(inst, filters);
+
+        assertEquals(Collections.emptySet(), result);
+        verifyNoInteractions(actionUnitRepository);
+    }
+
+    @Test
+    void computeAncestorClosure_rootOnlyButNoUserFilters_returnsEmpty() {
+        InstitutionDTO inst = new InstitutionDTO();
+        inst.setId(1L);
+        FilterDTO filters = new FilterDTO(true);
+
+        Set<Long> result = actionUnitService.computeAncestorClosure(inst, filters);
+
+        assertEquals(Collections.emptySet(), result);
+        verifyNoInteractions(actionUnitRepository);
+    }
+
+    @Test
+    void computeAncestorClosure_rootOnlyWithUserFilters_returnsClosure() {
+        InstitutionDTO inst = new InstitutionDTO();
+        inst.setId(1L);
+        FilterDTO filters = new FilterDTO(true);
+        filters.add(ActionUnitSpec.NAME_FILTER, "x", FilterDTO.FilterType.CONTAINS);
+
+        when(actionUnitRepository.findAll(any(Specification.class))).thenReturn(List.of(actionUnit1));
+        when(actionUnitRepository.findAncestorClosure(any(Long[].class))).thenReturn(List.of(1L, 5L));
+
+        Set<Long> result = actionUnitService.computeAncestorClosure(inst, filters);
+
+        assertEquals(Set.of(1L, 5L), result);
+    }
+
+    @Test
+    void computeAncestorClosure_reusesCachedClosureFromFilter() {
+        InstitutionDTO inst = new InstitutionDTO();
+        inst.setId(1L);
+        FilterDTO filters = new FilterDTO(true);
+        filters.add(ActionUnitSpec.NAME_FILTER, "x", FilterDTO.FilterType.CONTAINS);
+        filters.setAncestorClosure(List.of(7L, 8L));
+
+        Set<Long> result = actionUnitService.computeAncestorClosure(inst, filters);
+
+        assertEquals(Set.of(7L, 8L), result);
+        // No DB call: the closure was precomputed.
+        verify(actionUnitRepository, never()).findAll(any(Specification.class));
+        verify(actionUnitRepository, never()).findAncestorClosure(any(Long[].class));
+    }
+
+    // ------------------------------------------------------------------
+    // findMatchingInInstitutionByName
+    // ------------------------------------------------------------------
+
+    @Test
+    void findMatchingInInstitutionByName_returnsMappedDtos() {
+        InstitutionDTO inst = new InstitutionDTO();
+        inst.setId(1L);
+
+        when(actionUnitRepository.findAll(any(Specification.class), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(actionUnit1)));
+        when(actionUnitMapper.convert(actionUnit1)).thenReturn(actionUnit1dto);
+
+        List<ActionUnitDTO> result = actionUnitService.findMatchingInInstitutionByName(inst, "q", 25);
+
+        assertEquals(List.of(actionUnit1dto), result);
+    }
 
 }

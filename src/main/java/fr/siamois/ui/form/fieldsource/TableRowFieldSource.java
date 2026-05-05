@@ -2,10 +2,10 @@ package fr.siamois.ui.form.fieldsource;
 
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.customform.EnabledWhenJson;
-import fr.siamois.ui.form.CustomColUiDto;
-import fr.siamois.ui.form.CustomFormPanelUiDto;
-import fr.siamois.ui.form.CustomRowUiDto;
-import fr.siamois.ui.form.FormUiDto;
+import fr.siamois.ui.form.dto.CustomColUiDto;
+import fr.siamois.ui.form.dto.CustomFormPanelUiDto;
+import fr.siamois.ui.form.dto.CustomRowUiDto;
+import fr.siamois.ui.form.dto.FormUiDto;
 import fr.siamois.ui.table.FormFieldColumn;
 import fr.siamois.ui.table.TableColumn;
 import fr.siamois.ui.table.TableDefinition;

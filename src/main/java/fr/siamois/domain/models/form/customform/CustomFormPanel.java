@@ -13,6 +13,7 @@ public class CustomFormPanel implements Serializable {
     private String name;
     private List<CustomRow> rows;
     private Boolean isSystemPanel; // define by system or user?
+    private Boolean canUserAddFields;
 
     public static class Builder {
 
@@ -31,6 +32,11 @@ public class CustomFormPanel implements Serializable {
 
         public Builder isSystemPanel(boolean isSystem) {
             panel.setIsSystemPanel(isSystem);
+            return this;
+        }
+
+        public Builder canUserAddField(boolean canUserAddField) {
+            panel.setCanUserAddFields(canUserAddField);
             return this;
         }
 

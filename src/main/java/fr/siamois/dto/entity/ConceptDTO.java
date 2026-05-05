@@ -1,11 +1,17 @@
 package fr.siamois.dto.entity;
 
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
 import java.util.Objects;
 
 @Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class ConceptDTO implements Serializable {
 
     private String externalId;

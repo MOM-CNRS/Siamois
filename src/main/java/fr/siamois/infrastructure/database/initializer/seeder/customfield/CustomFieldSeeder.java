@@ -1,13 +1,13 @@
 package fr.siamois.infrastructure.database.initializer.seeder.customfield;
 
 import fr.siamois.domain.models.exceptions.database.DatabaseDataInitException;
-import fr.siamois.domain.models.form.customfield.CustomField;
-import fr.siamois.domain.models.form.customfield.CustomFieldDateTime;
-import fr.siamois.domain.models.form.customfield.CustomFieldSelectOneFromFieldCode;
-import fr.siamois.domain.models.form.customfield.CustomFieldText;
+import fr.siamois.domain.models.form.customfield.*;
+import fr.siamois.domain.models.form.measurement.UnitDefinition;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.infrastructure.database.initializer.seeder.ConceptSeeder;
+import fr.siamois.infrastructure.database.initializer.seeder.UnitDefinitionSeeder;
 import fr.siamois.infrastructure.database.repositories.form.CustomFieldRepository;
+import fr.siamois.mapper.UnitDefinitionMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -20,6 +20,8 @@ public class CustomFieldSeeder {
 
     private final CustomFieldRepository customFieldRepository;
     private final ConceptSeeder conceptSeeder;
+    private final UnitDefinitionSeeder unitDefinitionSeeder;
+    private final UnitDefinitionMapper mapper;
 
 
     public CustomField findFieldOrReturnNull(CustomFieldSeederSpec s, Concept c) {
@@ -77,6 +79,19 @@ public class CustomFieldSeeder {
 
                 else if(f instanceof CustomFieldDateTime df) {
                     df.setShowTime(false);
+                }
+
+                else if(f instanceof CustomFieldMeasurement df) {
+                    UnitDefinition unitDefinition = mapper.invertConvert(s.unitDefinitionDTO());
+
+                    unitDefinition.setConcept(
+                            conceptSeeder.findConceptOrReturnNull(
+                                    s.unitDefinitionDTO().getConcept().getVocabulary().getExternalVocabularyId(),
+                                    s.unitDefinitionDTO().getConcept().getExternalId()
+                    ));
+
+                    UnitDefinition found = unitDefinitionSeeder.findUnitOrReturnNull(unitDefinition.getConcept());
+                    df.setUnit(found);
                 }
 
                 customFieldRepository.save(f);

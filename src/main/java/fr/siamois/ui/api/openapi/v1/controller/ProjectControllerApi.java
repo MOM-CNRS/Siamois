@@ -1,28 +1,21 @@
 package fr.siamois.ui.api.openapi.v1.controller;
 
 
-import fr.siamois.domain.services.recordingunit.RecordingUnitService;
-import fr.siamois.dto.entity.RecordingUnitDTO;
-import fr.siamois.ui.api.openapi.v1.generic.response.ListMeta;
-import fr.siamois.ui.api.openapi.v1.mapper.RecordingUnitResponseMapper;
-import fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitResource;
-import fr.siamois.ui.api.openapi.v1.response.*;
+import fr.siamois.ui.api.openapi.v1.response.FindListResponse;
+import fr.siamois.ui.api.openapi.v1.response.ProjectListResponse;
+import fr.siamois.ui.api.openapi.v1.response.ProjectResponse;
+import fr.siamois.ui.api.openapi.v1.response.RecordingUnitListResponse;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.core.io.Resource;
-import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/projects")

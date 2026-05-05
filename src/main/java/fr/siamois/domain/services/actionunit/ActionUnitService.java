@@ -1,6 +1,7 @@
 package fr.siamois.domain.services.actionunit;
 
 import fr.siamois.domain.models.UserInfo;
+import fr.siamois.domain.models.ValidationStatus;
 import fr.siamois.domain.models.actionunit.ActionCode;
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.ark.Ark;
@@ -10,30 +11,36 @@ import fr.siamois.domain.models.exceptions.actionunit.ActionUnitNotFoundExceptio
 import fr.siamois.domain.models.exceptions.actionunit.FailedActionUnitSaveException;
 import fr.siamois.domain.models.exceptions.actionunit.NullActionUnitIdentifierException;
 import fr.siamois.domain.models.institution.Institution;
+import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.ArkEntityService;
-import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
+import fr.siamois.dto.FilterDTO;
 import fr.siamois.dto.entity.*;
+import fr.siamois.infrastructure.database.repositories.SpatialUnitRepository;
 import fr.siamois.infrastructure.database.repositories.actionunit.ActionCodeRepository;
 import fr.siamois.infrastructure.database.repositories.actionunit.ActionUnitRepository;
-import fr.siamois.infrastructure.database.repositories.team.TeamMemberRepository;
+import fr.siamois.infrastructure.database.repositories.specs.ActionUnitSpec;
 import fr.siamois.mapper.ActionUnitMapper;
+import fr.siamois.mapper.ConceptMapper;
 import fr.siamois.mapper.PersonMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.hibernate.Hibernate;
+import org.jspecify.annotations.NonNull;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.OffsetDateTime;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
+import java.time.ZoneId;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Service for managing Action Units.
@@ -48,47 +55,10 @@ public class ActionUnitService implements ArkEntityService {
     private final ActionUnitRepository actionUnitRepository;
     private final ConceptService conceptService;
     private final ActionCodeRepository actionCodeRepository;
-    private final TeamMemberRepository teamMemberRepository;
-    private final InstitutionService institutionService;
     private final ActionUnitMapper actionUnitMapper;
     private final PersonMapper personMapper;
-
-    /**
-     * Find all Action Units by institution, name, categories, persons, and global search.
-     *
-     * @param institutionId The ID of the institution to filter by
-     * @param name          The name to search for in Action Units
-     * @param categoryIds   The IDs of categories to filter by
-     * @param personIds     The IDs of persons to filter by
-     * @param global        The global search term to filter by
-     * @param langCode      The language code to filter by
-     * @param pageable      The pagination information
-     * @return A page of Action Units matching the criteria
-     */
-    @Transactional(readOnly = true)
-    public Page<ActionUnitDTO> findAllByInstitutionAndByNameContainingAndByCategoriesAndByGlobalContaining(
-            Long institutionId,
-            String name, Long[] categoryIds, Long[] personIds, String global, String langCode, Pageable pageable) {
-
-        Page<ActionUnit> res = actionUnitRepository.findAllByInstitutionAndByNameContainingAndByCategoriesAndByGlobalContaining(
-                institutionId, name, categoryIds, personIds, global, langCode, pageable);
-
-        //wireChildrenAndParents(res.getContent());  // Load and attach spatial hierarchy relationships
-
-
-        // load related actions
-        res.forEach(actionUnit -> {
-            Hibernate.initialize(actionUnit.getSpatialContext());
-            Hibernate.initialize(actionUnit.getRecordingUnitList());
-            Hibernate.initialize(actionUnit.getParents());
-            Hibernate.initialize(actionUnit.getChildren());
-
-        });
-
-
-        return res.map(actionUnitMapper::convert
-        );
-    }
+    private final SpatialUnitRepository spatialUnitRepository;
+    private final ConceptMapper conceptMapper;
 
     /**
      * Find all Action Units by institution, spatial unit, name, categories, persons, and global search.
@@ -113,19 +83,7 @@ public class ActionUnitService implements ArkEntityService {
 
         //wireChildrenAndParents(res.getContent());  // Load and attach spatial hierarchy relationships
 
-
-        // load related actions
-        res.forEach(actionUnit -> {
-            Hibernate.initialize(actionUnit.getSpatialContext());
-            Hibernate.initialize(actionUnit.getRecordingUnitList());
-            Hibernate.initialize(actionUnit.getParents());
-            Hibernate.initialize(actionUnit.getChildren());
-
-        });
-
-
-        return res.map(actionUnitMapper::convert
-        );
+        return res.map(actionUnitMapper::convert);
     }
 
     /**
@@ -160,22 +118,27 @@ public class ActionUnitService implements ArkEntityService {
             throws ActionUnitAlreadyExistsException {
 
 
-        Optional<ActionUnit> opt = actionUnitRepository.findByNameAndCreatedByInstitutionId(actionUnitDTO.getName(), info.getInstitution().getId());
-        if (opt.isPresent())
+
+        Optional<ActionUnit> existingName = actionUnitRepository.findByNameAndCreatedByInstitutionId(actionUnitDTO.getName(), info.getInstitution().getId());
+        if (existingName.isPresent() && (actionUnitDTO.getId() == null || !existingName.get().getId().equals(actionUnitDTO.getId()))) {
             throw new ActionUnitAlreadyExistsException(
                     "name",
-                    String.format("Action unit with name %s already exist in institution %s", actionUnitDTO.getName(), info.getInstitution().getName()));
+                    String.format("Action unit with name %s already exist", actionUnitDTO.getName()));
+        }
 
-        opt = actionUnitRepository.findByIdentifierAndCreatedByInstitutionId(actionUnitDTO.getIdentifier(), info.getInstitution().getId());
-        if (opt.isPresent())
+        Optional<ActionUnit> existingId = actionUnitRepository.findByIdentifierAndCreatedByInstitutionId(actionUnitDTO.getIdentifier(), info.getInstitution().getId());
+        if (existingId.isPresent() && (actionUnitDTO.getId() == null || !existingId.get().getId().equals(actionUnitDTO.getId()))) {
             throw new ActionUnitAlreadyExistsException(
                     "identifier",
-                    String.format("Action unit with identifier %s already exist in institution %s", actionUnitDTO.getIdentifier(), info.getInstitution().getName()));
-
+                    String.format("Action unit with identifier %s already exist", actionUnitDTO.getIdentifier()));
+        }
 
 
 
         actionUnitDTO.setCreatedByInstitution(info.getInstitution());
+        if(actionUnitDTO.getCreationTime() == null) {
+            actionUnitDTO.setCreationTime(OffsetDateTime.now(ZoneId.systemDefault()));
+        }
 
         // Generate unique identifier if not presents
         if (actionUnitDTO.getFullIdentifier() == null) {
@@ -191,6 +154,47 @@ public class ActionUnitService implements ArkEntityService {
         actionUnit.setType(type);
         Person user = personMapper.invertConvert(info.getUser());
         actionUnit.setCreatedBy(user);
+
+        if(actionUnitDTO.getMainLocation() != null && actionUnitDTO.getMainLocation().getId() == null) {
+            SpatialUnit toSave = new SpatialUnit();
+            toSave.setCategory(actionUnit.getMainLocation().getCategory());
+            toSave.setName(actionUnitDTO.getMainLocation().getName());
+            toSave.setCreatedBy(actionUnit.getCreatedBy());
+            toSave.setCode(actionUnitDTO.getMainLocation().getCode());
+            toSave.setCreatedByInstitution(actionUnit.getCreatedByInstitution());
+            toSave = spatialUnitRepository.save(toSave);
+            actionUnit.setMainLocation(toSave);
+        }
+        if (actionUnitDTO.getSpatialContext() != null) {
+            Set<SpatialUnit> persistentContext = new HashSet<>();
+
+            for (SpatialUnitSummaryDTO summary : actionUnitDTO.getSpatialContext()) {
+                if (summary.getId() == null) {
+                    // CAS : Nouveau lieu (ex: issu de l'API INSEE)
+                    SpatialUnit toSave = new SpatialUnit();
+                    toSave.setName(summary.getName());
+                    toSave.setCode(summary.getCode());
+                    toSave.setCategory(conceptMapper.invertConvert(summary.getCategory()));
+
+                    // On réutilise les métadonnées de l'unité parente
+                    toSave.setCreatedBy(actionUnit.getCreatedBy());
+                    toSave.setCreatedByInstitution(actionUnit.getCreatedByInstitution());
+
+                    // Sauvegarde immédiate pour obtenir un ID
+                    toSave = spatialUnitRepository.save(toSave);
+                    persistentContext.add(toSave);
+                } else {
+                    // CAS : Lieu existant en base
+                    spatialUnitRepository.findById(summary.getId())
+                            .ifPresent(persistentContext::add);
+                }
+            }
+
+            // Mise à jour de la relation ManyToMany ou OneToMany
+            actionUnit.setSpatialContext(persistentContext);
+        }
+
+
 
         try {
             return actionUnitRepository.save(actionUnit);
@@ -251,6 +255,11 @@ public class ActionUnitService implements ArkEntityService {
      * @return The saved ActionUnit
      */
     @Override
+    @CacheEvict({
+            "InstitutionHasRootChildrenAU",
+            "InstitutionHasRootChildrenSU",
+            "ActionUnitHasChildrenInInstitution"
+    })
     public AbstractEntityDTO save(AbstractEntityDTO toSave) {
         try {
             return actionUnitMapper.convert(
@@ -287,8 +296,80 @@ public class ActionUnitService implements ArkEntityService {
      * @param institution The institution to find ActionUnits for
      * @return A set of ActionUnits created by the institution
      */
-    public Set<ActionUnit> findAllByInstitution(Institution institution) {
-        return actionUnitRepository.findByCreatedByInstitution(institution);
+    public Set<ActionUnitDTO> findAllByInstitution(InstitutionDTO institution) {
+        return actionUnitRepository.findByCreatedByInstitutionId(institution.getId())
+                .stream()
+                .map(actionUnitMapper::convert)
+                .collect(Collectors.toSet());
+    }
+
+    /**
+     * Find the next ActionUnit created by a specific institution after the given one.
+     * If there is no next, returns the oldest one (wraps around).
+     *
+     * @param institution The institution to find ActionUnits for
+     * @param current The current ActionUnit to find the next one from
+     * @return The next ActionUnitDTO, or the oldest one if there is no next
+     */
+    public ActionUnitDTO findNextByInstitution(InstitutionDTO institution, ActionUnitDTO current) {
+        return actionUnitRepository
+                .findNext(
+                        institution.getId(), current.getCreationTime(),current.getId())
+                .map(actionUnitMapper::convert)
+                .orElseGet(() -> actionUnitRepository
+                        .findFirst(institution.getId())
+                        .map(actionUnitMapper::convert)
+                        .orElse(current)
+                );
+    }
+
+    /**
+     * Find the previous ActionUnit created by a specific institution before the given one.
+     * If there is no previous, returns the most recent one (wraps around).
+     *
+     * @param institution The institution to find ActionUnits for
+     * @param current The current ActionUnit to find the previous one from
+     * @return The previous ActionUnitDTO, or the most recent one if there is no previous
+     */
+    public ActionUnitDTO findPreviousByInstitution(InstitutionDTO institution, ActionUnitDTO current) {
+        return actionUnitRepository
+                .findPrevious(
+                        institution.getId(), current.getCreationTime(),current.getId())
+                .map(actionUnitMapper::convert)
+                .orElseGet(() -> actionUnitRepository
+                        .findLast(institution.getId())
+                        .map(actionUnitMapper::convert)
+                        .orElse(current)
+                );
+    }
+
+    /**
+     * Toggle the validated status of an ActionUnit.
+     *
+     * @param actionUnitId The id of the ActionUnit to toggle
+     * @return The updated ActionUnitDTO
+     */
+    public ActionUnitDTO toggleValidated(Long actionUnitId) {
+        ActionUnit actionUnit = actionUnitRepository.findById(actionUnitId)
+                .orElseThrow(() -> new ActionUnitNotFoundException("ActionUnit not found with id: " + actionUnitId));
+
+        // Cycle through the enum values
+        switch (actionUnit.getValidated()) {
+            case INCOMPLETE:
+                actionUnit.setValidated(ValidationStatus.COMPLETE);
+                break;
+            case COMPLETE:
+                actionUnit.setValidated(ValidationStatus.VALIDATED);
+                break;
+            case VALIDATED:
+                actionUnit.setValidated(ValidationStatus.INCOMPLETE);
+                break;
+            default:
+                throw new IllegalStateException("Unknown status: " + actionUnit.getValidated());
+        }
+
+
+        return actionUnitMapper.convert(actionUnitRepository.save(actionUnit));
     }
 
 
@@ -336,8 +417,7 @@ public class ActionUnitService implements ArkEntityService {
      * @return The list of ActionUnit associated with the institution
      */
     public List<ActionUnitDTO> findAllWithoutParentsByInstitution(Long institutionId) {
-        List<ActionUnit> res = actionUnitRepository.findRootsByInstitution(institutionId);
-        initializeActionUnitCollections(res);
+        List<ActionUnit> res = actionUnitRepository.findRootsByInstitution(institutionId, 50L);
         return res.stream()
                 .map(actionUnitMapper::convert)
                 .toList();
@@ -352,7 +432,6 @@ public class ActionUnitService implements ArkEntityService {
      */
     public List<ActionUnitDTO> findChildrenByParentAndInstitution(Long parentId, Long institutionId) {
         List<ActionUnit> res = actionUnitRepository.findChildrenByParentAndInstitution(parentId, institutionId);
-        initializeActionUnitCollections(res);
         return res.stream()
                 .map(actionUnitMapper::convert)
                 .toList();
@@ -366,23 +445,14 @@ public class ActionUnitService implements ArkEntityService {
      */
     public List<ActionUnitDTO> findBySpatialContext(Long spatialId) {
         List<ActionUnit> res = actionUnitRepository.findBySpatialContext(spatialId);
-        initializeActionUnitCollections(res);
         return res.stream()
                 .map(actionUnitMapper::convert)
                 .toList();
     }
 
-    // Reusable method to initialize collections
-    private void initializeActionUnitCollections(List<ActionUnit> actionUnits) {
-        actionUnits.forEach(au -> {
-            Hibernate.initialize(au.getParents());
-            Hibernate.initialize(au.getChildren());
-            Hibernate.initialize(au.getRecordingUnitList());
-        });
-    }
 
-    public List<ActionUnitDTO> findByTeamMember(PersonDTO member, InstitutionDTO institution) {
-        List<ActionUnit> actionUnits = actionUnitRepository.findByTeamMemberOrCreatorAndInstitution(member.getId(), institution.getId());
+    public List<ActionUnitDTO> findByTeamMember(PersonDTO member, InstitutionDTO institution, long limit) {
+        List<ActionUnit> actionUnits = actionUnitRepository.findByTeamMemberOrCreatorAndInstitutionLimit(member.getId(), institution.getId(), limit);
         return actionUnits.stream()
                 .map(actionUnitMapper::convert)
                 .toList();
@@ -396,6 +466,7 @@ public class ActionUnitService implements ArkEntityService {
      * @param institutionId the institution ID
      * @return True if they are children
      */
+    @Cacheable("ActionUnitHasChildrenInInstitution")
     public boolean existsChildrenByParentAndInstitution(Long parentId, Long institutionId) {
         return actionUnitRepository.existsChildrenByParentAndInstitution(parentId, institutionId);
     }
@@ -407,11 +478,117 @@ public class ActionUnitService implements ArkEntityService {
      * @param institutionId the institution ID
      * @return True if they are children
      */
+    @Cacheable("InstitutionHasRootChildrenAU")
     public boolean existsRootChildrenByInstitution(Long institutionId) {
         return actionUnitRepository.existsRootChildrenByInstitution(institutionId);
     }
 
+    @Cacheable("InstitutionHasRootChildrenSU")
     public boolean existsRootChildrenByRelatedSpatialUnit(Long spatialUnitId) {
         return actionUnitRepository.existsRootChildrenByRelatedSpatialUnit(spatialUnitId);
+    }
+
+    public int countRootsInInstitution(Long institutionId) {
+        return actionUnitRepository.countRootsInInstitution(institutionId);
+    }
+
+    public List<ActionUnit> findRootsByInstitution(Long institutionId, int first, int pageSize) {
+        return actionUnitRepository.findRootsByInstitution(institutionId, first, pageSize);
+    }
+
+    public List<ActionUnit> findRootsByInstitutionAndName(Long institutionId, String name, int first, int pageSize) {
+        return actionUnitRepository.findRootsByInstitutionAndName(institutionId, name, first, pageSize);
+    }
+
+    public int countRootsByInstitutionAndName(Long institutionId, String name) {
+        return actionUnitRepository.countRootsByInstitutionAndName(institutionId, name);
+    }
+
+    public boolean isRoot(Long actionUnitId, Long institutionId) {
+        return actionUnitRepository.isRoot(actionUnitId, institutionId);
+    }
+
+    public Page<ActionUnitDTO> searchActionUnits(InstitutionDTO institutionDTO, FilterDTO filters, Pageable pageable) {
+        Specification<ActionUnit> specs = prepareSpecs(institutionDTO, filters);
+
+        Page<ActionUnit> res = actionUnitRepository.findAll(specs, pageable);
+
+        if (filters.containsColumn("name")) {
+            String nameContains = filters.valueOfAsString("name");
+            log.trace("{} éléments trouvées pour {} (Page {}/{})", res.getTotalElements(), nameContains,res.getNumber() + 1, res.getTotalPages());
+        }
+
+        return res.map(actionUnitMapper::convert);
+    }
+
+    public int countSearchResults(InstitutionDTO institutionDTO, FilterDTO filters) {
+        Specification<ActionUnit> specs = prepareSpecs(institutionDTO, filters);
+        return Math.toIntExact(actionUnitRepository.count(specs));
+    }
+
+    private Specification<ActionUnit> prepareSpecs(@NonNull InstitutionDTO institutionDTO, @NonNull FilterDTO filters) {
+        Specification<ActionUnit> base = ActionUnitSpec.belongsToInstitution(institutionDTO.getId());
+
+        if (filters.isRootOnly()) {
+            if (filters.hasUserFilters()) {
+                Collection<Long> closure = resolveAncestorClosure(institutionDTO, filters);
+                if (closure.isEmpty()) {
+                    return base.and((root, q, cb) -> cb.disjunction());
+                }
+                return base.and(ActionUnitSpec.unitIsRoot()).and(ActionUnitSpec.idIn(closure));
+            }
+            return base.and(ActionUnitSpec.unitIsRoot());
+        }
+
+        return base.and(userFilterSpecs(filters));
+    }
+
+    private Specification<ActionUnit> userFilterSpecs(FilterDTO filters) {
+        Specification<ActionUnit> specs = Specification.where(null);
+
+        FilterDTO.FilterInfo globalFilter = filters.filterOf(ActionUnitSpec.GLOBAL_FILTER);
+        FilterDTO.FilterInfo nameFilter = filters.filterOf(ActionUnitSpec.NAME_FILTER);
+
+        if (nameFilter != null && nameFilter.getType() == FilterDTO.FilterType.CONTAINS) {
+            specs = specs.and(ActionUnitSpec.nameContaining(nameFilter.valueAsString()));
+        } else if (globalFilter != null && globalFilter.getType() == FilterDTO.FilterType.CONTAINS) {
+            specs = specs.and(ActionUnitSpec.nameContaining(globalFilter.valueAsString()));
+        }
+
+        return specs;
+    }
+
+    private Collection<Long> resolveAncestorClosure(InstitutionDTO institutionDTO, FilterDTO filters) {
+        if (filters.getAncestorClosure() != null) {
+            return filters.getAncestorClosure();
+        }
+        Specification<ActionUnit> matchSpecs = ActionUnitSpec.belongsToInstitution(institutionDTO.getId())
+                .and(userFilterSpecs(filters));
+        List<Long> matchIds = actionUnitRepository.findAll(matchSpecs).stream()
+                .map(ActionUnit::getId)
+                .toList();
+        Set<Long> closure = matchIds.isEmpty()
+                ? Collections.emptySet()
+                : new HashSet<>(actionUnitRepository.findAncestorClosure(matchIds.toArray(Long[]::new)));
+        filters.setAncestorClosure(closure);
+        filters.setMatchIds(new HashSet<>(matchIds));
+        return closure;
+    }
+
+    public Set<Long> computeAncestorClosure(InstitutionDTO institutionDTO, FilterDTO filters) {
+        if (!filters.isRootOnly() || !filters.hasUserFilters()) {
+            return Collections.emptySet();
+        }
+        return new HashSet<>(resolveAncestorClosure(institutionDTO, filters));
+    }
+
+    public List<ActionUnitDTO> findMatchingInInstitutionByName(InstitutionDTO institution, String query, int limit) {
+        Specification<ActionUnit> specs = ActionUnitSpec.belongsToInstitution(institution.getId());
+        specs = specs.and(ActionUnitSpec.nameContaining(query));
+
+        return actionUnitRepository.findAll(specs, PageRequest.ofSize(limit))
+                .stream()
+                .map(actionUnitMapper::convert)
+                .toList();
     }
 }

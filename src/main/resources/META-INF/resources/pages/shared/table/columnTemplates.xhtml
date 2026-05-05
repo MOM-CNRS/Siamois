@@ -6,16 +6,18 @@
                 xmlns:cellheader="http://java.sun.com/jsf/composite/pages/shared/cellheader"
 >
 
+    <!--@elvariable id="column" type="fr.siamois.ui.table.FormFieldColumn"-->
+    <!--@elvariable id="tableModel" type="fr.siamois.ui.table.EntityTableViewModel"-->
+    
     <!-- Header -->
     <f:facet name="header">
-        <p:outputPanel rendered="#{column.type ne 'COMMAND_LINK'}">
+        <p:outputPanel rendered="#{column.type ne 'COMMAND_LINK'}" layout="inline">
             #{langBean.msg(column.headerKey)}
         </p:outputPanel>
-        <p:outputPanel rendered="#{column.type eq 'COMMAND_LINK'}">
+        <p:outputPanel rendered="#{column.type eq 'COMMAND_LINK'}" layout="inline">
 
         </p:outputPanel>
     </f:facet>
-
     <!-- Row Context -->
     <ui:param name="rowContext" value="#{tableModel.getRowContext(item)}"/>
 
@@ -37,31 +39,9 @@
             <ui:param name="hasAutoGenerationFunction" value="false"/>
             <ui:param name="onGenerateValue" value="#{null}"/>
             <ui:param name="updateTargetsOnBlur" value="#{updateTableString}" />
+            <!--@elvariable id="canUserEditRow" type="java.lang.Boolean"-->
             <ui:param name="allowEdit" value="#{canUserEditRow}"/>
         </ui:include>
-    </ui:fragment>
-
-    <!-- COMMAND_LINK Column -->
-    <ui:fragment rendered="#{column.type eq 'COMMAND_LINK'}">
-        <p:commandButton
-                id="openRowLink"
-                styleClass="hidden-column"
-                action="#{tableModel.handleAction(column, item)}"
-                onstart="#{column.onstartJs}"
-                icon="bi bi-layout-sidebar-inset-reverse"
-                oncomplete="#{tableModel.getOnCompleteJs(item)}"
-                >
-            <f:attribute name="mode" value="mode" />
-        </p:commandButton>
-        <p:contextMenu for="openRowLink">
-            <p:menuitem value="Ouvrir dans un panel" disabled="true" icon="bi bi-box-arrow-in-up"/>
-            <p:menuitem value="Ouvrir en mode Focus" disabled="true" icon="bi bi-arrows-angle-expand"/>
-            <p:menuitem value="Ouvrir dans l'aperçu lateral" icon="bi bi-layout-sidebar-inset-reverse"
-                        action="#{tableModel.handleAction(column, item)}"
-                        onstart="#{column.onstartJs}"
-                        oncomplete="#{tableModel.getOnCompleteJs(item)}"
-            />
-        </p:contextMenu>
     </ui:fragment>
 
     <!-- RELATION Column -->
@@ -79,13 +59,6 @@
                     update="#{column.updateExpr}"
                     onstart="#{column.onstartJs}"
                     oncomplete="#{column.oncompleteJs}"/>
-            <p:commandButton
-                    rendered="#{column.addEnabled and tableModel.isRendered(column, column.addRenderedKey, item)}"
-                    styleClass="sia-icon-btn"
-                    icon="#{column.addIcon}"
-                    action="#{tableModel.handleRelationAction(column, item, panelIndex, 'ADD_RELATION')}"
-                    oncomplete="PF('newUnitDiag').show()"
-                    update="newUnitForm"/>
         </div>
     </ui:fragment>
 </ui:composition>

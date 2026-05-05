@@ -34,12 +34,16 @@ import static fr.siamois.ui.bean.panel.models.panel.single.AbstractSingleEntity.
 
 @Data
 @Entity
-@Table(name = "recording_unit")
+@Table(name = "recording_unit", indexes = {
+        @Index(columnList = "full_identifier", name = "idx_ru_full_identifier"),
+        @Index(columnList = "fk_institution_id", name = "idx_ru_institution")
+})
 @NoArgsConstructor
 @Audited
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class RecordingUnit extends RecordingUnitParent implements ArkEntity, ReferencableEntity {
 
+    @SuppressWarnings("CopyConstructorMissesField")
     public RecordingUnit(RecordingUnit recordingUnit) {
         setType(recordingUnit.getType());
         setActionUnit(recordingUnit.getActionUnit());
@@ -119,6 +123,15 @@ public class RecordingUnit extends RecordingUnitParent implements ArkEntity, Ref
 
     @FieldCode
     public static final String STRATI_FIELD_CODE = "SIARU.STRATI";
+
+    @FieldCode
+    public static final String EROSION_SHAPE_FIELD_CODE = "SIARU.EROSIONSHAPE";
+
+    @FieldCode
+    public static final String EROSION_PROFILE_FIELD_CODE = "SIARU.EROSIONPROFILE";
+
+    @FieldCode
+    public static final String EROSION_ORIENTATION_FIELD_CODE = "SIARU.EROSIONORIENTATION";
 
     // Setters/Removers
     @Override
@@ -427,7 +440,6 @@ public class RecordingUnit extends RecordingUnitParent implements ArkEntity, Ref
     @JsonIgnore
     public void removeRelationshipAsUnit1(StratigraphicRelationship rel) {
         relationshipsAsUnit1.remove(rel);
-        rel.setUnit1(null); // orphanRemoval → DELETE
     }
     @JsonIgnore
     public void addRelationshipAsUnit2(StratigraphicRelationship rel) {
@@ -437,7 +449,6 @@ public class RecordingUnit extends RecordingUnitParent implements ArkEntity, Ref
     @JsonIgnore
     public void removeRelationshipAsUnit2(StratigraphicRelationship rel) {
         relationshipsAsUnit2.remove(rel);
-        rel.setUnit2(null);
     }
 
 }

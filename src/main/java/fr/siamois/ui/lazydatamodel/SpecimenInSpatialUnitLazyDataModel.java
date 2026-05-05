@@ -1,6 +1,7 @@
 package fr.siamois.ui.lazydatamodel;
 
 import fr.siamois.domain.services.specimen.SpecimenService;
+import fr.siamois.dto.FilterDTO;
 import fr.siamois.dto.entity.SpatialUnitDTO;
 import fr.siamois.dto.entity.SpecimenDTO;
 import fr.siamois.ui.bean.LangBean;
@@ -10,8 +11,6 @@ import org.springframework.data.domain.Pageable;
 
 
 public class SpecimenInSpatialUnitLazyDataModel extends BaseSpecimenLazyDataModel {
-
-
 
     // locals
     @Getter
@@ -30,14 +29,22 @@ public class SpecimenInSpatialUnitLazyDataModel extends BaseSpecimenLazyDataMode
                                               Long[] personIds,
                                               String globalFilter,
                                               Pageable pageable) {
+        return Page.empty();
+    }
+
+
+    @Override
+    protected Page<SpecimenDTO> loadData(FilterDTO filter, Pageable pageable) {
         return specimenService.findAllBySpatialUnitAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
                 spatialUnit.getId(),
-                fullIdentifierFilter, categoryIds, globalFilter,
+                null, null, null,
                 langBean.getLanguageCode(),
                 pageable
         );
     }
 
-
-
+    @Override
+    protected int countWithFilter(FilterDTO filters) {
+        return 0;
+    }
 }

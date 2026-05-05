@@ -1,8 +1,7 @@
 package fr.siamois.ui.api.openapi.v1.mapper;
 
-import fr.siamois.ui.api.openapi.v1.resource.recordingunit.*;
 import fr.siamois.dto.entity.RecordingUnitDTO;
-
+import fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitResource;
 import fr.siamois.ui.mapper.adapter.ConversionServiceAdapter;
 import org.mapstruct.InjectionStrategy;
 import org.mapstruct.Mapper;

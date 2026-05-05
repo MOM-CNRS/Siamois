@@ -8,8 +8,6 @@ import fr.siamois.ui.api.openapi.v1.resource.organization.OrganizationResourceId
 import fr.siamois.ui.api.openapi.v1.resource.project.PlaceResourceIdentifier;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.time.OffsetDateTime;
 @Data
 @NoArgsConstructor
 public class PlaceResource extends PlaceResourceIdentifier {

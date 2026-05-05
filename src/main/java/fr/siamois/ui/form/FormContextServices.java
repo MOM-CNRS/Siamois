@@ -1,12 +1,19 @@
 package fr.siamois.ui.form;
 
+import fr.siamois.domain.services.GeoApiService;
+import fr.siamois.domain.services.GeoPlatService;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
+import fr.siamois.domain.services.form.CustomFieldMeasurementService;
 import fr.siamois.domain.services.form.FormService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitTreeService;
 import fr.siamois.domain.services.specimen.SpecimenService;
+import fr.siamois.domain.services.vocabulary.ConceptService;
+import fr.siamois.mapper.ConceptMapper;
+import fr.siamois.mapper.PlaceSuggestionMapper;
 import fr.siamois.ui.bean.LangBean;
+import fr.siamois.ui.bean.SessionSettingsBean;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.convert.ConversionService;
@@ -25,5 +32,11 @@ public class FormContextServices {
     private final RecordingUnitService recordingUnitService;
     private final ActionUnitService actionUnitService;
     private final ConversionService conversionService;
-
+    private final SessionSettingsBean sessionSettingsBean;
+    private final GeoPlatService geoPlatService;
+    private final GeoApiService geoApiService;
+    private final ConceptService conceptService;
+    private final ConceptMapper conceptMapper;
+    private final PlaceSuggestionMapper placeSuggestionMapper;
+    private final CustomFieldMeasurementService customFieldMeasurementService;
 }
