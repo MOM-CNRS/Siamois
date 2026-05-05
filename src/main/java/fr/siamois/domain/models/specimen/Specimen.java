@@ -40,7 +40,6 @@ public class Specimen extends TraceableEntity implements ArkEntity {
 
     @SuppressWarnings("CopyConstructorMissesField")
     public Specimen(@NonNull Specimen specimen) {
-        setType(specimen.getType());
         setRecordingUnit(specimen.getRecordingUnit());
         setCategory(specimen.getCategory());
         setCreatedByInstitution(specimen.getCreatedByInstitution());
@@ -104,13 +103,22 @@ public class Specimen extends TraceableEntity implements ArkEntity {
     protected Concept category; // lot, object, echantillon
 
     @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "fk_specimen_type")
-    protected Concept type;
-
-    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "fk_interpretation")
     protected Concept interpretation;
 
+    @ManyToMany
+    @JoinTable(
+            name = "specimen_material",
+            joinColumns = @JoinColumn(name = "fk_specimen_id"),
+            inverseJoinColumns = @JoinColumn(name = "fk_material_id"))
+    protected Set<Concept> material;
+
+    @ManyToMany
+    @JoinTable(
+            name = "specimen_material_class",
+            joinColumns = @JoinColumn(name = "fk_specimen_id"),
+            inverseJoinColumns = @JoinColumn(name = "fk_material_class__id"))
+    protected Set<Concept> materialClass;
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "fk_collection_method")
@@ -128,8 +136,25 @@ public class Specimen extends TraceableEntity implements ArkEntity {
     protected Integer identifier;
 
     @NotNull
+    @Column(name = "isolat_identifier")
+    protected String isolat_identifier;
+
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "fk_chronological_attribution")
+    protected Concept chronologicalAttribution;
+
+    @Column(name = "number_of_element")
+    protected Integer numberOfElements;
+
+    @NotNull
     @Column(name = "full_identifier")
     protected String fullIdentifier;
+
+    @Column(name = "description", length = 5000)
+    protected String description;
+
+    @Column(name = "comments", length = 5000)
+    protected String comments;
 
     @Override
     public boolean equals(Object o) {
