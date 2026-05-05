@@ -48,13 +48,7 @@ public abstract class TraceableEntity implements Serializable {
     @Column(name = "validated_at")
     protected OffsetDateTime validatedAt ;
 
-    @OneToOne(cascade = CascadeType.ALL, orphanRemoval = true)
-    @JoinColumn(name = "fk_z_sup")
-    private MeasurementAnswer zInf;
 
-    @OneToOne(cascade = CascadeType.ALL, orphanRemoval = true)
-    @JoinColumn(name = "fk_z_inf")
-    private MeasurementAnswer zSup;
 
     @ManyToOne
     @JoinColumn(name = "fk_validated_by")

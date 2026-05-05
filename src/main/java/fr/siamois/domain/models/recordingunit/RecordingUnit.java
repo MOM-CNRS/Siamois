@@ -16,6 +16,7 @@ import fr.siamois.domain.models.form.customform.CustomForm;
 import fr.siamois.domain.models.form.customform.CustomFormPanel;
 import fr.siamois.domain.models.form.customform.CustomRow;
 import fr.siamois.domain.models.form.customformresponse.CustomFormResponse;
+import fr.siamois.domain.models.form.measurement.MeasurementAnswer;
 import fr.siamois.domain.models.specimen.Specimen;
 import fr.siamois.domain.models.vocabulary.Concept;
 import jakarta.persistence.*;
@@ -31,6 +32,7 @@ import java.util.Set;
 
 import static fr.siamois.ui.bean.panel.models.panel.single.AbstractSingleEntity.COLUMN_CLASS_NAME;
 import static fr.siamois.ui.bean.panel.models.panel.single.AbstractSingleEntity.SYSTEM_THESO;
+import static org.hibernate.envers.RelationTargetAuditMode.NOT_AUDITED;
 
 @Data
 @Entity
@@ -82,6 +84,16 @@ public class RecordingUnit extends RecordingUnitParent implements ArkEntity, Ref
     @ManyToMany(mappedBy = "children",fetch = FetchType.LAZY)
     @JsonIgnore
     private Set<RecordingUnit> parents = new HashSet<>();
+
+    @OneToOne(cascade = CascadeType.ALL, orphanRemoval = true)
+    @JoinColumn(name = "fk_z_sup")
+    @Audited(targetAuditMode = NOT_AUDITED)
+    private MeasurementAnswer zInf;
+
+    @OneToOne(cascade = CascadeType.ALL, orphanRemoval = true)
+    @JoinColumn(name = "fk_z_inf")
+    @Audited(targetAuditMode = NOT_AUDITED)
+    private MeasurementAnswer zSup;
 
 
     @ManyToMany(fetch = FetchType.EAGER)

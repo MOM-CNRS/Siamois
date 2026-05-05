@@ -10,6 +10,7 @@ import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.document.Document;
 import fr.siamois.domain.models.exceptions.actionunit.NullActionUnitIdentifierException;
 import fr.siamois.domain.models.form.customform.CustomForm;
+import fr.siamois.domain.models.form.measurement.MeasurementAnswer;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.specimen.form.SpecimenDetailsForm;
 import fr.siamois.domain.models.specimen.form.SpecimenNewUnitForm;
@@ -27,6 +28,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+
+import static org.hibernate.envers.RelationTargetAuditMode.NOT_AUDITED;
 
 @Data
 @Entity
@@ -124,6 +127,11 @@ public class Specimen extends TraceableEntity implements ArkEntity {
     @JoinColumn(name = "fk_collection_method")
     protected Concept collectionMethod;
 
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "fk_sanitary_state")
+    protected Concept sanitaryState;
+
+
     @Column(name = "collection_date")
     protected OffsetDateTime collectionDate;
 
@@ -145,6 +153,11 @@ public class Specimen extends TraceableEntity implements ArkEntity {
 
     @Column(name = "number_of_element")
     protected Integer numberOfElements;
+
+    @OneToOne(cascade = CascadeType.ALL, orphanRemoval = true)
+    @JoinColumn(name = "fk_weight")
+    @Audited(targetAuditMode = NOT_AUDITED)
+    private MeasurementAnswer weight;
 
     @NotNull
     @Column(name = "full_identifier")
