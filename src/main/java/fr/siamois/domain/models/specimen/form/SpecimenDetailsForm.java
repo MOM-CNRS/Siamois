@@ -58,7 +58,7 @@ public class SpecimenDetailsForm extends SpecimenForm {
                                                 .addColumn(new CustomCol.Builder()
                                                         .readOnly(false)
                                                         .className(COLUMN_CLASS_NAME)
-                                                        .field(containsField)
+                                                        .field(containerField)
                                                         .build())
                                                 .addColumn(new CustomCol.Builder()
                                                         .readOnly(false)

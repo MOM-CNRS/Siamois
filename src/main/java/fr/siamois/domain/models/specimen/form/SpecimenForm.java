@@ -389,6 +389,16 @@ public abstract class SpecimenForm {
             .concept(weightConcept)
             .build();
 
+    @Transient
+    @JsonIgnore
+    protected static CustomFieldSelectMultipleContainer containerField =  CustomFieldSelectMultipleContainer.builder()
+            .label("specimen.field.containers")
+            .isSystemField(true)
+            .id(23L)
+            .valueBinding("containers")
+            .concept(containsConcept)
+            .build();
+
 
 
 }

@@ -32,7 +32,8 @@ public final class CustomFieldAnswerFactory {
                     Map.entry(CustomFieldSelectOnePerson.class, f -> new CustomFieldAnswerSelectOnePersonViewModel()),
                     Map.entry(CustomFieldStratigraphy.class, f -> new CustomFieldAnswerStratigraphyViewModel()),
                     Map.entry(CustomFieldSelectMultipleRecordingUnit.class, f -> new CustomFieldAnswerSelectMultipleRecordingUnitViewModel()),
-                    Map.entry(CustomFieldMeasurement.class, f -> new CustomFieldAnswerMeasurementViewModel())
+                    Map.entry(CustomFieldMeasurement.class, f -> new CustomFieldAnswerMeasurementViewModel()),
+                    Map.entry(CustomFieldSelectMultipleContainer.class, f -> new CustomFieldAnswerSelectMultipleContainerViewModel())
             );
 
     public static CustomFieldAnswerViewModel instantiateAnswerForField(CustomField field) {

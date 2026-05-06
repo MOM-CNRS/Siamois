@@ -172,10 +172,30 @@
 
         </c:if>
 
-        <c:if test="#{col.field['class'].simpleName eq 'CustomFieldSelectMultipleSpatialUnitTree'}">
+        <c:if test="#{col.field['class'].simpleName eq 'CustomFieldSelectMultipleContainer'}">
+
+            <siaInplace:containerMultiple
+                    id="spatialMultiple"
+                    rendered="#{col.field['class'].simpleName eq 'CustomFieldSelectMultipleContainer'}"
+                    hasBeenModified="#{hasBeenModified}"
+                    field="#{col.field}"
+                    formCtx="#{formCtx}"
+                    multiple="true"
+                    mode="#{mode}"
+                    panelId="#{panelId}"
+                    onModified="#{formCtx.onFieldAnswerModifiedListener}"
+                    updateTargetsOnBlur="#{panelHeaderUpdateId}"
+                    required="#{col.required}"
+                    label="#{spatialUnitFieldBean.resolveCustomFieldLabel(col.field)}"
+                    answer="#{answer}"
+            />
+
+        </c:if>
+
+        <c:if test="#{col.field['class'].simpleName eq 'CustomfIELD'}">
 
             <siaInplace:spatialMultiple
-                    id="spatialMultiple"
+                    id="containerMultiple"
                     rendered="#{col.field['class'].simpleName eq 'CustomFieldSelectMultipleSpatialUnitTree'}"
                     hasBeenModified="#{hasBeenModified}"
                     field="#{col.field}"

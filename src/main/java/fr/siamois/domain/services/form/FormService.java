@@ -78,21 +78,6 @@ public class FormService {
         return optForm.orElseGet(() -> formRepository.findEffectiveFormByTypeAndInstitution(null, institution.getId()).orElse(null));
     }
 
-    // --------- Answer creators
-
-    private static final Map<Class<? extends CustomField>, Supplier<? extends CustomFieldAnswer>> ANSWER_CREATORS =
-            Map.ofEntries(
-                    Map.entry(CustomFieldText.class, CustomFieldAnswerText::new),
-                    Map.entry(CustomFieldSelectOneFromFieldCode.class, CustomFieldAnswerSelectOneFromFieldCode::new),
-                    Map.entry(CustomFieldSelectMultiplePerson.class, CustomFieldAnswerSelectMultiplePerson::new),
-                    Map.entry(CustomFieldDateTime.class, CustomFieldAnswerDateTime::new),
-                    Map.entry(CustomFieldSelectOneActionUnit.class, CustomFieldAnswerSelectOneActionUnit::new),
-                    Map.entry(CustomFieldSelectOneSpatialUnit.class, CustomFieldAnswerSelectOneSpatialUnit::new),
-                    Map.entry(CustomFieldSelectMultipleSpatialUnitTree.class, CustomFieldAnswerSelectMultipleSpatialUnitTree::new),
-                    Map.entry(CustomFieldSelectOneActionCode.class, CustomFieldAnswerSelectOneActionCode::new),
-                    Map.entry(CustomFieldInteger.class, CustomFieldAnswerInteger::new),
-                    Map.entry(CustomFieldSelectOnePerson.class, CustomFieldAnswerSelectOnePerson::new)
-            );
 
     /**
      * Create or reuse a CustomFormResponse for the given entity + field source.
@@ -373,6 +358,7 @@ public class FormService {
         handlers.put(CustomFieldAnswerSelectMultipleSpatialUnitTreeViewModel.class, this::handleSpatialUnitSet);
         handlers.put(CustomFieldAnswerSelectMultipleRecordingUnitViewModel.class, this::handleRecordingUnitSet);
         handlers.put(CustomFieldAnswerMeasurementViewModel.class, this::handleMeasurement);
+        handlers.put(CustomFieldAnswerSelectMultipleContainerViewModel.class, this::handleContainerSet);
 
         Class<? extends CustomFieldAnswerViewModel> answerClass = answer.getClass();
         BiConsumer<CustomFieldAnswerViewModel, Object> handler = handlers.get(answerClass);
@@ -482,6 +468,12 @@ public class FormService {
                     .toList();
 
             treeAnswer.setValue(new ArrayList<>(dtos));
+        }
+    }
+
+    private void handleContainerSet(CustomFieldAnswerViewModel answer, Object value) {
+        if (answer instanceof CustomFieldAnswerSelectMultipleContainerViewModel containerAnswer && value instanceof Set<?> values) {
+            containerAnswer.setValue((Set<ContainerDTO>) values);
         }
     }
 
