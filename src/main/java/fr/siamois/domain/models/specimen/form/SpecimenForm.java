@@ -2,6 +2,7 @@ package fr.siamois.domain.models.specimen.form;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import fr.siamois.domain.models.form.customfield.*;
+import fr.siamois.domain.models.form.measurement.UnitDefinition;
 import fr.siamois.domain.models.specimen.Specimen;
 import fr.siamois.domain.models.vocabulary.Concept;
 import jakarta.persistence.Transient;
@@ -87,6 +88,91 @@ public abstract class SpecimenForm {
             .externalId("4290141")
             .build();
 
+    @Transient
+    @JsonIgnore
+    protected static Concept isolationNumberConcept = new Concept.Builder()
+            .vocabulary(SYSTEM_THESO)
+            .externalId("4282391")
+            .build();
+
+    @Transient
+    @JsonIgnore
+    protected static Concept containerConcept = new Concept.Builder()
+            .vocabulary(SYSTEM_THESO)
+            .externalId("4290154")
+            .build();
+
+    @Transient
+    @JsonIgnore
+    protected static Concept materialConcept = new Concept.Builder()
+            .vocabulary(SYSTEM_THESO)
+            .externalId("4290157")
+            .build();
+
+    @Transient
+    @JsonIgnore
+    protected static Concept descriptionConcept = new Concept.Builder()
+            .vocabulary(SYSTEM_THESO)
+            .externalId("4290158")
+            .build();
+
+    @Transient
+    @JsonIgnore
+    protected static Concept commentsConcept = new Concept.Builder()
+            .vocabulary(SYSTEM_THESO)
+            .externalId("4290159")
+            .build();
+
+    @Transient
+    @JsonIgnore
+    protected static Concept materialClassConcept = new Concept.Builder()
+            .vocabulary(SYSTEM_THESO)
+            .externalId("4290155")
+            .build();
+
+    @Transient
+    @JsonIgnore
+    protected static Concept normalizedInterpretationConcept = new Concept.Builder()
+            .vocabulary(SYSTEM_THESO)
+            .externalId("4290156")
+            .build();
+
+    @Transient
+    @JsonIgnore
+    protected static Concept taqConcept = new Concept.Builder()
+            .vocabulary(SYSTEM_THESO)
+            .externalId("4287614")
+            .build();
+
+    @Transient
+    @JsonIgnore
+    protected static Concept tpqConcept = new Concept.Builder()
+            .vocabulary(SYSTEM_THESO)
+            .externalId("4287613")
+            .build();
+
+    @Transient
+    @JsonIgnore
+    protected static Concept chronologicalAttributionConcept = new Concept.Builder()
+            .vocabulary(SYSTEM_THESO)
+            .externalId("4290160")
+            .build();
+
+    @Transient
+    @JsonIgnore
+    protected static Concept numberOfElementConcept = new Concept.Builder()
+            .vocabulary(SYSTEM_THESO)
+            .externalId("4290161")
+            .build();
+
+    @Transient
+    @JsonIgnore
+    protected static Concept weightConcept = new Concept.Builder()
+            .vocabulary(SYSTEM_THESO)
+            .externalId("4290162")
+            .build();
+
+
     // --------------- Fields
 
     // Fields
@@ -138,13 +224,23 @@ public abstract class SpecimenForm {
             .concept(specimenOtherIdConcept)
             .build();
 
+    @Transient
+    @JsonIgnore
+    protected static CustomFieldText isolationNumberField = CustomFieldText.builder()
+            .label("recordingunit.field.isolationIdentifier")
+            .isSystemField(true)
+            .id(10L)
+            .valueBinding("isolationNumber")
+            .concept(isolationNumberConcept)
+            .build();
+
 
     @Transient
     @JsonIgnore
     protected static CustomFieldSelectMultiplePerson authorsField =  CustomFieldSelectMultiplePerson.builder()
             .label("specimen.field.authors")
             .isSystemField(true)
-            .id(2L)
+            .id(6L)
             .valueBinding("authors")
             .concept(authorsConcept)
             .build();
@@ -154,31 +250,19 @@ public abstract class SpecimenForm {
     protected static CustomFieldSelectMultiplePerson collectorsField =  CustomFieldSelectMultiplePerson.builder()
             .label("specimen.field.collectors")
             .isSystemField(true)
-            .id(3L)
+            .id(7L)
             .valueBinding("collectors")
             .concept(collectorsConcept)
             .build();
 
-    @Transient
-    @JsonIgnore
-    protected static CustomFieldSelectOneFromFieldCode specimenTypeField =  CustomFieldSelectOneFromFieldCode.builder()
-            .label("specimen.field.type")
-            .isSystemField(true)
-            .valueBinding("type")
-            .id(4L)
-            .styleClass("mr-2 specimen-type-chip")
-            .iconClass("bi bi-bucket")
-            .fieldCode(Specimen.CATEGORY_FIELD)
-            .concept(specimenTypeConcept)
-            .build();
 
     @Transient
     @JsonIgnore
     protected static CustomFieldSelectOneFromFieldCode specimenCategoryField =  CustomFieldSelectOneFromFieldCode.builder()
-            .label("specimen.field.type")
+            .label("specimen.field.category")
             .isSystemField(true)
-            .valueBinding("type")
-            .id(5L)
+            .valueBinding("category")
+            .id(9L)
             .styleClass("mr-2 specimen-type-chip")
             .iconClass("bi bi-bucket")
             .fieldCode(Specimen.CAT_FIELD)
@@ -190,12 +274,121 @@ public abstract class SpecimenForm {
     protected static CustomFieldDateTime collectionDateField =  CustomFieldDateTime.builder()
             .label("specimen.field.collectionDate")
             .isSystemField(true)
-            .id(6L)
+            .id(11L)
             .valueBinding("collectionDate")
             .showTime(false)
             .concept(collectionDateConcept)
             .build();
 
-    
+    @Transient
+    @JsonIgnore
+    protected static CustomFieldSelectOneFromFieldCode materialField =  CustomFieldSelectOneFromFieldCode.builder()
+            .label("specimen.field.material")
+            .isSystemField(true)
+            .id(13L)
+            .valueBinding("material")
+            .concept(materialConcept)
+            .build();
+
+    @Transient
+    @JsonIgnore
+    protected static CustomFieldSelectOneFromFieldCode materialClassField =  CustomFieldSelectOneFromFieldCode.builder()
+            .label("specimen.field.materialClass")
+            .isSystemField(true)
+            .id(14L)
+            .valueBinding("materialClass")
+            .concept(materialClassConcept)
+            .build();
+
+    @Transient
+    @JsonIgnore
+    protected static CustomFieldSelectOneFromFieldCode normalizedInterpretationField =  CustomFieldSelectOneFromFieldCode.builder()
+            .label("specimen.field.normalizedInterpretation")
+            .isSystemField(true)
+            .id(15L)
+            .valueBinding("normalizedInterpretation")
+            .concept(normalizedInterpretationConcept)
+            .build();
+
+    @Transient
+    @JsonIgnore
+    protected static CustomFieldText descriptionField = CustomFieldText.builder()
+            .label("recordingunit.field.description")
+            .isSystemField(true)
+            .id(16L)
+            .valueBinding("description")
+            .concept(descriptionConcept)
+            .build();
+
+    @Transient
+    @JsonIgnore
+    protected static CustomFieldText commentsField = CustomFieldText.builder()
+            .label("recordingunit.field.comments")
+            .isSystemField(true)
+            .id(17L)
+            .valueBinding("comments")
+            .concept(commentsConcept)
+            .build();
+
+    @Transient
+    @JsonIgnore
+    protected static CustomFieldSelectOneFromFieldCode chronologicalAttributionField =  CustomFieldSelectOneFromFieldCode.builder()
+            .label("specimen.field.chronologicalAttribution")
+            .isSystemField(true)
+            .id(18L)
+            .valueBinding("chronologicalAttribution")
+            .concept(chronologicalAttributionConcept)
+            .build();
+
+    @Transient
+    @JsonIgnore
+    protected static CustomFieldInteger taqField =  CustomFieldInteger.builder()
+            .label("specimen.field.taq")
+            .isSystemField(true)
+            .id(19L)
+            .valueBinding("taq")
+            .concept(taqConcept)
+            .build();
+
+    @Transient
+    @JsonIgnore
+    protected static CustomFieldInteger tpqField =  CustomFieldInteger.builder()
+            .label("specimen.field.tpq")
+            .isSystemField(true)
+            .id(20L)
+            .valueBinding("tpq")
+            .concept(tpqConcept)
+            .build();
+
+    @Transient
+    @JsonIgnore
+    protected static CustomFieldInteger numberOfElementField =  CustomFieldInteger.builder()
+            .label("specimen.field.numberOfElement")
+            .isSystemField(true)
+            .id(21L)
+            .valueBinding("numberOfElements")
+            .concept(numberOfElementConcept)
+            .build();
+
+    @Transient
+    @JsonIgnore
+    protected static CustomFieldMeasurement weightField =  CustomFieldMeasurement.builder()
+            .label("specimen.field.weight")
+            .isSystemField(true)
+            .id(22L)
+            .unit(new UnitDefinition(
+                    null,
+                    null,
+                    "Kilo",
+                    "kg",
+                    UnitDefinition.Dimension.MASS,
+                    1000.0,
+                    false
+            ))
+            .valueBinding("weight")
+            .concept(weightConcept)
+            .build();
+
+
 
 }

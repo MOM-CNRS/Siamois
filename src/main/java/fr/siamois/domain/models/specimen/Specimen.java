@@ -12,6 +12,7 @@ import fr.siamois.domain.models.exceptions.actionunit.NullActionUnitIdentifierEx
 import fr.siamois.domain.models.form.customform.CustomForm;
 import fr.siamois.domain.models.form.measurement.MeasurementAnswer;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
+import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.specimen.form.SpecimenDetailsForm;
 import fr.siamois.domain.models.specimen.form.SpecimenNewUnitForm;
 import fr.siamois.domain.models.vocabulary.Concept;
@@ -107,7 +108,7 @@ public class Specimen extends TraceableEntity implements ArkEntity {
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "fk_interpretation")
-    protected Concept interpretation;
+    protected Concept normalizedInterpretation;
 
     @ManyToMany
     @JoinTable(
@@ -115,6 +116,19 @@ public class Specimen extends TraceableEntity implements ArkEntity {
             joinColumns = @JoinColumn(name = "fk_specimen_id"),
             inverseJoinColumns = @JoinColumn(name = "fk_material_id"))
     protected Set<Concept> material;
+
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JsonIgnore
+    @JoinTable(
+            name="specimen_hierarchy",
+            joinColumns = { @JoinColumn(name = "fk_parent_id") },
+            inverseJoinColumns = { @JoinColumn(name = "fk_child_id") }
+    )
+    private Set<Specimen> children = new HashSet<>();
+
+    @ManyToMany(mappedBy = "children", fetch = FetchType.LAZY)
+    @JsonIgnore
+    private Set<Specimen> parents = new HashSet<>();
 
     @ManyToMany
     @JoinTable(
@@ -145,7 +159,17 @@ public class Specimen extends TraceableEntity implements ArkEntity {
 
     @NotNull
     @Column(name = "isolat_identifier")
-    protected String isolat_identifier;
+    protected String isolationNumber;
+
+    @Column(name = "taq")
+    protected Integer taq;
+
+    @Column(name = "tpq")
+    protected Integer tpq;
+
+    @NotNull
+    @Column(name = "other_identifier")
+    protected String otherIdentifier;
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "fk_chronological_attribution")

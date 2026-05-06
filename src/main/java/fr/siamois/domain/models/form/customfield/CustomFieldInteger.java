@@ -4,8 +4,8 @@ import jakarta.persistence.Column;
 import jakarta.persistence.DiscriminatorValue;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
+import lombok.experimental.SuperBuilder;
 
 
 @Getter
@@ -13,6 +13,9 @@ import lombok.Setter;
 @Entity
 @DiscriminatorValue("INTEGER")
 @Table(name = "custom_field")
+@SuperBuilder
+@NoArgsConstructor
+@AllArgsConstructor
 public class CustomFieldInteger extends CustomField {
 
     @Column(name = "min_value")
