@@ -126,6 +126,10 @@ public class FlowBean implements Serializable {
         addPanel(panelFactory.createActionUnitListPanel());
     }
 
+    public void addContainerListPanel() {
+        addPanel(panelFactory.createContainerListPanel());
+    }
+
     public void addRecordingUnitListPanel() {
         addPanel(panelFactory.createRecordingUnitListPanel());
     }

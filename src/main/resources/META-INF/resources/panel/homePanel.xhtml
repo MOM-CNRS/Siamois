@@ -162,6 +162,29 @@
 
                         </p:column>
 
+                        <p:column styleClass="ui-g-12 ui-xs-12 ui-md-6 ui-lg-3">
+
+                            <siaCard:welcomeCard
+                                    icon="bi bi-box-seam"
+                                    cardStyleClass="sia-welcome-card sia-container"
+                                    chipStyleClass="container-count-chip-alt"
+                                    btnStyleClass="container-btn"
+                                    btnLabel="#{langBean.msg('homePanel.see.container')}"
+                                    label="#{langBean.msg('common.entity.containers')}"
+                                    count="0"
+                                    btnAction="#{navBean.goToContainerList(mode)}"
+                                    btnNewActionUpdate="newUnitForm"
+                                    btnNewActionOnComplete="PF('newUnitDiag').show();"
+                                    btnNewActionOnStart=""
+                                    btnNewAction="#{genericNewUnitDialogBean.openNewEntityDiag('CONTAINERS')}"
+                                    isCreateAllowed="false"
+                                    description="Contenants mobile (boites, sacs) et immobiles"
+                                    newPanelId="panel-container-list-container"
+                            />
+
+
+                        </p:column>
+
                     </p:row>
 
                 </p:panelGrid>
