@@ -22,6 +22,7 @@ import fr.siamois.ui.lazydatamodel.ContainerLazyDataModel;
 import fr.siamois.ui.lazydatamodel.scope.ActionUnitScope;
 import fr.siamois.ui.lazydatamodel.tree.ActionUnitTreeTableLazyModel;
 import fr.siamois.ui.table.ActionUnitTableViewModel;
+import fr.siamois.ui.table.ContainerTableViewModel;
 import fr.siamois.ui.table.ToolbarCreateConfig;
 import fr.siamois.ui.table.definitions.ActionUnitTableDefinitionFactory;
 import fr.siamois.ui.table.definitions.ContainerTableDefinitionFactory;
@@ -53,7 +54,7 @@ public class ContainerListPanel extends AbstractListPanel<ContainerDTO> implemen
     private final transient FormService formService;
     private final transient SpatialUnitTreeService spatialUnitTreeService;
     private final transient FlowBean flowBean;
-    private final transient GenericNewUnitDialogBean<ActionUnitDTO> genericNewUnitDialogBean;
+    private final transient GenericNewUnitDialogBean<ContainerDTO> genericNewUnitDialogBean;
     private final transient SpatialUnitWriteVerifier spatialUnitWriteVerifier;
     private final transient NavBean navBean;
     private final transient InstitutionService institutionService;
@@ -85,7 +86,7 @@ public class ContainerListPanel extends AbstractListPanel<ContainerDTO> implemen
         ContainerLazyDataModel lazy =  new ContainerLazyDataModel(containerService, sessionSettingsBean);
 
         // construction de la vue de table autour du lazy
-        tableModel = new ActionUnitTableViewModel(
+        tableModel = new ContainerTableViewModel(
                 lazy,
                 formService,
                 sessionSettingsBean,

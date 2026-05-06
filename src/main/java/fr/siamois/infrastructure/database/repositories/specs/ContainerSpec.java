@@ -31,7 +31,7 @@ public class ContainerSpec {
     }
 
     public static Specification<Container> unitIsRoot() {
-        return ((root, query, criteriaBuilder) -> criteriaBuilder.isEmpty(root.get("parents")));
+        return ((root, query, criteriaBuilder) -> criteriaBuilder.isNull(root.get("parent")));
     }
 
     public static Specification<Container> idIn(java.util.Collection<Long> ids) {

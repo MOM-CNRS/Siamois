@@ -64,7 +64,7 @@ public class ContainerTableDefinitionFactory {
         tableModel.getTableDefinition().addColumn(
                 FormFieldColumn.builder()
                         .id("identifier")
-                        .headerKey("spatialunit.field.identifier")
+                        .headerKey("container.field.identifier")
                         .field(identifierField)
                         .sortable(true)
                         .filterable(true)
