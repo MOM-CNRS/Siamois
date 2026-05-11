@@ -449,6 +449,9 @@ public interface RecordingUnitRepository extends CrudRepository<RecordingUnit, L
     )
     Integer countByActionContext(@Param("actionUnitId") Long actionUnitId);
 
+    @Query("select ru.actionUnit.id, count(ru) from RecordingUnit ru where ru.actionUnit.id in :ids group by ru.actionUnit.id")
+    List<Object[]> countRecordingUnitsGroupedByActionUnitIds(@Param("ids") List<Long> ids);
+
     @Query(value = """
     SELECT ru.*
     FROM recording_unit ru

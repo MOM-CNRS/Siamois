@@ -16,10 +16,12 @@ import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.ArkEntityService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.dto.FilterDTO;
+import fr.siamois.dto.api.AccessibleProjectForApi;
 import fr.siamois.dto.entity.*;
 import fr.siamois.infrastructure.database.repositories.SpatialUnitRepository;
 import fr.siamois.infrastructure.database.repositories.actionunit.ActionCodeRepository;
 import fr.siamois.infrastructure.database.repositories.actionunit.ActionUnitRepository;
+import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitRepository;
 import fr.siamois.infrastructure.database.repositories.specs.ActionUnitSpec;
 import fr.siamois.mapper.ActionUnitMapper;
 import fr.siamois.mapper.ConceptMapper;
@@ -31,6 +33,7 @@ import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -59,6 +62,7 @@ public class ActionUnitService implements ArkEntityService {
     private final PersonMapper personMapper;
     private final SpatialUnitRepository spatialUnitRepository;
     private final ConceptMapper conceptMapper;
+    private final RecordingUnitRepository recordingUnitRepository;
 
     /**
      * Find all Action Units by institution, spatial unit, name, categories, persons, and global search.
@@ -590,5 +594,60 @@ public class ActionUnitService implements ArkEntityService {
                 .stream()
                 .map(actionUnitMapper::convert)
                 .toList();
+    }
+
+    /**
+     * Projects (action units) visible in the API: all units belonging to the given institutions.
+     * Aligné sur l'interface web (liste des opérations par institution), pas sur la seule équipe {@code team_member}.
+     *
+     * @param organizationId when non-null, restrict to this institution (caller must ensure it is allowed for the person)
+     */
+    @Transactional(readOnly = true)
+    public Page<AccessibleProjectForApi> findAccessibleProjects(
+            Set<Long> accessibleInstitutionIds,
+            Long organizationId,
+            String search,
+            Pageable pageable) {
+        if (accessibleInstitutionIds == null || accessibleInstitutionIds.isEmpty()) {
+            return new PageImpl<>(List.of(), pageable, 0);
+        }
+        Collection<Long> institutionScope = organizationId != null
+                ? List.of(organizationId)
+                : accessibleInstitutionIds;
+
+        Specification<ActionUnit> spec = Specification.where(ActionUnitSpec.institutionIdIn(institutionScope))
+                .and(ActionUnitSpec.projectSearch(search));
+
+        Page<ActionUnit> page = actionUnitRepository.findAll(spec, pageable);
+
+        List<Long> ids = page.getContent().stream().map(ActionUnit::getId).toList();
+        Map<Long, Long> ruByProject = ids.isEmpty()
+                ? Map.of()
+                : countingMap(recordingUnitRepository.countRecordingUnitsGroupedByActionUnitIds(ids));
+        Map<Long, Long> childrenByProject = ids.isEmpty()
+                ? Map.of()
+                : countingMap(actionUnitRepository.countChildActionUnitsByParentIds(ids));
+
+        List<AccessibleProjectForApi> mapped = page.getContent().stream()
+                .map(au -> new AccessibleProjectForApi(
+                        actionUnitMapper.convert(au),
+                        ruByProject.getOrDefault(au.getId(), 0L),
+                        childrenByProject.getOrDefault(au.getId(), 0L)))
+                .toList();
+
+        return new PageImpl<>(mapped, pageable, page.getTotalElements());
+    }
+
+    private static Map<Long, Long> countingMap(List<Object[]> rows) {
+        if (rows == null || rows.isEmpty()) {
+            return Map.of();
+        }
+        Map<Long, Long> m = new HashMap<>();
+        for (Object[] row : rows) {
+            if (row.length >= 2 && row[0] != null && row[1] != null) {
+                m.put(((Number) row[0]).longValue(), ((Number) row[1]).longValue());
+            }
+        }
+        return m;
     }
 }
