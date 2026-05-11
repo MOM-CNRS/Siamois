@@ -17,10 +17,12 @@ import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.dto.FilterDTO;
+import fr.siamois.dto.api.AccessibleProjectForApi;
 import fr.siamois.dto.entity.*;
 import fr.siamois.infrastructure.database.repositories.SpatialUnitRepository;
 import fr.siamois.infrastructure.database.repositories.actionunit.ActionCodeRepository;
 import fr.siamois.infrastructure.database.repositories.actionunit.ActionUnitRepository;
+import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitRepository;
 import fr.siamois.infrastructure.database.repositories.specs.ActionUnitSpec;
 import fr.siamois.mapper.ActionUnitMapper;
 import fr.siamois.mapper.ConceptMapper;
@@ -36,6 +38,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.time.OffsetDateTime;
@@ -44,6 +47,7 @@ import java.util.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -56,6 +60,7 @@ class ActionUnitServiceTest {
     @Mock private PersonMapper personMapper;
     @Mock private ConceptMapper conceptMapper;
     @Mock private SpatialUnitRepository spatialUnitRepository;
+    @Mock private RecordingUnitRepository recordingUnitRepository;
     @InjectMocks
     private ActionUnitService actionUnitService;
 
@@ -1290,6 +1295,74 @@ class ActionUnitServiceTest {
         List<ActionUnitDTO> result = actionUnitService.findMatchingInInstitutionByName(inst, "q", 25);
 
         assertEquals(List.of(actionUnit1dto), result);
+    }
+
+    // ------------------------------------------------------------------
+    // findAccessibleProjects (API liste projets)
+    // ------------------------------------------------------------------
+
+    @Test
+    void findAccessibleProjects_emptyInstitutions_returnsEmptyPageWithoutDb() {
+        Pageable pageable = PageRequest.of(0, 20);
+
+        Page<AccessibleProjectForApi> page = actionUnitService.findAccessibleProjects(
+                Set.of(), null, null, pageable);
+
+        assertThat(page.getContent()).isEmpty();
+        assertThat(page.getTotalElements()).isZero();
+        verifyNoInteractions(actionUnitRepository);
+        verifyNoInteractions(recordingUnitRepository);
+    }
+
+    @Test
+    void findAccessibleProjects_noActionUnits_skipsCountQueries() {
+        when(actionUnitRepository.findAll(any(Specification.class), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 20), 0));
+
+        Page<AccessibleProjectForApi> page = actionUnitService.findAccessibleProjects(
+                Set.of(1L), null, null, PageRequest.of(0, 20));
+
+        assertThat(page.getContent()).isEmpty();
+        assertThat(page.getTotalElements()).isZero();
+        verify(recordingUnitRepository, never()).countRecordingUnitsGroupedByActionUnitIds(any());
+        verify(actionUnitRepository, never()).countChildActionUnitsByParentIds(any());
+    }
+
+    @Test
+    void findAccessibleProjects_mapsDtosAndMergesAggregateCounts() {
+        // ActionUnit.equals() utilise fullIdentifier : sans valeurs distinctes, Mockito confond les arguments de convert().
+        actionUnit1.setFullIdentifier("TEST-FIND-AU-1");
+        actionUnit2.setFullIdentifier("TEST-FIND-AU-2");
+        actionUnit1dto.setId(1L);
+        actionUnit2dto.setId(2L);
+
+        when(actionUnitRepository.findAll(any(Specification.class), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(actionUnit1, actionUnit2), PageRequest.of(0, 20, Sort.by("name")), 2));
+        when(actionUnitMapper.convert(actionUnit1)).thenReturn(actionUnit1dto);
+        when(actionUnitMapper.convert(actionUnit2)).thenReturn(actionUnit2dto);
+        List<Object[]> ruRows = new ArrayList<>();
+        ruRows.add(new Object[]{1L, 5L});
+        ruRows.add(new Object[]{2L, 3L});
+        when(recordingUnitRepository.countRecordingUnitsGroupedByActionUnitIds(eq(List.of(1L, 2L))))
+                .thenReturn(ruRows);
+        List<Object[]> childRows = new ArrayList<>();
+        childRows.add(new Object[]{1L, 1L});
+        when(actionUnitRepository.countChildActionUnitsByParentIds(eq(List.of(1L, 2L))))
+                .thenReturn(childRows);
+
+        Page<AccessibleProjectForApi> page = actionUnitService.findAccessibleProjects(
+                Set.of(10L), null, "alpha", PageRequest.of(0, 20, Sort.by("name")));
+
+        assertThat(page.getTotalElements()).isEqualTo(2);
+        assertThat(page.getContent()).hasSize(2);
+        assertThat(page.getContent().get(0).actionUnit().getId()).isEqualTo(1L);
+        assertThat(page.getContent().get(1).actionUnit().getId()).isEqualTo(2L);
+        assertThat(page.getContent().get(0).recordingUnitCount()).isEqualTo(5L);
+        assertThat(page.getContent().get(0).childActionUnitCount()).isEqualTo(1L);
+        assertThat(page.getContent().get(1).recordingUnitCount()).isEqualTo(3L);
+        assertThat(page.getContent().get(1).childActionUnitCount()).isZero();
+        verify(recordingUnitRepository).countRecordingUnitsGroupedByActionUnitIds(eq(List.of(1L, 2L)));
+        verify(actionUnitRepository).countChildActionUnitsByParentIds(eq(List.of(1L, 2L)));
     }
 
 }

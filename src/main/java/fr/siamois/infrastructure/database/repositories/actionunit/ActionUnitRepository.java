@@ -385,4 +385,12 @@ WHERE au.fk_institution_id = :institutionId AND has_childrens IS FALSE AND actio
             SELECT id FROM ascend
             """, nativeQuery = true)
     List<Long> findAncestorClosure(@Param("seedIds") Long[] seedIds);
+
+    @Query(value = """
+            SELECT fk_parent_id, COUNT(*)
+            FROM action_hierarchy
+            WHERE fk_parent_id IN (:ids)
+            GROUP BY fk_parent_id
+            """, nativeQuery = true)
+    List<Object[]> countChildActionUnitsByParentIds(@Param("ids") List<Long> ids);
 }
