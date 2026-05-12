@@ -30,12 +30,13 @@ spring:
     allow-bean-definition-overriding: true
   datasource:
     url: jdbc:postgresql://localhost:5432/siamois
-    password: siamois
-    username: siamois
+    password: postgres
+    username: postgres
     hikari:
       maximum-pool-size: 1000
       minimum-idle: 1
       idle-timeout: 30000
+      connection-timeout: 20000
       connection-test-query: SELECT 1
   jpa:
     show-sql: true
@@ -71,6 +72,9 @@ logging:
   level:
     root: ERROR
     fr.siamois: DEBUG
+    org.liquibase: INFO
+    liquibase: INFO
+    com.zaxxer.hikari: INFO
     org:
       springframework:
         transaction: DEBUG

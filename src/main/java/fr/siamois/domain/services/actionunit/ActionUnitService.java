@@ -638,6 +638,63 @@ public class ActionUnitService implements ArkEntityService {
         return new PageImpl<>(mapped, pageable, page.getTotalElements());
     }
 
+    /**
+     * Détail d'un projet (action unit) si son institution est dans {@code accessibleInstitutionIds}.
+     * <ul>
+     *     <li>Si {@code idOrKey} n'est composé que de chiffres décimaux : clé primaire {@code action_unit_id}.</li>
+     *     <li>Sinon : {@link ActionUnitRepository#findByFullIdentifier(String)} (identifiant métier complet).</li>
+     *     <li>Sinon encore : {@link ActionUnitRepository#findByIdentifierAndCreatedByInstitutionId(String, Long)}
+     *     pour chaque institution accessible (ex. identifiant court {@code C309_01} dans une org).</li>
+     * </ul>
+     * Les identifiants contenant des « / » doivent être correctement encodés dans l'URL (ex. {@code %2F}).
+     *
+     * @throws ActionUnitNotFoundException clé inconnue, ou projet hors périmètre (comportement type 404)
+     */
+    @Transactional(readOnly = true)
+    public AccessibleProjectForApi findAccessibleProjectByKey(String idOrKey, Set<Long> accessibleInstitutionIds) {
+        if (accessibleInstitutionIds == null || accessibleInstitutionIds.isEmpty()) {
+            throw new ActionUnitNotFoundException("No institution scope for current user");
+        }
+        ActionUnitDTO dto = loadProjectDtoForLookupKey(idOrKey, accessibleInstitutionIds);
+        InstitutionDTO inst = dto.getCreatedByInstitution();
+        if (inst == null || inst.getId() == null || !accessibleInstitutionIds.contains(inst.getId())) {
+            throw new ActionUnitNotFoundException("Project not found or not accessible");
+        }
+        long projectId = dto.getId();
+        List<Long> ids = List.of(projectId);
+        Map<Long, Long> ruByProject = countingMap(recordingUnitRepository.countRecordingUnitsGroupedByActionUnitIds(ids));
+        Map<Long, Long> childrenByProject = countingMap(actionUnitRepository.countChildActionUnitsByParentIds(ids));
+        return new AccessibleProjectForApi(
+                dto,
+                ruByProject.getOrDefault(projectId, 0L),
+                childrenByProject.getOrDefault(projectId, 0L));
+    }
+
+    private ActionUnitDTO loadProjectDtoForLookupKey(String idOrKey, Set<Long> accessibleInstitutionIds) {
+        String key = idOrKey == null ? "" : idOrKey.trim();
+        if (key.isEmpty()) {
+            throw new ActionUnitNotFoundException("Project key must not be empty");
+        }
+        if (key.chars().allMatch(Character::isDigit)) {
+            try {
+                return findById(Long.parseLong(key));
+            } catch (NumberFormatException e) {
+                // dépassement de long, etc. → repli sur identifiant métier / institutions
+            }
+        }
+        Optional<ActionUnit> byFullId = actionUnitRepository.findByFullIdentifier(key);
+        if (byFullId.isPresent()) {
+            return actionUnitMapper.convert(byFullId.get());
+        }
+        for (Long institutionId : accessibleInstitutionIds) {
+            Optional<ActionUnit> byShortId = actionUnitRepository.findByIdentifierAndCreatedByInstitutionId(key, institutionId);
+            if (byShortId.isPresent()) {
+                return actionUnitMapper.convert(byShortId.get());
+            }
+        }
+        throw new ActionUnitNotFoundException("ActionUnit not found with key: " + key);
+    }
+
     private static Map<Long, Long> countingMap(List<Object[]> rows) {
         if (rows == null || rows.isEmpty()) {
             return Map.of();
