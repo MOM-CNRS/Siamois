@@ -6,13 +6,19 @@ import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.exceptions.actionunit.ActionUnitNotFoundException;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
+import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.dto.api.AccessibleProjectForApi;
 import fr.siamois.dto.entity.ActionUnitDTO;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.PersonDTO;
+import fr.siamois.dto.entity.RecordingUnitDTO;
 import fr.siamois.mapper.PersonMapper;
+import fr.siamois.ui.api.handler.RestExceptionHandler;
 import fr.siamois.ui.api.openapi.v1.mapper.ProjectResponseMapper;
+import fr.siamois.ui.api.openapi.v1.mapper.RecordingUnitResponseMapper;
+import fr.siamois.ui.api.openapi.v1.service.ProjectApiService;
 import fr.siamois.ui.api.openapi.v1.resource.project.ProjectResource;
+import fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitResource;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -22,6 +28,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
@@ -37,6 +44,7 @@ import java.util.Set;
 import static org.hamcrest.Matchers.hasSize;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.verify;
@@ -57,6 +65,10 @@ class ProjectControllerApiTest {
     private PersonMapper personMapper;
     @Mock
     private ProjectResponseMapper projectResponseMapper;
+    @Mock
+    private RecordingUnitService recordingUnitService;
+    @Mock
+    private RecordingUnitResponseMapper recordingUnitResourceMapper;
 
     private MockMvc mockMvc;
 
@@ -69,13 +81,18 @@ class ProjectControllerApiTest {
         ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
         MappingJackson2HttpMessageConverter jsonConverter = new MappingJackson2HttpMessageConverter(objectMapper);
 
-        ProjectControllerApi controller = new ProjectControllerApi(
-                actionUnitService,
+        ProjectApiService projectApiService = new ProjectApiService(
                 institutionService,
-                personMapper,
-                projectResponseMapper);
+                actionUnitService,
+                recordingUnitService,
+                personMapper);
+        ProjectControllerApi controller = new ProjectControllerApi(
+                projectApiService,
+                projectResponseMapper,
+                recordingUnitResourceMapper);
 
         mockMvc = MockMvcBuilders.standaloneSetup(controller)
+                .setControllerAdvice(new RestExceptionHandler())
                 .setMessageConverters(jsonConverter)
                 .build();
 
@@ -329,5 +346,110 @@ class ProjectControllerApiTest {
                 .andExpect(jsonPath("$.data.name").value("Chartres"));
 
         verify(actionUnitService).findAccessibleProjectByKey(eq("C309_01"), eq(Set.of(100L)));
+    }
+
+    @Test
+    void getProjectRecordingUnits_withoutAuthentication_returns401() throws Exception {
+        SecurityContextHolder.getContext().setAuthentication(
+                new AnonymousAuthenticationToken("key", "anonymousUser",
+                        AuthorityUtils.createAuthorityList("ROLE_ANONYMOUS")));
+
+        mockMvc.perform(get("/api/v1/projects/5/recording-units"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void getProjectRecordingUnits_invalidPagination_returns400() throws Exception {
+        login();
+        mockMvc.perform(get("/api/v1/projects/5/recording-units").param("offset", "1").param("limit", "10"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void getProjectRecordingUnits_projectNotFound_returns404() throws Exception {
+        login();
+        when(personMapper.convert(person)).thenReturn(personDto);
+        when(institutionService.findInstitutionsOfPerson(personDto)).thenReturn(Set.of(institutionDto));
+        when(actionUnitService.findAccessibleProjectByKey(eq("5"), eq(Set.of(100L))))
+                .thenThrow(new ActionUnitNotFoundException("missing"));
+
+        mockMvc.perform(get("/api/v1/projects/5/recording-units"))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void getProjectRecordingUnits_success_returnsListAndTotalHeader() throws Exception {
+        login();
+        when(personMapper.convert(person)).thenReturn(personDto);
+        when(institutionService.findInstitutionsOfPerson(personDto)).thenReturn(Set.of(institutionDto));
+
+        ActionUnitDTO au = new ActionUnitDTO();
+        au.setId(5L);
+        AccessibleProjectForApi row = new AccessibleProjectForApi(au, 1L, 0L);
+        when(actionUnitService.findAccessibleProjectByKey(eq("5"), eq(Set.of(100L)))).thenReturn(row);
+
+        RecordingUnitDTO ruDto = new RecordingUnitDTO();
+        ruDto.setId(42L);
+        ruDto.setFullIdentifier("INST-PROJ-UE42");
+        PageImpl<RecordingUnitDTO> page = new PageImpl<>(
+                List.of(ruDto),
+                PageRequest.of(0, 10),
+                1L);
+        when(recordingUnitService.findByActionUnitId(eq(5L), eq(10), eq(0), any(Sort.class))).thenReturn(page);
+
+        RecordingUnitResource ruRes = new RecordingUnitResource(
+                "42",
+                "INST-PROJ-UE42",
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null);
+        ruRes.setResourceType("recording-units");
+        ruRes.setId("42");
+        when(recordingUnitResourceMapper.convert(eq(ruDto))).thenReturn(ruRes);
+
+        mockMvc.perform(get("/api/v1/projects/5/recording-units").param("offset", "0").param("limit", "10"))
+                .andExpect(status().isOk())
+                .andExpect(header().string("X-Total-Count", "1"))
+                .andExpect(jsonPath("$.data", hasSize(1)))
+                .andExpect(jsonPath("$.data[0].fullIdentifier").value("INST-PROJ-UE42"));
+
+        verify(recordingUnitService).findByActionUnitId(eq(5L), eq(10), eq(0), any(Sort.class));
+    }
+
+    @Test
+    void getProjectRecordingUnits_sortParam_passedToService() throws Exception {
+        login();
+        when(personMapper.convert(person)).thenReturn(personDto);
+        when(institutionService.findInstitutionsOfPerson(personDto)).thenReturn(Set.of(institutionDto));
+
+        ActionUnitDTO au = new ActionUnitDTO();
+        au.setId(5L);
+        AccessibleProjectForApi row = new AccessibleProjectForApi(au, 0L, 0L);
+        when(actionUnitService.findAccessibleProjectByKey(eq("5"), eq(Set.of(100L)))).thenReturn(row);
+
+        PageImpl<RecordingUnitDTO> page = new PageImpl<>(List.of(), PageRequest.of(0, 10), 0L);
+        when(recordingUnitService.findByActionUnitId(eq(5L), eq(10), eq(0), any(Sort.class))).thenReturn(page);
+
+        mockMvc.perform(get("/api/v1/projects/5/recording-units")
+                        .param("offset", "0")
+                        .param("limit", "10")
+                        .param("sort", "fullIdentifier:asc"))
+                .andExpect(status().isOk());
+
+        verify(recordingUnitService).findByActionUnitId(eq(5L), eq(10), eq(0),
+                argThat((Sort s) -> {
+                    for (Sort.Order o : s) {
+                        if ("fullIdentifier".equals(o.getProperty()) && o.isAscending()) {
+                            return true;
+                        }
+                    }
+                    return false;
+                }));
     }
 }

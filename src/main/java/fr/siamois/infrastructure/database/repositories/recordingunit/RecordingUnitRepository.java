@@ -47,6 +47,8 @@ public interface RecordingUnitRepository extends CrudRepository<RecordingUnit, L
 
     List<RecordingUnit> findAllByActionUnitId(Long actionUnitId);
 
+    Page<RecordingUnit> findAllByActionUnitId(Long actionUnitId, Pageable pageable);
+
     @Transactional
     @Modifying
     @Query(

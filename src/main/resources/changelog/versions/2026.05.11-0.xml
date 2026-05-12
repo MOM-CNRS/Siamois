@@ -4,6 +4,11 @@
                    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.0.xsd">
 
     <changeSet id="2026.05.11-0" author="gFiras" failOnError="true">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists schemaName="public" tableName="refresh_token"/>
+            </not>
+        </preConditions>
         <createTable tableName="refresh_token" schemaName="public">
             <column name="refresh_token_id" type="BIGSERIAL">
                 <constraints primaryKey="true" nullable="false"/>

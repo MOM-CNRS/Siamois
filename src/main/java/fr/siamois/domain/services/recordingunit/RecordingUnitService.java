@@ -41,6 +41,7 @@ import org.springframework.core.convert.ConversionService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
@@ -671,6 +672,13 @@ public class RecordingUnitService implements ArkEntityService {
                                                       int offset) {
         Pageable pageable = PageRequest.of(offset, limit);
         Page<RecordingUnit> page = recordingUnitRepository.findByCreatedByInstitutionId(institutionId, pageable);
+        return page.map(recordingUnitMapper::convert);
+    }
+
+    public Page<RecordingUnitDTO> findByActionUnitId(Long actionUnitId, int limit, int offset, Sort sort) {
+        int pageNumber = offset / limit;
+        Pageable pageable = PageRequest.of(pageNumber, limit, sort);
+        Page<RecordingUnit> page = recordingUnitRepository.findAllByActionUnitId(actionUnitId, pageable);
         return page.map(recordingUnitMapper::convert);
     }
 
