@@ -38,6 +38,7 @@
         <jakarta.enterprise.cdi-api.version>4.1.0</jakarta.enterprise.cdi-api.version>
         <tomcat-embed-jasper.version>11.0.0-M26</tomcat-embed-jasper.version>
         <jsf-impl.version>2.2.20</jsf-impl.version>
+        <jjwt.version>0.12.6</jjwt.version>
         <jts.version>1.20.0</jts.version>
         <mockito.version>5.14.2</mockito.version>
         <jacoco.version>0.8.12</jacoco.version>
@@ -88,8 +89,6 @@
             **/resources/**/*.*,
             **/*Spec.*
         </sonar.coverage.exclusions>
-
-
     </properties>
 
     <dependencyManagement>
@@ -259,6 +258,24 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-security</artifactId>
+        </dependency>
+        <!-- JWT (accès API mobile / Bearer) -->
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-api</artifactId>
+            <version>${jjwt.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-impl</artifactId>
+            <version>${jjwt.version}</version>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-jackson</artifactId>
+            <version>${jjwt.version}</version>
+            <scope>runtime</scope>
         </dependency>
         <dependency>
             <groupId>org.springframework.security</groupId>
