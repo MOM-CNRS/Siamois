@@ -1,33 +1,29 @@
 package fr.siamois.ui.api.openapi.v1.controller;
 
-
-import fr.siamois.domain.models.auth.Person;
-import fr.siamois.domain.models.exceptions.actionunit.ActionUnitNotFoundException;
-import fr.siamois.domain.services.InstitutionService;
-import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.dto.api.AccessibleProjectForApi;
-import fr.siamois.dto.entity.InstitutionDTO;
-import fr.siamois.dto.entity.PersonDTO;
-import fr.siamois.mapper.PersonMapper;
+import fr.siamois.dto.entity.RecordingUnitDTO;
 import fr.siamois.ui.api.openapi.v1.generic.response.ListMeta;
 import fr.siamois.ui.api.openapi.v1.mapper.ProjectResponseMapper;
+import fr.siamois.ui.api.openapi.v1.mapper.RecordingUnitResponseMapper;
 import fr.siamois.ui.api.openapi.v1.resource.project.ProjectResource;
+import fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitResource;
 import fr.siamois.ui.api.openapi.v1.response.FindListResponse;
 import fr.siamois.ui.api.openapi.v1.response.ProjectListResponse;
 import fr.siamois.ui.api.openapi.v1.response.ProjectResponse;
 import fr.siamois.ui.api.openapi.v1.response.RecordingUnitListResponse;
-import fr.siamois.utils.AuthenticatedUserUtils;
+import fr.siamois.ui.api.openapi.v1.OpenApiTags;
+import fr.siamois.ui.api.openapi.v1.service.ProjectApiCaller;
+import fr.siamois.ui.api.openapi.v1.service.ProjectApiService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.tags.Tags;
 import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -35,35 +31,25 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
-import java.util.Locale;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/v1/projects")
-@Tag(name = "Project", description = "Endpoints des projets")
+@Tags({@Tag(name = "Project", description = "Endpoints des projets")})
 public class ProjectControllerApi {
 
-    private static final int MAX_PAGE_SIZE = 200;
-    private static final Set<String> ALLOWED_SORT_FIELDS = Set.of(
-            "name", "identifier", "fullIdentifier", "creationTime"
-    );
-
-    private final ActionUnitService actionUnitService;
-    private final InstitutionService institutionService;
-    private final PersonMapper personMapper;
+    private final ProjectApiService projectApiService;
     private final ProjectResponseMapper projectResponseMapper;
+    private final RecordingUnitResponseMapper recordingUnitResourceMapper;
 
-    public ProjectControllerApi(ActionUnitService actionUnitService,
-                              InstitutionService institutionService,
-                              PersonMapper personMapper,
-                              ProjectResponseMapper projectResponseMapper) {
-        this.actionUnitService = actionUnitService;
-        this.institutionService = institutionService;
-        this.personMapper = personMapper;
+    public ProjectControllerApi(ProjectApiService projectApiService,
+                                ProjectResponseMapper projectResponseMapper,
+                                RecordingUnitResponseMapper recordingUnitResourceMapper) {
+        this.projectApiService = projectApiService;
         this.projectResponseMapper = projectResponseMapper;
+        this.recordingUnitResourceMapper = recordingUnitResourceMapper;
     }
 
+    @GetMapping
     @Operation(summary = "La liste des projets")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Ok"),
@@ -71,7 +57,7 @@ public class ProjectControllerApi {
             @ApiResponse(responseCode = "403", description = "Organisation non autorisée"),
             @ApiResponse(responseCode = "500", description = "Erreur interne")
     })
-    @GetMapping({"", "/"})
+    @Tag(name = OpenApiTags.APPLICATION_MOBILE, description = OpenApiTags.APPLICATION_MOBILE_DESCRIPTION)
     public ResponseEntity<ProjectListResponse> getAll(
             @RequestParam(defaultValue = "0") int offset,
             @RequestParam(defaultValue = "20") int limit,
@@ -80,36 +66,12 @@ public class ProjectControllerApi {
             @RequestParam(defaultValue = "name:asc") String sort,
             @RequestHeader(value = HttpHeaders.ACCEPT_LANGUAGE, required = false) String acceptLanguage) {
 
-        if (offset < 0 || limit <= 0 || limit > MAX_PAGE_SIZE) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Paramètres de pagination invalides");
-        }
-        if (limit > 0 && offset % limit != 0) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "offset doit être un multiple de limit");
-        }
+        projectApiService.validatePagedListRequest(offset, limit);
+        ProjectApiCaller caller = projectApiService.requireCaller();
+        Page<AccessibleProjectForApi> rows = projectApiService.pageAccessibleProjects(
+                caller, organizationId, search, offset, limit, sort);
 
-        Person person = AuthenticatedUserUtils.getAuthenticatedUser()
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authentification requise"));
-
-        PersonDTO personDto = personMapper.convert(person);
-        Set<Long> institutionIds = institutionService.findInstitutionsOfPerson(personDto).stream()
-                .map(InstitutionDTO::getId)
-                .collect(Collectors.toSet());
-
-        if (organizationId != null && !institutionIds.contains(organizationId)) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Organisation non accessible");
-        }
-
-        Sort springSort = parseProjectSort(sort);
-        int pageNumber = offset / limit;
-        Pageable pageable = PageRequest.of(pageNumber, limit, springSort);
-
-        Page<AccessibleProjectForApi> rows = actionUnitService.findAccessibleProjects(
-                institutionIds,
-                organizationId,
-                search,
-                pageable);
-
-        String lang = resolvePrimaryLang(acceptLanguage);
+        String lang = ProjectApiService.primaryAcceptLanguage(acceptLanguage);
         List<ProjectResource> resources = rows.getContent().stream()
                 .map(row -> projectResponseMapper.toResource(row, lang))
                 .toList();
@@ -119,21 +81,6 @@ public class ProjectControllerApi {
         return ResponseEntity.ok()
                 .header("X-Total-Count", String.valueOf(rows.getTotalElements()))
                 .body(new ProjectListResponse(resources, meta));
-    }
-
-    private static Sort parseProjectSort(String sortParam) {
-        if (sortParam == null || sortParam.isBlank()) {
-            return Sort.by(Sort.Direction.ASC, "name");
-        }
-        String[] parts = sortParam.split(":", 2);
-        String property = parts[0].trim();
-        if (!ALLOWED_SORT_FIELDS.contains(property)) {
-            property = "name";
-        }
-        Sort.Direction direction = parts.length > 1 && "desc".equalsIgnoreCase(parts[1].trim())
-                ? Sort.Direction.DESC
-                : Sort.Direction.ASC;
-        return Sort.by(direction, property);
     }
 
     @Operation(summary = "Un projet via son identifiant",
@@ -147,43 +94,16 @@ public class ProjectControllerApi {
             @ApiResponse(responseCode = "500", description = "Erreur interne")
     })
     @GetMapping("/{id}")
-    public ResponseEntity<ProjectResponse> getById(
-            @PathVariable("id") String id,
-            @RequestHeader(value = HttpHeaders.ACCEPT_LANGUAGE, required = false) String acceptLanguage) {
-        Person person = AuthenticatedUserUtils.getAuthenticatedUser()
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authentification requise"));
-
-        PersonDTO personDto = personMapper.convert(person);
-        Set<Long> institutionIds = institutionService.findInstitutionsOfPerson(personDto).stream()
-                .map(InstitutionDTO::getId)
-                .collect(Collectors.toSet());
-
-        try {
-            AccessibleProjectForApi row = actionUnitService.findAccessibleProjectByKey(id, institutionIds);
-            String lang = resolvePrimaryLang(acceptLanguage);
-            ProjectResource resource = projectResponseMapper.toResource(row, lang);
-            return ResponseEntity.ok(new ProjectResponse(resource));
-        } catch (ActionUnitNotFoundException e) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage());
-        }
+    @Tag(name = OpenApiTags.APPLICATION_MOBILE, description = OpenApiTags.APPLICATION_MOBILE_DESCRIPTION)
+    public ResponseEntity<ProjectResponse> getById(@PathVariable("id") String id,
+                                                   @RequestHeader(value = HttpHeaders.ACCEPT_LANGUAGE, required = false)
+                                                   String acceptLanguage) {
+        ProjectApiCaller caller = projectApiService.requireCaller();
+        AccessibleProjectForApi row = projectApiService.requireAccessibleProject(caller, id);
+        String lang = ProjectApiService.primaryAcceptLanguage(acceptLanguage);
+        ProjectResource resource = projectResponseMapper.toResource(row, lang);
+        return ResponseEntity.ok(new ProjectResponse(resource));
     }
-
-    /**
-     * Extrait la langue principale depuis l'en-tête {@code Accept-Language} (première entrée, sans qualité).
-     */
-    private static String resolvePrimaryLang(String acceptLanguage) {
-        if (acceptLanguage == null || acceptLanguage.isBlank()) {
-            return Locale.FRENCH.getLanguage();
-        }
-        String first = acceptLanguage.split(",")[0].trim();
-        int semi = first.indexOf(';');
-        if (semi > 0) {
-            first = first.substring(0, semi).trim();
-        }
-        int dash = first.indexOf('-');
-        return (dash > 0 ? first.substring(0, dash) : first).toLowerCase(Locale.ROOT);
-    }
-
 
     @Operation(summary = "La liste des mobiliers d'un projet")
     @ApiResponses(value = {
@@ -191,7 +111,7 @@ public class ProjectControllerApi {
             @ApiResponse(responseCode = "500", description = "Erreur interne")
     })
     @GetMapping("/{id}/finds")
-    @Tag(name="Mobilier")
+    @Tag(name = "Mobilier")
     public ResponseEntity<FindListResponse> getFinds(
             @PathVariable Long id,
             @RequestParam(defaultValue = "0") int offset,
@@ -215,22 +135,39 @@ public class ProjectControllerApi {
         throw new ResponseStatusException(HttpStatus.NOT_IMPLEMENTED, "Not implemented yet");
     }
 
-
-
-    @Operation(summary = "Récupérer la liste paginée des unités d'enregistrement d'un lieu")
+    @Operation(summary = "Récupérer la liste paginée des unités d'enregistrement d'un projet",
+            description = "Clé de projet : identique à GET /api/v1/projects/{id} (id numérique, fullIdentifier, identifiant court). "
+                    + "Tri : paramètre sort au format « propriété:asc » ou « propriété:desc » "
+                    + "(propriétés autorisées : creationTime, id, identifier, fullIdentifier, openingDate, closingDate). "
+                    + "Valeur par défaut : creationTime:desc.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Ok"),
-            @ApiResponse(responseCode = "404", description = "Institution non trouvée"),
+            @ApiResponse(responseCode = "400", description = "Paramètres de pagination invalides"),
+            @ApiResponse(responseCode = "401", description = "Non authentifié"),
+            @ApiResponse(responseCode = "404", description = "Projet introuvable ou non accessible"),
             @ApiResponse(responseCode = "500", description = "Erreur interne")
     })
     @GetMapping("/{id}/recording-units")
-    @Tag(name = "Unité d'enregistrement")
+    @Tag(name = OpenApiTags.APPLICATION_MOBILE, description = OpenApiTags.APPLICATION_MOBILE_DESCRIPTION)
     public ResponseEntity<RecordingUnitListResponse> getList(
-            @PathVariable Long id,
+            @PathVariable("id") String id,
             @RequestParam(defaultValue = "0") int offset,
-            @RequestParam(defaultValue = "10") int limit) {
+            @RequestParam(defaultValue = "10") int limit,
+            @Parameter(description = "Tri, ex. fullIdentifier:asc ou creationTime:desc")
+            @RequestParam(defaultValue = "creationTime:desc") String sort) {
 
-        throw new ResponseStatusException(HttpStatus.NOT_IMPLEMENTED, "Not implemented yet");
+        projectApiService.validatePagedListRequest(offset, limit);
+        ProjectApiCaller caller = projectApiService.requireCaller();
+        Page<RecordingUnitDTO> page = projectApiService.pageRecordingUnitsForProject(caller, id, offset, limit, sort);
+
+        List<RecordingUnitResource> resources = page.getContent().stream()
+                .map(recordingUnitResourceMapper::convert)
+                .toList();
+
+        ListMeta meta = new ListMeta(page.getTotalElements(), limit, (long) offset);
+        return ResponseEntity.ok()
+                .header("X-Total-Count", String.valueOf(page.getTotalElements()))
+                .body(new RecordingUnitListResponse(resources, meta));
     }
 
 }
