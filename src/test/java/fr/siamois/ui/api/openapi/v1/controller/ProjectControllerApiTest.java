@@ -3,6 +3,7 @@ package fr.siamois.ui.api.openapi.v1.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import fr.siamois.domain.models.auth.Person;
+import fr.siamois.domain.models.exceptions.actionunit.ActionUnitNotFoundException;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.dto.api.AccessibleProjectForApi;
@@ -21,6 +22,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -34,6 +36,7 @@ import java.util.Set;
 
 import static org.hamcrest.Matchers.hasSize;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.verify;
@@ -161,7 +164,7 @@ class ProjectControllerApiTest {
         resource.setResourceType("projects");
         resource.setId("1");
         resource.setName("Fouille A");
-        when(projectResponseMapper.toResource(row)).thenReturn(resource);
+        when(projectResponseMapper.toResource(eq(row), anyString())).thenReturn(resource);
 
         mockMvc.perform(get("/api/v1/projects").param("offset", "0").param("limit", "20"))
                 .andExpect(status().isOk())
@@ -177,5 +180,154 @@ class ProjectControllerApiTest {
                 isNull(),
                 isNull(),
                 any(Pageable.class));
+    }
+
+    @Test
+    void getAllProjects_passesAcceptLanguageToMapper() throws Exception {
+        login();
+        when(personMapper.convert(person)).thenReturn(personDto);
+        when(institutionService.findInstitutionsOfPerson(personDto)).thenReturn(Set.of(institutionDto));
+
+        ActionUnitDTO au = new ActionUnitDTO();
+        au.setId(1L);
+        AccessibleProjectForApi row = new AccessibleProjectForApi(au, 0L, 0L);
+        when(actionUnitService.findAccessibleProjects(eq(Set.of(100L)), isNull(), isNull(), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(row), PageRequest.of(0, 20), 1));
+
+        ProjectResource resource = new ProjectResource();
+        resource.setId("1");
+        when(projectResponseMapper.toResource(eq(row), eq("en"))).thenReturn(resource);
+
+        mockMvc.perform(get("/api/v1/projects")
+                        .param("offset", "0")
+                        .param("limit", "20")
+                        .header(HttpHeaders.ACCEPT_LANGUAGE, "en-US,en;q=0.9"))
+                .andExpect(status().isOk());
+
+        verify(projectResponseMapper).toResource(eq(row), eq("en"));
+    }
+
+    @Test
+    void getProjectById_withoutAuthentication_returns401() throws Exception {
+        SecurityContextHolder.getContext().setAuthentication(
+                new AnonymousAuthenticationToken("key", "anonymousUser",
+                        AuthorityUtils.createAuthorityList("ROLE_ANONYMOUS")));
+
+        mockMvc.perform(get("/api/v1/projects/5"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void getProjectById_notFound_returns404() throws Exception {
+        login();
+        when(personMapper.convert(person)).thenReturn(personDto);
+        when(institutionService.findInstitutionsOfPerson(personDto)).thenReturn(Set.of(institutionDto));
+        when(actionUnitService.findAccessibleProjectByKey(eq("55"), eq(Set.of(100L))))
+                .thenThrow(new ActionUnitNotFoundException("missing"));
+
+        mockMvc.perform(get("/api/v1/projects/55"))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void getProjectById_success_returnsWrappedResource() throws Exception {
+        login();
+        when(personMapper.convert(person)).thenReturn(personDto);
+        when(institutionService.findInstitutionsOfPerson(personDto)).thenReturn(Set.of(institutionDto));
+
+        ActionUnitDTO au = new ActionUnitDTO();
+        au.setId(5L);
+        au.setName("Projet test");
+        AccessibleProjectForApi row = new AccessibleProjectForApi(au, 1L, 0L);
+        when(actionUnitService.findAccessibleProjectByKey(eq("5"), eq(Set.of(100L)))).thenReturn(row);
+
+        ProjectResource resource = new ProjectResource();
+        resource.setResourceType("projects");
+        resource.setId("5");
+        resource.setName("Projet test");
+        when(projectResponseMapper.toResource(eq(row), anyString())).thenReturn(resource);
+
+        mockMvc.perform(get("/api/v1/projects/5"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.name").value("Projet test"))
+                .andExpect(jsonPath("$.data.resourceType").value("projects"))
+                .andExpect(jsonPath("$.data.resourceId").value("5"));
+
+        verify(actionUnitService).findAccessibleProjectByKey(eq("5"), eq(Set.of(100L)));
+    }
+
+    /**
+     * Clé métier non numérique (fullIdentifier, etc.) : une seule variable de chemin.
+     * Les identifiants contenant « / » doivent être encodés ({@code %2F}) côté client ; beaucoup de piles Servlet
+     * rejettent {@code %2F} dans le chemin (erreur Servlet en MockMvc / Tomcat), donc ce cas n’est pas rejoué ici.
+     */
+    @Test
+    void getProjectById_nonNumericKey_passedToService() throws Exception {
+        login();
+        when(personMapper.convert(person)).thenReturn(personDto);
+        when(institutionService.findInstitutionsOfPerson(personDto)).thenReturn(Set.of(institutionDto));
+
+        ActionUnitDTO au = new ActionUnitDTO();
+        au.setId(12L);
+        au.setName("Par full id");
+        AccessibleProjectForApi row = new AccessibleProjectForApi(au, 0L, 0L);
+        when(actionUnitService.findAccessibleProjectByKey(eq("INST-PROJ-2025"), eq(Set.of(100L)))).thenReturn(row);
+
+        ProjectResource resource = new ProjectResource();
+        resource.setResourceType("projects");
+        resource.setId("12");
+        resource.setName("Par full id");
+        when(projectResponseMapper.toResource(eq(row), anyString())).thenReturn(resource);
+
+        mockMvc.perform(get("/api/v1/projects/{id}", "INST-PROJ-2025"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.name").value("Par full id"));
+
+        verify(actionUnitService).findAccessibleProjectByKey(eq("INST-PROJ-2025"), eq(Set.of(100L)));
+    }
+
+    @Test
+    void getProjectById_passesAcceptLanguageToMapper() throws Exception {
+        login();
+        when(personMapper.convert(person)).thenReturn(personDto);
+        when(institutionService.findInstitutionsOfPerson(personDto)).thenReturn(Set.of(institutionDto));
+
+        ActionUnitDTO au = new ActionUnitDTO();
+        au.setId(3L);
+        AccessibleProjectForApi row = new AccessibleProjectForApi(au, 0L, 0L);
+        when(actionUnitService.findAccessibleProjectByKey(eq("3"), eq(Set.of(100L)))).thenReturn(row);
+
+        ProjectResource resource = new ProjectResource();
+        resource.setId("3");
+        when(projectResponseMapper.toResource(eq(row), eq("de"))).thenReturn(resource);
+
+        mockMvc.perform(get("/api/v1/projects/3").header(HttpHeaders.ACCEPT_LANGUAGE, "de-DE"))
+                .andExpect(status().isOk());
+
+        verify(projectResponseMapper).toResource(eq(row), eq("de"));
+    }
+
+    @Test
+    void getProjectById_shortIdentifierPassedToService() throws Exception {
+        login();
+        when(personMapper.convert(person)).thenReturn(personDto);
+        when(institutionService.findInstitutionsOfPerson(personDto)).thenReturn(Set.of(institutionDto));
+
+        ActionUnitDTO au = new ActionUnitDTO();
+        au.setId(33L);
+        au.setName("Chartres");
+        AccessibleProjectForApi row = new AccessibleProjectForApi(au, 0L, 0L);
+        when(actionUnitService.findAccessibleProjectByKey(eq("C309_01"), eq(Set.of(100L)))).thenReturn(row);
+
+        ProjectResource resource = new ProjectResource();
+        resource.setId("33");
+        resource.setName("Chartres");
+        when(projectResponseMapper.toResource(eq(row), anyString())).thenReturn(resource);
+
+        mockMvc.perform(get("/api/v1/projects/C309_01"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.name").value("Chartres"));
+
+        verify(actionUnitService).findAccessibleProjectByKey(eq("C309_01"), eq(Set.of(100L)));
     }
 }

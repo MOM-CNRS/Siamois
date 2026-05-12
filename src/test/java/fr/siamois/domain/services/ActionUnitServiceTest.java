@@ -1365,4 +1365,136 @@ class ActionUnitServiceTest {
         verify(actionUnitRepository).countChildActionUnitsByParentIds(eq(List.of(1L, 2L)));
     }
 
+    // ------------------------------------------------------------------
+    // findAccessibleProjectByKey
+    // ------------------------------------------------------------------
+
+    @Test
+    void findAccessibleProjectByKey_emptyInstitutions_throws() {
+        assertThrows(ActionUnitNotFoundException.class,
+                () -> actionUnitService.findAccessibleProjectByKey("1", Set.of()));
+    }
+
+    @Test
+    void findAccessibleProjectByKey_unknownNumericId_throws() {
+        when(actionUnitRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThrows(ActionUnitNotFoundException.class,
+                () -> actionUnitService.findAccessibleProjectByKey("99", Set.of(10L)));
+    }
+
+    @Test
+    void findAccessibleProjectByKey_wrongInstitution_throws() {
+        actionUnit1.setFullIdentifier("DETAIL-AU-WRONG");
+        actionUnit1.setId(5L);
+        actionUnit1dto.setId(5L);
+        when(actionUnitRepository.findById(5L)).thenReturn(Optional.of(actionUnit1));
+        InstitutionDTO wrongInst = new InstitutionDTO();
+        wrongInst.setId(200L);
+        actionUnit1dto.setCreatedByInstitution(wrongInst);
+        when(actionUnitMapper.convert(actionUnit1)).thenReturn(actionUnit1dto);
+
+        assertThrows(ActionUnitNotFoundException.class,
+                () -> actionUnitService.findAccessibleProjectByKey("5", Set.of(100L)));
+    }
+
+    @Test
+    void findAccessibleProjectByKey_returnsRowWithCounts_forNumericKey() {
+        actionUnit1.setFullIdentifier("DETAIL-AU-OK");
+        actionUnit1.setId(5L);
+        actionUnit1dto.setId(5L);
+        when(actionUnitRepository.findById(5L)).thenReturn(Optional.of(actionUnit1));
+        InstitutionDTO inst = new InstitutionDTO();
+        inst.setId(100L);
+        actionUnit1dto.setCreatedByInstitution(inst);
+        when(actionUnitMapper.convert(actionUnit1)).thenReturn(actionUnit1dto);
+        List<Object[]> ruRows = new ArrayList<>();
+        ruRows.add(new Object[]{5L, 7L});
+        when(recordingUnitRepository.countRecordingUnitsGroupedByActionUnitIds(eq(List.of(5L)))).thenReturn(ruRows);
+        List<Object[]> childRows = new ArrayList<>();
+        childRows.add(new Object[]{5L, 2L});
+        when(actionUnitRepository.countChildActionUnitsByParentIds(eq(List.of(5L)))).thenReturn(childRows);
+
+        AccessibleProjectForApi result = actionUnitService.findAccessibleProjectByKey("5", Set.of(100L));
+
+        assertThat(result.actionUnit().getId()).isEqualTo(5L);
+        assertThat(result.recordingUnitCount()).isEqualTo(7L);
+        assertThat(result.childActionUnitCount()).isEqualTo(2L);
+    }
+
+    @Test
+    void findAccessibleProjectByKey_resolvesByFullIdentifierWhenNonNumeric() {
+        actionUnit1.setFullIdentifier("INST-PROJ-2025");
+        actionUnit1.setId(5L);
+        actionUnit1dto.setId(5L);
+        when(actionUnitRepository.findByFullIdentifier("INST-PROJ-2025")).thenReturn(Optional.of(actionUnit1));
+        InstitutionDTO inst = new InstitutionDTO();
+        inst.setId(100L);
+        actionUnit1dto.setCreatedByInstitution(inst);
+        when(actionUnitMapper.convert(actionUnit1)).thenReturn(actionUnit1dto);
+        when(recordingUnitRepository.countRecordingUnitsGroupedByActionUnitIds(eq(List.of(5L))))
+                .thenReturn(new ArrayList<>());
+        when(actionUnitRepository.countChildActionUnitsByParentIds(eq(List.of(5L))))
+                .thenReturn(new ArrayList<>());
+
+        AccessibleProjectForApi result = actionUnitService.findAccessibleProjectByKey("INST-PROJ-2025", Set.of(100L));
+
+        assertThat(result.actionUnit().getId()).isEqualTo(5L);
+        verify(actionUnitRepository, never()).findById(anyLong());
+    }
+
+    @Test
+    void findAccessibleProjectByKey_resolvesByIdentifierWhenFullIdentifierUnknown() {
+        when(actionUnitRepository.findByFullIdentifier("C309_01")).thenReturn(Optional.empty());
+        when(actionUnitRepository.findByIdentifierAndCreatedByInstitutionId("C309_01", 100L))
+                .thenReturn(Optional.of(actionUnit1));
+        actionUnit1.setFullIdentifier("SHORT-ID-TEST-AU");
+        actionUnit1.setId(33L);
+        actionUnit1dto.setId(33L);
+        InstitutionDTO inst = new InstitutionDTO();
+        inst.setId(100L);
+        actionUnit1dto.setCreatedByInstitution(inst);
+        when(actionUnitMapper.convert(actionUnit1)).thenReturn(actionUnit1dto);
+        when(recordingUnitRepository.countRecordingUnitsGroupedByActionUnitIds(eq(List.of(33L))))
+                .thenReturn(new ArrayList<>());
+        when(actionUnitRepository.countChildActionUnitsByParentIds(eq(List.of(33L))))
+                .thenReturn(new ArrayList<>());
+
+        AccessibleProjectForApi result = actionUnitService.findAccessibleProjectByKey("C309_01", Set.of(100L));
+
+        assertThat(result.actionUnit().getId()).isEqualTo(33L);
+        verify(actionUnitRepository).findByFullIdentifier("C309_01");
+        verify(actionUnitRepository).findByIdentifierAndCreatedByInstitutionId("C309_01", 100L);
+    }
+
+    @Test
+    void findAccessibleProjectByKey_scansInstitutionsForIdentifierUntilFound() {
+        when(actionUnitRepository.findByFullIdentifier("ID-SHORT")).thenReturn(Optional.empty());
+        when(actionUnitRepository.findByIdentifierAndCreatedByInstitutionId("ID-SHORT", 100L))
+                .thenReturn(Optional.empty());
+        when(actionUnitRepository.findByIdentifierAndCreatedByInstitutionId("ID-SHORT", 200L))
+                .thenReturn(Optional.of(actionUnit1));
+
+        actionUnit1.setFullIdentifier("AU-MULTI-INST");
+        actionUnit1.setId(77L);
+        actionUnit1dto.setId(77L);
+        InstitutionDTO inst200 = new InstitutionDTO();
+        inst200.setId(200L);
+        actionUnit1dto.setCreatedByInstitution(inst200);
+        when(actionUnitMapper.convert(actionUnit1)).thenReturn(actionUnit1dto);
+        when(recordingUnitRepository.countRecordingUnitsGroupedByActionUnitIds(eq(List.of(77L))))
+                .thenReturn(new ArrayList<>());
+        when(actionUnitRepository.countChildActionUnitsByParentIds(eq(List.of(77L))))
+                .thenReturn(new ArrayList<>());
+
+        Set<Long> institutionsInScanOrder = new LinkedHashSet<>();
+        institutionsInScanOrder.add(100L);
+        institutionsInScanOrder.add(200L);
+        AccessibleProjectForApi result = actionUnitService.findAccessibleProjectByKey("ID-SHORT", institutionsInScanOrder);
+
+        assertThat(result.actionUnit().getId()).isEqualTo(77L);
+        verify(actionUnitRepository).findByIdentifierAndCreatedByInstitutionId("ID-SHORT", 100L);
+        verify(actionUnitRepository).findByIdentifierAndCreatedByInstitutionId("ID-SHORT", 200L);
+    }
+
 }

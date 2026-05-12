@@ -2,6 +2,7 @@ package fr.siamois.ui.api.openapi.v1.controller;
 
 
 import fr.siamois.domain.models.auth.Person;
+import fr.siamois.domain.models.exceptions.actionunit.ActionUnitNotFoundException;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.dto.api.AccessibleProjectForApi;
@@ -27,12 +28,14 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -74,7 +77,8 @@ public class ProjectControllerApi {
             @RequestParam(defaultValue = "20") int limit,
             @RequestParam(required = false) Long organizationId,
             @RequestParam(required = false) String search,
-            @RequestParam(defaultValue = "name:asc") String sort) {
+            @RequestParam(defaultValue = "name:asc") String sort,
+            @RequestHeader(value = HttpHeaders.ACCEPT_LANGUAGE, required = false) String acceptLanguage) {
 
         if (offset < 0 || limit <= 0 || limit > MAX_PAGE_SIZE) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Paramètres de pagination invalides");
@@ -105,8 +109,9 @@ public class ProjectControllerApi {
                 search,
                 pageable);
 
+        String lang = resolvePrimaryLang(acceptLanguage);
         List<ProjectResource> resources = rows.getContent().stream()
-                .map(projectResponseMapper::toResource)
+                .map(row -> projectResponseMapper.toResource(row, lang))
                 .toList();
 
         ListMeta meta = new ListMeta(rows.getTotalElements(), limit, (long) offset);
@@ -131,16 +136,52 @@ public class ProjectControllerApi {
         return Sort.by(direction, property);
     }
 
-    @Operation(summary = "Un projet via son identifiant")
+    @Operation(summary = "Un projet via son identifiant",
+            description = "Clé d'URL : id numérique (clé primaire), identifiant métier complet (fullIdentifier), "
+                    + "ou identifiant court du projet dans une de vos organisations. "
+                    + "Les caractères réservés (ex. « / ») doivent être encodés pour l'URL.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Ok"),
+            @ApiResponse(responseCode = "401", description = "Non authentifié"),
+            @ApiResponse(responseCode = "404", description = "Projet introuvable ou non accessible"),
             @ApiResponse(responseCode = "500", description = "Erreur interne")
     })
     @GetMapping("/{id}")
     public ResponseEntity<ProjectResponse> getById(
-            @PathVariable Long id
-    ) {
-        throw new ResponseStatusException(HttpStatus.NOT_IMPLEMENTED, "Not implemented yet");
+            @PathVariable("id") String id,
+            @RequestHeader(value = HttpHeaders.ACCEPT_LANGUAGE, required = false) String acceptLanguage) {
+        Person person = AuthenticatedUserUtils.getAuthenticatedUser()
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authentification requise"));
+
+        PersonDTO personDto = personMapper.convert(person);
+        Set<Long> institutionIds = institutionService.findInstitutionsOfPerson(personDto).stream()
+                .map(InstitutionDTO::getId)
+                .collect(Collectors.toSet());
+
+        try {
+            AccessibleProjectForApi row = actionUnitService.findAccessibleProjectByKey(id, institutionIds);
+            String lang = resolvePrimaryLang(acceptLanguage);
+            ProjectResource resource = projectResponseMapper.toResource(row, lang);
+            return ResponseEntity.ok(new ProjectResponse(resource));
+        } catch (ActionUnitNotFoundException e) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage());
+        }
+    }
+
+    /**
+     * Extrait la langue principale depuis l'en-tête {@code Accept-Language} (première entrée, sans qualité).
+     */
+    private static String resolvePrimaryLang(String acceptLanguage) {
+        if (acceptLanguage == null || acceptLanguage.isBlank()) {
+            return Locale.FRENCH.getLanguage();
+        }
+        String first = acceptLanguage.split(",")[0].trim();
+        int semi = first.indexOf(';');
+        if (semi > 0) {
+            first = first.substring(0, semi).trim();
+        }
+        int dash = first.indexOf('-');
+        return (dash > 0 ? first.substring(0, dash) : first).toLowerCase(Locale.ROOT);
     }
 
 
