@@ -20,15 +20,19 @@ import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.recordingunit.identifier.generic.RuIdentifierResolver;
 import fr.siamois.domain.services.recordingunit.identifier.generic.RuNumericalIdentifierResolver;
 import fr.siamois.dto.FilterDTO;
+import fr.siamois.dto.StratigraphicRelationshipDTO;
 import fr.siamois.dto.entity.*;
 import fr.siamois.infrastructure.database.repositories.person.PersonRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitIdCounterRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitIdInfoRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitRepository;
+import fr.siamois.infrastructure.database.repositories.recordingunit.StratigraphicRelationshipRepository;
 import fr.siamois.infrastructure.database.repositories.specs.RecordingUnitSpec;
 import fr.siamois.infrastructure.database.repositories.team.TeamMemberRepository;
 import fr.siamois.mapper.ActionUnitSummaryMapper;
 import fr.siamois.mapper.RecordingUnitMapper;
+import fr.siamois.mapper.RecordingUnitSummaryMapper;
+import fr.siamois.mapper.StatigraphicRelationshipMapper;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -73,6 +77,9 @@ public class RecordingUnitService implements ArkEntityService {
     private final RecordingUnitIdCounterRepository recordingUnitIdCounterRepository;
     private final RecordingUnitIdInfoRepository recordingUnitIdInfoRepository;
     private final RecordingUnitMapper recordingUnitMapper;
+    private final StratigraphicRelationshipRepository stratigraphicRelationshipRepository;
+    private final StatigraphicRelationshipMapper stratigraphicRelationshipMapper;
+    private final RecordingUnitSummaryMapper recordingUnitSummaryMapper;
     private final ConversionService conversionService;
     private final ApplicationContext applicationContext;
     private final ActionUnitSummaryMapper actionUnitSummaryMapper;
@@ -374,6 +381,14 @@ public class RecordingUnitService implements ArkEntityService {
     }
 
     /**
+     * Relations exposées pour l'API (stratigraphie + hiérarchie parent/enfant).
+     */
+    public record RecordingUnitRelationsBundle(List<StratigraphicRelationshipDTO> stratigraphicRelationships,
+                                               List<RecordingUnitSummaryDTO> parents,
+                                               List<RecordingUnitSummaryDTO> children) {
+    }
+
+    /**
      * Résout une UE pour les institutions accessibles à l'utilisateur (API OpenAPI).
      * <ul>
      *     <li>Si la clé est composée uniquement de chiffres : recherche par {@code recording_unit_id} ;
@@ -405,6 +420,35 @@ public class RecordingUnitService implements ArkEntityService {
                                                              Set<Long> accessibleInstitutionIds,
                                                              List<String> counts) {
         return findAccessibleRecordingUnitWithEntity(idOrKey, accessibleInstitutionIds, counts).dto();
+    }
+
+    /**
+     * Relations liées à une UE : stratigraphie (unit1 ou unit2) et liens hiérarchiques
+     * ({@link RecordingUnit#getParents()} / {@link RecordingUnit#getChildren()}), dans le périmètre
+     * d'institutions accessibles pour la résolution de l'UE cible.
+     */
+    @Transactional(readOnly = true)
+    public RecordingUnitRelationsBundle findRelationsForAccessibleRecordingUnit(String idOrKey,
+                                                                                  Set<Long> accessibleInstitutionIds) {
+        RecordingUnit unit = findAccessibleRecordingUnitWithEntity(idOrKey, accessibleInstitutionIds, null).entity();
+        Long id = unit.getId();
+        List<StratigraphicRelationshipDTO> stratigraphic = stratigraphicRelationshipRepository
+                .findAllInvolvingRecordingUnitId(id).stream()
+                .map(stratigraphicRelationshipMapper::convert)
+                .toList();
+        List<RecordingUnitSummaryDTO> parents = toAdjacentUnitSummaries(unit.getParents());
+        List<RecordingUnitSummaryDTO> children = toAdjacentUnitSummaries(unit.getChildren());
+        return new RecordingUnitRelationsBundle(stratigraphic, parents, children);
+    }
+
+    private List<RecordingUnitSummaryDTO> toAdjacentUnitSummaries(Set<RecordingUnit> adjacent) {
+        if (adjacent == null || adjacent.isEmpty()) {
+            return List.of();
+        }
+        return adjacent.stream()
+                .map(recordingUnitSummaryMapper::convert)
+                .sorted(Comparator.comparing(RecordingUnitSummaryDTO::getId, Comparator.nullsLast(Long::compareTo)))
+                .toList();
     }
 
     private RecordingUnit resolveRecordingUnitEntityByKey(String idOrKey, Set<Long> accessibleInstitutionIds) {

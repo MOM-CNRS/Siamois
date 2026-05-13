@@ -5,7 +5,9 @@ import fr.siamois.domain.models.recordingunit.StratigraphicRelationship;
 import fr.siamois.domain.models.recordingunit.StratigraphicRelationshipId;
 import fr.siamois.domain.models.vocabulary.Concept;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.history.RevisionRepository;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -23,4 +25,7 @@ public interface StratigraphicRelationshipRepository extends
     List<StratigraphicRelationship> findByUnit1AndConcept(RecordingUnit unit, Concept type);
 
     List<StratigraphicRelationship> findByUnit2AndConcept(RecordingUnit unit, Concept type);
+
+    @Query("SELECT r FROM StratigraphicRelationship r WHERE r.unit1.id = :recordingUnitId OR r.unit2.id = :recordingUnitId")
+    List<StratigraphicRelationship> findAllInvolvingRecordingUnitId(@Param("recordingUnitId") Long recordingUnitId);
 }

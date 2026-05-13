@@ -5,6 +5,8 @@ import fr.siamois.ui.api.openapi.v1.response.FindListResponse;
 import fr.siamois.ui.api.openapi.v1.response.RecordingUnitListResponse;
 import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitMobileDetailData;
 import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitMobileDetailResponse;
+import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitRelationsData;
+import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitRelationsResponse;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiCaller;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiService;
 import fr.siamois.ui.api.openapi.v1.service.RecordingUnitOpenApiService;
@@ -89,6 +91,32 @@ public class RecordingUnitsControllerApi {
                 lang);
 
         return ResponseEntity.ok(new RecordingUnitMobileDetailResponse(data));
+    }
+
+    @Operation(
+            summary = "Relations d'une unité d'enregistrement",
+            description = "Stratigraphie (relations unit1/unit2) et hiérarchie (parents et enfants via recording_unit_hierarchy). "
+                    + "Même périmètre d'accès que le détail UE (institutions du JWT)."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Ok"),
+            @ApiResponse(responseCode = "401", description = "Non authentifié"),
+            @ApiResponse(responseCode = "404", description = "UE introuvable ou hors périmètre"),
+            @ApiResponse(responseCode = "500", description = "Erreur interne")
+    })
+    @GetMapping("/{id}/relations")
+    @Tag(name = OpenApiTags.APPLICATION_MOBILE, description = OpenApiTags.APPLICATION_MOBILE_DESCRIPTION)
+    public ResponseEntity<RecordingUnitRelationsResponse> getRelations(
+            @Parameter(
+                    description = "Clé d'UE : identifiant numérique (recording_unit_id) ou full_identifier.",
+                    schema = @Schema(type = "string", example = "INST-PROJ-UE42")
+            )
+            @PathVariable("id") String id) {
+
+        ProjectApiCaller caller = projectApiService.requireCaller();
+        RecordingUnitRelationsData data = recordingUnitOpenApiService.buildRecordingUnitRelations(
+                id, caller.accessibleInstitutionIds());
+        return ResponseEntity.ok(new RecordingUnitRelationsResponse(data));
     }
 
     @Operation(summary = "La liste des mobiliers d'une UE")

@@ -27,6 +27,7 @@ import fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitResource
 import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitFormBundle;
 import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitFormFieldApi;
 import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitMobileDetailData;
+import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitRelationsData;
 import fr.siamois.ui.form.fieldsource.FieldSource;
 import fr.siamois.ui.form.fieldsource.PanelFieldSource;
 import fr.siamois.ui.form.dto.FormUiDto;
@@ -228,5 +229,16 @@ public class RecordingUnitOpenApiService {
             }
         }
         return null;
+    }
+
+    @Transactional(readOnly = true)
+    public RecordingUnitRelationsData buildRecordingUnitRelations(String recordingUnitKey,
+                                                                  Set<Long> accessibleInstitutionIds) {
+        RecordingUnitService.RecordingUnitRelationsBundle bundle =
+                recordingUnitService.findRelationsForAccessibleRecordingUnit(recordingUnitKey, accessibleInstitutionIds);
+        return new RecordingUnitRelationsData(
+                bundle.stratigraphicRelationships(),
+                bundle.parents(),
+                bundle.children());
     }
 }
