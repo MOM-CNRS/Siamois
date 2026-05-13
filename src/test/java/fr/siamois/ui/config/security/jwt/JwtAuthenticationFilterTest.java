@@ -234,10 +234,8 @@ class JwtAuthenticationFilterTest {
     }
 
     @Test
-    void jsonEscape_messageContainsQuote() throws Exception {
-        // Couverture indirecte via réponse : header Authorization absent déjà testé ;
-        // ce test vérifie qu'une JwtException avec message spécial ne casse pas le JSON.
-        when(jwtService.parseAndValidateAccessToken("x")).thenThrow(new JwtException("bad \"quote\""));
+    void invalidJwt_responseUsesGenericMessage_notRawJwtExceptionText() throws Exception {
+        when(jwtService.parseAndValidateAccessToken("x")).thenThrow(new JwtException("sensitive detail"));
 
         MockHttpServletRequest req = new MockHttpServletRequest();
         req.setServletPath("/api/v1/x");
@@ -246,6 +244,7 @@ class JwtAuthenticationFilterTest {
 
         filter.doFilter(req, res, filterChain);
 
-        assertThat(res.getContentAsString()).contains("\\\"quote\\\"");
+        assertThat(res.getContentAsString()).contains("Invalid or expired token");
+        assertThat(res.getContentAsString()).doesNotContain("sensitive detail");
     }
 }
