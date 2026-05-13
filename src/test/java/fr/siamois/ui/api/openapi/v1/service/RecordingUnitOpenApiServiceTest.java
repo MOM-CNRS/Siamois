@@ -18,15 +18,18 @@ import fr.siamois.domain.services.attributeconverter.CustomFormLayoutConverter;
 import fr.siamois.domain.services.form.FormService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.vocabulary.FieldConfigurationService;
+import fr.siamois.dto.StratigraphicRelationshipDTO;
 import fr.siamois.dto.entity.ConceptDTO;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.dto.entity.RecordingUnitDTO;
+import fr.siamois.dto.entity.RecordingUnitSummaryDTO;
 import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
 import fr.siamois.ui.api.openapi.v1.mapper.RecordingUnitResponseMapper;
 import fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitResource;
 import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitFormBundle;
 import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitMobileDetailData;
+import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitRelationsData;
 import fr.siamois.mapper.ConceptMapper;
 import fr.siamois.ui.form.dto.CustomColUiDto;
 import fr.siamois.ui.form.dto.CustomFormPanelUiDto;
@@ -572,6 +575,25 @@ class RecordingUnitOpenApiServiceTest {
 
         assertThat(data.fields().get("88").currentValue()).isSameAs(conceptDto);
         verify(conceptMapper).convert(jpaConcept);
+    }
+
+    @Test
+    void buildRecordingUnitRelations_mapsBundleFromRecordingUnitService() {
+        StratigraphicRelationshipDTO strat = new StratigraphicRelationshipDTO();
+        RecordingUnitSummaryDTO parent = new RecordingUnitSummaryDTO();
+        parent.setId(201L);
+        RecordingUnitSummaryDTO child = new RecordingUnitSummaryDTO();
+        child.setId(202L);
+        RecordingUnitService.RecordingUnitRelationsBundle bundle =
+                new RecordingUnitService.RecordingUnitRelationsBundle(List.of(strat), List.of(parent), List.of(child));
+        when(recordingUnitService.findRelationsForAccessibleRecordingUnit(eq("42"), eq(SCOPE))).thenReturn(bundle);
+
+        RecordingUnitRelationsData data = service.buildRecordingUnitRelations("42", SCOPE);
+
+        assertThat(data.getStratigraphicRelationships()).containsExactly(strat);
+        assertThat(data.getParents()).containsExactly(parent);
+        assertThat(data.getChildren()).containsExactly(child);
+        verify(recordingUnitService).findRelationsForAccessibleRecordingUnit("42", SCOPE);
     }
 
     private static FormUiDto formUiDtoWithOneField(CustomField field) {
