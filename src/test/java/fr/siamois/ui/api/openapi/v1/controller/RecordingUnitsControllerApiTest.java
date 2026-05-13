@@ -9,6 +9,7 @@ import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.document.DocumentService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.dto.StratigraphicRelationshipDTO;
+import fr.siamois.dto.entity.ConceptDTO;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.dto.entity.RecordingUnitSummaryDTO;
@@ -17,6 +18,9 @@ import fr.siamois.mapper.PersonMapper;
 import fr.siamois.ui.api.openapi.v1.mapper.ProjectDocumentOpenApiMapper;
 import fr.siamois.ui.api.handler.RestExceptionHandler;
 import fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitResource;
+import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitCreateFormData;
+import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitFormBundle;
+import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitFormFieldApi;
 import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitMobileDetailData;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiService;
 import fr.siamois.ui.api.openapi.v1.service.RecordingUnitOpenApiService;
@@ -26,18 +30,23 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -300,5 +309,122 @@ class RecordingUnitsControllerApiTest {
         mockMvc.perform(get("/api/v1/recording-units/404-key/relations"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.message").value("missing"));
+    }
+
+    @Test
+    void getRecordingUnitCreateForm_withoutAuth_returns401() throws Exception {
+        SecurityContextHolder.clearContext();
+
+        mockMvc.perform(get("/api/v1/recording-units/creation-form")
+                        .param("organizationId", "10")
+                        .param("recordingUnitTypeConceptId", "1"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void getRecordingUnitCreateForm_orgForbidden_returns403() throws Exception {
+        when(personMapper.convert(person)).thenReturn(personDto);
+        when(institutionService.findInstitutionsOfPerson(personDto)).thenReturn(Set.of(institutionDto));
+
+        mockMvc.perform(get("/api/v1/recording-units/creation-form")
+                        .param("organizationId", "999")
+                        .param("recordingUnitTypeConceptId", "1"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void getRecordingUnitCreateForm_success_returnsJson() throws Exception {
+        when(personMapper.convert(person)).thenReturn(personDto);
+        when(institutionService.findInstitutionsOfPerson(personDto)).thenReturn(Set.of(institutionDto));
+
+        ConceptDTO type = new ConceptDTO();
+        type.setId(3L);
+        RecordingUnitCreateFormData payload = new RecordingUnitCreateFormData(type, null, Map.of(), Map.of());
+        when(recordingUnitOpenApiService.buildRecordingUnitCreateForm(eq(10L), eq(3L), eq(personDto), eq("fr")))
+                .thenReturn(payload);
+
+        mockMvc.perform(get("/api/v1/recording-units/creation-form")
+                        .param("organizationId", "10")
+                        .param("recordingUnitTypeConceptId", "3")
+                        .header("Accept-Language", "fr"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.recordingUnitType.id").value(3));
+
+        verify(recordingUnitOpenApiService).buildRecordingUnitCreateForm(10L, 3L, personDto, "fr");
+    }
+
+    @Test
+    void getRecordingUnitCreateForm_whenServiceNotFound_returns404() throws Exception {
+        when(personMapper.convert(person)).thenReturn(personDto);
+        when(institutionService.findInstitutionsOfPerson(personDto)).thenReturn(Set.of(institutionDto));
+        when(recordingUnitOpenApiService.buildRecordingUnitCreateForm(anyLong(), anyLong(), eq(personDto), anyString()))
+                .thenThrow(new ResponseStatusException(HttpStatus.NOT_FOUND, "Recording unit type not found"));
+
+        mockMvc.perform(get("/api/v1/recording-units/creation-form")
+                        .param("organizationId", "10")
+                        .param("recordingUnitTypeConceptId", "99"))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void getRecordingUnitCreateForm_passesAcceptLanguageToService() throws Exception {
+        when(personMapper.convert(person)).thenReturn(personDto);
+        when(institutionService.findInstitutionsOfPerson(personDto)).thenReturn(Set.of(institutionDto));
+
+        ConceptDTO type = new ConceptDTO();
+        type.setId(1L);
+        when(recordingUnitOpenApiService.buildRecordingUnitCreateForm(eq(10L), eq(1L), eq(personDto), eq("en")))
+                .thenReturn(new RecordingUnitCreateFormData(type, null, Map.of(), Map.of()));
+
+        mockMvc.perform(get("/api/v1/recording-units/creation-form")
+                        .param("organizationId", "10")
+                        .param("recordingUnitTypeConceptId", "1")
+                        .header(HttpHeaders.ACCEPT_LANGUAGE, "en-US,en;q=0.9"))
+                .andExpect(status().isOk());
+
+        verify(recordingUnitOpenApiService).buildRecordingUnitCreateForm(10L, 1L, personDto, "en");
+    }
+
+    @Test
+    void getRecordingUnitCreateForm_withoutAcceptLanguage_passesFrenchDefault() throws Exception {
+        when(personMapper.convert(person)).thenReturn(personDto);
+        when(institutionService.findInstitutionsOfPerson(personDto)).thenReturn(Set.of(institutionDto));
+
+        ConceptDTO type = new ConceptDTO();
+        type.setId(2L);
+        when(recordingUnitOpenApiService.buildRecordingUnitCreateForm(eq(10L), eq(2L), eq(personDto), eq("fr")))
+                .thenReturn(new RecordingUnitCreateFormData(type, null, Map.of(), Map.of()));
+
+        mockMvc.perform(get("/api/v1/recording-units/creation-form")
+                        .param("organizationId", "10")
+                        .param("recordingUnitTypeConceptId", "2"))
+                .andExpect(status().isOk());
+
+        verify(recordingUnitOpenApiService).buildRecordingUnitCreateForm(10L, 2L, personDto, "fr");
+    }
+
+    @Test
+    void getRecordingUnitCreateForm_success_returnsFormBundleAndFieldsInJson() throws Exception {
+        when(personMapper.convert(person)).thenReturn(personDto);
+        when(institutionService.findInstitutionsOfPerson(personDto)).thenReturn(Set.of(institutionDto));
+
+        ConceptDTO type = new ConceptDTO();
+        type.setId(8L);
+        RecordingUnitFormBundle bundle = new RecordingUnitFormBundle(50L, "Mon formulaire", "D", "{\"layout\":[]}");
+        RecordingUnitFormFieldApi field = new RecordingUnitFormFieldApi(
+                12L, "TEXT", "Libellé", null, null, false, null, null);
+        Map<String, RecordingUnitFormFieldApi> fields = Map.of("12", field);
+        RecordingUnitCreateFormData payload = new RecordingUnitCreateFormData(type, bundle, fields, Map.of());
+        when(recordingUnitOpenApiService.buildRecordingUnitCreateForm(eq(10L), eq(8L), eq(personDto), eq("fr")))
+                .thenReturn(payload);
+
+        mockMvc.perform(get("/api/v1/recording-units/creation-form")
+                        .param("organizationId", "10")
+                        .param("recordingUnitTypeConceptId", "8"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.form.formId").value(50))
+                .andExpect(jsonPath("$.data.form.name").value("Mon formulaire"))
+                .andExpect(jsonPath("$.data.fields['12'].fieldId").value(12))
+                .andExpect(jsonPath("$.data.fields['12'].answerType").value("TEXT"));
     }
 }

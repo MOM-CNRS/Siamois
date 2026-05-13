@@ -11,9 +11,10 @@ import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerSelectOn
 import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerText;
 import fr.siamois.domain.models.form.customform.CustomForm;
 import fr.siamois.domain.models.form.customformresponse.CustomFormResponse;
-import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.UserInfo;
+import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
+import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.attributeconverter.CustomFormLayoutConverter;
 import fr.siamois.domain.services.form.FormService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
@@ -24,9 +25,11 @@ import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.dto.entity.RecordingUnitDTO;
 import fr.siamois.dto.entity.RecordingUnitSummaryDTO;
+import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
 import fr.siamois.ui.api.openapi.v1.mapper.RecordingUnitResponseMapper;
 import fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitResource;
+import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitCreateFormData;
 import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitFormBundle;
 import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitMobileDetailData;
 import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitRelationsData;
@@ -48,14 +51,18 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.core.convert.ConversionService;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
+import java.util.Optional;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
@@ -86,6 +93,10 @@ class RecordingUnitOpenApiServiceTest {
     private CustomFormLayoutConverter customFormLayoutConverter;
     @Mock
     private ConceptMapper conceptMapper;
+    @Mock
+    private InstitutionService institutionService;
+    @Mock
+    private ConceptRepository conceptRepository;
 
     private RecordingUnitOpenApiService service;
 
@@ -103,7 +114,9 @@ class RecordingUnitOpenApiServiceTest {
                 recordingUnitResponseMapper,
                 conversionService,
                 customFormLayoutConverter,
-                conceptMapper);
+                conceptMapper,
+                institutionService,
+                conceptRepository);
 
         personDto = new PersonDTO();
         personDto.setId(1L);
@@ -594,6 +607,185 @@ class RecordingUnitOpenApiServiceTest {
         assertThat(data.getParents()).containsExactly(parent);
         assertThat(data.getChildren()).containsExactly(child);
         verify(recordingUnitService).findRelationsForAccessibleRecordingUnit("42", SCOPE);
+    }
+
+    @Test
+    void buildRecordingUnitCreateForm_unknownOrganization_throws404() {
+        when(institutionService.findById(10L)).thenReturn(null);
+
+        assertThatThrownBy(() -> service.buildRecordingUnitCreateForm(10L, 1L, personDto, "fr"))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode().value()).isEqualTo(HttpStatus.NOT_FOUND.value()));
+    }
+
+    @Test
+    void buildRecordingUnitCreateForm_unknownType_throws404() {
+        when(institutionService.findById(10L)).thenReturn(new InstitutionDTO());
+        when(conceptRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.buildRecordingUnitCreateForm(10L, 99L, personDto, "fr"))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode().value()).isEqualTo(HttpStatus.NOT_FOUND.value()));
+    }
+
+    @Test
+    void buildRecordingUnitCreateForm_whenNoCustomForm_returnsTypeOnly() {
+        InstitutionDTO inst = new InstitutionDTO();
+        inst.setId(10L);
+        when(institutionService.findById(10L)).thenReturn(inst);
+        Concept concept = mock(Concept.class);
+        when(conceptRepository.findById(5L)).thenReturn(Optional.of(concept));
+        ConceptDTO typeDto = new ConceptDTO();
+        typeDto.setId(5L);
+        when(conceptMapper.convert(concept)).thenReturn(typeDto);
+        when(formService.findCustomFormByRecordingUnitTypeAndInstitutionId(typeDto, inst)).thenReturn(null);
+
+        RecordingUnitCreateFormData data = service.buildRecordingUnitCreateForm(10L, 5L, personDto, "fr");
+
+        assertThat(data.form()).isNull();
+        assertThat(data.fields()).isEmpty();
+        assertThat(data.vocabulariesByFieldCode()).isEmpty();
+        assertThat(data.recordingUnitType().getId()).isEqualTo(5L);
+    }
+
+    @Test
+    void buildRecordingUnitCreateForm_whenFormPresent_populatesFormFieldsAndVocabularies() throws Exception {
+        InstitutionDTO inst = new InstitutionDTO();
+        inst.setId(10L);
+        when(institutionService.findById(10L)).thenReturn(inst);
+        Concept concept = mock(Concept.class);
+        when(conceptRepository.findById(7L)).thenReturn(Optional.of(concept));
+        ConceptDTO typeDto = new ConceptDTO();
+        typeDto.setId(7L);
+        when(conceptMapper.convert(concept)).thenReturn(typeDto);
+
+        CustomForm customForm = mock(CustomForm.class);
+        when(customForm.getId()).thenReturn(100L);
+        when(customForm.getName()).thenReturn("Form A");
+        when(customForm.getDescription()).thenReturn("Desc");
+        when(customForm.getLayout()).thenReturn(List.of());
+        when(formService.findCustomFormByRecordingUnitTypeAndInstitutionId(typeDto, inst)).thenReturn(customForm);
+
+        CustomFieldSelectOneFromFieldCode vocabField = mock(CustomFieldSelectOneFromFieldCode.class);
+        when(vocabField.getId()).thenReturn(55L);
+        when(vocabField.getFieldCode()).thenReturn("SIARU.NOTATION");
+        when(vocabField.getLabel()).thenReturn("Notation");
+        when(vocabField.getHint()).thenReturn(null);
+        when(vocabField.getValueBinding()).thenReturn(null);
+        when(vocabField.getIsSystemField()).thenReturn(false);
+
+        FormUiDto formUiDto = formUiDtoWithOneField(vocabField);
+        when(conversionService.convert(customForm, FormUiDto.class)).thenReturn(formUiDto);
+        when(customFormLayoutConverter.convertToDatabaseColumn(any())).thenReturn("{}");
+
+        CustomFormResponseViewModel responseVm = new CustomFormResponseViewModel();
+        Map<CustomField, fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerViewModel> answers = new HashMap<>();
+        CustomFieldAnswerTextViewModel answerVm = new CustomFieldAnswerTextViewModel();
+        answerVm.setValue("x");
+        answers.put(vocabField, answerVm);
+        responseVm.setAnswers(answers);
+        when(formService.initOrReuseResponse(nullable(CustomFormResponseViewModel.class), any(RecordingUnitDTO.class), any(), eq(true)))
+                .thenReturn(responseVm);
+
+        ConceptAutocompleteDTO opt = mock(ConceptAutocompleteDTO.class);
+        when(fieldConfigurationService.fetchAutocomplete(any(UserInfo.class), eq("SIARU.NOTATION"), isNull())).thenReturn(List.of(opt));
+        when(formService.readAnswerValueForApi(answerVm)).thenReturn("x");
+
+        RecordingUnitCreateFormData data = service.buildRecordingUnitCreateForm(10L, 7L, personDto, "fr");
+
+        assertThat(data.form()).isNotNull();
+        assertThat(data.form().formId()).isEqualTo(100L);
+        assertThat(data.form().name()).isEqualTo("Form A");
+        assertThat(data.fields()).containsKey("55");
+        assertThat(data.fields().get("55").fieldCode()).isEqualTo("SIARU.NOTATION");
+        assertThat(data.fields().get("55").currentValue()).isEqualTo("x");
+        assertThat(data.vocabulariesByFieldCode().get("SIARU.NOTATION")).containsExactly(opt);
+    }
+
+    @Test
+    void buildRecordingUnitCreateForm_noConfigForFieldCode_returnsEmptyVocabularyList() throws Exception {
+        InstitutionDTO inst = new InstitutionDTO();
+        inst.setId(10L);
+        when(institutionService.findById(10L)).thenReturn(inst);
+        Concept concept = mock(Concept.class);
+        when(conceptRepository.findById(7L)).thenReturn(Optional.of(concept));
+        ConceptDTO typeDto = new ConceptDTO();
+        typeDto.setId(7L);
+        when(conceptMapper.convert(concept)).thenReturn(typeDto);
+
+        CustomForm customForm = mock(CustomForm.class);
+        when(customForm.getId()).thenReturn(1L);
+        when(customForm.getName()).thenReturn("F");
+        when(customForm.getDescription()).thenReturn(null);
+        when(customForm.getLayout()).thenReturn(List.of());
+        when(formService.findCustomFormByRecordingUnitTypeAndInstitutionId(typeDto, inst)).thenReturn(customForm);
+
+        CustomFieldSelectOneFromFieldCode vocabField = mock(CustomFieldSelectOneFromFieldCode.class);
+        when(vocabField.getId()).thenReturn(1L);
+        when(vocabField.getFieldCode()).thenReturn("SIARU.MISSING");
+        when(vocabField.getLabel()).thenReturn("L");
+        when(vocabField.getHint()).thenReturn(null);
+        when(vocabField.getValueBinding()).thenReturn(null);
+        when(vocabField.getIsSystemField()).thenReturn(false);
+
+        FormUiDto formUiDto = formUiDtoWithOneField(vocabField);
+        when(conversionService.convert(customForm, FormUiDto.class)).thenReturn(formUiDto);
+        when(customFormLayoutConverter.convertToDatabaseColumn(any())).thenReturn("[]");
+
+        CustomFormResponseViewModel responseVm = new CustomFormResponseViewModel();
+        CustomFieldAnswerTextViewModel answerVm = new CustomFieldAnswerTextViewModel();
+        responseVm.setAnswers(Map.of(vocabField, answerVm));
+        when(formService.initOrReuseResponse(nullable(CustomFormResponseViewModel.class), any(RecordingUnitDTO.class), any(), eq(true)))
+                .thenReturn(responseVm);
+        when(formService.readAnswerValueForApi(any())).thenReturn(null);
+        when(fieldConfigurationService.fetchAutocomplete(any(UserInfo.class), eq("SIARU.MISSING"), isNull()))
+                .thenThrow(new NoConfigForFieldException("SIARU.MISSING"));
+
+        RecordingUnitCreateFormData data = service.buildRecordingUnitCreateForm(10L, 7L, personDto, "fr");
+
+        assertThat(data.vocabulariesByFieldCode().get("SIARU.MISSING")).isEmpty();
+    }
+
+    @Test
+    void buildRecordingUnitCreateForm_whenInitThrows_fallsBackToMetadataOnlyFields() {
+        InstitutionDTO inst = new InstitutionDTO();
+        inst.setId(10L);
+        when(institutionService.findById(10L)).thenReturn(inst);
+        Concept concept = mock(Concept.class);
+        when(conceptRepository.findById(2L)).thenReturn(Optional.of(concept));
+        ConceptDTO typeDto = new ConceptDTO();
+        typeDto.setId(2L);
+        when(conceptMapper.convert(concept)).thenReturn(typeDto);
+
+        CustomForm customForm = mock(CustomForm.class);
+        when(customForm.getId()).thenReturn(50L);
+        when(customForm.getName()).thenReturn("N");
+        when(customForm.getDescription()).thenReturn(null);
+        when(customForm.getLayout()).thenReturn(List.of());
+        when(formService.findCustomFormByRecordingUnitTypeAndInstitutionId(typeDto, inst)).thenReturn(customForm);
+
+        CustomFieldText textField = mock(CustomFieldText.class);
+        when(textField.getId()).thenReturn(88L);
+        when(textField.getLabel()).thenReturn("Titre");
+        when(textField.getHint()).thenReturn(null);
+        when(textField.getValueBinding()).thenReturn(null);
+        when(textField.getIsSystemField()).thenReturn(false);
+
+        FormUiDto formUiDto = formUiDtoWithOneField(textField);
+        when(conversionService.convert(customForm, FormUiDto.class)).thenReturn(formUiDto);
+        when(customFormLayoutConverter.convertToDatabaseColumn(any())).thenReturn("[]");
+        doThrow(new IllegalStateException("boom"))
+                .when(formService)
+                .initOrReuseResponse(nullable(CustomFormResponseViewModel.class), any(RecordingUnitDTO.class), any(FieldSource.class), eq(true));
+
+        RecordingUnitCreateFormData data = service.buildRecordingUnitCreateForm(10L, 2L, personDto, "fr");
+
+        assertThat(data.form()).isNotNull();
+        assertThat(data.form().formId()).isEqualTo(50L);
+        assertThat(data.fields()).containsKey("88");
+        assertThat(data.fields().get("88").answerType()).isEqualTo("TEXT");
+        assertThat(data.fields().get("88").currentValue()).isNull();
+        assertThat(data.vocabulariesByFieldCode()).isEmpty();
     }
 
     private static FormUiDto formUiDtoWithOneField(CustomField field) {

@@ -3,6 +3,8 @@ package fr.siamois.ui.api.openapi.v1.controller;
 import fr.siamois.ui.api.openapi.v1.OpenApiTags;
 import fr.siamois.ui.api.openapi.v1.response.FindListResponse;
 import fr.siamois.ui.api.openapi.v1.response.RecordingUnitListResponse;
+import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitCreateFormData;
+import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitCreateFormResponse;
 import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitMobileDetailData;
 import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitMobileDetailResponse;
 import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitRelationsData;
@@ -37,6 +39,39 @@ public class RecordingUnitsControllerApi {
                                        RecordingUnitOpenApiService recordingUnitOpenApiService) {
         this.projectApiService = projectApiService;
         this.recordingUnitOpenApiService = recordingUnitOpenApiService;
+    }
+
+    @Operation(
+            summary = "Formulaire de création d'une unité d'enregistrement",
+            description = "Bundle formulaire (layout), définition des champs et vocabulaires pour un type d'UE donné "
+                    + "(concept) dans le contexte d'une organisation. "
+                    + "Paramètres : `organizationId` (institution dans le périmètre JWT) et `recordingUnitTypeConceptId` "
+                    + "(identifiant du concept de type d'UE). "
+                    + "La langue des libellés de vocabulaire suit l'en-tête Accept-Language."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Ok"),
+            @ApiResponse(responseCode = "401", description = "Non authentifié"),
+            @ApiResponse(responseCode = "403", description = "Organisation hors périmètre"),
+            @ApiResponse(responseCode = "404", description = "Organisation ou type d'UE introuvable"),
+            @ApiResponse(responseCode = "500", description = "Erreur interne")
+    })
+    @GetMapping("/creation-form")
+    @Tag(name = OpenApiTags.APPLICATION_MOBILE, description = OpenApiTags.APPLICATION_MOBILE_DESCRIPTION)
+    public ResponseEntity<RecordingUnitCreateFormResponse> getRecordingUnitCreateForm(
+            @Parameter(description = "Institution (doit être dans le périmètre JWT).", example = "10")
+            @RequestParam long organizationId,
+            @Parameter(description = "Identifiant du concept définissant le type d'UE (concept_id).", example = "42")
+            @RequestParam long recordingUnitTypeConceptId,
+            @Parameter(description = "Langue préférée pour les libellés de vocabulaire (première entrée utilisée).")
+            @RequestHeader(value = HttpHeaders.ACCEPT_LANGUAGE, required = false) String acceptLanguage) {
+
+        ProjectApiCaller caller = projectApiService.requireCaller();
+        projectApiService.assertOrganizationInCallerScope(organizationId, caller.accessibleInstitutionIds());
+        String lang = ProjectApiService.primaryAcceptLanguage(acceptLanguage);
+        RecordingUnitCreateFormData data = recordingUnitOpenApiService.buildRecordingUnitCreateForm(
+                organizationId, recordingUnitTypeConceptId, caller.person(), lang);
+        return ResponseEntity.ok(new RecordingUnitCreateFormResponse(data));
     }
 
     @Operation(summary = "La liste des unités d'enregistrement")

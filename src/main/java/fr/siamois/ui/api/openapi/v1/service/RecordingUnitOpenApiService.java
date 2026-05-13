@@ -12,6 +12,8 @@ import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerText;
 import fr.siamois.domain.models.form.customform.CustomForm;
 import fr.siamois.domain.models.form.customformresponse.CustomFormResponse;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
+import fr.siamois.domain.models.vocabulary.Concept;
+import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.form.FormService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.vocabulary.FieldConfigurationService;
@@ -20,10 +22,12 @@ import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.dto.entity.ConceptDTO;
 import fr.siamois.dto.entity.RecordingUnitDTO;
+import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
 import fr.siamois.mapper.ConceptMapper;
 import fr.siamois.ui.api.openapi.v1.mapper.RecordingUnitResponseMapper;
 import fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitResource;
+import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitCreateFormData;
 import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitFormBundle;
 import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitFormFieldApi;
 import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitMobileDetailData;
@@ -41,8 +45,10 @@ import jakarta.persistence.DiscriminatorValue;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.convert.ConversionService;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -52,7 +58,7 @@ import java.util.Objects;
 import java.util.Set;
 
 /**
- * Enrichissement OpenAPI pour le détail UE : formulaire effectif, champs et vocabulaires (scope applicatif aujourd'hui).
+ * Enrichissement OpenAPI pour le détail UE et le formulaire de création : formulaire effectif, champs et vocabulaires.
  */
 @Slf4j
 @Service
@@ -66,6 +72,8 @@ public class RecordingUnitOpenApiService {
     private final ConversionService conversionService;
     private final CustomFormLayoutConverter customFormLayoutConverter;
     private final ConceptMapper conceptMapper;
+    private final InstitutionService institutionService;
+    private final ConceptRepository conceptRepository;
 
     @Transactional(readOnly = true)
     public RecordingUnitMobileDetailData buildMobileDetail(String recordingUnitKey, PersonDTO personDto, Set<Long> accessibleInstitutionIds,
@@ -100,6 +108,67 @@ public class RecordingUnitOpenApiService {
         Map<String, List<ConceptAutocompleteDTO>> vocabs = loadVocabularies(fieldSource, userInfo);
 
         return new RecordingUnitMobileDetailData(recordingUnit, formBundle, fields, vocabs);
+    }
+
+    /**
+     * Formulaire de création d'une UE : même résolution que le détail (type + institution), sans entité persistée.
+     */
+    @Transactional(readOnly = true)
+    public RecordingUnitCreateFormData buildRecordingUnitCreateForm(long organizationId,
+                                                                  long recordingUnitTypeConceptId,
+                                                                  PersonDTO personDto,
+                                                                  String lang) {
+        InstitutionDTO institution = institutionService.findById(organizationId);
+        if (institution == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Organization not found");
+        }
+        Concept typeConcept = conceptRepository.findById(recordingUnitTypeConceptId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Recording unit type not found"));
+        ConceptDTO typeDto = conceptMapper.convert(typeConcept);
+
+        CustomForm customForm = formService.findCustomFormByRecordingUnitTypeAndInstitutionId(typeDto, institution);
+        if (customForm == null) {
+            return new RecordingUnitCreateFormData(typeDto, null, Map.of(), Map.of());
+        }
+
+        FormUiDto formUiDto = conversionService.convert(customForm, FormUiDto.class);
+        FieldSource fieldSource = new PanelFieldSource(formUiDto);
+        String layoutJson = customFormLayoutConverter.convertToDatabaseColumn(customForm.getLayout());
+        RecordingUnitFormBundle formBundle = new RecordingUnitFormBundle(
+                customForm.getId(), customForm.getName(), customForm.getDescription(), layoutJson);
+
+        RecordingUnitDTO shell = new RecordingUnitDTO();
+        shell.setType(typeDto);
+        shell.setCreatedByInstitution(institution);
+
+        Map<String, RecordingUnitFormFieldApi> fields = buildCreateFormFields(shell, fieldSource);
+
+        UserInfo userInfo = new UserInfo(institution, personDto, lang);
+        Map<String, List<ConceptAutocompleteDTO>> vocabs = loadVocabularies(fieldSource, userInfo);
+
+        return new RecordingUnitCreateFormData(typeDto, formBundle, fields, vocabs);
+    }
+
+    private Map<String, RecordingUnitFormFieldApi> buildCreateFormFields(RecordingUnitDTO shell, FieldSource fieldSource) {
+        try {
+            CustomFormResponseViewModel response = formService.initOrReuseResponse(null, shell, fieldSource, true);
+            if (response.getAnswers() == null) {
+                return buildFieldsMetadataOnly(fieldSource);
+            }
+            Map<String, RecordingUnitFormFieldApi> fields = new LinkedHashMap<>();
+            for (Map.Entry<CustomField, CustomFieldAnswerViewModel> e : response.getAnswers().entrySet()) {
+                CustomField field = e.getKey();
+                fields.put(String.valueOf(field.getId()), toFieldApi(field, e.getValue()));
+            }
+            return fields;
+        } catch (RuntimeException ex) {
+            log.warn(
+                    "Impossible d'initialiser les réponses formulaire pour création UE (type concept id={}): {}",
+                    shell.getType() != null ? shell.getType().getId() : null,
+                    ex.toString(),
+                    ex);
+            return buildFieldsMetadataOnly(fieldSource);
+        }
     }
 
     /**
