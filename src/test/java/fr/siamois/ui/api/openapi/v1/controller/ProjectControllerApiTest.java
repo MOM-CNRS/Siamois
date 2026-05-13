@@ -4,8 +4,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.exceptions.actionunit.ActionUnitNotFoundException;
+import fr.siamois.domain.models.document.Document;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
+import fr.siamois.domain.services.document.DocumentService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.dto.api.AccessibleProjectForApi;
 import fr.siamois.dto.entity.ActionUnitDTO;
@@ -14,8 +16,10 @@ import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.dto.entity.RecordingUnitDTO;
 import fr.siamois.mapper.PersonMapper;
 import fr.siamois.ui.api.handler.RestExceptionHandler;
+import fr.siamois.ui.api.openapi.v1.mapper.ProjectDocumentOpenApiMapper;
 import fr.siamois.ui.api.openapi.v1.mapper.ProjectResponseMapper;
 import fr.siamois.ui.api.openapi.v1.mapper.RecordingUnitResponseMapper;
+import fr.siamois.ui.api.openapi.v1.resource.document.ProjectDocumentResource;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiService;
 import fr.siamois.ui.api.openapi.v1.resource.project.ProjectResource;
 import fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitResource;
@@ -47,6 +51,8 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.ArgumentMatchers.same;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -68,6 +74,10 @@ class ProjectControllerApiTest {
     @Mock
     private RecordingUnitService recordingUnitService;
     @Mock
+    private DocumentService documentService;
+    @Mock
+    private ProjectDocumentOpenApiMapper projectDocumentOpenApiMapper;
+    @Mock
     private RecordingUnitResponseMapper recordingUnitResourceMapper;
 
     private MockMvc mockMvc;
@@ -85,6 +95,8 @@ class ProjectControllerApiTest {
                 institutionService,
                 actionUnitService,
                 recordingUnitService,
+                documentService,
+                projectDocumentOpenApiMapper,
                 personMapper);
         ProjectControllerApi controller = new ProjectControllerApi(
                 projectApiService,
@@ -451,5 +463,75 @@ class ProjectControllerApiTest {
                     }
                     return false;
                 }));
+    }
+
+    @Test
+    void getProjectDocuments_withoutAuthentication_returns401() throws Exception {
+        SecurityContextHolder.getContext().setAuthentication(
+                new AnonymousAuthenticationToken("key", "anonymousUser",
+                        AuthorityUtils.createAuthorityList("ROLE_ANONYMOUS")));
+
+        mockMvc.perform(get("/api/v1/projects/5/documents"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void getProjectDocuments_projectNotFound_returns404() throws Exception {
+        login();
+        when(personMapper.convert(person)).thenReturn(personDto);
+        when(institutionService.findInstitutionsOfPerson(personDto)).thenReturn(Set.of(institutionDto));
+        when(actionUnitService.findAccessibleProjectByKey(eq("5"), eq(Set.of(100L))))
+                .thenThrow(new ActionUnitNotFoundException("missing"));
+
+        mockMvc.perform(get("/api/v1/projects/5/documents"))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void getProjectDocuments_success_returnsDocuments() throws Exception {
+        login();
+        when(personMapper.convert(person)).thenReturn(personDto);
+        when(institutionService.findInstitutionsOfPerson(personDto)).thenReturn(Set.of(institutionDto));
+
+        ActionUnitDTO au = new ActionUnitDTO();
+        au.setId(7L);
+        AccessibleProjectForApi row = new AccessibleProjectForApi(au, 0L, 0L);
+        when(actionUnitService.findAccessibleProjectByKey(eq("7"), eq(Set.of(100L)))).thenReturn(row);
+
+        Document doc = mock(Document.class);
+        when(documentService.findForActionUnit(eq(au))).thenReturn(List.of(doc));
+
+        ProjectDocumentResource dr = new ProjectDocumentResource();
+        dr.setResourceType("documents");
+        dr.setId("100");
+        dr.setTitle("Plan de fouille");
+        when(projectDocumentOpenApiMapper.toResource(same(doc))).thenReturn(dr);
+
+        mockMvc.perform(get("/api/v1/projects/7/documents"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.documents", hasSize(1)))
+                .andExpect(jsonPath("$.data.documents[0].resourceId").value("100"))
+                .andExpect(jsonPath("$.data.documents[0].resourceType").value("documents"))
+                .andExpect(jsonPath("$.data.documents[0].title").value("Plan de fouille"));
+
+        verify(documentService).findForActionUnit(eq(au));
+        verify(projectDocumentOpenApiMapper).toResource(same(doc));
+    }
+
+    @Test
+    void getProjectDocuments_success_emptyList() throws Exception {
+        login();
+        when(personMapper.convert(person)).thenReturn(personDto);
+        when(institutionService.findInstitutionsOfPerson(personDto)).thenReturn(Set.of(institutionDto));
+
+        ActionUnitDTO au = new ActionUnitDTO();
+        au.setId(2L);
+        AccessibleProjectForApi row = new AccessibleProjectForApi(au, 0L, 0L);
+        when(actionUnitService.findAccessibleProjectByKey(eq("2"), eq(Set.of(100L)))).thenReturn(row);
+        when(documentService.findForActionUnit(eq(au))).thenReturn(List.of());
+
+        mockMvc.perform(get("/api/v1/projects/2/documents"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.documents", hasSize(0)));
     }
 }

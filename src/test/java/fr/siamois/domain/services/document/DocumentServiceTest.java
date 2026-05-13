@@ -454,4 +454,30 @@ class DocumentServiceTest {
 
     }
 
+    @Test
+    void deleteDocument_removesLinksStorageAndEntity() {
+        long id = 12L;
+        Document document = new Document();
+        document.setId(id);
+        Institution institution = new Institution();
+        institution.setId(3L);
+        document.setCreatedByInstitution(institution);
+
+        documentService.deleteDocument(document);
+
+        verify(documentRepository).deleteActionUnitDocumentLinks(id);
+        verify(documentRepository).deleteSpatialUnitDocumentLinks(id);
+        verify(documentRepository).deleteRecordingUnitDocumentLinks(id);
+        verify(documentRepository).deleteSpecimenDocumentLinks(id);
+        verify(documentRepository).deleteSpecimenStudyDocumentLinks(id);
+        verify(documentRepository).deleteRuStudyDocumentLinks(id);
+        verify(documentStorage).deleteStoredFile(document);
+        verify(documentRepository).delete(document);
+    }
+
+    @Test
+    void deleteDocument_nullId_throws() {
+        Document document = new Document();
+        assertThrows(IllegalArgumentException.class, () -> documentService.deleteDocument(document));
+    }
 }
