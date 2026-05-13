@@ -6,6 +6,8 @@ import fr.siamois.ui.api.openapi.v1.resource.find.FindResource;
 import fr.siamois.ui.api.openapi.v1.response.RecordingUnitListResponse;
 import fr.siamois.ui.api.openapi.v1.generic.response.ListMeta;
 import fr.siamois.ui.api.openapi.v1.resource.document.ProjectDocumentResource;
+import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitChildrenData;
+import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitChildrenResponse;
 import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitCreateFormData;
 import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitCreateFormResponse;
 import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitDocumentsData;
@@ -183,6 +185,32 @@ public class RecordingUnitsControllerApi {
         RecordingUnitRelationsData data = recordingUnitOpenApiService.buildRecordingUnitRelations(
                 id, caller.accessibleInstitutionIds());
         return ResponseEntity.ok(new RecordingUnitRelationsResponse(data));
+    }
+
+    @Operation(
+            summary = "Unités d'enregistrement enfants d'une UE",
+            description = "Liste des UE filles directes liées via recording_unit_hierarchy (fk_parent_id = l'UE cible). "
+                    + "Même clé d'UE et périmètre d'accès que GET /api/v1/recording-units/{id} et /relations."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Ok"),
+            @ApiResponse(responseCode = "401", description = "Non authentifié"),
+            @ApiResponse(responseCode = "404", description = "UE introuvable ou hors périmètre"),
+            @ApiResponse(responseCode = "500", description = "Erreur interne")
+    })
+    @GetMapping("/{id}/children")
+    @Tag(name = OpenApiTags.APPLICATION_MOBILE, description = OpenApiTags.APPLICATION_MOBILE_DESCRIPTION)
+    public ResponseEntity<RecordingUnitChildrenResponse> getChildren(
+            @Parameter(
+                    description = "Clé d'UE : identifiant numérique (recording_unit_id) ou full_identifier.",
+                    schema = @Schema(type = "string", example = "INST-PROJ-UE42")
+            )
+            @PathVariable("id") String id) {
+
+        ProjectApiCaller caller = projectApiService.requireCaller();
+        RecordingUnitChildrenData data = recordingUnitOpenApiService.buildRecordingUnitChildren(
+                id, caller.accessibleInstitutionIds());
+        return ResponseEntity.ok(new RecordingUnitChildrenResponse(data));
     }
 
     @Operation(

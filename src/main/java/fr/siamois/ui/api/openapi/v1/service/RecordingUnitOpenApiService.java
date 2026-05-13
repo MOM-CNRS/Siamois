@@ -23,6 +23,7 @@ import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.dto.entity.ConceptDTO;
 import fr.siamois.dto.entity.RecordingUnitDTO;
+import fr.siamois.dto.entity.RecordingUnitSummaryDTO;
 import fr.siamois.dto.entity.SpecimenDTO;
 import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
@@ -30,6 +31,7 @@ import fr.siamois.mapper.ConceptMapper;
 import fr.siamois.ui.api.openapi.v1.mapper.RecordingUnitResponseMapper;
 import fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitResource;
 import fr.siamois.ui.api.openapi.v1.response.find.FindFormData;
+import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitChildrenData;
 import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitCreateFormData;
 import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitFormBundle;
 import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitFormFieldApi;
@@ -352,5 +354,13 @@ public class RecordingUnitOpenApiService {
                 bundle.stratigraphicRelationships(),
                 bundle.parents(),
                 bundle.children());
+    }
+
+    @Transactional(readOnly = true)
+    public RecordingUnitChildrenData buildRecordingUnitChildren(String recordingUnitKey,
+                                                                Set<Long> accessibleInstitutionIds) {
+        List<RecordingUnitSummaryDTO> children =
+                recordingUnitService.findChildrenForAccessibleRecordingUnit(recordingUnitKey, accessibleInstitutionIds);
+        return new RecordingUnitChildrenData(children);
     }
 }

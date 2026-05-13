@@ -25,6 +25,7 @@ import fr.siamois.ui.api.handler.RestExceptionHandler;
 import fr.siamois.ui.api.openapi.v1.resource.document.ProjectDocumentResource;
 import fr.siamois.ui.api.openapi.v1.resource.find.FindResource;
 import fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitResource;
+import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitChildrenData;
 import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitCreateFormData;
 import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitFormBundle;
 import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitFormFieldApi;
@@ -65,6 +66,7 @@ import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.same;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
@@ -519,6 +521,104 @@ class RecordingUnitsControllerApiTest {
         mockMvc.perform(get("/api/v1/recording-units/404-key/relations"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.message").value("missing"));
+    }
+
+    @Test
+    void getChildren_returns200_withEmptyList() throws Exception {
+        when(personMapper.convert(person)).thenReturn(personDto);
+        when(institutionService.findInstitutionsOfPerson(personDto)).thenReturn(Set.of(institutionDto));
+
+        when(recordingUnitOpenApiService.buildRecordingUnitChildren(eq("5"), eq(Set.of(10L))))
+                .thenReturn(new RecordingUnitChildrenData(List.of()));
+
+        mockMvc.perform(get("/api/v1/recording-units/5/children"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.children").isArray())
+                .andExpect(jsonPath("$.data.children.length()").value(0));
+
+        verify(recordingUnitOpenApiService).buildRecordingUnitChildren(eq("5"), eq(Set.of(10L)));
+    }
+
+    @Test
+    void getChildren_returns200_withChildrenInPayload() throws Exception {
+        when(personMapper.convert(person)).thenReturn(personDto);
+        when(institutionService.findInstitutionsOfPerson(personDto)).thenReturn(Set.of(institutionDto));
+
+        RecordingUnitSummaryDTO child = new RecordingUnitSummaryDTO();
+        child.setId(100L);
+        child.setFullIdentifier("INST-A-UE-C");
+        when(recordingUnitOpenApiService.buildRecordingUnitChildren(eq("5"), eq(Set.of(10L))))
+                .thenReturn(new RecordingUnitChildrenData(List.of(child)));
+
+        mockMvc.perform(get("/api/v1/recording-units/5/children"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.children[0].id").value(100))
+                .andExpect(jsonPath("$.data.children[0].fullIdentifier").value("INST-A-UE-C"));
+
+        verify(recordingUnitOpenApiService).buildRecordingUnitChildren("5", Set.of(10L));
+    }
+
+    @Test
+    void getChildren_returns200_withSeveralChildren() throws Exception {
+        when(personMapper.convert(person)).thenReturn(personDto);
+        when(institutionService.findInstitutionsOfPerson(personDto)).thenReturn(Set.of(institutionDto));
+
+        RecordingUnitSummaryDTO first = new RecordingUnitSummaryDTO();
+        first.setId(10L);
+        first.setFullIdentifier("UE-10");
+        RecordingUnitSummaryDTO second = new RecordingUnitSummaryDTO();
+        second.setId(20L);
+        second.setFullIdentifier("UE-20");
+        when(recordingUnitOpenApiService.buildRecordingUnitChildren(eq("1"), eq(Set.of(10L))))
+                .thenReturn(new RecordingUnitChildrenData(List.of(first, second)));
+
+        mockMvc.perform(get("/api/v1/recording-units/1/children"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.children.length()").value(2))
+                .andExpect(jsonPath("$.data.children[0].id").value(10))
+                .andExpect(jsonPath("$.data.children[1].id").value(20));
+
+        verify(recordingUnitOpenApiService).buildRecordingUnitChildren("1", Set.of(10L));
+    }
+
+    @Test
+    void getChildren_withSeveralInstitutions_passesFullScopeToService() throws Exception {
+        InstitutionDTO inst20 = new InstitutionDTO();
+        inst20.setId(20L);
+        when(personMapper.convert(person)).thenReturn(personDto);
+        when(institutionService.findInstitutionsOfPerson(personDto))
+                .thenReturn(Set.of(institutionDto, inst20));
+
+        when(recordingUnitOpenApiService.buildRecordingUnitChildren(eq("ru-key"), eq(Set.of(10L, 20L))))
+                .thenReturn(new RecordingUnitChildrenData(List.of()));
+
+        mockMvc.perform(get("/api/v1/recording-units/ru-key/children"))
+                .andExpect(status().isOk());
+
+        verify(recordingUnitOpenApiService).buildRecordingUnitChildren(eq("ru-key"), eq(Set.of(10L, 20L)));
+    }
+
+    @Test
+    void getChildren_withoutAuth_returns401() throws Exception {
+        SecurityContextHolder.clearContext();
+
+        mockMvc.perform(get("/api/v1/recording-units/5/children"))
+                .andExpect(status().isUnauthorized());
+
+        verifyNoInteractions(recordingUnitOpenApiService);
+    }
+
+    @Test
+    void getChildren_whenRecordingUnitNotFound_returns404() throws Exception {
+        when(personMapper.convert(person)).thenReturn(personDto);
+        when(institutionService.findInstitutionsOfPerson(personDto)).thenReturn(Set.of(institutionDto));
+        when(recordingUnitOpenApiService.buildRecordingUnitChildren(any(), any()))
+                .thenThrow(new RecordingUnitNotFoundException("missing"));
+
+        mockMvc.perform(get("/api/v1/recording-units/404-key/children"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").value("missing"))
+                .andExpect(jsonPath("$.path").value("/api/v1/recording-units/404-key/children"));
     }
 
     @Test

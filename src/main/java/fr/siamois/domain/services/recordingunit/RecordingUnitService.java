@@ -441,6 +441,17 @@ public class RecordingUnitService implements ArkEntityService {
         return new RecordingUnitRelationsBundle(stratigraphic, parents, children);
     }
 
+    /**
+     * Unités d'enregistrement filles directes (table {@code recording_unit_hierarchy}) pour une UE accessible.
+     * Même résolution de clé et périmètre institutionnel que {@link #findRelationsForAccessibleRecordingUnit(String, Set)}.
+     */
+    @Transactional(readOnly = true)
+    public List<RecordingUnitSummaryDTO> findChildrenForAccessibleRecordingUnit(String idOrKey,
+                                                                                  Set<Long> accessibleInstitutionIds) {
+        RecordingUnit unit = findAccessibleRecordingUnitWithEntity(idOrKey, accessibleInstitutionIds, null).entity();
+        return toAdjacentUnitSummaries(unit.getChildren());
+    }
+
     private List<RecordingUnitSummaryDTO> toAdjacentUnitSummaries(Set<RecordingUnit> adjacent) {
         if (adjacent == null || adjacent.isEmpty()) {
             return List.of();
