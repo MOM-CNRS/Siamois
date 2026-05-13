@@ -5,12 +5,15 @@ import fr.siamois.dto.entity.RecordingUnitDTO;
 import fr.siamois.ui.api.openapi.v1.generic.response.ListMeta;
 import fr.siamois.ui.api.openapi.v1.mapper.ProjectResponseMapper;
 import fr.siamois.ui.api.openapi.v1.mapper.RecordingUnitResponseMapper;
+import fr.siamois.ui.api.openapi.v1.resource.document.ProjectDocumentResource;
 import fr.siamois.ui.api.openapi.v1.resource.project.ProjectResource;
 import fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitResource;
 import fr.siamois.ui.api.openapi.v1.response.FindListResponse;
 import fr.siamois.ui.api.openapi.v1.response.ProjectListResponse;
 import fr.siamois.ui.api.openapi.v1.response.ProjectResponse;
 import fr.siamois.ui.api.openapi.v1.response.RecordingUnitListResponse;
+import fr.siamois.ui.api.openapi.v1.response.project.ProjectDocumentsData;
+import fr.siamois.ui.api.openapi.v1.response.project.ProjectDocumentsResponse;
 import fr.siamois.ui.api.openapi.v1.OpenApiTags;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiCaller;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiService;
@@ -103,6 +106,25 @@ public class ProjectControllerApi {
         String lang = ProjectApiService.primaryAcceptLanguage(acceptLanguage);
         ProjectResource resource = projectResponseMapper.toResource(row, lang);
         return ResponseEntity.ok(new ProjectResponse(resource));
+    }
+
+    @Operation(
+            summary = "Documents rattachés à un projet",
+            description = "Liste des documents liés à l'unité d'action (projet) via action_unit_document. "
+                    + "Même clé de projet que GET /api/v1/projects/{id} (id numérique, fullIdentifier, identifiant court)."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Ok"),
+            @ApiResponse(responseCode = "401", description = "Non authentifié"),
+            @ApiResponse(responseCode = "404", description = "Projet introuvable ou non accessible"),
+            @ApiResponse(responseCode = "500", description = "Erreur interne")
+    })
+    @GetMapping("/{id}/documents")
+    @Tag(name = OpenApiTags.APPLICATION_MOBILE, description = OpenApiTags.APPLICATION_MOBILE_DESCRIPTION)
+    public ResponseEntity<ProjectDocumentsResponse> getDocuments(@PathVariable("id") String id) {
+        ProjectApiCaller caller = projectApiService.requireCaller();
+        List<ProjectDocumentResource> documents = projectApiService.listDocumentsForAccessibleProject(caller, id);
+        return ResponseEntity.ok(new ProjectDocumentsResponse(new ProjectDocumentsData(documents)));
     }
 
     @Operation(summary = "La liste des mobiliers d'un projet")

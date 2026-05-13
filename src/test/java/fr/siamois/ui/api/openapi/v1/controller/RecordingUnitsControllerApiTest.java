@@ -6,6 +6,7 @@ import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.exceptions.recordingunit.RecordingUnitNotFoundException;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
+import fr.siamois.domain.services.document.DocumentService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.dto.StratigraphicRelationshipDTO;
 import fr.siamois.dto.entity.InstitutionDTO;
@@ -13,6 +14,7 @@ import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.dto.entity.RecordingUnitSummaryDTO;
 import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitRelationsData;
 import fr.siamois.mapper.PersonMapper;
+import fr.siamois.ui.api.openapi.v1.mapper.ProjectDocumentOpenApiMapper;
 import fr.siamois.ui.api.handler.RestExceptionHandler;
 import fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitResource;
 import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitMobileDetailData;
@@ -53,6 +55,10 @@ class RecordingUnitsControllerApiTest {
     @Mock
     private RecordingUnitService recordingUnitService;
     @Mock
+    private DocumentService documentService;
+    @Mock
+    private ProjectDocumentOpenApiMapper projectDocumentOpenApiMapper;
+    @Mock
     private PersonMapper personMapper;
     @Mock
     private RecordingUnitOpenApiService recordingUnitOpenApiService;
@@ -72,6 +78,8 @@ class RecordingUnitsControllerApiTest {
                 institutionService,
                 actionUnitService,
                 recordingUnitService,
+                documentService,
+                projectDocumentOpenApiMapper,
                 personMapper);
 
         RecordingUnitsControllerApi controller = new RecordingUnitsControllerApi(
