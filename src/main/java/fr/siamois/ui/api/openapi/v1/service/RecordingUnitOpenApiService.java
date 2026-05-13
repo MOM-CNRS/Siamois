@@ -16,17 +16,20 @@ import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.form.FormService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
+import fr.siamois.domain.services.specimen.SpecimenService;
 import fr.siamois.domain.services.vocabulary.FieldConfigurationService;
 import fr.siamois.domain.services.attributeconverter.CustomFormLayoutConverter;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.dto.entity.ConceptDTO;
 import fr.siamois.dto.entity.RecordingUnitDTO;
+import fr.siamois.dto.entity.SpecimenDTO;
 import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
 import fr.siamois.mapper.ConceptMapper;
 import fr.siamois.ui.api.openapi.v1.mapper.RecordingUnitResponseMapper;
 import fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitResource;
+import fr.siamois.ui.api.openapi.v1.response.find.FindFormData;
 import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitCreateFormData;
 import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitFormBundle;
 import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitFormFieldApi;
@@ -74,6 +77,7 @@ public class RecordingUnitOpenApiService {
     private final ConceptMapper conceptMapper;
     private final InstitutionService institutionService;
     private final ConceptRepository conceptRepository;
+    private final SpecimenService specimenService;
 
     @Transactional(readOnly = true)
     public RecordingUnitMobileDetailData buildMobileDetail(String recordingUnitKey, PersonDTO personDto, Set<Long> accessibleInstitutionIds,
@@ -141,7 +145,8 @@ public class RecordingUnitOpenApiService {
         shell.setType(typeDto);
         shell.setCreatedByInstitution(institution);
 
-        Map<String, RecordingUnitFormFieldApi> fields = buildCreateFormFields(shell, fieldSource);
+        Map<String, RecordingUnitFormFieldApi> fields = buildCustomFormFieldsForBindTarget(
+                shell, fieldSource, "création UE", typeDto.getId());
 
         UserInfo userInfo = new UserInfo(institution, personDto, lang);
         Map<String, List<ConceptAutocompleteDTO>> vocabs = loadVocabularies(fieldSource, userInfo);
@@ -149,7 +154,44 @@ public class RecordingUnitOpenApiService {
         return new RecordingUnitCreateFormData(typeDto, formBundle, fields, vocabs);
     }
 
-    private Map<String, RecordingUnitFormFieldApi> buildCreateFormFields(RecordingUnitDTO shell, FieldSource fieldSource) {
+    /**
+     * Formulaire d'édition d'un mobilier (spécimen) : résolution du formulaire custom par type de spécimen
+     * et institution de rattachement (même mécanisme que pour une UE).
+     */
+    @Transactional(readOnly = true)
+    public FindFormData buildFindForm(long findId,
+                                      PersonDTO personDto,
+                                      Set<Long> accessibleInstitutionIds,
+                                      String lang) {
+        SpecimenDTO specimen = specimenService.findAccessibleById(findId, accessibleInstitutionIds)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Find not found"));
+        InstitutionDTO institution = specimen.getCreatedByInstitution();
+        ConceptDTO specimenType = specimen.getType();
+        if (institution == null || institution.getId() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Find has no owning institution");
+        }
+        CustomForm customForm = formService.findCustomFormByRecordingUnitTypeAndInstitutionId(specimenType, institution);
+        if (customForm == null) {
+            return new FindFormData(specimenType, null, Map.of(), Map.of());
+        }
+        FormUiDto formUiDto = conversionService.convert(customForm, FormUiDto.class);
+        FieldSource fieldSource = new PanelFieldSource(formUiDto);
+        String layoutJson = customFormLayoutConverter.convertToDatabaseColumn(customForm.getLayout());
+        RecordingUnitFormBundle formBundle = new RecordingUnitFormBundle(
+                customForm.getId(), customForm.getName(), customForm.getDescription(), layoutJson);
+        Long typeIdForLog = specimenType != null ? specimenType.getId() : null;
+        Map<String, RecordingUnitFormFieldApi> fields = buildCustomFormFieldsForBindTarget(
+                specimen, fieldSource, "mobilité id=" + findId, typeIdForLog);
+        UserInfo userInfo = new UserInfo(institution, personDto, lang);
+        Map<String, List<ConceptAutocompleteDTO>> vocabs = loadVocabularies(fieldSource, userInfo);
+        return new FindFormData(specimenType, formBundle, fields, vocabs);
+    }
+
+    private Map<String, RecordingUnitFormFieldApi> buildCustomFormFieldsForBindTarget(
+            Object shell,
+            FieldSource fieldSource,
+            String logContext,
+            Long typeConceptIdForLog) {
         try {
             CustomFormResponseViewModel response = formService.initOrReuseResponse(null, shell, fieldSource, true);
             if (response.getAnswers() == null) {
@@ -163,8 +205,9 @@ public class RecordingUnitOpenApiService {
             return fields;
         } catch (RuntimeException ex) {
             log.warn(
-                    "Impossible d'initialiser les réponses formulaire pour création UE (type concept id={}): {}",
-                    shell.getType() != null ? shell.getType().getId() : null,
+                    "Impossible d'initialiser les réponses formulaire pour {} (type concept id={}): {}",
+                    logContext,
+                    typeConceptIdForLog,
                     ex.toString(),
                     ex);
             return buildFieldsMetadataOnly(fieldSource);

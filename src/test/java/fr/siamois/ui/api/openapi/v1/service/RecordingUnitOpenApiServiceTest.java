@@ -18,6 +18,7 @@ import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.attributeconverter.CustomFormLayoutConverter;
 import fr.siamois.domain.services.form.FormService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
+import fr.siamois.domain.services.specimen.SpecimenService;
 import fr.siamois.domain.services.vocabulary.FieldConfigurationService;
 import fr.siamois.dto.StratigraphicRelationshipDTO;
 import fr.siamois.dto.entity.ConceptDTO;
@@ -25,10 +26,12 @@ import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.dto.entity.RecordingUnitDTO;
 import fr.siamois.dto.entity.RecordingUnitSummaryDTO;
+import fr.siamois.dto.entity.SpecimenDTO;
 import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
 import fr.siamois.ui.api.openapi.v1.mapper.RecordingUnitResponseMapper;
 import fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitResource;
+import fr.siamois.ui.api.openapi.v1.response.find.FindFormData;
 import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitCreateFormData;
 import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitFormBundle;
 import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitMobileDetailData;
@@ -97,6 +100,8 @@ class RecordingUnitOpenApiServiceTest {
     private InstitutionService institutionService;
     @Mock
     private ConceptRepository conceptRepository;
+    @Mock
+    private SpecimenService specimenService;
 
     private RecordingUnitOpenApiService service;
 
@@ -116,7 +121,8 @@ class RecordingUnitOpenApiServiceTest {
                 customFormLayoutConverter,
                 conceptMapper,
                 institutionService,
-                conceptRepository);
+                conceptRepository,
+                specimenService);
 
         personDto = new PersonDTO();
         personDto.setId(1L);
@@ -785,6 +791,48 @@ class RecordingUnitOpenApiServiceTest {
         assertThat(data.fields()).containsKey("88");
         assertThat(data.fields().get("88").answerType()).isEqualTo("TEXT");
         assertThat(data.fields().get("88").currentValue()).isNull();
+        assertThat(data.vocabulariesByFieldCode()).isEmpty();
+    }
+
+    @Test
+    void buildFindForm_whenNotAccessible_throws404() {
+        when(specimenService.findAccessibleById(404L, SCOPE)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.buildFindForm(404L, personDto, SCOPE, "fr"))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode().value()).isEqualTo(404));
+    }
+
+    @Test
+    void buildFindForm_whenNoInstitution_throws400() {
+        SpecimenDTO spec = new SpecimenDTO();
+        spec.setId(1L);
+        spec.setCreatedByInstitution(null);
+        when(specimenService.findAccessibleById(1L, SCOPE)).thenReturn(Optional.of(spec));
+
+        assertThatThrownBy(() -> service.buildFindForm(1L, personDto, SCOPE, "fr"))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode().value()).isEqualTo(400));
+    }
+
+    @Test
+    void buildFindForm_whenNoCustomForm_returnsTypeOnly() {
+        InstitutionDTO inst = new InstitutionDTO();
+        inst.setId(10L);
+        ConceptDTO type = new ConceptDTO();
+        type.setId(3L);
+        SpecimenDTO spec = new SpecimenDTO();
+        spec.setId(7L);
+        spec.setCreatedByInstitution(inst);
+        spec.setType(type);
+        when(specimenService.findAccessibleById(7L, SCOPE)).thenReturn(Optional.of(spec));
+        when(formService.findCustomFormByRecordingUnitTypeAndInstitutionId(type, inst)).thenReturn(null);
+
+        FindFormData data = service.buildFindForm(7L, personDto, SCOPE, "fr");
+
+        assertThat(data.specimenType().getId()).isEqualTo(3L);
+        assertThat(data.form()).isNull();
+        assertThat(data.fields()).isEmpty();
         assertThat(data.vocabulariesByFieldCode()).isEmpty();
     }
 

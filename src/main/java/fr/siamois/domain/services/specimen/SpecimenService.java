@@ -15,6 +15,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 
 import static fr.siamois.domain.models.ValidationStatus.*;
 
@@ -88,6 +90,25 @@ public class SpecimenService implements ArkEntityService {
     public SpecimenDTO findById(Long id) {
         Specimen specimen = specimenRepository.findById(id, Specimen.class).orElse(null);
         return specimen != null ? specimenMapper.convert(specimen) : null;
+    }
+
+    /**
+     * Spécimen dont l'institution de rattachement est dans le périmètre donné (API OpenAPI).
+     */
+    @Transactional(readOnly = true)
+    public Optional<SpecimenDTO> findAccessibleById(long specimenId, Set<Long> accessibleInstitutionIds) {
+        if (accessibleInstitutionIds == null || accessibleInstitutionIds.isEmpty()) {
+            return Optional.empty();
+        }
+        SpecimenDTO dto = findById(specimenId);
+        if (dto == null) {
+            return Optional.empty();
+        }
+        InstitutionDTO inst = dto.getCreatedByInstitution();
+        if (inst == null || inst.getId() == null || !accessibleInstitutionIds.contains(inst.getId())) {
+            return Optional.empty();
+        }
+        return Optional.of(dto);
     }
 
 
