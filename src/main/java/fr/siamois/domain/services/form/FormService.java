@@ -6,6 +6,7 @@ import fr.siamois.domain.models.form.customfieldanswer.*;
 import fr.siamois.domain.models.form.customform.CustomForm;
 import fr.siamois.domain.models.form.customform.EnabledWhenJson;
 import fr.siamois.domain.models.form.customform.ValueMatcher;
+import fr.siamois.domain.models.specimen.Specimen;
 import fr.siamois.dto.PlaceSuggestionDTO;
 import fr.siamois.dto.StratigraphicRelationshipDTO;
 import fr.siamois.dto.entity.*;
@@ -480,7 +481,7 @@ public class FormService {
 
     private void handleContainerSet(CustomFieldAnswerViewModel answer, Object value) {
         if (answer instanceof CustomFieldAnswerSelectMultipleContainerViewModel containerAnswer && value instanceof Set<?> values) {
-            containerAnswer.setValue((Set<ContainerDTO>) values);
+            containerAnswer.setValue(new ArrayList<>((Set<ContainerDTO>) value));
         }
     }
 

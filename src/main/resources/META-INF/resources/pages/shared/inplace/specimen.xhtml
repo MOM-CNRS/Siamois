@@ -36,9 +36,9 @@
                     <h:panelGroup rendered="#{(not cc.attrs.multiple) and (not empty cc.attrs.answer.value)}">
                         <div style="display:flex;gap:0.5em;">
                             <p:commandLink
-                                    styleClass="recording-unit"
+                                    styleClass="specimen"
                                     value="#{cc.attrs.answer.value.fullIdentifier}"
-                                    action="#{flowBean.addRecordingUnitToOverview(cc.attrs.answer.value.id,
+                                    action="#{flowBean.addSpecimenToOverview(cc.attrs.answer.value.id,
                                 focusViewBean.mainPanel,
                                 null
                                 )}"
@@ -56,18 +56,18 @@
         </h:panelGroup>
         <h:panelGroup id="inputGroup" rendered="#{cc.attrs.mode eq 'input'}">
                 <p:autoComplete value="#{cc.attrs.answer.value}"
-                                id="select-multiple-recording-unit"
-                                completeMethod="#{cc.attrs.formCtx.completeRecordingUnitOptions}"
-                                panelStyleClass="recording-unit"
+                                id="select-specimen"
+                                completeMethod="#{cc.attrs.formCtx.completeSpecimenOptions}"
+                                panelStyleClass="specimen"
                                 multiple="#{cc.attrs.multiple}"
-                                styleClass="recording-unit #{cc.attrs.answer.hasBeenModified ? 'track-change sia-modified-field': 'track-change'}"
+                                styleClass="specimen #{cc.attrs.answer.hasBeenModified ? 'track-change sia-modified-field': 'track-change'}"
                                 required="false"
                                 var="ru"
-                                itemValue="#{ru}"
-                                itemLabel="#{ru.fullIdentifier}"
+                                itemValue="#{s}"
+                                itemLabel="#{s.fullIdentifier}"
                                 onmousedown="event.stopPropagation();"
                                 onclick="event.stopPropagation();"
-                                converter="#{recordingUnitSummaryConverter}"
+                                converter="#{specimenSummaryConverter}"
                                 forceSelection="true"
                                 scrollHeight="300"
                                 dropdown="true"

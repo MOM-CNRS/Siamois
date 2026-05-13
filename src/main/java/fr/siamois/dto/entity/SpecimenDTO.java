@@ -26,7 +26,7 @@ public class SpecimenDTO extends AbstractEntityDTO {
     }
 
     public static List<String> getBindableFieldNames() {
-        return List.of("collectionDate", "collectors", "fullIdentifier", "authors",
+        return List.of("collectionDate", "collectors", "fullIdentifier", "authors", "recordingUnit",
                 "type", "category");
     }
 }

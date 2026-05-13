@@ -5,13 +5,15 @@ import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAut
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 
 @EqualsAndHashCode(callSuper = true)
 @Data
 public class CustomFieldAnswerSelectMultipleContainerViewModel extends CustomFieldAnswerViewModel {
 
-    private Set<ContainerDTO> value;
+    private List<ContainerDTO> value = new ArrayList<>();
 
     // To create new :
     private String newIdentifier;

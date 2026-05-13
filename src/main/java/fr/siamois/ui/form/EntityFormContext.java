@@ -41,6 +41,7 @@ import jakarta.faces.component.UIComponent;
 import jakarta.faces.component.UIInput;
 import jakarta.faces.context.FacesContext;
 import jakarta.faces.event.AjaxBehaviorEvent;
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -578,6 +579,18 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
         return Collections.emptyList();
     }
 
+    /**
+     * Get all specimen of the same scope (action unit) as the current unit.
+     *
+     * @return The list of specimen
+     */
+    public List<SpecimenSummaryDTO> completeSpecimenOptions(String query) {
+        if (unit instanceof SpecimenDTO specimen) {
+            return specimenService.findAllByActionUnit(specimen.getRecordingUnit().getId());
+        }
+        return Collections.emptyList();
+    }
+
 
     public void addStratigraphicRelationship(CustomFieldAnswerStratigraphyViewModel answer,
                                              FacesContext context,
@@ -807,5 +820,7 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
     public void toggleUncertainty(CustomFieldAnswerViewModel answer) {
         answer.setUncertain(!answer.isUncertain());
     }
+
+
 
 }

@@ -5,9 +5,12 @@ import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.specimen.Specimen;
 import fr.siamois.domain.services.ArkEntityService;
 import fr.siamois.dto.entity.*;
+import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitRepository;
 import fr.siamois.infrastructure.database.repositories.specimen.SpecimenRepository;
 import fr.siamois.mapper.InstitutionMapper;
 import fr.siamois.mapper.SpecimenMapper;
+import fr.siamois.mapper.SpecimenSummaryMapper;
+import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -23,7 +26,9 @@ import static fr.siamois.domain.models.ValidationStatus.*;
 public class SpecimenService implements ArkEntityService {
 
     private final SpecimenRepository specimenRepository;
+    private final RecordingUnitRepository recordingUnitRepository;
     private final SpecimenMapper specimenMapper;
+    private final SpecimenSummaryMapper specimenSummaryMapper;
     private final InstitutionMapper institutionMapper;
 
 
@@ -279,6 +284,16 @@ public class SpecimenService implements ArkEntityService {
         }
 
         return specimenMapper.convert(specimenRepository.save(unit));
+    }
+
+    public List<SpecimenSummaryDTO> findAllByActionUnit(@NotNull Long recordingUnitId) {
+        
+        Long id = recordingUnitRepository.findById(recordingUnitId).get().getActionUnit().getId();
+        return specimenRepository
+                .findFirst10ByActionUnitId(id)
+                .stream()
+                .map(specimenSummaryMapper::convert)
+                .toList();
     }
 
 }
