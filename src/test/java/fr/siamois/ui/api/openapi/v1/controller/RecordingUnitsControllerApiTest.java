@@ -9,17 +9,21 @@ import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.document.DocumentService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
+import fr.siamois.domain.services.specimen.SpecimenService;
 import fr.siamois.dto.StratigraphicRelationshipDTO;
 import fr.siamois.dto.entity.ConceptDTO;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.dto.entity.RecordingUnitDTO;
 import fr.siamois.dto.entity.RecordingUnitSummaryDTO;
+import fr.siamois.dto.entity.SpecimenDTO;
 import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitRelationsData;
 import fr.siamois.mapper.PersonMapper;
+import fr.siamois.ui.api.openapi.v1.mapper.FindOpenApiMapper;
 import fr.siamois.ui.api.openapi.v1.mapper.ProjectDocumentOpenApiMapper;
 import fr.siamois.ui.api.handler.RestExceptionHandler;
 import fr.siamois.ui.api.openapi.v1.resource.document.ProjectDocumentResource;
+import fr.siamois.ui.api.openapi.v1.resource.find.FindResource;
 import fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitResource;
 import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitCreateFormData;
 import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitFormBundle;
@@ -39,6 +43,10 @@ import org.springframework.http.converter.json.MappingJackson2HttpMessageConvert
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.server.ResponseStatusException;
@@ -48,6 +56,7 @@ import java.util.Map;
 import java.util.Set;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.hamcrest.Matchers.hasSize;
@@ -58,6 +67,7 @@ import static org.mockito.Mockito.same;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -73,7 +83,11 @@ class RecordingUnitsControllerApiTest {
     @Mock
     private DocumentService documentService;
     @Mock
+    private SpecimenService specimenService;
+    @Mock
     private ProjectDocumentOpenApiMapper projectDocumentOpenApiMapper;
+    @Mock
+    private FindOpenApiMapper findOpenApiMapper;
     @Mock
     private PersonMapper personMapper;
     @Mock
@@ -95,7 +109,9 @@ class RecordingUnitsControllerApiTest {
                 actionUnitService,
                 recordingUnitService,
                 documentService,
+                specimenService,
                 projectDocumentOpenApiMapper,
+                findOpenApiMapper,
                 personMapper);
 
         RecordingUnitsControllerApi controller = new RecordingUnitsControllerApi(
@@ -233,9 +249,196 @@ class RecordingUnitsControllerApiTest {
     }
 
     @Test
-    void getFinds_returns501() throws Exception {
+    void getFinds_withoutAuth_returns401() throws Exception {
+        SecurityContextHolder.clearContext();
+
         mockMvc.perform(get("/api/v1/recording-units/5/finds"))
-                .andExpect(status().isNotImplemented());
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void getFinds_notFound_returns404() throws Exception {
+        when(personMapper.convert(person)).thenReturn(personDto);
+        when(institutionService.findInstitutionsOfPerson(personDto)).thenReturn(Set.of(institutionDto));
+        when(recordingUnitService.findAccessibleRecordingUnitByKey(eq("missing"), eq(Set.of(10L)), isNull()))
+                .thenThrow(new RecordingUnitNotFoundException("gone"));
+
+        mockMvc.perform(get("/api/v1/recording-units/missing/finds")
+                        .param("offset", "0")
+                        .param("limit", "10"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").value("gone"));
+    }
+
+    @Test
+    void getFinds_badPagination_returns400() throws Exception {
+        mockMvc.perform(get("/api/v1/recording-units/5/finds")
+                        .param("offset", "1")
+                        .param("limit", "10"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void getFinds_success_empty_returnsMeta() throws Exception {
+        when(personMapper.convert(person)).thenReturn(personDto);
+        when(institutionService.findInstitutionsOfPerson(personDto)).thenReturn(Set.of(institutionDto));
+
+        RecordingUnitDTO ru = new RecordingUnitDTO();
+        ru.setId(5L);
+        ru.setCreatedByInstitution(institutionDto);
+        when(recordingUnitService.findAccessibleRecordingUnitByKey(eq("5"), eq(Set.of(10L)), isNull())).thenReturn(ru);
+
+        PageImpl<SpecimenDTO> page = new PageImpl<>(List.of(), PageRequest.of(0, 10), 0L);
+        when(specimenService.findAllByInstitutionAndByRecordingUnitAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
+                eq(10L), eq(5L), isNull(), isNull(), isNull(), eq("fr"), any())).thenReturn(page);
+
+        mockMvc.perform(get("/api/v1/recording-units/5/finds")
+                        .param("offset", "0")
+                        .param("limit", "10"))
+                .andExpect(status().isOk())
+                .andExpect(header().string("X-Total-Count", "0"))
+                .andExpect(jsonPath("$.data", hasSize(0)))
+                .andExpect(jsonPath("$.meta.total").value(0))
+                .andExpect(jsonPath("$.meta.limit").value(10))
+                .andExpect(jsonPath("$.meta.offset").value(0));
+    }
+
+    @Test
+    void getFinds_success_returnsMappedFinds() throws Exception {
+        when(personMapper.convert(person)).thenReturn(personDto);
+        when(institutionService.findInstitutionsOfPerson(personDto)).thenReturn(Set.of(institutionDto));
+
+        RecordingUnitDTO ru = new RecordingUnitDTO();
+        ru.setId(7L);
+        ru.setCreatedByInstitution(institutionDto);
+        when(recordingUnitService.findAccessibleRecordingUnitByKey(eq("7"), eq(Set.of(10L)), isNull())).thenReturn(ru);
+
+        SpecimenDTO spec = new SpecimenDTO();
+        spec.setId(99L);
+        spec.setFullIdentifier("INST-UE-99");
+        PageImpl<SpecimenDTO> page = new PageImpl<>(
+                List.of(spec),
+                PageRequest.of(0, 10),
+                1L);
+        when(specimenService.findAllByInstitutionAndByRecordingUnitAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
+                eq(10L), eq(7L), isNull(), isNull(), isNull(), eq("fr"), any())).thenReturn(page);
+
+        FindResource fr = new FindResource();
+        fr.setResourceType("finds");
+        fr.setId("99");
+        fr.setFullIdentifier("INST-UE-99");
+        when(findOpenApiMapper.toResource(same(spec))).thenReturn(fr);
+
+        mockMvc.perform(get("/api/v1/recording-units/7/finds")
+                        .param("offset", "0")
+                        .param("limit", "10"))
+                .andExpect(status().isOk())
+                .andExpect(header().string("X-Total-Count", "1"))
+                .andExpect(jsonPath("$.data", hasSize(1)))
+                .andExpect(jsonPath("$.data[0].resourceId").value("99"))
+                .andExpect(jsonPath("$.data[0].resourceType").value("finds"))
+                .andExpect(jsonPath("$.data[0].fullIdentifier").value("INST-UE-99"));
+
+        verify(findOpenApiMapper).toResource(same(spec));
+    }
+
+    @Test
+    void getFinds_sortParam_passedToSpecimenQuery() throws Exception {
+        when(personMapper.convert(person)).thenReturn(personDto);
+        when(institutionService.findInstitutionsOfPerson(personDto)).thenReturn(Set.of(institutionDto));
+
+        RecordingUnitDTO ru = new RecordingUnitDTO();
+        ru.setId(3L);
+        ru.setCreatedByInstitution(institutionDto);
+        when(recordingUnitService.findAccessibleRecordingUnitByKey(eq("3"), eq(Set.of(10L)), isNull())).thenReturn(ru);
+
+        PageImpl<SpecimenDTO> page = new PageImpl<>(List.of(), PageRequest.of(0, 10), 0L);
+        when(specimenService.findAllByInstitutionAndByRecordingUnitAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
+                eq(10L), eq(3L), isNull(), isNull(), isNull(), eq("fr"), any())).thenReturn(page);
+
+        mockMvc.perform(get("/api/v1/recording-units/3/finds")
+                        .param("offset", "0")
+                        .param("limit", "10")
+                        .param("sort", "fullIdentifier:asc"))
+                .andExpect(status().isOk());
+
+        verify(specimenService).findAllByInstitutionAndByRecordingUnitAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
+                eq(10L), eq(3L), isNull(), isNull(), isNull(), eq("fr"),
+                argThat((Pageable p) -> {
+                    Sort s = p.getSort();
+                    for (Sort.Order o : s) {
+                        if ("fullIdentifier".equals(o.getProperty()) && o.isAscending()) {
+                            return true;
+                        }
+                    }
+                    return false;
+                }));
+    }
+
+    @Test
+    void getFinds_passesAcceptLanguageToSpecimenQuery() throws Exception {
+        when(personMapper.convert(person)).thenReturn(personDto);
+        when(institutionService.findInstitutionsOfPerson(personDto)).thenReturn(Set.of(institutionDto));
+
+        RecordingUnitDTO ru = new RecordingUnitDTO();
+        ru.setId(1L);
+        ru.setCreatedByInstitution(institutionDto);
+        when(recordingUnitService.findAccessibleRecordingUnitByKey(eq("1"), eq(Set.of(10L)), isNull())).thenReturn(ru);
+
+        PageImpl<SpecimenDTO> page = new PageImpl<>(List.of(), PageRequest.of(0, 10), 0L);
+        when(specimenService.findAllByInstitutionAndByRecordingUnitAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
+                eq(10L), eq(1L), isNull(), isNull(), isNull(), eq("de"), any())).thenReturn(page);
+
+        mockMvc.perform(get("/api/v1/recording-units/1/finds")
+                        .param("offset", "0")
+                        .param("limit", "10")
+                        .header(HttpHeaders.ACCEPT_LANGUAGE, "de-AT,de;q=0.9"))
+                .andExpect(status().isOk());
+
+        verify(specimenService).findAllByInstitutionAndByRecordingUnitAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
+                eq(10L), eq(1L), isNull(), isNull(), isNull(), eq("de"), any());
+    }
+
+    @Test
+    void getFinds_recordingUnitWithoutInstitution_returns400() throws Exception {
+        when(personMapper.convert(person)).thenReturn(personDto);
+        when(institutionService.findInstitutionsOfPerson(personDto)).thenReturn(Set.of(institutionDto));
+
+        RecordingUnitDTO ru = new RecordingUnitDTO();
+        ru.setId(8L);
+        ru.setCreatedByInstitution(null);
+        when(recordingUnitService.findAccessibleRecordingUnitByKey(eq("8"), eq(Set.of(10L)), isNull())).thenReturn(ru);
+
+        mockMvc.perform(get("/api/v1/recording-units/8/finds")
+                        .param("offset", "0")
+                        .param("limit", "10"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void getFinds_withSeveralInstitutions_passesFullScopeToRecordingUnitResolution() throws Exception {
+        InstitutionDTO inst20 = new InstitutionDTO();
+        inst20.setId(20L);
+        when(personMapper.convert(person)).thenReturn(personDto);
+        when(institutionService.findInstitutionsOfPerson(personDto))
+                .thenReturn(Set.of(institutionDto, inst20));
+
+        RecordingUnitDTO ru = new RecordingUnitDTO();
+        ru.setId(2L);
+        ru.setCreatedByInstitution(institutionDto);
+        when(recordingUnitService.findAccessibleRecordingUnitByKey(eq("k"), eq(Set.of(10L, 20L)), isNull()))
+                .thenReturn(ru);
+
+        PageImpl<SpecimenDTO> page = new PageImpl<>(List.of(), PageRequest.of(0, 10), 0L);
+        when(specimenService.findAllByInstitutionAndByRecordingUnitAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
+                eq(10L), eq(2L), isNull(), isNull(), isNull(), eq("fr"), any())).thenReturn(page);
+
+        mockMvc.perform(get("/api/v1/recording-units/k/finds")
+                        .param("offset", "0")
+                        .param("limit", "10"))
+                .andExpect(status().isOk());
+
+        verify(recordingUnitService).findAccessibleRecordingUnitByKey("k", Set.of(10L, 20L), null);
     }
 
     @Test

@@ -9,6 +9,7 @@ import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.document.DocumentService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
+import fr.siamois.domain.services.specimen.SpecimenService;
 import fr.siamois.dto.api.AccessibleProjectForApi;
 import fr.siamois.dto.entity.ActionUnitDTO;
 import fr.siamois.dto.entity.InstitutionDTO;
@@ -16,6 +17,7 @@ import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.dto.entity.RecordingUnitDTO;
 import fr.siamois.mapper.PersonMapper;
 import fr.siamois.ui.api.handler.RestExceptionHandler;
+import fr.siamois.ui.api.openapi.v1.mapper.FindOpenApiMapper;
 import fr.siamois.ui.api.openapi.v1.mapper.ProjectDocumentOpenApiMapper;
 import fr.siamois.ui.api.openapi.v1.mapper.ProjectResponseMapper;
 import fr.siamois.ui.api.openapi.v1.mapper.RecordingUnitResponseMapper;
@@ -76,7 +78,11 @@ class ProjectControllerApiTest {
     @Mock
     private DocumentService documentService;
     @Mock
+    private SpecimenService specimenService;
+    @Mock
     private ProjectDocumentOpenApiMapper projectDocumentOpenApiMapper;
+    @Mock
+    private FindOpenApiMapper findOpenApiMapper;
     @Mock
     private RecordingUnitResponseMapper recordingUnitResourceMapper;
 
@@ -96,7 +102,9 @@ class ProjectControllerApiTest {
                 actionUnitService,
                 recordingUnitService,
                 documentService,
+                specimenService,
                 projectDocumentOpenApiMapper,
+                findOpenApiMapper,
                 personMapper);
         ProjectControllerApi controller = new ProjectControllerApi(
                 projectApiService,

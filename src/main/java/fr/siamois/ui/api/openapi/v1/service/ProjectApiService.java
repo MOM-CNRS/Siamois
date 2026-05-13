@@ -6,13 +6,17 @@ import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.document.DocumentService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
+import fr.siamois.domain.services.specimen.SpecimenService;
 import fr.siamois.dto.api.AccessibleProjectForApi;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.dto.entity.RecordingUnitDTO;
+import fr.siamois.dto.entity.SpecimenDTO;
 import fr.siamois.mapper.PersonMapper;
+import fr.siamois.ui.api.openapi.v1.mapper.FindOpenApiMapper;
 import fr.siamois.ui.api.openapi.v1.mapper.ProjectDocumentOpenApiMapper;
 import fr.siamois.ui.api.openapi.v1.resource.document.ProjectDocumentResource;
+import fr.siamois.ui.api.openapi.v1.resource.find.FindResource;
 import fr.siamois.utils.AuthenticatedUserUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -53,11 +57,17 @@ public class ProjectApiService {
             "id", "name", "identifier", "creationDate"
     );
 
+    private static final Set<String> ALLOWED_FIND_SORT_FIELDS = Set.of(
+            "creationTime", "id", "fullIdentifier"
+    );
+
     private final InstitutionService institutionService;
     private final ActionUnitService actionUnitService;
     private final RecordingUnitService recordingUnitService;
     private final DocumentService documentService;
+    private final SpecimenService specimenService;
     private final ProjectDocumentOpenApiMapper projectDocumentOpenApiMapper;
+    private final FindOpenApiMapper findOpenApiMapper;
     private final PersonMapper personMapper;
 
     public void validatePagedListRequest(int offset, int limit) {
@@ -162,6 +172,38 @@ public class ProjectApiService {
     }
 
     /**
+     * Mobiliers (spécimens) rattachés à une UE accessible, avec pagination (même périmètre que le détail UE).
+     */
+    @Transactional(readOnly = true)
+    public Page<FindResource> pageFindsForAccessibleRecordingUnit(
+            ProjectApiCaller caller,
+            String recordingUnitKey,
+            int offset,
+            int limit,
+            String sortParam,
+            String acceptLanguage) {
+        RecordingUnitDTO ru = recordingUnitService.findAccessibleRecordingUnitByKey(
+                recordingUnitKey, caller.accessibleInstitutionIds(), null);
+        InstitutionDTO institution = ru.getCreatedByInstitution();
+        if (institution == null || institution.getId() == null || ru.getId() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unité d'enregistrement sans institution");
+        }
+        String lang = primaryAcceptLanguage(acceptLanguage);
+        Sort sort = parseFindSort(sortParam);
+        int pageNumber = offset / limit;
+        Pageable pageable = PageRequest.of(pageNumber, limit, sort);
+        Page<SpecimenDTO> page = specimenService.findAllByInstitutionAndByRecordingUnitAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
+                institution.getId(),
+                ru.getId(),
+                null,
+                null,
+                null,
+                lang,
+                pageable);
+        return page.map(findOpenApiMapper::toResource);
+    }
+
+    /**
      * Langue principale depuis l'en-tête {@code Accept-Language} (première entrée, sans qualité).
      */
     public static String primaryAcceptLanguage(String acceptLanguage) {
@@ -224,6 +266,27 @@ public class ProjectApiService {
             cmp = cmp.reversed();
         }
         return institutions.stream().sorted(cmp).toList();
+    }
+
+    private static Sort parseFindSort(String sortParam) {
+        Sort defaultSort = Sort.by(Sort.Direction.DESC, "creationTime")
+                .and(Sort.by(Sort.Direction.DESC, "id"));
+        if (sortParam == null || sortParam.isBlank()) {
+            return defaultSort;
+        }
+        String[] parts = sortParam.split(":", 2);
+        String property = parts[0].trim();
+        if (!ALLOWED_FIND_SORT_FIELDS.contains(property)) {
+            return defaultSort;
+        }
+        Sort.Direction direction = parts.length > 1 && "desc".equalsIgnoreCase(parts[1].trim())
+                ? Sort.Direction.DESC
+                : Sort.Direction.ASC;
+        Sort primary = Sort.by(direction, property);
+        if ("id".equals(property)) {
+            return primary;
+        }
+        return primary.and(Sort.by(Sort.Direction.ASC, "id"));
     }
 
     private static Sort parseRecordingUnitSort(String sortParam) {
