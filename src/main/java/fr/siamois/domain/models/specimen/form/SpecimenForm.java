@@ -286,6 +286,7 @@ public abstract class SpecimenForm {
             .label("specimen.field.material")
             .isSystemField(true)
             .id(13L)
+            .fieldCode(Specimen.MATIERE_FIELD)
             .valueBinding("material")
             .concept(materialConcept)
             .build();
@@ -296,6 +297,7 @@ public abstract class SpecimenForm {
             .label("specimen.field.materialClass")
             .isSystemField(true)
             .id(14L)
+            .fieldCode(Specimen.CLASS_FIELD)
             .valueBinding("materialClass")
             .concept(materialClassConcept)
             .build();
@@ -306,6 +308,7 @@ public abstract class SpecimenForm {
             .label("specimen.field.normalizedInterpretation")
             .isSystemField(true)
             .id(15L)
+            .fieldCode(Specimen.INTERPRETATION_FIELD)
             .valueBinding("normalizedInterpretation")
             .concept(normalizedInterpretationConcept)
             .build();
@@ -316,6 +319,7 @@ public abstract class SpecimenForm {
             .label("recordingunit.field.description")
             .isSystemField(true)
             .id(16L)
+            .isTextArea(true)
             .valueBinding("description")
             .concept(descriptionConcept)
             .build();
@@ -326,6 +330,7 @@ public abstract class SpecimenForm {
             .label("recordingunit.field.comments")
             .isSystemField(true)
             .id(17L)
+            .isTextArea(true)
             .valueBinding("comments")
             .concept(commentsConcept)
             .build();

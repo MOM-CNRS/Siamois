@@ -234,6 +234,26 @@
 
         </c:if>
 
+        <c:if test="#{col.field['class'].simpleName eq 'CustomFieldSelectOneRecordingUnit'}">
+            <siaInplace:recordingUnitMultiple
+                    id="recordingUnitOne"
+                    rendered="#{col.field['class'].simpleName eq 'CustomFieldSelectOneRecordingUnit'}"
+                    hasBeenModified="#{hasBeenModified}"
+                    field="#{col.field}"
+                    formCtx="#{formCtx}"
+                    multiple="false"
+                    mode="#{mode}"
+                    panelId="#{panelId}"
+                    onModified="#{formCtx.onFieldAnswerModifiedListener}"
+                    updateTargetsOnBlur="#{panelHeaderUpdateId}"
+                    required="#{col.required}"
+                    label="#{spatialUnitFieldBean.resolveCustomFieldLabel(col.field)}"
+                    spatialUnitOptions="#{spatialUnitOptions}"
+                    answer="#{answer}"
+            />
+
+        </c:if>
+
 
         <c:if test="#{col.field['class'].simpleName eq 'CustomFieldSelectOneActionCode'}">
             <!-- Select one code OA -->

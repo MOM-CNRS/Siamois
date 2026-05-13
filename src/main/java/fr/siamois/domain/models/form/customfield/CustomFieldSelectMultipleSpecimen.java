@@ -20,7 +20,7 @@ public class CustomFieldSelectMultipleSpecimen extends CustomField {
 
     @Override
     public String getIcon() {
-        return "bi bi-pencil-square";
+        return "bi bi-bucket";
     }
 
 }

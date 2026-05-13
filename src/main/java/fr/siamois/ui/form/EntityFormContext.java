@@ -557,6 +557,15 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
         return Collections.emptyList();
     }
 
+    public List<ContainerDTO> getContainerOptions(String query) {
+        // todo : implement real
+        ContainerDTO containerDTO = new ContainerDTO();
+        containerDTO.setIdentifier("SAC-001");
+        ContainerDTO container = new ContainerDTO();
+        container.setIdentifier("CAISSE-002");
+        return List.of(containerDTO, container);
+    }
+
     /**
      * Get all recording units of the same scope (action unit) as the current unit.
      *

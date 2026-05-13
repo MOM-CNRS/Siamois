@@ -97,6 +97,9 @@ public class Specimen extends TraceableEntity implements ArkEntity {
     @FieldCode
     public static final String INTERPRETATION_FIELD = "SIAS.INTERPRETATION";
 
+    @FieldCode
+    public static final String CLASS_FIELD = "SIAS.CLASS";
+
     @NotNull
     @OneToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "fk_ark_id")

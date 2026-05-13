@@ -351,6 +351,7 @@ public class FormService {
         handlers.put(CustomFieldAnswerSelectMultiplePersonViewModel.class, this::handlePersonList);
         handlers.put(CustomFieldAnswerSelectOneFromFieldCodeViewModel.class, this::handleConcept);
         handlers.put(CustomFieldAnswerSelectOneActionUnitViewModel.class, this::handleActionUnit);
+        handlers.put(CustomFieldAnswerSelectOneRecordingUnitViewModel.class, this::handleRecordingUnit);
         handlers.put(CustomFieldAnswerSelectOneSpatialUnitViewModel.class, this::handleSpatialUnit);
         handlers.put(CustomFieldAnswerSelectOneActionCodeViewModel.class, this::handleActionCode);
         handlers.put(CustomFieldAnswerIntegerViewModel.class, this::handleInteger);
@@ -429,6 +430,12 @@ public class FormService {
     private void handleActionUnit(CustomFieldAnswerViewModel answer, Object value) {
         if (answer instanceof CustomFieldAnswerSelectOneActionUnitViewModel actionUnitAnswer) {
             actionUnitAnswer.setValue((ActionUnitSummaryDTO) value);
+        }
+    }
+
+    private void handleRecordingUnit(CustomFieldAnswerViewModel answer, Object value) {
+        if (answer instanceof CustomFieldAnswerSelectOneRecordingUnitViewModel actionUnitAnswer) {
+            actionUnitAnswer.setValue((RecordingUnitSummaryDTO) value);
         }
     }
 
