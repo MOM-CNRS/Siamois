@@ -32,6 +32,7 @@ import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAut
 import fr.siamois.ui.api.openapi.v1.mapper.RecordingUnitResponseMapper;
 import fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitResource;
 import fr.siamois.ui.api.openapi.v1.response.find.FindFormData;
+import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitChildrenData;
 import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitCreateFormData;
 import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitFormBundle;
 import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitMobileDetailData;
@@ -613,6 +614,28 @@ class RecordingUnitOpenApiServiceTest {
         assertThat(data.getParents()).containsExactly(parent);
         assertThat(data.getChildren()).containsExactly(child);
         verify(recordingUnitService).findRelationsForAccessibleRecordingUnit("42", SCOPE);
+    }
+
+    @Test
+    void buildRecordingUnitChildren_wrapsListFromRecordingUnitService() {
+        RecordingUnitSummaryDTO child = new RecordingUnitSummaryDTO();
+        child.setId(301L);
+        when(recordingUnitService.findChildrenForAccessibleRecordingUnit(eq("5"), eq(SCOPE))).thenReturn(List.of(child));
+
+        RecordingUnitChildrenData data = service.buildRecordingUnitChildren("5", SCOPE);
+
+        assertThat(data.children()).containsExactly(child);
+        verify(recordingUnitService).findChildrenForAccessibleRecordingUnit("5", SCOPE);
+    }
+
+    @Test
+    void buildRecordingUnitChildren_emptyListFromService() {
+        when(recordingUnitService.findChildrenForAccessibleRecordingUnit(eq("9"), eq(SCOPE))).thenReturn(List.of());
+
+        RecordingUnitChildrenData data = service.buildRecordingUnitChildren("9", SCOPE);
+
+        assertThat(data.children()).isEmpty();
+        verify(recordingUnitService).findChildrenForAccessibleRecordingUnit("9", SCOPE);
     }
 
     @Test
