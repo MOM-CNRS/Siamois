@@ -367,6 +367,89 @@ public class RecordingUnitService implements ArkEntityService {
         }
     }
 
+    /**
+     * UE résolue avec l'entité JPA (réponses formulaire persistées) et le DTO métier.
+     */
+    public record AccessibleRecordingUnit(RecordingUnit entity, RecordingUnitDTO dto) {
+    }
+
+    /**
+     * Résout une UE pour les institutions accessibles à l'utilisateur (API OpenAPI).
+     * <ul>
+     *     <li>Si la clé est composée uniquement de chiffres : recherche par {@code recording_unit_id} ;
+     *     si aucune ligne, repli sur {@link #resolveRecordingUnitEntityByFullIdentifier(String, Set)}.</li>
+     *     <li>Sinon : recherche par {@code full_identifier} dans les institutions accessibles (ordre d'id croissant).</li>
+     * </ul>
+     *
+     * @param counts si la liste contient {@code "specimen"}, charge le nombre de spécimens associés.
+     */
+    @Transactional(readOnly = true)
+    public AccessibleRecordingUnit findAccessibleRecordingUnitWithEntity(String idOrKey,
+                                                                         Set<Long> accessibleInstitutionIds,
+                                                                         List<String> counts) {
+        RecordingUnit entity = resolveRecordingUnitEntityByKey(idOrKey, accessibleInstitutionIds);
+        RecordingUnitDTO dto = recordingUnitMapper.convert(entity);
+        if (counts != null && counts.contains("specimen") && dto.getId() != null) {
+            dto.setSpecimenCount(recordingUnitRepository.countSpecimensByRecordingUnitId(dto.getId()));
+        }
+        return new AccessibleRecordingUnit(entity, dto);
+    }
+
+    /**
+     * Résout une UE pour les institutions accessibles à l'utilisateur (API OpenAPI).
+     *
+     * @param counts si la liste contient {@code "specimen"}, charge le nombre de spécimens associés.
+     */
+    @Transactional(readOnly = true)
+    public RecordingUnitDTO findAccessibleRecordingUnitByKey(String idOrKey,
+                                                             Set<Long> accessibleInstitutionIds,
+                                                             List<String> counts) {
+        return findAccessibleRecordingUnitWithEntity(idOrKey, accessibleInstitutionIds, counts).dto();
+    }
+
+    private RecordingUnit resolveRecordingUnitEntityByKey(String idOrKey, Set<Long> accessibleInstitutionIds) {
+        if (accessibleInstitutionIds == null || accessibleInstitutionIds.isEmpty()) {
+            throw new RecordingUnitNotFoundException("No institution scope for current user");
+        }
+        String key = idOrKey == null ? "" : idOrKey.trim();
+        if (key.isEmpty()) {
+            throw new RecordingUnitNotFoundException("Recording unit key must not be empty");
+        }
+
+        if (key.chars().allMatch(Character::isDigit)) {
+            try {
+                long numericId = Long.parseLong(key);
+                Optional<RecordingUnit> byPk = recordingUnitRepository.findById(numericId);
+                if (byPk.isPresent()) {
+                    RecordingUnit entity = byPk.get();
+                    RecordingUnitDTO converted = recordingUnitMapper.convert(entity);
+                    Long instId = converted.getCreatedByInstitution() == null ? null
+                            : converted.getCreatedByInstitution().getId();
+                    if (instId != null && accessibleInstitutionIds.contains(instId)) {
+                        return entity;
+                    }
+                    throw new RecordingUnitNotFoundException("Recording unit not found with key: " + key);
+                }
+                return resolveRecordingUnitEntityByFullIdentifier(key, accessibleInstitutionIds);
+            } catch (NumberFormatException e) {
+                return resolveRecordingUnitEntityByFullIdentifier(key, accessibleInstitutionIds);
+            }
+        }
+        return resolveRecordingUnitEntityByFullIdentifier(key, accessibleInstitutionIds);
+    }
+
+    private RecordingUnit resolveRecordingUnitEntityByFullIdentifier(String fullIdentifier,
+                                                                     Set<Long> accessibleInstitutionIds) {
+        List<Long> sortedInstitutionIds = accessibleInstitutionIds.stream().sorted().toList();
+        for (Long institutionId : sortedInstitutionIds) {
+            Optional<RecordingUnit> byFull = recordingUnitRepository.findByFullIdentifierAndInstitutionId(
+                    fullIdentifier, institutionId);
+            if (byFull.isPresent()) {
+                return byFull.get();
+            }
+        }
+        throw new RecordingUnitNotFoundException("Recording unit not found with key: " + fullIdentifier);
+    }
 
     @Override
     public List<? extends ArkEntity> findWithoutArk(Institution institution) {

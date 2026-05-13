@@ -48,6 +48,9 @@ public class CustomFormLayoutConverter implements AttributeConverter<List<Custom
 
     @Override
     public String convertToDatabaseColumn(List<CustomFormPanel> layout) {
+        if (layout == null || layout.isEmpty()) {
+            return "[]";
+        }
         try {
             List<Map<String, Object>> serializedLayout = layout.stream()
                     .map(this::serializePanel)

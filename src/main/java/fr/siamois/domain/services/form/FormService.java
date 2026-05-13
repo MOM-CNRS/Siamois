@@ -21,6 +21,7 @@ import fr.siamois.ui.viewmodel.CustomFormResponseViewModel;
 import fr.siamois.ui.viewmodel.fieldanswer.*;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -314,6 +315,27 @@ public class FormService {
         }
 
         return null;
+    }
+
+    /**
+     * Valeur exposable pour une API (JSON), y compris cas particulier stratigraphie.
+     */
+    @Nullable
+    public Object readAnswerValueForApi(@Nullable CustomFieldAnswerViewModel answer) {
+        if (answer == null) {
+            return null;
+        }
+        if (answer instanceof CustomFieldAnswerStratigraphyViewModel s) {
+            Map<String, Object> out = new LinkedHashMap<>();
+            out.put("anterior", s.getAnteriorRelationships() != null
+                    ? new ArrayList<>(s.getAnteriorRelationships()) : List.of());
+            out.put("posterior", s.getPosteriorRelationships() != null
+                    ? new ArrayList<>(s.getPosteriorRelationships()) : List.of());
+            out.put("synchronous", s.getSynchronousRelationships() != null
+                    ? new ArrayList<>(s.getSynchronousRelationships()) : List.of());
+            return out;
+        }
+        return extractValueFromAnswer(answer);
     }
 
     // -------------- Internal helpers
