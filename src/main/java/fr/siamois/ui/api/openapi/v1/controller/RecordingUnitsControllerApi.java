@@ -3,8 +3,11 @@ package fr.siamois.ui.api.openapi.v1.controller;
 import fr.siamois.ui.api.openapi.v1.OpenApiTags;
 import fr.siamois.ui.api.openapi.v1.response.FindListResponse;
 import fr.siamois.ui.api.openapi.v1.response.RecordingUnitListResponse;
+import fr.siamois.ui.api.openapi.v1.resource.document.ProjectDocumentResource;
 import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitCreateFormData;
 import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitCreateFormResponse;
+import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitDocumentsData;
+import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitDocumentsResponse;
 import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitMobileDetailData;
 import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitMobileDetailResponse;
 import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitRelationsData;
@@ -126,6 +129,31 @@ public class RecordingUnitsControllerApi {
                 lang);
 
         return ResponseEntity.ok(new RecordingUnitMobileDetailResponse(data));
+    }
+
+    @Operation(
+            summary = "Documents rattachés à une unité d'enregistrement",
+            description = "Liste des documents liés à l'UE via recording_unit_document. "
+                    + "Même clé d'UE que GET /api/v1/recording-units/{id} (identifiant numérique ou full_identifier)."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Ok"),
+            @ApiResponse(responseCode = "401", description = "Non authentifié"),
+            @ApiResponse(responseCode = "404", description = "UE introuvable ou hors périmètre"),
+            @ApiResponse(responseCode = "500", description = "Erreur interne")
+    })
+    @GetMapping("/{id}/documents")
+    @Tag(name = OpenApiTags.APPLICATION_MOBILE, description = OpenApiTags.APPLICATION_MOBILE_DESCRIPTION)
+    public ResponseEntity<RecordingUnitDocumentsResponse> getDocuments(
+            @Parameter(
+                    description = "Clé d'UE : identifiant numérique (recording_unit_id) ou full_identifier.",
+                    schema = @Schema(type = "string", example = "INST-PROJ-UE42")
+            )
+            @PathVariable("id") String id) {
+
+        ProjectApiCaller caller = projectApiService.requireCaller();
+        List<ProjectDocumentResource> documents = projectApiService.listDocumentsForAccessibleRecordingUnit(caller, id);
+        return ResponseEntity.ok(new RecordingUnitDocumentsResponse(new RecordingUnitDocumentsData(documents)));
     }
 
     @Operation(

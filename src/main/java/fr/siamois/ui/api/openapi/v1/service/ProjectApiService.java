@@ -149,6 +149,19 @@ public class ProjectApiService {
     }
 
     /**
+     * Documents rattachés à une UE via la table {@code recording_unit_document}.
+     */
+    @Transactional(readOnly = true)
+    public List<ProjectDocumentResource> listDocumentsForAccessibleRecordingUnit(ProjectApiCaller caller, String recordingUnitKey) {
+        RecordingUnitDTO ru = recordingUnitService.findAccessibleRecordingUnitByKey(
+                recordingUnitKey, caller.accessibleInstitutionIds(), null);
+        return documentService.findForRecordingUnit(ru).stream()
+                .sorted(Comparator.comparing(Document::getId, Comparator.nullsLast(Long::compareTo)))
+                .map(projectDocumentOpenApiMapper::toResource)
+                .toList();
+    }
+
+    /**
      * Langue principale depuis l'en-tête {@code Accept-Language} (première entrée, sans qualité).
      */
     public static String primaryAcceptLanguage(String acceptLanguage) {

@@ -3,6 +3,7 @@ package fr.siamois.ui.api.openapi.v1.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import fr.siamois.domain.models.auth.Person;
+import fr.siamois.domain.models.document.Document;
 import fr.siamois.domain.models.exceptions.recordingunit.RecordingUnitNotFoundException;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
@@ -12,11 +13,13 @@ import fr.siamois.dto.StratigraphicRelationshipDTO;
 import fr.siamois.dto.entity.ConceptDTO;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.PersonDTO;
+import fr.siamois.dto.entity.RecordingUnitDTO;
 import fr.siamois.dto.entity.RecordingUnitSummaryDTO;
 import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitRelationsData;
 import fr.siamois.mapper.PersonMapper;
 import fr.siamois.ui.api.openapi.v1.mapper.ProjectDocumentOpenApiMapper;
 import fr.siamois.ui.api.handler.RestExceptionHandler;
+import fr.siamois.ui.api.openapi.v1.resource.document.ProjectDocumentResource;
 import fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitResource;
 import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitCreateFormData;
 import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitFormBundle;
@@ -47,7 +50,11 @@ import java.util.Set;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.hamcrest.Matchers.hasSize;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.same;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -309,6 +316,144 @@ class RecordingUnitsControllerApiTest {
         mockMvc.perform(get("/api/v1/recording-units/404-key/relations"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.message").value("missing"));
+    }
+
+    @Test
+    void getRecordingUnitDocuments_withoutAuth_returns401() throws Exception {
+        SecurityContextHolder.clearContext();
+
+        mockMvc.perform(get("/api/v1/recording-units/5/documents"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void getRecordingUnitDocuments_notFound_returns404() throws Exception {
+        when(personMapper.convert(person)).thenReturn(personDto);
+        when(institutionService.findInstitutionsOfPerson(personDto)).thenReturn(Set.of(institutionDto));
+        when(recordingUnitService.findAccessibleRecordingUnitByKey(eq("404-key"), eq(Set.of(10L)), isNull()))
+                .thenThrow(new RecordingUnitNotFoundException("missing"));
+
+        mockMvc.perform(get("/api/v1/recording-units/404-key/documents"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").value("missing"));
+    }
+
+    @Test
+    void getRecordingUnitDocuments_success_returnsDocuments() throws Exception {
+        when(personMapper.convert(person)).thenReturn(personDto);
+        when(institutionService.findInstitutionsOfPerson(personDto)).thenReturn(Set.of(institutionDto));
+
+        RecordingUnitDTO ruDto = new RecordingUnitDTO();
+        ruDto.setId(42L);
+        when(recordingUnitService.findAccessibleRecordingUnitByKey(eq("7"), eq(Set.of(10L)), isNull())).thenReturn(ruDto);
+
+        Document doc = mock(Document.class);
+        when(documentService.findForRecordingUnit(eq(ruDto))).thenReturn(List.of(doc));
+
+        ProjectDocumentResource dr = new ProjectDocumentResource();
+        dr.setResourceType("documents");
+        dr.setId("100");
+        dr.setTitle("Photo de coupe");
+        when(projectDocumentOpenApiMapper.toResource(same(doc))).thenReturn(dr);
+
+        mockMvc.perform(get("/api/v1/recording-units/7/documents"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.documents", hasSize(1)))
+                .andExpect(jsonPath("$.data.documents[0].resourceId").value("100"))
+                .andExpect(jsonPath("$.data.documents[0].resourceType").value("documents"))
+                .andExpect(jsonPath("$.data.documents[0].title").value("Photo de coupe"));
+
+        verify(documentService).findForRecordingUnit(eq(ruDto));
+        verify(projectDocumentOpenApiMapper).toResource(same(doc));
+    }
+
+    @Test
+    void getRecordingUnitDocuments_success_emptyList() throws Exception {
+        when(personMapper.convert(person)).thenReturn(personDto);
+        when(institutionService.findInstitutionsOfPerson(personDto)).thenReturn(Set.of(institutionDto));
+
+        RecordingUnitDTO ruDto = new RecordingUnitDTO();
+        ruDto.setId(2L);
+        when(recordingUnitService.findAccessibleRecordingUnitByKey(eq("2"), eq(Set.of(10L)), isNull())).thenReturn(ruDto);
+        when(documentService.findForRecordingUnit(eq(ruDto))).thenReturn(List.of());
+
+        mockMvc.perform(get("/api/v1/recording-units/2/documents"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.documents", hasSize(0)));
+    }
+
+    @Test
+    void getRecordingUnitDocuments_withSeveralInstitutions_passesFullScopeToService() throws Exception {
+        InstitutionDTO inst20 = new InstitutionDTO();
+        inst20.setId(20L);
+        when(personMapper.convert(person)).thenReturn(personDto);
+        when(institutionService.findInstitutionsOfPerson(personDto))
+                .thenReturn(Set.of(institutionDto, inst20));
+
+        RecordingUnitDTO ruDto = new RecordingUnitDTO();
+        ruDto.setId(1L);
+        when(recordingUnitService.findAccessibleRecordingUnitByKey(eq("ru-key"), eq(Set.of(10L, 20L)), isNull()))
+                .thenReturn(ruDto);
+        when(documentService.findForRecordingUnit(eq(ruDto))).thenReturn(List.of());
+
+        mockMvc.perform(get("/api/v1/recording-units/ru-key/documents"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.documents", hasSize(0)));
+
+        verify(recordingUnitService).findAccessibleRecordingUnitByKey("ru-key", Set.of(10L, 20L), null);
+    }
+
+    @Test
+    void getRecordingUnitDocuments_success_passesFullIdentifierPathSegment() throws Exception {
+        when(personMapper.convert(person)).thenReturn(personDto);
+        when(institutionService.findInstitutionsOfPerson(personDto)).thenReturn(Set.of(institutionDto));
+
+        String fullId = "INST-PROJ-UE42";
+        RecordingUnitDTO ruDto = new RecordingUnitDTO();
+        ruDto.setId(500L);
+        when(recordingUnitService.findAccessibleRecordingUnitByKey(eq(fullId), eq(Set.of(10L)), isNull()))
+                .thenReturn(ruDto);
+        when(documentService.findForRecordingUnit(eq(ruDto))).thenReturn(List.of());
+
+        mockMvc.perform(get("/api/v1/recording-units/" + fullId + "/documents"))
+                .andExpect(status().isOk());
+
+        verify(recordingUnitService).findAccessibleRecordingUnitByKey(fullId, Set.of(10L), null);
+    }
+
+    @Test
+    void getRecordingUnitDocuments_success_returnsMultipleDocumentsSortedByResourceId() throws Exception {
+        when(personMapper.convert(person)).thenReturn(personDto);
+        when(institutionService.findInstitutionsOfPerson(personDto)).thenReturn(Set.of(institutionDto));
+
+        RecordingUnitDTO ruDto = new RecordingUnitDTO();
+        ruDto.setId(1L);
+        when(recordingUnitService.findAccessibleRecordingUnitByKey(eq("1"), eq(Set.of(10L)), isNull())).thenReturn(ruDto);
+
+        Document doc30 = mock(Document.class);
+        when(doc30.getId()).thenReturn(30L);
+        Document doc7 = mock(Document.class);
+        when(doc7.getId()).thenReturn(7L);
+        when(documentService.findForRecordingUnit(eq(ruDto))).thenReturn(List.of(doc30, doc7));
+
+        ProjectDocumentResource r30 = new ProjectDocumentResource();
+        r30.setResourceType("documents");
+        r30.setId("30");
+        r30.setTitle("second");
+        ProjectDocumentResource r7 = new ProjectDocumentResource();
+        r7.setResourceType("documents");
+        r7.setId("7");
+        r7.setTitle("first");
+        when(projectDocumentOpenApiMapper.toResource(same(doc30))).thenReturn(r30);
+        when(projectDocumentOpenApiMapper.toResource(same(doc7))).thenReturn(r7);
+
+        mockMvc.perform(get("/api/v1/recording-units/1/documents"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.documents", hasSize(2)))
+                .andExpect(jsonPath("$.data.documents[0].resourceId").value("7"))
+                .andExpect(jsonPath("$.data.documents[0].title").value("first"))
+                .andExpect(jsonPath("$.data.documents[1].resourceId").value("30"))
+                .andExpect(jsonPath("$.data.documents[1].title").value("second"));
     }
 
     @Test
