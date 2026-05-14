@@ -1,11 +1,11 @@
 package fr.siamois.ui.api.openapi.v1.controller;
 
 import fr.siamois.ui.api.openapi.v1.OpenApiTags;
-import fr.siamois.ui.api.openapi.v1.response.FindListResponse;
-import fr.siamois.ui.api.openapi.v1.resource.find.FindResource;
-import fr.siamois.ui.api.openapi.v1.response.RecordingUnitListResponse;
 import fr.siamois.ui.api.openapi.v1.generic.response.ListMeta;
 import fr.siamois.ui.api.openapi.v1.resource.document.ProjectDocumentResource;
+import fr.siamois.ui.api.openapi.v1.resource.find.FindResource;
+import fr.siamois.ui.api.openapi.v1.response.FindListResponse;
+import fr.siamois.ui.api.openapi.v1.response.RecordingUnitListResponse;
 import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitChildrenData;
 import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitChildrenResponse;
 import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitCreateFormData;
@@ -22,10 +22,12 @@ import fr.siamois.ui.api.openapi.v1.service.RecordingUnitOpenApiService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
+import io.swagger.v3.oas.annotations.hidden.Hidden;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -37,18 +39,14 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/recording-units")
-@Tag(name = "Unité d'enregistrement", description = "Endpoints des unités d'enregistrement")
+@Tag(name = OpenApiTags.RECORDING_UNIT, description = "Endpoints des unités d'enregistrement")
+@RequiredArgsConstructor
 public class RecordingUnitsControllerApi {
 
     private final ProjectApiService projectApiService;
     private final RecordingUnitOpenApiService recordingUnitOpenApiService;
 
-    public RecordingUnitsControllerApi(ProjectApiService projectApiService,
-                                       RecordingUnitOpenApiService recordingUnitOpenApiService) {
-        this.projectApiService = projectApiService;
-        this.recordingUnitOpenApiService = recordingUnitOpenApiService;
-    }
-
+    @GetMapping("/creation-form")
     @Operation(
             summary = "Formulaire de création d'une unité d'enregistrement",
             description = "Bundle formulaire (layout), définition des champs et vocabulaires pour un type d'UE donné "
@@ -64,7 +62,6 @@ public class RecordingUnitsControllerApi {
             @ApiResponse(responseCode = "404", description = "Organisation ou type d'UE introuvable"),
             @ApiResponse(responseCode = "500", description = "Erreur interne")
     })
-    @GetMapping("/creation-form")
     @Tag(name = OpenApiTags.APPLICATION_MOBILE, description = OpenApiTags.APPLICATION_MOBILE_DESCRIPTION)
     public ResponseEntity<RecordingUnitCreateFormResponse> getRecordingUnitCreateForm(
             @Parameter(description = "Institution (doit être dans le périmètre JWT).", example = "10")
@@ -82,16 +79,13 @@ public class RecordingUnitsControllerApi {
         return ResponseEntity.ok(new RecordingUnitCreateFormResponse(data));
     }
 
-    @Operation(summary = "La liste des unités d'enregistrement")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Ok"),
-            @ApiResponse(responseCode = "500", description = "Erreur interne")
-    })
+    @Hidden
     @GetMapping
     public ResponseEntity<RecordingUnitListResponse> getAll() {
         throw new ResponseStatusException(HttpStatus.NOT_IMPLEMENTED, "Not implemented yet");
     }
 
+    @GetMapping("/{id}")
     @Operation(
             summary = "Une unité d'enregistrement via son identifiant",
             description = "Clé d'URL : identifiant numérique (recording_unit_id) ou identifiant métier complet "
@@ -107,7 +101,6 @@ public class RecordingUnitsControllerApi {
             @ApiResponse(responseCode = "404", description = "UE introuvable ou hors périmètre"),
             @ApiResponse(responseCode = "500", description = "Erreur interne")
     })
-    @GetMapping("/{id}")
     @Tag(name = OpenApiTags.APPLICATION_MOBILE, description = OpenApiTags.APPLICATION_MOBILE_DESCRIPTION)
     public ResponseEntity<RecordingUnitMobileDetailResponse> getById(
             @Parameter(
@@ -127,15 +120,11 @@ public class RecordingUnitsControllerApi {
         ProjectApiCaller caller = projectApiService.requireCaller();
         String lang = ProjectApiService.primaryAcceptLanguage(acceptLanguage);
         RecordingUnitMobileDetailData data = recordingUnitOpenApiService.buildMobileDetail(
-                id,
-                caller.person(),
-                caller.accessibleInstitutionIds(),
-                counts,
-                lang);
-
+                id, caller.person(), caller.accessibleInstitutionIds(), counts, lang);
         return ResponseEntity.ok(new RecordingUnitMobileDetailResponse(data));
     }
 
+    @GetMapping("/{id}/documents")
     @Operation(
             summary = "Documents rattachés à une unité d'enregistrement",
             description = "Liste des documents liés à l'UE via recording_unit_document. "
@@ -147,7 +136,6 @@ public class RecordingUnitsControllerApi {
             @ApiResponse(responseCode = "404", description = "UE introuvable ou hors périmètre"),
             @ApiResponse(responseCode = "500", description = "Erreur interne")
     })
-    @GetMapping("/{id}/documents")
     @Tag(name = OpenApiTags.APPLICATION_MOBILE, description = OpenApiTags.APPLICATION_MOBILE_DESCRIPTION)
     public ResponseEntity<RecordingUnitDocumentsResponse> getDocuments(
             @Parameter(
@@ -161,6 +149,7 @@ public class RecordingUnitsControllerApi {
         return ResponseEntity.ok(new RecordingUnitDocumentsResponse(new RecordingUnitDocumentsData(documents)));
     }
 
+    @GetMapping("/{id}/relations")
     @Operation(
             summary = "Relations d'une unité d'enregistrement",
             description = "Stratigraphie (relations unit1/unit2) et hiérarchie (parents et enfants via recording_unit_hierarchy). "
@@ -172,7 +161,6 @@ public class RecordingUnitsControllerApi {
             @ApiResponse(responseCode = "404", description = "UE introuvable ou hors périmètre"),
             @ApiResponse(responseCode = "500", description = "Erreur interne")
     })
-    @GetMapping("/{id}/relations")
     @Tag(name = OpenApiTags.APPLICATION_MOBILE, description = OpenApiTags.APPLICATION_MOBILE_DESCRIPTION)
     public ResponseEntity<RecordingUnitRelationsResponse> getRelations(
             @Parameter(
@@ -187,6 +175,7 @@ public class RecordingUnitsControllerApi {
         return ResponseEntity.ok(new RecordingUnitRelationsResponse(data));
     }
 
+    @GetMapping("/{id}/children")
     @Operation(
             summary = "Unités d'enregistrement enfants d'une UE",
             description = "Liste des UE filles directes liées via recording_unit_hierarchy (fk_parent_id = l'UE cible). "
@@ -198,7 +187,6 @@ public class RecordingUnitsControllerApi {
             @ApiResponse(responseCode = "404", description = "UE introuvable ou hors périmètre"),
             @ApiResponse(responseCode = "500", description = "Erreur interne")
     })
-    @GetMapping("/{id}/children")
     @Tag(name = OpenApiTags.APPLICATION_MOBILE, description = OpenApiTags.APPLICATION_MOBILE_DESCRIPTION)
     public ResponseEntity<RecordingUnitChildrenResponse> getChildren(
             @Parameter(
@@ -213,6 +201,7 @@ public class RecordingUnitsControllerApi {
         return ResponseEntity.ok(new RecordingUnitChildrenResponse(data));
     }
 
+    @GetMapping("/{id}/finds")
     @Operation(
             summary = "Liste des mobiliers d'une unité d'enregistrement",
             description = "Spécimens liés à l'UE (table specimen, fk_recording_unit_id). "
@@ -228,7 +217,6 @@ public class RecordingUnitsControllerApi {
             @ApiResponse(responseCode = "404", description = "UE introuvable ou hors périmètre"),
             @ApiResponse(responseCode = "500", description = "Erreur interne")
     })
-    @GetMapping("/{id}/finds")
     @Tag(name = OpenApiTags.APPLICATION_MOBILE, description = OpenApiTags.APPLICATION_MOBILE_DESCRIPTION)
     public ResponseEntity<FindListResponse> getFinds(
             @Parameter(
@@ -252,5 +240,4 @@ public class RecordingUnitsControllerApi {
                 .header("X-Total-Count", String.valueOf(page.getTotalElements()))
                 .body(new FindListResponse(page.getContent(), meta));
     }
-
 }

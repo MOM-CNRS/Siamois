@@ -29,10 +29,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -83,10 +83,11 @@ public class ProjectApiService {
         Person person = AuthenticatedUserUtils.getAuthenticatedUser()
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authentification requise"));
         PersonDTO personDto = personMapper.convert(person);
-        List<InstitutionDTO> institutions = new ArrayList<>(institutionService.findInstitutionsOfPerson(personDto));
+        List<InstitutionDTO> institutions = List.copyOf(institutionService.findInstitutionsOfPerson(personDto));
         Set<Long> institutionIds = institutions.stream()
                 .map(InstitutionDTO::getId)
-                .collect(Collectors.toSet());
+                .filter(Objects::nonNull)
+                .collect(Collectors.toUnmodifiableSet());
         return new ProjectApiCaller(personDto, institutionIds, institutions);
     }
 
@@ -151,10 +152,7 @@ public class ProjectApiService {
     @Transactional(readOnly = true)
     public List<ProjectDocumentResource> listDocumentsForAccessibleProject(ProjectApiCaller caller, String projectIdOrKey) {
         AccessibleProjectForApi row = requireAccessibleProject(caller, projectIdOrKey);
-        return documentService.findForActionUnit(row.actionUnit()).stream()
-                .sorted(Comparator.comparing(Document::getId, Comparator.nullsLast(Long::compareTo)))
-                .map(projectDocumentOpenApiMapper::toResource)
-                .toList();
+        return toSortedDocumentResources(documentService.findForActionUnit(row.actionUnit()));
     }
 
     /**
@@ -164,7 +162,11 @@ public class ProjectApiService {
     public List<ProjectDocumentResource> listDocumentsForAccessibleRecordingUnit(ProjectApiCaller caller, String recordingUnitKey) {
         RecordingUnitDTO ru = recordingUnitService.findAccessibleRecordingUnitByKey(
                 recordingUnitKey, caller.accessibleInstitutionIds(), null);
-        return documentService.findForRecordingUnit(ru).stream()
+        return toSortedDocumentResources(documentService.findForRecordingUnit(ru));
+    }
+
+    private List<ProjectDocumentResource> toSortedDocumentResources(List<Document> docs) {
+        return docs.stream()
                 .sorted(Comparator.comparing(Document::getId, Comparator.nullsLast(Long::compareTo)))
                 .map(projectDocumentOpenApiMapper::toResource)
                 .toList();
@@ -218,40 +220,55 @@ public class ProjectApiService {
         return (dash > 0 ? first.substring(0, dash) : first).toLowerCase(Locale.ROOT);
     }
 
-    private static Sort parseProjectSort(String sortParam) {
-        if (sortParam == null || sortParam.isBlank()) {
-            return Sort.by(Sort.Direction.ASC, "name");
-        }
+    // ---- Sort helpers -------------------------------------------------------
+
+    /**
+     * Résolution générique d'un paramètre de tri "field:direction".
+     * Si le champ n'est pas dans {@code allowedFields}, utilise {@code defaultProperty} en préservant la direction.
+     */
+    private static Sort parseSort(String sortParam, Set<String> allowedFields, String defaultProperty) {
+        if (sortParam == null || sortParam.isBlank()) return Sort.by(Sort.Direction.ASC, defaultProperty);
+        String[] parts = sortParam.split(":", 2);
+        String property = allowedFields.contains(parts[0].trim()) ? parts[0].trim() : defaultProperty;
+        Sort.Direction dir = parts.length > 1 && "desc".equalsIgnoreCase(parts[1].trim())
+                ? Sort.Direction.DESC : Sort.Direction.ASC;
+        return Sort.by(dir, property);
+    }
+
+    /**
+     * Tri avec tri secondaire stable par {@code id:asc} (sauf si le tri primaire est déjà {@code id}).
+     * Défaut : {@code creationTime:desc, id:desc}.
+     */
+    private static Sort parseSortWithStableId(String sortParam, Set<String> allowedFields) {
+        Sort defaultSort = Sort.by(Sort.Direction.DESC, "creationTime").and(Sort.by(Sort.Direction.DESC, "id"));
+        if (sortParam == null || sortParam.isBlank()) return defaultSort;
         String[] parts = sortParam.split(":", 2);
         String property = parts[0].trim();
-        if (!ALLOWED_PROJECT_SORT_FIELDS.contains(property)) {
-            property = "name";
-        }
-        Sort.Direction direction = parts.length > 1 && "desc".equalsIgnoreCase(parts[1].trim())
-                ? Sort.Direction.DESC
-                : Sort.Direction.ASC;
-        return Sort.by(direction, property);
+        if (!allowedFields.contains(property)) return defaultSort;
+        Sort.Direction dir = parts.length > 1 && "desc".equalsIgnoreCase(parts[1].trim())
+                ? Sort.Direction.DESC : Sort.Direction.ASC;
+        Sort primary = Sort.by(dir, property);
+        return "id".equals(property) ? primary : primary.and(Sort.by(Sort.Direction.ASC, "id"));
+    }
+
+    private static Sort parseProjectSort(String sortParam) {
+        return parseSort(sortParam, ALLOWED_PROJECT_SORT_FIELDS, "name");
     }
 
     private static Sort parseOrganizationSort(String sortParam) {
-        if (sortParam == null || sortParam.isBlank()) {
-            return Sort.by(Sort.Direction.ASC, "name");
-        }
-        String[] parts = sortParam.split(":", 2);
-        String property = parts[0].trim();
-        if (!ALLOWED_ORGANIZATION_SORT_FIELDS.contains(property)) {
-            property = "name";
-        }
-        Sort.Direction direction = parts.length > 1 && "desc".equalsIgnoreCase(parts[1].trim())
-                ? Sort.Direction.DESC
-                : Sort.Direction.ASC;
-        return Sort.by(direction, property);
+        return parseSort(sortParam, ALLOWED_ORGANIZATION_SORT_FIELDS, "name");
+    }
+
+    private static Sort parseFindSort(String sortParam) {
+        return parseSortWithStableId(sortParam, ALLOWED_FIND_SORT_FIELDS);
+    }
+
+    private static Sort parseRecordingUnitSort(String sortParam) {
+        return parseSortWithStableId(sortParam, ALLOWED_RECORDING_UNIT_SORT_FIELDS);
     }
 
     private static List<InstitutionDTO> sortInstitutions(List<InstitutionDTO> institutions, Sort sort) {
-        if (institutions.isEmpty()) {
-            return List.of();
-        }
+        if (institutions.isEmpty()) return List.of();
         Sort.Order order = sort.stream().findFirst().orElse(new Sort.Order(Sort.Direction.ASC, "name"));
         Comparator<InstitutionDTO> cmp = switch (order.getProperty()) {
             case "id" -> Comparator.comparing(InstitutionDTO::getId, Comparator.nullsLast(Long::compareTo));
@@ -261,51 +278,7 @@ public class ProjectApiService {
                     InstitutionDTO::getCreationDate, Comparator.nullsLast(Comparator.naturalOrder()));
             default -> Comparator.comparing(InstitutionDTO::getName, Comparator.nullsLast(String::compareToIgnoreCase));
         };
-        if (order.isDescending()) {
-            cmp = cmp.reversed();
-        }
+        if (order.isDescending()) cmp = cmp.reversed();
         return institutions.stream().sorted(cmp).toList();
-    }
-
-    private static Sort parseFindSort(String sortParam) {
-        Sort defaultSort = Sort.by(Sort.Direction.DESC, "creationTime")
-                .and(Sort.by(Sort.Direction.DESC, "id"));
-        if (sortParam == null || sortParam.isBlank()) {
-            return defaultSort;
-        }
-        String[] parts = sortParam.split(":", 2);
-        String property = parts[0].trim();
-        if (!ALLOWED_FIND_SORT_FIELDS.contains(property)) {
-            return defaultSort;
-        }
-        Sort.Direction direction = parts.length > 1 && "desc".equalsIgnoreCase(parts[1].trim())
-                ? Sort.Direction.DESC
-                : Sort.Direction.ASC;
-        Sort primary = Sort.by(direction, property);
-        if ("id".equals(property)) {
-            return primary;
-        }
-        return primary.and(Sort.by(Sort.Direction.ASC, "id"));
-    }
-
-    private static Sort parseRecordingUnitSort(String sortParam) {
-        Sort defaultSort = Sort.by(Sort.Direction.DESC, "creationTime")
-                .and(Sort.by(Sort.Direction.DESC, "id"));
-        if (sortParam == null || sortParam.isBlank()) {
-            return defaultSort;
-        }
-        String[] parts = sortParam.split(":", 2);
-        String property = parts[0].trim();
-        if (!ALLOWED_RECORDING_UNIT_SORT_FIELDS.contains(property)) {
-            return defaultSort;
-        }
-        Sort.Direction direction = parts.length > 1 && "desc".equalsIgnoreCase(parts[1].trim())
-                ? Sort.Direction.DESC
-                : Sort.Direction.ASC;
-        Sort primary = Sort.by(direction, property);
-        if ("id".equals(property)) {
-            return primary;
-        }
-        return primary.and(Sort.by(Sort.Direction.ASC, "id"));
     }
 }

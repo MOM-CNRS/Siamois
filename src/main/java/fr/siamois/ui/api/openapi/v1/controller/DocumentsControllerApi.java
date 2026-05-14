@@ -13,42 +13,27 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import io.swagger.v3.oas.annotations.tags.Tags;
+import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestHeader;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.nio.charset.StandardCharsets;
 
 @RestController
 @RequestMapping("/api/v1/documents")
-@Tags({
-        @Tag(name = "Document", description = "Fichiers et contenus des documents SIAMOIS"),
-        @Tag(name = OpenApiTags.APPLICATION_MOBILE, description = OpenApiTags.APPLICATION_MOBILE_DESCRIPTION)
-})
+@Tag(name = "Document", description = "Fichiers et contenus des documents SIAMOIS")
+@RequiredArgsConstructor
 public class DocumentsControllerApi {
 
     private final ProjectApiService projectApiService;
     private final DocumentContentOpenApiService documentContentOpenApiService;
     private final DocumentFormOpenApiService documentFormOpenApiService;
 
-    public DocumentsControllerApi(ProjectApiService projectApiService,
-                                  DocumentContentOpenApiService documentContentOpenApiService,
-                                  DocumentFormOpenApiService documentFormOpenApiService) {
-        this.projectApiService = projectApiService;
-        this.documentContentOpenApiService = documentContentOpenApiService;
-        this.documentFormOpenApiService = documentFormOpenApiService;
-    }
-
+    @GetMapping("/form")
     @Operation(
             summary = "Formulaire création / édition d'un document",
             description = "Définition des champs (titre, description, nature, échelle, format, fichier) et listes de concepts "
@@ -64,7 +49,7 @@ public class DocumentsControllerApi {
             @ApiResponse(responseCode = "404", description = "Organisation inconnue ou document introuvable (documentId)"),
             @ApiResponse(responseCode = "500", description = "Erreur interne")
     })
-    @GetMapping("/form")
+    @Tag(name = OpenApiTags.APPLICATION_MOBILE, description = OpenApiTags.APPLICATION_MOBILE_DESCRIPTION)
     public ResponseEntity<DocumentFormResponse> getDocumentForm(
             @Parameter(description = "Institution pour la résolution des vocabulaires (doit être dans le périmètre JWT).", example = "10")
             @RequestParam("organizationId") long organizationId,
@@ -81,6 +66,7 @@ public class DocumentsControllerApi {
         return ResponseEntity.ok(new DocumentFormResponse(data));
     }
 
+    @GetMapping("/{id}")
     @Operation(
             summary = "Télécharger le fichier d'un document",
             description = "Flux binaire du fichier associé au document (`document_id`). "
@@ -94,7 +80,7 @@ public class DocumentsControllerApi {
             @ApiResponse(responseCode = "404", description = "Document ou fichier introuvable / hors périmètre"),
             @ApiResponse(responseCode = "500", description = "Erreur interne")
     })
-    @GetMapping("/{id}")
+    @Tag(name = OpenApiTags.APPLICATION_MOBILE, description = OpenApiTags.APPLICATION_MOBILE_DESCRIPTION)
     public ResponseEntity<Resource> downloadContent(
             @Parameter(description = "Identifiant numérique du document (document_id).", example = "42")
             @PathVariable("id") long id) {
@@ -113,6 +99,7 @@ public class DocumentsControllerApi {
                 .body(new InputStreamResource(payload.inputStream()));
     }
 
+    @DeleteMapping("/{id}")
     @Operation(
             summary = "Supprimer un document",
             description = "Supprime la ligne document, les liaisons (projet, UE spatiale, mobilier, études, etc.) et le fichier "
@@ -124,7 +111,6 @@ public class DocumentsControllerApi {
             @ApiResponse(responseCode = "404", description = "Document introuvable ou hors périmètre"),
             @ApiResponse(responseCode = "500", description = "Erreur interne")
     })
-    @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteDocument(
             @Parameter(description = "Identifiant numérique du document (document_id).", example = "42")
             @PathVariable("id") long id) {
