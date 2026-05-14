@@ -25,7 +25,7 @@ public class PlaceControllerApi {
             @ApiResponse(responseCode = "200", description = "Ok"),
             @ApiResponse(responseCode = "500", description = "Erreur interne")
     })
-    @GetMapping("/")
+    @GetMapping
     public ResponseEntity<PlaceListResponse> getAll() {
         throw new ResponseStatusException(HttpStatus.NOT_IMPLEMENTED, "Not implemented yet");
     }
@@ -36,9 +36,7 @@ public class PlaceControllerApi {
             @ApiResponse(responseCode = "500", description = "Erreur interne")
     })
     @GetMapping("/{id}")
-    public ResponseEntity<PlaceResponse> getById(
-            @PathVariable Long id
-    ) {
+    public ResponseEntity<PlaceResponse> getById(@PathVariable Long id) {
         throw new ResponseStatusException(HttpStatus.NOT_IMPLEMENTED, "Not implemented yet");
     }
 

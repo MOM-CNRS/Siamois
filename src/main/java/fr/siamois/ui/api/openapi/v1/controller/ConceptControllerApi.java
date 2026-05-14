@@ -26,7 +26,7 @@ public class ConceptControllerApi {
             @ApiResponse(responseCode = "200", description = "Ok"),
             @ApiResponse(responseCode = "500", description = "Erreur interne")
     })
-    @GetMapping("/")
+    @GetMapping
     public ResponseEntity<ConceptListResponse> getAll() {
         throw new ResponseStatusException(HttpStatus.NOT_IMPLEMENTED, "Not implemented yet");
     }
