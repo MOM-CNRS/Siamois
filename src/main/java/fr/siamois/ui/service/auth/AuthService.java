@@ -1,19 +1,14 @@
 package fr.siamois.ui.service.auth;
 
 import fr.siamois.domain.models.auth.Person;
-import fr.siamois.domain.models.auth.RefreshToken;
 import fr.siamois.domain.services.InstitutionService;
-import fr.siamois.domain.services.auth.TokenHasher;
 import fr.siamois.domain.services.person.PersonDetailsService;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.PersonDTO;
-import fr.siamois.infrastructure.database.repositories.auth.RefreshTokenRepository;
 import fr.siamois.mapper.PersonMapper;
 import fr.siamois.ui.api.openapi.v1.auth.dto.AuthUserResponse;
 import fr.siamois.ui.api.openapi.v1.auth.dto.LoginResponse;
 import fr.siamois.ui.api.openapi.v1.auth.dto.OrganizationSummaryResponse;
-import fr.siamois.ui.api.openapi.v1.auth.dto.TokenRefreshResponse;
-import fr.siamois.ui.config.security.jwt.JwtProperties;
 import fr.siamois.ui.config.security.jwt.JwtService;
 import fr.siamois.utils.AuthenticatedUserUtils;
 import lombok.RequiredArgsConstructor;
@@ -25,9 +20,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.security.SecureRandom;
-import java.time.OffsetDateTime;
-import java.util.Base64;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
@@ -39,12 +31,10 @@ public class AuthService {
     private final PersonDetailsService personDetailsService;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
-    private final JwtProperties jwtProperties;
-    private final RefreshTokenRepository refreshTokenRepository;
     private final InstitutionService institutionService;
     private final PersonMapper personMapper;
 
-    @Transactional
+    @Transactional(readOnly = true)
     public LoginResponse login(String email, String password) {
         if (email == null || email.isBlank() || password == null) {
             throw new BadCredentialsException("Missing credentials");
@@ -63,50 +53,8 @@ public class AuthService {
         }
 
         String access = jwtService.createAccessToken(person);
-        String refreshPlain = generateOpaqueRefreshToken();
-        persistRefreshToken(person, refreshPlain);
-
         AuthUserResponse user = buildAuthUserResponse(person);
-        return new LoginResponse(
-                access,
-                refreshPlain,
-                jwtService.accessTokenExpiresInSeconds(),
-                AuthConstants.TOKEN_TYPE_BEARER,
-                user);
-    }
-
-    @Transactional
-    public TokenRefreshResponse refresh(String refreshTokenPlain) {
-        if (refreshTokenPlain == null || refreshTokenPlain.isBlank()) {
-            throw new BadCredentialsException("Missing refresh token");
-        }
-        String hash = TokenHasher.sha256Hex(refreshTokenPlain.trim());
-        RefreshToken stored = refreshTokenRepository.findByTokenHash(hash)
-                .orElseThrow(() -> new BadCredentialsException("Invalid or expired refresh token"));
-        if (stored.getExpiresAt().isBefore(OffsetDateTime.now())) {
-            refreshTokenRepository.delete(stored);
-            throw new BadCredentialsException("Invalid or expired refresh token");
-        }
-        Person person = stored.getPerson();
-        // Rotation : révoquer l'ancien token et émettre un nouveau
-        refreshTokenRepository.delete(stored);
-        String newRefreshPlain = generateOpaqueRefreshToken();
-        persistRefreshToken(person, newRefreshPlain);
-        String access = jwtService.createAccessToken(person);
-        return new TokenRefreshResponse(access, newRefreshPlain, jwtService.accessTokenExpiresInSeconds(), AuthConstants.TOKEN_TYPE_BEARER);
-    }
-
-    @Transactional
-    public void purgeExpiredRefreshTokens() {
-        refreshTokenRepository.deleteByExpiresAtBefore(OffsetDateTime.now());
-    }
-
-    @Transactional
-    public void logout(String refreshTokenPlain) {
-        if (refreshTokenPlain == null || refreshTokenPlain.isBlank()) {
-            return;
-        }
-        refreshTokenRepository.deleteByTokenHash(TokenHasher.sha256Hex(refreshTokenPlain.trim()));
+        return new LoginResponse(access, jwtService.accessTokenExpiresInSeconds(), AuthConstants.TOKEN_TYPE_BEARER, user);
     }
 
     @Transactional(readOnly = true)
@@ -114,22 +62,6 @@ public class AuthService {
         Person person = AuthenticatedUserUtils.getAuthenticatedUser()
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED));
         return buildAuthUserResponse(person);
-    }
-
-    private void persistRefreshToken(Person person, String refreshPlain) {
-        OffsetDateTime now = OffsetDateTime.now();
-        RefreshToken rt = new RefreshToken();
-        rt.setPerson(person);
-        rt.setTokenHash(TokenHasher.sha256Hex(refreshPlain));
-        rt.setExpiresAt(now.plus(jwtProperties.getRefreshTokenValidity()));
-        rt.setCreatedAt(now);
-        refreshTokenRepository.save(rt);
-    }
-
-    private static String generateOpaqueRefreshToken() {
-        byte[] buf = new byte[48];
-        new SecureRandom().nextBytes(buf);
-        return Base64.getUrlEncoder().withoutPadding().encodeToString(buf);
     }
 
     private AuthUserResponse buildAuthUserResponse(Person person) {

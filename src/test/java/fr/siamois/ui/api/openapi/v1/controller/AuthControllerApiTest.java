@@ -6,7 +6,6 @@ import fr.siamois.ui.api.openapi.v1.OpenApiRestExceptionHandler;
 import fr.siamois.ui.api.openapi.v1.auth.dto.AuthUserResponse;
 import fr.siamois.ui.api.openapi.v1.auth.dto.LoginResponse;
 import fr.siamois.ui.api.openapi.v1.auth.dto.OrganizationSummaryResponse;
-import fr.siamois.ui.api.openapi.v1.auth.dto.TokenRefreshResponse;
 import fr.siamois.ui.service.auth.AuthService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -23,10 +22,8 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -56,10 +53,10 @@ class AuthControllerApiTest {
     }
 
     @Test
-    void login_success_returnsTokensAndUser() throws Exception {
+    void login_success_returnsTokenAndUser() throws Exception {
         AuthUserResponse user = new AuthUserResponse(
                 1L, "a@b.fr", "user", "Jean", "Dupont", List.of(new OrganizationSummaryResponse(10L, "Org")));
-        LoginResponse body = new LoginResponse("access-jwt", "refresh-opaque", 900L, "Bearer", user);
+        LoginResponse body = new LoginResponse("access-jwt", 900L, "Bearer", user);
         when(authService.login(eq("a@b.fr"), eq("secret"))).thenReturn(body);
 
         mockMvc.perform(post("/api/v1/auth/login")
@@ -67,7 +64,6 @@ class AuthControllerApiTest {
                         .content("{\"email\":\"a@b.fr\",\"password\":\"secret\"}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.accessToken").value("access-jwt"))
-                .andExpect(jsonPath("$.refreshToken").value("refresh-opaque"))
                 .andExpect(jsonPath("$.expiresIn").value(900))
                 .andExpect(jsonPath("$.tokenType").value("Bearer"))
                 .andExpect(jsonPath("$.user.email").value("a@b.fr"))
@@ -102,88 +98,6 @@ class AuthControllerApiTest {
     }
 
     @Test
-    void refresh_success_returnsAccessToken() throws Exception {
-        when(authService.refresh(eq("my-refresh")))
-                .thenReturn(new TokenRefreshResponse("new-access", "new-refresh-token", 900L, "Bearer"));
-
-        mockMvc.perform(post("/api/v1/auth/refresh")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"refreshToken\":\"my-refresh\"}"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.accessToken").value("new-access"))
-                .andExpect(jsonPath("$.expiresIn").value(900))
-                .andExpect(jsonPath("$.tokenType").value("Bearer"));
-
-        verify(authService).refresh("my-refresh");
-    }
-
-    @Test
-    void refresh_invalid_returns401() throws Exception {
-        when(authService.refresh(eq("bad")))
-                .thenThrow(new BadCredentialsException("Invalid refresh token"));
-
-        mockMvc.perform(post("/api/v1/auth/refresh")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"refreshToken\":\"bad\"}"))
-                .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.error").value("unauthorized"))
-                .andExpect(jsonPath("$.message").value("Invalid refresh token"));
-    }
-
-    @Test
-    void refresh_missingRefreshTokenField_callsServiceWithNull() throws Exception {
-        when(authService.refresh(null)).thenThrow(new BadCredentialsException("Missing refresh token"));
-
-        mockMvc.perform(post("/api/v1/auth/refresh")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{}"))
-                .andExpect(status().isUnauthorized());
-
-        verify(authService).refresh(null);
-    }
-
-    @Test
-    void refresh_explicitNullInJson_callsServiceWithNull() throws Exception {
-        when(authService.refresh(null)).thenThrow(new BadCredentialsException("Missing refresh token"));
-
-        mockMvc.perform(post("/api/v1/auth/refresh")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"refreshToken\":null}"))
-                .andExpect(status().isUnauthorized());
-
-        verify(authService).refresh(null);
-    }
-
-    @Test
-    void logout_withBody_callsService_andReturns204() throws Exception {
-        doNothing().when(authService).logout("rt");
-
-        mockMvc.perform(post("/api/v1/auth/logout")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"refreshToken\":\"rt\"}"))
-                .andExpect(status().isNoContent());
-
-        verify(authService).logout("rt");
-    }
-
-    @Test
-    void logout_withoutBody_returns204() throws Exception {
-        mockMvc.perform(post("/api/v1/auth/logout")
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isNoContent());
-    }
-
-    @Test
-    void logout_emptyJsonObject_callsLogoutWithNullRefresh() throws Exception {
-        mockMvc.perform(post("/api/v1/auth/logout")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{}"))
-                .andExpect(status().isNoContent());
-
-        verify(authService).logout(null);
-    }
-
-    @Test
     void me_returnsUser() throws Exception {
         AuthUserResponse user = new AuthUserResponse(
                 2L, "me@test.fr", "me", "A", "B", List.of());
@@ -203,15 +117,5 @@ class AuthControllerApiTest {
 
         mockMvc.perform(get("/api/v1/auth/me"))
                 .andExpect(status().isUnauthorized());
-    }
-
-    @Test
-    void refresh_exception_otherThanBadCredentials_propagates() throws Exception {
-        when(authService.refresh(any())).thenThrow(new IllegalStateException("db down"));
-
-        mockMvc.perform(post("/api/v1/auth/refresh")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"refreshToken\":\"x\"}"))
-                .andExpect(status().is5xxServerError());
     }
 }

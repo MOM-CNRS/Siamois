@@ -1,23 +1,17 @@
 package fr.siamois.ui.service.auth;
 
 import fr.siamois.domain.models.auth.Person;
-import fr.siamois.domain.models.auth.RefreshToken;
 import fr.siamois.domain.services.InstitutionService;
-import fr.siamois.domain.services.auth.TokenHasher;
 import fr.siamois.domain.services.person.PersonDetailsService;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.PersonDTO;
-import fr.siamois.infrastructure.database.repositories.auth.RefreshTokenRepository;
 import fr.siamois.mapper.PersonMapper;
 import fr.siamois.ui.api.openapi.v1.auth.dto.LoginResponse;
-import fr.siamois.ui.api.openapi.v1.auth.dto.TokenRefreshResponse;
-import fr.siamois.ui.config.security.jwt.JwtProperties;
 import fr.siamois.ui.config.security.jwt.JwtService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -31,17 +25,11 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.time.Duration;
-import java.time.OffsetDateTime;
 import java.util.LinkedHashSet;
-import java.util.Optional;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -54,10 +42,6 @@ class AuthServiceTest {
     private PasswordEncoder passwordEncoder;
     @Mock
     private JwtService jwtService;
-    @Mock
-    private JwtProperties jwtProperties;
-    @Mock
-    private RefreshTokenRepository refreshTokenRepository;
     @Mock
     private InstitutionService institutionService;
     @Mock
@@ -88,12 +72,11 @@ class AuthServiceTest {
     }
 
     @Test
-    void login_success_returnsTokensAndPersistsRefreshHash() {
+    void login_success_returnsTokenAndUser() {
         when(personDetailsService.findPersonByEmail("user@test.fr")).thenReturn(person);
         when(passwordEncoder.matches("pwd", person.getPassword())).thenReturn(true);
         when(jwtService.createAccessToken(person)).thenReturn("jwt-access");
         when(jwtService.accessTokenExpiresInSeconds()).thenReturn(900L);
-        when(jwtProperties.getRefreshTokenValidity()).thenReturn(Duration.ofDays(30));
 
         PersonDTO dto = new PersonDTO();
         dto.setId(99L);
@@ -105,14 +88,7 @@ class AuthServiceTest {
         assertThat(response.accessToken()).isEqualTo("jwt-access");
         assertThat(response.tokenType()).isEqualTo("Bearer");
         assertThat(response.expiresIn()).isEqualTo(900L);
-        assertThat(response.refreshToken()).isNotBlank();
         assertThat(response.user().email()).isEqualTo("user@test.fr");
-
-        ArgumentCaptor<RefreshToken> captor = ArgumentCaptor.forClass(RefreshToken.class);
-        verify(refreshTokenRepository).save(captor.capture());
-        RefreshToken saved = captor.getValue();
-        assertThat(saved.getTokenHash()).isEqualTo(TokenHasher.sha256Hex(response.refreshToken()));
-        assertThat(saved.getPerson()).isSameAs(person);
     }
 
     @Test
@@ -133,7 +109,6 @@ class AuthServiceTest {
         when(passwordEncoder.matches("pwd", person.getPassword())).thenReturn(true);
         when(jwtService.createAccessToken(person)).thenReturn("jwt");
         when(jwtService.accessTokenExpiresInSeconds()).thenReturn(900L);
-        when(jwtProperties.getRefreshTokenValidity()).thenReturn(Duration.ofDays(30));
         PersonDTO dto = new PersonDTO();
         when(personMapper.convert(person)).thenReturn(dto);
         when(institutionService.findInstitutionsOfPerson(dto)).thenReturn(Set.of());
@@ -171,7 +146,6 @@ class AuthServiceTest {
         when(passwordEncoder.matches("pwd", person.getPassword())).thenReturn(true);
         when(jwtService.createAccessToken(person)).thenReturn("jwt");
         when(jwtService.accessTokenExpiresInSeconds()).thenReturn(900L);
-        when(jwtProperties.getRefreshTokenValidity()).thenReturn(Duration.ofDays(30));
 
         PersonDTO dto = new PersonDTO();
         when(personMapper.convert(person)).thenReturn(dto);
@@ -227,105 +201,6 @@ class AuthServiceTest {
         assertThatThrownBy(() -> authService.login("user@test.fr", "pwd"))
                 .isInstanceOf(BadCredentialsException.class)
                 .hasMessageContaining("disabled");
-    }
-
-    @Test
-    void refresh_success_returnsNewAccessAndRotatesToken() {
-        String opaque = "opaque-refresh-value";
-        String hash = TokenHasher.sha256Hex(opaque);
-        RefreshToken stored = new RefreshToken();
-        stored.setPerson(person);
-        stored.setExpiresAt(OffsetDateTime.now().plusHours(1));
-
-        when(refreshTokenRepository.findByTokenHash(hash)).thenReturn(Optional.of(stored));
-        when(jwtService.createAccessToken(person)).thenReturn("new-access");
-        when(jwtService.accessTokenExpiresInSeconds()).thenReturn(900L);
-
-        TokenRefreshResponse r = authService.refresh(opaque);
-
-        assertThat(r.accessToken()).isEqualTo("new-access");
-        assertThat(r.refreshToken()).isNotBlank().isNotEqualTo(opaque);
-        assertThat(r.tokenType()).isEqualTo("Bearer");
-        assertThat(r.expiresIn()).isEqualTo(900L);
-        // Rotation : l'ancien token doit être révoqué
-        verify(refreshTokenRepository).delete(stored);
-        // Un nouveau token doit être persisté
-        verify(refreshTokenRepository).save(any());
-    }
-
-    @Test
-    void refresh_missingToken_throws() {
-        assertThatThrownBy(() -> authService.refresh("  "))
-                .isInstanceOf(BadCredentialsException.class);
-        assertThatThrownBy(() -> authService.refresh(null))
-                .isInstanceOf(BadCredentialsException.class);
-    }
-
-    @Test
-    void refresh_trimsOpaqueBeforeHash() {
-        String raw = "  my-token  ";
-        String hash = TokenHasher.sha256Hex("my-token");
-        RefreshToken stored = new RefreshToken();
-        stored.setPerson(person);
-        stored.setExpiresAt(OffsetDateTime.now().plusHours(1));
-
-        when(refreshTokenRepository.findByTokenHash(hash)).thenReturn(Optional.of(stored));
-        when(jwtService.createAccessToken(person)).thenReturn("access");
-        when(jwtService.accessTokenExpiresInSeconds()).thenReturn(60L);
-
-        authService.refresh(raw);
-
-        verify(refreshTokenRepository).findByTokenHash(hash);
-    }
-
-    @Test
-    void refresh_unknownHash_throws() {
-        when(refreshTokenRepository.findByTokenHash(any())).thenReturn(Optional.empty());
-
-        assertThatThrownBy(() -> authService.refresh("unknown"))
-                .isInstanceOf(BadCredentialsException.class);
-    }
-
-    @Test
-    void refresh_expired_deletesAndThrows() {
-        String opaque = "expired-rt";
-        String hash = TokenHasher.sha256Hex(opaque);
-        RefreshToken stored = new RefreshToken();
-        stored.setExpiresAt(OffsetDateTime.now().minusMinutes(1));
-
-        when(refreshTokenRepository.findByTokenHash(eq(hash))).thenReturn(Optional.of(stored));
-
-        assertThatThrownBy(() -> authService.refresh(opaque))
-                .isInstanceOf(BadCredentialsException.class)
-                .hasMessageContaining("Invalid or expired");
-
-        verify(refreshTokenRepository).delete(stored);
-    }
-
-    @Test
-    void logout_deletesByHash() {
-        String opaque = "to-revoke";
-        authService.logout(opaque);
-
-        verify(refreshTokenRepository).deleteByTokenHash(TokenHasher.sha256Hex(opaque));
-    }
-
-    @Test
-    void logout_blank_noDelete() {
-        authService.logout("   ");
-        verify(refreshTokenRepository, never()).deleteByTokenHash(any());
-    }
-
-    @Test
-    void logout_null_noDelete() {
-        authService.logout(null);
-        verify(refreshTokenRepository, never()).deleteByTokenHash(any());
-    }
-
-    @Test
-    void logout_trimsOpaqueBeforeDelete() {
-        authService.logout("  revoke-me  ");
-        verify(refreshTokenRepository).deleteByTokenHash(TokenHasher.sha256Hex("revoke-me"));
     }
 
     @Test
