@@ -13,6 +13,7 @@ public final class OpenApiTags {
     public static final String ORGANISATION = "Organisation";
     public static final String PROJECT = "Project";
     public static final String RECORDING_UNIT = "Unité d'enregistrement";
+    public static final String SPATIAL_UNIT = "Unité spatiale";
 
     private OpenApiTags() {
     }

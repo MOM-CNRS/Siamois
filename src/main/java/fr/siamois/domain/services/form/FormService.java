@@ -337,6 +337,14 @@ public class FormService {
     }
 
 
+    /**
+     * Applique une valeur déjà typée (comme pour {@link #readAnswerValueForApi}) sur une réponse de champ.
+     * Utile pour l’API OpenAPI qui sérialise les mêmes formes que le détail formulaire.
+     */
+    public void applyTypedValueToAnswer(CustomFieldAnswerViewModel answer, Object value) {
+        populateSystemFieldValue(answer, value);
+    }
+
     private void populateSystemFieldValue(CustomFieldAnswerViewModel answer, Object value) {
 
         Map<Class<? extends CustomFieldAnswerViewModel>, BiConsumer<CustomFieldAnswerViewModel, Object>> handlers = new HashMap<>();

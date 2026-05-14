@@ -6,7 +6,9 @@ import fr.siamois.domain.models.auth.Person;
 import fr.siamois.dto.entity.ConceptDTO;
 import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.ui.api.handler.RestExceptionHandler;
+import fr.siamois.ui.api.openapi.v1.resource.find.FindResource;
 import fr.siamois.ui.api.openapi.v1.response.find.FindFormData;
+import fr.siamois.ui.api.openapi.v1.service.FindOpenApiService;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiCaller;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiService;
 import fr.siamois.ui.api.openapi.v1.service.RecordingUnitOpenApiService;
@@ -18,6 +20,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.AuthorityUtils;
@@ -38,6 +41,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -48,6 +53,8 @@ class FindControllerApiTest {
     private ProjectApiService projectApiService;
     @Mock
     private RecordingUnitOpenApiService recordingUnitOpenApiService;
+    @Mock
+    private FindOpenApiService findOpenApiService;
 
     private MockMvc mockMvc;
 
@@ -59,7 +66,7 @@ class FindControllerApiTest {
         ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
         MappingJackson2HttpMessageConverter jsonConverter = new MappingJackson2HttpMessageConverter(objectMapper);
 
-        FindControllerApi controller = new FindControllerApi(projectApiService, recordingUnitOpenApiService);
+        FindControllerApi controller = new FindControllerApi(projectApiService, recordingUnitOpenApiService, findOpenApiService);
         mockMvc = MockMvcBuilders.standaloneSetup(controller)
                 .setControllerAdvice(new RestExceptionHandler())
                 .setMessageConverters(jsonConverter)
@@ -142,6 +149,40 @@ class FindControllerApiTest {
                 .andExpect(status().isOk());
 
         verify(recordingUnitOpenApiService).buildFindForm(7L, personDto, Set.of(10L), "fr");
+    }
+
+    @Test
+    void post_create_returns201() throws Exception {
+        when(projectApiService.requireCaller())
+                .thenReturn(new ProjectApiCaller(personDto, Set.of(10L), List.of()));
+        FindResource res = new FindResource();
+        res.setResourceType("finds");
+        res.setId("55");
+        when(findOpenApiService.createFind(any(), eq(personDto), eq(Set.of(10L)), eq("fr")))
+                .thenReturn(res);
+
+        mockMvc.perform(post("/api/v1/finds")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"recordingUnitId\":1,\"specimenTypeConceptId\":2}"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.data.id").value("55"));
+    }
+
+    @Test
+    void patch_returns200() throws Exception {
+        when(projectApiService.requireCaller())
+                .thenReturn(new ProjectApiCaller(personDto, Set.of(10L), List.of()));
+        FindResource res = new FindResource();
+        res.setResourceType("finds");
+        res.setId("3");
+        when(findOpenApiService.patchFind(eq(3L), any(), eq(personDto), eq(Set.of(10L)), eq("fr")))
+                .thenReturn(res);
+
+        mockMvc.perform(patch("/api/v1/finds/3")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.id").value("3"));
     }
 
     @Test

@@ -3,13 +3,17 @@ package fr.siamois.ui.api.openapi.v1.service;
 import fr.siamois.domain.models.exceptions.recordingunit.RecordingUnitNotFoundException;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
+import fr.siamois.domain.services.authorization.PermissionService;
 import fr.siamois.domain.services.document.DocumentService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.specimen.SpecimenService;
+import fr.siamois.domain.services.spatialunit.SpatialUnitService;
+import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.dto.entity.RecordingUnitDTO;
 import fr.siamois.dto.entity.SpecimenDTO;
+import fr.siamois.mapper.ConceptMapper;
 import fr.siamois.mapper.PersonMapper;
 import fr.siamois.ui.api.openapi.v1.mapper.FindOpenApiMapper;
 import fr.siamois.ui.api.openapi.v1.mapper.ProjectDocumentOpenApiMapper;
@@ -50,6 +54,8 @@ class ProjectApiServiceRecordingUnitFindsTest {
     @Mock
     private RecordingUnitService recordingUnitService;
     @Mock
+    private SpatialUnitService spatialUnitService;
+    @Mock
     private DocumentService documentService;
     @Mock
     private SpecimenService specimenService;
@@ -59,6 +65,12 @@ class ProjectApiServiceRecordingUnitFindsTest {
     private FindOpenApiMapper findOpenApiMapper;
     @Mock
     private PersonMapper personMapper;
+    @Mock
+    private PermissionService permissionService;
+    @Mock
+    private ConceptService conceptService;
+    @Mock
+    private ConceptMapper conceptMapper;
 
     private ProjectApiService projectApiService;
 
@@ -72,11 +84,15 @@ class ProjectApiServiceRecordingUnitFindsTest {
                 institutionService,
                 actionUnitService,
                 recordingUnitService,
+                spatialUnitService,
                 documentService,
                 specimenService,
                 projectDocumentOpenApiMapper,
                 findOpenApiMapper,
-                personMapper);
+                personMapper,
+                permissionService,
+                conceptService,
+                conceptMapper);
     }
 
     private ProjectApiCaller caller() {

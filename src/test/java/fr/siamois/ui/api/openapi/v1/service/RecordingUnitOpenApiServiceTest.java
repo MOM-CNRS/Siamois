@@ -15,6 +15,11 @@ import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.InstitutionService;
+import fr.siamois.domain.services.LangService;
+import fr.siamois.domain.services.actionunit.ActionUnitService;
+import fr.siamois.domain.services.authorization.PermissionService;
+import fr.siamois.domain.services.person.PersonService;
+import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.domain.services.attributeconverter.CustomFormLayoutConverter;
 import fr.siamois.domain.services.form.FormService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
@@ -38,6 +43,7 @@ import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitFormBund
 import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitMobileDetailData;
 import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitRelationsData;
 import fr.siamois.mapper.ConceptMapper;
+import fr.siamois.mapper.PersonMapper;
 import fr.siamois.ui.form.dto.CustomColUiDto;
 import fr.siamois.ui.form.dto.CustomFormPanelUiDto;
 import fr.siamois.ui.form.dto.CustomRowUiDto;
@@ -59,6 +65,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.HashMap;
 import java.util.List;
@@ -73,6 +80,7 @@ import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.ArgumentMatchers.same;
 import static org.mockito.ArgumentMatchers.nullable;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -103,6 +111,18 @@ class RecordingUnitOpenApiServiceTest {
     private ConceptRepository conceptRepository;
     @Mock
     private SpecimenService specimenService;
+    @Mock
+    private LangService langService;
+    @Mock
+    private ActionUnitService actionUnitService;
+    @Mock
+    private PermissionService permissionService;
+    @Mock
+    private PersonService personService;
+    @Mock
+    private SpatialUnitService spatialUnitService;
+    @Mock
+    private PersonMapper personMapper;
 
     private RecordingUnitOpenApiService service;
 
@@ -123,7 +143,22 @@ class RecordingUnitOpenApiServiceTest {
                 conceptMapper,
                 institutionService,
                 conceptRepository,
-                specimenService);
+                specimenService,
+                langService,
+                actionUnitService,
+                permissionService,
+                personService,
+                spatialUnitService,
+                personMapper);
+
+        lenient().when(langService.localeForApiLang(any())).thenAnswer(inv -> {
+            Object arg = inv.getArgument(0);
+            if (arg == null || ((String) arg).isBlank()) {
+                return Locale.FRENCH;
+            }
+            return Locale.forLanguageTag((String) arg);
+        });
+        lenient().when(langService.resolveMessage(any(), any())).thenAnswer(inv -> inv.getArgument(0));
 
         personDto = new PersonDTO();
         personDto.setId(1L);
@@ -132,8 +167,7 @@ class RecordingUnitOpenApiServiceTest {
         ruDto.setId(1026L);
 
         ruEntity = mock(RecordingUnit.class);
-        ruResource = new RecordingUnitResource(
-                null, null, null, null, null, null, null, null, null, null, null);
+        ruResource = new RecordingUnitResource();
         ruResource.setResourceType("recording-units");
         ruResource.setId("1026");
     }
@@ -610,9 +644,9 @@ class RecordingUnitOpenApiServiceTest {
 
         RecordingUnitRelationsData data = service.buildRecordingUnitRelations("42", SCOPE);
 
-        assertThat(data.getStratigraphicRelationships()).containsExactly(strat);
-        assertThat(data.getParents()).containsExactly(parent);
-        assertThat(data.getChildren()).containsExactly(child);
+        assertThat(data.stratigraphicRelationships()).containsExactly(strat);
+        assertThat(data.parents()).containsExactly(parent);
+        assertThat(data.children()).containsExactly(child);
         verify(recordingUnitService).findRelationsForAccessibleRecordingUnit("42", SCOPE);
     }
 
@@ -793,12 +827,13 @@ class RecordingUnitOpenApiServiceTest {
         when(customForm.getLayout()).thenReturn(List.of());
         when(formService.findCustomFormByRecordingUnitTypeAndInstitutionId(typeDto, inst)).thenReturn(customForm);
 
-        CustomFieldText textField = mock(CustomFieldText.class);
-        when(textField.getId()).thenReturn(88L);
-        when(textField.getLabel()).thenReturn("Titre");
-        when(textField.getHint()).thenReturn(null);
-        when(textField.getValueBinding()).thenReturn(null);
-        when(textField.getIsSystemField()).thenReturn(false);
+        // Entité réelle : les mocks n'ont pas @DiscriminatorValue sur leur classe → answerType ≠ "TEXT" dans toFieldApi.
+        CustomFieldText textField = new CustomFieldText();
+        textField.setId(88L);
+        textField.setLabel("Titre");
+        textField.setHint(null);
+        textField.setValueBinding(null);
+        textField.setIsSystemField(false);
 
         FormUiDto formUiDto = formUiDtoWithOneField(textField);
         when(conversionService.convert(customForm, FormUiDto.class)).thenReturn(formUiDto);

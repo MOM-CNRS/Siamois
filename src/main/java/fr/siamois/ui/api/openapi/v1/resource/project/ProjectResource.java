@@ -29,6 +29,18 @@ public class ProjectResource extends ProjectResourceIdentifier {
 
     private RelationshipToOne<ConceptResourceIdentifier> type;
 
+    @Schema(description = "Code opération archéologique (Code OA), chaîne métier du code d'action principal")
+    private String codeOperationArcheologique;
+
+    @Schema(description = "Type d'opération : vocabulaire + concept + libellé courant (langue Accept-Language)")
+    private ConceptFieldValue typeConcept;
+
+    @Schema(description = "Type du code d'action (concept rattaché au Code OA), si présent")
+    private ConceptFieldValue actionCodeTypeConcept;
+
+    @Schema(description = "Catégorie du lieu principal (concept), si lieu principal renseigné")
+    private ConceptFieldValue mainLocationCategoryConcept;
+
     private RelationshipToOne<fr.siamois.ui.api.openapi.v1.resource.project.PlaceResourceIdentifier> mainLocation ;
     private RelationshipToMany<fr.siamois.ui.api.openapi.v1.resource.project.PlaceResourceIdentifier> spatialContext ;
     private RelationshipToOne<OrganizationResourceIdentifier> organization;

@@ -19,10 +19,15 @@ import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.dto.FilterDTO;
 import fr.siamois.dto.api.AccessibleProjectForApi;
 import fr.siamois.dto.entity.*;
+import fr.siamois.infrastructure.database.repositories.DocumentRepository;
 import fr.siamois.infrastructure.database.repositories.SpatialUnitRepository;
 import fr.siamois.infrastructure.database.repositories.actionunit.ActionCodeRepository;
 import fr.siamois.infrastructure.database.repositories.actionunit.ActionUnitRepository;
+import fr.siamois.infrastructure.database.repositories.person.PendingActionUnitRepository;
+import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitIdCounterRepository;
+import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitIdLabelRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitRepository;
+import fr.siamois.infrastructure.database.repositories.team.TeamMemberRepository;
 import fr.siamois.infrastructure.database.repositories.specs.ActionUnitSpec;
 import fr.siamois.mapper.ActionUnitMapper;
 import fr.siamois.mapper.ConceptMapper;
@@ -61,6 +66,11 @@ class ActionUnitServiceTest {
     @Mock private ConceptMapper conceptMapper;
     @Mock private SpatialUnitRepository spatialUnitRepository;
     @Mock private RecordingUnitRepository recordingUnitRepository;
+    @Mock private TeamMemberRepository teamMemberRepository;
+    @Mock private DocumentRepository documentRepository;
+    @Mock private PendingActionUnitRepository pendingActionUnitRepository;
+    @Mock private RecordingUnitIdCounterRepository recordingUnitIdCounterRepository;
+    @Mock private RecordingUnitIdLabelRepository recordingUnitIdLabelRepository;
     @InjectMocks
     private ActionUnitService actionUnitService;
 

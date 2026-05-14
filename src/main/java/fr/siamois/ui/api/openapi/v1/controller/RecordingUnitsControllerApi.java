@@ -14,6 +14,8 @@ import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitDocument
 import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitDocumentsResponse;
 import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitMobileDetailData;
 import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitMobileDetailResponse;
+import fr.siamois.ui.api.openapi.v1.request.recordingunit.RecordingUnitCreateRequest;
+import fr.siamois.ui.api.openapi.v1.request.recordingunit.RecordingUnitPatchRequest;
 import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitRelationsData;
 import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitRelationsResponse;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiCaller;
@@ -22,7 +24,6 @@ import fr.siamois.ui.api.openapi.v1.service.RecordingUnitOpenApiService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
-import io.swagger.v3.oas.annotations.hidden.Hidden;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -31,9 +32,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
@@ -79,10 +80,69 @@ public class RecordingUnitsControllerApi {
         return ResponseEntity.ok(new RecordingUnitCreateFormResponse(data));
     }
 
-    @Hidden
+    @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Créer une unité d'enregistrement",
+            description = "Crée une UE sur un projet (action_unit_id) avec un type (concept). "
+                    + "Les valeurs de formulaire sont passées dans `fieldAnswers` (clés = identifiants de champs, "
+                    + "comme sur GET /creation-form). Le formulaire effectif dépend du type d'UE et de l'institution du projet."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "201", description = "Créée"),
+            @ApiResponse(responseCode = "400", description = "Requête ou formulaire invalide"),
+            @ApiResponse(responseCode = "401", description = "Non authentifié"),
+            @ApiResponse(responseCode = "403", description = "Interdit"),
+            @ApiResponse(responseCode = "404", description = "Projet ou type introuvable"),
+            @ApiResponse(responseCode = "500", description = "Erreur interne")
+    })
+    @Tag(name = OpenApiTags.APPLICATION_MOBILE, description = OpenApiTags.APPLICATION_MOBILE_DESCRIPTION)
+    public ResponseEntity<RecordingUnitMobileDetailResponse> createRecordingUnit(
+            @RequestBody RecordingUnitCreateRequest body,
+            @RequestHeader(value = HttpHeaders.ACCEPT_LANGUAGE, required = false) String acceptLanguage) {
+
+        ProjectApiCaller caller = projectApiService.requireCaller();
+        String lang = ProjectApiService.primaryAcceptLanguage(acceptLanguage);
+        RecordingUnitMobileDetailData data = recordingUnitOpenApiService.createRecordingUnit(
+                body, caller.person(), caller.accessibleInstitutionIds(), lang);
+        return ResponseEntity.status(HttpStatus.CREATED).body(new RecordingUnitMobileDetailResponse(data));
+    }
+
+    @PatchMapping(value = "/{id}", consumes = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Modifier partiellement une unité d'enregistrement",
+            description = "Met à jour les réponses de formulaire présentes dans `fieldAnswers` (fusion partielle). "
+                    + "Même clé d'UE que GET /api/v1/recording-units/{id} (identifiant numérique ou full_identifier)."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Ok"),
+            @ApiResponse(responseCode = "400", description = "Requête invalide"),
+            @ApiResponse(responseCode = "401", description = "Non authentifié"),
+            @ApiResponse(responseCode = "403", description = "Interdit"),
+            @ApiResponse(responseCode = "404", description = "UE introuvable ou hors périmètre"),
+            @ApiResponse(responseCode = "500", description = "Erreur interne")
+    })
+    @Tag(name = OpenApiTags.APPLICATION_MOBILE, description = OpenApiTags.APPLICATION_MOBILE_DESCRIPTION)
+    public ResponseEntity<RecordingUnitMobileDetailResponse> patchRecordingUnit(
+            @Parameter(
+                    description = "Clé d'UE : identifiant numérique (recording_unit_id) ou full_identifier.",
+                    schema = @Schema(type = "string", example = "INST-PROJ-UE42")
+            )
+            @PathVariable("id") String id,
+            @RequestBody RecordingUnitPatchRequest body,
+            @RequestHeader(value = HttpHeaders.ACCEPT_LANGUAGE, required = false) String acceptLanguage) {
+
+        ProjectApiCaller caller = projectApiService.requireCaller();
+        String lang = ProjectApiService.primaryAcceptLanguage(acceptLanguage);
+        RecordingUnitMobileDetailData data = recordingUnitOpenApiService.patchRecordingUnit(
+                id, body, caller.person(), caller.accessibleInstitutionIds(), lang);
+        return ResponseEntity.ok(new RecordingUnitMobileDetailResponse(data));
+    }
+
     @GetMapping
     public ResponseEntity<RecordingUnitListResponse> getAll() {
-        throw new ResponseStatusException(HttpStatus.NOT_IMPLEMENTED, "Not implemented yet");
+        // Réponse directe 501 : en MockMvc standalone, ResponseStatusException peut être
+        // enveloppée et traitée comme 500 par le handler générique.
+        return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build();
     }
 
     @GetMapping("/{id}")
@@ -239,5 +299,32 @@ public class RecordingUnitsControllerApi {
         return ResponseEntity.ok()
                 .header("X-Total-Count", String.valueOf(page.getTotalElements()))
                 .body(new FindListResponse(page.getContent(), meta));
+    }
+
+    @DeleteMapping("/{id}")
+    @Operation(
+            summary = "Supprimer une unité d'enregistrement",
+            description = "Identifiant numérique obligatoire : clé primaire recording_unit_id. "
+                    + "L'UE doit être dans une institution accessible (JWT). Droit d'écriture requis. "
+                    + "Refus (409) si l'UE contient des mobiliers, des études ou des unités filles en hiérarchie."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "204", description = "Supprimée"),
+            @ApiResponse(responseCode = "401", description = "Non authentifié"),
+            @ApiResponse(responseCode = "403", description = "Suppression non autorisée"),
+            @ApiResponse(responseCode = "404", description = "UE introuvable ou hors périmètre"),
+            @ApiResponse(responseCode = "409", description = "Suppression impossible (mobiliers, études ou UE filles)"),
+            @ApiResponse(responseCode = "500", description = "Erreur interne")
+    })
+    @Tag(name = OpenApiTags.APPLICATION_MOBILE, description = OpenApiTags.APPLICATION_MOBILE_DESCRIPTION)
+    public ResponseEntity<Void> deleteByNumericId(
+            @Parameter(description = "Identifiant numérique recording_unit_id.", example = "42")
+            @PathVariable("id") long id,
+            @Parameter(description = "Langue pour le contrôle d'autorisation (UserInfo).")
+            @RequestHeader(value = HttpHeaders.ACCEPT_LANGUAGE, required = false) String acceptLanguage) {
+
+        ProjectApiCaller caller = projectApiService.requireCaller();
+        projectApiService.deleteRecordingUnit(caller, id, acceptLanguage);
+        return ResponseEntity.noContent().build();
     }
 }

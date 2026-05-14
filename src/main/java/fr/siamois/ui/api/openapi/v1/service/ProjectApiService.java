@@ -1,20 +1,35 @@
 package fr.siamois.ui.api.openapi.v1.service;
 
+import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.document.Document;
+import fr.siamois.domain.models.exceptions.actionunit.ActionUnitAlreadyExistsException;
+import fr.siamois.domain.models.exceptions.actionunit.FailedActionUnitSaveException;
+import fr.siamois.domain.models.exceptions.actionunit.NullActionUnitIdentifierException;
+import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
+import fr.siamois.domain.services.authorization.PermissionService;
 import fr.siamois.domain.services.document.DocumentService;
+import fr.siamois.domain.models.exceptions.spatialunit.SpatialUnitNotFoundException;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.specimen.SpecimenService;
+import fr.siamois.domain.services.spatialunit.SpatialUnitService;
+import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.dto.api.AccessibleProjectForApi;
+import fr.siamois.dto.entity.ActionUnitDTO;
+import fr.siamois.dto.entity.ConceptDTO;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.dto.entity.RecordingUnitDTO;
+import fr.siamois.dto.entity.SpatialUnitDTO;
+import fr.siamois.dto.entity.SpatialUnitSummaryDTO;
 import fr.siamois.dto.entity.SpecimenDTO;
+import fr.siamois.mapper.ConceptMapper;
 import fr.siamois.mapper.PersonMapper;
 import fr.siamois.ui.api.openapi.v1.mapper.FindOpenApiMapper;
 import fr.siamois.ui.api.openapi.v1.mapper.ProjectDocumentOpenApiMapper;
+import fr.siamois.ui.api.openapi.v1.request.project.ProjectPatchRequest;
 import fr.siamois.ui.api.openapi.v1.resource.document.ProjectDocumentResource;
 import fr.siamois.ui.api.openapi.v1.resource.find.FindResource;
 import fr.siamois.utils.AuthenticatedUserUtils;
@@ -30,6 +45,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Comparator;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
@@ -64,11 +80,15 @@ public class ProjectApiService {
     private final InstitutionService institutionService;
     private final ActionUnitService actionUnitService;
     private final RecordingUnitService recordingUnitService;
+    private final SpatialUnitService spatialUnitService;
     private final DocumentService documentService;
     private final SpecimenService specimenService;
     private final ProjectDocumentOpenApiMapper projectDocumentOpenApiMapper;
     private final FindOpenApiMapper findOpenApiMapper;
     private final PersonMapper personMapper;
+    private final PermissionService permissionService;
+    private final ConceptService conceptService;
+    private final ConceptMapper conceptMapper;
 
     public void validatePagedListRequest(int offset, int limit) {
         if (offset < 0 || limit <= 0 || limit > MAX_PAGE_SIZE) {
@@ -120,6 +140,116 @@ public class ProjectApiService {
     }
 
     /**
+     * Mise à jour partielle d'un projet accessible, avec contrôle d'écriture ({@link PermissionService}).
+     */
+    @Transactional
+    public AccessibleProjectForApi patchProject(
+            ProjectApiCaller caller,
+            String projectIdOrKey,
+            ProjectPatchRequest patch,
+            String lang) {
+        AccessibleProjectForApi row = requireAccessibleProject(caller, projectIdOrKey);
+        ActionUnitDTO dto = row.actionUnit();
+        InstitutionDTO inst = dto.getCreatedByInstitution();
+        if (inst == null || inst.getId() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Projet sans organisation de rattachement");
+        }
+        UserInfo userInfo = new UserInfo(inst, caller.person(), lang);
+        if (!permissionService.hasWritePermission(userInfo, dto)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Modification du projet non autorisée");
+        }
+        applyProjectPatch(dto, patch);
+        applySpatialContextPatch(dto, inst, patch);
+        ConceptDTO type = dto.getType();
+        if (patch.getTypeConceptId() != null) {
+            Concept concept = conceptService.findById(patch.getTypeConceptId())
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Type de projet inconnu"));
+            type = conceptMapper.convert(concept);
+            dto.setType(type);
+        }
+        try {
+            actionUnitService.save(userInfo, dto, type);
+        } catch (ActionUnitAlreadyExistsException e) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, e.getMessage(), e);
+        } catch (NullActionUnitIdentifierException | FailedActionUnitSaveException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage(), e);
+        }
+        return actionUnitService.findAccessibleProjectByKey(String.valueOf(dto.getId()), caller.accessibleInstitutionIds());
+    }
+
+    /**
+     * Supprime un projet sans unité d'enregistrement ni projet enfant (sinon 409).
+     */
+    @Transactional
+    public void deleteProject(ProjectApiCaller caller, String projectIdOrKey, String lang) {
+        AccessibleProjectForApi row = requireAccessibleProject(caller, projectIdOrKey);
+        ActionUnitDTO dto = row.actionUnit();
+        if (dto.getId() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Projet sans identifiant");
+        }
+        InstitutionDTO inst = dto.getCreatedByInstitution();
+        if (inst == null || inst.getId() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Projet sans organisation de rattachement");
+        }
+        UserInfo userInfo = new UserInfo(inst, caller.person(), lang);
+        if (!permissionService.hasWritePermission(userInfo, dto)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Suppression du projet non autorisée");
+        }
+        if (row.recordingUnitCount() > 0) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Impossible de supprimer : le projet contient des unités d'enregistrement");
+        }
+        if (row.childActionUnitCount() > 0) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Impossible de supprimer : le projet contient des sous-projets");
+        }
+        try {
+            actionUnitService.deleteProjectWhenEmpty(dto.getId());
+        } catch (IllegalStateException e) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, e.getMessage(), e);
+        }
+    }
+
+    private static void applyProjectPatch(ActionUnitDTO dto, ProjectPatchRequest patch) {
+        if (patch.getName() != null) {
+            dto.setName(patch.getName());
+        }
+        if (patch.getBeginDate() != null) {
+            dto.setBeginDate(patch.getBeginDate());
+        }
+        if (patch.getEndDate() != null) {
+            dto.setEndDate(patch.getEndDate());
+        }
+    }
+
+    private void applySpatialContextPatch(ActionUnitDTO dto, InstitutionDTO projectInstitution, ProjectPatchRequest patch) {
+        if (patch.getSpatialContextSpatialUnitIds() == null) {
+            return;
+        }
+        if (projectInstitution.getId() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Projet sans organisation de rattachement");
+        }
+        long orgId = projectInstitution.getId();
+        LinkedHashSet<SpatialUnitSummaryDTO> resolved = new LinkedHashSet<>();
+        for (Long spatialUnitId : patch.getSpatialContextSpatialUnitIds()) {
+            if (spatialUnitId == null) {
+                continue;
+            }
+            SpatialUnitDTO place;
+            try {
+                place = spatialUnitService.findById(spatialUnitId);
+            } catch (SpatialUnitNotFoundException e) {
+                throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Lieu introuvable : " + spatialUnitId, e);
+            }
+            InstitutionDTO placeOrg = place.getCreatedByInstitution();
+            if (placeOrg == null || placeOrg.getId() == null || !Objects.equals(placeOrg.getId(), orgId)) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                        "Le lieu " + spatialUnitId + " n'appartient pas à l'organisation du projet");
+            }
+            resolved.add(new SpatialUnitSummaryDTO(place));
+        }
+        dto.setSpatialContext(resolved);
+    }
+
+    /**
      * Institutions que l'utilisateur peut consulter.
      * Tri et pagination appliqués sur la liste déjà portée par {@link ProjectApiCaller#institutions()}
      * (chargée une seule fois lors de l'appel à {@link #requireCaller()}).
@@ -153,6 +283,29 @@ public class ProjectApiService {
     public List<ProjectDocumentResource> listDocumentsForAccessibleProject(ProjectApiCaller caller, String projectIdOrKey) {
         AccessibleProjectForApi row = requireAccessibleProject(caller, projectIdOrKey);
         return toSortedDocumentResources(documentService.findForActionUnit(row.actionUnit()));
+    }
+
+    /**
+     * Supprime une UE par sa clé primaire (recording_unit_id), avec contrôle d'écriture.
+     */
+    @Transactional
+    public void deleteRecordingUnit(ProjectApiCaller caller, long recordingUnitId, String acceptLanguage) {
+        RecordingUnitDTO dto = recordingUnitService.requireAccessibleRecordingUnitByPrimaryKey(
+                recordingUnitId, caller.accessibleInstitutionIds());
+        InstitutionDTO inst = dto.getCreatedByInstitution();
+        if (inst == null || inst.getId() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unité d'enregistrement sans organisation");
+        }
+        String lang = primaryAcceptLanguage(acceptLanguage);
+        UserInfo userInfo = new UserInfo(inst, caller.person(), lang);
+        if (!permissionService.hasWritePermission(userInfo, dto)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Suppression de l'unité non autorisée");
+        }
+        try {
+            recordingUnitService.deleteRecordingUnitById(recordingUnitId);
+        } catch (IllegalStateException e) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, e.getMessage(), e);
+        }
     }
 
     /**

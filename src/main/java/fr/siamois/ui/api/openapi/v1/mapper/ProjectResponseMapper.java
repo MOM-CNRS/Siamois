@@ -6,6 +6,8 @@ import fr.siamois.dto.api.AccessibleProjectForApi;
 import fr.siamois.dto.entity.ActionUnitDTO;
 import fr.siamois.dto.entity.ConceptDTO;
 import fr.siamois.dto.entity.SpatialUnitSummaryDTO;
+import fr.siamois.dto.entity.VocabularyDTO;
+import fr.siamois.ui.api.openapi.v1.resource.project.ConceptFieldValue;
 import fr.siamois.mapper.ConceptMapper;
 import fr.siamois.ui.api.openapi.v1.generic.response.RelationshipCountOnly;
 import fr.siamois.ui.api.openapi.v1.generic.response.RelationshipToMany;
@@ -59,9 +61,19 @@ public class ProjectResponseMapper {
         if (dto.getType() != null) {
             r.setType(new RelationshipToOne<>(conceptResourceIdentifierMapper.convert(dto.getType())));
             r.setCategorie(resolveCategoryLabel(dto.getType(), lang));
+            r.setTypeConcept(toConceptFieldValue(dto.getType(), lang));
+        }
+        if (dto.getPrimaryActionCode() != null) {
+            r.setCodeOperationArcheologique(dto.getPrimaryActionCode().getCode());
+            if (dto.getPrimaryActionCode().getType() != null) {
+                r.setActionCodeTypeConcept(toConceptFieldValue(dto.getPrimaryActionCode().getType(), lang));
+            }
         }
         if (dto.getMainLocation() != null) {
             r.setMainLocation(new RelationshipToOne<>(toPlaceIdentifier(dto.getMainLocation())));
+            if (dto.getMainLocation().getCategory() != null) {
+                r.setMainLocationCategoryConcept(toConceptFieldValue(dto.getMainLocation().getCategory(), lang));
+            }
         }
         if (dto.getSpatialContext() != null && !dto.getSpatialContext().isEmpty()) {
             List<PlaceResourceIdentifier> places = new ArrayList<>();
@@ -151,5 +163,25 @@ public class ProjectResponseMapper {
             p.setId(String.valueOf(su.getId()));
         }
         return p;
+    }
+
+    private ConceptFieldValue toConceptFieldValue(ConceptDTO concept, String lang) {
+        if (concept == null) {
+            return null;
+        }
+        ConceptFieldValue v = new ConceptFieldValue();
+        VocabularyDTO voc = concept.getVocabulary();
+        if (voc != null) {
+            v.setVocabularyId(voc.getId());
+            v.setVocabularyExternalId(voc.getExternalVocabularyId());
+            v.setVocabularyBaseUri(voc.getBaseUri());
+            if (voc.getType() != null) {
+                v.setVocabularyTypeLabel(voc.getType().getLabel());
+            }
+        }
+        v.setConceptId(concept.getId());
+        v.setConceptExternalId(concept.getExternalId());
+        v.setDisplayLabel(resolveCategoryLabel(concept, lang));
+        return v;
     }
 }

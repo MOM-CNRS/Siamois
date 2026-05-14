@@ -15,7 +15,6 @@ import fr.siamois.ui.api.openapi.v1.service.ProjectApiService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
-import io.swagger.v3.oas.annotations.hidden.Hidden;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -75,13 +74,11 @@ public class OrganizationControllerApi {
                 .body(new OrganizationListResponse(resources, meta));
     }
 
-    @Hidden
     @GetMapping("/{id}")
     public ResponseEntity<OrganizationResponse> getById(@PathVariable Long id) {
         throw new ResponseStatusException(HttpStatus.NOT_IMPLEMENTED, "Not implemented yet");
     }
 
-    @Hidden
     @GetMapping("/{id}/projects")
     public ResponseEntity<ProjectListResponse> getProjects(
             @PathVariable Long id,
@@ -90,7 +87,6 @@ public class OrganizationControllerApi {
         throw new ResponseStatusException(HttpStatus.NOT_IMPLEMENTED, "Not implemented yet");
     }
 
-    @Hidden
     @GetMapping("/{id}/places")
     public ResponseEntity<PlaceListResponse> getPlaces(
             @PathVariable Long id,
@@ -99,7 +95,6 @@ public class OrganizationControllerApi {
         throw new ResponseStatusException(HttpStatus.NOT_IMPLEMENTED, "Not implemented yet");
     }
 
-    @Hidden
     @GetMapping("/{id}/finds")
     public ResponseEntity<FindListResponse> getFinds(
             @PathVariable Long id,
