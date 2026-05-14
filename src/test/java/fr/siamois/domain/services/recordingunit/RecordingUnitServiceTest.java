@@ -35,6 +35,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentCaptor.forClass;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.*;
 
 
@@ -365,34 +367,24 @@ class RecordingUnitServiceTest {
         // Mocks
         when(recordingUnitMapper.invertConvert(inputDto)).thenReturn(sourceEntity);
         when(recordingUnitRepository.findById(1L)).thenReturn(Optional.of(managedEntity));
-        when(recordingUnitRepository.findById(2L)).thenReturn(Optional.of(managedParentEntity));
+        when(recordingUnitRepository.findAllById(argThat(ids -> {
+            List<Long> collected = new ArrayList<>();
+            ids.forEach(collected::add);
+            return collected.size() == 1 && collected.get(0).equals(2L);
+        }))).thenReturn(List.of(managedParentEntity));
         when(recordingUnitRepository.save(any(RecordingUnit.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(recordingUnitRepository.saveAll(anyList())).thenAnswer(inv -> inv.getArgument(0));
         when(recordingUnitMapper.convert(any(RecordingUnit.class))).thenReturn(new RecordingUnitDTO());
 
         // Act
         recordingUnitService.save(inputDto);
 
         // Assert
-        // On capture les entités passées à la méthode save() du repository.
-        // On s'attend à 2 sauvegardes : l'entité principale et son parent.
-        ArgumentCaptor<RecordingUnit> savedEntityCaptor = ArgumentCaptor.forClass(RecordingUnit.class);
-        verify(recordingUnitRepository, times(2)).save(savedEntityCaptor.capture());
+        verify(recordingUnitRepository, times(1)).save(any(RecordingUnit.class));
+        verify(recordingUnitRepository, times(1)).saveAll(anyList());
 
-        RecordingUnit savedManagedEntity = savedEntityCaptor.getAllValues().stream()
-                .filter(e -> e.getId().equals(1L))
-                .findFirst()
-                .orElseThrow(() -> new AssertionError("L'entité managée n'a pas été sauvegardée"));
-
-        RecordingUnit savedParentEntity = savedEntityCaptor.getAllValues().stream()
-                .filter(e -> e.getId().equals(2L))
-                .findFirst()
-                .orElseThrow(() -> new AssertionError("L'entité parente n'a pas été sauvegardée"));
-
-        // 1. Vérifier que les champs ont bien été copiés sur l'entité managée
-        assertEquals("Nouvelle Description", savedManagedEntity.getDescription());
-
-        // 2. Vérifier que la relation parent/enfant a été mise à jour
-        assertTrue(savedParentEntity.getChildren().contains(savedManagedEntity),
+        assertEquals("Nouvelle Description", managedEntity.getDescription());
+        assertTrue(managedParentEntity.getChildren().contains(managedEntity),
                 "L'entité managée doit être dans la liste des enfants du parent.");
     }
 

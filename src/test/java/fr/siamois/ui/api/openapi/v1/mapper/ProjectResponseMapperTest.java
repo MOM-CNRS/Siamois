@@ -4,10 +4,13 @@ import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.models.vocabulary.label.ConceptLabel;
 import fr.siamois.domain.services.vocabulary.LabelService;
 import fr.siamois.dto.api.AccessibleProjectForApi;
+import fr.siamois.domain.models.vocabulary.VocabularyType;
+import fr.siamois.dto.entity.ActionCodeDTO;
 import fr.siamois.dto.entity.ActionUnitDTO;
 import fr.siamois.dto.entity.ConceptDTO;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.SpatialUnitSummaryDTO;
+import fr.siamois.dto.entity.VocabularyDTO;
 import fr.siamois.mapper.ConceptMapper;
 import fr.siamois.ui.api.openapi.v1.resource.concept.ConceptResourceIdentifier;
 import fr.siamois.ui.api.openapi.v1.resource.project.ProjectResource;
@@ -147,5 +150,102 @@ class ProjectResponseMapperTest {
         projectResponseMapper.toResource(row);
 
         verify(labelService).findLabelOf(conceptEntity, "fr");
+    }
+
+    @Test
+    void toResource_setsCodeOperationArcheologique() {
+        ActionCodeDTO ac = new ActionCodeDTO();
+        ac.setCode("OA-999");
+        dto.setPrimaryActionCode(ac);
+        when(conceptMapper.invertConvert(typeDto)).thenReturn(conceptEntity);
+        ConceptLabel label = mock(ConceptLabel.class);
+        when(label.getLabel()).thenReturn("L");
+        when(labelService.findLabelOf(conceptEntity, "fr")).thenReturn(label);
+
+        ProjectResource r = projectResponseMapper.toResource(new AccessibleProjectForApi(dto, 0L, 0L), "fr");
+
+        assertThat(r.getCodeOperationArcheologique()).isEqualTo("OA-999");
+    }
+
+    @Test
+    void toResource_typeConcept_containsVocabularyAndLabel() {
+        VocabularyType vt = mock(VocabularyType.class);
+        when(vt.getLabel()).thenReturn("Thesaurus");
+        VocabularyDTO voc = VocabularyDTO.builder()
+                .id(50L)
+                .externalVocabularyId("EXT-VOC")
+                .baseUri("http://example/theso")
+                .type(vt)
+                .build();
+        typeDto.setVocabulary(voc);
+        when(conceptMapper.invertConvert(typeDto)).thenReturn(conceptEntity);
+        ConceptLabel label = mock(ConceptLabel.class);
+        when(label.getLabel()).thenReturn("Excavation");
+        when(labelService.findLabelOf(conceptEntity, "fr")).thenReturn(label);
+
+        ProjectResource r = projectResponseMapper.toResource(new AccessibleProjectForApi(dto, 0L, 0L), "fr");
+
+        assertThat(r.getTypeConcept()).isNotNull();
+        assertThat(r.getTypeConcept().getVocabularyId()).isEqualTo(50L);
+        assertThat(r.getTypeConcept().getVocabularyExternalId()).isEqualTo("EXT-VOC");
+        assertThat(r.getTypeConcept().getVocabularyBaseUri()).isEqualTo("http://example/theso");
+        assertThat(r.getTypeConcept().getVocabularyTypeLabel()).isEqualTo("Thesaurus");
+        assertThat(r.getTypeConcept().getConceptId()).isEqualTo(99L);
+        assertThat(r.getTypeConcept().getDisplayLabel()).isEqualTo("Excavation");
+    }
+
+    @Test
+    void toResource_actionCodeTypeConcept_whenPrimaryActionCodeHasType() {
+        ConceptDTO codeType = new ConceptDTO();
+        codeType.setId(3L);
+        codeType.setExternalId("CT-1");
+        ActionCodeDTO ac = new ActionCodeDTO();
+        ac.setCode("X");
+        ac.setType(codeType);
+        dto.setPrimaryActionCode(ac);
+
+        Concept codeTypeEntity = new Concept();
+        when(conceptMapper.invertConvert(typeDto)).thenReturn(conceptEntity);
+        when(conceptMapper.invertConvert(codeType)).thenReturn(codeTypeEntity);
+        ConceptLabel l1 = mock(ConceptLabel.class);
+        when(l1.getLabel()).thenReturn("T1");
+        ConceptLabel l2 = mock(ConceptLabel.class);
+        when(l2.getLabel()).thenReturn("T2");
+        when(labelService.findLabelOf(conceptEntity, "fr")).thenReturn(l1);
+        when(labelService.findLabelOf(codeTypeEntity, "fr")).thenReturn(l2);
+
+        ProjectResource r = projectResponseMapper.toResource(new AccessibleProjectForApi(dto, 0L, 0L), "fr");
+
+        assertThat(r.getActionCodeTypeConcept()).isNotNull();
+        assertThat(r.getActionCodeTypeConcept().getConceptId()).isEqualTo(3L);
+        assertThat(r.getActionCodeTypeConcept().getDisplayLabel()).isEqualTo("T2");
+    }
+
+    @Test
+    void toResource_mainLocationCategoryConcept() {
+        ConceptDTO cat = new ConceptDTO();
+        cat.setId(8L);
+        cat.setExternalId("CAT-1");
+        SpatialUnitSummaryDTO main = new SpatialUnitSummaryDTO();
+        main.setId(100L);
+        main.setName("Lieu");
+        main.setCategory(cat);
+        dto.setMainLocation(main);
+
+        Concept catEntity = new Concept();
+        when(conceptMapper.invertConvert(typeDto)).thenReturn(conceptEntity);
+        when(conceptMapper.invertConvert(cat)).thenReturn(catEntity);
+        ConceptLabel l1 = mock(ConceptLabel.class);
+        when(l1.getLabel()).thenReturn("TypeOp");
+        ConceptLabel l2 = mock(ConceptLabel.class);
+        when(l2.getLabel()).thenReturn("Carre");
+        when(labelService.findLabelOf(conceptEntity, "fr")).thenReturn(l1);
+        when(labelService.findLabelOf(catEntity, "fr")).thenReturn(l2);
+
+        ProjectResource r = projectResponseMapper.toResource(new AccessibleProjectForApi(dto, 0L, 0L), "fr");
+
+        assertThat(r.getMainLocationCategoryConcept()).isNotNull();
+        assertThat(r.getMainLocationCategoryConcept().getConceptId()).isEqualTo(8L);
+        assertThat(r.getMainLocationCategoryConcept().getDisplayLabel()).isEqualTo("Carre");
     }
 }

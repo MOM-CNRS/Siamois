@@ -5,11 +5,15 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
+import fr.siamois.domain.services.authorization.PermissionService;
 import fr.siamois.domain.services.document.DocumentService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.specimen.SpecimenService;
+import fr.siamois.domain.services.spatialunit.SpatialUnitService;
+import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.PersonDTO;
+import fr.siamois.mapper.ConceptMapper;
 import fr.siamois.mapper.PersonMapper;
 import fr.siamois.ui.api.handler.RestExceptionHandler;
 import fr.siamois.ui.api.openapi.v1.mapper.FindOpenApiMapper;
@@ -55,6 +59,8 @@ class OrganizationControllerApiTest {
     @Mock
     private RecordingUnitService recordingUnitService;
     @Mock
+    private SpatialUnitService spatialUnitService;
+    @Mock
     private DocumentService documentService;
     @Mock
     private SpecimenService specimenService;
@@ -62,6 +68,12 @@ class OrganizationControllerApiTest {
     private ProjectDocumentOpenApiMapper projectDocumentOpenApiMapper;
     @Mock
     private FindOpenApiMapper findOpenApiMapper;
+    @Mock
+    private PermissionService permissionService;
+    @Mock
+    private ConceptService conceptService;
+    @Mock
+    private ConceptMapper conceptMapper;
     @Mock
     private RecordingUnitResponseMapper recordingUnitResponseMapper;
 
@@ -79,11 +91,15 @@ class OrganizationControllerApiTest {
                 institutionService,
                 actionUnitService,
                 recordingUnitService,
+                spatialUnitService,
                 documentService,
                 specimenService,
                 projectDocumentOpenApiMapper,
                 findOpenApiMapper,
-                personMapper);
+                personMapper,
+                permissionService,
+                conceptService,
+                conceptMapper);
 
         OrganizationControllerApi controller = new OrganizationControllerApi(
                 recordingUnitService,

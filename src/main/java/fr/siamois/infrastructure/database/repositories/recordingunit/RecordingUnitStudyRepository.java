@@ -13,5 +13,7 @@ import java.util.List;
 public interface RecordingUnitStudyRepository extends CrudRepository<RecordingUnitStudy, Long>, RevisionRepository<RecordingUnitStudy, Long, Long> {
 
     List<RecordingUnitStudy> findAllByArkIsNullAndCreatedByInstitution(@NotNull Institution createdByInstitution);
+
+    long countByRecordingUnit_Id(Long recordingUnitId);
 }
 

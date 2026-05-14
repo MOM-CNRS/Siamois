@@ -27,6 +27,9 @@ public interface RecordingUnitRepository extends CrudRepository<RecordingUnit, L
     @Query("SELECT COUNT(s) FROM Specimen s WHERE s.recordingUnit.id = :recordingUnitId")
     Long countSpecimensByRecordingUnitId(@Param("recordingUnitId") Long recordingUnitId);
 
+    @Query("SELECT COUNT(r) FROM StratigraphicRelationship r WHERE r.unit1.id = :recordingUnitId OR r.unit2.id = :recordingUnitId")
+    long countStratigraphicRelationshipsByRecordingUnitId(@Param("recordingUnitId") Long recordingUnitId);
+
     @Query(
             value = "UPDATE recording_unit SET fk_type = :type WHERE recording_unit.recording_unit_id IN (:ids)",
             nativeQuery = true
@@ -48,6 +51,13 @@ public interface RecordingUnitRepository extends CrudRepository<RecordingUnit, L
     List<RecordingUnit> findAllByActionUnitId(Long actionUnitId);
 
     Page<RecordingUnit> findAllByActionUnitId(Long actionUnitId, Pageable pageable);
+
+    long countByActionUnit_Id(Long actionUnitId);
+
+    @Modifying
+    @Transactional
+    @Query(nativeQuery = true, value = "DELETE FROM recording_unit_contributors WHERE fk_recording_unit_id = :recordingUnitId")
+    void deleteContributorLinksForRecordingUnit(@Param("recordingUnitId") Long recordingUnitId);
 
     @Transactional
     @Modifying

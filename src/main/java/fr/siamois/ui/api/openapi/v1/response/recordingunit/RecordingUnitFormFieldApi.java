@@ -11,8 +11,9 @@ import org.springframework.lang.Nullable;
 public record RecordingUnitFormFieldApi(
         @Schema(description = "custom_field_id") Long fieldId,
         @Schema(description = "Type de réponse (discriminant JPA, ex. SELECT_ONE_FROM_FIELD_CODE)") String answerType,
+        @Schema(description = "Libellé affichable : les clés i18n du modèle sont résolues selon Accept-Language (MessageSource)")
         String label,
-
+        @Schema(description = "Texte d'aide affichable ; clés i18n résolues selon Accept-Language comme pour label")
         String hint,
 
         @Schema(description = "Binding attribut métier si champ système") String valueBinding,

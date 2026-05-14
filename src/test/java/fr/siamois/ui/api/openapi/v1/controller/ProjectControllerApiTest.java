@@ -7,14 +7,19 @@ import fr.siamois.domain.models.exceptions.actionunit.ActionUnitNotFoundExceptio
 import fr.siamois.domain.models.document.Document;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
+import fr.siamois.domain.services.authorization.PermissionService;
 import fr.siamois.domain.services.document.DocumentService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.specimen.SpecimenService;
+import fr.siamois.domain.services.spatialunit.SpatialUnitService;
+import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.dto.api.AccessibleProjectForApi;
 import fr.siamois.dto.entity.ActionUnitDTO;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.dto.entity.RecordingUnitDTO;
+import fr.siamois.dto.entity.SpatialUnitDTO;
+import fr.siamois.mapper.ConceptMapper;
 import fr.siamois.mapper.PersonMapper;
 import fr.siamois.ui.api.handler.RestExceptionHandler;
 import fr.siamois.ui.api.openapi.v1.mapper.FindOpenApiMapper;
@@ -22,7 +27,10 @@ import fr.siamois.ui.api.openapi.v1.mapper.ProjectDocumentOpenApiMapper;
 import fr.siamois.ui.api.openapi.v1.mapper.ProjectResponseMapper;
 import fr.siamois.ui.api.openapi.v1.mapper.RecordingUnitResponseMapper;
 import fr.siamois.ui.api.openapi.v1.resource.document.ProjectDocumentResource;
+import fr.siamois.ui.api.openapi.v1.response.project.ProjectFormData;
+import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitFormBundle;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiService;
+import fr.siamois.ui.api.openapi.v1.service.RecordingUnitOpenApiService;
 import fr.siamois.ui.api.openapi.v1.resource.project.ProjectResource;
 import fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitResource;
 import org.junit.jupiter.api.AfterEach;
@@ -36,6 +44,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -45,19 +54,24 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import static org.hamcrest.Matchers.hasSize;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.ArgumentMatchers.same;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -76,6 +90,8 @@ class ProjectControllerApiTest {
     @Mock
     private RecordingUnitService recordingUnitService;
     @Mock
+    private SpatialUnitService spatialUnitService;
+    @Mock
     private DocumentService documentService;
     @Mock
     private SpecimenService specimenService;
@@ -84,7 +100,15 @@ class ProjectControllerApiTest {
     @Mock
     private FindOpenApiMapper findOpenApiMapper;
     @Mock
+    private PermissionService permissionService;
+    @Mock
+    private ConceptService conceptService;
+    @Mock
+    private ConceptMapper conceptMapper;
+    @Mock
     private RecordingUnitResponseMapper recordingUnitResourceMapper;
+    @Mock
+    private RecordingUnitOpenApiService recordingUnitOpenApiService;
 
     private MockMvc mockMvc;
 
@@ -101,15 +125,20 @@ class ProjectControllerApiTest {
                 institutionService,
                 actionUnitService,
                 recordingUnitService,
+                spatialUnitService,
                 documentService,
                 specimenService,
                 projectDocumentOpenApiMapper,
                 findOpenApiMapper,
-                personMapper);
+                personMapper,
+                permissionService,
+                conceptService,
+                conceptMapper);
         ProjectControllerApi controller = new ProjectControllerApi(
                 projectApiService,
                 projectResponseMapper,
-                recordingUnitResourceMapper);
+                recordingUnitResourceMapper,
+                recordingUnitOpenApiService);
 
         mockMvc = MockMvcBuilders.standaloneSetup(controller)
                 .setControllerAdvice(new RestExceptionHandler())
@@ -293,6 +322,42 @@ class ProjectControllerApiTest {
         verify(actionUnitService).findAccessibleProjectByKey(eq("5"), eq(Set.of(100L)));
     }
 
+    @Test
+    void getProjectForm_withoutAuthentication_returns401() throws Exception {
+        SecurityContextHolder.getContext().setAuthentication(
+                new AnonymousAuthenticationToken("key", "anonymousUser",
+                        AuthorityUtils.createAuthorityList("ROLE_ANONYMOUS")));
+
+        mockMvc.perform(get("/api/v1/projects/5/form"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void getProjectForm_success_returnsPayload() throws Exception {
+        login();
+        when(personMapper.convert(person)).thenReturn(personDto);
+        when(institutionService.findInstitutionsOfPerson(personDto)).thenReturn(Set.of(institutionDto));
+
+        ActionUnitDTO au = new ActionUnitDTO();
+        au.setId(5L);
+        au.setCreatedByInstitution(institutionDto);
+        AccessibleProjectForApi row = new AccessibleProjectForApi(au, 0L, 0L);
+        when(actionUnitService.findAccessibleProjectByKey(eq("5"), eq(Set.of(100L)))).thenReturn(row);
+
+        ProjectFormData formData = new ProjectFormData(
+                new RecordingUnitFormBundle(null, "Details", "", "{}"),
+                Map.of(),
+                Map.of());
+        when(recordingUnitOpenApiService.buildProjectDetailForm(same(au), eq(personDto), anyString()))
+                .thenReturn(formData);
+
+        mockMvc.perform(get("/api/v1/projects/5/form"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.form.name").value("Details"));
+
+        verify(recordingUnitOpenApiService).buildProjectDetailForm(same(au), eq(personDto), eq("fr"));
+    }
+
     /**
      * Clé métier non numérique (fullIdentifier, etc.) : une seule variable de chemin.
      * Les identifiants contenant « / » doivent être encodés ({@code %2F}) côté client ; beaucoup de piles Servlet
@@ -417,18 +482,9 @@ class ProjectControllerApiTest {
                 1L);
         when(recordingUnitService.findByActionUnitId(eq(5L), eq(10), eq(0), any(Sort.class))).thenReturn(page);
 
-        RecordingUnitResource ruRes = new RecordingUnitResource(
-                "42",
-                "INST-PROJ-UE42",
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null);
+        RecordingUnitResource ruRes = new RecordingUnitResource();
+        ruRes.setIdentifier("42");
+        ruRes.setFullIdentifier("INST-PROJ-UE42");
         ruRes.setResourceType("recording-units");
         ruRes.setId("42");
         when(recordingUnitResourceMapper.convert(eq(ruDto))).thenReturn(ruRes);
@@ -541,5 +597,176 @@ class ProjectControllerApiTest {
         mockMvc.perform(get("/api/v1/projects/2/documents"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.documents", hasSize(0)));
+    }
+
+    @Test
+    void patchProject_withoutAuthentication_returns401() throws Exception {
+        SecurityContextHolder.getContext().setAuthentication(
+                new AnonymousAuthenticationToken("key", "anonymousUser",
+                        AuthorityUtils.createAuthorityList("ROLE_ANONYMOUS")));
+
+        mockMvc.perform(patch("/api/v1/projects/1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"X\"}"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void patchProject_writeForbidden_returns403() throws Exception {
+        login();
+        when(personMapper.convert(person)).thenReturn(personDto);
+        when(institutionService.findInstitutionsOfPerson(personDto)).thenReturn(Set.of(institutionDto));
+
+        ActionUnitDTO au = new ActionUnitDTO();
+        au.setId(1L);
+        au.setName("P");
+        au.setCreatedByInstitution(institutionDto);
+        AccessibleProjectForApi row = new AccessibleProjectForApi(au, 0L, 0L);
+        when(actionUnitService.findAccessibleProjectByKey(eq("1"), eq(Set.of(100L)))).thenReturn(row);
+        when(permissionService.hasWritePermission(any(), any())).thenReturn(false);
+
+        mockMvc.perform(patch("/api/v1/projects/1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"Autre\"}"))
+                .andExpect(status().isForbidden());
+
+        verify(actionUnitService, never()).save(any(), any(), any());
+    }
+
+    @Test
+    void patchProject_success_returns200AndCallsSave() throws Exception {
+        login();
+        when(personMapper.convert(person)).thenReturn(personDto);
+        when(institutionService.findInstitutionsOfPerson(personDto)).thenReturn(Set.of(institutionDto));
+
+        ActionUnitDTO au = new ActionUnitDTO();
+        au.setId(8L);
+        au.setName("Avant");
+        au.setCreatedByInstitution(institutionDto);
+        AccessibleProjectForApi row = new AccessibleProjectForApi(au, 0L, 0L);
+        when(actionUnitService.findAccessibleProjectByKey(eq("8"), eq(Set.of(100L))))
+                .thenReturn(row)
+                .thenAnswer(invocation -> new AccessibleProjectForApi(au, 0L, 0L));
+        when(permissionService.hasWritePermission(any(), any())).thenReturn(true);
+        when(actionUnitService.save(any(), any(), any())).thenReturn(au);
+
+        ProjectResource resource = new ProjectResource();
+        resource.setResourceType("projects");
+        resource.setId("8");
+        resource.setName("Après");
+        when(projectResponseMapper.toResource(any(AccessibleProjectForApi.class), anyString())).thenReturn(resource);
+
+        mockMvc.perform(patch("/api/v1/projects/8")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"Après\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.name").value("Après"));
+
+        verify(actionUnitService).save(any(), argThat((ActionUnitDTO d) -> "Après".equals(d.getName())), any());
+    }
+
+    @Test
+    void patchProject_spatialContext_passesResolvedPlacesToSave() throws Exception {
+        login();
+        when(personMapper.convert(person)).thenReturn(personDto);
+        when(institutionService.findInstitutionsOfPerson(personDto)).thenReturn(Set.of(institutionDto));
+
+        ActionUnitDTO au = new ActionUnitDTO();
+        au.setId(9L);
+        au.setName("P");
+        au.setCreatedByInstitution(institutionDto);
+        AccessibleProjectForApi row = new AccessibleProjectForApi(au, 0L, 0L);
+        when(actionUnitService.findAccessibleProjectByKey(eq("9"), eq(Set.of(100L))))
+                .thenReturn(row)
+                .thenAnswer(invocation -> new AccessibleProjectForApi(au, 0L, 0L));
+        when(permissionService.hasWritePermission(any(), any())).thenReturn(true);
+
+        SpatialUnitDTO place = new SpatialUnitDTO();
+        place.setId(50L);
+        place.setCreatedByInstitution(institutionDto);
+        when(spatialUnitService.findById(50L)).thenReturn(place);
+        when(actionUnitService.save(any(), any(), any())).thenReturn(au);
+
+        ProjectResource resource = new ProjectResource();
+        resource.setResourceType("projects");
+        resource.setId("9");
+        when(projectResponseMapper.toResource(any(AccessibleProjectForApi.class), anyString())).thenReturn(resource);
+
+        mockMvc.perform(patch("/api/v1/projects/9")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"spatialContextSpatialUnitIds\":[50]}"))
+                .andExpect(status().isOk());
+
+        verify(actionUnitService).save(any(), argThat((ActionUnitDTO d) ->
+                d.getSpatialContext() != null
+                        && d.getSpatialContext().size() == 1
+                        && d.getSpatialContext().iterator().next().getId().equals(50L)), any());
+    }
+
+    @Test
+    void deleteProject_withoutAuthentication_returns401() throws Exception {
+        SecurityContextHolder.getContext().setAuthentication(
+                new AnonymousAuthenticationToken("key", "anonymousUser",
+                        AuthorityUtils.createAuthorityList("ROLE_ANONYMOUS")));
+
+        mockMvc.perform(delete("/api/v1/projects/1"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void deleteProject_whenProjectHasRecordingUnits_returns409() throws Exception {
+        login();
+        when(personMapper.convert(person)).thenReturn(personDto);
+        when(institutionService.findInstitutionsOfPerson(personDto)).thenReturn(Set.of(institutionDto));
+
+        ActionUnitDTO au = new ActionUnitDTO();
+        au.setId(3L);
+        au.setCreatedByInstitution(institutionDto);
+        AccessibleProjectForApi row = new AccessibleProjectForApi(au, 2L, 0L);
+        when(actionUnitService.findAccessibleProjectByKey(eq("3"), eq(Set.of(100L)))).thenReturn(row);
+        when(permissionService.hasWritePermission(any(), any())).thenReturn(true);
+
+        mockMvc.perform(delete("/api/v1/projects/3"))
+                .andExpect(status().isConflict());
+
+        verify(actionUnitService, never()).deleteProjectWhenEmpty(anyLong());
+    }
+
+    @Test
+    void deleteProject_whenProjectHasChildProjects_returns409() throws Exception {
+        login();
+        when(personMapper.convert(person)).thenReturn(personDto);
+        when(institutionService.findInstitutionsOfPerson(personDto)).thenReturn(Set.of(institutionDto));
+
+        ActionUnitDTO au = new ActionUnitDTO();
+        au.setId(4L);
+        au.setCreatedByInstitution(institutionDto);
+        AccessibleProjectForApi row = new AccessibleProjectForApi(au, 0L, 1L);
+        when(actionUnitService.findAccessibleProjectByKey(eq("4"), eq(Set.of(100L)))).thenReturn(row);
+        when(permissionService.hasWritePermission(any(), any())).thenReturn(true);
+
+        mockMvc.perform(delete("/api/v1/projects/4"))
+                .andExpect(status().isConflict());
+
+        verify(actionUnitService, never()).deleteProjectWhenEmpty(anyLong());
+    }
+
+    @Test
+    void deleteProject_success_returns204() throws Exception {
+        login();
+        when(personMapper.convert(person)).thenReturn(personDto);
+        when(institutionService.findInstitutionsOfPerson(personDto)).thenReturn(Set.of(institutionDto));
+
+        ActionUnitDTO au = new ActionUnitDTO();
+        au.setId(9L);
+        au.setCreatedByInstitution(institutionDto);
+        AccessibleProjectForApi row = new AccessibleProjectForApi(au, 0L, 0L);
+        when(actionUnitService.findAccessibleProjectByKey(eq("9"), eq(Set.of(100L)))).thenReturn(row);
+        when(permissionService.hasWritePermission(any(), any())).thenReturn(true);
+
+        mockMvc.perform(delete("/api/v1/projects/9"))
+                .andExpect(status().isNoContent());
+
+        verify(actionUnitService).deleteProjectWhenEmpty(9L);
     }
 }

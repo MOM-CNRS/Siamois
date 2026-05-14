@@ -4,6 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -22,6 +23,20 @@ public class OpenApiRestExceptionHandler {
         return ResponseEntity.status(401).body(Map.of(
                 "error", "unauthorized",
                 "message", ex.getMessage() != null ? ex.getMessage() : "Invalid credentials"));
+    }
+
+    /**
+     * Corps JSON illisible (clés non quotées, virgule en trop, mauvais Content-Type, etc.).
+     */
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<Map<String, String>> messageNotReadable(HttpMessageNotReadableException ex) {
+        Throwable cause = ex.getMostSpecificCause();
+        log.debug("OpenAPI request body not readable: {}", cause != null ? cause.getMessage() : ex.getMessage());
+        return ResponseEntity.badRequest().body(Map.of(
+                "error", "bad_request",
+                "message",
+                "Invalid or malformed JSON body. Use strict JSON with double-quoted keys and strings, "
+                        + "e.g. {\"name\":\"value\"}. Ensure Content-Type is application/json."));
     }
 
     @ExceptionHandler(ResponseStatusException.class)

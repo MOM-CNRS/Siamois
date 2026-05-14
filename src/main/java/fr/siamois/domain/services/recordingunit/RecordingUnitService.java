@@ -2,6 +2,7 @@ package fr.siamois.domain.services.recordingunit;
 
 import fr.siamois.domain.models.ArkEntity;
 import fr.siamois.domain.models.UserInfo;
+import fr.siamois.domain.models.form.customformresponse.CustomFormResponse;
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.actionunit.ActionUnitResolveConfig;
 import fr.siamois.domain.models.auth.Person;
@@ -23,9 +24,13 @@ import fr.siamois.dto.FilterDTO;
 import fr.siamois.dto.StratigraphicRelationshipDTO;
 import fr.siamois.dto.entity.*;
 import fr.siamois.infrastructure.database.repositories.person.PersonRepository;
+import fr.siamois.infrastructure.database.repositories.ArkRepository;
+import fr.siamois.infrastructure.database.repositories.DocumentRepository;
+import fr.siamois.infrastructure.database.repositories.form.CustomFormResponseRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitIdCounterRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitIdInfoRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitRepository;
+import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitStudyRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.StratigraphicRelationshipRepository;
 import fr.siamois.infrastructure.database.repositories.specs.RecordingUnitSpec;
 import fr.siamois.infrastructure.database.repositories.team.TeamMemberRepository;
@@ -43,6 +48,7 @@ import org.springframework.cache.annotation.Cacheable;
 import org.springframework.context.ApplicationContext;
 import org.springframework.core.convert.ConversionService;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -83,6 +89,10 @@ public class RecordingUnitService implements ArkEntityService {
     private final ConversionService conversionService;
     private final ApplicationContext applicationContext;
     private final ActionUnitSummaryMapper actionUnitSummaryMapper;
+    private final DocumentRepository documentRepository;
+    private final CustomFormResponseRepository customFormResponseRepository;
+    private final ArkRepository arkRepository;
+    private final RecordingUnitStudyRepository recordingUnitStudyRepository;
 
     /**
      * Bulk update the type of multiple recording units.
@@ -414,6 +424,110 @@ public class RecordingUnitService implements ArkEntityService {
                                                              Set<Long> accessibleInstitutionIds,
                                                              List<String> counts) {
         return findAccessibleRecordingUnitWithEntity(idOrKey, accessibleInstitutionIds, counts).dto();
+    }
+
+    /**
+     * UE identifiée par sa clé primaire {@code recording_unit_id}, si l'institution de l'UE est dans le périmètre.
+     * (Contrairement à {@link #findAccessibleRecordingUnitByKey}, aucun repli sur un identifiant métier numérique.)
+     */
+    @Transactional(readOnly = true)
+    public RecordingUnitDTO requireAccessibleRecordingUnitByPrimaryKey(long recordingUnitId,
+                                                                         Set<Long> accessibleInstitutionIds) {
+        if (accessibleInstitutionIds == null || accessibleInstitutionIds.isEmpty()) {
+            throw new RecordingUnitNotFoundException("No institution scope for current user");
+        }
+        RecordingUnit entity = recordingUnitRepository.findById(recordingUnitId)
+                .orElseThrow(() -> new RecordingUnitNotFoundException(
+                        "RecordingUnit not found with ID: " + recordingUnitId));
+        RecordingUnitDTO dto = recordingUnitMapper.convert(entity);
+        Long instId = dto.getCreatedByInstitution() == null ? null : dto.getCreatedByInstitution().getId();
+        if (instId == null || !accessibleInstitutionIds.contains(instId)) {
+            throw new RecordingUnitNotFoundException("Recording unit not found or not accessible: " + recordingUnitId);
+        }
+        return dto;
+    }
+
+    /**
+     * Supprime une UE sans mobiliers, sans études liées et sans UE filles en hiérarchie.
+     * Nettoie les liaisons (stratigraphie, documents, identifiants, formulaire, ARK).
+     *
+     * @throws IllegalStateException si la suppression est interdite (contenu bloquant)
+     */
+    @Transactional
+    @CacheEvict({
+            "InstitutionHasRootChildrenRU",
+            "ActionHasRootChildrenRU"
+    })
+    public void deleteRecordingUnitById(long recordingUnitId) {
+        RecordingUnit ru = recordingUnitRepository.findById(recordingUnitId)
+                .orElseThrow(() -> new RecordingUnitNotFoundException(
+                        "RecordingUnit not found with ID: " + recordingUnitId));
+
+        Long specimenCount = recordingUnitRepository.countSpecimensByRecordingUnitId(recordingUnitId);
+        if (specimenCount != null && specimenCount > 0) {
+            throw new IllegalStateException("Impossible de supprimer : l'unité d'enregistrement contient des mobiliers");
+        }
+        if (recordingUnitStudyRepository.countByRecordingUnit_Id(recordingUnitId) > 0) {
+            throw new IllegalStateException("Impossible de supprimer : l'unité d'enregistrement a des études associées");
+        }
+        if (ru.getChildren() != null && !ru.getChildren().isEmpty()) {
+            throw new IllegalStateException("Impossible de supprimer : l'unité d'enregistrement possède des unités filles");
+        }
+
+        if (ru.getParents() != null) {
+            for (RecordingUnit parent : new HashSet<>(ru.getParents())) {
+                if (parent.getChildren() != null) {
+                    parent.getChildren().remove(ru);
+                }
+            }
+            ru.getParents().clear();
+        }
+        if (ru.getChildren() != null) {
+            ru.getChildren().clear();
+        }
+
+        List<StratigraphicRelationship> rels = stratigraphicRelationshipRepository.findAllInvolvingRecordingUnitId(recordingUnitId);
+        if (!rels.isEmpty()) {
+            stratigraphicRelationshipRepository.deleteAll(rels);
+        }
+        if (ru.getRelationshipsAsUnit1() != null) {
+            ru.getRelationshipsAsUnit1().clear();
+        }
+        if (ru.getRelationshipsAsUnit2() != null) {
+            ru.getRelationshipsAsUnit2().clear();
+        }
+
+        recordingUnitRepository.deleteContributorLinksForRecordingUnit(recordingUnitId);
+        documentRepository.deleteAllRecordingUnitDocumentLinksByRecordingUnitId(recordingUnitId);
+        recordingUnitIdCounterRepository.deleteAllByRecordingUnitId(recordingUnitId);
+        if (recordingUnitIdInfoRepository.existsById(recordingUnitId)) {
+            recordingUnitIdInfoRepository.deleteById(recordingUnitId);
+        }
+
+        if (ru.getContributors() != null) {
+            ru.getContributors().clear();
+        }
+        if (ru.getDocuments() != null) {
+            ru.getDocuments().clear();
+        }
+
+        CustomFormResponse formResponse = ru.getFormResponse();
+        if (formResponse != null) {
+            ru.setFormResponse(null);
+        }
+        Long arkId = ru.getArk() != null ? ru.getArk().getInternalId() : null;
+
+        recordingUnitRepository.save(ru);
+
+        if (formResponse != null && formResponse.getId() != null) {
+            customFormResponseRepository.deleteById(formResponse.getId());
+        }
+
+        recordingUnitRepository.delete(ru);
+
+        if (arkId != null) {
+            arkRepository.deleteById(arkId);
+        }
     }
 
     /**
@@ -805,7 +919,20 @@ public class RecordingUnitService implements ArkEntityService {
         int pageNumber = offset / limit;
         Pageable pageable = PageRequest.of(pageNumber, limit, sort);
         Page<RecordingUnit> page = recordingUnitRepository.findAllByActionUnitId(actionUnitId, pageable);
-        return page.map(recordingUnitMapper::convert);
+        List<RecordingUnitDTO> content = page.getContent().stream()
+                .map(recordingUnitMapper::convert)
+                .map(this::enrichRecordingUnitDtoForProjectList)
+                .toList();
+        return new PageImpl<>(content, pageable, page.getTotalElements());
+    }
+
+    private RecordingUnitDTO enrichRecordingUnitDtoForProjectList(RecordingUnitDTO dto) {
+        if (dto.getId() == null) {
+            return dto;
+        }
+        dto.setSpecimenCount(recordingUnitRepository.countSpecimensByRecordingUnitId(dto.getId()));
+        dto.setRelationshipCount(recordingUnitRepository.countStratigraphicRelationshipsByRecordingUnitId(dto.getId()));
+        return dto;
     }
 
     public RecordingUnitIdInfo createOrGetInfoOf(@NonNull RecordingUnit recordingUnit, @Nullable RecordingUnit parentRecordingUnit) {

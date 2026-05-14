@@ -6,7 +6,9 @@ import fr.siamois.domain.models.institution.Institution;
 import jakarta.validation.constraints.NotNull;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import jakarta.transaction.Transactional;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.data.repository.history.RevisionRepository;
@@ -393,4 +395,24 @@ WHERE au.fk_institution_id = :institutionId AND has_childrens IS FALSE AND actio
             GROUP BY fk_parent_id
             """, nativeQuery = true)
     List<Object[]> countChildActionUnitsByParentIds(@Param("ids") List<Long> ids);
+
+    @Modifying
+    @Transactional
+    @Query(nativeQuery = true, value = "DELETE FROM action_unit_form_mapping WHERE fk_action_unit = :actionUnitId")
+    void deleteFormMappingsForActionUnit(@Param("actionUnitId") Long actionUnitId);
+
+    @Modifying
+    @Transactional
+    @Query(nativeQuery = true, value = "DELETE FROM action_action_code WHERE fk_action_id = :actionUnitId")
+    void deleteSecondaryActionCodeLinksForActionUnit(@Param("actionUnitId") Long actionUnitId);
+
+    @Modifying
+    @Transactional
+    @Query(nativeQuery = true, value = "DELETE FROM action_hierarchy WHERE fk_parent_id = :actionUnitId OR fk_child_id = :actionUnitId")
+    void deleteHierarchyLinksForActionUnit(@Param("actionUnitId") Long actionUnitId);
+
+    @Modifying
+    @Transactional
+    @Query(nativeQuery = true, value = "DELETE FROM action_unit_spatial_context WHERE fk_action_unit_id = :actionUnitId")
+    void deleteSpatialContextLinksForActionUnit(@Param("actionUnitId") Long actionUnitId);
 }

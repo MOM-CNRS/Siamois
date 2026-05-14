@@ -30,6 +30,9 @@ public class RecordingUnitDTO extends AbstractEntityDTO {
     protected ConceptDTO geomorphologicalAgent;
     protected ConceptDTO normalizedInterpretation;
     protected Long specimenCount;
+    /** Nombre de relations stratigraphiques (unité en tant qu'extrémité 1 ou 2). */
+    protected Long relationshipCount;
+    protected String matrixColor;
     protected PersonDTO author;
     protected String description;
     protected List<PersonDTO> contributors = new ArrayList<>();
@@ -57,6 +60,8 @@ public class RecordingUnitDTO extends AbstractEntityDTO {
         createdByInstitution = original.getCreatedByInstitution();
         description = original.getDescription();
         spatialUnit = original.getSpatialUnit();
+        matrixColor = original.getMatrixColor();
+        relationshipCount = original.getRelationshipCount();
     }
 
     /**

@@ -27,6 +27,7 @@ import java.nio.charset.StandardCharsets;
 @RequestMapping("/api/v1/documents")
 @Tag(name = "Document", description = "Fichiers et contenus des documents SIAMOIS")
 @RequiredArgsConstructor
+@Tag(name = OpenApiTags.APPLICATION_MOBILE, description = OpenApiTags.APPLICATION_MOBILE_DESCRIPTION)
 public class DocumentsControllerApi {
 
     private final ProjectApiService projectApiService;
@@ -49,7 +50,6 @@ public class DocumentsControllerApi {
             @ApiResponse(responseCode = "404", description = "Organisation inconnue ou document introuvable (documentId)"),
             @ApiResponse(responseCode = "500", description = "Erreur interne")
     })
-    @Tag(name = OpenApiTags.APPLICATION_MOBILE, description = OpenApiTags.APPLICATION_MOBILE_DESCRIPTION)
     public ResponseEntity<DocumentFormResponse> getDocumentForm(
             @Parameter(description = "Institution pour la résolution des vocabulaires (doit être dans le périmètre JWT).", example = "10")
             @RequestParam("organizationId") long organizationId,
@@ -80,7 +80,6 @@ public class DocumentsControllerApi {
             @ApiResponse(responseCode = "404", description = "Document ou fichier introuvable / hors périmètre"),
             @ApiResponse(responseCode = "500", description = "Erreur interne")
     })
-    @Tag(name = OpenApiTags.APPLICATION_MOBILE, description = OpenApiTags.APPLICATION_MOBILE_DESCRIPTION)
     public ResponseEntity<Resource> downloadContent(
             @Parameter(description = "Identifiant numérique du document (document_id).", example = "42")
             @PathVariable("id") long id) {

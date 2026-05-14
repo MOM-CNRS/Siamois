@@ -7,9 +7,12 @@ import fr.siamois.domain.models.document.Document;
 import fr.siamois.domain.models.exceptions.recordingunit.RecordingUnitNotFoundException;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
+import fr.siamois.domain.services.authorization.PermissionService;
 import fr.siamois.domain.services.document.DocumentService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.specimen.SpecimenService;
+import fr.siamois.domain.services.spatialunit.SpatialUnitService;
+import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.dto.StratigraphicRelationshipDTO;
 import fr.siamois.dto.entity.ConceptDTO;
 import fr.siamois.dto.entity.InstitutionDTO;
@@ -18,6 +21,7 @@ import fr.siamois.dto.entity.RecordingUnitDTO;
 import fr.siamois.dto.entity.RecordingUnitSummaryDTO;
 import fr.siamois.dto.entity.SpecimenDTO;
 import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitRelationsData;
+import fr.siamois.mapper.ConceptMapper;
 import fr.siamois.mapper.PersonMapper;
 import fr.siamois.ui.api.openapi.v1.mapper.FindOpenApiMapper;
 import fr.siamois.ui.api.openapi.v1.mapper.ProjectDocumentOpenApiMapper;
@@ -40,6 +44,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.AuthorityUtils;
@@ -63,12 +68,18 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.hamcrest.Matchers.hasSize;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.same;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -83,6 +94,8 @@ class RecordingUnitsControllerApiTest {
     @Mock
     private RecordingUnitService recordingUnitService;
     @Mock
+    private SpatialUnitService spatialUnitService;
+    @Mock
     private DocumentService documentService;
     @Mock
     private SpecimenService specimenService;
@@ -90,6 +103,12 @@ class RecordingUnitsControllerApiTest {
     private ProjectDocumentOpenApiMapper projectDocumentOpenApiMapper;
     @Mock
     private FindOpenApiMapper findOpenApiMapper;
+    @Mock
+    private PermissionService permissionService;
+    @Mock
+    private ConceptService conceptService;
+    @Mock
+    private ConceptMapper conceptMapper;
     @Mock
     private PersonMapper personMapper;
     @Mock
@@ -110,11 +129,15 @@ class RecordingUnitsControllerApiTest {
                 institutionService,
                 actionUnitService,
                 recordingUnitService,
+                spatialUnitService,
                 documentService,
                 specimenService,
                 projectDocumentOpenApiMapper,
                 findOpenApiMapper,
-                personMapper);
+                personMapper,
+                permissionService,
+                conceptService,
+                conceptMapper);
 
         RecordingUnitsControllerApi controller = new RecordingUnitsControllerApi(
                 projectApiService,
@@ -147,8 +170,7 @@ class RecordingUnitsControllerApiTest {
         when(personMapper.convert(person)).thenReturn(personDto);
         when(institutionService.findInstitutionsOfPerson(personDto)).thenReturn(Set.of(institutionDto));
 
-        RecordingUnitResource resource = new RecordingUnitResource(
-                null, null, null, null, null, null, null, null, null, null, null);
+        RecordingUnitResource resource = new RecordingUnitResource();
         resource.setResourceType("recording-units");
         resource.setId("5");
         when(recordingUnitOpenApiService.buildMobileDetail(
@@ -162,12 +184,47 @@ class RecordingUnitsControllerApiTest {
     }
 
     @Test
+    void post_create_returns201() throws Exception {
+        when(personMapper.convert(person)).thenReturn(personDto);
+        when(institutionService.findInstitutionsOfPerson(personDto)).thenReturn(Set.of(institutionDto));
+
+        RecordingUnitResource resource = new RecordingUnitResource();
+        resource.setResourceType("recording-units");
+        resource.setId("99");
+        when(recordingUnitOpenApiService.createRecordingUnit(any(), eq(personDto), eq(Set.of(10L)), eq("fr")))
+                .thenReturn(new RecordingUnitMobileDetailData(resource, null, Map.of(), Map.of()));
+
+        mockMvc.perform(post("/api/v1/recording-units")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"actionUnitId\":1,\"recordingUnitTypeConceptId\":2,\"fieldAnswers\":{}}"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.data.recordingUnit.resourceId").value("99"));
+    }
+
+    @Test
+    void patch_returns200() throws Exception {
+        when(personMapper.convert(person)).thenReturn(personDto);
+        when(institutionService.findInstitutionsOfPerson(personDto)).thenReturn(Set.of(institutionDto));
+
+        RecordingUnitResource resource = new RecordingUnitResource();
+        resource.setResourceType("recording-units");
+        resource.setId("5");
+        when(recordingUnitOpenApiService.patchRecordingUnit(eq("5"), any(), eq(personDto), eq(Set.of(10L)), eq("fr")))
+                .thenReturn(new RecordingUnitMobileDetailData(resource, null, Map.of(), Map.of()));
+
+        mockMvc.perform(patch("/api/v1/recording-units/5")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.recordingUnit.resourceId").value("5"));
+    }
+
+    @Test
     void getById_withCounts_passesToService() throws Exception {
         when(personMapper.convert(person)).thenReturn(personDto);
         when(institutionService.findInstitutionsOfPerson(personDto)).thenReturn(Set.of(institutionDto));
 
-        RecordingUnitResource resource = new RecordingUnitResource(
-                null, null, null, null, null, null, null, null, null, null, null);
+        RecordingUnitResource resource = new RecordingUnitResource();
         resource.setResourceType("recording-units");
         resource.setId("5");
         when(recordingUnitOpenApiService.buildMobileDetail(
@@ -192,8 +249,7 @@ class RecordingUnitsControllerApiTest {
         when(personMapper.convert(person)).thenReturn(personDto);
         when(institutionService.findInstitutionsOfPerson(personDto)).thenReturn(Set.of(institutionDto));
 
-        RecordingUnitResource resource = new RecordingUnitResource(
-                null, null, null, null, null, null, null, null, null, null, null);
+        RecordingUnitResource resource = new RecordingUnitResource();
         resource.setResourceType("recording-units");
         resource.setId("7");
         when(recordingUnitOpenApiService.buildMobileDetail(
@@ -217,8 +273,7 @@ class RecordingUnitsControllerApiTest {
         when(institutionService.findInstitutionsOfPerson(personDto))
                 .thenReturn(Set.of(institutionDto, inst20));
 
-        RecordingUnitResource resource = new RecordingUnitResource(
-                null, null, null, null, null, null, null, null, null, null, null);
+        RecordingUnitResource resource = new RecordingUnitResource();
         resource.setResourceType("recording-units");
         resource.setId("1");
         when(recordingUnitOpenApiService.buildMobileDetail(
@@ -242,12 +297,6 @@ class RecordingUnitsControllerApiTest {
         mockMvc.perform(get("/api/v1/recording-units/404-key"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.message").value("missing"));
-    }
-
-    @Test
-    void getAll_returns501() throws Exception {
-        mockMvc.perform(get("/api/v1/recording-units"))
-                .andExpect(status().isNotImplemented());
     }
 
     @Test
@@ -874,5 +923,67 @@ class RecordingUnitsControllerApiTest {
                 .andExpect(jsonPath("$.data.form.name").value("Mon formulaire"))
                 .andExpect(jsonPath("$.data.fields['12'].fieldId").value(12))
                 .andExpect(jsonPath("$.data.fields['12'].answerType").value("TEXT"));
+    }
+
+    @Test
+    void deleteRecordingUnit_withoutAuth_returns401() throws Exception {
+        SecurityContextHolder.clearContext();
+
+        mockMvc.perform(delete("/api/v1/recording-units/5"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void deleteRecordingUnit_forbidden_returns403() throws Exception {
+        when(personMapper.convert(person)).thenReturn(personDto);
+        when(institutionService.findInstitutionsOfPerson(personDto)).thenReturn(Set.of(institutionDto));
+
+        RecordingUnitDTO ru = new RecordingUnitDTO();
+        ru.setId(5L);
+        ru.setCreatedByInstitution(institutionDto);
+        when(recordingUnitService.requireAccessibleRecordingUnitByPrimaryKey(eq(5L), eq(Set.of(10L))))
+                .thenReturn(ru);
+        when(permissionService.hasWritePermission(any(), any())).thenReturn(false);
+
+        mockMvc.perform(delete("/api/v1/recording-units/5"))
+                .andExpect(status().isForbidden());
+
+        verify(recordingUnitService, never()).deleteRecordingUnitById(anyLong());
+    }
+
+    @Test
+    void deleteRecordingUnit_success_returns204() throws Exception {
+        when(personMapper.convert(person)).thenReturn(personDto);
+        when(institutionService.findInstitutionsOfPerson(personDto)).thenReturn(Set.of(institutionDto));
+
+        RecordingUnitDTO ru = new RecordingUnitDTO();
+        ru.setId(9L);
+        ru.setCreatedByInstitution(institutionDto);
+        when(recordingUnitService.requireAccessibleRecordingUnitByPrimaryKey(eq(9L), eq(Set.of(10L))))
+                .thenReturn(ru);
+        when(permissionService.hasWritePermission(any(), any())).thenReturn(true);
+        doNothing().when(recordingUnitService).deleteRecordingUnitById(9L);
+
+        mockMvc.perform(delete("/api/v1/recording-units/9"))
+                .andExpect(status().isNoContent());
+
+        verify(recordingUnitService).deleteRecordingUnitById(9L);
+    }
+
+    @Test
+    void deleteRecordingUnit_whenDomainConflict_returns409() throws Exception {
+        when(personMapper.convert(person)).thenReturn(personDto);
+        when(institutionService.findInstitutionsOfPerson(personDto)).thenReturn(Set.of(institutionDto));
+
+        RecordingUnitDTO ru = new RecordingUnitDTO();
+        ru.setId(3L);
+        ru.setCreatedByInstitution(institutionDto);
+        when(recordingUnitService.requireAccessibleRecordingUnitByPrimaryKey(eq(3L), eq(Set.of(10L))))
+                .thenReturn(ru);
+        when(permissionService.hasWritePermission(any(), any())).thenReturn(true);
+        doThrow(new IllegalStateException("mobiliers")).when(recordingUnitService).deleteRecordingUnitById(3L);
+
+        mockMvc.perform(delete("/api/v1/recording-units/3"))
+                .andExpect(status().isConflict());
     }
 }

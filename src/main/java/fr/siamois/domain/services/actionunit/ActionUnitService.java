@@ -18,10 +18,15 @@ import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.dto.FilterDTO;
 import fr.siamois.dto.api.AccessibleProjectForApi;
 import fr.siamois.dto.entity.*;
+import fr.siamois.infrastructure.database.repositories.DocumentRepository;
 import fr.siamois.infrastructure.database.repositories.SpatialUnitRepository;
 import fr.siamois.infrastructure.database.repositories.actionunit.ActionCodeRepository;
 import fr.siamois.infrastructure.database.repositories.actionunit.ActionUnitRepository;
+import fr.siamois.infrastructure.database.repositories.person.PendingActionUnitRepository;
+import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitIdCounterRepository;
+import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitIdLabelRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitRepository;
+import fr.siamois.infrastructure.database.repositories.team.TeamMemberRepository;
 import fr.siamois.infrastructure.database.repositories.specs.ActionUnitSpec;
 import fr.siamois.mapper.ActionUnitMapper;
 import fr.siamois.mapper.ConceptMapper;
@@ -63,6 +68,11 @@ public class ActionUnitService implements ArkEntityService {
     private final SpatialUnitRepository spatialUnitRepository;
     private final ConceptMapper conceptMapper;
     private final RecordingUnitRepository recordingUnitRepository;
+    private final TeamMemberRepository teamMemberRepository;
+    private final DocumentRepository documentRepository;
+    private final PendingActionUnitRepository pendingActionUnitRepository;
+    private final RecordingUnitIdCounterRepository recordingUnitIdCounterRepository;
+    private final RecordingUnitIdLabelRepository recordingUnitIdLabelRepository;
 
     /**
      * Find all Action Units by institution, spatial unit, name, categories, persons, and global search.
@@ -668,6 +678,38 @@ public class ActionUnitService implements ArkEntityService {
                 dto,
                 ruByProject.getOrDefault(projectId, 0L),
                 childrenByProject.getOrDefault(projectId, 0L));
+    }
+
+    /**
+     * Supprime une unité d'action (projet) vide : aucune unité d'enregistrement, aucun enfant dans la hiérarchie.
+     * Nettoie les lignes dépendantes pour respecter les contraintes de clés étrangères.
+     *
+     * @throws IllegalStateException si le projet n'est pas supprimable
+     */
+    @CacheEvict({
+            "InstitutionHasRootChildrenAU",
+            "InstitutionHasRootChildrenSU",
+            "ActionUnitHasChildrenInInstitution"
+    })
+    public void deleteProjectWhenEmpty(long actionUnitId) {
+        if (recordingUnitRepository.countByActionUnit_Id(actionUnitId) > 0) {
+            throw new IllegalStateException("Impossible de supprimer : le projet contient des unités d'enregistrement");
+        }
+        Map<Long, Long> childrenByProject = countingMap(
+                actionUnitRepository.countChildActionUnitsByParentIds(List.of(actionUnitId)));
+        if (childrenByProject.getOrDefault(actionUnitId, 0L) > 0) {
+            throw new IllegalStateException("Impossible de supprimer : le projet contient des sous-projets");
+        }
+        teamMemberRepository.deleteAll(teamMemberRepository.findAllByActionUnitId(actionUnitId));
+        pendingActionUnitRepository.deleteAllByActionUnitId(actionUnitId);
+        recordingUnitIdCounterRepository.deleteAllByConfigActionUnitId(actionUnitId);
+        recordingUnitIdLabelRepository.deleteAllByActionUnitId(actionUnitId);
+        actionUnitRepository.deleteFormMappingsForActionUnit(actionUnitId);
+        actionUnitRepository.deleteSecondaryActionCodeLinksForActionUnit(actionUnitId);
+        actionUnitRepository.deleteHierarchyLinksForActionUnit(actionUnitId);
+        actionUnitRepository.deleteSpatialContextLinksForActionUnit(actionUnitId);
+        documentRepository.deleteAllActionUnitDocumentLinksByActionUnitId(actionUnitId);
+        actionUnitRepository.deleteById(actionUnitId);
     }
 
     private ActionUnitDTO loadProjectDtoForLookupKey(String idOrKey, Set<Long> accessibleInstitutionIds) {

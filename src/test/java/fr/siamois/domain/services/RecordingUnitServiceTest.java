@@ -25,13 +25,20 @@ import fr.siamois.dto.FilterDTO;
 import fr.siamois.dto.entity.*;
 import fr.siamois.infrastructure.api.dto.ConceptFieldDTO;
 import fr.siamois.infrastructure.database.repositories.person.PersonRepository;
+import fr.siamois.infrastructure.database.repositories.ArkRepository;
+import fr.siamois.infrastructure.database.repositories.DocumentRepository;
+import fr.siamois.infrastructure.database.repositories.form.CustomFormResponseRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitIdCounterRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitIdInfoRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitRepository;
+import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitStudyRepository;
+import fr.siamois.infrastructure.database.repositories.recordingunit.StratigraphicRelationshipRepository;
 import fr.siamois.infrastructure.database.repositories.specs.RecordingUnitSpec;
 import fr.siamois.infrastructure.database.repositories.team.TeamMemberRepository;
 import fr.siamois.mapper.ActionUnitSummaryMapper;
 import fr.siamois.mapper.RecordingUnitMapper;
+import fr.siamois.mapper.RecordingUnitSummaryMapper;
+import fr.siamois.mapper.StatigraphicRelationshipMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -41,6 +48,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationContext;
+import org.springframework.core.convert.ConversionService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
@@ -54,6 +62,7 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.*;
 
@@ -85,6 +94,22 @@ class RecordingUnitServiceTest {
     private RecordingUnitMapper recordingUnitMapper;
     @Mock
     private ActionUnitSummaryMapper actionUnitSummaryMapper;
+    @Mock
+    private DocumentRepository documentRepository;
+    @Mock
+    private CustomFormResponseRepository customFormResponseRepository;
+    @Mock
+    private ArkRepository arkRepository;
+    @Mock
+    private RecordingUnitStudyRepository recordingUnitStudyRepository;
+    @Mock
+    private StratigraphicRelationshipRepository stratigraphicRelationshipRepository;
+    @Mock
+    private StatigraphicRelationshipMapper stratigraphicRelationshipMapper;
+    @Mock
+    private RecordingUnitSummaryMapper recordingUnitSummaryMapper;
+    @Mock
+    private ConversionService conversionService;
 
 
     @InjectMocks
@@ -165,7 +190,9 @@ class RecordingUnitServiceTest {
         user = new PersonDTO();
         userInfo = new UserInfo(parentInstitutionDto, user, "fr");
 
-
+        // setupParents appelle findAllById même pour une liste vide ; sans stub, Mockito renvoie null → NPE.
+        lenient().when(recordingUnitRepository.findAllById(argThat(list -> list == null || !list.iterator().hasNext())))
+                .thenReturn(Collections.emptyList());
     }
 
     @Test
@@ -267,9 +294,14 @@ class RecordingUnitServiceTest {
 
         // Le service cherche l'unité existante car l'ID est 1L
         when(recordingUnitRepository.findById(1L)).thenReturn(Optional.of(managedUnit));
-        when(recordingUnitRepository.findById(10L)).thenReturn(Optional.of(parentEntity));
         when(recordingUnitRepository.findById(2L)).thenReturn(Optional.of(targetUnit2));
         when(recordingUnitRepository.findById(3L)).thenReturn(Optional.of(targetUnit3));
+        when(recordingUnitRepository.findAllById(argThat(ids -> {
+            List<Long> collected = new ArrayList<>();
+            ids.forEach(collected::add);
+            return collected.equals(List.of(10L));
+        }))).thenReturn(List.of(parentEntity));
+        when(recordingUnitRepository.saveAll(anyList())).thenAnswer(inv -> inv.getArgument(0));
 
         when(recordingUnitRepository.save(any(RecordingUnit.class))).thenAnswer(inv -> inv.getArgument(0));
         when(personRepository.findAllById(anyList())).thenReturn(List.of(new Person()));
@@ -283,7 +315,11 @@ class RecordingUnitServiceTest {
         // --- 5. Assertions ---
         assertNotNull(result);
         verify(recordingUnitRepository, atLeastOnce()).save(any(RecordingUnit.class));
-        verify(recordingUnitRepository).findById(10L);
+        verify(recordingUnitRepository).findAllById(argThat(ids -> {
+            List<Long> collected = new ArrayList<>();
+            ids.forEach(collected::add);
+            return collected.equals(List.of(10L));
+        }));
         verify(recordingUnitRepository).findById(2L);
         verify(recordingUnitRepository).findById(3L);
     }
@@ -945,8 +981,8 @@ class RecordingUnitServiceTest {
         // 3. Mocks
         when(recordingUnitMapper.invertConvert(recordingUnitToSave2)).thenReturn(entityToSave);
 
-        // Simulation de l'échec de récupération du parent en base
-        when(recordingUnitRepository.findById(nonExistentParentId)).thenReturn(Optional.empty());
+        // setupParents charge les parents via findAllById (plus findById unitaire)
+        when(recordingUnitRepository.findAllById(List.of(nonExistentParentId))).thenReturn(Collections.emptyList());
 
         // Act & Assert
         FailedRecordingUnitSaveException exception = assertThrows(
@@ -954,10 +990,9 @@ class RecordingUnitServiceTest {
                 () -> recordingUnitService.save(recordingUnitToSave2)
         );
 
-        // Vérification du message (encapsulé par le try/catch du service)
-        assertEquals("Parent not found: " + nonExistentParentId, exception.getMessage());
+        assertEquals("Some parents not found: [" + nonExistentParentId + "]", exception.getMessage());
 
-        verify(recordingUnitRepository).findById(nonExistentParentId);
+        verify(recordingUnitRepository).findAllById(List.of(nonExistentParentId));
     }
 
 
@@ -1873,8 +1908,12 @@ class RecordingUnitServiceTest {
         // Mock finding the parent
         when(recordingUnitRepository.findById(parentId)).thenReturn(Optional.of(managedParent));
 
-        // Mock finding the NEW child (This is the call inside the 'if (!alreadyPresent)' block)
-        when(recordingUnitRepository.findById(newChildId)).thenReturn(Optional.of(newChildEntity));
+        // setupChilds résout les enfants manquants via findAllById
+        when(recordingUnitRepository.findAllById(argThat(ids -> {
+            List<Long> collected = new ArrayList<>();
+            ids.forEach(collected::add);
+            return collected.size() == 1 && collected.contains(newChildId);
+        }))).thenReturn(List.of(newChildEntity));
 
         // Mock save
         when(recordingUnitRepository.save(any(RecordingUnit.class))).thenAnswer(i -> i.getArgument(0));
@@ -1889,8 +1928,11 @@ class RecordingUnitServiceTest {
 
         assertEquals(1, managedParent.getChildren().size());
 
-        // Verify the repository was actually called to fetch the new child
-        verify(recordingUnitRepository).findById(newChildId);
+        verify(recordingUnitRepository).findAllById(argThat(ids -> {
+            List<Long> collected = new ArrayList<>();
+            ids.forEach(collected::add);
+            return collected.size() == 1 && collected.contains(newChildId);
+        }));
     }
 
 }
