@@ -18,7 +18,5 @@ public class JwtProperties {
     @Size(min = 32, message = "JWT secret must be at least 32 characters (256 bits) for HS256")
     private String secret;
 
-    private Duration accessTokenValidity = Duration.ofMinutes(15);
-
-    private Duration refreshTokenValidity = Duration.ofDays(30);
+    private Duration accessTokenValidity = Duration.ofDays(30);
 }
