@@ -1,5 +1,6 @@
 package fr.siamois.ui.api.openapi.v1;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -9,7 +10,9 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Map;
+import java.util.UUID;
 
+@Slf4j
 @Order(1)
 @RestControllerAdvice(basePackages = "fr.siamois.ui.api.openapi.v1.controller")
 public class OpenApiRestExceptionHandler {
@@ -35,8 +38,11 @@ public class OpenApiRestExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, String>> unhandled(Exception ex) {
+        String correlationId = UUID.randomUUID().toString();
+        log.error("[{}] Unhandled exception in OpenAPI controller", correlationId, ex);
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(
                 "error", "internal_error",
-                "message", ex.getMessage() != null ? ex.getMessage() : "Internal Server Error"));
+                "message", "Internal Server Error",
+                "correlationId", correlationId));
     }
 }

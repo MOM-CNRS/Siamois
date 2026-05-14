@@ -26,6 +26,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -94,7 +95,7 @@ class FindControllerApiTest {
     @Test
     void getFindForm_success_returnsJson() throws Exception {
         when(projectApiService.requireCaller())
-                .thenReturn(new ProjectApiCaller(personDto, Set.of(10L)));
+                .thenReturn(new ProjectApiCaller(personDto, Set.of(10L), List.of()));
 
         ConceptDTO type = new ConceptDTO();
         type.setId(2L);
@@ -113,7 +114,7 @@ class FindControllerApiTest {
     @Test
     void getFindForm_passesAcceptLanguageToService() throws Exception {
         when(projectApiService.requireCaller())
-                .thenReturn(new ProjectApiCaller(personDto, Set.of(10L)));
+                .thenReturn(new ProjectApiCaller(personDto, Set.of(10L), List.of()));
 
         ConceptDTO type = new ConceptDTO();
         type.setId(1L);
@@ -130,7 +131,7 @@ class FindControllerApiTest {
     @Test
     void getFindForm_withoutAcceptLanguage_defaultsToFrench() throws Exception {
         when(projectApiService.requireCaller())
-                .thenReturn(new ProjectApiCaller(personDto, Set.of(10L)));
+                .thenReturn(new ProjectApiCaller(personDto, Set.of(10L), List.of()));
 
         ConceptDTO type = new ConceptDTO();
         type.setId(3L);
@@ -146,7 +147,7 @@ class FindControllerApiTest {
     @Test
     void getFindForm_whenNotFound_returns404() throws Exception {
         when(projectApiService.requireCaller())
-                .thenReturn(new ProjectApiCaller(personDto, Set.of(10L)));
+                .thenReturn(new ProjectApiCaller(personDto, Set.of(10L), List.of()));
         when(recordingUnitOpenApiService.buildFindForm(anyLong(), any(), any(), anyString()))
                 .thenThrow(new ResponseStatusException(HttpStatus.NOT_FOUND, "Find not found"));
 
@@ -160,7 +161,7 @@ class FindControllerApiTest {
     @Test
     void getFindForm_whenBadRequest_returns400() throws Exception {
         when(projectApiService.requireCaller())
-                .thenReturn(new ProjectApiCaller(personDto, Set.of(10L)));
+                .thenReturn(new ProjectApiCaller(personDto, Set.of(10L), List.of()));
         when(recordingUnitOpenApiService.buildFindForm(anyLong(), any(), any(), anyString()))
                 .thenThrow(new ResponseStatusException(HttpStatus.BAD_REQUEST, "Find has no owning institution"));
 

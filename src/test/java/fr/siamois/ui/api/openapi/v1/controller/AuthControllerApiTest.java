@@ -104,7 +104,7 @@ class AuthControllerApiTest {
     @Test
     void refresh_success_returnsAccessToken() throws Exception {
         when(authService.refresh(eq("my-refresh")))
-                .thenReturn(new TokenRefreshResponse("new-access", 900L, "Bearer"));
+                .thenReturn(new TokenRefreshResponse("new-access", "new-refresh-token", 900L, "Bearer"));
 
         mockMvc.perform(post("/api/v1/auth/refresh")
                         .contentType(MediaType.APPLICATION_JSON)

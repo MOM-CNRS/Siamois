@@ -176,71 +176,65 @@ public class RecordingUnitService implements ArkEntityService {
 
     private void setupChilds(RecordingUnit recordingUnit, RecordingUnit managedRecordingUnit) {
         if (recordingUnit.getChildren() == null) {
-            // If null, no changes are made to the children.
             return;
         }
 
-        // 1. Get the IDs of the children we WANT to have
         Set<Long> incomingIds = recordingUnit.getChildren().stream()
                 .filter(c -> c != null && c.getId() != null)
                 .map(RecordingUnit::getId)
                 .collect(Collectors.toSet());
 
-        // 2. Remove children no longer in the list
-        // (Uses removeIf to avoid ConcurrentModificationException)
-        managedRecordingUnit.getChildren().removeIf(child ->
-                !incomingIds.contains(child.getId()));
+        managedRecordingUnit.getChildren().removeIf(child -> !incomingIds.contains(child.getId()));
 
-        // 3. Add new children
-        for (Long id : incomingIds) {
-            // Check if child is already managed to avoid redundant DB hits/duplicates
-            boolean alreadyPresent = managedRecordingUnit.getChildren().stream()
-                    .anyMatch(c -> c.getId().equals(id));
+        Set<Long> presentIds = managedRecordingUnit.getChildren().stream()
+                .map(RecordingUnit::getId)
+                .collect(Collectors.toSet());
+        Set<Long> missingIds = incomingIds.stream()
+                .filter(id -> !presentIds.contains(id))
+                .collect(Collectors.toSet());
 
-            if (!alreadyPresent) {
-                RecordingUnit child = recordingUnitRepository.findById(id)
-                        .orElseThrow(() -> new IllegalArgumentException("Child not found: " + id));
-                managedRecordingUnit.getChildren().add(child);
+        if (!missingIds.isEmpty()) {
+            List<RecordingUnit> missing = (List<RecordingUnit>) recordingUnitRepository.findAllById(missingIds);
+            if (missing.size() != missingIds.size()) {
+                throw new IllegalArgumentException("Some children not found: " + missingIds);
             }
+            managedRecordingUnit.getChildren().addAll(missing);
         }
-
     }
 
     private void setupParents(RecordingUnit recordingUnit, RecordingUnit managedRecordingUnit) {
         if (recordingUnit.getParents() == null) {
-            // If null, no changes are made to the parents.
             return;
         }
 
-        // Fetch current parents of managedRecordingUnit
         Set<RecordingUnit> currentParents = new HashSet<>(managedRecordingUnit.getParents());
-        Set<RecordingUnit> newParents = new HashSet<>();
 
-        // Build the set of new parents
-        for (RecordingUnit parentRef : recordingUnit.getParents()) {
-            RecordingUnit parent = recordingUnitRepository.findById(parentRef.getId())
-                    .orElseThrow(() -> new IllegalArgumentException("Parent not found: " + parentRef.getId()));
-            newParents.add(parent);
+        List<Long> newParentIds = recordingUnit.getParents().stream()
+                .filter(p -> p != null && p.getId() != null)
+                .map(RecordingUnit::getId)
+                .toList();
+        List<RecordingUnit> loadedParents = (List<RecordingUnit>) recordingUnitRepository.findAllById(newParentIds);
+        if (loadedParents.size() != newParentIds.size()) {
+            throw new IllegalArgumentException("Some parents not found: " + newParentIds);
         }
+        Set<RecordingUnit> newParents = new HashSet<>(loadedParents);
 
+        List<RecordingUnit> toSave = new ArrayList<>();
 
-        // Find parents to add (in newParents but not in currentParents)
         for (RecordingUnit parent : newParents) {
             if (!currentParents.contains(parent)) {
                 parent.getChildren().add(managedRecordingUnit);
-                recordingUnitRepository.save(parent);
+                toSave.add(parent);
             }
         }
-
-        // Find parents to remove (in currentParents but not in newParents)
         for (RecordingUnit parent : currentParents) {
             if (!newParents.contains(parent)) {
                 parent.getChildren().remove(managedRecordingUnit);
-                recordingUnitRepository.save(parent);
+                toSave.add(parent);
             }
         }
+        recordingUnitRepository.saveAll(toSave);
 
-        // Update the parents list of managedRecordingUnit
         managedRecordingUnit.getParents().clear();
         managedRecordingUnit.getParents().addAll(newParents);
     }
@@ -495,15 +489,8 @@ public class RecordingUnitService implements ArkEntityService {
 
     private RecordingUnit resolveRecordingUnitEntityByFullIdentifier(String fullIdentifier,
                                                                      Set<Long> accessibleInstitutionIds) {
-        List<Long> sortedInstitutionIds = accessibleInstitutionIds.stream().sorted().toList();
-        for (Long institutionId : sortedInstitutionIds) {
-            Optional<RecordingUnit> byFull = recordingUnitRepository.findByFullIdentifierAndInstitutionId(
-                    fullIdentifier, institutionId);
-            if (byFull.isPresent()) {
-                return byFull.get();
-            }
-        }
-        throw new RecordingUnitNotFoundException("Recording unit not found with key: " + fullIdentifier);
+        return recordingUnitRepository.findFirstByFullIdentifierAndInstitutionIdIn(fullIdentifier, accessibleInstitutionIds)
+                .orElseThrow(() -> new RecordingUnitNotFoundException("Recording unit not found with key: " + fullIdentifier));
     }
 
     @Override
@@ -808,7 +795,8 @@ public class RecordingUnitService implements ArkEntityService {
     public Page<RecordingUnitDTO> findByInstitutionId(Long institutionId,
                                                       int limit,
                                                       int offset) {
-        Pageable pageable = PageRequest.of(offset, limit);
+        int pageNumber = limit > 0 ? offset / limit : 0;
+        Pageable pageable = PageRequest.of(pageNumber, limit);
         Page<RecordingUnit> page = recordingUnitRepository.findByCreatedByInstitutionId(institutionId, pageable);
         return page.map(recordingUnitMapper::convert);
     }

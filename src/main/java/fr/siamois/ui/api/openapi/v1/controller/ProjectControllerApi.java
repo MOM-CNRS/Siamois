@@ -19,6 +19,7 @@ import fr.siamois.ui.api.openapi.v1.service.ProjectApiCaller;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.hidden.Hidden;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -127,33 +128,18 @@ public class ProjectControllerApi {
         return ResponseEntity.ok(new ProjectDocumentsResponse(new ProjectDocumentsData(documents)));
     }
 
-    @Operation(summary = "La liste des mobiliers d'un projet")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Ok"),
-            @ApiResponse(responseCode = "500", description = "Erreur interne")
-    })
+    @Hidden
     @GetMapping("/{id}/finds")
-    @Tag(name = "Mobilier")
     public ResponseEntity<FindListResponse> getFinds(
-            @PathVariable Long id,
+            @PathVariable String id,
             @RequestParam(defaultValue = "0") int offset,
             @RequestParam(defaultValue = "10") int limit) {
         throw new ResponseStatusException(HttpStatus.NOT_IMPLEMENTED, "Not implemented yet");
     }
 
-    @Operation(summary = "Le geopackage d'un projet")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Ok",
-                    content = @Content(
-                            mediaType = "application/geopackage+sqlite3",
-                            schema = @Schema(type = "string", format = "binary")
-                    )
-            ),
-            @ApiResponse(responseCode = "500", description = "Erreur interne")
-    })
+    @Hidden
     @GetMapping(value = "/{id}/geopackage", produces = "application/geopackage+sqlite3")
-    public ResponseEntity<Resource> getGeoPackage(
-            @PathVariable Long id) {
+    public ResponseEntity<Resource> getGeoPackage(@PathVariable String id) {
         throw new ResponseStatusException(HttpStatus.NOT_IMPLEMENTED, "Not implemented yet");
     }
 
