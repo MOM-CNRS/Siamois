@@ -63,7 +63,7 @@ public class DocumentService implements ArkEntityService {
 
     @Override
     public AbstractEntityDTO save(AbstractEntityDTO toSave) {
-        return null; // TODO IMPLEMENT
+        throw new UnsupportedOperationException("DocumentService.save(AbstractEntityDTO) is not implemented");
     }
 
     /**

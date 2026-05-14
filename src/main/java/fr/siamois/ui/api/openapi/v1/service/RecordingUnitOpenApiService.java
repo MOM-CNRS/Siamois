@@ -190,12 +190,28 @@ public class RecordingUnitOpenApiService {
     }
 
     private Map<String, RecordingUnitFormFieldApi> buildCustomFormFieldsForBindTarget(
-            Object shell,
+            RecordingUnitDTO shell,
+            FieldSource fieldSource,
+            String logContext,
+            Long typeConceptIdForLog) {
+        return buildCustomFormFieldsForEntity(shell, fieldSource, logContext, typeConceptIdForLog);
+    }
+
+    private Map<String, RecordingUnitFormFieldApi> buildCustomFormFieldsForBindTarget(
+            SpecimenDTO shell,
+            FieldSource fieldSource,
+            String logContext,
+            Long typeConceptIdForLog) {
+        return buildCustomFormFieldsForEntity(shell, fieldSource, logContext, typeConceptIdForLog);
+    }
+
+    private Map<String, RecordingUnitFormFieldApi> buildCustomFormFieldsForEntity(
+            Object entity,
             FieldSource fieldSource,
             String logContext,
             Long typeConceptIdForLog) {
         try {
-            CustomFormResponseViewModel response = formService.initOrReuseResponse(null, shell, fieldSource, true);
+            CustomFormResponseViewModel response = formService.initOrReuseResponse(null, entity, fieldSource, true);
             if (response.getAnswers() == null) {
                 return buildFieldsMetadataOnly(fieldSource);
             }

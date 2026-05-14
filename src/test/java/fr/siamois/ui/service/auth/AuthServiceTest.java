@@ -230,7 +230,7 @@ class AuthServiceTest {
     }
 
     @Test
-    void refresh_success_returnsNewAccess() {
+    void refresh_success_returnsNewAccessAndRotatesToken() {
         String opaque = "opaque-refresh-value";
         String hash = TokenHasher.sha256Hex(opaque);
         RefreshToken stored = new RefreshToken();
@@ -244,8 +244,13 @@ class AuthServiceTest {
         TokenRefreshResponse r = authService.refresh(opaque);
 
         assertThat(r.accessToken()).isEqualTo("new-access");
+        assertThat(r.refreshToken()).isNotBlank().isNotEqualTo(opaque);
         assertThat(r.tokenType()).isEqualTo("Bearer");
         assertThat(r.expiresIn()).isEqualTo(900L);
+        // Rotation : l'ancien token doit être révoqué
+        verify(refreshTokenRepository).delete(stored);
+        // Un nouveau token doit être persisté
+        verify(refreshTokenRepository).save(any());
     }
 
     @Test
@@ -292,7 +297,7 @@ class AuthServiceTest {
 
         assertThatThrownBy(() -> authService.refresh(opaque))
                 .isInstanceOf(BadCredentialsException.class)
-                .hasMessageContaining("Expired");
+                .hasMessageContaining("Invalid or expired");
 
         verify(refreshTokenRepository).delete(stored);
     }

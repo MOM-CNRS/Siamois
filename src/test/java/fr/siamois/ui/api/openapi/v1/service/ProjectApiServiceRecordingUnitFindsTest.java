@@ -80,7 +80,7 @@ class ProjectApiServiceRecordingUnitFindsTest {
     }
 
     private ProjectApiCaller caller() {
-        return new ProjectApiCaller(personDto, SCOPE);
+        return new ProjectApiCaller(personDto, SCOPE, List.of());
     }
 
     @Test

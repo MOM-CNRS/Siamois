@@ -82,15 +82,23 @@ public class AuthService {
         }
         String hash = TokenHasher.sha256Hex(refreshTokenPlain.trim());
         RefreshToken stored = refreshTokenRepository.findByTokenHash(hash)
-                .orElseThrow(() -> new BadCredentialsException("Invalid refresh token"));
+                .orElseThrow(() -> new BadCredentialsException("Invalid or expired refresh token"));
         if (stored.getExpiresAt().isBefore(OffsetDateTime.now())) {
             refreshTokenRepository.delete(stored);
-            throw new BadCredentialsException("Expired refresh token");
+            throw new BadCredentialsException("Invalid or expired refresh token");
         }
         Person person = stored.getPerson();
-        person.getAuthorities();
+        // Rotation : révoquer l'ancien token et émettre un nouveau
+        refreshTokenRepository.delete(stored);
+        String newRefreshPlain = generateOpaqueRefreshToken();
+        persistRefreshToken(person, newRefreshPlain);
         String access = jwtService.createAccessToken(person);
-        return new TokenRefreshResponse(access, jwtService.accessTokenExpiresInSeconds(), AuthConstants.TOKEN_TYPE_BEARER);
+        return new TokenRefreshResponse(access, newRefreshPlain, jwtService.accessTokenExpiresInSeconds(), AuthConstants.TOKEN_TYPE_BEARER);
+    }
+
+    @Transactional
+    public void purgeExpiredRefreshTokens() {
+        refreshTokenRepository.deleteByExpiresAtBefore(OffsetDateTime.now());
     }
 
     @Transactional

@@ -83,10 +83,11 @@ public class ProjectApiService {
         Person person = AuthenticatedUserUtils.getAuthenticatedUser()
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authentification requise"));
         PersonDTO personDto = personMapper.convert(person);
-        Set<Long> institutionIds = institutionService.findInstitutionsOfPerson(personDto).stream()
+        List<InstitutionDTO> institutions = new ArrayList<>(institutionService.findInstitutionsOfPerson(personDto));
+        Set<Long> institutionIds = institutions.stream()
                 .map(InstitutionDTO::getId)
                 .collect(Collectors.toSet());
-        return new ProjectApiCaller(personDto, institutionIds);
+        return new ProjectApiCaller(personDto, institutionIds, institutions);
     }
 
     public void assertOrganizationInCallerScope(Long organizationId, Set<Long> accessibleInstitutionIds) {
@@ -118,18 +119,16 @@ public class ProjectApiService {
     }
 
     /**
-     * Institutions que l'utilisateur peut consulter (membre, gestionnaire d'action ou d'institution, ou super-admin).
-     * Tri et pagination appliqués en mémoire sur l'ensemble retourné par {@link InstitutionService#findInstitutionsOfPerson}.
+     * Institutions que l'utilisateur peut consulter.
+     * Tri et pagination appliqués sur la liste déjà portée par {@link ProjectApiCaller#institutions()}
+     * (chargée une seule fois lors de l'appel à {@link #requireCaller()}).
      */
-    @Transactional(readOnly = true)
     public Page<InstitutionDTO> pageAccessibleOrganizations(ProjectApiCaller caller, int offset, int limit, String sortParam) {
         Sort sort = parseOrganizationSort(sortParam);
-        List<InstitutionDTO> sorted = sortInstitutions(
-                new ArrayList<>(institutionService.findInstitutionsOfPerson(caller.person())),
-                sort);
+        List<InstitutionDTO> sorted = sortInstitutions(caller.institutions(), sort);
         long total = sorted.size();
-        int from = Math.min(offset, sorted.size());
-        int to = Math.min(offset + limit, sorted.size());
+        int from = Math.min(offset, (int) total);
+        int to = Math.min(offset + limit, (int) total);
         List<InstitutionDTO> slice = sorted.subList(from, to);
         Pageable pageable = PageRequest.of(limit > 0 ? offset / limit : 0, limit, sort);
         return new PageImpl<>(slice, pageable, total);

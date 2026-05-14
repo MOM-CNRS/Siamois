@@ -244,6 +244,19 @@ public interface RecordingUnitRepository extends CrudRepository<RecordingUnit, L
     Optional<RecordingUnit> findByFullIdentifier(@NotNull String fullIdentifier);
 
     @Query(
+            value = "SELECT ru.* FROM recording_unit ru " +
+                    "JOIN institution i ON ru.fk_institution_id = i.institution_id " +
+                    "WHERE ru.full_identifier = :fullIdentifier " +
+                    "AND i.institution_id IN :institutionIds " +
+                    "LIMIT 1",
+            nativeQuery = true
+    )
+    Optional<RecordingUnit> findFirstByFullIdentifierAndInstitutionIdIn(
+            @Param("fullIdentifier") String fullIdentifier,
+            @Param("institutionIds") Set<Long> institutionIds
+    );
+
+    @Query(
             nativeQuery = true,
             value = "WITH ranked_labels AS ( " +
                     "    SELECT " +

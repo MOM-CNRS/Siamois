@@ -96,7 +96,7 @@ class DocumentsControllerApiTest {
     void downloadContent_success_returnsBinary() throws Exception {
         login();
         when(projectApiService.requireCaller())
-                .thenReturn(new ProjectApiCaller(personDto, Set.of(10L)));
+                .thenReturn(new ProjectApiCaller(personDto, Set.of(10L), List.of()));
 
         byte[] data = new byte[]{1, 2, 3};
         when(documentContentOpenApiService.requireDownloadableContent(eq(42L), eq(Set.of(10L))))
@@ -118,7 +118,7 @@ class DocumentsControllerApiTest {
     void downloadContent_notFound_returns404() throws Exception {
         login();
         when(projectApiService.requireCaller())
-                .thenReturn(new ProjectApiCaller(personDto, Set.of(10L)));
+                .thenReturn(new ProjectApiCaller(personDto, Set.of(10L), List.of()));
         when(documentContentOpenApiService.requireDownloadableContent(eq(100L), eq(Set.of(10L))))
                 .thenThrow(new ResponseStatusException(HttpStatus.NOT_FOUND, "Document not found"));
 
@@ -140,7 +140,7 @@ class DocumentsControllerApiTest {
     void deleteDocument_success_returns204() throws Exception {
         login();
         when(projectApiService.requireCaller())
-                .thenReturn(new ProjectApiCaller(personDto, Set.of(10L)));
+                .thenReturn(new ProjectApiCaller(personDto, Set.of(10L), List.of()));
 
         mockMvc.perform(delete("/api/v1/documents/5"))
                 .andExpect(status().isNoContent());
@@ -152,7 +152,7 @@ class DocumentsControllerApiTest {
     void deleteDocument_notFound_returns404() throws Exception {
         login();
         when(projectApiService.requireCaller())
-                .thenReturn(new ProjectApiCaller(personDto, Set.of(10L)));
+                .thenReturn(new ProjectApiCaller(personDto, Set.of(10L), List.of()));
         doThrow(new ResponseStatusException(HttpStatus.NOT_FOUND, "Document not found"))
                 .when(documentContentOpenApiService).deleteAccessibleDocument(eq(99L), eq(Set.of(10L)));
 
@@ -165,7 +165,7 @@ class DocumentsControllerApiTest {
     void deleteDocument_withSeveralInstitutions_passesFullScope() throws Exception {
         login();
         when(projectApiService.requireCaller())
-                .thenReturn(new ProjectApiCaller(personDto, Set.of(10L, 20L)));
+                .thenReturn(new ProjectApiCaller(personDto, Set.of(10L, 20L), List.of()));
 
         mockMvc.perform(delete("/api/v1/documents/3"))
                 .andExpect(status().isNoContent());
@@ -186,7 +186,7 @@ class DocumentsControllerApiTest {
     void getDocumentForm_orgForbidden_returns403() throws Exception {
         login();
         when(projectApiService.requireCaller())
-                .thenReturn(new ProjectApiCaller(personDto, Set.of(10L)));
+                .thenReturn(new ProjectApiCaller(personDto, Set.of(10L), List.of()));
         doThrow(new ResponseStatusException(HttpStatus.FORBIDDEN, "Organisation non accessible"))
                 .when(projectApiService).assertOrganizationInCallerScope(eq(99L), eq(Set.of(10L)));
 
@@ -198,7 +198,7 @@ class DocumentsControllerApiTest {
     void getDocumentForm_success_returnsJson() throws Exception {
         login();
         when(projectApiService.requireCaller())
-                .thenReturn(new ProjectApiCaller(personDto, Set.of(10L)));
+                .thenReturn(new ProjectApiCaller(personDto, Set.of(10L), List.of()));
         DocumentFormData payload = new DocumentFormData(
                 List.of(new DocumentFormFieldApi("title", "TEXT", null, Document.MAX_TITLE_LENGTH)),
                 Map.of(Document.NATURE_FIELD_CODE, List.of()),

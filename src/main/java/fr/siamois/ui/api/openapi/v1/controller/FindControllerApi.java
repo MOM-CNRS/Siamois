@@ -10,6 +10,7 @@ import fr.siamois.ui.api.openapi.v1.service.ProjectApiService;
 import fr.siamois.ui.api.openapi.v1.service.RecordingUnitOpenApiService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.hidden.Hidden;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -25,7 +26,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 @RestController
 @RequestMapping("/api/v1/finds")
-@Tag(name = "Mobilier", description = "Endpoints des unités des mobiliers")
+@Tag(name = OpenApiTags.MOBILIER, description = "Endpoints des mobiliers (spécimens)")
 public class FindControllerApi {
 
     private final ProjectApiService projectApiService;
@@ -37,21 +38,13 @@ public class FindControllerApi {
         this.recordingUnitOpenApiService = recordingUnitOpenApiService;
     }
 
-    @Operation(summary = "La liste des mobiliers")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Ok"),
-            @ApiResponse(responseCode = "500", description = "Erreur interne")
-    })
+    @Hidden
     @GetMapping("/")
     public ResponseEntity<FindListResponse> getAll() {
         throw new ResponseStatusException(HttpStatus.NOT_IMPLEMENTED, "Not implemented yet");
     }
 
-    @Operation(summary = "Un mobilier via son identifiant")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Ok"),
-            @ApiResponse(responseCode = "500", description = "Erreur interne")
-    })
+    @Hidden
     @GetMapping("/{id}")
     public ResponseEntity<FindResponse> getById(
             @PathVariable Long id
