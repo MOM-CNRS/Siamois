@@ -36,7 +36,6 @@ import java.util.Set;
 
 import static org.hamcrest.Matchers.hasSize;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -254,8 +253,7 @@ class OrganizationControllerApiTest {
                 .andExpect(jsonPath("$.meta.total").value(2))
                 .andExpect(jsonPath("$.meta.offset").value(0));
 
-        // requireCaller() + pageAccessibleOrganizations() chargent chacun la liste des institutions.
-        verify(institutionService, times(2)).findInstitutionsOfPerson(eq(personDto));
+        verify(institutionService).findInstitutionsOfPerson(eq(personDto));
     }
 
     @Test

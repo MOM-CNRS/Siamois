@@ -212,22 +212,10 @@ public class RecordingUnitOpenApiService {
             Long typeConceptIdForLog) {
         try {
             CustomFormResponseViewModel response = formService.initOrReuseResponse(null, entity, fieldSource, true);
-            if (response.getAnswers() == null) {
-                return buildFieldsMetadataOnly(fieldSource);
-            }
-            Map<String, RecordingUnitFormFieldApi> fields = new LinkedHashMap<>();
-            for (Map.Entry<CustomField, CustomFieldAnswerViewModel> e : response.getAnswers().entrySet()) {
-                CustomField field = e.getKey();
-                fields.put(String.valueOf(field.getId()), toFieldApi(field, e.getValue()));
-            }
-            return fields;
+            return toFieldsMap(response, fieldSource);
         } catch (RuntimeException ex) {
-            log.warn(
-                    "Impossible d'initialiser les réponses formulaire pour {} (type concept id={}): {}",
-                    logContext,
-                    typeConceptIdForLog,
-                    ex.toString(),
-                    ex);
+            log.warn("Impossible d'initialiser les réponses formulaire pour {} (type concept id={}): {}",
+                    logContext, typeConceptIdForLog, ex.toString(), ex);
             return buildFieldsMetadataOnly(fieldSource);
         }
     }
@@ -244,31 +232,28 @@ public class RecordingUnitOpenApiService {
         try {
             CustomFormResponseViewModel response = formService.initOrReuseResponse(null, dto, fieldSource, true);
             applyPersistedCustomAnswers(entity, customForm, response, lang);
-            if (response.getAnswers() == null) {
-                return buildFieldsMetadataOnly(fieldSource);
-            }
-            Map<String, RecordingUnitFormFieldApi> fields = new LinkedHashMap<>();
-            for (Map.Entry<CustomField, CustomFieldAnswerViewModel> e : response.getAnswers().entrySet()) {
-                CustomField field = e.getKey();
-                fields.put(String.valueOf(field.getId()), toFieldApi(field, e.getValue()));
-            }
-            return fields;
+            return toFieldsMap(response, fieldSource);
         } catch (RuntimeException ex) {
-            log.warn(
-                    "Impossible de construire les réponses formulaire pour l'UE id={} (fallback métadonnées seules): {}",
-                    dto.getId(),
-                    ex.toString(),
-                    ex);
+            log.warn("Impossible de construire les réponses formulaire pour l'UE id={} (fallback métadonnées seules): {}",
+                    dto.getId(), ex.toString(), ex);
             return buildFieldsMetadataOnly(fieldSource);
         }
+    }
+
+    private Map<String, RecordingUnitFormFieldApi> toFieldsMap(CustomFormResponseViewModel response, FieldSource fallback) {
+        if (response.getAnswers() == null) return buildFieldsMetadataOnly(fallback);
+        Map<String, RecordingUnitFormFieldApi> fields = new LinkedHashMap<>();
+        for (Map.Entry<CustomField, CustomFieldAnswerViewModel> e : response.getAnswers().entrySet()) {
+            CustomField field = e.getKey();
+            fields.put(String.valueOf(field.getId()), toFieldApi(field, e.getValue()));
+        }
+        return fields;
     }
 
     private Map<String, RecordingUnitFormFieldApi> buildFieldsMetadataOnly(FieldSource fieldSource) {
         Map<String, RecordingUnitFormFieldApi> fields = new LinkedHashMap<>();
         for (CustomField field : fieldSource.getAllFields()) {
-            if (field == null || field.getId() == null) {
-                continue;
-            }
+            if (field == null || field.getId() == null) continue;
             fields.put(String.valueOf(field.getId()), toFieldApi(field, null));
         }
         return fields;

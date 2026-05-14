@@ -55,7 +55,6 @@ public class FindOpenApiMapper {
                     .toList();
             r.setAuthors(new RelationshipToMany<>(list));
         }
-        r.setGeom(null);
         return r;
     }
 }

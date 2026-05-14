@@ -19,7 +19,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -71,14 +70,14 @@ public class DocumentFormOpenApiService {
     }
 
     private static List<DocumentFormFieldApi> staticFields() {
-        List<DocumentFormFieldApi> fields = new ArrayList<>();
-        fields.add(new DocumentFormFieldApi("title", "TEXT", null, Document.MAX_TITLE_LENGTH));
-        fields.add(new DocumentFormFieldApi("description", "TEXTAREA", null, Document.MAX_DESCRIPTION_LENGTH));
-        fields.add(new DocumentFormFieldApi("nature", "CONCEPT_SELECT", Document.NATURE_FIELD_CODE, null));
-        fields.add(new DocumentFormFieldApi("scale", "CONCEPT_SELECT", Document.SCALE_FIELD_CODE, null));
-        fields.add(new DocumentFormFieldApi("format", "CONCEPT_SELECT", Document.FORMAT_FIELD_CODE, null));
-        fields.add(new DocumentFormFieldApi("file", "FILE", null, null));
-        return List.copyOf(fields);
+        return List.of(
+                new DocumentFormFieldApi("title", "TEXT", null, Document.MAX_TITLE_LENGTH),
+                new DocumentFormFieldApi("description", "TEXTAREA", null, Document.MAX_DESCRIPTION_LENGTH),
+                new DocumentFormFieldApi("nature", "CONCEPT_SELECT", Document.NATURE_FIELD_CODE, null),
+                new DocumentFormFieldApi("scale", "CONCEPT_SELECT", Document.SCALE_FIELD_CODE, null),
+                new DocumentFormFieldApi("format", "CONCEPT_SELECT", Document.FORMAT_FIELD_CODE, null),
+                new DocumentFormFieldApi("file", "FILE", null, null)
+        );
     }
 
     private void putVocabulary(UserInfo userInfo, Map<String, List<ConceptAutocompleteDTO>> out, String fieldCode) {

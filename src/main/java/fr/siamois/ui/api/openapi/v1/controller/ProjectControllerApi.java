@@ -2,6 +2,7 @@ package fr.siamois.ui.api.openapi.v1.controller;
 
 import fr.siamois.dto.api.AccessibleProjectForApi;
 import fr.siamois.dto.entity.RecordingUnitDTO;
+import fr.siamois.ui.api.openapi.v1.OpenApiTags;
 import fr.siamois.ui.api.openapi.v1.generic.response.ListMeta;
 import fr.siamois.ui.api.openapi.v1.mapper.ProjectResponseMapper;
 import fr.siamois.ui.api.openapi.v1.mapper.RecordingUnitResponseMapper;
@@ -14,7 +15,6 @@ import fr.siamois.ui.api.openapi.v1.response.ProjectResponse;
 import fr.siamois.ui.api.openapi.v1.response.RecordingUnitListResponse;
 import fr.siamois.ui.api.openapi.v1.response.project.ProjectDocumentsData;
 import fr.siamois.ui.api.openapi.v1.response.project.ProjectDocumentsResponse;
-import fr.siamois.ui.api.openapi.v1.OpenApiTags;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiCaller;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -25,7 +25,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import io.swagger.v3.oas.annotations.tags.Tags;
+import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpHeaders;
@@ -38,20 +38,13 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/projects")
-@Tags({@Tag(name = "Project", description = "Endpoints des projets")})
+@Tag(name = OpenApiTags.PROJECT, description = "Endpoints des projets")
+@RequiredArgsConstructor
 public class ProjectControllerApi {
 
     private final ProjectApiService projectApiService;
     private final ProjectResponseMapper projectResponseMapper;
     private final RecordingUnitResponseMapper recordingUnitResourceMapper;
-
-    public ProjectControllerApi(ProjectApiService projectApiService,
-                                ProjectResponseMapper projectResponseMapper,
-                                RecordingUnitResponseMapper recordingUnitResourceMapper) {
-        this.projectApiService = projectApiService;
-        this.projectResponseMapper = projectResponseMapper;
-        this.recordingUnitResourceMapper = recordingUnitResourceMapper;
-    }
 
     @GetMapping
     @Operation(summary = "La liste des projets")
@@ -87,6 +80,7 @@ public class ProjectControllerApi {
                 .body(new ProjectListResponse(resources, meta));
     }
 
+    @GetMapping("/{id}")
     @Operation(summary = "Un projet via son identifiant",
             description = "Clé d'URL : id numérique (clé primaire), identifiant métier complet (fullIdentifier), "
                     + "ou identifiant court du projet dans une de vos organisations. "
@@ -97,18 +91,17 @@ public class ProjectControllerApi {
             @ApiResponse(responseCode = "404", description = "Projet introuvable ou non accessible"),
             @ApiResponse(responseCode = "500", description = "Erreur interne")
     })
-    @GetMapping("/{id}")
     @Tag(name = OpenApiTags.APPLICATION_MOBILE, description = OpenApiTags.APPLICATION_MOBILE_DESCRIPTION)
-    public ResponseEntity<ProjectResponse> getById(@PathVariable("id") String id,
-                                                   @RequestHeader(value = HttpHeaders.ACCEPT_LANGUAGE, required = false)
-                                                   String acceptLanguage) {
+    public ResponseEntity<ProjectResponse> getById(
+            @PathVariable("id") String id,
+            @RequestHeader(value = HttpHeaders.ACCEPT_LANGUAGE, required = false) String acceptLanguage) {
         ProjectApiCaller caller = projectApiService.requireCaller();
         AccessibleProjectForApi row = projectApiService.requireAccessibleProject(caller, id);
         String lang = ProjectApiService.primaryAcceptLanguage(acceptLanguage);
-        ProjectResource resource = projectResponseMapper.toResource(row, lang);
-        return ResponseEntity.ok(new ProjectResponse(resource));
+        return ResponseEntity.ok(new ProjectResponse(projectResponseMapper.toResource(row, lang)));
     }
 
+    @GetMapping("/{id}/documents")
     @Operation(
             summary = "Documents rattachés à un projet",
             description = "Liste des documents liés à l'unité d'action (projet) via action_unit_document. "
@@ -120,7 +113,6 @@ public class ProjectControllerApi {
             @ApiResponse(responseCode = "404", description = "Projet introuvable ou non accessible"),
             @ApiResponse(responseCode = "500", description = "Erreur interne")
     })
-    @GetMapping("/{id}/documents")
     @Tag(name = OpenApiTags.APPLICATION_MOBILE, description = OpenApiTags.APPLICATION_MOBILE_DESCRIPTION)
     public ResponseEntity<ProjectDocumentsResponse> getDocuments(@PathVariable("id") String id) {
         ProjectApiCaller caller = projectApiService.requireCaller();
@@ -128,21 +120,7 @@ public class ProjectControllerApi {
         return ResponseEntity.ok(new ProjectDocumentsResponse(new ProjectDocumentsData(documents)));
     }
 
-    @Hidden
-    @GetMapping("/{id}/finds")
-    public ResponseEntity<FindListResponse> getFinds(
-            @PathVariable String id,
-            @RequestParam(defaultValue = "0") int offset,
-            @RequestParam(defaultValue = "10") int limit) {
-        throw new ResponseStatusException(HttpStatus.NOT_IMPLEMENTED, "Not implemented yet");
-    }
-
-    @Hidden
-    @GetMapping(value = "/{id}/geopackage", produces = "application/geopackage+sqlite3")
-    public ResponseEntity<Resource> getGeoPackage(@PathVariable String id) {
-        throw new ResponseStatusException(HttpStatus.NOT_IMPLEMENTED, "Not implemented yet");
-    }
-
+    @GetMapping("/{id}/recording-units")
     @Operation(summary = "Récupérer la liste paginée des unités d'enregistrement d'un projet",
             description = "Clé de projet : identique à GET /api/v1/projects/{id} (id numérique, fullIdentifier, identifiant court). "
                     + "Tri : paramètre sort au format « propriété:asc » ou « propriété:desc » "
@@ -155,7 +133,6 @@ public class ProjectControllerApi {
             @ApiResponse(responseCode = "404", description = "Projet introuvable ou non accessible"),
             @ApiResponse(responseCode = "500", description = "Erreur interne")
     })
-    @GetMapping("/{id}/recording-units")
     @Tag(name = OpenApiTags.APPLICATION_MOBILE, description = OpenApiTags.APPLICATION_MOBILE_DESCRIPTION)
     public ResponseEntity<RecordingUnitListResponse> getList(
             @PathVariable("id") String id,
@@ -178,4 +155,18 @@ public class ProjectControllerApi {
                 .body(new RecordingUnitListResponse(resources, meta));
     }
 
+    @Hidden
+    @GetMapping("/{id}/finds")
+    public ResponseEntity<FindListResponse> getFinds(
+            @PathVariable String id,
+            @RequestParam(defaultValue = "0") int offset,
+            @RequestParam(defaultValue = "10") int limit) {
+        throw new ResponseStatusException(HttpStatus.NOT_IMPLEMENTED, "Not implemented yet");
+    }
+
+    @Hidden
+    @GetMapping(value = "/{id}/geopackage", produces = "application/geopackage+sqlite3")
+    public ResponseEntity<Resource> getGeoPackage(@PathVariable String id) {
+        throw new ResponseStatusException(HttpStatus.NOT_IMPLEMENTED, "Not implemented yet");
+    }
 }
