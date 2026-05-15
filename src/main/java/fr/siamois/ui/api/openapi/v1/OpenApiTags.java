@@ -10,6 +10,7 @@ public final class OpenApiTags {
             "Endpoints consommés par l'application mobile Siamois.";
 
     public static final String MOBILIER = "Mobilier";
+    public static final String VOCABULARY = "Vocabulaire";
     public static final String ORGANISATION = "Organisation";
     public static final String PROJECT = "Project";
     public static final String RECORDING_UNIT = "Unité d'enregistrement";

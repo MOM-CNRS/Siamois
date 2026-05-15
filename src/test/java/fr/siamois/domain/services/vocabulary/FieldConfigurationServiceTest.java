@@ -343,4 +343,29 @@ class FieldConfigurationServiceTest {
         assertThat(service.resultLimit()).isEqualTo(FieldConfigurationService.LIMIT_RESULTS);
     }
 
+    @Test
+    void fetchAllConfiguredVocabularies_returnsMapPerFieldCode() throws NoConfigForFieldException {
+        String fieldCode = "TESTFIELD";
+        when(conceptFieldConfigRepository.findDistinctFieldCodesForInstitutionAndUser(
+                userInfo.getInstitution().getId(), userInfo.getUser().getId()))
+                .thenReturn(List.of(fieldCode));
+
+        ConceptFieldConfig cfc = new ConceptFieldConfig();
+        Concept concept = new Concept();
+        concept.setVocabulary(vocabulary);
+        cfc.setConcept(concept);
+        cfc.setFieldCode(fieldCode);
+        when(conceptFieldConfigRepository.findOneByFieldCodeForInstitution(userInfo.getInstitution().getId(), fieldCode))
+                .thenReturn(Optional.of(cfc));
+
+        List<ConceptAutocompleteDTO> expected = List.of(
+                new ConceptAutocompleteDTO(new ConceptDTO(), "A", "fr"));
+        when(autocompleteRepository.findMatchingConceptsFor(cfc.getConcept(), "fr", null, 200))
+                .thenReturn(expected);
+
+        var result = service.fetchAllConfiguredVocabularies(userInfo);
+
+        assertThat(result).containsEntry(fieldCode, expected);
+    }
+
 }
