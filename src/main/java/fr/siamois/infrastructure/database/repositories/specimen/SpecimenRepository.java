@@ -281,5 +281,11 @@ public interface SpecimenRepository extends JpaRepository<Specimen, Long>, Revis
     Optional<Specimen> findFirstByRecordingUnitIdOrderByCreationTimeAsc(Long institutionId);  // oldest
 
     Optional<Specimen> findFirstByRecordingUnitIdOrderByCreationTimeDesc(Long institutionId);
+
+    @Query(nativeQuery = true, value = "SELECT COUNT(*) FROM specimen_movement WHERE fk_specimen_id = :specimenId")
+    long countMovementsBySpecimenId(@Param("specimenId") long specimenId);
+
+    @Query(nativeQuery = true, value = "SELECT COUNT(*) FROM specimen_group_attribution WHERE fk_specimen_id = :specimenId")
+    long countGroupAttributionsBySpecimenId(@Param("specimenId") long specimenId);
 }
 

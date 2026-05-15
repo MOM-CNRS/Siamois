@@ -130,4 +130,31 @@ public class MobilierControllerApi {
                 id, body, caller.person(), caller.accessibleInstitutionIds(), lang);
         return ResponseEntity.ok(new FindResponse(resource));
     }
+
+    @DeleteMapping("/{id}")
+    @Operation(
+            summary = "Supprimer un mobilier",
+            description = "Supprime le spécimen identifié par `specimen_id` (identifiant numérique). "
+                    + "Droit d'écriture requis sur l'UE parente. "
+                    + "Refus (409) si le mobilier a des mouvements ou appartient à un groupe de spécimens. "
+                    + "Les documents liés sont détachés mais non supprimés."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "204", description = "Supprimé"),
+            @ApiResponse(responseCode = "401", description = "Non authentifié"),
+            @ApiResponse(responseCode = "403", description = "Interdit"),
+            @ApiResponse(responseCode = "404", description = "Mobilier introuvable ou hors périmètre"),
+            @ApiResponse(responseCode = "409", description = "Suppression impossible (mouvements ou groupes)"),
+            @ApiResponse(responseCode = "500", description = "Erreur interne")
+    })
+    public ResponseEntity<Void> deleteFind(
+            @Parameter(description = "Identifiant numérique du spécimen (specimen_id).", example = "42")
+            @PathVariable("id") long id,
+            @RequestHeader(value = HttpHeaders.ACCEPT_LANGUAGE, required = false) String acceptLanguage) {
+
+        ProjectApiCaller caller = projectApiService.requireCaller();
+        String lang = ProjectApiService.primaryAcceptLanguage(acceptLanguage);
+        findOpenApiService.deleteFind(id, caller.person(), caller.accessibleInstitutionIds(), lang);
+        return ResponseEntity.noContent().build();
+    }
 }
