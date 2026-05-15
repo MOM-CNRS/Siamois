@@ -52,7 +52,6 @@ import fr.siamois.ui.api.openapi.v1.OpenApiExecutionContext;
 import fr.siamois.ui.api.openapi.v1.OpenApiParamIds;
 import fr.siamois.ui.api.openapi.v1.mapper.RecordingUnitResponseMapper;
 import fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitResource;
-import fr.siamois.ui.api.openapi.v1.response.find.FindFormData;
 import fr.siamois.ui.api.openapi.v1.response.find.FindMobilierFormData;
 import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitChildrenData;
 import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitCreateFormData;
@@ -230,34 +229,20 @@ public class RecordingUnitOpenApiService {
     }
 
     /**
-     * Formulaire de création d'un mobilier : résolution par UE (institution) et type de spécimen,
-     * sans entité persistée (même mécanisme que {@link #buildRecordingUnitCreateForm}).
+     * Gabarit UI mobilier pour une organisation : layout et métadonnées des champs (sans valeurs saisies).
+     * Utilise le formulaire personnalisé « générique » de l'institution (sans type de spécimen).
+     * Vocabulaires : {@code GET /api/v1/vocabularies}. Valeurs d'un mobilier existant : {@link #buildFindMobilierForm}.
      */
     @Transactional(readOnly = true)
-    public FindFormData buildFindCreateForm(String recordingUnitKey,
-                                            String specimenTypeConceptId,
-                                            PersonDTO personDto,
-                                            Set<Long> accessibleInstitutionIds,
-                                            String lang) {
-        RecordingUnitDTO ru = recordingUnitService.findAccessibleRecordingUnitByKey(
-                recordingUnitKey, accessibleInstitutionIds, null);
-        InstitutionDTO institution = ru.getCreatedByInstitution();
-        if (institution == null || institution.getId() == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "UE sans organisation");
-        }
-        UserInfo userInfo = new UserInfo(institution, personDto, lang);
-        if (!permissionService.hasWritePermission(userInfo, ru)) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Création de mobilier non autorisée sur cette UE");
+    public FindMobilierFormData buildFindMobilierUiForm(long organizationId, PersonDTO personDto, String lang) {
+        InstitutionDTO institution = institutionService.findById(organizationId);
+        if (institution == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Organization not found");
         }
 
-        long typeConceptId = OpenApiParamIds.parseRequiredConceptId(specimenTypeConceptId, "specimenTypeConceptId");
-        Concept typeConcept = conceptRepository.findById(typeConceptId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Type de mobilier introuvable"));
-        ConceptDTO typeDto = conceptMapper.convert(typeConcept);
-
-        CustomForm customForm = formService.findCustomFormByRecordingUnitTypeAndInstitutionId(typeDto, institution);
+        CustomForm customForm = formService.findCustomFormByRecordingUnitTypeAndInstitutionId(null, institution);
         if (customForm == null) {
-            return new FindFormData(typeDto, null, Map.of(), Map.of());
+            return new FindMobilierFormData(null, Map.of());
         }
 
         FormUiDto formUiDto = conversionService.convert(customForm, FormUiDto.class);
@@ -266,27 +251,16 @@ public class RecordingUnitOpenApiService {
         RecordingUnitFormBundle formBundle = new RecordingUnitFormBundle(
                 customForm.getId(), customForm.getName(), customForm.getDescription(), layoutJson);
 
-        SpecimenDTO shell = new SpecimenDTO();
-        shell.setRecordingUnit(new RecordingUnitSummaryDTO(ru));
-        shell.setCreatedByInstitution(institution);
-        shell.setType(typeDto);
-        shell.setCreatedBy(personDto);
-        shell.setAuthors(new ArrayList<>(List.of(personDto)));
-        shell.setCollectors(new ArrayList<>(List.of(personDto)));
-        shell.setCollectionDate(OffsetDateTime.now());
-        shell.setValidated(ValidationStatus.INCOMPLETE);
-
+        UserInfo userInfo = new UserInfo(institution, personDto, lang);
         Locale locale = langService.localeForApiLang(lang);
         Map<String, RecordingUnitFormFieldApi> fields = OpenApiExecutionContext.callWithUserInfo(
-                userInfo, () -> buildCustomFormFieldsForBindTarget(
-                        shell, fieldSource, "création mobilier", typeDto.getId(), locale));
-        Map<String, List<ConceptAutocompleteDTO>> vocabs = loadVocabularies(fieldSource, userInfo);
+                userInfo, () -> buildFieldsMetadataOnly(fieldSource, locale));
 
-        return new FindFormData(typeDto, formBundle, fields, vocabs);
+        return new FindMobilierFormData(formBundle, fields);
     }
 
     /**
-     * Formulaire d'édition d'un mobilier existant : layout et champs avec valeurs persistées (sans vocabulaires).
+     * Mobilier existant : layout, champs et valeurs persistées (sans vocabulaires).
      */
     @Transactional(readOnly = true)
     public FindMobilierFormData buildFindMobilierForm(String idOrKey,

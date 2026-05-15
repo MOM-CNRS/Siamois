@@ -1,15 +1,11 @@
 package fr.siamois.ui.api.openapi.v1.service;
 
-import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.document.Document;
-import fr.siamois.domain.models.exceptions.vocabulary.NoConfigForFieldException;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.InstitutionService;
-import fr.siamois.domain.services.vocabulary.FieldConfigurationService;
 import fr.siamois.dto.entity.ConceptDTO;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.PersonDTO;
-import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
 import fr.siamois.mapper.ConceptMapper;
 import fr.siamois.ui.api.openapi.v1.response.document.DocumentFormData;
 import org.junit.jupiter.api.BeforeEach;
@@ -19,14 +15,10 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.util.List;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -34,8 +26,6 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class DocumentFormOpenApiServiceTest {
 
-    @Mock
-    private FieldConfigurationService fieldConfigurationService;
     @Mock
     private InstitutionService institutionService;
     @Mock
@@ -47,8 +37,7 @@ class DocumentFormOpenApiServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new DocumentFormOpenApiService(
-                fieldConfigurationService, institutionService, documentContentOpenApiService, conceptMapper);
+        service = new DocumentFormOpenApiService(institutionService, documentContentOpenApiService, conceptMapper);
     }
 
     @Test
@@ -62,60 +51,26 @@ class DocumentFormOpenApiServiceTest {
     }
 
     @Test
-    void buildForm_creation_returnsFieldsAndVocabularies() throws NoConfigForFieldException {
+    void buildForm_creation_returnsFieldsOnly() {
         PersonDTO person = new PersonDTO();
         InstitutionDTO inst = new InstitutionDTO();
         inst.setId(10L);
         when(institutionService.findById(10L)).thenReturn(inst);
-
-        ConceptAutocompleteDTO n1 = mock(ConceptAutocompleteDTO.class);
-        when(fieldConfigurationService.fetchAutocomplete(any(UserInfo.class), eq(Document.NATURE_FIELD_CODE), isNull()))
-                .thenReturn(List.of(n1));
-        when(fieldConfigurationService.fetchAutocomplete(any(UserInfo.class), eq(Document.SCALE_FIELD_CODE), isNull()))
-                .thenReturn(List.of());
-        when(fieldConfigurationService.fetchAutocomplete(any(UserInfo.class), eq(Document.FORMAT_FIELD_CODE), isNull()))
-                .thenReturn(List.of());
 
         DocumentFormData data = service.buildForm(person, 10L, Set.of(10L), "fr", null);
 
         assertThat(data.fields()).hasSize(6);
         assertThat(data.fields().get(2).fieldKey()).isEqualTo("nature");
         assertThat(data.fields().get(2).fieldCode()).isEqualTo(Document.NATURE_FIELD_CODE);
-        assertThat(data.vocabulariesByFieldCode().get(Document.NATURE_FIELD_CODE)).containsExactly(n1);
         assertThat(data.currentValues()).isNull();
     }
 
     @Test
-    void buildForm_noConfigForField_returnsEmptyList() throws NoConfigForFieldException {
+    void buildForm_withDocumentId_returnsCurrentValues() {
         PersonDTO person = new PersonDTO();
         InstitutionDTO inst = new InstitutionDTO();
         inst.setId(10L);
         when(institutionService.findById(10L)).thenReturn(inst);
-
-        when(fieldConfigurationService.fetchAutocomplete(any(UserInfo.class), eq(Document.NATURE_FIELD_CODE), isNull()))
-                .thenThrow(new NoConfigForFieldException(Document.NATURE_FIELD_CODE));
-        when(fieldConfigurationService.fetchAutocomplete(any(UserInfo.class), eq(Document.SCALE_FIELD_CODE), isNull()))
-                .thenReturn(List.of());
-        when(fieldConfigurationService.fetchAutocomplete(any(UserInfo.class), eq(Document.FORMAT_FIELD_CODE), isNull()))
-                .thenReturn(List.of());
-
-        DocumentFormData data = service.buildForm(person, 10L, Set.of(10L), "fr", null);
-
-        assertThat(data.vocabulariesByFieldCode().get(Document.NATURE_FIELD_CODE)).isEmpty();
-    }
-
-    @Test
-    void buildForm_withDocumentId_returnsCurrentValues() throws NoConfigForFieldException {
-        PersonDTO person = new PersonDTO();
-        InstitutionDTO inst = new InstitutionDTO();
-        inst.setId(10L);
-        when(institutionService.findById(10L)).thenReturn(inst);
-        when(fieldConfigurationService.fetchAutocomplete(any(UserInfo.class), eq(Document.NATURE_FIELD_CODE), isNull()))
-                .thenReturn(List.of());
-        when(fieldConfigurationService.fetchAutocomplete(any(UserInfo.class), eq(Document.SCALE_FIELD_CODE), isNull()))
-                .thenReturn(List.of());
-        when(fieldConfigurationService.fetchAutocomplete(any(UserInfo.class), eq(Document.FORMAT_FIELD_CODE), isNull()))
-                .thenReturn(List.of());
 
         Document doc = mock(Document.class);
         when(documentContentOpenApiService.requireAccessibleDocument(5L, Set.of(10L))).thenReturn(doc);

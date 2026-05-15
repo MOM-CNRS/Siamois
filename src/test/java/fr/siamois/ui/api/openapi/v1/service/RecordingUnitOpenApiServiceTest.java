@@ -36,7 +36,6 @@ import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptReposit
 import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
 import fr.siamois.ui.api.openapi.v1.mapper.RecordingUnitResponseMapper;
 import fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitResource;
-import fr.siamois.ui.api.openapi.v1.response.find.FindFormData;
 import fr.siamois.ui.api.openapi.v1.response.find.FindMobilierFormData;
 import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitChildrenData;
 import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitCreateFormData;
@@ -854,71 +853,25 @@ class RecordingUnitOpenApiServiceTest {
     }
 
     @Test
-    void buildFindCreateForm_whenNoInstitution_throws400() {
-        RecordingUnitDTO ru = new RecordingUnitDTO();
-        ru.setId(12L);
-        ru.setCreatedByInstitution(null);
-        when(recordingUnitService.findAccessibleRecordingUnitByKey("12", SCOPE, null)).thenReturn(ru);
+    void buildFindMobilierUiForm_unknownOrganization_throws404() {
+        when(institutionService.findById(10L)).thenReturn(null);
 
-        assertThatThrownBy(() -> service.buildFindCreateForm("12", "42", personDto, SCOPE, "fr"))
-                .isInstanceOf(ResponseStatusException.class)
-                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode().value()).isEqualTo(400));
-    }
-
-    @Test
-    void buildFindCreateForm_whenForbidden_throws403() {
-        InstitutionDTO inst = new InstitutionDTO();
-        inst.setId(10L);
-        RecordingUnitDTO ru = new RecordingUnitDTO();
-        ru.setId(12L);
-        ru.setCreatedByInstitution(inst);
-        when(recordingUnitService.findAccessibleRecordingUnitByKey("12", SCOPE, null)).thenReturn(ru);
-        when(permissionService.hasWritePermission(any(), eq(ru))).thenReturn(false);
-
-        assertThatThrownBy(() -> service.buildFindCreateForm("12", "42", personDto, SCOPE, "fr"))
-                .isInstanceOf(ResponseStatusException.class)
-                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode().value()).isEqualTo(403));
-    }
-
-    @Test
-    void buildFindCreateForm_unknownType_throws404() {
-        InstitutionDTO inst = new InstitutionDTO();
-        inst.setId(10L);
-        RecordingUnitDTO ru = new RecordingUnitDTO();
-        ru.setId(12L);
-        ru.setCreatedByInstitution(inst);
-        when(recordingUnitService.findAccessibleRecordingUnitByKey("12", SCOPE, null)).thenReturn(ru);
-        when(permissionService.hasWritePermission(any(), eq(ru))).thenReturn(true);
-        when(conceptRepository.findById(99L)).thenReturn(Optional.empty());
-
-        assertThatThrownBy(() -> service.buildFindCreateForm("12", "99", personDto, SCOPE, "fr"))
+        assertThatThrownBy(() -> service.buildFindMobilierUiForm(10L, personDto, "fr"))
                 .isInstanceOf(ResponseStatusException.class)
                 .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode().value()).isEqualTo(404));
     }
 
     @Test
-    void buildFindCreateForm_whenNoCustomForm_returnsTypeOnly() {
+    void buildFindMobilierUiForm_whenNoCustomForm_returnsEmptyFields() {
         InstitutionDTO inst = new InstitutionDTO();
         inst.setId(10L);
-        RecordingUnitDTO ru = new RecordingUnitDTO();
-        ru.setId(12L);
-        ru.setCreatedByInstitution(inst);
-        when(recordingUnitService.findAccessibleRecordingUnitByKey("12", SCOPE, null)).thenReturn(ru);
-        when(permissionService.hasWritePermission(any(), eq(ru))).thenReturn(true);
+        when(institutionService.findById(10L)).thenReturn(inst);
+        when(formService.findCustomFormByRecordingUnitTypeAndInstitutionId(null, inst)).thenReturn(null);
 
-        Concept concept = mock(Concept.class);
-        when(conceptRepository.findById(42L)).thenReturn(Optional.of(concept));
-        ConceptDTO typeDto = new ConceptDTO();
-        typeDto.setId(42L);
-        when(conceptMapper.convert(concept)).thenReturn(typeDto);
-        when(formService.findCustomFormByRecordingUnitTypeAndInstitutionId(typeDto, inst)).thenReturn(null);
+        FindMobilierFormData data = service.buildFindMobilierUiForm(10L, personDto, "fr");
 
-        FindFormData data = service.buildFindCreateForm("12", "42", personDto, SCOPE, "fr");
-
-        assertThat(data.specimenType().getId()).isEqualTo(42L);
         assertThat(data.form()).isNull();
         assertThat(data.fields()).isEmpty();
-        assertThat(data.vocabulariesByFieldCode()).isEmpty();
     }
 
     @Test

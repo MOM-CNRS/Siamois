@@ -36,11 +36,11 @@ public class DocumentsControllerApi {
     @GetMapping("/form")
     @Operation(
             summary = "Formulaire création / édition d'un document",
-            description = "Définition des champs (titre, description, nature, échelle, format, fichier) et listes de concepts "
-                    + "pour SIAD.NATURE, SIAD.SCALE et SIAD.FORMAT, selon la configuration utilisateur / institution de l'organisation. "
+            description = "Définition des champs (titre, description, nature, échelle, format, fichier). "
+                    + "Les listes de concepts (SIAD.NATURE, SIAD.SCALE, SIAD.FORMAT) sont fournies par GET /api/v1/vocabularies. "
                     + "Paramètre optionnel `documentId` : valeurs courantes pour pré-remplissage si le document est accessible "
                     + "(même règle d'institution que le téléchargement). "
-                    + "Langue des libellés : en-tête Accept-Language."
+                    + "Langue des libellés des valeurs courantes : en-tête Accept-Language."
     )
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Ok"),
@@ -50,11 +50,11 @@ public class DocumentsControllerApi {
             @ApiResponse(responseCode = "500", description = "Erreur interne")
     })
     public ResponseEntity<DocumentFormResponse> getDocumentForm(
-            @Parameter(description = "Institution pour la résolution des vocabulaires (doit être dans le périmètre JWT).", example = "10")
+            @Parameter(description = "Institution du document (doit être dans le périmètre JWT).", example = "10")
             @RequestParam("organizationId") long organizationId,
             @Parameter(description = "Optionnel : identifiant du document à éditer (pré-remplissage).", example = "42")
             @RequestParam(value = "documentId", required = false) Long documentId,
-            @Parameter(description = "Langue préférée pour les libellés de vocabulaire (première entrée utilisée).")
+            @Parameter(description = "Langue préférée pour les libellés des valeurs courantes (première entrée utilisée).")
             @RequestHeader(value = HttpHeaders.ACCEPT_LANGUAGE, required = false) String acceptLanguage) {
 
         ProjectApiCaller caller = projectApiService.requireCaller();
