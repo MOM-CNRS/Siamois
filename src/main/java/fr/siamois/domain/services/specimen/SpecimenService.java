@@ -7,6 +7,8 @@ import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.specimen.Specimen;
 import fr.siamois.domain.services.ArkEntityService;
 import fr.siamois.dto.entity.*;
+import fr.siamois.infrastructure.database.repositories.ArkRepository;
+import fr.siamois.infrastructure.database.repositories.DocumentRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitRepository;
 import fr.siamois.infrastructure.database.repositories.specimen.SpecimenFindSortSql;
 import fr.siamois.infrastructure.database.repositories.specimen.SpecimenRepository;
@@ -37,6 +39,8 @@ public class SpecimenService implements ArkEntityService {
     private final SpecimenMapper specimenMapper;
     private final SpecimenSummaryMapper specimenSummaryMapper;
     private final InstitutionMapper institutionMapper;
+    private final DocumentRepository documentRepository;
+    private final ArkRepository arkRepository;
 
 
 
@@ -520,6 +524,45 @@ public class SpecimenService implements ArkEntityService {
                 .stream()
                 .map(specimenSummaryMapper::convert)
                 .toList();
+    }
+
+    /**
+     * Supprime un mobilier (spécimen) sans mouvements ni rattachement à un groupe.
+     * Détache les documents (sans les supprimer) et supprime l'ARK associé.
+     *
+     * @throws IllegalArgumentException si le spécimen n'existe pas
+     * @throws IllegalStateException si la suppression est interdite (contenu bloquant)
+     */
+    @Transactional
+    public void deleteSpecimenById(long specimenId) {
+        Specimen specimen = specimenRepository.findById(specimenId)
+                .orElseThrow(() -> new IllegalArgumentException("Mobilier introuvable: " + specimenId));
+
+        if (specimenRepository.countMovementsBySpecimenId(specimenId) > 0) {
+            throw new IllegalStateException("Impossible de supprimer : le mobilier a des mouvements associés");
+        }
+        if (specimenRepository.countGroupAttributionsBySpecimenId(specimenId) > 0) {
+            throw new IllegalStateException("Impossible de supprimer : le mobilier appartient à un ou plusieurs groupes");
+        }
+
+        documentRepository.deleteAllSpecimenDocumentLinksBySpecimenId(specimenId);
+
+        if (specimen.getAuthors() != null) {
+            specimen.getAuthors().clear();
+        }
+        if (specimen.getCollectors() != null) {
+            specimen.getCollectors().clear();
+        }
+        if (specimen.getDocuments() != null) {
+            specimen.getDocuments().clear();
+        }
+
+        Long arkId = specimen.getArk() != null ? specimen.getArk().getInternalId() : null;
+        specimenRepository.delete(specimen);
+
+        if (arkId != null) {
+            arkRepository.deleteById(arkId);
+        }
     }
 
 }

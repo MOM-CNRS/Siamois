@@ -38,6 +38,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -159,5 +160,28 @@ class FindControllerApiTest {
                         .content("{}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.resourceId").value("3"));
+    }
+
+    @Test
+    void delete_returns204() throws Exception {
+        when(projectApiService.requireCaller())
+                .thenReturn(new ProjectApiCaller(personDto, Set.of(10L), List.of()));
+
+        mockMvc.perform(delete("/api/v1/mobiliers/7"))
+                .andExpect(status().isNoContent());
+
+        verify(findOpenApiService).deleteFind(eq(7L), eq(personDto), eq(Set.of(10L)), eq("fr"));
+    }
+
+    @Test
+    void delete_withoutAuth_returns401() throws Exception {
+        SecurityContextHolder.clearContext();
+        when(projectApiService.requireCaller())
+                .thenThrow(new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authentification requise"));
+
+        mockMvc.perform(delete("/api/v1/mobiliers/7"))
+                .andExpect(status().isUnauthorized());
+
+        verifyNoInteractions(findOpenApiService);
     }
 }

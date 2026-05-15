@@ -187,6 +187,39 @@ public class FindOpenApiService {
         return findOpenApiMapper.toResource(saved);
     }
 
+    @Transactional
+    public void deleteFind(long specimenId,
+                           PersonDTO personDto,
+                           Set<Long> accessibleInstitutionIds,
+                           String lang) {
+        SpecimenDTO dto = specimenService.findAccessibleById(specimenId, accessibleInstitutionIds)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Mobilier introuvable ou hors périmètre"));
+
+        InstitutionDTO institution = dto.getCreatedByInstitution();
+        if (institution == null || institution.getId() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Mobilier sans organisation");
+        }
+        RecordingUnitSummaryDTO ruSum = dto.getRecordingUnit();
+        if (ruSum == null || ruSum.getId() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Mobilier sans unité d'enregistrement");
+        }
+        RecordingUnitDTO ru = recordingUnitService.requireAccessibleRecordingUnitByPrimaryKey(
+                ruSum.getId(), accessibleInstitutionIds);
+
+        UserInfo userInfo = new UserInfo(institution, personDto, lang);
+        if (!permissionService.hasWritePermission(userInfo, ru)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Suppression non autorisée");
+        }
+
+        try {
+            specimenService.deleteSpecimenById(specimenId);
+        } catch (IllegalStateException e) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, e.getMessage(), e);
+        } catch (IllegalArgumentException e) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage(), e);
+        }
+    }
+
     private void mergeFieldAnswers(CustomFormResponseViewModel response,
                                    FieldSource fieldSource,
                                    Map<String, Object> fieldAnswers) {
