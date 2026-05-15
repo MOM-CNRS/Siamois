@@ -154,7 +154,7 @@ public class RecordingUnitOpenApiService {
 
     /**
      * Gabarit UI du formulaire système projet ({@link ActionUnit#DETAILS_FORM}) : layout et métadonnées des champs.
-     * Vocabulaires : {@code GET /api/v1/vocabularies}. Valeurs d'un projet existant : {@link #buildProjectDetailForm}.
+     * Vocabulaires : {@code GET /api/v1/vocabularies}.
      */
     @Transactional(readOnly = true)
     public ProjectFormData buildProjectUiForm(long organizationId, PersonDTO personDto, String lang) {
@@ -162,19 +162,7 @@ public class RecordingUnitOpenApiService {
         if (institution == null) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Organization not found");
         }
-        return buildProjectFormBundle(institution, personDto, lang, null);
-    }
-
-    /**
-     * Projet existant : formulaire système avec valeurs persistées (sans vocabulaires).
-     */
-    @Transactional(readOnly = true)
-    public ProjectFormData buildProjectDetailForm(ActionUnitDTO dto, PersonDTO personDto, String lang) {
-        InstitutionDTO institution = dto.getCreatedByInstitution();
-        if (institution == null || institution.getId() == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Projet sans organisation de rattachement");
-        }
-        return buildProjectFormBundle(institution, personDto, lang, dto);
+        return buildProjectFormBundle(institution, personDto, lang);
     }
 
     /**
@@ -204,8 +192,7 @@ public class RecordingUnitOpenApiService {
 
     private ProjectFormData buildProjectFormBundle(InstitutionDTO institution,
                                                    PersonDTO personDto,
-                                                   String lang,
-                                                   ActionUnitDTO dtoOrNull) {
+                                                   String lang) {
         CustomForm systemForm = ActionUnit.DETAILS_FORM;
         FormUiDto formUiDto = conversionService.convert(systemForm, FormUiDto.class);
         FieldSource fieldSource = new PanelFieldSource(formUiDto);
@@ -218,18 +205,8 @@ public class RecordingUnitOpenApiService {
 
         UserInfo userInfo = new UserInfo(institution, personDto, lang);
         Locale locale = langService.localeForApiLang(lang);
-        Map<String, RecordingUnitFormFieldApi> fields = OpenApiExecutionContext.callWithUserInfo(userInfo, () -> {
-            if (dtoOrNull == null) {
-                return buildFieldsMetadataOnly(fieldSource, locale);
-            }
-            try {
-                CustomFormResponseViewModel response = formService.initOrReuseResponse(null, dtoOrNull, fieldSource, true);
-                return toFieldsMap(response, fieldSource, locale);
-            } catch (RuntimeException ex) {
-                log.warn("Impossible d'initialiser le formulaire projet id={}: {}", dtoOrNull.getId(), ex.toString(), ex);
-                return buildFieldsMetadataOnly(fieldSource, locale);
-            }
-        });
+        Map<String, RecordingUnitFormFieldApi> fields = OpenApiExecutionContext.callWithUserInfo(
+                userInfo, () -> buildFieldsMetadataOnly(fieldSource, locale));
         return new ProjectFormData(formBundle, fields);
     }
 
