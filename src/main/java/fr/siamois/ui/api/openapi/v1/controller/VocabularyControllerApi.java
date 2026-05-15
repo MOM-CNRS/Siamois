@@ -1,12 +1,11 @@
 package fr.siamois.ui.api.openapi.v1.controller;
 
-import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.ui.api.openapi.v1.OpenApiTags;
-import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitTypeOptionsData;
-import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitTypeOptionsResponse;
+import fr.siamois.ui.api.openapi.v1.response.vocabulary.VocabulariesData;
+import fr.siamois.ui.api.openapi.v1.response.vocabulary.VocabulariesResponse;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiCaller;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiService;
-import fr.siamois.ui.api.openapi.v1.service.RecordingUnitTypeOpenApiService;
+import fr.siamois.ui.api.openapi.v1.service.VocabularyOpenApiService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -22,43 +21,43 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/v1/recording-unit-types")
-@Tag(name = OpenApiTags.RECORDING_UNIT, description = "Types d'unité d'enregistrement")
+@RequestMapping("/api/v1/vocabularies")
+@Tag(name = OpenApiTags.VOCABULARY, description = "Vocabulaires contrôlés (thésaurus par field_code)")
 @RequiredArgsConstructor
-public class RecordingUnitTypeSearchControllerApi {
+public class VocabularyControllerApi {
 
     private final ProjectApiService projectApiService;
-    private final RecordingUnitTypeOpenApiService recordingUnitTypeOpenApiService;
+    private final VocabularyOpenApiService vocabularyOpenApiService;
 
     @GetMapping
     @Operation(
-            summary = "Types d'unité d'enregistrement possibles",
-            description = "Retourne les concepts du vocabulaire contrôlé `" + RecordingUnit.TYPE_FIELD_CODE + "` "
-                    + "configurés pour l'organisation (même source que l'autocomplete web). "
-                    + "Paramètre `q` optionnel pour filtrer sur le libellé. "
-                    + "Pour créer une UE : `recordingUnitTypeConceptId` = identifiant du concept (`types[].conceptLabelToDisplay.concept.id`)."
+            summary = "Tous les vocabulaires configurés pour une organisation",
+            description = "Retourne, pour chaque `field_code` configuré (institution ou préférence utilisateur), "
+                    + "la liste des concepts disponibles (même format que `vocabulariesByFieldCode` sur les formulaires). "
+                    + "Jusqu'à " + fr.siamois.domain.services.vocabulary.FieldConfigurationService.LIMIT_RESULTS
+                    + " concepts par field_code. "
+                    + "Paramètre `organizationId` : institution dans le périmètre JWT. "
+                    + "Langue des libellés : en-tête Accept-Language."
     )
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Ok (liste vide si pas de config vocabulaire pour ce champ)"),
+            @ApiResponse(responseCode = "200", description = "Ok (map vide si aucune configuration)"),
             @ApiResponse(responseCode = "401", description = "Non authentifié"),
             @ApiResponse(responseCode = "403", description = "Organisation hors périmètre"),
             @ApiResponse(responseCode = "404", description = "Organisation introuvable"),
             @ApiResponse(responseCode = "500", description = "Erreur interne")
     })
     @Tag(name = OpenApiTags.APPLICATION_MOBILE, description = OpenApiTags.APPLICATION_MOBILE_DESCRIPTION)
-    public ResponseEntity<RecordingUnitTypeOptionsResponse> listTypes(
+    public ResponseEntity<VocabulariesResponse> listVocabularies(
             @Parameter(description = "Institution (doit être dans le périmètre JWT).", example = "10", required = true)
             @RequestParam long organizationId,
-            @Parameter(description = "Filtre optionnel sur le libellé (autocomplete).")
-            @RequestParam(required = false) String q,
+            @Parameter(description = "Langue préférée pour les libellés (première entrée utilisée).")
             @RequestHeader(value = HttpHeaders.ACCEPT_LANGUAGE, required = false) String acceptLanguage) {
 
         ProjectApiCaller caller = projectApiService.requireCaller();
         projectApiService.assertOrganizationInCallerScope(organizationId, caller.accessibleInstitutionIds());
         String lang = ProjectApiService.primaryAcceptLanguage(acceptLanguage);
-        var types = recordingUnitTypeOpenApiService.listRecordingUnitTypes(
-                organizationId, caller.person(), lang, q);
-        RecordingUnitTypeOptionsData data = new RecordingUnitTypeOptionsData(RecordingUnit.TYPE_FIELD_CODE, types);
-        return ResponseEntity.ok(new RecordingUnitTypeOptionsResponse(data));
+        VocabulariesData data = vocabularyOpenApiService.listVocabulariesForOrganization(
+                organizationId, caller.person(), lang);
+        return ResponseEntity.ok(new VocabulariesResponse(data));
     }
 }
