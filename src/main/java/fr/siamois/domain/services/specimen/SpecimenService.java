@@ -265,6 +265,39 @@ public class SpecimenService implements ArkEntityService {
         return Optional.of(dto);
     }
 
+    /**
+     * Spécimen accessible par clé API : {@code specimen_id} numérique ou {@code full_identifier}.
+     */
+    @Transactional(readOnly = true)
+    public Optional<SpecimenDTO> findAccessibleByKey(String idOrKey, Set<Long> accessibleInstitutionIds) {
+        if (accessibleInstitutionIds == null || accessibleInstitutionIds.isEmpty()) {
+            return Optional.empty();
+        }
+        String key = idOrKey == null ? "" : idOrKey.trim();
+        if (key.isEmpty()) {
+            return Optional.empty();
+        }
+
+        if (key.chars().allMatch(Character::isDigit)) {
+            try {
+                long numericId = Long.parseLong(key);
+                Optional<SpecimenDTO> byPk = findAccessibleById(numericId, accessibleInstitutionIds);
+                if (byPk.isPresent()) {
+                    return byPk;
+                }
+                return findAccessibleByFullIdentifier(key, accessibleInstitutionIds);
+            } catch (NumberFormatException e) {
+                return findAccessibleByFullIdentifier(key, accessibleInstitutionIds);
+            }
+        }
+        return findAccessibleByFullIdentifier(key, accessibleInstitutionIds);
+    }
+
+    private Optional<SpecimenDTO> findAccessibleByFullIdentifier(String fullIdentifier,
+                                                                 Set<Long> accessibleInstitutionIds) {
+        return specimenRepository.findFirstByFullIdentifierAndInstitutionIdIn(fullIdentifier, accessibleInstitutionIds)
+                .map(specimenMapper::convert);
+    }
 
     /**
      * Finds all specimens by institution and full identifier containing the specified string,

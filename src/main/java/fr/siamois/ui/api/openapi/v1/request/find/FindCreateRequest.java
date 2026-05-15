@@ -8,7 +8,7 @@ import java.util.Map;
 
 /**
  * Création d'un mobilier (spécimen) sur une UE : type (concept) et valeurs par id de champ
- * (comme GET /mobiliers/creation-form).
+ * (clés = identifiants custom_field).
  */
 @Data
 @Schema(description = "Création d'un mobilier")

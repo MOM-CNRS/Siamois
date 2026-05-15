@@ -3,11 +3,10 @@ package fr.siamois.ui.api.openapi.v1.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import fr.siamois.domain.models.auth.Person;
-import fr.siamois.dto.entity.ConceptDTO;
 import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.ui.api.handler.RestExceptionHandler;
 import fr.siamois.ui.api.openapi.v1.resource.find.FindResource;
-import fr.siamois.ui.api.openapi.v1.response.find.FindFormData;
+import fr.siamois.ui.api.openapi.v1.response.find.FindMobilierFormData;
 import fr.siamois.ui.api.openapi.v1.service.FindOpenApiService;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiCaller;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiService;
@@ -34,7 +33,6 @@ import java.util.Map;
 import java.util.Set;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
@@ -88,67 +86,45 @@ class FindControllerApiTest {
     }
 
     @Test
-    void getFindForm_withoutAuth_returns401() throws Exception {
+    void getById_withoutAuth_returns401() throws Exception {
         SecurityContextHolder.clearContext();
         when(projectApiService.requireCaller())
                 .thenThrow(new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authentification requise"));
 
-        mockMvc.perform(get("/api/v1/mobiliers/5/form"))
+        mockMvc.perform(get("/api/v1/mobiliers/5"))
                 .andExpect(status().isUnauthorized());
 
         verifyNoInteractions(recordingUnitOpenApiService);
     }
 
     @Test
-    void getFindForm_success_returnsJson() throws Exception {
+    void getById_success_returnsFormAndFieldsOnly() throws Exception {
         when(projectApiService.requireCaller())
                 .thenReturn(new ProjectApiCaller(personDto, Set.of(10L), List.of()));
 
-        ConceptDTO type = new ConceptDTO();
-        type.setId(2L);
-        FindFormData payload = new FindFormData(type, null, Map.of(), Map.of());
-        when(recordingUnitOpenApiService.buildFindForm(eq(5L), eq(personDto), eq(Set.of(10L)), eq("fr")))
+        FindMobilierFormData payload = new FindMobilierFormData(null, Map.of());
+        when(recordingUnitOpenApiService.buildFindMobilierForm(eq("5"), eq(personDto), eq(Set.of(10L)), eq("fr")))
                 .thenReturn(payload);
 
-        mockMvc.perform(get("/api/v1/mobiliers/5/form")
+        mockMvc.perform(get("/api/v1/mobiliers/5")
                         .header(HttpHeaders.ACCEPT_LANGUAGE, "fr"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.specimenType.id").value(2));
+                .andExpect(jsonPath("$.data.fields").isEmpty())
+                .andExpect(jsonPath("$.data.specimenType").doesNotExist())
+                .andExpect(jsonPath("$.data.vocabulariesByFieldCode").doesNotExist());
 
-        verify(recordingUnitOpenApiService).buildFindForm(5L, personDto, Set.of(10L), "fr");
+        verify(recordingUnitOpenApiService).buildFindMobilierForm("5", personDto, Set.of(10L), "fr");
     }
 
     @Test
-    void getFindForm_passesAcceptLanguageToService() throws Exception {
+    void getById_whenNotFound_returns404() throws Exception {
         when(projectApiService.requireCaller())
                 .thenReturn(new ProjectApiCaller(personDto, Set.of(10L), List.of()));
+        when(recordingUnitOpenApiService.buildFindMobilierForm(anyString(), any(), any(), any()))
+                .thenThrow(new ResponseStatusException(HttpStatus.NOT_FOUND, "Mobilier introuvable ou hors périmètre"));
 
-        ConceptDTO type = new ConceptDTO();
-        type.setId(1L);
-        when(recordingUnitOpenApiService.buildFindForm(eq(9L), eq(personDto), eq(Set.of(10L)), eq("en")))
-                .thenReturn(new FindFormData(type, null, Map.of(), Map.of()));
-
-        mockMvc.perform(get("/api/v1/mobiliers/9/form")
-                        .header(HttpHeaders.ACCEPT_LANGUAGE, "en-US,en;q=0.9"))
-                .andExpect(status().isOk());
-
-        verify(recordingUnitOpenApiService).buildFindForm(9L, personDto, Set.of(10L), "en");
-    }
-
-    @Test
-    void getFindForm_withoutAcceptLanguage_defaultsToFrench() throws Exception {
-        when(projectApiService.requireCaller())
-                .thenReturn(new ProjectApiCaller(personDto, Set.of(10L), List.of()));
-
-        ConceptDTO type = new ConceptDTO();
-        type.setId(3L);
-        when(recordingUnitOpenApiService.buildFindForm(eq(7L), eq(personDto), eq(Set.of(10L)), eq("fr")))
-                .thenReturn(new FindFormData(type, null, Map.of(), Map.of()));
-
-        mockMvc.perform(get("/api/v1/mobiliers/7/form"))
-                .andExpect(status().isOk());
-
-        verify(recordingUnitOpenApiService).buildFindForm(7L, personDto, Set.of(10L), "fr");
+        mockMvc.perform(get("/api/v1/mobiliers/99"))
+                .andExpect(status().isNotFound());
     }
 
     @Test
@@ -183,88 +159,5 @@ class FindControllerApiTest {
                         .content("{}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.id").value("3"));
-    }
-
-    @Test
-    void getFindForm_whenNotFound_returns404() throws Exception {
-        when(projectApiService.requireCaller())
-                .thenReturn(new ProjectApiCaller(personDto, Set.of(10L), List.of()));
-        when(recordingUnitOpenApiService.buildFindForm(anyLong(), any(), any(), anyString()))
-                .thenThrow(new ResponseStatusException(HttpStatus.NOT_FOUND, "Find not found"));
-
-        mockMvc.perform(get("/api/v1/finds/99/form"))
-                .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.status").value(404))
-                .andExpect(jsonPath("$.message").value("Find not found"))
-                .andExpect(jsonPath("$.path").value("/api/v1/finds/99/form"));
-    }
-
-    @Test
-    void getFindForm_whenBadRequest_returns400() throws Exception {
-        when(projectApiService.requireCaller())
-                .thenReturn(new ProjectApiCaller(personDto, Set.of(10L), List.of()));
-        when(recordingUnitOpenApiService.buildFindForm(anyLong(), any(), any(), anyString()))
-                .thenThrow(new ResponseStatusException(HttpStatus.BAD_REQUEST, "Find has no owning institution"));
-
-        mockMvc.perform(get("/api/v1/mobiliers/12/form"))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.status").value(400))
-                .andExpect(jsonPath("$.message").value("Find has no owning institution"));
-    }
-
-    @Test
-    void getFindCreateForm_withoutAuth_returns401() throws Exception {
-        SecurityContextHolder.clearContext();
-        when(projectApiService.requireCaller())
-                .thenThrow(new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authentification requise"));
-
-        mockMvc.perform(get("/api/v1/mobiliers/creation-form")
-                        .param("recordingUnitId", "12")
-                        .param("specimenTypeConceptId", "42"))
-                .andExpect(status().isUnauthorized());
-
-        verifyNoInteractions(recordingUnitOpenApiService);
-    }
-
-    @Test
-    void getFindCreateForm_success_returnsJson() throws Exception {
-        when(projectApiService.requireCaller())
-                .thenReturn(new ProjectApiCaller(personDto, Set.of(10L), List.of()));
-
-        ConceptDTO type = new ConceptDTO();
-        type.setId(42L);
-        FindFormData payload = new FindFormData(type, null, Map.of(), Map.of());
-        when(recordingUnitOpenApiService.buildFindCreateForm(
-                eq("12"), eq("42"), eq(personDto), eq(Set.of(10L)), eq("fr")))
-                .thenReturn(payload);
-
-        mockMvc.perform(get("/api/v1/mobiliers/creation-form")
-                        .param("recordingUnitId", "12")
-                        .param("specimenTypeConceptId", "42")
-                        .header(HttpHeaders.ACCEPT_LANGUAGE, "fr"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.specimenType.id").value(42));
-
-        verify(recordingUnitOpenApiService).buildFindCreateForm("12", "42", personDto, Set.of(10L), "fr");
-    }
-
-    @Test
-    void getFindCreateForm_passesAcceptLanguageToService() throws Exception {
-        when(projectApiService.requireCaller())
-                .thenReturn(new ProjectApiCaller(personDto, Set.of(10L), List.of()));
-
-        ConceptDTO type = new ConceptDTO();
-        type.setId(3L);
-        when(recordingUnitOpenApiService.buildFindCreateForm(
-                eq("5"), eq("3"), eq(personDto), eq(Set.of(10L)), eq("en")))
-                .thenReturn(new FindFormData(type, null, Map.of(), Map.of()));
-
-        mockMvc.perform(get("/api/v1/mobiliers/creation-form")
-                        .param("recordingUnitId", "5")
-                        .param("specimenTypeConceptId", "3")
-                        .header(HttpHeaders.ACCEPT_LANGUAGE, "en-US,en;q=0.9"))
-                .andExpect(status().isOk());
-
-        verify(recordingUnitOpenApiService).buildFindCreateForm("5", "3", personDto, Set.of(10L), "en");
     }
 }
