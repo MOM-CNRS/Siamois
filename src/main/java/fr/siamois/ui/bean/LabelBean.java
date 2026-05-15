@@ -8,6 +8,7 @@ import fr.siamois.domain.services.vocabulary.LabelService;
 import fr.siamois.dto.entity.ConceptDTO;
 import fr.siamois.dto.entity.ConceptLabelDTO;
 import fr.siamois.infrastructure.database.repositories.vocabulary.label.ConceptLabelRepository;
+import fr.siamois.utils.context.ExecutionContextHolder;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.event.EventListener;
 import org.springframework.core.convert.ConversionService;
@@ -16,6 +17,7 @@ import org.springframework.stereotype.Service;
 
 import java.io.Serializable;
 import java.util.*;
+import java.util.Locale;
 
 @Service
 @RequiredArgsConstructor
@@ -65,24 +67,30 @@ public class LabelBean implements Serializable {
      */
     @Nullable
     public String findLabelOf(@Nullable ConceptDTO concept) {
-        if (concept == null) return null;
-        UserInfo userInfo = sessionSettingsBean.getUserInfo();
+        if (concept == null) {
+            return null;
+        }
+        String lang = resolveLangCode();
+        UserInfo userInfo = resolveUserInfo();
+        if (userInfo == null) {
+            return labelService.findLabelOf(concept, lang).getLabel();
+        }
         List<ConceptPrefLabel> labels = new ArrayList<>();
 
-        Optional<String> preferedLang =  searchMatchingLangAndPrefLabel(userInfo.getLang(), concept, labels);
-        if (preferedLang.isPresent()) {
-            addToCache(userInfo.getLang(), concept, preferedLang.get());
-            return preferedLang.get();
+        Optional<String> preferred = searchMatchingLangAndPrefLabel(lang, concept, labels);
+        if (preferred.isPresent()) {
+            addToCache(lang, concept, preferred.get());
+            return preferred.get();
         }
 
         return concept.getExternalId();
-
     }
 
     public String findVocabularyLabelOf(Concept concept) {
-        if (concept == null) return null;
-        UserInfo info = sessionSettingsBean.getUserInfo();
-        return labelService.findLabelOf(concept.getVocabulary(), info.getLang()).getValue();
+        if (concept == null) {
+            return null;
+        }
+        return labelService.findLabelOf(concept.getVocabulary(), resolveLangCode()).getValue();
     }
 
     public Optional<ConceptLabelDTO> findById(Long id) {
@@ -95,7 +103,24 @@ public class LabelBean implements Serializable {
     }
 
     public String getCurrentUserLang() {
-        return sessionSettingsBean.getUserInfo().getLang();
+        return resolveLangCode();
+    }
+
+    @Nullable
+    private UserInfo resolveUserInfo() {
+        UserInfo fromSession = sessionSettingsBean.getUserInfo();
+        if (fromSession != null) {
+            return fromSession;
+        }
+        return ExecutionContextHolder.get();
+    }
+
+    private String resolveLangCode() {
+        UserInfo info = resolveUserInfo();
+        if (info != null && info.getLang() != null && !info.getLang().isBlank()) {
+            return info.getLang();
+        }
+        return Locale.FRENCH.getLanguage();
     }
 
 }

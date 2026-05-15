@@ -22,7 +22,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/v1/vocabularies")
-@Tag(name = OpenApiTags.VOCABULARY, description = "Vocabulaires contrôlés (thésaurus par field_code)")
+@Tag(name = OpenApiTags.VOCABULARY)
 @RequiredArgsConstructor
 public class VocabularyControllerApi {
 
@@ -46,7 +46,6 @@ public class VocabularyControllerApi {
             @ApiResponse(responseCode = "404", description = "Organisation introuvable"),
             @ApiResponse(responseCode = "500", description = "Erreur interne")
     })
-    @Tag(name = OpenApiTags.APPLICATION_MOBILE, description = OpenApiTags.APPLICATION_MOBILE_DESCRIPTION)
     public ResponseEntity<VocabulariesResponse> listVocabularies(
             @Parameter(description = "Institution (doit être dans le périmètre JWT).", example = "10", required = true)
             @RequestParam long organizationId,

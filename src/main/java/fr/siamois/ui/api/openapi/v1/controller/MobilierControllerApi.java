@@ -13,6 +13,7 @@ import fr.siamois.ui.api.openapi.v1.service.FindOpenApiService;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiCaller;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiService;
 import fr.siamois.ui.api.openapi.v1.service.RecordingUnitOpenApiService;
+import io.swagger.v3.oas.annotations.Hidden;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -38,6 +39,7 @@ public class MobilierControllerApi {
     private final FindOpenApiService findOpenApiService;
 
 
+    @Hidden
     @GetMapping
     public ResponseEntity<FindListResponse> getAll() {
         throw new ResponseStatusException(HttpStatus.NOT_IMPLEMENTED, "Not implemented yet");
@@ -58,7 +60,6 @@ public class MobilierControllerApi {
             @ApiResponse(responseCode = "404", description = "Mobilier introuvable ou hors périmètre"),
             @ApiResponse(responseCode = "500", description = "Erreur interne")
     })
-    @Tag(name = OpenApiTags.APPLICATION_MOBILE, description = OpenApiTags.APPLICATION_MOBILE_DESCRIPTION)
     public ResponseEntity<FindMobilierFormResponse> getById(
             @Parameter(
                     description = "Clé du mobilier : identifiant numérique (specimen_id) ou full_identifier.",
@@ -91,7 +92,6 @@ public class MobilierControllerApi {
             @ApiResponse(responseCode = "404", description = "UE ou type introuvable"),
             @ApiResponse(responseCode = "500", description = "Erreur interne")
     })
-    @Tag(name = OpenApiTags.APPLICATION_MOBILE, description = OpenApiTags.APPLICATION_MOBILE_DESCRIPTION)
     public ResponseEntity<FindResponse> createFind(
             @RequestBody FindCreateRequest body,
             @RequestHeader(value = HttpHeaders.ACCEPT_LANGUAGE, required = false) String acceptLanguage) {
@@ -118,7 +118,6 @@ public class MobilierControllerApi {
             @ApiResponse(responseCode = "404", description = "Mobilier introuvable ou hors périmètre"),
             @ApiResponse(responseCode = "500", description = "Erreur interne")
     })
-    @Tag(name = OpenApiTags.APPLICATION_MOBILE, description = OpenApiTags.APPLICATION_MOBILE_DESCRIPTION)
     public ResponseEntity<FindResponse> patchFind(
             @Parameter(description = "Identifiant numérique du spécimen (specimen_id).", example = "42")
             @PathVariable("id") long id,

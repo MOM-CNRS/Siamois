@@ -141,7 +141,7 @@ class FindControllerApiTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"recordingUnitId\":\"1\",\"specimenTypeConceptId\":\"2\"}"))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.data.id").value("55"));
+                .andExpect(jsonPath("$.data.resourceId").value("55"));
     }
 
     @Test
@@ -158,6 +158,6 @@ class FindControllerApiTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{}"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.id").value("3"));
+                .andExpect(jsonPath("$.data.resourceId").value("3"));
     }
 }

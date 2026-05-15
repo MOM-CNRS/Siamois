@@ -32,6 +32,7 @@ import fr.siamois.dto.entity.SpatialUnitSummaryDTO;
 import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRepository;
 import fr.siamois.mapper.ConceptMapper;
 import fr.siamois.mapper.PersonMapper;
+import fr.siamois.ui.api.openapi.v1.OpenApiExecutionContext;
 import fr.siamois.ui.api.openapi.v1.OpenApiParamIds;
 import fr.siamois.ui.api.openapi.v1.mapper.FindOpenApiMapper;
 import fr.siamois.ui.api.openapi.v1.request.find.FindCreateRequest;
@@ -174,11 +175,13 @@ public class FindOpenApiService {
                     "Aucun formulaire personnalisé pour ce type de mobilier : impossible d'appliquer fieldAnswers");
         }
 
-        FormUiDto formUiDto = conversionService.convert(customForm, FormUiDto.class);
-        FieldSource fieldSource = new PanelFieldSource(formUiDto);
-        CustomFormResponseViewModel response = formService.initOrReuseResponse(null, dto, fieldSource, true);
-        mergeFieldAnswers(response, fieldSource, answers);
-        formService.updateJpaEntityFromResponse(response, dto);
+        OpenApiExecutionContext.runWithUserInfo(userInfo, () -> {
+            FormUiDto formUiDto = conversionService.convert(customForm, FormUiDto.class);
+            FieldSource fieldSource = new PanelFieldSource(formUiDto);
+            CustomFormResponseViewModel response = formService.initOrReuseResponse(null, dto, fieldSource, true);
+            mergeFieldAnswers(response, fieldSource, answers);
+            formService.updateJpaEntityFromResponse(response, dto);
+        });
 
         SpecimenDTO saved = specimenService.save(dto);
         return findOpenApiMapper.toResource(saved);

@@ -5,6 +5,7 @@ import fr.siamois.ui.api.openapi.v1.response.FindListResponse;
 import fr.siamois.ui.api.openapi.v1.response.PlaceListResponse;
 import fr.siamois.ui.api.openapi.v1.response.PlaceResponse;
 import fr.siamois.ui.api.openapi.v1.response.RecordingUnitListResponse;
+import io.swagger.v3.oas.annotations.Hidden;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -14,9 +15,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
+@Hidden
 @RestController
 @RequestMapping("/api/v1/places")
-@Tag(name = "Place", description = "Endpoints des lieux")
 public class PlaceControllerApi {
 
 
