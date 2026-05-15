@@ -174,6 +174,25 @@ class FindControllerApiTest {
     }
 
     @Test
+    void getForm_returnsUiShell() throws Exception {
+        when(projectApiService.requireCaller())
+                .thenReturn(new ProjectApiCaller(personDto, Set.of(10L), List.of()));
+
+        FindMobilierFormData payload = new FindMobilierFormData(null, Map.of());
+        when(recordingUnitOpenApiService.buildFindMobilierUiForm(eq(10L), eq(personDto), eq("fr")))
+                .thenReturn(payload);
+
+        mockMvc.perform(get("/api/v1/mobiliers/form")
+                        .param("organizationId", "10")
+                        .header(HttpHeaders.ACCEPT_LANGUAGE, "fr"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.fields").isEmpty());
+
+        verify(projectApiService).assertOrganizationInCallerScope(10L, Set.of(10L));
+        verify(recordingUnitOpenApiService).buildFindMobilierUiForm(10L, personDto, "fr");
+    }
+
+    @Test
     void delete_withoutAuth_returns401() throws Exception {
         SecurityContextHolder.clearContext();
         when(projectApiService.requireCaller())

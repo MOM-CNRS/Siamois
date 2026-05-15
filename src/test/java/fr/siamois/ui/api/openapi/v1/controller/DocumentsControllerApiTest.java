@@ -27,7 +27,6 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.io.ByteArrayInputStream;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import static org.hamcrest.Matchers.containsString;
@@ -201,7 +200,6 @@ class DocumentsControllerApiTest {
                 .thenReturn(new ProjectApiCaller(personDto, Set.of(10L), List.of()));
         DocumentFormData payload = new DocumentFormData(
                 List.of(new DocumentFormFieldApi("title", "TEXT", null, Document.MAX_TITLE_LENGTH)),
-                Map.of(Document.NATURE_FIELD_CODE, List.of()),
                 null);
         when(documentFormOpenApiService.buildForm(eq(personDto), eq(10L), eq(Set.of(10L)), eq("fr"), isNull()))
                 .thenReturn(payload);

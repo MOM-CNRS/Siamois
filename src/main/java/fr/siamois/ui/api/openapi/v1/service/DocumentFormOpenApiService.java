@@ -1,11 +1,8 @@
 package fr.siamois.ui.api.openapi.v1.service;
 
-import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.document.Document;
-import fr.siamois.domain.models.exceptions.vocabulary.NoConfigForFieldException;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.InstitutionService;
-import fr.siamois.domain.services.vocabulary.FieldConfigurationService;
 import fr.siamois.dto.entity.ConceptDTO;
 import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
@@ -19,19 +16,16 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 /**
- * Formulaire OpenAPI document : mêmes vocabulaires que le dialogue web (codes SIAD.* via {@link FieldConfigurationService}).
+ * Formulaire OpenAPI document : définition des champs (vocabulaires via GET /api/v1/vocabularies).
  */
 @Service
 @RequiredArgsConstructor
 public class DocumentFormOpenApiService {
 
-    private final FieldConfigurationService fieldConfigurationService;
     private final InstitutionService institutionService;
     private final DocumentContentOpenApiService documentContentOpenApiService;
     private final ConceptMapper conceptMapper;
@@ -42,16 +36,9 @@ public class DocumentFormOpenApiService {
                                       Set<Long> accessibleInstitutionIds,
                                       String lang,
                                       Long documentId) {
-        var institution = institutionService.findById(organizationId);
-        if (institution == null) {
+        if (institutionService.findById(organizationId) == null) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Organization not found");
         }
-        UserInfo userInfo = new UserInfo(institution, person, lang);
-
-        Map<String, List<ConceptAutocompleteDTO>> vocabs = new LinkedHashMap<>();
-        putVocabulary(userInfo, vocabs, Document.NATURE_FIELD_CODE);
-        putVocabulary(userInfo, vocabs, Document.SCALE_FIELD_CODE);
-        putVocabulary(userInfo, vocabs, Document.FORMAT_FIELD_CODE);
 
         DocumentFormCurrentValuesApi current = null;
         if (documentId != null) {
@@ -66,7 +53,7 @@ public class DocumentFormOpenApiService {
                     doc.getMimeType());
         }
 
-        return new DocumentFormData(staticFields(), vocabs, current);
+        return new DocumentFormData(staticFields(), current);
     }
 
     private static List<DocumentFormFieldApi> staticFields() {
@@ -78,14 +65,6 @@ public class DocumentFormOpenApiService {
                 new DocumentFormFieldApi("format", "CONCEPT_SELECT", Document.FORMAT_FIELD_CODE, null),
                 new DocumentFormFieldApi("file", "FILE", null, null)
         );
-    }
-
-    private void putVocabulary(UserInfo userInfo, Map<String, List<ConceptAutocompleteDTO>> out, String fieldCode) {
-        try {
-            out.put(fieldCode, fieldConfigurationService.fetchAutocomplete(userInfo, fieldCode, null));
-        } catch (NoConfigForFieldException e) {
-            out.put(fieldCode, List.of());
-        }
     }
 
     private ConceptAutocompleteDTO toAutocomplete(Concept concept, String lang) {

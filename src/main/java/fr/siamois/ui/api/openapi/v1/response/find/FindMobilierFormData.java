@@ -7,16 +7,18 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.Map;
 
 /**
- * Formulaire d'un mobilier existant : layout et champs avec valeurs actuelles (sans vocabulaires).
- * Les listes de concepts sont disponibles via {@code GET /api/v1/vocabularies}.
+ * Layout et champs d'un formulaire mobilier.
+ * Sur {@code GET /mobiliers/form} : métadonnées UI seules ({@code currentValue} absent).
+ * Sur {@code GET /mobiliers/{id}} : inclut les valeurs persistées.
+ * Vocabulaires : {@code GET /api/v1/vocabularies}.
  */
-@Schema(description = "Formulaire d'édition d'un mobilier (layout et champs)")
+@Schema(description = "Formulaire mobilier (layout et champs)")
 public record FindMobilierFormData(
 
-        @Schema(description = "Formulaire effectif ; absent si aucune configuration pour ce type / institution")
+        @Schema(description = "Formulaire effectif ; absent si aucune configuration pour l'organisation")
         RecordingUnitFormBundle form,
 
-        @Schema(description = "Champs indexés par identifiant custom_field (chaîne numérique), avec currentValue")
+        @Schema(description = "Champs indexés par identifiant custom_field (chaîne numérique)")
         Map<String, RecordingUnitFormFieldApi> fields
 ) {
 }
