@@ -6,9 +6,9 @@ import lombok.Getter;
 
 @Getter
 @EqualsAndHashCode(callSuper = false)
-public class FindFormResponse extends Response<FindFormData> {
+public class FindMobilierFormResponse extends Response<FindMobilierFormData> {
 
-    public FindFormResponse(FindFormData data) {
+    public FindMobilierFormResponse(FindMobilierFormData data) {
         super(data);
     }
 }

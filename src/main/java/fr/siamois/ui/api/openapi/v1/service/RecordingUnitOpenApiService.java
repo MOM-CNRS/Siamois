@@ -51,6 +51,7 @@ import fr.siamois.ui.api.openapi.v1.OpenApiParamIds;
 import fr.siamois.ui.api.openapi.v1.mapper.RecordingUnitResponseMapper;
 import fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitResource;
 import fr.siamois.ui.api.openapi.v1.response.find.FindFormData;
+import fr.siamois.ui.api.openapi.v1.response.find.FindMobilierFormData;
 import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitChildrenData;
 import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitCreateFormData;
 import fr.siamois.ui.api.openapi.v1.request.recordingunit.RecordingUnitCreateRequest;
@@ -227,40 +228,6 @@ public class RecordingUnitOpenApiService {
     }
 
     /**
-     * Formulaire d'édition d'un mobilier (spécimen) : résolution du formulaire custom par type de spécimen
-     * et institution de rattachement (même mécanisme que pour une UE).
-     */
-    @Transactional(readOnly = true)
-    public FindFormData buildFindForm(long findId,
-                                      PersonDTO personDto,
-                                      Set<Long> accessibleInstitutionIds,
-                                      String lang) {
-        SpecimenDTO specimen = specimenService.findAccessibleById(findId, accessibleInstitutionIds)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Find not found"));
-        InstitutionDTO institution = specimen.getCreatedByInstitution();
-        ConceptDTO specimenType = specimen.getType();
-        if (institution == null || institution.getId() == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Find has no owning institution");
-        }
-        CustomForm customForm = formService.findCustomFormByRecordingUnitTypeAndInstitutionId(specimenType, institution);
-        if (customForm == null) {
-            return new FindFormData(specimenType, null, Map.of(), Map.of());
-        }
-        FormUiDto formUiDto = conversionService.convert(customForm, FormUiDto.class);
-        FieldSource fieldSource = new PanelFieldSource(formUiDto);
-        String layoutJson = customFormLayoutConverter.convertToDatabaseColumn(customForm.getLayout());
-        RecordingUnitFormBundle formBundle = new RecordingUnitFormBundle(
-                customForm.getId(), customForm.getName(), customForm.getDescription(), layoutJson);
-        Long typeIdForLog = specimenType != null ? specimenType.getId() : null;
-        Locale locale = langService.localeForApiLang(lang);
-        Map<String, RecordingUnitFormFieldApi> fields = buildCustomFormFieldsForBindTarget(
-                specimen, fieldSource, "mobilité id=" + findId, typeIdForLog, locale);
-        UserInfo userInfo = new UserInfo(institution, personDto, lang);
-        Map<String, List<ConceptAutocompleteDTO>> vocabs = loadVocabularies(fieldSource, userInfo);
-        return new FindFormData(specimenType, formBundle, fields, vocabs);
-    }
-
-    /**
      * Formulaire de création d'un mobilier : résolution par UE (institution) et type de spécimen,
      * sans entité persistée (même mécanisme que {@link #buildRecordingUnitCreateForm}).
      */
@@ -313,6 +280,43 @@ public class RecordingUnitOpenApiService {
         Map<String, List<ConceptAutocompleteDTO>> vocabs = loadVocabularies(fieldSource, userInfo);
 
         return new FindFormData(typeDto, formBundle, fields, vocabs);
+    }
+
+    /**
+     * Formulaire d'édition d'un mobilier existant : layout et champs avec valeurs persistées (sans vocabulaires).
+     */
+    @Transactional(readOnly = true)
+    public FindMobilierFormData buildFindMobilierForm(String idOrKey,
+                                                      PersonDTO personDto,
+                                                      Set<Long> accessibleInstitutionIds,
+                                                      String lang) {
+        SpecimenDTO specimen = specimenService.findAccessibleByKey(idOrKey, accessibleInstitutionIds)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Mobilier introuvable ou hors périmètre"));
+        InstitutionDTO institution = specimen.getCreatedByInstitution();
+        if (institution == null || institution.getId() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Mobilier sans organisation");
+        }
+        ConceptDTO specimenType = specimen.getType();
+        if (specimenType == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Mobilier sans type");
+        }
+
+        CustomForm customForm = formService.findCustomFormByRecordingUnitTypeAndInstitutionId(specimenType, institution);
+        if (customForm == null) {
+            return new FindMobilierFormData(null, Map.of());
+        }
+
+        FormUiDto formUiDto = conversionService.convert(customForm, FormUiDto.class);
+        FieldSource fieldSource = new PanelFieldSource(formUiDto);
+        String layoutJson = customFormLayoutConverter.convertToDatabaseColumn(customForm.getLayout());
+        RecordingUnitFormBundle formBundle = new RecordingUnitFormBundle(
+                customForm.getId(), customForm.getName(), customForm.getDescription(), layoutJson);
+
+        Locale locale = langService.localeForApiLang(lang);
+        Map<String, RecordingUnitFormFieldApi> fields = buildCustomFormFieldsForBindTarget(
+                specimen, fieldSource, "mobilier key=" + idOrKey, specimenType.getId(), locale);
+
+        return new FindMobilierFormData(formBundle, fields);
     }
 
     private Map<String, RecordingUnitFormFieldApi> buildCustomFormFieldsForBindTarget(

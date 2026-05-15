@@ -14,6 +14,7 @@ import org.springframework.data.repository.query.Param;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 
 public interface SpecimenRepository extends JpaRepository<Specimen, Long>, RevisionRepository<Specimen, Long, Long>,
@@ -243,6 +244,19 @@ public interface SpecimenRepository extends JpaRepository<Specimen, Long>, Revis
     Optional<Specimen> findByFullIdentifierAndCreatedByInstitution(String i, Institution createdInstitution);
 
     Optional<Specimen> findByFullIdentifier(@NotNull String fullIdentifier);
+
+    @Query(
+            value = "SELECT s.* FROM specimen s " +
+                    "JOIN institution i ON s.fk_institution_id = i.institution_id " +
+                    "WHERE s.full_identifier = :fullIdentifier " +
+                    "AND i.institution_id IN :institutionIds " +
+                    "LIMIT 1",
+            nativeQuery = true
+    )
+    Optional<Specimen> findFirstByFullIdentifierAndInstitutionIdIn(
+            @Param("fullIdentifier") String fullIdentifier,
+            @Param("institutionIds") Set<Long> institutionIds
+    );
 
     @Query(
             value = "SELECT COUNT(*) FROM specimen s "+

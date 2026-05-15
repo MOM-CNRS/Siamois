@@ -37,6 +37,7 @@ import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAut
 import fr.siamois.ui.api.openapi.v1.mapper.RecordingUnitResponseMapper;
 import fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitResource;
 import fr.siamois.ui.api.openapi.v1.response.find.FindFormData;
+import fr.siamois.ui.api.openapi.v1.response.find.FindMobilierFormData;
 import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitChildrenData;
 import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitCreateFormData;
 import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitFormBundle;
@@ -921,28 +922,16 @@ class RecordingUnitOpenApiServiceTest {
     }
 
     @Test
-    void buildFindForm_whenNotAccessible_throws404() {
-        when(specimenService.findAccessibleById(404L, SCOPE)).thenReturn(Optional.empty());
+    void buildFindMobilierForm_whenNotAccessible_throws404() {
+        when(specimenService.findAccessibleByKey("404", SCOPE)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> service.buildFindForm(404L, personDto, SCOPE, "fr"))
+        assertThatThrownBy(() -> service.buildFindMobilierForm("404", personDto, SCOPE, "fr"))
                 .isInstanceOf(ResponseStatusException.class)
                 .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode().value()).isEqualTo(404));
     }
 
     @Test
-    void buildFindForm_whenNoInstitution_throws400() {
-        SpecimenDTO spec = new SpecimenDTO();
-        spec.setId(1L);
-        spec.setCreatedByInstitution(null);
-        when(specimenService.findAccessibleById(1L, SCOPE)).thenReturn(Optional.of(spec));
-
-        assertThatThrownBy(() -> service.buildFindForm(1L, personDto, SCOPE, "fr"))
-                .isInstanceOf(ResponseStatusException.class)
-                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode().value()).isEqualTo(400));
-    }
-
-    @Test
-    void buildFindForm_whenNoCustomForm_returnsTypeOnly() {
+    void buildFindMobilierForm_whenNoCustomForm_returnsEmptyForm() {
         InstitutionDTO inst = new InstitutionDTO();
         inst.setId(10L);
         ConceptDTO type = new ConceptDTO();
@@ -951,15 +940,13 @@ class RecordingUnitOpenApiServiceTest {
         spec.setId(7L);
         spec.setCreatedByInstitution(inst);
         spec.setType(type);
-        when(specimenService.findAccessibleById(7L, SCOPE)).thenReturn(Optional.of(spec));
+        when(specimenService.findAccessibleByKey("7", SCOPE)).thenReturn(Optional.of(spec));
         when(formService.findCustomFormByRecordingUnitTypeAndInstitutionId(type, inst)).thenReturn(null);
 
-        FindFormData data = service.buildFindForm(7L, personDto, SCOPE, "fr");
+        FindMobilierFormData data = service.buildFindMobilierForm("7", personDto, SCOPE, "fr");
 
-        assertThat(data.specimenType().getId()).isEqualTo(3L);
         assertThat(data.form()).isNull();
         assertThat(data.fields()).isEmpty();
-        assertThat(data.vocabulariesByFieldCode()).isEmpty();
     }
 
     private static FormUiDto formUiDtoWithOneField(CustomField field) {
