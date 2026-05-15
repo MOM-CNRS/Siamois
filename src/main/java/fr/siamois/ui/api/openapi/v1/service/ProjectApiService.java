@@ -73,10 +73,6 @@ public class ProjectApiService {
             "id", "name", "identifier", "creationDate"
     );
 
-    private static final Set<String> ALLOWED_FIND_SORT_FIELDS = Set.of(
-            "creationTime", "id", "fullIdentifier"
-    );
-
     private final InstitutionService institutionService;
     private final ActionUnitService actionUnitService;
     private final RecordingUnitService recordingUnitService;
@@ -343,9 +339,8 @@ public class ProjectApiService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unité d'enregistrement sans institution");
         }
         String lang = primaryAcceptLanguage(acceptLanguage);
-        Sort sort = parseFindSort(sortParam);
         int pageNumber = offset / limit;
-        Pageable pageable = PageRequest.of(pageNumber, limit, sort);
+        Pageable pageable = PageRequest.of(pageNumber, limit);
         Page<SpecimenDTO> page = specimenService.findAllByInstitutionAndByRecordingUnitAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
                 institution.getId(),
                 ru.getId(),
@@ -353,6 +348,7 @@ public class ProjectApiService {
                 null,
                 null,
                 lang,
+                sortParam,
                 pageable);
         return page.map(findOpenApiMapper::toResource);
     }
@@ -410,10 +406,6 @@ public class ProjectApiService {
 
     private static Sort parseOrganizationSort(String sortParam) {
         return parseSort(sortParam, ALLOWED_ORGANIZATION_SORT_FIELDS, "name");
-    }
-
-    private static Sort parseFindSort(String sortParam) {
-        return parseSortWithStableId(sortParam, ALLOWED_FIND_SORT_FIELDS);
     }
 
     private static Sort parseRecordingUnitSort(String sortParam) {

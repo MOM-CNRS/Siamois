@@ -66,7 +66,7 @@ class FindControllerApiTest {
         ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
         MappingJackson2HttpMessageConverter jsonConverter = new MappingJackson2HttpMessageConverter(objectMapper);
 
-        FindControllerApi controller = new FindControllerApi(projectApiService, recordingUnitOpenApiService, findOpenApiService);
+        MobilierControllerApi controller = new MobilierControllerApi(projectApiService, recordingUnitOpenApiService, findOpenApiService);
         mockMvc = MockMvcBuilders.standaloneSetup(controller)
                 .setControllerAdvice(new RestExceptionHandler())
                 .setMessageConverters(jsonConverter)
@@ -93,7 +93,7 @@ class FindControllerApiTest {
         when(projectApiService.requireCaller())
                 .thenThrow(new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authentification requise"));
 
-        mockMvc.perform(get("/api/v1/finds/5/form"))
+        mockMvc.perform(get("/api/v1/mobiliers/5/form"))
                 .andExpect(status().isUnauthorized());
 
         verifyNoInteractions(recordingUnitOpenApiService);
@@ -110,7 +110,7 @@ class FindControllerApiTest {
         when(recordingUnitOpenApiService.buildFindForm(eq(5L), eq(personDto), eq(Set.of(10L)), eq("fr")))
                 .thenReturn(payload);
 
-        mockMvc.perform(get("/api/v1/finds/5/form")
+        mockMvc.perform(get("/api/v1/mobiliers/5/form")
                         .header(HttpHeaders.ACCEPT_LANGUAGE, "fr"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.specimenType.id").value(2));
@@ -128,7 +128,7 @@ class FindControllerApiTest {
         when(recordingUnitOpenApiService.buildFindForm(eq(9L), eq(personDto), eq(Set.of(10L)), eq("en")))
                 .thenReturn(new FindFormData(type, null, Map.of(), Map.of()));
 
-        mockMvc.perform(get("/api/v1/finds/9/form")
+        mockMvc.perform(get("/api/v1/mobiliers/9/form")
                         .header(HttpHeaders.ACCEPT_LANGUAGE, "en-US,en;q=0.9"))
                 .andExpect(status().isOk());
 
@@ -145,7 +145,7 @@ class FindControllerApiTest {
         when(recordingUnitOpenApiService.buildFindForm(eq(7L), eq(personDto), eq(Set.of(10L)), eq("fr")))
                 .thenReturn(new FindFormData(type, null, Map.of(), Map.of()));
 
-        mockMvc.perform(get("/api/v1/finds/7/form"))
+        mockMvc.perform(get("/api/v1/mobiliers/7/form"))
                 .andExpect(status().isOk());
 
         verify(recordingUnitOpenApiService).buildFindForm(7L, personDto, Set.of(10L), "fr");
@@ -161,9 +161,9 @@ class FindControllerApiTest {
         when(findOpenApiService.createFind(any(), eq(personDto), eq(Set.of(10L)), eq("fr")))
                 .thenReturn(res);
 
-        mockMvc.perform(post("/api/v1/finds")
+        mockMvc.perform(post("/api/v1/mobiliers")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"recordingUnitId\":1,\"specimenTypeConceptId\":2}"))
+                        .content("{\"recordingUnitId\":\"1\",\"specimenTypeConceptId\":\"2\"}"))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.data.id").value("55"));
     }
@@ -178,7 +178,7 @@ class FindControllerApiTest {
         when(findOpenApiService.patchFind(eq(3L), any(), eq(personDto), eq(Set.of(10L)), eq("fr")))
                 .thenReturn(res);
 
-        mockMvc.perform(patch("/api/v1/finds/3")
+        mockMvc.perform(patch("/api/v1/mobiliers/3")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{}"))
                 .andExpect(status().isOk())
@@ -206,9 +206,65 @@ class FindControllerApiTest {
         when(recordingUnitOpenApiService.buildFindForm(anyLong(), any(), any(), anyString()))
                 .thenThrow(new ResponseStatusException(HttpStatus.BAD_REQUEST, "Find has no owning institution"));
 
-        mockMvc.perform(get("/api/v1/finds/12/form"))
+        mockMvc.perform(get("/api/v1/mobiliers/12/form"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.status").value(400))
                 .andExpect(jsonPath("$.message").value("Find has no owning institution"));
+    }
+
+    @Test
+    void getFindCreateForm_withoutAuth_returns401() throws Exception {
+        SecurityContextHolder.clearContext();
+        when(projectApiService.requireCaller())
+                .thenThrow(new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authentification requise"));
+
+        mockMvc.perform(get("/api/v1/mobiliers/creation-form")
+                        .param("recordingUnitId", "12")
+                        .param("specimenTypeConceptId", "42"))
+                .andExpect(status().isUnauthorized());
+
+        verifyNoInteractions(recordingUnitOpenApiService);
+    }
+
+    @Test
+    void getFindCreateForm_success_returnsJson() throws Exception {
+        when(projectApiService.requireCaller())
+                .thenReturn(new ProjectApiCaller(personDto, Set.of(10L), List.of()));
+
+        ConceptDTO type = new ConceptDTO();
+        type.setId(42L);
+        FindFormData payload = new FindFormData(type, null, Map.of(), Map.of());
+        when(recordingUnitOpenApiService.buildFindCreateForm(
+                eq("12"), eq("42"), eq(personDto), eq(Set.of(10L)), eq("fr")))
+                .thenReturn(payload);
+
+        mockMvc.perform(get("/api/v1/mobiliers/creation-form")
+                        .param("recordingUnitId", "12")
+                        .param("specimenTypeConceptId", "42")
+                        .header(HttpHeaders.ACCEPT_LANGUAGE, "fr"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.specimenType.id").value(42));
+
+        verify(recordingUnitOpenApiService).buildFindCreateForm("12", "42", personDto, Set.of(10L), "fr");
+    }
+
+    @Test
+    void getFindCreateForm_passesAcceptLanguageToService() throws Exception {
+        when(projectApiService.requireCaller())
+                .thenReturn(new ProjectApiCaller(personDto, Set.of(10L), List.of()));
+
+        ConceptDTO type = new ConceptDTO();
+        type.setId(3L);
+        when(recordingUnitOpenApiService.buildFindCreateForm(
+                eq("5"), eq("3"), eq(personDto), eq(Set.of(10L)), eq("en")))
+                .thenReturn(new FindFormData(type, null, Map.of(), Map.of()));
+
+        mockMvc.perform(get("/api/v1/mobiliers/creation-form")
+                        .param("recordingUnitId", "5")
+                        .param("specimenTypeConceptId", "3")
+                        .header(HttpHeaders.ACCEPT_LANGUAGE, "en-US,en;q=0.9"))
+                .andExpect(status().isOk());
+
+        verify(recordingUnitOpenApiService).buildFindCreateForm("5", "3", personDto, Set.of(10L), "en");
     }
 }

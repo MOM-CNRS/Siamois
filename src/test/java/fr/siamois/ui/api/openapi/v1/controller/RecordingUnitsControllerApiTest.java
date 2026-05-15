@@ -341,7 +341,7 @@ class RecordingUnitsControllerApiTest {
 
         PageImpl<SpecimenDTO> page = new PageImpl<>(List.of(), PageRequest.of(0, 10), 0L);
         when(specimenService.findAllByInstitutionAndByRecordingUnitAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
-                eq(10L), eq(5L), isNull(), isNull(), isNull(), eq("fr"), any())).thenReturn(page);
+                eq(10L), eq(5L), isNull(), isNull(), isNull(), eq("fr"), eq("creationTime:desc"), any())).thenReturn(page);
 
         mockMvc.perform(get("/api/v1/recording-units/5/finds")
                         .param("offset", "0")
@@ -372,7 +372,7 @@ class RecordingUnitsControllerApiTest {
                 PageRequest.of(0, 10),
                 1L);
         when(specimenService.findAllByInstitutionAndByRecordingUnitAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
-                eq(10L), eq(7L), isNull(), isNull(), isNull(), eq("fr"), any())).thenReturn(page);
+                eq(10L), eq(7L), isNull(), isNull(), isNull(), eq("fr"), eq("creationTime:desc"), any())).thenReturn(page);
 
         FindResource fr = new FindResource();
         fr.setResourceType("finds");
@@ -405,7 +405,7 @@ class RecordingUnitsControllerApiTest {
 
         PageImpl<SpecimenDTO> page = new PageImpl<>(List.of(), PageRequest.of(0, 10), 0L);
         when(specimenService.findAllByInstitutionAndByRecordingUnitAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
-                eq(10L), eq(3L), isNull(), isNull(), isNull(), eq("fr"), any())).thenReturn(page);
+                eq(10L), eq(3L), isNull(), isNull(), isNull(), eq("fr"), eq("fullIdentifier:asc"), any())).thenReturn(page);
 
         mockMvc.perform(get("/api/v1/recording-units/3/finds")
                         .param("offset", "0")
@@ -414,16 +414,7 @@ class RecordingUnitsControllerApiTest {
                 .andExpect(status().isOk());
 
         verify(specimenService).findAllByInstitutionAndByRecordingUnitAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
-                eq(10L), eq(3L), isNull(), isNull(), isNull(), eq("fr"),
-                argThat((Pageable p) -> {
-                    Sort s = p.getSort();
-                    for (Sort.Order o : s) {
-                        if ("fullIdentifier".equals(o.getProperty()) && o.isAscending()) {
-                            return true;
-                        }
-                    }
-                    return false;
-                }));
+                eq(10L), eq(3L), isNull(), isNull(), isNull(), eq("fr"), eq("fullIdentifier:asc"), any(Pageable.class));
     }
 
     @Test
@@ -438,7 +429,7 @@ class RecordingUnitsControllerApiTest {
 
         PageImpl<SpecimenDTO> page = new PageImpl<>(List.of(), PageRequest.of(0, 10), 0L);
         when(specimenService.findAllByInstitutionAndByRecordingUnitAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
-                eq(10L), eq(1L), isNull(), isNull(), isNull(), eq("de"), any())).thenReturn(page);
+                eq(10L), eq(1L), isNull(), isNull(), isNull(), eq("de"), eq("creationTime:desc"), any())).thenReturn(page);
 
         mockMvc.perform(get("/api/v1/recording-units/1/finds")
                         .param("offset", "0")
@@ -447,7 +438,7 @@ class RecordingUnitsControllerApiTest {
                 .andExpect(status().isOk());
 
         verify(specimenService).findAllByInstitutionAndByRecordingUnitAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
-                eq(10L), eq(1L), isNull(), isNull(), isNull(), eq("de"), any());
+                eq(10L), eq(1L), isNull(), isNull(), isNull(), eq("de"), eq("creationTime:desc"), any(Pageable.class));
     }
 
     @Test
@@ -482,7 +473,7 @@ class RecordingUnitsControllerApiTest {
 
         PageImpl<SpecimenDTO> page = new PageImpl<>(List.of(), PageRequest.of(0, 10), 0L);
         when(specimenService.findAllByInstitutionAndByRecordingUnitAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
-                eq(10L), eq(2L), isNull(), isNull(), isNull(), eq("fr"), any())).thenReturn(page);
+                eq(10L), eq(2L), isNull(), isNull(), isNull(), eq("fr"), eq("creationTime:desc"), any())).thenReturn(page);
 
         mockMvc.perform(get("/api/v1/recording-units/k/finds")
                         .param("offset", "0")

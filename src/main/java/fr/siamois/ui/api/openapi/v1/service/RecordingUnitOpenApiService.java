@@ -47,6 +47,7 @@ import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptReposit
 import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
 import fr.siamois.mapper.PersonMapper;
 import fr.siamois.mapper.ConceptMapper;
+import fr.siamois.ui.api.openapi.v1.OpenApiParamIds;
 import fr.siamois.ui.api.openapi.v1.mapper.RecordingUnitResponseMapper;
 import fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitResource;
 import fr.siamois.ui.api.openapi.v1.response.find.FindFormData;
@@ -257,6 +258,61 @@ public class RecordingUnitOpenApiService {
         UserInfo userInfo = new UserInfo(institution, personDto, lang);
         Map<String, List<ConceptAutocompleteDTO>> vocabs = loadVocabularies(fieldSource, userInfo);
         return new FindFormData(specimenType, formBundle, fields, vocabs);
+    }
+
+    /**
+     * Formulaire de création d'un mobilier : résolution par UE (institution) et type de spécimen,
+     * sans entité persistée (même mécanisme que {@link #buildRecordingUnitCreateForm}).
+     */
+    @Transactional(readOnly = true)
+    public FindFormData buildFindCreateForm(String recordingUnitKey,
+                                            String specimenTypeConceptId,
+                                            PersonDTO personDto,
+                                            Set<Long> accessibleInstitutionIds,
+                                            String lang) {
+        RecordingUnitDTO ru = recordingUnitService.findAccessibleRecordingUnitByKey(
+                recordingUnitKey, accessibleInstitutionIds, null);
+        InstitutionDTO institution = ru.getCreatedByInstitution();
+        if (institution == null || institution.getId() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "UE sans organisation");
+        }
+        UserInfo userInfo = new UserInfo(institution, personDto, lang);
+        if (!permissionService.hasWritePermission(userInfo, ru)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Création de mobilier non autorisée sur cette UE");
+        }
+
+        long typeConceptId = OpenApiParamIds.parseRequiredConceptId(specimenTypeConceptId, "specimenTypeConceptId");
+        Concept typeConcept = conceptRepository.findById(typeConceptId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Type de mobilier introuvable"));
+        ConceptDTO typeDto = conceptMapper.convert(typeConcept);
+
+        CustomForm customForm = formService.findCustomFormByRecordingUnitTypeAndInstitutionId(typeDto, institution);
+        if (customForm == null) {
+            return new FindFormData(typeDto, null, Map.of(), Map.of());
+        }
+
+        FormUiDto formUiDto = conversionService.convert(customForm, FormUiDto.class);
+        FieldSource fieldSource = new PanelFieldSource(formUiDto);
+        String layoutJson = customFormLayoutConverter.convertToDatabaseColumn(customForm.getLayout());
+        RecordingUnitFormBundle formBundle = new RecordingUnitFormBundle(
+                customForm.getId(), customForm.getName(), customForm.getDescription(), layoutJson);
+
+        SpecimenDTO shell = new SpecimenDTO();
+        shell.setRecordingUnit(new RecordingUnitSummaryDTO(ru));
+        shell.setCreatedByInstitution(institution);
+        shell.setType(typeDto);
+        shell.setCreatedBy(personDto);
+        shell.setAuthors(new ArrayList<>(List.of(personDto)));
+        shell.setCollectors(new ArrayList<>(List.of(personDto)));
+        shell.setCollectionDate(OffsetDateTime.now());
+        shell.setValidated(ValidationStatus.INCOMPLETE);
+
+        Locale locale = langService.localeForApiLang(lang);
+        Map<String, RecordingUnitFormFieldApi> fields = buildCustomFormFieldsForBindTarget(
+                shell, fieldSource, "création mobilier", typeDto.getId(), locale);
+        Map<String, List<ConceptAutocompleteDTO>> vocabs = loadVocabularies(fieldSource, userInfo);
+
+        return new FindFormData(typeDto, formBundle, fields, vocabs);
     }
 
     private Map<String, RecordingUnitFormFieldApi> buildCustomFormFieldsForBindTarget(

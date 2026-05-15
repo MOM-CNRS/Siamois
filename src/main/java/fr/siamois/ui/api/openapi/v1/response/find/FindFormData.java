@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Formulaire d'édition d'un mobilier (spécimen) : bundle, champs et vocabulaires (même modèle que le formulaire UE).
+ * Formulaire mobilier (création ou édition) : bundle, champs et vocabulaires (même modèle que le formulaire UE).
  */
 @Schema(description = "Formulaire mobilier (layout, champs, vocabulaires)")
 public record FindFormData(

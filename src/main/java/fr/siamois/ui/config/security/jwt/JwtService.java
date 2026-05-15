@@ -27,7 +27,18 @@ public class JwtService {
 
     @PostConstruct
     void initKey() {
-        byte[] bytes = jwtProperties.getSecret().getBytes(StandardCharsets.UTF_8);
+        String raw = jwtProperties.getSecret();
+        if (raw == null || raw.isBlank()) {
+            throw new IllegalStateException(
+                    "JWT secret is missing or blank. Set siamois.jwt.secret or environment variable SIAMOIS_JWT_SECRET "
+                            + "(HS256 requires at least 32 UTF-8 characters).");
+        }
+        String secret = raw.trim();
+        if (secret.length() < 32) {
+            throw new IllegalStateException(
+                    "JWT secret must be at least 32 characters (256 bits) for HS256; got length " + secret.length() + ".");
+        }
+        byte[] bytes = secret.getBytes(StandardCharsets.UTF_8);
         this.signingKey = Keys.hmacShaKeyFor(bytes);
     }
 

@@ -14,7 +14,7 @@ import org.springframework.context.annotation.Configuration;
                 title = "Siamois",
                 version = "v1",
                 description = "Les routes sous /api/v1/** sont sécurisées par JWT Bearer (Authorization). "
-                        + "Jetons : POST /api/v1/auth/login ou POST /api/v1/auth/refresh."
+                        + "Jeton d'accès : POST /api/v1/auth/login (renouvellement : rappeler login)."
         ),
         security = @SecurityRequirement(name = "bearer-jwt")
 )
@@ -23,7 +23,7 @@ import org.springframework.context.annotation.Configuration;
         type = SecuritySchemeType.HTTP,
         scheme = "bearer",
         bearerFormat = "JWT",
-        description = "Access token JWT (header Authorization: Bearer …). Généré via /api/v1/auth/login ou renouvelé via /api/v1/auth/refresh."
+        description = "Access token JWT (header Authorization: Bearer …). Généré via POST /api/v1/auth/login."
 )
 public class OpenApiConfig {
 }

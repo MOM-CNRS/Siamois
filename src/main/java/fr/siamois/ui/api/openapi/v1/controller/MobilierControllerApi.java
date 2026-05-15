@@ -1,6 +1,8 @@
 package fr.siamois.ui.api.openapi.v1.controller;
 
+import fr.siamois.ui.api.openapi.v1.OpenApiParamIds;
 import fr.siamois.ui.api.openapi.v1.OpenApiTags;
+import io.swagger.v3.oas.annotations.media.Schema;
 import fr.siamois.ui.api.openapi.v1.request.find.FindCreateRequest;
 import fr.siamois.ui.api.openapi.v1.request.find.FindPatchRequest;
 import fr.siamois.ui.api.openapi.v1.response.FindResponse;
@@ -27,10 +29,10 @@ import org.springframework.web.server.ResponseStatusException;
 
 
 @RestController
-@RequestMapping("/api/v1/finds")
+@RequestMapping("/api/v1/mobiliers")
 @Tag(name = OpenApiTags.MOBILIER, description = "Endpoints des mobiliers (spécimens)")
 @RequiredArgsConstructor
-public class FindControllerApi {
+public class MobilierControllerApi {
 
     private final ProjectApiService projectApiService;
     private final RecordingUnitOpenApiService recordingUnitOpenApiService;
@@ -45,6 +47,49 @@ public class FindControllerApi {
     @GetMapping("/{id}")
     public ResponseEntity<FindResponse> getById(@PathVariable Long id) {
         throw new ResponseStatusException(HttpStatus.NOT_IMPLEMENTED, "Not implemented yet");
+    }
+
+    @GetMapping("/creation-form")
+    @Operation(
+            summary = "Formulaire de création d'un mobilier",
+            description = "Bundle formulaire (layout), définition des champs et vocabulaires pour créer un spécimen "
+                    + "sur une UE avec un type de mobilier donné. "
+                    + "Paramètres : `recordingUnitId` (clé d'UE : recording_unit_id ou full_identifier) et "
+                    + "`specimenTypeConceptId` (concept_id du type de mobilier, chaîne numérique). "
+                    + "Le type est obligatoire : le formulaire custom dépend du type et de l'institution de l'UE. "
+                    + "Les clés de `fieldAnswers` sur POST /mobiliers correspondent aux identifiants de champs retournés ici. "
+                    + "Langue des libellés de vocabulaire : en-tête Accept-Language."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Ok"),
+            @ApiResponse(responseCode = "400", description = "UE sans organisation"),
+            @ApiResponse(responseCode = "401", description = "Non authentifié"),
+            @ApiResponse(responseCode = "403", description = "Création non autorisée sur cette UE"),
+            @ApiResponse(responseCode = "404", description = "UE ou type de mobilier introuvable"),
+            @ApiResponse(responseCode = "500", description = "Erreur interne")
+    })
+    @Tag(name = OpenApiTags.APPLICATION_MOBILE, description = OpenApiTags.APPLICATION_MOBILE_DESCRIPTION)
+    public ResponseEntity<FindFormResponse> getFindCreateForm(
+            @Parameter(
+                    description = "Clé d'UE : identifiant numérique (recording_unit_id) ou full_identifier.",
+                    schema = @Schema(type = "string", example = "INST-PROJ-UE42")
+            )
+            @RequestParam String recordingUnitId,
+            @Parameter(
+                    description = "Identifiant du concept de type de mobilier (concept_id, chaîne numérique).",
+                    schema = @Schema(type = "string", example = "42")
+            )
+            @RequestParam String specimenTypeConceptId,
+            @Parameter(description = "Langue préférée pour les libellés de vocabulaire (première entrée utilisée).")
+            @RequestHeader(value = HttpHeaders.ACCEPT_LANGUAGE, required = false) String acceptLanguage) {
+
+        ProjectApiCaller caller = projectApiService.requireCaller();
+        String lang = ProjectApiService.primaryAcceptLanguage(acceptLanguage);
+        FindFormData data = recordingUnitOpenApiService.buildFindCreateForm(
+                OpenApiParamIds.requireNonBlank(recordingUnitId, "recordingUnitId"),
+                OpenApiParamIds.requireNonBlank(specimenTypeConceptId, "specimenTypeConceptId"),
+                caller.person(), caller.accessibleInstitutionIds(), lang);
+        return ResponseEntity.ok(new FindFormResponse(data));
     }
 
     @GetMapping("/{id}/form")
@@ -79,7 +124,8 @@ public class FindControllerApi {
     @Operation(
             summary = "Créer un mobilier",
             description = "Crée un spécimen rattaché à une UE (`recordingUnitId`) avec un type (`specimenTypeConceptId`). "
-                    + "Valeurs de formulaire optionnelles dans `fieldAnswers` (mêmes clés que sur GET /finds/{id}/form). "
+                    + "Valeurs de formulaire optionnelles dans `fieldAnswers` (mêmes clés que sur GET /mobiliers/creation-form "
+                    + "ou GET /mobiliers/{id}/form). "
                     + "Droit d'écriture requis sur l'UE parente."
     )
     @ApiResponses(value = {

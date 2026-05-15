@@ -2,21 +2,20 @@ package fr.siamois.ui.config.security.jwt;
 
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.validation.annotation.Validated;
 
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Size;
 import java.time.Duration;
 
+/**
+ * Propriétés {@code siamois.jwt.*}. Les contraintes sur {@code secret} sont appliquées dans
+ * {@link JwtService} au démarrage pour ne pas exiger Hibernate Validator sur le binding
+ * {@link ConfigurationProperties}.
+ */
 @Data
-@Validated
 @ConfigurationProperties(prefix = "siamois.jwt")
 public class JwtProperties {
 
-    /** Secret UTF-8 pour signature HS256 — minimum 32 caractères (256 bits). */
-    @NotBlank(message = "JWT secret must not be blank")
-    @Size(min = 32, message = "JWT secret must be at least 32 characters (256 bits) for HS256")
+    /** Secret UTF-8 pour HS256 — au moins 32 caractères, validé dans {@link JwtService}. */
     private String secret;
 
-    private Duration accessTokenValidity = Duration.ofDays(30);
+    private Duration accessTokenValidity = Duration.ofMinutes(15);
 }

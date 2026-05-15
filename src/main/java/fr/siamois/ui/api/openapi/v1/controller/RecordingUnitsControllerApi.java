@@ -261,7 +261,7 @@ public class RecordingUnitsControllerApi {
         return ResponseEntity.ok(new RecordingUnitChildrenResponse(data));
     }
 
-    @GetMapping("/{id}/finds")
+    @GetMapping("/{id}/mobiliers")
     @Operation(
             summary = "Liste des mobiliers d'une unité d'enregistrement",
             description = "Spécimens liés à l'UE (table specimen, fk_recording_unit_id). "
@@ -277,6 +277,7 @@ public class RecordingUnitsControllerApi {
             @ApiResponse(responseCode = "404", description = "UE introuvable ou hors périmètre"),
             @ApiResponse(responseCode = "500", description = "Erreur interne")
     })
+    @Tag(name = OpenApiTags.MOBILIER)
     @Tag(name = OpenApiTags.APPLICATION_MOBILE, description = OpenApiTags.APPLICATION_MOBILE_DESCRIPTION)
     public ResponseEntity<FindListResponse> getFinds(
             @Parameter(

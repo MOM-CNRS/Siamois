@@ -235,7 +235,7 @@ public class ProjectControllerApi {
                 .body(new RecordingUnitListResponse(resources, meta));
     }
 
-    @GetMapping("/{id}/finds")
+    @GetMapping("/{id}/mobiliers")
     public ResponseEntity<FindListResponse> getFinds(
             @PathVariable String id,
             @RequestParam(defaultValue = "0") int offset,

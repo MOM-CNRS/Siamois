@@ -32,6 +32,7 @@ import fr.siamois.dto.entity.SpatialUnitSummaryDTO;
 import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRepository;
 import fr.siamois.mapper.ConceptMapper;
 import fr.siamois.mapper.PersonMapper;
+import fr.siamois.ui.api.openapi.v1.OpenApiParamIds;
 import fr.siamois.ui.api.openapi.v1.mapper.FindOpenApiMapper;
 import fr.siamois.ui.api.openapi.v1.request.find.FindCreateRequest;
 import fr.siamois.ui.api.openapi.v1.request.find.FindPatchRequest;
@@ -81,12 +82,13 @@ public class FindOpenApiService {
                                    PersonDTO personDto,
                                    Set<Long> accessibleInstitutionIds,
                                    String lang) {
-        if (request.getRecordingUnitId() == null || request.getSpecimenTypeConceptId() == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "recordingUnitId et specimenTypeConceptId sont obligatoires");
-        }
-        RecordingUnitDTO ru = recordingUnitService.requireAccessibleRecordingUnitByPrimaryKey(
-                request.getRecordingUnitId(), accessibleInstitutionIds);
+        String recordingUnitKey = OpenApiParamIds.requireNonBlank(
+                request.getRecordingUnitId(), "recordingUnitId");
+        long typeConceptId = OpenApiParamIds.parseRequiredConceptId(
+                request.getSpecimenTypeConceptId(), "specimenTypeConceptId");
+
+        RecordingUnitDTO ru = recordingUnitService.findAccessibleRecordingUnitByKey(
+                recordingUnitKey, accessibleInstitutionIds, null);
         InstitutionDTO institution = ru.getCreatedByInstitution();
         if (institution == null || institution.getId() == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "UE sans organisation");
@@ -96,7 +98,7 @@ public class FindOpenApiService {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Création de mobilier non autorisée sur cette UE");
         }
 
-        Concept typeConcept = conceptRepository.findById(request.getSpecimenTypeConceptId())
+        Concept typeConcept = conceptRepository.findById(typeConceptId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Type de mobilier introuvable"));
         ConceptDTO typeDto = conceptMapper.convert(typeConcept);
 

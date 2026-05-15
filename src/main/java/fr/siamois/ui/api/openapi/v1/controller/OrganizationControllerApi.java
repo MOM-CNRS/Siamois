@@ -95,7 +95,7 @@ public class OrganizationControllerApi {
         throw new ResponseStatusException(HttpStatus.NOT_IMPLEMENTED, "Not implemented yet");
     }
 
-    @GetMapping("/{id}/finds")
+    @GetMapping("/{id}/mobiliers")
     public ResponseEntity<FindListResponse> getFinds(
             @PathVariable Long id,
             @RequestParam(defaultValue = "0") int offset,
