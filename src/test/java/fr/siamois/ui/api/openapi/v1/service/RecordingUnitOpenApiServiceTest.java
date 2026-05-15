@@ -12,6 +12,7 @@ import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerText;
 import fr.siamois.domain.models.form.customform.CustomForm;
 import fr.siamois.domain.models.form.customformresponse.CustomFormResponse;
 import fr.siamois.domain.models.UserInfo;
+import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.InstitutionService;
@@ -37,6 +38,7 @@ import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAut
 import fr.siamois.ui.api.openapi.v1.mapper.RecordingUnitResponseMapper;
 import fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitResource;
 import fr.siamois.ui.api.openapi.v1.response.find.FindMobilierFormData;
+import fr.siamois.ui.api.openapi.v1.response.project.ProjectFormData;
 import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitChildrenData;
 import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitCreateFormData;
 import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitFormBundle;
@@ -850,6 +852,40 @@ class RecordingUnitOpenApiServiceTest {
         assertThat(data.fields().get("88").answerType()).isEqualTo("TEXT");
         assertThat(data.fields().get("88").currentValue()).isNull();
         assertThat(data.vocabulariesByFieldCode()).isEmpty();
+    }
+
+    @Test
+    void buildProjectUiForm_unknownOrganization_throws404() {
+        when(institutionService.findById(10L)).thenReturn(null);
+
+        assertThatThrownBy(() -> service.buildProjectUiForm(10L, personDto, "fr"))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode().value()).isEqualTo(404));
+    }
+
+    @Test
+    void buildProjectUiForm_returnsMetadataOnly() {
+        InstitutionDTO inst = new InstitutionDTO();
+        inst.setId(10L);
+        when(institutionService.findById(10L)).thenReturn(inst);
+
+        CustomFieldText textField = new CustomFieldText();
+        textField.setId(301L);
+        textField.setLabel("Libellé projet");
+        textField.setHint(null);
+        textField.setValueBinding(null);
+        textField.setIsSystemField(true);
+
+        FormUiDto formUiDto = formUiDtoWithOneField(textField);
+        when(conversionService.convert(ActionUnit.DETAILS_FORM, FormUiDto.class)).thenReturn(formUiDto);
+        when(customFormLayoutConverter.convertToDatabaseColumn(any())).thenReturn("[]");
+
+        ProjectFormData data = service.buildProjectUiForm(10L, personDto, "fr");
+
+        assertThat(data.form()).isNotNull();
+        assertThat(data.fields()).containsKey("301");
+        assertThat(data.fields().get("301").currentValue()).isNull();
+        assertThat(data.fields().get("301").label()).isEqualTo("Libellé projet");
     }
 
     @Test

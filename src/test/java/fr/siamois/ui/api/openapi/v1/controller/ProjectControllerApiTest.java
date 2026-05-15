@@ -15,6 +15,7 @@ import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.dto.api.AccessibleProjectForApi;
 import fr.siamois.dto.entity.ActionUnitDTO;
+import fr.siamois.dto.entity.ConceptDTO;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.dto.entity.RecordingUnitDTO;
@@ -72,6 +73,7 @@ import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -133,7 +135,8 @@ class ProjectControllerApiTest {
                 personMapper,
                 permissionService,
                 conceptService,
-                conceptMapper);
+                conceptMapper,
+                recordingUnitOpenApiService);
         ProjectControllerApi controller = new ProjectControllerApi(
                 projectApiService,
                 projectResponseMapper,
@@ -323,6 +326,28 @@ class ProjectControllerApiTest {
     }
 
     @Test
+    void getProjectUiForm_success_returnsPayload() throws Exception {
+        login();
+        when(personMapper.convert(person)).thenReturn(personDto);
+        when(institutionService.findInstitutionsOfPerson(personDto)).thenReturn(Set.of(institutionDto));
+
+        ProjectFormData formData = new ProjectFormData(
+                new RecordingUnitFormBundle(null, "Details", "", "{}"),
+                Map.of());
+        when(recordingUnitOpenApiService.buildProjectUiForm(eq(100L), eq(personDto), eq("fr")))
+                .thenReturn(formData);
+
+        mockMvc.perform(get("/api/v1/projects/form")
+                        .param("organizationId", "100")
+                        .header(HttpHeaders.ACCEPT_LANGUAGE, "fr"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.form.name").value("Details"))
+                .andExpect(jsonPath("$.data.vocabulariesByFieldCode").doesNotExist());
+
+        verify(recordingUnitOpenApiService).buildProjectUiForm(100L, personDto, "fr");
+    }
+
+    @Test
     void getProjectForm_withoutAuthentication_returns401() throws Exception {
         SecurityContextHolder.getContext().setAuthentication(
                 new AnonymousAuthenticationToken("key", "anonymousUser",
@@ -346,7 +371,6 @@ class ProjectControllerApiTest {
 
         ProjectFormData formData = new ProjectFormData(
                 new RecordingUnitFormBundle(null, "Details", "", "{}"),
-                Map.of(),
                 Map.of());
         when(recordingUnitOpenApiService.buildProjectDetailForm(same(au), eq(personDto), anyString()))
                 .thenReturn(formData);
@@ -597,6 +621,75 @@ class ProjectControllerApiTest {
         mockMvc.perform(get("/api/v1/projects/2/documents"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.documents", hasSize(0)));
+    }
+
+    @Test
+    void createProject_withoutAuthentication_returns401() throws Exception {
+        SecurityContextHolder.getContext().setAuthentication(
+                new AnonymousAuthenticationToken("key", "anonymousUser",
+                        AuthorityUtils.createAuthorityList("ROLE_ANONYMOUS")));
+
+        mockMvc.perform(post("/api/v1/projects")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"organizationId\":100,\"name\":\"N\",\"identifier\":\"ID\",\"typeConceptId\":1}"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void createProject_forbiddenWhenNotManager_returns403() throws Exception {
+        login();
+        when(personMapper.convert(person)).thenReturn(personDto);
+        when(institutionService.findInstitutionsOfPerson(personDto)).thenReturn(Set.of(institutionDto));
+        when(institutionService.findById(100L)).thenReturn(institutionDto);
+        when(permissionService.isInstitutionManager(any())).thenReturn(false);
+        when(permissionService.isActionManager(any())).thenReturn(false);
+
+        mockMvc.perform(post("/api/v1/projects")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"organizationId\":100,\"name\":\"Nouveau\",\"identifier\":\"NOU\",\"typeConceptId\":42}"))
+                .andExpect(status().isForbidden());
+
+        verify(actionUnitService, never()).save(any(), any(), any());
+    }
+
+    @Test
+    void createProject_success_returns201AndCallsSave() throws Exception {
+        login();
+        when(personMapper.convert(person)).thenReturn(personDto);
+        when(institutionService.findInstitutionsOfPerson(personDto)).thenReturn(Set.of(institutionDto));
+        when(institutionService.findById(100L)).thenReturn(institutionDto);
+        when(permissionService.isInstitutionManager(any())).thenReturn(true);
+
+        fr.siamois.domain.models.vocabulary.Concept typeConcept = mock(fr.siamois.domain.models.vocabulary.Concept.class);
+        when(conceptService.findById(42L)).thenReturn(java.util.Optional.of(typeConcept));
+        ConceptDTO typeDto = new ConceptDTO();
+        typeDto.setId(42L);
+        when(conceptMapper.convert(typeConcept)).thenReturn(typeDto);
+
+        ActionUnitDTO saved = new ActionUnitDTO();
+        saved.setId(77L);
+        saved.setName("Nouveau");
+        saved.setIdentifier("NOU");
+        saved.setCreatedByInstitution(institutionDto);
+        when(actionUnitService.save(any(), any(), any())).thenReturn(saved);
+        when(actionUnitService.findAccessibleProjectByKey(eq("77"), eq(Set.of(100L))))
+                .thenReturn(new AccessibleProjectForApi(saved, 0L, 0L));
+
+        ProjectResource resource = new ProjectResource();
+        resource.setResourceType("projects");
+        resource.setId("77");
+        resource.setName("Nouveau");
+        when(projectResponseMapper.toResource(any(AccessibleProjectForApi.class), anyString())).thenReturn(resource);
+
+        mockMvc.perform(post("/api/v1/projects")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"organizationId\":100,\"name\":\"Nouveau\",\"identifier\":\"NOU\",\"typeConceptId\":42}"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.data.name").value("Nouveau"));
+
+        verify(actionUnitService).save(any(), argThat((ActionUnitDTO d) ->
+                "Nouveau".equals(d.getName()) && "NOU".equals(d.getIdentifier())), eq(typeDto));
+        verify(recordingUnitOpenApiService).applySystemProjectFormFieldAnswers(any(), any(), same(personDto), anyString());
     }
 
     @Test

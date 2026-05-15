@@ -137,7 +137,8 @@ class RecordingUnitsControllerApiTest {
                 personMapper,
                 permissionService,
                 conceptService,
-                conceptMapper);
+                conceptMapper,
+                recordingUnitOpenApiService);
 
         RecordingUnitsControllerApi controller = new RecordingUnitsControllerApi(
                 projectApiService,

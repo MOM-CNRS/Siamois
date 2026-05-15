@@ -153,8 +153,20 @@ public class RecordingUnitOpenApiService {
     }
 
     /**
-     * Formulaire système de fiche projet (unité d'action) : même schéma que le web ({@link ActionUnit#DETAILS_FORM}),
-     * avec listes de concepts pour les champs configurés par field_code (ex. type d'opération).
+     * Gabarit UI du formulaire système projet ({@link ActionUnit#DETAILS_FORM}) : layout et métadonnées des champs.
+     * Vocabulaires : {@code GET /api/v1/vocabularies}. Valeurs d'un projet existant : {@link #buildProjectDetailForm}.
+     */
+    @Transactional(readOnly = true)
+    public ProjectFormData buildProjectUiForm(long organizationId, PersonDTO personDto, String lang) {
+        InstitutionDTO institution = institutionService.findById(organizationId);
+        if (institution == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Organization not found");
+        }
+        return buildProjectFormBundle(institution, personDto, lang, null);
+    }
+
+    /**
+     * Projet existant : formulaire système avec valeurs persistées (sans vocabulaires).
      */
     @Transactional(readOnly = true)
     public ProjectFormData buildProjectDetailForm(ActionUnitDTO dto, PersonDTO personDto, String lang) {
@@ -162,6 +174,38 @@ public class RecordingUnitOpenApiService {
         if (institution == null || institution.getId() == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Projet sans organisation de rattachement");
         }
+        return buildProjectFormBundle(institution, personDto, lang, dto);
+    }
+
+    /**
+     * Applique les réponses du formulaire système projet ({@link ActionUnit#DETAILS_FORM}) sur un shell avant save.
+     */
+    public void applySystemProjectFormFieldAnswers(ActionUnitDTO shell,
+                                                   Map<String, Object> fieldAnswers,
+                                                   PersonDTO personDto,
+                                                   String lang) {
+        if (fieldAnswers == null || fieldAnswers.isEmpty()) {
+            return;
+        }
+        InstitutionDTO institution = shell.getCreatedByInstitution();
+        if (institution == null || institution.getId() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Projet sans organisation");
+        }
+        UserInfo userInfo = new UserInfo(institution, personDto, lang);
+        OpenApiExecutionContext.runWithUserInfo(userInfo, () -> {
+            CustomForm systemForm = ActionUnit.DETAILS_FORM;
+            FormUiDto formUiDto = conversionService.convert(systemForm, FormUiDto.class);
+            FieldSource fieldSource = new PanelFieldSource(formUiDto);
+            CustomFormResponseViewModel response = formService.initOrReuseResponse(null, shell, fieldSource, true);
+            mergeFieldAnswers(shell, response, fieldSource, fieldAnswers, lang);
+            formService.updateJpaEntityFromResponse(response, shell);
+        });
+    }
+
+    private ProjectFormData buildProjectFormBundle(InstitutionDTO institution,
+                                                   PersonDTO personDto,
+                                                   String lang,
+                                                   ActionUnitDTO dtoOrNull) {
         CustomForm systemForm = ActionUnit.DETAILS_FORM;
         FormUiDto formUiDto = conversionService.convert(systemForm, FormUiDto.class);
         FieldSource fieldSource = new PanelFieldSource(formUiDto);
@@ -175,16 +219,18 @@ public class RecordingUnitOpenApiService {
         UserInfo userInfo = new UserInfo(institution, personDto, lang);
         Locale locale = langService.localeForApiLang(lang);
         Map<String, RecordingUnitFormFieldApi> fields = OpenApiExecutionContext.callWithUserInfo(userInfo, () -> {
+            if (dtoOrNull == null) {
+                return buildFieldsMetadataOnly(fieldSource, locale);
+            }
             try {
-                CustomFormResponseViewModel response = formService.initOrReuseResponse(null, dto, fieldSource, true);
+                CustomFormResponseViewModel response = formService.initOrReuseResponse(null, dtoOrNull, fieldSource, true);
                 return toFieldsMap(response, fieldSource, locale);
             } catch (RuntimeException ex) {
-                log.warn("Impossible d'initialiser le formulaire projet id={}: {}", dto.getId(), ex.toString(), ex);
+                log.warn("Impossible d'initialiser le formulaire projet id={}: {}", dtoOrNull.getId(), ex.toString(), ex);
                 return buildFieldsMetadataOnly(fieldSource, locale);
             }
         });
-        Map<String, List<ConceptAutocompleteDTO>> vocabs = loadVocabularies(fieldSource, userInfo);
-        return new ProjectFormData(formBundle, fields, vocabs);
+        return new ProjectFormData(formBundle, fields);
     }
 
     /**
@@ -639,6 +685,21 @@ public class RecordingUnitOpenApiService {
                                    FieldSource fieldSource,
                                    Map<String, Object> fieldAnswers,
                                    String lang) {
+        mergeFieldAnswersInternal(response, fieldSource, fieldAnswers, bindTarget);
+    }
+
+    private void mergeFieldAnswers(ActionUnitDTO bindTarget,
+                                   CustomFormResponseViewModel response,
+                                   FieldSource fieldSource,
+                                   Map<String, Object> fieldAnswers,
+                                   String lang) {
+        mergeFieldAnswersInternal(response, fieldSource, fieldAnswers, null);
+    }
+
+    private void mergeFieldAnswersInternal(CustomFormResponseViewModel response,
+                                           FieldSource fieldSource,
+                                           Map<String, Object> fieldAnswers,
+                                           RecordingUnitDTO recordingUnitForCoercion) {
         if (fieldAnswers == null || fieldAnswers.isEmpty() || response.getAnswers() == null) {
             return;
         }
@@ -661,7 +722,7 @@ public class RecordingUnitOpenApiService {
             }
             Object typed;
             try {
-                typed = coerceAnswerValue(field, e.getValue(), bindTarget);
+                typed = coerceAnswerValue(field, e.getValue(), recordingUnitForCoercion);
             } catch (ResponseStatusException rex) {
                 throw rex;
             } catch (RuntimeException ex) {
