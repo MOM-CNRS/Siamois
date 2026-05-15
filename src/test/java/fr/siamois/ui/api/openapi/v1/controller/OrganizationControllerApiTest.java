@@ -21,6 +21,7 @@ import fr.siamois.ui.api.openapi.v1.mapper.OrganizationOpenApiMapper;
 import fr.siamois.ui.api.openapi.v1.mapper.ProjectDocumentOpenApiMapper;
 import fr.siamois.ui.api.openapi.v1.mapper.RecordingUnitResponseMapper;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiService;
+import fr.siamois.ui.api.openapi.v1.service.RecordingUnitOpenApiService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -76,6 +77,8 @@ class OrganizationControllerApiTest {
     private ConceptMapper conceptMapper;
     @Mock
     private RecordingUnitResponseMapper recordingUnitResponseMapper;
+    @Mock
+    private RecordingUnitOpenApiService recordingUnitOpenApiService;
 
     private MockMvc mockMvc;
 
@@ -99,7 +102,8 @@ class OrganizationControllerApiTest {
                 personMapper,
                 permissionService,
                 conceptService,
-                conceptMapper);
+                conceptMapper,
+                recordingUnitOpenApiService);
 
         OrganizationControllerApi controller = new OrganizationControllerApi(
                 recordingUnitService,

@@ -71,6 +71,8 @@ class ProjectApiServiceRecordingUnitFindsTest {
     private ConceptService conceptService;
     @Mock
     private ConceptMapper conceptMapper;
+    @Mock
+    private RecordingUnitOpenApiService recordingUnitOpenApiService;
 
     private ProjectApiService projectApiService;
 
@@ -92,7 +94,8 @@ class ProjectApiServiceRecordingUnitFindsTest {
                 personMapper,
                 permissionService,
                 conceptService,
-                conceptMapper);
+                conceptMapper,
+                recordingUnitOpenApiService);
     }
 
     private ProjectApiCaller caller() {

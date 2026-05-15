@@ -42,6 +42,7 @@ class ProjectApiServiceOrganizationPageTest {
     @Mock private PermissionService permissionService;
     @Mock private ConceptService conceptService;
     @Mock private ConceptMapper conceptMapper;
+    @Mock private RecordingUnitOpenApiService recordingUnitOpenApiService;
 
     private ProjectApiService projectApiService;
 
@@ -62,7 +63,8 @@ class ProjectApiServiceOrganizationPageTest {
                 personMapper,
                 permissionService,
                 conceptService,
-                conceptMapper);
+                conceptMapper,
+                recordingUnitOpenApiService);
     }
 
     private ProjectApiCaller caller(List<InstitutionDTO> institutions) {

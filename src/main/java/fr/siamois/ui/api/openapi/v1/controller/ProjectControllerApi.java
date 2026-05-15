@@ -8,6 +8,7 @@ import fr.siamois.ui.api.openapi.v1.mapper.ProjectResponseMapper;
 import fr.siamois.ui.api.openapi.v1.mapper.RecordingUnitResponseMapper;
 import fr.siamois.ui.api.openapi.v1.resource.document.ProjectDocumentResource;
 import fr.siamois.ui.api.openapi.v1.resource.project.ProjectResource;
+import fr.siamois.ui.api.openapi.v1.request.project.ProjectCreateRequest;
 import fr.siamois.ui.api.openapi.v1.request.project.ProjectPatchRequest;
 import fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitResource;
 import fr.siamois.ui.api.openapi.v1.response.FindListResponse;
@@ -82,6 +83,60 @@ public class ProjectControllerApi {
                 .body(new ProjectListResponse(resources, meta));
     }
 
+    @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Créer un projet",
+            description = "Crée une unité d'action (projet) dans une organisation. "
+                    + "Champs obligatoires : organizationId, name, identifier, typeConceptId. "
+                    + "fieldAnswers : clés = custom_field_id (formulaire système, voir GET /api/v1/projects/form). "
+                    + "Droit requis : gestionnaire d'institution ou gestionnaire d'action."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "201", description = "Créé"),
+            @ApiResponse(responseCode = "400", description = "Requête ou données invalides"),
+            @ApiResponse(responseCode = "401", description = "Non authentifié"),
+            @ApiResponse(responseCode = "403", description = "Création non autorisée ou organisation hors périmètre"),
+            @ApiResponse(responseCode = "404", description = "Organisation, type ou lieu introuvable"),
+            @ApiResponse(responseCode = "409", description = "Conflit (nom ou identifiant déjà utilisé)"),
+            @ApiResponse(responseCode = "500", description = "Erreur interne")
+    })
+    public ResponseEntity<ProjectResponse> create(
+            @RequestBody ProjectCreateRequest body,
+            @RequestHeader(value = HttpHeaders.ACCEPT_LANGUAGE, required = false) String acceptLanguage) {
+        ProjectApiCaller caller = projectApiService.requireCaller();
+        String lang = ProjectApiService.primaryAcceptLanguage(acceptLanguage);
+        AccessibleProjectForApi row = projectApiService.createProject(caller, body, lang);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(new ProjectResponse(projectResponseMapper.toResource(row, lang)));
+    }
+
+    @GetMapping("/form")
+    @Operation(
+            summary = "Gabarit UI du formulaire projet",
+            description = "Retourne le layout et la définition des champs du formulaire système projet (sans valeurs saisies). "
+                    + "Vocabulaires : GET /api/v1/vocabularies. "
+                    + "Valeurs d'un projet déjà enregistré : GET /api/v1/projects/{id}/form."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Ok"),
+            @ApiResponse(responseCode = "401", description = "Non authentifié"),
+            @ApiResponse(responseCode = "403", description = "Organisation hors périmètre"),
+            @ApiResponse(responseCode = "404", description = "Organisation introuvable"),
+            @ApiResponse(responseCode = "500", description = "Erreur interne")
+    })
+    public ResponseEntity<ProjectFormResponse> getProjectUiForm(
+            @Parameter(description = "Institution (doit être dans le périmètre JWT).", example = "10", required = true)
+            @RequestParam("organizationId") long organizationId,
+            @Parameter(description = "Langue des libellés de champs (première entrée utilisée).")
+            @RequestHeader(value = HttpHeaders.ACCEPT_LANGUAGE, required = false) String acceptLanguage) {
+
+        ProjectApiCaller caller = projectApiService.requireCaller();
+        projectApiService.assertOrganizationInCallerScope(organizationId, caller.accessibleInstitutionIds());
+        String lang = ProjectApiService.primaryAcceptLanguage(acceptLanguage);
+        return ResponseEntity.ok(new ProjectFormResponse(
+                recordingUnitOpenApiService.buildProjectUiForm(organizationId, caller.person(), lang)));
+    }
+
     @GetMapping("/{id}")
     @Operation(summary = "Un projet via son identifiant",
             description = "Clé d'URL : id numérique (clé primaire), identifiant métier complet (fullIdentifier), "
@@ -107,10 +162,9 @@ public class ProjectControllerApi {
 
     @GetMapping("/{id}/form")
     @Operation(
-            summary = "Formulaire et vocabulaires d'un projet",
-            description = "Retourne le formulaire système de fiche projet (layout, champs avec valeurs courantes) "
-                    + "et les listes de concepts par field_code (ex. type d'opération). "
-                    + "Même clé de projet que GET /api/v1/projects/{id}. Les libellés de vocabulaire suivent Accept-Language."
+            summary = "Formulaire d'un projet avec ses valeurs",
+            description = "Layout, champs et valeurs persistées pour le projet (même clé que GET /api/v1/projects/{id}). "
+                    + "Pour le gabarit UI seul : GET /api/v1/projects/form. Vocabulaires : GET /api/v1/vocabularies."
     )
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Ok"),

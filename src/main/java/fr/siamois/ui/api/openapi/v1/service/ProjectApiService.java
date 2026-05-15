@@ -29,6 +29,7 @@ import fr.siamois.mapper.ConceptMapper;
 import fr.siamois.mapper.PersonMapper;
 import fr.siamois.ui.api.openapi.v1.mapper.FindOpenApiMapper;
 import fr.siamois.ui.api.openapi.v1.mapper.ProjectDocumentOpenApiMapper;
+import fr.siamois.ui.api.openapi.v1.request.project.ProjectCreateRequest;
 import fr.siamois.ui.api.openapi.v1.request.project.ProjectPatchRequest;
 import fr.siamois.ui.api.openapi.v1.resource.document.ProjectDocumentResource;
 import fr.siamois.ui.api.openapi.v1.resource.find.FindResource;
@@ -85,6 +86,7 @@ public class ProjectApiService {
     private final PermissionService permissionService;
     private final ConceptService conceptService;
     private final ConceptMapper conceptMapper;
+    private final RecordingUnitOpenApiService recordingUnitOpenApiService;
 
     public void validatePagedListRequest(int offset, int limit) {
         if (offset < 0 || limit <= 0 || limit > MAX_PAGE_SIZE) {
@@ -133,6 +135,72 @@ public class ProjectApiService {
 
     public AccessibleProjectForApi requireAccessibleProject(ProjectApiCaller caller, String projectIdOrKey) {
         return actionUnitService.findAccessibleProjectByKey(projectIdOrKey, caller.accessibleInstitutionIds());
+    }
+
+    /**
+     * Crée un projet dans une organisation (gestionnaire d'institution ou d'action requis).
+     */
+    @Transactional
+    public AccessibleProjectForApi createProject(ProjectApiCaller caller, ProjectCreateRequest request, String lang) {
+        if (request.getOrganizationId() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "organizationId est obligatoire");
+        }
+        assertOrganizationInCallerScope(request.getOrganizationId(), caller.accessibleInstitutionIds());
+
+        InstitutionDTO institution = institutionService.findById(request.getOrganizationId());
+        if (institution == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Organisation introuvable");
+        }
+
+        UserInfo userInfo = new UserInfo(institution, caller.person(), lang);
+        if (!permissionService.isInstitutionManager(userInfo) && !permissionService.isActionManager(userInfo)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Création de projet non autorisée");
+        }
+
+        String name = request.getName() == null ? "" : request.getName().trim();
+        if (name.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "name est obligatoire");
+        }
+        String identifier = request.getIdentifier() == null ? "" : request.getIdentifier().trim();
+        if (identifier.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "identifier est obligatoire");
+        }
+        if (request.getTypeConceptId() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "typeConceptId est obligatoire");
+        }
+
+        Concept typeConcept = conceptService.findById(request.getTypeConceptId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Type de projet introuvable"));
+        ConceptDTO typeDto = conceptMapper.convert(typeConcept);
+
+        ActionUnitDTO shell = new ActionUnitDTO();
+        shell.setCreatedByInstitution(institution);
+        shell.setCreatedBy(caller.person());
+        shell.setName(name);
+        shell.setIdentifier(identifier);
+        shell.setBeginDate(request.getBeginDate());
+        shell.setEndDate(request.getEndDate());
+        shell.setType(typeDto);
+        shell.setSpatialContext(new LinkedHashSet<>());
+
+        if (request.getSpatialContextSpatialUnitIds() != null) {
+            ProjectPatchRequest spatialPatch = new ProjectPatchRequest();
+            spatialPatch.setSpatialContextSpatialUnitIds(request.getSpatialContextSpatialUnitIds());
+            applySpatialContextPatch(shell, institution, spatialPatch);
+        }
+
+        recordingUnitOpenApiService.applySystemProjectFormFieldAnswers(
+                shell, request.getFieldAnswers(), caller.person(), lang);
+
+        try {
+            ActionUnitDTO saved = actionUnitService.save(userInfo, shell, typeDto);
+            return actionUnitService.findAccessibleProjectByKey(
+                    String.valueOf(saved.getId()), caller.accessibleInstitutionIds());
+        } catch (ActionUnitAlreadyExistsException e) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, e.getMessage(), e);
+        } catch (NullActionUnitIdentifierException | FailedActionUnitSaveException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage(), e);
+        }
     }
 
     /**
