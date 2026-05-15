@@ -347,41 +347,6 @@ class ProjectControllerApiTest {
         verify(recordingUnitOpenApiService).buildProjectUiForm(100L, personDto, "fr");
     }
 
-    @Test
-    void getProjectForm_withoutAuthentication_returns401() throws Exception {
-        SecurityContextHolder.getContext().setAuthentication(
-                new AnonymousAuthenticationToken("key", "anonymousUser",
-                        AuthorityUtils.createAuthorityList("ROLE_ANONYMOUS")));
-
-        mockMvc.perform(get("/api/v1/projects/5/form"))
-                .andExpect(status().isUnauthorized());
-    }
-
-    @Test
-    void getProjectForm_success_returnsPayload() throws Exception {
-        login();
-        when(personMapper.convert(person)).thenReturn(personDto);
-        when(institutionService.findInstitutionsOfPerson(personDto)).thenReturn(Set.of(institutionDto));
-
-        ActionUnitDTO au = new ActionUnitDTO();
-        au.setId(5L);
-        au.setCreatedByInstitution(institutionDto);
-        AccessibleProjectForApi row = new AccessibleProjectForApi(au, 0L, 0L);
-        when(actionUnitService.findAccessibleProjectByKey(eq("5"), eq(Set.of(100L)))).thenReturn(row);
-
-        ProjectFormData formData = new ProjectFormData(
-                new RecordingUnitFormBundle(null, "Details", "", "{}"),
-                Map.of());
-        when(recordingUnitOpenApiService.buildProjectDetailForm(same(au), eq(personDto), anyString()))
-                .thenReturn(formData);
-
-        mockMvc.perform(get("/api/v1/projects/5/form"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.form.name").value("Details"));
-
-        verify(recordingUnitOpenApiService).buildProjectDetailForm(same(au), eq(personDto), eq("fr"));
-    }
-
     /**
      * Clé métier non numérique (fullIdentifier, etc.) : une seule variable de chemin.
      * Les identifiants contenant « / » doivent être encodés ({@code %2F}) côté client ; beaucoup de piles Servlet

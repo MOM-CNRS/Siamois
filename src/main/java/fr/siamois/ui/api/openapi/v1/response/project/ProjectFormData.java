@@ -8,8 +8,7 @@ import java.util.Map;
 
 /**
  * Layout et champs du formulaire système projet (unité d'action).
- * Sur {@code GET /projects/form} : métadonnées UI seules ({@code currentValue} absent).
- * Sur {@code GET /projects/{id}/form} : inclut les valeurs persistées.
+ * Métadonnées UI seules ({@code currentValue} absent) — voir {@code GET /api/v1/projects/form}.
  * Vocabulaires : {@code GET /api/v1/vocabularies}.
  */
 @Schema(description = "Formulaire projet (layout et champs)")

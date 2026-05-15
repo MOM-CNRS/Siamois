@@ -114,8 +114,7 @@ public class ProjectControllerApi {
     @Operation(
             summary = "Gabarit UI du formulaire projet",
             description = "Retourne le layout et la définition des champs du formulaire système projet (sans valeurs saisies). "
-                    + "Vocabulaires : GET /api/v1/vocabularies. "
-                    + "Valeurs d'un projet déjà enregistré : GET /api/v1/projects/{id}/form."
+                    + "Vocabulaires : GET /api/v1/vocabularies."
     )
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Ok"),
@@ -158,29 +157,6 @@ public class ProjectControllerApi {
         AccessibleProjectForApi row = projectApiService.requireAccessibleProject(caller, id);
         String lang = ProjectApiService.primaryAcceptLanguage(acceptLanguage);
         return ResponseEntity.ok(new ProjectResponse(projectResponseMapper.toResource(row, lang)));
-    }
-
-    @GetMapping("/{id}/form")
-    @Operation(
-            summary = "Formulaire d'un projet avec ses valeurs",
-            description = "Layout, champs et valeurs persistées pour le projet (même clé que GET /api/v1/projects/{id}). "
-                    + "Pour le gabarit UI seul : GET /api/v1/projects/form. Vocabulaires : GET /api/v1/vocabularies."
-    )
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Ok"),
-            @ApiResponse(responseCode = "400", description = "Projet sans organisation de rattachement"),
-            @ApiResponse(responseCode = "401", description = "Non authentifié"),
-            @ApiResponse(responseCode = "404", description = "Projet introuvable ou non accessible"),
-            @ApiResponse(responseCode = "500", description = "Erreur interne")
-    })
-    public ResponseEntity<ProjectFormResponse> getProjectForm(
-            @PathVariable("id") String id,
-            @RequestHeader(value = HttpHeaders.ACCEPT_LANGUAGE, required = false) String acceptLanguage) {
-        ProjectApiCaller caller = projectApiService.requireCaller();
-        AccessibleProjectForApi row = projectApiService.requireAccessibleProject(caller, id);
-        String lang = ProjectApiService.primaryAcceptLanguage(acceptLanguage);
-        return ResponseEntity.ok(new ProjectFormResponse(
-                recordingUnitOpenApiService.buildProjectDetailForm(row.actionUnit(), caller.person(), lang)));
     }
 
     @PatchMapping(value = "/{id}", consumes = MediaType.APPLICATION_JSON_VALUE)
