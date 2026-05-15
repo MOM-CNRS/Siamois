@@ -25,9 +25,8 @@ import java.nio.charset.StandardCharsets;
 
 @RestController
 @RequestMapping("/api/v1/documents")
-@Tag(name = "Document", description = "Fichiers et contenus des documents SIAMOIS")
+@Tag(name = OpenApiTags.DOCUMENT)
 @RequiredArgsConstructor
-@Tag(name = OpenApiTags.APPLICATION_MOBILE, description = OpenApiTags.APPLICATION_MOBILE_DESCRIPTION)
 public class DocumentsControllerApi {
 
     private final ProjectApiService projectApiService;

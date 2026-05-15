@@ -12,6 +12,7 @@ import fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitResource
 import fr.siamois.ui.api.openapi.v1.response.*;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiCaller;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiService;
+import io.swagger.v3.oas.annotations.Hidden;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
@@ -30,7 +31,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/organizations")
-@Tag(name = OpenApiTags.ORGANISATION, description = "API des organisations")
+@Tag(name = OpenApiTags.ORGANISATION)
 @RequiredArgsConstructor
 public class OrganizationControllerApi {
 
@@ -52,7 +53,6 @@ public class OrganizationControllerApi {
             @ApiResponse(responseCode = "401", description = "Non authentifié"),
             @ApiResponse(responseCode = "500", description = "Erreur interne")
     })
-    @Tag(name = OpenApiTags.APPLICATION_MOBILE, description = OpenApiTags.APPLICATION_MOBILE_DESCRIPTION)
     public ResponseEntity<OrganizationListResponse> getAll(
             @RequestParam(defaultValue = "0") int offset,
             @RequestParam(defaultValue = "20") int limit,
@@ -74,11 +74,13 @@ public class OrganizationControllerApi {
                 .body(new OrganizationListResponse(resources, meta));
     }
 
+    @Hidden
     @GetMapping("/{id}")
     public ResponseEntity<OrganizationResponse> getById(@PathVariable Long id) {
         throw new ResponseStatusException(HttpStatus.NOT_IMPLEMENTED, "Not implemented yet");
     }
 
+    @Hidden
     @GetMapping("/{id}/projects")
     public ResponseEntity<ProjectListResponse> getProjects(
             @PathVariable Long id,
@@ -87,6 +89,7 @@ public class OrganizationControllerApi {
         throw new ResponseStatusException(HttpStatus.NOT_IMPLEMENTED, "Not implemented yet");
     }
 
+    @Hidden
     @GetMapping("/{id}/places")
     public ResponseEntity<PlaceListResponse> getPlaces(
             @PathVariable Long id,
@@ -95,6 +98,7 @@ public class OrganizationControllerApi {
         throw new ResponseStatusException(HttpStatus.NOT_IMPLEMENTED, "Not implemented yet");
     }
 
+    @Hidden
     @GetMapping("/{id}/mobiliers")
     public ResponseEntity<FindListResponse> getFinds(
             @PathVariable Long id,

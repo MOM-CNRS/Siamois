@@ -34,7 +34,7 @@ import java.util.List;
  */
 @RestController
 @RequestMapping("/api/v1/spatial-units")
-@Tag(name = OpenApiTags.SPATIAL_UNIT, description = "Recherche et autocomplétion d'unités spatiales")
+@Tag(name = OpenApiTags.SPATIAL_UNIT)
 @RequiredArgsConstructor
 public class SpatialUnitSearchControllerApi {
 
@@ -57,7 +57,6 @@ public class SpatialUnitSearchControllerApi {
             @ApiResponse(responseCode = "403", description = "Organisation hors périmètre"),
             @ApiResponse(responseCode = "500", description = "Erreur interne")
     })
-    @Tag(name = OpenApiTags.APPLICATION_MOBILE, description = OpenApiTags.APPLICATION_MOBILE_DESCRIPTION)
     public ResponseEntity<SpatialUnitAutocompleteListResponse> autocomplete(
             @Parameter(description = "Institution propriétaire des lieux (doit être dans le périmètre JWT).", example = "10", required = true)
             @RequestParam("organizationId") long organizationId,

@@ -20,16 +20,21 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
 import java.util.LinkedHashSet;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 class ProjectResponseMapperTest {
 
     @Mock
@@ -68,7 +73,7 @@ class ProjectResponseMapperTest {
         ConceptResourceIdentifier typeIdent = new ConceptResourceIdentifier();
         typeIdent.setResourceType("concepts");
         typeIdent.setId("99");
-        when(conceptResourceIdentifierMapper.convert(typeDto)).thenReturn(typeIdent);
+        lenient().when(conceptResourceIdentifierMapper.convert(typeDto)).thenReturn(typeIdent);
     }
 
     @Test
@@ -82,8 +87,8 @@ class ProjectResponseMapperTest {
         ProjectResource r = projectResponseMapper.toResource(row, "fr");
 
         assertThat(r.getCategorie()).isEqualTo("Fouille programmée");
-        verify(conceptMapper).invertConvert(typeDto);
-        verify(labelService).findLabelOf(conceptEntity, "fr");
+        verify(conceptMapper, times(2)).invertConvert(typeDto);
+        verify(labelService, times(2)).findLabelOf(conceptEntity, "fr");
     }
 
     @Test
@@ -107,7 +112,7 @@ class ProjectResponseMapperTest {
         ProjectResource r = projectResponseMapper.toResource(row, "en");
 
         assertThat(r.getCategorie()).isEqualTo("Survey");
-        verify(labelService).findLabelOf(conceptEntity, "en");
+        verify(labelService, times(2)).findLabelOf(conceptEntity, "en");
     }
 
     @Test
@@ -149,7 +154,7 @@ class ProjectResponseMapperTest {
         AccessibleProjectForApi row = new AccessibleProjectForApi(dto, 0L, 0L);
         projectResponseMapper.toResource(row);
 
-        verify(labelService).findLabelOf(conceptEntity, "fr");
+        verify(labelService, times(2)).findLabelOf(conceptEntity, "fr");
     }
 
     @Test

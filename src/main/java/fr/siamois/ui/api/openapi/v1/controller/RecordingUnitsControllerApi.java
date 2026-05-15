@@ -21,6 +21,7 @@ import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitRelation
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiCaller;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiService;
 import fr.siamois.ui.api.openapi.v1.service.RecordingUnitOpenApiService;
+import io.swagger.v3.oas.annotations.Hidden;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
@@ -40,7 +41,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/recording-units")
-@Tag(name = OpenApiTags.RECORDING_UNIT, description = "Endpoints des unités d'enregistrement")
+@Tag(name = OpenApiTags.RECORDING_UNIT)
 @RequiredArgsConstructor
 public class RecordingUnitsControllerApi {
 
@@ -63,7 +64,6 @@ public class RecordingUnitsControllerApi {
             @ApiResponse(responseCode = "404", description = "Organisation ou type d'UE introuvable"),
             @ApiResponse(responseCode = "500", description = "Erreur interne")
     })
-    @Tag(name = OpenApiTags.APPLICATION_MOBILE, description = OpenApiTags.APPLICATION_MOBILE_DESCRIPTION)
     public ResponseEntity<RecordingUnitCreateFormResponse> getRecordingUnitCreateForm(
             @Parameter(description = "Institution (doit être dans le périmètre JWT).", example = "10")
             @RequestParam long organizationId,
@@ -83,7 +83,8 @@ public class RecordingUnitsControllerApi {
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
     @Operation(
             summary = "Créer une unité d'enregistrement",
-            description = "Crée une UE sur un projet (action_unit_id) avec un type (concept). "
+            description = "Crée une UE sur un projet (`actionUnitId` : action_unit_id numérique, full_identifier "
+                    + "ou identifiant court) avec un type (concept). "
                     + "Les valeurs de formulaire sont passées dans `fieldAnswers` (clés = identifiants de champs, "
                     + "comme sur GET /creation-form). Le formulaire effectif dépend du type d'UE et de l'institution du projet."
     )
@@ -95,7 +96,6 @@ public class RecordingUnitsControllerApi {
             @ApiResponse(responseCode = "404", description = "Projet ou type introuvable"),
             @ApiResponse(responseCode = "500", description = "Erreur interne")
     })
-    @Tag(name = OpenApiTags.APPLICATION_MOBILE, description = OpenApiTags.APPLICATION_MOBILE_DESCRIPTION)
     public ResponseEntity<RecordingUnitMobileDetailResponse> createRecordingUnit(
             @RequestBody RecordingUnitCreateRequest body,
             @RequestHeader(value = HttpHeaders.ACCEPT_LANGUAGE, required = false) String acceptLanguage) {
@@ -121,7 +121,6 @@ public class RecordingUnitsControllerApi {
             @ApiResponse(responseCode = "404", description = "UE introuvable ou hors périmètre"),
             @ApiResponse(responseCode = "500", description = "Erreur interne")
     })
-    @Tag(name = OpenApiTags.APPLICATION_MOBILE, description = OpenApiTags.APPLICATION_MOBILE_DESCRIPTION)
     public ResponseEntity<RecordingUnitMobileDetailResponse> patchRecordingUnit(
             @Parameter(
                     description = "Clé d'UE : identifiant numérique (recording_unit_id) ou full_identifier.",
@@ -138,6 +137,7 @@ public class RecordingUnitsControllerApi {
         return ResponseEntity.ok(new RecordingUnitMobileDetailResponse(data));
     }
 
+    @Hidden
     @GetMapping
     public ResponseEntity<RecordingUnitListResponse> getAll() {
         // Réponse directe 501 : en MockMvc standalone, ResponseStatusException peut être
@@ -161,7 +161,6 @@ public class RecordingUnitsControllerApi {
             @ApiResponse(responseCode = "404", description = "UE introuvable ou hors périmètre"),
             @ApiResponse(responseCode = "500", description = "Erreur interne")
     })
-    @Tag(name = OpenApiTags.APPLICATION_MOBILE, description = OpenApiTags.APPLICATION_MOBILE_DESCRIPTION)
     public ResponseEntity<RecordingUnitMobileDetailResponse> getById(
             @Parameter(
                     description = "Clé d'UE : identifiant numérique (recording_unit_id) ou full_identifier.",
@@ -196,7 +195,6 @@ public class RecordingUnitsControllerApi {
             @ApiResponse(responseCode = "404", description = "UE introuvable ou hors périmètre"),
             @ApiResponse(responseCode = "500", description = "Erreur interne")
     })
-    @Tag(name = OpenApiTags.APPLICATION_MOBILE, description = OpenApiTags.APPLICATION_MOBILE_DESCRIPTION)
     public ResponseEntity<RecordingUnitDocumentsResponse> getDocuments(
             @Parameter(
                     description = "Clé d'UE : identifiant numérique (recording_unit_id) ou full_identifier.",
@@ -221,7 +219,6 @@ public class RecordingUnitsControllerApi {
             @ApiResponse(responseCode = "404", description = "UE introuvable ou hors périmètre"),
             @ApiResponse(responseCode = "500", description = "Erreur interne")
     })
-    @Tag(name = OpenApiTags.APPLICATION_MOBILE, description = OpenApiTags.APPLICATION_MOBILE_DESCRIPTION)
     public ResponseEntity<RecordingUnitRelationsResponse> getRelations(
             @Parameter(
                     description = "Clé d'UE : identifiant numérique (recording_unit_id) ou full_identifier.",
@@ -247,7 +244,6 @@ public class RecordingUnitsControllerApi {
             @ApiResponse(responseCode = "404", description = "UE introuvable ou hors périmètre"),
             @ApiResponse(responseCode = "500", description = "Erreur interne")
     })
-    @Tag(name = OpenApiTags.APPLICATION_MOBILE, description = OpenApiTags.APPLICATION_MOBILE_DESCRIPTION)
     public ResponseEntity<RecordingUnitChildrenResponse> getChildren(
             @Parameter(
                     description = "Clé d'UE : identifiant numérique (recording_unit_id) ou full_identifier.",
@@ -277,8 +273,6 @@ public class RecordingUnitsControllerApi {
             @ApiResponse(responseCode = "404", description = "UE introuvable ou hors périmètre"),
             @ApiResponse(responseCode = "500", description = "Erreur interne")
     })
-    @Tag(name = OpenApiTags.MOBILIER)
-    @Tag(name = OpenApiTags.APPLICATION_MOBILE, description = OpenApiTags.APPLICATION_MOBILE_DESCRIPTION)
     public ResponseEntity<FindListResponse> getFinds(
             @Parameter(
                     description = "Clé d'UE : identifiant numérique (recording_unit_id) ou full_identifier.",
@@ -317,7 +311,6 @@ public class RecordingUnitsControllerApi {
             @ApiResponse(responseCode = "409", description = "Suppression impossible (mobiliers, études ou UE filles)"),
             @ApiResponse(responseCode = "500", description = "Erreur interne")
     })
-    @Tag(name = OpenApiTags.APPLICATION_MOBILE, description = OpenApiTags.APPLICATION_MOBILE_DESCRIPTION)
     public ResponseEntity<Void> deleteByNumericId(
             @Parameter(description = "Identifiant numérique recording_unit_id.", example = "42")
             @PathVariable("id") long id,

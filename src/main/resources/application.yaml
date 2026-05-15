@@ -92,3 +92,11 @@ logging:
       springframework: INFO
       hibernate:
         SQL: INFO
+
+springdoc:
+  swagger-ui:
+    tags-sorter: alpha
+    operations-sorter: alpha
+    doc-expansion: none
+    display-request-duration: true
+  default-produces-media-type: application/json

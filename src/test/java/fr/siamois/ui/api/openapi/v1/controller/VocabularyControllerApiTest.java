@@ -1,6 +1,7 @@
 package fr.siamois.ui.api.openapi.v1.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.dto.entity.ConceptDTO;
 import fr.siamois.dto.entity.PersonDTO;
@@ -30,7 +31,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -51,7 +54,7 @@ class VocabularyControllerApiTest {
 
     @BeforeEach
     void setUp() {
-        ObjectMapper objectMapper = new ObjectMapper();
+        ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
         mockMvc = MockMvcBuilders.standaloneSetup(
                         new VocabularyControllerApi(projectApiService, vocabularyOpenApiService))
                 .setControllerAdvice(new RestExceptionHandler())
@@ -89,6 +92,8 @@ class VocabularyControllerApiTest {
     void listVocabularies_orgForbidden_returns403() throws Exception {
         when(projectApiService.requireCaller())
                 .thenReturn(new ProjectApiCaller(personDto, Set.of(10L), List.of()));
+        doThrow(new ResponseStatusException(HttpStatus.FORBIDDEN, "Organisation non accessible"))
+                .when(projectApiService).assertOrganizationInCallerScope(eq(999L), any());
 
         mockMvc.perform(get("/api/v1/vocabularies").param("organizationId", "999"))
                 .andExpect(status().isForbidden());

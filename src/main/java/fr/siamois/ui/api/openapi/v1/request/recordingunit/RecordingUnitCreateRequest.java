@@ -14,8 +14,13 @@ import java.util.Map;
 @Schema(description = "Création d'une unité d'enregistrement")
 public class RecordingUnitCreateRequest {
 
-    @Schema(description = "Identifiant du projet (action_unit_id)", example = "12", requiredMode = Schema.RequiredMode.REQUIRED)
-    private Long actionUnitId;
+    @Schema(
+            description = "Clé du projet (unité d'action) : identifiant numérique (action_unit_id), "
+                    + "full_identifier ou identifiant court dans une organisation accessible.",
+            example = "INST-PROJ-2024",
+            requiredMode = Schema.RequiredMode.REQUIRED
+    )
+    private String actionUnitId;
 
     @Schema(description = "Identifiant du concept de type d'UE (concept_id)", example = "42", requiredMode = Schema.RequiredMode.REQUIRED)
     private Long recordingUnitTypeConceptId;

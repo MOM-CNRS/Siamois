@@ -20,6 +20,7 @@ import fr.siamois.ui.api.openapi.v1.response.project.ProjectFormResponse;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiCaller;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiService;
 import fr.siamois.ui.api.openapi.v1.service.RecordingUnitOpenApiService;
+import io.swagger.v3.oas.annotations.Hidden;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -39,7 +40,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/projects")
-@Tag(name = OpenApiTags.PROJECT, description = "Endpoints des projets")
+@Tag(name = OpenApiTags.PROJECT)
 @RequiredArgsConstructor
 public class ProjectControllerApi {
 
@@ -56,7 +57,6 @@ public class ProjectControllerApi {
             @ApiResponse(responseCode = "403", description = "Organisation non autorisée"),
             @ApiResponse(responseCode = "500", description = "Erreur interne")
     })
-    @Tag(name = OpenApiTags.APPLICATION_MOBILE, description = OpenApiTags.APPLICATION_MOBILE_DESCRIPTION)
     public ResponseEntity<ProjectListResponse> getAll(
             @RequestParam(defaultValue = "0") int offset,
             @RequestParam(defaultValue = "20") int limit,
@@ -96,7 +96,6 @@ public class ProjectControllerApi {
             @ApiResponse(responseCode = "404", description = "Projet introuvable ou non accessible"),
             @ApiResponse(responseCode = "500", description = "Erreur interne")
     })
-    @Tag(name = OpenApiTags.APPLICATION_MOBILE, description = OpenApiTags.APPLICATION_MOBILE_DESCRIPTION)
     public ResponseEntity<ProjectResponse> getById(
             @PathVariable("id") String id,
             @RequestHeader(value = HttpHeaders.ACCEPT_LANGUAGE, required = false) String acceptLanguage) {
@@ -120,7 +119,6 @@ public class ProjectControllerApi {
             @ApiResponse(responseCode = "404", description = "Projet introuvable ou non accessible"),
             @ApiResponse(responseCode = "500", description = "Erreur interne")
     })
-    @Tag(name = OpenApiTags.APPLICATION_MOBILE, description = OpenApiTags.APPLICATION_MOBILE_DESCRIPTION)
     public ResponseEntity<ProjectFormResponse> getProjectForm(
             @PathVariable("id") String id,
             @RequestHeader(value = HttpHeaders.ACCEPT_LANGUAGE, required = false) String acceptLanguage) {
@@ -146,7 +144,6 @@ public class ProjectControllerApi {
             @ApiResponse(responseCode = "409", description = "Conflit (ex. nom ou identifiant déjà utilisé)"),
             @ApiResponse(responseCode = "500", description = "Erreur interne")
     })
-    @Tag(name = OpenApiTags.APPLICATION_MOBILE, description = OpenApiTags.APPLICATION_MOBILE_DESCRIPTION)
     public ResponseEntity<ProjectResponse> patch(
             @PathVariable("id") String id,
             @RequestBody ProjectPatchRequest body,
@@ -169,7 +166,6 @@ public class ProjectControllerApi {
             @ApiResponse(responseCode = "409", description = "Projet non supprimable (UE ou sous-projets)"),
             @ApiResponse(responseCode = "500", description = "Erreur interne")
     })
-    @Tag(name = OpenApiTags.APPLICATION_MOBILE, description = OpenApiTags.APPLICATION_MOBILE_DESCRIPTION)
     public ResponseEntity<Void> delete(
             @PathVariable("id") String id,
             @RequestHeader(value = HttpHeaders.ACCEPT_LANGUAGE, required = false) String acceptLanguage) {
@@ -191,7 +187,6 @@ public class ProjectControllerApi {
             @ApiResponse(responseCode = "404", description = "Projet introuvable ou non accessible"),
             @ApiResponse(responseCode = "500", description = "Erreur interne")
     })
-    @Tag(name = OpenApiTags.APPLICATION_MOBILE, description = OpenApiTags.APPLICATION_MOBILE_DESCRIPTION)
     public ResponseEntity<ProjectDocumentsResponse> getDocuments(@PathVariable("id") String id) {
         ProjectApiCaller caller = projectApiService.requireCaller();
         List<ProjectDocumentResource> documents = projectApiService.listDocumentsForAccessibleProject(caller, id);
@@ -213,7 +208,6 @@ public class ProjectControllerApi {
             @ApiResponse(responseCode = "404", description = "Projet introuvable ou non accessible"),
             @ApiResponse(responseCode = "500", description = "Erreur interne")
     })
-    @Tag(name = OpenApiTags.APPLICATION_MOBILE, description = OpenApiTags.APPLICATION_MOBILE_DESCRIPTION)
     public ResponseEntity<RecordingUnitListResponse> getList(
             @PathVariable("id") String id,
             @RequestParam(defaultValue = "0") int offset,
@@ -235,6 +229,7 @@ public class ProjectControllerApi {
                 .body(new RecordingUnitListResponse(resources, meta));
     }
 
+    @Hidden
     @GetMapping("/{id}/mobiliers")
     public ResponseEntity<FindListResponse> getFinds(
             @PathVariable String id,
@@ -243,6 +238,7 @@ public class ProjectControllerApi {
         throw new ResponseStatusException(HttpStatus.NOT_IMPLEMENTED, "Not implemented yet");
     }
 
+    @Hidden
     @GetMapping(value = "/{id}/geopackage", produces = "application/geopackage+sqlite3")
     public ResponseEntity<Resource> getGeoPackage(@PathVariable String id) {
         throw new ResponseStatusException(HttpStatus.NOT_IMPLEMENTED, "Not implemented yet");

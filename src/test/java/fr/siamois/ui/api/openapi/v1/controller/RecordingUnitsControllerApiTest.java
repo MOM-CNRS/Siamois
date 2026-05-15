@@ -303,7 +303,7 @@ class RecordingUnitsControllerApiTest {
     void getFinds_withoutAuth_returns401() throws Exception {
         SecurityContextHolder.clearContext();
 
-        mockMvc.perform(get("/api/v1/recording-units/5/finds"))
+        mockMvc.perform(get("/api/v1/recording-units/5/mobiliers"))
                 .andExpect(status().isUnauthorized());
     }
 
@@ -314,7 +314,7 @@ class RecordingUnitsControllerApiTest {
         when(recordingUnitService.findAccessibleRecordingUnitByKey(eq("missing"), eq(Set.of(10L)), isNull()))
                 .thenThrow(new RecordingUnitNotFoundException("gone"));
 
-        mockMvc.perform(get("/api/v1/recording-units/missing/finds")
+        mockMvc.perform(get("/api/v1/recording-units/missing/mobiliers")
                         .param("offset", "0")
                         .param("limit", "10"))
                 .andExpect(status().isNotFound())
@@ -323,7 +323,7 @@ class RecordingUnitsControllerApiTest {
 
     @Test
     void getFinds_badPagination_returns400() throws Exception {
-        mockMvc.perform(get("/api/v1/recording-units/5/finds")
+        mockMvc.perform(get("/api/v1/recording-units/5/mobiliers")
                         .param("offset", "1")
                         .param("limit", "10"))
                 .andExpect(status().isBadRequest());
@@ -343,7 +343,7 @@ class RecordingUnitsControllerApiTest {
         when(specimenService.findAllByInstitutionAndByRecordingUnitAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
                 eq(10L), eq(5L), isNull(), isNull(), isNull(), eq("fr"), eq("creationTime:desc"), any())).thenReturn(page);
 
-        mockMvc.perform(get("/api/v1/recording-units/5/finds")
+        mockMvc.perform(get("/api/v1/recording-units/5/mobiliers")
                         .param("offset", "0")
                         .param("limit", "10"))
                 .andExpect(status().isOk())
@@ -380,7 +380,7 @@ class RecordingUnitsControllerApiTest {
         fr.setFullIdentifier("INST-UE-99");
         when(findOpenApiMapper.toResource(same(spec))).thenReturn(fr);
 
-        mockMvc.perform(get("/api/v1/recording-units/7/finds")
+        mockMvc.perform(get("/api/v1/recording-units/7/mobiliers")
                         .param("offset", "0")
                         .param("limit", "10"))
                 .andExpect(status().isOk())
@@ -407,7 +407,7 @@ class RecordingUnitsControllerApiTest {
         when(specimenService.findAllByInstitutionAndByRecordingUnitAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
                 eq(10L), eq(3L), isNull(), isNull(), isNull(), eq("fr"), eq("fullIdentifier:asc"), any())).thenReturn(page);
 
-        mockMvc.perform(get("/api/v1/recording-units/3/finds")
+        mockMvc.perform(get("/api/v1/recording-units/3/mobiliers")
                         .param("offset", "0")
                         .param("limit", "10")
                         .param("sort", "fullIdentifier:asc"))
@@ -431,7 +431,7 @@ class RecordingUnitsControllerApiTest {
         when(specimenService.findAllByInstitutionAndByRecordingUnitAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
                 eq(10L), eq(1L), isNull(), isNull(), isNull(), eq("de"), eq("creationTime:desc"), any())).thenReturn(page);
 
-        mockMvc.perform(get("/api/v1/recording-units/1/finds")
+        mockMvc.perform(get("/api/v1/recording-units/1/mobiliers")
                         .param("offset", "0")
                         .param("limit", "10")
                         .header(HttpHeaders.ACCEPT_LANGUAGE, "de-AT,de;q=0.9"))
@@ -451,7 +451,7 @@ class RecordingUnitsControllerApiTest {
         ru.setCreatedByInstitution(null);
         when(recordingUnitService.findAccessibleRecordingUnitByKey(eq("8"), eq(Set.of(10L)), isNull())).thenReturn(ru);
 
-        mockMvc.perform(get("/api/v1/recording-units/8/finds")
+        mockMvc.perform(get("/api/v1/recording-units/8/mobiliers")
                         .param("offset", "0")
                         .param("limit", "10"))
                 .andExpect(status().isBadRequest());
@@ -475,7 +475,7 @@ class RecordingUnitsControllerApiTest {
         when(specimenService.findAllByInstitutionAndByRecordingUnitAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
                 eq(10L), eq(2L), isNull(), isNull(), isNull(), eq("fr"), eq("creationTime:desc"), any())).thenReturn(page);
 
-        mockMvc.perform(get("/api/v1/recording-units/k/finds")
+        mockMvc.perform(get("/api/v1/recording-units/k/mobiliers")
                         .param("offset", "0")
                         .param("limit", "10"))
                 .andExpect(status().isOk());

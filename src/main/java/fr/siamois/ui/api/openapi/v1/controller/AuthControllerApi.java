@@ -3,6 +3,7 @@ package fr.siamois.ui.api.openapi.v1.controller;
 import fr.siamois.ui.service.auth.AuthService;
 import fr.siamois.ui.api.openapi.v1.auth.dto.AuthUserResponse;
 import fr.siamois.ui.api.openapi.v1.auth.dto.LoginRequest;
+import fr.siamois.ui.api.openapi.v1.OpenApiTags;
 import fr.siamois.ui.api.openapi.v1.auth.dto.LoginResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirements;
@@ -17,7 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/v1/auth")
 @RequiredArgsConstructor
-@Tag(name = "Auth", description = "Authentification JWT (mobile / API)")
+@Tag(name = OpenApiTags.AUTH)
 public class AuthControllerApi {
 
     private final AuthService authService;

@@ -34,6 +34,7 @@ import fr.siamois.domain.services.specimen.SpecimenService;
 import fr.siamois.domain.services.vocabulary.FieldConfigurationService;
 import fr.siamois.domain.services.attributeconverter.CustomFormLayoutConverter;
 import fr.siamois.domain.models.auth.Person;
+import fr.siamois.dto.api.AccessibleProjectForApi;
 import fr.siamois.dto.entity.ActionUnitDTO;
 import fr.siamois.dto.entity.ActionUnitSummaryDTO;
 import fr.siamois.dto.entity.InstitutionDTO;
@@ -47,6 +48,7 @@ import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptReposit
 import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
 import fr.siamois.mapper.PersonMapper;
 import fr.siamois.mapper.ConceptMapper;
+import fr.siamois.ui.api.openapi.v1.OpenApiExecutionContext;
 import fr.siamois.ui.api.openapi.v1.OpenApiParamIds;
 import fr.siamois.ui.api.openapi.v1.mapper.RecordingUnitResponseMapper;
 import fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitResource;
@@ -142,10 +144,10 @@ public class RecordingUnitOpenApiService {
 
         RecordingUnitFormBundle formBundle = new RecordingUnitFormBundle(customForm.getId(), customForm.getName(), customForm.getDescription(), layoutJson);
 
-        Locale locale = langService.localeForApiLang(lang);
-        Map<String, RecordingUnitFormFieldApi> fields = buildFieldsWithFallback(entity, dto, customForm, fieldSource, locale);
-
         UserInfo userInfo = new UserInfo(institution, personDto, lang);
+        Locale locale = langService.localeForApiLang(lang);
+        Map<String, RecordingUnitFormFieldApi> fields = OpenApiExecutionContext.callWithUserInfo(
+                userInfo, () -> buildFieldsWithFallback(entity, dto, customForm, fieldSource, locale));
         Map<String, List<ConceptAutocompleteDTO>> vocabs = loadVocabularies(fieldSource, userInfo);
 
         return new RecordingUnitMobileDetailData(recordingUnit, formBundle, fields, vocabs);
@@ -171,17 +173,17 @@ public class RecordingUnitOpenApiService {
                 systemForm.getDescription() != null ? systemForm.getDescription() : "",
                 layoutJson);
 
-        Locale locale = langService.localeForApiLang(lang);
-        Map<String, RecordingUnitFormFieldApi> fields;
-        try {
-            CustomFormResponseViewModel response = formService.initOrReuseResponse(null, dto, fieldSource, true);
-            fields = toFieldsMap(response, fieldSource, locale);
-        } catch (RuntimeException ex) {
-            log.warn("Impossible d'initialiser le formulaire projet id={}: {}", dto.getId(), ex.toString(), ex);
-            fields = buildFieldsMetadataOnly(fieldSource, locale);
-        }
-
         UserInfo userInfo = new UserInfo(institution, personDto, lang);
+        Locale locale = langService.localeForApiLang(lang);
+        Map<String, RecordingUnitFormFieldApi> fields = OpenApiExecutionContext.callWithUserInfo(userInfo, () -> {
+            try {
+                CustomFormResponseViewModel response = formService.initOrReuseResponse(null, dto, fieldSource, true);
+                return toFieldsMap(response, fieldSource, locale);
+            } catch (RuntimeException ex) {
+                log.warn("Impossible d'initialiser le formulaire projet id={}: {}", dto.getId(), ex.toString(), ex);
+                return buildFieldsMetadataOnly(fieldSource, locale);
+            }
+        });
         Map<String, List<ConceptAutocompleteDTO>> vocabs = loadVocabularies(fieldSource, userInfo);
         return new ProjectFormData(formBundle, fields, vocabs);
     }
@@ -217,11 +219,11 @@ public class RecordingUnitOpenApiService {
         shell.setType(typeDto);
         shell.setCreatedByInstitution(institution);
 
-        Locale locale = langService.localeForApiLang(lang);
-        Map<String, RecordingUnitFormFieldApi> fields = buildCustomFormFieldsForBindTarget(
-                shell, fieldSource, "création UE", typeDto.getId(), locale);
-
         UserInfo userInfo = new UserInfo(institution, personDto, lang);
+        Locale locale = langService.localeForApiLang(lang);
+        Map<String, RecordingUnitFormFieldApi> fields = OpenApiExecutionContext.callWithUserInfo(
+                userInfo, () -> buildCustomFormFieldsForBindTarget(
+                        shell, fieldSource, "création UE", typeDto.getId(), locale));
         Map<String, List<ConceptAutocompleteDTO>> vocabs = loadVocabularies(fieldSource, userInfo);
 
         return new RecordingUnitCreateFormData(typeDto, formBundle, fields, vocabs);
@@ -275,8 +277,9 @@ public class RecordingUnitOpenApiService {
         shell.setValidated(ValidationStatus.INCOMPLETE);
 
         Locale locale = langService.localeForApiLang(lang);
-        Map<String, RecordingUnitFormFieldApi> fields = buildCustomFormFieldsForBindTarget(
-                shell, fieldSource, "création mobilier", typeDto.getId(), locale);
+        Map<String, RecordingUnitFormFieldApi> fields = OpenApiExecutionContext.callWithUserInfo(
+                userInfo, () -> buildCustomFormFieldsForBindTarget(
+                        shell, fieldSource, "création mobilier", typeDto.getId(), locale));
         Map<String, List<ConceptAutocompleteDTO>> vocabs = loadVocabularies(fieldSource, userInfo);
 
         return new FindFormData(typeDto, formBundle, fields, vocabs);
@@ -312,9 +315,11 @@ public class RecordingUnitOpenApiService {
         RecordingUnitFormBundle formBundle = new RecordingUnitFormBundle(
                 customForm.getId(), customForm.getName(), customForm.getDescription(), layoutJson);
 
+        UserInfo userInfo = new UserInfo(institution, personDto, lang);
         Locale locale = langService.localeForApiLang(lang);
-        Map<String, RecordingUnitFormFieldApi> fields = buildCustomFormFieldsForBindTarget(
-                specimen, fieldSource, "mobilier key=" + idOrKey, specimenType.getId(), locale);
+        Map<String, RecordingUnitFormFieldApi> fields = OpenApiExecutionContext.callWithUserInfo(
+                userInfo, () -> buildCustomFormFieldsForBindTarget(
+                        specimen, fieldSource, "mobilier key=" + idOrKey, specimenType.getId(), locale));
 
         return new FindMobilierFormData(formBundle, fields);
     }
@@ -509,19 +514,16 @@ public class RecordingUnitOpenApiService {
                                                              PersonDTO personDto,
                                                              Set<Long> accessibleInstitutionIds,
                                                              String lang) {
-        if (request.getActionUnitId() == null || request.getRecordingUnitTypeConceptId() == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "actionUnitId et recordingUnitTypeConceptId sont obligatoires");
+        String projectKey = OpenApiParamIds.requireNonBlank(request.getActionUnitId(), "actionUnitId");
+        if (request.getRecordingUnitTypeConceptId() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "recordingUnitTypeConceptId est obligatoire");
         }
-        ActionUnitDTO au = actionUnitService.findById(request.getActionUnitId());
-        if (au == null) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Projet introuvable");
-        }
+        AccessibleProjectForApi project = actionUnitService.findAccessibleProjectByKey(
+                projectKey, accessibleInstitutionIds);
+        ActionUnitDTO au = project.actionUnit();
         InstitutionDTO institution = au.getCreatedByInstitution();
         if (institution == null || institution.getId() == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Projet sans organisation");
-        }
-        if (accessibleInstitutionIds == null || !accessibleInstitutionIds.contains(institution.getId())) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Organisation hors périmètre");
         }
         UserInfo userInfo = new UserInfo(institution, personDto, lang);
         if (!permissionService.hasWritePermission(userInfo, au)) {
@@ -561,29 +563,31 @@ public class RecordingUnitOpenApiService {
         }
         shell.setIdentifier("0");
 
-        FormUiDto formUiDto = conversionService.convert(customForm, FormUiDto.class);
-        FieldSource fieldSource = new PanelFieldSource(formUiDto);
-        CustomFormResponseViewModel response = formService.initOrReuseResponse(null, shell, fieldSource, true);
-        mergeFieldAnswers(shell, response, fieldSource, request.getFieldAnswers(), lang);
-        formService.updateJpaEntityFromResponse(response, shell);
+        RecordingUnitDTO created = OpenApiExecutionContext.callWithUserInfo(userInfo, () -> {
+            FormUiDto formUiDto = conversionService.convert(customForm, FormUiDto.class);
+            FieldSource fieldSource = new PanelFieldSource(formUiDto);
+            CustomFormResponseViewModel response = formService.initOrReuseResponse(null, shell, fieldSource, true);
+            mergeFieldAnswers(shell, response, fieldSource, request.getFieldAnswers(), lang);
+            formService.updateJpaEntityFromResponse(response, shell);
 
-        RecordingUnitDTO created;
-        try {
-            created = recordingUnitService.save(shell);
-        } catch (FailedRecordingUnitSaveException e) {
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage(), e);
-        }
+            RecordingUnitDTO saved;
+            try {
+                saved = recordingUnitService.save(shell);
+            } catch (FailedRecordingUnitSaveException e) {
+                throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage(), e);
+            }
 
-        String generated = recordingUnitService.generateFullIdentifier(created.getActionUnit(), created);
-        created.setFullIdentifier(generated);
-        if (recordingUnitService.fullIdentifierAlreadyExistInAction(created)) {
-            created.setFullIdentifier(created.getActionUnit().getRecordingUnitIdentifierFormat());
-        }
-        try {
-            created = recordingUnitService.save(created);
-        } catch (FailedRecordingUnitSaveException e) {
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage(), e);
-        }
+            String generated = recordingUnitService.generateFullIdentifier(saved.getActionUnit(), saved);
+            saved.setFullIdentifier(generated);
+            if (recordingUnitService.fullIdentifierAlreadyExistInAction(saved)) {
+                saved.setFullIdentifier(saved.getActionUnit().getRecordingUnitIdentifierFormat());
+            }
+            try {
+                return recordingUnitService.save(saved);
+            } catch (FailedRecordingUnitSaveException e) {
+                throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage(), e);
+            }
+        });
 
         String key = created.getId() != null ? String.valueOf(created.getId()) : created.getFullIdentifier();
         return buildMobileDetail(key, personDto, accessibleInstitutionIds, null, lang);
@@ -623,18 +627,20 @@ public class RecordingUnitOpenApiService {
                     "Aucun formulaire personnalisé pour ce type d'UE : impossible d'appliquer fieldAnswers");
         }
 
-        FormUiDto formUiDto = conversionService.convert(customForm, FormUiDto.class);
-        FieldSource fieldSource = new PanelFieldSource(formUiDto);
-        CustomFormResponseViewModel response = formService.initOrReuseResponse(null, dto, fieldSource, true);
-        applyPersistedCustomAnswers(entity, customForm, response, langService.localeForApiLang(lang).getLanguage());
-        mergeFieldAnswers(dto, response, fieldSource, answers, lang);
-        formService.updateJpaEntityFromResponse(response, dto);
+        OpenApiExecutionContext.runWithUserInfo(userInfo, () -> {
+            FormUiDto formUiDto = conversionService.convert(customForm, FormUiDto.class);
+            FieldSource fieldSource = new PanelFieldSource(formUiDto);
+            CustomFormResponseViewModel response = formService.initOrReuseResponse(null, dto, fieldSource, true);
+            applyPersistedCustomAnswers(entity, customForm, response, langService.localeForApiLang(lang).getLanguage());
+            mergeFieldAnswers(dto, response, fieldSource, answers, lang);
+            formService.updateJpaEntityFromResponse(response, dto);
 
-        try {
-            recordingUnitService.save(dto);
-        } catch (FailedRecordingUnitSaveException e) {
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage(), e);
-        }
+            try {
+                recordingUnitService.save(dto);
+            } catch (FailedRecordingUnitSaveException e) {
+                throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage(), e);
+            }
+        });
 
         return buildMobileDetail(recordingUnitKey, personDto, accessibleInstitutionIds, null, lang);
     }
