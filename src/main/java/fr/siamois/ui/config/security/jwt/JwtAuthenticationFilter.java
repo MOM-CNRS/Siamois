@@ -29,12 +29,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private static final String BEARER_PREFIX = "Bearer ";
 
     /**
-     * Hors JWT : uniquement obtention / renouvellement des jetons (sans Bearer).
+     * Hors JWT : uniquement la connexion (sans Bearer).
      * Tout le reste de {@code /api/v1/**} exige un en-tête {@code Authorization: Bearer} avec un access token valide.
      */
     private static final Set<String> PUBLIC_AUTH_PATHS = Set.of(
-            "/api/v1/auth/login",
-            "/api/v1/auth/refresh"
+            "/api/v1/auth/login"
     );
 
     private final JwtService jwtService;

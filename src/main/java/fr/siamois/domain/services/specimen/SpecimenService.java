@@ -8,6 +8,7 @@ import fr.siamois.domain.models.specimen.Specimen;
 import fr.siamois.domain.services.ArkEntityService;
 import fr.siamois.dto.entity.*;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitRepository;
+import fr.siamois.infrastructure.database.repositories.specimen.SpecimenFindSortSql;
 import fr.siamois.infrastructure.database.repositories.specimen.SpecimenRepository;
 import fr.siamois.mapper.InstitutionMapper;
 import fr.siamois.mapper.SpecimenMapper;
@@ -15,6 +16,7 @@ import fr.siamois.mapper.SpecimenSummaryMapper;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -314,9 +316,29 @@ public class SpecimenService implements ArkEntityService {
             String langCode,
             Pageable pageable
     ) {
-        Page<Specimen> specimenPage = specimenRepository.findAllByInstitutionAndByRecordingUnitIdAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
-                institutionId, recordingUnitId, fullIdentifier, categoryIds, global, langCode, pageable
-        );
+        return findAllByInstitutionAndByRecordingUnitAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
+                institutionId, recordingUnitId, fullIdentifier, categoryIds, global, langCode, null, pageable);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<SpecimenDTO> findAllByInstitutionAndByRecordingUnitAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
+            Long institutionId,
+            Long recordingUnitId,
+            String fullIdentifier,
+            Long[] categoryIds,
+            String global,
+            String langCode,
+            String apiSortParam,
+            Pageable pageable
+    ) {
+        String orderBy = apiSortParam != null && !apiSortParam.isBlank()
+                ? SpecimenFindSortSql.fromApiSortParam(apiSortParam)
+                : SpecimenFindSortSql.fromSpringSort(pageable.getSort());
+        Pageable pageWithoutSort = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize());
+        Page<Specimen> specimenPage = specimenRepository
+                .findAllByInstitutionAndRecordingUnitIdAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
+                        institutionId, recordingUnitId, fullIdentifier, categoryIds, global, langCode, orderBy,
+                        pageWithoutSort);
 
         return specimenPage.map(specimenMapper::convert);
     }

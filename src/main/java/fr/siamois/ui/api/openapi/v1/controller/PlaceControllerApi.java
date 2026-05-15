@@ -46,7 +46,7 @@ public class PlaceControllerApi {
             @ApiResponse(responseCode = "200", description = "Ok"),
             @ApiResponse(responseCode = "500", description = "Erreur interne")
     })
-    @GetMapping("/{id}/finds")
+    @GetMapping("/{id}/mobiliers")
     @Tag(name="Mobilier")
     public ResponseEntity<FindListResponse> getFinds(
             @PathVariable Long id,

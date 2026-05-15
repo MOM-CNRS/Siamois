@@ -213,9 +213,9 @@ class SpecimenServiceTest {
         Page<Specimen> mockPage = new PageImpl<>(Collections.singletonList(mockSpecimen));
 
         // 2. Configuration des mocks
-        when(specimenRepository.findAllByInstitutionAndByRecordingUnitIdAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
-                institutionId, recordingUnitId, fullIdentifier,
-                categoryIds, globalFilter, langCode, pageable))
+        when(specimenRepository.findAllByInstitutionAndRecordingUnitIdAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
+                eq(institutionId), eq(recordingUnitId), eq(fullIdentifier),
+                eq(categoryIds), eq(globalFilter), eq(langCode), anyString(), any(Pageable.class)))
                 .thenReturn(mockPage);
 
         when(specimenMapper.convert(mockSpecimen))
@@ -232,9 +232,10 @@ class SpecimenServiceTest {
 
         // 5. Vérification des interactions
         verify(specimenRepository, times(1))
-                .findAllByInstitutionAndByRecordingUnitIdAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
-                        institutionId, recordingUnitId, fullIdentifier,
-                        categoryIds, globalFilter, langCode, pageable);
+                .findAllByInstitutionAndRecordingUnitIdAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
+                        eq(institutionId), eq(recordingUnitId), eq(fullIdentifier),
+                        eq(categoryIds), eq(globalFilter), eq(langCode),
+                        eq("s.creation_time DESC, s.specimen_id ASC"), any(Pageable.class));
 
         verify(specimenMapper, times(1))
                 .convert(mockSpecimen);

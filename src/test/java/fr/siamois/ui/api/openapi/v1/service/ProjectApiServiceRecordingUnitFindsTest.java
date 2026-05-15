@@ -115,7 +115,7 @@ class ProjectApiServiceRecordingUnitFindsTest {
                 PageRequest.of(0, 20, Sort.by(Sort.Direction.DESC, "creationTime")),
                 1L);
         when(specimenService.findAllByInstitutionAndByRecordingUnitAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
-                eq(10L), eq(55L), isNull(), isNull(), isNull(), eq("fr"), any(Pageable.class)))
+                eq(10L), eq(55L), isNull(), isNull(), isNull(), eq("fr"), eq("creationTime:desc"), any(Pageable.class)))
                 .thenReturn(specimenPage);
 
         FindResource mapped = new FindResource();
@@ -140,14 +140,34 @@ class ProjectApiServiceRecordingUnitFindsTest {
 
         PageImpl<SpecimenDTO> specimenPage = new PageImpl<>(List.of(), PageRequest.of(0, 10), 0L);
         when(specimenService.findAllByInstitutionAndByRecordingUnitAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
-                eq(10L), eq(1L), isNull(), isNull(), isNull(), eq("it"), any(Pageable.class)))
+                eq(10L), eq(1L), isNull(), isNull(), isNull(), eq("it"), eq("id:asc"), any(Pageable.class)))
                 .thenReturn(specimenPage);
 
         projectApiService.pageFindsForAccessibleRecordingUnit(
                 caller(), "1", 0, 10, "id:asc", "it-CH,it;q=0.9");
 
         verify(specimenService).findAllByInstitutionAndByRecordingUnitAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
-                eq(10L), eq(1L), isNull(), isNull(), isNull(), eq("it"), any(Pageable.class));
+                eq(10L), eq(1L), isNull(), isNull(), isNull(), eq("it"), eq("id:asc"), any(Pageable.class));
+    }
+
+    @Test
+    void pageFindsForAccessibleRecordingUnit_passesSortParamToSpecimenService() {
+        InstitutionDTO inst = new InstitutionDTO();
+        inst.setId(10L);
+        RecordingUnitDTO ru = new RecordingUnitDTO();
+        ru.setId(2L);
+        ru.setCreatedByInstitution(inst);
+        when(recordingUnitService.findAccessibleRecordingUnitByKey(eq("2"), eq(SCOPE), isNull())).thenReturn(ru);
+
+        PageImpl<SpecimenDTO> specimenPage = new PageImpl<>(List.of(), PageRequest.of(0, 10), 0L);
+        when(specimenService.findAllByInstitutionAndByRecordingUnitAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
+                eq(10L), eq(2L), isNull(), isNull(), isNull(), eq("fr"), eq("creationTime:desc"), any(Pageable.class)))
+                .thenReturn(specimenPage);
+
+        projectApiService.pageFindsForAccessibleRecordingUnit(caller(), "2", 0, 10, "creationTime:desc", null);
+
+        verify(specimenService).findAllByInstitutionAndByRecordingUnitAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
+                eq(10L), eq(2L), isNull(), isNull(), isNull(), eq("fr"), eq("creationTime:desc"), any(Pageable.class));
     }
 
     @Test
@@ -161,16 +181,17 @@ class ProjectApiServiceRecordingUnitFindsTest {
 
         PageImpl<SpecimenDTO> specimenPage = new PageImpl<>(List.of(), PageRequest.of(2, 10), 0L);
         when(specimenService.findAllByInstitutionAndByRecordingUnitAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
-                eq(10L), eq(2L), isNull(), isNull(), isNull(), eq("fr"), any(Pageable.class)))
+                eq(10L), eq(2L), isNull(), isNull(), isNull(), eq("fr"), isNull(), any(Pageable.class)))
                 .thenReturn(specimenPage);
 
         projectApiService.pageFindsForAccessibleRecordingUnit(caller(), "2", 20, 10, null, null);
 
         ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
         verify(specimenService).findAllByInstitutionAndByRecordingUnitAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
-                eq(10L), eq(2L), isNull(), isNull(), isNull(), eq("fr"), pageableCaptor.capture());
+                eq(10L), eq(2L), isNull(), isNull(), isNull(), eq("fr"), isNull(), pageableCaptor.capture());
         assertThat(pageableCaptor.getValue().getPageNumber()).isEqualTo(2);
         assertThat(pageableCaptor.getValue().getPageSize()).isEqualTo(10);
+        assertThat(pageableCaptor.getValue().getSort().isUnsorted()).isTrue();
     }
 
     @Test

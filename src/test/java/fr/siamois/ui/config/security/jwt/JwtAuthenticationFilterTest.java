@@ -73,15 +73,27 @@ class JwtAuthenticationFilterTest {
     }
 
     @Test
-    void refreshPath_withTrailingSlash_normalizedAndPassesThrough() throws Exception {
+    void loginPath_withTrailingSlash_normalizedAndPassesThrough() throws Exception {
         MockHttpServletRequest req = new MockHttpServletRequest();
-        req.setServletPath("/api/v1/auth/refresh/");
+        req.setServletPath("/api/v1/auth/login/");
         MockHttpServletResponse res = new MockHttpServletResponse();
 
         filter.doFilter(req, res, filterChain);
 
         verify(filterChain).doFilter(req, res);
         verify(jwtService, never()).parseAndValidateAccessToken(anyString());
+    }
+
+    @Test
+    void refreshPath_requiresJwt_notPublic() throws Exception {
+        MockHttpServletRequest req = new MockHttpServletRequest();
+        req.setServletPath("/api/v1/auth/refresh");
+        MockHttpServletResponse res = new MockHttpServletResponse();
+
+        filter.doFilter(req, res, filterChain);
+
+        verify(filterChain, never()).doFilter(req, res);
+        assertThat(res.getStatus()).isEqualTo(401);
     }
 
     @Test

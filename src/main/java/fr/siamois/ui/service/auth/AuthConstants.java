@@ -1,7 +1,7 @@
 package fr.siamois.ui.service.auth;
 
 /**
- * Constantes partagées pour l’authentification API (JWT + refresh).
+ * Constantes partagées pour l’authentification API (JWT).
  */
 public final class AuthConstants {
 

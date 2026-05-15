@@ -28,7 +28,6 @@ siamois:
     # HS256 : au moins 256 bits — utiliser une valeur forte en prod (variable SIAMOIS_JWT_SECRET).
     secret: ${SIAMOIS_JWT_SECRET:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef}
     access-token-validity: PT15M
-    refresh-token-validity: P30D
 
 
 spring:

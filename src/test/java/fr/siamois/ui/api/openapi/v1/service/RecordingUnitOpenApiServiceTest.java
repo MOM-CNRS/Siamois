@@ -853,6 +853,74 @@ class RecordingUnitOpenApiServiceTest {
     }
 
     @Test
+    void buildFindCreateForm_whenNoInstitution_throws400() {
+        RecordingUnitDTO ru = new RecordingUnitDTO();
+        ru.setId(12L);
+        ru.setCreatedByInstitution(null);
+        when(recordingUnitService.findAccessibleRecordingUnitByKey("12", SCOPE, null)).thenReturn(ru);
+
+        assertThatThrownBy(() -> service.buildFindCreateForm("12", "42", personDto, SCOPE, "fr"))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode().value()).isEqualTo(400));
+    }
+
+    @Test
+    void buildFindCreateForm_whenForbidden_throws403() {
+        InstitutionDTO inst = new InstitutionDTO();
+        inst.setId(10L);
+        RecordingUnitDTO ru = new RecordingUnitDTO();
+        ru.setId(12L);
+        ru.setCreatedByInstitution(inst);
+        when(recordingUnitService.findAccessibleRecordingUnitByKey("12", SCOPE, null)).thenReturn(ru);
+        when(permissionService.hasWritePermission(any(), eq(ru))).thenReturn(false);
+
+        assertThatThrownBy(() -> service.buildFindCreateForm("12", "42", personDto, SCOPE, "fr"))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode().value()).isEqualTo(403));
+    }
+
+    @Test
+    void buildFindCreateForm_unknownType_throws404() {
+        InstitutionDTO inst = new InstitutionDTO();
+        inst.setId(10L);
+        RecordingUnitDTO ru = new RecordingUnitDTO();
+        ru.setId(12L);
+        ru.setCreatedByInstitution(inst);
+        when(recordingUnitService.findAccessibleRecordingUnitByKey("12", SCOPE, null)).thenReturn(ru);
+        when(permissionService.hasWritePermission(any(), eq(ru))).thenReturn(true);
+        when(conceptRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.buildFindCreateForm("12", "99", personDto, SCOPE, "fr"))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode().value()).isEqualTo(404));
+    }
+
+    @Test
+    void buildFindCreateForm_whenNoCustomForm_returnsTypeOnly() {
+        InstitutionDTO inst = new InstitutionDTO();
+        inst.setId(10L);
+        RecordingUnitDTO ru = new RecordingUnitDTO();
+        ru.setId(12L);
+        ru.setCreatedByInstitution(inst);
+        when(recordingUnitService.findAccessibleRecordingUnitByKey("12", SCOPE, null)).thenReturn(ru);
+        when(permissionService.hasWritePermission(any(), eq(ru))).thenReturn(true);
+
+        Concept concept = mock(Concept.class);
+        when(conceptRepository.findById(42L)).thenReturn(Optional.of(concept));
+        ConceptDTO typeDto = new ConceptDTO();
+        typeDto.setId(42L);
+        when(conceptMapper.convert(concept)).thenReturn(typeDto);
+        when(formService.findCustomFormByRecordingUnitTypeAndInstitutionId(typeDto, inst)).thenReturn(null);
+
+        FindFormData data = service.buildFindCreateForm("12", "42", personDto, SCOPE, "fr");
+
+        assertThat(data.specimenType().getId()).isEqualTo(42L);
+        assertThat(data.form()).isNull();
+        assertThat(data.fields()).isEmpty();
+        assertThat(data.vocabulariesByFieldCode()).isEmpty();
+    }
+
+    @Test
     void buildFindForm_whenNotAccessible_throws404() {
         when(specimenService.findAccessibleById(404L, SCOPE)).thenReturn(Optional.empty());
 
