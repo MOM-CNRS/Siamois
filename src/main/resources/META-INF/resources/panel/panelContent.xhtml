@@ -89,37 +89,7 @@
                                                             <h:outputText styleClass="bi bi-arrow-clockwise"/>
                                                         </p:commandLink>
 
-                                                        <p:commandLink id="previous"
-                                                                       process="@this"
-                                                                       rendered="#{panelModel.parentOrOverview.hasPreviousNext()}"
-                                                                       action="#{panelModel.parentOrOverview.goToPrevious()}"
-                                                                       styleClass="sideview-topbar-button">
-                                                            <h:outputText styleClass='ui-icon bi bi-caret-up'/>
-                                                        </p:commandLink>
-                                                        <p:tooltip
-                                                                autoHide="false" value="Fiche précédente"
-                                                                position="bottom"
-                                                                for="previous"
-                                                        />
-                                                        <p:commandLink id="next"
-                                                                       process="@this"
-                                                                       rendered="#{panelModel.parentOrOverview.hasPreviousNext()}"
-                                                                       action="#{panelModel.parentOrOverview.goToNext()}"
-                                                                       styleClass="sideview-topbar-button">
-                                                            <h:outputText styleClass='ui-icon bi bi-caret-down'/>
-                                                        </p:commandLink>
-                                                        <p:tooltip
-                                                                autoHide="false" value="Fiche suivante"
-                                                                position="bottom"
-                                                                for="next"
-                                                        />
-                                                        <c:if test="#{panelModel.parentOrOverview.hasPreviousNext()}">
-                                                            <ui:include src="/panel/header/validationButton.xhtml" >
-                                                                <ui:param name="disabled" value="false"/>
-                                                                <ui:param name="unit" value="#{panelModel.parentOrOverview.unit}"/>
-                                                                <ui:param name="panelModel" value="#{panelModel.parentOrOverview}"/>
-                                                            </ui:include>
-                                                        </c:if>
+
                                                     </div>
                                                 </h:form>
                         <div style="display: flex;
