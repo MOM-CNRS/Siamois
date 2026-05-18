@@ -8,6 +8,7 @@ import fr.siamois.ui.api.openapi.v1.response.document.DocumentFormData;
 import fr.siamois.ui.api.openapi.v1.response.document.DocumentFormFieldApi;
 import fr.siamois.ui.api.openapi.v1.service.DocumentContentOpenApiService;
 import fr.siamois.ui.api.openapi.v1.service.DocumentFormOpenApiService;
+import fr.siamois.ui.api.openapi.v1.service.DocumentWriteOpenApiService;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiCaller;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiService;
 import org.junit.jupiter.api.AfterEach;
@@ -51,6 +52,8 @@ class DocumentsControllerApiTest {
     private DocumentContentOpenApiService documentContentOpenApiService;
     @Mock
     private DocumentFormOpenApiService documentFormOpenApiService;
+    @Mock
+    private DocumentWriteOpenApiService documentWriteOpenApiService;
 
     private MockMvc mockMvc;
 
@@ -60,7 +63,10 @@ class DocumentsControllerApiTest {
     @BeforeEach
     void setUp() {
         DocumentsControllerApi controller = new DocumentsControllerApi(
-                projectApiService, documentContentOpenApiService, documentFormOpenApiService);
+                projectApiService,
+                documentContentOpenApiService,
+                documentFormOpenApiService,
+                documentWriteOpenApiService);
         mockMvc = MockMvcBuilders.standaloneSetup(controller)
                 .setControllerAdvice(new RestExceptionHandler())
                 .build();

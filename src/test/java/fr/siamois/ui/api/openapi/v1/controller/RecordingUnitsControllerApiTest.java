@@ -34,6 +34,7 @@ import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitCreateFo
 import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitFormBundle;
 import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitFormFieldApi;
 import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitMobileDetailData;
+import fr.siamois.ui.api.openapi.v1.service.DocumentWriteOpenApiService;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiService;
 import fr.siamois.ui.api.openapi.v1.service.RecordingUnitOpenApiService;
 import org.junit.jupiter.api.AfterEach;
@@ -113,6 +114,8 @@ class RecordingUnitsControllerApiTest {
     private PersonMapper personMapper;
     @Mock
     private RecordingUnitOpenApiService recordingUnitOpenApiService;
+    @Mock
+    private DocumentWriteOpenApiService documentWriteOpenApiService;
 
     private MockMvc mockMvc;
 
@@ -142,7 +145,8 @@ class RecordingUnitsControllerApiTest {
 
         RecordingUnitsControllerApi controller = new RecordingUnitsControllerApi(
                 projectApiService,
-                recordingUnitOpenApiService);
+                recordingUnitOpenApiService,
+                documentWriteOpenApiService);
 
         mockMvc = MockMvcBuilders.standaloneSetup(controller)
                 .setControllerAdvice(new RestExceptionHandler())
