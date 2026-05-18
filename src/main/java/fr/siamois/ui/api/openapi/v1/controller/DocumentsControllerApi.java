@@ -9,7 +9,6 @@ import fr.siamois.ui.api.openapi.v1.service.DocumentFormOpenApiService;
 import fr.siamois.ui.api.openapi.v1.service.DocumentWriteOpenApiService;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiCaller;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiService;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -118,13 +117,9 @@ public class DocumentsControllerApi {
             @ApiResponse(responseCode = "404", description = "Document ou concept introuvable"),
             @ApiResponse(responseCode = "500", description = "Erreur interne")
     })
-    public ResponseEntity<DocumentResourceResponse> patchDocument(
-            @PathVariable("id") long id,
-            @RequestBody DocumentPatchRequest body,
-            @RequestHeader(value = HttpHeaders.ACCEPT_LANGUAGE, required = false) String acceptLanguage) {
+    public ResponseEntity<DocumentResourceResponse> patchDocument(@PathVariable("id") long id, @RequestBody DocumentPatchRequest body) {
 
         ProjectApiCaller caller = projectApiService.requireCaller();
-        String lang = ProjectApiService.primaryAcceptLanguage(acceptLanguage);
         var resource = documentWriteOpenApiService.updateDocument(
                 caller,
                 id,
@@ -132,8 +127,7 @@ public class DocumentsControllerApi {
                 body.getDescription(),
                 body.getNatureConceptId(),
                 body.getScaleConceptId(),
-                body.getFormatConceptId(),
-                lang);
+                body.getFormatConceptId());
         return ResponseEntity.ok(new DocumentResourceResponse(resource));
     }
 

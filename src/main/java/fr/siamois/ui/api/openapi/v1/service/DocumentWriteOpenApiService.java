@@ -127,8 +127,7 @@ public class DocumentWriteOpenApiService {
             String description,
             Long natureConceptId,
             Long scaleConceptId,
-            Long formatConceptId,
-            String lang) {
+            Long formatConceptId) {
 
         Document doc = documentContentOpenApiService.requireAccessibleDocument(
                 documentId, caller.accessibleInstitutionIds());
