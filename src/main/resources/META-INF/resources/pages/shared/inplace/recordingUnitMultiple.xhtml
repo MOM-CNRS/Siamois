@@ -69,8 +69,9 @@
                                 onclick="event.stopPropagation();"
                                 converter="#{recordingUnitSummaryConverter}"
                                 forceSelection="true"
+                                unique="true"
                                 scrollHeight="300"
-                                dropdown="true"
+                                dropdown="false"
                                 showEmptyMessage="false"
                                 maxResults="#{fieldConfigurationService.resultLimit()}">
                     <f:attribute name="field" value="#{cc.attrs.field}" />

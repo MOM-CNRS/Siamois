@@ -2,6 +2,7 @@ package fr.siamois.domain.services.specimen;
 
 import fr.siamois.domain.models.exceptions.actionunit.ActionUnitNotFoundException;
 import fr.siamois.domain.models.institution.Institution;
+import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.specimen.Specimen;
 import fr.siamois.domain.services.ArkEntityService;
 import fr.siamois.dto.entity.*;
@@ -17,7 +18,11 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import static fr.siamois.domain.models.ValidationStatus.*;
 
@@ -49,6 +54,82 @@ public class SpecimenService implements ArkEntityService {
         return ((currentMaxIdentifier == null) ? 1 : currentMaxIdentifier + 1);
     }
 
+    private Specimen newOrGetSpecimen(Specimen specimen) {
+        Specimen managedSpecimen;
+        if (specimen.getId() != null) {
+            Optional<Specimen> optRecordingUnit = specimenRepository.findById(specimen.getId());
+            managedSpecimen = optRecordingUnit.orElse(specimen);
+        } else {
+            managedSpecimen = specimen;
+        }
+        return managedSpecimen;
+    }
+
+    private void setupChilds(Specimen specimen, Specimen managedSpecimen) {
+        if (specimen.getChildren() == null) {
+            return;
+        }
+
+        // 1. Get the IDs of the children we WANT to have
+        Set<Long> incomingIds = specimen.getChildren().stream()
+                .filter(c -> c != null && c.getId() != null)
+                .map(Specimen::getId)
+                .collect(Collectors.toSet());
+
+        // 2. Remove children no longer in the list
+        managedSpecimen.getChildren().removeIf(child ->
+                !incomingIds.contains(child.getId()));
+
+        // 3. Add new children
+        for (Long id : incomingIds) {
+            boolean alreadyPresent = managedSpecimen.getChildren().stream()
+                    .anyMatch(c -> c.getId().equals(id));
+
+            if (!alreadyPresent) {
+                Specimen child = specimenRepository.findById(id)
+                        .orElseThrow(() -> new IllegalArgumentException("Child not found: " + id));
+                managedSpecimen.getChildren().add(child);
+            }
+        }
+    }
+
+    private void setupParents(Specimen specimen, Specimen managedSpecimen) {
+        if (specimen.getParents() == null) {
+            return;
+        }
+
+        // Fetch current parents of managedSpecimen
+        Set<Specimen> currentParents = new HashSet<>(managedSpecimen.getParents());
+        Set<Specimen> newParents = new HashSet<>();
+
+        // Build the set of new parents
+        for (Specimen parentRef : specimen.getParents()) {
+            Specimen parent = specimenRepository.findById(parentRef.getId())
+                    .orElseThrow(() -> new IllegalArgumentException("Parent not found: " + parentRef.getId()));
+            newParents.add(parent);
+        }
+
+        // Find parents to add (in newParents but not in currentParents)
+        for (Specimen parent : newParents) {
+            if (!currentParents.contains(parent)) {
+                parent.getChildren().add(managedSpecimen);
+                specimenRepository.save(parent);
+            }
+        }
+
+        // Find parents to remove (in currentParents but not in newParents)
+        for (Specimen parent : currentParents) {
+            if (!newParents.contains(parent)) {
+                parent.getChildren().remove(managedSpecimen);
+                specimenRepository.save(parent);
+            }
+        }
+
+        // Update the parents list of managedSpecimen
+        managedSpecimen.getParents().clear();
+        managedSpecimen.getParents().addAll(newParents);
+    }
+
     /**
      * Saves a specimen to the repository.
      *
@@ -69,11 +150,16 @@ public class SpecimenService implements ArkEntityService {
         // Convertir SpecimenDTO en Specimen
         Specimen specimen = specimenMapper.invertConvert(toSave);
 
+        Specimen managedSpecimen = newOrGetSpecimen(specimen);
+
+        setupParents(specimen, managedSpecimen);
+        setupChilds(specimen, managedSpecimen);
+
         // Sauvegarder l'entité Specimen
-        Specimen savedSpecimen = specimenRepository.save(specimen);
+        managedSpecimen = specimenRepository.save(managedSpecimen);
 
         // Convertir l'entité sauvegardée en SpecimenDTO et la retourner
-        return specimenMapper.convert(savedSpecimen);
+        return specimenMapper.convert(managedSpecimen);
     }
 
     @Override

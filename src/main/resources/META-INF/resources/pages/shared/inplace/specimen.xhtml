@@ -62,7 +62,7 @@
                                 multiple="#{cc.attrs.multiple}"
                                 styleClass="specimen #{cc.attrs.answer.hasBeenModified ? 'track-change sia-modified-field': 'track-change'}"
                                 required="false"
-                                var="ru"
+                                var="s"
                                 itemValue="#{s}"
                                 itemLabel="#{s.fullIdentifier}"
                                 onmousedown="event.stopPropagation();"
@@ -70,7 +70,8 @@
                                 converter="#{specimenSummaryConverter}"
                                 forceSelection="true"
                                 scrollHeight="300"
-                                dropdown="true"
+                                dropdown="false"
+                                unique="true"
                                 showEmptyMessage="false"
                                 maxResults="#{fieldConfigurationService.resultLimit()}">
                     <f:attribute name="field" value="#{cc.attrs.field}" />
