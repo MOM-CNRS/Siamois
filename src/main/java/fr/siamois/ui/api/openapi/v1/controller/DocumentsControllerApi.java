@@ -1,11 +1,18 @@
 package fr.siamois.ui.api.openapi.v1.controller;
 
 import fr.siamois.ui.api.openapi.v1.OpenApiTags;
+import fr.siamois.ui.api.openapi.v1.request.document.DocumentPatchRequest;
 import fr.siamois.ui.api.openapi.v1.response.document.DocumentFormResponse;
+import fr.siamois.ui.api.openapi.v1.response.document.DocumentResourceResponse;
 import fr.siamois.ui.api.openapi.v1.service.DocumentContentOpenApiService;
 import fr.siamois.ui.api.openapi.v1.service.DocumentFormOpenApiService;
+import fr.siamois.ui.api.openapi.v1.service.DocumentWriteOpenApiService;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiCaller;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiService;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -32,6 +39,7 @@ public class DocumentsControllerApi {
     private final ProjectApiService projectApiService;
     private final DocumentContentOpenApiService documentContentOpenApiService;
     private final DocumentFormOpenApiService documentFormOpenApiService;
+    private final DocumentWriteOpenApiService documentWriteOpenApiService;
 
     @GetMapping("/form")
     @Operation(
@@ -95,6 +103,38 @@ public class DocumentsControllerApi {
                 .contentType(payload.mediaType())
                 .header(HttpHeaders.CONTENT_DISPOSITION, disposition.toString())
                 .body(new InputStreamResource(payload.inputStream()));
+    }
+
+    @PatchMapping(value = "/{id}", consumes = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Modifier les métadonnées d'un document",
+            description = "Met à jour titre, description et concepts (nature, échelle, format). "
+                    + "Le fichier n'est pas remplacé par cet endpoint."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Ok"),
+            @ApiResponse(responseCode = "400", description = "Requête invalide"),
+            @ApiResponse(responseCode = "401", description = "Non authentifié"),
+            @ApiResponse(responseCode = "404", description = "Document ou concept introuvable"),
+            @ApiResponse(responseCode = "500", description = "Erreur interne")
+    })
+    public ResponseEntity<DocumentResourceResponse> patchDocument(
+            @PathVariable("id") long id,
+            @RequestBody DocumentPatchRequest body,
+            @RequestHeader(value = HttpHeaders.ACCEPT_LANGUAGE, required = false) String acceptLanguage) {
+
+        ProjectApiCaller caller = projectApiService.requireCaller();
+        String lang = ProjectApiService.primaryAcceptLanguage(acceptLanguage);
+        var resource = documentWriteOpenApiService.updateDocument(
+                caller,
+                id,
+                body.getTitle(),
+                body.getDescription(),
+                body.getNatureConceptId(),
+                body.getScaleConceptId(),
+                body.getFormatConceptId(),
+                lang);
+        return ResponseEntity.ok(new DocumentResourceResponse(resource));
     }
 
     @DeleteMapping("/{id}")
