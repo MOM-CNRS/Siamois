@@ -30,6 +30,7 @@ import fr.siamois.ui.api.openapi.v1.mapper.RecordingUnitResponseMapper;
 import fr.siamois.ui.api.openapi.v1.resource.document.ProjectDocumentResource;
 import fr.siamois.ui.api.openapi.v1.response.project.ProjectFormData;
 import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitFormBundle;
+import fr.siamois.ui.api.openapi.v1.service.DocumentWriteOpenApiService;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiService;
 import fr.siamois.ui.api.openapi.v1.service.RecordingUnitOpenApiService;
 import fr.siamois.ui.api.openapi.v1.resource.project.ProjectResource;
@@ -111,6 +112,8 @@ class ProjectControllerApiTest {
     private RecordingUnitResponseMapper recordingUnitResourceMapper;
     @Mock
     private RecordingUnitOpenApiService recordingUnitOpenApiService;
+    @Mock
+    private DocumentWriteOpenApiService documentWriteOpenApiService;
 
     private MockMvc mockMvc;
 
@@ -141,7 +144,8 @@ class ProjectControllerApiTest {
                 projectApiService,
                 projectResponseMapper,
                 recordingUnitResourceMapper,
-                recordingUnitOpenApiService);
+                recordingUnitOpenApiService,
+                documentWriteOpenApiService);
 
         mockMvc = MockMvcBuilders.standaloneSetup(controller)
                 .setControllerAdvice(new RestExceptionHandler())
