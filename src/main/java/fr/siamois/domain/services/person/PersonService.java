@@ -178,6 +178,18 @@ public class PersonService {
                 .toList();
     }
 
+    /**
+     * Utilisateurs rattachés à une institution (équipes de projet, gestionnaires), hors super-admins.
+     *
+     * @param search filtre optionnel sur nom, prénom, e-mail ou identifiant (insensible à la casse)
+     */
+    @Transactional(readOnly = true)
+    public List<PersonDTO> findAllInInstitution(long institutionId, String search) {
+        String filter = search == null || search.isBlank() ? null : search.trim();
+        return personRepository.findAllInInstitution(institutionId, filter).stream()
+                .map(personMapper::convert)
+                .toList();
+    }
 
     /**
      * Find all the person being an author of a spatial unit
