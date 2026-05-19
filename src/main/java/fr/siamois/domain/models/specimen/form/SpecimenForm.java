@@ -24,7 +24,7 @@ public abstract class SpecimenForm {
     // Specimen identifier
     protected static Concept specimenOtherIdConcept = new Concept.Builder()
             .vocabulary(SYSTEM_THESO)
-            .externalId("4282391")
+            .externalId("4290142")
             .build();
 
     // Authors
@@ -285,6 +285,7 @@ public abstract class SpecimenForm {
     protected static CustomFieldSelectMultipleFromFieldCode materialField =  CustomFieldSelectMultipleFromFieldCode.builder()
             .label("specimen.field.material")
             .isSystemField(true)
+            .isSystemField(true)
             .id(13L)
             .fieldCode(Specimen.MATIERE_FIELD)
             .valueBinding("material")
@@ -352,6 +353,8 @@ public abstract class SpecimenForm {
             .isSystemField(true)
             .id(19L)
             .valueBinding("taq")
+            .maxValue(Integer.MAX_VALUE)
+            .minValue(0)
             .concept(taqConcept)
             .build();
 
@@ -361,6 +364,8 @@ public abstract class SpecimenForm {
             .label("specimen.field.tpq")
             .isSystemField(true)
             .id(20L)
+            .maxValue(Integer.MAX_VALUE)
+            .minValue(Integer.MIN_VALUE)
             .valueBinding("tpq")
             .concept(tpqConcept)
             .build();
@@ -371,6 +376,8 @@ public abstract class SpecimenForm {
             .label("specimen.field.numberOfElement")
             .isSystemField(true)
             .id(21L)
+            .maxValue(Integer.MAX_VALUE)
+            .minValue(0)
             .valueBinding("numberOfElements")
             .concept(numberOfElementConcept)
             .build();
@@ -401,7 +408,7 @@ public abstract class SpecimenForm {
             .isSystemField(true)
             .id(23L)
             .valueBinding("containers")
-            .concept(containsConcept)
+            .concept(containerConcept)
             .build();
 
 
