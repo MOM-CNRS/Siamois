@@ -297,6 +297,8 @@ public class FormService {
             return a.getValue();
         } else if (answer instanceof CustomFieldAnswerSelectMultipleRecordingUnitViewModel a) {
             return new HashSet<>(a.getValue());
+        } else if (answer instanceof CustomFieldAnswerSelectMultipleSpecimenViewModel a) {
+            return new HashSet<>(a.getValue());
         }
 
         return null;
@@ -361,6 +363,7 @@ public class FormService {
         handlers.put(CustomFieldAnswerSelectMultipleRecordingUnitViewModel.class, this::handleRecordingUnitSet);
         handlers.put(CustomFieldAnswerMeasurementViewModel.class, this::handleMeasurement);
         handlers.put(CustomFieldAnswerSelectMultipleContainerViewModel.class, this::handleContainerSet);
+        handlers.put(CustomFieldAnswerSelectMultipleSpecimenViewModel.class, this::handleSpecimenSet);
 
         Class<? extends CustomFieldAnswerViewModel> answerClass = answer.getClass();
         BiConsumer<CustomFieldAnswerViewModel, Object> handler = handlers.get(answerClass);
@@ -482,6 +485,12 @@ public class FormService {
     private void handleContainerSet(CustomFieldAnswerViewModel answer, Object value) {
         if (answer instanceof CustomFieldAnswerSelectMultipleContainerViewModel containerAnswer && value instanceof Set<?> values) {
             containerAnswer.setValue(new ArrayList<>((Set<ContainerDTO>) value));
+        }
+    }
+
+    private void handleSpecimenSet(CustomFieldAnswerViewModel answer, Object value) {
+        if (answer instanceof CustomFieldAnswerSelectMultipleSpecimenViewModel specimenAnswer && value instanceof Set<?> values) {
+            specimenAnswer.setValue(new ArrayList<>((Set<SpecimenSummaryDTO>) value));
         }
     }
 
