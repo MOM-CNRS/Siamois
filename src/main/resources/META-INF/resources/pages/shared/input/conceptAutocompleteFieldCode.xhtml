@@ -8,7 +8,7 @@
     <cc:interface>
 
         <cc:attribute name="itemSelectListener" required="false" method-signature="void &lt;java.lang.String&gt;(java.lang.Object)" />
-        <cc:attribute name="selectedConcept" type="fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO" required="true"/>
+        <cc:attribute name="selectedConcept" required="true"/>
         <cc:attribute name="editConceptUrl" required="true"/>
         <cc:attribute name="disabled" required="false" default="false"/>
         <cc:attribute name="ajaxUpdateTargets" required="false" default="@form"/>
@@ -18,6 +18,7 @@
         <cc:attribute name="field" required="true"/>
         <cc:attribute name="inputStyleClass" required="false" default=""/>
         <cc:attribute name="label" type="String" required="false"/>
+        <cc:attribute name="multiple" type="java.lang.Boolean" required="false" default="false"/>
         <cc:attribute name="required" type="java.lang.Boolean" required="false" default="false"/>
 
 
@@ -39,6 +40,7 @@
                         onclick="event.stopPropagation();"
                         converter="#{conceptAutocompleteDTOConverter}"
                         forceSelection="true"
+                        multiple="#{cc.attrs.multiple}"
                         scrollHeight="300"
                         onchange="this.input[0].classList.add('sia-modified-field')"
                         dropdown="true"

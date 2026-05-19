@@ -9,14 +9,15 @@
 >
 
     <cc:interface>
-        <cc:attribute name="answer" type="fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerSelectOneFromFieldCodeViewModel" required="true"/>
+        <cc:attribute name="answer" type="fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerViewModel" required="true"/>
         <cc:attribute name="hasBeenModified" type="Boolean" required="false" default="false"/>
-        <cc:attribute name="field" type="fr.siamois.domain.models.form.customfield.CustomFieldSelectOneFromFieldCode" required="true"/>
+        <cc:attribute name="field" type="fr.siamois.domain.models.form.customfield.CustomField" required="true"/>
         <cc:attribute name="panelId" type="String" required="false"/>
         <cc:attribute name="label" type="String" required="false"/>
         <cc:attribute name="mode" type="String" required="false" default="READ"/>
         <cc:attribute name="updateTargetsOnBlur" type="String" required="false" default="@this"/>
         <cc:attribute name="required" type="java.lang.Boolean" required="false" default="false"/>
+        <cc:attribute name="multiple" type="java.lang.Boolean" required="false" default="false"/>
         <cc:attribute name="onConceptChanged" method-signature="void listener(org.primefaces.event.SelectEvent)" required="false"/>
         <cc:attribute name="panelStyleClass" type="String" required="false" default=""/>
     </cc:interface>
@@ -36,6 +37,7 @@
                                                           selectedConcept="#{cc.attrs.answer.value}"
                                                           field="#{cc.attrs.field}"
                                                           panelId="#{cc.attrs.panelId}"
+                                                          multiple="#{cc.attrs.multiple}"
                                                           label="#{cc.attrs.label}"
                                                           ajaxUpdateTargets="#{cc.attrs.updateTargetsOnBlur}"
                                                           required="#{cc.attrs.required}"

@@ -260,6 +260,20 @@ public class FormService {
             } catch (NullPointerException e) {
                 return null;
             }
+        } else if (answer instanceof CustomFieldAnswerSelectMultipleFromFieldCodeViewModel a) {
+            try {
+                if (a.getValue() == null) {
+                    return Set.of();
+                }
+
+                return a.getValue().stream()
+                        .filter(Objects::nonNull)
+                        .map(ConceptAutocompleteDTO::concept)
+                        .collect(Collectors.toSet());
+
+            } catch (NullPointerException e) {
+                return Set.of();
+            }
         } else if (answer instanceof CustomFieldAnswerSelectOneActionUnitViewModel a) {
             return a.getValue();
         } else if (answer instanceof CustomFieldAnswerSelectOneSpatialUnitViewModel a) {
@@ -298,6 +312,8 @@ public class FormService {
         } else if (answer instanceof CustomFieldAnswerSelectMultipleRecordingUnitViewModel a) {
             return new HashSet<>(a.getValue());
         } else if (answer instanceof CustomFieldAnswerSelectMultipleSpecimenViewModel a) {
+            return new HashSet<>(a.getValue());
+        } else if (answer instanceof CustomFieldAnswerSelectMultipleFromFieldCodeViewModel a) {
             return new HashSet<>(a.getValue());
         }
 
@@ -364,6 +380,7 @@ public class FormService {
         handlers.put(CustomFieldAnswerMeasurementViewModel.class, this::handleMeasurement);
         handlers.put(CustomFieldAnswerSelectMultipleContainerViewModel.class, this::handleContainerSet);
         handlers.put(CustomFieldAnswerSelectMultipleSpecimenViewModel.class, this::handleSpecimenSet);
+        handlers.put(CustomFieldAnswerSelectMultipleFromFieldCodeViewModel.class, this::handleConceptSet);
 
         Class<? extends CustomFieldAnswerViewModel> answerClass = answer.getClass();
         BiConsumer<CustomFieldAnswerViewModel, Object> handler = handlers.get(answerClass);
@@ -447,7 +464,7 @@ public class FormService {
         if (answer instanceof CustomFieldAnswerSelectOneSpatialUnitViewModel spatialUnitAnswer) {
             // Convert to place suggestion
             SpatialUnitSummaryDTO val = (SpatialUnitSummaryDTO) value;
-            PlaceSuggestionDTO dto ;
+            PlaceSuggestionDTO dto;
             if (val != null) {
                 dto = mapToPlaceSuggestion(val);
                 spatialUnitAnswer.setValue(dto);
@@ -485,6 +502,22 @@ public class FormService {
     private void handleContainerSet(CustomFieldAnswerViewModel answer, Object value) {
         if (answer instanceof CustomFieldAnswerSelectMultipleContainerViewModel containerAnswer && value instanceof Set<?> values) {
             containerAnswer.setValue(new ArrayList<>((Set<ContainerDTO>) value));
+        }
+    }
+
+    private void handleConceptSet(CustomFieldAnswerViewModel answer, Object value) {
+        if (answer instanceof CustomFieldAnswerSelectMultipleFromFieldCodeViewModel multipleAnswer && value instanceof Set<?> values) {
+            List<ConceptAutocompleteDTO> autocompleteList = values.stream()
+                    .filter(ConceptDTO.class::isInstance)
+                    .map(ConceptDTO.class::cast)
+                    .map(concept -> new ConceptAutocompleteDTO(
+                            concept,
+                            labelBean.findLabelOf(concept),
+                            labelBean.getCurrentUserLang()
+                    ))
+                    .toList(); // Ou .collect(Collectors.toList()) selon votre version de Java
+
+            multipleAnswer.setValue(new ArrayList<>(autocompleteList));
         }
     }
 

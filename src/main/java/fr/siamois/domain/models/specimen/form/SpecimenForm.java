@@ -282,7 +282,7 @@ public abstract class SpecimenForm {
 
     @Transient
     @JsonIgnore
-    protected static CustomFieldSelectOneFromFieldCode materialField =  CustomFieldSelectOneFromFieldCode.builder()
+    protected static CustomFieldSelectMultipleFromFieldCode materialField =  CustomFieldSelectMultipleFromFieldCode.builder()
             .label("specimen.field.material")
             .isSystemField(true)
             .id(13L)
@@ -293,7 +293,7 @@ public abstract class SpecimenForm {
 
     @Transient
     @JsonIgnore
-    protected static CustomFieldSelectOneFromFieldCode materialClassField =  CustomFieldSelectOneFromFieldCode.builder()
+    protected static CustomFieldSelectMultipleFromFieldCode materialClassField =  CustomFieldSelectMultipleFromFieldCode.builder()
             .label("specimen.field.materialClass")
             .isSystemField(true)
             .id(14L)

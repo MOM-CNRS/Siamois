@@ -353,31 +353,48 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
         return res;
     }
 
-    public void handleConceptChange(CustomField field, ConceptAutocompleteDTO newValue) {
+    public void handleConceptChange(CustomField field, Object newValue) {
 
-        CustomFieldAnswerSelectOneFromFieldCodeViewModel ans = (CustomFieldAnswerSelectOneFromFieldCodeViewModel) formResponse.getAnswers().get(field);
-        ans.setValue(newValue);
+        CustomFieldAnswerViewModel ans = formResponse.getAnswers().get(field);
 
-        if (autoSave) {
-            // Save the change
-            boolean status = save();
-            if (status) {
-                markFieldNotModified(field);
-            } else {
-                setFieldAnswerHasBeenModified(field);
+        // Si c'est une liste (champ multiple), on met à jour la valeur et on arrête TOUT immédiatement
+        if (ans instanceof CustomFieldAnswerSelectMultipleFromFieldCodeViewModel multipleAns) {
+            multipleAns.getValue().add( (ConceptAutocompleteDTO) newValue);
+            if (autoSave) {
+                // Save the change
+                boolean status = save();
+                if (status) {
+                    markFieldNotModified(field);
+                } else {
+                    setFieldAnswerHasBeenModified(field);
+                }
+            }
+            return; // Fin de la méthode, le reste ne s'exécute pas
+        }
+
+        // Sinon, on continue avec la logique existante pour un champ unique
+        if (ans instanceof CustomFieldAnswerSelectOneFromFieldCodeViewModel singleAns) {
+            ConceptAutocompleteDTO singleValue = (ConceptAutocompleteDTO) newValue;
+            singleAns.setValue(singleValue);
+
+            if (autoSave) {
+                // Save the change
+                boolean status = save();
+                if (status) {
+                    markFieldNotModified(field);
+                } else {
+                    setFieldAnswerHasBeenModified(field);
+                }
+            }
+
+            // Apply concept change logic
+            onConceptChanged(field, singleValue);
+
+            // If it's the field defining the form, change form
+            if (isFormScopeField(field) && formScopeChangeCallback != null) {
+                formScopeChangeCallback.accept(field, singleValue.getConceptLabelToDisplay().getConcept());
             }
         }
-
-
-        // Apply concept change logic
-        onConceptChanged(field, newValue);
-
-        // If it's the field defining the form, change form
-        if (isFormScopeField(field) && formScopeChangeCallback != null) {
-            formScopeChangeCallback.accept(field, newValue.getConceptLabelToDisplay().getConcept());
-        }
-
-
     }
 
     private boolean isFormScopeField(CustomField field) {

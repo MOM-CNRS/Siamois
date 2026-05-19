@@ -18,10 +18,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static fr.siamois.domain.models.ValidationStatus.*;
@@ -131,6 +128,35 @@ public class SpecimenService implements ArkEntityService {
     }
 
     /**
+     * Synchronize collection
+     *
+     * @param managedCollection La collection issue de l'entité managée (ex: managedSpecimen.getMaterialClass())
+     * @param newCollection     La collection contenant les nouvelles données (ex: specimen.getMaterialClass())
+     * @param <T>               Le type de l'entité (ici Concept)
+     */
+    private <T> void synchronizeCollection(Collection<T> managedCollection, Collection<T> newCollection) {
+        if (managedCollection == null) {
+            return; // Sécurité si la collection de l'entité n'est pas initialisée
+        }
+
+        // 1. Si la nouvelle collection est nulle ou vide, on vide simplement la collection managée
+        if (newCollection == null || newCollection.isEmpty()) {
+            managedCollection.clear();
+            return;
+        }
+
+        // 2. Supprimer les éléments qui ne sont plus présents dans la nouvelle collection
+        managedCollection.retainAll(newCollection);
+
+        // 3. Ajouter les éléments de la nouvelle collection qui n'étaient pas encore présents
+        for (T element : newCollection) {
+            if (!managedCollection.contains(element)) {
+                managedCollection.add(element);
+            }
+        }
+    }
+
+    /**
      * Saves a specimen to the repository.
      *
      * @param toSave the specimen to save
@@ -154,6 +180,9 @@ public class SpecimenService implements ArkEntityService {
 
         setupParents(specimen, managedSpecimen);
         setupChilds(specimen, managedSpecimen);
+
+        synchronizeCollection(managedSpecimen.getMaterialClass(), specimen.getMaterialClass());
+        synchronizeCollection(managedSpecimen.getMaterial(), specimen.getMaterial());
 
         // Sauvegarder l'entité Specimen
         managedSpecimen = specimenRepository.save(managedSpecimen);

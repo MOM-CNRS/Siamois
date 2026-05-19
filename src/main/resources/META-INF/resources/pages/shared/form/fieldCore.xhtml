@@ -100,6 +100,24 @@
             />
         </c:if>
 
+        <c:if test="#{col.field['class'].simpleName eq 'CustomFieldSelectMultipleFromFieldCode'}">
+            <!-- CONCEPT -->
+            <siaInplace:concept
+                    id="conceptMultiple"
+                    hasBeenModified="#{hasBeenModified}"
+                    field="#{col.field}"
+                    multiple="true"
+                    panelId="#{panelId}"
+                    required="#{col.required}"
+                    label="#{spatialUnitFieldBean.resolveCustomFieldLabel(col.field)}"
+                    mode="#{mode}"
+                    updateTargetsOnBlur="#{conceptFieldsUpdateTargetsOnBlur} #{updateTargetsOnBlur}"
+                    answer="#{answer}"
+                    panelStyleClass="#{panelStyleClass}"
+                    onConceptChanged="#{formCtx.setFieldConceptAnswerHasBeenModified}"
+            />
+        </c:if>
+
 
         <c:if test="#{col.field['class'].simpleName eq 'CustomFieldSelectOneActionUnit'}">
             <!-- Select one action -->
