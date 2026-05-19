@@ -156,6 +156,35 @@ public class SpecimenService implements ArkEntityService {
         }
     }
 
+    private static void setupOtherFields(Specimen specimen, Specimen managedSpecimen) {
+
+        managedSpecimen.setArk(specimen.getArk());
+        managedSpecimen.setDescription(specimen.getDescription());
+        managedSpecimen.setCollectors(specimen.getCollectors());
+        managedSpecimen.setCollectionDate(specimen.getCollectionDate());
+        managedSpecimen.setWeight(specimen.getWeight());
+        managedSpecimen.setNormalizedInterpretation(specimen.getNormalizedInterpretation());
+        managedSpecimen.setValidated(specimen.getValidated());
+        managedSpecimen.setValidatedAt(specimen.getValidatedAt());
+        managedSpecimen.setValidatedBy(specimen.getValidatedBy());
+        managedSpecimen.setTaq(specimen.getTaq());
+        managedSpecimen.setTpq(specimen.getTpq());
+        managedSpecimen.setComments(specimen.getComments());
+        managedSpecimen.setOtherIdentifier(specimen.getOtherIdentifier());
+        managedSpecimen.setCategory(specimen.getCategory());
+        managedSpecimen.setIsolationNumber(specimen.getIsolationNumber());
+        managedSpecimen.setWeight(specimen.getWeight());
+        managedSpecimen.setNumberOfElements(specimen.getNumberOfElements());
+
+        if (managedSpecimen.getCreatedBy() == null) {
+            managedSpecimen.setCreatedBy(specimen.getCreatedBy());
+        }
+
+
+        managedSpecimen.setChronologicalAttribution(specimen.getChronologicalAttribution());
+
+    }
+
     /**
      * Saves a specimen to the repository.
      *
@@ -180,6 +209,7 @@ public class SpecimenService implements ArkEntityService {
 
         setupParents(specimen, managedSpecimen);
         setupChilds(specimen, managedSpecimen);
+        setupOtherFields(specimen, managedSpecimen);
 
         synchronizeCollection(managedSpecimen.getMaterialClass(), specimen.getMaterialClass());
         synchronizeCollection(managedSpecimen.getMaterial(), specimen.getMaterial());

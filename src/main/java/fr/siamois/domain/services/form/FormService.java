@@ -131,27 +131,6 @@ public class FormService {
         return response;
     }
 
-    /**
-     * Create or reuse a CustomFormResponse for the given entity + field source.
-     *
-     * @param answers   the answers
-     * @param jpaEntity entity we bind system fields against
-     * @param field     the fiels
-     */
-    public void initOneAnswer(CustomFormResponseViewModel answers,
-                              Object jpaEntity,
-                              CustomField field) {
-
-
-        List<String> bindableFields = getBindableFieldNames(jpaEntity);
-
-        CustomFieldAnswerViewModel answer = answers.getAnswers().get(field);
-
-        if (answer != null) {
-            initializeAnswer(answer, field, jpaEntity, bindableFields);
-        }
-
-    }
 
     // ------------------- Enabled rules
 
@@ -245,7 +224,8 @@ public class FormService {
             return a.getValue().atOffset(ZoneOffset.UTC);
         } else if (answer instanceof CustomFieldAnswerTextViewModel a) {
             return a.getValue();
-        } else if (answer instanceof CustomFieldAnswerSelectMultiplePersonViewModel a) {
+        }
+        else if (answer instanceof CustomFieldAnswerSelectMultiplePersonViewModel a) {
             return a.getValue();
         } else if (answer instanceof CustomFieldAnswerSelectOnePersonViewModel a) {
             return a.getValue();
@@ -312,8 +292,6 @@ public class FormService {
         } else if (answer instanceof CustomFieldAnswerSelectMultipleRecordingUnitViewModel a) {
             return new HashSet<>(a.getValue());
         } else if (answer instanceof CustomFieldAnswerSelectMultipleSpecimenViewModel a) {
-            return new HashSet<>(a.getValue());
-        } else if (answer instanceof CustomFieldAnswerSelectMultipleFromFieldCodeViewModel a) {
             return new HashSet<>(a.getValue());
         }
 

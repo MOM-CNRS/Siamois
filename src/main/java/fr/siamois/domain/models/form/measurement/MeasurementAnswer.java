@@ -24,7 +24,7 @@ public class MeasurementAnswer implements Serializable {
     @Column(name = "numeric_value", nullable = false)
     private Double numericValue;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(cascade = {CascadeType.PERSIST, CascadeType.MERGE})
     @JoinColumn(name = "fk_unit_id", nullable = false)
     private UnitDefinition unit;
 
