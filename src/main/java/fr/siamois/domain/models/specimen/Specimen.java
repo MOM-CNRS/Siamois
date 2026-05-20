@@ -117,7 +117,7 @@ public class Specimen extends TraceableEntity implements ArkEntity {
             name = "specimen_material",
             joinColumns = @JoinColumn(name = "fk_specimen_id"),
             inverseJoinColumns = @JoinColumn(name = "fk_material_id"))
-    protected Set<Concept> material;
+    protected transient Set<Concept> material;
 
     @ManyToMany(fetch = FetchType.LAZY)
     @JsonIgnore
@@ -137,7 +137,7 @@ public class Specimen extends TraceableEntity implements ArkEntity {
             name = "specimen_material_class",
             joinColumns = @JoinColumn(name = "fk_specimen_id"),
             inverseJoinColumns = @JoinColumn(name = "fk_material_class__id"))
-    protected Set<Concept> materialClass;
+    protected transient Set<Concept> materialClass;
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "fk_collection_method")

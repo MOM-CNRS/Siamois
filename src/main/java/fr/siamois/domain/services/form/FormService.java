@@ -219,82 +219,59 @@ public class FormService {
     }
 
     private static Object extractValueFromAnswer(CustomFieldAnswerViewModel answer) {
-        if (answer instanceof CustomFieldAnswerDateTimeViewModel a && a.getValue() != null) {
-            return a.getValue().atOffset(ZoneOffset.UTC);
-        } else if (answer instanceof CustomFieldAnswerTextViewModel a) {
-            return a.getValue();
+        if (answer == null) return null;
+
+        // 1. Group all simple models that just return their direct value
+        if (answer instanceof CustomFieldAnswerTextViewModel a) return a.getValue();
+        if (answer instanceof CustomFieldAnswerIntegerViewModel a) return a.getValue();
+        if (answer instanceof CustomFieldAnswerSelectOneActionUnitViewModel a) return a.getValue();
+        if (answer instanceof CustomFieldAnswerSelectOneActionCodeViewModel a) return a.getValue();
+        if (answer instanceof CustomFieldAnswerSelectOneAddressViewModel a) return a.getValue();
+        if (answer instanceof CustomFieldAnswerSelectOnePersonViewModel a) return a.getValue();
+        if (answer instanceof CustomFieldAnswerSelectMultiplePersonViewModel a) return a.getValue();
+
+        // 2. Handle complex extractions using Java 17 pattern matching
+        if (answer instanceof CustomFieldAnswerDateTimeViewModel a) {
+            return a.getValue() != null ? a.getValue().atOffset(ZoneOffset.UTC) : null;
         }
-        else if (answer instanceof CustomFieldAnswerSelectMultiplePersonViewModel a) {
-            return a.getValue();
-        } else if (answer instanceof CustomFieldAnswerSelectOnePersonViewModel a) {
-            return a.getValue();
-        } else if (answer instanceof CustomFieldAnswerMeasurementViewModel a) {
-            if (a.getValue() != null && a.getValue().getNumericValue() != null) {
-                return a.getValue();
-            }
-            return null;
-        } else if (answer instanceof CustomFieldAnswerSelectOneFromFieldCodeViewModel a) {
-            try {
-                return a.getValue().concept();
-            } catch (NullPointerException e) {
-                return null;
-            }
-        } else if (answer instanceof CustomFieldAnswerSelectMultipleFromFieldCodeViewModel a) {
-            try {
-                if (a.getValue() == null) {
-                    return Set.of();
-                }
-
-                return a.getValue().stream()
-                        .filter(Objects::nonNull)
-                        .map(ConceptAutocompleteDTO::concept)
-                        .collect(Collectors.toSet());
-
-            } catch (NullPointerException e) {
-                return Set.of();
-            }
-        } else if (answer instanceof CustomFieldAnswerSelectOneActionUnitViewModel a) {
-            return a.getValue();
-        } else if (answer instanceof CustomFieldAnswerSelectOneSpatialUnitViewModel a) {
-            if (a.getValue() != null) {
-                // Convert back to place dto (single selection)
-                PlaceSuggestionDTO ans = a.getValue();
-                SpatialUnitSummaryDTO dto = new SpatialUnitSummaryDTO();
-                dto.setId(ans.getId());
-                dto.setName(ans.getName());
-                dto.setCode(ans.getCode());
-                dto.setCategory(ans.getCategory());
-                return dto;
-            } else {
-                return null;
-            }
-
-        } else if (answer instanceof CustomFieldAnswerSelectMultipleSpatialUnitTreeViewModel a) {
-            // Convert each PlaceSuggestionDTO in the list to SpatialUnitSummaryDTO
-            List<PlaceSuggestionDTO> placeSuggestionList = a.getValue();
-            return placeSuggestionList.stream()
-                    .map(place -> {
-                        SpatialUnitSummaryDTO dto = new SpatialUnitSummaryDTO();
-                        dto.setId(place.getId());
-                        dto.setName(place.getName());
-                        dto.setCode(place.getCode());
-                        dto.setCategory(place.getCategory());
-                        return dto;
-                    })
+        if (answer instanceof CustomFieldAnswerMeasurementViewModel a) {
+            return (a.getValue() != null && a.getValue().getNumericValue() != null) ? a.getValue() : null;
+        }
+        if (answer instanceof CustomFieldAnswerSelectOneFromFieldCodeViewModel a) {
+            return a.getValue() != null ? a.getValue().concept() : null;
+        }
+        if (answer instanceof CustomFieldAnswerSelectMultipleFromFieldCodeViewModel a) {
+            return a.getValue() == null ? Set.of() : a.getValue().stream()
+                    .filter(Objects::nonNull)
+                    .map(ConceptAutocompleteDTO::concept)
                     .collect(Collectors.toSet());
-        } else if (answer instanceof CustomFieldAnswerSelectOneActionCodeViewModel a) {
-            return a.getValue();
-        } else if (answer instanceof CustomFieldAnswerIntegerViewModel a) {
-            return a.getValue();
-        } else if (answer instanceof CustomFieldAnswerSelectOneAddressViewModel a) {
-            return a.getValue();
-        } else if (answer instanceof CustomFieldAnswerSelectMultipleRecordingUnitViewModel a) {
-            return new HashSet<>(a.getValue());
-        } else if (answer instanceof CustomFieldAnswerSelectMultipleSpecimenViewModel a) {
-            return new HashSet<>(a.getValue());
+        }
+        if (answer instanceof CustomFieldAnswerSelectOneSpatialUnitViewModel a) {
+            return a.getValue() != null ? toSpatialUnitSummary(a.getValue()) : null;
+        }
+        if (answer instanceof CustomFieldAnswerSelectMultipleSpatialUnitTreeViewModel a) {
+            return a.getValue() == null ? Set.of() : a.getValue().stream()
+                    .filter(Objects::nonNull)
+                    .map(FormService::toSpatialUnitSummary)
+                    .collect(Collectors.toSet());
+        }
+        if (answer instanceof CustomFieldAnswerSelectMultipleRecordingUnitViewModel a) {
+            return a.getValue() != null ? new HashSet<>(a.getValue()) : null;
+        }
+        if (answer instanceof CustomFieldAnswerSelectMultipleSpecimenViewModel a) {
+            return a.getValue() != null ? new HashSet<>(a.getValue()) : null;
         }
 
         return null;
+    }
+
+    private static SpatialUnitSummaryDTO toSpatialUnitSummary(PlaceSuggestionDTO ans) {
+        SpatialUnitSummaryDTO dto = new SpatialUnitSummaryDTO();
+        dto.setId(ans.getId());
+        dto.setName(ans.getName());
+        dto.setCode(ans.getCode());
+        dto.setCategory(ans.getCategory());
+        return dto;
     }
 
     // -------------- Internal helpers
@@ -478,7 +455,7 @@ public class FormService {
 
     private void handleContainerSet(CustomFieldAnswerViewModel answer, Object value) {
         if (answer instanceof CustomFieldAnswerSelectMultipleContainerViewModel containerAnswer && value instanceof Set<?> values) {
-            containerAnswer.setValue(new ArrayList<>((Set<ContainerDTO>) value));
+            containerAnswer.setValue(new ArrayList<>((Set<ContainerDTO>) values));
         }
     }
 
@@ -500,7 +477,7 @@ public class FormService {
 
     private void handleSpecimenSet(CustomFieldAnswerViewModel answer, Object value) {
         if (answer instanceof CustomFieldAnswerSelectMultipleSpecimenViewModel specimenAnswer && value instanceof Set<?> values) {
-            specimenAnswer.setValue(new ArrayList<>((Set<SpecimenSummaryDTO>) value));
+            specimenAnswer.setValue(new ArrayList<>((Set<SpecimenSummaryDTO>) values));
         }
     }
 
