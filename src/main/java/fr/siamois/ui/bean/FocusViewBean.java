@@ -81,6 +81,9 @@ public class FocusViewBean implements Serializable {
             case "specimen" ->
                     isListPanel ? panelFactory.createSpecimenListPanel()
                             : panelFactory.createSpecimenPanel(id);
+            case "container" ->
+                    isListPanel ? panelFactory.createContainerListPanel() :
+            null;
             case "welcome" -> panelFactory.createWelcomePanel();
             default -> throw new IllegalArgumentException("Unknown panel type: " + type);
         };

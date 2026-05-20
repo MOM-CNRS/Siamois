@@ -59,21 +59,6 @@ class SpecimenSeederTest {
         );
     }
 
-    @Test
-    void seed_ConceptDoesNotExist() {
-
-
-        when(conceptSeeder.findConceptOrThrow(new ConceptSeeder.ConceptKey("th240", "123456")))
-                .thenThrow(new IllegalStateException("Concept introuvable"));
-
-        IllegalStateException ex = assertThrows(
-                IllegalStateException.class,
-                () -> seeder.seed(toInsert, 1L)
-        );
-
-        assertThat(ex.getMessage()).contains("Concept introuvable");
-
-    }
 
     @Test
     void seed_AuthorDoesNotExist() {

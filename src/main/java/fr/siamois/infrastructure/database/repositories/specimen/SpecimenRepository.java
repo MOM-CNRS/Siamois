@@ -333,5 +333,8 @@ public interface SpecimenRepository extends JpaRepository<Specimen, Long>, Revis
     Optional<Specimen> findFirstByRecordingUnitIdOrderByCreationTimeAsc(Long institutionId);  // oldest
 
     Optional<Specimen> findFirstByRecordingUnitIdOrderByCreationTimeDesc(Long institutionId);
+
+    @Query("SELECT s FROM Specimen s WHERE s.recordingUnit.actionUnit.id = :actionUnitId")
+    List<Specimen> findFirst10ByActionUnitId(@Param("actionUnitId") Long actionUnitId);
 }
 

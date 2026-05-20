@@ -52,7 +52,6 @@ public class SpecimenSeeder {
 
         for (var s : specs) {
             // Find Type
-            Concept type = conceptSeeder.findConceptOrThrow(s.type);
             Concept cat = conceptSeeder.findConceptOrThrow(s.category);
             // Find author
             Person author = personSeeder.findPersonOrThrow(s.authorEmail);
@@ -86,7 +85,6 @@ public class SpecimenSeeder {
             toGetOrCreate.setCategory(cat);
             toGetOrCreate.setCreatedBy(author);
             toGetOrCreate.setFullIdentifier(s.fullIdentifier);
-            toGetOrCreate.setType(type);
             toGetOrCreate.setRecordingUnit(ru);
             toGetOrCreate.setAuthors(authors);
             toGetOrCreate.setCollectors(collectors);

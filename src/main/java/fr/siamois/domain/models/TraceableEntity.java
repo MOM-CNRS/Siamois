@@ -2,7 +2,6 @@ package fr.siamois.domain.models;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import fr.siamois.domain.models.auth.Person;
-import fr.siamois.domain.models.form.measurement.MeasurementAnswer;
 import fr.siamois.domain.models.institution.Institution;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
@@ -48,13 +47,7 @@ public abstract class TraceableEntity implements Serializable {
     @Column(name = "validated_at")
     protected OffsetDateTime validatedAt ;
 
-    @OneToOne(cascade = CascadeType.ALL, orphanRemoval = true)
-    @JoinColumn(name = "fk_z_sup")
-    private MeasurementAnswer zInf;
 
-    @OneToOne(cascade = CascadeType.ALL, orphanRemoval = true)
-    @JoinColumn(name = "fk_z_inf")
-    private MeasurementAnswer zSup;
 
     @ManyToOne
     @JoinColumn(name = "fk_validated_by")

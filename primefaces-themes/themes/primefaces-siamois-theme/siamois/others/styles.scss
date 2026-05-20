@@ -475,19 +475,22 @@ body .history .ui-button {
 body .ui-button.ui-button-flat.status-button {
 
     color: white;
-    height:1.5em;
-    width: 1.5em;
+    height:2em;
+    width: 2em;
 
     &.validated {
-        background-color: var(--green-valid);
+       color: #5e6ad2;
+        background-color: transparent;
     }
 
     &.complete {
-        background-color: #d9b036;
+        color: #d9b036;
+        background-color: transparent;
     }
 
     &.incomplete {
-        background-color: var(--error-main);
+        color: #9f9fa2;
+        background-color: transparent;
     }
 }
 

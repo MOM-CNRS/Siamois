@@ -283,6 +283,16 @@ public class NavBean implements Serializable {
         }
     }
 
+    public void goToContainerList(String mode) throws IOException {
+        if(Objects.equals(mode, FLOW)) {
+            flowBean.addContainerListPanel();
+            flowBean.redirectToDashboard();
+        }
+        if(Objects.equals(mode, FOCUS)) {
+            flowBean.redirectToFocus("/container");
+        }
+    }
+
     public void goToRecordingUnitList(String mode) throws IOException {
         if(Objects.equals(mode, FLOW)) {
             flowBean.addRecordingUnitListPanel();

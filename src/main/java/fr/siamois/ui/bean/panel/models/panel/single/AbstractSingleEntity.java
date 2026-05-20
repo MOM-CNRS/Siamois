@@ -55,7 +55,8 @@ public abstract class AbstractSingleEntity<T extends AbstractEntityDTO>
         implements EntityForm<T>, Serializable {
 
     public static final String FIELD = "field";
-    public static final String COLUMN_CLASS_NAME = "ui-g-12 ui-md-6 ui-lg-4";
+    public static final String COLUMN_CLASS_NAME = "ui-g-12 ui-md-6 ui-lg-3";
+    public static final String LONG_COLUMN_CLASS_NAME = "ui-g-12 ui-md-12 ui-lg-12";
 
     // -------------------- Dependencies --------------------
 

@@ -10,6 +10,7 @@ import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.document.Document;
 import fr.siamois.domain.models.exceptions.actionunit.NullActionUnitIdentifierException;
 import fr.siamois.domain.models.form.customform.CustomForm;
+import fr.siamois.domain.models.form.measurement.MeasurementAnswer;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.specimen.form.SpecimenDetailsForm;
 import fr.siamois.domain.models.specimen.form.SpecimenNewUnitForm;
@@ -28,6 +29,8 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
+import static org.hibernate.envers.RelationTargetAuditMode.NOT_AUDITED;
+
 @Data
 @Entity
 @Table(name = "specimen", indexes = {
@@ -40,7 +43,6 @@ public class Specimen extends TraceableEntity implements ArkEntity {
 
     @SuppressWarnings("CopyConstructorMissesField")
     public Specimen(@NonNull Specimen specimen) {
-        setType(specimen.getType());
         setRecordingUnit(specimen.getRecordingUnit());
         setCategory(specimen.getCategory());
         setCreatedByInstitution(specimen.getCreatedByInstitution());
@@ -94,6 +96,9 @@ public class Specimen extends TraceableEntity implements ArkEntity {
     @FieldCode
     public static final String INTERPRETATION_FIELD = "SIAS.INTERPRETATION";
 
+    @FieldCode
+    public static final String CLASS_FIELD = "SIAS.CLASS";
+
     @NotNull
     @OneToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "fk_ark_id")
@@ -104,17 +109,44 @@ public class Specimen extends TraceableEntity implements ArkEntity {
     protected Concept category; // lot, object, echantillon
 
     @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "fk_specimen_type")
-    protected Concept type;
-
-    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "fk_interpretation")
-    protected Concept interpretation;
+    protected Concept normalizedInterpretation;
 
+    @ManyToMany
+    @JoinTable(
+            name = "specimen_material",
+            joinColumns = @JoinColumn(name = "fk_specimen_id"),
+            inverseJoinColumns = @JoinColumn(name = "fk_material_id"))
+    protected transient Set<Concept> material;
+
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JsonIgnore
+    @JoinTable(
+            name="specimen_hierarchy",
+            joinColumns = { @JoinColumn(name = "fk_parent_id") },
+            inverseJoinColumns = { @JoinColumn(name = "fk_child_id") }
+    )
+    private Set<Specimen> children = new HashSet<>();
+
+    @ManyToMany(mappedBy = "children", fetch = FetchType.LAZY)
+    @JsonIgnore
+    private Set<Specimen> parents = new HashSet<>();
+
+    @ManyToMany
+    @JoinTable(
+            name = "specimen_material_class",
+            joinColumns = @JoinColumn(name = "fk_specimen_id"),
+            inverseJoinColumns = @JoinColumn(name = "fk_material_class__id"))
+    protected transient Set<Concept> materialClass;
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "fk_collection_method")
     protected Concept collectionMethod;
+
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "fk_sanitary_state")
+    protected Concept sanitaryState;
+
 
     @Column(name = "collection_date")
     protected OffsetDateTime collectionDate;
@@ -128,8 +160,40 @@ public class Specimen extends TraceableEntity implements ArkEntity {
     protected Integer identifier;
 
     @NotNull
+    @Column(name = "isolat_identifier")
+    protected String isolationNumber;
+
+    @Column(name = "taq")
+    protected Integer taq;
+
+    @Column(name = "tpq")
+    protected Integer tpq;
+
+    @NotNull
+    @Column(name = "other_identifier")
+    protected String otherIdentifier;
+
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "fk_chronological_attribution")
+    protected Concept chronologicalAttribution;
+
+    @Column(name = "number_of_element")
+    protected Integer numberOfElements;
+
+    @OneToOne(cascade = CascadeType.ALL, orphanRemoval = true)
+    @JoinColumn(name = "fk_weight")
+    @Audited(targetAuditMode = NOT_AUDITED)
+    private MeasurementAnswer weight;
+
+    @NotNull
     @Column(name = "full_identifier")
     protected String fullIdentifier;
+
+    @Column(name = "description", length = 5000)
+    protected String description;
+
+    @Column(name = "comments", length = 5000)
+    protected String comments;
 
     @Override
     public boolean equals(Object o) {

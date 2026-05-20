@@ -273,7 +273,7 @@ public class RecordingUnitService implements ArkEntityService {
         }
 
 
-        managedRecordingUnit.setChronologicalPhase(recordingUnit.getChronologicalPhase());
+        managedRecordingUnit.setChronologicalAttribution(recordingUnit.getChronologicalAttribution());
         managedRecordingUnit.setGeomorphologicalAgent(recordingUnit.getGeomorphologicalAgent());
 
     }

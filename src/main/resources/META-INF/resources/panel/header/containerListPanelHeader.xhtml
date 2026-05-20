@@ -1,0 +1,14 @@
+<ui:fragment xmlns="http://www.w3.org/1999/xhtml"
+             xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
+             xmlns:p="http://primefaces.org/ui"
+>
+    <!--@elvariable id="panelModel" type="fr.siamois.ui.bean.panel.models.panel.list.ContainerListPanel"-->
+
+    <i class="#{panelModel.icon}" style="font-size: 2rem; color:var(--main-color)"/>
+    <span style="padding-right:0.5em;">#{langBean.msg(panelModel.titleCodeOrTitle)}</span>
+    <p:chip label="#{panelModel.totalNumberOfUnits}" styleClass="container-count-chip" style="background: transparent;color:var(--main-color)"/>
+    <div id="spinner" style="display:none;" class="spinner-border">
+        <output class="visually-hidden">Loading...</output>
+    </div>
+
+</ui:fragment>

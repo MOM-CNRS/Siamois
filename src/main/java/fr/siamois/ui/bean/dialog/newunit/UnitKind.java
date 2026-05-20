@@ -39,6 +39,16 @@ public enum UnitKind {
             "/specimen/",
             Specimen.NEW_UNIT_FORM
     )),
+    CONTAINER(new UnitKindConfig(
+            "/container/new",
+            "Nouveau contenant",
+            "container-panel",
+            "bi bi-box-seam",
+            "container-autocomplete",
+            "common.entity.specimen.updated",
+            "/contaner/",
+            Specimen.NEW_UNIT_FORM
+    )),
     RECORDING(new UnitKindConfig(
             "/recording-unit/new",
             "Nouvelle unité d'enregistrement",

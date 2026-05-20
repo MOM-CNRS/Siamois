@@ -15,9 +15,9 @@
                 update="@this"
                 disabled="#{disabled}"
                 process="@this"
-                icon="#{unit.validated eq 'VALIDATED' ? 'bi bi-check' :
-                  unit.validated eq 'COMPLETE' ? 'bi bi-check' :
-                  'bi bi-exclamation'}"
+                icon="#{unit.validated eq 'VALIDATED' ? 'bi bi-check-circle' :
+                  unit.validated eq 'COMPLETE' ? 'bi bi-circle-fill' :
+                  'bi bi-circle'}"
                 styleClass="rounded-button ui-button-flat
                 #{unit.validated eq 'VALIDATED' ? 'status-button validated' :
                   unit.validated eq 'COMPLETE' ? 'status-button complete' :

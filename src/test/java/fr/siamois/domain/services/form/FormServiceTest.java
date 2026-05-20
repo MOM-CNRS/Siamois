@@ -1,9 +1,7 @@
 package fr.siamois.domain.services.form;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import fr.siamois.domain.models.form.customfield.CustomField;
-import fr.siamois.domain.models.form.customfield.CustomFieldMeasurement;
-import fr.siamois.domain.models.form.customfield.CustomFieldStratigraphy;
+import fr.siamois.domain.models.form.customfield.*;
 import fr.siamois.domain.models.form.customform.CustomForm;
 import fr.siamois.domain.models.form.customform.EnabledWhenJson;
 import fr.siamois.domain.models.institution.Institution;
@@ -20,6 +18,7 @@ import fr.siamois.ui.form.fieldsource.FieldSource;
 import fr.siamois.ui.form.rules.EnabledRulesEngine;
 import fr.siamois.ui.viewmodel.CustomFormResponseViewModel;
 import fr.siamois.ui.viewmodel.fieldanswer.*;
+import lombok.Data;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -99,6 +98,7 @@ class FormServiceTest {
      * Simple JPA-like entity with bindable fields + JavaBean getters/setters.
      * FormService uses reflection + PropertyDescriptor, so names must match.
      */
+    @Data
     public static class DummyEntity {
         private String title;
         private Integer count;
@@ -112,110 +112,15 @@ class FormServiceTest {
         private Set<SpatialUnitSummaryDTO> spatialUnitSet;
         private SpatialUnitSummaryDTO spatialUnitNull;
         private MeasurementAnswerDTO meas;
+        private Set<ConceptDTO> conceptSet;
+        private Set<SpecimenSummaryDTO> specimenSet;
 
         public List<String> getBindableFieldNames() {
             return List.of(
-                    "title", "count", "createdAt", "typeConcept",
-                    "actionUnit", "spatialUnit", "actionCode","recordingUnitParents",
+                    "title", "count", "createdAt", "typeConcept", "conceptSet",
+                    "actionUnit", "spatialUnit", "actionCode","recordingUnitParents", "specimenSet",
                     "person", "personList", "spatialUnitSet", "spatialUnitNull", "meas"
             );
-        }
-
-        // Getters and Setters
-        public String getTitle() {
-            return title;
-        }
-
-        public void setTitle(String title) {
-            this.title = title;
-        }
-
-        public MeasurementAnswerDTO getMeas() {
-            return meas;
-        }
-
-        public void setMeas(MeasurementAnswerDTO meas) {
-            this.meas = meas;
-        }
-
-        public Integer getCount() {
-            return count;
-        }
-
-        public void setCount(Integer count) {
-            this.count = count;
-        }
-
-        public OffsetDateTime getCreatedAt() {
-            return createdAt;
-        }
-
-        public void setCreatedAt(OffsetDateTime createdAt) {
-            this.createdAt = createdAt;
-        }
-
-        public ConceptDTO getTypeConcept() {
-            return typeConcept;
-        }
-
-        public void setTypeConcept(ConceptDTO typeConcept) {
-            this.typeConcept = typeConcept;
-        }
-
-        public ActionUnitSummaryDTO getActionUnit() {
-            return actionUnit;
-        }
-
-        public void setActionUnit(ActionUnitSummaryDTO actionUnit) {
-            this.actionUnit = actionUnit;
-        }
-
-        public SpatialUnitSummaryDTO getSpatialUnit() {
-            return spatialUnit;
-        }
-
-        public void setSpatialUnit(SpatialUnitSummaryDTO spatialUnit) {
-            this.spatialUnit = spatialUnit;
-        }
-
-        public ActionCodeDTO getActionCode() {
-            return actionCode;
-        }
-
-        public void setActionCode(ActionCodeDTO actionCode) {
-            this.actionCode = actionCode;
-        }
-
-        public PersonDTO getPerson() {
-            return person;
-        }
-
-        public void setPerson(PersonDTO person) {
-            this.person = person;
-        }
-
-        public List<PersonDTO> getPersonList() {
-            return personList;
-        }
-
-        public void setPersonList(List<PersonDTO> personList) {
-            this.personList = personList;
-        }
-
-        public Set<SpatialUnitSummaryDTO> getSpatialUnitSet() {
-            return spatialUnitSet;
-        }
-
-        public void setSpatialUnitSet(Set<SpatialUnitSummaryDTO> spatialUnitSet) {
-            this.spatialUnitSet = spatialUnitSet;
-        }
-
-        public SpatialUnitSummaryDTO getSpatialUnitNull() {
-            return spatialUnitNull;
-        }
-
-        public void setSpatialUnitNull(SpatialUnitSummaryDTO spatialUnitNull) {
-            this.spatialUnitNull = spatialUnitNull;
         }
     }
 
@@ -425,6 +330,8 @@ class FormServiceTest {
         CustomField spatialUnitFieldNull = mockSystemField(true, "spatialUnitNull");
         CustomField recordingUnitParentsField = mockSystemField(true, "recordingUnitParents");
         CustomField measurementField = mockSystemField(true, "meas");
+        CustomField multipleConceptField= mockSystemField(true, "conceptSet");
+        CustomField specimenSetField = mockSystemField(true, "specimenSet");
 
         // Mock answers for all supported types
         CustomFieldAnswerTextViewModel  titleAnswer = new CustomFieldAnswerTextViewModel();
@@ -437,6 +344,25 @@ class FormServiceTest {
         measAnswer.setValue(MeasurementAnswerDTO.builder()
                 .numericValue(45.0)
                 .build());
+
+
+        ConceptDTO concept1 = mock(ConceptDTO.class);
+        ConceptDTO concept2 = mock(ConceptDTO.class);
+        ConceptAutocompleteDTO dto1 =
+                new ConceptAutocompleteDTO(concept1, "Label 1", "en");
+        ConceptAutocompleteDTO dto2 =
+                new ConceptAutocompleteDTO(concept2, "Label 2", "en");
+        CustomFieldAnswerSelectMultipleFromFieldCodeViewModel conceptSetAnswer =
+                new CustomFieldAnswerSelectMultipleFromFieldCodeViewModel();
+        conceptSetAnswer.setValue(new ArrayList<>(List.of(dto1, dto2)));
+
+        // specimen set
+        SpecimenSummaryDTO s1 = mock(SpecimenSummaryDTO.class);
+        SpecimenSummaryDTO s2 = mock(SpecimenSummaryDTO.class);
+        CustomFieldAnswerSelectMultipleSpecimenViewModel specimenSetAnswer =
+                new CustomFieldAnswerSelectMultipleSpecimenViewModel();
+        specimenSetAnswer.setValue(new ArrayList<>(List.of(s1,s2)));
+
 
         CustomFieldAnswerDateTimeViewModel  createdAtAnswer = new CustomFieldAnswerDateTimeViewModel ();
         createdAtAnswer.setValue(LocalDateTime.of(2023, 1, 1, 12, 0));
@@ -500,6 +426,8 @@ class FormServiceTest {
         answers.put(spatialUnitFieldNull, spatialUnitAnswerNull);
         answers.put(recordingUnitParentsField, recordingAnswer);
         answers.put(measurementField, measAnswer);
+        answers.put(multipleConceptField, conceptSetAnswer);
+        answers.put(specimenSetField, specimenSetAnswer);
         response.setAnswers(answers);
 
         // Act: Update the JPA entity from the response
@@ -517,6 +445,8 @@ class FormServiceTest {
         assertEquals(personList, entity.getPersonList());
         assertEquals(2, entity.getSpatialUnitSet().size());
         assertEquals(45.0, entity.getMeas().getNumericValue());
+        assertEquals(2, entity.getConceptSet().size());
+        assertEquals(2, entity.getSpecimenSet().size());
         assertNull(entity.getSpatialUnitNull());
     }
 
@@ -622,10 +552,16 @@ class FormServiceTest {
         CustomFieldMeasurement measurementField = mock(CustomFieldMeasurement.class);
         when(measurementField.getIsSystemField()).thenReturn(true);
         when(measurementField.getValueBinding()).thenReturn("meas");
+        CustomFieldSelectMultipleFromFieldCode multipleConceptField = mock(CustomFieldSelectMultipleFromFieldCode.class);
+        when(multipleConceptField.getIsSystemField()).thenReturn(true);
+        when(multipleConceptField.getValueBinding()).thenReturn("conceptSet");
+        CustomFieldSelectMultipleSpecimen specimenSetField = mock(CustomFieldSelectMultipleSpecimen.class);
+        when(specimenSetField.getIsSystemField()).thenReturn(true);
+        when(specimenSetField.getValueBinding()).thenReturn("specimenSet");
 
         // Setup mocks for fieldSource
         when(fieldSource.getAllFields()).thenReturn(
-                List.of(titleField, countField, createdAtField, conceptField, actionUnitField,
+                List.of(titleField, countField, createdAtField, conceptField, actionUnitField, multipleConceptField, specimenSetField,
                         spatialUnitField, actionCodeField, personField, personListField, spatialUnitSetField, measurementField)
         );
 
@@ -668,6 +604,16 @@ class FormServiceTest {
         when(measurement.getNumericValue()).thenReturn(45.0);
         entity.setMeas(measurement);
 
+        // Concept set
+        ConceptDTO conceptSet1 = mock(ConceptDTO.class);
+        entity.setConceptSet(new HashSet<>());
+        entity.getConceptSet().add(conceptSet1);
+
+        // Specimen set
+        SpecimenSummaryDTO specimen = mock(SpecimenSummaryDTO.class);
+        entity.setSpecimenSet(new HashSet<>());
+        entity.getSpecimenSet().add(specimen);
+
         Set<SpatialUnitSummaryDTO> spatialUnitSet = Set.of(mock(SpatialUnitSummaryDTO.class), mock(SpatialUnitSummaryDTO.class));
         entity.setSpatialUnitSet(spatialUnitSet);
 
@@ -707,6 +653,10 @@ class FormServiceTest {
                     .thenReturn(new CustomFieldAnswerSelectMultipleSpatialUnitTreeViewModel());
             mockedFactory.when(() -> CustomFieldAnswerFactory.instantiateAnswerForField(measurementField))
                     .thenReturn(new CustomFieldAnswerMeasurementViewModel());
+            mockedFactory.when(() -> CustomFieldAnswerFactory.instantiateAnswerForField(multipleConceptField))
+                    .thenReturn(new CustomFieldAnswerSelectMultipleFromFieldCodeViewModel());
+            mockedFactory.when(() -> CustomFieldAnswerFactory.instantiateAnswerForField(specimenSetField))
+                    .thenReturn(new CustomFieldAnswerSelectMultipleSpecimenViewModel());
 
             // Act: Initialize or reuse the response
             CustomFormResponseViewModel response = formService.initOrReuseResponse(null, entity, fieldSource, false);
@@ -724,6 +674,8 @@ class FormServiceTest {
             assertEquals(person, ((CustomFieldAnswerSelectOnePersonViewModel) response.getAnswers().get(personField)).getValue());
             assertEquals(personList, ((CustomFieldAnswerSelectMultiplePersonViewModel) response.getAnswers().get(personListField)).getValue());
             assertEquals(measurement.getNumericValue(), ((CustomFieldAnswerMeasurementViewModel) response.getAnswers().get(measurementField)).getValue().getNumericValue());
+            assertEquals(1, ((CustomFieldAnswerSelectMultipleFromFieldCodeViewModel) response.getAnswers().get(multipleConceptField)).getValue().size());
+            assertEquals(1, ((CustomFieldAnswerSelectMultipleSpecimenViewModel) response.getAnswers().get(specimenSetField)).getValue().size());
 
             // Also ensure pk set + hasBeenModified false
             assertNotNull(response.getAnswers().get(titleField).getPk());

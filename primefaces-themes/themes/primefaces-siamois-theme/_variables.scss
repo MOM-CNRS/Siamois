@@ -37,6 +37,12 @@ $groundLightColor200: #D8B9B9;
 $groundLightColor50: #ECE4E4;
 $groundDarkColor: #581011;
 
+$thirdMainColor: #E55807;
+$thirdLightColor100: #FADECD;
+$thirdLightColor200: #F7CDB5;
+$thirdLightColor50: #F9EFEA;
+$thirdDarkColor: #b84807;
+
 
 $colors: (
     "blue": #2196F3,
@@ -150,6 +156,12 @@ $highlightTextColor:#6B7280 !default;
     --ground-light-color-200: #{$groundLightColor200};
     --ground-light-color-50: #{$groundLightColor50};
     --ground-dark-color: #{$groundDarkColor};
+
+    --third-main-color: #{$thirdMainColor};
+    --third-light-color-100: #{$thirdLightColor100};
+    --third-light-color-200: #{$thirdLightColor200};
+    --third-light-color-50: #{$thirdLightColor50};
+    --third-dark-color: #{$thirdDarkColor};
 
     --error-main: #D32F2F;
 }

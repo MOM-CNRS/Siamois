@@ -98,8 +98,8 @@ public abstract class RecordingUnitParent extends TraceableEntity {
     protected Integer tpq;
 
     @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "fk_chronological_phase")
-    protected Concept chronologicalPhase;
+    @JoinColumn(name = "fk_chronological_attribution")
+    protected Concept chronologicalAttribution;
 
     @NotNull
     @ManyToOne(fetch = FetchType.EAGER, optional = false)

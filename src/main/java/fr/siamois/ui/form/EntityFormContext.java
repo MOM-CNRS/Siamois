@@ -352,31 +352,37 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
         return res;
     }
 
-    public void handleConceptChange(CustomField field, ConceptAutocompleteDTO newValue) {
+    public void handleConceptChange(CustomField field, Object newValue) {
+        CustomFieldAnswerViewModel ans = formResponse.getAnswers().get(field);
 
-        CustomFieldAnswerSelectOneFromFieldCodeViewModel ans = (CustomFieldAnswerSelectOneFromFieldCodeViewModel) formResponse.getAnswers().get(field);
-        ans.setValue(newValue);
+        if (ans instanceof CustomFieldAnswerSelectMultipleFromFieldCodeViewModel multipleAns) {
+            multipleAns.getValue().add((ConceptAutocompleteDTO) newValue);
+            handleAutoSave(field);
+            return;
+        }
 
+        if (ans instanceof CustomFieldAnswerSelectOneFromFieldCodeViewModel singleAns) {
+            ConceptAutocompleteDTO singleValue = (ConceptAutocompleteDTO) newValue;
+            singleAns.setValue(singleValue);
+
+            handleAutoSave(field);
+
+            onConceptChanged(field, singleValue);
+
+            if (isFormScopeField(field) && formScopeChangeCallback != null) {
+                formScopeChangeCallback.accept(field, singleValue.getConceptLabelToDisplay().getConcept());
+            }
+        }
+    }
+
+    private void handleAutoSave(CustomField field) {
         if (autoSave) {
-            // Save the change
-            boolean status = save();
-            if (status) {
+            if (save()) {
                 markFieldNotModified(field);
             } else {
                 setFieldAnswerHasBeenModified(field);
             }
         }
-
-
-        // Apply concept change logic
-        onConceptChanged(field, newValue);
-
-        // If it's the field defining the form, change form
-        if (isFormScopeField(field) && formScopeChangeCallback != null) {
-            formScopeChangeCallback.accept(field, newValue.getConceptLabelToDisplay().getConcept());
-        }
-
-
     }
 
     private boolean isFormScopeField(CustomField field) {
@@ -557,6 +563,15 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
         return Collections.emptyList();
     }
 
+    public List<ContainerDTO> getContainerOptions(String query) {
+        // todo : implement real
+        ContainerDTO containerDTO = new ContainerDTO();
+        containerDTO.setIdentifier("SAC-001");
+        ContainerDTO container = new ContainerDTO();
+        container.setIdentifier("CAISSE-002");
+        return List.of(containerDTO, container);
+    }
+
     /**
      * Get all recording units of the same scope (action unit) as the current unit.
      *
@@ -565,6 +580,18 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
     public List<RecordingUnitSummaryDTO> completeRecordingUnitOptions(String query) {
         if (unit instanceof RecordingUnitDTO recordingUnit) {
             return recordingUnitService.findAllByActionUnit(recordingUnit.getActionUnit().getId());
+        }
+        return Collections.emptyList();
+    }
+
+    /**
+     * Get all specimen of the same scope (action unit) as the current unit.
+     *
+     * @return The list of specimen
+     */
+    public List<SpecimenSummaryDTO> completeSpecimenOptions(String query) {
+        if (unit instanceof SpecimenDTO specimen) {
+            return specimenService.findAllByActionUnit(specimen.getRecordingUnit().getId());
         }
         return Collections.emptyList();
     }
@@ -798,5 +825,7 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
     public void toggleUncertainty(CustomFieldAnswerViewModel answer) {
         answer.setUncertain(!answer.isUncertain());
     }
+
+
 
 }
