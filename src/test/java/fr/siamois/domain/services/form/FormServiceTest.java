@@ -1,10 +1,7 @@
 package fr.siamois.domain.services.form;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import fr.siamois.domain.models.form.customfield.CustomField;
-import fr.siamois.domain.models.form.customfield.CustomFieldMeasurement;
-import fr.siamois.domain.models.form.customfield.CustomFieldSelectMultipleFromFieldCode;
-import fr.siamois.domain.models.form.customfield.CustomFieldStratigraphy;
+import fr.siamois.domain.models.form.customfield.*;
 import fr.siamois.domain.models.form.customform.CustomForm;
 import fr.siamois.domain.models.form.customform.EnabledWhenJson;
 import fr.siamois.domain.models.institution.Institution;
@@ -116,11 +113,12 @@ class FormServiceTest {
         private SpatialUnitSummaryDTO spatialUnitNull;
         private MeasurementAnswerDTO meas;
         private Set<ConceptDTO> conceptSet;
+        private Set<SpecimenSummaryDTO> specimenSet;
 
         public List<String> getBindableFieldNames() {
             return List.of(
                     "title", "count", "createdAt", "typeConcept", "conceptSet",
-                    "actionUnit", "spatialUnit", "actionCode","recordingUnitParents",
+                    "actionUnit", "spatialUnit", "actionCode","recordingUnitParents", "specimenSet",
                     "person", "personList", "spatialUnitSet", "spatialUnitNull", "meas"
             );
         }
@@ -333,6 +331,7 @@ class FormServiceTest {
         CustomField recordingUnitParentsField = mockSystemField(true, "recordingUnitParents");
         CustomField measurementField = mockSystemField(true, "meas");
         CustomField multipleConceptField= mockSystemField(true, "conceptSet");
+        CustomField specimenSetField = mockSystemField(true, "specimenSet");
 
         // Mock answers for all supported types
         CustomFieldAnswerTextViewModel  titleAnswer = new CustomFieldAnswerTextViewModel();
@@ -356,6 +355,13 @@ class FormServiceTest {
         CustomFieldAnswerSelectMultipleFromFieldCodeViewModel conceptSetAnswer =
                 new CustomFieldAnswerSelectMultipleFromFieldCodeViewModel();
         conceptSetAnswer.setValue(new ArrayList<>(List.of(dto1, dto2)));
+
+        // specimen set
+        SpecimenSummaryDTO s1 = mock(SpecimenSummaryDTO.class);
+        SpecimenSummaryDTO s2 = mock(SpecimenSummaryDTO.class);
+        CustomFieldAnswerSelectMultipleSpecimenViewModel specimenSetAnswer =
+                new CustomFieldAnswerSelectMultipleSpecimenViewModel();
+        specimenSetAnswer.setValue(new ArrayList<>(List.of(s1,s2)));
 
 
         CustomFieldAnswerDateTimeViewModel  createdAtAnswer = new CustomFieldAnswerDateTimeViewModel ();
@@ -421,6 +427,7 @@ class FormServiceTest {
         answers.put(recordingUnitParentsField, recordingAnswer);
         answers.put(measurementField, measAnswer);
         answers.put(multipleConceptField, conceptSetAnswer);
+        answers.put(specimenSetField, specimenSetAnswer);
         response.setAnswers(answers);
 
         // Act: Update the JPA entity from the response
@@ -439,6 +446,7 @@ class FormServiceTest {
         assertEquals(2, entity.getSpatialUnitSet().size());
         assertEquals(45.0, entity.getMeas().getNumericValue());
         assertEquals(2, entity.getConceptSet().size());
+        assertEquals(2, entity.getSpecimenSet().size());
         assertNull(entity.getSpatialUnitNull());
     }
 
@@ -547,10 +555,13 @@ class FormServiceTest {
         CustomFieldSelectMultipleFromFieldCode multipleConceptField = mock(CustomFieldSelectMultipleFromFieldCode.class);
         when(multipleConceptField.getIsSystemField()).thenReturn(true);
         when(multipleConceptField.getValueBinding()).thenReturn("conceptSet");
+        CustomFieldSelectMultipleSpecimen specimenSetField = mock(CustomFieldSelectMultipleSpecimen.class);
+        when(specimenSetField.getIsSystemField()).thenReturn(true);
+        when(specimenSetField.getValueBinding()).thenReturn("specimenSet");
 
         // Setup mocks for fieldSource
         when(fieldSource.getAllFields()).thenReturn(
-                List.of(titleField, countField, createdAtField, conceptField, actionUnitField, multipleConceptField,
+                List.of(titleField, countField, createdAtField, conceptField, actionUnitField, multipleConceptField, specimenSetField,
                         spatialUnitField, actionCodeField, personField, personListField, spatialUnitSetField, measurementField)
         );
 
@@ -598,6 +609,10 @@ class FormServiceTest {
         entity.setConceptSet(new HashSet<>());
         entity.getConceptSet().add(conceptSet1);
 
+        // Specimen set
+        SpecimenSummaryDTO specimen = mock(SpecimenSummaryDTO.class);
+        entity.setSpecimenSet(new HashSet<>());
+        entity.getSpecimenSet().add(specimen);
 
         Set<SpatialUnitSummaryDTO> spatialUnitSet = Set.of(mock(SpatialUnitSummaryDTO.class), mock(SpatialUnitSummaryDTO.class));
         entity.setSpatialUnitSet(spatialUnitSet);
@@ -640,6 +655,8 @@ class FormServiceTest {
                     .thenReturn(new CustomFieldAnswerMeasurementViewModel());
             mockedFactory.when(() -> CustomFieldAnswerFactory.instantiateAnswerForField(multipleConceptField))
                     .thenReturn(new CustomFieldAnswerSelectMultipleFromFieldCodeViewModel());
+            mockedFactory.when(() -> CustomFieldAnswerFactory.instantiateAnswerForField(specimenSetField))
+                    .thenReturn(new CustomFieldAnswerSelectMultipleSpecimenViewModel());
 
             // Act: Initialize or reuse the response
             CustomFormResponseViewModel response = formService.initOrReuseResponse(null, entity, fieldSource, false);
@@ -658,6 +675,7 @@ class FormServiceTest {
             assertEquals(personList, ((CustomFieldAnswerSelectMultiplePersonViewModel) response.getAnswers().get(personListField)).getValue());
             assertEquals(measurement.getNumericValue(), ((CustomFieldAnswerMeasurementViewModel) response.getAnswers().get(measurementField)).getValue().getNumericValue());
             assertEquals(1, ((CustomFieldAnswerSelectMultipleFromFieldCodeViewModel) response.getAnswers().get(multipleConceptField)).getValue().size());
+            assertEquals(1, ((CustomFieldAnswerSelectMultipleSpecimenViewModel) response.getAnswers().get(specimenSetField)).getValue().size());
 
             // Also ensure pk set + hasBeenModified false
             assertNotNull(response.getAnswers().get(titleField).getPk());
