@@ -51,6 +51,7 @@ public class SpecimenSeeder {
     public void seed(List<SpecimenSpecs> specs, Long institutionId) {
 
         for (var s : specs) {
+            // Find Type
             Concept cat = conceptSeeder.findConceptOrThrow(s.category);
             // Find author
             Person author = personSeeder.findPersonOrThrow(s.authorEmail);
