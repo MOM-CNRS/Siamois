@@ -6,10 +6,13 @@ import fr.siamois.domain.models.exceptions.actionunit.ActionUnitNotFoundExceptio
 import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.specimen.Specimen;
+import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.dto.entity.*;
+import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitRepository;
 import fr.siamois.infrastructure.database.repositories.specimen.SpecimenRepository;
 import fr.siamois.mapper.InstitutionMapper;
 import fr.siamois.mapper.SpecimenMapper;
+import fr.siamois.mapper.SpecimenSummaryMapper;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -24,6 +27,7 @@ import java.time.OffsetDateTime;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -34,9 +38,6 @@ class SpecimenServiceTest {
     @Mock
     private SpecimenRepository specimenRepository;
 
-
-
-
     @Mock
     private InstitutionMapper institutionMapper;
 
@@ -45,6 +46,12 @@ class SpecimenServiceTest {
 
     @InjectMocks
     private SpecimenService specimenService;
+
+    @Mock
+    private RecordingUnitRepository recordingUnitRepository;
+
+    @Mock
+    private SpecimenSummaryMapper specimenSummaryMapper;
 
 
 
@@ -521,4 +528,197 @@ class SpecimenServiceTest {
         // Act & Assert
         assertThrows(ActionUnitNotFoundException.class, () -> specimenService.toggleValidated(99L));
     }
+
+    @Test
+    void save_WithPreExistingFullIdentifier_ShouldNotGenerateIdentifiers() {
+        // Arrange
+        SpecimenDTO dto = new SpecimenDTO();
+        dto.setFullIdentifier("RU-101_SPEC-44");
+
+        Specimen specimenEntity = new Specimen();
+        specimenEntity.setId(null);
+
+        when(specimenMapper.invertConvert(dto)).thenReturn(specimenEntity);
+        when(specimenRepository.save(any(Specimen.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(specimenMapper.convert(any(Specimen.class))).thenReturn(dto);
+
+        // Act
+        SpecimenDTO result = specimenService.save(dto);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals("RU-101_SPEC-44", result.getFullIdentifier());
+        verify(specimenRepository, never()).findMaxUsedIdentifierByRecordingUnit(anyLong());
+    }
+
+    @Test
+    void save_WithExistingId_ShouldFetchManagedInstanceAndSyncOtherFields() {
+        // Arrange
+        SpecimenDTO dto = new SpecimenDTO();
+        dto.setFullIdentifier("RU-12_SPEC-5");
+
+        Specimen incomingSpecimen = new Specimen();
+        incomingSpecimen.setId(9900L);
+        incomingSpecimen.setDescription("Updated Description");
+
+        Specimen managedSpecimen = new Specimen();
+        managedSpecimen.setId(9900L);
+        managedSpecimen.setDescription("Old Description");
+
+        when(specimenMapper.invertConvert(dto)).thenReturn(incomingSpecimen);
+        when(specimenRepository.findById(9900L)).thenReturn(Optional.of(managedSpecimen));
+        when(specimenRepository.save(managedSpecimen)).thenReturn(managedSpecimen);
+        when(specimenMapper.convert(managedSpecimen)).thenReturn(dto);
+
+        // Act
+        specimenService.save(dto);
+
+        // Assert
+        assertEquals("Updated Description", managedSpecimen.getDescription());
+        verify(specimenRepository).findById(9900L);
+        verify(specimenRepository).save(managedSpecimen);
+    }
+
+    @Test
+    void save_ShouldSynchronizeConceptCollectionsCorrectly() {
+        // Arrange
+        SpecimenDTO dto = new SpecimenDTO();
+        dto.setFullIdentifier("IDENT_SYNC");
+
+        Concept gold = new Concept();
+        gold.setId(101L);
+        gold.setExternalId("101");
+        Concept silver = new Concept();
+        silver.setId(102L);
+        silver.setExternalId("102");
+        Concept bronze = new Concept();
+        bronze.setId(103L);
+        bronze.setExternalId("103");
+
+        Specimen incomingSpecimen = new Specimen();
+        incomingSpecimen.setId(1L);
+        // User sends Gold and Silver
+        incomingSpecimen.setMaterial(new java.util.HashSet<>(List.of(gold, silver)));
+
+        Specimen managedSpecimen = new Specimen();
+        managedSpecimen.setId(1L);
+        // Database contains Silver and Bronze
+        managedSpecimen.setMaterial(new java.util.HashSet<>(List.of(silver, bronze)));
+
+        when(specimenMapper.invertConvert(dto)).thenReturn(incomingSpecimen);
+        when(specimenRepository.findById(1L)).thenReturn(Optional.of(managedSpecimen));
+        when(specimenRepository.save(managedSpecimen)).thenAnswer(i -> i.getArgument(0));
+        when(specimenMapper.convert(any(Specimen.class))).thenReturn(dto);
+
+        // Act
+        specimenService.save(dto);
+
+        // Assert
+        // Silver is retained, Bronze pruned out, Gold merged in cleanly
+        Set<Concept> results = managedSpecimen.getMaterial();
+        assertTrue(results.contains(silver));
+        assertTrue(results.contains(gold));
+        assertFalse(results.contains(bronze));
+        assertEquals(2, results.size());
+    }
+
+    @Test
+    void save_ShouldUpdateParentChildBidirectionalRelationships() {
+        // Arrange
+        SpecimenDTO dto = new SpecimenDTO();
+        dto.setFullIdentifier("IDENT_REL");
+
+        // Set up the persistent entity currently in DB tracking an old parent relationship
+        Specimen managedSpecimen = new Specimen();
+        managedSpecimen.setId(10L);
+        managedSpecimen.setFullIdentifier("CHILD_10");
+
+        Specimen oldParent = new Specimen();
+        oldParent.setId(100L);
+        oldParent.setFullIdentifier("PARENT_100");
+        oldParent.setChildren(new java.util.HashSet<>(List.of(managedSpecimen)));
+        managedSpecimen.setParents(new java.util.HashSet<>(List.of(oldParent)));
+
+        // Set up incoming payload asking to switch to a new parent reference
+        Specimen incomingSpecimen = new Specimen();
+        incomingSpecimen.setId(10L);
+        incomingSpecimen.setFullIdentifier("CHILD_10");
+        Specimen newParentRef = new Specimen();
+        newParentRef.setId(200L);
+        newParentRef.setFullIdentifier("PARENT_200");
+        incomingSpecimen.setParents(new java.util.HashSet<>(List.of(newParentRef)));
+
+        Specimen newParentManaged = new Specimen();
+        newParentManaged.setId(200L);
+        newParentManaged.setFullIdentifier("PARENT_200");
+        newParentManaged.setChildren(new java.util.HashSet<>());
+
+        when(specimenMapper.invertConvert(dto)).thenReturn(incomingSpecimen);
+        when(specimenRepository.findById(10L)).thenReturn(Optional.of(managedSpecimen));
+        when(specimenRepository.findById(200L)).thenReturn(Optional.of(newParentManaged));
+
+        when(specimenRepository.save(any(Specimen.class))).thenAnswer(i -> i.getArgument(0));
+        when(specimenMapper.convert(any(Specimen.class))).thenReturn(dto);
+
+        // Act
+        specimenService.save(dto);
+
+        // Assert
+        // Verify relationship broken down from old parent
+        assertFalse(oldParent.getChildren().contains(managedSpecimen));
+        // Verify cross-reference appended onto the incoming entity parent
+        assertTrue(newParentManaged.getChildren().contains(managedSpecimen));
+        // Verify internal tracking lists match sync targets
+        assertTrue(managedSpecimen.getParents().contains(newParentManaged));
+        assertFalse(managedSpecimen.getParents().contains(oldParent));
+
+        verify(specimenRepository).save(oldParent);
+        verify(specimenRepository).save(newParentManaged);
+    }
+
+    @Test
+    void save_ShouldSynchronizeChildrenListsAndPruneDroppedOnes() {
+        // Arrange
+        SpecimenDTO dto = new SpecimenDTO();
+        dto.setFullIdentifier("IDENT_CHILD_SYNC");
+
+        Specimen managedSpecimen = new Specimen();
+        managedSpecimen.setId(50L);
+        managedSpecimen.setFullIdentifier("PARENT_50");
+
+        Specimen oldChild = new Specimen();
+        oldChild.setId(501L);
+        oldChild.setFullIdentifier("CHILD_501");
+        managedSpecimen.setChildren(new java.util.HashSet<>(List.of(oldChild)));
+
+        Specimen incomingSpecimen = new Specimen();
+        incomingSpecimen.setId(50L);
+        incomingSpecimen.setFullIdentifier("PARENT_50");
+
+        Specimen newChildRef = new Specimen();
+        newChildRef.setId(502L);
+        newChildRef.setFullIdentifier("CHILD_502");
+        incomingSpecimen.setChildren(new java.util.HashSet<>(List.of(newChildRef)));
+
+        Specimen newChildManaged = new Specimen();
+        newChildManaged.setId(502L);
+        newChildManaged.setFullIdentifier("CHILD_502");
+
+        when(specimenMapper.invertConvert(dto)).thenReturn(incomingSpecimen);
+        when(specimenRepository.findById(50L)).thenReturn(Optional.of(managedSpecimen));
+        when(specimenRepository.findById(502L)).thenReturn(Optional.of(newChildManaged));
+
+        when(specimenRepository.save(any(Specimen.class))).thenAnswer(i -> i.getArgument(0));
+        when(specimenMapper.convert(any(Specimen.class))).thenReturn(dto);
+
+        // Act
+        specimenService.save(dto);
+
+        // Assert
+        assertFalse(managedSpecimen.getChildren().contains(oldChild));
+        assertTrue(managedSpecimen.getChildren().contains(newChildManaged));
+        assertEquals(1, managedSpecimen.getChildren().size());
+        verify(specimenRepository).findById(502L);
+    }
+
 }

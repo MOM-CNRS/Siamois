@@ -13,6 +13,7 @@ import fr.siamois.mapper.SpecimenMapper;
 import fr.siamois.mapper.SpecimenSummaryMapper;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
+import org.mockito.Mock;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -32,6 +33,7 @@ public class SpecimenService implements ArkEntityService {
     private final SpecimenMapper specimenMapper;
     private final SpecimenSummaryMapper specimenSummaryMapper;
     private final InstitutionMapper institutionMapper;
+
 
 
     @Override
@@ -432,7 +434,7 @@ public class SpecimenService implements ArkEntityService {
     }
 
     public List<SpecimenSummaryDTO> findAllByActionUnit(@NotNull Long recordingUnitId) {
-        
+
         Long id = recordingUnitRepository.findById(recordingUnitId).get().getActionUnit().getId();
         return specimenRepository
                 .findFirst10ByActionUnitId(id)
