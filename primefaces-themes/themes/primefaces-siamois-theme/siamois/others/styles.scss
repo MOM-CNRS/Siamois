@@ -527,7 +527,7 @@ body .ui-tabs .ui-tabs-panels .ui-tabs-panel {
     max-width: 1200px;
 }
 
-#historyForm {
+#subSidebarForm {
     display: flex; /* On garde le flex pour l'alignement interne */
     width: 350px;
     overflow: hidden;
@@ -539,7 +539,7 @@ body .ui-tabs .ui-tabs-panels .ui-tabs-panel {
 }
 
 /* État fermé */
-#historyForm.is-collapsed {
+#subSidebarForm.is-collapsed {
     width: 0;
     opacity: 0;
     padding-left: 0;

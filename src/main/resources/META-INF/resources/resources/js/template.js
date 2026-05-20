@@ -24,20 +24,22 @@ function toggleCollapseSidebar() {
     }
 }
 
-function toggleCollapseHistory() {
-    const $historyForm = $('#historyForm');
-    const $history = $('#historyForm\\:history');
-    const $buttons = $history.find('.panel-menu button');
+function toggleCollapseHistory(history) {
 
-    // On bascule la classe
-    $historyForm.toggleClass('is-collapsed');
+    if(history) {
+        const $historyForm = $('#subSidebarForm');
+        const $history = $('#subSidebarForm\\:sidebarContent');
+        const $buttons = $history.find('.panel-menu button');
 
-    // On gère l'aspect visuel des boutons en fonction de l'état
-    if ($historyForm.hasClass('is-collapsed')) {
-        $buttons.addClass('ui-button-icon-only');
-    } else {
-        $buttons.removeClass('ui-button-icon-only');
+
+        // On gère l'aspect visuel des boutons en fonction de l'état
+        if ($historyForm.hasClass('is-collapsed')) {
+            $buttons.addClass('ui-button-icon-only');
+        } else {
+            $buttons.removeClass('ui-button-icon-only');
+        }
     }
+
 }
 
 

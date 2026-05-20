@@ -169,18 +169,29 @@
                             </li>
                             <li class="nav-item">
                                 <p:commandLink
-                                        id="historyLink"
-                                        type="button"
-                                        action="#{historyBean.toggleHistory}"
-                                        update="@none"
-                                        oncomplete="toggleCollapseHistory();"
+                                        id="historyLinkNav"
+                                        action="#{sidebarBean.toggleMode('HISTORIQUE')}"
+                                        update="subSidebarForm"
+                                        oncomplete="toggleCollapseHistory(true);"
                                         styleClass="nav-link"
                                 >
                                     <i class="bi bi-clock-fill"/>
                                     <span class="menu-text">Historique</span>
-                                    <p:tooltip for="historyLink" value="Historique"/>
+                                    <p:tooltip for="historyLinkNav" value="Historique"/>
                                 </p:commandLink>
-
+                            </li>
+                            <li class="nav-item">
+                                <p:commandLink
+                                        id="bookmarksLinkNav"
+                                        action="#{sidebarBean.toggleMode('BOOKMARKS')}"
+                                        update="subSidebarForm"
+                                        oncomplete="toggleCollapseHistory(false);"
+                                        styleClass="nav-link"
+                                >
+                                    <i class="bi bi-bookmark-fill"/>
+                                    <span class="menu-text">Favoris</span>
+                                    <p:tooltip for="bookmarksLinkNav" value="Favoris"/>
+                                </p:commandLink>
                             </li>
                             <p:divider/>
                             <h:panelGroup id="bookmarkGroup" layout="none"
