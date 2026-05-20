@@ -12,7 +12,6 @@ import fr.siamois.domain.models.exceptions.actionunit.NullActionUnitIdentifierEx
 import fr.siamois.domain.models.form.customform.CustomForm;
 import fr.siamois.domain.models.form.measurement.MeasurementAnswer;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
-import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.specimen.form.SpecimenDetailsForm;
 import fr.siamois.domain.models.specimen.form.SpecimenNewUnitForm;
 import fr.siamois.domain.models.vocabulary.Concept;

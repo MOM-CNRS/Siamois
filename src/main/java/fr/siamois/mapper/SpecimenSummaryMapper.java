@@ -1,7 +1,6 @@
 package fr.siamois.mapper;
 
 import fr.siamois.domain.models.specimen.Specimen;
-import fr.siamois.dto.entity.SpecimenDTO;
 import fr.siamois.dto.entity.SpecimenSummaryDTO;
 import fr.siamois.ui.mapper.adapter.ConversionServiceAdapter;
 import org.jspecify.annotations.Nullable;

@@ -2,7 +2,6 @@ package fr.siamois.domain.models;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import fr.siamois.domain.models.auth.Person;
-import fr.siamois.domain.models.form.measurement.MeasurementAnswer;
 import fr.siamois.domain.models.institution.Institution;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;

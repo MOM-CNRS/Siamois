@@ -1,6 +1,5 @@
 package fr.siamois.infrastructure.database.repositories.specs;
 
-import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.container.Container;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.lang.NonNull;

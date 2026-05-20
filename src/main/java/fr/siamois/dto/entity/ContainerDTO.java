@@ -1,6 +1,5 @@
 package fr.siamois.dto.entity;
 
-import fr.siamois.domain.models.TraceableEntity;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
 import lombok.Data;

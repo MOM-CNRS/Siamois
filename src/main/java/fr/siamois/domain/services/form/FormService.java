@@ -1,12 +1,12 @@
 package fr.siamois.domain.services.form;
 
 
-import fr.siamois.domain.models.form.customfield.*;
-import fr.siamois.domain.models.form.customfieldanswer.*;
+import fr.siamois.domain.models.form.customfield.CustomField;
+import fr.siamois.domain.models.form.customfield.CustomFieldMeasurement;
+import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerId;
 import fr.siamois.domain.models.form.customform.CustomForm;
 import fr.siamois.domain.models.form.customform.EnabledWhenJson;
 import fr.siamois.domain.models.form.customform.ValueMatcher;
-import fr.siamois.domain.models.specimen.Specimen;
 import fr.siamois.dto.PlaceSuggestionDTO;
 import fr.siamois.dto.StratigraphicRelationshipDTO;
 import fr.siamois.dto.entity.*;
@@ -32,7 +32,6 @@ import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.*;
 import java.util.function.BiConsumer;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 /**

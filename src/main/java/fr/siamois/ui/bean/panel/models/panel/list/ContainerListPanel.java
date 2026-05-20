@@ -6,7 +6,6 @@ import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.authorization.writeverifier.SpatialUnitWriteVerifier;
 import fr.siamois.domain.services.form.FormService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitTreeService;
-import fr.siamois.dto.entity.ActionUnitDTO;
 import fr.siamois.dto.entity.ContainerDTO;
 import fr.siamois.mapper.ActionUnitMapper;
 import fr.siamois.ui.bean.NavBean;
@@ -16,15 +15,10 @@ import fr.siamois.ui.bean.dialog.newunit.UnitKind;
 import fr.siamois.ui.bean.panel.FlowBean;
 import fr.siamois.ui.bean.panel.models.PanelBreadcrumb;
 import fr.siamois.ui.form.FormContextServices;
-import fr.siamois.ui.lazydatamodel.ActionUnitLazyDataModel;
 import fr.siamois.ui.lazydatamodel.BaseLazyDataModel;
 import fr.siamois.ui.lazydatamodel.ContainerLazyDataModel;
-import fr.siamois.ui.lazydatamodel.scope.ActionUnitScope;
-import fr.siamois.ui.lazydatamodel.tree.ActionUnitTreeTableLazyModel;
-import fr.siamois.ui.table.ActionUnitTableViewModel;
 import fr.siamois.ui.table.ContainerTableViewModel;
 import fr.siamois.ui.table.ToolbarCreateConfig;
-import fr.siamois.ui.table.definitions.ActionUnitTableDefinitionFactory;
 import fr.siamois.ui.table.definitions.ContainerTableDefinitionFactory;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -38,8 +32,6 @@ import org.springframework.stereotype.Component;
 
 import java.io.Serializable;
 import java.util.List;
-
-import static fr.siamois.ui.lazydatamodel.scope.ActionUnitScope.Type.INSTITUTION;
 
 
 @Slf4j

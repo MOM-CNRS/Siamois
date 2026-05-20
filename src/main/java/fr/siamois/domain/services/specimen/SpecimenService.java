@@ -2,7 +2,6 @@ package fr.siamois.domain.services.specimen;
 
 import fr.siamois.domain.models.exceptions.actionunit.ActionUnitNotFoundException;
 import fr.siamois.domain.models.institution.Institution;
-import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.specimen.Specimen;
 import fr.siamois.domain.services.ArkEntityService;
 import fr.siamois.dto.entity.*;
@@ -13,7 +12,6 @@ import fr.siamois.mapper.SpecimenMapper;
 import fr.siamois.mapper.SpecimenSummaryMapper;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
-import org.mockito.Mock;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
