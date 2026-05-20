@@ -122,14 +122,14 @@ public class NavBean implements Serializable {
     }
 
     public void reloadBookmarkedPanels() {
-        bookmarkedPanels = bookmarkService.findAll(sessionSettingsBean.getUserInfo());
+        // todo ?
     }
 
-    public String bookmarkTitle(Bookmark bookmark) {
+    public String bookmarkTitle(BookmarkDTO bookmark) {
         try {
-            return langBean.msg(bookmark.getTitleCode());
+            return langBean.msg(bookmark.getTitle());
         } catch (NoSuchMessageException e) {
-            return bookmark.getTitleCode();
+            return bookmark.getTitle();
         }
     }
 

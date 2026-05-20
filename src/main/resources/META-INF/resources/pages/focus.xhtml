@@ -122,111 +122,102 @@
 
             <h:form
                     id="subSidebarForm"
-                    styleClass="#{sidebarBean.visible ? '' : 'is-collapsed'}"
+                    styleClass="sub-sidebar-container #{sidebarBean.visible ? '' : 'is-collapsed'} mode-#{sidebarBean.currentMode.name().toLowerCase()}"
                     style="height: 100%; flex-direction: column; align-items: center;"
             >
+                <style>
+                    .ui-datatable-invisible-header thead { display: none !important; }
+                    .ui-datatable-invisible-header .ui-datatable-data tr td { border: none !important; padding: 4px 8px !important; }
+                    .bookmark-row { display: flex; align-items: center; width: 100%; }
+                </style>
+
                 <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
-                <div id="historyDiv" style="background: white; width: 100%; border: 1px solid #dee2e6;">
-                    <p:commandButton
-                            id="toggle-sidebar-btn"
-                            value="#{sidebarBean.currentMode == 'HISTORIQUE' ? 'Historique' : 'Favoris'}"
-                            style="width: 100%"
-                            icon="bi bi-chevron-double-left"
-                            action="#{sidebarBean.close()}"
-                            update="@none"
-                            process="@this"
-                            oncomplete="toggleCollapseHistory();"
-                            styleClass="ui-button-flat"
-                    >
-                    </p:commandButton>
+
+                <div class="sidebar-animated-inner" style="width: 320px; height: 100%; display: flex; flex-direction: column;">
+
+                    <div id="historyDiv" style="background: white; width: 100%; border: 1px solid #dee2e6;">
+                        <p:commandButton
+                                id="toggle-sidebar-btn"
+                                value="#{sidebarBean.currentMode == 'HISTORIQUE' ? 'Historique' : 'Favoris'}"
+                                style="width: 100%"
+                                icon="bi bi-chevron-double-left"
+                                action="#{sidebarBean.close()}"
+                                onstart="animateSidebarClose();"
+                                update="sidebarContent"
+                                process="@this"
+                                styleClass="ui-button-flat"
+                        />
+                    </div>
+
+                    <p:outputPanel id="sidebarContent" style="height: 100%; width: 100%; flex-grow: 1;">
+
+                        <ui:fragment rendered="#{sidebarBean.currentMode == 'HISTORIQUE'}">
+                            <p:dataScroller value="#{historyBean.items}" mode="inline" buffer="50" style="height: 100%" styleClass="panel-menu" var="item" chunkSize="20">
+                                <p:commandButton action="#{historyBean.redirectToEntry(item)}" icon="#{item.icon}" value="#{item.title}" styleClass="#{item.styleClass} nav-link ui-button-flat" />
+                            </p:dataScroller>
+                        </ui:fragment>
+
+                        <ui:fragment rendered="#{sidebarBean.currentMode == 'BOOKMARKS'}">
+                            <div style="height: 100%">
+                                <p:dataTable id="bookmarksTable"
+                                             value="#{bookmarkMenuBean.lazyModel}"
+                                             var="bkm"
+                                             lazy="true"
+                                             editable="true"
+                                             rowKey="#{bkm.id}"
+                                             scrollable="true"
+                                             scrollRows="40"
+                                             scrollHeight="500"
+                                             virtualScroll="true"
+                                             styleClass="ui-datatable-invisible-header panel-menu">
+
+                                    <p:ajax event="rowEdit" listener="#{bookmarkMenuBean.onRowEdit}" update="bookmarksTable" />
+                                    <p:ajax event="rowEditCancel" listener="#{bookmarkMenuBean.onRowCancel}" />
+
+
+                                    <p:column style="vertical-align: middle;">
+                                        <div class="bookmark-row" style="width: 100%;">
+                                            <p:cellEditor>
+
+                                                <f:facet name="output">
+                                                    <p:commandButton id="bookmarkLink"
+                                                                     action="#{bookmarkMenuBean.redirectToEntry(bkm)}"
+                                                                     icon="#{bkm.bookmarkIcon}"
+                                                                     value="#{navBean.bookmarkTitle(bkm)}"
+                                                                     styleClass="nav-link ui-button-flat"
+                                                                     style="text-align: left; width: 100%; color: #{bkm.bookmarkColor};">
+                                                    </p:commandButton>
+                                                    <p:tooltip for="@previous" value="#{navBean.bookmarkTitle(bkm)}"/>
+                                                </f:facet>
+
+                                                <f:facet name="input">
+                                                    <div style="display: flex; align-items: center; width: 100%; padding-left: 12px;">
+                                                        <i class="#{bkm.bookmarkIcon}" style="margin-right: 8px; color: #{bkm.bookmarkColor};" />
+                                                        <p:inputText value="#{bkm.title}" style="width: 100%;" required="true" />
+                                                    </div>
+                                                </f:facet>
+
+                                            </p:cellEditor>
+                                        </div>
+                                    </p:column>
+
+                                    <p:column style="width: 40px; text-align: center; vertical-align: middle;">
+                                        <p:rowEditor editTitle="Modifier" saveTitle="Valider" cancelTitle="Annuler" />
+                                    </p:column>
+
+                                    <p:column style="width: 40px; text-align: center; vertical-align: middle;">
+                                        <p:commandButton action="#{bookmarkMenuBean.deleteItem(bkm)}"
+                                                         icon="bi bi-trash"
+                                                         update="bookmarksTable"
+                                                         process="@this"
+                                                         styleClass="ui-button-flat ui-button-danger rounded-button" />
+                                    </p:column>
+                                </p:dataTable>
+                            </div>
+                        </ui:fragment>
+
+                    </p:outputPanel>
                 </div>
-
-
-
-                <p:outputPanel id="sidebarContent" styleClass="history collapsed" style="height: 100%; width: 100%;">
-
-                    <ui:fragment rendered="#{sidebarBean.currentMode == 'HISTORIQUE'}">
-                        <p:dataScroller value="#{historyBean.items}"
-                                        mode="inline"
-                                        buffer="50"
-                                        style="height: 100%"
-                                        styleClass="panel-menu"
-                                        var="item" chunkSize="20">
-                            <f:facet name="loader">
-                                <p:commandButton type="button" value="+"/>
-                            </f:facet>
-                            <p:commandButton id="historyLink"
-                                             action="#{historyBean.redirectToEntry(item)}"
-                                             icon="#{item.icon}"
-                                             value="#{item.title}"
-                                             styleClass="#{item.styleClass} nav-link ui-button-flat">
-                            </p:commandButton>
-                            <p:tooltip for="@previous" value="#{item.title}"/>
-                        </p:dataScroller>
-                    </ui:fragment>
-
-                    <ui:fragment rendered="#{sidebarBean.currentMode == 'BOOKMARKS'}">
-
-                        <style>
-                            /* CSS to seamlessly strip down the column headers for a clean navigation panel look */
-                            .ui-datatable-invisible-header thead {
-                                display: none !important;
-                            }
-                            .ui-datatable-invisible-header .ui-datatable-data tr td {
-                                border: none !important; /* Makes rows visually seamless like items list */
-                                padding: 4px 8px !important;
-                            }
-                            .bookmark-row {
-                                display: flex;
-                                align-items: center;
-                                width: 100%;
-                            }
-                        </style>
-                        <div style="height: 100%">
-                            <p:dataTable id="bookmarksTable"
-                                         value="#{bookmarkMenuBean.lazyModel}"
-                                         var="bkm"
-                                         lazy="true"
-                                         scrollable="true"
-                                         virtualScroll="true"
-                                         scrollHeight="500"
-                                         scrollRows="1"
-                                         styleClass="ui-datatable-invisible-header panel-menu">
-
-                                <p:column style="vertical-align: middle;">
-                                    <div class="bookmark-row">
-                                        <p:commandButton id="bookmarkLink"
-                                                         action="#{bookmarkBean.redirectToEntry(bkm)}"
-                                                         icon="#{bkm.icon}"
-                                                         value="#{bkm.title}"
-                                                         styleClass="nav-link ui-button-flat"
-                                                         style="text-align: left; flex-grow: 1; width: 100%;">
-                                        </p:commandButton>
-                                        <p:tooltip for="@previous" value="#{bkm.title}"/>
-                                    </div>
-                                </p:column>
-
-                                <p:column style="width: 40px; text-align: center; vertical-align: middle;">
-                                    <p:commandButton action="#{bookmarkBean.deleteItem(bkm)}"
-                                                     icon="bi bi-trash"
-                                                     update="bookmarksTable"
-                                                     process="@this"
-                                                     styleClass="ui-button-flat ui-button-danger rounded-button">
-                                        <p:confirm header="Confirmation" message="Supprimer ce signet ?" icon="bi bi-exclamation-triangle" />
-                                    </p:commandButton>
-                                </p:column>
-
-                            </p:dataTable>
-                        </div>
-
-
-                        <p:confirmDialog global="true" showEffect="fade" hideEffect="fade" responsive="true" width="350px">
-                            <p:commandButton value="Non" type="button" styleClass="ui-confirmdialog-no ui-button-flat"/>
-                            <p:commandButton value="Oui" type="button" styleClass="ui-confirmdialog-yes ui-button-danger" />
-                        </p:confirmDialog>
-
-                    </ui:fragment>
-                </p:outputPanel>
             </h:form>
 
             <p:outputPanel id="flowContent" styleClass="flow fullscreen-flow focus">

@@ -24,6 +24,44 @@ function toggleCollapseSidebar() {
     }
 }
 
+function animateSidebarClose() {
+    // Manually force the CSS collapse transition right before AJAX finishes
+    var sidebar = document.getElementById('subSidebarForm');
+    if (sidebar) {
+        sidebar.classList.add('is-collapsed');
+    }
+}
+
+function handleSidebarToggle(targetMode) {
+    var sidebar = document.getElementById('subSidebarForm');
+    if (!sidebar) return;
+
+    // Normalize input to lowercase to match our JSF class naming structure
+    var requestedModeClass = 'mode-' + targetMode.toLowerCase();
+
+    var isCurrentlyCollapsed = sidebar.classList.contains('is-collapsed');
+    var isSameModeActive = sidebar.classList.contains(requestedModeClass);
+
+    if (!isCurrentlyCollapsed && isSameModeActive) {
+        // CASE 1: The sidebar is open AND you clicked the EXACT same icon.
+        // Action: Slide it shut smoothly.
+        sidebar.classList.add('is-collapsed');
+    }
+    else if (!isCurrentlyCollapsed && !isSameModeActive) {
+        // CASE 2: The sidebar is open, but you clicked the OTHER icon.
+        // Action: Do NOT close it. Keep it wide open so the user just sees the content swap.
+        // Optional: You can manually swap the class immediately for a smoother transition feel
+        sidebar.className = sidebar.className.replace(/mode-\w+/g, requestedModeClass);
+    }
+    else {
+        // CASE 3: The sidebar was completely closed.
+        // Action: Wait a split second for PrimeFaces to inject the HTML content, then slide it open.
+        setTimeout(function() {
+            sidebar.classList.remove('is-collapsed');
+        }, 50);
+    }
+}
+
 function toggleCollapseHistory(history) {
 
     if(history) {

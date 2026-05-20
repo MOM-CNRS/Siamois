@@ -415,7 +415,7 @@ body .history-menu-text.ui-tabmenu .ui-tabmenu-nav .ui-tabmenuitem {
     z-index: 1000;
     background: transparent;
     overflow: visible;
-    height: fit-content;
+    height: 500px;
 }
 
 body .ui-tabmenu.panel-menu-text {
@@ -527,27 +527,47 @@ body .ui-tabs .ui-tabs-panels .ui-tabs-panel {
     max-width: 1200px;
 }
 
-#subSidebarForm {
-    display: flex; /* On garde le flex pour l'alignement interne */
-    width: 350px;
-    overflow: hidden;
-    white-space: nowrap;
-    transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1),
-    opacity 0.3s ease,
-    padding 0.4s ease;
+/* The main wrapper form/container holding your sub-sidebar */
+.sub-sidebar-container {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: #ffffff;
+    border-right: 1px solid #dee2e6;
+
+    /* Smooth Animation Settings */
+    width: 320px; /* Adjust your expanded panel width here */
     opacity: 1;
+    overflow: hidden;
+    transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 0.2s ease-in-out,
+    margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* État fermé */
-#subSidebarForm.is-collapsed {
-    width: 0;
-    opacity: 0;
-    padding-left: 0;
-    padding-right: 0;
-    border: none;
+/* The Collapsed State Modifier */
+.sub-sidebar-container.is-collapsed {
+    width: 0px !important;
+    opacity: 0 !important;
+    border-right: 0px solid transparent !important;
+    margin-left: -1px; /* Prevents border pixels from peeking out */
 }
 
-
+/* Inner content container ensures layout components don't wrap weirdly during collapse width contraction */
+.sidebar-animated-inner {
+    width: 320px; /* Must match the expanded container width exactly */
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+/* Fix for the actions column layout */
+.actions-wrapper {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 4px;
+    width: 100%;
+}
 
 
 .svg-shortcuts-legend {

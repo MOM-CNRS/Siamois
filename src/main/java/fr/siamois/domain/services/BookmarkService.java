@@ -4,11 +4,15 @@ import fr.siamois.domain.models.Bookmark;
 import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.institution.Institution;
+import fr.siamois.dto.entity.BookmarkDTO;
 import fr.siamois.infrastructure.database.repositories.BookmarkRepository;
+import fr.siamois.mapper.BookmarkMapper;
 import fr.siamois.mapper.InstitutionMapper;
 import fr.siamois.mapper.PersonMapper;
 import fr.siamois.ui.bean.panel.models.panel.AbstractPanel;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,20 +29,26 @@ public class BookmarkService {
     private final BookmarkRepository bookmarkRepository;
     private final PersonMapper personMapper;
     private final InstitutionMapper institutionMapper;
+    private final BookmarkMapper bookmarkMapper;
 
 
     /**
-     * Finds all bookmarks for a user.
+     * Finds a paginated slice of bookmarks converted to DTOs for a user.
      *
      * @param userInfo the user information containing the user and institution
-     * @return a list of bookmarks associated with the user and institution
+     * @param pageable pagination and sorting configuration rules
+     * @return a Page wrapper of BookmarkDTOs
      */
     @Transactional(readOnly = true)
-    public List<Bookmark> findAll(UserInfo userInfo) {
+    public Page<BookmarkDTO> findAll(UserInfo userInfo, Pageable pageable) {
         Person person = personMapper.invertConvert(userInfo.getUser());
         Institution institution = institutionMapper.invertConvert(userInfo.getInstitution());
 
-        return bookmarkRepository.findByPersonAndInstitution(person, institution);
+        // 1. Fetch the paginated page
+        Page<Bookmark> entitiesPage = bookmarkRepository.findByPersonAndInstitution(person, institution, pageable);
+
+        // 2. Map the entities to DTOs utilizing the MapStruct reference
+        return entitiesPage.map(bookmarkMapper::toDto);
     }
 
 

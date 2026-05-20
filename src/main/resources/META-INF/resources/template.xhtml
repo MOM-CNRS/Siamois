@@ -168,26 +168,24 @@
                                 </script>
                             </li>
                             <li class="nav-item">
-                                <p:commandLink
-                                        id="historyLinkNav"
-                                        action="#{sidebarBean.toggleMode('HISTORIQUE')}"
-                                        update="subSidebarForm"
-                                        oncomplete="toggleCollapseHistory(true);"
-                                        styleClass="nav-link"
-                                >
+                                <p:commandLink action="#{sidebarBean.toggleMode('HISTORIQUE')}"
+                                               update="subSidebarForm:historyDiv, subSidebarForm:sidebarContent, subSidebarForm:toggle-sidebar-btn"
+                                               process="@this"
+                                               id="historyLinkNav"
+                                               onstart="handleSidebarToggle('HISTORIQUE');"
+                                               styleClass="nav-link">
                                     <i class="bi bi-clock-fill"/>
                                     <span class="menu-text">Historique</span>
                                     <p:tooltip for="historyLinkNav" value="Historique"/>
                                 </p:commandLink>
                             </li>
                             <li class="nav-item">
-                                <p:commandLink
-                                        id="bookmarksLinkNav"
-                                        action="#{sidebarBean.toggleMode('BOOKMARKS')}"
-                                        update="subSidebarForm"
-                                        oncomplete="toggleCollapseHistory(false);"
-                                        styleClass="nav-link"
-                                >
+                                <p:commandLink action="#{sidebarBean.toggleMode('BOOKMARKS')}"
+                                               update="subSidebarForm:historyDiv, subSidebarForm:sidebarContent, subSidebarForm:toggle-sidebar-btn"
+                                               process="@this"
+                                               id="bookmarksLinkNav"
+                                               onstart="handleSidebarToggle('BOOKMARKS');"
+                                               styleClass="nav-link">
                                     <i class="bi bi-bookmark-fill"/>
                                     <span class="menu-text">Favoris</span>
                                     <p:tooltip for="bookmarksLinkNav" value="Favoris"/>
