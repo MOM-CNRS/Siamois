@@ -1,7 +1,9 @@
 package fr.siamois.domain.services.specimen;
 
+import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.exceptions.actionunit.ActionUnitNotFoundException;
 import fr.siamois.domain.models.institution.Institution;
+import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.specimen.Specimen;
 import fr.siamois.domain.services.ArkEntityService;
 import fr.siamois.dto.entity.*;
@@ -433,7 +435,10 @@ public class SpecimenService implements ArkEntityService {
 
     public List<SpecimenSummaryDTO> findAllByActionUnit(@NotNull Long recordingUnitId) {
 
-        Long id = recordingUnitRepository.findById(recordingUnitId).get().getActionUnit().getId();
+        Long id = recordingUnitRepository.findById(recordingUnitId)
+                .map(RecordingUnit::getActionUnit)
+                .map(ActionUnit::getId)
+                .orElse(null);
         return specimenRepository
                 .findFirst10ByActionUnitId(id)
                 .stream()

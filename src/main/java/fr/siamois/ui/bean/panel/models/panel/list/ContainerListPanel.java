@@ -52,7 +52,7 @@ public class ContainerListPanel extends AbstractListPanel<ContainerDTO> implemen
     private final transient InstitutionService institutionService;
     private final transient FormContextServices formContextServices;
     private final transient ActionUnitMapper actionUnitMapper;
-    private final ContainerService containerService;
+    private final transient ContainerService containerService;
 
     // locals
     private String actionUnitListErrorMessage;

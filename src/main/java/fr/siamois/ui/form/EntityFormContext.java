@@ -353,45 +353,34 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
     }
 
     public void handleConceptChange(CustomField field, Object newValue) {
-
         CustomFieldAnswerViewModel ans = formResponse.getAnswers().get(field);
 
-        // Si c'est une liste (champ multiple), on met à jour la valeur et on arrête TOUT immédiatement
         if (ans instanceof CustomFieldAnswerSelectMultipleFromFieldCodeViewModel multipleAns) {
-            multipleAns.getValue().add( (ConceptAutocompleteDTO) newValue);
-            if (autoSave) {
-                // Save the change
-                boolean status = save();
-                if (status) {
-                    markFieldNotModified(field);
-                } else {
-                    setFieldAnswerHasBeenModified(field);
-                }
-            }
-            return; // Fin de la méthode, le reste ne s'exécute pas
+            multipleAns.getValue().add((ConceptAutocompleteDTO) newValue);
+            handleAutoSave(field);
+            return;
         }
 
-        // Sinon, on continue avec la logique existante pour un champ unique
         if (ans instanceof CustomFieldAnswerSelectOneFromFieldCodeViewModel singleAns) {
             ConceptAutocompleteDTO singleValue = (ConceptAutocompleteDTO) newValue;
             singleAns.setValue(singleValue);
 
-            if (autoSave) {
-                // Save the change
-                boolean status = save();
-                if (status) {
-                    markFieldNotModified(field);
-                } else {
-                    setFieldAnswerHasBeenModified(field);
-                }
-            }
+            handleAutoSave(field);
 
-            // Apply concept change logic
             onConceptChanged(field, singleValue);
 
-            // If it's the field defining the form, change form
             if (isFormScopeField(field) && formScopeChangeCallback != null) {
                 formScopeChangeCallback.accept(field, singleValue.getConceptLabelToDisplay().getConcept());
+            }
+        }
+    }
+
+    private void handleAutoSave(CustomField field) {
+        if (autoSave) {
+            if (save()) {
+                markFieldNotModified(field);
+            } else {
+                setFieldAnswerHasBeenModified(field);
             }
         }
     }

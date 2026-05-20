@@ -13,6 +13,7 @@ import static fr.siamois.ui.bean.panel.models.panel.single.AbstractSingleEntity.
 public class ContainerTableDefinitionFactory {
 
     public static final String THIS = "@this";
+    public static final String IDENTIFIER = "identifier";
 
     private ContainerTableDefinitionFactory() {
     }
@@ -30,7 +31,7 @@ public class ContainerTableDefinitionFactory {
                 .label("common.label.identifier")
                 .id(2L)
                 .isSystemField(true)
-                .valueBinding("identifier")
+                .valueBinding(IDENTIFIER)
                 .concept(nameConcept)
                 .build();
 
@@ -50,7 +51,7 @@ public class ContainerTableDefinitionFactory {
                         .sortField("name")
 
                         // What to display inside <h:outputText>
-                        .valueKey("identifier")
+                        .valueKey(IDENTIFIER)
 
                         // What to do on click (Pattern A key)
                         .action(TableColumnAction.GO_TO_ACTION_UNIT)
@@ -65,7 +66,7 @@ public class ContainerTableDefinitionFactory {
 
         tableModel.getTableDefinition().addColumn(
                 FormFieldColumn.builder()
-                        .id("identifier")
+                        .id(IDENTIFIER)
                         .headerKey("container.field.identifier")
                         .field(identifierField)
                         .sortable(true)

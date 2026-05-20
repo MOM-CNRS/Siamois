@@ -11,7 +11,6 @@ public class ContainerDTO extends AbstractEntityDTO {
 
     protected Concept type;
     protected SpatialUnit spatialUnit;
-    private Long id;
     protected String identifier;
 
 }
