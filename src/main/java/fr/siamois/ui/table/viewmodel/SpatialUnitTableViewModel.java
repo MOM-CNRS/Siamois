@@ -1,4 +1,4 @@
-package fr.siamois.ui.table;
+package fr.siamois.ui.table.viewmodel;
 
 import fr.siamois.domain.models.exceptions.recordingunit.FailedRecordingUnitSaveException;
 import fr.siamois.domain.models.exceptions.spatialunit.SpatialUnitAlreadyExistsException;
@@ -21,6 +21,11 @@ import fr.siamois.ui.form.dto.FormUiDto;
 import fr.siamois.ui.lazydatamodel.BaseLazyDataModel;
 import fr.siamois.ui.lazydatamodel.BaseSpatialUnitLazyDataModel;
 import fr.siamois.ui.lazydatamodel.tree.SpatialUnitTreeTableLazyModel;
+import fr.siamois.ui.table.*;
+import fr.siamois.ui.table.column.CommandLinkColumn;
+import fr.siamois.ui.table.column.RelationColumn;
+import fr.siamois.ui.table.column.TableColumn;
+import fr.siamois.ui.table.column.TableColumnAction;
 import fr.siamois.utils.MessageUtils;
 import lombok.Getter;
 import org.jspecify.annotations.NonNull;
@@ -31,8 +36,8 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
-import static fr.siamois.ui.table.TableColumnAction.DUPLICATE_ROW;
-import static fr.siamois.ui.table.TableColumnAction.GO_TO_SPATIAL_UNIT;
+import static fr.siamois.ui.table.column.TableColumnAction.DUPLICATE_ROW;
+import static fr.siamois.ui.table.column.TableColumnAction.GO_TO_SPATIAL_UNIT;
 
 /**
  * View model spécifique pour les tableaux de SpatialUnit.
@@ -167,7 +172,7 @@ public class SpatialUnitTableViewModel extends EntityTableViewModel<SpatialUnitD
                 RowAction.builder()
                         .action(TableColumnAction.TOGGLE_BOOKMARK)
                         .processExpr(THIS)
-                        .updateExpr("@this navBarCsrfForm:siamoisNavForm:bookmarkGroup")
+                        .updateExpr("@this, subSidebarForm")
                         .updateSelfTable(false)
                         .styleClass(SIA_ICON_BTN)
                         .build(),

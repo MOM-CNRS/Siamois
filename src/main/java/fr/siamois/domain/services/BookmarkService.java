@@ -72,6 +72,11 @@ public class BookmarkService {
         return bookmarkRepository.save(bookmark);
     }
 
+    @Transactional
+    public BookmarkDTO update(BookmarkDTO bookmarkDTO) {
+        return bookmarkMapper.toDto(bookmarkRepository.save(bookmarkMapper.invertConvert(bookmarkDTO)));
+    }
+
 
     /**
      * Deletes a bookmark for a user based on the provided panel.

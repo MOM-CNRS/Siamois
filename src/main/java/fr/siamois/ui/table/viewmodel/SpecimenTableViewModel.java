@@ -1,4 +1,4 @@
-package fr.siamois.ui.table;
+package fr.siamois.ui.table.viewmodel;
 
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.services.form.FormService;
@@ -13,6 +13,11 @@ import fr.siamois.ui.form.FormContextServices;
 import fr.siamois.ui.form.dto.FormUiDto;
 import fr.siamois.ui.lazydatamodel.BaseLazyDataModel;
 import fr.siamois.ui.lazydatamodel.BaseSpecimenLazyDataModel;
+import fr.siamois.ui.table.*;
+import fr.siamois.ui.table.column.CommandLinkColumn;
+import fr.siamois.ui.table.column.RelationColumn;
+import fr.siamois.ui.table.column.TableColumn;
+import fr.siamois.ui.table.column.TableColumnAction;
 import lombok.Getter;
 import org.jspecify.annotations.NonNull;
 import org.primefaces.model.TreeNode;
@@ -20,8 +25,8 @@ import org.primefaces.model.TreeNode;
 import java.util.ArrayList;
 import java.util.List;
 
-import static fr.siamois.ui.table.TableColumnAction.DUPLICATE_ROW;
-import static fr.siamois.ui.table.TableColumnAction.GO_TO_SPECIMEN;
+import static fr.siamois.ui.table.column.TableColumnAction.DUPLICATE_ROW;
+import static fr.siamois.ui.table.column.TableColumnAction.GO_TO_SPECIMEN;
 
 /**
  * View model spécifique pour les tableaux de Specimen.
@@ -135,7 +140,7 @@ public class SpecimenTableViewModel extends EntityTableViewModel<SpecimenDTO, Lo
                 RowAction.builder()
                         .action(TableColumnAction.TOGGLE_BOOKMARK)
                         .processExpr("@this")
-                        .updateExpr("bookmarkToggleButton navBarCsrfForm:siamoisNavForm:bookmarkGroup")
+                        .updateExpr("bookmarkToggleButton, subSidebarForm")
                         .updateSelfTable(false)
                         .styleClass("sia-icon-btn")
                         .build(),

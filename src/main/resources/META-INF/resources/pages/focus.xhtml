@@ -164,12 +164,37 @@
                     <p:outputPanel id="sidebarContent" style="height: 100%; width: 100%; flex-grow: 1;">
 
                         <ui:fragment rendered="#{sidebarBean.currentMode == 'HISTORIQUE'}">
-                            <p:dataScroller value="#{historyBean.items}" mode="inline" buffer="50" style="height: 100%"
-                                            styleClass="panel-menu" var="item" chunkSize="20">
-                                <p:commandButton action="#{historyBean.redirectToEntry(item)}" icon="#{item.icon}"
-                                                 value="#{item.title}"
-                                                 styleClass="#{item.styleClass} nav-link ui-button-flat"/>
-                            </p:dataScroller>
+                            <div style="height: 100%">
+                                <p:dataTable id="historyTable"
+                                             value="#{historyBean.items}"
+                                             var="historyItem"
+                                             rowKey="#{historyItem.id}"
+                                             scrollable="true"
+                                             scrollRows="40"
+                                             scrollHeight="100%"
+                                             virtualScroll="true"
+                                             styleClass="ui-datatable-invisible-header panel-menu">
+
+
+
+                                    <p:column style="vertical-align: middle; width:100%">
+                                        <div class="bookmark-row" style="width: 100%;">
+
+                                                    <p:commandButton id="historyLink"
+                                                                     action="#{historyBean.redirectToEntry(historyItem)}"
+                                                                     icon="#{historyItem.icon}"
+                                                                     process="@this"
+                                                                     value="#{historyItem.title}"
+                                                                     styleClass="#{historyItem.styleClass} nav-link ui-button-flat bookmark-full-button"
+                                                                     style="width:100%">
+                                                    </p:commandButton>
+                                                    <p:tooltip for="historyLink"
+                                                               value="#{historyItem.title}"/>
+
+                                        </div>
+                                    </p:column>
+                                </p:dataTable>
+                            </div>
                         </ui:fragment>
 
                         <ui:fragment rendered="#{sidebarBean.currentMode == 'BOOKMARKS'}">

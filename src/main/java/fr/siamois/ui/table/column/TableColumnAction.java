@@ -1,4 +1,4 @@
-package fr.siamois.ui.table;
+package fr.siamois.ui.table.column;
 
 /**
  * Supported command actions for table link columns.

@@ -1,4 +1,4 @@
-package fr.siamois.ui.table;
+package fr.siamois.ui.table.viewmodel;
 
 import fr.siamois.domain.models.form.customfield.*;
 import fr.siamois.domain.services.form.FormService;
@@ -20,11 +20,10 @@ import fr.siamois.ui.form.fieldsource.FieldSource;
 import fr.siamois.ui.form.fieldsource.TableRowFieldSource;
 import fr.siamois.ui.lazydatamodel.BaseLazyDataModel;
 import fr.siamois.ui.lazydatamodel.tree.BaseTreeTableLazyModel;
-import jakarta.faces.application.FacesMessage;
-import jakarta.faces.context.FacesContext;
+import fr.siamois.ui.table.*;
+import fr.siamois.ui.table.column.*;
 import lombok.Getter;
 import lombok.Setter;
-import org.primefaces.component.api.UIColumn;
 import org.primefaces.event.ColumnToggleEvent;
 import org.primefaces.model.TreeNode;
 import org.primefaces.model.Visibility;
@@ -197,7 +196,7 @@ public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
      * Colonnes visibles (pour <p:columns>).
      */
     public List<TableColumn> getColumns() {
-        return tableDefinition.getVisibleColumns();
+        return tableDefinition.getColumns();
     }
 
     public boolean isConceptFilter(TableColumn column) {
@@ -336,11 +335,10 @@ public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
 
     public void onToggle(ColumnToggleEvent e) {
         Integer index = (Integer) e.getData();
-        UIColumn column = e.getColumn();
+        //UIColumn column = e.getColumn();
         Visibility visibility = e.getVisibility();
-        String header = column.getAriaHeaderText() != null ? column.getAriaHeaderText() : column.getHeaderText();
-        FacesMessage msg = new FacesMessage(FacesMessage.SEVERITY_INFO, "Column " + index + " toggled: " + header + " " + visibility, null);
-        FacesContext.getCurrentInstance().addMessage(null, msg);
+        // 4 bc the first 4 columns are fixed
+        tableDefinition.getColumns().get(index-4).setVisible(visibility == Visibility.VISIBLE);
     }
 
 

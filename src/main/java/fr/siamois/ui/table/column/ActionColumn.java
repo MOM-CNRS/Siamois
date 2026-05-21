@@ -1,5 +1,6 @@
-package fr.siamois.ui.table;
+package fr.siamois.ui.table.column;
 
+import fr.siamois.ui.table.RowAction;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.experimental.SuperBuilder;

@@ -4,9 +4,11 @@
 // Mixin that creates themed styles
 @mixin themed-panel($panel-selector, $main-color, $light50-color, $light100-color, $light200-color, $dark-color) {
 
+  body .bookmark-row button.#{$panel-selector}-panel {
+    color: #{$main-color} !important;
+  }
+
   .#{$panel-selector} {
-
-
 
 
     // CSS custom properties for this panel

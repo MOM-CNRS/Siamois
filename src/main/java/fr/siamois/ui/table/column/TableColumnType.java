@@ -1,4 +1,4 @@
-package fr.siamois.ui.table;
+package fr.siamois.ui.table.column;
 
 public enum TableColumnType {
     FORM_FIELD,

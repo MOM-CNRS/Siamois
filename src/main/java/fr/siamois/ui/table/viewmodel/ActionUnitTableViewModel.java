@@ -1,12 +1,12 @@
-package fr.siamois.ui.table;
+package fr.siamois.ui.table.viewmodel;
 
-import fr.siamois.domain.models.container.Container;
+import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.form.FormService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitTreeService;
-import fr.siamois.dto.entity.ContainerDTO;
+import fr.siamois.dto.entity.ActionUnitDTO;
 import fr.siamois.mapper.ActionUnitMapper;
 import fr.siamois.ui.bean.NavBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
@@ -16,16 +16,21 @@ import fr.siamois.ui.bean.dialog.newunit.UnitKind;
 import fr.siamois.ui.bean.panel.FlowBean;
 import fr.siamois.ui.form.FormContextServices;
 import fr.siamois.ui.form.dto.FormUiDto;
-import fr.siamois.ui.lazydatamodel.BaseContainerLazyDataModel;
+import fr.siamois.ui.lazydatamodel.BaseActionUnitLazyDataModel;
 import fr.siamois.ui.lazydatamodel.BaseLazyDataModel;
 import fr.siamois.ui.lazydatamodel.tree.ActionUnitTreeTableLazyModel;
+import fr.siamois.ui.table.*;
+import fr.siamois.ui.table.column.CommandLinkColumn;
+import fr.siamois.ui.table.column.RelationColumn;
+import fr.siamois.ui.table.column.TableColumn;
+import fr.siamois.ui.table.column.TableColumnAction;
 import lombok.Getter;
 import org.jspecify.annotations.NonNull;
 import org.primefaces.model.TreeNode;
 
 import java.util.List;
 
-import static fr.siamois.ui.table.TableColumnAction.GO_TO_ACTION_UNIT;
+import static fr.siamois.ui.table.column.TableColumnAction.GO_TO_ACTION_UNIT;
 
 /**
  * View model spécifique pour les tableaux de ActionUnit.
@@ -36,12 +41,12 @@ import static fr.siamois.ui.table.TableColumnAction.GO_TO_ACTION_UNIT;
  *      - configureRowSystemFields
  */
 @Getter
-public class ContainerTableViewModel extends EntityTableViewModel<ContainerDTO, Long> {
+public class ActionUnitTableViewModel extends EntityTableViewModel<ActionUnitDTO, Long> {
 
     public static final String PARENTS = "parents";
     public static final String CHILDREN = "children";
-
-    private final BaseContainerLazyDataModel containerLazyDataModel;
+    /** Lazy model spécifique RecordingUnit (accès à selectedUnits, etc.) */
+    private final BaseActionUnitLazyDataModel actionUnitLazyDataModel;
     private final FlowBean flowBean;
 
     private final InstitutionService institutionService;
@@ -52,31 +57,31 @@ public class ContainerTableViewModel extends EntityTableViewModel<ContainerDTO, 
     private final ActionUnitMapper actionUnitMapper;
 
 
-    public ContainerTableViewModel(BaseContainerLazyDataModel containerLazyDataModel,
-                                   FormService formService,
-                                   SessionSettingsBean sessionSettingsBean,
-                                   SpatialUnitTreeService spatialUnitTreeService,
-                                   SpatialUnitService spatialUnitService,
-                                   NavBean navBean,
-                                   FlowBean flowBean, GenericNewUnitDialogBean<ContainerDTO> genericNewUnitDialogBean,
-                                   ActionUnitTreeTableLazyModel treeLazyModel,
-                                   InstitutionService institutionService,
-                                   FormContextServices formContextServices, ActionUnitService actionUnitService, ActionUnitMapper actionUnitMapper) {
+    public ActionUnitTableViewModel(BaseActionUnitLazyDataModel actionUnitLazyDataModel,
+                                    FormService formService,
+                                    SessionSettingsBean sessionSettingsBean,
+                                    SpatialUnitTreeService spatialUnitTreeService,
+                                    SpatialUnitService spatialUnitService,
+                                    NavBean navBean,
+                                    FlowBean flowBean, GenericNewUnitDialogBean<ActionUnitDTO> genericNewUnitDialogBean,
+                                    ActionUnitTreeTableLazyModel treeLazyModel,
+                                    InstitutionService institutionService,
+                                    FormContextServices formContextServices, ActionUnitService actionUnitService, ActionUnitMapper actionUnitMapper) {
 
         super(
-                containerLazyDataModel,
-                null,
+                actionUnitLazyDataModel,
+                treeLazyModel,
                 genericNewUnitDialogBean,
                 formService,
                 spatialUnitTreeService,
                 spatialUnitService,
                 navBean,
                 sessionSettingsBean.getLangBean(),
-                ContainerDTO::getId,   // idExtractor
+                ActionUnitDTO::getId,   // idExtractor
                 "type"        ,          // formScopeValueBinding,
                 formContextServices
         );
-        this.containerLazyDataModel = containerLazyDataModel;
+        this.actionUnitLazyDataModel = actionUnitLazyDataModel;
         this.sessionSettingsBean = sessionSettingsBean;
         this.flowBean = flowBean;
         this.institutionService = institutionService;
@@ -85,18 +90,18 @@ public class ContainerTableViewModel extends EntityTableViewModel<ContainerDTO, 
     }
 
     @Override
-    protected FormUiDto resolveRowFormFor(ContainerDTO au) {
+    protected FormUiDto resolveRowFormFor(ActionUnitDTO au) {
         return null;
     }
 
     @Override
-    protected void configureRowSystemFields(ContainerDTO au, FormUiDto rowForm) {
+    protected void configureRowSystemFields(ActionUnitDTO au, FormUiDto rowForm) {
         // no system field to init
     }
 
     @Override
     protected void handleCommandLink(CommandLinkColumn column,
-                                     ContainerDTO au) {
+                                     ActionUnitDTO au) {
 
         if (column.getAction() == GO_TO_ACTION_UNIT) {
 
@@ -116,7 +121,7 @@ public class ContainerTableViewModel extends EntityTableViewModel<ContainerDTO, 
 
     // resolving cell text based on value key
     @Override
-    public String resolveText(TableColumn column, ContainerDTO au) {
+    public String resolveText(TableColumn column, ActionUnitDTO au) {
 
         if (column instanceof CommandLinkColumn linkColumn) {
 
@@ -134,9 +139,12 @@ public class ContainerTableViewModel extends EntityTableViewModel<ContainerDTO, 
     }
 
     @Override
-    public Integer resolveCount(TableColumn column, ContainerDTO au) {
+    public Integer resolveCount(TableColumn column, ActionUnitDTO au) {
         if (column instanceof RelationColumn rel) {
             return switch (rel.getCountKey()) {
+                case PARENTS -> au.getParents() == null ? 0 : au.getParents().size();
+                case CHILDREN -> au.getChildren() == null ? 0 : au.getChildren().size();
+                case "recordingUnit" -> au.getRecordingUnitList() == null ? 0 : au.getRecordingUnitList().size();
                 default -> 0;
             };
         }
@@ -144,7 +152,7 @@ public class ContainerTableViewModel extends EntityTableViewModel<ContainerDTO, 
     }
 
     @Override
-    public boolean isRendered(TableColumn column, String key, ContainerDTO au) {
+    public boolean isRendered(TableColumn column, String key, ActionUnitDTO au) {
         return switch (key) {
             case "writeMode" -> flowBean.getIsWriteMode();
             case "actionUnitCreateAllowed" -> institutionService.personIsInstitutionManagerOrActionManager(
@@ -164,7 +172,7 @@ public class ContainerTableViewModel extends EntityTableViewModel<ContainerDTO, 
                 RowAction.builder()
                         .action(TableColumnAction.TOGGLE_BOOKMARK)
                         .processExpr("@this")
-                        .updateExpr("bookmarkToggleButton navBarCsrfForm:siamoisNavForm:bookmarkGroup")
+                        .updateExpr("bookmarkToggleButton, subSidebarForm")
                         .updateSelfTable(false)
                         .styleClass("sia-icon-btn")
                         .build(),
@@ -181,7 +189,7 @@ public class ContainerTableViewModel extends EntityTableViewModel<ContainerDTO, 
 
 
     @Override
-    public void handleRelationAction(RelationColumn col, ContainerDTO au, TableColumnAction action) {
+    public void handleRelationAction(RelationColumn col, ActionUnitDTO au, TableColumnAction action) {
         switch (action) {
             case VIEW_RELATION ->
                     flowBean.addActionUnitToOverview(
@@ -227,7 +235,7 @@ public class ContainerTableViewModel extends EntityTableViewModel<ContainerDTO, 
         }
     }
 
-    public boolean isRendered(RowAction action, ContainerDTO au) {
+    public boolean isRendered(RowAction action, ActionUnitDTO au) {
         return switch (action.getAction()) {
             case DUPLICATE_ROW -> false;
             case TOGGLE_BOOKMARK -> false;
@@ -237,13 +245,13 @@ public class ContainerTableViewModel extends EntityTableViewModel<ContainerDTO, 
 
 
     public String resolveIcon(RowAction action,
-                              ContainerDTO au) {
+                              ActionUnitDTO au) {
         return switch (action.getAction()) {
             default -> "";
         };
     }
 
-    public void handleRowAction(RowAction action,  Container au) {
+    public void handleRowAction(RowAction action,  ActionUnit au) {
         if (action == null || action.getAction() == null) {
             throw new IllegalStateException("Unhandled action: null");
         }
@@ -251,8 +259,8 @@ public class ContainerTableViewModel extends EntityTableViewModel<ContainerDTO, 
         throw new IllegalStateException("Unhandled action: " + action.getAction());
     }
 
-    public void handleRowAction(RowAction action, TreeNode<Container> node) {
-        Container au = node.getData();
+    public void handleRowAction(RowAction action, TreeNode<ActionUnit> node) {
+        ActionUnit au = node.getData();
         handleRowAction(action, au);
     }
 
@@ -262,25 +270,24 @@ public class ContainerTableViewModel extends EntityTableViewModel<ContainerDTO, 
     }
 
     @Override
-    public boolean canUserEditRow(ContainerDTO unit) {
+    public boolean canUserEditRow(ActionUnitDTO unit) {
         return true; // todo: implement permission
     }
 
     @Override
-    public BaseLazyDataModel<ContainerDTO> getLazyDataModel() {
-        containerLazyDataModel.setRootOnly(treeMode);
-        return containerLazyDataModel;
+    public BaseLazyDataModel<ActionUnitDTO> getLazyDataModel() {
+        actionUnitLazyDataModel.setRootOnly(treeMode);
+        return actionUnitLazyDataModel;
     }
 
     @Override
-    protected boolean unitIsLeaf(@NonNull ContainerDTO unit) {
-        return true;
+    protected boolean unitIsLeaf(@NonNull ActionUnitDTO unit) {
+        return !actionUnitService.isRoot(unit.getId(), sessionSettingsBean.getSelectedInstitution().getId());
     }
 
     @Override
-    protected @NonNull List<ContainerDTO> loadChildrensOfUnit(@NonNull ContainerDTO parentUnit) {
-        //todo
-        return List.of();
+    protected @NonNull List<ActionUnitDTO> loadChildrensOfUnit(@NonNull ActionUnitDTO parentUnit) {
+        return actionUnitService.findChildrenByParentAndInstitution(parentUnit.getId(), sessionSettingsBean.getSelectedInstitution().getId());
     }
 
 }

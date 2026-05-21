@@ -18,6 +18,7 @@ import org.springframework.context.annotation.ScopedProxyMode;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -62,7 +63,8 @@ public class BookmarkMenuBean implements Serializable {
             public List<BookmarkDTO> load(int first, int pageSize, Map<String, SortMeta> sortBy, Map<String, FilterMeta> filterBy) {
                 // Calculate page index (Spring Pages are 0-indexed: page = offset / size)
                 int pageIndex = first / pageSize;
-                Pageable pageable = PageRequest.of(pageIndex, pageSize);
+                Sort sort = Sort.by(Sort.Direction.DESC, "createdAt");
+                Pageable pageable = PageRequest.of(pageIndex, pageSize, sort);
 
                 // Fetch user identity data context details (assumed injected/retrieved)
                 UserInfo currentUser = sessionSettingsBean.getUserInfo();
@@ -95,10 +97,8 @@ public class BookmarkMenuBean implements Serializable {
 
     public void onRowEdit(RowEditEvent<BookmarkDTO> event) {
         BookmarkDTO editedItem = event.getObject();
-        log.info("Saving updated title for Bookmark ID {}: {}", editedItem.getId(), editedItem.getTitle());
-
-        // TODO: Invoke your database layer to save changes permanently:
-        // bookmarkService.updateTitle(editedItem.getId(), editedItem.getTitle());
+        log.trace("Saving updated title for Bookmark ID {}: {}", editedItem.getId(), editedItem.getTitle());
+        bookmarkService.update(editedItem);
 
 
     }

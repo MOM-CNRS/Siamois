@@ -18,6 +18,7 @@ import fr.siamois.ui.form.EntityFormContext;
 import fr.siamois.ui.form.FormContextServices;
 import fr.siamois.ui.form.dto.FormUiDto;
 import fr.siamois.ui.form.fieldsource.PanelFieldSource;
+import fr.siamois.ui.table.viewmodel.EntityTableViewModel;
 import fr.siamois.ui.viewmodel.CustomFormResponseViewModel;
 import fr.siamois.utils.MessageUtils;
 import lombok.Getter;
@@ -72,14 +73,14 @@ public class GenericNewUnitDialogBean<T extends AbstractEntityDTO>
     private transient INewUnitHandler<T> handler;
 
     // creation  callback + contexte ====
-    private transient fr.siamois.ui.table.EntityTableViewModel<T, ?> sourceTableModel;
+    private transient EntityTableViewModel<T, ?> sourceTableModel;
     private transient NewUnitContext newUnitContext;
 
 
     // Unique selectKind
     @SuppressWarnings("unchecked")
     public void selectKind(NewUnitContext ctx,
-                           fr.siamois.ui.table.EntityTableViewModel<T, ?> sourceTableModel)
+                           EntityTableViewModel<T, ?> sourceTableModel)
             throws CannotInitializeNewUnitDialogException {
 
         this.kind = ctx.getKindToCreate();

@@ -1,4 +1,4 @@
-package fr.siamois.ui.table;
+package fr.siamois.ui.table.column;
 
 import fr.siamois.domain.models.form.customfield.CustomField;
 import lombok.Data;

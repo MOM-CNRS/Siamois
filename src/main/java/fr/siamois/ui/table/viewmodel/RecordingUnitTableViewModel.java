@@ -1,4 +1,4 @@
-package fr.siamois.ui.table;
+package fr.siamois.ui.table.viewmodel;
 
 import fr.siamois.domain.models.exceptions.recordingunit.FailedRecordingUnitSaveException;
 import fr.siamois.domain.models.form.customfield.CustomField;
@@ -26,6 +26,11 @@ import fr.siamois.ui.form.dto.FormUiDto;
 import fr.siamois.ui.lazydatamodel.BaseLazyDataModel;
 import fr.siamois.ui.lazydatamodel.BaseRecordingUnitLazyDataModel;
 import fr.siamois.ui.lazydatamodel.tree.RecordingUnitTreeTableLazyModel;
+import fr.siamois.ui.table.*;
+import fr.siamois.ui.table.column.CommandLinkColumn;
+import fr.siamois.ui.table.column.RelationColumn;
+import fr.siamois.ui.table.column.TableColumn;
+import fr.siamois.ui.table.column.TableColumnAction;
 import fr.siamois.utils.MessageUtils;
 import lombok.Getter;
 import org.primefaces.model.TreeNode;
@@ -35,8 +40,8 @@ import java.time.LocalDateTime;
 import java.time.Month;
 import java.util.*;
 
-import static fr.siamois.ui.table.TableColumnAction.DUPLICATE_ROW;
-import static fr.siamois.ui.table.TableColumnAction.GO_TO_RECORDING_UNIT;
+import static fr.siamois.ui.table.column.TableColumnAction.DUPLICATE_ROW;
+import static fr.siamois.ui.table.column.TableColumnAction.GO_TO_RECORDING_UNIT;
 
 /**
  * View model spécifique pour les tableaux de RecordingUnit.
@@ -229,7 +234,7 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
                 RowAction.builder()
                         .action(TableColumnAction.TOGGLE_BOOKMARK)
                         .processExpr(THIS)
-                        .updateExpr("bookmarkToggleButton navBarCsrfForm:siamoisNavForm:bookmarkGroup")
+                        .updateExpr("bookmarkToggleButton, subSidebarForm")
                         .updateSelfTable(false)
                         .styleClass(SIA_ICON_BTN)
                         .build(),

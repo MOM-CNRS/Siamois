@@ -17,7 +17,7 @@ import fr.siamois.ui.lazydatamodel.BaseLazyDataModel;
 import fr.siamois.ui.lazydatamodel.SpatialUnitLazyDataModel;
 import fr.siamois.ui.lazydatamodel.scope.SpatialUnitScope;
 import fr.siamois.ui.lazydatamodel.tree.SpatialUnitTreeTableLazyModel;
-import fr.siamois.ui.table.SpatialUnitTableViewModel;
+import fr.siamois.ui.table.viewmodel.SpatialUnitTableViewModel;
 import fr.siamois.ui.table.ToolbarCreateConfig;
 import fr.siamois.ui.table.definitions.SpatialUnitTableDefinitionFactory;
 import lombok.Data;

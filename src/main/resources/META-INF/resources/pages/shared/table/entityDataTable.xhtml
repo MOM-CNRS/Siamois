@@ -5,7 +5,7 @@
                 xmlns:f="http://java.sun.com/jsf/core" xmlns:c="http://java.sun.com/jsp/jstl/core"
 >
 
-    <!--@elvariable id="tableModel" type="fr.siamois.ui.table.EntityTableViewModel"-->
+    <!--@elvariable id="tableModel" type="fr.siamois.ui.table.viewmodel.EntityTableViewModel"-->
 
     <style>
         .filter-table-column-hidden .ui-column-filter {
@@ -135,6 +135,7 @@
                     style="min-width: #{column.type != 'COMMAND_LINK' ? '10em' : ''};"
                     sortable="#{column.sortable}"
                     filterable="#{column.filterable}"
+                    visible="#{column.visible}"
                     field="#{column.field.valueBinding}"
                     filterBy="#{column.field.valueBinding}"
                     sortBy="#{column.field.valueBinding}"

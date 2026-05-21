@@ -3,10 +3,10 @@ package fr.siamois.ui.table.definitions;
 import fr.siamois.domain.models.form.customfield.CustomFieldText;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.dto.entity.ContainerDTO;
-import fr.siamois.ui.table.CommandLinkColumn;
-import fr.siamois.ui.table.EntityTableViewModel;
-import fr.siamois.ui.table.FormFieldColumn;
-import fr.siamois.ui.table.TableColumnAction;
+import fr.siamois.ui.table.column.CommandLinkColumn;
+import fr.siamois.ui.table.viewmodel.EntityTableViewModel;
+import fr.siamois.ui.table.column.FormFieldColumn;
+import fr.siamois.ui.table.column.TableColumnAction;
 
 import static fr.siamois.ui.bean.panel.models.panel.single.AbstractSingleEntity.SYSTEM_THESO;
 

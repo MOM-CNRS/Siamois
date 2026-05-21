@@ -3,7 +3,11 @@ package fr.siamois.ui.table.definitions;
 import fr.siamois.domain.models.form.customfield.*;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.dto.entity.RecordingUnitDTO;
-import fr.siamois.ui.table.*;
+import fr.siamois.ui.table.column.CommandLinkColumn;
+import fr.siamois.ui.table.column.FormFieldColumn;
+import fr.siamois.ui.table.column.RelationColumn;
+import fr.siamois.ui.table.column.TableColumnAction;
+import fr.siamois.ui.table.viewmodel.EntityTableViewModel;
 
 import static fr.siamois.ui.bean.panel.models.panel.single.AbstractSingleEntity.SYSTEM_THESO;
 
@@ -280,7 +284,7 @@ public final class RecordingUnitTableDefinitionFactory {
                         .field(matrixColor)
                         .sortable(true)
                         .filterable(true)
-                        .visible(true)
+                        .visible(false)
                         .required(false)
                         .build()
         );
@@ -292,7 +296,7 @@ public final class RecordingUnitTableDefinitionFactory {
                         .field(dateField)
                         .sortable(true)
                         .filterable(true)
-                        .visible(true)
+                        .visible(false)
                         .required(true)
                         .build()
         );
@@ -314,7 +318,7 @@ public final class RecordingUnitTableDefinitionFactory {
                         .field(contributorsField)
                         .sortable(false)
                         .filterable(true)
-                        .visible(true)
+                        .visible(false)
                         .required(false)
                         .build()
         );

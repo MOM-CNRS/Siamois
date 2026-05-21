@@ -7,7 +7,7 @@
                 xmlns:custom="http://siamois.fr/jsf/custom"
 >
 
-    <!--@elvariable id="tableModel" type="fr.siamois.ui.table.EntityTableViewModel"-->
+    <!--@elvariable id="tableModel" type="fr.siamois.ui.table.viewmodel.EntityTableViewModel"-->
 
     <style>
         .filter-table-column-hidden .ui-column-filter {
@@ -167,6 +167,7 @@
                 styleClass="small-cell"
                 style="min-width: #{column.type != 'COMMAND_LINK' ? '10em' : ''};"
                 sortable="#{column.sortable}"
+                visible="#{column.visible}"
                 filterable="#{column.filterable}"
                 field="#{column.field == null ? null : column.field.valueBinding}"
                 filterBy="#{column.field.valueBinding}"

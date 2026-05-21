@@ -17,7 +17,7 @@ import fr.siamois.ui.bean.panel.models.PanelBreadcrumb;
 import fr.siamois.ui.form.FormContextServices;
 import fr.siamois.ui.lazydatamodel.BaseLazyDataModel;
 import fr.siamois.ui.lazydatamodel.ContainerLazyDataModel;
-import fr.siamois.ui.table.ContainerTableViewModel;
+import fr.siamois.ui.table.viewmodel.ContainerTableViewModel;
 import fr.siamois.ui.table.ToolbarCreateConfig;
 import fr.siamois.ui.table.definitions.ContainerTableDefinitionFactory;
 import lombok.EqualsAndHashCode;

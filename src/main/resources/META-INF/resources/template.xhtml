@@ -192,26 +192,7 @@
                                 </p:commandLink>
                             </li>
                             <p:divider/>
-                            <h:panelGroup id="bookmarkGroup" layout="none"
-                                          rendered="#{navBean.bookmarkedPanels.size() > 0}">
 
-                                <li class="nav-header">
-                                    #{langBean.msg('nav.header.bookmark')}
-                                </li>
-                                <ui:repeat value="#{navBean.bookmarkedPanels}" var="bookmark">
-                                    <p:autoUpdate/>
-                                    <li class="nav-item">
-                                        <h:commandLink id="bookmarkLink"
-                                                       action="#{navBean.redirectToBookmarked(bookmark.getResourceUri())}"
-                                                       styleClass="nav-link">
-                                            <i class="#{bookmark.getBookmarkIcon()}"
-                                               style="color: #{bookmark.getBookmarkColor()}"/>
-                                            <span class="menu-text">#{navBean.bookmarkTitle(bookmark)}</span>
-                                        </h:commandLink>
-                                        <p:tooltip for="bookmarkLink" value="#{navBean.bookmarkTitle(bookmark)}"/>
-                                    </li>
-                                </ui:repeat>
-                            </h:panelGroup>
                         </ul>
                     </form:csrfform>
                 </div>

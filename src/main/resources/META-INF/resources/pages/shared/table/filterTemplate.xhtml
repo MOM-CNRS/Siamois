@@ -6,8 +6,8 @@
                 xmlns:c="http://java.sun.com/jsp/jstl/core"
 >
 
-    <!--@elvariable id="tableModel" type="fr.siamois.ui.table.EntityTableViewModel"-->
-    <!--@elvariable id="column" type="fr.siamois.ui.table.TableColumn"-->
+    <!--@elvariable id="tableModel" type="fr.siamois.ui.table.viewmodel.EntityTableViewModel"-->
+    <!--@elvariable id="column" type="fr.siamois.ui.table.column.TableColumn"-->
 
     <c:if test="#{tableModel.isConceptFilter(column) and tableModel.columnFilteringEnabled}">
         <f:facet name="filter">

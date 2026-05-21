@@ -1,4 +1,4 @@
-package fr.siamois.ui.table;
+package fr.siamois.ui.table.column;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;

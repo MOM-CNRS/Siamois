@@ -15,6 +15,8 @@ public class BookmarkDTO {
     private Long id;
     private String title;
     private String resourceUri;
+    private PersonDTO person;
+    private InstitutionDTO institution;
 
     // Static mapping configurations moved cleanly into presentation layer constants
     private static final Map<String, String> COLOR_MAP = Map.of(

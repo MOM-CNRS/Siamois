@@ -18,7 +18,7 @@ import fr.siamois.ui.lazydatamodel.ActionUnitLazyDataModel;
 import fr.siamois.ui.lazydatamodel.BaseLazyDataModel;
 import fr.siamois.ui.lazydatamodel.scope.ActionUnitScope;
 import fr.siamois.ui.lazydatamodel.tree.ActionUnitTreeTableLazyModel;
-import fr.siamois.ui.table.ActionUnitTableViewModel;
+import fr.siamois.ui.table.viewmodel.ActionUnitTableViewModel;
 import fr.siamois.ui.table.ToolbarCreateConfig;
 import fr.siamois.ui.table.definitions.ActionUnitTableDefinitionFactory;
 import lombok.EqualsAndHashCode;

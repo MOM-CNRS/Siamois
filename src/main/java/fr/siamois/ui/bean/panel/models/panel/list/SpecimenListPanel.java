@@ -14,7 +14,7 @@ import fr.siamois.ui.bean.panel.models.PanelBreadcrumb;
 import fr.siamois.ui.form.FormContextServices;
 import fr.siamois.ui.lazydatamodel.BaseLazyDataModel;
 import fr.siamois.ui.lazydatamodel.SpecimenLazyDataModel;
-import fr.siamois.ui.table.SpecimenTableViewModel;
+import fr.siamois.ui.table.viewmodel.SpecimenTableViewModel;
 import fr.siamois.ui.table.definitions.SpecimenTableDefinitionFactory;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
