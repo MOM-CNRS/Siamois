@@ -111,7 +111,7 @@ public class NavBean implements Serializable {
     }
 
     public void removeFromBookmarkedPanels(AbstractPanel panel) {
-        bookmarkService.delete(sessionSettingsBean.getUserInfo(), panel);
+        bookmarkService.delete(sessionSettingsBean.getUserInfo(), panel.ressourceUri());
     }
 
     public List<Bookmark> getBookmarkedPanels() {

@@ -77,17 +77,17 @@ public class BookmarkService {
      * Deletes a bookmark for a user based on the provided panel.
      *
      * @param userInfo the user information containing the user and institution
-     * @param panel    the panel containing the resource URI
+     * @param resourceUri    the resource URI to delete
      */
     @Transactional
-    public void delete(UserInfo userInfo, AbstractPanel panel) {
+    public void delete(UserInfo userInfo, String resourceUri) {
         Person person = personMapper.invertConvert(userInfo.getUser());
         Institution institution = institutionMapper.invertConvert(userInfo.getInstitution());
 
         bookmarkRepository.deleteBookmarkByPersonAndInstitutionAndResourceUri(
                 person,
                 institution,
-                panel.ressourceUri()
+                resourceUri
         );
     }
 

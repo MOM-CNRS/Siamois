@@ -126,14 +126,26 @@
                     style="height: 100%; flex-direction: column; align-items: center;"
             >
                 <style>
-                    .ui-datatable-invisible-header thead { display: none !important; }
-                    .ui-datatable-invisible-header .ui-datatable-data tr td { border: none !important; padding: 4px 8px !important; }
-                    .bookmark-row { display: flex; align-items: center; width: 100%; }
+                    .ui-datatable-invisible-header thead {
+                        display: none !important;
+                    }
+
+                    .ui-datatable-invisible-header .ui-datatable-data tr td {
+                        border: none !important;
+                        padding: 4px 8px !important;
+                    }
+
+                    .bookmark-row {
+                        display: flex;
+                        align-items: center;
+                        width: 100%;
+                    }
                 </style>
 
                 <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
 
-                <div class="sidebar-animated-inner" style="width: 320px; height: 100%; display: flex; flex-direction: column;">
+                <p:outputLabel id="sidebarAnimatedInner" class="sidebar-animated-inner"
+                               style="width: 320px; height: 100%; display: flex; flex-direction: column;">
 
                     <div id="historyDiv" style="background: white; width: 100%; border: 1px solid #dee2e6;">
                         <p:commandButton
@@ -152,8 +164,11 @@
                     <p:outputPanel id="sidebarContent" style="height: 100%; width: 100%; flex-grow: 1;">
 
                         <ui:fragment rendered="#{sidebarBean.currentMode == 'HISTORIQUE'}">
-                            <p:dataScroller value="#{historyBean.items}" mode="inline" buffer="50" style="height: 100%" styleClass="panel-menu" var="item" chunkSize="20">
-                                <p:commandButton action="#{historyBean.redirectToEntry(item)}" icon="#{item.icon}" value="#{item.title}" styleClass="#{item.styleClass} nav-link ui-button-flat" />
+                            <p:dataScroller value="#{historyBean.items}" mode="inline" buffer="50" style="height: 100%"
+                                            styleClass="panel-menu" var="item" chunkSize="20">
+                                <p:commandButton action="#{historyBean.redirectToEntry(item)}" icon="#{item.icon}"
+                                                 value="#{item.title}"
+                                                 styleClass="#{item.styleClass} nav-link ui-button-flat"/>
                             </p:dataScroller>
                         </ui:fragment>
 
@@ -167,42 +182,45 @@
                                              rowKey="#{bkm.id}"
                                              scrollable="true"
                                              scrollRows="40"
-                                             scrollHeight="500"
+                                             scrollHeight="100%"
                                              virtualScroll="true"
                                              styleClass="ui-datatable-invisible-header panel-menu">
 
-                                    <p:ajax event="rowEdit" listener="#{bookmarkMenuBean.onRowEdit}" update="bookmarksTable" />
-                                    <p:ajax event="rowEditCancel" listener="#{bookmarkMenuBean.onRowCancel}" />
+                                    <p:ajax event="rowEdit" listener="#{bookmarkMenuBean.onRowEdit}"
+                                            update="bookmarksTable"/>
+                                    <p:ajax event="rowEditCancel" listener="#{bookmarkMenuBean.onRowCancel}"/>
 
 
-                                    <p:column style="vertical-align: middle;">
+                                    <p:column style="vertical-align: middle; width:100%">
                                         <div class="bookmark-row" style="width: 100%;">
-                                            <p:cellEditor>
-
+                                            <p:cellEditor style="width: 100%">
                                                 <f:facet name="output">
                                                     <p:commandButton id="bookmarkLink"
                                                                      action="#{bookmarkMenuBean.redirectToEntry(bkm)}"
                                                                      icon="#{bkm.bookmarkIcon}"
+                                                                     process="@this"
                                                                      value="#{navBean.bookmarkTitle(bkm)}"
-                                                                     styleClass="nav-link ui-button-flat"
-                                                                     style="text-align: left; width: 100%; color: #{bkm.bookmarkColor};">
+                                                                     styleClass="nav-link ui-button-flat bookmark-full-button"
+                                                                     style="color: #{bkm.bookmarkColor} !important; width:100%">
                                                     </p:commandButton>
-                                                    <p:tooltip for="@previous" value="#{navBean.bookmarkTitle(bkm)}"/>
+                                                    <p:tooltip for="bookmarkLink"
+                                                               value="#{navBean.bookmarkTitle(bkm)}"/>
                                                 </f:facet>
 
                                                 <f:facet name="input">
-                                                    <div style="display: flex; align-items: center; width: 100%; padding-left: 12px;">
-                                                        <i class="#{bkm.bookmarkIcon}" style="margin-right: 8px; color: #{bkm.bookmarkColor};" />
-                                                        <p:inputText value="#{bkm.title}" style="width: 100%;" required="true" />
+                                                    <div style="display: flex; align-items: center; width: 100%; padding: 4px 12px;">
+                                                        <i class="#{bkm.bookmarkIcon}"
+                                                           style="margin-right: 8px; color: #{bkm.bookmarkColor};"/>
+                                                        <p:inputText value="#{bkm.title}" style="width: 100%;"
+                                                                     required="true"/>
                                                     </div>
                                                 </f:facet>
-
                                             </p:cellEditor>
                                         </div>
                                     </p:column>
 
                                     <p:column style="width: 40px; text-align: center; vertical-align: middle;">
-                                        <p:rowEditor editTitle="Modifier" saveTitle="Valider" cancelTitle="Annuler" />
+                                        <p:rowEditor editTitle="Modifier" saveTitle="Valider" cancelTitle="Annuler"/>
                                     </p:column>
 
                                     <p:column style="width: 40px; text-align: center; vertical-align: middle;">
@@ -210,14 +228,14 @@
                                                          icon="bi bi-trash"
                                                          update="bookmarksTable"
                                                          process="@this"
-                                                         styleClass="ui-button-flat ui-button-danger rounded-button" />
+                                                         styleClass="ui-button-flat ui-button-danger rounded-button"/>
                                     </p:column>
                                 </p:dataTable>
                             </div>
                         </ui:fragment>
 
                     </p:outputPanel>
-                </div>
+                </p:outputLabel>
             </h:form>
 
             <p:outputPanel id="flowContent" styleClass="flow fullscreen-flow focus">
@@ -257,15 +275,18 @@
                                     </div>
 
                                 </h:form>
-                                <div style="display: flex;
+                                <h:form id="actionForm-${focusViewBean.mainPanel.panelIndex}-head">
+                                    <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
+                                    <div style="display: flex;
                                     gap: 0.5em;
                                     align-items: center;
                                     flex-wrap: wrap;">
-                                    <ui:include rendered="#{focusViewBean.mainPanel.displayHeader() != null}"
-                                                src="#{focusViewBean.mainPanel.displayHeader()}">
-                                        <ui:param name="panelModel" value="#{focusViewBean.mainPanel}"/>
-                                    </ui:include>
-                                </div>
+                                        <ui:include rendered="#{focusViewBean.mainPanel.displayHeader() != null}"
+                                                    src="#{focusViewBean.mainPanel.displayHeader()}">
+                                            <ui:param name="panelModel" value="#{focusViewBean.mainPanel}"/>
+                                        </ui:include>
+                                    </div>
+                                </h:form>
 
                             </div>
                             <p:outputPanel id="panelContent" deferred="false" loaded="#{focusViewBean.mainPanel.loaded}"

@@ -169,7 +169,7 @@
                             </li>
                             <li class="nav-item">
                                 <p:commandLink action="#{sidebarBean.toggleMode('HISTORIQUE')}"
-                                               update="subSidebarForm:historyDiv, subSidebarForm:sidebarContent, subSidebarForm:toggle-sidebar-btn"
+                                               update="subSidebarForm:sidebarAnimatedInner"
                                                process="@this"
                                                id="historyLinkNav"
                                                onstart="handleSidebarToggle('HISTORIQUE');"
@@ -181,7 +181,7 @@
                             </li>
                             <li class="nav-item">
                                 <p:commandLink action="#{sidebarBean.toggleMode('BOOKMARKS')}"
-                                               update="subSidebarForm:historyDiv, subSidebarForm:sidebarContent, subSidebarForm:toggle-sidebar-btn"
+                                               update="subSidebarForm:sidebarAnimatedInner"
                                                process="@this"
                                                id="bookmarksLinkNav"
                                                onstart="handleSidebarToggle('BOOKMARKS');"
