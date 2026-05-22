@@ -6,6 +6,7 @@ import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.domain.services.specimen.SpecimenService;
+import fr.siamois.dto.view.TableViewState;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
 import fr.siamois.ui.bean.panel.models.PanelBreadcrumb;
@@ -39,6 +40,21 @@ public class WelcomePanel extends AbstractPanel implements Serializable {
     private long nbOfActionUnits;
     private long nbOfRecordingUnits;
     private long nbOfSpecimen;
+
+    @Override
+    public String buildBookmarkUrl() {
+        return "";
+    }
+
+    @Override
+    public void applyViewState(TableViewState state) {
+        // TODO document why this method is empty
+    }
+
+    @Override
+    public boolean isDirty() {
+        return false;
+    }
 
 
     public boolean hasPreviousNext() {

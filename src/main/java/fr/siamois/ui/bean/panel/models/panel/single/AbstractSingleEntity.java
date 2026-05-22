@@ -14,6 +14,7 @@ import fr.siamois.domain.services.vocabulary.FieldConfigurationService;
 import fr.siamois.dto.entity.AbstractEntityDTO;
 import fr.siamois.dto.entity.ConceptDTO;
 import fr.siamois.dto.entity.SpatialUnitSummaryDTO;
+import fr.siamois.dto.view.TableViewState;
 import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
 import fr.siamois.ui.bean.LabelBean;
 import fr.siamois.ui.bean.LangBean;
@@ -54,6 +55,8 @@ public abstract class AbstractSingleEntity<T extends AbstractEntityDTO>
         extends AbstractPanel
         implements EntityForm<T>, Serializable {
 
+
+
     public static final String FIELD = "field";
     public static final String COLUMN_CLASS_NAME = "ui-g-12 ui-md-6 ui-lg-3";
     public static final String LONG_COLUMN_CLASS_NAME = "ui-g-12 ui-md-12 ui-lg-12";
@@ -82,6 +85,21 @@ public abstract class AbstractSingleEntity<T extends AbstractEntityDTO>
      * Per-entity form context. Holds answers, enabled rules, spatial tree state, etc.
      */
     protected transient EntityFormContext<T> formContext;
+
+    @Override
+    public String buildBookmarkUrl() {
+        return "";
+    }
+
+    @Override
+    public void applyViewState(TableViewState state) {
+
+    };
+
+    @Override
+    public boolean isDirty() {
+        return false;
+    }
 
     // -------------------- Vocabulary constants ------------
 

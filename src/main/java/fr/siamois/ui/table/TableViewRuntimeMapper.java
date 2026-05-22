@@ -15,7 +15,6 @@ public class TableViewRuntimeMapper {
         TableViewState state = new TableViewState();
 
         state.setTreeMode(model.isTreeMode());
-        state.setGlobalFilter(model.getGlobalFilter());
 
         // columns
         state.setColumns(
@@ -24,17 +23,16 @@ public class TableViewRuntimeMapper {
                             ColumnState cs = new ColumnState();
                             cs.setColumnId(c.getId());
                             cs.setVisible(c.isVisible());
-                            cs.setWidth(c.getWidth() != null ? Integer.parseInt(c.getWidth().replace("px", "")) : null);
                             return cs;
                         })
                         .collect(Collectors.toList())
         );
 
         // sorting
-        state.setSorting(model.getLazyDataModel().getSortStates());
+        //state.setSorting(model.getLazyDataModel().getSortStates());
 
         // filters
-        state.setFilters(model.getLazyDataModel().getFilterStates());
+        //state.setFilters(model.getLazyDataModel().getFilterStates());
 
         return state;
     }
@@ -44,7 +42,7 @@ public class TableViewRuntimeMapper {
         if (state == null) return;
 
         model.setTreeMode(state.isTreeMode());
-        model.setGlobalFilter(state.getGlobalFilter());
+        model.setColumnFilteringEnabled(state.isColumnFilteringEnabled());
 
         // columns
         if (state.getColumns() != null) {
@@ -53,29 +51,21 @@ public class TableViewRuntimeMapper {
 
             model.getColumns().forEach(col -> {
                 ColumnState cs = byId.get(col.getId());
-                if (cs == null) return;
+                if (cs == null) {col.setVisible(false); return;}
 
                 col.setVisible(cs.isVisible());
-                if (cs.getWidth() != null) {
-                    col.setWidth(cs.getWidth() + "px");
-                }
             });
         }
 
         // filters
         if (state.getFilters() != null) {
-            model.getLazyDataModel().setFilterStates(state.getFilters());
+            model.applyFilterStates(state.getFilters());
         }
 
         // sorting
         if (state.getSorting() != null) {
-            model.getLazyDataModel().setSortStates(state.getSorting());
+            //model.getLazyDataModel().setSortStates(state.getSorting());
         }
 
-        // tree
-        if (state.getTree() != null) {
-            model.setTreeMode(true);
-            model.getLazyDataModel().setRootOnly(state.getTree().isRootOnly());
-        }
     }
 }

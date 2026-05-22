@@ -5,6 +5,7 @@ import fr.siamois.domain.services.form.FormService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitTreeService;
 import fr.siamois.dto.entity.*;
+import fr.siamois.dto.view.FilterState;
 import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.NavBean;
@@ -19,6 +20,7 @@ import fr.siamois.ui.form.dto.FormUiDto;
 import fr.siamois.ui.form.fieldsource.FieldSource;
 import fr.siamois.ui.form.fieldsource.TableRowFieldSource;
 import fr.siamois.ui.lazydatamodel.BaseLazyDataModel;
+import fr.siamois.ui.lazydatamodel.FilterAndSortUtils;
 import fr.siamois.ui.lazydatamodel.tree.BaseTreeTableLazyModel;
 import fr.siamois.ui.table.*;
 import fr.siamois.ui.table.column.*;
@@ -117,12 +119,9 @@ public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
     @Getter
     private List<TreeNode<T>> checkboxSelectedTreeNodes;
 
-
-
     @Getter
     @Setter
     private ToolbarCreateConfig toolbarCreateConfig;
-
 
     @Getter
     @Setter
@@ -609,5 +608,218 @@ public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
             lazyDataModel.setLazyRoot(null);
             lazyDataModel.resetCache();
         }
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<Long> castLongList(Object value) {
+
+        if (value == null) {
+            return List.of();
+        }
+
+        if (value instanceof List<?> list) {
+
+            return list.stream()
+                    .filter(Objects::nonNull)
+                    .map(v -> {
+                        if (v instanceof Number n) {
+                            return n.longValue();
+                        }
+                        if (v instanceof String s) {
+                            return Long.parseLong(s);
+                        }
+                        throw new IllegalArgumentException(
+                                "Cannot convert value to Long: " + v
+                        );
+                    })
+                    .toList();
+        }
+
+        // single value fallback
+        if (value instanceof Number n) {
+            return List.of(n.longValue());
+        }
+
+        if (value instanceof String s) {
+            return List.of(Long.parseLong(s));
+        }
+
+        throw new IllegalArgumentException(
+                "Unsupported filter value type: " + value.getClass()
+        );
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<Date> castDateList(Object value) {
+
+        if (value == null) {
+            return List.of();
+        }
+
+        if (value instanceof List<?> list) {
+
+            return list.stream()
+                    .filter(Objects::nonNull)
+                    .map(v -> {
+                        if (v instanceof Number n) {
+                            return new Date(n.longValue());
+                        }
+                        if (v instanceof String s) {
+                            return new Date(Long.parseLong(s));
+                        }
+                        throw new IllegalArgumentException(
+                                "Invalid date value: " + v
+                        );
+                    })
+                    .toList();
+        }
+
+        throw new IllegalArgumentException(
+                "Expected List for DATE_RANGE but got: " + value.getClass()
+        );
+    }
+
+    public void applyFilterStates(
+            Map<String, FilterState> filters
+    ) {
+
+
+        if (filters == null) {
+            return;
+        }
+
+        // Apply to table
+        conceptFilterValues.clear();
+        personFilterValues.clear();
+        actionUnitFilterValues.clear();
+        spatialUnitFilterValues.clear();
+        dateFilterValues.clear();
+
+        for (FilterState state : filters.values()) {
+
+            if (state == null) {
+                continue;
+            }
+
+            switch (state.getType()) {
+
+                case CONCEPT -> {
+
+                    List<Long> ids =
+                            castLongList(state.getValue());
+
+                    List<ConceptAutocompleteDTO> values =
+                            ids.stream()
+                                    .map(id -> {
+                                        ConceptDTO concept = new ConceptDTO();
+                                        concept.setId(id);
+                                        // todo : load concept from db ??
+                                        ConceptAutocompleteDTO dto =
+                                                new ConceptAutocompleteDTO(concept, "Test", langBean.getLanguageCode());
+                                        return dto;
+                                    })
+                                    .toList();
+
+                    conceptFilterValues.put(
+                            state.getColumnId(),
+                            values
+                    );
+                }
+
+                case PERSON -> {
+
+                    List<Long> ids =
+                            castLongList(state.getValue());
+
+                    List<PersonDTO> values =
+                            ids.stream()
+                                    .map(id -> {
+                                        PersonDTO dto =
+                                                new PersonDTO();
+
+                                        dto.setId(id);
+
+                                        return dto;
+                                    })
+                                    .toList();
+
+                    personFilterValues.put(
+                            state.getColumnId(),
+                            values
+                    );
+                }
+
+                case ACTION_UNIT -> {
+
+                    List<Long> ids =
+                            castLongList(state.getValue());
+
+                    List<ActionUnitDTO> values =
+                            ids.stream()
+                                    .map(id -> {
+                                        ActionUnitDTO dto =
+                                                new ActionUnitDTO();
+
+                                        dto.setId(id);
+
+                                        return dto;
+                                    })
+                                    .toList();
+
+                    actionUnitFilterValues.put(
+                            state.getColumnId(),
+                            values
+                    );
+                }
+
+                case SPATIAL_UNIT -> {
+
+                    List<Long> ids =
+                            castLongList(state.getValue());
+
+                    List<SpatialUnitDTO> values =
+                            ids.stream()
+                                    .map(id -> {
+                                        SpatialUnitDTO dto =
+                                                new SpatialUnitDTO();
+
+                                        dto.setId(id);
+
+                                        return dto;
+                                    })
+                                    .toList();
+
+                    spatialUnitFilterValues.put(
+                            state.getColumnId(),
+                            values
+                    );
+                }
+
+                case DATE_RANGE -> {
+
+                    List<Date> dates =
+                            castDateList(state.getValue());
+
+                    dateFilterValues.put(
+                            state.getColumnId(),
+                            dates
+                    );
+                }
+            }
+        }
+
+        // Init lazy
+        lazyDataModel.setInitialFilter(FilterAndSortUtils.toFilterMetaMap(
+                filters
+        ));
+    }
+
+    public Object getFilterForCol(TableColumn column) {
+        if(column instanceof FormFieldColumn) {
+            if(column.getField() instanceof CustomFieldSelectOneFromFieldCode) {
+                return conceptFilterValues.get(column.getField().getValueBinding());
+            }
+        }
+        return null;
     }
 }

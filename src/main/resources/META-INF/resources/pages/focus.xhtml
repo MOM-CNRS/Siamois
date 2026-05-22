@@ -274,9 +274,13 @@
                                 styleClass="#{focusViewBean.mainPanel.panelClass} panel-docked focus"
                                 style="border-radius: 0px; display: flex; flex-direction: column; border-top: 3px solid var(--main-color)"
                                 id="panel-${focusViewBean.mainPanel.prefixPanelIndex}">
+
                             <div class="sideview-titlebar" style="background: var(--siamois-green-light-100);">
                                 <h:form style="float:right;" id="actionForm-${focusViewBean.mainPanel.panelIndex}">
                                     <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
+                                    <p:splitButton value="Mettre à jour" icon="bi bi-bookmark">
+                                        <p:menuitem value="Enregistrer comme nouveau favori" icon="bi bi-bookmark-plus"/>
+                                    </p:splitButton>
                                     <div style="padding: 3px;
                                             display: flex;
                                             border: 1px solid var(--siamois-green-light);
@@ -300,6 +304,7 @@
                                     </div>
 
                                 </h:form>
+
                                 <h:form id="actionForm-${focusViewBean.mainPanel.panelIndex}-head">
                                     <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
                                     <div style="display: flex;

@@ -3,6 +3,7 @@ package fr.siamois.ui.lazydatamodel;
 import fr.siamois.domain.models.vocabulary.label.ConceptLabel;
 import fr.siamois.dto.FilterDTO;
 import fr.siamois.dto.SortDTO;
+import fr.siamois.dto.view.FilterState;
 import lombok.Getter;
 import lombok.Setter;
 import org.primefaces.model.FilterMeta;
@@ -38,7 +39,12 @@ public abstract class BaseLazyDataModel<T> extends LazyDataModel<T> implements L
     protected int cachedPageSize;
     protected transient Map<String, SortMeta> cachedSortBy = new HashMap<>();
     protected transient List<T> queryResult;
+    protected transient List<T> filtered;
     protected int cachedRowCount;
+
+    // For filter initialization
+    protected transient Map<String, FilterMeta> initialFilter = new HashMap<>();
+    protected boolean initialized = false;
 
     @Getter
     @Setter
@@ -186,6 +192,9 @@ public abstract class BaseLazyDataModel<T> extends LazyDataModel<T> implements L
         if (!columnFilteringEnabled) {
             map = new HashMap<>();
         }
+        if(!initialized) {
+            map = initialFilter;
+        }
         Map<String, FilterMeta> activeFilters = prepareFilters(map);
 
         for (Map.Entry<String, FilterMeta> entry : activeFilters.entrySet()) {
@@ -205,6 +214,10 @@ public abstract class BaseLazyDataModel<T> extends LazyDataModel<T> implements L
         Map<String, SortMeta> activeSorts = prepareSorts(sortBy);
         if (!columnFilteringEnabled) {
             filterBy = new HashMap<>();
+        }
+        if(!initialized) {
+            filterBy = initialFilter;
+            initialized = true;
         }
         Map<String, FilterMeta> activeFilters = prepareFilters(filterBy);
 
@@ -315,23 +328,7 @@ public abstract class BaseLazyDataModel<T> extends LazyDataModel<T> implements L
     }
 
     public void addRowToModel(T newUnit) {
-        // Increment the total against the previously known total — using the
-        // wrappedData size would replace the total with the page size and break
-        // the paginator after duplications/bulk creates.
-        int newTotal = getRowCount() + 1;
-        setRowCount(newTotal);
-        setCachedRowCount(newTotal);
 
-        List<T> modifiableCopy = new ArrayList<>();
-        if (getWrappedData() != null) {
-            modifiableCopy = new ArrayList<>(getWrappedData());
-        }
-        modifiableCopy.add(0, newUnit);
-        setWrappedData(modifiableCopy);
-        setQueryResult(modifiableCopy);
-
-        if (modifiableCopy.size() > getPageSizeState()) {
-            modifiableCopy.remove(modifiableCopy.size() - 1);
-        }
     }
+
 }

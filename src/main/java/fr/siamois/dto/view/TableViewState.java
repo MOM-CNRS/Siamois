@@ -13,6 +13,8 @@ public class TableViewState {
     // layout mode
     private boolean treeMode;
 
+    private boolean columnFilteringEnabled ;
+
     // column configuration
     private List<ColumnState> columns;
 

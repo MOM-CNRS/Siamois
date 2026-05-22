@@ -56,6 +56,7 @@
                  rows="#{tableModel.lazyDataModel.pageSizeState}"
                  first="#{tableModel.lazyDataModel.first}"
                  sortMode="multiple"
+                 filteredValue="#{tableModel.lazyDataModel.filtered}"
                  partialUpdate="false"
                  emptyMessage="#{langBean.msg('recordingUnitList.empty')}"
                  paginatorTemplate="#{langBean.msg('label.resultsPerPage')}: {RowsPerPageDropdown} {RowReport} {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink}"

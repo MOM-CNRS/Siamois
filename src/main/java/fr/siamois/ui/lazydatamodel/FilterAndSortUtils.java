@@ -2,6 +2,7 @@ package fr.siamois.ui.lazydatamodel;
 
 import fr.siamois.dto.entity.AbstractEntityDTO;
 import fr.siamois.dto.entity.ConceptDTO;
+import fr.siamois.dto.view.FilterState;
 import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
 import jakarta.faces.context.FacesContext;
 import org.primefaces.model.FilterMeta;
@@ -135,6 +136,49 @@ public class FilterAndSortUtils {
             }
         }
         return activeSorts;
+    }
+
+    public static Map<String, FilterMeta> toFilterMetaMap(
+            @Nullable Map<String, FilterState> states
+    ) {
+
+        Map<String, FilterMeta> result = new HashMap<>();
+
+        if (states == null || states.isEmpty()) {
+            return result;
+        }
+
+        for (Map.Entry<String, FilterState> entry : states.entrySet()) {
+
+            FilterState state = entry.getValue();
+
+            if (state == null) {
+                continue;
+            }
+
+            MatchMode matchMode = switch (state.getType()) {
+
+                case TEXT -> MatchMode.CONTAINS;
+
+                case CONCEPT -> MatchMode.IN;
+
+                case DATE_RANGE -> MatchMode.BETWEEN;
+
+                case BOOLEAN -> MatchMode.EQUALS;
+
+                default -> MatchMode.EQUALS;
+            };
+
+            FilterMeta meta = FilterMeta.builder()
+                    .field(state.getColumnId())
+                    .filterValue(state.getValue())
+                    .matchMode(matchMode)
+                    .build();
+
+            result.put(state.getColumnId(), meta);
+        }
+
+        return result;
     }
 
 }

@@ -1,5 +1,6 @@
 package fr.siamois.ui.bean.panel.models.panel;
 
+import fr.siamois.dto.view.TableViewState;
 import fr.siamois.ui.bean.panel.models.PanelBreadcrumb;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -32,6 +33,13 @@ public abstract class AbstractPanel implements Serializable {
     protected boolean isRoot = true; // Is the panel a root panel or an overview
     protected AbstractPanel parentOrOverview; // if root, the panel can display and overview
     protected String errorMessage;
+
+
+    public abstract String buildBookmarkUrl();
+
+    public abstract void applyViewState(TableViewState state);
+
+    public abstract boolean isDirty();
 
 
     public void loadData() {

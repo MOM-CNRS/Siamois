@@ -9,10 +9,15 @@ import fr.siamois.domain.services.vocabulary.FieldConfigurationService;
 import fr.siamois.domain.services.vocabulary.FieldService;
 import fr.siamois.domain.services.vocabulary.LabelService;
 import fr.siamois.dto.entity.AbstractEntityDTO;
+import fr.siamois.dto.view.ColumnState;
+import fr.siamois.dto.view.FilterState;
+import fr.siamois.dto.view.SortState;
+import fr.siamois.dto.view.TableViewState;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
 import fr.siamois.ui.bean.panel.models.panel.AbstractPanel;
 import fr.siamois.ui.lazydatamodel.BaseLazyDataModel;
+import fr.siamois.ui.table.TableViewRuntimeMapper;
 import fr.siamois.ui.table.viewmodel.EntityTableViewModel;
 import fr.siamois.ui.table.column.TableColumn;
 import fr.siamois.utils.MessageUtils;
@@ -25,9 +30,7 @@ import org.primefaces.model.menu.DefaultMenuItem;
 import org.springframework.context.ApplicationContext;
 
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
+import java.util.*;
 
 @Getter
 @Setter
@@ -47,10 +50,31 @@ public abstract class AbstractListPanel<T extends AbstractEntityDTO> extends Abs
     protected final transient BookmarkService bookmarkService;
     protected final transient FieldService fieldService;
     protected final transient FieldConfigurationService fieldConfigurationService;
+    protected final transient TableViewRuntimeMapper tableViewRuntimeMapper;
 
     // local
     protected BaseLazyDataModel<T> lazyDataModel;
     protected long totalNumberOfUnits;
+    protected boolean dirty;
+
+    @Override
+    public String buildBookmarkUrl() {
+        return "";
+    }
+
+    @Override
+    public void applyViewState(TableViewState state) {
+        if (state == null) {
+            return;
+        }
+
+        tableViewRuntimeMapper.apply(
+                tableModel,
+                state
+        );
+
+        dirty = false;
+    }
 
 
     /**
@@ -73,6 +97,7 @@ public abstract class AbstractListPanel<T extends AbstractEntityDTO> extends Abs
         sessionSettingsBean = null;
         fieldService = null;
         fieldConfigurationService = null;
+        this.tableViewRuntimeMapper = null;
     }
 
     public void refresh() {
@@ -98,6 +123,7 @@ public abstract class AbstractListPanel<T extends AbstractEntityDTO> extends Abs
         this.bookmarkService = applicationContext.getBean(BookmarkService.class);
         this.fieldService = applicationContext.getBean(FieldService.class);
         this.fieldConfigurationService = applicationContext.getBean(FieldConfigurationService.class);
+        this.tableViewRuntimeMapper = applicationContext.getBean(TableViewRuntimeMapper.class);
     }
 
     protected abstract long countUnitsByInstitution();
@@ -127,9 +153,6 @@ public abstract class AbstractListPanel<T extends AbstractEntityDTO> extends Abs
 
 
 
-
-
-
     public void init() {
 
         DefaultMenuItem item = DefaultMenuItem.builder()
@@ -146,6 +169,79 @@ public abstract class AbstractListPanel<T extends AbstractEntityDTO> extends Abs
         configureLazyDataModel(lazyDataModel);
 
         configureTableColumns();
+
+        TableViewState tableViewState = new TableViewState();
+
+        tableViewState.setVersion(1);
+
+        tableViewState.setColumnFilteringEnabled(true);
+
+        tableViewState.setTreeMode(false);
+
+// -------------------------
+// COLUMNS
+// -------------------------
+
+        List<ColumnState> columns = new ArrayList<>();
+
+        ColumnState identifierCol = new ColumnState();
+        identifierCol.setColumnId("identifier");
+        identifierCol.setVisible(true);
+
+        ColumnState typeCol = new ColumnState();
+        typeCol.setColumnId("type");
+        typeCol.setVisible(true);
+
+        ColumnState dateCol = new ColumnState();
+        dateCol.setColumnId("openingDate");
+        dateCol.setVisible(false);
+
+        columns.add(identifierCol);
+        columns.add(typeCol);
+        columns.add(dateCol);
+
+        tableViewState.setColumns(columns);
+
+// -------------------------
+// SORTING
+// -------------------------
+
+        List<SortState> sorting = new ArrayList<>();
+
+        SortState sort = new SortState();
+        sort.setColumnId("identifier");
+        sort.setDirection(SortState.Direction.ASC);
+        sort.setPriority(0);
+
+        sorting.add(sort);
+
+        tableViewState.setSorting(sorting);
+
+// -------------------------
+// FILTERS
+// -------------------------
+
+        Map<String, FilterState> filters = new HashMap<>();
+
+        FilterState identifierFilter = new FilterState();
+        identifierFilter.setColumnId("identifier");
+        identifierFilter.setType(FilterState.FilterType.TEXT);
+        identifierFilter.setValue("RU-2024");
+
+        filters.put("identifier", identifierFilter);
+
+        FilterState typeFilter = new FilterState();
+        typeFilter.setColumnId("type");
+        typeFilter.setType(FilterState.FilterType.CONCEPT);
+        typeFilter.setValue(List.of(1,2));
+
+        filters.put("type", typeFilter);
+
+        tableViewState.setFilters(filters);
+
+        applyViewState(tableViewState);
+
+        // TODO : reload data??
     }
 
     protected abstract String getBreadcrumbKey();
