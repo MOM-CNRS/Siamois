@@ -35,22 +35,23 @@ import org.springframework.lang.NonNull;
 import java.util.*;
 import java.util.function.Function;
 
+import static fr.siamois.dto.view.FilterState.FilterType.*;
 import static fr.siamois.ui.bean.dialog.newunit.NewUnitContext.TreeInsert.ROOT;
 import static fr.siamois.utils.MessageUtils.displayErrorMessage;
 
 /**
  * View model générique pour une table d'entités avec formulaires dynamiques.
- *
+ * <p>
  * - tient une TableDefinition (colonnes)
  * - s'appuie sur un BaseLazyDataModel<T> "pur data"
  * - crée un EntityFormContext<T> par ligne :
- *      - réponses
- *      - règles d'activation
- *      - champs système (min/max, etc.)
- *
+ * - réponses
+ * - règles d'activation
+ * - champs système (min/max, etc.)
+ * <p>
  * Les sous-classes doivent définir :
- *  - resolveRowFormFor(T entity)
- *  - configureRowSystemFields(T entity, CustomForm form)
+ * - resolveRowFormFor(T entity)
+ * - configureRowSystemFields(T entity, CustomForm form)
  */
 @Getter
 public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
@@ -60,14 +61,18 @@ public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
     @Setter
     protected String globalFilter = "";
 
-    /** Lazy model "pur data" (chargement, tri, filtres, sélection, etc.) */
+    /**
+     * Lazy model "pur data" (chargement, tri, filtres, sélection, etc.)
+     */
     protected final BaseLazyDataModel<T> lazyDataModel;
     protected final BaseTreeTableLazyModel<T, ID> treeLazyModel;
 
     @Setter
     public int defaultPageSize = 10;
 
-    /** Services nécessaires pour la logique formulaire de ligne */
+    /**
+     * Services nécessaires pour la logique formulaire de ligne
+     */
     protected final FormService formService;
     protected final SpatialUnitTreeService spatialUnitTreeService;
     protected final SpatialUnitService spatialUnitService;
@@ -81,10 +86,12 @@ public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
     private boolean columnFilteringEnabled = false;
 
 
-    /** Fournit l'identifiant unique d'une entité T (ex: RecordingUnit::getId) */
+    /**
+     * Fournit l'identifiant unique d'une entité T (ex: RecordingUnit::getId)
+     */
     private final Function<T, ID> idExtractor;
     @Setter
-    protected AbstractPanel parentPanel ; // the parent panel to open items in overview
+    protected AbstractPanel parentPanel; // the parent panel to open items in overview
 
     /**
      * Nom de la propriété de T utilisée comme "form scope" (ex: "type"),
@@ -92,26 +99,40 @@ public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
      */
     private final String formScopeValueBinding;
 
-    /** Définition globale des colonnes de la table */
+    /**
+     * Définition globale des colonnes de la table
+     */
     private final TableDefinition tableDefinition = new TableDefinition();
 
-    /** Contexte de formulaire par ligne (clé = ID de l'entité) */
+    /**
+     * Contexte de formulaire par ligne (clé = ID de l'entité)
+     */
     protected final Map<ID, EntityFormContext<T>> rowContexts = new HashMap<>();
 
-    /** Concepts sélectionnés pour le filtre d'une colonne (clé = valueBinding de la colonne). */
+    /**
+     * Concepts sélectionnés pour le filtre d'une colonne (clé = valueBinding de la colonne).
+     */
     private final Map<String, List<ConceptAutocompleteDTO>> conceptFilterValues = new HashMap<>();
 
-    /** Personnes sélectionnées pour le filtre d'une colonne (clé = valueBinding de la colonne). */
+    /**
+     * Personnes sélectionnées pour le filtre d'une colonne (clé = valueBinding de la colonne).
+     */
     private final Map<String, List<PersonDTO>> personFilterValues = new HashMap<>();
 
-    /** Action units sélectionnés pour le filtre d'une colonne (clé = valueBinding de la colonne). */
+    /**
+     * Action units sélectionnés pour le filtre d'une colonne (clé = valueBinding de la colonne).
+     */
     private final Map<String, List<ActionUnitDTO>> actionUnitFilterValues = new HashMap<>();
 
-    /** Unités spatiales sélectionnées pour le filtre d'une colonne (clé = valueBinding de la colonne). */
+    /**
+     * Unités spatiales sélectionnées pour le filtre d'une colonne (clé = valueBinding de la colonne).
+     */
     private final Map<String, List<SpatialUnitDTO>> spatialUnitFilterValues = new HashMap<>();
 
-    /** Bornes de dates sélectionnées pour le filtre d'une colonne (clé = valueBinding de la colonne).
-     *  Contient jusqu'à 2 éléments : [from, to]. */
+    /**
+     * Bornes de dates sélectionnées pour le filtre d'une colonne (clé = valueBinding de la colonne).
+     * Contient jusqu'à 2 éléments : [from, to].
+     */
     private final Map<String, java.util.List<java.util.Date>> dateFilterValues = new HashMap<>();
 
     // tree mode selection
@@ -188,7 +209,6 @@ public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
             this.treeLazyModel.setGlobalFilter(globalFilter);
         }
     }
-
 
 
     /**
@@ -337,7 +357,7 @@ public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
         //UIColumn column = e.getColumn();
         Visibility visibility = e.getVisibility();
         // 4 bc the first 4 columns are fixed
-        tableDefinition.getColumns().get(index-4).setVisible(visibility == Visibility.VISIBLE);
+        tableDefinition.getColumns().get(index - 4).setVisible(visibility == Visibility.VISIBLE);
     }
 
 
@@ -441,12 +461,9 @@ public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
         }
 
         switch (treeInsert) {
-            case CHILD_FIRST ->
-                    LazyTreeMutator.insertChildFirst(root, clickedId, created, loadFn, isLeafFn);
-            case PARENT_AT_ROOT ->
-                    LazyTreeMutator.insertParentAndReparent(root, clickedId, created, loadFn, isLeafFn);
-            case SIBLING_BELOW ->
-                    LazyTreeMutator.insertSiblingBelow(root, clickedId, created, loadFn, isLeafFn);
+            case CHILD_FIRST -> LazyTreeMutator.insertChildFirst(root, clickedId, created, loadFn, isLeafFn);
+            case PARENT_AT_ROOT -> LazyTreeMutator.insertParentAndReparent(root, clickedId, created, loadFn, isLeafFn);
+            case SIBLING_BELOW -> LazyTreeMutator.insertSiblingBelow(root, clickedId, created, loadFn, isLeafFn);
             default -> {
                 // no op (NONE)
             }
@@ -456,7 +473,7 @@ public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
     // Handler when clicking on the create button on top of the table
     public void openCreateFromToolbar(fr.siamois.ui.bean.dialog.newunit.GenericNewUnitDialogBean<T> dialogBean,
                                       String updateOnCreate,
-    String tableClientId) {
+                                      String tableClientId) {
         if (toolbarCreateConfig == null) {
             return; // pas de bouton configuré
         }
@@ -508,7 +525,7 @@ public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
     }
 
     /*
-    * Check if user has permission to edit the row data
+     * Check if user has permission to edit the row data
      */
     public abstract boolean canUserEditRow(T unit);
 
@@ -814,9 +831,102 @@ public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
         ));
     }
 
+    public Map<String, FilterState> extractFilterStates() {
+
+        Map<String, FilterState> filters = new HashMap<>();
+
+        // concepts
+        conceptFilterValues.forEach((columnId, values) -> {
+
+            FilterState state = new FilterState();
+
+            state.setColumnId(columnId);
+
+            state.setType(CONCEPT);
+
+            state.setValue(
+                    values.stream()
+                            .map(v -> v.concept().getId())
+                            .toList()
+            );
+
+            filters.put(columnId, state);
+        });
+
+        // persons
+        personFilterValues.forEach((columnId, values) -> {
+
+            FilterState state = new FilterState();
+
+            state.setColumnId(columnId);
+
+            state.setType(PERSON);
+
+            state.setValue(
+                    values.stream()
+                            .map(PersonDTO::getId)
+                            .toList()
+            );
+
+            filters.put(columnId, state);
+        });
+
+        // action units
+        actionUnitFilterValues.forEach((columnId, values) -> {
+
+            FilterState state = new FilterState();
+
+            state.setColumnId(columnId);
+
+            state.setType(ACTION_UNIT);
+
+            state.setValue(
+                    values.stream()
+                            .map(ActionUnitDTO::getId)
+                            .toList()
+            );
+
+            filters.put(columnId, state);
+        });
+
+        // spatial units
+        spatialUnitFilterValues.forEach((columnId, values) -> {
+
+            FilterState state = new FilterState();
+
+            state.setColumnId(columnId);
+
+            state.setType(SPATIAL_UNIT);
+
+            state.setValue(
+                    values.stream()
+                            .map(SpatialUnitDTO::getId)
+                            .toList()
+            );
+
+            filters.put(columnId, state);
+        });
+
+        // date ranges
+        dateFilterValues.forEach((columnId, values) -> {
+
+            FilterState state = new FilterState();
+
+            state.setColumnId(columnId);
+
+            state.setType(DATE_RANGE);
+
+            state.setValue(values);
+
+            filters.put(columnId, state);
+        });
+
+        return filters;
+    }
+
     public Object getFilterForCol(TableColumn column) {
-        if(column instanceof FormFieldColumn) {
-            if(column.getField() instanceof CustomFieldSelectOneFromFieldCode) {
+        if (column instanceof FormFieldColumn) {
+            if (column.getField() instanceof CustomFieldSelectOneFromFieldCode) {
                 return conceptFilterValues.get(column.getField().getValueBinding());
             }
         }
@@ -824,6 +934,6 @@ public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
     }
 
     public String getSelectedAndTotalCount() {
-        return lazyDataModel.getSelectedUnits().size()+"/"+lazyDataModel.getRowCount();
+        return lazyDataModel.getSelectedUnits().size() + "/" + lazyDataModel.getRowCount();
     }
 }

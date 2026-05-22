@@ -15,6 +15,7 @@ public class TableViewRuntimeMapper {
         TableViewState state = new TableViewState();
 
         state.setTreeMode(model.isTreeMode());
+        state.setColumnFilteringEnabled(model.isColumnFilteringEnabled());
 
         // columns
         state.setColumns(
@@ -32,7 +33,7 @@ public class TableViewRuntimeMapper {
         //state.setSorting(model.getLazyDataModel().getSortStates());
 
         // filters
-        //state.setFilters(model.getLazyDataModel().getFilterStates());
+        state.setFilters(model.extractFilterStates());
 
         return state;
     }

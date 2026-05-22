@@ -233,7 +233,7 @@ public abstract class AbstractListPanel<T extends AbstractEntityDTO> extends Abs
         FilterState typeFilter = new FilterState();
         typeFilter.setColumnId("type");
         typeFilter.setType(FilterState.FilterType.CONCEPT);
-        typeFilter.setValue(List.of(1,2));
+        typeFilter.setValue(List.of(3255));
 
         filters.put("type", typeFilter);
 
