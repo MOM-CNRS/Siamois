@@ -1,6 +1,7 @@
 package fr.siamois.ui.bean.panel.models.panel.list;
 
 import fr.siamois.domain.services.BookmarkService;
+import fr.siamois.domain.services.UiViewService;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.person.PersonService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
@@ -51,15 +52,54 @@ public abstract class AbstractListPanel<T extends AbstractEntityDTO> extends Abs
     protected final transient FieldService fieldService;
     protected final transient FieldConfigurationService fieldConfigurationService;
     protected final transient TableViewRuntimeMapper tableViewRuntimeMapper;
+    protected final transient UiViewService uiViewService;
 
     // local
     protected BaseLazyDataModel<T> lazyDataModel;
     protected long totalNumberOfUnits;
-    protected boolean dirty;
+    protected transient TableViewState tableViewState = new TableViewState(); // init state
+    protected Long viewId; // view defining the apparence the panel (table configuration mainly)
+
+    @Override
+    public boolean isBookmarked(
+
+    ) {
+        return bookmarkService.isRessourceBookmarkedByUser(sessionSettingsBean.getUserInfo(), buildBookmarkUrl());
+    }
+
+    @Override
+    public void togglePanelBookmark() {
+        if(Boolean.TRUE.equals(bookmarkService.isRessourceBookmarkedByUser(sessionSettingsBean.getUserInfo(), buildBookmarkUrl()))) {
+            bookmarkService.delete(sessionSettingsBean.getUserInfo(), buildBookmarkUrl());
+        }
+        else {
+            // ADD THE VIEW IF EXIST, DUPLICATE IF NOT YOUR OWN VIEW
+            bookmarkService.save(sessionSettingsBean.getUserInfo(), buildBookmarkUrl(), titleCodeOrTitle);
+        }
+    }
+
+    @Override
+    public boolean isDirty() {
+
+        TableViewState saved = tableViewState;
+        if (saved == null) {
+            return false;
+        }
+
+        TableViewState current = tableViewRuntimeMapper.extract(tableModel);
+
+        if (current == null) {
+            return false;
+        }
+
+        return !saved.normalize()
+                .equals(current.normalize());
+    }
 
     @Override
     public String buildBookmarkUrl() {
-        return "";
+        return "/recording-unit"
+                + "?viewId=" + viewId;
     }
 
     @Override
@@ -73,7 +113,6 @@ public abstract class AbstractListPanel<T extends AbstractEntityDTO> extends Abs
                 state
         );
 
-        dirty = false;
     }
 
 
@@ -98,6 +137,7 @@ public abstract class AbstractListPanel<T extends AbstractEntityDTO> extends Abs
         fieldService = null;
         fieldConfigurationService = null;
         this.tableViewRuntimeMapper = null;
+        uiViewService = null;
     }
 
     public void refresh() {
@@ -124,6 +164,7 @@ public abstract class AbstractListPanel<T extends AbstractEntityDTO> extends Abs
         this.fieldService = applicationContext.getBean(FieldService.class);
         this.fieldConfigurationService = applicationContext.getBean(FieldConfigurationService.class);
         this.tableViewRuntimeMapper = applicationContext.getBean(TableViewRuntimeMapper.class);
+        this.uiViewService = applicationContext.getBean(UiViewService.class);
     }
 
     protected abstract long countUnitsByInstitution();
@@ -164,84 +205,25 @@ public abstract class AbstractListPanel<T extends AbstractEntityDTO> extends Abs
             this.getBreadcrumb().getModel().getElements().add(item);
         }
 
-        totalNumberOfUnits = countUnitsByInstitution();
+        totalNumberOfUnits = countUnitsByInstitution(); // todo : modify based on view??
         lazyDataModel = createLazyDataModel();
         configureLazyDataModel(lazyDataModel);
 
         configureTableColumns();
 
-        TableViewState tableViewState = new TableViewState();
-
-        tableViewState.setVersion(1);
-
-        tableViewState.setColumnFilteringEnabled(true);
-
-        tableViewState.setTreeMode(false);
-
-// -------------------------
-// COLUMNS
-// -------------------------
-
-        List<ColumnState> columns = new ArrayList<>();
-
-        ColumnState identifierCol = new ColumnState();
-        identifierCol.setColumnId("identifier");
-        identifierCol.setVisible(true);
-
-        ColumnState typeCol = new ColumnState();
-        typeCol.setColumnId("type");
-        typeCol.setVisible(true);
-
-        ColumnState dateCol = new ColumnState();
-        dateCol.setColumnId("openingDate");
-        dateCol.setVisible(false);
-
-        columns.add(identifierCol);
-        columns.add(typeCol);
-        columns.add(dateCol);
-
-        tableViewState.setColumns(columns);
-
-// -------------------------
-// SORTING
-// -------------------------
-
-        List<SortState> sorting = new ArrayList<>();
-
-        SortState sort = new SortState();
-        sort.setColumnId("identifier");
-        sort.setDirection(SortState.Direction.ASC);
-        sort.setPriority(0);
-
-        sorting.add(sort);
-
-        tableViewState.setSorting(sorting);
-
-// -------------------------
-// FILTERS
-// -------------------------
-
-        Map<String, FilterState> filters = new HashMap<>();
-
-        FilterState identifierFilter = new FilterState();
-        identifierFilter.setColumnId("identifier");
-        identifierFilter.setType(FilterState.FilterType.TEXT);
-        identifierFilter.setValue("RU-2024");
-
-        filters.put("identifier", identifierFilter);
-
-        FilterState typeFilter = new FilterState();
-        typeFilter.setColumnId("type");
-        typeFilter.setType(FilterState.FilterType.CONCEPT);
-        typeFilter.setValue(List.of(3255));
-
-        filters.put("type", typeFilter);
-
-        tableViewState.setFilters(filters);
-
+        // get view from id
+        tableViewState = new TableViewState();
+        // Try to fetch from db if set
+        if(viewId != null) {
+            tableViewState = uiViewService.getState(viewId);
+        }
+        else {
+            // init from current
+            tableViewState = tableViewRuntimeMapper.extract(tableModel);
+        }
+        // otherwise default
         applyViewState(tableViewState);
 
-        // TODO : reload data??
     }
 
     protected abstract String getBreadcrumbKey();

@@ -66,7 +66,7 @@
                             onIcon="pi pi-filter" offIcon="pi pi-filter-slash"
                             styleClass="vertical-align-middle ml-3">
 
-                        <p:ajax update=":#{cc.clientId}:#{tableId}"
+                        <p:ajax update=":#{cc.clientId}:#{tableId}, actionForm-#{tableModel.parentPanel.panelIndex}"
                                 listener="#{tableModel.onColumnFilteringToggle}" />
                     </p:toggleSwitch>
                 </div>

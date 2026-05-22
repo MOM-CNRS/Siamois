@@ -31,7 +31,7 @@ public abstract class AbstractPanel implements Serializable {
     protected Boolean collapsed = false;
     protected Boolean loaded = false;
     protected boolean isRoot = true; // Is the panel a root panel or an overview
-    protected AbstractPanel parentOrOverview; // if root, the panel can display and overview
+    protected AbstractPanel parentOrOverview; // if root, the panel can display have an overview
     protected String errorMessage;
 
 
@@ -41,6 +41,9 @@ public abstract class AbstractPanel implements Serializable {
 
     public abstract boolean isDirty();
 
+    public abstract boolean isBookmarked();
+
+    public abstract void togglePanelBookmark() ;
 
     public void loadData() {
         // deffer loading here ?

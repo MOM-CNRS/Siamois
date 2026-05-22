@@ -5,6 +5,7 @@ import fr.siamois.domain.models.form.customfield.CustomFieldText;
 import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerText;
 import fr.siamois.domain.models.vocabulary.Vocabulary;
 import fr.siamois.domain.models.vocabulary.VocabularyType;
+import fr.siamois.domain.services.BookmarkService;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.document.DocumentService;
 import fr.siamois.domain.services.form.FormService;
@@ -74,12 +75,31 @@ public abstract class AbstractSingleEntity<T extends AbstractEntityDTO>
     protected final transient FormService formService;
     protected final transient FormContextServices formContextServices;
     protected final transient ConversionService conversionService;
+    protected final transient BookmarkService bookmarkService;
 
     // -------------------- Local state ---------------------
 
     protected transient T unit;
 
     protected transient FormUiDto detailsForm;
+
+    @Override
+    public void togglePanelBookmark() {
+        if(Boolean.TRUE.equals(bookmarkService.isRessourceBookmarkedByUser(sessionSettingsBean.getUserInfo(), buildBookmarkUrl()))) {
+            bookmarkService.delete(sessionSettingsBean.getUserInfo(), buildBookmarkUrl());
+        }
+        else {
+            // ADD THE VIEW IF EXIST, DUPLICATE IF NOT YOUR OWN VIEW
+            bookmarkService.save(sessionSettingsBean.getUserInfo(), buildBookmarkUrl(), titleCodeOrTitle);
+        }
+    }
+
+    @Override
+    public boolean isBookmarked(
+
+    ) {
+        return bookmarkService.isRessourceBookmarkedByUser(sessionSettingsBean.getUserInfo(), buildBookmarkUrl());
+    }
 
     /**
      * Per-entity form context. Holds answers, enabled rules, spatial tree state, etc.
@@ -88,6 +108,7 @@ public abstract class AbstractSingleEntity<T extends AbstractEntityDTO>
 
     @Override
     public String buildBookmarkUrl() {
+        // todo return
         return "";
     }
 
@@ -117,7 +138,7 @@ public abstract class AbstractSingleEntity<T extends AbstractEntityDTO>
 
     // -------------------- Constructors --------------------
 
-    protected AbstractSingleEntity(ApplicationContext context) {
+    protected AbstractSingleEntity(ApplicationContext context, BookmarkService bookmarkService) {
         this.sessionSettingsBean = context.getBean(SessionSettingsBean.class);
         this.fieldConfigurationService = context.getBean(FieldConfigurationService.class);
         this.spatialUnitTreeService = context.getBean(SpatialUnitTreeService.class);
@@ -129,6 +150,7 @@ public abstract class AbstractSingleEntity<T extends AbstractEntityDTO>
         this.formContextServices = context.getBean(FormContextServices.class);
         this.langBean = context.getBean(LangBean.class);
         this.conversionService = context.getBean(ConversionService.class);
+        this.bookmarkService = bookmarkService;
     }
 
     protected AbstractSingleEntity(String titleCodeOrTitle,
@@ -147,6 +169,7 @@ public abstract class AbstractSingleEntity<T extends AbstractEntityDTO>
         this.formContextServices = context.getBean(FormContextServices.class);
         this.langBean = context.getBean(LangBean.class);
         this.conversionService = context.getBean(ConversionService.class);
+        this.bookmarkService = context.getBean(BookmarkService.class);;
     }
 
     // -------------------- Utility -------------------------

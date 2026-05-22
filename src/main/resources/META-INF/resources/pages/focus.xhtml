@@ -278,8 +278,10 @@
                             <div class="sideview-titlebar" style="background: var(--siamois-green-light-100);">
                                 <h:form style="float:right;" id="actionForm-${focusViewBean.mainPanel.panelIndex}">
                                     <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
-                                    <p:splitButton value="Mettre à jour" icon="bi bi-bookmark">
+                                    <p:splitButton id="dirtyViewSplitButton" value="Mettre à jour" icon="bi bi-bookmark"
+                                                   rendered="#{focusViewBean.mainPanel.isDirty() && focusViewBean.mainPanel.isBookmarked()}">
                                         <p:menuitem value="Enregistrer comme nouveau favori" icon="bi bi-bookmark-plus"/>
+                                        <p:menuitem value="Réinitialiser la vue" icon="bi bi-arrow-clockwise"/>
                                     </p:splitButton>
                                     <div style="padding: 3px;
                                             display: flex;
@@ -287,9 +289,9 @@
                                             border-radius: 15px;">
                                         <p:commandLink id="bookmarkToggleButton"
                                                        styleClass="sideview-topbar-button"
-                                                       action="#{navBean.togglePanelBookmark(focusViewBean.mainPanel)}"
-                                                       update="bookmarkToggleButton navBarCsrfForm:siamoisNavForm">
-                                            <h:outputText styleClass="#{navBean.isPanelBookmarkedByUser(focusViewBean.mainPanel) ?
+                                                       action="#{focusViewBean.mainPanel.togglePanelBookmark()}"
+                                                       update="bookmarkToggleButton navBarCsrfForm:siamoisNavForm subSidebarForm">
+                                            <h:outputText styleClass="#{focusViewBean.mainPanel.isBookmarked() ?
                             'ui-icon bi bi-bookmark-fill' : 'ui-icon bi bi-bookmark'}"/>
                                         </p:commandLink>
                                         <p:commandLink id="refreshPanelButton"
