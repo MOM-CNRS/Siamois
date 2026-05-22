@@ -11,7 +11,10 @@
             <p:toolbarGroup align="left">
                 <div style="display: flex; flex-direction: row; flex-wrap: wrap; gap: 1em; align-items: center;">
 
-
+                    <p:chip
+                            style="background-color: var(--siamois-green-light-100)"
+                        label="#{tableModel.getSelectedAndTotalCount()}"
+                    />
                     <p:commandButton
                             type="button"
                             id="tableParam"
