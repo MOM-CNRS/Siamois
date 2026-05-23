@@ -149,6 +149,7 @@ public class RecordingUnitListPanel extends AbstractListPanel<RecordingUnitDTO> 
 
     @Override
     public void init() {
+        viewId=1L;
         // super.init() va appeler createLazyDataModel() → tableModel est initialisé ici
         super.init();
 

@@ -1,5 +1,6 @@
 package fr.siamois.domain.models.uiview;
 
+import fr.siamois.domain.models.auth.Person;
 import fr.siamois.dto.view.TableViewState;
 import jakarta.persistence.*;
 import lombok.*;
@@ -23,8 +24,14 @@ public class UiTableView {
      * The resource this view applies to
      * e.g. "recording-unit", "specimen", etc.
      */
-    @Column(nullable = false)
     private String resourceType;
+
+    /**
+     * The owner of the view
+     */
+    @ManyToOne
+    @JoinColumn(name = "fk_owner")
+    private Person owner;
 
     /**
      * The actual UI configuration (columns, filters, sorting, etc.)

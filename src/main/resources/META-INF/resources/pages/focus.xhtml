@@ -279,9 +279,17 @@
                                 <h:form style="float:right;" id="actionForm-${focusViewBean.mainPanel.panelIndex}">
                                     <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
                                     <p:splitButton id="dirtyViewSplitButton" value="Mettre à jour" icon="bi bi-bookmark"
-                                                   rendered="#{focusViewBean.mainPanel.isDirty() && focusViewBean.mainPanel.isBookmarked()}">
-                                        <p:menuitem value="Enregistrer comme nouveau favori" icon="bi bi-bookmark-plus"/>
-                                        <p:menuitem value="Réinitialiser la vue" icon="bi bi-arrow-clockwise"/>
+                                                   action="#{focusViewBean.mainPanel.updateCurrentBookmark()}"
+                                                   update="panel-${focusViewBean.mainPanel.prefixPanelIndex}"
+                                                   rendered="#{focusViewBean.mainPanel.isDirty() and focusViewBean.mainPanel.isBookmarked()}">
+                                        <p:menuitem value="Enregistrer comme nouvelle vue"
+                                                    update="panel-${focusViewBean.mainPanel.prefixPanelIndex}, subSidebarForm"
+                                                    action="#{focusViewBean.mainPanel.saveAsNewView()}"
+                                                    icon="bi bi-bookmark-plus"/>
+                                        <p:menuitem value="Réinitialiser la vue"
+                                                    update="panel-${focusViewBean.mainPanel.prefixPanelIndex}"
+                                                    action="#{focusViewBean.mainPanel.reinitializeView()}"
+                                                    icon="bi bi-arrow-clockwise"/>
                                     </p:splitButton>
                                     <div style="padding: 3px;
                                             display: flex;
@@ -290,7 +298,7 @@
                                         <p:commandLink id="bookmarkToggleButton"
                                                        styleClass="sideview-topbar-button"
                                                        action="#{focusViewBean.mainPanel.togglePanelBookmark()}"
-                                                       update="bookmarkToggleButton navBarCsrfForm:siamoisNavForm subSidebarForm">
+                                                       update="bookmarkToggleButton, navBarCsrfForm:siamoisNavForm, subSidebarForm, actionForm-#{focusViewBean.mainPanel.panelIndex}">
                                             <h:outputText styleClass="#{focusViewBean.mainPanel.isBookmarked() ?
                             'ui-icon bi bi-bookmark-fill' : 'ui-icon bi bi-bookmark'}"/>
                                         </p:commandLink>

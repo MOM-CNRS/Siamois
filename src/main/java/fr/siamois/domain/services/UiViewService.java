@@ -2,9 +2,12 @@ package fr.siamois.domain.services;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import fr.siamois.domain.models.uiview.UiTableView;
+import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.dto.view.TableViewState;
 import fr.siamois.infrastructure.database.UiViewRepository;
+import fr.siamois.mapper.PersonMapper;
 import lombok.RequiredArgsConstructor;
+import org.springframework.boot.actuate.env.EnvironmentEndpoint;
 import org.springframework.stereotype.Service;
 
 /**
@@ -15,6 +18,8 @@ import org.springframework.stereotype.Service;
 public class UiViewService {
 
     private final UiViewRepository uiViewRepository;
+    private final PersonMapper personMapper;
+    private final EnvironmentEndpoint environmentEndpoint;
 
     public TableViewState getState(Long viewId) {
 
@@ -24,5 +29,26 @@ public class UiViewService {
                 );
 
         return entity.getState();
+    }
+
+    public UiTableView save(TableViewState tableViewState, PersonDTO personDTO) {
+
+        UiTableView entity = new UiTableView();
+        entity.setState(tableViewState);
+        entity.setOwner(personMapper.invertConvert(personDTO));
+        entity = uiViewRepository.save(entity);
+
+        return entity;
+    }
+
+    public UiTableView update(Long viewId, TableViewState tableViewState, PersonDTO personDTO) {
+
+        UiTableView entity = new UiTableView();
+        entity.setId(viewId);
+        entity.setState(tableViewState);
+        entity.setOwner(personMapper.invertConvert(personDTO));
+        entity = uiViewRepository.save(entity);
+
+        return entity;
     }
 }

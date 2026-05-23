@@ -1,5 +1,6 @@
 package fr.siamois.ui.bean.panel.models.panel.list;
 
+import fr.siamois.domain.models.uiview.UiTableView;
 import fr.siamois.domain.services.BookmarkService;
 import fr.siamois.domain.services.UiViewService;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
@@ -67,15 +68,50 @@ public abstract class AbstractListPanel<T extends AbstractEntityDTO> extends Abs
         return bookmarkService.isRessourceBookmarkedByUser(sessionSettingsBean.getUserInfo(), buildBookmarkUrl());
     }
 
+    public void reinitializeView(){
+        applyViewState(tableViewState);
+    }
+
     @Override
     public void togglePanelBookmark() {
         if(Boolean.TRUE.equals(bookmarkService.isRessourceBookmarkedByUser(sessionSettingsBean.getUserInfo(), buildBookmarkUrl()))) {
             bookmarkService.delete(sessionSettingsBean.getUserInfo(), buildBookmarkUrl());
         }
         else {
-            // ADD THE VIEW IF EXIST, DUPLICATE IF NOT YOUR OWN VIEW
+            
+            if(viewId == null) {
+                UiTableView view = uiViewService.save(
+                        tableViewRuntimeMapper.extract(tableModel),
+                        sessionSettingsBean.getAuthenticatedUser());
+                viewId = view.getId();
+                tableViewState = view.getState();
+            }
+
             bookmarkService.save(sessionSettingsBean.getUserInfo(), buildBookmarkUrl(), titleCodeOrTitle);
         }
+    }
+
+    public void updateCurrentBookmark() {
+        if(viewId == null) {
+            // no view to update
+        }
+        else {
+            UiTableView view = uiViewService.update(
+                    viewId,
+                    tableViewRuntimeMapper.extract(tableModel),
+                    sessionSettingsBean.getAuthenticatedUser());
+            tableViewState = view.getState();
+        }
+    }
+
+    public void saveAsNewView() {
+        UiTableView view = uiViewService.save(
+                tableViewRuntimeMapper.extract(tableModel),
+                sessionSettingsBean.getAuthenticatedUser());
+        viewId = view.getId();
+        tableViewState = view.getState();
+
+        bookmarkService.save(sessionSettingsBean.getUserInfo(), buildBookmarkUrl(), titleCodeOrTitle);
     }
 
     @Override
@@ -98,12 +134,20 @@ public abstract class AbstractListPanel<T extends AbstractEntityDTO> extends Abs
 
     @Override
     public String buildBookmarkUrl() {
-        return "/recording-unit"
-                + "?viewId=" + viewId;
+        String url = this.ressourceUri();
+
+        if (viewId != null) {
+            url += "?viewId=" + viewId;
+        }
+
+        return url;
     }
 
     @Override
     public void applyViewState(TableViewState state) {
+
+        lazyDataModel.setInitialized(false);
+
         if (state == null) {
             return;
         }

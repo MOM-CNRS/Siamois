@@ -94,6 +94,7 @@ public abstract class AbstractSingleEntity<T extends AbstractEntityDTO>
         }
     }
 
+
     @Override
     public boolean isBookmarked(
 
