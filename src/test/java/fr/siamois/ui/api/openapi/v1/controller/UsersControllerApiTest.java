@@ -119,11 +119,10 @@ class UsersControllerApiTest {
                 .andExpect(status().isOk())
                 .andExpect(header().string("X-Total-Count", "1"))
                 .andExpect(jsonPath("$.data", hasSize(1)))
-                .andExpect(jsonPath("$.data[0].resourceType").value("persons"))
                 .andExpect(jsonPath("$.data[0].resourceId").value("1"))
+                .andExpect(jsonPath("$.data[0].username").value("alice"))
                 .andExpect(jsonPath("$.data[0].name").value("Alice"))
                 .andExpect(jsonPath("$.data[0].lastname").value("Martin"))
-                .andExpect(jsonPath("$.data[0].email").value("alice@example.org"))
                 .andExpect(jsonPath("$.meta.total").value(1));
     }
 

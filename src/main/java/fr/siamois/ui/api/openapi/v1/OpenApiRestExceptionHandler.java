@@ -1,5 +1,7 @@
 package fr.siamois.ui.api.openapi.v1;
 
+import fr.siamois.ui.api.openapi.v1.exception.SyncRevisionConflictException;
+import fr.siamois.ui.api.openapi.v1.response.sync.SyncConflictResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
@@ -37,6 +39,13 @@ public class OpenApiRestExceptionHandler {
                 "message",
                 "Invalid or malformed JSON body. Use strict JSON with double-quoted keys and strings, "
                         + "e.g. {\"name\":\"value\"}. Ensure Content-Type is application/json."));
+    }
+
+    @ExceptionHandler(SyncRevisionConflictException.class)
+    public ResponseEntity<SyncConflictResponse> syncRevisionConflict(
+            SyncRevisionConflictException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(new SyncConflictResponse(ex.getConflictData()));
     }
 
     @ExceptionHandler(ResponseStatusException.class)

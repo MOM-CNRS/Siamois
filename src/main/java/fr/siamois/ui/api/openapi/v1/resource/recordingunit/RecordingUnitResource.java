@@ -23,6 +23,9 @@ import java.time.OffsetDateTime;
 public class RecordingUnitResource
         extends RecordingUnitResourceIdentifier {
 
+    @Schema(description = "Révision de synchronisation (optimistic locking)")
+    private Long syncRevision;
+
     private String identifier;
     private String fullIdentifier;
 
