@@ -148,6 +148,12 @@ public class PanelFactory {
                 .build();
     }
 
+    public RecordingUnitListPanel createRecordingUnitListPanel(Long viewId) {
+        return new RecordingUnitListPanel.RecordingUnitListPanelBuilder(recordingUnitListPanelProvider)
+                .viewId(viewId)
+                .build();
+    }
+
     public SpecimenListPanel createSpecimenListPanel() {
         return new SpecimenListPanel.Builder(specimenListPanel)
                 .build();

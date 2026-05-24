@@ -107,7 +107,7 @@ public class NavBean implements Serializable {
     }
 
     public void addToBookmarkedPanels(AbstractPanel panel) {
-        bookmarkedPanels.add(bookmarkService.save(sessionSettingsBean.getUserInfo(), panel));
+        bookmarkService.save(sessionSettingsBean.getUserInfo(), panel);
     }
 
     public void removeFromBookmarkedPanels(AbstractPanel panel) {

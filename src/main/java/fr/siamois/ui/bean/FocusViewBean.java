@@ -11,6 +11,8 @@ import lombok.RequiredArgsConstructor;
 
 import java.io.Serializable;
 import java.util.Base64;
+import java.util.HashMap;
+import java.util.Map;
 
 @Named
 @ViewScoped
@@ -36,61 +38,90 @@ public class FocusViewBean implements Serializable {
     private String secondaryToken;
 
     private AbstractPanel resolvePanel(String path) {
-        // Remove leading '/' if present
+
         if (path.startsWith("/")) {
             path = path.substring(1);
         }
 
-        String[] parts = path.split("/");
-        String type = parts[0];
+        String[] pathAndQuery = path.split("\\?", 2);
 
-        // Séparer l'ID du paramètre (ex: "3?tab=2" -> id = "3", tab = "2")
-        Long id = null;
-        Integer tabParam = null;
-        if (parts.length > 1) {
-            String idWithParam = parts[1];
-            if (idWithParam.contains("?")) {
-                String[] idAndParam = idWithParam.split("\\?", 2);
-                id = Long.parseLong(idAndParam[0]);
-                // Extraire le paramètre "tab" si présent
-                String[] params = idAndParam[1].split("&");
-                for (String param : params) {
-                    if (param.startsWith("tab=")) {
-                        tabParam = Integer.parseInt(param.substring(4));
-                        break;
-                    }
+        String cleanPath = pathAndQuery[0];
+
+        Map<String, String> queryParams = new HashMap<>();
+
+        if (pathAndQuery.length > 1) {
+
+            String query = pathAndQuery[1];
+
+            for (String param : query.split("&")) {
+
+                String[] kv = param.split("=", 2);
+
+                if (kv.length == 2) {
+                    queryParams.put(kv[0], kv[1]);
                 }
-            } else {
-                id = Long.parseLong(idWithParam);
             }
         }
 
-        // Déterminer si c'est un panel de liste ou un panel unitaire
+        String[] parts = cleanPath.split("/");
+
+        String type = parts[0];
+
+        Long id = parts.length > 1
+                ? Long.parseLong(parts[1])
+                : null;
+
+        Integer tabParam = queryParams.containsKey("tab")
+                ? Integer.parseInt(queryParams.get("tab"))
+                : null;
+
+        Long viewId = queryParams.containsKey("viewId")
+                ? Long.parseLong(queryParams.get("viewId"))
+                : null;
+
         boolean isListPanel = id == null;
-// Créer le panel
+
         AbstractPanel panel = switch (type) {
+
             case "recording-unit" ->
-                    isListPanel ? panelFactory.createRecordingUnitListPanel()
+                    isListPanel
+                            ? panelFactory.createRecordingUnitListPanel(viewId)
                             : panelFactory.createRecordingUnitPanel(id);
+
             case "action-unit" ->
-                    isListPanel ? panelFactory.createActionUnitListPanel()
+                    isListPanel
+                            ? panelFactory.createActionUnitListPanel()
                             : panelFactory.createActionUnitPanel(id);
+
             case "spatial-unit" ->
-                    isListPanel ? panelFactory.createSpatialUnitListPanel()
+                    isListPanel
+                            ? panelFactory.createSpatialUnitListPanel()
                             : panelFactory.createSpatialUnitPanel(id);
+
             case "specimen" ->
-                    isListPanel ? panelFactory.createSpecimenListPanel()
+                    isListPanel
+                            ? panelFactory.createSpecimenListPanel()
                             : panelFactory.createSpecimenPanel(id);
+
             case "container" ->
-                    isListPanel ? panelFactory.createContainerListPanel() :
-            null;
-            case "welcome" -> panelFactory.createWelcomePanel();
-            default -> throw new IllegalArgumentException("Unknown panel type: " + type);
+                    isListPanel
+                            ? panelFactory.createContainerListPanel()
+                            : null;
+
+            case "welcome" ->
+                    panelFactory.createWelcomePanel();
+
+            default ->
+                    throw new IllegalArgumentException(
+                            "Unknown panel type: " + type
+                    );
         };
 
-        // Si c'est un panel unitaire et qu'un tab est spécifié, appliquer le paramètre
-        if (!isListPanel && tabParam != null && panel instanceof AbstractSingleEntityPanel abstractSingleEntityPanel) {
-            abstractSingleEntityPanel.setActiveTabIndex(tabParam);
+        if (!isListPanel
+                && tabParam != null
+                && panel instanceof AbstractSingleEntityPanel singlePanel) {
+
+            singlePanel.setActiveTabIndex(tabParam);
         }
 
         return panel;
