@@ -1,6 +1,10 @@
 package fr.siamois.ui.api.openapi.v1.service;
 
 import fr.siamois.domain.models.exceptions.vocabulary.NoConfigForFieldException;
+import fr.siamois.domain.models.auth.Person;
+import fr.siamois.domain.models.exceptions.recordingunit.FailedRecordingUnitSaveException;
+import fr.siamois.domain.models.form.customfield.CustomFieldDateTime;
+import fr.siamois.domain.models.form.customfield.CustomFieldSelectOnePerson;
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.customfield.CustomFieldSelectOneFromFieldCode;
 import fr.siamois.domain.models.form.customfield.CustomFieldText;
@@ -27,12 +31,16 @@ import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.specimen.SpecimenService;
 import fr.siamois.domain.services.vocabulary.FieldConfigurationService;
 import fr.siamois.dto.StratigraphicRelationshipDTO;
+import fr.siamois.dto.api.AccessibleProjectForApi;
+import fr.siamois.dto.entity.ActionUnitDTO;
+import fr.siamois.dto.entity.ActionUnitSummaryDTO;
 import fr.siamois.dto.entity.ConceptDTO;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.dto.entity.RecordingUnitDTO;
 import fr.siamois.dto.entity.RecordingUnitSummaryDTO;
 import fr.siamois.dto.entity.SpecimenDTO;
+import fr.siamois.dto.entity.SpatialUnitSummaryDTO;
 import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
 import fr.siamois.ui.api.openapi.v1.mapper.RecordingUnitResponseMapper;
@@ -45,6 +53,7 @@ import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitFormBund
 import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitMobileDetailData;
 import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitRelationsData;
 import fr.siamois.ui.api.openapi.v1.exception.SyncRevisionConflictException;
+import fr.siamois.ui.api.openapi.v1.request.recordingunit.RecordingUnitCreateRequest;
 import fr.siamois.ui.api.openapi.v1.request.recordingunit.RecordingUnitPatchRequest;
 import fr.siamois.mapper.ConceptMapper;
 import fr.siamois.mapper.PersonMapper;
@@ -57,6 +66,7 @@ import fr.siamois.ui.viewmodel.CustomFormResponseViewModel;
 import fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerDateTimeViewModel;
 import fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerIntegerViewModel;
 import fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerSelectOneFromFieldCodeViewModel;
+import fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerSelectOnePersonViewModel;
 import fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerTextViewModel;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -69,6 +79,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.HashMap;
@@ -1004,6 +1015,561 @@ class RecordingUnitOpenApiServiceTest {
         assertThatThrownBy(() -> service.patchRecordingUnit("1026", request, personDto, SCOPE, "fr"))
                 .isInstanceOf(ResponseStatusException.class)
                 .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN));
+    }
+
+    @Test
+    void applySystemProjectFormFieldAnswers_emptyAnswers_noOp() {
+        ActionUnitDTO shell = new ActionUnitDTO();
+        service.applySystemProjectFormFieldAnswers(shell, Map.of(), personDto, "fr");
+        verifyNoInteractions(formService);
+    }
+
+    @Test
+    void applySystemProjectFormFieldAnswers_withoutOrganization_throws400() {
+        ActionUnitDTO shell = new ActionUnitDTO();
+        assertThatThrownBy(() -> service.applySystemProjectFormFieldAnswers(shell, Map.of("1", "x"), personDto, "fr"))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST));
+    }
+
+    @Test
+    void applySystemProjectFormFieldAnswers_appliesAnswersOnShell() {
+        InstitutionDTO inst = new InstitutionDTO();
+        inst.setId(10L);
+        ActionUnitDTO shell = new ActionUnitDTO();
+        shell.setCreatedByInstitution(inst);
+
+        CustomFieldText textField = mock(CustomFieldText.class);
+        when(textField.getId()).thenReturn(11L);
+        FormUiDto formUiDto = formUiDtoWithOneField(textField);
+        when(conversionService.convert(ActionUnit.DETAILS_FORM, FormUiDto.class)).thenReturn(formUiDto);
+
+        CustomFieldAnswerTextViewModel answerVm = new CustomFieldAnswerTextViewModel();
+        CustomFormResponseViewModel responseVm = new CustomFormResponseViewModel();
+        Map<CustomField, fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerViewModel> answers = new HashMap<>();
+        answers.put(textField, answerVm);
+        responseVm.setAnswers(answers);
+        when(formService.initOrReuseResponse(isNull(), same(shell), any(FieldSource.class), eq(true))).thenReturn(responseVm);
+
+        service.applySystemProjectFormFieldAnswers(shell, Map.of("11", "projet"), personDto, "fr");
+
+        verify(formService).applyTypedValueToAnswer(same(answerVm), eq("projet"));
+        verify(formService).updateJpaEntityFromResponse(responseVm, shell);
+    }
+
+    @Test
+    void buildFindMobilierForm_withoutOrganization_throws400() {
+        SpecimenDTO spec = new SpecimenDTO();
+        spec.setId(1L);
+        spec.setType(new ConceptDTO());
+        when(specimenService.findAccessibleByKey("1", SCOPE)).thenReturn(Optional.of(spec));
+
+        assertThatThrownBy(() -> service.buildFindMobilierForm("1", personDto, SCOPE, "fr"))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST));
+    }
+
+    @Test
+    void buildFindMobilierForm_withoutType_throws400() {
+        InstitutionDTO inst = new InstitutionDTO();
+        inst.setId(10L);
+        SpecimenDTO spec = new SpecimenDTO();
+        spec.setId(1L);
+        spec.setCreatedByInstitution(inst);
+        when(specimenService.findAccessibleByKey("1", SCOPE)).thenReturn(Optional.of(spec));
+
+        assertThatThrownBy(() -> service.buildFindMobilierForm("1", personDto, SCOPE, "fr"))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST));
+    }
+
+    @Test
+    void buildFindMobilierUiForm_whenFormPresent_returnsBundleAndFields() {
+        InstitutionDTO inst = new InstitutionDTO();
+        inst.setId(10L);
+        when(institutionService.findById(10L)).thenReturn(inst);
+
+        CustomForm customForm = mock(CustomForm.class);
+        when(customForm.getId()).thenReturn(3L);
+        when(customForm.getName()).thenReturn("Mobilier");
+        when(customForm.getDescription()).thenReturn("desc");
+        when(customForm.getLayout()).thenReturn(List.of());
+        when(formService.findCustomFormByRecordingUnitTypeAndInstitutionId(null, inst)).thenReturn(customForm);
+
+        CustomFieldText textField = mock(CustomFieldText.class);
+        when(textField.getId()).thenReturn(20L);
+        when(textField.getLabel()).thenReturn("Libellé");
+        when(textField.getHint()).thenReturn(null);
+        when(textField.getValueBinding()).thenReturn(null);
+        when(textField.getIsSystemField()).thenReturn(false);
+        when(conversionService.convert(customForm, FormUiDto.class)).thenReturn(formUiDtoWithOneField(textField));
+        when(customFormLayoutConverter.convertToDatabaseColumn(any())).thenReturn("[]");
+
+        FindMobilierFormData data = service.buildFindMobilierUiForm(10L, personDto, "fr");
+
+        assertThat(data.form()).isNotNull();
+        assertThat(data.form().formId()).isEqualTo(3L);
+        assertThat(data.fields()).containsKey("20");
+    }
+
+    @Test
+    void createRecordingUnit_projectWithoutOrganization_throws400() {
+        ActionUnitDTO au = new ActionUnitDTO();
+        au.setId(5L);
+        when(actionUnitService.findAccessibleProjectByKey("5", SCOPE))
+                .thenReturn(new AccessibleProjectForApi(au, 0, 0));
+
+        RecordingUnitCreateRequest request = new RecordingUnitCreateRequest();
+        request.setActionUnitId("5");
+        request.setRecordingUnitTypeConceptId(42L);
+
+        assertThatThrownBy(() -> service.createRecordingUnit(request, personDto, SCOPE, "fr"))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST));
+    }
+
+    @Test
+    void patchRecordingUnit_nullCurrentRevision_treatsAsZero() {
+        InstitutionDTO inst = new InstitutionDTO();
+        inst.setId(10L);
+        ruDto.setCreatedByInstitution(inst);
+        ruDto.setType(new ConceptDTO());
+        when(ruEntity.getSyncRevision()).thenReturn(null);
+
+        when(recordingUnitService.findAccessibleRecordingUnitWithEntity(eq("1026"), eq(SCOPE), isNull()))
+                .thenReturn(new RecordingUnitService.AccessibleRecordingUnit(ruEntity, ruDto));
+        when(recordingUnitResponseMapper.convert(ruDto)).thenReturn(ruResource);
+        when(formService.findCustomFormByRecordingUnitTypeAndInstitutionId(ruDto.getType(), inst)).thenReturn(null);
+        when(permissionService.hasWritePermission(any(), same(ruDto))).thenReturn(true);
+
+        RecordingUnitPatchRequest request = new RecordingUnitPatchRequest();
+        request.setExpectedRevision(0L);
+
+        RecordingUnitMobileDetailData data = service.patchRecordingUnit("1026", request, personDto, SCOPE, "fr");
+
+        assertThat(data.recordingUnit().getId()).isEqualTo("1026");
+    }
+
+    @Test
+    void createRecordingUnit_missingTypeConceptId_throws400() {
+        RecordingUnitCreateRequest request = new RecordingUnitCreateRequest();
+        request.setActionUnitId("proj");
+
+        assertThatThrownBy(() -> service.createRecordingUnit(request, personDto, SCOPE, "fr"))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST));
+    }
+
+    @Test
+    void createRecordingUnit_withoutWritePermission_throws403() {
+        InstitutionDTO inst = new InstitutionDTO();
+        inst.setId(10L);
+        ActionUnitDTO au = new ActionUnitDTO();
+        au.setId(5L);
+        au.setCreatedByInstitution(inst);
+        when(actionUnitService.findAccessibleProjectByKey("5", SCOPE))
+                .thenReturn(new AccessibleProjectForApi(au, 0, 0));
+        when(permissionService.hasWritePermission(any(UserInfo.class), same(au))).thenReturn(false);
+
+        RecordingUnitCreateRequest request = new RecordingUnitCreateRequest();
+        request.setActionUnitId("5");
+        request.setRecordingUnitTypeConceptId(42L);
+
+        assertThatThrownBy(() -> service.createRecordingUnit(request, personDto, SCOPE, "fr"))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN));
+    }
+
+    @Test
+    void createRecordingUnit_noCustomForm_throws400() {
+        InstitutionDTO inst = new InstitutionDTO();
+        inst.setId(10L);
+        ActionUnitDTO au = new ActionUnitDTO();
+        au.setId(5L);
+        au.setCreatedByInstitution(inst);
+        when(actionUnitService.findAccessibleProjectByKey("5", SCOPE))
+                .thenReturn(new AccessibleProjectForApi(au, 0, 0));
+        when(permissionService.hasWritePermission(any(UserInfo.class), same(au))).thenReturn(true);
+        Concept typeConcept = new Concept();
+        typeConcept.setId(42L);
+        when(conceptRepository.findById(42L)).thenReturn(Optional.of(typeConcept));
+        when(conceptMapper.convert(typeConcept)).thenReturn(new ConceptDTO());
+        when(formService.findCustomFormByRecordingUnitTypeAndInstitutionId(any(), eq(inst))).thenReturn(null);
+
+        RecordingUnitCreateRequest request = new RecordingUnitCreateRequest();
+        request.setActionUnitId("5");
+        request.setRecordingUnitTypeConceptId(42L);
+
+        assertThatThrownBy(() -> service.createRecordingUnit(request, personDto, SCOPE, "fr"))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST));
+    }
+
+    @Test
+    void createRecordingUnit_success_persistsAndReturnsDetail() throws Exception {
+        InstitutionDTO inst = new InstitutionDTO();
+        inst.setId(10L);
+        ActionUnitDTO au = new ActionUnitDTO();
+        au.setId(5L);
+        au.setCreatedByInstitution(inst);
+        au.setRecordingUnitIdentifierFormat("RU-%s");
+        when(actionUnitService.findAccessibleProjectByKey("5", SCOPE))
+                .thenReturn(new AccessibleProjectForApi(au, 0, 0));
+        when(permissionService.hasWritePermission(any(UserInfo.class), same(au))).thenReturn(true);
+
+        Concept typeConcept = new Concept();
+        typeConcept.setId(42L);
+        ConceptDTO typeDto = new ConceptDTO();
+        typeDto.setId(42L);
+        when(conceptRepository.findById(42L)).thenReturn(Optional.of(typeConcept));
+        when(conceptMapper.convert(typeConcept)).thenReturn(typeDto);
+
+        CustomForm customForm = mock(CustomForm.class);
+        when(customForm.getLayout()).thenReturn(List.of());
+        when(formService.findCustomFormByRecordingUnitTypeAndInstitutionId(typeDto, inst)).thenReturn(customForm);
+
+        SpatialUnitSummaryDTO su = new SpatialUnitSummaryDTO();
+        su.setId(77L);
+        when(spatialUnitService.getSpatialUnitOptionsFor(any(RecordingUnitDTO.class))).thenReturn(List.of(su));
+
+        CustomFieldInteger intField = mock(CustomFieldInteger.class);
+        when(intField.getId()).thenReturn(8L);
+        when(intField.getLabel()).thenReturn("n");
+        when(intField.getHint()).thenReturn(null);
+        when(intField.getValueBinding()).thenReturn(null);
+        when(intField.getIsSystemField()).thenReturn(false);
+        FormUiDto formUiDto = formUiDtoWithOneField(intField);
+        when(conversionService.convert(customForm, FormUiDto.class)).thenReturn(formUiDto);
+
+        CustomFieldAnswerIntegerViewModel answerVm = new CustomFieldAnswerIntegerViewModel();
+        CustomFormResponseViewModel responseVm = new CustomFormResponseViewModel();
+        Map<CustomField, fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerViewModel> answers = new HashMap<>();
+        answers.put(intField, answerVm);
+        responseVm.setAnswers(answers);
+        when(formService.initOrReuseResponse(isNull(), any(RecordingUnitDTO.class), any(FieldSource.class), eq(true)))
+                .thenReturn(responseVm);
+
+        RecordingUnitDTO saved = new RecordingUnitDTO();
+        saved.setId(3000L);
+        saved.setActionUnit(new ActionUnitSummaryDTO(au));
+        when(recordingUnitService.save(any(RecordingUnitDTO.class))).thenReturn(saved);
+        when(recordingUnitService.generateFullIdentifier(any(), any())).thenReturn("RU-3000");
+        when(recordingUnitService.fullIdentifierAlreadyExistInAction(saved)).thenReturn(false);
+
+        ruDto.setCreatedByInstitution(inst);
+        ruDto.setType(typeDto);
+        when(recordingUnitService.findAccessibleRecordingUnitWithEntity(eq("3000"), eq(SCOPE), isNull()))
+                .thenReturn(new RecordingUnitService.AccessibleRecordingUnit(ruEntity, ruDto));
+        when(recordingUnitResponseMapper.convert(ruDto)).thenReturn(ruResource);
+        when(formService.findCustomFormByRecordingUnitTypeAndInstitutionId(typeDto, inst)).thenReturn(customForm);
+        when(customFormLayoutConverter.convertToDatabaseColumn(any())).thenReturn("[]");
+        when(formService.readAnswerValueForApi(any())).thenReturn(null);
+
+        RecordingUnitCreateRequest request = new RecordingUnitCreateRequest();
+        request.setActionUnitId("5");
+        request.setRecordingUnitTypeConceptId(42L);
+        request.setFieldAnswers(Map.of("8", 12));
+
+        RecordingUnitMobileDetailData data = service.createRecordingUnit(request, personDto, SCOPE, "fr");
+
+        assertThat(data.recordingUnit().getId()).isEqualTo("1026");
+        verify(formService).applyTypedValueToAnswer(same(answerVm), eq(12));
+        verify(recordingUnitService, org.mockito.Mockito.times(2)).save(any(RecordingUnitDTO.class));
+    }
+
+    @Test
+    void createRecordingUnit_saveFailure_throws500() {
+        InstitutionDTO inst = new InstitutionDTO();
+        inst.setId(10L);
+        ActionUnitDTO au = new ActionUnitDTO();
+        au.setId(5L);
+        au.setCreatedByInstitution(inst);
+        when(actionUnitService.findAccessibleProjectByKey("5", SCOPE))
+                .thenReturn(new AccessibleProjectForApi(au, 0, 0));
+        when(permissionService.hasWritePermission(any(UserInfo.class), same(au))).thenReturn(true);
+        Concept typeConcept = new Concept();
+        typeConcept.setId(42L);
+        ConceptDTO typeDto = new ConceptDTO();
+        when(conceptRepository.findById(42L)).thenReturn(Optional.of(typeConcept));
+        when(conceptMapper.convert(typeConcept)).thenReturn(typeDto);
+        CustomForm customForm = mock(CustomForm.class);
+        when(formService.findCustomFormByRecordingUnitTypeAndInstitutionId(typeDto, inst)).thenReturn(customForm);
+        when(spatialUnitService.getSpatialUnitOptionsFor(any())).thenReturn(List.of());
+        when(conversionService.convert(customForm, FormUiDto.class)).thenReturn(new FormUiDto());
+        CustomFormResponseViewModel responseVm = new CustomFormResponseViewModel();
+        responseVm.setAnswers(Map.of());
+        when(formService.initOrReuseResponse(isNull(), any(), any(), eq(true))).thenReturn(responseVm);
+        when(recordingUnitService.save(any(RecordingUnitDTO.class)))
+                .thenThrow(new FailedRecordingUnitSaveException("fail"));
+
+        RecordingUnitCreateRequest request = new RecordingUnitCreateRequest();
+        request.setActionUnitId("5");
+        request.setRecordingUnitTypeConceptId(42L);
+
+        assertThatThrownBy(() -> service.createRecordingUnit(request, personDto, SCOPE, "fr"))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR));
+    }
+
+    @Test
+    void patchRecordingUnit_withoutOrganization_throws400() {
+        ruDto.setCreatedByInstitution(null);
+        when(recordingUnitService.findAccessibleRecordingUnitWithEntity(eq("1026"), eq(SCOPE), isNull()))
+                .thenReturn(new RecordingUnitService.AccessibleRecordingUnit(ruEntity, ruDto));
+
+        assertThatThrownBy(() -> service.patchRecordingUnit("1026", new RecordingUnitPatchRequest(), personDto, SCOPE, "fr"))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST));
+    }
+
+    @Test
+    void patchRecordingUnit_noCustomFormWithAnswers_throws400() {
+        InstitutionDTO inst = new InstitutionDTO();
+        inst.setId(10L);
+        ruDto.setCreatedByInstitution(inst);
+        ruDto.setType(new ConceptDTO());
+        when(recordingUnitService.findAccessibleRecordingUnitWithEntity(eq("1026"), eq(SCOPE), isNull()))
+                .thenReturn(new RecordingUnitService.AccessibleRecordingUnit(ruEntity, ruDto));
+        when(permissionService.hasWritePermission(any(), same(ruDto))).thenReturn(true);
+        when(formService.findCustomFormByRecordingUnitTypeAndInstitutionId(ruDto.getType(), inst)).thenReturn(null);
+
+        RecordingUnitPatchRequest request = new RecordingUnitPatchRequest();
+        request.setFieldAnswers(Map.of("1", "x"));
+
+        assertThatThrownBy(() -> service.patchRecordingUnit("1026", request, personDto, SCOPE, "fr"))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST));
+    }
+
+    @Test
+    void patchRecordingUnit_withFieldAnswers_persistsAndReturnsDetail() {
+        InstitutionDTO inst = new InstitutionDTO();
+        inst.setId(10L);
+        ruDto.setCreatedByInstitution(inst);
+        ConceptDTO type = new ConceptDTO();
+        type.setId(3L);
+        ruDto.setType(type);
+
+        CustomForm customForm = mock(CustomForm.class);
+        when(customForm.getId()).thenReturn(10L);
+        when(customForm.getLayout()).thenReturn(List.of());
+
+        CustomFieldText textField = mock(CustomFieldText.class);
+        when(textField.getId()).thenReturn(15L);
+        when(textField.getLabel()).thenReturn("desc");
+        when(textField.getHint()).thenReturn(null);
+        when(textField.getValueBinding()).thenReturn("description");
+        when(textField.getIsSystemField()).thenReturn(false);
+        FormUiDto formUiDto = formUiDtoWithOneField(textField);
+
+        CustomFieldAnswerTextViewModel answerVm = new CustomFieldAnswerTextViewModel();
+        CustomFormResponseViewModel responseVm = new CustomFormResponseViewModel();
+        Map<CustomField, fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerViewModel> answers = new HashMap<>();
+        answers.put(textField, answerVm);
+        responseVm.setAnswers(answers);
+
+        when(recordingUnitService.findAccessibleRecordingUnitWithEntity(eq("1026"), eq(SCOPE), isNull()))
+                .thenReturn(new RecordingUnitService.AccessibleRecordingUnit(ruEntity, ruDto));
+        when(permissionService.hasWritePermission(any(), same(ruDto))).thenReturn(true);
+        when(formService.findCustomFormByRecordingUnitTypeAndInstitutionId(type, inst)).thenReturn(customForm);
+        when(conversionService.convert(customForm, FormUiDto.class)).thenReturn(formUiDto);
+        when(formService.initOrReuseResponse(isNull(), same(ruDto), any(FieldSource.class), eq(true))).thenReturn(responseVm);
+        when(recordingUnitService.save(ruDto)).thenReturn(ruDto);
+        when(recordingUnitResponseMapper.convert(ruDto)).thenReturn(ruResource);
+        when(customFormLayoutConverter.convertToDatabaseColumn(any())).thenReturn("[]");
+        when(formService.readAnswerValueForApi(same(answerVm))).thenReturn("patched");
+
+        RecordingUnitPatchRequest request = new RecordingUnitPatchRequest();
+        request.setFieldAnswers(Map.of("15", "patched", "bad-key", "ignored"));
+
+        RecordingUnitMobileDetailData data = service.patchRecordingUnit("1026", request, personDto, SCOPE, "fr");
+
+        assertThat(data.recordingUnit().getId()).isEqualTo("1026");
+        verify(formService).applyTypedValueToAnswer(same(answerVm), eq("patched"));
+        verify(recordingUnitService).save(ruDto);
+    }
+
+    @Test
+    void patchRecordingUnit_coercesDateTimeAndConceptAnswers() {
+        InstitutionDTO inst = new InstitutionDTO();
+        inst.setId(10L);
+        ruDto.setCreatedByInstitution(inst);
+        ConceptDTO type = new ConceptDTO();
+        type.setId(3L);
+        ruDto.setType(type);
+
+        CustomForm customForm = mock(CustomForm.class);
+        when(customForm.getLayout()).thenReturn(List.of());
+
+        CustomFieldDateTime dateField = mock(CustomFieldDateTime.class);
+        when(dateField.getId()).thenReturn(21L);
+        when(dateField.getLabel()).thenReturn("date");
+        when(dateField.getHint()).thenReturn(null);
+        when(dateField.getValueBinding()).thenReturn(null);
+        when(dateField.getIsSystemField()).thenReturn(false);
+
+        CustomFieldSelectOneFromFieldCode conceptField = mock(CustomFieldSelectOneFromFieldCode.class);
+        when(conceptField.getId()).thenReturn(22L);
+        when(conceptField.getLabel()).thenReturn("concept");
+        when(conceptField.getHint()).thenReturn(null);
+        when(conceptField.getValueBinding()).thenReturn(null);
+        when(conceptField.getIsSystemField()).thenReturn(false);
+
+        FormUiDto formUiDto = new FormUiDto();
+        CustomColUiDto col1 = new CustomColUiDto();
+        col1.setField(dateField);
+        CustomColUiDto col2 = new CustomColUiDto();
+        col2.setField(conceptField);
+        CustomRowUiDto row = new CustomRowUiDto();
+        row.setColumns(List.of(col1, col2));
+        CustomFormPanelUiDto panel = new CustomFormPanelUiDto();
+        panel.setRows(List.of(row));
+        formUiDto.setLayout(List.of(panel));
+
+        CustomFieldAnswerDateTimeViewModel dateVm = new CustomFieldAnswerDateTimeViewModel();
+        CustomFieldAnswerSelectOneFromFieldCodeViewModel conceptVm = new CustomFieldAnswerSelectOneFromFieldCodeViewModel();
+        CustomFormResponseViewModel responseVm = new CustomFormResponseViewModel();
+        Map<CustomField, fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerViewModel> answers = new HashMap<>();
+        answers.put(dateField, dateVm);
+        answers.put(conceptField, conceptVm);
+        responseVm.setAnswers(answers);
+
+        OffsetDateTime parsed = OffsetDateTime.parse("2025-05-19T10:00:00Z");
+        Concept concept = new Concept();
+        concept.setId(99L);
+        ConceptDTO conceptDto = new ConceptDTO();
+        conceptDto.setId(99L);
+
+        when(recordingUnitService.findAccessibleRecordingUnitWithEntity(any(), any(), any()))
+                .thenReturn(new RecordingUnitService.AccessibleRecordingUnit(ruEntity, ruDto));
+        when(permissionService.hasWritePermission(any(), same(ruDto))).thenReturn(true);
+        when(formService.findCustomFormByRecordingUnitTypeAndInstitutionId(type, inst)).thenReturn(customForm);
+        when(conversionService.convert(customForm, FormUiDto.class)).thenReturn(formUiDto);
+        when(formService.initOrReuseResponse(isNull(), same(ruDto), any(FieldSource.class), eq(true))).thenReturn(responseVm);
+        when(conceptRepository.findById(99L)).thenReturn(Optional.of(concept));
+        when(conceptMapper.convert(concept)).thenReturn(conceptDto);
+        when(recordingUnitService.save(ruDto)).thenReturn(ruDto);
+        when(recordingUnitResponseMapper.convert(ruDto)).thenReturn(ruResource);
+        when(customFormLayoutConverter.convertToDatabaseColumn(any())).thenReturn("[]");
+        when(formService.readAnswerValueForApi(any())).thenReturn(null);
+
+        RecordingUnitPatchRequest request = new RecordingUnitPatchRequest();
+        request.setFieldAnswers(Map.of(
+                "21", "2025-05-19T10:00:00Z",
+                "22", Map.of("id", 99)));
+
+        service.patchRecordingUnit("1026", request, personDto, SCOPE, "fr");
+
+        verify(formService).applyTypedValueToAnswer(same(dateVm), eq(parsed));
+        verify(formService).applyTypedValueToAnswer(same(conceptVm), eq(conceptDto));
+    }
+
+    @Test
+    void patchRecordingUnit_unknownConcept_throws400() {
+        InstitutionDTO inst = new InstitutionDTO();
+        inst.setId(10L);
+        ruDto.setCreatedByInstitution(inst);
+        ConceptDTO type = new ConceptDTO();
+        ruDto.setType(type);
+
+        CustomForm customForm = mock(CustomForm.class);
+        CustomFieldSelectOneFromFieldCode conceptField = mock(CustomFieldSelectOneFromFieldCode.class);
+        when(conceptField.getId()).thenReturn(22L);
+
+        CustomFieldAnswerSelectOneFromFieldCodeViewModel conceptVm = new CustomFieldAnswerSelectOneFromFieldCodeViewModel();
+        CustomFormResponseViewModel responseVm = new CustomFormResponseViewModel();
+        responseVm.setAnswers(Map.of(conceptField, conceptVm));
+
+        when(recordingUnitService.findAccessibleRecordingUnitWithEntity(any(), any(), any()))
+                .thenReturn(new RecordingUnitService.AccessibleRecordingUnit(ruEntity, ruDto));
+        when(permissionService.hasWritePermission(any(), same(ruDto))).thenReturn(true);
+        when(formService.findCustomFormByRecordingUnitTypeAndInstitutionId(type, inst)).thenReturn(customForm);
+        when(conversionService.convert(customForm, FormUiDto.class)).thenReturn(formUiDtoWithOneField(conceptField));
+        when(formService.initOrReuseResponse(isNull(), any(), any(FieldSource.class), eq(true))).thenReturn(responseVm);
+        when(conceptRepository.findById(404L)).thenReturn(Optional.empty());
+
+        RecordingUnitPatchRequest request = new RecordingUnitPatchRequest();
+        request.setFieldAnswers(Map.of("22", 404L));
+
+        assertThatThrownBy(() -> service.patchRecordingUnit("1026", request, personDto, SCOPE, "fr"))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST));
+    }
+
+    @Test
+    void patchRecordingUnit_saveFailure_throws500() {
+        InstitutionDTO inst = new InstitutionDTO();
+        inst.setId(10L);
+        ruDto.setCreatedByInstitution(inst);
+        ruDto.setType(new ConceptDTO());
+        CustomForm customForm = mock(CustomForm.class);
+        CustomFieldText textField = mock(CustomFieldText.class);
+        when(textField.getId()).thenReturn(1L);
+        CustomFieldAnswerTextViewModel answerVm = new CustomFieldAnswerTextViewModel();
+        CustomFormResponseViewModel responseVm = new CustomFormResponseViewModel();
+        responseVm.setAnswers(Map.of(textField, answerVm));
+
+        when(recordingUnitService.findAccessibleRecordingUnitWithEntity(any(), any(), any()))
+                .thenReturn(new RecordingUnitService.AccessibleRecordingUnit(ruEntity, ruDto));
+        when(permissionService.hasWritePermission(any(), same(ruDto))).thenReturn(true);
+        when(formService.findCustomFormByRecordingUnitTypeAndInstitutionId(any(), any())).thenReturn(customForm);
+        when(conversionService.convert(customForm, FormUiDto.class)).thenReturn(formUiDtoWithOneField(textField));
+        when(formService.initOrReuseResponse(isNull(), any(), any(FieldSource.class), eq(true))).thenReturn(responseVm);
+        when(recordingUnitService.save(any(RecordingUnitDTO.class)))
+                .thenThrow(new FailedRecordingUnitSaveException("err"));
+
+        RecordingUnitPatchRequest request = new RecordingUnitPatchRequest();
+        request.setFieldAnswers(Map.of("1", "x"));
+
+        assertThatThrownBy(() -> service.patchRecordingUnit("1026", request, personDto, SCOPE, "fr"))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR));
+    }
+
+    @Test
+    void patchRecordingUnit_coercesPersonSelectOne() {
+        InstitutionDTO inst = new InstitutionDTO();
+        inst.setId(10L);
+        ruDto.setCreatedByInstitution(inst);
+        ConceptDTO type = new ConceptDTO();
+        ruDto.setType(type);
+
+        CustomForm customForm = mock(CustomForm.class);
+        CustomFieldSelectOnePerson personField = mock(CustomFieldSelectOnePerson.class);
+        when(personField.getId()).thenReturn(30L);
+        when(personField.getLabel()).thenReturn("author");
+        when(personField.getHint()).thenReturn(null);
+        when(personField.getValueBinding()).thenReturn(null);
+        when(personField.getIsSystemField()).thenReturn(false);
+
+        CustomFieldAnswerSelectOnePersonViewModel personVm = new CustomFieldAnswerSelectOnePersonViewModel();
+        CustomFormResponseViewModel responseVm = new CustomFormResponseViewModel();
+        responseVm.setAnswers(Map.of(personField, personVm));
+
+        Person person = new Person();
+        person.setId(4L);
+        PersonDTO personResult = new PersonDTO();
+        personResult.setId(4L);
+
+        when(recordingUnitService.findAccessibleRecordingUnitWithEntity(any(), any(), any()))
+                .thenReturn(new RecordingUnitService.AccessibleRecordingUnit(ruEntity, ruDto));
+        when(permissionService.hasWritePermission(any(), same(ruDto))).thenReturn(true);
+        when(formService.findCustomFormByRecordingUnitTypeAndInstitutionId(type, inst)).thenReturn(customForm);
+        when(conversionService.convert(customForm, FormUiDto.class)).thenReturn(formUiDtoWithOneField(personField));
+        when(formService.initOrReuseResponse(isNull(), same(ruDto), any(FieldSource.class), eq(true))).thenReturn(responseVm);
+        when(personService.findById(4L)).thenReturn(person);
+        when(personMapper.convert(person)).thenReturn(personResult);
+        when(recordingUnitService.save(ruDto)).thenReturn(ruDto);
+        when(recordingUnitResponseMapper.convert(ruDto)).thenReturn(ruResource);
+        when(customFormLayoutConverter.convertToDatabaseColumn(any())).thenReturn("[]");
+        when(formService.readAnswerValueForApi(any())).thenReturn(null);
+
+        RecordingUnitPatchRequest request = new RecordingUnitPatchRequest();
+        request.setFieldAnswers(Map.of("30", "4"));
+
+        service.patchRecordingUnit("1026", request, personDto, SCOPE, "fr");
+
+        verify(formService).applyTypedValueToAnswer(same(personVm), eq(personResult));
     }
 
     private static FormUiDto formUiDtoWithOneField(CustomField field) {

@@ -236,9 +236,7 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
         Long actionUnitId = unit.getActionUnit().getId();
         if(isRoot) {
             command = "#{navBean.redirectToBookmarked('/action-unit/"+actionUnitId+"')}";
-        }
-        else {
-
+        } else {
             command = "#{flowBean.addActionUnitToOverview(" + actionUnitId + ", focusViewBean.mainPanel, 2)}";
         }
 
