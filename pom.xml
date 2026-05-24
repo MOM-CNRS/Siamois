@@ -59,6 +59,12 @@
             src/main/resources/META-INF/resources/resources/css/jquery*
         </sonar.exclusions>
         <sonar.coverage.exclusions>
+            <!-- Contrat REST OpenAPI v1 : requêtes, réponses, ressources JSON (pas de logique métier) -->
+            **/ui/api/openapi/v1/request/**,
+            **/ui/api/openapi/v1/response/**,
+            **/ui/api/openapi/v1/resource/**,
+            **/ui/api/openapi/v1/auth/dto/**,
+            **/ui/api/openapi/v1/generic/response/**,
             **/infrastructure/api/dto/**Response.*,
             **/models/**/*.*,
             **/config/**/*.*,
