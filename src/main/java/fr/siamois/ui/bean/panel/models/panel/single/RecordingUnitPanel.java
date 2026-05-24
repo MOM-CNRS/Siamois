@@ -22,7 +22,6 @@ import fr.siamois.ui.bean.panel.models.panel.single.tab.SpecimenTab;
 import fr.siamois.ui.bean.panel.models.panel.single.tab.StratigraphyTab;
 import fr.siamois.ui.form.dto.FormUiDto;
 import fr.siamois.ui.lazydatamodel.RecordingUnitChildrenLazyDataModel;
-import fr.siamois.ui.lazydatamodel.RecordingUnitParentsLazyDataModel;
 import fr.siamois.ui.lazydatamodel.SpecimenInRecordingUnitLazyDataModel;
 import fr.siamois.ui.table.viewmodel.RecordingUnitTableViewModel;
 import fr.siamois.ui.table.viewmodel.SpecimenTableViewModel;
@@ -69,8 +68,6 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
 
     // lazy model for children
     private RecordingUnitChildrenLazyDataModel lazyDataModelChildren ;
-    // lazy model for parents
-    private RecordingUnitParentsLazyDataModel lazyDataModelParents ;
 
     // lazy model for children
     private transient RecordingUnitTableViewModel parentTableModel;
@@ -171,11 +168,6 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
             // Get all the Parents of the recording unit
             selectedCategoriesParents = new ArrayList<>();
             totalParentsCount = 0;
-            lazyDataModelParents = new RecordingUnitParentsLazyDataModel(
-                    recordingUnitService,
-                    langBean,
-                    unit
-            );
 
             // iniy stratigraphy module
             stratigraphyViewModel = new CustomFieldAnswerStratigraphyViewModel();
