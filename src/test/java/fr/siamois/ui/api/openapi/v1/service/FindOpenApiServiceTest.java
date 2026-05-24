@@ -52,6 +52,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 import org.springframework.core.convert.ConversionService;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
@@ -70,6 +72,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.ArgumentMatchers.same;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -78,6 +81,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 class FindOpenApiServiceTest {
 
     private static final Set<Long> SCOPE = Set.of(10L);
@@ -148,8 +152,9 @@ class FindOpenApiServiceTest {
         findResource = new FindResource();
         findResource.setResourceType("finds");
         findResource.setId("99");
-        when(findOpenApiMapper.toResource(any(SpecimenDTO.class))).thenReturn(findResource);
-        when(permissionService.hasWritePermission(any(), any(RecordingUnitDTO.class))).thenReturn(true);
+        lenient().when(findOpenApiMapper.toResource(any(SpecimenDTO.class))).thenReturn(findResource);
+        lenient().when(findOpenApiMapper.toResource(isNull())).thenReturn(findResource);
+        lenient().when(permissionService.hasWritePermission(any(), any(RecordingUnitDTO.class))).thenReturn(true);
     }
 
     // --- createFind ---
@@ -261,7 +266,11 @@ class FindOpenApiServiceTest {
         CustomFieldText textField = textField(2L);
         CustomForm customForm = mock(CustomForm.class);
         FormUiDto formUi = formUiDtoWithFields(intField, textField);
-        CustomFormResponseViewModel responseVm = responseWith(intField, new CustomFieldAnswerIntegerViewModel());
+        CustomFormResponseViewModel responseVm = new CustomFormResponseViewModel();
+        Map<CustomField, CustomFieldAnswerViewModel> answers = new HashMap<>();
+        answers.put(intField, new CustomFieldAnswerIntegerViewModel());
+        answers.put(textField, new CustomFieldAnswerTextViewModel());
+        responseVm.setAnswers(answers);
 
         when(formService.findCustomFormByRecordingUnitTypeAndInstitutionId(typeDto, institution)).thenReturn(customForm);
         when(conversionService.convert(customForm, FormUiDto.class)).thenReturn(formUi);
@@ -495,7 +504,10 @@ class FindOpenApiServiceTest {
         when(specimenService.save(any(SpecimenDTO.class))).thenAnswer(inv -> inv.getArgument(0));
 
         FindCreateRequest request = createRequest("UE-1", "3");
-        request.setFieldAnswers(Map.of("10", "2025-01-02T08:00:00Z", "11", null));
+        Map<String, Object> fieldAnswers = new HashMap<>();
+        fieldAnswers.put("10", "2025-01-02T08:00:00Z");
+        fieldAnswers.put("11", null);
+        request.setFieldAnswers(fieldAnswers);
 
         service.createFind(request, personDto, SCOPE, LANG);
 
@@ -642,7 +654,7 @@ class FindOpenApiServiceTest {
         when(formService.initOrReuseResponse(isNull(), any(SpecimenDTO.class), any(), eq(true))).thenReturn(responseVm);
 
         FindCreateRequest request = createRequest("UE-1", "3");
-        request.setFieldAnswers(Map.of("4", "not-an-id"));
+        request.setFieldAnswers(Map.of("4", Map.of()));
 
         assertThatThrownBy(() -> service.createFind(request, personDto, SCOPE, LANG))
                 .isInstanceOf(ResponseStatusException.class)
