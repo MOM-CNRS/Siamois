@@ -59,7 +59,7 @@ class VocabularyOpenApiServiceTest {
 
         VocabulariesData data = service.listVocabulariesForOrganization(10L, new PersonDTO(), "fr");
 
-        assertThat(data.vocabularies()).isEqualTo(vocab);
+        assertThat(data.vocabulariesByFieldCode()).isEqualTo(vocab);
         verify(fieldConfigurationService).fetchAllConfiguredVocabularies(any());
     }
 }
