@@ -97,8 +97,8 @@ class UserOpenApiServiceTest {
         inst.setId(10L);
         when(institutionService.findById(10L)).thenReturn(inst);
 
-        PersonDTO a = user(1L, "Z", "Y", "z");
-        PersonDTO b = user(2L, "A", "Y", "a");
+        PersonDTO a = user(1L, "Z", "Zebra", "z");
+        PersonDTO b = user(2L, "A", "Alpha", "a");
         when(personService.findAllInInstitution(10L, null)).thenReturn(List.of(a, b));
 
         Page<PersonDTO> page = service.pageUsersInOrganization(caller, 10L, null, 0, 20, "unknown:asc");

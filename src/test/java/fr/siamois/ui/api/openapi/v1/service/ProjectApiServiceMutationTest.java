@@ -194,12 +194,12 @@ class ProjectApiServiceMutationTest {
     @Test
     void patchProject_success_updatesProject() throws Exception {
         ActionUnitDTO au = projectWithInstitution();
+        au.setId(7L);
         au.setType(new ConceptDTO());
         AccessibleProjectForApi row = new AccessibleProjectForApi(au, 0L, 0L);
         when(actionUnitService.findAccessibleProjectByKey("7", SCOPE)).thenReturn(row);
         when(permissionService.hasWritePermission(any(), same(au))).thenReturn(true);
         when(actionUnitService.save(any(), same(au), any())).thenReturn(au);
-        when(actionUnitService.findAccessibleProjectByKey("7", SCOPE)).thenReturn(row);
 
         ProjectPatchRequest patch = new ProjectPatchRequest();
         patch.setName("Updated");

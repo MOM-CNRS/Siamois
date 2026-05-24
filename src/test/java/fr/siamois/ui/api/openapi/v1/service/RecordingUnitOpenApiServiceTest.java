@@ -979,6 +979,7 @@ class RecordingUnitOpenApiServiceTest {
                 .thenReturn(new RecordingUnitService.AccessibleRecordingUnit(ruEntity, ruDto));
         when(recordingUnitResponseMapper.convert(ruDto)).thenReturn(ruResource);
         when(formService.findCustomFormByRecordingUnitTypeAndInstitutionId(ruDto.getType(), inst)).thenReturn(null);
+        when(permissionService.hasWritePermission(any(), same(ruDto))).thenReturn(true);
 
         RecordingUnitPatchRequest request = new RecordingUnitPatchRequest();
         request.setExpectedRevision(3L);
