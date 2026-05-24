@@ -76,4 +76,38 @@ public final class SpecimenFindSortSql {
             default -> null;
         };
     }
+
+    /**
+     * Clauses ORDER BY autorisées pour les requêtes natives (whitelist fixe, pas de concaténation utilisateur).
+     */
+    public enum NativeOrderBy {
+        DEFAULT(DEFAULT_ORDER_BY),
+        CREATION_TIME_ASC("s.creation_time ASC, s.specimen_id ASC"),
+        CREATION_TIME_DESC("s.creation_time DESC, s.specimen_id ASC"),
+        FULL_IDENTIFIER_ASC("s.full_identifier ASC, s.specimen_id ASC"),
+        FULL_IDENTIFIER_DESC("s.full_identifier DESC, s.specimen_id ASC"),
+        SPECIMEN_ID_ASC("s.specimen_id ASC"),
+        SPECIMEN_ID_DESC("s.specimen_id DESC"),
+        LABEL_ASC("c_label ASC, s.specimen_id ASC"),
+        LABEL_DESC("c_label DESC, s.specimen_id ASC");
+
+        private final String clause;
+
+        NativeOrderBy(String clause) {
+            this.clause = clause;
+        }
+
+        public static NativeOrderBy fromClause(String orderByClause) {
+            if (orderByClause == null || orderByClause.isBlank()) {
+                return DEFAULT;
+            }
+            String normalized = orderByClause.trim();
+            for (NativeOrderBy value : values()) {
+                if (value.clause.equalsIgnoreCase(normalized)) {
+                    return value;
+                }
+            }
+            return DEFAULT;
+        }
+    }
 }

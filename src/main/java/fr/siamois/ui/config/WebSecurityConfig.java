@@ -15,7 +15,9 @@ import org.springframework.core.annotation.Order;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.annotation.web.configurers.CsrfConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
@@ -49,6 +51,8 @@ public class WebSecurityConfig {
 
     /**
      * Swagger / OpenAPI : accès anonyme, sans redirection vers le formulaire web (SpringDoc + WebJars).
+     * <p>
+     * CSRF désactivé : documentation en lecture seule, sans authentification par cookie de session.
      */
     @Bean
     @Order(0)
@@ -60,7 +64,7 @@ public class WebSecurityConfig {
                         "/swagger-ui.html",
                         "/webjars/**")
                 .authorizeHttpRequests(auth -> auth.anyRequest().permitAll())
-                .csrf(AbstractHttpConfigurer::disable)
+                .csrf(csrfDisabled())
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED));
         return http.build();
@@ -68,13 +72,17 @@ public class WebSecurityConfig {
 
     /**
      * API REST v1 : JWT Bearer (stateless), sans session ni formulaire.
+     * <p>
+     * CSRF désactivé volontairement : l'authentification repose sur le header {@code Authorization}
+     * (Bearer JWT), pas sur un cookie de session. Le filtre web ({@link #webSecurityFilterChain})
+     * conserve la protection CSRF pour l'application JSF (formulaires avec jeton {@code _csrf}).
      */
     @Bean
     @Order(1)
     public SecurityFilterChain apiV1SecurityFilterChain(HttpSecurity http,
                                                         JwtAuthenticationFilter jwtAuthenticationFilter) throws Exception {
         http.securityMatcher("/api/v1/**")
-                .csrf(AbstractHttpConfigurer::disable)
+                .csrf(csrfDisabled())
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
@@ -133,6 +141,15 @@ public class WebSecurityConfig {
     @Bean
     public BCryptPasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
+    }
+
+    /**
+     * CSRF désactivé pour Swagger (accès anonyme) et l'API v1 (JWT Bearer, sans cookie de session).
+     * L'application web JSF ({@link #webSecurityFilterChain}) conserve CSRF activé par défaut.
+     */
+    @SuppressWarnings("java:S4502")
+    private static Customizer<CsrfConfigurer<HttpSecurity>> csrfDisabled() {
+        return AbstractHttpConfigurer::disable;
     }
 
 }

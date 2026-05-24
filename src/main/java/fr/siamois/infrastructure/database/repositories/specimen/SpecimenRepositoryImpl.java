@@ -9,13 +9,8 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 
 import java.util.List;
-import java.util.regex.Pattern;
 
 public class SpecimenRepositoryImpl implements SpecimenRepositoryCustom {
-
-    private static final Pattern SAFE_ORDER_BY = Pattern.compile(
-            "^((s\\.(creation_time|full_identifier|specimen_id)|c_label) (ASC|DESC))(, (s\\.(creation_time|full_identifier|specimen_id)|c_label) (ASC|DESC))*$",
-            Pattern.CASE_INSENSITIVE);
 
     private static final String RANKED_LABELS_CTE = "WITH ranked_labels AS ( "
             + "    SELECT "
@@ -57,19 +52,14 @@ public class SpecimenRepositoryImpl implements SpecimenRepositoryCustom {
             String langCode,
             String orderByClause,
             Pageable pageable) {
-        String orderBy = validateOrderBy(orderByClause);
+        SpecimenFindSortSql.NativeOrderBy sort = SpecimenFindSortSql.NativeOrderBy.fromClause(orderByClause);
 
         Query countQuery = entityManager.createNativeQuery(
                 RANKED_LABELS_CTE + "SELECT count(s) " + FROM_WHERE);
         bindFilterParams(countQuery, institutionId, recordingUnitId, fullIdentifier, categoryIds, global, langCode);
         long total = ((Number) countQuery.getSingleResult()).longValue();
 
-        Query dataQuery = entityManager.createNativeQuery(
-                RANKED_LABELS_CTE
-                        + "SELECT s.*, rl.label_value AS c_label "
-                        + FROM_WHERE
-                        + " ORDER BY " + orderBy,
-                Specimen.class);
+        Query dataQuery = entityManager.createNativeQuery(buildRankedSpecimenSelectSql(sort), Specimen.class);
         bindFilterParams(dataQuery, institutionId, recordingUnitId, fullIdentifier, categoryIds, global, langCode);
         dataQuery.setFirstResult((int) pageable.getOffset());
         dataQuery.setMaxResults(pageable.getPageSize());
@@ -79,11 +69,44 @@ public class SpecimenRepositoryImpl implements SpecimenRepositoryCustom {
         return new PageImpl<>(content, pageable, total);
     }
 
-    private static String validateOrderBy(String orderByClause) {
-        if (orderByClause == null || !SAFE_ORDER_BY.matcher(orderByClause.trim()).matches()) {
-            return SpecimenFindSortSql.fromApiSortParam(null);
-        }
-        return orderByClause.trim();
+    /**
+     * Requête SELECT avec ORDER BY fixe (whitelist {@link SpecimenFindSortSql.NativeOrderBy}) — pas de SQL dynamique utilisateur.
+     */
+    private static String buildRankedSpecimenSelectSql(SpecimenFindSortSql.NativeOrderBy sort) {
+        return switch (sort) {
+            case DEFAULT, CREATION_TIME_DESC -> RANKED_LABELS_CTE
+                    + "SELECT s.*, rl.label_value AS c_label "
+                    + FROM_WHERE
+                    + " ORDER BY s.creation_time DESC, s.specimen_id ASC";
+            case CREATION_TIME_ASC -> RANKED_LABELS_CTE
+                    + "SELECT s.*, rl.label_value AS c_label "
+                    + FROM_WHERE
+                    + " ORDER BY s.creation_time ASC, s.specimen_id ASC";
+            case FULL_IDENTIFIER_ASC -> RANKED_LABELS_CTE
+                    + "SELECT s.*, rl.label_value AS c_label "
+                    + FROM_WHERE
+                    + " ORDER BY s.full_identifier ASC, s.specimen_id ASC";
+            case FULL_IDENTIFIER_DESC -> RANKED_LABELS_CTE
+                    + "SELECT s.*, rl.label_value AS c_label "
+                    + FROM_WHERE
+                    + " ORDER BY s.full_identifier DESC, s.specimen_id ASC";
+            case SPECIMEN_ID_ASC -> RANKED_LABELS_CTE
+                    + "SELECT s.*, rl.label_value AS c_label "
+                    + FROM_WHERE
+                    + " ORDER BY s.specimen_id ASC";
+            case SPECIMEN_ID_DESC -> RANKED_LABELS_CTE
+                    + "SELECT s.*, rl.label_value AS c_label "
+                    + FROM_WHERE
+                    + " ORDER BY s.specimen_id DESC";
+            case LABEL_ASC -> RANKED_LABELS_CTE
+                    + "SELECT s.*, rl.label_value AS c_label "
+                    + FROM_WHERE
+                    + " ORDER BY c_label ASC, s.specimen_id ASC";
+            case LABEL_DESC -> RANKED_LABELS_CTE
+                    + "SELECT s.*, rl.label_value AS c_label "
+                    + FROM_WHERE
+                    + " ORDER BY c_label DESC, s.specimen_id ASC";
+        };
     }
 
     private static void bindFilterParams(
