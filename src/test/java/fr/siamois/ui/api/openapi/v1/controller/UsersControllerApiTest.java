@@ -32,6 +32,7 @@ import java.util.Set;
 
 import static org.hamcrest.Matchers.hasSize;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
@@ -128,6 +129,41 @@ class UsersControllerApiTest {
                 .andExpect(jsonPath("$.data[0].name").value("Alice"))
                 .andExpect(jsonPath("$.data[0].lastname").value("Martin"))
                 .andExpect(jsonPath("$.meta.total").value(1));
+    }
+
+    @Test
+    void listUsers_organizationOutOfScope_returns403() throws Exception {
+        login();
+        when(projectApiService.requireCaller()).thenReturn(
+                new fr.siamois.ui.api.openapi.v1.service.ProjectApiCaller(
+                        personDto, Set.of(10L), List.of(institutionDto)));
+
+        mockMvc.perform(get("/api/v1/users").param("organizationId", "100"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void listUsers_unknownOrganization_returns404() throws Exception {
+        login();
+        when(projectApiService.requireCaller()).thenReturn(
+                new fr.siamois.ui.api.openapi.v1.service.ProjectApiCaller(
+                        personDto, Set.of(100L), List.of(institutionDto)));
+        when(institutionService.findById(100L)).thenReturn(null);
+
+        mockMvc.perform(get("/api/v1/users").param("organizationId", "100"))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void listUsers_invalidPagination_returns400() throws Exception {
+        login();
+        doThrow(new ResponseStatusException(HttpStatus.BAD_REQUEST, "Paramètres de pagination invalides"))
+                .when(projectApiService).validatePagedListRequest(-1, 20);
+
+        mockMvc.perform(get("/api/v1/users")
+                        .param("organizationId", "100")
+                        .param("offset", "-1"))
+                .andExpect(status().isBadRequest());
     }
 
     @Test

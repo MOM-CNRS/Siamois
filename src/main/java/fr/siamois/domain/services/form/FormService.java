@@ -312,6 +312,19 @@ public class FormService {
             return a.getValue();
         } else if (answer instanceof CustomFieldAnswerSelectMultipleRecordingUnitViewModel a) {
             return new HashSet<>(a.getValue());
+        } else if (answer instanceof CustomFieldAnswerSelectMultipleFromFieldCodeViewModel a) {
+            if (a.getValue() == null) {
+                return null;
+            }
+            return a.getValue().stream()
+                    .map(ConceptAutocompleteDTO::concept)
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toSet());
+        } else if (answer instanceof CustomFieldAnswerSelectMultipleSpecimenViewModel a) {
+            if (a.getValue() == null) {
+                return null;
+            }
+            return new HashSet<>(a.getValue());
         }
 
         return null;
@@ -403,6 +416,8 @@ public class FormService {
         handlers.put(CustomFieldAnswerSelectMultipleSpatialUnitTreeViewModel.class, this::handleSpatialUnitSet);
         handlers.put(CustomFieldAnswerSelectMultipleRecordingUnitViewModel.class, this::handleRecordingUnitSet);
         handlers.put(CustomFieldAnswerMeasurementViewModel.class, this::handleMeasurement);
+        handlers.put(CustomFieldAnswerSelectMultipleFromFieldCodeViewModel.class, this::handleConceptSet);
+        handlers.put(CustomFieldAnswerSelectMultipleSpecimenViewModel.class, this::handleSpecimenSet);
 
         Class<? extends CustomFieldAnswerViewModel> answerClass = answer.getClass();
         BiConsumer<CustomFieldAnswerViewModel, Object> handler = handlers.get(answerClass);
@@ -528,6 +543,34 @@ public class FormService {
     private void handleRecordingUnitSet(CustomFieldAnswerViewModel answer, Object value) {
         if (answer instanceof CustomFieldAnswerSelectMultipleRecordingUnitViewModel ans) {
             ans.setValue(new ArrayList<>((Set<RecordingUnitSummaryDTO>) value));
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private void handleConceptSet(CustomFieldAnswerViewModel answer, Object value) {
+        if (answer instanceof CustomFieldAnswerSelectMultipleFromFieldCodeViewModel multiAnswer
+                && value instanceof Collection<?> concepts) {
+            List<ConceptAutocompleteDTO> dtos = concepts.stream()
+                    .filter(ConceptDTO.class::isInstance)
+                    .map(ConceptDTO.class::cast)
+                    .map(c -> new ConceptAutocompleteDTO(
+                            c,
+                            labelBean.findLabelOf(c),
+                            labelBean.getCurrentUserLang()))
+                    .toList();
+            multiAnswer.setValue(new ArrayList<>(dtos));
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private void handleSpecimenSet(CustomFieldAnswerViewModel answer, Object value) {
+        if (answer instanceof CustomFieldAnswerSelectMultipleSpecimenViewModel multiAnswer
+                && value instanceof Collection<?> specimens) {
+            List<SpecimenSummaryDTO> list = specimens.stream()
+                    .filter(SpecimenSummaryDTO.class::isInstance)
+                    .map(SpecimenSummaryDTO.class::cast)
+                    .toList();
+            multiAnswer.setValue(new ArrayList<>(list));
         }
     }
 

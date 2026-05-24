@@ -1,7 +1,9 @@
 package fr.siamois.domain.services.specimen;
 
+import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.exceptions.actionunit.ActionUnitNotFoundException;
 import fr.siamois.domain.models.institution.Institution;
+import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.specimen.Specimen;
 import fr.siamois.domain.services.ArkEntityService;
 import fr.siamois.dto.entity.*;
@@ -9,8 +11,11 @@ import fr.siamois.infrastructure.database.repositories.ArkRepository;
 import fr.siamois.infrastructure.database.repositories.DocumentRepository;
 import fr.siamois.infrastructure.database.repositories.specimen.SpecimenFindSortSql;
 import fr.siamois.infrastructure.database.repositories.specimen.SpecimenRepository;
+import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitRepository;
 import fr.siamois.mapper.InstitutionMapper;
+import fr.siamois.mapper.SpecimenSummaryMapper;
 import fr.siamois.mapper.SpecimenMapper;
+import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -18,9 +23,12 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import static fr.siamois.domain.models.ValidationStatus.*;
 
@@ -31,7 +39,9 @@ public class SpecimenService implements ArkEntityService {
     private final SpecimenRepository specimenRepository;
     private final SpecimenMapper specimenMapper;
     private final InstitutionMapper institutionMapper;
+    private final SpecimenSummaryMapper specimenSummaryMapper;
     private final DocumentRepository documentRepository;
+    private final RecordingUnitRepository recordingUnitRepository;
     private final ArkRepository arkRepository;
 
 
@@ -50,6 +60,107 @@ public class SpecimenService implements ArkEntityService {
         // Generate next identifier
         Integer currentMaxIdentifier = specimenRepository.findMaxUsedIdentifierByRecordingUnit(specimen.getRecordingUnit().getId());
         return ((currentMaxIdentifier == null) ? 1 : currentMaxIdentifier + 1);
+    }
+
+    private Specimen newOrGetSpecimen(Specimen specimen) {
+        if (specimen.getId() != null) {
+            return specimenRepository.findById(specimen.getId()).orElse(specimen);
+        }
+        return specimen;
+    }
+
+    private void setupChilds(Specimen specimen, Specimen managedSpecimen) {
+        if (specimen.getChildren() == null) {
+            return;
+        }
+
+        Set<Long> incomingIds = specimen.getChildren().stream()
+                .filter(c -> c != null && c.getId() != null)
+                .map(Specimen::getId)
+                .collect(Collectors.toSet());
+
+        managedSpecimen.getChildren().removeIf(child -> !incomingIds.contains(child.getId()));
+
+        for (Long id : incomingIds) {
+            boolean alreadyPresent = managedSpecimen.getChildren().stream()
+                    .anyMatch(c -> c.getId().equals(id));
+            if (!alreadyPresent) {
+                Specimen child = specimenRepository.findById(id)
+                        .orElseThrow(() -> new IllegalArgumentException("Child not found: " + id));
+                managedSpecimen.getChildren().add(child);
+            }
+        }
+    }
+
+    private void setupParents(Specimen specimen, Specimen managedSpecimen) {
+        if (specimen.getParents() == null) {
+            return;
+        }
+
+        Set<Specimen> currentParents = new HashSet<>(managedSpecimen.getParents());
+        Set<Specimen> newParents = new HashSet<>();
+
+        for (Specimen parentRef : specimen.getParents()) {
+            Specimen parent = specimenRepository.findById(parentRef.getId())
+                    .orElseThrow(() -> new IllegalArgumentException("Parent not found: " + parentRef.getId()));
+            newParents.add(parent);
+        }
+
+        for (Specimen parent : newParents) {
+            if (!currentParents.contains(parent)) {
+                parent.getChildren().add(managedSpecimen);
+                specimenRepository.save(parent);
+            }
+        }
+
+        for (Specimen parent : currentParents) {
+            if (!newParents.contains(parent)) {
+                parent.getChildren().remove(managedSpecimen);
+                specimenRepository.save(parent);
+            }
+        }
+
+        managedSpecimen.getParents().clear();
+        managedSpecimen.getParents().addAll(newParents);
+    }
+
+    private <T> void synchronizeCollection(Collection<T> managedCollection, Collection<T> newCollection) {
+        if (managedCollection == null) {
+            return;
+        }
+        if (newCollection == null || newCollection.isEmpty()) {
+            managedCollection.clear();
+            return;
+        }
+        managedCollection.retainAll(newCollection);
+        for (T element : newCollection) {
+            if (!managedCollection.contains(element)) {
+                managedCollection.add(element);
+            }
+        }
+    }
+
+    private static void setupOtherFields(Specimen specimen, Specimen managedSpecimen) {
+        managedSpecimen.setArk(specimen.getArk());
+        managedSpecimen.setDescription(specimen.getDescription());
+        managedSpecimen.setCollectors(specimen.getCollectors());
+        managedSpecimen.setCollectionDate(specimen.getCollectionDate());
+        managedSpecimen.setWeight(specimen.getWeight());
+        managedSpecimen.setNormalizedInterpretation(specimen.getNormalizedInterpretation());
+        managedSpecimen.setValidated(specimen.getValidated());
+        managedSpecimen.setValidatedAt(specimen.getValidatedAt());
+        managedSpecimen.setValidatedBy(specimen.getValidatedBy());
+        managedSpecimen.setTaq(specimen.getTaq());
+        managedSpecimen.setTpq(specimen.getTpq());
+        managedSpecimen.setComments(specimen.getComments());
+        managedSpecimen.setOtherIdentifier(specimen.getOtherIdentifier());
+        managedSpecimen.setCategory(specimen.getCategory());
+        managedSpecimen.setIsolationNumber(specimen.getIsolationNumber());
+        managedSpecimen.setNumberOfElements(specimen.getNumberOfElements());
+        if (managedSpecimen.getCreatedBy() == null) {
+            managedSpecimen.setCreatedBy(specimen.getCreatedBy());
+        }
+        managedSpecimen.setChronologicalAttribution(specimen.getChronologicalAttribution());
     }
 
     /**
@@ -72,8 +183,15 @@ public class SpecimenService implements ArkEntityService {
         // Convertir SpecimenDTO en Specimen
         Specimen specimen = specimenMapper.invertConvert(toSave);
 
+        Specimen managedSpecimen = newOrGetSpecimen(specimen);
+        setupParents(specimen, managedSpecimen);
+        setupChilds(specimen, managedSpecimen);
+        setupOtherFields(specimen, managedSpecimen);
+        synchronizeCollection(managedSpecimen.getMaterialClass(), specimen.getMaterialClass());
+        synchronizeCollection(managedSpecimen.getMaterial(), specimen.getMaterial());
+
         // Sauvegarder l'entité Specimen
-        Specimen savedSpecimen = specimenRepository.save(specimen);
+        Specimen savedSpecimen = specimenRepository.save(managedSpecimen);
 
         // Convertir l'entité sauvegardée en SpecimenDTO et la retourner
         return specimenMapper.convert(savedSpecimen);
@@ -359,6 +477,19 @@ public class SpecimenService implements ArkEntityService {
         }
 
         return specimenMapper.convert(specimenRepository.save(unit));
+    }
+
+    public List<SpecimenSummaryDTO> findAllByActionUnit(@NotNull Long recordingUnitId) {
+
+        Long id = recordingUnitRepository.findById(recordingUnitId)
+                .map(RecordingUnit::getActionUnit)
+                .map(ActionUnit::getId)
+                .orElse(null);
+        return specimenRepository
+                .findFirst10ByActionUnitId(id)
+                .stream()
+                .map(specimenSummaryMapper::convert)
+                .toList();
     }
 
     /**

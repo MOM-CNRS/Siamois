@@ -44,6 +44,8 @@ import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitCreateFo
 import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitFormBundle;
 import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitMobileDetailData;
 import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitRelationsData;
+import fr.siamois.ui.api.openapi.v1.exception.SyncRevisionConflictException;
+import fr.siamois.ui.api.openapi.v1.request.recordingunit.RecordingUnitPatchRequest;
 import fr.siamois.mapper.ConceptMapper;
 import fr.siamois.mapper.PersonMapper;
 import fr.siamois.ui.form.dto.CustomColUiDto;
@@ -84,6 +86,7 @@ import static org.mockito.ArgumentMatchers.nullable;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -936,6 +939,70 @@ class RecordingUnitOpenApiServiceTest {
 
         assertThat(data.form()).isNull();
         assertThat(data.fields()).isEmpty();
+    }
+
+    @Test
+    void patchRecordingUnit_syncRevisionMismatch_throwsConflict() {
+        InstitutionDTO inst = new InstitutionDTO();
+        inst.setId(10L);
+        ruDto.setCreatedByInstitution(inst);
+        ruDto.setType(new ConceptDTO());
+        when(ruEntity.getSyncRevision()).thenReturn(2L);
+
+        when(recordingUnitService.findAccessibleRecordingUnitWithEntity(eq("1026"), eq(SCOPE), isNull()))
+                .thenReturn(new RecordingUnitService.AccessibleRecordingUnit(ruEntity, ruDto));
+        when(recordingUnitResponseMapper.convert(ruDto)).thenReturn(ruResource);
+        when(formService.findCustomFormByRecordingUnitTypeAndInstitutionId(ruDto.getType(), inst)).thenReturn(null);
+
+        RecordingUnitPatchRequest request = new RecordingUnitPatchRequest();
+        request.setExpectedRevision(1L);
+        request.setFieldAnswers(Map.of());
+
+        assertThatThrownBy(() -> service.patchRecordingUnit("1026", request, personDto, SCOPE, "fr"))
+                .isInstanceOf(SyncRevisionConflictException.class)
+                .satisfies(ex -> {
+                    SyncRevisionConflictException conflict = (SyncRevisionConflictException) ex;
+                    assertThat(conflict.getConflictData().currentRevision()).isEqualTo(2L);
+                    assertThat(conflict.getConflictData().expectedRevision()).isEqualTo(1L);
+                });
+    }
+
+    @Test
+    void patchRecordingUnit_matchingSyncRevisionWithEmptyAnswers_returnsDetail() {
+        InstitutionDTO inst = new InstitutionDTO();
+        inst.setId(10L);
+        ruDto.setCreatedByInstitution(inst);
+        ruDto.setType(new ConceptDTO());
+        when(ruEntity.getSyncRevision()).thenReturn(3L);
+
+        when(recordingUnitService.findAccessibleRecordingUnitWithEntity(eq("1026"), eq(SCOPE), isNull()))
+                .thenReturn(new RecordingUnitService.AccessibleRecordingUnit(ruEntity, ruDto));
+        when(recordingUnitResponseMapper.convert(ruDto)).thenReturn(ruResource);
+        when(formService.findCustomFormByRecordingUnitTypeAndInstitutionId(ruDto.getType(), inst)).thenReturn(null);
+
+        RecordingUnitPatchRequest request = new RecordingUnitPatchRequest();
+        request.setExpectedRevision(3L);
+
+        RecordingUnitMobileDetailData data = service.patchRecordingUnit("1026", request, personDto, SCOPE, "fr");
+
+        assertThat(data.recordingUnit().getId()).isEqualTo("1026");
+        verify(recordingUnitService, never()).save(any());
+    }
+
+    @Test
+    void patchRecordingUnit_withoutWritePermission_throws403() {
+        InstitutionDTO inst = new InstitutionDTO();
+        inst.setId(10L);
+        ruDto.setCreatedByInstitution(inst);
+        when(recordingUnitService.findAccessibleRecordingUnitWithEntity(eq("1026"), eq(SCOPE), isNull()))
+                .thenReturn(new RecordingUnitService.AccessibleRecordingUnit(ruEntity, ruDto));
+        when(permissionService.hasWritePermission(any(), same(ruDto))).thenReturn(false);
+
+        RecordingUnitPatchRequest request = new RecordingUnitPatchRequest();
+
+        assertThatThrownBy(() -> service.patchRecordingUnit("1026", request, personDto, SCOPE, "fr"))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN));
     }
 
     private static FormUiDto formUiDtoWithOneField(CustomField field) {

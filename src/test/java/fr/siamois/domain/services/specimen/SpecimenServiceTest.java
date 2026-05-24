@@ -553,6 +553,39 @@ class SpecimenServiceTest {
     }
 
     @Test
+    void findAllByActionUnit_resolvesActionUnitFromRecordingUnit() {
+        fr.siamois.domain.models.recordingunit.RecordingUnit ru = new fr.siamois.domain.models.recordingunit.RecordingUnit();
+        fr.siamois.domain.models.actionunit.ActionUnit au = new fr.siamois.domain.models.actionunit.ActionUnit();
+        au.setId(5L);
+        ru.setActionUnit(au);
+        when(recordingUnitRepository.findById(100L)).thenReturn(java.util.Optional.of(ru));
+
+        Specimen specimen = new Specimen();
+        specimen.setId(1L);
+        when(specimenRepository.findFirst10ByActionUnitId(5L)).thenReturn(List.of(specimen));
+
+        SpecimenSummaryDTO summary = new SpecimenSummaryDTO();
+        summary.setId(1L);
+        when(specimenSummaryMapper.convert(specimen)).thenReturn(summary);
+
+        List<SpecimenSummaryDTO> result = specimenService.findAllByActionUnit(100L);
+
+        assertEquals(1, result.size());
+        assertEquals(summary, result.get(0));
+        verify(specimenRepository).findFirst10ByActionUnitId(5L);
+    }
+
+    @Test
+    void findAllByActionUnit_unknownRecordingUnit_returnsEmptyList() {
+        when(recordingUnitRepository.findById(404L)).thenReturn(java.util.Optional.empty());
+        when(specimenRepository.findFirst10ByActionUnitId(null)).thenReturn(List.of());
+
+        List<SpecimenSummaryDTO> result = specimenService.findAllByActionUnit(404L);
+
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
     void save_WithExistingId_ShouldFetchManagedInstanceAndSyncOtherFields() {
         // Arrange
         SpecimenDTO dto = new SpecimenDTO();
