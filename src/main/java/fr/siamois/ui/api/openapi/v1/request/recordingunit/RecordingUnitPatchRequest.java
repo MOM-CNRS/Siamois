@@ -14,6 +14,13 @@ import java.util.Map;
 @Schema(description = "Mise à jour partielle d'une unité d'enregistrement (réponses formulaire)")
 public class RecordingUnitPatchRequest {
 
+    @Schema(
+            description = "Révision attendue (valeur de syncRevision au moment du chargement client). "
+                    + "Si absente, aucun contrôle de conflit (comportement legacy). "
+                    + "Si présente et différente de la révision serveur → HTTP 409."
+    )
+    private Long expectedRevision;
+
     @Schema(description = "Valeurs par id de champ (string numérique)")
     private Map<String, Object> fieldAnswers = new HashMap<>();
 }

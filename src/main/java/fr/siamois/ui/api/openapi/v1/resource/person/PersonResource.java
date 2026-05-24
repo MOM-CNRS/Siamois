@@ -1,30 +1,21 @@
 package fr.siamois.ui.api.openapi.v1.resource.person;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
 
-@Data
-@EqualsAndHashCode(callSuper = true)
-public class PersonResource extends PersonResourceIdentifier {
-
-    @Schema(description = "Prénom")
-    private String name;
-
-    @Schema(description = "Nom de famille")
-    private String lastname;
-
-    @Schema(description = "Adresse e-mail")
-    private String email;
-
-    @Schema(description = "Identifiant de connexion")
-    private String username;
-
-    public PersonResource(String name, String lastname, String email, String username) {
-        super("persons", null);
-        this.name = name;
-        this.lastname = lastname;
-        this.email = email;
-        this.username = username;
-    }
+/**
+ * Utilisateur exposé par {@code GET /api/v1/users}.
+ */
+@Schema(description = "Utilisateur")
+public record PersonResource(
+        @Schema(description = "Identifiant personne (person_id)", example = "42")
+        @JsonProperty("resourceId")
+        String resourceId,
+        @Schema(description = "Identifiant de connexion")
+        String username,
+        @Schema(description = "Prénom")
+        String name,
+        @Schema(description = "Nom de famille")
+        String lastname
+) {
 }

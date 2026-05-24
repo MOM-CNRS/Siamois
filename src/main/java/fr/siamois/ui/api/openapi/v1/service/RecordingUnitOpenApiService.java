@@ -56,7 +56,9 @@ import fr.siamois.ui.api.openapi.v1.response.find.FindMobilierFormData;
 import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitChildrenData;
 import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitCreateFormData;
 import fr.siamois.ui.api.openapi.v1.request.recordingunit.RecordingUnitCreateRequest;
+import fr.siamois.ui.api.openapi.v1.exception.SyncRevisionConflictException;
 import fr.siamois.ui.api.openapi.v1.request.recordingunit.RecordingUnitPatchRequest;
+import fr.siamois.ui.api.openapi.v1.response.sync.SyncConflictData;
 import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitFormBundle;
 import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitFormFieldApi;
 import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitMobileDetailData;
@@ -604,6 +606,14 @@ public class RecordingUnitOpenApiService {
         RecordingUnitDTO dto = bundle.dto();
         RecordingUnit entity = bundle.entity();
 
+        assertSyncRevisionIfRequested(
+                recordingUnitKey,
+                request.getExpectedRevision(),
+                entity.getSyncRevision(),
+                personDto,
+                accessibleInstitutionIds,
+                lang);
+
         InstitutionDTO institution = dto.getCreatedByInstitution();
         if (institution == null || institution.getId() == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unité sans organisation");
@@ -640,6 +650,29 @@ public class RecordingUnitOpenApiService {
         });
 
         return buildMobileDetail(recordingUnitKey, personDto, accessibleInstitutionIds, null, lang);
+    }
+
+    private void assertSyncRevisionIfRequested(String recordingUnitKey,
+                                               Long expectedRevision,
+                                               Long currentRevision,
+                                               PersonDTO personDto,
+                                               Set<Long> accessibleInstitutionIds,
+                                               String lang) {
+        if (expectedRevision == null) {
+            return;
+        }
+        long current = currentRevision != null ? currentRevision : 0L;
+        if (expectedRevision == current) {
+            return;
+        }
+        RecordingUnitMobileDetailData serverState = buildMobileDetail(
+                recordingUnitKey, personDto, accessibleInstitutionIds, null, lang);
+        throw new SyncRevisionConflictException(new SyncConflictData(
+                "recording_unit",
+                recordingUnitKey,
+                expectedRevision,
+                current,
+                serverState));
     }
 
     private static ActionUnitSummaryDTO actionUnitSummaryFromFull(ActionUnitDTO au) {

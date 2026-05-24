@@ -8,10 +8,7 @@ import org.springframework.stereotype.Component;
 public class PersonOpenApiMapper {
 
     public PersonResource toResource(PersonDTO dto) {
-        PersonResource r = new PersonResource(dto.getName(), dto.getLastname(), dto.getEmail(), dto.getUsername());
-        if (dto.getId() != null) {
-            r.setId(String.valueOf(dto.getId()));
-        }
-        return r;
+        String resourceId = dto.getId() != null ? String.valueOf(dto.getId()) : null;
+        return new PersonResource(resourceId, dto.getUsername(), dto.getName(), dto.getLastname());
     }
 }

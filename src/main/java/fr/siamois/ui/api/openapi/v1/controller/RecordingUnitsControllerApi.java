@@ -161,6 +161,7 @@ public class RecordingUnitsControllerApi {
             @ApiResponse(responseCode = "401", description = "Non authentifié"),
             @ApiResponse(responseCode = "403", description = "Interdit"),
             @ApiResponse(responseCode = "404", description = "UE introuvable ou hors périmètre"),
+            @ApiResponse(responseCode = "409", description = "Conflit de révision (modification concurrente)"),
             @ApiResponse(responseCode = "500", description = "Erreur interne")
     })
     public ResponseEntity<RecordingUnitMobileDetailResponse> patchRecordingUnit(

@@ -64,6 +64,14 @@ public class RecordingUnit extends RecordingUnitParent implements ArkEntity, Ref
     @Column(name = "recording_unit_id", nullable = false)
     private Long id;
 
+    /**
+     * Révision de synchronisation : incrémentée à chaque sauvegarde.
+     * Utilisée par l'API mobile pour la détection de conflits (optimistic locking).
+     */
+    @Version
+    @Column(name = "sync_revision", nullable = false)
+    private Long syncRevision = 0L;
+
     @OneToMany(mappedBy = "unit1", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonIgnore
     private Set<StratigraphicRelationship> relationshipsAsUnit1 = new HashSet<>();

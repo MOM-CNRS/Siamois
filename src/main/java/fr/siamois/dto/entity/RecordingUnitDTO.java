@@ -18,6 +18,9 @@ import java.util.Set;
 @NoArgsConstructor
 public class RecordingUnitDTO extends AbstractEntityDTO {
 
+  /** Révision serveur pour détection de conflit (optimistic locking). */
+    protected Long syncRevision;
+
     protected String identifier;
     protected String fullIdentifier;
     protected ConceptDTO type;
