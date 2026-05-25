@@ -24,21 +24,6 @@ public class RecordingUnitChildrenLazyDataModel extends BaseRecordingUnitLazyDat
         this.sessionSettings = sessionSettings;
     }
 
-    @Override
-    protected Page<RecordingUnitDTO> loadRecordingUnits(String fullIdentifierFilter,
-                                                        Long[] categoryIds,
-                                                        Long[] personIds,
-                                                        String globalFilter,
-                                                        Pageable pageable) {
-        return recordingUnitService.findAllByParentAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
-                recordingUnit.getId(),
-                fullIdentifierFilter, categoryIds, globalFilter,
-                langBean.getLanguageCode(),
-                pageable
-
-        );
-    }
-
 
     @Override
     protected Page<RecordingUnitDTO> loadData(FilterDTO filter, Pageable pageable) {

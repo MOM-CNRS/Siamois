@@ -161,7 +161,8 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
             lazyDataModelChildren = new RecordingUnitChildrenLazyDataModel(
                     recordingUnitService,
                     langBean,
-                    unit
+                    unit,
+                    sessionSettingsBean
             );
             selectedCategoriesChildren = new ArrayList<>();
             totalChildrenCount = 0;

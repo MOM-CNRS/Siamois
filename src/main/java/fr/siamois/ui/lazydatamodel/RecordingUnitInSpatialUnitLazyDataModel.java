@@ -25,21 +25,8 @@ public class RecordingUnitInSpatialUnitLazyDataModel extends BaseRecordingUnitLa
     }
 
     @Override
-    protected Page<RecordingUnitDTO> loadRecordingUnits(String fullIdentifierFilter,
-                                                        Long[] categoryIds,
-                                                        Long[] personIds,
-                                                        String globalFilter,
-                                                        Pageable pageable) {
-        return Page.empty();
-    }
-
-
-    @Override
     protected Page<RecordingUnitDTO> loadData(FilterDTO filter, Pageable pageable) {
-        return recordingUnitService.searchRecordingUnitInSpatialUnit(sessionSettings.getSelectedInstitution(),
-                spatialUnit,
-                filter,
-                pageable);
+        return recordingUnitService.searchRecordingUnitInSpatialUnit(sessionSettings.getSelectedInstitution(),  spatialUnit, filter, pageable);
     }
 
     @Override

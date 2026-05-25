@@ -199,7 +199,8 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnitDTO> im
             specimenLazyDataModel = new SpecimenInActionUnitLazyDataModel(
                     specimenService,
                     langBean,
-                    unit
+                    unit,
+                    sessionSettingsBean
             );
             specimenLazyDataModel.setSelectedUnits(new ArrayList<>());
 

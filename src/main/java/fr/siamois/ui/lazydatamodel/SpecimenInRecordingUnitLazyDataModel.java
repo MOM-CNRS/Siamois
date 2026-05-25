@@ -28,35 +28,19 @@ public class SpecimenInRecordingUnitLazyDataModel extends BaseSpecimenLazyDataMo
         this.recordingUnit = recordingUnit;
     }
 
-    @Override
-    protected Page<SpecimenDTO> loadSpecimens(String fullIdentifierFilter,
-                                              Long[] categoryIds,
-                                              Long[] personIds,
-                                              String globalFilter,
-                                              Pageable pageable) {
-        return specimenService.findAllByInstitutionAndByRecordingUnitAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
-                sessionSettings.getSelectedInstitution().getId(),
-                recordingUnit.getId(),
-                fullIdentifierFilter, categoryIds, globalFilter,
-                langBean.getLanguageCode(),
-                pageable
-        );
-    }
 
 
     @Override
     protected Page<SpecimenDTO> loadData(FilterDTO filter, Pageable pageable) {
-        return specimenService.findAllByInstitutionAndByRecordingUnitAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
-                sessionSettings.getSelectedInstitution().getId(),
-                recordingUnit.getId(),
-                null, null, null,
-                langBean.getLanguageCode(),
-                pageable
-        );
+        return specimenService.searchSpecimenInRecordingUnit(sessionSettings.getSelectedInstitution(),
+                recordingUnit,
+                filter, pageable);
     }
 
     @Override
     protected int countWithFilter(FilterDTO filters) {
-        return 0;
+        return specimenService.countSearchResultsInRecordingUnit(sessionSettings.getSelectedInstitution(),
+                recordingUnit,
+                filters);
     }
 }

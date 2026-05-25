@@ -1,11 +1,13 @@
 package fr.siamois.infrastructure.database.repositories.specimen;
 
 import fr.siamois.domain.models.institution.Institution;
+import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.specimen.Specimen;
 import jakarta.validation.constraints.NotNull;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.history.RevisionRepository;
@@ -16,7 +18,7 @@ import java.util.List;
 import java.util.Optional;
 
 
-public interface SpecimenRepository extends JpaRepository<Specimen, Long>, RevisionRepository<Specimen, Long, Long> {
+public interface SpecimenRepository extends JpaRepository<Specimen, Long>, RevisionRepository<Specimen, Long, Long>, JpaSpecificationExecutor<Specimen> {
     List<Specimen> findAllByArkIsNullAndCreatedByInstitution(@NotNull Institution createdByInstitution);
 
     <T> Optional<T> findById(Long id, Class<T> type);

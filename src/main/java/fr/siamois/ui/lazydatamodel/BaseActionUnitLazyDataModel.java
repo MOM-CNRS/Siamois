@@ -27,7 +27,7 @@ public abstract class BaseActionUnitLazyDataModel extends BaseLazyDataModel<Acti
     @Override
     protected SortDTO getDefaultSortDTO() {
         SortDTO sortDTO = new SortDTO();
-        sortDTO.add("action_unit_id", SortDTO.SortOrder.ASC);
+        sortDTO.add("id", SortDTO.SortOrder.ASC);
         return sortDTO;
     }
 

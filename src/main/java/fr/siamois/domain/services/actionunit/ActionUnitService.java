@@ -531,7 +531,8 @@ public class ActionUnitService implements ArkEntityService {
         return Math.toIntExact(actionUnitRepository.count(specs));
     }
 
-    public Page<ActionUnitDTO> searchActionUnitsInSpatialUnit(InstitutionDTO institutionDTO, SpatialUnitDTO spatialUnitDTO, FilterDTO filters, Pageable pageable) {
+    public Page<ActionUnitDTO> searchActionUnitsInSpatialUnit(InstitutionDTO institutionDTO,
+                                                              SpatialUnitDTO spatialUnitDTO, FilterDTO filters, Pageable pageable) {
         Specification<ActionUnit> specs = prepareSpecs(institutionDTO, filters);
         specs = specs.and(ActionUnitSpec.actionUnitInSpatialUnit(spatialUnitDTO.getId()));
         Page<ActionUnit> res = actionUnitRepository.findAll(specs, pageable);

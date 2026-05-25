@@ -65,32 +65,6 @@ class RecordingUnitChildrenLazyDataModelTest {
         parent.setId(100L);
     }
 
-    @Test
-    void loadRecordingUnits_Success() {
-
-        lazyModel = new RecordingUnitChildrenLazyDataModel(recordingUnitService,langBean, parent);
-
-        // Arrange
-        when(recordingUnitService.findAllByParentAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
-                any(Long.class),
-                any(String.class),
-                any(Long[].class),
-                any(String.class),
-                any(String.class),
-                any(Pageable.class)
-        )).thenReturn(p);
-        when(langBean.getLanguageCode()).thenReturn("en");
-
-        // Act
-        Page<RecordingUnitDTO> actualResult = lazyModel.loadRecordingUnits("null",
-                new Long[2],new Long[2], "null", pageable);
-
-        // Assert
-        // Assert
-        assertEquals(unit1, actualResult.getContent().get(0));
-        assertEquals(unit2, actualResult.getContent().get(1));
-    }
-
 
 
 

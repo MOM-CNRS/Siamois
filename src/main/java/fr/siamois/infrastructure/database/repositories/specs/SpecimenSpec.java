@@ -1,6 +1,7 @@
 package fr.siamois.infrastructure.database.repositories.specs;
 
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
+import fr.siamois.domain.models.specimen.Specimen;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.lang.NonNull;
 
@@ -21,17 +22,32 @@ public class SpecimenSpec {
     }
 
     @NonNull
-    public static Specification<RecordingUnit> specimenInInstitution(long institutionId) {
+    public static Specification<Specimen> specimenInInstitution(long institutionId) {
         return (root, query, criteriaBuilder) -> criteriaBuilder.equal(root.get("createdByInstitution").get("id"), institutionId);
     }
 
     @NonNull
-    public static Specification<RecordingUnit> specimenInActionUnit(long actionUnitId) {
+    public static Specification<Specimen> specimenInActionUnit(long actionUnitId) {
         return ((root, query, criteriaBuilder) -> criteriaBuilder.equal(root.get("actionUnit").get("id"), actionUnitId));
     }
 
     @NonNull
-    public static Specification<RecordingUnit> recordingUnitInRecordingUnit(long recordingUnitId) {
+    public static Specification<Specimen> specimenInRecordingUnit(long recordingUnitId) {
+        return ((root, query, criteriaBuilder) -> criteriaBuilder.equal(root.get("recordingUnit").get("id"), recordingUnitId));
+    }
+
+    @NonNull
+    public static Specification<Specimen> unitIsRoot() {
+        return ((root, query, criteriaBuilder) -> criteriaBuilder.isEmpty(root.get("parents")));
+    }
+
+    @NonNull
+    public static Specification<Specimen> idIn(java.util.Collection<Long> ids) {
+        return (root, query, criteriaBuilder) -> root.get("id").in(ids);
+    }
+
+    @NonNull
+    public static Specification<Specimen> recordingUnitInRecordingUnit(long recordingUnitId) {
         return ((root, query, criteriaBuilder) -> criteriaBuilder.equal(root.get("recordingUnit").get("id"), recordingUnitId));
     }
 

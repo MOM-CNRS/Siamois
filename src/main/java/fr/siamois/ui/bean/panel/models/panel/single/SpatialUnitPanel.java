@@ -406,7 +406,8 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
         SpatialUnitChildrenLazyDataModel lazyDataModelChildren= new SpatialUnitChildrenLazyDataModel(
                 spatialUnitService,
                 langBean,
-                unit
+                unit,
+                sessionSettings
         );
 
         SpatialUnitTreeTableLazyModel childLazyTree = new SpatialUnitTreeTableLazyModel(

@@ -32,7 +32,7 @@ public class ActionUnitInSpatialUnitLazyDataModel extends BaseActionUnitLazyData
     @Override
     protected Page<ActionUnitDTO> loadData(FilterDTO filter, Pageable pageable) {
         return actionUnitService.searchActionUnitsInSpatialUnit(
-                sessionSettings.getSelectedInstitution(), spatialUnit, pageable);
+                sessionSettings.getSelectedInstitution(), spatialUnit, filter, pageable);
     }
 
     @Override
