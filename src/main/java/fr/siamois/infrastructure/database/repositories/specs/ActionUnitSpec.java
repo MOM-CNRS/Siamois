@@ -1,6 +1,7 @@
 package fr.siamois.infrastructure.database.repositories.specs;
 
 import fr.siamois.domain.models.actionunit.ActionUnit;
+import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
@@ -35,6 +36,11 @@ public class ActionUnitSpec {
 
     public static Specification<ActionUnit> idIn(java.util.Collection<Long> ids) {
         return (root, query, criteriaBuilder) -> root.get("id").in(ids);
+    }
+
+    @NonNull
+    public static Specification<ActionUnit> actionUnitInSpatialUnit(long spatialUnitId) {
+        return ((root, query, criteriaBuilder) -> criteriaBuilder.equal(root.get("spatialUnit").get("id"), spatialUnitId));
     }
 
 }

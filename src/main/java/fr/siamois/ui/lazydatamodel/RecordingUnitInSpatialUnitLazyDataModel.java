@@ -5,6 +5,7 @@ import fr.siamois.dto.FilterDTO;
 import fr.siamois.dto.entity.RecordingUnitDTO;
 import fr.siamois.dto.entity.SpatialUnitDTO;
 import fr.siamois.ui.bean.LangBean;
+import fr.siamois.ui.bean.SessionSettingsBean;
 import lombok.Getter;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -14,11 +15,13 @@ public class RecordingUnitInSpatialUnitLazyDataModel extends BaseRecordingUnitLa
 
     @Getter
     private final transient SpatialUnitDTO spatialUnit;
+    private final transient SessionSettingsBean sessionSettings;
 
     public RecordingUnitInSpatialUnitLazyDataModel(RecordingUnitService recordingUnitService,
-                                                   LangBean langBean, SpatialUnitDTO spatialUnit) {
+                                                   LangBean langBean, SpatialUnitDTO spatialUnit, SessionSettingsBean sessionSettings) {
         super(recordingUnitService,langBean);
         this.spatialUnit = spatialUnit;
+        this.sessionSettings = sessionSettings;
     }
 
     @Override
@@ -33,16 +36,17 @@ public class RecordingUnitInSpatialUnitLazyDataModel extends BaseRecordingUnitLa
 
     @Override
     protected Page<RecordingUnitDTO> loadData(FilterDTO filter, Pageable pageable) {
-        return recordingUnitService.findAllBySpatialUnitAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
-                spatialUnit.getId(),
-                null, null, null,
-                langBean.getLanguageCode(),
-                pageable
-        );
+        return recordingUnitService.searchRecordingUnitInSpatialUnit(sessionSettings.getSelectedInstitution(),
+                spatialUnit,
+                filter,
+                pageable);
     }
 
     @Override
     protected int countWithFilter(FilterDTO filters) {
-        return 0;
+        return recordingUnitService.countSearchResultsInSpatialUnit(sessionSettings.getSelectedInstitution(),
+                spatialUnit,
+                filters
+        );
     }
 }

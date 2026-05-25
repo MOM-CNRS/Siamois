@@ -21,6 +21,7 @@ import fr.siamois.infrastructure.database.repositories.SpatialUnitRepository;
 import fr.siamois.infrastructure.database.repositories.actionunit.ActionCodeRepository;
 import fr.siamois.infrastructure.database.repositories.actionunit.ActionUnitRepository;
 import fr.siamois.infrastructure.database.repositories.specs.ActionUnitSpec;
+import fr.siamois.infrastructure.database.repositories.specs.RecordingUnitSpec;
 import fr.siamois.mapper.ActionUnitMapper;
 import fr.siamois.mapper.ConceptMapper;
 import fr.siamois.mapper.PersonMapper;
@@ -520,6 +521,30 @@ public class ActionUnitService implements ArkEntityService {
 
         return res.map(actionUnitMapper::convert);
     }
+
+
+
+    public int countSearchResultsInSpatialUnit(InstitutionDTO institutionDTO,SpatialUnitDTO spatialUnitDTO,
+                                               FilterDTO filters) {
+        Specification<ActionUnit> specs = prepareSpecs(institutionDTO, filters);
+        specs = specs.and(ActionUnitSpec.actionUnitInSpatialUnit(spatialUnitDTO.getId()));
+        return Math.toIntExact(actionUnitRepository.count(specs));
+    }
+
+    public Page<ActionUnitDTO> searchActionUnitsInSpatialUnit(InstitutionDTO institutionDTO, SpatialUnitDTO spatialUnitDTO, FilterDTO filters, Pageable pageable) {
+        Specification<ActionUnit> specs = prepareSpecs(institutionDTO, filters);
+        specs = specs.and(ActionUnitSpec.actionUnitInSpatialUnit(spatialUnitDTO.getId()));
+        Page<ActionUnit> res = actionUnitRepository.findAll(specs, pageable);
+
+        if (filters.containsColumn("name")) {
+            String nameContains = filters.valueOfAsString("name");
+            log.trace("{} éléments trouvées pour {} (Page {}/{})", res.getTotalElements(), nameContains,res.getNumber() + 1, res.getTotalPages());
+        }
+
+        return res.map(actionUnitMapper::convert);
+    }
+
+
 
     public int countSearchResults(InstitutionDTO institutionDTO, FilterDTO filters) {
         Specification<ActionUnit> specs = prepareSpecs(institutionDTO, filters);

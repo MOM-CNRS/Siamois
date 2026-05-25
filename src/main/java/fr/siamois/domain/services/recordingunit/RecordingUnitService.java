@@ -901,9 +901,41 @@ public class RecordingUnitService implements ArkEntityService {
         return results.map(recordingUnitMapper::convert);
     }
 
+    public Page<RecordingUnitDTO> searchRecordingUnitInRecordingUnit(InstitutionDTO institutionDTO,
+                                                                     @NonNull RecordingUnitDTO recordingUnitDTO,
+                                                                     FilterDTO filters, Pageable pageable) {
+        Specification<RecordingUnit> specs = prepareSpecs(institutionDTO, filters);
+        specs = specs.and(RecordingUnitSpec.recordingUnitInRecordingUnit(recordingUnitDTO.getId()));
+        Page<RecordingUnit> results = recordingUnitRepository.findAll(specs, pageable);
+        return results.map(recordingUnitMapper::convert);
+    }
+
+    public Page<RecordingUnitDTO> searchRecordingUnitInSpatialUnit(InstitutionDTO institutionDTO,
+                                                                     @NonNull SpatialUnitDTO spatialUnitDTO,
+                                                                     FilterDTO filters, Pageable pageable) {
+        Specification<RecordingUnit> specs = prepareSpecs(institutionDTO, filters);
+        specs = specs.and(RecordingUnitSpec.recordingUnitInSpatialUnit(spatialUnitDTO.getId()));
+        Page<RecordingUnit> results = recordingUnitRepository.findAll(specs, pageable);
+        return results.map(recordingUnitMapper::convert);
+    }
+
     public int countSearchResultsInActionUnit(InstitutionDTO institutionDTO, @NonNull ActionUnitDTO actionUnitDTO, FilterDTO filters) {
         Specification<RecordingUnit> specs = prepareSpecs(institutionDTO, filters);
         specs = specs.and(RecordingUnitSpec.recordingUnitInActionUnit(actionUnitDTO.getId()));
+        return Math.toIntExact(recordingUnitRepository.count(specs));
+    }
+
+    public int countSearchResultsInRecordingUnit(InstitutionDTO institutionDTO,
+                                                 @NonNull RecordingUnitDTO recordingUnitDTO, FilterDTO filters) {
+        Specification<RecordingUnit> specs = prepareSpecs(institutionDTO, filters);
+        specs = specs.and(RecordingUnitSpec.recordingUnitInRecordingUnit(recordingUnitDTO.getId()));
+        return Math.toIntExact(recordingUnitRepository.count(specs));
+    }
+
+    public int countSearchResultsInSpatialUnit(InstitutionDTO institutionDTO,
+                                                 @NonNull SpatialUnitDTO spatialUnitDTO, FilterDTO filters) {
+        Specification<RecordingUnit> specs = prepareSpecs(institutionDTO, filters);
+        specs = specs.and(RecordingUnitSpec.recordingUnitInSpatialUnit(spatialUnitDTO.getId()));
         return Math.toIntExact(recordingUnitRepository.count(specs));
     }
 

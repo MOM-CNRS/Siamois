@@ -31,16 +31,13 @@ public class ActionUnitInSpatialUnitLazyDataModel extends BaseActionUnitLazyData
 
     @Override
     protected Page<ActionUnitDTO> loadData(FilterDTO filter, Pageable pageable) {
-        return actionUnitService.findAllByInstitutionAndBySpatialUnitAndByNameContainingAndByCategoriesAndByGlobalContaining(
-                sessionSettings.getSelectedInstitution().getId(),
-                spatialUnit.getId(),
-                nameFilter, null, null, null,
-                langBean.getLanguageCode(),
-                pageable);
+        return actionUnitService.searchActionUnitsInSpatialUnit(
+                sessionSettings.getSelectedInstitution(), spatialUnit, pageable);
     }
 
     @Override
     protected int countWithFilter(FilterDTO filters) {
-        return 0;
+        return actionUnitService.countSearchResultsInSpatialUnit(sessionSettings.getSelectedInstitution(), spatialUnit,
+                filters);
     }
 }

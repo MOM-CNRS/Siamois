@@ -51,6 +51,16 @@ public class RecordingUnitSpec {
     }
 
     @NonNull
+    public static Specification<RecordingUnit> recordingUnitInSpatialUnit(long spatialUnitId) {
+        return ((root, query, criteriaBuilder) -> criteriaBuilder.equal(root.get("spatialUnit").get("id"), spatialUnitId));
+    }
+
+    @NonNull
+    public static Specification<RecordingUnit> recordingUnitInRecordingUnit(long id) {
+        return ((root, query, criteriaBuilder) -> criteriaBuilder.equal(root.get("parent").get("id"), id));
+    }
+
+    @NonNull
     public static Specification<RecordingUnit> fullIdentifierContains(String fullIdentifier) {
         return (root, query, criteriaBuilder) -> {
             if (fullIdentifier == null || fullIdentifier.isEmpty()) {
