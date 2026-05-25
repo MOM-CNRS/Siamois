@@ -60,6 +60,11 @@ public class WelcomePanel extends AbstractPanel implements Serializable {
     }
 
     @Override
+    public boolean canUserUpdateView() {
+        return false;
+    }
+
+    @Override
     public boolean isBookmarked(
 
     ) {

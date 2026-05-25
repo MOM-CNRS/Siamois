@@ -1,6 +1,7 @@
 package fr.siamois.domain.services;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import fr.siamois.domain.models.ValidationStatus;
 import fr.siamois.domain.models.uiview.UiTableView;
 import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.dto.view.TableViewState;
@@ -43,25 +44,24 @@ public class UiViewService {
         return uiTableViewMapper.toDto(entity);
     }
 
-    public UiTableView save(TableViewState tableViewState, PersonDTO personDTO) {
+    public UITableViewDTO save(TableViewState tableViewState, PersonDTO personDTO) {
 
         UiTableView entity = new UiTableView();
         entity.setState(tableViewState);
         entity.setOwner(personMapper.invertConvert(personDTO));
         entity = uiViewRepository.save(entity);
 
-        return entity;
+        return uiTableViewMapper.toDto(entity);
     }
 
-    public UiTableView update(Long viewId, TableViewState tableViewState, PersonDTO personDTO) {
+    public UITableViewDTO update(Long viewId, UITableViewDTO viewState, PersonDTO personDTO) {
 
-        UiTableView entity = new UiTableView();
-        entity.setId(viewId);
-        entity.setState(tableViewState);
-        entity.setOwner(personMapper.invertConvert(personDTO));
-        entity = uiViewRepository.save(entity);
+        viewState.setOwner(personDTO);
+        viewState.setId(viewId);
+        viewState.setId(viewId);
+        UiTableView entity = uiViewRepository.save(uiTableViewMapper.toEntity(viewState));
 
-        return entity;
+        return uiTableViewMapper.toDto(entity);
     }
 
     public UITableViewDTO save(UITableViewDTO uiTableViewDTO) {

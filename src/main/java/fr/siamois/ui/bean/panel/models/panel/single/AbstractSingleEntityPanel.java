@@ -437,5 +437,10 @@ public abstract class AbstractSingleEntityPanel<T extends AbstractEntityDTO> ext
         return true;
     }
 
+    @Override
+    public boolean canUserUpdateView() {
+        return false;
+    }
+
 
 }

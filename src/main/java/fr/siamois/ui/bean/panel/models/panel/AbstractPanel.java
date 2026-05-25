@@ -45,6 +45,8 @@ public abstract class AbstractPanel implements Serializable {
 
     public abstract void togglePanelBookmark() ;
 
+    public abstract boolean canUserUpdateView();
+
     public void loadData() {
         // deffer loading here ?
         loaded = true;

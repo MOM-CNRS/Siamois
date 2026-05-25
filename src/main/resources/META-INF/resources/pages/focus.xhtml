@@ -278,15 +278,16 @@
                                 id="panel-${focusViewBean.mainPanel.prefixPanelIndex}">
 
                             <div class="sideview-titlebar" style="background: var(--siamois-green-light-100);">
-                                <h:form style="float:right;" id="actionForm-${focusViewBean.mainPanel.panelIndex}">
+                                <h:form style="float:right;display: flex;
+    gap: 1rem;" id="actionForm-${focusViewBean.mainPanel.panelIndex}">
                                     <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
                                     <p:splitButton id="dirtyViewSplitButton"
+                                                   styleClass="view-edit-button"
                                                    rendered="#{focusViewBean.mainPanel.canUserUpdateView()
-                                                   and focusViewBean.mainPanel.isDirty()
-                                                   and focusViewBean.mainPanel.isBookmarked()}"
+                                                   and focusViewBean.mainPanel.isDirty()}"
                                                    value="Mettre à jour"
                                                    icon="bi bi-bookmark"
-                                                   action="#{focusViewBean.mainPanel.updateCurrentBookmark()}"
+                                                   action="#{focusViewBean.mainPanel.updateCurrentView()}"
                                                    update="panel-${focusViewBean.mainPanel.prefixPanelIndex}">
                                         <p:menuitem value="Enregistrer comme nouvelle vue"
                                                     update="panel-${focusViewBean.mainPanel.prefixPanelIndex}, subSidebarForm"
@@ -298,7 +299,9 @@
                                                     icon="bi bi-arrow-clockwise"/>
                                     </p:splitButton>
                                     <p:splitButton value="Enregistrer comme nouvelle vue"
+                                                   styleClass="view-edit-button"
                                                    update="panel-${focusViewBean.mainPanel.prefixPanelIndex}, subSidebarForm"
+                                                   rendered="#{(not focusViewBean.mainPanel.canUserUpdateView()) and focusViewBean.mainPanel.isDirty()}"
                                                    action="#{focusViewBean.mainPanel.saveAsNewView()}"
                                                    icon="bi bi-bookmark-plus">
                                         <p:menuitem value="Réinitialiser la vue"

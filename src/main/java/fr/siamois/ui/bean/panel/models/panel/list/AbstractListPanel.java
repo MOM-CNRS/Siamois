@@ -56,8 +56,17 @@ public abstract class AbstractListPanel<T extends AbstractEntityDTO> extends Abs
     // local
     protected BaseLazyDataModel<T> lazyDataModel;
     protected long totalNumberOfUnits;
-    protected transient TableViewState tableViewState = new TableViewState(); // init state
+    protected transient UITableViewDTO initialView = new UITableViewDTO(); // init state
     protected Long viewId; // view defining the apparence the panel (table configuration mainly)
+
+    @Override
+    public boolean canUserUpdateView() {
+        if(viewId == null) return false;
+        // If view exist, get it and check author
+        UITableViewDTO view = uiViewService.findOne(viewId);
+        // Can edit if it's the same user
+        return view != null && Objects.equals(view.getOwner().getId(), sessionSettingsBean.getUserInfo().getUser().getId());
+    }
 
     @Override
     public boolean isBookmarked(
@@ -67,7 +76,7 @@ public abstract class AbstractListPanel<T extends AbstractEntityDTO> extends Abs
     }
 
     public void reinitializeView(){
-        applyViewState(tableViewState);
+        applyViewState(initialView.getState());
     }
 
     @Override
@@ -76,46 +85,40 @@ public abstract class AbstractListPanel<T extends AbstractEntityDTO> extends Abs
             bookmarkService.delete(sessionSettingsBean.getUserInfo(), buildBookmarkUrl());
         }
         else {
-            
-            if(viewId == null) {
-                UiTableView view = uiViewService.save(
-                        tableViewRuntimeMapper.extract(tableModel),
-                        sessionSettingsBean.getAuthenticatedUser());
-                viewId = view.getId();
-                tableViewState = view.getState();
-            }
 
             bookmarkService.save(sessionSettingsBean.getUserInfo(), buildBookmarkUrl(), titleCodeOrTitle);
         }
     }
 
-    public void updateCurrentBookmark() {
+    public void updateCurrentView() {
         if(viewId == null) {
             // no view to update
         }
         else {
-            UiTableView view = uiViewService.update(
+            initialView.setState(tableViewRuntimeMapper.extract(tableModel));
+            initialView = uiViewService.update(
                     viewId,
-                    tableViewRuntimeMapper.extract(tableModel),
+                    initialView,
                     sessionSettingsBean.getAuthenticatedUser());
-            tableViewState = view.getState();
         }
     }
 
     public void saveAsNewView() {
-        UiTableView view = uiViewService.save(
+
+        UITableViewDTO view = uiViewService.save(
                 tableViewRuntimeMapper.extract(tableModel),
                 sessionSettingsBean.getAuthenticatedUser());
-        viewId = view.getId();
-        tableViewState = view.getState();
 
+        viewId = view.getId();
+        initialView = view;
+        // bookmark it
         bookmarkService.save(sessionSettingsBean.getUserInfo(), buildBookmarkUrl(), titleCodeOrTitle);
     }
 
     @Override
     public boolean isDirty() {
 
-        TableViewState saved = tableViewState;
+        TableViewState saved = initialView.getState();
         if (saved == null) {
             return false;
         }
@@ -254,11 +257,12 @@ public abstract class AbstractListPanel<T extends AbstractEntityDTO> extends Abs
         configureTableColumns();
 
         // get view from id
-        tableViewState = new TableViewState();
+        initialView = new UITableViewDTO();
+        initialView.setState(new TableViewState());
         // Try to fetch from db if set
         if(viewId != null) {
             UITableViewDTO uiTableViewDTO = uiViewService.findOne(viewId);
-            tableViewState = uiTableViewDTO.getState();
+            initialView = uiTableViewDTO;
             if(uiTableViewDTO != null && uiTableViewDTO.getTitle() != null) {
                 // if title is set, set it.
                 titleCodeOrTitle = uiTableViewDTO.getTitle();
@@ -266,10 +270,10 @@ public abstract class AbstractListPanel<T extends AbstractEntityDTO> extends Abs
         }
         else {
             // init from current
-            tableViewState = tableViewRuntimeMapper.extract(tableModel);
+            initialView.setState(tableViewRuntimeMapper.extract(tableModel));
         }
         // otherwise default
-        applyViewState(tableViewState);
+        applyViewState(initialView.getState());
 
     }
 
