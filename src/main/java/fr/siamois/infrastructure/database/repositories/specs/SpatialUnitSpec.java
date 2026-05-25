@@ -1,6 +1,7 @@
 package fr.siamois.infrastructure.database.repositories.specs;
 
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
+import fr.siamois.dto.entity.SpatialUnitDTO;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
@@ -45,5 +46,11 @@ public class SpatialUnitSpec {
     @NonNull
     public static Specification<SpatialUnit> idIn(java.util.Collection<Long> ids) {
         return (root, query, criteriaBuilder) -> root.get("id").in(ids);
+    }
+
+
+    @NonNull
+    public static Specification<SpatialUnit> spatialUnitInSpatialUnit(Long id) {
+        return (root, query, criteriaBuilder) -> root.get("parents").in(id);
     }
 }

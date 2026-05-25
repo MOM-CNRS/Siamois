@@ -25,6 +25,7 @@ import fr.siamois.dto.PlaceSuggestionDTO;
 import fr.siamois.dto.entity.*;
 import fr.siamois.infrastructure.database.repositories.SpatialUnitRepository;
 import fr.siamois.infrastructure.database.repositories.actionunit.ActionUnitRepository;
+import fr.siamois.infrastructure.database.repositories.specs.ActionUnitSpec;
 import fr.siamois.infrastructure.database.repositories.specs.SpatialUnitSpec;
 import fr.siamois.mapper.*;
 import lombok.RequiredArgsConstructor;
@@ -591,6 +592,26 @@ public class SpatialUnitService implements ArkEntityService {
         Specification<SpatialUnit> specs = prepareSpecs(institutionDTO, filterDTO);
         return Math.toIntExact(spatialUnitRepository.count(specs));
     }
+
+    public Page<SpatialUnitDTO> searchSpatialUnitsInSpatialUnit(InstitutionDTO institutionDTO,
+                                                                SpatialUnitDTO spatialUnitDTO,
+                                                                FilterDTO filterDTO, Pageable pageable) {
+        Specification<SpatialUnit> specs = prepareSpecs(institutionDTO, filterDTO);
+        specs = specs.and(SpatialUnitSpec.spatialUnitInSpatialUnit(spatialUnitDTO.getId()));
+        Page<SpatialUnit> result = spatialUnitRepository.findAll(specs, pageable);
+        log.trace("Found {} SpatialUnits", result.getTotalElements());
+        return result.map(spatialUnitMapper::convert);
+    }
+
+    public int countSearchResultsInSpatialUnit(InstitutionDTO institutionDTO,
+                                               SpatialUnitDTO spatialUnitDTO,
+                                               FilterDTO filterDTO) {
+        Specification<SpatialUnit> specs = prepareSpecs(institutionDTO, filterDTO);
+        specs = specs.and(SpatialUnitSpec.spatialUnitInSpatialUnit(spatialUnitDTO.getId()));
+        return Math.toIntExact(spatialUnitRepository.count(specs));
+    }
+
+
 
     private Specification<SpatialUnit> prepareSpecs(InstitutionDTO institutionDTO, FilterDTO filterDTO) {
         Specification<SpatialUnit> base = SpatialUnitSpec.belongsToInstitution(institutionDTO.getId());

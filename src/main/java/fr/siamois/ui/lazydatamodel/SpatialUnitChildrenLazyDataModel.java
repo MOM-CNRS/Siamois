@@ -4,6 +4,7 @@ import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.dto.FilterDTO;
 import fr.siamois.dto.entity.SpatialUnitDTO;
 import fr.siamois.ui.bean.LangBean;
+import fr.siamois.ui.bean.SessionSettingsBean;
 import lombok.Getter;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -14,26 +15,31 @@ public class SpatialUnitChildrenLazyDataModel extends BaseSpatialUnitLazyDataMod
     private final transient LangBean langBean;
     @Getter
     private final transient SpatialUnitDTO spatialUnit;
+    private final transient SessionSettingsBean sessionSettings;
+
 
     public SpatialUnitChildrenLazyDataModel(SpatialUnitService spatialUnitService
             , LangBean langBean
-            , SpatialUnitDTO spatialUnit) {
+            , SpatialUnitDTO spatialUnit, SessionSettingsBean sessionSettings) {
         this.spatialUnitService = spatialUnitService;
         this.langBean = langBean;
         this.spatialUnit = spatialUnit;
-    }
-
-    @Override
-    protected Page<SpatialUnitDTO> loadData(FilterDTO filter, Pageable pageable) {
-        return spatialUnitService.findAllByParentAndByNameContainingAndByCategoriesAndByGlobalContaining(
-                spatialUnit,
-                nameFilter, null, null, null,
-                langBean.getLanguageCode(),
-                pageable);
+        this.sessionSettings = sessionSettings;
     }
 
     @Override
     protected int countWithFilter(FilterDTO filters) {
-        return 0;
+        return spatialUnitService.countSearchResultsInSpatialUnit(sessionSettings.getSelectedInstitution(),
+                spatialUnit,
+                filters);
+    }
+
+
+    @Override
+    protected Page<SpatialUnitDTO> loadData(FilterDTO filter, Pageable pageable) {
+        return spatialUnitService.searchSpatialUnitsInSpatialUnit(sessionSettings.getSelectedInstitution(),
+                spatialUnit,
+                filter,
+                pageable);
     }
 }
