@@ -169,9 +169,33 @@ public class FilterAndSortUtils {
                 default -> MatchMode.EQUALS;
             };
 
+            Object value = switch (state.getType()) {
+
+                case TEXT -> state.getValue();
+
+                case CONCEPT, PERSON, ACTION_UNIT, SPATIAL_UNIT -> {
+                    List<Map<String, Object>> raw =
+                            (List<Map<String, Object>>) state.getValue();
+
+                    List<Long> ids = raw.stream()
+                            .map(m -> ((Number) m.get("id")).longValue())
+                            .toList();
+
+                    yield ids;
+                }
+
+                case DATE_RANGE -> state.getValue();
+
+                case BOOLEAN -> state.getValue();
+
+                default -> state.getValue() != null
+                        ? state.getValue().toString()
+                        : null;
+            };
+
             FilterMeta meta = FilterMeta.builder()
                     .field(state.getColumnId())
-                    .filterValue(state.getValue())
+                    .filterValue( value )
                     .matchMode(matchMode)
                     .build();
 

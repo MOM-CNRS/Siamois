@@ -639,12 +639,31 @@ public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
             return list.stream()
                     .filter(Objects::nonNull)
                     .map(v -> {
+
+                        // legacy numeric support
                         if (v instanceof Number n) {
                             return n.longValue();
                         }
+
                         if (v instanceof String s) {
                             return Long.parseLong(s);
                         }
+
+                        // new object support:
+                        // { "id": 12, "label": "Specimen" }
+                        if (v instanceof Map<?, ?> map) {
+
+                            Object id = map.get("id");
+
+                            if (id instanceof Number n) {
+                                return n.longValue();
+                            }
+
+                            if (id instanceof String s) {
+                                return Long.parseLong(s);
+                            }
+                        }
+
                         throw new IllegalArgumentException(
                                 "Cannot convert value to Long: " + v
                         );
@@ -696,10 +715,10 @@ public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
         );
     }
 
+    @SuppressWarnings("unchecked")
     public void applyFilterStates(
             Map<String, FilterState> filters
     ) {
-
 
         if (filters == null) {
             return;
@@ -722,18 +741,29 @@ public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
 
                 case CONCEPT -> {
 
-                    List<Long> ids =
-                            castLongList(state.getValue());
+                    List<Map<String, Object>> rawValues =
+                            (List<Map<String, Object>>) state.getValue();
 
                     List<ConceptAutocompleteDTO> values =
-                            ids.stream()
-                                    .map(id -> {
-                                        ConceptDTO concept = new ConceptDTO();
+                            rawValues.stream()
+                                    .map(raw -> {
+
+                                        Long id =
+                                                ((Number) raw.get("id")).longValue();
+
+                                        String label =
+                                                (String) raw.get("label");
+
+                                        ConceptDTO concept =
+                                                new ConceptDTO();
+
                                         concept.setId(id);
-                                        // todo : load concept from db ??
-                                        ConceptAutocompleteDTO dto =
-                                                new ConceptAutocompleteDTO(concept, "Test", langBean.getLanguageCode());
-                                        return dto;
+
+                                        return new ConceptAutocompleteDTO(
+                                                concept,
+                                                label,
+                                                langBean.getLanguageCode()
+                                        );
                                     })
                                     .toList();
 
@@ -745,16 +775,26 @@ public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
 
                 case PERSON -> {
 
-                    List<Long> ids =
-                            castLongList(state.getValue());
+                    List<Map<String, Object>> rawValues =
+                            (List<Map<String, Object>>) state.getValue();
 
                     List<PersonDTO> values =
-                            ids.stream()
-                                    .map(id -> {
+                            rawValues.stream()
+                                    .map(raw -> {
+
+                                        Long id =
+                                                ((Number) raw.get("id")).longValue();
+
+                                        String label =
+                                                (String) raw.get("label");
+
                                         PersonDTO dto =
                                                 new PersonDTO();
 
                                         dto.setId(id);
+
+                                        // fake display label
+                                        dto.setName(label);
 
                                         return dto;
                                     })
@@ -768,16 +808,25 @@ public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
 
                 case ACTION_UNIT -> {
 
-                    List<Long> ids =
-                            castLongList(state.getValue());
+                    List<Map<String, Object>> rawValues =
+                            (List<Map<String, Object>>) state.getValue();
 
                     List<ActionUnitDTO> values =
-                            ids.stream()
-                                    .map(id -> {
+                            rawValues.stream()
+                                    .map(raw -> {
+
+                                        Long id =
+                                                ((Number) raw.get("id")).longValue();
+
+                                        String label =
+                                                (String) raw.get("label");
+
                                         ActionUnitDTO dto =
                                                 new ActionUnitDTO();
 
                                         dto.setId(id);
+
+                                        dto.setName(label);
 
                                         return dto;
                                     })
@@ -791,16 +840,25 @@ public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
 
                 case SPATIAL_UNIT -> {
 
-                    List<Long> ids =
-                            castLongList(state.getValue());
+                    List<Map<String, Object>> rawValues =
+                            (List<Map<String, Object>>) state.getValue();
 
                     List<SpatialUnitDTO> values =
-                            ids.stream()
-                                    .map(id -> {
+                            rawValues.stream()
+                                    .map(raw -> {
+
+                                        Long id =
+                                                ((Number) raw.get("id")).longValue();
+
+                                        String label =
+                                                (String) raw.get("label");
+
                                         SpatialUnitDTO dto =
                                                 new SpatialUnitDTO();
 
                                         dto.setId(id);
+
+                                        dto.setName(label);
 
                                         return dto;
                                     })
@@ -826,9 +884,9 @@ public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
         }
 
         // Init lazy
-        lazyDataModel.setInitialFilter(FilterAndSortUtils.toFilterMetaMap(
-                filters
-        ));
+        lazyDataModel.setInitialFilter(
+                FilterAndSortUtils.toFilterMetaMap(filters)
+        );
     }
 
     public Map<String, FilterState> extractFilterStates() {
@@ -846,7 +904,10 @@ public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
 
             state.setValue(
                     values.stream()
-                            .map(v -> v.concept().getId())
+                            .map(v -> Map.of(
+                                    "id", v.concept().getId(),
+                                    "label", v.getConceptLabelToDisplay().getLabel()
+                            ))
                             .toList()
             );
 
@@ -864,7 +925,10 @@ public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
 
             state.setValue(
                     values.stream()
-                            .map(PersonDTO::getId)
+                            .map(v -> Map.of(
+                                    "id", v.getId(),
+                                    "label", v.displayName()
+                            ))
                             .toList()
             );
 
@@ -882,7 +946,10 @@ public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
 
             state.setValue(
                     values.stream()
-                            .map(ActionUnitDTO::getId)
+                            .map(v -> Map.of(
+                                    "id", v.getId(),
+                                    "label", v.getName()
+                            ))
                             .toList()
             );
 
@@ -900,7 +967,10 @@ public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
 
             state.setValue(
                     values.stream()
-                            .map(SpatialUnitDTO::getId)
+                            .map(v -> Map.of(
+                                    "id", v.getId(),
+                                    "label", v.getName()
+                            ))
                             .toList()
             );
 
@@ -922,15 +992,6 @@ public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
         });
 
         return filters;
-    }
-
-    public Object getFilterForCol(TableColumn column) {
-        if (column instanceof FormFieldColumn) {
-            if (column.getField() instanceof CustomFieldSelectOneFromFieldCode) {
-                return conceptFilterValues.get(column.getField().getValueBinding());
-            }
-        }
-        return null;
     }
 
     public String getSelectedAndTotalCount() {
