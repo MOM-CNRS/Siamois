@@ -44,10 +44,11 @@ public class UiViewService {
         return uiTableViewMapper.toDto(entity);
     }
 
-    public UITableViewDTO save(TableViewState tableViewState, PersonDTO personDTO) {
+    public UITableViewDTO save(TableViewState tableViewState, PersonDTO personDTO, String title) {
 
         UiTableView entity = new UiTableView();
         entity.setState(tableViewState);
+        entity.setTitle(title);
         entity.setOwner(personMapper.invertConvert(personDTO));
         entity = uiViewRepository.save(entity);
 

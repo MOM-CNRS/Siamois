@@ -107,7 +107,7 @@ public abstract class AbstractListPanel<T extends AbstractEntityDTO> extends Abs
 
         UITableViewDTO view = uiViewService.save(
                 tableViewRuntimeMapper.extract(tableModel),
-                sessionSettingsBean.getAuthenticatedUser());
+                sessionSettingsBean.getAuthenticatedUser(), titleCodeOrTitle);
 
         viewId = view.getId();
         initialView = view;
