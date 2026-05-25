@@ -1,5 +1,6 @@
 package fr.siamois.dto.view;
 
+import fr.siamois.dto.entity.PersonDTO;
 import lombok.Data;
 
 import java.time.Instant;
@@ -12,8 +13,12 @@ public class UITableViewDTO {
 
     private String resourceType;
 
+    private String title;
+
     /**
      * Full UI configuration
      */
     private TableViewState state;
+
+    private PersonDTO owner;
 }

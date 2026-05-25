@@ -11,10 +11,7 @@ import fr.siamois.domain.services.vocabulary.FieldConfigurationService;
 import fr.siamois.domain.services.vocabulary.FieldService;
 import fr.siamois.domain.services.vocabulary.LabelService;
 import fr.siamois.dto.entity.AbstractEntityDTO;
-import fr.siamois.dto.view.ColumnState;
-import fr.siamois.dto.view.FilterState;
-import fr.siamois.dto.view.SortState;
-import fr.siamois.dto.view.TableViewState;
+import fr.siamois.dto.view.*;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
 import fr.siamois.ui.bean.panel.models.panel.AbstractPanel;
@@ -28,6 +25,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import org.primefaces.component.api.UITableState;
 import org.primefaces.model.menu.DefaultMenuItem;
 import org.springframework.context.ApplicationContext;
 
@@ -259,7 +257,12 @@ public abstract class AbstractListPanel<T extends AbstractEntityDTO> extends Abs
         tableViewState = new TableViewState();
         // Try to fetch from db if set
         if(viewId != null) {
-            tableViewState = uiViewService.getState(viewId);
+            UITableViewDTO uiTableViewDTO = uiViewService.findOne(viewId);
+            tableViewState = uiTableViewDTO.getState();
+            if(uiTableViewDTO != null && uiTableViewDTO.getTitle() != null) {
+                // if title is set, set it.
+                titleCodeOrTitle = uiTableViewDTO.getTitle();
+            }
         }
         else {
             // init from current

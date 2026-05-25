@@ -218,7 +218,7 @@
 
                                     <p:column style="vertical-align: middle; width:100%">
                                         <div class="bookmark-row" style="width: 100%;">
-                                            <p:cellEditor style="width: 100%">
+                                            <p:cellEditor style="width: 100%" >
                                                 <f:facet name="output">
                                                     <p:commandButton id="bookmarkLink"
                                                                      action="#{bookmarkMenuBean.redirectToEntry(bkm)}"
@@ -245,12 +245,14 @@
                                     </p:column>
 
                                     <p:column style="width: 40px; text-align: center; vertical-align: middle;">
-                                        <p:rowEditor editTitle="Modifier" saveTitle="Valider" cancelTitle="Annuler"/>
+                                        <p:rowEditor rendered="#{bookmarkMenuBean.canEditViewNameOfBookmark(bkm)}"
+                                                     editTitle="Modifier" saveTitle="Valider" cancelTitle="Annuler" />
                                     </p:column>
 
                                     <p:column style="width: 40px; text-align: center; vertical-align: middle;">
                                         <p:commandButton action="#{bookmarkMenuBean.deleteItem(bkm)}"
                                                          icon="bi bi-trash"
+
                                                          update="bookmarksTable"
                                                          process="@this"
                                                          styleClass="ui-button-flat ui-button-danger rounded-button"/>

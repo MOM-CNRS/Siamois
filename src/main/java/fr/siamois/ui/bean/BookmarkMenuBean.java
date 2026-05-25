@@ -2,8 +2,11 @@ package fr.siamois.ui.bean;
 
 
 import fr.siamois.domain.models.UserInfo;
+import fr.siamois.domain.models.uiview.UiTableView;
 import fr.siamois.domain.services.BookmarkService;
+import fr.siamois.domain.services.UiViewService;
 import fr.siamois.dto.entity.BookmarkDTO;
+import fr.siamois.dto.view.UITableViewDTO;
 import fr.siamois.ui.bean.panel.FlowBean;
 import jakarta.annotation.PostConstruct;
 import lombok.Getter;
@@ -25,6 +28,7 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 @Slf4j
 @Component
@@ -36,6 +40,7 @@ public class BookmarkMenuBean implements Serializable {
     private final FlowBean flowBean;
     private final SessionSettingsBean sessionSettingsBean;
     private final BookmarkService bookmarkService;
+    private final UiViewService uiViewService;
 
     // PrimeFaces Lazy Model
     private LazyDataModel<BookmarkDTO> lazyModel;
@@ -97,10 +102,13 @@ public class BookmarkMenuBean implements Serializable {
 
     public void onRowEdit(RowEditEvent<BookmarkDTO> event) {
         BookmarkDTO editedItem = event.getObject();
-        log.trace("Saving updated title for Bookmark ID {}: {}", editedItem.getId(), editedItem.getTitle());
-        bookmarkService.update(editedItem);
-
-
+        Long viewId = resolveViewId(editedItem.getResourceUri());
+        if(viewId == null) { return ;}
+        // If view exist, get it
+        UITableViewDTO view = uiViewService.findOne(viewId);
+        if(view == null) { return ;}
+        view.setTitle(editedItem.getTitle());
+        uiViewService.save(view);
     }
 
     public void onRowCancel(RowEditEvent<BookmarkDTO> event) {
@@ -109,4 +117,38 @@ public class BookmarkMenuBean implements Serializable {
         // No database action required here, JSF rolls back the local property changes natively
     }
 
+    public Boolean canEditViewNameOfBookmark(BookmarkDTO bookmark) {
+        Long viewId = resolveViewId(bookmark.getResourceUri());
+        if(viewId == null) { return false ;}
+        // If view exist, get it and check author
+        UITableViewDTO view = uiViewService.findOne(viewId);
+        // Can edit if it's the same user
+        return view != null && Objects.equals(view.getOwner().getId(), sessionSettingsBean.getUserInfo().getUser().getId());
+    }
+
+    private Long resolveViewId(String path) {
+
+        if (path == null || path.isBlank()) {
+            return null;
+        }
+
+        String[] pathAndQuery = path.split("\\?", 2);
+
+        if (pathAndQuery.length < 2) {
+            return null;
+        }
+
+        String query = pathAndQuery[1];
+
+        for (String param : query.split("&")) {
+
+            String[] kv = param.split("=", 2);
+
+            if (kv.length == 2 && "viewId".equals(kv[0])) {
+                return Long.parseLong(kv[1]);
+            }
+        }
+
+        return null;
+    }
 }

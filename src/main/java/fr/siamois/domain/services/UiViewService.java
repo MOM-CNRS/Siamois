@@ -4,8 +4,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import fr.siamois.domain.models.uiview.UiTableView;
 import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.dto.view.TableViewState;
+import fr.siamois.dto.view.UITableViewDTO;
 import fr.siamois.infrastructure.database.UiViewRepository;
 import fr.siamois.mapper.PersonMapper;
+import fr.siamois.mapper.UITableViewMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.actuate.env.EnvironmentEndpoint;
 import org.springframework.stereotype.Service;
@@ -19,7 +21,7 @@ public class UiViewService {
 
     private final UiViewRepository uiViewRepository;
     private final PersonMapper personMapper;
-    private final EnvironmentEndpoint environmentEndpoint;
+    private final UITableViewMapper uiTableViewMapper;
 
     public TableViewState getState(Long viewId) {
 
@@ -29,6 +31,16 @@ public class UiViewService {
                 );
 
         return entity.getState();
+    }
+
+    public UITableViewDTO findOne(Long viewId) {
+
+        UiTableView entity = uiViewRepository.findById(viewId)
+                .orElseThrow(() ->
+                        new IllegalArgumentException("UI View not found: " + viewId)
+                );
+
+        return uiTableViewMapper.toDto(entity);
     }
 
     public UiTableView save(TableViewState tableViewState, PersonDTO personDTO) {
@@ -50,5 +62,9 @@ public class UiViewService {
         entity = uiViewRepository.save(entity);
 
         return entity;
+    }
+
+    public UITableViewDTO save(UITableViewDTO uiTableViewDTO) {
+        return uiTableViewMapper.toDto(uiViewRepository.save(uiTableViewMapper.toEntity(uiTableViewDTO)));
     }
 }

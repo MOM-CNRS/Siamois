@@ -26,6 +26,8 @@ public class UiTableView {
      */
     private String resourceType;
 
+    private String title;
+
     /**
      * The owner of the view
      */
