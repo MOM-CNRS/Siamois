@@ -2,6 +2,7 @@ package fr.siamois.infrastructure.database.repositories.specs;
 
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.dto.entity.SpatialUnitDTO;
+import jakarta.persistence.criteria.Join;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
@@ -51,6 +52,9 @@ public class SpatialUnitSpec {
 
     @NonNull
     public static Specification<SpatialUnit> spatialUnitInSpatialUnit(Long id) {
-        return (root, query, criteriaBuilder) -> root.get("parents").in(id);
+        return (root, query, criteriaBuilder) -> {
+            Join<SpatialUnit, SpatialUnit> parentsJoin = root.join("parents");
+            return criteriaBuilder.equal(parentsJoin.get("id"), id);
+        };
     }
 }
