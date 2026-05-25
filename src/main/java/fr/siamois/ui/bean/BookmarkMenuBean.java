@@ -8,6 +8,7 @@ import fr.siamois.domain.services.UiViewService;
 import fr.siamois.dto.entity.BookmarkDTO;
 import fr.siamois.dto.view.UITableViewDTO;
 import fr.siamois.ui.bean.panel.FlowBean;
+import fr.siamois.ui.utils.FilterStateTooltipHelper;
 import jakarta.annotation.PostConstruct;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -175,5 +176,14 @@ public class BookmarkMenuBean implements Serializable {
         }
 
         return null;
+    }
+
+    public String getFilterTooltipSummary(BookmarkDTO bookmark) {
+        Long viewId = resolveViewId(bookmark.getResourceUri());
+        if(viewId == null) { return null;}
+        // If view exist, get it
+        UITableViewDTO view = uiViewService.findOne(viewId);
+        if(view == null) { return null;}
+        return FilterStateTooltipHelper.buildTooltip(view.getState().getFilters());
     }
 }

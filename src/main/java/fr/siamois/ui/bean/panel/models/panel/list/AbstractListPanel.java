@@ -19,6 +19,7 @@ import fr.siamois.ui.lazydatamodel.BaseLazyDataModel;
 import fr.siamois.ui.table.TableViewRuntimeMapper;
 import fr.siamois.ui.table.viewmodel.EntityTableViewModel;
 import fr.siamois.ui.table.column.TableColumn;
+import fr.siamois.ui.utils.FilterStateTooltipHelper;
 import fr.siamois.utils.MessageUtils;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -105,14 +106,22 @@ public abstract class AbstractListPanel<T extends AbstractEntityDTO> extends Abs
 
     public void saveAsNewView() {
 
+        String filterSummary =
+                FilterStateTooltipHelper.buildTooltip(
+                        tableViewRuntimeMapper.extract(tableModel).getFilters()
+                );
+
+        String title =
+                langBean.msg(getBreadcrumbKey()) + filterSummary.substring(0, 30);
         UITableViewDTO view = uiViewService.save(
                 tableViewRuntimeMapper.extract(tableModel),
-                sessionSettingsBean.getAuthenticatedUser(), titleCodeOrTitle);
+                sessionSettingsBean.getAuthenticatedUser(), title);
 
         viewId = view.getId();
         initialView = view;
         // bookmark it
         bookmarkService.save(sessionSettingsBean.getUserInfo(), buildBookmarkUrl(), titleCodeOrTitle);
+        titleCodeOrTitle = title;
     }
 
     @Override
