@@ -138,10 +138,10 @@ public class FocusViewBean implements Serializable {
             mainPanel.setRoot(true);
             main.setIcon(mainPanel.getIcon());
             if(mainPanel instanceof AbstractListPanel<?>) {
-                main.setTitle(langBean.msg(mainPanel.getTitleCodeOrTitle()));
+                main.setTitle(mainPanel.resolveTitleOrTitleCode());
             }
             else {
-                main.setTitle(mainPanel.getTitleCodeOrTitle());
+                main.setTitle(mainPanel.resolveTitleOrTitleCode());
             }
 
             main.setUri(mainPanel.ressourceUri());
@@ -159,10 +159,10 @@ public class FocusViewBean implements Serializable {
             overviewPanel.setParentOrOverview(mainPanel);
             side.setIcon(overviewPanel.getIcon());
             if(overviewPanel instanceof AbstractListPanel<?>) {
-                side.setTitle(langBean.msg(overviewPanel.getTitleCodeOrTitle()));
+                side.setTitle(langBean.msg(overviewPanel.resolveTitleOrTitleCode()));
             }
             else {
-                side.setTitle(overviewPanel.getTitleCodeOrTitle());
+                side.setTitle(overviewPanel.resolveTitleOrTitleCode());
             }
 
             side.setUri(overviewPanel.ressourceUri());

@@ -224,12 +224,12 @@
                                                                      action="#{bookmarkMenuBean.redirectToEntry(bkm)}"
                                                                      icon="#{bkm.bookmarkIcon}"
                                                                      process="@this"
-                                                                     value="#{navBean.bookmarkTitle(bkm)}"
+                                                                     value="#{bookmarkMenuBean.resolveName(bkm)}"
                                                                      styleClass="nav-link ui-button-flat bookmark-full-button"
                                                                      style="color: #{bkm.bookmarkColor} !important; width:100%">
                                                     </p:commandButton>
                                                     <p:tooltip for="bookmarkLink"
-                                                               value="#{navBean.bookmarkTitle(bkm)}"/>
+                                                               value="#{bookmarkMenuBean.resolveName(bkm)}"/>
                                                 </f:facet>
 
                                                 <f:facet name="input">
@@ -280,14 +280,27 @@
                             <div class="sideview-titlebar" style="background: var(--siamois-green-light-100);">
                                 <h:form style="float:right;" id="actionForm-${focusViewBean.mainPanel.panelIndex}">
                                     <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
-                                    <p:splitButton id="dirtyViewSplitButton" value="Mettre à jour" icon="bi bi-bookmark"
+                                    <p:splitButton id="dirtyViewSplitButton"
+                                                   rendered="#{focusViewBean.mainPanel.canUserUpdateView()
+                                                   and focusViewBean.mainPanel.isDirty()
+                                                   and focusViewBean.mainPanel.isBookmarked()}"
+                                                   value="Mettre à jour"
+                                                   icon="bi bi-bookmark"
                                                    action="#{focusViewBean.mainPanel.updateCurrentBookmark()}"
-                                                   update="panel-${focusViewBean.mainPanel.prefixPanelIndex}"
-                                                   rendered="#{focusViewBean.mainPanel.isDirty() and focusViewBean.mainPanel.isBookmarked()}">
+                                                   update="panel-${focusViewBean.mainPanel.prefixPanelIndex}">
                                         <p:menuitem value="Enregistrer comme nouvelle vue"
                                                     update="panel-${focusViewBean.mainPanel.prefixPanelIndex}, subSidebarForm"
                                                     action="#{focusViewBean.mainPanel.saveAsNewView()}"
                                                     icon="bi bi-bookmark-plus"/>
+                                        <p:menuitem value="Réinitialiser la vue"
+                                                    update="panel-${focusViewBean.mainPanel.prefixPanelIndex}"
+                                                    action="#{focusViewBean.mainPanel.reinitializeView()}"
+                                                    icon="bi bi-arrow-clockwise"/>
+                                    </p:splitButton>
+                                    <p:splitButton value="Enregistrer comme nouvelle vue"
+                                                   update="panel-${focusViewBean.mainPanel.prefixPanelIndex}, subSidebarForm"
+                                                   action="#{focusViewBean.mainPanel.saveAsNewView()}"
+                                                   icon="bi bi-bookmark-plus">
                                         <p:menuitem value="Réinitialiser la vue"
                                                     update="panel-${focusViewBean.mainPanel.prefixPanelIndex}"
                                                     action="#{focusViewBean.mainPanel.reinitializeView()}"

@@ -41,6 +41,7 @@ public class BookmarkMenuBean implements Serializable {
     private final SessionSettingsBean sessionSettingsBean;
     private final BookmarkService bookmarkService;
     private final UiViewService uiViewService;
+    private final NavBean navBean;
 
     // PrimeFaces Lazy Model
     private LazyDataModel<BookmarkDTO> lazyModel;
@@ -109,6 +110,30 @@ public class BookmarkMenuBean implements Serializable {
         if(view == null) { return ;}
         view.setTitle(editedItem.getTitle());
         uiViewService.save(view);
+    }
+
+    public String resolveName(BookmarkDTO bookmark) {
+
+        Long viewId = resolveViewId(bookmark.getResourceUri());
+
+        if (viewId == null) {
+            return navBean.bookmarkTitle(bookmark);
+        }
+
+        UITableViewDTO view = uiViewService.findOne(viewId);
+
+        if (view != null
+                && Objects.equals(
+                view.getOwner().getId(),
+                sessionSettingsBean.getUserInfo().getUser().getId()
+        )
+                && view.getTitle() != null
+                && !view.getTitle().isBlank()) {
+
+            return view.getTitle();
+        }
+
+        return navBean.bookmarkTitle(bookmark);
     }
 
     public void onRowCancel(RowEditEvent<BookmarkDTO> event) {
