@@ -43,8 +43,7 @@ function handleSidebarToggle(targetMode) {
     var isSameModeActive = sidebar.classList.contains(requestedModeClass);
 
     if (!isCurrentlyCollapsed && isSameModeActive) {
-        // CASE 1: The sidebar is open AND you clicked the EXACT same icon.
-        // Action: Slide it shut smoothly.
+        // toggle the button already open
         sidebar.classList.add('is-collapsed');
     }
     else if (!isCurrentlyCollapsed && !isSameModeActive) {
@@ -54,11 +53,8 @@ function handleSidebarToggle(targetMode) {
         sidebar.className = sidebar.className.replace(/mode-\w+/g, requestedModeClass);
     }
     else {
-        // CASE 3: The sidebar was completely closed.
-        // Action: Wait a split second for PrimeFaces to inject the HTML content, then slide it open.
-        setTimeout(function() {
-            sidebar.classList.remove('is-collapsed');
-        }, 50);
+        sidebar.className = sidebar.className.replace(/mode-\w+/g, requestedModeClass);
+        sidebar.classList.remove('is-collapsed');
     }
 }
 
