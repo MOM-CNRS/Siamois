@@ -90,17 +90,17 @@ public class FocusViewBean implements Serializable {
 
             case "action-unit" ->
                     isListPanel
-                            ? panelFactory.createActionUnitListPanel()
+                            ? panelFactory.createActionUnitListPanel(viewId)
                             : panelFactory.createActionUnitPanel(id);
 
             case "spatial-unit" ->
                     isListPanel
-                            ? panelFactory.createSpatialUnitListPanel()
+                            ? panelFactory.createSpatialUnitListPanel(viewId)
                             : panelFactory.createSpatialUnitPanel(id);
 
             case "specimen" ->
                     isListPanel
-                            ? panelFactory.createSpecimenListPanel()
+                            ? panelFactory.createSpecimenListPanel(viewId)
                             : panelFactory.createSpecimenPanel(id);
 
             case "container" ->

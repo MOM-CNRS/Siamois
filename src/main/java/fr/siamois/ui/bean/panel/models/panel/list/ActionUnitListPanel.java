@@ -173,6 +173,11 @@ public class ActionUnitListPanel extends AbstractListPanel<ActionUnitDTO> implem
             return this;
         }
 
+        public ActionUnitListPanel.ActionUnitListPanelBuilder viewId(Long viewId) {
+            actionUnitListPanel.setViewId(viewId);
+            return this;
+        }
+
         public ActionUnitListPanel build() {
             actionUnitListPanel.init();
             return actionUnitListPanel;

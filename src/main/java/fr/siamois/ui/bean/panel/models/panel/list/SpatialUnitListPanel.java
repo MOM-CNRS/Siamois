@@ -166,6 +166,12 @@ public class SpatialUnitListPanel extends AbstractListPanel<SpatialUnitDTO>  imp
             return this;
         }
 
+        public SpatialUnitListPanel.SpatialUnitListPanelBuilder viewId(Long viewId) {
+            spatialUnitListPanel.setViewId(viewId);
+
+            return this;
+        }
+
         public SpatialUnitListPanel build() {
             spatialUnitListPanel.init();
             return spatialUnitListPanel;

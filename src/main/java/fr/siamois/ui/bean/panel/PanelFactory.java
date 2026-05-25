@@ -132,10 +132,23 @@ public class PanelFactory {
                 .build();
     }
 
+    public SpatialUnitListPanel createSpatialUnitListPanel(Long viewId) {
+        return new SpatialUnitListPanel.SpatialUnitListPanelBuilder(spatialUnitListPanelProvider)
+                .viewId(viewId)
+                .build();
+    }
+
     public ActionUnitListPanel createActionUnitListPanel() {
         return new ActionUnitListPanel.ActionUnitListPanelBuilder(actionUnitListPanelProvider)
                 .build();
     }
+
+    public ActionUnitListPanel createActionUnitListPanel(Long viewId) {
+        return new ActionUnitListPanel.ActionUnitListPanelBuilder(actionUnitListPanelProvider)
+                .viewId(viewId)
+                .build();
+    }
+
 
     public ContainerListPanel createContainerListPanel() {
         return new ContainerListPanel.ContainerListPanelBuilder(containerListPanelProvider).build();
@@ -156,6 +169,12 @@ public class PanelFactory {
 
     public SpecimenListPanel createSpecimenListPanel() {
         return new SpecimenListPanel.Builder(specimenListPanel)
+                .build();
+    }
+
+    public SpecimenListPanel createSpecimenListPanel(Long viewId) {
+        return new SpecimenListPanel.Builder(specimenListPanel)
+                .viewId(viewId)
                 .build();
     }
 

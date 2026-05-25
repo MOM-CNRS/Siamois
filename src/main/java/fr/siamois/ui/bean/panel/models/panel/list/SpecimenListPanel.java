@@ -161,6 +161,12 @@ public class SpecimenListPanel extends AbstractListPanel<SpecimenDTO>  implement
             return this;
         }
 
+        public SpecimenListPanel.Builder viewId(Long viewId) {
+            specimenListPanel.setViewId(viewId);
+
+            return this;
+        }
+
         public SpecimenListPanel build() {
             specimenListPanel.init();
             return specimenListPanel;
