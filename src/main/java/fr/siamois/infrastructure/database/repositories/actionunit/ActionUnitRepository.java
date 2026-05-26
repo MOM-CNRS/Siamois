@@ -385,4 +385,7 @@ WHERE au.fk_institution_id = :institutionId AND has_childrens IS FALSE AND actio
             SELECT id FROM ascend
             """, nativeQuery = true)
     List<Long> findAncestorClosure(@Param("seedIds") Long[] seedIds);
+
+    @Query("SELECT au FROM ActionUnit au JOIN FETCH au.createdBy WHERE au.createdBy.id = :personId")
+    Set<ActionUnit> findAllByCreatedById(@Param("personId") Long personId);
 }

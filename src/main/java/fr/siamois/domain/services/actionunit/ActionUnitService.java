@@ -110,14 +110,13 @@ public class ActionUnitService implements ArkEntityService {
     /**
      * Save an ActionUnit without a transaction.
      *
-     * @param info        User information containing the user and institution
+     * @param info           User information containing the user and institution
      * @param actionUnitDTO  The ActionUnit to save
      * @param typeConceptDTO The concept type of the ActionUnit
      * @return The saved ActionUnit
      */
     public ActionUnit saveNotTransactional(UserInfo info, ActionUnitDTO actionUnitDTO, ConceptDTO typeConceptDTO)
             throws ActionUnitAlreadyExistsException {
-
 
 
         Optional<ActionUnit> existingName = actionUnitRepository.findByNameAndCreatedByInstitutionId(actionUnitDTO.getName(), info.getInstitution().getId());
@@ -135,15 +134,14 @@ public class ActionUnitService implements ArkEntityService {
         }
 
 
-
         actionUnitDTO.setCreatedByInstitution(info.getInstitution());
-        if(actionUnitDTO.getCreationTime() == null) {
+        if (actionUnitDTO.getCreationTime() == null) {
             actionUnitDTO.setCreationTime(OffsetDateTime.now(ZoneId.systemDefault()));
         }
 
         // Generate unique identifier if not presents
         if (actionUnitDTO.getFullIdentifier() == null) {
-            if(actionUnitDTO.getIdentifier() == null) {
+            if (actionUnitDTO.getIdentifier() == null) {
                 throw new NullActionUnitIdentifierException("ActionUnit identifier must be set");
             }
             actionUnitDTO.setFullIdentifier(actionUnitDTO.getIdentifier());
@@ -156,7 +154,7 @@ public class ActionUnitService implements ArkEntityService {
         Person user = personMapper.invertConvert(info.getUser());
         actionUnit.setCreatedBy(user);
 
-        if(actionUnitDTO.getMainLocation() != null && actionUnitDTO.getMainLocation().getId() == null) {
+        if (actionUnitDTO.getMainLocation() != null && actionUnitDTO.getMainLocation().getId() == null) {
             SpatialUnit toSave = new SpatialUnit();
             toSave.setCategory(actionUnit.getMainLocation().getCategory());
             toSave.setName(actionUnitDTO.getMainLocation().getName());
@@ -194,7 +192,6 @@ public class ActionUnitService implements ArkEntityService {
             // Mise à jour de la relation ManyToMany ou OneToMany
             actionUnit.setSpatialContext(persistentContext);
         }
-
 
 
         try {
@@ -309,13 +306,13 @@ public class ActionUnitService implements ArkEntityService {
      * If there is no next, returns the oldest one (wraps around).
      *
      * @param institution The institution to find ActionUnits for
-     * @param current The current ActionUnit to find the next one from
+     * @param current     The current ActionUnit to find the next one from
      * @return The next ActionUnitDTO, or the oldest one if there is no next
      */
     public ActionUnitDTO findNextByInstitution(InstitutionDTO institution, ActionUnitDTO current) {
         return actionUnitRepository
                 .findNext(
-                        institution.getId(), current.getCreationTime(),current.getId())
+                        institution.getId(), current.getCreationTime(), current.getId())
                 .map(actionUnitMapper::convert)
                 .orElseGet(() -> actionUnitRepository
                         .findFirst(institution.getId())
@@ -329,13 +326,13 @@ public class ActionUnitService implements ArkEntityService {
      * If there is no previous, returns the most recent one (wraps around).
      *
      * @param institution The institution to find ActionUnits for
-     * @param current The current ActionUnit to find the previous one from
+     * @param current     The current ActionUnit to find the previous one from
      * @return The previous ActionUnitDTO, or the most recent one if there is no previous
      */
     public ActionUnitDTO findPreviousByInstitution(InstitutionDTO institution, ActionUnitDTO current) {
         return actionUnitRepository
                 .findPrevious(
-                        institution.getId(), current.getCreationTime(),current.getId())
+                        institution.getId(), current.getCreationTime(), current.getId())
                 .map(actionUnitMapper::convert)
                 .orElseGet(() -> actionUnitRepository
                         .findLast(institution.getId())
@@ -441,7 +438,7 @@ public class ActionUnitService implements ArkEntityService {
     /**
      * Get all ActionUnit in the institution that are linked to a spatial unit
      *
-     * @param spatialId     the spatial unit id
+     * @param spatialId the spatial unit id
      * @return The list of ActionUnit
      */
     public List<ActionUnitDTO> findBySpatialContext(Long spatialId) {
@@ -516,15 +513,14 @@ public class ActionUnitService implements ArkEntityService {
 
         if (filters.containsColumn("name")) {
             String nameContains = filters.valueOfAsString("name");
-            log.trace("{} éléments trouvées pour {} (Page {}/{})", res.getTotalElements(), nameContains,res.getNumber() + 1, res.getTotalPages());
+            log.trace("{} éléments trouvées pour {} (Page {}/{})", res.getTotalElements(), nameContains, res.getNumber() + 1, res.getTotalPages());
         }
 
         return res.map(actionUnitMapper::convert);
     }
 
 
-
-    public int countSearchResultsInSpatialUnit(InstitutionDTO institutionDTO,SpatialUnitDTO spatialUnitDTO,
+    public int countSearchResultsInSpatialUnit(InstitutionDTO institutionDTO, SpatialUnitDTO spatialUnitDTO,
                                                FilterDTO filters) {
         Specification<ActionUnit> specs = prepareSpecs(institutionDTO, filters);
         specs = specs.and(ActionUnitSpec.actionUnitInSpatialUnit(spatialUnitDTO.getId()));
@@ -539,12 +535,11 @@ public class ActionUnitService implements ArkEntityService {
 
         if (filters.containsColumn("name")) {
             String nameContains = filters.valueOfAsString("name");
-            log.trace("{} éléments trouvées pour {} (Page {}/{})", res.getTotalElements(), nameContains,res.getNumber() + 1, res.getTotalPages());
+            log.trace("{} éléments trouvées pour {} (Page {}/{})", res.getTotalElements(), nameContains, res.getNumber() + 1, res.getTotalPages());
         }
 
         return res.map(actionUnitMapper::convert);
     }
-
 
 
     public int countSearchResults(InstitutionDTO institutionDTO, FilterDTO filters) {
@@ -617,4 +612,17 @@ public class ActionUnitService implements ArkEntityService {
                 .map(actionUnitMapper::convert)
                 .toList();
     }
+
+    public Set<ActionUnitDTO> findAllByActionManager(PersonDTO user) {
+        if (user == null || user.getId() == null) {
+            return Collections.emptySet();
+        }
+
+        Set<ActionUnit> actionUnits = actionUnitRepository.findAllByCreatedById(user.getId());
+
+        return actionUnits.stream()
+                .map(actionUnitMapper::convert)
+                .collect(Collectors.toSet());
+    }
+
 }

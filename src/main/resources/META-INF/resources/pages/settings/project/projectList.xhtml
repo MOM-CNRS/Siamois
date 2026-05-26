@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui:composition template="/template.xhtml"
+                xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
+                xmlns:comp="http://java.sun.com/jsf/composite/pages/settings/components"
+                xmlns:p="http://primefaces.org/ui"
+                xmlns:form="http://java.sun.com/jsf/composite/pages/shared/form"
+                xmlns:h="http://java.sun.com/jsf/html">
+
+    <ui:define name="head">
+        <h:outputStylesheet library="css" name="settings.css"/>
+    </ui:define>
+
+    <ui:define name="content">
+        <main >
+
+            <comp:datatable
+                    createButtonLabel="NULL"
+                    formId="projectListForm"
+                    title="#{langBean.msg('projectList.breadcrumb')}"
+                    description="#{langBean.msg('projectList.description')}"
+                    filterAction="#{projectListBean.filter()}"
+                    searchInputTextValue="#{projectListBean.searchInput}"
+                    addAction="#{projectListBean.filter()}"
+                    renderCreateButton="false"
+            >
+                <p:dataTable
+                        id="actionUnitTable"
+                        value="#{projectListBean.filteredActionUnits}"
+                        var="au"
+                        sortMode="single"
+                        widgetVar="actionUnitDatatable"
+                        rowKey="#{au.id}"
+                >
+                    <p:column headerText="#{langBean.msg('actionManagers.header.name')}">
+                        <p:outputLabel value="#{au.name}"/>
+                    </p:column>
+                    <p:column headerText="#{langBean.msg('actionManagers.header.numberOfMembers')}">
+                        <p:outputLabel value="#{projectListBean.numberOfMemberInActionUnit(au)}"/>
+                    </p:column>
+                    <p:column headerText="#{langBean.msg('organisationSettings.titles.actionManager')}">
+                        <p:outputLabel value="#{au.createdBy.displayName()}"/>
+                    </p:column>
+                    <p:column>
+                        <p:commandButton
+                                value="..."
+                                action="#{teamListBean.manageTeamMember(au)}"
+                        />
+                    </p:column>
+                </p:dataTable>
+            </comp:datatable>
+        </main>
+    </ui:define>
+
+</ui:composition>

@@ -12,6 +12,7 @@ import fr.siamois.domain.models.exceptions.institution.NullInstitutionIdentifier
 import fr.siamois.domain.models.form.customform.CustomForm;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
+import fr.siamois.domain.models.team.ActionManagerRelation;
 import fr.siamois.domain.models.vocabulary.Concept;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
@@ -163,6 +164,7 @@ public class ActionUnit extends TraceableEntity implements ArkEntity {
     @NotNull
     @Column(name = "min_recording_unit_code")
     protected Integer minRecordingUnitCode;
+
 
     /**
      * This field is set to true when the action unit has children in the institution.

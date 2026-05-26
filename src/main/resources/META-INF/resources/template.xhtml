@@ -311,6 +311,19 @@
                         </li>
                     </ul>
 
+                    <ul class="nav flex-column">
+                        <li class="nav-header">#{langBean.msg("nav.header.projects")}</li>
+                        <li class="nav-item">
+                            <h:commandLink action="#{navBean.goToProjectsSettings()}" styleClass="nav-link"
+                                           id="projectsManagementLink">
+                                <i class="bi bi-arrow-down-square"/>
+                                <span class="menu-text">#{langBean.msg('nav.projectsManagement')}</span>
+                                <p:tooltip for="projectsManagementLink"
+                                           value="#{langBean.msg('nav.projectsManagement.hint')}"/>
+                            </h:commandLink>
+                        </li>
+                    </ul>
+
 
                     <div class="sidebar-footer">
                         <hr class="sidebar-divider"/>
