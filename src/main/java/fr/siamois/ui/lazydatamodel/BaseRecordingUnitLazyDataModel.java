@@ -147,5 +147,12 @@ public abstract class BaseRecordingUnitLazyDataModel extends BaseLazyDataModel<R
         addRowToModel(newRec);
     }
 
+    @Override
+    protected SortDTO getDefaultSortDTO() {
+        SortDTO sortDTO = new SortDTO();
+        sortDTO.add("id", SortDTO.SortOrder.ASC);
+        return sortDTO;
+    }
+
 
 }

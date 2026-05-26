@@ -328,7 +328,24 @@ public abstract class BaseLazyDataModel<T> extends LazyDataModel<T> implements L
     }
 
     public void addRowToModel(T newUnit) {
+        // Increment the total against the previously known total — using the
+        // wrappedData size would replace the total with the page size and break
+        // the paginator after duplications/bulk creates.
+        int newTotal = getRowCount() + 1;
+        setRowCount(newTotal);
+        setCachedRowCount(newTotal);
 
+        List<T> modifiableCopy = new ArrayList<>();
+        if (getWrappedData() != null) {
+            modifiableCopy = new ArrayList<>(getWrappedData());
+        }
+        modifiableCopy.add(0, newUnit);
+        setWrappedData(modifiableCopy);
+        setQueryResult(modifiableCopy);
+
+        if (modifiableCopy.size() > getPageSizeState()) {
+            modifiableCopy.remove(modifiableCopy.size() - 1);
+        }
     }
 
 }

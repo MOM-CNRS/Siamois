@@ -446,6 +446,7 @@ class BaseLazyDataModelTest {
                 FilterMeta.builder().field("globalFilter").filterValue("needle").matchMode(MatchMode.GLOBAL).build());
 
         Set<String> seenColumns = new HashSet<>();
+        model.initialized = true;
         model.counter = filter -> {
             seenColumns.addAll(filter.getColumns());
             return 3;
