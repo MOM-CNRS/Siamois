@@ -104,6 +104,19 @@ public abstract class AbstractListPanel<T extends AbstractEntityDTO> extends Abs
         }
     }
 
+
+    private static String safeSubstring(String value, int max) {
+        if (value == null || value.isBlank()) {
+            return "";
+        }
+
+        if (value.length() <= max) {
+            return value;
+        }
+
+        return value.substring(0, max) + "…";
+    }
+
     public void saveAsNewView() {
 
         String filterSummary =
@@ -112,7 +125,7 @@ public abstract class AbstractListPanel<T extends AbstractEntityDTO> extends Abs
                 );
 
         String title =
-                langBean.msg(getBreadcrumbKey()) + filterSummary.substring(0, 30);
+                langBean.msg(getBreadcrumbKey()) + safeSubstring(filterSummary,30);
         UITableViewDTO view = uiViewService.save(
                 tableViewRuntimeMapper.extract(tableModel),
                 sessionSettingsBean.getAuthenticatedUser(), title);
