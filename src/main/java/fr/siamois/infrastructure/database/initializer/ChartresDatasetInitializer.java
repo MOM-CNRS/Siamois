@@ -87,7 +87,7 @@ public class ChartresDatasetInitializer implements DatabaseInitializer {
             if (is == null) {
                 throw new IllegalStateException("Impossible de trouver Import Chartres.xlsx");
             }
-            specs = ooxmlImportService.importFromExcel(is);
+            specs = ooxmlImportService.importFromExcel(is, OOXMLImportService.ImportScope.ALL, null);
         } catch (IOException e) {
             throw new DatabaseDataInitException(e.getMessage(), e);
         }

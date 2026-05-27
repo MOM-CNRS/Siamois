@@ -26,8 +26,6 @@ public class PervoliaDatasetInitializer  {
     @Value("${siamois.admin.email}")
     private String adminEmail;
 
-
-
     private final ConceptSeeder conceptSeeder;
     private final PersonSeeder personSeeder;
     private final ThesaurusSeeder thesaurusSeeder;
@@ -80,7 +78,7 @@ public class PervoliaDatasetInitializer  {
             if (is == null) {
                 throw new IllegalStateException("Impossible de trouver Import Pervolia.xlsx");
             }
-            specs = ooxmlImportService.importFromExcel(is);
+            specs = ooxmlImportService.importFromExcel(is, OOXMLImportService.ImportScope.ALL, null);
         } catch (IOException e) {
             throw new DatabaseDataInitException(e.getMessage(), e);
         }

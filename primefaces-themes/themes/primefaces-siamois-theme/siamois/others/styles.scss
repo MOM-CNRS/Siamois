@@ -792,7 +792,7 @@ body .view-edit-button.ui-splitbutton {
 
 /* Texte principal au centre */
 .modern-dropzone::after {
-  content: "Supports .xlsx and .xls files up to 10MB";
+  content: "Supporte les fichiers .xlsx and .xls de moins de 10MB";
   white-space: pre-wrap;
   display: block;
   color: #111827;
@@ -800,7 +800,3 @@ body .view-edit-button.ui-splitbutton {
   font-size: 0.95rem;
   line-height: 1.6;
 }
-
-/* Cibler la deuxième ligne de texte (les contraintes de taille) pour la rendre plus claire */
-/* Astuce : on applique un style plus léger au conteneur global via CSS si nécessaire, ou on ajuste via l'after */
-

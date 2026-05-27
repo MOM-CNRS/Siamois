@@ -1,7 +1,9 @@
 package fr.siamois.infrastructure.dataimport;
 
+import fr.siamois.dto.entity.ActionUnitDTO;
 import fr.siamois.infrastructure.database.initializer.seeder.*;
 import org.apache.poi.ss.usermodel.*;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -76,31 +78,48 @@ public class OOXMLImportService {
         }
     }
 
+    public enum ImportScope {
+        ALL,
+        PROJECT
+    }
 
-    public ImportSpecs importFromExcel(InputStream is) throws IOException {
+    public ImportSpecs importFromExcel(InputStream is, ImportScope scope, ActionUnitDTO actionUnitDTO) throws IOException {
         try (Workbook workbook = WorkbookFactory.create(is)) {
 
             Map<String, String> sheetIdToName = readSheetMetadata(workbook);
 
-            Sheet institutionSheet = workbook.getSheet(sheetIdToName.getOrDefault(INSTITUTION, "Institution"));
-            Sheet personSheet      = workbook.getSheet(sheetIdToName.getOrDefault(PERSON, "Personne"));
-            Sheet spatialSheet     = workbook.getSheet(sheetIdToName.getOrDefault("spatial_unit", "Unité spatiale"));
-            Sheet codeSheet        = workbook.getSheet(sheetIdToName.getOrDefault("code", "Code"));
-            Sheet actionUnitSheet  = workbook.getSheet(sheetIdToName.getOrDefault("action_unit", "Unite action"));
+            List<InstitutionSeeder.InstitutionSpec> institutions = new ArrayList<>();
+            List<PersonSeeder.PersonSpec> persons =  new ArrayList<>();
+            List<SpatialUnitSeeder.SpatialUnitSpecs> spatialUnits =  new ArrayList<>();
+            List<ActionCodeSeeder.ActionCodeSpec> actionCodes =  new ArrayList<>();
+            List<ActionUnitSeeder.ActionUnitSpecs> actionUnits =  new ArrayList<>();
+            List<RecordingUnitSeeder.RecordingUnitSpecs> recordingUnits =  new ArrayList<>();
+            List<SpecimenSeeder.SpecimenSpecs> specimenSpecs =  new ArrayList<>();
+            List<RecordingUnitRelSeeder.RecordingUnitDTO> recordingUnitDTOS =  new ArrayList<>();
+            List<RecordingUnitStratiRelSeeder.RecordingUnitStratiRelDTO> stratiDTOS =  new ArrayList<>();
+
+            if(scope == ImportScope.ALL) {
+                Sheet institutionSheet = workbook.getSheet(sheetIdToName.getOrDefault(INSTITUTION, "Institution"));
+                Sheet personSheet      = workbook.getSheet(sheetIdToName.getOrDefault(PERSON, "Personne"));
+                Sheet spatialSheet     = workbook.getSheet(sheetIdToName.getOrDefault("spatial_unit", "Unité spatiale"));
+                Sheet codeSheet        = workbook.getSheet(sheetIdToName.getOrDefault("code", "Code"));
+                Sheet actionUnitSheet  = workbook.getSheet(sheetIdToName.getOrDefault("action_unit", "Unite action"));
+                institutions = parseInstitutions(institutionSheet);
+                persons = parsePersons(personSheet);
+                spatialUnits = parseSpatialUnits(spatialSheet);
+                actionCodes = parseActionCodes(codeSheet);
+                actionUnits = parseActionUnits(actionUnitSheet);
+            }
+
             Sheet recordingUnitSheet  = workbook.getSheet(sheetIdToName.getOrDefault("recording_unit", "Unite action"));
             Sheet specimenSheet  = workbook.getSheet(sheetIdToName.getOrDefault("specimen", "Prelev."));
             Sheet recordingRelSheet  = workbook.getSheet(sheetIdToName.getOrDefault("recordingRel", "UE_rel"));
             Sheet stratiSheet  = workbook.getSheet(sheetIdToName.getOrDefault("stratiRel", "Strati_Rel"));
 
-            List<InstitutionSeeder.InstitutionSpec> institutions = parseInstitutions(institutionSheet);
-            List<PersonSeeder.PersonSpec> persons = parsePersons(personSheet);
-            List<SpatialUnitSeeder.SpatialUnitSpecs> spatialUnits = parseSpatialUnits(spatialSheet);
-            List<ActionCodeSeeder.ActionCodeSpec> actionCodes = parseActionCodes(codeSheet);
-            List<ActionUnitSeeder.ActionUnitSpecs> actionUnits = parseActionUnits(actionUnitSheet);
-            List<RecordingUnitSeeder.RecordingUnitSpecs> recordingUnits = parseRecordingUnits(recordingUnitSheet);
-            List<SpecimenSeeder.SpecimenSpecs> specimenSpecs = parseSpecimens(specimenSheet);
-            List<RecordingUnitRelSeeder.RecordingUnitDTO> recordingUnitDTOS = parseRecordingRels(recordingRelSheet);
-            List<RecordingUnitStratiRelSeeder.RecordingUnitStratiRelDTO> stratiDTOS = parseStratiRels(stratiSheet);
+            recordingUnits = parseRecordingUnits(recordingUnitSheet, scope, actionUnitDTO);
+            specimenSpecs = parseSpecimens(specimenSheet);
+            recordingUnitDTOS = parseRecordingRels(recordingRelSheet);
+            stratiDTOS = parseStratiRels(stratiSheet);
 
             return new ImportSpecs(institutions, persons, spatialUnits, actionCodes, actionUnits,
                     recordingUnits, specimenSpecs, recordingUnitDTOS, stratiDTOS);
@@ -457,7 +476,8 @@ public class OOXMLImportService {
     }
 
 
-    public List<RecordingUnitSeeder.RecordingUnitSpecs> parseRecordingUnits(Sheet sheet) {
+    public List<RecordingUnitSeeder.RecordingUnitSpecs> parseRecordingUnits(Sheet sheet,
+        ImportScope scope, ActionUnitDTO actionUnit) {
         if (sheet == null || sheet.getRow(0) == null) {
             return List.of();
         }
@@ -465,11 +485,14 @@ public class OOXMLImportService {
         Map<String, Integer> cols = indexColumns(sheet.getRow(0));
 
         List<RecordingUnitSeeder.RecordingUnitSpecs> result = new ArrayList<>();
-        forEachDataRow(sheet, row -> parseRowToRecordingUnit(row, cols).ifPresent(result::add));
+        forEachDataRow(sheet, row -> parseRowToRecordingUnit(row, cols, scope == ImportScope.PROJECT ? actionUnit : null).ifPresent(result::add));
         return result;
     }
 
-    private Optional<RecordingUnitSeeder.RecordingUnitSpecs> parseRowToRecordingUnit(Row row, Map<String, Integer> cols) {
+    private Optional<RecordingUnitSeeder.RecordingUnitSpecs> parseRowToRecordingUnit(
+            Row row, Map<String,
+            Integer> cols,
+            @Nullable ActionUnitDTO actionUnit) {
         String identStr     = getStringCellOrNull(row, cols.get(IDENTIFIANT));
         String description  = getStringCellOrNull(row, cols.get("description"));
 
@@ -485,7 +508,7 @@ public class OOXMLImportService {
         ConceptSeeder.ConceptKey interpretation = conceptKeyFromUri(getOptionalCell(row, cols.get("interpretation uri")));
 
         String authorEmail     = getStringCellOrNull(row, cols.get("author email"));
-        String institutionId   = getStringCellOrNull(row, cols.get(INSTITUTION));
+        String institutionId   = actionUnit != null ? actionUnit.getCreatedByInstitution().getIdentifier() : getStringCellOrNull(row, cols.get(INSTITUTION));
         List<String> excavators = parseEmailList(getStringCellOrNull(row, cols.get("contributeurs email")));
 
         OffsetDateTime beginDate = parseOptionalDate(row, cols.get("date d'ouverture"));
@@ -495,7 +518,8 @@ public class OOXMLImportService {
         String createdBy = "system@siamois.fr";
 
         SpatialUnitSeeder.SpatialUnitKey spatialKey = parseOptionalSpatialUnit(row, cols.get("unite spatiale"));
-        ActionUnitSeeder.ActionUnitKey actionKey   = parseOptionalActionUnit(row, cols.get("unite d'action"));
+        ActionUnitSeeder.ActionUnitKey actionKey   = actionUnit != null ? new ActionUnitSeeder.ActionUnitKey(actionUnit.getFullIdentifier())
+                : parseOptionalActionUnit(row, cols.get("unite d'action"));
 
         String matrixColor   = getStringCellOrNull(row, cols.get("couleur de la matrice"));
         String matrixTexture = getStringCellOrNull(row, cols.get("texture de la matrice"));

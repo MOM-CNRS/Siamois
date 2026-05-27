@@ -7,7 +7,7 @@
                 xmlns:p="http://primefaces.org/ui"
                 xmlns:form="http://java.sun.com/jsf/composite/pages/shared/form"
 
->
+                xmlns:f="http://java.sun.com/jsf/core">
 
     <ui:define name="head">
         <h:outputStylesheet library="css" name="settings.css"/>
@@ -21,35 +21,139 @@
                     <p:menuitem value="#{projectDetailsBean.project.name}"/>
                     <p:menuitem value="Importer et exporter les données"/>
                 </p:breadCrumb>
+            </form:csrfform>
 
-                <form:csrfform formId="projectImportForm" styleClass="sia-settings-form">
-                    <div class="field-value-group">
-                        <h2 class="field-value-title">Import</h2>
-                        <div class="field-value-content">
-                            <p:commandButton
-                                    value="Télécharger un exemple" icon="pi pi-arrow-down"
-                                    styleClass="ui-button-outlined">
-                                <p:fileDownload value="#{projectDetailsBean.file}"/>
-                            </p:commandButton>
+            <form:csrfform formId="projectImportForm" styleClass="sia-settings-form">
+                <div class="field-value-group">
+                    <h2 class="field-value-title">Importer</h2>
+                    <div class="field-value-content">
+                        <p:commandButton
+                                value="Télécharger un exemple" icon="pi pi-arrow-down"
+                                styleClass="ui-button-outlined" style="background-color: white;">
+                            <p:fileDownload value="#{projectDetailsBean.file}"/>
+                        </p:commandButton>
 
-                            <div class="custom-upload-container">
+                        <div class="custom-upload-container">
 
-                                <p:fileUpload listener="#{fileUploadView.handleFileUpload}"
-                                              mode="advanced"
-                                              dragDrop="true"
-                                              auto="true"
-                                              update="messages"
-                                              allowTypes="/(\.|\/)(xlsx|xls)$/"
-                                              invalidSizeMessage="Le fichier dépasse la limite de 10 Mo."
-                                              invalidFileMessage="Seuls les fichiers .xlsx et .xls sont autorisés."
-                                              styleClass="modern-dropzone"
-                                              label="Faire glisser le fichier ici ou cliquer pour chercher un fichier"/>
+                            <p:fileUpload listener="#{projectUploadSettingsBean.handleFileUpload}"
+                                          mode="advanced"
+                                          dragDrop="true"
+                                          auto="true"
+                                          update="messages, projectImportForm:uploadOverview, projectImportForm:uploadButtons"
+                                          allowTypes="/(\.|\/)(xlsx|xls)$/"
+                                          invalidSizeMessage="Le fichier dépasse la limite de 10 Mo."
+                                          invalidFileMessage="Seuls les fichiers .xlsx et .xls sont autorisés."
+                                          styleClass="modern-dropzone"
+                                          label="Faire glisser le fichier ici ou cliquer pour chercher un fichier"/>
 
-                                <p:growl id="messages" showDetail="true" keepAlive="true" />
-                            </div>
+                            <p:growl id="messages" showDetail="true" keepAlive="true"/>
                         </div>
+
+                        <p:outputPanel id="uploadOverview">
+                            <p:tabView rendered="#{projectUploadSettingsBean.specs != null}">
+                                <p:tab title="UE">
+                                    <f:facet name="title">
+                                        <div style="display: flex;gap: 0.5em;
+    align-items: center;">
+                                            <span>UE</span>
+                                            <p:badge value="#{projectUploadSettingsBean.specs.recordingUnits().size()}"
+                                                     style="background-color: var(--siamois-green);gap: 0.5em;
+    align-items: center;" class="ml-1"/>
+                                        </div>
+                                    </f:facet>
+                                    <div style="padding: 3em;">
+                                        Aucune erreur
+                                    </div>
+                                </p:tab>
+                                <p:tab title="Regroupements d'UE">
+                                    <f:facet name="title">
+                                        <div style="display: flex;gap: 0.5em;
+    align-items: center;">
+                                            <span>Regroupements d'UE</span>
+                                            <p:badge value="#{projectUploadSettingsBean.specs.recordingUnitRelSpecs().size()}"
+                                                     style="background-color: var(--siamois-green);gap: 0.5em;
+    align-items: center;" class="ml-1"/>
+                                        </div>
+                                    </f:facet>
+                                    <div style="padding: 3em;">
+                                        Aucune erreur
+                                    </div>
+                                </p:tab>
+                                <p:tab title="Stratigraphie">
+                                    <f:facet name="title">
+                                        <div style="display: flex;gap: 0.5em;
+    align-items: center;">
+                                            <span>Stratigraphie</span>
+                                            <p:badge value="#{projectUploadSettingsBean.specs.recordingUnitStratiRelSpecs().size()}"
+                                                     style="background-color: var(--siamois-green);gap: 0.5em;
+    align-items: center;" class="ml-1"/>
+                                        </div>
+                                    </f:facet>
+                                    <div style="padding: 3em;">
+                                        Aucune erreur
+                                    </div>
+                                </p:tab>
+                                <p:tab title="Mobilier">
+                                    <f:facet name="title">
+                                        <div style="display: flex;gap: 0.5em;
+    align-items: center;">
+                                            <span>Mobilier</span>
+                                            <p:badge value="#{projectUploadSettingsBean.specs.specimenSpecs().size()}"
+                                                     style="background-color: var(--siamois-green);" class="ml-1"/>
+                                        </div>
+                                    </f:facet>
+                                    <div style="padding: 3em;">
+                                        Aucune erreur
+                                    </div>
+                                </p:tab>
+                                <p:tab title="Regroupement de mobilier">
+                                    <f:facet name="title">
+                                        <f:facet name="title">
+                                            <div style="display: flex;gap: 0.5em;
+    align-items: center;">
+                                                <span>Regroupement de mobilier</span>
+                                                <p:badge value="#{0}"
+                                                         style="background-color: var(--siamois-green);gap: 0.5em;
+    align-items: center;" class="ml-1"/>
+                                            </div>
+                                        </f:facet>
+                                    </f:facet>
+                                    <div style="padding: 3em;">
+                                        Aucune erreur
+                                    </div>
+                                </p:tab>
+                                <p:tab title="Phase">
+                                    <f:facet name="title">
+                                        <div style="display: flex;gap: 0.5em;
+    align-items: center;">
+                                            <span>Phase</span>
+                                            <p:badge value="#{0}"
+                                                     style="background-color: var(--siamois-green);gap: 0.5em;
+    align-items: center;" class="ml-1"/>
+                                        </div>
+                                    </f:facet>
+                                    <div style="padding: 3em;">
+                                        Aucune erreur
+                                    </div>
+                                </p:tab>
+                            </p:tabView>
+
+
+                        </p:outputPanel>
+
+                        <p:outputPanel id="uploadButtons" layout="block" styleClass="field-value-save">
+                            <p:commandButton action="#{projectDetailsBean.backToProjectSettings()}"
+                                             value="Retour"/>
+                            <p:commandButton
+                                    rendered="#{projectUploadSettingsBean.readyToUpload == true}"
+                                    value="Importer les données"
+                                    update="projectImportForm:uploadButtons"
+                                    action="#{projectUploadSettingsBean.uploadSpec()}"
+                            />
+                        </p:outputPanel>
+
                     </div>
-                </form:csrfform>
+                </div>
 
 
             </form:csrfform>

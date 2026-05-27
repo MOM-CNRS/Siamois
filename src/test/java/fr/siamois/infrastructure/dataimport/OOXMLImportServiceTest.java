@@ -336,7 +336,7 @@ class OOXMLImportServiceTest {
         wb.write(out);
 
         ImportSpecs specs = service.importFromExcel(
-                new ByteArrayInputStream(out.toByteArray())
+                new ByteArrayInputStream(out.toByteArray()), OOXMLImportService.ImportScope.ALL, null
         );
 
         assertThat(specs).isNotNull();
@@ -359,7 +359,7 @@ class OOXMLImportServiceTest {
 
 
         ImportSpecs specs = service.importFromExcel(
-                new ByteArrayInputStream(out.toByteArray())
+                new ByteArrayInputStream(out.toByteArray()), OOXMLImportService.ImportScope.ALL, null
         );
 
         assertThat(specs).isNotNull();
@@ -410,7 +410,7 @@ class OOXMLImportServiceTest {
 
         // Execute
         List<RecordingUnitSeeder.RecordingUnitSpecs> specs =
-                service.parseRecordingUnits(s);
+                service.parseRecordingUnits(s, OOXMLImportService.ImportScope.ALL, null);
 
         // Assert
         assertThat(specs).hasSize(1);
