@@ -12,12 +12,16 @@ import jakarta.faces.context.FacesContext;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.primefaces.event.FileUploadEvent;
+import org.primefaces.model.DefaultStreamedContent;
+import org.primefaces.model.StreamedContent;
 import org.primefaces.model.file.UploadedFile;
 import org.springframework.context.annotation.Scope;
 import org.springframework.context.annotation.ScopedProxyMode;
 import org.springframework.context.event.EventListener;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Component;
 
+import java.io.IOException;
 import java.io.InputStream;
 
 @Component
@@ -31,6 +35,7 @@ public class ProjectUploadSettingsBean {
 
     ActionUnitDTO project;
     UploadedFile originalFile;
+    StreamedContent templateFile;
     ImportSpecs specs;
     boolean readyToUpload = false;
 
@@ -38,8 +43,20 @@ public class ProjectUploadSettingsBean {
         reset();
         this.project = project;
 
+        templateFile = DefaultStreamedContent.builder()
+                .name("import_projet_sample.xlsx")
+                .contentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+                .stream(() -> {
+                    try {
+                        return new ClassPathResource(
+                                "datasets/import_projet_sample.xlsx")
+                                .getInputStream();
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+                })
+                .build();
     }
-
     @EventListener(LoginEvent.class)
     public void reset() {
         project = null;
@@ -87,5 +104,6 @@ public class ProjectUploadSettingsBean {
             }
         }
     }
+
 
 }
