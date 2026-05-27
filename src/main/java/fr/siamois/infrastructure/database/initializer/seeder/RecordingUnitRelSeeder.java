@@ -17,11 +17,11 @@ public class RecordingUnitRelSeeder {
     private final RecordingUnitSeeder recordingUnitSeeder;
     private final RecordingUnitRepository recordingUnitRepository;
 
-    public record RecordingUnitDTO(String parent, String child) {
+    public record RecordingUnitRelDTO(String parent, String child) {
 
     }
 
-    public void seed(List<RecordingUnitDTO> specs, Long institutionId) {
+    public void seed(List<RecordingUnitRelDTO> specs, Long institutionId) {
         // Step 1: Group children by parent identifier
         Map<String, List<RecordingUnit>> parentToChildren = new HashMap<>();
         for (var s : specs) {

@@ -293,7 +293,7 @@ class OOXMLImportServiceTest {
 
         row(s, 1, "100", "101");
 
-        List<RecordingUnitRelSeeder.RecordingUnitDTO> rels =
+        List<RecordingUnitRelSeeder.RecordingUnitRelDTO> rels =
                 service.parseRecordingRels(s);
 
         assertThat(rels).hasSize(1);

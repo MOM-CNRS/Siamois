@@ -168,6 +168,151 @@
 
         <p:outputPanel style="display: flex; flex-direction: row; overflow-y: hidden;" id="flow" styleClass="#{flowBean.fullscreenPanelIndex !=-1 ? 'focus' : ''}">
 
+            <h:form
+                    id="subSidebarForm"
+                    styleClass="sub-sidebar-container #{sidebarBean.visible ? '' : 'is-collapsed'} mode-#{sidebarBean.currentMode.name().toLowerCase()}"
+                    style="height: 100%; flex-direction: column; align-items: center;"
+            >
+                <style>
+                    .ui-datatable-invisible-header thead {
+                        display: none !important;
+                    }
+
+                    .ui-datatable-invisible-header .ui-datatable-data tr td {
+                        border: none !important;
+                        padding: 4px 8px !important;
+                    }
+
+                    .bookmark-row {
+                        display: flex;
+                        align-items: center;
+                        width: 100%;
+                    }
+                </style>
+
+                <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
+
+                <p:outputLabel id="sidebarAnimatedInner" class="sidebar-animated-inner"
+                               style="width: 320px; height: 100%; display: flex; flex-direction: column;">
+
+                    <div id="historyDiv" style="background: white; width: 100%; border: 1px solid #dee2e6;">
+                        <p:commandButton
+                                id="toggle-sidebar-btn"
+                                value="#{sidebarBean.currentMode == 'HISTORIQUE' ? 'Historique' : 'Favoris'}"
+                                style="width: 100%"
+                                icon="bi bi-chevron-double-left"
+                                action="#{sidebarBean.close()}"
+                                onstart="animateSidebarClose();"
+                                update="sidebarContent"
+                                process="@this"
+                                styleClass="ui-button-flat"
+                        />
+                    </div>
+
+                    <p:outputPanel id="sidebarContent" style="height: 100%; width: 100%; flex-grow: 1;">
+
+                        <ui:fragment rendered="#{sidebarBean.currentMode == 'HISTORIQUE'}">
+                            <div style="height: 100%">
+                                <p:dataTable id="historyTable"
+                                             value="#{historyBean.items}"
+                                             var="historyItem"
+                                             rowKey="#{historyItem.id}"
+                                             scrollable="true"
+                                             scrollRows="40"
+                                             scrollHeight="100%"
+                                             virtualScroll="true"
+                                             styleClass="ui-datatable-invisible-header panel-menu">
+
+
+
+                                    <p:column style="vertical-align: middle; width:100%">
+                                        <div class="bookmark-row" style="width: 100%;">
+
+                                            <p:commandButton id="historyLink"
+                                                             action="#{historyBean.redirectToEntry(historyItem)}"
+                                                             icon="#{historyItem.icon}"
+                                                             process="@this"
+                                                             value="#{historyItem.title}"
+                                                             styleClass="#{historyItem.styleClass} nav-link ui-button-flat bookmark-full-button"
+                                                             style="width:100%">
+                                            </p:commandButton>
+                                            <p:tooltip for="historyLink"
+                                                       value="#{historyItem.title}"/>
+
+                                        </div>
+                                    </p:column>
+                                </p:dataTable>
+                            </div>
+                        </ui:fragment>
+
+                        <ui:fragment rendered="#{sidebarBean.currentMode == 'BOOKMARKS'}">
+                            <div style="height: 100%">
+                                <p:dataTable id="bookmarksTable"
+                                             value="#{bookmarkMenuBean.lazyModel}"
+                                             var="bkm"
+                                             lazy="true"
+                                             editable="true"
+                                             rowKey="#{bkm.id}"
+                                             scrollable="true"
+                                             scrollRows="40"
+                                             scrollHeight="100%"
+                                             virtualScroll="true"
+                                             styleClass="ui-datatable-invisible-header panel-menu">
+
+                                    <p:ajax event="rowEdit" listener="#{bookmarkMenuBean.onRowEdit}"
+                                            update="bookmarksTable"/>
+                                    <p:ajax event="rowEditCancel" listener="#{bookmarkMenuBean.onRowCancel}"/>
+
+
+                                    <p:column style="vertical-align: middle; width:100%">
+                                        <div class="bookmark-row" style="width: 100%;">
+                                            <p:cellEditor style="width: 100%" >
+                                                <f:facet name="output">
+                                                    <p:commandButton id="bookmarkLink"
+                                                                     action="#{bookmarkMenuBean.redirectToEntry(bkm)}"
+                                                                     icon="#{bkm.bookmarkIcon}"
+                                                                     process="@this"
+                                                                     value="#{bookmarkMenuBean.resolveName(bkm)}"
+                                                                     styleClass="nav-link ui-button-flat bookmark-full-button"
+                                                                     style="color: #{bkm.bookmarkColor} !important; width:100%">
+                                                    </p:commandButton>
+                                                    <p:tooltip for="bookmarkLink"
+                                                               value="#{bookmarkMenuBean.getFilterTooltipSummary(bkm)}"/>
+                                                </f:facet>
+
+                                                <f:facet name="input">
+                                                    <div style="display: flex; align-items: center; width: 100%; padding: 4px 12px;">
+                                                        <i class="#{bkm.bookmarkIcon}"
+                                                           style="margin-right: 8px; color: #{bkm.bookmarkColor};"/>
+                                                        <p:inputText value="#{bkm.title}" style="width: 100%;"
+                                                                     required="true"/>
+                                                    </div>
+                                                </f:facet>
+                                            </p:cellEditor>
+                                        </div>
+                                    </p:column>
+
+                                    <p:column style="width: 40px; text-align: center; vertical-align: middle;">
+                                        <p:rowEditor rendered="#{bookmarkMenuBean.canEditViewNameOfBookmark(bkm)}"
+                                                     editTitle="Modifier" saveTitle="Valider" cancelTitle="Annuler" />
+                                    </p:column>
+
+                                    <p:column style="width: 40px; text-align: center; vertical-align: middle;">
+                                        <p:commandButton action="#{bookmarkMenuBean.deleteItem(bkm)}"
+                                                         icon="bi bi-trash"
+
+                                                         update="bookmarksTable"
+                                                         process="@this"
+                                                         styleClass="ui-button-flat ui-button-danger rounded-button"/>
+                                    </p:column>
+                                </p:dataTable>
+                            </div>
+                        </ui:fragment>
+
+                    </p:outputPanel>
+                </p:outputLabel>
+            </h:form>
+
             <p:outputPanel id="flowSummary" rendered="#{flowBean.fullscreenPanelIndex ==-1}">
                 <h:form id="flowSummaryForm" >
                     <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>

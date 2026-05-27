@@ -95,7 +95,7 @@ public class OOXMLImportService {
             List<ActionUnitSeeder.ActionUnitSpecs> actionUnits =  new ArrayList<>();
             List<RecordingUnitSeeder.RecordingUnitSpecs> recordingUnits =  new ArrayList<>();
             List<SpecimenSeeder.SpecimenSpecs> specimenSpecs =  new ArrayList<>();
-            List<RecordingUnitRelSeeder.RecordingUnitDTO> recordingUnitDTOS =  new ArrayList<>();
+            List<RecordingUnitRelSeeder.RecordingUnitRelDTO> recordingUnitDTOS =  new ArrayList<>();
             List<RecordingUnitStratiRelSeeder.RecordingUnitStratiRelDTO> stratiDTOS =  new ArrayList<>();
 
             if(scope == ImportScope.ALL) {
@@ -111,13 +111,13 @@ public class OOXMLImportService {
                 actionUnits = parseActionUnits(actionUnitSheet);
             }
 
-            Sheet recordingUnitSheet  = workbook.getSheet(sheetIdToName.getOrDefault("recording_unit", "Unite action"));
-            Sheet specimenSheet  = workbook.getSheet(sheetIdToName.getOrDefault("specimen", "Prelev."));
+            Sheet recordingUnitSheet  = workbook.getSheet(sheetIdToName.getOrDefault("recording_unit", "UE"));
+            Sheet specimenSheet  = workbook.getSheet(sheetIdToName.getOrDefault("specimen", "Prelev"));
             Sheet recordingRelSheet  = workbook.getSheet(sheetIdToName.getOrDefault("recordingRel", "UE_rel"));
             Sheet stratiSheet  = workbook.getSheet(sheetIdToName.getOrDefault("stratiRel", "Strati_Rel"));
 
             recordingUnits = parseRecordingUnits(recordingUnitSheet, scope, actionUnitDTO);
-            specimenSpecs = parseSpecimens(specimenSheet);
+            specimenSpecs = parseSpecimens(specimenSheet, scope, actionUnitDTO);
             recordingUnitDTOS = parseRecordingRels(recordingRelSheet);
             stratiDTOS = parseStratiRels(stratiSheet);
 
@@ -283,7 +283,7 @@ public class OOXMLImportService {
         return new ArrayList<>(specsByName.values());
     }
 
-    public List<RecordingUnitRelSeeder.RecordingUnitDTO> parseRecordingRels(Sheet sheet) {
+    public List<RecordingUnitRelSeeder.RecordingUnitRelDTO> parseRecordingRels(Sheet sheet) {
         if (sheet == null) {
             return List.of();
         }
@@ -303,7 +303,7 @@ public class OOXMLImportService {
             return List.of();
         }
 
-        List<RecordingUnitRelSeeder.RecordingUnitDTO> specs = new ArrayList<>();
+        List<RecordingUnitRelSeeder.RecordingUnitRelDTO> specs = new ArrayList<>();
 
         forEachDataRow(sheet, row -> {
             String parent = getStringCell(row, parentNum);
@@ -312,7 +312,7 @@ public class OOXMLImportService {
             if (parent == null || parent.isBlank()) return;
             if (child  == null || child.isBlank())  return;
 
-            specs.add(new RecordingUnitRelSeeder.RecordingUnitDTO(parent, child));
+            specs.add(new RecordingUnitRelSeeder.RecordingUnitRelDTO(parent, child));
         });
 
         return specs;
@@ -571,7 +571,8 @@ public class OOXMLImportService {
     }
 
 
-    public List<SpecimenSeeder.SpecimenSpecs> parseSpecimens(Sheet sheet) {
+    public List<SpecimenSeeder.SpecimenSpecs> parseSpecimens(Sheet sheet,ImportScope scope, ActionUnitDTO actionUnit
+    ) {
         if (sheet == null) {
             return List.of();
         }
@@ -620,7 +621,8 @@ public class OOXMLImportService {
             ConceptSeeder.ConceptKey designationKey= conceptKeyFromUri(designationUri);
 
             // ---- Institution ----
-            String institutionId = getStringCellOrNull(row, colInstitution);
+            String institutionId = actionUnit != null ? actionUnit.getCreatedByInstitution().getIdentifier() : getStringCellOrNull(row, colInstitution);
+
 
             // ---- Auteurs ----
             String auteurFiche = getStringCellOrNull(row, colAuteurFicheEmail);

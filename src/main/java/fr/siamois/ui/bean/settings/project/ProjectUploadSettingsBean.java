@@ -80,10 +80,6 @@ public class ProjectUploadSettingsBean {
                         project);
                 readyToUpload = true;
 
-                // Optionnel : Ajouter un message de succès pour l'utilisateur
-                FacesContext.getCurrentInstance().addMessage(null,
-                        new FacesMessage(FacesMessage.SEVERITY_INFO, "Succès", file.getFileName() + " a été chargé."));
-
             } catch (Exception e) {
                 // Gestion de l'erreur d'import ou de lecture de fichier
                 FacesContext.getCurrentInstance().addMessage(null,

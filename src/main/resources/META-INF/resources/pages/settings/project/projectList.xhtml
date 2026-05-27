@@ -35,6 +35,9 @@
                     <p:column headerText="#{langBean.msg('actionManagers.header.name')}">
                         <p:outputLabel value="#{au.name}"/>
                     </p:column>
+                    <p:column headerText="Identifiant">
+                        <p:outputLabel value="#{au.fullIdentifier}"/>
+                    </p:column>
                     <p:column headerText="#{langBean.msg('actionManagers.header.numberOfMembers')}">
                         <p:outputLabel value="#{projectListBean.numberOfMemberInActionUnit(au)}"/>
                     </p:column>

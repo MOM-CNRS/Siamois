@@ -23,10 +23,15 @@
                 </p:breadCrumb>
             </form:csrfform>
 
+
+
             <form:csrfform formId="projectImportForm" styleClass="sia-settings-form">
                 <div class="field-value-group">
-                    <h2 class="field-value-title">Importer</h2>
                     <div class="field-value-content">
+                        <p:selectOneButton value="import" style="margin: auto; border-radius: 20px;">
+                            <f:selectItem itemLabel="Importer" itemValue="import"/>
+                            <f:selectItem itemLabel="Exporter" itemDisabled="true" itemValue="export"/>
+                        </p:selectOneButton>
                         <p:commandButton
                                 value="Télécharger un exemple" icon="pi pi-arrow-down"
                                 styleClass="ui-button-outlined" style="background-color: white;">
