@@ -10,6 +10,7 @@ import fr.siamois.ui.bean.SessionSettingsBean;
 import fr.siamois.ui.bean.dialog.institution.UserDialogBean;
 import fr.siamois.ui.bean.settings.SettingsDatatableBean;
 import fr.siamois.ui.bean.settings.team.TeamMembersBean;
+import jakarta.el.MethodExpression;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
@@ -31,7 +32,7 @@ public class ProjectListBean implements SettingsDatatableBean {
     private final transient ActionUnitService actionUnitService;
     private final NavBean navBean;
     private final transient SessionSettingsBean sessionSettingsBean;
-
+    private final transient ProjectDetailsBean projectDetailsBean;
     private final transient InstitutionService institutionService;
     private String searchInput;
 
@@ -75,4 +76,9 @@ public class ProjectListBean implements SettingsDatatableBean {
     }
 
 
+    public String redirectToProject(ActionUnitDTO actionUnit) {
+        projectDetailsBean.setProject(actionUnit);
+        projectDetailsBean.init();
+         return "/pages/settings/project/projectSettings.xhtml?faces-redirect=true";
+    }
 }

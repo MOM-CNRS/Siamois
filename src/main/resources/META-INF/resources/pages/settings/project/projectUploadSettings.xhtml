@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui:composition template="/template.xhtml"
+                xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:h="http://xmlns.jcp.org/jsf/html"
+                xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
+                xmlns:settings="http://java.sun.com/jsf/composite/pages/settings/components"
+                xmlns:p="http://primefaces.org/ui"
+                xmlns:form="http://java.sun.com/jsf/composite/pages/shared/form"
+
+>
+
+    <ui:define name="head">
+        <h:outputStylesheet library="css" name="settings.css"/>
+    </ui:define>
+
+    <ui:define name="content">
+        <main class="container-lg">
+            <form:csrfform formId="breadCrumbForm" styleClass="breadCrumpForm">
+                <p:breadCrumb homeDisplay="false">
+                    <p:menuitem value="Projets" action="#{projectDetailsBean.goToProjectList()}"/>
+                    <p:menuitem value="#{projectDetailsBean.project.name}"/>
+                    <p:menuitem value="Importer et exporter les données"/>
+                </p:breadCrumb>
+
+                <form:csrfform formId="projectImportForm" styleClass="sia-settings-form">
+                    <div class="field-value-group">
+                        <h2 class="field-value-title">Import</h2>
+                        <div class="field-value-content">
+                            <p:commandButton
+                                    value="Télécharger un exemple" icon="pi pi-arrow-down"
+                                    styleClass="ui-button-outlined">
+                                <p:fileDownload value="#{projectDetailsBean.file}"/>
+                            </p:commandButton>
+                        </div>
+                    </div>
+                </form:csrfform>
+
+
+            </form:csrfform>
+        </main>
+    </ui:define>
+
+</ui:composition>
