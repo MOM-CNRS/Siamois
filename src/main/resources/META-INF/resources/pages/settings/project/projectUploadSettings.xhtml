@@ -31,6 +31,22 @@
                                     styleClass="ui-button-outlined">
                                 <p:fileDownload value="#{projectDetailsBean.file}"/>
                             </p:commandButton>
+
+                            <div class="custom-upload-container">
+
+                                <p:fileUpload listener="#{fileUploadView.handleFileUpload}"
+                                              mode="advanced"
+                                              dragDrop="true"
+                                              auto="true"
+                                              update="messages"
+                                              allowTypes="/(\.|\/)(xlsx|xls)$/"
+                                              invalidSizeMessage="Le fichier dépasse la limite de 10 Mo."
+                                              invalidFileMessage="Seuls les fichiers .xlsx et .xls sont autorisés."
+                                              styleClass="modern-dropzone"
+                                              label="Faire glisser le fichier ici ou cliquer pour chercher un fichier"/>
+
+                                <p:growl id="messages" showDetail="true" keepAlive="true" />
+                            </div>
                         </div>
                     </div>
                 </form:csrfform>
