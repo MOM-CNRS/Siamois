@@ -2,6 +2,7 @@ package fr.siamois.ui.bean;
 
 import fr.siamois.domain.events.publisher.InstitutionChangeEventPublisher;
 import fr.siamois.domain.models.Bookmark;
+import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.events.LoginEvent;
 import fr.siamois.domain.services.BookmarkService;
 import fr.siamois.domain.services.InstitutionService;
@@ -10,6 +11,7 @@ import fr.siamois.ui.bean.converter.InstitutionConverter;
 import fr.siamois.ui.bean.panel.FlowBean;
 import fr.siamois.ui.bean.panel.models.panel.AbstractPanel;
 import fr.siamois.ui.bean.settings.InstitutionListSettingsBean;
+import fr.siamois.ui.bean.settings.project.ProjectDetailsBean;
 import fr.siamois.ui.bean.settings.project.ProjectListBean;
 import fr.siamois.utils.MessageUtils;
 import io.micrometer.common.lang.Nullable;
@@ -54,6 +56,7 @@ public class NavBean implements Serializable {
     private final transient BookmarkService bookmarkService;
     private final FlowBean flowBean;
     private final LangBean langBean;
+    private final ProjectDetailsBean projectDetailsBean;
 
     private String urlToGoBack; // URL to go back from settings
 
@@ -75,7 +78,7 @@ public class NavBean implements Serializable {
                    InstitutionConverter converter,
                    InstitutionService institutionService,
                    RedirectBean redirectBean,
-                   InstitutionListSettingsBean institutionListSettingsBean, ProjectListBean projectListBean, BookmarkService bookmarkService, FlowBean flowBean, LangBean langBean) {
+                   InstitutionListSettingsBean institutionListSettingsBean, ProjectListBean projectListBean, BookmarkService bookmarkService, FlowBean flowBean, LangBean langBean, ProjectDetailsBean projectDetailsBean) {
         this.sessionSettingsBean = sessionSettingsBean;
         this.institutionChangeEventPublisher = institutionChangeEventPublisher;
         this.converter = converter;
@@ -86,6 +89,7 @@ public class NavBean implements Serializable {
         this.bookmarkService = bookmarkService;
         this.flowBean = flowBean;
         this.langBean = langBean;
+        this.projectDetailsBean = projectDetailsBean;
     }
 
     public InstitutionDTO getSelectedInstitution() {
@@ -268,6 +272,7 @@ public class NavBean implements Serializable {
     }
 
     public void goToProjectsSettings() {
+        setApplicationMode(NavBean.ApplicationMode.SETTINGS);
         projectListBean.init();
         redirectBean.redirectTo("/settings/project");
     }
@@ -341,6 +346,15 @@ public class NavBean implements Serializable {
                 .getRequestParameterMap()
                 .get("id");
         flowBean.redirectToFocus("/action-unit/" + id);
+    }
+
+    public void redirectToActionUnitSettings(ActionUnitDTO actionUnit) throws IOException {
+        setApplicationMode(NavBean.ApplicationMode.SETTINGS);
+        projectListBean.init();
+        String path = projectListBean.redirectToProject(actionUnit);
+        FacesContext facesContext = FacesContext.getCurrentInstance();
+        String contextPath = facesContext.getExternalContext().getRequestContextPath();
+        facesContext.getExternalContext().redirect(contextPath + path);
     }
 
     public void redirectToActionUnit(Long actionUnitId, @Nullable Integer tabIndex) throws IOException {

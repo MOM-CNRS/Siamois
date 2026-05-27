@@ -6,7 +6,7 @@
                 xmlns:settings="http://java.sun.com/jsf/composite/pages/settings/components"
                 xmlns:p="http://primefaces.org/ui"
                 xmlns:form="http://java.sun.com/jsf/composite/pages/shared/form"
->
+                xmlns:f="http://java.sun.com/jsf/core">
 
     <ui:define name="head">
         <h:outputStylesheet library="css" name="settings.css"/>
@@ -14,12 +14,23 @@
 
     <ui:define name="content">
         <main class="container-lg">
-            <form:csrfform formId="breadCrumbForm" styleClass="breadCrumpForm" >
-                <p:breadCrumb homeDisplay="false">
+
+            <form:csrfform formId="breadCrumbForm"
+                           styleClass="breadCrumpForm"
+                           style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+
+                <p:breadCrumb homeDisplay="false" style="flex-grow: 1; border: none; background: transparent; padding: 0;">
                     <p:menuitem value="Projets" action="#{projectDetailsBean.goToProjectList()}"/>
-                    <p:menuitem value="#{projectDetailsBean.project.name}" action="#{projectDetailsBean.backToProjectSettings()}"/>
-                    <p:menuitem value="Importer et exporter les données"/>
+                    <p:menuitem value="#{projectDetailsBean.project.name}"/>
                 </p:breadCrumb>
+
+                <p:commandButton action="#{navBean.redirectToActionUnit()}"
+                                 icon="bi bi-database"
+                                 value="Ouvrir le projet dans l'application"
+                                 process="@this"
+                                 styleClass="ui-button-flat">
+                    <f:param name="id" value="#{projectDetailsBean.project.id}" />
+                </p:commandButton>
 
             </form:csrfform>
             <settings:settingsCategory
