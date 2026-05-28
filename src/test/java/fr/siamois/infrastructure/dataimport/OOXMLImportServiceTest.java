@@ -598,7 +598,7 @@ class OOXMLImportServiceTest {
 
         // Execute
         List<SpecimenSeeder.SpecimenSpecs> specs =
-                service.parseSpecimens(s);
+                service.parseSpecimens(s, OOXMLImportService.ImportScope.ALL, null);
 
         // Assert
         assertThat(specs).hasSize(1);
