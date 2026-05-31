@@ -492,8 +492,8 @@ public class FormService {
     }
 
     private void handleRecordingUnitSet(CustomFieldAnswerViewModel answer, Object value) {
-        if (answer instanceof CustomFieldAnswerSelectMultipleRecordingUnitViewModel ans) {
-            ans.setValue(new ArrayList<>((Set<RecordingUnitSummaryDTO>) value));
+        if (answer instanceof CustomFieldAnswerSelectMultipleRecordingUnitViewModel ans && value instanceof Set<?> values) {
+            ans.setValue(new ArrayList<>((Set<RecordingUnitSummaryDTO>) values));
         }
     }
 

@@ -71,6 +71,14 @@ public final class RecordingUnitTableDefinitionFactory {
                 .vocabulary(SYSTEM_THESO)
                 .externalId("Couleur de la matrice")
                 .build();
+        Concept isPartOfConcept = new Concept.Builder()
+                .vocabulary(SYSTEM_THESO)
+                .externalId("4289277")
+                .build();
+        Concept containsConcept = new Concept.Builder()
+                .vocabulary(SYSTEM_THESO)
+                .externalId("4289278")
+                .build();
 
         CustomFieldText recordingUnitIdField =  CustomFieldText.builder()
                 .label("recordingunit.field.identifier")
@@ -137,6 +145,21 @@ public final class RecordingUnitTableDefinitionFactory {
                 .valueBinding("spatialUnit")
                 .concept(spatialConcept)
                 .build();
+        CustomFieldSelectMultipleRecordingUnit
+                isPartOfField = CustomFieldSelectMultipleRecordingUnit.builder()
+                .label("common.field.parents")
+                .isSystemField(true)
+                .id(10L)
+                .valueBinding("parents")
+                .concept(isPartOfConcept)
+                .build();
+        CustomFieldSelectMultipleRecordingUnit containsField = CustomFieldSelectMultipleRecordingUnit.builder()
+                .label("common.field.children")
+                .isSystemField(true)
+                .id(11L)
+                .valueBinding("children")
+                .concept(containsConcept)
+                .build();
 
         dateField.setId(2L);
         typeField.setId(1L);
@@ -178,6 +201,30 @@ public final class RecordingUnitTableDefinitionFactory {
                         .filterable(true)
                         .visible(true)
                         .required(true)
+                        .build()
+        );
+
+        tableModel.getTableDefinition().addColumn(
+                FormFieldColumn.builder()
+                        .id("isPartOf")
+                        .headerKey("common.field.parents")
+                        .field(isPartOfField)
+                        .sortable(false)
+                        .filterable(false)
+                        .visible(true)
+                        .required(false)
+                        .build()
+        );
+
+        tableModel.getTableDefinition().addColumn(
+                FormFieldColumn.builder()
+                        .id("contains")
+                        .headerKey("common.field.children")
+                        .field(containsField)
+                        .sortable(false)
+                        .filterable(false)
+                        .visible(true)
+                        .required(false)
                         .build()
         );
 
