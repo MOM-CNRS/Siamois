@@ -2,15 +2,17 @@
         xmlns="http://www.w3.org/1999/xhtml"
         xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
         xmlns:cc="http://java.sun.com/jsf/composite"
-        xmlns:p="http://primefaces.org/ui" xmlns:f="http://java.sun.com/jsf/core" xmlns:h="http://java.sun.com/jsf/html"
->
+        xmlns:p="http://primefaces.org/ui"
+        xmlns:f="http://java.sun.com/jsf/core"
+        xmlns:h="http://java.sun.com/jsf/html">
 
     <cc:interface>
         <cc:attribute name="answer"
                       type="fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerViewModel"
                       required="true"/>
         <cc:attribute name="hasBeenModified" type="Boolean" required="false" default="false"/>
-        <cc:attribute name="field" type="fr.siamois.domain.models.form.customfield.CustomField"
+        <cc:attribute name="field"
+                      type="fr.siamois.domain.models.form.customfield.CustomField"
                       required="true"/>
         <cc:attribute name="label" type="String" required="false"/>
         <cc:attribute name="required" type="java.lang.Boolean" required="true"/>
@@ -30,71 +32,192 @@
     </cc:interface>
 
     <cc:implementation>
-        <h:panelGroup rendered="#{cc.attrs.mode ne 'input'}">
-                <!-- Single value -->
-                <h:panelGroup rendered="#{(not cc.attrs.multiple) and (not empty cc.attrs.answer.value)}">
+
+        <style>
+            .full-clickable-inplace,
+            .full-clickable-inplace .ui-inplace-display,
+            .full-clickable-inplace .inplace-click-zone {
+                display: block;
+                width: 100%;
+                box-sizing: border-box;
+            }
+
+            .full-clickable-inplace .ui-inplace-display {
+                min-height: 32px;
+                cursor: pointer;
+            }
+
+            .full-clickable-inplace .inplace-click-zone {
+                display: flex;
+                align-items: center;
+                flex-wrap: wrap;
+                gap: .25rem;
+                min-height: 32px;
+                width: 100%;
+            }
+
+            .full-clickable-inplace .inplace-click-zone:hover {
+                background: rgba(0,0,0,.04);
+                cursor: pointer;
+            }
+        </style>
+
+        <p:inplace
+                disabled="#{cc.attrs.mode ne 'input'}"
+                styleClass="full-clickable-inplace"
+                effect="none"
+                widgetVar="inplace_#{cc.clientId.replace(':','_')}">
+
+            <f:facet name="output">
+
+                <div class="inplace-click-zone">
+
+                    <!-- Single value -->
                     <h:panelGroup rendered="#{(not cc.attrs.multiple) and (not empty cc.attrs.answer.value)}">
-                        <div style="display:flex;gap:0.5em;">
+
+                        <div style="display:flex;gap:0.5em;align-items:center;">
+
                             <p:commandLink
                                     styleClass="recording-unit"
                                     value="#{cc.attrs.answer.value.fullIdentifier}"
-                                    action="#{flowBean.addRecordingUnitToOverview(cc.attrs.answer.value.id,
-                                focusViewBean.mainPanel,
-                                null
-                                )}"
+                                    action="#{flowBean.addRecordingUnitToOverview(
+                                        cc.attrs.answer.value.id,
+                                        focusViewBean.mainPanel,
+                                        null
+                                    )}"
                                     process="@this"
                                     update="@this">
-                                <f:param name="id" value="#{cc.attrs.answer.value.id}"/>
+
+                                <f:param name="id"
+                                         value="#{cc.attrs.answer.value.id}"/>
+
                             </p:commandLink>
+
                             <p:chip
                                     rendered="#{cc.attrs.displayType}"
                                     label="#{labelBean.findLabelOf(cc.attrs.answer.value.type)}"
                                     styleClass="mr-2 action-unit-type-chip"/>
-                        </div>
-                    </h:panelGroup>
-                </h:panelGroup>
-        </h:panelGroup>
-        <h:panelGroup id="inputGroup" rendered="#{cc.attrs.mode eq 'input'}">
-                <p:autoComplete value="#{cc.attrs.answer.value}"
-                                id="select-multiple-recording-unit"
-                                completeMethod="#{cc.attrs.formCtx.completeRecordingUnitOptions}"
-                                panelStyleClass="recording-unit"
-                                multiple="#{cc.attrs.multiple}"
-                                styleClass="recording-unit #{cc.attrs.answer.hasBeenModified ? 'track-change sia-modified-field': 'track-change'}"
-                                required="false"
-                                var="ru"
-                                itemValue="#{ru}"
-                                itemLabel="#{ru.fullIdentifier}"
-                                onmousedown="event.stopPropagation();"
-                                onclick="event.stopPropagation();"
-                                converter="#{recordingUnitSummaryConverter}"
-                                forceSelection="true"
-                                unique="true"
-                                scrollHeight="300"
-                                dropdown="false"
-                                showEmptyMessage="false"
-                                maxResults="#{fieldConfigurationService.resultLimit()}">
-                    <f:attribute name="field" value="#{cc.attrs.field}" />
-                    <p:ajax update="#{cc.attrs.updateTargetsOnBlur}"
-                            process="@this"
-                            onstart="$(PrimeFaces.escapeClientId('#{cc.clientId}:input')).removeClass('sia-modified-field'); showSpinner('#{cc.attrs.panelId}')"
-                            oncomplete="hideSpinner('#{cc.attrs.panelId}')"
-                            onerror="handleAutoSaveError(xhr, status, '#{cc.attrs.panelId}'); $(PrimeFaces.escapeClientId('#{cc.clientId}:input')).addClass('sia-modified-field');"
-                            listener="#{cc.attrs.onModified}"/>
-                    <p:ajax update="#{cc.attrs.updateTargetsOnBlur}"
-                            event="itemUnselect"
-                            process="@this"
-                            onstart="$(PrimeFaces.escapeClientId('#{cc.clientId}:input')).removeClass('sia-modified-field'); showSpinner('#{cc.attrs.panelId}')"
-                            oncomplete="hideSpinner('#{cc.attrs.panelId}')"
-                            onerror="handleAutoSaveError(xhr, status, '#{cc.attrs.panelId}'); $(PrimeFaces.escapeClientId('#{cc.clientId}:input')).addClass('sia-modified-field');"
-                            listener="#{cc.attrs.onModified}"/>
-                    <f:facet name="footer">
 
-                    </f:facet>
+                        </div>
+
+                    </h:panelGroup>
+
+                    <!-- Multiple values -->
+                    <h:panelGroup rendered="#{cc.attrs.multiple and not empty cc.attrs.answer.value}">
+
+                        <ui:repeat value="#{cc.attrs.answer.value}"
+                                   var="recordingUnit"
+                                   varStatus="status">
+
+                            <p:commandLink
+                                    styleClass="recording-unit"
+                                    value="#{recordingUnit.fullIdentifier}"
+                                    action="#{flowBean.addRecordingUnitToOverview(
+                                        recordingUnit.id,
+                                        focusViewBean.mainPanel,
+                                        null
+                                    )}"
+                                    process="@this"
+                                    update="@none"
+                                    onclick="event.stopPropagation();">
+
+                                <f:param name="id"
+                                         value="#{recordingUnit.id}"/>
+
+                            </p:commandLink>
+
+                            <p:chip
+                                    rendered="#{cc.attrs.displayType}"
+                                    label="#{labelBean.findLabelOf(recordingUnit.type)}"
+                                    styleClass="mr-2 action-unit-type-chip"/>
+
+                            <h:outputText value=", "
+                                          rendered="#{not status.last}"/>
+
+                        </ui:repeat>
+
+                    </h:panelGroup>
+
+                </div>
+
+            </f:facet>
+
+            <f:facet name="input">
+
+                <p:autoComplete
+                        value="#{cc.attrs.answer.value}"
+                        id="select-multiple-recording-unit"
+                        completeMethod="#{cc.attrs.formCtx.completeRecordingUnitOptions}"
+                        panelStyleClass="recording-unit"
+                        multiple="#{cc.attrs.multiple}"
+                        styleClass="recording-unit #{cc.attrs.answer.hasBeenModified ? 'track-change sia-modified-field' : 'track-change'}"
+                        required="false"
+                        var="ru"
+                        itemValue="#{ru}"
+                        itemLabel="#{ru.fullIdentifier}"
+                        converter="#{recordingUnitSummaryConverter}"
+                        forceSelection="true"
+                        unique="true"
+                        scrollHeight="300"
+                        dropdown="false"
+                        showEmptyMessage="false"
+                        maxResults="#{fieldConfigurationService.resultLimit()}"
+                        onmousedown="event.stopPropagation();"
+                        onclick="event.stopPropagation();"
+                        onblur="
+                            setTimeout(function() {
+                                if (!$('.ui-autocomplete-panel:visible').length) {
+                                    PF('inplace_#{cc.clientId.replace(':','_')}').save();
+                                }
+                            }, 150);
+                        ">
+
+                    <f:attribute name="field" value="#{cc.attrs.field}"/>
+
+                    <p:ajax
+                            update="#{cc.attrs.updateTargetsOnBlur}"
+                            process="@this"
+                            onstart="
+                                $(PrimeFaces.escapeClientId('#{cc.clientId}:input'))
+                                    .removeClass('sia-modified-field');
+                                showSpinner('#{cc.attrs.panelId}');
+                            "
+                            oncomplete="
+                                hideSpinner('#{cc.attrs.panelId}');
+                            "
+                            onerror="
+                                handleAutoSaveError(xhr, status, '#{cc.attrs.panelId}');
+                                $(PrimeFaces.escapeClientId('#{cc.clientId}:input'))
+                                    .addClass('sia-modified-field');
+                            "
+                            listener="#{cc.attrs.onModified}"/>
+
+                    <p:ajax
+                            event="itemUnselect"
+                            update="#{cc.attrs.updateTargetsOnBlur}"
+                            process="@this"
+                            onstart="
+                                $(PrimeFaces.escapeClientId('#{cc.clientId}:input'))
+                                    .removeClass('sia-modified-field');
+                                showSpinner('#{cc.attrs.panelId}');
+                            "
+                            oncomplete="
+                                hideSpinner('#{cc.attrs.panelId}');
+                            "
+                            onerror="
+                                handleAutoSaveError(xhr, status, '#{cc.attrs.panelId}');
+                                $(PrimeFaces.escapeClientId('#{cc.clientId}:input'))
+                                    .addClass('sia-modified-field');
+                            "
+                            listener="#{cc.attrs.onModified}"/>
+
+                    <f:facet name="footer"/>
+
                 </p:autoComplete>
 
+            </f:facet>
 
-        </h:panelGroup>
+        </p:inplace>
 
     </cc:implementation>
 

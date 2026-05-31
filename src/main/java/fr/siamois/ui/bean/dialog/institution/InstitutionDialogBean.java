@@ -62,7 +62,7 @@ public class InstitutionDialogBean implements Serializable {
         publicThesaurus = new ArrayList<>();
         thesaurusServerUrl = "https://thesaurus.mom.fr";
         selected = new ThesaurusInfo("", "", "", "");
-        reloadThesaurusInfoList();
+        //reloadThesaurusInfoList();
     }
 
     public InstitutionDTO createInstitution() throws InstitutionAlreadyExistException, FailedInstitutionSaveException, InvalidEndpointException, NotSiamoisThesaurusException {
