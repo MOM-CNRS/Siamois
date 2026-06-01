@@ -221,7 +221,7 @@ public abstract class BaseLazyDataModel<T> extends LazyDataModel<T> implements L
                 filterDTO.add(entry.getKey(), entry.getValue().getFilterValue(), FilterDTO.FilterType.CONTAINS);
             }
         }
-        constantFilters.forEach((k, v) -> filterDTO.add(k, v.getFilter(), v.getType()));
+        constantFilters.forEach((k, v) -> filterDTO.addScopeFilter(k, v.getFilter(), v.getType()));
         return countWithFilter(filterDTO);
     }
 
@@ -261,7 +261,7 @@ public abstract class BaseLazyDataModel<T> extends LazyDataModel<T> implements L
         SortDTO sortDTO = new SortDTO();
 
         prepareFilterDTO(activeFilters, filterDTO);
-        constantFilters.forEach((k, v) -> filterDTO.add(k, v.getFilter(), v.getType()));
+        constantFilters.forEach((k, v) -> filterDTO.addScopeFilter(k, v.getFilter(), v.getType()));
         prepareSortDTO(activeSorts, sortDTO);
 
         Pageable pageable = PageRequest.of(pageNumber, pageSizeState, buildSort(sortDTO));

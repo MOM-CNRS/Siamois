@@ -14,6 +14,8 @@ import java.util.*;
 public class FilterDTO {
 
     private final Map<String, FilterInfo> filter;
+    /** Keys added via {@link #addScopeFilter} — never counted as user-applied filters. */
+    private final Set<String> scopeFilterKeys = new HashSet<>();
     public static final String GLOBAL_FILTER_KEY = "global";
 
     /**
@@ -84,7 +86,13 @@ public class FilterDTO {
     }
 
     public boolean hasUserFilters() {
-        return !filter.isEmpty();
+        return filter.keySet().stream().anyMatch(k -> !scopeFilterKeys.contains(k));
+    }
+
+    /** Add a scope (constant) filter — applied to every query but never treated as a user-applied filter. */
+    public void addScopeFilter(String key, Object value, FilterType type) {
+        filter.put(key, new FilterInfo(value, type));
+        scopeFilterKeys.add(key);
     }
 
     @NonNull

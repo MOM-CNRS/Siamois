@@ -27,7 +27,7 @@ import fr.siamois.ui.bean.panel.models.panel.single.tab.ActionSettingsTab;
 import fr.siamois.ui.bean.panel.models.panel.single.tab.RecordingTab;
 import fr.siamois.ui.bean.settings.team.TeamMembersBean;
 import fr.siamois.ui.form.dto.FormUiDto;
-import fr.siamois.ui.lazydatamodel.RecordingUnitInActionUnitLazyDataModel;
+import fr.siamois.ui.lazydatamodel.RecordingUnitLazyDataModel;
 import fr.siamois.ui.lazydatamodel.SpecimenInActionUnitLazyDataModel;
 import fr.siamois.ui.lazydatamodel.scope.RecordingUnitScope;
 import fr.siamois.ui.mapper.FormMapper;
@@ -53,6 +53,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import static fr.siamois.dto.FilterDTO.FilterType.CONTAINS;
+import static fr.siamois.infrastructure.database.repositories.specs.RecordingUnitSpec.ACTION_UNIT_FILTER;
 
 /**
  * <p>This bean handles the spatial unit page</p>
@@ -112,7 +115,6 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnitDTO> im
     private transient List<ActionCode> secondaryActionCodes;
 
     // Linked recording units
-    private transient RecordingUnitInActionUnitLazyDataModel recordingUnitListLazyDataModel;
     private Integer totalRecordingUnitCount;
     // Lazy model for recording unit in the spatial unit
     private SpecimenInActionUnitLazyDataModel specimenLazyDataModel;
@@ -369,12 +371,13 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnitDTO> im
     }
 
     public void initRecordingTab() {
-        RecordingUnitInActionUnitLazyDataModel actionLazyDataModel = new RecordingUnitInActionUnitLazyDataModel(
+        RecordingUnitLazyDataModel actionLazyDataModel = new RecordingUnitLazyDataModel(
                 recordingUnitService,
                 sessionSettingsBean,
-                langBean,
-                unit
+                langBean
         );
+
+        actionLazyDataModel.withConstantFilter(ACTION_UNIT_FILTER, List.of(unit.getId()), CONTAINS);
 
         totalRecordingUnitCount = recordingUnitService.countByActionContext(unit);
 
