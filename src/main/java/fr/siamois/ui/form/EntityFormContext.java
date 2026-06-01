@@ -50,6 +50,7 @@ import org.primefaces.model.TreeNode;
 import org.springframework.core.convert.ConversionService;
 import org.springframework.data.domain.Page;
 
+import java.time.OffsetDateTime;
 import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
@@ -523,6 +524,41 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
             toSave.setCategory(answer.getNewType().concept());
             toSave = spatialUnitService.save(sessionSettingsBean.getUserInfo(), toSave);
             answer.getValue().add(services.getPlaceSuggestionMapper().convert(toSave));
+            if (unit.getId() != null) {
+                this.save();
+            }
+        } catch (Exception e) {
+            MessageUtils.displayErrorMessage(langBean, "dialog.unsaved.error", e.getMessage());
+        }
+    }
+
+    public void saveNewRecordingUnitFromField(CustomFieldAnswerViewModel rawAnswer) {
+        if (!(rawAnswer instanceof CustomFieldAnswerSelectMultipleRecordingUnitViewModel answer)) {
+            return;
+        }
+        if (!(unit instanceof RecordingUnitDTO parentRu)) {
+            return;
+        }
+        try {
+            RecordingUnitDTO toSave = new RecordingUnitDTO();
+            toSave.setActionUnit(parentRu.getActionUnit());
+            toSave.setCreatedByInstitution(parentRu.getCreatedByInstitution());
+            toSave.setSpatialUnit(parentRu.getSpatialUnit());
+            toSave.setAuthor(sessionSettingsBean.getAuthenticatedUser());
+            toSave.setContributors(List.of(sessionSettingsBean.getAuthenticatedUser()));
+            toSave.setOpeningDate(OffsetDateTime.now());
+            toSave.setType(answer.getNewType() != null ? answer.getNewType().concept() : null);
+            toSave.setParents(new HashSet<>());
+            toSave.setChildren(new HashSet<>());
+
+            RecordingUnitDTO created = recordingUnitService.save(toSave);
+            String fullIdentifier = recordingUnitService.generateFullIdentifier(created.getActionUnit(), created);
+            created.setFullIdentifier(fullIdentifier);
+            created = recordingUnitService.save(created);
+
+            answer.getValue().add(new RecordingUnitSummaryDTO(created));
+            answer.setNewType(null);
+
             if (unit.getId() != null) {
                 this.save();
             }

@@ -399,6 +399,59 @@ $(globalThis).on("popstate", function(e) {
 
 });
 
+function rumExpand(id) {
+    var view = document.getElementById('rum_v_' + id);
+    if (!view) return;
+    view.querySelectorAll('.rum-extra').forEach(function(el) { el.style.display = ''; });
+    var expandBtn = view.querySelector('.rum-expand-btn');
+    if (expandBtn) expandBtn.style.display = 'none';
+    var collapseBtn = view.querySelector('.rum-collapse-btn');
+    if (collapseBtn) collapseBtn.style.display = '';
+}
+
+function rumCollapse(id) {
+    var view = document.getElementById('rum_v_' + id);
+    if (!view) return;
+    view.querySelectorAll('.rum-extra').forEach(function(el) { el.style.display = 'none'; });
+    var expandBtn = view.querySelector('.rum-expand-btn');
+    if (expandBtn) expandBtn.style.display = '';
+    var collapseBtn = view.querySelector('.rum-collapse-btn');
+    if (collapseBtn) collapseBtn.style.display = 'none';
+}
+
+function rumEdit(id) {
+    var view = document.getElementById('rum_v_' + id);
+    var edit = document.getElementById('rum_e_' + id);
+    if (view) view.style.display = 'none';
+    if (edit) {
+        edit.style.display = '';
+        var input = edit.querySelector('input[type="text"]');
+        if (input) setTimeout(function() { input.focus(); }, 50);
+    }
+}
+
+function rumClose(id) {
+    var edit = document.getElementById('rum_e_' + id);
+    var view = document.getElementById('rum_v_' + id);
+    if (edit) edit.style.display = 'none';
+    if (view) view.style.display = '';
+}
+
+function ruInplaceOnBlur(clientId) {
+    var _id = clientId.replace(/:/g, '_');
+    console.log('[ruInplaceOnBlur] id=' + _id + ' justShown=' + window['ruJustShown_' + _id]);
+    setTimeout(function() {
+        var justShown = window['ruJustShown_' + _id];
+        var panelOpen = $('.ui-autocomplete-panel:visible').length > 0;
+        var ov = PF(_id + '_ruOverlay');
+        var overlayOpen = ov != null && ov.isVisible();
+        console.log('[ruInplaceOnBlur] after timeout — justShown=' + justShown + ' panelOpen=' + panelOpen + ' overlayOpen=' + overlayOpen);
+        if (!justShown && !panelOpen && !overlayOpen) {
+            PF('inplace_' + _id).save();
+        }
+    }, 150);
+}
+
 
 
 
