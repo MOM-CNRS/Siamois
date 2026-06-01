@@ -17,7 +17,6 @@ import fr.siamois.ui.form.FormContextServices;
 import fr.siamois.ui.lazydatamodel.ActionUnitLazyDataModel;
 import fr.siamois.ui.lazydatamodel.BaseLazyDataModel;
 import fr.siamois.ui.lazydatamodel.scope.ActionUnitScope;
-import fr.siamois.ui.lazydatamodel.tree.ActionUnitTreeTableLazyModel;
 import fr.siamois.ui.table.viewmodel.ActionUnitTableViewModel;
 import fr.siamois.ui.table.ToolbarCreateConfig;
 import fr.siamois.ui.table.definitions.ActionUnitTableDefinitionFactory;
@@ -77,11 +76,6 @@ public class ActionUnitListPanel extends AbstractListPanel<ActionUnitDTO> implem
     @Override
     protected BaseLazyDataModel<ActionUnitDTO> createLazyDataModel() {
         ActionUnitLazyDataModel lazy =  new ActionUnitLazyDataModel(actionUnitService, sessionSettingsBean);
-        ActionUnitTreeTableLazyModel lazyTree = new ActionUnitTreeTableLazyModel(actionUnitService,
-                ActionUnitScope.builder()
-                        .institutionId(sessionSettingsBean.getSelectedInstitution().getId())
-                        .type(INSTITUTION)
-                        .build());
 
         // construction de la vue de table autour du lazy
         tableModel = new ActionUnitTableViewModel(
@@ -93,7 +87,6 @@ public class ActionUnitListPanel extends AbstractListPanel<ActionUnitDTO> implem
                 navBean,
                 flowBean,
                 genericNewUnitDialogBean,
-                lazyTree,
                 institutionService,
                 formContextServices,
                 actionUnitService,

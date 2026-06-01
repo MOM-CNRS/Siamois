@@ -18,7 +18,6 @@ import fr.siamois.ui.lazydatamodel.BaseLazyDataModel;
 import fr.siamois.ui.lazydatamodel.BaseRecordingUnitLazyDataModel;
 import fr.siamois.ui.lazydatamodel.RecordingUnitLazyDataModel;
 import fr.siamois.ui.lazydatamodel.scope.RecordingUnitScope;
-import fr.siamois.ui.lazydatamodel.tree.RecordingUnitTreeTableLazyModel;
 import fr.siamois.ui.table.viewmodel.RecordingUnitTableViewModel;
 import fr.siamois.ui.table.definitions.RecordingUnitTableDefinitionFactory;
 import fr.siamois.utils.MessageUtils;
@@ -96,11 +95,6 @@ public class RecordingUnitListPanel extends AbstractListPanel<RecordingUnitDTO> 
     protected BaseLazyDataModel<RecordingUnitDTO> createLazyDataModel() {
         BaseRecordingUnitLazyDataModel lazy =
                 new RecordingUnitLazyDataModel(recordingUnitService, sessionSettingsBean, langBean);
-        RecordingUnitTreeTableLazyModel lazyTree = new RecordingUnitTreeTableLazyModel(recordingUnitService,
-                RecordingUnitScope.builder()
-                        .institutionId(sessionSettingsBean.getSelectedInstitution().getId())
-                        .type(RecordingUnitScope.Type.RU_IN_INSTITUTION)
-                        .build());
 
         // construction de la vue de table autour du lazy
         tableModel = new RecordingUnitTableViewModel(
@@ -114,8 +108,7 @@ public class RecordingUnitListPanel extends AbstractListPanel<RecordingUnitDTO> 
                 genericNewUnitDialogBean,
                 recordingUnitWriteVerifier,
                 recordingUnitService,
-                lazyTree,
-                langBean,
+                                langBean,
                 formContextServices
         );
         tableModel.setParentPanel(this);

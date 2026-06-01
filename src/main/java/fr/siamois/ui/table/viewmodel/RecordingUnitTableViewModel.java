@@ -25,7 +25,6 @@ import fr.siamois.ui.form.FormContextServices;
 import fr.siamois.ui.form.dto.FormUiDto;
 import fr.siamois.ui.lazydatamodel.BaseLazyDataModel;
 import fr.siamois.ui.lazydatamodel.BaseRecordingUnitLazyDataModel;
-import fr.siamois.ui.lazydatamodel.tree.RecordingUnitTreeTableLazyModel;
 import fr.siamois.ui.table.*;
 import fr.siamois.ui.table.column.CommandLinkColumn;
 import fr.siamois.ui.table.column.RelationColumn;
@@ -80,7 +79,7 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
                                        FlowBean flowBean, GenericNewUnitDialogBean<RecordingUnitDTO> genericNewUnitDialogBean,
                                        RecordingUnitWriteVerifier recordingUnitWriteVerifier,
                                        RecordingUnitService recordingUnitService,
-                                       RecordingUnitTreeTableLazyModel treeLazyModel, LangBean langBean, FormContextServices formContextServices) {
+                                      LangBean langBean, FormContextServices formContextServices) {
 
         super(
                 lazyDataModel,

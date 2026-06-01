@@ -87,7 +87,6 @@ public class ContainerListPanel extends AbstractListPanel<ContainerDTO> implemen
                 navBean,
                 flowBean,
                 genericNewUnitDialogBean,
-                null,
                 institutionService,
                 formContextServices,
                 actionUnitService,

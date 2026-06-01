@@ -16,7 +16,6 @@ import fr.siamois.ui.form.FormContextServices;
 import fr.siamois.ui.lazydatamodel.BaseLazyDataModel;
 import fr.siamois.ui.lazydatamodel.SpatialUnitLazyDataModel;
 import fr.siamois.ui.lazydatamodel.scope.SpatialUnitScope;
-import fr.siamois.ui.lazydatamodel.tree.SpatialUnitTreeTableLazyModel;
 import fr.siamois.ui.table.viewmodel.SpatialUnitTableViewModel;
 import fr.siamois.ui.table.ToolbarCreateConfig;
 import fr.siamois.ui.table.definitions.SpatialUnitTableDefinitionFactory;
@@ -109,12 +108,6 @@ public class SpatialUnitListPanel extends AbstractListPanel<SpatialUnitDTO>  imp
     @Override
     protected BaseLazyDataModel<SpatialUnitDTO> createLazyDataModel() {
         SpatialUnitLazyDataModel lazy = new SpatialUnitLazyDataModel(spatialUnitService, sessionSettingsBean);
-        SpatialUnitTreeTableLazyModel lazyTree = new SpatialUnitTreeTableLazyModel(spatialUnitService,
-                SpatialUnitScope.builder()
-                        .institutionId(sessionSettingsBean.getSelectedInstitution().getId())
-                        .type(INSTITUTION)
-                        .build());
-
         // construction de la vue de table autour du lazy
         tableModel = new SpatialUnitTableViewModel(
                 lazy,
@@ -126,7 +119,6 @@ public class SpatialUnitListPanel extends AbstractListPanel<SpatialUnitDTO>  imp
                 flowBean,
                 genericNewUnitDialogBean,
                 spatialUnitWriteVerifier,
-                lazyTree,
                 institutionService,
                 formContextServices
         );

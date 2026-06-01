@@ -30,7 +30,6 @@ import fr.siamois.ui.form.dto.FormUiDto;
 import fr.siamois.ui.lazydatamodel.RecordingUnitInActionUnitLazyDataModel;
 import fr.siamois.ui.lazydatamodel.SpecimenInActionUnitLazyDataModel;
 import fr.siamois.ui.lazydatamodel.scope.RecordingUnitScope;
-import fr.siamois.ui.lazydatamodel.tree.RecordingUnitTreeTableLazyModel;
 import fr.siamois.ui.mapper.FormMapper;
 import fr.siamois.ui.table.viewmodel.RecordingUnitTableViewModel;
 import fr.siamois.ui.table.ToolbarCreateConfig;
@@ -378,12 +377,6 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnitDTO> im
         );
 
         totalRecordingUnitCount = recordingUnitService.countByActionContext(unit);
-        RecordingUnitTreeTableLazyModel rLazyTree = new RecordingUnitTreeTableLazyModel(
-                recordingUnitService, RecordingUnitScope.builder()
-                .actionId(unit.getId())
-                .type(RecordingUnitScope.Type.ACTION)
-                .build()
-        );
 
         recordingTabTableModel = new RecordingUnitTableViewModel(
                 actionLazyDataModel,
@@ -396,7 +389,6 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnitDTO> im
                 (GenericNewUnitDialogBean<RecordingUnitDTO>) genericNewUnitDialogBean,
                 recordingUnitWriteVerifier,
                 recordingUnitService,
-                rLazyTree,
                 langBean,
                 formContextServices
         );

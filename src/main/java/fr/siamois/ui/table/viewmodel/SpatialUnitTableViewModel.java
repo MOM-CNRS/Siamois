@@ -20,7 +20,6 @@ import fr.siamois.ui.form.FormContextServices;
 import fr.siamois.ui.form.dto.FormUiDto;
 import fr.siamois.ui.lazydatamodel.BaseLazyDataModel;
 import fr.siamois.ui.lazydatamodel.BaseSpatialUnitLazyDataModel;
-import fr.siamois.ui.lazydatamodel.tree.SpatialUnitTreeTableLazyModel;
 import fr.siamois.ui.table.*;
 import fr.siamois.ui.table.column.CommandLinkColumn;
 import fr.siamois.ui.table.column.RelationColumn;
@@ -72,7 +71,6 @@ public class SpatialUnitTableViewModel extends EntityTableViewModel<SpatialUnitD
                                      NavBean navBean,
                                      FlowBean flowBean, GenericNewUnitDialogBean<SpatialUnitDTO> genericNewUnitDialogBean,
                                      SpatialUnitWriteVerifier writeVerifier,
-                                     SpatialUnitTreeTableLazyModel treeLazyModel,
                                      InstitutionService institutionService,
                                      FormContextServices formContextService) {
 

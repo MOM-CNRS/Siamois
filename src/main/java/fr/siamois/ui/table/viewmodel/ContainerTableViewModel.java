@@ -18,7 +18,6 @@ import fr.siamois.ui.form.FormContextServices;
 import fr.siamois.ui.form.dto.FormUiDto;
 import fr.siamois.ui.lazydatamodel.BaseContainerLazyDataModel;
 import fr.siamois.ui.lazydatamodel.BaseLazyDataModel;
-import fr.siamois.ui.lazydatamodel.tree.ActionUnitTreeTableLazyModel;
 import fr.siamois.ui.table.*;
 import fr.siamois.ui.table.column.CommandLinkColumn;
 import fr.siamois.ui.table.column.RelationColumn;
@@ -64,7 +63,6 @@ public class ContainerTableViewModel extends EntityTableViewModel<ContainerDTO, 
                                    SpatialUnitService spatialUnitService,
                                    NavBean navBean,
                                    FlowBean flowBean, GenericNewUnitDialogBean<ContainerDTO> genericNewUnitDialogBean,
-                                   ActionUnitTreeTableLazyModel treeLazyModel,
                                    InstitutionService institutionService,
                                    FormContextServices formContextServices, ActionUnitService actionUnitService, ActionUnitMapper actionUnitMapper) {
 

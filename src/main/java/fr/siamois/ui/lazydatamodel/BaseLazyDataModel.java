@@ -47,6 +47,22 @@ public abstract class BaseLazyDataModel<T> extends LazyDataModel<T> implements L
     protected transient Map<String, FilterMeta> initialFilter = new HashMap<>();
     protected boolean initialized = false;
 
+    // Constant filters: applied after prepareFilterDTO on every load/count, cannot be overridden by the user.
+    private final Map<String, FilterDTO.FilterInfo> constantFilters = new LinkedHashMap<>();
+
+    /**
+     * Register a filter that is always injected into every query regardless of what the user has set.
+     * Typical use: scope a generic lazy model to a parent entity without creating a subclass.
+     * <pre>
+     *   new RecordingUnitLazyDataModel(svc, settings, lang)
+     *       .withConstantFilter(ACTION_UNIT_FILTER, List.of(actionUnit), CONTAINS)
+     * </pre>
+     */
+    public BaseLazyDataModel<T> withConstantFilter(String key, Object value, FilterDTO.FilterType type) {
+        constantFilters.put(key, new FilterDTO.FilterInfo(value, type));
+        return this;
+    }
+
     @Getter
     @Setter
     protected transient TreeNode<T> lazyRoot;
@@ -205,6 +221,7 @@ public abstract class BaseLazyDataModel<T> extends LazyDataModel<T> implements L
                 filterDTO.add(entry.getKey(), entry.getValue().getFilterValue(), FilterDTO.FilterType.CONTAINS);
             }
         }
+        constantFilters.forEach((k, v) -> filterDTO.add(k, v.getFilter(), v.getType()));
         return countWithFilter(filterDTO);
     }
 
@@ -244,6 +261,7 @@ public abstract class BaseLazyDataModel<T> extends LazyDataModel<T> implements L
         SortDTO sortDTO = new SortDTO();
 
         prepareFilterDTO(activeFilters, filterDTO);
+        constantFilters.forEach((k, v) -> filterDTO.add(k, v.getFilter(), v.getType()));
         prepareSortDTO(activeSorts, sortDTO);
 
         Pageable pageable = PageRequest.of(pageNumber, pageSizeState, buildSort(sortDTO));

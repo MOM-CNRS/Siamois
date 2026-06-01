@@ -21,7 +21,6 @@ import fr.siamois.ui.form.fieldsource.FieldSource;
 import fr.siamois.ui.form.fieldsource.TableRowFieldSource;
 import fr.siamois.ui.lazydatamodel.BaseLazyDataModel;
 import fr.siamois.ui.lazydatamodel.FilterAndSortUtils;
-import fr.siamois.ui.lazydatamodel.tree.BaseTreeTableLazyModel;
 import fr.siamois.ui.table.*;
 import fr.siamois.ui.table.column.*;
 import lombok.Getter;

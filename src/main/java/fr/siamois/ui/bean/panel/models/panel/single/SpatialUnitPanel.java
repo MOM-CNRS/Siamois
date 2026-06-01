@@ -28,8 +28,6 @@ import fr.siamois.ui.lazydatamodel.ActionUnitInSpatialUnitLazyDataModel;
 import fr.siamois.ui.lazydatamodel.SpatialUnitChildrenLazyDataModel;
 import fr.siamois.ui.lazydatamodel.scope.ActionUnitScope;
 import fr.siamois.ui.lazydatamodel.scope.SpatialUnitScope;
-import fr.siamois.ui.lazydatamodel.tree.ActionUnitTreeTableLazyModel;
-import fr.siamois.ui.lazydatamodel.tree.SpatialUnitTreeTableLazyModel;
 import fr.siamois.ui.mapper.FormMapper;
 import fr.siamois.ui.table.viewmodel.ActionUnitTableViewModel;
 import fr.siamois.ui.table.viewmodel.SpatialUnitTableViewModel;
@@ -362,12 +360,6 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
                 unit
         );
         totalActionUnitCount = actionUnitService.countBySpatialContext(unit);
-        ActionUnitTreeTableLazyModel actionLazyTree = new ActionUnitTreeTableLazyModel(
-                actionUnitService, ActionUnitScope.builder()
-                .spatialUnitId(unit.getId())
-                .type(LINKED_TO_SPATIAL_UNIT)
-                .build()
-        );
 
         actionTabTableModel = new ActionUnitTableViewModel(
                 actionLazyDataModel,
@@ -378,7 +370,6 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
                 navBean,
                 flowBean,
                 (GenericNewUnitDialogBean<ActionUnitDTO>) genericNewUnitDialogBean,
-                actionLazyTree,
                 institutionService,
                 formContextServices,
                 actionUnitService, null);
@@ -410,13 +401,6 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
                 sessionSettings
         );
 
-        SpatialUnitTreeTableLazyModel childLazyTree = new SpatialUnitTreeTableLazyModel(
-                spatialUnitService, SpatialUnitScope.builder()
-                .spatialUnitId(unit.getId())
-                .institutionId(sessionSettingsBean.getSelectedInstitution().getId())
-                .type(CHILDREN_OF_SPATIAL_UNIT)
-                .build()
-        );
         totalParentsCount = spatialUnitService.countParentsByChild(unit);
         childTableModel = new SpatialUnitTableViewModel(
                 lazyDataModelChildren,
@@ -428,7 +412,6 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
                 flowBean,
                 (GenericNewUnitDialogBean<SpatialUnitDTO>) genericNewUnitDialogBean,
                 spatialUnitWriteVerifier,
-                childLazyTree,
                 institutionService,
                 formContextServices
         );

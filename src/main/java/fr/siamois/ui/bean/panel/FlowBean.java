@@ -230,7 +230,7 @@ public class FlowBean implements Serializable {
         overviewPanel.setParentOrOverview(targetPanel);
 
         if(targetPanel instanceof AbstractListPanel<?>) {
-            main.setTitle(langBean.msg(targetPanel.getTitleCodeOrTitle()));
+            main.setTitle(targetPanel.resolveTitleOrTitleCode());
         }
         else {
             main.setTitle(targetPanel.getTitleCodeOrTitle());
@@ -242,7 +242,7 @@ public class FlowBean implements Serializable {
 
 
         if(overviewPanel instanceof AbstractListPanel<?>) {
-            side.setTitle(langBean.msg(overviewPanel.getTitleCodeOrTitle()));
+            side.setTitle(overviewPanel.resolveTitleOrTitleCode());
         }
         else {
             side.setTitle(overviewPanel.getTitleCodeOrTitle());
