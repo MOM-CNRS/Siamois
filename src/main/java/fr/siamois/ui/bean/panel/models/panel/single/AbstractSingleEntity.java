@@ -22,6 +22,7 @@ import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
 import fr.siamois.ui.bean.panel.EntityForm;
 import fr.siamois.ui.bean.panel.models.panel.AbstractPanel;
+import fr.siamois.ui.bean.panel.models.panel.list.AbstractListPanel;
 import fr.siamois.ui.form.EntityFormContext;
 import fr.siamois.ui.form.FormContextServices;
 import fr.siamois.ui.form.dto.CustomColUiDto;
@@ -35,6 +36,7 @@ import jakarta.faces.event.ActionEvent;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
+import org.primefaces.PrimeFaces;
 import org.springframework.context.ApplicationContext;
 import org.springframework.core.convert.ConversionService;
 
@@ -244,6 +246,20 @@ public abstract class AbstractSingleEntity<T extends AbstractEntityDTO>
                     // nom de la propriété qui porte le scope (ex: "type")
                     getFormScopePropertyName()
             );
+            formContext.addPostSaveCallback(() -> {
+                if (!isRoot && parentOrOverview != null) {
+                    if (parentOrOverview instanceof AbstractListPanel<?> listPanel) {
+                        listPanel.updateRowInTableModel(unit);
+                        String rowTarget = null;
+                        PrimeFaces.current().ajax().update(
+                                rowTarget != null ? rowTarget
+                                        : "panel-" + parentOrOverview.getPrefixPanelIndex() + "-container"
+                        );
+                    } else {
+                        PrimeFaces.current().ajax().update("panel-" + parentOrOverview.getPrefixPanelIndex() + "-container");
+                    }
+                }
+            });
         }
         formContext.init(forceInit);
     }

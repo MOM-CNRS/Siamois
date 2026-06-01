@@ -70,7 +70,6 @@ public class ActionUnitTableViewModel extends EntityTableViewModel<ActionUnitDTO
 
         super(
                 actionUnitLazyDataModel,
-                treeLazyModel,
                 genericNewUnitDialogBean,
                 formService,
                 spatialUnitTreeService,
@@ -104,7 +103,7 @@ public class ActionUnitTableViewModel extends EntityTableViewModel<ActionUnitDTO
                                      ActionUnitDTO au) {
 
         if (column.getAction() == GO_TO_ACTION_UNIT) {
-
+            setOverviewEntityId(au.getId());
             flowBean.addActionUnitToOverview(
                     au.getId(),
                     parentPanel,
@@ -191,12 +190,10 @@ public class ActionUnitTableViewModel extends EntityTableViewModel<ActionUnitDTO
     @Override
     public void handleRelationAction(RelationColumn col, ActionUnitDTO au, TableColumnAction action) {
         switch (action) {
-            case VIEW_RELATION ->
-                    flowBean.addActionUnitToOverview(
-                            au.getId(),
-                            parentPanel,
-                            col.getViewTargetIndex()
-                    );
+            case VIEW_RELATION -> {
+                setOverviewEntityId(au.getId());
+                flowBean.addActionUnitToOverview(au.getId(), parentPanel, col.getViewTargetIndex());
+            }
 
             case ADD_RELATION -> {
                 // Dispatch based on column.countKey (or add a dedicated "relationKey")

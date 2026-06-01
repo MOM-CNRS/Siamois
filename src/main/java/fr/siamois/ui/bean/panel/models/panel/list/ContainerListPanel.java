@@ -136,6 +136,11 @@ public class ContainerListPanel extends AbstractListPanel<ContainerDTO> implemen
         return "bi bi-box-seam";
     }
 
+    @Override
+    protected String getTableClientIdPrefix() {
+        return "containerListForm:containerList";
+    }
+
 
 
     public List<Person> authorsAvailable() {

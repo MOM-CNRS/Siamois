@@ -122,6 +122,11 @@ public class SpecimenListPanel extends AbstractListPanel<SpecimenDTO>  implement
         return "bi bi-bucket";
     }
 
+    @Override
+    protected String getTableClientIdPrefix() {
+        return "specimenListForm:specimentList";
+    }
+
 
 
     public List<Person> authorsAvailable() {

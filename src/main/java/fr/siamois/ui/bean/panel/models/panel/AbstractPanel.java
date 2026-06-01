@@ -45,6 +45,13 @@ public abstract class AbstractPanel implements Serializable {
 
     public abstract void togglePanelBookmark() ;
 
+    public String getActionToolbarId() {
+        if (isRoot) {
+            return "actionForm-"+getPanelIndex();
+        }
+        return "actionForm-"+parentOrOverview.getPanelIndex();
+    }
+
     public abstract boolean canUserUpdateView();
 
     public void loadData() {

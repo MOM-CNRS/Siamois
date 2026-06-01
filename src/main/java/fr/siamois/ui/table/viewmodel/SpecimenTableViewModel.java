@@ -90,6 +90,7 @@ public class SpecimenTableViewModel extends EntityTableViewModel<SpecimenDTO, Lo
                                      SpecimenDTO s) {
 
         if (column.getAction() == GO_TO_SPECIMEN) {
+            setOverviewEntityId(s.getId());
             flowBean.addSpecimenToOverview(s.getId(), parentPanel, null);
         } else {
             throw new IllegalStateException(

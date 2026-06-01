@@ -128,6 +128,21 @@ public abstract class BaseTreeTableLazyModel<T extends AbstractEntityDTO, ID> im
         return nodes.isEmpty() ? null : nodes.get(0);
     }
 
+    /**
+     * Update the entity data in every tree node that represents it (handles multi-hierarchy).
+     * The tree structure is left intact; only the data payload of matching nodes changes.
+     */
+    public void updateEntityInTree(T updatedEntity) {
+        if (updatedEntity == null || !initialized || root == null) return;
+        ID id = idExtractor.apply(updatedEntity);
+        if (id == null) return;
+        List<LazyDefaultTreeNode<T>> nodes = nodesById.get(id);
+        if (nodes == null) return;
+        for (LazyDefaultTreeNode<T> node : nodes) {
+            node.setData(updatedEntity);
+        }
+    }
+
     /** Register node in the index (call during build and during inserts) */
     protected void registerNode(T entity, LazyDefaultTreeNode<T> node) {
         if (entity == null || node == null) return;

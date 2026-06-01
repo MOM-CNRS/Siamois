@@ -29,6 +29,17 @@
             margin-top: 0.5rem;
             box-sizing: border-box;
         }
+
+        .ui-datatable tr.overview-open > td {
+            border-top: 2px solid var(--siamois-green-active) !important;
+            border-bottom: 2px solid var(--siamois-green-active) !important;
+        }
+        .ui-datatable tr.overview-open > td:first-child {
+            border-left: 2px solid var(--siamois-green-active) !important;
+        }
+        .ui-datatable tr.overview-open > td:last-child {
+            border-right: 2px solid var(--siamois-green-active) !important;
+        }
     </style>
 
     <p:blockUI block="entityDatatable" trigger="#{cc.clientId}:entityDatatable" widgetVar="#{cc.clientId}_buiDataTables">
@@ -65,6 +76,7 @@
                  rowIndexVar="rowIndex"
                  tableStyle="table-layout: auto;"
                  tableStyleClass="datatable-hoverable-table"
+                 rowStyleClass="#{tableModel.getRowStyleClass(item)}"
                  value="#{tableModel.lazyDataModel}"
                  styleClass="#{tableClass} #{not tableModel.columnFilteringEnabled ? 'filter-table-column-hidden' : ''}">
 

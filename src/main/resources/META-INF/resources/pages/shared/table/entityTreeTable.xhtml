@@ -41,6 +41,18 @@
         .ui-treetable tr.search-match:hover > td {
             background-color: rgba(255, 221, 87, 0.4);
         }
+
+        /* Highlight the row whose entity is currently open in the side overview. */
+        .ui-treetable tr.overview-open > td {
+            border-top: 2px solid var(--siamois-green-active) !important;
+            border-bottom: 2px solid var(--siamois-green-active) !important;
+        }
+        .ui-treetable tr.overview-open > td:first-child {
+            border-left: 2px solid var(--siamois-green-active) !important;
+        }
+        .ui-treetable tr.overview-open > td:last-child {
+            border-right: 2px solid var(--siamois-green-active) !important;
+        }
     </style>
 
     <p:blockUI block="entityTreeTable" trigger="#{cc.clientId}:entityTreeTable" widgetVar="#{cc.clientId}_buiTreeTables">
@@ -63,7 +75,7 @@
                  propagateSelectionUp="false"
                  propagateSelectionDown="false"
                  allowUnsorting="true"
-                 sortBy="#{tableModel.treeLazyModel.sortBy}"
+                 sortBy="#{tableModel.lazyDataModel.sortBy}"
                  sortMode="multiple"
                  partialUpdate="false"
                  resizableColumns="true"

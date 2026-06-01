@@ -32,7 +32,7 @@
                                     onIcon="bi bi-list-nested"
                                     offIcon="bi bi-list">
                                 <p:ajax process="@this"
-                                        update=":#{cc.clientId}:tableContainer, actionForm-#{tableModel.parentPanel.panelIndex}"
+                                        update=":#{cc.clientId}:tableContainer, #{tableModel.parentPanel.actionToolbarId}"
                                         listener="#{tableModel.onSwitchTreeMode}"
                                         onstart="PF('#{cc.clientId}_buiTables').show()"
                                         oncomplete="PF('#{cc.clientId}_buiTables').hide()"/>
@@ -47,7 +47,7 @@
                                     datasource=":#{cc.clientId}:#{tableId}"
                                     trigger=":#{cc.clientId}:#{tableId}:toggler">
                                 <p:ajax event="toggle"
-                                        update="actionForm-#{tableModel.parentPanel.panelIndex}"
+                                        update="#{tableModel.parentPanel.actionToolbarId}"
                                         listener="#{cc.attrs.tableModel.onToggle}"/>
                             </p:columnToggler>
                         </div>
@@ -69,7 +69,7 @@
                             onIcon="pi pi-filter" offIcon="pi pi-filter-slash"
                             styleClass="vertical-align-middle ml-3">
 
-                        <p:ajax update=":#{cc.clientId}:#{tableId}, actionForm-#{tableModel.parentPanel.panelIndex}"
+                        <p:ajax update=":#{cc.clientId}:#{tableId}, #{tableModel.parentPanel.actionToolbarId}"
                                 listener="#{tableModel.onColumnFilteringToggle}" />
                     </p:toggleSwitch>
                 </div>

@@ -78,7 +78,6 @@ public class SpatialUnitTableViewModel extends EntityTableViewModel<SpatialUnitD
 
         super(
                 lazyDataModel,
-                treeLazyModel,
                 genericNewUnitDialogBean,
                 formService,
                 spatialUnitTreeService,
@@ -112,6 +111,7 @@ public class SpatialUnitTableViewModel extends EntityTableViewModel<SpatialUnitD
                                      SpatialUnitDTO su) {
 
         if (column.getAction() == GO_TO_SPATIAL_UNIT) {
+            setOverviewEntityId(su.getId());
             flowBean.addSpatialUnitToOverview(su.getId(), parentPanel, null);
         } else {
             throw new IllegalStateException("Unhandled action: " + column.getAction());
@@ -216,7 +216,10 @@ public class SpatialUnitTableViewModel extends EntityTableViewModel<SpatialUnitD
     public void handleRelationAction(RelationColumn col, SpatialUnitDTO su, TableColumnAction action) {
         switch (action) {
 
-            case VIEW_RELATION -> flowBean.addSpatialUnitToOverview(su.getId(), parentPanel, 3);
+            case VIEW_RELATION -> {
+                setOverviewEntityId(su.getId());
+                flowBean.addSpatialUnitToOverview(su.getId(), parentPanel, 3);
+            }
 
             case ADD_RELATION -> {
                 // Dispatch based on column.countKey (or add a dedicated "relationKey")
@@ -384,11 +387,9 @@ public class SpatialUnitTableViewModel extends EntityTableViewModel<SpatialUnitD
     public void save() {
         // Determine the source of entities based on treeMode
         Set<SpatialUnitDTO> entities;
-        if (treeMode) {
-            entities = treeLazyModel.getAllEntitiesFromTree();
-        } else {
+
             entities = new HashSet<>(lazyDataModel.getQueryResult());
-        }
+
 
         // Iterate over all entities
         for (SpatialUnitDTO entity : entities) {
@@ -438,10 +439,6 @@ public class SpatialUnitTableViewModel extends EntityTableViewModel<SpatialUnitD
         return spatialUnitService.findDirectChildrensOf(parentUnit.getId());
     }
 
-    @Override
-    public TreeNode<SpatialUnitDTO> getTreeRoot() {
-        return treeLazyModel.getRoot();
-    }
 
     // Duplique une unité spatiale
     // Le place au même niveau dans la hierarchie mais ne copie pas les enfants

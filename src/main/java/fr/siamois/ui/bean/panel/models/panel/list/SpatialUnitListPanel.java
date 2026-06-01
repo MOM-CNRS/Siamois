@@ -88,6 +88,11 @@ public class SpatialUnitListPanel extends AbstractListPanel<SpatialUnitDTO>  imp
         return "bi bi-geo-alt";
     }
 
+    @Override
+    protected String getTableClientIdPrefix() {
+        return "spatialUnitListPanelForm:spatialUnitList";
+    }
+
 
     @Override
     public String displayHeader() {

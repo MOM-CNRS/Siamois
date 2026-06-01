@@ -1,6 +1,5 @@
 package fr.siamois.ui.bean.panel.models.panel.list;
 
-import fr.siamois.domain.models.uiview.UiTableView;
 import fr.siamois.domain.services.BookmarkService;
 import fr.siamois.domain.services.UiViewService;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
@@ -26,7 +25,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import org.primefaces.component.api.UITableState;
+import org.primefaces.PrimeFaces;
 import org.primefaces.model.menu.DefaultMenuItem;
 import org.springframework.context.ApplicationContext;
 
@@ -210,6 +209,25 @@ public abstract class AbstractListPanel<T extends AbstractEntityDTO> extends Abs
     public void refresh() {
         init();
     }
+
+    @Override
+    public void closeOverview() {
+        if (tableModel != null) {
+            tableModel.setOverviewEntityId(null);
+        }
+        super.closeOverview();
+        PrimeFaces.current().ajax().update("panel-" + getPrefixPanelIndex() + "-container");
+    }
+
+    @SuppressWarnings("unchecked")
+    public void updateRowInTableModel(AbstractEntityDTO entity) {
+        if (tableModel != null && entity != null) {
+            tableModel.updateEntityInCurrentPage((T) entity);
+        }
+    }
+
+    /** Client ID prefix shared by both table components: {@code formId:compositeId}. */
+    protected abstract String getTableClientIdPrefix();
 
 
     protected AbstractListPanel(

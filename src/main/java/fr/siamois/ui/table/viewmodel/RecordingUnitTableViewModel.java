@@ -84,7 +84,6 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
 
         super(
                 lazyDataModel,
-                treeLazyModel,
                 genericNewUnitDialogBean,
                 formService,
                 spatialUnitTreeService,
@@ -168,6 +167,7 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
                                      RecordingUnitDTO ru) {
 
         if (column.getAction() == GO_TO_RECORDING_UNIT) {
+            setOverviewEntityId(ru.getId());
             flowBean.addRecordingUnitToOverview(
                     ru.getId(),
                     parentPanel,
@@ -278,12 +278,10 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
     public void handleRelationAction(RelationColumn col, RecordingUnitDTO ru, TableColumnAction action) {
         switch (action) {
 
-            case VIEW_RELATION ->
-                    flowBean.addRecordingUnitToOverview(
-                            ru.getId(),
-                            parentPanel,
-                            col.getViewTargetIndex()
-                    );
+            case VIEW_RELATION -> {
+                setOverviewEntityId(ru.getId());
+                flowBean.addRecordingUnitToOverview(ru.getId(), parentPanel, col.getViewTargetIndex());
+            }
 
             case ADD_RELATION -> {
                 // Dispatch based on column.countKey (or add a dedicated "relationKey")
@@ -407,10 +405,6 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
         return recordingUnitService.findAllByParentRecordingUnit(parentUnit.getId());
     }
 
-    @Override
-    public TreeNode<RecordingUnitDTO> getTreeRoot() {
-        return treeLazyModel.getRoot();
-    }
 
     // Duplique une unité d'enregistrement
     // Le place au même niveau dans la hierarchie mais ne copie pas les enfants
@@ -462,11 +456,8 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
     public void save() {
         // Determine the source of entities based on treeMode
         Set<RecordingUnitDTO> entities;
-        if (treeMode) {
-            entities = treeLazyModel.getAllEntitiesFromTree();
-        } else {
-            entities = new HashSet<>(lazyDataModel.getQueryResult());
-        }
+
+        entities = new HashSet<>(lazyDataModel.getQueryResult());
 
         // Iterate over all entities
         for (RecordingUnitDTO entity : entities) {

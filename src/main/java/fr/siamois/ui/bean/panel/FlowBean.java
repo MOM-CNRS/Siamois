@@ -254,9 +254,19 @@ public class FlowBean implements Serializable {
 
         historyBean.addItem(newEntry);
 
+        if (targetPanel instanceof AbstractListPanel<?> listPanel
+                && listPanel.getTableModel() != null
+                && overviewPanel instanceof AbstractSingleEntityPanel<?> singlePanel) {
+            listPanel.getTableModel().setOverviewEntityId(singlePanel.getUnitId());
+        }
+
         String base64RootUri = Base64.getUrlEncoder().withoutPadding().encodeToString(targetPanel.ressourceUri().getBytes());
         String base64OverviewUri = Base64.getUrlEncoder().withoutPadding().encodeToString(overviewPanel.ressourceUri().getBytes());
-        PrimeFaces.current().ajax().update("sideview-"+targetPanel.getPanelIndex(), "historyForm");
+        PrimeFaces.current().ajax().update(
+                "sideview-" + targetPanel.getPanelIndex(),
+                "historyForm",
+                "panel-" + targetPanel.getPrefixPanelIndex() + "-container"
+        );
         PrimeFaces.current().executeScript(
                 String.format(
                         "showSideview('%s', '%s', '%s');",

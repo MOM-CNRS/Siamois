@@ -65,7 +65,6 @@ public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
      * Lazy model "pur data" (chargement, tri, filtres, sélection, etc.)
      */
     protected final BaseLazyDataModel<T> lazyDataModel;
-    protected final BaseTreeTableLazyModel<T, ID> treeLazyModel;
 
     @Setter
     public int defaultPageSize = 10;
@@ -92,6 +91,10 @@ public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
     private final Function<T, ID> idExtractor;
     @Setter
     protected AbstractPanel parentPanel; // the parent panel to open items in overview
+
+    @Getter
+    @Setter
+    private Long overviewEntityId; // ID of the entity currently open in the overview panel
 
     /**
      * Nom de la propriété de T utilisée comme "form scope" (ex: "type"),
@@ -165,7 +168,6 @@ public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
     ) {
         this(
                 lazyDataModel,
-                null, // treeLazyModel is not used in this constructor
                 genericNewUnitDialogBean,
                 formService,
                 spatialUnitTreeService,
@@ -179,7 +181,6 @@ public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
 
     protected EntityTableViewModel(
             BaseLazyDataModel<T> lazyDataModel,
-            BaseTreeTableLazyModel<T, ID> treeLazyModel,
             GenericNewUnitDialogBean<T> genericNewUnitDialogBean,
             FormService formService,
             SpatialUnitTreeService spatialUnitTreeService,
@@ -190,7 +191,6 @@ public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
             FormContextServices formContextServices
     ) {
         this.lazyDataModel = lazyDataModel;
-        this.treeLazyModel = treeLazyModel;
         this.formService = formService;
         this.genericNewUnitDialogBean = genericNewUnitDialogBean;
         this.spatialUnitTreeService = spatialUnitTreeService;
@@ -204,9 +204,6 @@ public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
         // Set global filter for both models if they exist
         if (this.lazyDataModel != null) {
             this.lazyDataModel.setGlobalFilter(globalFilter);
-        }
-        if (this.treeLazyModel != null) {
-            this.treeLazyModel.setGlobalFilter(globalFilter);
         }
     }
 
@@ -602,13 +599,44 @@ public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
     }
 
     /**
-     * Row CSS class for the TreeTable: {@code search-match} when the row's
-     * entity is one of the actual hits, empty otherwise. Bound from
-     * {@code rowStyleClass} on the tree table; the styling itself lives in
-     * {@code entityTreeTable.xhtml}.
+     * Row CSS class: {@code search-match} for search hits, {@code overview-open} for
+     * the entity currently open in the side overview.
      */
     public String getRowStyleClass(T item) {
-        return isSearchMatch(item) ? "search-match" : "";
+        if (item == null) return "";
+        String classes = isSearchMatch(item) ? "search-match" : "";
+        if (overviewEntityId != null && overviewEntityId.equals(item.getId())) {
+            classes = classes.isEmpty() ? "overview-open" : classes + " overview-open";
+        }
+        return classes;
+    }
+
+    /**
+     * Update the entity in the lazy model cache and reset its row context so the
+     * next render shows the latest data without a DB round-trip.
+     */
+    public void updateEntityInCurrentPage(T updatedEntity) {
+        if (updatedEntity == null) return;
+        ID id = idExtractor.apply(updatedEntity);
+        if (id == null) return;
+        if (lazyDataModel != null) {
+            lazyDataModel.updateEntityInCache(updatedEntity);
+        }
+        rowContexts.remove(id);
+    }
+
+    /**
+     * Index (0-based) of {@code entityId} in the current page's cached result, or -1 if absent.
+     * Used to build a PrimeFaces {@code :@row(n)} AJAX update target.
+     */
+    public int getRowIndexInCurrentPage(Long entityId) {
+        if (lazyDataModel == null || entityId == null) return -1;
+        List<T> result = lazyDataModel.getQueryResult();
+        if (result == null) return -1;
+        for (int i = 0; i < result.size(); i++) {
+            if (entityId.equals(result.get(i).getId())) return i;
+        }
+        return -1;
     }
 
     /**

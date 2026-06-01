@@ -70,7 +70,6 @@ public class ContainerTableViewModel extends EntityTableViewModel<ContainerDTO, 
 
         super(
                 containerLazyDataModel,
-                null,
                 genericNewUnitDialogBean,
                 formService,
                 spatialUnitTreeService,

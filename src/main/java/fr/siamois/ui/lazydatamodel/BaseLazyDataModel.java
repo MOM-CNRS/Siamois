@@ -3,6 +3,7 @@ package fr.siamois.ui.lazydatamodel;
 import fr.siamois.domain.models.vocabulary.label.ConceptLabel;
 import fr.siamois.dto.FilterDTO;
 import fr.siamois.dto.SortDTO;
+import fr.siamois.dto.entity.AbstractEntityDTO;
 import fr.siamois.dto.view.FilterState;
 import lombok.Getter;
 import lombok.Setter;
@@ -325,6 +326,23 @@ public abstract class BaseLazyDataModel<T> extends LazyDataModel<T> implements L
         int last = first + pageSizeState;
         int total = this.getRowCount();
         return Math.min(last, total);
+    }
+
+    public void updateEntityInCache(T updatedEntity) {
+        if (queryResult == null || updatedEntity == null) return;
+        if (!(updatedEntity instanceof AbstractEntityDTO dto)) return;
+        Long id = dto.getId();
+        if (id == null) return;
+
+        List<T> mutable = new ArrayList<>(queryResult);
+        for (int i = 0; i < mutable.size(); i++) {
+            if (mutable.get(i) instanceof AbstractEntityDTO existing && id.equals(existing.getId())) {
+                mutable.set(i, updatedEntity);
+                setWrappedData(mutable);
+                setQueryResult(mutable);
+                return;
+            }
+        }
     }
 
     public void addRowToModel(T newUnit) {

@@ -141,6 +141,11 @@ public class ActionUnitListPanel extends AbstractListPanel<ActionUnitDTO> implem
         return "bi bi-arrow-down-square";
     }
 
+    @Override
+    protected String getTableClientIdPrefix() {
+        return "actionUnitListPanelForm:actionUnitList";
+    }
+
 
 
     public List<Person> authorsAvailable() {

@@ -107,6 +107,12 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
 
     private List<SpatialUnitSummaryDTO> options; // spatial unit options
 
+    private final List<Runnable> postSaveCallbacks = new ArrayList<>();
+
+    public void addPostSaveCallback(Runnable callback) {
+        postSaveCallbacks.add(callback);
+    }
+
 
     private CustomFormResponseViewModel formResponse;
 
@@ -846,7 +852,11 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
     public boolean save() {
         EntityFormContextSaveStrategy<T> strategy = (EntityFormContextSaveStrategy<T>) SAVE_STRATEGIES.get(unit.getClass());
         if (strategy != null) {
-            return strategy.save(this);
+            boolean success = strategy.save(this);
+            if (success) {
+                postSaveCallbacks.forEach(Runnable::run);
+            }
+            return success;
         } else {
             throw new UnsupportedOperationException(
                     "No save strategy defined for type: " + unit.getClass().getSimpleName()

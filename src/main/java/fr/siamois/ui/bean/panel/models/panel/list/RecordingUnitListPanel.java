@@ -143,6 +143,11 @@ public class RecordingUnitListPanel extends AbstractListPanel<RecordingUnitDTO> 
         return "bi bi-pencil-square";
     }
 
+    @Override
+    protected String getTableClientIdPrefix() {
+        return "recordingUnitListForm:recordingUnitList";
+    }
+
     public List<Person> authorsAvailable() {
         return personService.findAllAuthorsOfActionUnitByInstitution(sessionSettingsBean.getSelectedInstitution());
     }

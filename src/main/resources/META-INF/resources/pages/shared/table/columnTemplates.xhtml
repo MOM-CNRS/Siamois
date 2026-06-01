@@ -49,16 +49,21 @@
         <f:facet name="header">
             <cellheader:withIcon icon="#{column.headerIcon}" text="#{langBean.msg(column.headerKey)}"/>
         </f:facet>
+        <style>
+            .relation-col-btn { visibility: hidden; }
+            tr:hover .relation-col-btn,
+            .ui-row-hover .relation-col-btn { visibility: visible; }
+        </style>
         <div style="display:flex; gap:1em; align-items:center;">
             <span>#{tableModel.resolveCount(column, item)}</span>
-            <p:commandButton
-                    icon="#{column.viewIcon}"
-                    action="#{tableModel.handleRelationAction(column, item, 'VIEW_RELATION')}"
-                    styleClass="sia-icon-btn"
+            <p:commandButton styleClass="ui-button-flat relation-col-btn"
                     process="#{column.processExpr}"
                     update="#{column.updateExpr}"
                     onstart="#{column.onstartJs}"
-                    oncomplete="#{column.oncompleteJs}"/>
+                    action="#{tableModel.handleRelationAction(column, item, 'VIEW_RELATION')}"
+                    oncomplete="#{column.oncompleteJs}"
+                    icon="bi bi-layout-sidebar-inset-reverse"
+                    title="Ouvrir dans l'aperçu"/>
         </div>
     </ui:fragment>
 </ui:composition>
