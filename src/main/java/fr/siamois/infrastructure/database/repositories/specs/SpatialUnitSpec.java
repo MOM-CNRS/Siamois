@@ -14,6 +14,7 @@ public class SpatialUnitSpec {
     public static final String NAME_FILTER = "name";
     public static final String CATEGORY_FILTER = "category";
     public static final String ID_FILTER = "id";
+    public static final String PARENT_FILTER = "parents";
 
     private SpatialUnitSpec() {
         throw new UnsupportedOperationException("Spec should never be instantiated");
@@ -55,6 +56,14 @@ public class SpatialUnitSpec {
         return (root, query, criteriaBuilder) -> {
             Join<SpatialUnit, SpatialUnit> parentsJoin = root.join("parents");
             return criteriaBuilder.equal(parentsJoin.get("id"), id);
+        };
+    }
+
+    @NonNull
+    public static Specification<SpatialUnit> isChildOf(List<Long> parentIds) {
+        return (root, query, cb) -> {
+            Join<SpatialUnit, SpatialUnit> parentsJoin = root.join(PARENT_FILTER);
+            return cb.in(parentsJoin.get("id")).value(parentIds);
         };
     }
 }

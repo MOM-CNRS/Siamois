@@ -24,8 +24,11 @@ import fr.siamois.ui.bean.panel.models.panel.AbstractPanel;
 import fr.siamois.ui.bean.panel.models.panel.single.tab.ActionTab;
 import fr.siamois.ui.bean.panel.utils.SpatialUnitHelperService;
 import fr.siamois.ui.form.dto.FormUiDto;
-import fr.siamois.ui.lazydatamodel.ActionUnitInSpatialUnitLazyDataModel;
-import fr.siamois.ui.lazydatamodel.SpatialUnitChildrenLazyDataModel;
+import fr.siamois.dto.FilterDTO;
+import fr.siamois.infrastructure.database.repositories.specs.ActionUnitSpec;
+import fr.siamois.infrastructure.database.repositories.specs.SpatialUnitSpec;
+import fr.siamois.ui.lazydatamodel.ActionUnitLazyDataModel;
+import fr.siamois.ui.lazydatamodel.SpatialUnitLazyDataModel;
 import fr.siamois.ui.lazydatamodel.scope.ActionUnitScope;
 import fr.siamois.ui.lazydatamodel.scope.SpatialUnitScope;
 import fr.siamois.ui.mapper.FormMapper;
@@ -353,12 +356,8 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
     }
 
     public void initActionTab() {
-        ActionUnitInSpatialUnitLazyDataModel actionLazyDataModel = new ActionUnitInSpatialUnitLazyDataModel(
-                actionUnitService,
-                sessionSettings,
-                langBean,
-                unit
-        );
+        ActionUnitLazyDataModel actionLazyDataModel = new ActionUnitLazyDataModel(actionUnitService, sessionSettings);
+        actionLazyDataModel.withConstantFilter(ActionUnitSpec.SPATIAL_UNIT_FILTER, List.of(unit.getId()), FilterDTO.FilterType.CONTAINS);
         totalActionUnitCount = actionUnitService.countBySpatialContext(unit);
 
         actionTabTableModel = new ActionUnitTableViewModel(
@@ -394,12 +393,8 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
 
     public void initChildTableForHierarchyTab() {
 
-        SpatialUnitChildrenLazyDataModel lazyDataModelChildren= new SpatialUnitChildrenLazyDataModel(
-                spatialUnitService,
-                langBean,
-                unit,
-                sessionSettings
-        );
+        SpatialUnitLazyDataModel lazyDataModelChildren = new SpatialUnitLazyDataModel(spatialUnitService, sessionSettings);
+        lazyDataModelChildren.withConstantFilter(SpatialUnitSpec.PARENT_FILTER, List.of(unit.getId()), FilterDTO.FilterType.CONTAINS);
 
         totalParentsCount = spatialUnitService.countParentsByChild(unit);
         childTableModel = new SpatialUnitTableViewModel(

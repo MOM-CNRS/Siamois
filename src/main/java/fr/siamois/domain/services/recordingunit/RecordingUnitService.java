@@ -999,6 +999,10 @@ public class RecordingUnitService implements ArkEntityService {
             }
         }
 
+        if (filters.containsColumn(RecordingUnitSpec.PARENT_FILTER)) {
+            specification = specification.and(RecordingUnitSpec.isChildOf(filters.valueAsIdListOf(RecordingUnitSpec.PARENT_FILTER)));
+        }
+
         return specification;
     }
 

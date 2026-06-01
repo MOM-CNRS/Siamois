@@ -576,6 +576,10 @@ public class ActionUnitService implements ArkEntityService {
             specs = specs.and(ActionUnitSpec.nameContaining(globalFilter.valueAsString()));
         }
 
+        if (filters.containsColumn(ActionUnitSpec.SPATIAL_UNIT_FILTER)) {
+            specs = specs.and(ActionUnitSpec.isInSpatialUnit(filters.valueAsIdListOf(ActionUnitSpec.SPATIAL_UNIT_FILTER)));
+        }
+
         return specs;
     }
 

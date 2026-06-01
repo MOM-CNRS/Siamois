@@ -519,6 +519,15 @@ public class SpecimenService implements ArkEntityService {
 
     public static Specification<Specimen> userFilterSpecs(@NonNull FilterDTO filters) {
         Specification<Specimen> specification = Specification.where(null);
+
+        if (filters.containsColumn(SpecimenSpec.ACTION_UNIT_FILTER)) {
+            specification = specification.and(SpecimenSpec.isInActionUnit(filters.valueAsIdListOf(SpecimenSpec.ACTION_UNIT_FILTER)));
+        }
+
+        if (filters.containsColumn(SpecimenSpec.RECORDING_UNIT_FILTER)) {
+            specification = specification.and(SpecimenSpec.isInRecordingUnit(filters.valueAsIdListOf(SpecimenSpec.RECORDING_UNIT_FILTER)));
+        }
+
         return specification;
     }
 

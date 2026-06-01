@@ -21,8 +21,11 @@ import fr.siamois.ui.bean.panel.models.panel.AbstractPanel;
 import fr.siamois.ui.bean.panel.models.panel.single.tab.SpecimenTab;
 import fr.siamois.ui.bean.panel.models.panel.single.tab.StratigraphyTab;
 import fr.siamois.ui.form.dto.FormUiDto;
-import fr.siamois.ui.lazydatamodel.RecordingUnitChildrenLazyDataModel;
-import fr.siamois.ui.lazydatamodel.SpecimenInRecordingUnitLazyDataModel;
+import fr.siamois.dto.FilterDTO;
+import fr.siamois.infrastructure.database.repositories.specs.RecordingUnitSpec;
+import fr.siamois.infrastructure.database.repositories.specs.SpecimenSpec;
+import fr.siamois.ui.lazydatamodel.RecordingUnitLazyDataModel;
+import fr.siamois.ui.lazydatamodel.SpecimenLazyDataModel;
 import fr.siamois.ui.table.viewmodel.RecordingUnitTableViewModel;
 import fr.siamois.ui.table.viewmodel.SpecimenTableViewModel;
 import fr.siamois.ui.table.ToolbarCreateConfig;
@@ -62,12 +65,6 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
     private final transient NavBean navBean;
     private final transient GenericNewUnitDialogBean<?> genericNewUnitDialogBean;
 
-    // ---------- Locals
-    // Linked specimen
-    private transient SpecimenInRecordingUnitLazyDataModel specimenListLazyDataModel ;
-
-    // lazy model for children
-    private RecordingUnitChildrenLazyDataModel lazyDataModelChildren ;
 
     // lazy model for children
     private transient RecordingUnitTableViewModel parentTableModel;
@@ -143,12 +140,8 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
             unit = recordingUnitService.findById(unitId);
 
 
-            specimenListLazyDataModel = new SpecimenInRecordingUnitLazyDataModel(
-                    specimenService,
-                    sessionSettingsBean,
-                    langBean,
-                    unit
-            );
+            SpecimenLazyDataModel specimenListLazyDataModel = new SpecimenLazyDataModel(specimenService, sessionSettingsBean, langBean);
+            specimenListLazyDataModel.withConstantFilter(SpecimenSpec.RECORDING_UNIT_FILTER, List.of(unit.getId()), FilterDTO.FilterType.CONTAINS);
             specimenListLazyDataModel.setSelectedUnits(new ArrayList<>());
 
 
@@ -158,12 +151,8 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
             specimenListLazyDataModel.setSelectedUnits(new ArrayList<>());
 
             // Get  the CHILDREN of the recording unit
-            lazyDataModelChildren = new RecordingUnitChildrenLazyDataModel(
-                    recordingUnitService,
-                    langBean,
-                    unit,
-                    sessionSettingsBean
-            );
+            RecordingUnitLazyDataModel lazyDataModelChildren = new RecordingUnitLazyDataModel(recordingUnitService, sessionSettingsBean, langBean);
+            lazyDataModelChildren.withConstantFilter(RecordingUnitSpec.PARENT_FILTER, List.of(unit.getId()), FilterDTO.FilterType.CONTAINS);
             selectedCategoriesChildren = new ArrayList<>();
             totalChildrenCount = 0;
             // Get all the Parents of the recording unit
@@ -422,12 +411,8 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
     }
 
     public void initSpecimenTab() {
-        SpecimenInRecordingUnitLazyDataModel lazyDataModel = new SpecimenInRecordingUnitLazyDataModel(
-                specimenService,
-                sessionSettingsBean,
-                langBean,
-                unit
-        );
+        SpecimenLazyDataModel lazyDataModel = new SpecimenLazyDataModel(specimenService, sessionSettingsBean, langBean);
+        lazyDataModel.withConstantFilter(SpecimenSpec.RECORDING_UNIT_FILTER, List.of(unit.getId()), FilterDTO.FilterType.CONTAINS);
 
         specimenTableModel = new SpecimenTableViewModel(
                 lazyDataModel,

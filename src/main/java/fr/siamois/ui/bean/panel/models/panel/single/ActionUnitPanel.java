@@ -28,7 +28,9 @@ import fr.siamois.ui.bean.panel.models.panel.single.tab.RecordingTab;
 import fr.siamois.ui.bean.settings.team.TeamMembersBean;
 import fr.siamois.ui.form.dto.FormUiDto;
 import fr.siamois.ui.lazydatamodel.RecordingUnitLazyDataModel;
-import fr.siamois.ui.lazydatamodel.SpecimenInActionUnitLazyDataModel;
+import fr.siamois.dto.FilterDTO;
+import fr.siamois.infrastructure.database.repositories.specs.SpecimenSpec;
+import fr.siamois.ui.lazydatamodel.SpecimenLazyDataModel;
 import fr.siamois.ui.lazydatamodel.scope.RecordingUnitScope;
 import fr.siamois.ui.mapper.FormMapper;
 import fr.siamois.ui.table.viewmodel.RecordingUnitTableViewModel;
@@ -116,8 +118,6 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnitDTO> im
 
     // Linked recording units
     private Integer totalRecordingUnitCount;
-    // Lazy model for recording unit in the spatial unit
-    private SpecimenInActionUnitLazyDataModel specimenLazyDataModel;
     private Integer totalSpecimenCount;
 
 
@@ -197,12 +197,8 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnitDTO> im
 
             initRecordingTab();
 
-            specimenLazyDataModel = new SpecimenInActionUnitLazyDataModel(
-                    specimenService,
-                    langBean,
-                    unit,
-                    sessionSettingsBean
-            );
+            SpecimenLazyDataModel specimenLazyDataModel = new SpecimenLazyDataModel(specimenService, sessionSettingsBean, langBean);
+            specimenLazyDataModel.withConstantFilter(SpecimenSpec.ACTION_UNIT_FILTER, List.of(unit.getId()), FilterDTO.FilterType.CONTAINS);
             specimenLazyDataModel.setSelectedUnits(new ArrayList<>());
 
             totalSpecimenCount = specimenService.countByActionContext(unit);

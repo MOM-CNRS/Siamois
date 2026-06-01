@@ -10,6 +10,9 @@ import java.util.List;
 
 public class SpecimenSpec {
 
+    public static final String ACTION_UNIT_FILTER = "actionUnit";
+    public static final String RECORDING_UNIT_FILTER = "recordingUnit";
+
     private SpecimenSpec() {
         throw new UnsupportedOperationException("Spec should never be instantiated");
     }
@@ -32,8 +35,18 @@ public class SpecimenSpec {
     }
 
     @NonNull
+    public static Specification<Specimen> isInActionUnit(List<Long> ids) {
+        return (root, query, cb) -> cb.in(root.get(ACTION_UNIT_FILTER).get("id")).value(ids);
+    }
+
+    @NonNull
     public static Specification<Specimen> specimenInRecordingUnit(long recordingUnitId) {
         return ((root, query, criteriaBuilder) -> criteriaBuilder.equal(root.get("recordingUnit").get("id"), recordingUnitId));
+    }
+
+    @NonNull
+    public static Specification<Specimen> isInRecordingUnit(List<Long> ids) {
+        return (root, query, cb) -> cb.in(root.get(RECORDING_UNIT_FILTER).get("id")).value(ids);
     }
 
     @NonNull
