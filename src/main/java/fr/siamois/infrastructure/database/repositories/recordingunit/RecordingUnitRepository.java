@@ -47,6 +47,8 @@ public interface RecordingUnitRepository extends CrudRepository<RecordingUnit, L
 
     List<RecordingUnit> findAllByActionUnitId(Long actionUnitId);
 
+    List<RecordingUnit> findByActionUnitIdAndFullIdentifierContainingIgnoreCaseOrderByFullIdentifierAsc(Long actionUnitId, String query, org.springframework.data.domain.Pageable pageable);
+
     @Transactional
     @Modifying
     @Query(

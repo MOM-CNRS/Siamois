@@ -793,6 +793,16 @@ public class RecordingUnitService implements ArkEntityService {
                 .toList();
     }
 
+    public List<RecordingUnitSummaryDTO> autocompleteInActionUnit(@NotNull Long actionUnitId, String query, int limit) {
+        return recordingUnitRepository
+                .findByActionUnitIdAndFullIdentifierContainingIgnoreCaseOrderByFullIdentifierAsc(
+                        actionUnitId, query == null ? "" : query,
+                        org.springframework.data.domain.PageRequest.of(0, limit))
+                .stream()
+                .map(unit -> conversionService.convert(unit, RecordingUnitSummaryDTO.class))
+                .toList();
+    }
+
     /**
      * Find all direct parents of a given SpatialUnit
      *

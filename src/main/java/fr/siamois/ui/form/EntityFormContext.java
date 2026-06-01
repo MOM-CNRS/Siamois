@@ -621,7 +621,8 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
      */
     public List<RecordingUnitSummaryDTO> completeRecordingUnitOptions(String query) {
         if (unit instanceof RecordingUnitDTO recordingUnit) {
-            return recordingUnitService.findAllByActionUnit(recordingUnit.getActionUnit().getId());
+            return recordingUnitService.autocompleteInActionUnit(
+                    recordingUnit.getActionUnit().getId(), query, services.getFieldConfigurationService().resultLimit());
         }
         return Collections.emptyList();
     }
