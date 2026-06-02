@@ -250,13 +250,7 @@ public abstract class AbstractSingleEntity<T extends AbstractEntityDTO>
                 if (!isRoot && parentOrOverview != null) {
                     if (parentOrOverview instanceof AbstractListPanel<?> listPanel) {
                         listPanel.updateRowInTableModel(unit);
-                        String rowTarget = null;
-                        PrimeFaces.current().ajax().update(
-                                rowTarget != null ? rowTarget
-                                        : "panel-" + parentOrOverview.getPrefixPanelIndex() + "-container"
-                        );
-                    } else {
-                        PrimeFaces.current().ajax().update("panel-" + parentOrOverview.getPrefixPanelIndex() + "-container");
+                        PrimeFaces.current().ajax().update(listPanel.getRowUpdateTarget(unit.getId()));
                     }
                 }
             });

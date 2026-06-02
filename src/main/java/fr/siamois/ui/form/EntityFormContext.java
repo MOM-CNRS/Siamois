@@ -542,18 +542,19 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
         if (!(rawAnswer instanceof CustomFieldAnswerSelectMultipleRecordingUnitViewModel answer)) {
             return;
         }
-        if (!(unit instanceof RecordingUnitDTO parentRu)) {
+        if (answer.getNewType() == null || answer.getNewActionUnit() == null) {
+            MessageUtils.displayErrorMessage(langBean, "dialog.unsaved.error", "Le projet et le type sont obligatoires");
             return;
         }
         try {
+            ActionUnitSummaryDTO actionUnit = answer.getNewActionUnit();
             RecordingUnitDTO toSave = new RecordingUnitDTO();
-            toSave.setActionUnit(parentRu.getActionUnit());
-            toSave.setCreatedByInstitution(parentRu.getCreatedByInstitution());
-            toSave.setSpatialUnit(parentRu.getSpatialUnit());
+            toSave.setActionUnit(actionUnit);
+            toSave.setCreatedByInstitution(actionUnit.getCreatedByInstitution());
             toSave.setAuthor(sessionSettingsBean.getAuthenticatedUser());
             toSave.setContributors(List.of(sessionSettingsBean.getAuthenticatedUser()));
             toSave.setOpeningDate(OffsetDateTime.now());
-            toSave.setType(answer.getNewType() != null ? answer.getNewType().concept() : null);
+            toSave.setType(answer.getNewType().concept());
             toSave.setParents(new HashSet<>());
             toSave.setChildren(new HashSet<>());
 
@@ -564,12 +565,36 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
 
             answer.getValue().add(new RecordingUnitSummaryDTO(created));
             answer.setNewType(null);
+            answer.setNewActionUnit(null);
 
             if (unit.getId() != null) {
                 this.save();
             }
         } catch (Exception e) {
             MessageUtils.displayErrorMessage(langBean, "dialog.unsaved.error", e.getMessage());
+        }
+    }
+
+    /**
+     * Complete ActionUnit options for the "new RU" overlay autocomplete.
+     * Scoped to the current institution.
+     */
+    public List<ActionUnitSummaryDTO> completeActionUnitOptions(String query) {
+        return services.getActionUnitService()
+                .findMatchingInInstitutionByName(sessionSettingsBean.getSelectedInstitution(), query, 20)
+                .stream()
+                .map(ActionUnitSummaryDTO::new)
+                .toList();
+    }
+
+    /**
+     * Pre-fills {@code newActionUnit} with the parent's action unit so the overlay opens
+     * with the project already selected.
+     */
+    public void initNewRuDefaults(CustomFieldAnswerViewModel rawAnswer) {
+        if (!(rawAnswer instanceof CustomFieldAnswerSelectMultipleRecordingUnitViewModel answer)) return;
+        if (answer.getNewActionUnit() == null && unit instanceof RecordingUnitDTO ru) {
+            answer.setNewActionUnit(ru.getActionUnit());
         }
     }
 

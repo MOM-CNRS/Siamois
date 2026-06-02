@@ -110,6 +110,7 @@
         <!-- ═══════════════════════════════════════════════════════════
              VIEW MODE
              ═══════════════════════════════════════════════════════════ -->
+        <p:outputPanel id="rumView" layout="block" style="display:contents">
         <div id="rum_v_#{cc.clientId.replace(':','_')}" class="rum-wrapper">
 
             <div class="rum-items" style="#{cc.attrs.compact ? 'flex-wrap:nowrap' : 'flex-wrap:wrap'}">
@@ -169,7 +170,7 @@
                 <button type="button" class="rum-action-btn rum-collapse-btn" style="display:none"
                         title="Réduire"
                         onclick="rumCollapse('#{cc.clientId.replace(':','_')}')">
-                    <i class="bi bi-dash"/>
+                    <i class="bi bi-chevron-double-left"/>
                 </button>
             </ui:fragment>
 
@@ -192,6 +193,7 @@
 
             </div>
         </div>
+        </p:outputPanel>
 
         <!-- ═══════════════════════════════════════════════════════════
              EDIT MODE (hidden by default, shown by rumEdit())
@@ -244,9 +246,10 @@
                                 id="btnNouveau"
                                 icon="bi bi-plus-lg"
                                 process="@this"
-                                oncomplete="PF('#{cc.clientId}_ruMenu').hide(); var ov = PF('#{cc.clientId}_ruOverlay'); ov.show(); ov.align();"
+                                action="#{cc.attrs.formCtx.initNewRuDefaults(cc.attrs.answer)}"
+                                oncomplete="$('.ui-autocomplete-panel:visible').hide(); var ov = PF('#{cc.clientId}_ruOverlay'); ov.show(); ov.align();"
                                 value="Nouveau"
-                                update="#{cc.clientId}"/>
+                                update="#{cc.clientId}:ruNewGrid"/>
                     </div>
                 </f:facet>
 
@@ -265,6 +268,27 @@
                             hideEffect="fade">
 
                 <h:panelGrid columns="2" cellpadding="5" id="ruNewGrid">
+
+                    <p:outputLabel for="newRuProjectAutocomplete" value="Projet :"/>
+                    <p:autoComplete value="#{cc.attrs.answer.newActionUnit}"
+                                    id="newRuProjectAutocomplete"
+                                    completeMethod="#{cc.attrs.formCtx.completeActionUnitOptions}"
+                                    var="au"
+                                    itemValue="#{au}"
+                                    itemLabel="#{au.name}"
+                                    converter="#{actionUnitSummaryConverter}"
+                                    required="true"
+                                    forceSelection="true"
+                                    scrollHeight="300"
+                                    dropdown="true"
+                                    placeholder="Rechercher un projet…"
+                                    showEmptyMessage="false"
+                                    maxResults="#{fieldConfigurationService.resultLimit()}"
+                                    onmousedown="event.stopPropagation();"
+                                    onclick="event.stopPropagation();">
+                        <p:ajax event="itemSelect" process="@this" update="@none"/>
+                    </p:autoComplete>
+
                     <p:outputLabel for="newRuTypeAutocomplete" value="#{langBean.msg('recordingunit.property.type')}:"/>
                     <p:autoComplete value="#{cc.attrs.answer.newType}"
                                     id="newRuTypeAutocomplete"
@@ -287,7 +311,7 @@
 
                     <p:commandButton
                             style="background: var(--siamois-green-active); border-color: var(--siamois-green-active);"
-                            value="#{langBean.msg('common.action.create')}"
+                            value="Créer"
                             action="#{cc.attrs.formCtx.saveNewRecordingUnitFromField(cc.attrs.answer)}"
                             process="ruNewGrid"
                             onsuccess="PF('#{cc.clientId}_ruOverlay').hide();"
@@ -296,11 +320,11 @@
 
             </p:overlayPanel>
 
-            <!-- Close button: exit edit mode -->
+            <!-- Close button: exit edit mode and refresh view panel -->
             <button type="button" class="rum-action-btn"
                     title="Fermer"
-                    onclick="rumClose('#{cc.clientId.replace(':','_')}')">
-                <i class="bi bi-x-lg"/>
+                    onclick="rumClose('#{cc.clientId.replace(':','_')}'); PrimeFaces.ab({source:'#{cc.clientId}', process:'@none', update:'#{cc.clientId}:rumView'});">
+                <i class="bi bi-chevron-double-left"/>
             </button>
 
             <!-- Side overview — disabled, reserved for future use -->

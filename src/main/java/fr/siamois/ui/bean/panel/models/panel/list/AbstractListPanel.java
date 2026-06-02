@@ -216,7 +216,7 @@ public abstract class AbstractListPanel<T extends AbstractEntityDTO> extends Abs
             tableModel.setOverviewEntityId(null);
         }
         super.closeOverview();
-        PrimeFaces.current().ajax().update("panel-" + getPrefixPanelIndex() + "-container");
+        PrimeFaces.current().ajax().update(getActiveTableClientId());
     }
 
     @SuppressWarnings("unchecked")
@@ -224,6 +224,32 @@ public abstract class AbstractListPanel<T extends AbstractEntityDTO> extends Abs
         if (tableModel != null && entity != null) {
             tableModel.updateEntityInCurrentPage((T) entity);
         }
+    }
+
+    /**
+     * AJAX update target for a single row, or the whole table when the row index is unknown.
+     * Always targets the table component itself — never the outer panel container.
+     */
+    public String getRowUpdateTarget(Long entityId) {
+        if (tableModel == null || entityId == null) return getActiveTableClientId();
+        String prefix = getTableClientIdPrefix();
+        if (tableModel.isTreeMode()) {
+            return prefix + ":entityTreeTable";
+        }
+        int rowIdx = tableModel.getRowIndexInCurrentPage(entityId);
+        if (rowIdx < 0) {
+            return prefix + ":entityDatatable";
+        }
+        return prefix + ":entityDatatable:@row(" + rowIdx + ")";
+    }
+
+    /** Returns the currently active table component client ID (tree or flat). */
+    public String getActiveTableClientId() {
+        String prefix = getTableClientIdPrefix();
+        if (tableModel != null && tableModel.isTreeMode()) {
+            return prefix + ":entityTreeTable";
+        }
+        return prefix + ":entityDatatable";
     }
 
     /** Client ID prefix shared by both table components: {@code formId:compositeId}. */

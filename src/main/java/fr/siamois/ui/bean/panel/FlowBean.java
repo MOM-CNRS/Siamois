@@ -262,10 +262,13 @@ public class FlowBean implements Serializable {
 
         String base64RootUri = Base64.getUrlEncoder().withoutPadding().encodeToString(targetPanel.ressourceUri().getBytes());
         String base64OverviewUri = Base64.getUrlEncoder().withoutPadding().encodeToString(overviewPanel.ressourceUri().getBytes());
+        String tableTarget = (targetPanel instanceof AbstractListPanel<?> lp)
+                ? lp.getActiveTableClientId()
+                : "panel-" + targetPanel.getPrefixPanelIndex() + "-container";
         PrimeFaces.current().ajax().update(
                 "sideview-" + targetPanel.getPanelIndex(),
                 "historyForm",
-                "panel-" + targetPanel.getPrefixPanelIndex() + "-container"
+                tableTarget
         );
         PrimeFaces.current().executeScript(
                 String.format(
