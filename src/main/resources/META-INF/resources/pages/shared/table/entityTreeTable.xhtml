@@ -53,6 +53,8 @@
         .ui-treetable tr.overview-open > td:last-child {
             border-right: 2px solid var(--siamois-green-active) !important;
         }
+
+
     </style>
 
     <p:blockUI block="entityTreeTable" trigger="#{cc.clientId}:entityTreeTable" widgetVar="#{cc.clientId}_buiTreeTables">
@@ -91,6 +93,9 @@
                           columnFilteringEnabled="#{tableModel.columnFilteringEnabled}"
                           rowStyleClass="#{tableModel.getRowStyleClass(item)}"
     >
+        <p:ajax event="select" action="#{tableModel.handleSelectionChange()}" update="selectedCountChip"/>
+        <p:ajax event="unselect" action="#{tableModel.handleSelectionChange()}" update="selectedCountChip"/>
+
         <p:ajax event="filter" process="@this" oncomplete="if (args &amp;&amp; args.newRowCount !== undefined) { PF('#{cc.clientId}_entityTreeTable').getPaginator().setTotalRecords(args.newRowCount); }" />
         <f:facet name="header">
             <ui:include src="/pages/shared/table/tableToolbar.xhtml">
@@ -100,9 +105,14 @@
             </ui:include>
         </f:facet>
 
-        <p:column style="width: min-content;"
-                  styleClass="small-cell"
-                  selectionBox="true" id="selectionCol"  toggleable="false"/>
+        <p:column styleClass="small-cell" selectionBox="true" toggleable="false">
+            <f:facet name="header">
+                <p:chip id="selectedCountChip"
+                        style="background-color: var(--siamois-green-light-100)"
+                        label="#{tableModel.getSelectedAndTotalCount()}"
+                />
+            </f:facet>
+        </p:column>
 
         <!-- link -->
         <p:column style="width: min-content;"

@@ -40,6 +40,7 @@
         .ui-datatable tr.overview-open > td:last-child {
             border-right: 2px solid var(--siamois-green-active) !important;
         }
+
     </style>
 
     <p:blockUI block="entityDatatable" trigger="#{cc.clientId}:entityDatatable" widgetVar="#{cc.clientId}_buiDataTables">
@@ -61,7 +62,6 @@
                  widgetVar="#{cc.clientId}_entityDatatable"
                  lazy="true"
                  rowKey="#{item.id}"
-                 resizableColumns="true"
                  globalFilter="#{tableModel.globalFilter}"
                  allowUnsorting="true"
                  sortBy="#{tableModel.lazyDataModel.sortBy}"
@@ -80,6 +80,10 @@
                  value="#{tableModel.lazyDataModel}"
                  styleClass="#{tableClass} #{not tableModel.columnFilteringEnabled ? 'filter-table-column-hidden' : ''}">
 
+        <p:ajax event="rowSelectCheckbox" action="#{tableModel.handleSelectionChange()}" update="selectedCountChip"/>
+        <p:ajax event="rowUnselectCheckbox" action="#{tableModel.handleSelectionChange()}" update="selectedCountChip"/>
+        <p:ajax event="toggleSelect" action="#{tableModel.handleSelectionChange()}" update="selectedCountChip"/>
+
         <f:facet name="{RowReport}">
             <span class="ui-paginator-current">
                 #{tableModel.lazyDataModel.getFirstIndexOnPage()}-#{tableModel.lazyDataModel.getLastIndexOnPage()} of #{tableModel.lazyDataModel.rowCount}
@@ -95,7 +99,14 @@
             </ui:include>
         </f:facet>
 
-        <p:column styleClass="small-cell" selectionBox="true" style="width:16px;text-align:center" toggleable="false"/>
+        <p:column styleClass="small-cell" selectionBox="true" toggleable="false">
+            <f:facet name="header">
+                <p:chip id="selectedCountChip"
+                        style="background-color: var(--siamois-green-light-100)"
+                        label="#{tableModel.getSelectedAndTotalCount()}"
+                />
+            </f:facet>
+        </p:column>
 
         <!-- link -->
         <p:column style="min-width: 10px;"

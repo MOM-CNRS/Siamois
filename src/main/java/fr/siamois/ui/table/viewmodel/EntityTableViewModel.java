@@ -1024,4 +1024,8 @@ public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
     public String getSelectedAndTotalCount() {
         return lazyDataModel.getSelectedUnits().size() + "/" + lazyDataModel.getRowCount();
     }
+
+    public void handleSelectionChange() {
+        // Empty action handler for selection changes
+    }
 }
