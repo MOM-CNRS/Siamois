@@ -142,6 +142,17 @@
             </p:toolbar>
         </p:column>
 
+        <p:column style="width: min-content;"
+                  styleClass="small-cell"
+                  headerText="Statut"
+                  id="statusCol" toggleable="false"
+        >
+            <ui:include src="/panel/header/validationButton.xhtml" >
+                <ui:param name="disabled" value="true"/>
+                <ui:param name="unit" value="#{item}"/>
+            </ui:include>
+        </p:column>
+
         <c:forEach var="column" items="#{tableModel.columns}" varStatus="colStatus">
             <p:column
                     id="col_#{colStatus.index}"
