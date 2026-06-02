@@ -24,6 +24,12 @@
                     <p:menuitem value="#{projectDetailsBean.project.name}"/>
                 </p:breadCrumb>
 
+
+            </form:csrfform>
+            <form:csrfform formId="linkToActionForm" style="margin-top: 1em;"
+            >
+
+
                 <p:commandButton action="#{navBean.redirectToActionUnit()}"
                                  icon="bi bi-database"
                                  value="Ouvrir le projet dans l'application"
