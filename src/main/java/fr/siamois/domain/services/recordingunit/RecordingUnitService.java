@@ -389,61 +389,7 @@ public class RecordingUnitService implements ArkEntityService {
         return recordingUnitRepository.countByCreatedByInstitutionId(institutionId);
     }
 
-    /**
-     * Find all recording units by institution and filter by full identifier, categories, and global search.
-     *
-     * @param institutionId  The ID of the institution to filter by.
-     * @param fullIdentifier The full identifier to search for (can be partial).
-     * @param categoryIds    The IDs of categories to filter by (can be null).
-     * @param global         The global search term to filter by (can be null).
-     * @param langCode       The language code for localization (can be null).
-     * @param pageable       The pagination information.
-     * @return A page of RecordingUnit matching the criteria.
-     */
-    @Transactional
-    public Page<RecordingUnitDTO> findAllByInstitutionAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
-            Long institutionId,
-            String fullIdentifier,
-            Long[] categoryIds,
-            String global,
-            String langCode,
-            Pageable pageable
-    ) {
-        Page<RecordingUnit> res = recordingUnitRepository.findAllByInstitutionAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
-                institutionId, fullIdentifier, categoryIds, global, langCode, pageable
-        );
 
-        return res.map(recordingUnitMapper::convert);
-    }
-
-    /**
-     * Find all recording units by institution, action unit, full identifier, categories, and global search.
-     *
-     * @param institutionId  The ID of the institution to filter by.
-     * @param actionId       The ID of the action unit to filter by.
-     * @param fullIdentifier The full identifier to search for (can be partial).
-     * @param categoryIds    The IDs of categories to filter by (can be null).
-     * @param global         The global search term to filter by (can be null).
-     * @param langCode       The language code for localization (can be null).
-     * @param pageable       The pagination information.
-     * @return A page of RecordingUnit matching the criteria.
-     */
-    @Transactional
-    public Page<RecordingUnitDTO> findAllByInstitutionAndByActionUnitAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
-            Long institutionId,
-            Long actionId,
-            String fullIdentifier,
-            Long[] categoryIds,
-            String global,
-            String langCode,
-            Pageable pageable
-    ) {
-        Page<RecordingUnit> res = recordingUnitRepository.findAllByInstitutionAndByActionUnitAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
-                institutionId, actionId, fullIdentifier, categoryIds, global, langCode, pageable
-        );
-
-        return res.map(recordingUnitMapper::convert);
-    }
 
     /**
      * Verify if the user has the permission to create specimen in the context of a recording unit
@@ -460,45 +406,7 @@ public class RecordingUnitService implements ArkEntityService {
                         && actionUnitService.isActionUnitStillOngoing(action));
     }
 
-    public Page<RecordingUnitDTO> findAllByParentAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
-            Long recordingUnitId,
-            String fullIdentifierFilter,
-            Long[] categoryIds,
-            String globalFilter,
-            String languageCode,
-            Pageable pageable) {
 
-        Page<RecordingUnit> res = recordingUnitRepository.findAllByParentAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
-                recordingUnitId, fullIdentifierFilter, categoryIds, globalFilter, languageCode, pageable
-        );
-
-        return res
-                .map(recordingUnitMapper::convert);
-    }
-
-    public Page<RecordingUnitDTO> findAllByChildAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(Long childId,
-                                                                                                               String fullIdentifierFilter,
-                                                                                                               Long[] categoryIds,
-                                                                                                               String globalFilter, String languageCode, Pageable pageable) {
-        Page<RecordingUnit> res = recordingUnitRepository.findAllByChildAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
-                childId, fullIdentifierFilter, categoryIds, globalFilter, languageCode, pageable
-        );
-
-        return res.map(recordingUnitMapper::convert);
-    }
-
-    public Page<RecordingUnitDTO> findAllBySpatialUnitAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(Long spatialUnitId,
-                                                                                                                     String fullIdentifierFilter,
-                                                                                                                     Long[] categoryIds,
-                                                                                                                     String globalFilter, String languageCode, Pageable pageable
-
-    ) {
-        Page<RecordingUnit> res = recordingUnitRepository.findAllBySpatialUnitAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
-                spatialUnitId, fullIdentifierFilter, categoryIds, globalFilter, languageCode, pageable
-        );
-
-        return res.map(recordingUnitMapper::convert);
-    }
 
     /**
      * Count the number of RecordingUnits associated with a specific SpatialUnit.
