@@ -801,3 +801,17 @@ body .view-edit-button.ui-splitbutton {
   font-size: 0.95rem;
   line-height: 1.6;
 }
+
+.ui-treetable .new-entity-overlay tbody td {
+  border: none;
+}
+
+.ui-datatable .new-entity-overlay tbody td {
+  border: none;
+}
+
+.ui-overlaypanel.new-entity-overlay .ui-overlaypanel-content {
+  max-width: 50em;
+}
+
+

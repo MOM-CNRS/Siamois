@@ -552,6 +552,7 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
             toSave.setActionUnit(actionUnit);
             toSave.setCreatedByInstitution(actionUnit.getCreatedByInstitution());
             toSave.setAuthor(sessionSettingsBean.getAuthenticatedUser());
+            toSave.setCreatedBy(sessionSettingsBean.getAuthenticatedUser());
             toSave.setContributors(List.of(sessionSettingsBean.getAuthenticatedUser()));
             toSave.setOpeningDate(OffsetDateTime.now());
             toSave.setType(answer.getNewType().concept());
