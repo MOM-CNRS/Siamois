@@ -268,7 +268,6 @@
                             hideEffect="fade">
 
                 <h:panelGrid columns="2" cellpadding="5" id="ruNewGrid">
-
                     <p:outputLabel for="newRuProjectAutocomplete" value="Projet :"/>
                     <p:autoComplete value="#{cc.attrs.answer.newActionUnit}"
                                     id="newRuProjectAutocomplete"
@@ -289,7 +288,7 @@
                         <p:ajax event="itemSelect" process="@this" update="@none"/>
                     </p:autoComplete>
 
-                    <p:outputLabel for="newRuTypeAutocomplete" value="#{langBean.msg('recordingunit.property.type')}:"/>
+                    <p:outputLabel for="newRuTypeAutocomplete" value="Type :"/>
                     <p:autoComplete value="#{cc.attrs.answer.newType}"
                                     id="newRuTypeAutocomplete"
                                     completeMethod="#{spatialUnitFieldBean.completeWithFieldCode}"
