@@ -61,7 +61,7 @@ public class Person implements UserDetails {
     private String password;
 
     @NotNull
-    @Column(name = "mail", nullable = false, length = MAIL_MAX_LENGTH, unique = true, columnDefinition = "citext")
+    @Column(name = "mail", nullable = true, length = MAIL_MAX_LENGTH, unique = true, columnDefinition = "citext")
     private String email;
 
     @ColumnDefault("false")

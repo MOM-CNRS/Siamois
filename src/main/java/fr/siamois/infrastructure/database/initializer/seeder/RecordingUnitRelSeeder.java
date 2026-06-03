@@ -24,14 +24,20 @@ public class RecordingUnitRelSeeder {
     public void seed(List<RecordingUnitRelDTO> specs, Long institutionId) {
         // Step 1: Group children by parent identifier
         Map<String, List<RecordingUnit>> parentToChildren = new HashMap<>();
-        for (var s : specs) {
-            String parentKey = s.parent;
-            RecordingUnit child = recordingUnitSeeder.getRecordingUnitFromKey(
-                    new RecordingUnitSeeder.RecordingUnitKey(s.child),
-                    institutionId
-            );
-            if(child==null) continue;
-            parentToChildren.computeIfAbsent(parentKey, k -> new ArrayList<>()).add(child);
+        for (int i = 0; i < specs.size(); i++) {
+            var s = specs.get(i);
+            try {
+                String parentKey = s.parent;
+                RecordingUnit child = recordingUnitSeeder.getRecordingUnitFromKey(
+                        new RecordingUnitSeeder.RecordingUnitKey(s.child),
+                        institutionId
+                );
+                if(child==null) continue;
+                parentToChildren.computeIfAbsent(parentKey, k -> new ArrayList<>()).add(child);
+            } catch (Exception e) {
+                throw new IllegalStateException(
+                        "[Relation UE ligne " + (i + 1) + "] '" + s.parent + " -> " + s.child + "' : " + e.getMessage(), e);
+            }
         }
 
         // Step 2: Update parents with their children

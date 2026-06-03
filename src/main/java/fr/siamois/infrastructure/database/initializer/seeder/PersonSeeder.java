@@ -27,22 +27,42 @@ public class PersonSeeder {
     public Person findPersonOrThrow(String email) {
         Person p = findPersonOrReturnNull(email);
         if(p == null ) {
-            throw new IllegalStateException("Person introuvable");
+            throw new IllegalStateException("Person "+email+" introuvable");
         }
         return p;
     }
 
+    public Person findOrCreatePerson(String nameLastName) {
+        if (nameLastName == null || nameLastName.isBlank()) {
+            throw new IllegalArgumentException("Nom/Prénom incorrect: " + nameLastName);
+        }
+        String trimmed = nameLastName.trim();
+        int lastSpace = trimmed.lastIndexOf(' ');
+        String firstname;
+        String lastname;
+        if (lastSpace < 1) {
+            throw new IllegalArgumentException("Nom/Prénom incorrect: " + nameLastName);
+        } else {
+            firstname = trimmed.substring(0, lastSpace).trim();
+            lastname = trimmed.substring(lastSpace + 1).trim();
+        }
+        String username = firstname.replaceAll("\\s+", "") + "." + lastname;
+        return getOrCreatePerson(null, firstname, lastname, username);
+    }
+
     private Person getOrCreatePerson(String email, String name, String lastname, String username) {
-        Person authorGetOrCreated = findPersonOrReturnNull(email) ;
+        Person authorGetOrCreated = personRepository
+                .findByNameIgnoreCaseAndLastnameIgnoreCase(name, lastname)
+                .orElse(null);
         if(authorGetOrCreated != null) {
             return authorGetOrCreated;
         }
         else {
             authorGetOrCreated = new Person();
+            authorGetOrCreated.setEmail(email);
             authorGetOrCreated.setUsername(username);
             authorGetOrCreated.setName(name);
             authorGetOrCreated.setLastname(lastname);
-            authorGetOrCreated.setEmail(email);
             authorGetOrCreated.setPassword("mysuperstrongpassword");
             personRepository.save(authorGetOrCreated);
         }
@@ -51,8 +71,14 @@ public class PersonSeeder {
 
     public Map<String, Person> seed(List<PersonSpec> specs) {
         Map<String, Person> result = new HashMap<>();
-        for (var s : specs) {
-            result.put(s.email, getOrCreatePerson(s.email, s.name, s.lastname, s.username));
+        for (int i = 0; i < specs.size(); i++) {
+            var s = specs.get(i);
+            try {
+                result.put(s.email, getOrCreatePerson(s.email, s.name, s.lastname, s.username));
+            } catch (Exception e) {
+                throw new IllegalStateException(
+                        "[Personne ligne " + (i + 1) + "] '" + s.email + "' : " + e.getMessage(), e);
+            }
         }
         return result;
     }

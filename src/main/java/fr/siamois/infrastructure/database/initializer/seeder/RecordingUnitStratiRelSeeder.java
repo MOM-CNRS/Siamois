@@ -28,40 +28,37 @@ public class RecordingUnitStratiRelSeeder {
 
     public void seed(List<RecordingUnitStratiRelDTO> specs, Long institutionId) {
 
-        for (var s : specs) {
-            RecordingUnit us1;
-            RecordingUnit us2;
-            Optional<StratigraphicRelationship> toFind;
+        for (int i = 0; i < specs.size(); i++) {
+            var s = specs.get(i);
             try {
-                us1 = recordingUnitSeeder.getRecordingUnitFromKey(
+                RecordingUnit us1 = recordingUnitSeeder.getRecordingUnitFromKey(
                         new RecordingUnitSeeder.RecordingUnitKey(s.us1),
                         institutionId
                 );
-                us2 = recordingUnitSeeder.getRecordingUnitFromKey(
+                RecordingUnit us2 = recordingUnitSeeder.getRecordingUnitFromKey(
                         new RecordingUnitSeeder.RecordingUnitKey(s.us2),
                         institutionId
                 );
-                toFind = stratigraphicRelationshipRepository.findByUnit1AndUnit2(
+                Optional<StratigraphicRelationship> toFind = stratigraphicRelationshipRepository.findByUnit1AndUnit2(
                         us1, us2
                 );
-            }
-            catch(Exception e) {
-                // no op
-                break;
-            }
 
-            Concept rel = s.rel != null
-                    ? conceptSeeder.findConceptOrThrow(s.rel)
-                    : null;
-            if(toFind.isEmpty() && us1 != null && us2 != null && rel != null) {
-                StratigraphicRelationship newRelationship = new StratigraphicRelationship();
-                newRelationship.setUnit1(us1);
-                newRelationship.setUnit2(us2);
-                newRelationship.setConcept(rel);
-                newRelationship.setConceptDirection(s.conceptDirection);
-                newRelationship.setIsAsynchronous(s.isAsynchronous);
-                newRelationship.setUncertain(s.isUncertain);
-                stratigraphicRelationshipRepository.save(newRelationship);
+                Concept rel = s.rel != null
+                        ? conceptSeeder.findConceptOrThrow(s.rel)
+                        : null;
+                if(toFind.isEmpty() && us1 != null && us2 != null && rel != null) {
+                    StratigraphicRelationship newRelationship = new StratigraphicRelationship();
+                    newRelationship.setUnit1(us1);
+                    newRelationship.setUnit2(us2);
+                    newRelationship.setConcept(rel);
+                    newRelationship.setConceptDirection(s.conceptDirection);
+                    newRelationship.setIsAsynchronous(s.isAsynchronous);
+                    newRelationship.setUncertain(s.isUncertain);
+                    stratigraphicRelationshipRepository.save(newRelationship);
+                }
+            } catch (Exception e) {
+                throw new IllegalStateException(
+                        "[Relation strati ligne " + (i + 1) + "] '" + s.us1 + " -> " + s.us2 + "' : " + e.getMessage(), e);
             }
         }
 

@@ -64,6 +64,8 @@ public interface PersonRepository extends JpaRepository<Person, Long> {
 
     Optional<Person> findByEmailIgnoreCase(String email);
 
+    Optional<Person> findByNameIgnoreCaseAndLastnameIgnoreCase(String name, String lastname);
+
     @Query(
             nativeQuery = true,
             value = "SELECT p.* FROM person p " +

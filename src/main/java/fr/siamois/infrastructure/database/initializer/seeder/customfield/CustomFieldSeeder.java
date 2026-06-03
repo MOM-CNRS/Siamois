@@ -5,6 +5,7 @@ import fr.siamois.domain.models.form.customfield.*;
 import fr.siamois.domain.models.form.measurement.UnitDefinition;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.infrastructure.database.initializer.seeder.ConceptSeeder;
+import fr.siamois.infrastructure.database.initializer.seeder.SeederUtils;
 import fr.siamois.infrastructure.database.initializer.seeder.UnitDefinitionSeeder;
 import fr.siamois.infrastructure.database.repositories.form.CustomFieldRepository;
 import fr.siamois.mapper.UnitDefinitionMapper;
@@ -44,57 +45,60 @@ public class CustomFieldSeeder {
     }
 
     public void seed(List<CustomFieldSeederSpec> specs) throws DatabaseDataInitException {
-        for (var s : specs) {
+        for (int i = 0; i < specs.size(); i++) {
+            var s = specs.get(i);
+            try {
+                Concept c = SeederUtils.field("conceptKey", () -> conceptSeeder.findConceptOrThrow(s.conceptKey()));
 
-            // Check if concept exists
-            Concept c = conceptSeeder.findConceptOrThrow(s.conceptKey());
+                CustomField field = findFieldOrReturnNull(s,c);
+                if(field == null) {
+                    CustomField f;
+                    try {
+                        f = s.answerClass()
+                                .getDeclaredConstructor()
+                                .newInstance();
+                    } catch (InstantiationException | IllegalAccessException | InvocationTargetException |
+                             NoSuchMethodException e) {
+                        throw new DatabaseDataInitException(e.getMessage(), e.getCause());
+                    }
 
-            CustomField field = findFieldOrReturnNull(s,c);
-            if(field == null) {
-                CustomField f = null;
-                try {
-                    f = s.answerClass()
-                            .getDeclaredConstructor()
-                            .newInstance();
-                } catch (InstantiationException | IllegalAccessException | InvocationTargetException |
-                         NoSuchMethodException e) {
-                    throw new DatabaseDataInitException(e.getMessage(), e.getCause());
+                    f.setIsSystemField(s.isSystemField());
+                    f.setValueBinding(s.valueBinding());
+                    f.setConcept(c);
+                    f.setLabel(s.label());
+
+                    if (f instanceof CustomFieldSelectOneFromFieldCode df) {
+                        df.setStyleClass(s.styleClass());
+                        df.setIconClass(s.iconClass());
+                        df.setFieldCode(s.fieldCode());
+                    }
+
+                    else if (f instanceof CustomFieldText df) {
+                        df.setIsTextArea(s.isTextArea());
+                    }
+
+                    else if(f instanceof CustomFieldDateTime df) {
+                        df.setShowTime(false);
+                    }
+
+                    else if(f instanceof CustomFieldMeasurement df) {
+                        UnitDefinition unitDefinition = mapper.invertConvert(s.unitDefinitionDTO());
+
+                        unitDefinition.setConcept(
+                                conceptSeeder.findConceptOrReturnNull(
+                                        s.unitDefinitionDTO().getConcept().getVocabulary().getExternalVocabularyId(),
+                                        s.unitDefinitionDTO().getConcept().getExternalId()
+                        ));
+
+                        UnitDefinition found = unitDefinitionSeeder.findUnitOrReturnNull(unitDefinition.getConcept());
+                        df.setUnit(found);
+                    }
+
+                    customFieldRepository.save(f);
                 }
-
-                f.setIsSystemField(s.isSystemField());
-                f.setValueBinding(s.valueBinding());
-                f.setConcept(c);
-                f.setLabel(s.label());
-
-
-                if (f instanceof CustomFieldSelectOneFromFieldCode df) {
-                    df.setStyleClass(s.styleClass());
-                    df.setIconClass(s.iconClass());
-                    df.setFieldCode(s.fieldCode());
-                }
-
-                else if (f instanceof CustomFieldText df) {
-                    df.setIsTextArea(s.isTextArea());
-                }
-
-                else if(f instanceof CustomFieldDateTime df) {
-                    df.setShowTime(false);
-                }
-
-                else if(f instanceof CustomFieldMeasurement df) {
-                    UnitDefinition unitDefinition = mapper.invertConvert(s.unitDefinitionDTO());
-
-                    unitDefinition.setConcept(
-                            conceptSeeder.findConceptOrReturnNull(
-                                    s.unitDefinitionDTO().getConcept().getVocabulary().getExternalVocabularyId(),
-                                    s.unitDefinitionDTO().getConcept().getExternalId()
-                    ));
-
-                    UnitDefinition found = unitDefinitionSeeder.findUnitOrReturnNull(unitDefinition.getConcept());
-                    df.setUnit(found);
-                }
-
-                customFieldRepository.save(f);
+            } catch (Exception e) {
+                throw new IllegalStateException(
+                        "[Champ ligne " + (i + 1) + "] '" + s.label() + "' : " + e.getMessage(), e);
             }
         }
     }
