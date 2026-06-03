@@ -22,6 +22,15 @@ public class CommandLinkColumn extends TableColumn {
      */
     private String valueKey;
 
+    /** Bootstrap icon class for the entity type (e.g. "bi bi-bucket"). Shown inside the chip. */
+    private String iconClass;
+
+    /** CSS color value for the chip background (e.g. "var(--ground-main-color)"). */
+    private String chipColor;
+
+    /** Whether the chip text can be edited inline via hover pencil icon. */
+    private boolean editable;
+
     /* Optional PF / JS behaviors */
 
     private String processExpr;

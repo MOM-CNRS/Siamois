@@ -50,8 +50,9 @@ public class ContainerTableDefinitionFactory {
                         .filterable(false)
                         .sortField("name")
 
-                        // What to display inside <h:outputText>
-                        .valueKey(IDENTIFIER)
+                        .iconClass("bi bi-arrow-down-square")
+                        .chipColor("var(--context-main-color)")
+                        .valueKey("name")
 
                         // What to do on click (Pattern A key)
                         .action(TableColumnAction.GO_TO_ACTION_UNIT)

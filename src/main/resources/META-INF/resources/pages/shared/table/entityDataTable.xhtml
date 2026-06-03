@@ -3,6 +3,7 @@
                 xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
                 xmlns:p="http://primefaces.org/ui"
                 xmlns:f="http://java.sun.com/jsf/core" xmlns:c="http://java.sun.com/jsp/jstl/core"
+                xmlns:h="http://java.sun.com/jsf/html"
 >
 
     <!--@elvariable id="tableModel" type="fr.siamois.ui.table.viewmodel.EntityTableViewModel"-->
@@ -108,31 +109,97 @@
             </f:facet>
         </p:column>
 
-        <!-- link -->
+        <p:column style="width: min-content;"
+                  styleClass="small-cell"
+                  headerText="Statut"
+                  id="statusCol" toggleable="false"
+        >
+            <ui:include src="/panel/header/validationButton.xhtml" >
+                <ui:param name="disabled" value="true"/>
+                <ui:param name="unit" value="#{item}"/>
+            </ui:include>
+        </p:column>
+
+        <!-- link: chip (icône + texte) cliquable + crayon au hover pour édition -->
         <p:column style="min-width: 10px;"
                   styleClass="small-cell"
                   id="linkCol" width="fit-content" toggleable="false">
-            <p:commandButton
-                    id="openRowLink"
-                    styleClass="hidden-column"
-                    action="#{tableModel.handleAction(tableModel.tableDefinition.commandLinkColumn, item)}"
-                    onstart="#{tableModel.tableDefinition.commandLinkColumn.onstartJs}"
-                    immediate="true"
-                    process="@this"
-                    icon="bi bi-layout-sidebar-inset-reverse"
-                    oncomplete="#{tableModel.getOnCompleteJs(item)}"
-            >
-                <f:attribute name="mode" value="mode"/>
-            </p:commandButton>
-            <p:contextMenu for="openRowLink">
-                <p:menuitem value="Ouvrir dans un panel" disabled="true" icon="bi bi-box-arrow-in-up"/>
-                <p:menuitem value="Ouvrir en mode Focus" disabled="true" icon="bi bi-arrows-angle-expand"/>
-                <p:menuitem value="Ouvrir dans l'aperçu lateral" icon="bi bi-layout-sidebar-inset-reverse"
-                            action="#{tableModel.handleAction(tableModel.tableDefinition.commandLinkColumn, item)}"
-                            onstart="#{tableModel.tableDefinition.commandLinkColumn.onstartJs}"
-                            oncomplete="#{tableModel.getOnCompleteJs(item)}"
-                />
-            </p:contextMenu>
+
+            <style>
+                .chip-cell-wrapper { display: flex; align-items: center; gap: 4px; flex-wrap: nowrap; }
+                .chip-cell-actions { visibility: hidden; display: flex; align-items: center; gap: 2px; flex-shrink: 0; }
+                .chip-cell-wrapper:hover .chip-cell-actions { visibility: visible; }
+                .chip-nav-link { text-decoration: none !important; color: inherit !important; }
+                .entity-nav-chip { cursor: pointer; }
+                .entity-nav-chip:hover { filter: brightness(0.95); }
+            </style>
+
+
+
+            <p:outputPanel id="chipCell" layout="block">
+
+                <!-- READ mode -->
+                <h:panelGroup rendered="#{not tableModel.isEditingLink(item)}"
+                              styleClass="chip-cell-wrapper">
+
+                    <!-- Chip cliquable → navigation -->
+                    <p:commandLink id="chipNavigate"
+                                   styleClass="chip-nav-link"
+                                   action="#{tableModel.handleAction(tableModel.tableDefinition.commandLinkColumn, item)}"
+                                   onstart="#{tableModel.tableDefinition.commandLinkColumn.onstartJs}"
+                                   oncomplete="#{tableModel.getOnCompleteJs(item)}"
+                                   immediate="true"
+                                   process="@this">
+                        <p:chip label="#{tableModel.resolveText(tableModel.tableDefinition.commandLinkColumn, item)}"
+                                icon="#{tableModel.tableDefinition.commandLinkColumn.iconClass}"
+                                styleClass="entity-nav-chip"
+                                style="background: #{tableModel.tableDefinition.commandLinkColumn.chipColor}; color: white;"/>
+                    </p:commandLink>
+
+                    <!-- Bouton crayon : visible au hover de la cellule -->
+                    <div class="chip-cell-actions">
+                        <p:commandButton id="editChipBtn"
+                                         rendered="#{tableModel.tableDefinition.commandLinkColumn.editable}"
+                                         icon="bi bi-pencil"
+                                         styleClass="rum-action-btn"
+                                         action="#{tableModel.startEditLink(item)}"
+                                         update="chipCell"
+                                         process="@this"
+                                         title="Modifier"/>
+                    </div>
+
+                    <p:contextMenu for="chipNavigate">
+                        <p:menuitem value="Ouvrir dans un panel" disabled="true" icon="bi bi-box-arrow-in-up"/>
+                        <p:menuitem value="Ouvrir en mode Focus" disabled="true" icon="bi bi-arrows-angle-expand"/>
+                        <p:menuitem value="Ouvrir dans l'aperçu lateral" icon="bi bi-layout-sidebar-inset-reverse"
+                                    action="#{tableModel.handleAction(tableModel.tableDefinition.commandLinkColumn, item)}"
+                                    onstart="#{tableModel.tableDefinition.commandLinkColumn.onstartJs}"
+                                    oncomplete="#{tableModel.getOnCompleteJs(item)}"/>
+                    </p:contextMenu>
+
+                </h:panelGroup>
+
+                <!-- EDIT mode -->
+                <h:panelGroup rendered="#{tableModel.isEditingLink(item)}"
+                              style="display:flex; align-items:center; gap:4px;">
+                    <p:inputText id="editLinkInput"
+                                 value="#{tableModel.editingLinkValue}"
+                                 style="min-width: 8em;"/>
+                    <p:commandButton icon="bi bi-check"
+                                     styleClass="rum-action-btn"
+                                     title="Valider"
+                                     action="#{tableModel.applyLinkEdit(item)}"
+                                     update="chipCell"
+                                     process="editLinkInput @this"/>
+                    <p:commandButton icon="bi bi-x"
+                                     styleClass="rum-action-btn"
+                                     title="Annuler"
+                                     action="#{tableModel.cancelEditLink()}"
+                                     update="chipCell"
+                                     process="@this"/>
+                </h:panelGroup>
+
+            </p:outputPanel>
         </p:column>
 
         <!-- Actions Column -->
@@ -153,16 +220,7 @@
             </p:toolbar>
         </p:column>
 
-        <p:column style="width: min-content;"
-                  styleClass="small-cell"
-                  headerText="Statut"
-                  id="statusCol" toggleable="false"
-        >
-            <ui:include src="/panel/header/validationButton.xhtml" >
-                <ui:param name="disabled" value="true"/>
-                <ui:param name="unit" value="#{item}"/>
-            </ui:include>
-        </p:column>
+
 
         <c:forEach var="column" items="#{tableModel.columns}" varStatus="colStatus">
             <p:column

@@ -83,6 +83,9 @@ public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
     @Setter
     private boolean columnFilteringEnabled = false;
 
+    @Getter @Setter private String editingLinkValue;
+    @Getter @Setter private Long editingLinkItemId;
+
 
     /**
      * Fournit l'identifiant unique d'une entité T (ex: RecordingUnit::getId)
@@ -369,6 +372,29 @@ public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
         } else if (column instanceof RelationColumn relColumn) {
             handleRelationAction(relColumn, item, relColumn.getViewAction());
         }
+    }
+
+    public boolean isEditingLink(T item) {
+        return item != null && item.getId().equals(editingLinkItemId);
+    }
+
+    public void startEditLink(T item) {
+        this.editingLinkItemId = item.getId();
+        this.editingLinkValue = resolveText(tableDefinition.getCommandLinkColumn(), item);
+    }
+
+    public void cancelEditLink() {
+        this.editingLinkItemId = null;
+        this.editingLinkValue = null;
+    }
+
+    public void applyLinkEdit(T item) {
+        handleLinkEdit(tableDefinition.getCommandLinkColumn(), item, editingLinkValue);
+        cancelEditLink();
+    }
+
+    public void handleLinkEdit(CommandLinkColumn column, T item, String newValue) {
+        // no-op by default — subclasses override to persist
     }
 
     public void handleRelationAction(RelationColumn column, T item, TableColumnAction action) {

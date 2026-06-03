@@ -814,4 +814,76 @@ body .view-edit-button.ui-splitbutton {
   max-width: 50em;
 }
 
+.rum-wrapper {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 0.25rem;
+  min-height: 32px;
+}
+.rum-items {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+}
+.rum-actions {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 0.15rem;
+  flex-shrink: 0;
+  visibility: hidden;
+}
+.rum-wrapper:hover .rum-actions {
+  visibility: visible;
+}
+.rum-edit-wrapper {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 0.25rem;
+  width: 100%;
+}
+.rum-edit-wrapper .ui-autocomplete {
+  flex: 1;
+  min-width: 0;
+}
+.rum-action-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--text-secondary, #6c757d);
+  padding: 0.15rem 0.25rem;
+  border-radius: 3px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+.rum-action-btn:hover:not(:disabled) {
+  background: rgba(0,0,0,0.06);
+  color: var(--text-main, #212529);
+}
+.rum-action-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.rum-items.compact {
+  flex-wrap: nowrap;
+}
+.rum-expand-badge {
+  background: var(--siamois-green);
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  border-radius: 3px;
+  padding: 0.1rem 0.35rem;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  flex-shrink: 0;
+}
+.rum-expand-badge:hover {
+  opacity: 0.85;
+}
 

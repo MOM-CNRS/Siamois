@@ -79,7 +79,8 @@ public final class SpecimenTableDefinitionFactory {
                 .filterable(false)
                 .sortField("full_identifier")
 
-                // What to display inside <h:outputText>
+                .iconClass("bi bi-bucket")
+                .chipColor("var(--ground-main-color)")
                 .valueKey("fullIdentifier")
 
                 // What to do on click (Pattern A key)

@@ -179,7 +179,8 @@ public final class RecordingUnitTableDefinitionFactory {
                         .filterable(true)
                         .sortField("full_identifier")
 
-                        // What to display inside <h:outputText>
+                        .iconClass("bi bi-pencil-square")
+                        .chipColor("var(--ground-main-color)")
                         .valueKey("fullIdentifier")
 
                         // What to do on click (Pattern A key)

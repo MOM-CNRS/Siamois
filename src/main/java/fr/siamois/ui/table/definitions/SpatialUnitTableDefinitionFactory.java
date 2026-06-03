@@ -89,6 +89,8 @@ public final class SpatialUnitTableDefinitionFactory {
                         .filterable(true)
                         .sortField("name")
 
+                        .iconClass("bi bi-geo-alt")
+                        .chipColor("var(--context-main-color)")
                         .valueKey("name")
                         .action(TableColumnAction.GO_TO_SPATIAL_UNIT)
 

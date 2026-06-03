@@ -124,8 +124,8 @@ public class ActionUnitTableViewModel extends EntityTableViewModel<ActionUnitDTO
 
             String valueKey = linkColumn.getValueKey();
 
-            if ("identifier".equals(valueKey)) {
-                return au.getIdentifier();
+            if ("name".equals(valueKey)) {
+                return au.getName();
             }
 
             throw new IllegalStateException("Unknown valueKey: " + valueKey);
