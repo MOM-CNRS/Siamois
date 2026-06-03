@@ -96,7 +96,7 @@ public class RecordingUnit extends RecordingUnitParent implements ArkEntity, Ref
     private MeasurementAnswer zSup;
 
 
-    @ManyToMany(fetch = FetchType.EAGER)
+    @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
             name = "recording_unit_contributors",
             joinColumns = @JoinColumn(name = "fk_recording_unit_id"),

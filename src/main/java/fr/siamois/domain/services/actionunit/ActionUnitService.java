@@ -20,6 +20,7 @@ import fr.siamois.dto.entity.*;
 import fr.siamois.infrastructure.database.repositories.SpatialUnitRepository;
 import fr.siamois.infrastructure.database.repositories.actionunit.ActionCodeRepository;
 import fr.siamois.infrastructure.database.repositories.actionunit.ActionUnitRepository;
+import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitRepository;
 import fr.siamois.infrastructure.database.repositories.specs.ActionUnitSpec;
 import fr.siamois.infrastructure.database.repositories.specs.RecordingUnitSpec;
 import fr.siamois.mapper.ActionUnitMapper;
@@ -54,6 +55,7 @@ import java.util.stream.Collectors;
 public class ActionUnitService implements ArkEntityService {
 
     private final ActionUnitRepository actionUnitRepository;
+    private final RecordingUnitRepository recordingUnitRepository;
     private final ConceptService conceptService;
     private final ActionCodeRepository actionCodeRepository;
     private final ActionUnitMapper actionUnitMapper;
@@ -76,7 +78,7 @@ public class ActionUnitService implements ArkEntityService {
         try {
             ActionUnit actionUnit = actionUnitRepository.findById(id)
                     .orElseThrow(() -> new ActionUnitNotFoundException("ActionUnit not found with ID: " + id));
-            return actionUnitMapper.convert(actionUnit);
+            return convertWithCount(actionUnit);
         } catch (RuntimeException e) {
             log.error(e.getMessage(), e);
             throw e;
@@ -428,7 +430,7 @@ public class ActionUnitService implements ArkEntityService {
     public List<ActionUnitDTO> findByTeamMember(PersonDTO member, InstitutionDTO institution, long limit) {
         List<ActionUnit> actionUnits = actionUnitRepository.findByTeamMemberOrCreatorAndInstitutionLimit(member.getId(), institution.getId(), limit);
         return actionUnits.stream()
-                .map(actionUnitMapper::convert)
+                .map(this::convertWithCount)
                 .toList();
     }
 
@@ -484,15 +486,11 @@ public class ActionUnitService implements ArkEntityService {
 
     public Page<ActionUnitDTO> searchActionUnits(InstitutionDTO institutionDTO, FilterDTO filters, Pageable pageable) {
         Specification<ActionUnit> specs = prepareSpecs(institutionDTO, filters);
-
         Page<ActionUnit> res = actionUnitRepository.findAll(specs, pageable);
-
         if (filters.containsColumn("name")) {
-            String nameContains = filters.valueOfAsString("name");
-            log.trace("{} éléments trouvées pour {} (Page {}/{})", res.getTotalElements(), nameContains, res.getNumber() + 1, res.getTotalPages());
+            log.trace("{} éléments trouvées pour {} (Page {}/{})", res.getTotalElements(), filters.valueOfAsString("name"), res.getNumber() + 1, res.getTotalPages());
         }
-
-        return res.map(actionUnitMapper::convert);
+        return res.map(this::convertWithCount);
     }
 
 
@@ -508,13 +506,17 @@ public class ActionUnitService implements ArkEntityService {
         Specification<ActionUnit> specs = prepareSpecs(institutionDTO, filters);
         specs = specs.and(ActionUnitSpec.actionUnitInSpatialUnit(spatialUnitDTO.getId()));
         Page<ActionUnit> res = actionUnitRepository.findAll(specs, pageable);
-
         if (filters.containsColumn("name")) {
-            String nameContains = filters.valueOfAsString("name");
-            log.trace("{} éléments trouvées pour {} (Page {}/{})", res.getTotalElements(), nameContains, res.getNumber() + 1, res.getTotalPages());
+            log.trace("{} éléments trouvées pour {} (Page {}/{})", res.getTotalElements(), filters.valueOfAsString("name"), res.getNumber() + 1, res.getTotalPages());
         }
+        return res.map(this::convertWithCount);
+    }
 
-        return res.map(actionUnitMapper::convert);
+    private ActionUnitDTO convertWithCount(ActionUnit au) {
+        ActionUnitDTO dto = actionUnitMapper.convert(au);
+        Integer count = recordingUnitRepository.countByActionContext(au.getId());
+        dto.setRecordingUnitCount(count != null ? count : 0);
+        return dto;
     }
 
 

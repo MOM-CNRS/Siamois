@@ -141,7 +141,7 @@ public class ActionUnitTableViewModel extends EntityTableViewModel<ActionUnitDTO
             return switch (rel.getCountKey()) {
                 case PARENTS -> au.getParents() == null ? 0 : au.getParents().size();
                 case CHILDREN -> au.getChildren() == null ? 0 : au.getChildren().size();
-                case "recordingUnit" -> au.getRecordingUnitList() == null ? 0 : au.getRecordingUnitList().size();
+                case "recordingUnit" -> au.getRecordingUnitCount();
                 default -> 0;
             };
         }
