@@ -233,7 +233,7 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
                 RowAction.builder()
                         .action(TableColumnAction.TOGGLE_BOOKMARK)
                         .processExpr(THIS)
-                        .updateExpr("bookmarkToggleButton, subSidebarForm")
+                        .updateExpr("@this, subSidebarForm")
                         .updateSelfTable(false)
                         .styleClass(SIA_ICON_BTN)
                         .build(),
@@ -304,7 +304,7 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
     public String resolveIcon(RowAction action,RecordingUnitDTO ru) {
 
         return switch (action.getAction()) {
-            case TOGGLE_BOOKMARK -> Boolean.TRUE.equals(navBean.isRecordingUnitBookmarkedByUser(ru.getFullIdentifier()))
+            case TOGGLE_BOOKMARK -> Boolean.TRUE.equals(navBean.isRecordingUnitBookmarkedByUser(String.valueOf(ru.getId())))
                             ? "bi bi-bookmark-x-fill"
                             : "bi bi-bookmark-plus";
             case DUPLICATE_ROW -> "bi bi-copy";
