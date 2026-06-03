@@ -163,7 +163,7 @@
 
                     <p:outputPanel id="sidebarContent" style="height: 100%; width: 100%; flex-grow: 1;">
 
-                        <ui:fragment rendered="#{sidebarBean.currentMode == 'HISTORIQUE'}">
+                        <p:outputPanel id="historyPanel" rendered="#{sidebarBean.currentMode == 'HISTORIQUE'}">
                             <div style="height: 100%">
                                 <p:dataTable id="historyTable"
                                              value="#{historyBean.items}"
@@ -195,10 +195,9 @@
                                     </p:column>
                                 </p:dataTable>
                             </div>
-                        </ui:fragment>
+                        </p:outputPanel>
 
-                        <ui:fragment rendered="#{sidebarBean.currentMode == 'BOOKMARKS'}">
-                            <div style="height: 100%">
+                        <p:outputPanel id="bookmarkPanel" style="height: 100%" rendered="#{sidebarBean.currentMode == 'BOOKMARKS'}">
                                 <p:dataTable id="bookmarksTable"
                                              value="#{bookmarkMenuBean.lazyModel}"
                                              var="bkm"
@@ -258,8 +257,7 @@
                                                          styleClass="ui-button-flat ui-button-danger rounded-button"/>
                                     </p:column>
                                 </p:dataTable>
-                            </div>
-                        </ui:fragment>
+                        </p:outputPanel>
 
                     </p:outputPanel>
                 </p:outputLabel>

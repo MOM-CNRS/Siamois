@@ -74,9 +74,9 @@
                                 <p:commandLink id="bookmarkToggleButton"
                                                process="@this"
                                                styleClass="sideview-topbar-button"
-                                               action="#{navBean.togglePanelBookmark(panelModel.parentOrOverview)}"
-                                               update="navBarCsrfForm:siamoisNavForm">
-                                    <h:outputText styleClass="#{navBean.isPanelBookmarkedByUser(panelModel.parentOrOverview) ?
+                                               action="#{panelModel.parentOrOverview.togglePanelBookmark()}"
+                                               update="bookmarkToggleButton, navBarCsrfForm:siamoisNavForm, subSidebarForm, actionForm-${panelModel.prefixPanelIndex}-overview">
+                                    <h:outputText styleClass="#{panelModel.parentOrOverview.isBookmarked() ?
                                                     'ui-icon bi bi-bookmark-fill' : 'ui-icon bi bi-bookmark'}"/>
                                 </p:commandLink>
 

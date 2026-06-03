@@ -45,8 +45,7 @@ public class WelcomePanel extends AbstractPanel implements Serializable {
 
     @Override
     public String buildBookmarkUrl() {
-        // todo
-        return "";
+        return this.ressourceUri();
     }
 
     @Override

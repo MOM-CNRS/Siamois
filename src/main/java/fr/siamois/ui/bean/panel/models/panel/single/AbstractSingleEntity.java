@@ -111,8 +111,8 @@ public abstract class AbstractSingleEntity<T extends AbstractEntityDTO>
 
     @Override
     public String buildBookmarkUrl() {
-        // todo return
-        return "";
+
+            return  this.ressourceUri();
     }
 
     @Override

@@ -184,7 +184,7 @@
                                                update="subSidebarForm:sidebarAnimatedInner"
                                                process="@this"
                                                id="bookmarksLinkNav"
-                                               oncomplete="handleSidebarToggle('BOOKMARKS');"
+                                               oncomplete="handleSidebarToggle('BOOKMARKS'); setTimeout(function(){ var el = document.querySelector('[id$=bookmarksTable] .ui-datatable-scrollable-body'); if(el){ el.scrollTop = 1; el.scrollTop = 0; } }, 150);"
                                                styleClass="nav-link">
                                     <i class="bi bi-bookmark-fill"/>
                                     <span class="menu-text">Favoris</span>

@@ -82,6 +82,8 @@ public class BookmarkMenuBean implements Serializable {
                 // Store total row elements internally for the secondary count step
                 this.cachedTotalRows = (int) resultPage.getTotalElements();
 
+                this.setRowCount(cachedTotalRows);
+
                 // Return the localized raw collection list back to the virtual scroll datatable renderer
                 return resultPage.getContent();
             }
