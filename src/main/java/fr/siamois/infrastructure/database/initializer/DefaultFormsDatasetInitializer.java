@@ -65,6 +65,10 @@ public class DefaultFormsDatasetInitializer implements DatabaseInitializer {
     // Default Siamois field concept
     List<ConceptSeeder.ConceptSpec> concepts = List.of(
 
+            // For action unit form
+            new ConceptSeeder.ConceptSpec(DEFAULT_VOCABULARY_ID, "4288314", "Adresse", "fr"),
+            new ConceptSeeder.ConceptSpec(DEFAULT_VOCABULARY_ID, "4287976", "Commune", "fr"),
+
             // Champs
             new ConceptSeeder.ConceptSpec(DEFAULT_VOCABULARY_ID, "4287605", "Type d'unité", "fr"),
             new ConceptSeeder.ConceptSpec(DEFAULT_VOCABULARY_ID, "4287606", "Cycle géomorphologique", "fr"),

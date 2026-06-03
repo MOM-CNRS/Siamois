@@ -1,10 +1,13 @@
 package fr.siamois.domain.services;
 
 import fr.siamois.domain.models.vocabulary.Concept;
+import fr.siamois.domain.models.vocabulary.VocabularyType;
 import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.dto.PlaceSuggestionDTO;
 import fr.siamois.dto.entity.ConceptDTO;
+import fr.siamois.dto.entity.VocabularyDTO;
 import fr.siamois.infrastructure.api.dto.geoapi.CommuneListResponse;
+import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRepository;
 import fr.siamois.mapper.ConceptMapper;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -19,7 +22,7 @@ import java.util.List;
 @Service
 public class GeoApiService {
 
-    private final ConceptService conceptService;
+    private final ConceptRepository conceptRepository;
     private final ConceptMapper conceptMapper;
 
     private static final String BASE_URL = "https://geo.api.gouv.fr/communes";
@@ -46,8 +49,10 @@ public class GeoApiService {
         }
 
         // On récupère le concept "Commune" (ID 417) pour typer les résultats externes
-        Concept communeConcept = conceptService.findById(417).orElse(new Concept());
-        ConceptDTO conceptDTO = conceptMapper.convert(communeConcept);
+        ConceptDTO conceptDTO = conceptMapper.convert(
+                conceptRepository.findConceptByExternalIdIgnoreCase("th252", "4287976")
+                        .orElseThrow()
+        );
 
         return response.stream()
                 .map(r -> {

@@ -11,6 +11,7 @@ import fr.siamois.domain.services.spatialunit.SpatialUnitTreeService;
 import fr.siamois.domain.services.specimen.SpecimenService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.domain.services.vocabulary.FieldConfigurationService;
+import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRepository;
 import fr.siamois.mapper.ConceptMapper;
 import fr.siamois.mapper.PlaceSuggestionMapper;
 import fr.siamois.ui.bean.LangBean;
@@ -41,4 +42,5 @@ public class FormContextServices {
     private final PlaceSuggestionMapper placeSuggestionMapper;
     private final CustomFieldMeasurementService customFieldMeasurementService;
     private final FieldConfigurationService fieldConfigurationService;
+    private final ConceptRepository conceptRepository;
 }

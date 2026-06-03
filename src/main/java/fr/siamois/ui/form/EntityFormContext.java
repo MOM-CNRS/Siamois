@@ -8,6 +8,7 @@ import fr.siamois.domain.models.form.customfield.CustomFieldMeasurement;
 import fr.siamois.domain.models.form.customfield.CustomFieldSelectMultipleSpatialUnitTree;
 import fr.siamois.domain.models.form.customfield.CustomFieldSelectOneSpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
+import fr.siamois.domain.models.vocabulary.VocabularyType;
 import fr.siamois.domain.services.GeoApiService;
 import fr.siamois.domain.services.GeoPlatService;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
@@ -102,6 +103,7 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
     private final ConceptService conceptService;
     private final ConceptMapper conceptMapper;
     private final FormContextServices services;
+
 
 
 
@@ -451,8 +453,11 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
         }
 
         if (Objects.equals(source, "GEOPLAT")) {
-            Concept addressConcept = conceptService.findById(418).orElse(new Concept());
-            ConceptDTO conceptDTO = conceptMapper.convert(addressConcept);
+
+            ConceptDTO conceptDTO = conceptMapper.convert(
+                    services.getConceptRepository().findConceptByExternalIdIgnoreCase("th252", "4288314")
+                            .orElseThrow()
+            );
 
             return geoPlatService.search(query).stream()
                     .map(r -> {

@@ -22,8 +22,5 @@ public interface ActionUnitMapper extends Converter<ActionUnit, ActionUnitDTO> {
     @DelegatingConverter
     ActionUnit invertConvert(ActionUnitDTO actionUnitDTO);
 
-    @Mapping(target = "recordingUnitList", ignore = true)
-    ActionUnitDTO toLightDto(ActionUnit source);
-
 }
 
