@@ -16,7 +16,6 @@ import java.io.IOException;
 import java.io.InputStream;
 
 @Slf4j
-@Component
 @Getter
 @Setter
 public class PervoliaDatasetInitializer  {

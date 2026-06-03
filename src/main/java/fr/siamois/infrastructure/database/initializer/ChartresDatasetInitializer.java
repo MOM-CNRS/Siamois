@@ -21,7 +21,6 @@ import java.io.InputStream;
 import java.util.List;
 
 @Slf4j
-@Component
 @Getter
 @Setter
 @Order
@@ -68,6 +67,7 @@ public class ChartresDatasetInitializer implements DatabaseInitializer {
     @Override
     @Transactional
     public void initialize() throws DatabaseDataInitException {
+
         // run only if not inserted
         RecordingUnit existing = recordingUnitService
                 .findByFullIdentifierAndInstitutionIdentifier("1000", "chartres");

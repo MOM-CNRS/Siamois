@@ -72,9 +72,9 @@ public class ProjectUploadSettingsBean {
         }
         try {
             seeder.seedAll(specs,project);
-            readyToUpload=false;
             FacesContext.getCurrentInstance().addMessage(null,
                     new FacesMessage(FacesMessage.SEVERITY_INFO, "Données importées avec succès", null));
+            reset();
         } catch (Exception e) {
             FacesContext.getCurrentInstance().addMessage(null,
                     new FacesMessage(FacesMessage.SEVERITY_ERROR, "Une erreur est survenue", e.getMessage()));
