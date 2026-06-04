@@ -68,7 +68,7 @@ public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
     protected final BaseLazyDataModel<T> lazyDataModel;
 
     @Setter
-    public int defaultPageSize = 10;
+    public int defaultPageSize = 20;
 
     /**
      * Services nécessaires pour la logique formulaire de ligne
