@@ -24,6 +24,7 @@ public abstract class AbstractPanel implements Serializable {
     protected String titleCodeOrTitle;
     protected String panelClass;
     protected String icon;
+    private String goBackUrl;
     @Getter(AccessLevel.NONE)
     protected PanelBreadcrumb breadcrumb;
     @Getter(AccessLevel.NONE)

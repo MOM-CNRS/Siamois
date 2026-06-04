@@ -30,7 +30,7 @@ public abstract class BaseLazyDataModel<T> extends LazyDataModel<T> implements L
 
     // Page, Sort and Filter state
     protected int first = 0;
-    protected int pageSizeState = 10;
+    protected int pageSizeState = 20;
     protected transient Set<SortMeta> sortBy = new HashSet<>();
 
     // Cache

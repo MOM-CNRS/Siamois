@@ -36,6 +36,7 @@ public class FocusViewBean implements Serializable {
     // tokens reçus depuis l'URL
     private String mainToken;
     private String secondaryToken;
+    private String backToken;
 
     private AbstractPanel resolvePanel(String path) {
 
@@ -141,6 +142,9 @@ public class FocusViewBean implements Serializable {
             String decoded = decodeToken(mainToken);
             mainPanel = resolvePanel(decoded);
             mainPanel.setRoot(true);
+            if (backToken != null) {
+                mainPanel.setGoBackUrl(decodeToken(backToken));
+            }
             main.setIcon(mainPanel.getIcon());
             if(mainPanel instanceof AbstractListPanel<?>) {
                 main.setTitle(mainPanel.resolveTitleOrTitleCode());

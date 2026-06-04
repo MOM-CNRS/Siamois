@@ -436,30 +436,45 @@ public class FlowBean implements Serializable {
     }
 
     public void redirectToFocus(String resourceUri) throws IOException {
-        redirectToFocus(resourceUri, null);
+        redirectToFocus(resourceUri, null, null);
     }
 
     public void redirectToFocus(String resourceUri, @Nullable String overviewResourceUri) throws IOException {
+        redirectToFocus(resourceUri, overviewResourceUri, null);
+    }
+
+    public void redirectToFocus(String resourceUri, @Nullable String overviewResourceUri, @Nullable String backUrl) throws IOException {
         String encodedUri = Base64.getUrlEncoder().withoutPadding()
                 .encodeToString(resourceUri.getBytes(StandardCharsets.UTF_8));
 
         FacesContext context = FacesContext.getCurrentInstance();
         String basePath = context.getExternalContext().getRequestContextPath();
 
-        String sParam = "";
+        StringBuilder params = new StringBuilder();
         if (overviewResourceUri != null) {
-            sParam = "?s=" + Base64.getUrlEncoder().withoutPadding()
-                    .encodeToString(overviewResourceUri.getBytes(StandardCharsets.UTF_8));
+            params.append("?s=").append(Base64.getUrlEncoder().withoutPadding()
+                    .encodeToString(overviewResourceUri.getBytes(StandardCharsets.UTF_8)));
+        }
+        if (backUrl != null) {
+            params.append(params.length() > 0 ? "&" : "?").append("back=")
+                    .append(Base64.getUrlEncoder().withoutPadding()
+                            .encodeToString(backUrl.getBytes(StandardCharsets.UTF_8)));
         }
 
-        String url = basePath + "/focus/" + encodedUri + sParam;
-
-        context.getExternalContext().redirect(url);
+        context.getExternalContext().redirect(basePath + "/focus/" + encodedUri + params);
     }
 
 
     public void fullScreen(AbstractPanel panel) throws IOException {
-        redirectToFocus(panel.ressourceUri(), null);
+        // panel = overview panel being expanded; its parentOrOverview = root/main panel
+        AbstractPanel mainPanel = panel.getParentOrOverview();
+        String contextPath = FacesContext.getCurrentInstance().getExternalContext().getRequestContextPath();
+        String encodedMain = Base64.getUrlEncoder().withoutPadding()
+                .encodeToString(mainPanel.ressourceUri().getBytes(StandardCharsets.UTF_8));
+        String encodedOverview = Base64.getUrlEncoder().withoutPadding()
+                .encodeToString(panel.ressourceUri().getBytes(StandardCharsets.UTF_8));
+        String backUrl = contextPath + "/focus/" + encodedMain + "?s=" + encodedOverview;
+        redirectToFocus(panel.ressourceUri(), null, backUrl);
     }
 
     public void redirectToDashboard() throws IOException {

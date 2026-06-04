@@ -23,6 +23,7 @@
         <f:metadata>
             <f:viewParam name="main" value="#{focusViewBean.mainToken}"/>
             <f:viewParam name="s" value="#{focusViewBean.secondaryToken}"/>
+            <f:viewParam name="back" value="#{focusViewBean.backToken}"/>
             <f:viewAction action="#{focusViewBean.beforeInit}" onPostback="false"/>
         </f:metadata>
     </ui:define>
@@ -311,6 +312,13 @@
                                             display: flex;
                                             border: 1px solid var(--siamois-green-light);
                                             border-radius: 15px;">
+                                        <p:commandLink id="closeFocusLink"
+                                                       rendered="#{not empty focusViewBean.mainPanel.goBackUrl}"
+                                                       styleClass="sideview-topbar-button"
+                                                       onclick="window.location.href='#{focusViewBean.mainPanel.goBackUrl}'; return false;"
+                                                       title="#{langBean.msg('nav.closeFocus')}">
+                                            <h:outputText styleClass="bi bi-arrows-angle-contract"/>
+                                        </p:commandLink>
                                         <p:commandLink id="bookmarkToggleButton"
                                                        styleClass="sideview-topbar-button"
                                                        action="#{focusViewBean.mainPanel.togglePanelBookmark()}"
