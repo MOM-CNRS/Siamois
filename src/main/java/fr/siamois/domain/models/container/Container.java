@@ -2,17 +2,20 @@ package fr.siamois.domain.models.container;
 
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import fr.siamois.domain.models.FieldCode;
 import fr.siamois.domain.models.TraceableEntity;
+import fr.siamois.domain.models.container.form.ContainerDetailsForm;
+import fr.siamois.domain.models.container.form.ContainerNewUnitForm;
 import fr.siamois.domain.models.form.customform.CustomForm;
+import fr.siamois.domain.models.form.measurement.MeasurementAnswer;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
-import fr.siamois.domain.models.specimen.form.SpecimenDetailsForm;
-import fr.siamois.domain.models.specimen.form.SpecimenNewUnitForm;
 import fr.siamois.domain.models.vocabulary.Concept;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.envers.Audited;
+import org.hibernate.envers.NotAudited;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -23,6 +26,9 @@ import java.util.Set;
 @Audited
 @NoArgsConstructor
 public class Container extends TraceableEntity {
+
+    @FieldCode
+    public static final String TYPE_FIELD = "SIAC.TYPE";
 
     @OneToMany(mappedBy = "parent", fetch = FetchType.LAZY)
     @JsonIgnore
@@ -50,13 +56,32 @@ public class Container extends TraceableEntity {
     @Column(name = "identifier")
     protected String identifier;
 
-    @Transient
-    @JsonIgnore
-    public static final CustomForm DETAILS_FORM = SpecimenDetailsForm.build();
+    @OneToOne(cascade = CascadeType.ALL, orphanRemoval = true)
+    @JoinColumn(name = "fk_length")
+    @NotAudited
+    private MeasurementAnswer length;
+
+    @OneToOne(cascade = CascadeType.ALL, orphanRemoval = true)
+    @JoinColumn(name = "fk_width")
+    @NotAudited
+    private MeasurementAnswer width;
+
+    @OneToOne(cascade = CascadeType.ALL, orphanRemoval = true)
+    @JoinColumn(name = "fk_height")
+    @NotAudited
+    private MeasurementAnswer height;
+
+    @OneToOne(cascade = CascadeType.ALL, orphanRemoval = true)
+    @JoinColumn(name = "fk_weight")
+    @NotAudited
+    private MeasurementAnswer weight;
 
     @Transient
     @JsonIgnore
-    public static final CustomForm NEW_UNIT_FORM = SpecimenNewUnitForm.build();
+    public static final CustomForm DETAILS_FORM = ContainerDetailsForm.build();
+
+    @Transient
+    @JsonIgnore
+    public static final CustomForm NEW_UNIT_FORM = ContainerNewUnitForm.build();
 
 }
-

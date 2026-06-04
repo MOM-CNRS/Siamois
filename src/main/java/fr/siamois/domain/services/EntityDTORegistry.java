@@ -2,6 +2,7 @@ package fr.siamois.domain.services;
 
 import fr.siamois.domain.models.TraceableEntity;
 import fr.siamois.domain.models.actionunit.ActionUnit;
+import fr.siamois.domain.models.container.Container;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.specimen.Specimen;
@@ -14,7 +15,8 @@ import java.util.Map;
 @Service
 public class EntityDTORegistry {
     private final Map<Class<? extends AbstractEntityDTO>,
-            Class<? extends TraceableEntity>> dtoToEntityMap = new HashMap<>();
+            Class<? extends TraceableEntity>>
+            dtoToEntityMap = new HashMap<>();
     private final Map<Class<? extends AbstractEntityDTO>,
             Class<? extends AbstractEntityDTO>> dtoToummaryMap = new HashMap<>();
 
@@ -24,6 +26,7 @@ public class EntityDTORegistry {
         dtoToEntityMap.put(SpecimenDTO.class, Specimen.class);
         dtoToEntityMap.put(ActionUnitDTO.class, ActionUnit.class);
         dtoToEntityMap.put(SpatialUnitDTO.class, SpatialUnit.class);
+        dtoToEntityMap.put(ContainerDTO.class, Container.class);
 
     }
 

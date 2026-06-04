@@ -261,6 +261,9 @@ public class FormService {
         if (answer instanceof CustomFieldAnswerSelectMultipleSpecimenViewModel a) {
             return a.getValue() != null ? new HashSet<>(a.getValue()) : null;
         }
+        if (answer instanceof CustomFieldAnswerSelectMultipleContainerViewModel a) {
+            return a.getValue() != null ? new HashSet<>(a.getValue()) : null;
+        }
 
         return null;
     }

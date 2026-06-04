@@ -371,6 +371,22 @@ public class FlowBean implements Serializable {
         }
     }
 
+    public void addContainerToOverview(Long id, AbstractPanel targetPanel, @Nullable Integer tabIndex) {
+
+        if (targetPanel != null) {
+            ContainerPanel overviewPanel = panelFactory.createContainerPanel(id);
+            if (tabIndex != null) {
+                overviewPanel.setActiveTabIndex(tabIndex);
+            }
+            overviewPanel.setRoot(false);
+            if (targetPanel.isRoot()) {
+                addPanelToOverview(targetPanel, overviewPanel);
+            } else {
+                addPanelToOverview(targetPanel.getParentOrOverview(), overviewPanel);
+            }
+        }
+    }
+
 
 
     public void goToRecordingUnitByIdNewPanel(Long id, Integer tabIndex) {

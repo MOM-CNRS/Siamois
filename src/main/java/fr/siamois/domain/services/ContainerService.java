@@ -101,5 +101,16 @@ public class ContainerService {
         return Math.toIntExact(containerRepository.count(specs));
     }
 
+    public ContainerDTO save(ContainerDTO dto) {
+        Container entity = containerMapper.invertConvert(dto);
+        entity = containerRepository.save(entity);
+        return containerMapper.convert(entity);
+    }
+
+    public ContainerDTO findById(Long id) {
+        return containerRepository.findById(id)
+                .map(containerMapper::convert)
+                .orElse(null);
+    }
 
 }

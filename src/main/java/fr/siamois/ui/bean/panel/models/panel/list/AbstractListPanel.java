@@ -240,7 +240,8 @@ public abstract class AbstractListPanel<T extends AbstractEntityDTO> extends Abs
         if (rowIdx < 0) {
             return prefix + ":entityDatatable";
         }
-        return prefix + ":entityDatatable:@row(" + rowIdx + ")";
+        //return prefix + ":entityDatatable:@row(" + rowIdx + ")"; // todo : fix The row count of the target is lesser than the row number. Expression: "row(0)"
+        return null ;
     }
 
     /** Returns the currently active table component client ID (tree or flat). */

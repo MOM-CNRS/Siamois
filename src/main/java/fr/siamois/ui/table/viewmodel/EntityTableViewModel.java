@@ -560,6 +560,8 @@ public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
             return "PF('buiContent').hide();onCompleteCallback('panel-action-unit-" + unit.getId() + CONTAINER;
         } else if (unit instanceof SpatialUnitDTO) {
             return "PF('buiContent').hide();onCompleteCallback('panel-spatial-unit-" + unit.getId() + CONTAINER;
+        } else if (unit instanceof ContainerDTO) {
+            return "PF('buiContent').hide();onCompleteCallback('panel-container-" + unit.getId() + CONTAINER;
         } else {
             throw new IllegalArgumentException("Non handled type  : " + unit.getClass().getName());
         }

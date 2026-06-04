@@ -29,7 +29,7 @@ import org.primefaces.model.TreeNode;
 
 import java.util.List;
 
-import static fr.siamois.ui.table.column.TableColumnAction.GO_TO_ACTION_UNIT;
+import static fr.siamois.ui.table.column.TableColumnAction.GO_TO_CONTAINER;
 
 /**
  * View model spécifique pour les tableaux de ActionUnit.
@@ -100,15 +100,8 @@ public class ContainerTableViewModel extends EntityTableViewModel<ContainerDTO, 
     protected void handleCommandLink(CommandLinkColumn column,
                                      ContainerDTO au) {
 
-        if (column.getAction() == GO_TO_ACTION_UNIT) {
-
-            flowBean.addActionUnitToOverview(
-                    au.getId(),
-                    parentPanel,
-                    null
-            );
-
-
+        if (column.getAction() == GO_TO_CONTAINER) {
+            flowBean.addContainerToOverview(au.getId(), parentPanel, null);
         } else {
             throw new IllegalStateException(
                     "Unhandled action: " + column.getAction()
@@ -192,38 +185,6 @@ public class ContainerTableViewModel extends EntityTableViewModel<ContainerDTO, 
                             col.getViewTargetIndex()
                     );
 
-            case ADD_RELATION -> {
-                // Dispatch based on column.countKey (or add a dedicated "relationKey")
-                String countKey = col.getCountKey();
-
-                if (PARENTS.equals(countKey)) {
-
-                    NewUnitContext ctx = NewUnitContext.builder()
-                            .kindToCreate(UnitKind.ACTION)
-                            .trigger(NewUnitContext.Trigger.cell(UnitKind.ACTION, au.getId(), PARENTS))
-                            .insertPolicy(NewUnitContext.UiInsertPolicy.builder()
-                                    .listInsert(NewUnitContext.ListInsert.TOP)
-                                    .treeInsert(NewUnitContext.TreeInsert.PARENT_AT_ROOT)
-                                    .build())
-                            .build();
-
-                    openCreateDialog(ctx, genericNewUnitDialogBean);
-
-                } else if (CHILDREN.equals(countKey)) {
-
-                    NewUnitContext ctx = NewUnitContext.builder()
-                            .kindToCreate(UnitKind.ACTION)
-                            .trigger(NewUnitContext.Trigger.cell(UnitKind.ACTION, au.getId(), CHILDREN))
-                            .insertPolicy(NewUnitContext.UiInsertPolicy.builder()
-                                    .listInsert(NewUnitContext.ListInsert.TOP)
-                                    .treeInsert(NewUnitContext.TreeInsert.CHILD_FIRST)
-                                    .build())
-                            .build();
-
-                    openCreateDialog(ctx, genericNewUnitDialogBean);
-                }
-
-            }
 
             default -> throw new IllegalStateException("Unhandled relation action: " + action);
         }
@@ -260,7 +221,7 @@ public class ContainerTableViewModel extends EntityTableViewModel<ContainerDTO, 
 
     @Override
     public boolean isTreeViewSupported() {
-        return true;
+        return false;
     }
 
     @Override

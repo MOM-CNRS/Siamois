@@ -5,6 +5,7 @@ import fr.siamois.ui.bean.panel.models.PanelBreadcrumb;
 import fr.siamois.ui.bean.panel.models.panel.WelcomePanel;
 import fr.siamois.ui.bean.panel.models.panel.list.*;
 import fr.siamois.ui.bean.panel.models.panel.single.ActionUnitPanel;
+import fr.siamois.ui.bean.panel.models.panel.single.ContainerPanel;
 import fr.siamois.ui.bean.panel.models.panel.single.RecordingUnitPanel;
 import fr.siamois.ui.bean.panel.models.panel.single.SpatialUnitPanel;
 import fr.siamois.ui.bean.panel.models.panel.single.SpecimenPanel;
@@ -29,6 +30,7 @@ public class PanelFactory {
     private final ObjectProvider<SpecimenListPanel> specimenListPanel;
     private final ObjectProvider<WelcomePanel> welcomePanelProvider;
     private final ObjectProvider<SpecimenPanel> specimenPanelProvider;
+    private final ObjectProvider<ContainerPanel> containerPanelProvider;
 
 
 
@@ -39,7 +41,8 @@ public class PanelFactory {
             ObjectProvider<ActionUnitPanel> actionUnitPanelProvider,
             ObjectProvider<RecordingUnitPanel> recordingUnitPanelProvider,
             ObjectProvider<RecordingUnitListPanel> recordingUnitListPanelProvider, ObjectProvider<SpecimenListPanel> specimenListPanel,
-            ObjectProvider<WelcomePanel> welcomePanelProvider, ObjectProvider<SpecimenPanel> specimenPanelProvider) {
+            ObjectProvider<WelcomePanel> welcomePanelProvider, ObjectProvider<SpecimenPanel> specimenPanelProvider,
+            ObjectProvider<ContainerPanel> containerPanelProvider) {
 
         this.spatialUnitListPanelProvider = spatialUnitListPanelProvider;
         this.actionUnitListPanelProvider = actionUnitListPanelProvider;
@@ -52,6 +55,7 @@ public class PanelFactory {
         this.specimenListPanel = specimenListPanel;
         this.welcomePanelProvider = welcomePanelProvider;
         this.specimenPanelProvider = specimenPanelProvider;
+        this.containerPanelProvider = containerPanelProvider;
     }
 
     public SpatialUnitPanel createSpatialUnitPanel(Long spatialUnitId) {
@@ -152,6 +156,12 @@ public class PanelFactory {
 
     public ContainerListPanel createContainerListPanel() {
         return new ContainerListPanel.ContainerListPanelBuilder(containerListPanelProvider).build();
+    }
+
+    public ContainerPanel createContainerPanel(Long id) {
+        return new ContainerPanel.Builder(containerPanelProvider)
+                .id(id)
+                .build();
     }
 
 

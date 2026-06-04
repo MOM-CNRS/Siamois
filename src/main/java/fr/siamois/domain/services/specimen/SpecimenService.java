@@ -221,6 +221,7 @@ public class SpecimenService implements ArkEntityService {
 
         synchronizeCollection(managedSpecimen.getMaterialClass(), specimen.getMaterialClass());
         synchronizeCollection(managedSpecimen.getMaterial(), specimen.getMaterial());
+        synchronizeCollection(managedSpecimen.getContainers(), specimen.getContainers());
 
         // Sauvegarder l'entité Specimen
         managedSpecimen = specimenRepository.save(managedSpecimen);

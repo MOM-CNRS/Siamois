@@ -30,6 +30,7 @@ import fr.siamois.ui.form.rules.ColumnApplier;
 import fr.siamois.ui.form.rules.EnabledRulesEngine;
 import fr.siamois.ui.form.rules.ValueProvider;
 import fr.siamois.ui.form.savestrategy.ActionUnitSaveStrategy;
+import fr.siamois.ui.form.savestrategy.ContainerSaveStrategy;
 import fr.siamois.ui.form.savestrategy.RecordingUnitSaveStrategy;
 import fr.siamois.ui.form.savestrategy.SpatialUnitSaveStrategy;
 import fr.siamois.ui.form.savestrategy.SpecimenSaveStrategy;
@@ -48,8 +49,11 @@ import lombok.RequiredArgsConstructor;
 import org.primefaces.PrimeFaces;
 import org.primefaces.event.SelectEvent;
 import org.primefaces.model.TreeNode;
+import fr.siamois.dto.FilterDTO;
+import fr.siamois.infrastructure.database.repositories.specs.ActionUnitSpec;
 import org.springframework.core.convert.ConversionService;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 
 import java.time.OffsetDateTime;
 import java.util.*;
@@ -147,6 +151,7 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
         SAVE_STRATEGIES.put(ActionUnitDTO.class, new ActionUnitSaveStrategy());
         SAVE_STRATEGIES.put(SpatialUnitDTO.class, new SpatialUnitSaveStrategy());
         SAVE_STRATEGIES.put(SpecimenDTO.class, new SpecimenSaveStrategy());
+        SAVE_STRATEGIES.put(ContainerDTO.class, new ContainerSaveStrategy());
     }
 
     public EntityFormContext(T unit,
@@ -637,12 +642,43 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
     }
 
     public List<ContainerDTO> getContainerOptions(String query) {
-        // todo : implement real
-        ContainerDTO containerDTO = new ContainerDTO();
-        containerDTO.setIdentifier("SAC-001");
-        ContainerDTO container = new ContainerDTO();
-        container.setIdentifier("CAISSE-002");
-        return List.of(containerDTO, container);
+        FilterDTO filter = new FilterDTO();
+        filter.add(ActionUnitSpec.GLOBAL_FILTER, query, FilterDTO.FilterType.CONTAINS);
+        InstitutionDTO institution = sessionSettingsBean.getSelectedInstitution();
+        return services.getContainerService()
+                .searchContainers(institution, filter,
+                        PageRequest.of(0, services.getFieldConfigurationService().resultLimit()))
+                .getContent();
+    }
+
+    public void saveNewContainerFromField(CustomFieldAnswerViewModel rawAnswer) {
+        if (!(rawAnswer instanceof CustomFieldAnswerSelectMultipleContainerViewModel answer)) {
+            return;
+        }
+        if (answer.getNewIdentifier() == null || answer.getNewIdentifier().isBlank()) {
+            MessageUtils.displayErrorMessage(langBean, "dialog.unsaved.error", "L'identifiant est obligatoire");
+            return;
+        }
+        try {
+            ContainerDTO toSave = new ContainerDTO();
+            toSave.setIdentifier(answer.getNewIdentifier());
+            if (answer.getNewType() != null) {
+                toSave.setType(answer.getNewType().getConceptLabelToDisplay().getConcept());
+            }
+            toSave.setCreatedBy(sessionSettingsBean.getAuthenticatedUser());
+            toSave.setCreatedByInstitution(sessionSettingsBean.getSelectedInstitution());
+
+            ContainerDTO created = services.getContainerService().save(toSave);
+            answer.getValue().add(created);
+            answer.setNewIdentifier(null);
+            answer.setNewType(null);
+
+            if (unit.getId() != null) {
+                this.save();
+            }
+        } catch (Exception e) {
+            MessageUtils.displayErrorMessage(langBean, "dialog.unsaved.error", e.getMessage());
+        }
     }
 
     /**

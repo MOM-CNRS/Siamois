@@ -1,16 +1,26 @@
 package fr.siamois.dto.entity;
 
-import fr.siamois.domain.models.spatialunit.SpatialUnit;
-import fr.siamois.domain.models.vocabulary.Concept;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
+
+import java.util.List;
 
 @EqualsAndHashCode(callSuper = true)
 @Data
+@NoArgsConstructor
 public class ContainerDTO extends AbstractEntityDTO {
 
-    protected Concept type;
-    protected SpatialUnit spatialUnit;
+    protected ConceptDTO type;
+    protected SpatialUnitSummaryDTO spatialUnit;
     protected String identifier;
+    protected MeasurementAnswerDTO length;
+    protected MeasurementAnswerDTO width;
+    protected MeasurementAnswerDTO height;
+    protected MeasurementAnswerDTO weight;
+
+    public static List<String> getBindableFieldNames() {
+        return List.of("identifier", "type", "spatialUnit", "length", "width", "height", "weight");
+    }
 
 }
