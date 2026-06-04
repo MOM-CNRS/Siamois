@@ -264,6 +264,9 @@ public class FormService {
         if (answer instanceof CustomFieldAnswerSelectMultipleContainerViewModel a) {
             return a.getValue() != null ? new HashSet<>(a.getValue()) : null;
         }
+        if (answer instanceof CustomFieldAnswerSelectMultiplePhaseViewModel a) {
+            return a.getValue() != null ? new HashSet<>(a.getValue()) : null;
+        }
 
         return null;
     }
@@ -337,6 +340,7 @@ public class FormService {
         handlers.put(CustomFieldAnswerMeasurementViewModel.class, this::handleMeasurement);
         handlers.put(CustomFieldAnswerSelectMultipleContainerViewModel.class, this::handleContainerSet);
         handlers.put(CustomFieldAnswerSelectMultipleSpecimenViewModel.class, this::handleSpecimenSet);
+        handlers.put(CustomFieldAnswerSelectMultiplePhaseViewModel.class, this::handlePhaseSet);
         handlers.put(CustomFieldAnswerSelectMultipleFromFieldCodeViewModel.class, this::handleConceptSet);
 
         Class<? extends CustomFieldAnswerViewModel> answerClass = answer.getClass();
@@ -459,6 +463,12 @@ public class FormService {
     private void handleContainerSet(CustomFieldAnswerViewModel answer, Object value) {
         if (answer instanceof CustomFieldAnswerSelectMultipleContainerViewModel containerAnswer && value instanceof Set<?> values) {
             containerAnswer.setValue(new ArrayList<>((Set<ContainerDTO>) values));
+        }
+    }
+
+    private void handlePhaseSet(CustomFieldAnswerViewModel answer, Object value) {
+        if (answer instanceof CustomFieldAnswerSelectMultiplePhaseViewModel phaseAnswer && value instanceof Set<?> values) {
+            phaseAnswer.setValue(new ArrayList<>((Set<PhaseDTO>) values));
         }
     }
 

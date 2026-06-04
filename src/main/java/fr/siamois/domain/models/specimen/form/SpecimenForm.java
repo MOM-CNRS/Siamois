@@ -411,6 +411,21 @@ public abstract class SpecimenForm {
             .concept(containerConcept)
             .build();
 
+    protected static Concept phasesConcept = new Concept.Builder()
+            .vocabulary(SYSTEM_THESO)
+            .externalId("specimen.phases")
+            .build();
+
+    @Transient
+    @JsonIgnore
+    protected static CustomFieldSelectMultiplePhase phasesField = CustomFieldSelectMultiplePhase.builder()
+            .label("specimen.field.phases")
+            .isSystemField(true)
+            .id(24L)
+            .valueBinding("phases")
+            .concept(phasesConcept)
+            .build();
+
 
 
 }

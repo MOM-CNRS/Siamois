@@ -45,15 +45,18 @@ public class PhaseTableDefinitionFactory {
 
         CustomFieldInteger orderNumberField = CustomFieldInteger.builder()
                 .label("phase.field.orderNumber").isSystemField(true)
-                .id(5L).valueBinding("orderNumber").concept(orderNumberConcept).build();
+                .id(5L).valueBinding("orderNumber").concept(orderNumberConcept)
+                .minValue(0).maxValue(Integer.MAX_VALUE).build();
 
         CustomFieldInteger lowerBoundField = CustomFieldInteger.builder()
                 .label("phase.field.lowerBound").isSystemField(true)
-                .id(6L).valueBinding("lowerBound").concept(lowerBoundConcept).build();
+                .id(6L).valueBinding("lowerBound").concept(lowerBoundConcept)
+                .minValue(Integer.MIN_VALUE).maxValue(Integer.MAX_VALUE).build();
 
         CustomFieldInteger upperBoundField = CustomFieldInteger.builder()
                 .label("phase.field.upperBound").isSystemField(true)
-                .id(7L).valueBinding("upperBound").concept(upperBoundConcept).build();
+                .id(7L).valueBinding("upperBound").concept(upperBoundConcept)
+                .minValue(Integer.MIN_VALUE).maxValue(Integer.MAX_VALUE).build();
 
         CustomFieldSelectMultipleFromFieldCode periodsField = CustomFieldSelectMultipleFromFieldCode.builder()
                 .label("phase.field.periods").isSystemField(true).id(8L)

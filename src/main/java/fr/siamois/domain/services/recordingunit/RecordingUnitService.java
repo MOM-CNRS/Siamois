@@ -140,7 +140,7 @@ public class RecordingUnitService implements ArkEntityService {
             managedRecordingUnit.setCreatedByInstitution(recordingUnit.getCreatedByInstitution());
             managedRecordingUnit.setFullIdentifier(recordingUnit.getFullIdentifier());
             setupOtherFields(recordingUnit, managedRecordingUnit);
-
+            synchronizeCollection(managedRecordingUnit.getPhases(), recordingUnit.getPhases());
 
             RecordingUnit toReturn = recordingUnitRepository.save(managedRecordingUnit);
 
@@ -153,6 +153,13 @@ public class RecordingUnitService implements ArkEntityService {
             log.error(e.getMessage(), e);
             throw new FailedRecordingUnitSaveException(e.getMessage());
         }
+    }
+
+    private <T> void synchronizeCollection(java.util.Collection<T> managed, java.util.Collection<T> incoming) {
+        if (managed == null) return;
+        if (incoming == null || incoming.isEmpty()) { managed.clear(); return; }
+        managed.retainAll(incoming);
+        for (T item : incoming) { if (!managed.contains(item)) managed.add(item); }
     }
 
     private RecordingUnit newOrGetRecordingUnit(RecordingUnit recordingUnit) {

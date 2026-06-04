@@ -643,6 +643,16 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
         return Collections.emptyList();
     }
 
+    public List<PhaseDTO> getPhaseOptions(String query) {
+        FilterDTO filter = new FilterDTO();
+        filter.add(ActionUnitSpec.GLOBAL_FILTER, query, FilterDTO.FilterType.CONTAINS);
+        InstitutionDTO institution = sessionSettingsBean.getSelectedInstitution();
+        return services.getPhaseService()
+                .searchPhases(institution, filter,
+                        PageRequest.of(0, services.getFieldConfigurationService().resultLimit()))
+                .getContent();
+    }
+
     public List<ContainerDTO> getContainerOptions(String query) {
         FilterDTO filter = new FilterDTO();
         filter.add(ActionUnitSpec.GLOBAL_FILTER, query, FilterDTO.FilterType.CONTAINS);
@@ -651,6 +661,40 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
                 .searchContainers(institution, filter,
                         PageRequest.of(0, services.getFieldConfigurationService().resultLimit()))
                 .getContent();
+    }
+
+    public void saveNewPhaseFromField(CustomFieldAnswerViewModel rawAnswer) {
+        if (!(rawAnswer instanceof CustomFieldAnswerSelectMultiplePhaseViewModel answer)) {
+            return;
+        }
+        if (answer.getNewIdentifier() == null || answer.getNewIdentifier().isBlank()) {
+            MessageUtils.displayErrorMessage(langBean, "dialog.unsaved.error", "L'identifiant est obligatoire");
+            return;
+        }
+        try {
+            PhaseDTO toSave = new PhaseDTO();
+            toSave.setIdentifier(answer.getNewIdentifier());
+            toSave.setTitle(answer.getNewTitle());
+            toSave.setOrderNumber(answer.getNewOrderNumber());
+            if (answer.getNewType() != null) {
+                toSave.setType(answer.getNewType().getConceptLabelToDisplay().getConcept());
+            }
+            toSave.setCreatedBy(sessionSettingsBean.getAuthenticatedUser());
+            toSave.setCreatedByInstitution(sessionSettingsBean.getSelectedInstitution());
+
+            PhaseDTO created = services.getPhaseService().save(toSave);
+            answer.getValue().add(created);
+            answer.setNewIdentifier(null);
+            answer.setNewTitle(null);
+            answer.setNewOrderNumber(null);
+            answer.setNewType(null);
+
+            if (unit.getId() != null) {
+                this.save();
+            }
+        } catch (Exception e) {
+            MessageUtils.displayErrorMessage(langBean, "dialog.unsaved.error", e.getMessage());
+        }
     }
 
     public void saveNewContainerFromField(CustomFieldAnswerViewModel rawAnswer) {

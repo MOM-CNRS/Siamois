@@ -17,6 +17,7 @@ import fr.siamois.domain.models.form.customform.CustomFormPanel;
 import fr.siamois.domain.models.form.customform.CustomRow;
 import fr.siamois.domain.models.form.customformresponse.CustomFormResponse;
 import fr.siamois.domain.models.form.measurement.MeasurementAnswer;
+import fr.siamois.domain.models.phase.Phase;
 import fr.siamois.domain.models.specimen.Specimen;
 import fr.siamois.domain.models.vocabulary.Concept;
 import jakarta.persistence.*;
@@ -108,6 +109,15 @@ public class RecordingUnit extends RecordingUnitParent implements ArkEntity, Ref
     @OneToMany(mappedBy = "recordingUnit")
     @JsonIgnore
     private Set<Specimen> specimenList;
+
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+            name = "recording_unit_phase",
+            joinColumns = @JoinColumn(name = "fk_recording_unit_id"),
+            inverseJoinColumns = @JoinColumn(name = "fk_phase_id")
+    )
+    @NotAudited
+    private Set<Phase> phases = new HashSet<>();
 
     @OneToMany(fetch = FetchType.LAZY)
     @JoinTable(
@@ -381,6 +391,23 @@ public class RecordingUnit extends RecordingUnitParent implements ArkEntity, Ref
             .concept(closingDateConcept)
             .build();
 
+
+    @Transient
+    @JsonIgnore
+    private static Concept phasesConcept = new Concept.Builder()
+            .vocabulary(SYSTEM_THESO)
+            .externalId("recordingunit.phases")
+            .build();
+
+    @Transient
+    @JsonIgnore
+    private static CustomFieldSelectMultiplePhase phasesField = CustomFieldSelectMultiplePhase.builder()
+            .label("recordingunit.field.phases")
+            .isSystemField(true)
+            .id(20L)
+            .valueBinding("phases")
+            .concept(phasesConcept)
+            .build();
 
     public static final String COMMON_HEADER_GENERAL = "common.header.general";
     @Transient

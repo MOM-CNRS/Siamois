@@ -77,6 +77,8 @@ public abstract class PhaseForm {
             .label("phase.field.orderNumber")
             .isSystemField(true)
             .id(5L)
+            .minValue(0)
+            .maxValue(Integer.MAX_VALUE)
             .valueBinding("orderNumber")
             .concept(orderNumberConcept)
             .build();
@@ -86,6 +88,8 @@ public abstract class PhaseForm {
             .label("phase.field.lowerBound")
             .isSystemField(true)
             .id(6L)
+            .minValue(Integer.MIN_VALUE)
+            .maxValue(Integer.MAX_VALUE)
             .valueBinding("lowerBound")
             .concept(lowerBoundConcept)
             .build();
@@ -95,6 +99,8 @@ public abstract class PhaseForm {
             .label("phase.field.upperBound")
             .isSystemField(true)
             .id(7L)
+            .minValue(Integer.MIN_VALUE)
+            .maxValue(Integer.MAX_VALUE)
             .valueBinding("upperBound")
             .concept(upperBoundConcept)
             .build();

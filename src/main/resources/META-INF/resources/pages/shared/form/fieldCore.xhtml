@@ -210,6 +210,25 @@
 
         </c:if>
 
+        <c:if test="#{col.field['class'].simpleName eq 'CustomFieldSelectMultiplePhase'}">
+
+            <siaInplace:phaseMultiple
+                    id="phaseMultiple"
+                    hasBeenModified="#{hasBeenModified}"
+                    field="#{col.field}"
+                    formCtx="#{formCtx}"
+                    multiple="true"
+                    mode="#{mode}"
+                    panelId="#{panelId}"
+                    onModified="#{formCtx.onFieldAnswerModifiedListener}"
+                    updateTargetsOnBlur="#{panelHeaderUpdateId}"
+                    required="#{col.required}"
+                    label="#{spatialUnitFieldBean.resolveCustomFieldLabel(col.field)}"
+                    answer="#{answer}"
+            />
+
+        </c:if>
+
         <c:if test="#{col.field['class'].simpleName eq 'CustomFieldSelectMultipleSpatialUnitTree'}">
 
             <siaInplace:spatialMultiple

@@ -435,5 +435,30 @@ public final class SpecimenTableDefinitionFactory {
                         .required(false)
                         .build()
         );
+
+        Concept phasesConcept = new Concept.Builder()
+                .vocabulary(SYSTEM_THESO)
+                .externalId("specimen.phases")
+                .build();
+
+        CustomFieldSelectMultiplePhase phasesField = CustomFieldSelectMultiplePhase.builder()
+                .label("specimen.field.phases")
+                .isSystemField(true)
+                .id(24L)
+                .valueBinding("phases")
+                .concept(phasesConcept)
+                .build();
+
+        tableModel.getTableDefinition().addColumn(
+                FormFieldColumn.builder()
+                        .id("phases")
+                        .headerKey("specimen.field.phases")
+                        .field(phasesField)
+                        .sortable(false)
+                        .filterable(false)
+                        .visible(false)
+                        .required(false)
+                        .build()
+        );
     }
 }
