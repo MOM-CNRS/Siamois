@@ -6,12 +6,12 @@
                 xmlns:p="http://primefaces.org/ui"
                 xmlns:h="http://java.sun.com/jsf/html" xmlns:f="http://java.sun.com/jsf/core">
 
-    <ui:define name="metadata">
-    <f:event type="preRenderView" listener="#{navBean.onPreRenderView}"/>
-    </ui:define>
-
     <ui:define name="head">
         <h:outputStylesheet library="css" name="settings.css"/>
+    </ui:define>
+
+    <ui:define name="metadata">
+        <f:event type="preRenderView" listener="#{navBean.onPreRenderView}"/>
     </ui:define>
 
     <ui:define name="content">
@@ -27,6 +27,13 @@
                     addAction="#{projectListBean.filter()}"
                     renderCreateButton="false"
             >
+                <p:commandButton action="#{navBean.goToActionUnitList()}"
+                                 icon="bi bi-database"
+                                 value="Voir et créer des projets dans l'application"
+                                 process="@this"
+                                 styleClass="ui-button-flat">
+                </p:commandButton>
+
                 <p:dataTable
                         id="actionUnitTable"
                         value="#{projectListBean.filteredActionUnits}"
