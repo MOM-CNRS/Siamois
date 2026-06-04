@@ -813,10 +813,32 @@ public class RecordingUnitService implements ArkEntityService {
 
     public Page<RecordingUnitDTO> searchRecordingUnit(InstitutionDTO institution, FilterDTO filters, Pageable pageable) {
         Specification<RecordingUnit> specs = prepareSpecs(institution, filters);
+        Page<RecordingUnitDTO> page = recordingUnitRepository.findAll(specs, pageable)
+                .map(recordingUnitMapper::toLightDto);
 
-        Page<RecordingUnit> results = recordingUnitRepository.findAll(specs, pageable);
+        List<Long> ids = page.getContent().stream()
+                .map(RecordingUnitDTO::getId)
+                .filter(Objects::nonNull)
+                .toList();
 
-        return results.map(recordingUnitMapper::toLightDto);
+        if (!ids.isEmpty()) {
+            Map<Long, Long> specimenCounts = recordingUnitRepository.countSpecimensByIds(ids).stream()
+                    .collect(java.util.stream.Collectors.toMap(
+                            row -> ((Number) row[0]).longValue(),
+                            row -> ((Number) row[1]).longValue()));
+            Map<Long, Long> relationshipCounts = recordingUnitRepository.countRelationshipsByIds(ids).stream()
+                    .collect(java.util.stream.Collectors.toMap(
+                            row -> ((Number) row[0]).longValue(),
+                            row -> ((Number) row[1]).longValue()));
+            page.getContent().forEach(dto -> {
+                dto.setSpecimenCount(specimenCounts.getOrDefault(dto.getId(), 0L));
+                dto.setParentsCount(dto.getParents() == null ? 0 : dto.getParents().size());
+                dto.setChildrenCount(dto.getChildren() == null ? 0 : dto.getChildren().size());
+                dto.setRelationshipCount(relationshipCounts.getOrDefault(dto.getId(), 0L).intValue());
+            });
+        }
+
+        return page;
     }
 
     public Page<RecordingUnitDTO> searchRecordingUnitInActionUnit(InstitutionDTO institutionDTO, @NonNull ActionUnitDTO actionUnitDTO, FilterDTO filters, Pageable pageable) {

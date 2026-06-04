@@ -27,6 +27,18 @@ public interface RecordingUnitRepository extends CrudRepository<RecordingUnit, L
     @Query("SELECT COUNT(s) FROM Specimen s WHERE s.recordingUnit.id = :recordingUnitId")
     Long countSpecimensByRecordingUnitId(@Param("recordingUnitId") Long recordingUnitId);
 
+    @Query("SELECT r.id as id, COUNT(s) as cnt FROM RecordingUnit r LEFT JOIN r.specimenList s WHERE r.id IN :ids GROUP BY r.id")
+    List<Object[]> countSpecimensByIds(@Param("ids") List<Long> ids);
+
+    @Query(value = """
+        SELECT ru_id, COUNT(*) FROM (
+            SELECT fk_recording_unit_1_id AS ru_id FROM stratigraphic_relationship WHERE fk_recording_unit_1_id IN (:ids)
+            UNION ALL
+            SELECT fk_recording_unit_2_id AS ru_id FROM stratigraphic_relationship WHERE fk_recording_unit_2_id IN (:ids)
+        ) sub GROUP BY ru_id
+        """, nativeQuery = true)
+    List<Object[]> countRelationshipsByIds(@Param("ids") List<Long> ids);
+
     @Query(
             value = "UPDATE recording_unit SET fk_type = :type WHERE recording_unit.recording_unit_id IN (:ids)",
             nativeQuery = true

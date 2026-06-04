@@ -201,12 +201,11 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
     @Override
     public Integer resolveCount(TableColumn column, RecordingUnitDTO ru) {
         if (column instanceof RelationColumn rel) {
-            return (int) switch (rel.getCountKey()) {
+            return switch (rel.getCountKey()) {
                 case PARENTS -> ru.getParentsCount() == null ? 0 : ru.getParentsCount();
                 case "children" -> ru.getChildrenCount() == null ? 0 : ru.getChildrenCount();
-                case "specimenList" -> ru.getSpecimenCount() == null ? 0 : ru.getSpecimenCount();
-                case "relationships" -> ru.getRelationshipsAsUnit1() == null ? 0 :
-                    ru.getRelationshipsAsUnit1().size() + ru.getRelationshipsAsUnit2().size();
+                case "specimenList" -> ru.getSpecimenCount() == null ? 0 : (int) (long) ru.getSpecimenCount();
+                case "relationships" -> ru.getRelationshipCount() == null ? 0 : ru.getRelationshipCount();
                 default -> 0;
             };
         }

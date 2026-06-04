@@ -24,6 +24,7 @@ public class RecordingUnitDTO extends AbstractEntityDTO {
     protected ActionUnitSummaryDTO actionUnit;
     protected Integer parentsCount;
     protected Integer childrenCount;
+    protected Integer relationshipCount;
     protected OffsetDateTime openingDate;
     protected OffsetDateTime closingDate;
     protected ConceptDTO geomorphologicalCycle;
