@@ -655,6 +655,21 @@ public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
     }
 
     /**
+     * Updates the entity in the cache and drops its row context only if it is present
+     * in the current page. Safe to call with any AbstractEntityDTO due to type erasure —
+     * no actual cast failure can occur when just replacing in List and removing from Map.
+     */
+    @SuppressWarnings("unchecked")
+    public void updateIfPresent(AbstractEntityDTO entity) {
+        if (entity == null || entity.getId() == null) return;
+        if (getRowIndexInCurrentPage(entity.getId()) < 0) return;
+        if (lazyDataModel != null) {
+            lazyDataModel.updateEntityInCache((T) entity);
+        }
+        rowContexts.remove((ID) entity.getId());
+    }
+
+    /**
      * Index (0-based) of {@code entityId} in the current page's cached result, or -1 if absent.
      * Used to build a PrimeFaces {@code :@row(n)} AJAX update target.
      */

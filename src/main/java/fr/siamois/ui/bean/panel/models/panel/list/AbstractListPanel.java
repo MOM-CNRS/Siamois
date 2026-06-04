@@ -236,12 +236,7 @@ public abstract class AbstractListPanel<T extends AbstractEntityDTO> extends Abs
         if (tableModel.isTreeMode()) {
             return prefix + ":entityTreeTable";
         }
-        int rowIdx = tableModel.getRowIndexInCurrentPage(entityId);
-        if (rowIdx < 0) {
-            return prefix + ":entityDatatable";
-        }
-        //return prefix + ":entityDatatable:@row(" + rowIdx + ")"; // todo : fix The row count of the target is lesser than the row number. Expression: "row(0)"
-        return null ;
+        return prefix + ":entityDatatable";
     }
 
     /** Returns the currently active table component client ID (tree or flat). */

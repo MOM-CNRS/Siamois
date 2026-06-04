@@ -23,6 +23,7 @@ import fr.siamois.ui.bean.SessionSettingsBean;
 import fr.siamois.ui.bean.panel.EntityForm;
 import fr.siamois.ui.bean.panel.models.panel.AbstractPanel;
 import fr.siamois.ui.bean.panel.models.panel.list.AbstractListPanel;
+import fr.siamois.ui.bean.panel.models.panel.single.tab.EntityListTab;
 import fr.siamois.ui.form.EntityFormContext;
 import fr.siamois.ui.form.FormContextServices;
 import fr.siamois.ui.form.dto.CustomColUiDto;
@@ -251,6 +252,18 @@ public abstract class AbstractSingleEntity<T extends AbstractEntityDTO>
                     if (parentOrOverview instanceof AbstractListPanel<?> listPanel) {
                         listPanel.updateRowInTableModel(unit);
                         PrimeFaces.current().ajax().update(listPanel.getRowUpdateTarget(unit.getId()));
+                    } else if (parentOrOverview instanceof AbstractSingleEntityPanel<?> singlePanel) {
+                        if (singlePanel.getTabs() != null) {
+                            singlePanel.getTabs().stream()
+                                .filter(EntityListTab.class::isInstance)
+                                .map(t -> (EntityListTab<?>) t)
+                                .forEach(t -> {
+                                    if (t.getTableModel() != null) t.getTableModel().updateIfPresent(unit);
+                                });
+                        }
+                        PrimeFaces.current().ajax().update(
+                            "singlePanelUnitForm-" + singlePanel.getPanelIndex() + ":singlePanelUnitTabs"
+                        );
                     }
                 }
             });

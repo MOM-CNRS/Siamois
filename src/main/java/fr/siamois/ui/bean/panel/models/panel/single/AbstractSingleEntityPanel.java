@@ -87,6 +87,16 @@ public abstract class AbstractSingleEntityPanel<T extends AbstractEntityDTO> ext
 
     public void refresh() {
         refreshUnit();
+        if (tabs != null) {
+            tabs.stream()
+                .filter(EntityListTab.class::isInstance)
+                .map(t -> (EntityListTab<?>) t)
+                .forEach(t -> {
+                    if (t.getTableModel() != null) {
+                        t.getTableModel().resetRowContexts();
+                    }
+                });
+        }
     }
 
     @Override

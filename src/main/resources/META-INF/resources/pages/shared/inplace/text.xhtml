@@ -80,7 +80,7 @@
 
                         <f:attribute name="field" value="#{cc.attrs.field}" />
 
-                        <p:ajax event="keyup" delay="2000"
+                        <p:ajax event="keyup" delay="1000"
                                 update="#{cc.attrs.updateTargetsOnBlur}"
                                 process="@this"
                                 onstart="$(PrimeFaces.escapeClientId('#{cc.clientId}:input')).removeClass('sia-modified-field'); showSpinner('#{cc.attrs.panelId}')"
