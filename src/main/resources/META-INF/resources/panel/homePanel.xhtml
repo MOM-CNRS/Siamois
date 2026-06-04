@@ -165,6 +165,28 @@
                         <p:column styleClass="ui-g-12 ui-xs-12 ui-md-6 ui-lg-3">
 
                             <siaCard:welcomeCard
+                                    icon="bi bi-layers"
+                                    cardStyleClass="sia-welcome-card sia-recording-unit"
+                                    chipStyleClass="recording-unit-count-chip-alt"
+                                    btnStyleClass="recording-unit-btn"
+                                    btnLabel="#{langBean.msg('homePanel.see.phase')}"
+                                    label="#{langBean.msg('common.entity.phases')}"
+                                    count="#{panelModel.nbOfPhases}"
+                                    btnAction="#{navBean.goToPhaseList(mode)}"
+                                    btnNewActionUpdate="newUnitForm"
+                                    btnNewActionOnComplete="PF('newUnitDiag').show();"
+                                    btnNewActionOnStart=""
+                                    btnNewAction="#{genericNewUnitDialogBean.openNewEntityDiag('PHASE')}"
+                                    isCreateAllowed="true"
+                                    description="Phases et sous-phases chronologiques"
+                                    newPanelId="panel-phase-list-container"
+                            />
+
+                        </p:column>
+
+                        <p:column styleClass="ui-g-12 ui-xs-12 ui-md-6 ui-lg-3">
+
+                            <siaCard:welcomeCard
                                     icon="bi bi-box-seam"
                                     cardStyleClass="sia-welcome-card sia-container"
                                     chipStyleClass="container-count-chip-alt"

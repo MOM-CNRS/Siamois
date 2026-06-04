@@ -302,6 +302,16 @@ public class NavBean implements Serializable {
         }
     }
 
+    public void goToPhaseList(String mode) throws IOException {
+        if (Objects.equals(mode, FLOW)) {
+            flowBean.addPhaseListPanel();
+            flowBean.redirectToDashboard();
+        }
+        if (Objects.equals(mode, FOCUS)) {
+            flowBean.redirectToFocus("/phase");
+        }
+    }
+
     public void goToRecordingUnitList(String mode) throws IOException {
         if (Objects.equals(mode, FLOW)) {
             flowBean.addRecordingUnitListPanel();

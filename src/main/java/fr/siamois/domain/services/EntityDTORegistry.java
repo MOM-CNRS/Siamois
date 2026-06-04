@@ -3,6 +3,7 @@ package fr.siamois.domain.services;
 import fr.siamois.domain.models.TraceableEntity;
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.container.Container;
+import fr.siamois.domain.models.phase.Phase;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.specimen.Specimen;
@@ -27,6 +28,7 @@ public class EntityDTORegistry {
         dtoToEntityMap.put(ActionUnitDTO.class, ActionUnit.class);
         dtoToEntityMap.put(SpatialUnitDTO.class, SpatialUnit.class);
         dtoToEntityMap.put(ContainerDTO.class, Container.class);
+        dtoToEntityMap.put(PhaseDTO.class, Phase.class);
 
     }
 

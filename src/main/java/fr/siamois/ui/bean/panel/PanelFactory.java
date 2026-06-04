@@ -4,8 +4,10 @@ package fr.siamois.ui.bean.panel;
 import fr.siamois.ui.bean.panel.models.PanelBreadcrumb;
 import fr.siamois.ui.bean.panel.models.panel.WelcomePanel;
 import fr.siamois.ui.bean.panel.models.panel.list.*;
+import fr.siamois.ui.bean.panel.models.panel.list.PhaseListPanel;
 import fr.siamois.ui.bean.panel.models.panel.single.ActionUnitPanel;
 import fr.siamois.ui.bean.panel.models.panel.single.ContainerPanel;
+import fr.siamois.ui.bean.panel.models.panel.single.PhasePanel;
 import fr.siamois.ui.bean.panel.models.panel.single.RecordingUnitPanel;
 import fr.siamois.ui.bean.panel.models.panel.single.SpatialUnitPanel;
 import fr.siamois.ui.bean.panel.models.panel.single.SpecimenPanel;
@@ -31,6 +33,8 @@ public class PanelFactory {
     private final ObjectProvider<WelcomePanel> welcomePanelProvider;
     private final ObjectProvider<SpecimenPanel> specimenPanelProvider;
     private final ObjectProvider<ContainerPanel> containerPanelProvider;
+    private final ObjectProvider<PhaseListPanel> phaseListPanelProvider;
+    private final ObjectProvider<PhasePanel> phasePanelProvider;
 
 
 
@@ -42,7 +46,9 @@ public class PanelFactory {
             ObjectProvider<RecordingUnitPanel> recordingUnitPanelProvider,
             ObjectProvider<RecordingUnitListPanel> recordingUnitListPanelProvider, ObjectProvider<SpecimenListPanel> specimenListPanel,
             ObjectProvider<WelcomePanel> welcomePanelProvider, ObjectProvider<SpecimenPanel> specimenPanelProvider,
-            ObjectProvider<ContainerPanel> containerPanelProvider) {
+            ObjectProvider<ContainerPanel> containerPanelProvider,
+            ObjectProvider<PhaseListPanel> phaseListPanelProvider,
+            ObjectProvider<PhasePanel> phasePanelProvider) {
 
         this.spatialUnitListPanelProvider = spatialUnitListPanelProvider;
         this.actionUnitListPanelProvider = actionUnitListPanelProvider;
@@ -56,6 +62,8 @@ public class PanelFactory {
         this.welcomePanelProvider = welcomePanelProvider;
         this.specimenPanelProvider = specimenPanelProvider;
         this.containerPanelProvider = containerPanelProvider;
+        this.phaseListPanelProvider = phaseListPanelProvider;
+        this.phasePanelProvider = phasePanelProvider;
     }
 
     public SpatialUnitPanel createSpatialUnitPanel(Long spatialUnitId) {
@@ -160,6 +168,16 @@ public class PanelFactory {
 
     public ContainerPanel createContainerPanel(Long id) {
         return new ContainerPanel.Builder(containerPanelProvider)
+                .id(id)
+                .build();
+    }
+
+    public PhaseListPanel createPhaseListPanel() {
+        return new PhaseListPanel.PhaseListPanelBuilder(phaseListPanelProvider).build();
+    }
+
+    public PhasePanel createPhasePanel(Long id) {
+        return new PhasePanel.Builder(phasePanelProvider)
                 .id(id)
                 .build();
     }

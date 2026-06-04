@@ -1,6 +1,7 @@
 package fr.siamois.ui.form;
 
 import fr.siamois.domain.services.ContainerService;
+import fr.siamois.domain.services.PhaseService;
 import fr.siamois.domain.services.GeoApiService;
 import fr.siamois.domain.services.GeoPlatService;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
@@ -30,6 +31,7 @@ public class FormContextServices {
     private final FormService formService;
     private final LangBean langBean;
     private final ContainerService containerService;
+    private final PhaseService phaseService;
     private final SpatialUnitTreeService spatialUnitTreeService;
     private final SpatialUnitService spatialUnitService;
     private final SpecimenService specimenService;

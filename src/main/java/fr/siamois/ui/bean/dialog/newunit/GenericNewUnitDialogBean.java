@@ -184,6 +184,7 @@ public class GenericNewUnitDialogBean<T extends AbstractEntityDTO>
                 case ACTION -> flowBean.addActionUnitToOverview(getUnitId(),sourceTableModel.getParentPanel(), null);
                 case SPECIMEN -> flowBean.addSpecimenToOverview(getUnitId(),sourceTableModel.getParentPanel(), null);
                 case CONTAINER -> flowBean.addContainerToOverview(getUnitId(), sourceTableModel.getParentPanel(), null);
+                case PHASE -> flowBean.addPhaseToOverview(getUnitId(), sourceTableModel.getParentPanel(), null);
             }
 
         } catch (EntityAlreadyExistsException e) {

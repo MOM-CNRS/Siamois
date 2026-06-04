@@ -130,6 +130,10 @@ public class FlowBean implements Serializable {
         addPanel(panelFactory.createContainerListPanel());
     }
 
+    public void addPhaseListPanel() {
+        addPanel(panelFactory.createPhaseListPanel());
+    }
+
     public void addRecordingUnitListPanel() {
         addPanel(panelFactory.createRecordingUnitListPanel());
     }
@@ -366,6 +370,21 @@ public class FlowBean implements Serializable {
                 addPanelToOverview(targetPanel, overviewPanel);
             }
             else {
+                addPanelToOverview(targetPanel.getParentOrOverview(), overviewPanel);
+            }
+        }
+    }
+
+    public void addPhaseToOverview(Long id, AbstractPanel targetPanel, @Nullable Integer tabIndex) {
+        if (targetPanel != null) {
+            PhasePanel overviewPanel = panelFactory.createPhasePanel(id);
+            if (tabIndex != null) {
+                overviewPanel.setActiveTabIndex(tabIndex);
+            }
+            overviewPanel.setRoot(false);
+            if (targetPanel.isRoot()) {
+                addPanelToOverview(targetPanel, overviewPanel);
+            } else {
                 addPanelToOverview(targetPanel.getParentOrOverview(), overviewPanel);
             }
         }

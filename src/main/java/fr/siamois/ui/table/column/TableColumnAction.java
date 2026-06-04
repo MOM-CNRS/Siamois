@@ -13,6 +13,7 @@ public enum TableColumnAction {
     GO_TO_ACTION_UNIT,
     GO_TO_SPECIMEN,
     GO_TO_CONTAINER,
+    GO_TO_PHASE,
     NEW_ACTION,
     NEW_CHILDREN,
     NEW_PARENT,

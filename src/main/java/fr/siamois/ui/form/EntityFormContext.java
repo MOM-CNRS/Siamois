@@ -31,6 +31,7 @@ import fr.siamois.ui.form.rules.EnabledRulesEngine;
 import fr.siamois.ui.form.rules.ValueProvider;
 import fr.siamois.ui.form.savestrategy.ActionUnitSaveStrategy;
 import fr.siamois.ui.form.savestrategy.ContainerSaveStrategy;
+import fr.siamois.ui.form.savestrategy.PhaseSaveStrategy;
 import fr.siamois.ui.form.savestrategy.RecordingUnitSaveStrategy;
 import fr.siamois.ui.form.savestrategy.SpatialUnitSaveStrategy;
 import fr.siamois.ui.form.savestrategy.SpecimenSaveStrategy;
@@ -152,6 +153,7 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
         SAVE_STRATEGIES.put(SpatialUnitDTO.class, new SpatialUnitSaveStrategy());
         SAVE_STRATEGIES.put(SpecimenDTO.class, new SpecimenSaveStrategy());
         SAVE_STRATEGIES.put(ContainerDTO.class, new ContainerSaveStrategy());
+        SAVE_STRATEGIES.put(PhaseDTO.class, new PhaseSaveStrategy());
     }
 
     public EntityFormContext(T unit,

@@ -428,3 +428,4 @@
 @include themed-panel('recording-unit', var(--ground-main-color), var(--ground-light-color-50), var(--ground-light-color-100), var(--ground-light-color-200), var(--ground-dark-color));
 @include themed-panel('specimen', var(--ground-main-color), var(--ground-light-color-50), var(--ground-light-color-100), var(--ground-light-color-200), var(--ground-dark-color));
 @include themed-panel('container', var(--third-main-color), var(--third-light-color-50), var(--third-light-color-100), var(--third-light-color-200), var(--third-dark-color));
+@include themed-panel('phase', var(--ground-main-color), var(--ground-light-color-50), var(--ground-light-color-100), var(--ground-light-color-200), var(--ground-dark-color));

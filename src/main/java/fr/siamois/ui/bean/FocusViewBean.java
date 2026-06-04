@@ -108,6 +108,11 @@ public class FocusViewBean implements Serializable {
                             ? panelFactory.createContainerListPanel()
                             : panelFactory.createContainerPanel(id);
 
+            case "phase" ->
+                    isListPanel
+                            ? panelFactory.createPhaseListPanel()
+                            : panelFactory.createPhasePanel(id);
+
             case "welcome" ->
                     panelFactory.createWelcomePanel();
 
