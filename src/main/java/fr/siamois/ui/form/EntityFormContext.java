@@ -598,9 +598,46 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
      * with the project already selected.
      */
     public void initNewRuDefaults(CustomFieldAnswerViewModel rawAnswer) {
-        if (!(rawAnswer instanceof CustomFieldAnswerSelectMultipleRecordingUnitViewModel answer)) return;
-        if (answer.getNewActionUnit() == null && unit instanceof RecordingUnitDTO ru) {
-            answer.setNewActionUnit(ru.getActionUnit());
+        if (rawAnswer instanceof CustomFieldAnswerSelectMultipleRecordingUnitViewModel answer) {
+            if (answer.getNewActionUnit() == null && unit instanceof RecordingUnitDTO ru) {
+                answer.setNewActionUnit(ru.getActionUnit());
+            }
+        } else if (rawAnswer instanceof CustomFieldAnswerStratigraphyViewModel stratiAnswer) {
+            if (stratiAnswer.getNewActionUnit() == null && unit instanceof RecordingUnitDTO ru) {
+                stratiAnswer.setNewActionUnit(ru.getActionUnit());
+            }
+        }
+    }
+
+    public void saveNewTargetRuForStrati(CustomFieldAnswerViewModel rawAnswer) {
+        if (!(rawAnswer instanceof CustomFieldAnswerStratigraphyViewModel answer)) return;
+        if (answer.getNewType() == null || answer.getNewActionUnit() == null) {
+            MessageUtils.displayErrorMessage(langBean, "dialog.unsaved.error", "Le projet et le type sont obligatoires");
+            return;
+        }
+        try {
+            ActionUnitSummaryDTO actionUnit = answer.getNewActionUnit();
+            RecordingUnitDTO toSave = new RecordingUnitDTO();
+            toSave.setActionUnit(actionUnit);
+            toSave.setCreatedByInstitution(actionUnit.getCreatedByInstitution());
+            toSave.setAuthor(sessionSettingsBean.getAuthenticatedUser());
+            toSave.setCreatedBy(sessionSettingsBean.getAuthenticatedUser());
+            toSave.setContributors(List.of(sessionSettingsBean.getAuthenticatedUser()));
+            toSave.setOpeningDate(OffsetDateTime.now());
+            toSave.setType(answer.getNewType().concept());
+            toSave.setParents(new HashSet<>());
+            toSave.setChildren(new HashSet<>());
+
+            RecordingUnitDTO created = recordingUnitService.save(toSave);
+            String fullIdentifier = recordingUnitService.generateFullIdentifier(created.getActionUnit(), created);
+            created.setFullIdentifier(fullIdentifier);
+            created = recordingUnitService.save(created);
+
+            answer.setTargetToAdd(new RecordingUnitSummaryDTO(created));
+            answer.setNewType(null);
+            answer.setNewActionUnit(null);
+        } catch (Exception e) {
+            MessageUtils.displayErrorMessage(langBean, "dialog.unsaved.error", e.getMessage());
         }
     }
 
