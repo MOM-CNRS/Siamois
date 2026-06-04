@@ -1,7 +1,6 @@
 package fr.siamois.infrastructure.database.repositories.specs;
 
 import fr.siamois.domain.models.actionunit.ActionUnit;
-import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import java.util.List;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.lang.NonNull;
