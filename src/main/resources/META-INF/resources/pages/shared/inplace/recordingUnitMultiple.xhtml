@@ -35,16 +35,11 @@
 
     <cc:implementation>
 
-        <style>
-
-
-        </style>
-
         <!-- ═══════════════════════════════════════════════════════════
              VIEW MODE
              ═══════════════════════════════════════════════════════════ -->
         <p:outputPanel id="rumView" layout="block" style="display:contents">
-        <div id="rum_v_#{cc.clientId.replace(':','_')}" class="rum-wrapper  recording-unit">
+        <div id="rum_v_#{cc.clientId.replace(':','_')}" class="rum-wrapper recording-unit #{cc.attrs.mode eq 'input' and empty cc.attrs.answer.value ? 'rum-empty' : ''}">
 
             <div class="rum-items #{cc.attrs.compact ? 'compact' : ''}" style="#{cc.attrs.compact ? 'flex-wrap:nowrap' : 'flex-wrap:wrap'}">
 

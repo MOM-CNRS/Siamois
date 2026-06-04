@@ -31,7 +31,7 @@
 
         <!-- ═══ VIEW MODE ═══ -->
         <p:outputPanel id="phaseView" layout="block" style="display:contents">
-        <div id="rum_v_#{cc.clientId.replace(':','_')}" class="rum-wrapper phase">
+        <div id="rum_v_#{cc.clientId.replace(':','_')}" class="rum-wrapper phase #{cc.attrs.mode eq 'input' and empty cc.attrs.answer.value ? 'rum-empty' : ''}">
 
             <div class="rum-items #{cc.attrs.compact ? 'compact' : ''}" style="#{cc.attrs.compact ? 'flex-wrap:nowrap' : 'flex-wrap:wrap'}">
 

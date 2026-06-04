@@ -838,6 +838,9 @@ body .view-edit-button.ui-splitbutton {
 .rum-wrapper:hover .rum-actions {
   visibility: visible;
 }
+.rum-wrapper.rum-empty .rum-actions {
+  visibility: visible;
+}
 .rum-edit-wrapper {
   display: flex;
   flex-wrap: nowrap;
@@ -884,6 +887,101 @@ body .view-edit-button.ui-splitbutton {
   flex-shrink: 0;
 }
 .rum-expand-badge:hover {
+  opacity: 0.85;
+}
+
+/* ── spatialMultiple component (sum-*) ── */
+.sum-wrapper {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 0.25rem;
+  min-height: 32px;
+}
+.sum-items {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+}
+.sum-items.compact {
+  flex-wrap: nowrap;
+}
+.sum-actions {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 0.15rem;
+  flex-shrink: 0;
+  visibility: hidden;
+}
+.sum-wrapper:hover .sum-actions {
+  visibility: visible;
+}
+.sum-wrapper.sum-empty .sum-actions {
+  visibility: visible;
+}
+.sum-edit-wrapper {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 0.25rem;
+  width: 100%;
+}
+.sum-edit-wrapper .ui-autocomplete {
+  flex: 1;
+  min-width: 0;
+}
+.sum-action-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--text-secondary, #6c757d);
+  padding: 0.15rem 0.25rem;
+  border-radius: 3px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+.sum-action-btn:hover:not(:disabled) {
+  background: rgba(0, 0, 0, 0.06);
+  color: var(--text-main, #212529);
+}
+.sum-action-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.sum-chip-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  background: var(--siamois-green);
+  color: var(--text-light, #fff);
+  border-radius: 12px;
+  padding: 0.375rem 0.75rem;
+  font-size: 0.875rem;
+  text-decoration: none;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+.sum-chip-link:hover {
+  opacity: 0.85;
+  color: var(--text-light, #fff);
+  text-decoration: none;
+}
+.sum-expand-badge {
+  background: var(--siamois-green);
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  border-radius: 3px;
+  padding: 0.1rem 0.35rem;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  flex-shrink: 0;
+}
+.sum-expand-badge:hover {
   opacity: 0.85;
 }
 
