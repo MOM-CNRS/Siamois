@@ -8,42 +8,6 @@
 
     <!--@elvariable id="tableModel" type="fr.siamois.ui.table.viewmodel.EntityTableViewModel"-->
 
-    <style>
-        .filter-table-column-hidden .ui-column-filter {
-            display: none !important;
-        }
-
-        .ui-datatable thead th {
-            text-align: left;
-            vertical-align: top;
-        }
-
-        .ui-datatable thead th .ui-column-title,
-        .ui-datatable thead th .ui-sortable-column-icon {
-            display: inline-block;
-            vertical-align: middle;
-        }
-
-        .ui-datatable thead th .ui-column-filter {
-            display: block;
-            width: 100%;
-            margin-top: 0.5rem;
-            box-sizing: border-box;
-        }
-
-        .ui-datatable tr.overview-open > td {
-            border-top: 2px solid var(--siamois-green-active) !important;
-            border-bottom: 2px solid var(--siamois-green-active) !important;
-        }
-        .ui-datatable tr.overview-open > td:first-child {
-            border-left: 2px solid var(--siamois-green-active) !important;
-        }
-        .ui-datatable tr.overview-open > td:last-child {
-            border-right: 2px solid var(--siamois-green-active) !important;
-        }
-
-    </style>
-
     <p:blockUI block="entityDatatable" trigger="#{cc.clientId}:entityDatatable" widgetVar="#{cc.clientId}_buiDataTables">
         <i class="pi pi-spin pi-spinner" style="font-size: 3rem"/>
     </p:blockUI>
@@ -109,115 +73,96 @@
             </f:facet>
         </p:column>
 
-        <p:column style="width: min-content;"
-                  styleClass="small-cell"
-                  headerText="Statut"
-                  id="statusCol" toggleable="false"
-        >
-            <ui:include src="/panel/header/validationButton.xhtml" >
-                <ui:param name="disabled" value="true"/>
-                <ui:param name="unit" value="#{item}"/>
-            </ui:include>
-        </p:column>
+        <!-- Merged: status | id-chip | row-actions -->
+        <p:column styleClass="small-cell" exportable="false" toggleable="false" id="statusIdActionsCol"
+                  style="width: 1%; white-space: nowrap;">
 
-        <!-- link: chip (icône + texte) cliquable + crayon au hover pour édition -->
-        <p:column style="min-width: 10px;"
-                  styleClass="small-cell"
-                  id="linkCol" width="fit-content" toggleable="false">
+            <p:outputPanel id="mergedCell" layout="block">
+                <div class="mca-wrapper">
 
-            <style>
-                .chip-cell-wrapper { display: flex; align-items: center; gap: 4px; flex-wrap: nowrap; }
-                .chip-cell-actions { visibility: hidden; display: flex; align-items: center; gap: 2px; flex-shrink: 0; }
-                .chip-cell-wrapper:hover .chip-cell-actions { visibility: visible; }
-                .chip-nav-link { text-decoration: none !important; color: inherit !important; }
-                .entity-nav-chip { cursor: pointer; }
-                .entity-nav-chip:hover { filter: brightness(0.95); }
-            </style>
+                    <!-- Status (left) -->
+                    <ui:include src="/panel/header/validationButton.xhtml">
+                        <ui:param name="disabled" value="true"/>
+                        <ui:param name="unit" value="#{item}"/>
+                    </ui:include>
 
+                    <!-- Chip / ID (middle, flex-grow) -->
+                    <div class="mca-chip-area">
 
+                        <!-- READ mode -->
+                        <h:panelGroup rendered="#{not tableModel.isEditingLink(item)}"
+                                      styleClass="chip-cell-wrapper">
+                            <p:commandLink id="chipNavigate"
+                                           styleClass="chip-nav-link"
+                                           action="#{tableModel.handleAction(tableModel.tableDefinition.commandLinkColumn, item)}"
+                                           onstart="#{tableModel.tableDefinition.commandLinkColumn.onstartJs}"
+                                           oncomplete="#{tableModel.getOnCompleteJs(item)}"
+                                           immediate="true"
+                                           process="@this">
+                                <p:chip label="#{tableModel.resolveText(tableModel.tableDefinition.commandLinkColumn, item)}"
+                                        icon="#{tableModel.tableDefinition.commandLinkColumn.iconClass}"
+                                        styleClass="entity-nav-chip"
+                                        style="background: #{tableModel.tableDefinition.commandLinkColumn.chipColor}; color: white;"/>
+                            </p:commandLink>
 
-            <p:outputPanel id="chipCell" layout="block">
+                            <div class="chip-cell-actions">
+                                <p:commandButton id="editChipBtn"
+                                                 rendered="#{tableModel.tableDefinition.commandLinkColumn.editable}"
+                                                 icon="bi bi-pencil"
+                                                 styleClass="rum-action-btn"
+                                                 action="#{tableModel.startEditLink(item)}"
+                                                 update="mergedCell"
+                                                 process="@this"
+                                                 title="Modifier"/>
+                            </div>
 
-                <!-- READ mode -->
-                <h:panelGroup rendered="#{not tableModel.isEditingLink(item)}"
-                              styleClass="chip-cell-wrapper">
+                            <p:contextMenu for="chipNavigate">
+                                <p:menuitem value="Ouvrir dans un panel" disabled="true" icon="bi bi-box-arrow-in-up"/>
+                                <p:menuitem value="Ouvrir en mode Focus" disabled="true" icon="bi bi-arrows-angle-expand"/>
+                                <p:menuitem value="Ouvrir dans l'aperçu lateral" icon="bi bi-layout-sidebar-inset-reverse"
+                                            action="#{tableModel.handleAction(tableModel.tableDefinition.commandLinkColumn, item)}"
+                                            onstart="#{tableModel.tableDefinition.commandLinkColumn.onstartJs}"
+                                            oncomplete="#{tableModel.getOnCompleteJs(item)}"/>
+                            </p:contextMenu>
+                        </h:panelGroup>
 
-                    <!-- Chip cliquable → navigation -->
-                    <p:commandLink id="chipNavigate"
-                                   styleClass="chip-nav-link"
-                                   action="#{tableModel.handleAction(tableModel.tableDefinition.commandLinkColumn, item)}"
-                                   onstart="#{tableModel.tableDefinition.commandLinkColumn.onstartJs}"
-                                   oncomplete="#{tableModel.getOnCompleteJs(item)}"
-                                   immediate="true"
-                                   process="@this">
-                        <p:chip label="#{tableModel.resolveText(tableModel.tableDefinition.commandLinkColumn, item)}"
-                                icon="#{tableModel.tableDefinition.commandLinkColumn.iconClass}"
-                                styleClass="entity-nav-chip"
-                                style="background: #{tableModel.tableDefinition.commandLinkColumn.chipColor}; color: white;"/>
-                    </p:commandLink>
+                        <!-- EDIT mode -->
+                        <h:panelGroup rendered="#{tableModel.isEditingLink(item)}"
+                                      style="display:flex; align-items:center; gap:4px;">
+                            <p:inputText id="editLinkInput"
+                                         value="#{tableModel.editingLinkValue}"
+                                         style="min-width: 8em;"/>
+                            <p:commandButton icon="bi bi-check"
+                                             styleClass="rum-action-btn"
+                                             title="Valider"
+                                             action="#{tableModel.applyLinkEdit(item)}"
+                                             update="mergedCell"
+                                             process="editLinkInput @this"/>
+                            <p:commandButton icon="bi bi-x"
+                                             styleClass="rum-action-btn"
+                                             title="Annuler"
+                                             action="#{tableModel.cancelEditLink()}"
+                                             update="mergedCell"
+                                             process="@this"/>
+                        </h:panelGroup>
 
-                    <!-- Bouton crayon : visible au hover de la cellule -->
-                    <div class="chip-cell-actions">
-                        <p:commandButton id="editChipBtn"
-                                         rendered="#{tableModel.tableDefinition.commandLinkColumn.editable}"
-                                         icon="bi bi-pencil"
-                                         styleClass="rum-action-btn"
-                                         action="#{tableModel.startEditLink(item)}"
-                                         update="chipCell"
-                                         process="@this"
-                                         title="Modifier"/>
                     </div>
 
-                    <p:contextMenu for="chipNavigate">
-                        <p:menuitem value="Ouvrir dans un panel" disabled="true" icon="bi bi-box-arrow-in-up"/>
-                        <p:menuitem value="Ouvrir en mode Focus" disabled="true" icon="bi bi-arrows-angle-expand"/>
-                        <p:menuitem value="Ouvrir dans l'aperçu lateral" icon="bi bi-layout-sidebar-inset-reverse"
-                                    action="#{tableModel.handleAction(tableModel.tableDefinition.commandLinkColumn, item)}"
-                                    onstart="#{tableModel.tableDefinition.commandLinkColumn.onstartJs}"
-                                    oncomplete="#{tableModel.getOnCompleteJs(item)}"/>
-                    </p:contextMenu>
+                    <!-- Row actions (right) -->
+                    <div class="mca-row-actions">
+                        <ui:repeat value="#{tableModel.rowActions}" var="action">
+                            <p:commandButton
+                                    rendered="#{tableModel.isRendered(action, item)}"
+                                    icon="#{tableModel.resolveIcon(action, item)}"
+                                    action="#{tableModel.handleRowAction(action, item)}"
+                                    process="#{empty action.processExpr ? '@this' : action.processExpr}"
+                                    update="#{action.updateSelfTable ? (':'.concat(cc.clientId).concat(':entityDatatable')) : action.updateExpr}"
+                                    styleClass="#{action.styleClass}"/>
+                        </ui:repeat>
+                    </div>
 
-                </h:panelGroup>
-
-                <!-- EDIT mode -->
-                <h:panelGroup rendered="#{tableModel.isEditingLink(item)}"
-                              style="display:flex; align-items:center; gap:4px;">
-                    <p:inputText id="editLinkInput"
-                                 value="#{tableModel.editingLinkValue}"
-                                 style="min-width: 8em;"/>
-                    <p:commandButton icon="bi bi-check"
-                                     styleClass="rum-action-btn"
-                                     title="Valider"
-                                     action="#{tableModel.applyLinkEdit(item)}"
-                                     update="chipCell"
-                                     process="editLinkInput @this"/>
-                    <p:commandButton icon="bi bi-x"
-                                     styleClass="rum-action-btn"
-                                     title="Annuler"
-                                     action="#{tableModel.cancelEditLink()}"
-                                     update="chipCell"
-                                     process="@this"/>
-                </h:panelGroup>
-
+                </div>
             </p:outputPanel>
-        </p:column>
-
-        <!-- Actions Column -->
-        <p:column styleClass="small-cell" exportable="false" toggleable="false" style="min-width: 10px;">
-            <p:toolbar style="padding-top: 0;
-            padding-bottom: 0;">
-                <p:toolbarGroup styleClass="action-col">
-                    <ui:repeat value="#{tableModel.rowActions}" var="action">
-                        <p:commandButton
-                                rendered="#{tableModel.isRendered(action, item)}"
-                                icon="#{tableModel.resolveIcon(action, item)}"
-                                action="#{tableModel.handleRowAction(action, item)}"
-                                process="#{empty action.processExpr ? '@this' : action.processExpr}"
-                                update="#{action.updateSelfTable ? (':'.concat(cc.clientId).concat(':entityDatatable')) : action.updateExpr}"
-                                styleClass="#{action.styleClass}"/>
-                    </ui:repeat>
-                </p:toolbarGroup>
-            </p:toolbar>
         </p:column>
 
 
@@ -253,6 +198,8 @@
             </p:column>
         </c:forEach>
 
+        <!-- Filler: absorbs remaining width so real columns stick left -->
+        <p:column style="width: 100%;" exportable="false" toggleable="false" id="fillerCol"/>
 
     </p:dataTable>
 

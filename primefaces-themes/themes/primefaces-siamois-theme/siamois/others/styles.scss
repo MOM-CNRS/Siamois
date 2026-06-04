@@ -890,6 +890,85 @@ body .view-edit-button.ui-splitbutton {
   opacity: 0.85;
 }
 
+/* ── entityDataTable: layout ── */
+.filter-table-column-hidden .ui-column-filter {
+  display: none !important;
+}
+.ui-datatable thead th {
+  text-align: left;
+  vertical-align: top;
+}
+.ui-datatable thead th .ui-column-title,
+.ui-datatable thead th .ui-sortable-column-icon {
+  display: inline-block;
+  vertical-align: middle;
+}
+.ui-datatable thead th .ui-column-filter {
+  display: block;
+  width: 100%;
+  margin-top: 0.5rem;
+  box-sizing: border-box;
+}
+.ui-datatable tr.overview-open > td {
+  border-top: 2px solid var(--siamois-green-active) !important;
+  border-bottom: 2px solid var(--siamois-green-active) !important;
+}
+.ui-datatable tr.overview-open > td:first-child {
+  border-left: 2px solid var(--siamois-green-active) !important;
+}
+.ui-datatable tr.overview-open > td:last-child {
+  border-right: 2px solid var(--siamois-green-active) !important;
+}
+
+/* ── entityDataTable: chip-cell ── */
+.chip-cell-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: nowrap;
+}
+.chip-cell-actions {
+  visibility: hidden;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+}
+.chip-cell-wrapper:hover .chip-cell-actions {
+  visibility: visible;
+}
+.chip-nav-link {
+  text-decoration: none !important;
+  color: inherit !important;
+}
+.entity-nav-chip {
+  cursor: pointer;
+}
+.entity-nav-chip:hover {
+  filter: brightness(0.95);
+}
+
+/* ── entityDataTable: merged status/id/actions column ── */
+.mca-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+}
+.mca-chip-area {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+}
+.mca-row-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
 /* ── spatialMultiple component (sum-*) ── */
 .sum-wrapper {
   display: flex;
