@@ -1,7 +1,6 @@
 package fr.siamois.infrastructure.database.repositories.specs;
 
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
-import fr.siamois.dto.entity.SpatialUnitDTO;
 import jakarta.persistence.criteria.Join;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.lang.NonNull;

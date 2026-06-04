@@ -1,6 +1,9 @@
 package fr.siamois.ui.table.definitions;
 
-import fr.siamois.domain.models.form.customfield.*;
+import fr.siamois.domain.models.form.customfield.CustomFieldInteger;
+import fr.siamois.domain.models.form.customfield.CustomFieldSelectMultipleFromFieldCode;
+import fr.siamois.domain.models.form.customfield.CustomFieldSelectOneFromFieldCode;
+import fr.siamois.domain.models.form.customfield.CustomFieldText;
 import fr.siamois.domain.models.phase.Phase;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.dto.entity.PhaseDTO;

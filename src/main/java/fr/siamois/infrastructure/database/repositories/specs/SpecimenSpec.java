@@ -1,11 +1,9 @@
 package fr.siamois.infrastructure.database.repositories.specs;
 
-import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.specimen.Specimen;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.lang.NonNull;
 
-import java.time.OffsetDateTime;
 import java.util.List;
 
 public class SpecimenSpec {

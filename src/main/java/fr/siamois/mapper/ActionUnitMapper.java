@@ -1,9 +1,7 @@
 package fr.siamois.mapper;
 
 import fr.siamois.domain.models.actionunit.ActionUnit;
-import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.dto.entity.ActionUnitDTO;
-import fr.siamois.dto.entity.RecordingUnitDTO;
 import fr.siamois.ui.mapper.adapter.ConversionServiceAdapter;
 import org.mapstruct.*;
 import org.mapstruct.extensions.spring.DelegatingConverter;

@@ -1,12 +1,12 @@
 package fr.siamois.mapper;
 
 
-import fr.siamois.domain.models.actionunit.ActionCode;
 import fr.siamois.domain.models.uiview.UiTableView;
-import fr.siamois.dto.entity.ActionCodeDTO;
 import fr.siamois.dto.view.UITableViewDTO;
 import fr.siamois.ui.mapper.adapter.ConversionServiceAdapter;
-import org.mapstruct.*;
+import org.mapstruct.InjectionStrategy;
+import org.mapstruct.Mapper;
+import org.mapstruct.MappingConstants;
 import org.springframework.core.convert.converter.Converter;
 
 @Mapper(uses = ConversionServiceAdapter.class, componentModel = MappingConstants.ComponentModel.SPRING,

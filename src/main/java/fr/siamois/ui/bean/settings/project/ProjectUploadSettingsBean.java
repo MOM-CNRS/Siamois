@@ -3,7 +3,6 @@ package fr.siamois.ui.bean.settings.project;
 
 import fr.siamois.domain.models.events.LoginEvent;
 import fr.siamois.dto.entity.ActionUnitDTO;
-import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.infrastructure.database.initializer.seeder.ImportSpecs;
 import fr.siamois.infrastructure.database.initializer.seeder.ProjectDataSeeder;
 import fr.siamois.infrastructure.dataimport.OOXMLImportService;

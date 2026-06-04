@@ -1,20 +1,14 @@
 package fr.siamois.ui.bean.settings.project;
 
-import com.sun.faces.application.ProjectStageJndiFactory;
 import fr.siamois.domain.models.events.LoginEvent;
-import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.authorization.PermissionService;
 import fr.siamois.dto.entity.ActionUnitDTO;
-import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
-import fr.siamois.ui.bean.settings.InstitutionActionManagerListBean;
 import fr.siamois.ui.bean.settings.components.OptionElement;
-import fr.siamois.ui.bean.settings.institution.InstitutionInfoSettingsBean;
-import fr.siamois.ui.bean.settings.institution.InstitutionManagerListBean;
-import fr.siamois.ui.bean.settings.institution.InstitutionThesaurusSettingsBean;
-import fr.siamois.ui.bean.settings.team.TeamListBean;
-import lombok.*;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.primefaces.model.StreamedContent;
 import org.springframework.context.annotation.Scope;
@@ -22,31 +16,6 @@ import org.springframework.context.annotation.ScopedProxyMode;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
-import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.List;
-
-
-import fr.siamois.domain.models.events.LoginEvent;
-import fr.siamois.domain.services.InstitutionService;
-import fr.siamois.domain.services.authorization.PermissionService;
-import fr.siamois.dto.entity.InstitutionDTO;
-import fr.siamois.ui.bean.LangBean;
-import fr.siamois.ui.bean.SessionSettingsBean;
-import fr.siamois.ui.bean.settings.components.OptionElement;
-import fr.siamois.ui.bean.settings.institution.InstitutionInfoSettingsBean;
-import fr.siamois.ui.bean.settings.institution.InstitutionManagerListBean;
-import fr.siamois.ui.bean.settings.institution.InstitutionThesaurusSettingsBean;
-import fr.siamois.ui.bean.settings.team.TeamListBean;
-import lombok.Getter;
-import lombok.Setter;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.annotation.Scope;
-import org.springframework.context.annotation.ScopedProxyMode;
-import org.springframework.context.event.EventListener;
-import org.springframework.stereotype.Component;
-
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 

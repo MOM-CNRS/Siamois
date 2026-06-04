@@ -2,7 +2,6 @@ package fr.siamois.ui.bean;
 
 
 import fr.siamois.domain.models.UserInfo;
-import fr.siamois.domain.models.uiview.UiTableView;
 import fr.siamois.domain.services.BookmarkService;
 import fr.siamois.domain.services.UiViewService;
 import fr.siamois.dto.entity.BookmarkDTO;
@@ -14,8 +13,8 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.primefaces.event.RowEditEvent;
-import org.primefaces.model.LazyDataModel;
 import org.primefaces.model.FilterMeta;
+import org.primefaces.model.LazyDataModel;
 import org.primefaces.model.SortMeta;
 import org.springframework.context.annotation.Scope;
 import org.springframework.context.annotation.ScopedProxyMode;

@@ -1,11 +1,7 @@
 package fr.siamois.domain.services;
 
-import fr.siamois.domain.models.vocabulary.Concept;
-import fr.siamois.domain.models.vocabulary.VocabularyType;
-import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.dto.PlaceSuggestionDTO;
 import fr.siamois.dto.entity.ConceptDTO;
-import fr.siamois.dto.entity.VocabularyDTO;
 import fr.siamois.infrastructure.api.dto.geoapi.CommuneListResponse;
 import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRepository;
 import fr.siamois.mapper.ConceptMapper;

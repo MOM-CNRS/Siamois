@@ -10,10 +10,13 @@ import fr.siamois.domain.services.person.PersonService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.specimen.SpecimenService;
 import fr.siamois.domain.services.vocabulary.LabelService;
+import fr.siamois.dto.FilterDTO;
 import fr.siamois.dto.entity.ActionUnitDTO;
 import fr.siamois.dto.entity.ConceptDTO;
 import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.dto.entity.SpatialUnitDTO;
+import fr.siamois.infrastructure.database.repositories.specs.ActionUnitSpec;
+import fr.siamois.infrastructure.database.repositories.specs.SpatialUnitSpec;
 import fr.siamois.ui.bean.NavBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
 import fr.siamois.ui.bean.dialog.newunit.GenericNewUnitDialogBean;
@@ -24,19 +27,14 @@ import fr.siamois.ui.bean.panel.models.panel.AbstractPanel;
 import fr.siamois.ui.bean.panel.models.panel.single.tab.ActionTab;
 import fr.siamois.ui.bean.panel.utils.SpatialUnitHelperService;
 import fr.siamois.ui.form.dto.FormUiDto;
-import fr.siamois.dto.FilterDTO;
-import fr.siamois.infrastructure.database.repositories.specs.ActionUnitSpec;
-import fr.siamois.infrastructure.database.repositories.specs.SpatialUnitSpec;
 import fr.siamois.ui.lazydatamodel.ActionUnitLazyDataModel;
 import fr.siamois.ui.lazydatamodel.SpatialUnitLazyDataModel;
-import fr.siamois.ui.lazydatamodel.scope.ActionUnitScope;
-import fr.siamois.ui.lazydatamodel.scope.SpatialUnitScope;
 import fr.siamois.ui.mapper.FormMapper;
-import fr.siamois.ui.table.viewmodel.ActionUnitTableViewModel;
-import fr.siamois.ui.table.viewmodel.SpatialUnitTableViewModel;
 import fr.siamois.ui.table.ToolbarCreateConfig;
 import fr.siamois.ui.table.definitions.ActionUnitTableDefinitionFactory;
 import fr.siamois.ui.table.definitions.SpatialUnitTableDefinitionFactory;
+import fr.siamois.ui.table.viewmodel.ActionUnitTableViewModel;
+import fr.siamois.ui.table.viewmodel.SpatialUnitTableViewModel;
 import fr.siamois.utils.MessageUtils;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -53,9 +51,6 @@ import org.springframework.stereotype.Component;
 import java.io.Serializable;
 import java.util.List;
 import java.util.stream.Collectors;
-
-import static fr.siamois.ui.lazydatamodel.scope.ActionUnitScope.Type.LINKED_TO_SPATIAL_UNIT;
-import static fr.siamois.ui.lazydatamodel.scope.SpatialUnitScope.Type.CHILDREN_OF_SPATIAL_UNIT;
 
 /**
  * <p>This bean handles the spatial unit page</p>

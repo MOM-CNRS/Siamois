@@ -15,8 +15,6 @@ import lombok.Getter;
 import lombok.Setter;
 import org.primefaces.event.RowEditEvent;
 import org.primefaces.model.FilterMeta;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 
 import java.time.LocalDate;
 import java.util.Collections;

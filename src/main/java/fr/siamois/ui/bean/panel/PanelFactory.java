@@ -4,13 +4,7 @@ package fr.siamois.ui.bean.panel;
 import fr.siamois.ui.bean.panel.models.PanelBreadcrumb;
 import fr.siamois.ui.bean.panel.models.panel.WelcomePanel;
 import fr.siamois.ui.bean.panel.models.panel.list.*;
-import fr.siamois.ui.bean.panel.models.panel.list.PhaseListPanel;
-import fr.siamois.ui.bean.panel.models.panel.single.ActionUnitPanel;
-import fr.siamois.ui.bean.panel.models.panel.single.ContainerPanel;
-import fr.siamois.ui.bean.panel.models.panel.single.PhasePanel;
-import fr.siamois.ui.bean.panel.models.panel.single.RecordingUnitPanel;
-import fr.siamois.ui.bean.panel.models.panel.single.SpatialUnitPanel;
-import fr.siamois.ui.bean.panel.models.panel.single.SpecimenPanel;
+import fr.siamois.ui.bean.panel.models.panel.single.*;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Component;
 

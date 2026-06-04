@@ -16,10 +16,9 @@ import fr.siamois.ui.bean.panel.models.PanelBreadcrumb;
 import fr.siamois.ui.form.FormContextServices;
 import fr.siamois.ui.lazydatamodel.ActionUnitLazyDataModel;
 import fr.siamois.ui.lazydatamodel.BaseLazyDataModel;
-import fr.siamois.ui.lazydatamodel.scope.ActionUnitScope;
-import fr.siamois.ui.table.viewmodel.ActionUnitTableViewModel;
 import fr.siamois.ui.table.ToolbarCreateConfig;
 import fr.siamois.ui.table.definitions.ActionUnitTableDefinitionFactory;
+import fr.siamois.ui.table.viewmodel.ActionUnitTableViewModel;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
@@ -32,8 +31,6 @@ import org.springframework.stereotype.Component;
 
 import java.io.Serializable;
 import java.util.List;
-
-import static fr.siamois.ui.lazydatamodel.scope.ActionUnitScope.Type.INSTITUTION;
 
 
 @Slf4j

@@ -1,9 +1,9 @@
 package fr.siamois.ui.form;
 
 import fr.siamois.domain.services.ContainerService;
-import fr.siamois.domain.services.PhaseService;
 import fr.siamois.domain.services.GeoApiService;
 import fr.siamois.domain.services.GeoPlatService;
+import fr.siamois.domain.services.PhaseService;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.form.CustomFieldMeasurementService;
 import fr.siamois.domain.services.form.FormService;

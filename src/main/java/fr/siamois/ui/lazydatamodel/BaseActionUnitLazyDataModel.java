@@ -2,7 +2,6 @@ package fr.siamois.ui.lazydatamodel;
 
 import fr.siamois.dto.SortDTO;
 import fr.siamois.dto.entity.ActionUnitDTO;
-import fr.siamois.infrastructure.database.repositories.specs.ActionUnitSpec;
 import lombok.Getter;
 import lombok.Setter;
 

@@ -7,7 +7,6 @@ import fr.siamois.dto.entity.VocabularyDTO;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
 

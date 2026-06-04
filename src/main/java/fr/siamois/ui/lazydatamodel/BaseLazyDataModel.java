@@ -4,7 +4,6 @@ import fr.siamois.domain.models.vocabulary.label.ConceptLabel;
 import fr.siamois.dto.FilterDTO;
 import fr.siamois.dto.SortDTO;
 import fr.siamois.dto.entity.AbstractEntityDTO;
-import fr.siamois.dto.view.FilterState;
 import lombok.Getter;
 import lombok.Setter;
 import org.primefaces.model.FilterMeta;

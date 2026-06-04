@@ -2,7 +2,6 @@ package fr.siamois.ui.lazydatamodel;
 
 import fr.siamois.domain.services.specimen.SpecimenService;
 import fr.siamois.dto.FilterDTO;
-import fr.siamois.dto.entity.ActionUnitDTO;
 import fr.siamois.dto.entity.SpecimenDTO;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.SessionSettingsBean;

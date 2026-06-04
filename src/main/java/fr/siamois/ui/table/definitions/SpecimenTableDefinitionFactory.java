@@ -6,9 +6,9 @@ import fr.siamois.domain.models.specimen.Specimen;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.dto.entity.SpecimenDTO;
 import fr.siamois.ui.table.column.CommandLinkColumn;
-import fr.siamois.ui.table.viewmodel.EntityTableViewModel;
 import fr.siamois.ui.table.column.FormFieldColumn;
 import fr.siamois.ui.table.column.TableColumnAction;
+import fr.siamois.ui.table.viewmodel.EntityTableViewModel;
 
 import static fr.siamois.ui.bean.panel.models.panel.single.AbstractSingleEntity.SYSTEM_THESO;
 

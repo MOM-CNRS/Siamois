@@ -3,9 +3,6 @@ package fr.siamois.dto.view;
 import fr.siamois.dto.entity.PersonDTO;
 import lombok.Data;
 
-import java.time.Instant;
-import java.util.UUID;
-
 @Data
 public class UITableViewDTO {
 

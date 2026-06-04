@@ -18,7 +18,7 @@ import fr.siamois.ui.form.FormContextServices;
 import fr.siamois.ui.form.dto.FormUiDto;
 import fr.siamois.ui.lazydatamodel.BaseActionUnitLazyDataModel;
 import fr.siamois.ui.lazydatamodel.BaseLazyDataModel;
-import fr.siamois.ui.table.*;
+import fr.siamois.ui.table.RowAction;
 import fr.siamois.ui.table.column.CommandLinkColumn;
 import fr.siamois.ui.table.column.RelationColumn;
 import fr.siamois.ui.table.column.TableColumn;

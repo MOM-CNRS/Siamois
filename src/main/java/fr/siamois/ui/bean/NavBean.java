@@ -2,7 +2,6 @@ package fr.siamois.ui.bean;
 
 import fr.siamois.domain.events.publisher.InstitutionChangeEventPublisher;
 import fr.siamois.domain.models.Bookmark;
-import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.events.LoginEvent;
 import fr.siamois.domain.services.BookmarkService;
 import fr.siamois.domain.services.InstitutionService;

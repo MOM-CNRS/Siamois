@@ -10,14 +10,15 @@ import fr.siamois.domain.services.vocabulary.FieldConfigurationService;
 import fr.siamois.domain.services.vocabulary.FieldService;
 import fr.siamois.domain.services.vocabulary.LabelService;
 import fr.siamois.dto.entity.AbstractEntityDTO;
-import fr.siamois.dto.view.*;
+import fr.siamois.dto.view.TableViewState;
+import fr.siamois.dto.view.UITableViewDTO;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
 import fr.siamois.ui.bean.panel.models.panel.AbstractPanel;
 import fr.siamois.ui.lazydatamodel.BaseLazyDataModel;
 import fr.siamois.ui.table.TableViewRuntimeMapper;
-import fr.siamois.ui.table.viewmodel.EntityTableViewModel;
 import fr.siamois.ui.table.column.TableColumn;
+import fr.siamois.ui.table.viewmodel.EntityTableViewModel;
 import fr.siamois.ui.utils.FilterStateTooltipHelper;
 import fr.siamois.utils.MessageUtils;
 import lombok.EqualsAndHashCode;
@@ -30,7 +31,10 @@ import org.primefaces.model.menu.DefaultMenuItem;
 import org.springframework.context.ApplicationContext;
 
 import java.io.Serializable;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Objects;
 
 @Getter
 @Setter

@@ -4,7 +4,6 @@ package fr.siamois.ui.utils;
 import fr.siamois.dto.view.FilterState;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * Helper centralisé pour construire des résumés textuels

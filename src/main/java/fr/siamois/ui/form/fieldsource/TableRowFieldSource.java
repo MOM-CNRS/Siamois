@@ -6,9 +6,9 @@ import fr.siamois.ui.form.dto.CustomColUiDto;
 import fr.siamois.ui.form.dto.CustomFormPanelUiDto;
 import fr.siamois.ui.form.dto.CustomRowUiDto;
 import fr.siamois.ui.form.dto.FormUiDto;
+import fr.siamois.ui.table.TableDefinition;
 import fr.siamois.ui.table.column.FormFieldColumn;
 import fr.siamois.ui.table.column.TableColumn;
-import fr.siamois.ui.table.TableDefinition;
 
 import java.util.Collection;
 import java.util.HashMap;

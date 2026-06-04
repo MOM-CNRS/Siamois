@@ -1,7 +1,5 @@
 package fr.siamois.domain.services;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import fr.siamois.domain.models.ValidationStatus;
 import fr.siamois.domain.models.uiview.UiTableView;
 import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.dto.view.TableViewState;
@@ -10,7 +8,6 @@ import fr.siamois.infrastructure.database.UiViewRepository;
 import fr.siamois.mapper.PersonMapper;
 import fr.siamois.mapper.UITableViewMapper;
 import lombok.RequiredArgsConstructor;
-import org.springframework.boot.actuate.env.EnvironmentEndpoint;
 import org.springframework.stereotype.Service;
 
 /**
