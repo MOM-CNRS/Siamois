@@ -217,6 +217,9 @@
 
   // Input fields
   .ui-inputfield {
+
+    font-size: 0.875rem;
+
     &.ui-state-hover {
       border-color: var(--siamois-green-light-200);
     }
@@ -283,8 +286,9 @@
   }
 
   .ui-autocomplete .ui-autocomplete-multiple-container .ui-autocomplete-token {
-    background-color: var(--siamois-green);
-    color: white;
+    background-color: white;
+    border: 1px solid var(--main-color);
+    color: 1px solid var(--main-color);
   }
 
 

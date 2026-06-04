@@ -506,6 +506,10 @@ body .ui-treetable.ui-treetable-sm .ui-treetable-data > tr > td.small-cell {
   padding: 0rem .5rem;
 }
 
+body .ui-datatable.ui-datatable-sm .ui-datatable-data > tr > td.small-cell {
+  padding: 0rem .5rem;
+}
+
 body .ui-inplace .ui-inplace-display {
   padding: 0rem 0rem;
 }
@@ -888,6 +892,40 @@ body .view-edit-button.ui-splitbutton {
 }
 .rum-expand-badge:hover {
   opacity: 0.85;
+}
+
+/* ── entityDataTable / entityTreeTable: layout ── */
+.ui-treetable thead th {
+  text-align: left;
+  vertical-align: top;
+}
+.ui-treetable thead th .ui-column-title,
+.ui-treetable thead th .ui-sortable-column-icon {
+  display: inline-block;
+  vertical-align: middle;
+}
+.ui-treetable thead th .ui-column-filter {
+  display: block;
+  width: 100%;
+  margin-top: 0.5rem;
+  box-sizing: border-box;
+}
+.ui-treetable tr.search-match > td {
+  background-color: rgba(255, 221, 87, 0.25);
+  font-weight: 600;
+}
+.ui-treetable tr.search-match:hover > td {
+  background-color: rgba(255, 221, 87, 0.4);
+}
+.ui-treetable tr.overview-open > td {
+  border-top: 2px solid var(--siamois-green-active) !important;
+  border-bottom: 2px solid var(--siamois-green-active) !important;
+}
+.ui-treetable tr.overview-open > td:first-child {
+  border-left: 2px solid var(--siamois-green-active) !important;
+}
+.ui-treetable tr.overview-open > td:last-child {
+  border-right: 2px solid var(--siamois-green-active) !important;
 }
 
 /* ── entityDataTable: layout ── */
