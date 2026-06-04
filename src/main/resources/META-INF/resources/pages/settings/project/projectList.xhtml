@@ -4,7 +4,11 @@
                 xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
                 xmlns:comp="http://java.sun.com/jsf/composite/pages/settings/components"
                 xmlns:p="http://primefaces.org/ui"
-                xmlns:h="http://java.sun.com/jsf/html">
+                xmlns:h="http://java.sun.com/jsf/html" xmlns:f="http://java.sun.com/jsf/core">
+
+    <ui:define name="metadata">
+    <f:event type="preRenderView" listener="#{navBean.onPreRenderView}"/>
+    </ui:define>
 
     <ui:define name="head">
         <h:outputStylesheet library="css" name="settings.css"/>
@@ -31,6 +35,9 @@
                         widgetVar="actionUnitDatatable"
                         rowKey="#{au.id}"
                 >
+                    <p:column headerText="Institution">
+                        <p:outputLabel value="#{au.createdByInstitution.name}"/>
+                    </p:column>
                     <p:column headerText="#{langBean.msg('actionManagers.header.name')}">
                         <p:outputLabel value="#{au.name}"/>
                     </p:column>

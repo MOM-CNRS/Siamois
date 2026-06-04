@@ -5,16 +5,14 @@
                 xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
                 xmlns:p="http://primefaces.org/ui"
                 xmlns:settingscomp="http://xmlns.jcp.org/jsf/composite/pages/settings/components"
-                xmlns:f="http://xmlns.jcp.org/jsf/core">
+                xmlns:f="http://java.sun.com/jsf/core">
 
     <ui:define name="head">
         <h:outputStylesheet library="css" name="settings.css"/>
     </ui:define>
 
     <ui:define name="metadata">
-        <f:metadata>
-            <f:viewAction action="#{profileSettingsBean.init()}"/>
-        </f:metadata>
+        <f:event type="preRenderView" listener="#{navBean.onPreRenderView}"/>
     </ui:define>
 
     <ui:define name="content">

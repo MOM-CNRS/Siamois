@@ -15,6 +15,7 @@ import fr.siamois.ui.bean.settings.project.ProjectListBean;
 import fr.siamois.utils.MessageUtils;
 import io.micrometer.common.lang.Nullable;
 import jakarta.faces.context.FacesContext;
+import jakarta.faces.event.ComponentSystemEvent;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
@@ -105,6 +106,13 @@ public class NavBean implements Serializable {
 
     public boolean isSettingsMode() {
         return applicationMode == ApplicationMode.SETTINGS;
+    }
+
+    public void onPreRenderView() {
+        String viewId = FacesContext.getCurrentInstance().getViewRoot().getViewId();
+        if (viewId != null && viewId.contains("/settings")) {
+            applicationMode = ApplicationMode.SETTINGS;
+        }
     }
 
     public void goToOrganisationSettings() {
