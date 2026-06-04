@@ -43,8 +43,32 @@
                                         itemLabel="#{result.matchingTerm}"
                                         itemValue="#{result}"
                                         completeMethod="#{searchBean.completeText}"
+                                        converter="#{searchResultConverter}"
                                         scrollHeight="250"
-                        />
+                                        forceSelection="true">
+
+                            <p:column>
+                                <div style="display:flex; align-items:center; gap:0.5em;">
+                                    <i class="#{not empty result.recordingUnitId ? 'bi bi-pencil-square' :
+                                                not empty result.spatialUnitId   ? 'bi bi-geo-alt' :
+                                                not empty result.actionUnitId    ? 'bi bi-arrow-down-square' :
+                                                                                   'bi bi-bucket'}"/>
+                                    <span style="flex:1">#{result.matchingTerm}</span>
+                                    <small style="color:var(--text-secondary,#6c757d); flex-shrink:0">
+                                        #{not empty result.recordingUnitId ? 'UE' :
+                                          not empty result.spatialUnitId   ? 'Lieu' :
+                                          not empty result.actionUnitId    ? 'Projet' :
+                                                                             'Mobilier'}
+                                    </small>
+                                </div>
+                            </p:column>
+
+                            <p:ajax event="itemSelect"
+                                    listener="#{searchBean.onResultSelect}"
+                                    process="@this"
+                                    update="@none"/>
+
+                        </p:autoComplete>
                     </span>
                     </article>
                 </form:csrfform>
