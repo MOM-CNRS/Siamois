@@ -74,8 +74,7 @@ public class SpecimenPanel extends AbstractSingleEntityPanel<SpecimenDTO>  imple
         this.redirectBean = context.getBean(RedirectBean.class);
     }
 
-    @Override
-    public String ressourceUri() {
+    public String entityRessourceUri() {
         return "/specimen/" + unitId;
     }
 

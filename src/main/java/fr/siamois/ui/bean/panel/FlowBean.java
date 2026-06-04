@@ -42,7 +42,6 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.io.Serializable;
-import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -441,32 +440,26 @@ public class FlowBean implements Serializable {
     }
 
     public void redirectToFocus(String resourceUri, @Nullable String overviewResourceUri) throws IOException {
-        // Encode the URI in Base64
-        String encodedUri = Base64.getEncoder().encodeToString(resourceUri.getBytes(StandardCharsets.UTF_8));
-
-        // URL-encode the Base64 string to ensure it's safe for a URL
-        String safeEncodedUri = URLEncoder.encode(encodedUri, StandardCharsets.UTF_8);
+        String encodedUri = Base64.getUrlEncoder().withoutPadding()
+                .encodeToString(resourceUri.getBytes(StandardCharsets.UTF_8));
 
         FacesContext context = FacesContext.getCurrentInstance();
         String basePath = context.getExternalContext().getRequestContextPath();
 
         String sParam = "";
-        if(overviewResourceUri != null) {
-            sParam="?s="+URLEncoder.encode(
-                    Base64.getEncoder().encodeToString(overviewResourceUri.getBytes(StandardCharsets.UTF_8))
-                    , StandardCharsets.UTF_8);
+        if (overviewResourceUri != null) {
+            sParam = "?s=" + Base64.getUrlEncoder().withoutPadding()
+                    .encodeToString(overviewResourceUri.getBytes(StandardCharsets.UTF_8));
         }
 
-        String url = basePath + "/focus/" + safeEncodedUri + sParam;
+        String url = basePath + "/focus/" + encodedUri + sParam;
 
         context.getExternalContext().redirect(url);
     }
 
 
     public void fullScreen(AbstractPanel panel) throws IOException {
-        // Redirect to focus page
         redirectToFocus(panel.ressourceUri(), null);
-
     }
 
     public void redirectToDashboard() throws IOException {

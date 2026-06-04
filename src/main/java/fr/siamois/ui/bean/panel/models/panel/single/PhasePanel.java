@@ -61,8 +61,7 @@ public class PhasePanel extends AbstractSingleEntityPanel<PhaseDTO> implements S
         this.redirectBean = context.getBean(RedirectBean.class);
     }
 
-    @Override
-    public String ressourceUri() {
+    public String entityRessourceUri() {
         return "/phase/" + unitId;
     }
 

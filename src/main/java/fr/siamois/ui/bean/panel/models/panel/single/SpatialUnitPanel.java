@@ -140,8 +140,7 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
     }
 
 
-    @Override
-    public String ressourceUri() {
+    public String entityRessourceUri() {
         return "/spatial-unit/" + unitId;
     }
 

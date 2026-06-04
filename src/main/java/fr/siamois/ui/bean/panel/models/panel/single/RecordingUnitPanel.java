@@ -95,8 +95,7 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
     }
 
 
-    @Override
-    public String ressourceUri() {
+    public String entityRessourceUri() {
         return "/recording-unit/" + unitId;
     }
 

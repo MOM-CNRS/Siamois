@@ -100,6 +100,16 @@ public abstract class AbstractSingleEntityPanel<T extends AbstractEntityDTO> ext
     }
 
     @Override
+    public String ressourceUri() {
+        String base = entityRessourceUri();
+        return (activeTabIndex != null && activeTabIndex > 0)
+                ? base + "?tab=" + activeTabIndex
+                : base;
+    }
+
+    public abstract String entityRessourceUri();
+
+    @Override
     public String display() {
         return "/panel/singleUnitPanel.xhtml";
     }

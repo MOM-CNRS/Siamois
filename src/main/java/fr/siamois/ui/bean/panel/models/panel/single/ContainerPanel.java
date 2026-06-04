@@ -61,8 +61,7 @@ public class ContainerPanel extends AbstractSingleEntityPanel<ContainerDTO> impl
         this.redirectBean = context.getBean(RedirectBean.class);
     }
 
-    @Override
-    public String ressourceUri() {
+    public String entityRessourceUri() {
         return "/container/" + unitId;
     }
 

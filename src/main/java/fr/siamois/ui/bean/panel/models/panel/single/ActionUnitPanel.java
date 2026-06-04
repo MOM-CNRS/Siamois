@@ -138,8 +138,7 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnitDTO> im
     }
 
 
-    @Override
-    public String ressourceUri() {
+    public String entityRessourceUri() {
         return String.format("/action-unit/%s", unit.getId());
     }
 
