@@ -52,13 +52,15 @@ public class RecordingUnitSeeder {
 
     }
 
-    public record RecordingUnitKey(String fullIdentifier) {
+    public record RecordingUnitKey(String fullIdentifier, String actionIdentifier) {
     }
 
     private void getOrCreateRecordingUnit(RecordingUnit recordingUnit) {
 
-        Optional<RecordingUnit> opt = recordingUnitRepository.findByFullIdentifierAndInstitutionId(recordingUnit.getFullIdentifier(),
-                recordingUnit.getCreatedByInstitution().getId());
+        Optional<RecordingUnit> opt = recordingUnitRepository.findByFullIdentifierAndInstitutionIdAndActionUnitFullIdentifier(
+                recordingUnit.getFullIdentifier(),
+                recordingUnit.getCreatedByInstitution().getId(),
+                recordingUnit.getActionUnit().getFullIdentifier());
         if (opt.isEmpty()) {
             recordingUnitRepository.save(recordingUnit);
         }
@@ -66,7 +68,7 @@ public class RecordingUnitSeeder {
 
 
     public ActionUnit getActionUnitFromKey(ActionUnitSeeder.ActionUnitKey key) {
-        return actionUnitRepository.findByFullIdentifier(key.fullIdentifier())
+        return actionUnitRepository.findByIdentifierAndCreatedByInstitutionIdentifier(key.fullIdentifier(), key.institutionIdentifier())
                 .orElseThrow(() -> new IllegalStateException("Action introuvable"));
     }
 
@@ -76,7 +78,8 @@ public class RecordingUnitSeeder {
     }
 
     public RecordingUnit getRecordingUnitFromKey(RecordingUnitKey key, Long institutionId) {
-        return recordingUnitRepository.findByFullIdentifierAndInstitutionId(key.fullIdentifier, institutionId)
+        return recordingUnitRepository.findByFullIdentifierAndInstitutionIdAndActionUnitFullIdentifier(
+                key.fullIdentifier, institutionId, key.actionIdentifier())
                 .orElseThrow(() -> new IllegalStateException("Recording unit introuvable"));
     }
 

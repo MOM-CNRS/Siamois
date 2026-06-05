@@ -464,8 +464,10 @@ public class OOXMLImportService {
         String createdBy = SIAMOIS_SYSTEM;
 
         SpatialUnitSeeder.SpatialUnitKey spatialKey = parseOptionalSpatialUnit(row, cols, "unite spatiale");
-        ActionUnitSeeder.ActionUnitKey actionKey    = actionUnit != null ? new ActionUnitSeeder.ActionUnitKey(actionUnit.getFullIdentifier())
-                : parseOptionalActionUnit(row, cols, "unite d'action");
+        ActionUnitSeeder.ActionUnitKey actionKey    = actionUnit != null ? new ActionUnitSeeder.ActionUnitKey(
+                actionUnit.getFullIdentifier(),
+                actionUnit.getCreatedByInstitution().getIdentifier())
+                : parseOptionalActionUnit(row, cols, "unite d'action", "");
 
         String matrixColor   = getStringCellOrNull(row, cols.get("couleur de la matrice"));
         String matrixTexture = getStringCellOrNull(row, cols.get("texture de la matrice"));
@@ -515,10 +517,10 @@ public class OOXMLImportService {
         }
     }
 
-    private ActionUnitSeeder.ActionUnitKey parseOptionalActionUnit(Row row, Map<String, Integer> cols, String key) {
+    private ActionUnitSeeder.ActionUnitKey parseOptionalActionUnit(Row row, Map<String, Integer> cols, String key, String institutionIdentifier) {
         try {
             String ident = getStringCellOrNull(row, cols, key);
-            return (ident == null || ident.isBlank()) ? null : new ActionUnitSeeder.ActionUnitKey(ident.trim());
+            return (ident == null || ident.isBlank()) ? null : new ActionUnitSeeder.ActionUnitKey(ident.trim(), institutionIdentifier);
         } catch (Exception e) {
             throw new IllegalStateException("[colonne '" + key + "'] : " + e.getMessage(), e);
         }
@@ -553,7 +555,8 @@ public class OOXMLImportService {
 
             String ruStr = getStringCellOrNull(row, cols, "unite d'enregistrement");
             RecordingUnitSeeder.RecordingUnitKey recordingUnitKey =
-                    (ruStr == null || ruStr.isBlank()) ? null : new RecordingUnitSeeder.RecordingUnitKey(ruStr);
+                    (ruStr == null || ruStr.isBlank()) ? null : new RecordingUnitSeeder.RecordingUnitKey(ruStr,
+                            actionUnit.getFullIdentifier());
 
             result.add(new SpecimenSeeder.SpecimenSpecs(
                     identStr,

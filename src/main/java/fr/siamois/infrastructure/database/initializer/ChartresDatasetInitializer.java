@@ -100,8 +100,8 @@ public class ChartresDatasetInitializer implements DatabaseInitializer {
         recordingUnitSeeder.seed(specs.recordingUnits());
         specimenSeeder.seed(specs.specimenSpecs(), ch.getId());
         recordingUnitSeeder.seed(specs.recordingUnits());
-        recordingUnitRelSeeder.seed(specs.recordingUnitRelSpecs(), ch.getId());
-        recordingUnitStratiRelSeeder.seed(specs.recordingUnitStratiRelSpecs(), ch.getId());
+        recordingUnitRelSeeder.seed(specs.recordingUnitRelSpecs(), ch.getId(), null);
+        recordingUnitStratiRelSeeder.seed(specs.recordingUnitStratiRelSpecs(), ch.getId(), null);
 
     }
 }

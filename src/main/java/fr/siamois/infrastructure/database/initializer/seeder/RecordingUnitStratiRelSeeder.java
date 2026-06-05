@@ -26,17 +26,17 @@ public class RecordingUnitStratiRelSeeder {
             Boolean isUncertain) {
     }
 
-    public void seed(List<RecordingUnitStratiRelDTO> specs, Long institutionId) {
+    public void seed(List<RecordingUnitStratiRelDTO> specs, Long institutionId, String actionUnitIdentifier) {
 
         for (int i = 0; i < specs.size(); i++) {
             var s = specs.get(i);
             try {
                 RecordingUnit us1 = recordingUnitSeeder.getRecordingUnitFromKey(
-                        new RecordingUnitSeeder.RecordingUnitKey(s.us1),
+                        new RecordingUnitSeeder.RecordingUnitKey(s.us1, actionUnitIdentifier),
                         institutionId
                 );
                 RecordingUnit us2 = recordingUnitSeeder.getRecordingUnitFromKey(
-                        new RecordingUnitSeeder.RecordingUnitKey(s.us2),
+                        new RecordingUnitSeeder.RecordingUnitKey(s.us2, actionUnitIdentifier),
                         institutionId
                 );
                 Optional<StratigraphicRelationship> toFind = stratigraphicRelationshipRepository.findByUnit1AndUnit2(

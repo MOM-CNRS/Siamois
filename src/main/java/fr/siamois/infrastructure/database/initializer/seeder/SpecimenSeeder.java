@@ -41,7 +41,11 @@ public class SpecimenSeeder {
 
     private void getOrCreateSpecimen(Specimen specimen) {
 
-        Optional<Specimen> opt = specimenRepository.findByFullIdentifier(specimen.getFullIdentifier());
+        Optional<Specimen> opt = specimenRepository.findByFullIdentifierAndInstitutionIdAndRecordingUnitFullIdentifierAndActionUnitFullIdentifier(
+                specimen.getFullIdentifier(),
+                specimen.getCreatedByInstitution().getId(),
+                specimen.getRecordingUnit().getFullIdentifier(),
+                specimen.getRecordingUnit().getActionUnit().getFullIdentifier());
         if (opt.isEmpty()) {
             specimenRepository.save(specimen);
         }

@@ -9,6 +9,7 @@
 
     <ui:define name="metadata">
     <f:event type="preRenderView" listener="#{navBean.onPreRenderView}"/>
+    <f:event type="preRenderView" listener="#{projectDetailsBean.checkProjectOrRedirect}"/>
     </ui:define>
 
     <ui:define name="head">

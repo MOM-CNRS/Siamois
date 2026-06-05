@@ -18,8 +18,10 @@ public class ProjectDataSeeder {
         spatialUnitSeeder.seed(spec.spatialUnits());
         recordingUnitSeeder.seed(spec.recordingUnits());
         specimenSeeder.seed(spec.specimenSpecs(),project.getCreatedByInstitution().getId());
-        recordingUnitStratiRelSeeder.seed(spec.recordingUnitStratiRelSpecs(), project.getCreatedByInstitution().getId());
-        recordingUnitRelSeeder.seed(spec.recordingUnitRelSpecs(), project.getCreatedByInstitution().getId());
+        recordingUnitStratiRelSeeder.seed(spec.recordingUnitStratiRelSpecs(), project.getCreatedByInstitution().getId(),
+                project.getFullIdentifier());
+        recordingUnitRelSeeder.seed(spec.recordingUnitRelSpecs(), project.getCreatedByInstitution().getId(),
+                project.getFullIdentifier());
     }
 
 }

@@ -4,6 +4,7 @@ import fr.siamois.domain.models.events.LoginEvent;
 import fr.siamois.domain.services.authorization.PermissionService;
 import fr.siamois.dto.entity.ActionUnitDTO;
 import fr.siamois.ui.bean.LangBean;
+import fr.siamois.ui.bean.RedirectBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
 import fr.siamois.ui.bean.settings.components.OptionElement;
 import lombok.Getter;
@@ -31,6 +32,7 @@ public class ProjectDetailsBean {
     private final LangBean langBean;
     private final PermissionService permissionService;
     private final SessionSettingsBean sessionSettingsBean;
+    private final RedirectBean redirectBean;
 
     // LOCALS
     private ActionUnitDTO project;
@@ -65,6 +67,12 @@ public class ProjectDetailsBean {
         }));
 
 
+    }
+
+    public void checkProjectOrRedirect() {
+        if (project == null) {
+            redirectBean.redirectTo("/settings/project");
+        }
     }
 
     public String goToProjectList() {

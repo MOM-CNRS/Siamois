@@ -39,6 +39,8 @@ public interface ActionUnitRepository extends CrudRepository<ActionUnit, Long>, 
 
     Optional<ActionUnit> findByIdentifierAndCreatedByInstitutionId(String identifier, Long institutionId);
 
+    Optional<ActionUnit> findByIdentifierAndCreatedByInstitutionIdentifier(String identifier, String institutionId);
+
     @Query(value = """
     SELECT su.*
     FROM action_unit su

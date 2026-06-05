@@ -42,7 +42,7 @@ public class ActionUnitSeeder {
 
     }
 
-    public record ActionUnitKey(String fullIdentifier) {}
+    public record ActionUnitKey(String fullIdentifier, String institutionIdentifier) {}
 
     private void getOrCreateActionUnit(ActionUnit actionUnit) {
         Optional<ActionUnit> opt = actionUnitRepository.findByFullIdentifier(actionUnit.getFullIdentifier());
