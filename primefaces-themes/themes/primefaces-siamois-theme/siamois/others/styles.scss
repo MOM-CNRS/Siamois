@@ -1102,3 +1102,28 @@ body .view-edit-button.ui-splitbutton {
   opacity: 0.85;
 }
 
+body .panel-tab-wrapper .ui-tabs-top {
+  height: 100%;
+  overflow: hidden;
+}
+
+body .panel-tab-wrapper .ui-tabs-panels {
+  height: 100%;
+  overflow: auto;
+}
+
+.ui-tabs {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.ui-tabs-nav {
+  flex: 0 0 auto;
+}
+
+.ui-tabs-panels {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+}
