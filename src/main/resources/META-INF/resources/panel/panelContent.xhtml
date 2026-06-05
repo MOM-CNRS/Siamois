@@ -50,16 +50,8 @@
                                                             align-items: center;
                                                             border-radius: 15px;">
 
-                                <p:commandLink id="createEntityBtn"
-                                               rendered="#{panelModel.parentOrOverview.creationUnitKind != null and flowBean.isWriteMode}"
-                                               styleClass="sideview-topbar-button"
-                                               action="#{genericNewUnitDialogBean.openNewEntityDiag(panelModel.parentOrOverview.creationUnitKind, panelModel.parentOrOverview)}"
-                                               update="newUnitForm"
-                                               oncomplete="PF('newUnitDiag').show();"
-                                               immediate="true">
-                                    <h:outputText styleClass="bi bi-plus-square"/>
-                                </p:commandLink>
-                                <p:tooltip autoHide="false" value="Créer" position="bottom" for="createEntityBtn"/>
+
+
 
                                 <p:commandLink styleClass="sideview-topbar-button"
                                                id="closeSideview"
@@ -90,6 +82,37 @@
                                     <h:outputText styleClass="#{panelModel.parentOrOverview.isBookmarked() ?
                                                     'ui-icon bi bi-bookmark-fill' : 'ui-icon bi bi-bookmark'}"/>
                                 </p:commandLink>
+
+                                <p:commandLink id="createEntityBtn"
+                                               rendered="#{panelModel.parentOrOverview.creationUnitKind != null and flowBean.isWriteMode}"
+                                               styleClass="sideview-topbar-button"
+                                               action="#{genericNewUnitDialogBean.openNewEntityDiag(panelModel.parentOrOverview.creationUnitKind, panelModel.parentOrOverview)}"
+                                               update="newUnitForm"
+                                               oncomplete="PF('newUnitDiag').show();"
+                                               immediate="true">
+                                    <h:outputText styleClass="bi bi-plus-square"/>
+                                </p:commandLink>
+                                <p:tooltip autoHide="false" value="Créer" position="bottom" for="createEntityBtn"/>
+
+                                <p:commandLink id="duplicateBtn"
+                                               rendered="#{panelModel.parentOrOverview.canDuplicate() and flowBean.isWriteMode}"
+                                               styleClass="sideview-topbar-button"
+                                               action="#{panelModel.parentOrOverview.duplicate()}"
+                                               update="sideview-${panelIndex}"
+                                               immediate="true">
+                                    <h:outputText styleClass="bi bi-copy"/>
+                                </p:commandLink>
+                                <p:tooltip autoHide="false" for="duplicateBtn" value="Dupliquer" position="bottom"/>
+
+                                <h:commandLink id="duplicateBtnDisabled"
+                                              rendered="#{panelModel.parentOrOverview.creationUnitKind != null
+                                                          and not panelModel.parentOrOverview.canDuplicate()
+                                                          and flowBean.isWriteMode}"
+                                              styleClass="sideview-topbar-button ui-commandlink ui-widget"
+                                              style="opacity:0.4; cursor:not-allowed;">
+                                    <i class="bi bi-copy"/>
+                                </h:commandLink>
+                                <p:tooltip autoHide="false" for="duplicateBtnDisabled" value="À venir" position="bottom"/>
 
                                 <p:commandLink id="refreshPanelButton"
                                                process="@this"

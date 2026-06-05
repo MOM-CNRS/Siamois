@@ -336,16 +336,7 @@
                                             display: flex;
                                             border: 1px solid var(--siamois-green-light);
                                             border-radius: 15px;">
-                                        <p:commandLink id="createEntityBtn"
-                                                       rendered="#{focusViewBean.mainPanel.creationUnitKind != null and flowBean.isWriteMode}"
-                                                       styleClass="sideview-topbar-button"
-                                                       action="#{genericNewUnitDialogBean.openNewEntityDiag(focusViewBean.mainPanel.creationUnitKind, focusViewBean.mainPanel)}"
-                                                       update="newUnitForm"
-                                                       oncomplete="PF('newUnitDiag').show();"
-                                                       immediate="true">
-                                            <h:outputText styleClass="bi bi-plus-square"/>
-                                        </p:commandLink>
-                                        <p:tooltip for="createEntityBtn" value="Créer" position="bottom"/>
+
                                         <p:commandLink id="closeFocusLink"
                                                        rendered="#{not empty focusViewBean.mainPanel.goBackUrl}"
                                                        styleClass="sideview-topbar-button"
@@ -360,6 +351,34 @@
                                             <h:outputText styleClass="#{focusViewBean.mainPanel.isBookmarked() ?
                             'ui-icon bi bi-bookmark-fill' : 'ui-icon bi bi-bookmark'}"/>
                                         </p:commandLink>
+                                        <p:commandLink id="createEntityBtn"
+                                                       rendered="#{focusViewBean.mainPanel.creationUnitKind != null and flowBean.isWriteMode}"
+                                                       styleClass="sideview-topbar-button"
+                                                       action="#{genericNewUnitDialogBean.openNewEntityDiag(focusViewBean.mainPanel.creationUnitKind, focusViewBean.mainPanel)}"
+                                                       update="newUnitForm"
+                                                       oncomplete="PF('newUnitDiag').show();"
+                                                       immediate="true">
+                                            <h:outputText styleClass="bi bi-plus-square"/>
+                                        </p:commandLink>
+                                        <p:tooltip for="createEntityBtn" value="Créer" position="bottom"/>
+                                        <p:commandLink id="duplicateBtn"
+                                                       rendered="#{focusViewBean.mainPanel.canDuplicate() and flowBean.isWriteMode}"
+                                                       styleClass="sideview-topbar-button"
+                                                       action="#{focusViewBean.mainPanel.duplicate()}"
+                                                       update="panel-${focusViewBean.mainPanel.prefixPanelIndex}-container"
+                                                       immediate="true">
+                                            <h:outputText styleClass="bi bi-copy"/>
+                                        </p:commandLink>
+                                        <p:tooltip for="duplicateBtn" value="Dupliquer" position="bottom"/>
+                                        <h:commandLink id="duplicateBtnDisabled"
+                                                      rendered="#{focusViewBean.mainPanel.creationUnitKind != null
+                                                                  and not focusViewBean.mainPanel.canDuplicate()
+                                                                  and flowBean.isWriteMode}"
+                                                      styleClass="sideview-topbar-button ui-commandlink ui-widget"
+                                                      style="opacity:0.4; cursor:not-allowed;">
+                                            <i class="bi bi-copy"/>
+                                        </h:commandLink>
+                                        <p:tooltip for="duplicateBtnDisabled" value="À venir" position="bottom" autoHide="false"/>
                                         <p:commandLink id="refreshPanelButton"
                                                        styleClass="sideview-topbar-button"
                                                        action="#{focusViewBean.mainPanel.refresh()}"

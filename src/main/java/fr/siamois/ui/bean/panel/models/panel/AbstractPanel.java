@@ -139,6 +139,14 @@ public abstract class AbstractPanel implements Serializable {
                 .build();
     }
 
+    public boolean canDuplicate() {
+        return false;
+    }
+
+    public void duplicate() {
+        // no-op by default
+    }
+
     public boolean isBreadcrumbVisible() {
         if (breadcrumb == null) return false;
         return isBreadcrumbVisible;

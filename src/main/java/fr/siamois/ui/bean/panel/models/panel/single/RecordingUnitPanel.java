@@ -43,10 +43,12 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 
+import fr.siamois.utils.MessageUtils;
 import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 
 @Slf4j
@@ -117,6 +119,30 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
                 .trigger(NewUnitContext.Trigger.toolbar())
                 .scope(NewUnitContext.Scope.linkedTo("ACTION", unit.getActionUnit().getId()))
                 .build();
+    }
+
+    @Override
+    public boolean canDuplicate() {
+        return true;
+    }
+
+    @Override
+    public void duplicate() {
+        RecordingUnitDTO copy = new RecordingUnitDTO(unit);
+        copy.setParents(new HashSet<>());
+        copy.setAuthor(sessionSettingsBean.getAuthenticatedUser());
+        copy.setCreatedBy(sessionSettingsBean.getAuthenticatedUser());
+
+        RecordingUnitDTO saved = recordingUnitService.save(copy);
+        saved.setFullIdentifier(recordingUnitService.generateFullIdentifier(saved.getActionUnit(), saved));
+        if (recordingUnitService.fullIdentifierAlreadyExistInAction(saved)) {
+            saved.setFullIdentifier(saved.getActionUnit().getRecordingUnitIdentifierFormat());
+            MessageUtils.displayWarnMessage(langBean, "recordingunit.error.identifier.alreadyExists");
+        }
+        saved = recordingUnitService.save(saved);
+
+        flowBean.addRecordingUnitToOverview(saved.getId(), this, null);
+        MessageUtils.displayInfoMessage(langBean, "common.action.duplicateEntity", unit.getFullIdentifier());
     }
 
     /**
