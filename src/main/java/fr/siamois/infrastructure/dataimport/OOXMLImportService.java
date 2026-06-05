@@ -27,6 +27,7 @@ public class OOXMLImportService {
     public static final String PERSON = "person";
     public static final String INSTITUTION = "institution";
     public static final String TYPE_URI = "type uri";
+    public static final String SIAMOIS_SYSTEM = "siamois system";
 
     public Map<String, String> readSheetMetadata(Workbook workbook) {
         Sheet metaSheet = workbook.getSheet("sheet_metadata");
@@ -97,16 +98,16 @@ public class OOXMLImportService {
             List<SpecimenSeeder.SpecimenSpecs> specimenSpecs =  new ArrayList<>();
             List<RecordingUnitRelSeeder.RecordingUnitRelDTO> recordingUnitDTOS =  new ArrayList<>();
             List<RecordingUnitStratiRelSeeder.RecordingUnitStratiRelDTO> stratiDTOS =  new ArrayList<>();
+            Sheet spatialSheet = workbook.getSheet(sheetIdToName.getOrDefault("spatial_unit", "Unité spatiale"));
 
             if(scope == ImportScope.ALL) {
                 Sheet institutionSheet = workbook.getSheet(sheetIdToName.getOrDefault(INSTITUTION, "Institution"));
                 Sheet personSheet      = workbook.getSheet(sheetIdToName.getOrDefault(PERSON, "Personne"));
-                Sheet spatialSheet     = workbook.getSheet(sheetIdToName.getOrDefault("spatial_unit", "Unité spatiale"));
                 Sheet codeSheet        = workbook.getSheet(sheetIdToName.getOrDefault("code", "Code"));
                 Sheet actionUnitSheet  = workbook.getSheet(sheetIdToName.getOrDefault("action_unit", "Unite action"));
                 institutions = parseInstitutions(institutionSheet);
                 persons = parsePersons(personSheet);
-                spatialUnits = parseSpatialUnits(spatialSheet);
+
                 actionCodes = parseActionCodes(codeSheet);
                 actionUnits = parseActionUnits(actionUnitSheet);
             }
@@ -116,6 +117,7 @@ public class OOXMLImportService {
             Sheet recordingRelSheet  = workbook.getSheet(sheetIdToName.getOrDefault("recordingRel", "UE_rel"));
             Sheet stratiSheet  = workbook.getSheet(sheetIdToName.getOrDefault("stratiRel", "Strati_Rel"));
 
+            spatialUnits = parseSpatialUnits(spatialSheet, scope, actionUnitDTO);
             recordingUnits = parseRecordingUnits(recordingUnitSheet, scope, actionUnitDTO);
             specimenSpecs = parseSpecimens(specimenSheet, scope, actionUnitDTO);
             recordingUnitDTOS = parseRecordingRels(recordingRelSheet);
@@ -191,7 +193,9 @@ public class OOXMLImportService {
         }
     }
 
-    public List<SpatialUnitSeeder.SpatialUnitSpecs> parseSpatialUnits(Sheet sheet) {
+    public List<SpatialUnitSeeder.SpatialUnitSpecs> parseSpatialUnits(Sheet sheet,
+                                                                      ImportScope scope,
+                                                                      ActionUnitDTO actionUnit) {
         try {
         Row header = sheet.getRow(0);
         Map<String, Integer> cols = indexColumns(header);
@@ -205,8 +209,8 @@ public class OOXMLImportService {
             if (name == null || name.isBlank()) return;
 
             String uriType      = getStringCellOrNull(row, cols, "uri type");
-            String creatorEmail = getStringCellOrNull(row, cols, "createur");
-            String institution  = getStringCellOrNull(row, cols, INSTITUTION);
+            String creatorEmail = SIAMOIS_SYSTEM;
+            String institution = actionUnit != null ? actionUnit.getCreatedByInstitution().getIdentifier() : getStringCellOrNull(row, cols, INSTITUTION);
             String enfantsRaw   = getStringCellOrNull(row, cols, "enfants");
 
             // 🔹 idt = vocabularyId, idc = conceptId
@@ -457,7 +461,7 @@ public class OOXMLImportService {
         OffsetDateTime endDate   = parseOptionalDate(row, cols, "date de fermeture");
 
         OffsetDateTime creationTime = OffsetDateTime.now();
-        String createdBy = "siamois system";
+        String createdBy = SIAMOIS_SYSTEM;
 
         SpatialUnitSeeder.SpatialUnitKey spatialKey = parseOptionalSpatialUnit(row, cols, "unite spatiale");
         ActionUnitSeeder.ActionUnitKey actionKey    = actionUnit != null ? new ActionUnitSeeder.ActionUnitKey(actionUnit.getFullIdentifier())
@@ -557,7 +561,7 @@ public class OOXMLImportService {
                     typeKey,
                     categoryKey,
                     designationKey,
-                    "siamois system",
+                    SIAMOIS_SYSTEM,
                     institutionId,
                     authors,
                     collectors,

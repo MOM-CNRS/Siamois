@@ -10,6 +10,7 @@ import jakarta.faces.application.FacesMessage;
 import jakarta.faces.context.FacesContext;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
+import org.primefaces.PrimeFaces;
 import org.primefaces.event.FileUploadEvent;
 import org.primefaces.model.DefaultStreamedContent;
 import org.primefaces.model.StreamedContent;
@@ -66,17 +67,20 @@ public class ProjectUploadSettingsBean {
 
     public void uploadSpec() {
         if(specs == null) {
-            FacesContext.getCurrentInstance().addMessage(null,
+            FacesContext.getCurrentInstance().addMessage("templateFormCC:templateForm:templateGrowl",
                     new FacesMessage(FacesMessage.SEVERITY_ERROR, "Rien à importer", null));
+            PrimeFaces.current().ajax().update("templateFormCC:templateForm:templateGrowl");
         }
         try {
             seeder.seedAll(specs,project);
-            FacesContext.getCurrentInstance().addMessage(null,
+            FacesContext.getCurrentInstance().addMessage("templateFormCC:templateForm:templateGrowl",
                     new FacesMessage(FacesMessage.SEVERITY_INFO, "Données importées avec succès", null));
+            PrimeFaces.current().ajax().update("templateFormCC:templateForm:templateGrowl");
             reset();
         } catch (Exception e) {
-            FacesContext.getCurrentInstance().addMessage(null,
+            FacesContext.getCurrentInstance().addMessage("templateFormCC:templateForm:templateGrowl",
                     new FacesMessage(FacesMessage.SEVERITY_ERROR, "Une erreur est survenue", e.getMessage()));
+            PrimeFaces.current().ajax().update("templateFormCC:templateForm:templateGrowl");
         }
     }
 

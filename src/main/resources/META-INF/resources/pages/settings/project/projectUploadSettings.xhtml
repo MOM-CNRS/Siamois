@@ -73,6 +73,26 @@
                         <p:outputPanel id="uploadOverview">
                             <p:tabView rendered="#{projectUploadSettingsBean.specs != null}">
 
+                                <p:tab title="Lieu">
+                                    <f:facet name="title">
+                                        <div style="display: flex; gap: 0.5em; align-items: center;">
+                                            <span>Lieu</span>
+                                            <p:badge value="#{projectUploadSettingsBean.specs.spatialUnits().size()}"
+                                                     style="background-color: var(--siamois-green);" class="ml-1"/>
+                                        </div>
+                                    </f:facet>
+                                    <div style="padding: 1em;">
+                                        <p:dataTable value="#{projectUploadSettingsBean.specs.spatialUnits()}" var="usp"
+                                                     paginator="true" rows="10" size="small" stripedRows="true"
+                                                     paginatorPosition="bottom" emptyMessage="Aucun lieu trouvé">
+                                            <p:column headerText="Nom" sortBy="#{usp.name()}">
+                                                <h:outputText value="#{usp.name()}" />
+                                            </p:column>
+                                        </p:dataTable>
+                                    </div>
+                                </p:tab>
+
+
                                 <p:tab title="UE">
                                     <f:facet name="title">
                                         <div style="display: flex; gap: 0.5em; align-items: center;">

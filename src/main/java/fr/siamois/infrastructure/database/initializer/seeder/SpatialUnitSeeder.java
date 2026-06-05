@@ -67,8 +67,8 @@ public class SpatialUnitSeeder {
                 if (c == null) throw new IllegalStateException("Concept introuvable");
                 return c;
             });
-            Person author = SeederUtils.field("authorEmail", () -> {
-                Person p = personSeeder.findPersonOrReturnNull(s.authorEmail);
+            Person author = SeederUtils.field("auteur", () -> {
+                Person p = personSeeder.findOrCreatePerson(s.authorEmail);
                 if (p == null) throw new IllegalStateException("Auteur introuvable");
                 return p;
             });

@@ -243,7 +243,7 @@ class OOXMLImportServiceTest {
         row(s, 2, "US 1", "uri?idt=th1&idc=2", "a@b.fr", "INST", null);
         row(s, 3, "US 2", "uri?idt=th1&idc=3", "a@b.fr", "INST", null);
 
-        List<SpatialUnitSeeder.SpatialUnitSpecs> specs = service.parseSpatialUnits(s);
+        List<SpatialUnitSeeder.SpatialUnitSpecs> specs = service.parseSpatialUnits(s, OOXMLImportService.ImportScope.ALL, null);
 
         SpatialUnitSeeder.SpatialUnitSpecs parent =
                 specs.stream()
