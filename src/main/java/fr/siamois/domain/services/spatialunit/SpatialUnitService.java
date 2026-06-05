@@ -376,6 +376,10 @@ public class SpatialUnitService implements ArkEntityService {
         }
 
         List<SpatialUnit> roots = new ArrayList<>(au.get().getSpatialContext());
+        SpatialUnit mainLocation = au.get().getMainLocation();
+        if (mainLocation != null && roots.stream().noneMatch(su -> mainLocation.getId().equals(su.getId()))) {
+            roots.add(0, mainLocation);
+        }
         List<Long> rootIds = roots.stream()
                 .map(SpatialUnit::getId)
                 .filter(Objects::nonNull)
