@@ -144,6 +144,11 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
         return "/panel/header/spatialUnitPanelHeader.xhtml";
     }
 
+    @Override
+    public UnitKind getCreationUnitKind() {
+        return UnitKind.SPATIAL;
+    }
+
 
 
 

@@ -336,6 +336,16 @@
                                             display: flex;
                                             border: 1px solid var(--siamois-green-light);
                                             border-radius: 15px;">
+                                        <p:commandLink id="createEntityBtn"
+                                                       rendered="#{focusViewBean.mainPanel.creationUnitKind != null and flowBean.isWriteMode}"
+                                                       styleClass="sideview-topbar-button"
+                                                       action="#{genericNewUnitDialogBean.openNewEntityDiag(focusViewBean.mainPanel.creationUnitKind, focusViewBean.mainPanel)}"
+                                                       update="newUnitForm"
+                                                       oncomplete="PF('newUnitDiag').show();"
+                                                       immediate="true">
+                                            <h:outputText styleClass="bi bi-plus-square"/>
+                                        </p:commandLink>
+                                        <p:tooltip for="createEntityBtn" value="Créer" position="bottom"/>
                                         <p:commandLink id="closeFocusLink"
                                                        rendered="#{not empty focusViewBean.mainPanel.goBackUrl}"
                                                        styleClass="sideview-topbar-button"

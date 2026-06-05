@@ -13,6 +13,7 @@ import fr.siamois.ui.bean.dialog.newunit.handler.INewUnitHandler;
 import fr.siamois.ui.bean.field.SpatialUnitFieldBean;
 import fr.siamois.ui.bean.panel.EntityForm;
 import fr.siamois.ui.bean.panel.FlowBean;
+import fr.siamois.ui.bean.panel.models.panel.AbstractPanel;
 import fr.siamois.ui.exceptions.CannotInitializeNewUnitDialogException;
 import fr.siamois.ui.form.EntityFormContext;
 import fr.siamois.ui.form.FormContextServices;
@@ -74,6 +75,7 @@ public class GenericNewUnitDialogBean<T extends AbstractEntityDTO>
 
     // creation  callback + contexte ====
     private transient EntityTableViewModel<T, ?> sourceTableModel;
+    private transient AbstractPanel sourcePanel;
     private transient NewUnitContext newUnitContext;
 
 
@@ -178,13 +180,18 @@ public class GenericNewUnitDialogBean<T extends AbstractEntityDTO>
             PrimeFaces.current().executeScript(js);
 
             // Display the new unit in the overview
-            switch(kind) {
-                case SPATIAL -> flowBean.addSpatialUnitToOverview(getUnitId(),sourceTableModel.getParentPanel(), null);
-                case RECORDING -> flowBean.addRecordingUnitToOverview(getUnitId(),sourceTableModel.getParentPanel(), null);
-                case ACTION -> flowBean.addActionUnitToOverview(getUnitId(),sourceTableModel.getParentPanel(), null);
-                case SPECIMEN -> flowBean.addSpecimenToOverview(getUnitId(),sourceTableModel.getParentPanel(), null);
-                case CONTAINER -> flowBean.addContainerToOverview(getUnitId(), sourceTableModel.getParentPanel(), null);
-                case PHASE -> flowBean.addPhaseToOverview(getUnitId(), sourceTableModel.getParentPanel(), null);
+            AbstractPanel parentPanel = sourceTableModel != null
+                    ? sourceTableModel.getParentPanel()
+                    : sourcePanel;
+            if (parentPanel != null) {
+                switch (kind) {
+                    case SPATIAL -> flowBean.addSpatialUnitToOverview(getUnitId(), parentPanel, null);
+                    case RECORDING -> flowBean.addRecordingUnitToOverview(getUnitId(), parentPanel, null);
+                    case ACTION -> flowBean.addActionUnitToOverview(getUnitId(), parentPanel, null);
+                    case SPECIMEN -> flowBean.addSpecimenToOverview(getUnitId(), parentPanel, null);
+                    case CONTAINER -> flowBean.addContainerToOverview(getUnitId(), parentPanel, null);
+                    case PHASE -> flowBean.addPhaseToOverview(getUnitId(), parentPanel, null);
+                }
             }
 
         } catch (EntityAlreadyExistsException e) {
@@ -256,10 +263,18 @@ public class GenericNewUnitDialogBean<T extends AbstractEntityDTO>
     Initializing the new entity dialog without context from home panel
      */
     public void openNewEntityDiag(UnitKind unitKind) {
-        NewUnitContext ctx = NewUnitContext.builder()
-                .kindToCreate(unitKind)
-                .trigger(NewUnitContext.Trigger.homePanel())
-                .build();
+        openNewEntityDiag(unitKind, null);
+    }
+
+    /*
+    Initializing the new entity dialog from a panel (no table). The given panel is used
+    as context for opening the overview after creation.
+     */
+    public void openNewEntityDiag(UnitKind unitKind, AbstractPanel panel) {
+        this.sourcePanel = panel;
+        NewUnitContext ctx = panel != null
+                ? panel.buildCreationContext(unitKind)
+                : NewUnitContext.builder().kindToCreate(unitKind).trigger(NewUnitContext.Trigger.homePanel()).build();
         try {
             selectKind(ctx, null);
         } catch (CannotInitializeNewUnitDialogException e) {

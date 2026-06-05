@@ -77,6 +77,7 @@ public class SpecimenHandler implements INewUnitHandler<SpecimenDTO> {
     }
 
     private void handleCellContext(NewUnitContext ctx, SpecimenDTO unit) {
+
         NewUnitContext.Trigger trigger = ctx.getTrigger();
         if (trigger == null || trigger.getClickedId() == null || trigger.getColumnKey() == null) {
             return;

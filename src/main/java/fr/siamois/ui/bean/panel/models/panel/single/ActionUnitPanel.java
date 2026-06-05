@@ -311,6 +311,11 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnitDTO> im
         return "/panel/header/actionUnitPanelHeader.xhtml";
     }
 
+    @Override
+    public UnitKind getCreationUnitKind() {
+        return UnitKind.ACTION;
+    }
+
     public void addNewSecondaryCode() {
         ActionCode code = new ActionCode();
         Concept c = new Concept();

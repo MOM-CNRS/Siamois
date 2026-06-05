@@ -30,6 +30,8 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 
+import fr.siamois.ui.bean.dialog.newunit.NewUnitContext;
+import fr.siamois.ui.bean.dialog.newunit.UnitKind;
 import java.io.Serializable;
 import java.util.List;
 
@@ -81,6 +83,21 @@ public class SpecimenPanel extends AbstractSingleEntityPanel<SpecimenDTO>  imple
     @Override
     public String displayHeader() {
         return "/panel/header/specimenPanelHeader.xhtml";
+    }
+
+    @Override
+    public UnitKind getCreationUnitKind() {
+        return UnitKind.SPECIMEN;
+    }
+
+    @Override
+    public NewUnitContext buildCreationContext(UnitKind kind) {
+        if (unit == null || unit.getRecordingUnit() == null) return super.buildCreationContext(kind);
+        return NewUnitContext.builder()
+                .kindToCreate(kind)
+                .trigger(NewUnitContext.Trigger.toolbar())
+                .scope(NewUnitContext.Scope.linkedTo("RECORDING", unit.getRecordingUnit().getId()))
+                .build();
     }
 
 

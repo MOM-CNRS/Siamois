@@ -104,6 +104,21 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
         return "/panel/header/recordingUnitPanelHeader.xhtml";
     }
 
+    @Override
+    public UnitKind getCreationUnitKind() {
+        return UnitKind.RECORDING;
+    }
+
+    @Override
+    public NewUnitContext buildCreationContext(UnitKind kind) {
+        if (unit == null || unit.getActionUnit() == null) return super.buildCreationContext(kind);
+        return NewUnitContext.builder()
+                .kindToCreate(kind)
+                .trigger(NewUnitContext.Trigger.toolbar())
+                .scope(NewUnitContext.Scope.linkedTo("ACTION", unit.getActionUnit().getId()))
+                .build();
+    }
+
     /**
      * Returns all the spatial units a recording unit can be attached to
      *

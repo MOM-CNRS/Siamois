@@ -26,6 +26,7 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 
+import fr.siamois.ui.bean.dialog.newunit.UnitKind;
 import java.io.Serializable;
 import java.util.List;
 
@@ -68,6 +69,11 @@ public class PhasePanel extends AbstractSingleEntityPanel<PhaseDTO> implements S
     @Override
     public String displayHeader() {
         return "/panel/header/phasePanelHeader.xhtml";
+    }
+
+    @Override
+    public UnitKind getCreationUnitKind() {
+        return UnitKind.PHASE;
     }
 
     @Override

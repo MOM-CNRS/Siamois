@@ -50,6 +50,17 @@
                                                             align-items: center;
                                                             border-radius: 15px;">
 
+                                <p:commandLink id="createEntityBtn"
+                                               rendered="#{panelModel.parentOrOverview.creationUnitKind != null and flowBean.isWriteMode}"
+                                               styleClass="sideview-topbar-button"
+                                               action="#{genericNewUnitDialogBean.openNewEntityDiag(panelModel.parentOrOverview.creationUnitKind, panelModel.parentOrOverview)}"
+                                               update="newUnitForm"
+                                               oncomplete="PF('newUnitDiag').show();"
+                                               immediate="true">
+                                    <h:outputText styleClass="bi bi-plus-square"/>
+                                </p:commandLink>
+                                <p:tooltip autoHide="false" value="Créer" position="bottom" for="createEntityBtn"/>
+
                                 <p:commandLink styleClass="sideview-topbar-button"
                                                id="closeSideview"
                                                action="#{panelModel.closeOverview()}">

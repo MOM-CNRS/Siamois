@@ -1,6 +1,8 @@
 package fr.siamois.ui.bean.panel.models.panel;
 
 import fr.siamois.dto.view.TableViewState;
+import fr.siamois.ui.bean.dialog.newunit.NewUnitContext;
+import fr.siamois.ui.bean.dialog.newunit.UnitKind;
 import fr.siamois.ui.bean.panel.models.PanelBreadcrumb;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -124,6 +126,17 @@ public abstract class AbstractPanel implements Serializable {
      */
     public String displayHeader() {
         return null;
+    }
+
+    public UnitKind getCreationUnitKind() {
+        return null;
+    }
+
+    public NewUnitContext buildCreationContext(UnitKind kind) {
+        return NewUnitContext.builder()
+                .kindToCreate(kind)
+                .trigger(NewUnitContext.Trigger.homePanel())
+                .build();
     }
 
     public boolean isBreadcrumbVisible() {
