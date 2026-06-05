@@ -96,6 +96,7 @@ public class OOXMLImportService {
             List<ActionUnitSeeder.ActionUnitSpecs> actionUnits =  new ArrayList<>();
             List<RecordingUnitSeeder.RecordingUnitSpecs> recordingUnits =  new ArrayList<>();
             List<SpecimenSeeder.SpecimenSpecs> specimenSpecs =  new ArrayList<>();
+            List<PhaseSeeder.PhaseSpecs> phaseSpecs = new ArrayList<>();
             List<RecordingUnitRelSeeder.RecordingUnitRelDTO> recordingUnitDTOS =  new ArrayList<>();
             List<RecordingUnitStratiRelSeeder.RecordingUnitStratiRelDTO> stratiDTOS =  new ArrayList<>();
             Sheet spatialSheet = workbook.getSheet(sheetIdToName.getOrDefault("spatial_unit", "Unité spatiale"));
@@ -117,14 +118,17 @@ public class OOXMLImportService {
             Sheet recordingRelSheet  = workbook.getSheet(sheetIdToName.getOrDefault("recordingRel", "UE_rel"));
             Sheet stratiSheet  = workbook.getSheet(sheetIdToName.getOrDefault("stratiRel", "Strati_Rel"));
 
+            Sheet phaseSheet = workbook.getSheet(sheetIdToName.getOrDefault("phase", "Phase"));
+
             spatialUnits = parseSpatialUnits(spatialSheet, scope, actionUnitDTO);
             recordingUnits = parseRecordingUnits(recordingUnitSheet, scope, actionUnitDTO);
             specimenSpecs = parseSpecimens(specimenSheet, scope, actionUnitDTO);
+            phaseSpecs = parsePhases(phaseSheet, scope, actionUnitDTO);
             recordingUnitDTOS = parseRecordingRels(recordingRelSheet);
             stratiDTOS = parseStratiRels(stratiSheet);
 
             return new ImportSpecs(institutions, persons, spatialUnits, actionCodes, actionUnits,
-                    recordingUnits, specimenSpecs, recordingUnitDTOS, stratiDTOS);
+                    recordingUnits, specimenSpecs, phaseSpecs, recordingUnitDTOS, stratiDTOS);
         }
     }
 
@@ -473,6 +477,8 @@ public class OOXMLImportService {
         String matrixTexture = getStringCellOrNull(row, cols.get("texture de la matrice"));
         String matrixComp    = getStringCellOrNull(row, cols.get("composition de la matrice"));
 
+        List<String> phaseIdentifiers = parsePersonList(getStringCellOrNull(row, cols, "phases"));
+
         return Optional.of(new RecordingUnitSeeder.RecordingUnitSpecs(
                 identStr,
                 identifier,
@@ -493,7 +499,8 @@ public class OOXMLImportService {
                 description,
                 matrixColor,
                 matrixComp,
-                matrixTexture
+                matrixTexture,
+                phaseIdentifiers
         ));
     }
 
@@ -581,6 +588,46 @@ public class OOXMLImportService {
 
 
 
+    public List<PhaseSeeder.PhaseSpecs> parsePhases(Sheet sheet, ImportScope scope, ActionUnitDTO actionUnit) {
+        if (sheet == null) return List.of();
+        try {
+            Row header = sheet.getRow(0);
+            if (header == null) return List.of();
+
+            Map<String, Integer> cols = indexColumns(header);
+            List<PhaseSeeder.PhaseSpecs> result = new ArrayList<>();
+
+            forEachDataRow(sheet, row -> {
+                String identifier = getStringCellOrNull(row, cols, IDENTIFIANT);
+                if (identifier == null || identifier.isBlank()) return;
+
+                String title       = getStringCellOrNull(row, cols, "titre");
+                ConceptSeeder.ConceptKey type = conceptKeyFromUri(getStringCellOrNull(row, cols, TYPE_URI));
+                String description  = getStringCellOrNull(row, cols, "description");
+                Integer orderNumber = getIntegerCellOrNull(row, cols, "ordre");
+                Integer lowerBound  = getIntegerCellOrNull(row, cols, "borne inferieure");
+                Integer upperBound  = getIntegerCellOrNull(row, cols, "borne superieure");
+
+                String authorEmail = getStringCellOrNull(row, cols, "auteur");
+
+                ActionUnitSeeder.ActionUnitKey actionKey = actionUnit != null
+                        ? new ActionUnitSeeder.ActionUnitKey(
+                                actionUnit.getFullIdentifier(),
+                                actionUnit.getCreatedByInstitution().getIdentifier())
+                        : new ActionUnitSeeder.ActionUnitKey(
+                                getStringCellOrNull(row, cols, "projet"),
+                                getStringCellOrNull(row, cols, INSTITUTION));
+
+                result.add(new PhaseSeeder.PhaseSpecs(
+                        identifier, title, type, description, orderNumber, lowerBound, upperBound, authorEmail, actionKey));
+            });
+
+            return result;
+        } catch (Exception e) {
+            throw new IllegalStateException("[Feuille '" + sheet.getSheetName() + "'] : " + e.getMessage(), e);
+        }
+    }
+
     public Optional<String> extractIdtFromUri(String uri) {
         if (uri == null) return Optional.empty();
         int idx = uri.indexOf("idt=");
@@ -656,8 +703,24 @@ public class OOXMLImportService {
         }
     }
 
+    public Integer getIntegerCellOrNull(Row row, Map<String, Integer> cols, String key) {
+        Integer colIndex = cols.get(key);
+        if (colIndex == null) return null;
+        Cell cell = row.getCell(colIndex);
+        if (cell == null) return null;
+        if (cell.getCellType() == CellType.NUMERIC) return (int) cell.getNumericCellValue();
+        String s = getStringCell(cell);
+        return parseIntegerSafe(s);
+    }
+
     public String getStringCell(Cell cell) {
         if (cell == null) return null;
+        if (cell.getCellType() == CellType.NUMERIC) {
+            double v = cell.getNumericCellValue();
+            return v == Math.floor(v) && !Double.isInfinite(v)
+                    ? String.valueOf((long) v)
+                    : String.valueOf(v);
+        }
         String val = cell.getStringCellValue();
         return val != null ? val.trim() : null;
     }

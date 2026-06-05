@@ -7,6 +7,8 @@ import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
+import fr.siamois.domain.models.phase.Phase;
+import fr.siamois.infrastructure.database.repositories.PhaseRepository;
 import fr.siamois.infrastructure.database.repositories.SpatialUnitRepository;
 import fr.siamois.infrastructure.database.repositories.actionunit.ActionUnitRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitRepository;
@@ -15,8 +17,10 @@ import org.springframework.stereotype.Service;
 
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 
 @Service
@@ -29,6 +33,7 @@ public class RecordingUnitSeeder {
     private final SpatialUnitRepository spatialUnitRepository;
     private final ActionUnitRepository actionUnitRepository;
     private final PersonSeeder personSeeder;
+    private final PhaseRepository phaseRepository;
 
     public record RecordingUnitSpecs(String fullIdentifier, Integer identifier,
                                      ConceptSeeder.ConceptKey type,
@@ -48,7 +53,8 @@ public class RecordingUnitSeeder {
                                      String description,
                                      String matrixColor,
                                      String matrixComposition,
-                                     String matrixTexture) {
+                                     String matrixTexture,
+                                     List<String> phaseIdentifiers) {
 
     }
 
@@ -136,6 +142,16 @@ public class RecordingUnitSeeder {
             toGetOrCreate.setClosingDate(s.endDate);
             toGetOrCreate.setActionUnit(au);
             toGetOrCreate.setSpatialUnit(su);
+
+            if (s.phaseIdentifiers != null && !s.phaseIdentifiers.isEmpty()) {
+                Set<Phase> phases = new HashSet<>();
+                for (String phaseId : s.phaseIdentifiers) {
+                    phaseRepository.findByIdentifierAndActionUnitId(phaseId, au.getId())
+                            .ifPresent(phases::add);
+                }
+                toGetOrCreate.setPhases(phases);
+            }
+
             getOrCreateRecordingUnit(toGetOrCreate);
 
             } catch (Exception e) {

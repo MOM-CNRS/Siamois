@@ -192,11 +192,21 @@
                                     <f:facet name="title">
                                         <div style="display: flex; gap: 0.5em; align-items: center;">
                                             <span>Phase</span>
-                                            <p:badge value="#{0}" style="background-color: var(--siamois-green);" class="ml-1"/>
+                                            <p:badge value="#{projectUploadSettingsBean.specs.phaseSpecs().size()}"
+                                                     style="background-color: var(--siamois-green);" class="ml-1"/>
                                         </div>
                                     </f:facet>
-                                    <div style="padding: 3em; text-align: center; color: var(--text-secondary);">
-                                        Aucune donnée ou structure à importer pour cette feuille.
+                                    <div style="padding: 1em;">
+                                        <p:dataTable value="#{projectUploadSettingsBean.specs.phaseSpecs()}" var="phase"
+                                                     paginator="true" rows="10" size="small" stripedRows="true"
+                                                     paginatorPosition="bottom" emptyMessage="Aucune phase trouvée">
+                                            <p:column headerText="Identifiant" sortBy="#{phase.identifier()}">
+                                                <h:outputText value="#{phase.identifier()}" />
+                                            </p:column>
+                                            <p:column headerText="Titre" sortBy="#{phase.title()}">
+                                                <h:outputText value="#{phase.title()}" />
+                                            </p:column>
+                                        </p:dataTable>
                                     </div>
                                 </p:tab>
                             </p:tabView>

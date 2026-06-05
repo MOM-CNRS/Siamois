@@ -3,6 +3,8 @@ package fr.siamois.domain.models.phase;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import fr.siamois.domain.models.FieldCode;
 import fr.siamois.domain.models.TraceableEntity;
+import fr.siamois.domain.models.actionunit.ActionUnit;
+import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.form.customform.CustomForm;
 import fr.siamois.domain.models.phase.form.PhaseDetailsForm;
 import fr.siamois.domain.models.phase.form.PhaseNewUnitForm;
@@ -41,6 +43,15 @@ public class Phase extends TraceableEntity {
     @NotNull
     @Column(name = "identifier")
     private String identifier;
+
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "fk_action_unit_id")
+    private ActionUnit actionUnit;
+
+    @Audited(targetAuditMode = org.hibernate.envers.RelationTargetAuditMode.NOT_AUDITED)
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "fk_author_id")
+    private Person author;
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "fk_type")

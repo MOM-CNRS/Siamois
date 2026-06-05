@@ -13,11 +13,13 @@ public class ProjectDataSeeder {
     private final RecordingUnitRelSeeder recordingUnitRelSeeder;
     private final RecordingUnitStratiRelSeeder recordingUnitStratiRelSeeder;
     private final SpatialUnitSeeder spatialUnitSeeder;
+    private final PhaseSeeder phaseSeeder;
 
     public void seedAll(ImportSpecs spec, ActionUnitDTO project) {
         spatialUnitSeeder.seed(spec.spatialUnits());
+        phaseSeeder.seed(spec.phaseSpecs());
         recordingUnitSeeder.seed(spec.recordingUnits());
-        specimenSeeder.seed(spec.specimenSpecs(),project.getCreatedByInstitution().getId());
+        specimenSeeder.seed(spec.specimenSpecs(), project.getCreatedByInstitution().getId());
         recordingUnitStratiRelSeeder.seed(spec.recordingUnitStratiRelSpecs(), project.getCreatedByInstitution().getId(),
                 project.getFullIdentifier());
         recordingUnitRelSeeder.seed(spec.recordingUnitRelSpecs(), project.getCreatedByInstitution().getId(),

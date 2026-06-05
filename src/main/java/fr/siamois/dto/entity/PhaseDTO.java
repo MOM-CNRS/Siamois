@@ -13,6 +13,7 @@ import java.util.Set;
 public class PhaseDTO extends AbstractEntityDTO {
 
     private String identifier;
+    private ActionUnitSummaryDTO actionUnit;
     private ConceptDTO type;
     private String title;
     private String description;

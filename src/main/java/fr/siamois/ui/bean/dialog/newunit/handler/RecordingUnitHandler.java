@@ -45,9 +45,12 @@ public class RecordingUnitHandler implements INewUnitHandler<RecordingUnitDTO> {
     @Override
     public List<SpatialUnitSummaryDTO> getSpatialUnitOptions(RecordingUnitDTO unit) {
         ActionUnitDTO actionUnit = actionUnitService.findById(unit.getActionUnit().getId());
-        // Return the spatial context of the parent action
         if (actionUnit != null) {
-            return new ArrayList<>(actionUnit.getSpatialContext());
+            List<SpatialUnitSummaryDTO> options = new ArrayList<>(actionUnit.getSpatialContext());
+            if (actionUnit.getMainLocation() != null && !options.contains(actionUnit.getMainLocation())) {
+                options.add(0, actionUnit.getMainLocation());
+            }
+            return options;
         }
 
         return List.of();

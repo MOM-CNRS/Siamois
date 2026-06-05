@@ -44,12 +44,12 @@ public class ProjectUploadSettingsBean {
         this.project = project;
 
         templateFile = DefaultStreamedContent.builder()
-                .name("import_projet_sample.xlsx")
+                .name("Import_Chartres_Projet.xlsx")
                 .contentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
                 .stream(() -> {
                     try {
                         return new ClassPathResource(
-                                "datasets/import_projet_sample.xlsx")
+                                "datasets/Import_Chartres_Projet.xlsx")
                                 .getInputStream();
                     } catch (IOException e) {
                         throw new RuntimeException(e);
