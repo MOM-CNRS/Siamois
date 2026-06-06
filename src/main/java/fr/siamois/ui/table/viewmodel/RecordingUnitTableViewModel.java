@@ -200,6 +200,7 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
 
     @Override
     public Integer resolveCount(TableColumn column, RecordingUnitDTO ru) {
+        if (ru == null) return 0;
         if (column instanceof RelationColumn rel) {
             return switch (rel.getCountKey()) {
                 case PARENTS -> ru.getParentsCount() == null ? 0 : ru.getParentsCount();

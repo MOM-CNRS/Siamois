@@ -1,0 +1,66 @@
+<ui:fragment xmlns="http://www.w3.org/1999/xhtml"
+             xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
+             xmlns:h="http://java.sun.com/jsf/html"
+             xmlns:p="http://primefaces.org/ui">
+
+    <!--@elvariable id="tab"        type="fr.siamois.ui.bean.panel.models.panel.single.tab.PanelTab"-->
+    <!--@elvariable id="panelModel" type="fr.siamois.ui.bean.panel.models.panel.single.ActionUnitPanel"-->
+
+    <h:panelGroup id="tabTitle_#{tab.id}" layout="block" style="display:flex; align-items:center; gap:0.3em; font-weight:bold;">
+
+        <!-- View mode -->
+        <span id="tabView_#{tab.id}" style="display:flex; align-items:center; gap:0.3em;">
+            <i class="#{tab.icon}"/>
+            <span id="tabLabel_#{tab.id}">#{tab.customTitle}</span>
+        </span>
+
+        <!-- Edit mode (hidden by default) -->
+        <span id="tabEdit_#{tab.id}" style="display:none; align-items:center; gap:0.2em;">
+            <input id="tabInput_#{tab.id}" type="text" value="#{tab.customTitle}"
+                   style="width:8rem; font-size:inherit; font-weight:bold;"
+                   onclick="event.stopPropagation(); event.preventDefault();"
+                   onkeydown="event.stopPropagation(); if(event.key==='Enter'){ event.preventDefault(); document.getElementById('tabSave_#{tab.id}').click(); } if(event.key==='Escape'){ event.preventDefault(); tabCancelEdit('#{tab.id}'); }"/>
+            <button id="tabSave_#{tab.id}" type="button"
+                    class="ui-button ui-button-icon-only"
+                    style="padding:0.1rem 0.3rem; min-width:unset;"
+                    title="Enregistrer"
+                    onclick="event.stopPropagation(); event.preventDefault(); renameTabCmd#{panelModel.unitId}([{name:'tabId',value:'#{tab.id}'},{name:'newTitle',value:document.getElementById('tabInput_#{tab.id}').value}]);">
+                <i class="bi bi-check"/>
+            </button>
+            <button type="button"
+                    class="ui-button ui-button-icon-only"
+                    style="padding:0.1rem 0.3rem; min-width:unset;"
+                    title="Annuler"
+                    onclick="event.stopPropagation(); event.preventDefault(); tabCancelEdit('#{tab.id}');">
+                <i class="bi bi-x"/>
+            </button>
+        </span>
+
+    </h:panelGroup>
+
+    <script>
+        function tabStartEdit(tabId) {
+            document.getElementById('tabView_' + tabId).style.display = 'none';
+            var edit = document.getElementById('tabEdit_' + tabId);
+            edit.style.display = 'flex';
+            var input = document.getElementById('tabInput_' + tabId);
+            input.value = document.getElementById('tabLabel_' + tabId).textContent.trim();
+            input.focus();
+            input.select();
+        }
+        function tabCancelEdit(tabId) {
+            document.getElementById('tabEdit_' + tabId).style.display = 'none';
+            document.getElementById('tabView_' + tabId).style.display = 'flex';
+        }
+    </script>
+
+    <p:contextMenu for="tabTitle_#{tab.id}">
+        <p:menuitem value="Renommer"
+                    icon="bi bi-pencil"
+                    onclick="tabStartEdit('#{tab.id}'); return false;"/>
+        <p:menuitem value="Fermer"
+                    icon="bi bi-x-lg"
+                    onclick="removeTabCmd#{panelModel.unitId}([{name:'tabId',value:'#{tab.id}'}]); return false;"/>
+    </p:contextMenu>
+
+</ui:fragment>

@@ -11,7 +11,7 @@
         <table:entityTable
                 tableModel="#{tabModel.tableModel}"
                 panelIndex="#{panelIndex}"
-                id="recordingList"
+                id="#{empty tableId ? 'recordingList' : tableId}"
         />
     </div>
 

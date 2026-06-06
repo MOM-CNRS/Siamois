@@ -40,6 +40,8 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import jakarta.faces.context.FacesContext;
+import org.primefaces.PrimeFaces;
 import org.primefaces.model.menu.DefaultMenuItem;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.config.BeanDefinition;
@@ -118,6 +120,8 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnitDTO> im
     // Linked recording units
     private Integer totalRecordingUnitCount;
     private Integer totalSpecimenCount;
+
+    private int dynamicTabCounter = 0;
 
 
     public ActionUnitPanel(ApplicationContext context) {
@@ -548,5 +552,63 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnitDTO> im
         return "spatial-unit";
     }
 
+    public void addRecordingUnitTab() {
+        dynamicTabCounter++;
+
+        RecordingUnitLazyDataModel lazyModel = new RecordingUnitLazyDataModel(
+                recordingUnitService, sessionSettingsBean, langBean);
+        lazyModel.withConstantFilter(ACTION_UNIT_FILTER, List.of(unit.getId()), CONTAINS);
+
+        RecordingUnitTableViewModel vm = new RecordingUnitTableViewModel(
+                lazyModel, formService, sessionSettingsBean,
+                spatialUnitTreeService, spatialUnitService, navBean, flowBean,
+                (GenericNewUnitDialogBean<RecordingUnitDTO>) genericNewUnitDialogBean,
+                recordingUnitWriteVerifier, recordingUnitService, langBean, formContextServices);
+        vm.setParentPanel(this);
+        RecordingUnitTableDefinitionFactory.applyTo(vm);
+        vm.setToolbarCreateConfig(
+                ToolbarCreateConfig.builder()
+                        .kindToCreate(UnitKind.RECORDING)
+                        .scopeSupplier(() -> NewUnitContext.Scope.builder()
+                                .key("ACTION").entityId(unit.getId()).build())
+                        .build());
+
+        RecordingTab newTab = new RecordingTab(
+                "common.entity.recordingUnits",
+                "bi bi-pencil-square",
+                "dynamicRecordingTab_" + dynamicTabCounter,
+                vm,
+                totalRecordingUnitCount);
+        newTab.setCustomTitle(langBean.msg("common.entity.recordingUnits") + " #" + dynamicTabCounter);
+        newTab.setCloseable(true);
+
+        tabs.add(newTab);
+        activeTabIndex = tabs.size() - 1;
+    }
+
+    public void removeTabById(String tabId) {
+        tabs.removeIf(t -> t.getId().equals(tabId));
+        if (activeTabIndex >= tabs.size()) {
+            activeTabIndex = tabs.size() - 1;
+        }
+    }
+
+    public void removeTabByIdFromParam() {
+        String tabId = FacesContext.getCurrentInstance().getExternalContext()
+                .getRequestParameterMap().get("tabId");
+        removeTabById(tabId);
+    }
+
+    public void renameTabFromParam() {
+        var params = FacesContext.getCurrentInstance().getExternalContext().getRequestParameterMap();
+        String tabId = params.get("tabId");
+        String newTitle = params.get("newTitle");
+        if (tabId != null && newTitle != null) {
+            tabs.stream()
+                    .filter(t -> t.getId().equals(tabId))
+                    .findFirst()
+                    .ifPresent(t -> t.setCustomTitle(newTitle.trim().isEmpty() ? t.getCustomTitle() : newTitle.trim()));
+        }
+    }
 
 }

@@ -2,22 +2,48 @@
              xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
              xmlns:p="http://primefaces.org/ui"
              xmlns:f="http://xmlns.jcp.org/jsf/core"
-
+             xmlns:c="http://java.sun.com/jsp/jstl/core" xmlns:h="http://java.sun.com/jsf/html"
 >
 
-    <!--@elvariable id="panelModel" type="fr.siamois.ui.bean.panel.models.panel.single.AbstractSingleEntityPanel"-->
+    <!--@elvariable id="panelModel" type="fr.siamois.ui.bean.panel.models.panel.single.ActionUnitPanel"-->
     <!--@elvariable id="panelIndex" type="Integer"-->
+
+    <!-- RemoteCommands outside the TabView NamingContainer — tab facet components cannot fire JSF actions directly -->
+    <p:remoteCommand name="addRecordingUnitTabCmd#{panelModel.unitId}"
+                     action="#{panelModel.addRecordingUnitTab()}"
+                     process="@this"
+                     update=":singlePanelUnitForm-#{panelIndex}:singlePanelUnitTabs"
+                     onstart="showProgressBar(PF('pbBarAjax_#{panelIndex}'), 'var(--main-color)');"
+                     oncomplete="hideProgressBar(PF('pbBarAjax_#{panelIndex}'));"/>
+    <p:remoteCommand name="removeTabCmd#{panelModel.unitId}"
+                     action="#{panelModel.removeTabByIdFromParam()}"
+                     process="@this"
+                     update=":singlePanelUnitForm-#{panelIndex}:singlePanelUnitTabs"/>
+    <p:remoteCommand name="renameTabCmd#{panelModel.unitId}"
+                     action="#{panelModel.renameTabFromParam()}"
+                     process="@this"
+                     update=":singlePanelUnitForm-#{panelIndex}:singlePanelUnitTabs"/>
 
     <!-- Tabs -->
     <p:tabView id="singlePanelUnitTabs" activeIndex="#{panelModel.activeTabIndex}" dynamic="true">
+
+        <f:facet name="actions">
+            <p:splitButton value="#{langBean.msg('panel.tab.add')}"
+                           icon="bi bi-plus-lg"
+                           type="button"
+                           onclick="addRecordingUnitTabCmd#{panelModel.unitId}();">
+                <p:menuitem value="#{langBean.msg('common.entity.recordingUnits')}"
+                            icon="bi bi-pencil-square"
+                            onclick="addRecordingUnitTabCmd#{panelModel.unitId}();"/>
+            </p:splitButton>
+        </f:facet>
+
         <p:ajax
                 event="tabChange"
                 listener="#{panelModel.onTabChange}"
                 onstart="showProgressBar(PF('pbBarAjax_#{panelIndex}'), 'var(--main-color)');"
                 oncomplete="hideProgressBar(PF('pbBarAjax_#{panelIndex}'));"
         />
-
-
 
             <!-- details tab -->
             <p:tab>
@@ -107,14 +133,26 @@
 
         </p:tab>
 
-
-
-
-
-
+        <!-- Dynamic tabs (added at runtime) -->
+        <c:forEach items="#{panelModel.tabs}" var="extraTab" begin="4">
+            <p:tab>
+                <f:facet name="title">
+                    <ui:include src="/pages/shared/tab/dynamicTabTitle.xhtml">
+                        <ui:param name="tab"        value="#{extraTab}"/>
+                        <ui:param name="panelModel" value="#{panelModel}"/>
+                        <ui:param name="panelIndex" value="#{panelIndex}"/>
+                    </ui:include>
+                </f:facet>
+                <ui:include src="#{extraTab.getViewName()}">
+                    <ui:param name="panelModel" value="#{panelModel}"/>
+                    <ui:param name="panelIndex" value="#{panelIndex}"/>
+                    <ui:param name="tabModel"   value="#{extraTab}"/>
+                    <ui:param name="tableId"    value="recordingList_#{extraTab.id}"/>
+                </ui:include>
+            </p:tab>
+        </c:forEach>
 
     </p:tabView>
-
 
 
 </ui:fragment>

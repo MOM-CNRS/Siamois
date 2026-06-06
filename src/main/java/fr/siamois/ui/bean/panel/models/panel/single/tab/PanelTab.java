@@ -10,6 +10,8 @@ public abstract class PanelTab {
     private String titleCode;
     private String icon;
     private String id;
+    private String customTitle;
+    private boolean closeable = false;
     private static final String ROOT = "singlePanelUnitForm:singlePanelUnitTabs";
 
     public String getRoot() {
