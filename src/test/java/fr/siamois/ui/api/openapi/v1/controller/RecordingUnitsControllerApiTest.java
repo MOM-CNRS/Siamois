@@ -667,6 +667,59 @@ class RecordingUnitsControllerApiTest {
     }
 
     @Test
+    void addExistingChild_returns200_withRelations() throws Exception {
+        when(personMapper.convert(person)).thenReturn(personDto);
+        when(institutionService.findInstitutionsOfPerson(personDto)).thenReturn(Set.of(institutionDto));
+
+        RecordingUnitSummaryDTO child = new RecordingUnitSummaryDTO();
+        child.setId(99L);
+        RecordingUnitRelationsData relations = new RecordingUnitRelationsData(List.of(), List.of(), List.of(child));
+        when(recordingUnitOpenApiService.addExistingChild(eq("5"), eq(99L), eq(personDto), eq(Set.of(10L))))
+                .thenReturn(relations);
+
+        mockMvc.perform(post("/api/v1/recording-units/5/children")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"relatedRecordingUnitId\":99}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.children", hasSize(1)))
+                .andExpect(jsonPath("$.data.children[0].id").value(99));
+
+        verify(recordingUnitOpenApiService).addExistingChild("5", 99L, personDto, Set.of(10L));
+    }
+
+    @Test
+    void addExistingChild_withoutRelatedId_returns400() throws Exception {
+        when(personMapper.convert(person)).thenReturn(personDto);
+        when(institutionService.findInstitutionsOfPerson(personDto)).thenReturn(Set.of(institutionDto));
+
+        mockMvc.perform(post("/api/v1/recording-units/5/children")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isBadRequest());
+
+        verifyNoInteractions(recordingUnitOpenApiService);
+    }
+
+    @Test
+    void removeExistingParent_returns200_withRelations() throws Exception {
+        when(personMapper.convert(person)).thenReturn(personDto);
+        when(institutionService.findInstitutionsOfPerson(personDto)).thenReturn(Set.of(institutionDto));
+
+        RecordingUnitSummaryDTO parent = new RecordingUnitSummaryDTO();
+        parent.setId(88L);
+        RecordingUnitRelationsData relations = new RecordingUnitRelationsData(List.of(), List.of(parent), List.of());
+        when(recordingUnitOpenApiService.removeExistingParent(eq("5"), eq(88L), eq(personDto), eq(Set.of(10L))))
+                .thenReturn(relations);
+
+        mockMvc.perform(delete("/api/v1/recording-units/5/parents/88"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.parents", hasSize(1)))
+                .andExpect(jsonPath("$.data.parents[0].id").value(88));
+
+        verify(recordingUnitOpenApiService).removeExistingParent("5", 88L, personDto, Set.of(10L));
+    }
+
+    @Test
     void getRecordingUnitDocuments_withoutAuth_returns401() throws Exception {
         SecurityContextHolder.clearContext();
 

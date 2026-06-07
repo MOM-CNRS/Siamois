@@ -689,6 +689,51 @@ class RecordingUnitOpenApiServiceTest {
     }
 
     @Test
+    void addExistingChild_linksUnitsAndReturnsRelations() {
+        RecordingUnit parentEntity = new RecordingUnit();
+        parentEntity.setId(5L);
+        RecordingUnitDTO parentDto = new RecordingUnitDTO();
+        parentDto.setId(5L);
+        InstitutionDTO institution = new InstitutionDTO();
+        institution.setId(10L);
+        parentDto.setCreatedByInstitution(institution);
+        when(recordingUnitService.findAccessibleRecordingUnitWithEntity(eq("5"), eq(SCOPE), isNull()))
+                .thenReturn(new RecordingUnitService.AccessibleRecordingUnit(parentEntity, parentDto));
+        when(permissionService.hasWritePermission(any(UserInfo.class), eq(parentDto))).thenReturn(true);
+        when(recordingUnitService.requireAccessibleRecordingUnitByPrimaryKey(99L, SCOPE)).thenReturn(new RecordingUnitDTO());
+        RecordingUnitRelationsData relations = new RecordingUnitRelationsData(List.of(), List.of(), List.of());
+        when(recordingUnitService.findRelationsForAccessibleRecordingUnit("5", SCOPE)).thenReturn(
+                new RecordingUnitService.RecordingUnitRelationsBundle(List.of(), List.of(), List.of()));
+
+        RecordingUnitRelationsData data = service.addExistingChild("5", 99L, personDto, SCOPE);
+
+        assertThat(data).isNotNull();
+        verify(recordingUnitService).addHierarchyChild(5L, 99L);
+        verify(recordingUnitService).findRelationsForAccessibleRecordingUnit("5", SCOPE);
+    }
+
+    @Test
+    void addExistingChild_withoutWritePermission_throws403() {
+        RecordingUnit parentEntity = new RecordingUnit();
+        parentEntity.setId(5L);
+        RecordingUnitDTO parentDto = new RecordingUnitDTO();
+        parentDto.setId(5L);
+        InstitutionDTO institution = new InstitutionDTO();
+        institution.setId(10L);
+        parentDto.setCreatedByInstitution(institution);
+        when(recordingUnitService.findAccessibleRecordingUnitWithEntity(eq("5"), eq(SCOPE), isNull()))
+                .thenReturn(new RecordingUnitService.AccessibleRecordingUnit(parentEntity, parentDto));
+        when(permissionService.hasWritePermission(any(UserInfo.class), eq(parentDto))).thenReturn(false);
+
+        assertThatThrownBy(() -> service.addExistingChild("5", 99L, personDto, SCOPE))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode().value())
+                        .isEqualTo(HttpStatus.FORBIDDEN.value()));
+
+        verify(recordingUnitService, never()).addHierarchyChild(any(Long.class), any(Long.class));
+    }
+
+    @Test
     void buildRecordingUnitCreateForm_unknownOrganization_throws404() {
         when(institutionService.findById(10L)).thenReturn(null);
 

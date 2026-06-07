@@ -560,6 +560,79 @@ public class RecordingUnitService implements ArkEntityService {
         return toAdjacentUnitSummaries(unit.getChildren());
     }
 
+    /**
+     * Lie une UE existante comme enfant direct d'une autre (table {@code recording_unit_hierarchy}).
+     */
+    @Transactional
+    @CacheEvict({
+            "InstitutionHasRootChildrenRU",
+            "ActionHasRootChildrenRU"
+    })
+    public void addHierarchyChild(long parentId, long childId) {
+        if (parentId == childId) {
+            throw new IllegalArgumentException("Une unité d'enregistrement ne peut pas être son propre enfant");
+        }
+
+        RecordingUnit parent = recordingUnitRepository.findById(parentId)
+                .orElseThrow(() -> new RecordingUnitNotFoundException(
+                        "RecordingUnit not found with ID: " + parentId));
+        RecordingUnit child = recordingUnitRepository.findById(childId)
+                .orElseThrow(() -> new RecordingUnitNotFoundException(
+                        "RecordingUnit not found with ID: " + childId));
+
+        assertSameActionUnit(parent, child);
+
+        if (parent.getChildren() != null && parent.getChildren().contains(child)) {
+            throw new IllegalStateException("Cette relation parent/enfant existe déjà");
+        }
+
+        if (wouldCreateHierarchyCycle(parentId, childId)) {
+            throw new IllegalStateException("Impossible de créer la relation : cycle hiérarchique détecté");
+        }
+
+        parent.getChildren().add(child);
+        child.getParents().add(parent);
+        recordingUnitRepository.save(parent);
+    }
+
+    /**
+     * Supprime le lien hiérarchique direct parent → enfant.
+     */
+    @Transactional
+    @CacheEvict({
+            "InstitutionHasRootChildrenRU",
+            "ActionHasRootChildrenRU"
+    })
+    public void removeHierarchyChild(long parentId, long childId) {
+        RecordingUnit parent = recordingUnitRepository.findById(parentId)
+                .orElseThrow(() -> new RecordingUnitNotFoundException(
+                        "RecordingUnit not found with ID: " + parentId));
+        RecordingUnit child = recordingUnitRepository.findById(childId)
+                .orElseThrow(() -> new RecordingUnitNotFoundException(
+                        "RecordingUnit not found with ID: " + childId));
+
+        if (parent.getChildren() == null || !parent.getChildren().contains(child)) {
+            throw new IllegalStateException("Aucune relation parent/enfant directe entre ces unités");
+        }
+
+        parent.getChildren().remove(child);
+        child.getParents().remove(parent);
+        recordingUnitRepository.save(parent);
+    }
+
+    private void assertSameActionUnit(RecordingUnit first, RecordingUnit second) {
+        Long firstActionId = first.getActionUnit() == null ? null : first.getActionUnit().getId();
+        Long secondActionId = second.getActionUnit() == null ? null : second.getActionUnit().getId();
+        if (firstActionId == null || secondActionId == null || !Objects.equals(firstActionId, secondActionId)) {
+            throw new IllegalArgumentException("Les unités d'enregistrement doivent appartenir au même projet");
+        }
+    }
+
+    private boolean wouldCreateHierarchyCycle(long parentId, long childId) {
+        List<Long> ancestorsOfParent = recordingUnitRepository.findAncestorClosure(new Long[]{parentId});
+        return ancestorsOfParent.contains(childId);
+    }
+
     private List<RecordingUnitSummaryDTO> toAdjacentUnitSummaries(Set<RecordingUnit> adjacent) {
         if (adjacent == null || adjacent.isEmpty()) {
             return List.of();

@@ -504,6 +504,91 @@ public class RecordingUnitOpenApiService {
         return new RecordingUnitChildrenData(children);
     }
 
+    @Transactional
+    public RecordingUnitRelationsData addExistingChild(String recordingUnitKey,
+                                                       long relatedRecordingUnitId,
+                                                       PersonDTO personDto,
+                                                       Set<Long> accessibleInstitutionIds) {
+        RecordingUnitService.AccessibleRecordingUnit parent =
+                recordingUnitService.findAccessibleRecordingUnitWithEntity(
+                        recordingUnitKey, accessibleInstitutionIds, null);
+        assertWritePermission(parent.dto(), personDto);
+        recordingUnitService.requireAccessibleRecordingUnitByPrimaryKey(
+                relatedRecordingUnitId, accessibleInstitutionIds);
+        mutateHierarchy(() -> recordingUnitService.addHierarchyChild(
+                parent.entity().getId(), relatedRecordingUnitId));
+        return buildRecordingUnitRelations(recordingUnitKey, accessibleInstitutionIds);
+    }
+
+    @Transactional
+    public RecordingUnitRelationsData addExistingParent(String recordingUnitKey,
+                                                          long relatedRecordingUnitId,
+                                                          PersonDTO personDto,
+                                                          Set<Long> accessibleInstitutionIds) {
+        RecordingUnitService.AccessibleRecordingUnit child =
+                recordingUnitService.findAccessibleRecordingUnitWithEntity(
+                        recordingUnitKey, accessibleInstitutionIds, null);
+        assertWritePermission(child.dto(), personDto);
+        recordingUnitService.requireAccessibleRecordingUnitByPrimaryKey(
+                relatedRecordingUnitId, accessibleInstitutionIds);
+        mutateHierarchy(() -> recordingUnitService.addHierarchyChild(
+                relatedRecordingUnitId, child.entity().getId()));
+        return buildRecordingUnitRelations(recordingUnitKey, accessibleInstitutionIds);
+    }
+
+    @Transactional
+    public RecordingUnitRelationsData removeExistingChild(String recordingUnitKey,
+                                                            long relatedRecordingUnitId,
+                                                            PersonDTO personDto,
+                                                            Set<Long> accessibleInstitutionIds) {
+        RecordingUnitService.AccessibleRecordingUnit parent =
+                recordingUnitService.findAccessibleRecordingUnitWithEntity(
+                        recordingUnitKey, accessibleInstitutionIds, null);
+        assertWritePermission(parent.dto(), personDto);
+        recordingUnitService.requireAccessibleRecordingUnitByPrimaryKey(
+                relatedRecordingUnitId, accessibleInstitutionIds);
+        mutateHierarchy(() -> recordingUnitService.removeHierarchyChild(
+                parent.entity().getId(), relatedRecordingUnitId));
+        return buildRecordingUnitRelations(recordingUnitKey, accessibleInstitutionIds);
+    }
+
+    @Transactional
+    public RecordingUnitRelationsData removeExistingParent(String recordingUnitKey,
+                                                           long relatedRecordingUnitId,
+                                                           PersonDTO personDto,
+                                                           Set<Long> accessibleInstitutionIds) {
+        RecordingUnitService.AccessibleRecordingUnit child =
+                recordingUnitService.findAccessibleRecordingUnitWithEntity(
+                        recordingUnitKey, accessibleInstitutionIds, null);
+        assertWritePermission(child.dto(), personDto);
+        recordingUnitService.requireAccessibleRecordingUnitByPrimaryKey(
+                relatedRecordingUnitId, accessibleInstitutionIds);
+        mutateHierarchy(() -> recordingUnitService.removeHierarchyChild(
+                relatedRecordingUnitId, child.entity().getId()));
+        return buildRecordingUnitRelations(recordingUnitKey, accessibleInstitutionIds);
+    }
+
+    private void assertWritePermission(RecordingUnitDTO dto, PersonDTO personDto) {
+        InstitutionDTO institution = dto.getCreatedByInstitution();
+        if (institution == null || institution.getId() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unité sans organisation");
+        }
+        UserInfo userInfo = new UserInfo(institution, personDto, null);
+        if (!permissionService.hasWritePermission(userInfo, dto)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Modification non autorisée");
+        }
+    }
+
+    private void mutateHierarchy(Runnable mutation) {
+        try {
+            mutation.run();
+        } catch (IllegalArgumentException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage(), e);
+        } catch (IllegalStateException e) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, e.getMessage(), e);
+        }
+    }
+
     /**
      * Création d'une UE : formulaire résolu par type + institution du projet ; valeurs dans {@code fieldAnswers}
      * (clés = id de champ). Champs non reconnus ou non supportés en v1 sont ignorés (log).
