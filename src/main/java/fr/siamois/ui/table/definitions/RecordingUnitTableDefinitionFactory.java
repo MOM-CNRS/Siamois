@@ -254,6 +254,31 @@ public final class RecordingUnitTableDefinitionFactory {
                         .build()
         );
 
+        Concept phasesConcept = new Concept.Builder()
+                .vocabulary(SYSTEM_THESO)
+                .externalId("recordingunit.phases")
+                .build();
+
+        CustomFieldSelectMultiplePhase phasesField = CustomFieldSelectMultiplePhase.builder()
+                .label("recordingunit.field.phases")
+                .isSystemField(true)
+                .id(20L)
+                .valueBinding("phases")
+                .concept(phasesConcept)
+                .build();
+
+        tableModel.getTableDefinition().addColumn(
+                FormFieldColumn.builder()
+                        .id("phases")
+                        .headerKey("recordingunit.field.phases")
+                        .field(phasesField)
+                        .sortable(false)
+                        .filterable(false)
+                        .visible(true)
+                        .required(false)
+                        .build()
+        );
+
         tableModel.getTableDefinition().addColumn(
                 RelationColumn.builder()
                         .id("relationships")
@@ -371,30 +396,7 @@ public final class RecordingUnitTableDefinitionFactory {
                         .build()
         );
 
-        Concept phasesConcept = new Concept.Builder()
-                .vocabulary(SYSTEM_THESO)
-                .externalId("recordingunit.phases")
-                .build();
 
-        CustomFieldSelectMultiplePhase phasesField = CustomFieldSelectMultiplePhase.builder()
-                .label("recordingunit.field.phases")
-                .isSystemField(true)
-                .id(20L)
-                .valueBinding("phases")
-                .concept(phasesConcept)
-                .build();
-
-        tableModel.getTableDefinition().addColumn(
-                FormFieldColumn.builder()
-                        .id("phases")
-                        .headerKey("recordingunit.field.phases")
-                        .field(phasesField)
-                        .sortable(false)
-                        .filterable(false)
-                        .visible(false)
-                        .required(false)
-                        .build()
-        );
 
 
     }
