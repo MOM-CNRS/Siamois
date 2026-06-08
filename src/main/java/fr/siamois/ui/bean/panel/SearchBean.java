@@ -41,7 +41,9 @@ public class SearchBean implements Serializable {
     }
 
     public List<SearchResultDTO> completeText(String input) {
-        return searchRepository.findResultsFor(input, userInfo.getInstitution(), userInfo.getUser());
+        return searchRepository.findResultsFor(input,
+                sessionSettingsBean.getSelectedInstitution(),
+                userInfo.getUser());
     }
 
     public void onResultSelect(AjaxBehaviorEvent event) {
