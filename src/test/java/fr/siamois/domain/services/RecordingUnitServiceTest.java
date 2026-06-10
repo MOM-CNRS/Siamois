@@ -32,7 +32,6 @@ import fr.siamois.infrastructure.database.repositories.form.CustomFormResponseRe
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitIdCounterRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitIdInfoRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitRepository;
-import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitStudyRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.StratigraphicRelationshipRepository;
 import fr.siamois.infrastructure.database.repositories.specs.RecordingUnitSpec;
 import fr.siamois.infrastructure.database.repositories.team.TeamMemberRepository;
@@ -102,8 +101,6 @@ class RecordingUnitServiceTest {
     private CustomFormResponseRepository customFormResponseRepository;
     @Mock
     private ArkRepository arkRepository;
-    @Mock
-    private RecordingUnitStudyRepository recordingUnitStudyRepository;
     @Mock
     private StratigraphicRelationshipRepository stratigraphicRelationshipRepository;
     @Mock
@@ -2177,7 +2174,6 @@ class RecordingUnitServiceTest {
 
             when(recordingUnitRepository.findById(20L)).thenReturn(Optional.of(ru));
             when(recordingUnitRepository.countSpecimensByRecordingUnitId(20L)).thenReturn(0L);
-            when(recordingUnitStudyRepository.countByRecordingUnit_Id(20L)).thenReturn(0L);
             when(stratigraphicRelationshipRepository.findAllInvolvingRecordingUnitId(20L)).thenReturn(List.of());
             when(recordingUnitIdInfoRepository.existsById(20L)).thenReturn(false);
             when(recordingUnitRepository.save(ru)).thenReturn(ru);
@@ -2206,8 +2202,7 @@ class RecordingUnitServiceTest {
             RecordingUnit ru = new RecordingUnit();
             ru.setId(20L);
             when(recordingUnitRepository.findById(20L)).thenReturn(Optional.of(ru));
-            when(recordingUnitRepository.countSpecimensByRecordingUnitId(20L)).thenReturn(0L);
-            when(recordingUnitStudyRepository.countByRecordingUnit_Id(20L)).thenReturn(1L);
+            when(recordingUnitRepository.countSpecimensByRecordingUnitId(20L)).thenReturn(1L);
 
             assertThrows(IllegalStateException.class,
                     () -> recordingUnitService.deleteRecordingUnitById(20L));
@@ -2222,7 +2217,6 @@ class RecordingUnitServiceTest {
             ru.setChildren(new HashSet<>(Set.of(child)));
             when(recordingUnitRepository.findById(20L)).thenReturn(Optional.of(ru));
             when(recordingUnitRepository.countSpecimensByRecordingUnitId(20L)).thenReturn(0L);
-            when(recordingUnitStudyRepository.countByRecordingUnit_Id(20L)).thenReturn(0L);
 
             assertThrows(IllegalStateException.class,
                     () -> recordingUnitService.deleteRecordingUnitById(20L));

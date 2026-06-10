@@ -92,7 +92,7 @@ class FindControllerApiTest {
         when(projectApiService.requireCaller())
                 .thenThrow(new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authentification requise"));
 
-        mockMvc.perform(get("/api/v1/mobiliers/5"))
+        mockMvc.perform(get("/api/v1/finds/5"))
                 .andExpect(status().isUnauthorized());
 
         verifyNoInteractions(recordingUnitOpenApiService);
@@ -107,7 +107,7 @@ class FindControllerApiTest {
         when(recordingUnitOpenApiService.buildFindMobilierForm(eq("5"), eq(personDto), eq(Set.of(10L)), eq("fr")))
                 .thenReturn(payload);
 
-        mockMvc.perform(get("/api/v1/mobiliers/5")
+        mockMvc.perform(get("/api/v1/finds/5")
                         .header(HttpHeaders.ACCEPT_LANGUAGE, "fr"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.fields").isEmpty())
@@ -124,7 +124,7 @@ class FindControllerApiTest {
         when(recordingUnitOpenApiService.buildFindMobilierForm(anyString(), any(), any(), any()))
                 .thenThrow(new ResponseStatusException(HttpStatus.NOT_FOUND, "Mobilier introuvable ou hors périmètre"));
 
-        mockMvc.perform(get("/api/v1/mobiliers/99"))
+        mockMvc.perform(get("/api/v1/finds/99"))
                 .andExpect(status().isNotFound());
     }
 
@@ -138,7 +138,7 @@ class FindControllerApiTest {
         when(findOpenApiService.createFind(any(), eq(personDto), eq(Set.of(10L)), eq("fr")))
                 .thenReturn(res);
 
-        mockMvc.perform(post("/api/v1/mobiliers")
+        mockMvc.perform(post("/api/v1/finds")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"recordingUnitId\":\"1\",\"specimenTypeConceptId\":\"2\"}"))
                 .andExpect(status().isCreated())
@@ -155,7 +155,7 @@ class FindControllerApiTest {
         when(findOpenApiService.patchFind(eq(3L), any(), eq(personDto), eq(Set.of(10L)), eq("fr")))
                 .thenReturn(res);
 
-        mockMvc.perform(patch("/api/v1/mobiliers/3")
+        mockMvc.perform(patch("/api/v1/finds/3")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{}"))
                 .andExpect(status().isOk())
@@ -167,7 +167,7 @@ class FindControllerApiTest {
         when(projectApiService.requireCaller())
                 .thenReturn(new ProjectApiCaller(personDto, Set.of(10L), List.of()));
 
-        mockMvc.perform(delete("/api/v1/mobiliers/7"))
+        mockMvc.perform(delete("/api/v1/finds/7"))
                 .andExpect(status().isNoContent());
 
         verify(findOpenApiService).deleteFind(eq(7L), eq(personDto), eq(Set.of(10L)), eq("fr"));
@@ -182,7 +182,7 @@ class FindControllerApiTest {
         when(recordingUnitOpenApiService.buildFindUiForm(eq(10L), eq(personDto), eq("fr")))
                 .thenReturn(payload);
 
-        mockMvc.perform(get("/api/v1/mobiliers/form")
+        mockMvc.perform(get("/api/v1/finds/form")
                         .param("organizationId", "10")
                         .header(HttpHeaders.ACCEPT_LANGUAGE, "fr"))
                 .andExpect(status().isOk())
@@ -198,7 +198,7 @@ class FindControllerApiTest {
         when(projectApiService.requireCaller())
                 .thenThrow(new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authentification requise"));
 
-        mockMvc.perform(delete("/api/v1/mobiliers/7"))
+        mockMvc.perform(delete("/api/v1/finds/7"))
                 .andExpect(status().isUnauthorized());
 
         verifyNoInteractions(findOpenApiService);

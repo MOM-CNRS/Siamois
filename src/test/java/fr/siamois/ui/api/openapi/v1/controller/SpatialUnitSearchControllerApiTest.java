@@ -60,7 +60,7 @@ class SpatialUnitSearchControllerApiTest {
         when(projectApiService.requireCaller()).thenThrow(
                 new ResponseStatusException(org.springframework.http.HttpStatus.UNAUTHORIZED, "Authentification requise"));
 
-        mockMvc.perform(get("/api/v1/spatial-units/autocomplete")
+        mockMvc.perform(get("/api/v1/places/autocomplete")
                         .param("organizationId", "10")
                         .param("q", "rue"))
                 .andExpect(status().isUnauthorized());
@@ -71,7 +71,7 @@ class SpatialUnitSearchControllerApiTest {
         when(projectApiService.requireCaller()).thenReturn(
                 new ProjectApiCaller(new PersonDTO(), Set.of(10L), List.of()));
 
-        mockMvc.perform(get("/api/v1/spatial-units/autocomplete")
+        mockMvc.perform(get("/api/v1/places/autocomplete")
                         .param("organizationId", "10")
                         .param("q", "   "))
                 .andExpect(status().isBadRequest());
@@ -84,7 +84,7 @@ class SpatialUnitSearchControllerApiTest {
         doThrow(new ResponseStatusException(org.springframework.http.HttpStatus.FORBIDDEN, "Organisation non accessible"))
                 .when(projectApiService).assertOrganizationInCallerScope(eq(10L), any());
 
-        mockMvc.perform(get("/api/v1/spatial-units/autocomplete")
+        mockMvc.perform(get("/api/v1/places/autocomplete")
                         .param("organizationId", "10")
                         .param("q", "a"))
                 .andExpect(status().isForbidden());
@@ -109,7 +109,7 @@ class SpatialUnitSearchControllerApiTest {
                 eq(PageRequest.of(0, 20))))
                 .thenReturn(new PageImpl<>(List.of(su), PageRequest.of(0, 20), 1));
 
-        mockMvc.perform(get("/api/v1/spatial-units/autocomplete")
+        mockMvc.perform(get("/api/v1/places/autocomplete")
                         .param("organizationId", "10")
                         .param("q", "  lilas  "))
                 .andExpect(status().isOk())
