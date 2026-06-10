@@ -54,7 +54,7 @@ class SpecimenSeederTest {
                         List.of("author@siamois.fr"),
                         List.of("author@siamois.fr"),
                         OffsetDateTime.of(2012, 6, 22, 0, 0, 0, 0, ZoneOffset.UTC),
-                        new RecordingUnitSeeder.RecordingUnitKey("chartres-C309_01-1100")
+                        new RecordingUnitSeeder.RecordingUnitKey("chartres-C309_01-1100", "")
                 )
         );
     }
@@ -97,7 +97,7 @@ class SpecimenSeederTest {
 
         when(institutionSeeder.findInstitutionOrReturnNull("chartres"))
                 .thenReturn(new Institution());
-        when(recordingUnitSeeder.getRecordingUnitFromKey(new RecordingUnitSeeder.RecordingUnitKey("chartres-C309_01-1100"),1L))
+        when(recordingUnitSeeder.getRecordingUnitFromKey(new RecordingUnitSeeder.RecordingUnitKey("chartres-C309_01-1100",""),1L))
                 .thenReturn(new RecordingUnit());
         when(specimenRepository.findByFullIdentifier("chartres-C309_01-1100-1"))
                 .thenReturn(Optional.of(new Specimen()));
@@ -113,7 +113,7 @@ class SpecimenSeederTest {
 
         when(institutionSeeder.findInstitutionOrReturnNull("chartres"))
                 .thenReturn(new Institution());
-        when(recordingUnitSeeder.getRecordingUnitFromKey(new RecordingUnitSeeder.RecordingUnitKey("chartres-C309_01-1100"),1L))
+        when(recordingUnitSeeder.getRecordingUnitFromKey(new RecordingUnitSeeder.RecordingUnitKey("chartres-C309_01-1100",""),1L))
                 .thenReturn(new RecordingUnit());
         when(specimenRepository.findByFullIdentifier("chartres-C309_01-1100-1"))
                 .thenReturn(Optional.empty());

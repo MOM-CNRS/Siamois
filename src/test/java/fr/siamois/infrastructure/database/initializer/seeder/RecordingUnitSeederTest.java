@@ -67,11 +67,12 @@ class RecordingUnitSeederTest {
                         null,
                         null,
                         new SpatialUnitSeeder.SpatialUnitKey("Spatial"),
-                        new ActionUnitSeeder.ActionUnitKey("action-01"),
+                        new ActionUnitSeeder.ActionUnitKey("action-01", "chartres"),
                         "",
                         "",
                         "",
-                        ""
+                        "",
+                        null
                 )
         );
 
@@ -109,11 +110,12 @@ class RecordingUnitSeederTest {
                         null,
                         null,
                         new SpatialUnitSeeder.SpatialUnitKey("Spatial"),
-                        new ActionUnitSeeder.ActionUnitKey("action-01"),
+                        new ActionUnitSeeder.ActionUnitKey("action-01", "chartres"),
                         "",
                         "",
                         "",
-                        ""
+                        "",
+                        null
                 )
         );
 
@@ -151,11 +153,12 @@ class RecordingUnitSeederTest {
                         null,
                         null,
                         new SpatialUnitSeeder.SpatialUnitKey("Spatial"),
-                        new ActionUnitSeeder.ActionUnitKey("action-01"),
+                        new ActionUnitSeeder.ActionUnitKey("action-01", "chartres"),
                         "",
                         "",
                         "",
-                        ""
+                        "",
+                        null
                 )
         );
 
@@ -197,11 +200,12 @@ class RecordingUnitSeederTest {
                         null,
                         null,
                         new SpatialUnitSeeder.SpatialUnitKey("Spatial"),
-                        new ActionUnitSeeder.ActionUnitKey("action-01"),
+                        new ActionUnitSeeder.ActionUnitKey("action-01", "chartres"),
                         "",
                         "",
                         "",
-                        ""
+                        "",
+                        null
                 )
         );
 
@@ -242,11 +246,12 @@ class RecordingUnitSeederTest {
                         null,
                         null,
                         new SpatialUnitSeeder.SpatialUnitKey("Spatial"),
-                        new ActionUnitSeeder.ActionUnitKey("action-01"),
+                        new ActionUnitSeeder.ActionUnitKey("action-01", "chartres"),
                         "",
                         "",
                         "",
-                        ""
+                        "",
+                        null
                 )
         );
 
@@ -290,11 +295,12 @@ class RecordingUnitSeederTest {
                         null,
                         null,
                         new SpatialUnitSeeder.SpatialUnitKey("Spatial"),
-                        new ActionUnitSeeder.ActionUnitKey("action-01"),
+                        new ActionUnitSeeder.ActionUnitKey("action-01", "chartres"),
                         "",
                         "",
                         "",
-                        ""
+                        "",
+                        null
                 )
         );
 
@@ -338,11 +344,12 @@ class RecordingUnitSeederTest {
                         null,
                         null,
                         new SpatialUnitSeeder.SpatialUnitKey("Spatial"),
-                        new ActionUnitSeeder.ActionUnitKey("action-01"),
+                        new ActionUnitSeeder.ActionUnitKey("action-01", "chartres"),
                         "",
                         "",
                         "",
-                        ""
+                        "",
+                        null
                 )
         );
 
@@ -368,7 +375,7 @@ class RecordingUnitSeederTest {
     void getRecordingUnitFromKey_existingRecordingUnit_returnsIt() {
         // Given
         RecordingUnitSeeder.RecordingUnitKey key =
-                new RecordingUnitSeeder.RecordingUnitKey("RU-001");
+                new RecordingUnitSeeder.RecordingUnitKey("RU-001", "");
 
         RecordingUnit recordingUnit = new RecordingUnit(); recordingUnit.setFullIdentifier("RU-001");
 
@@ -389,7 +396,7 @@ class RecordingUnitSeederTest {
     void getRecordingUnitFromKey_missingRecordingUnit_throwsException() {
         // Given
         RecordingUnitSeeder.RecordingUnitKey key =
-                new RecordingUnitSeeder.RecordingUnitKey("RU-404");
+                new RecordingUnitSeeder.RecordingUnitKey("RU-404", "");
 
         when(recordingUnitRepository.findByFullIdentifierAndInstitutionId("RU-404", 1L))
                 .thenReturn(Optional.empty());
