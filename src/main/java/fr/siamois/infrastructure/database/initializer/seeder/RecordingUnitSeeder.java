@@ -130,6 +130,7 @@ public class RecordingUnitSeeder {
             toGetOrCreate.setMatrixColor(s.matrixColor);
             toGetOrCreate.setIdentifier(s.identifier);
             toGetOrCreate.setFullIdentifier(s.fullIdentifier);
+            toGetOrCreate.setIdentifier(s.identifier);
             toGetOrCreate.setType(type);
             toGetOrCreate.setGeomorphologicalAgent(geoAgent);
             toGetOrCreate.setGeomorphologicalCycle(geoCycle);

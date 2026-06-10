@@ -65,7 +65,7 @@ class FindControllerApiTest {
         ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
         MappingJackson2HttpMessageConverter jsonConverter = new MappingJackson2HttpMessageConverter(objectMapper);
 
-        MobilierControllerApi controller = new MobilierControllerApi(projectApiService, recordingUnitOpenApiService, findOpenApiService);
+        FindControllerApi controller = new FindControllerApi(projectApiService, recordingUnitOpenApiService, findOpenApiService);
         mockMvc = MockMvcBuilders.standaloneSetup(controller)
                 .setControllerAdvice(new RestExceptionHandler())
                 .setMessageConverters(jsonConverter)
@@ -179,7 +179,7 @@ class FindControllerApiTest {
                 .thenReturn(new ProjectApiCaller(personDto, Set.of(10L), List.of()));
 
         FindMobilierFormData payload = new FindMobilierFormData(null, Map.of());
-        when(recordingUnitOpenApiService.buildFindMobilierUiForm(eq(10L), eq(personDto), eq("fr")))
+        when(recordingUnitOpenApiService.buildFindUiForm(eq(10L), eq(personDto), eq("fr")))
                 .thenReturn(payload);
 
         mockMvc.perform(get("/api/v1/mobiliers/form")
@@ -189,7 +189,7 @@ class FindControllerApiTest {
                 .andExpect(jsonPath("$.data.fields").isEmpty());
 
         verify(projectApiService).assertOrganizationInCallerScope(10L, Set.of(10L));
-        verify(recordingUnitOpenApiService).buildFindMobilierUiForm(10L, personDto, "fr");
+        verify(recordingUnitOpenApiService).buildFindUiForm(10L, personDto, "fr");
     }
 
     @Test

@@ -8,7 +8,7 @@ import fr.siamois.ui.api.openapi.v1.request.find.FindPatchRequest;
 import fr.siamois.ui.api.openapi.v1.response.FindResponse;
 import fr.siamois.ui.api.openapi.v1.response.FindListResponse;
 import fr.siamois.ui.api.openapi.v1.resource.find.FindResource;
-import fr.siamois.ui.api.openapi.v1.response.find.FindMobilierFormResponse;
+import fr.siamois.ui.api.openapi.v1.response.find.FindFormResponse;
 import fr.siamois.ui.api.openapi.v1.service.FindOpenApiService;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiCaller;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiService;
@@ -29,10 +29,10 @@ import org.springframework.web.server.ResponseStatusException;
 
 
 @RestController
-@RequestMapping("/api/v1/mobiliers")
-@Tag(name = OpenApiTags.MOBILIER, description = "Endpoints des mobiliers (spécimens)")
+@RequestMapping("/api/v1/finds")
+@Tag(name = OpenApiTags.FIND, description = "Endpoints des mobiliers (spécimens)")
 @RequiredArgsConstructor
-public class MobilierControllerApi {
+public class FindControllerApi {
 
     private final ProjectApiService projectApiService;
     private final RecordingUnitOpenApiService recordingUnitOpenApiService;
@@ -61,7 +61,7 @@ public class MobilierControllerApi {
             @ApiResponse(responseCode = "404", description = "Organisation introuvable"),
             @ApiResponse(responseCode = "500", description = "Erreur interne")
     })
-    public ResponseEntity<FindMobilierFormResponse> getForm(
+    public ResponseEntity<FindFormResponse> getForm(
             @Parameter(description = "Institution (doit être dans le périmètre JWT).", example = "10", required = true)
             @RequestParam("organizationId") long organizationId,
             @Parameter(description = "Langue des libellés de champs (première entrée utilisée).")
@@ -70,8 +70,8 @@ public class MobilierControllerApi {
         ProjectApiCaller caller = projectApiService.requireCaller();
         projectApiService.assertOrganizationInCallerScope(organizationId, caller.accessibleInstitutionIds());
         String lang = ProjectApiService.primaryAcceptLanguage(acceptLanguage);
-        return ResponseEntity.ok(new FindMobilierFormResponse(
-                recordingUnitOpenApiService.buildFindMobilierUiForm(organizationId, caller.person(), lang)));
+        return ResponseEntity.ok(new FindFormResponse(
+                recordingUnitOpenApiService.buildFindUiForm(organizationId, caller.person(), lang)));
     }
 
     @GetMapping("/{id}")
@@ -87,7 +87,7 @@ public class MobilierControllerApi {
             @ApiResponse(responseCode = "404", description = "Mobilier introuvable ou hors périmètre"),
             @ApiResponse(responseCode = "500", description = "Erreur interne")
     })
-    public ResponseEntity<FindMobilierFormResponse> getById(
+    public ResponseEntity<FindFormResponse> getById(
             @Parameter(
                     description = "Clé du mobilier : identifiant numérique (specimen_id) ou full_identifier.",
                     schema = @Schema(type = "string", example = "INST-PROJ-UE42-M1")
@@ -98,7 +98,7 @@ public class MobilierControllerApi {
 
         ProjectApiCaller caller = projectApiService.requireCaller();
         String lang = ProjectApiService.primaryAcceptLanguage(acceptLanguage);
-        return ResponseEntity.ok(new FindMobilierFormResponse(
+        return ResponseEntity.ok(new FindFormResponse(
                 recordingUnitOpenApiService.buildFindMobilierForm(
                         OpenApiParamIds.requireNonBlank(id, "id"),
                         caller.person(), caller.accessibleInstitutionIds(), lang)));

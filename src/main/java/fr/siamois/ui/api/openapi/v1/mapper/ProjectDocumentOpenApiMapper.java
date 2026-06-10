@@ -9,6 +9,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 @RequiredArgsConstructor
+// TODO [ARCH] utiliser mapstruct
 public class ProjectDocumentOpenApiMapper {
 
     private final ConceptMapper conceptMapper;

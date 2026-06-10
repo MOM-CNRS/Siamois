@@ -951,7 +951,7 @@ class RecordingUnitOpenApiServiceTest {
     void buildFindMobilierUiForm_unknownOrganization_throws404() {
         when(institutionService.findById(10L)).thenReturn(null);
 
-        assertThatThrownBy(() -> service.buildFindMobilierUiForm(10L, personDto, "fr"))
+        assertThatThrownBy(() -> service.buildFindUiForm(10L, personDto, "fr"))
                 .isInstanceOf(ResponseStatusException.class)
                 .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode().value()).isEqualTo(404));
     }
@@ -963,7 +963,7 @@ class RecordingUnitOpenApiServiceTest {
         when(institutionService.findById(10L)).thenReturn(inst);
         when(formService.findCustomFormByRecordingUnitTypeAndInstitutionId(null, inst)).thenReturn(null);
 
-        FindMobilierFormData data = service.buildFindMobilierUiForm(10L, personDto, "fr");
+        FindMobilierFormData data = service.buildFindUiForm(10L, personDto, "fr");
 
         assertThat(data.form()).isNull();
         assertThat(data.fields()).isEmpty();
@@ -1150,7 +1150,7 @@ class RecordingUnitOpenApiServiceTest {
         when(conversionService.convert(customForm, FormUiDto.class)).thenReturn(formUiDtoWithOneField(textField));
         when(customFormLayoutConverter.convertToDatabaseColumn(any())).thenReturn("[]");
 
-        FindMobilierFormData data = service.buildFindMobilierUiForm(10L, personDto, "fr");
+        FindMobilierFormData data = service.buildFindUiForm(10L, personDto, "fr");
 
         assertThat(data.form()).isNotNull();
         assertThat(data.form().formId()).isEqualTo(3L);

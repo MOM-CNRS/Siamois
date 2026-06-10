@@ -30,7 +30,6 @@ import fr.siamois.infrastructure.database.repositories.form.CustomFormResponseRe
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitIdCounterRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitIdInfoRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitRepository;
-import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitStudyRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.StratigraphicRelationshipRepository;
 import fr.siamois.infrastructure.database.repositories.specs.RecordingUnitSpec;
 import fr.siamois.infrastructure.database.repositories.team.TeamMemberRepository;
@@ -92,7 +91,6 @@ public class RecordingUnitService implements ArkEntityService {
     private final DocumentRepository documentRepository;
     private final CustomFormResponseRepository customFormResponseRepository;
     private final ArkRepository arkRepository;
-    private final RecordingUnitStudyRepository recordingUnitStudyRepository;
 
     /**
      * Bulk update the type of multiple recording units.
@@ -466,9 +464,6 @@ public class RecordingUnitService implements ArkEntityService {
         Long specimenCount = recordingUnitRepository.countSpecimensByRecordingUnitId(recordingUnitId);
         if (specimenCount != null && specimenCount > 0) {
             throw new IllegalStateException("Impossible de supprimer : l'unité d'enregistrement contient des mobiliers");
-        }
-        if (recordingUnitStudyRepository.countByRecordingUnit_Id(recordingUnitId) > 0) {
-            throw new IllegalStateException("Impossible de supprimer : l'unité d'enregistrement a des études associées");
         }
         if (ru.getChildren() != null && !ru.getChildren().isEmpty()) {
             throw new IllegalStateException("Impossible de supprimer : l'unité d'enregistrement possède des unités filles");

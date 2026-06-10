@@ -259,7 +259,7 @@ public class RecordingUnitOpenApiService {
      * Vocabulaires : {@code GET /api/v1/vocabularies}. Valeurs d'un mobilier existant : {@link #buildFindMobilierForm}.
      */
     @Transactional(readOnly = true)
-    public FindMobilierFormData buildFindMobilierUiForm(long organizationId, PersonDTO personDto, String lang) {
+    public FindMobilierFormData buildFindUiForm(long organizationId, PersonDTO personDto, String lang) {
         InstitutionDTO institution = institutionService.findById(organizationId);
         if (institution == null) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Organization not found");

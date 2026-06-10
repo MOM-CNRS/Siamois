@@ -612,6 +612,7 @@ public class ActionUnitService implements ArkEntityService {
      *
      * @param organizationId when non-null, restrict to this institution (caller must ensure it is allowed for the person)
      */
+    // TODO [ARCH] Définir avec Julien si on décide que les service n'expose que des DTOs domaine et si c'est le rôle des package ui de mapper vers le DTO API
     @Transactional(readOnly = true)
     public Page<AccessibleProjectForApi> findAccessibleProjects(
             Set<Long> accessibleInstitutionIds,
@@ -660,6 +661,7 @@ public class ActionUnitService implements ArkEntityService {
      *
      * @throws ActionUnitNotFoundException clé inconnue, ou projet hors périmètre (comportement type 404)
      */
+    // TODO [ARCH] Définir avec Julien si on décide que les service n'expose que des DTOs domaine et si c'est le rôle des package ui de mapper vers le DTO API
     @Transactional(readOnly = true)
     public AccessibleProjectForApi findAccessibleProjectByKey(String idOrKey, Set<Long> accessibleInstitutionIds) {
         if (accessibleInstitutionIds == null || accessibleInstitutionIds.isEmpty()) {

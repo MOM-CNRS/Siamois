@@ -17,6 +17,7 @@ import java.util.List;
  */
 @Component
 @RequiredArgsConstructor
+// TODO [ARCH] utiliser mapstruct
 public class FindOpenApiMapper {
 
     private final ConceptResourceIdentifierMapper conceptResourceIdentifierMapper;

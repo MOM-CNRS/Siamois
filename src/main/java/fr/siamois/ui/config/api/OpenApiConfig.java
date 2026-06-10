@@ -13,10 +13,10 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 @OpenAPIDefinition(
         info = @Info(
-                title = "SIAMOIS — API mobile v1",
+                title = "SIAMOIS — API v0 (peut être modifier d'ici la v1)",
                 version = "1.0",
                 description = """
-                        API REST consommée par l'application mobile SIAMOIS (archéologie).
+                        API REST SIAMOIS
 
                         **Authentification** — `POST /api/v1/auth/login` (public) renvoie un JWT. \
                         Toutes les autres routes `/api/v1/**` exigent l'en-tête `Authorization: Bearer <token>`. \
@@ -43,9 +43,9 @@ import org.springframework.context.annotation.Configuration;
         tags = {
                 @Tag(name = OpenApiTags.AUTH, description = "Connexion JWT et profil utilisateur."),
                 @Tag(name = OpenApiTags.ORGANISATION, description = "Institutions accessibles dans le périmètre du jeton."),
-                @Tag(name = OpenApiTags.PROJECT, description = "Projets (unités d'action) : liste, fiche, formulaire, documents, UE rattachées."),
+                @Tag(name = OpenApiTags.PROJECT, description = "Projets : liste, fiche, formulaire, documents, UE rattachées."),
                 @Tag(name = OpenApiTags.RECORDING_UNIT, description = "Unités d'enregistrement : création, détail, relations, mobiliers, documents."),
-                @Tag(name = OpenApiTags.MOBILIER, description = "Spécimens (mobiliers) : formulaire, création et mise à jour."),
+                @Tag(name = OpenApiTags.FIND, description = "Mobilier : formulaire, création et mise à jour."),
                 @Tag(name = OpenApiTags.DOCUMENT, description = "Fichiers et formulaires documentaires."),
                 @Tag(name = OpenApiTags.VOCABULARY, description = "Thésaurus configurés par field_code pour une organisation."),
                 @Tag(name = OpenApiTags.SPATIAL_UNIT, description = "Recherche de lieux pour l'autocomplétion (contexte spatial des projets)."),

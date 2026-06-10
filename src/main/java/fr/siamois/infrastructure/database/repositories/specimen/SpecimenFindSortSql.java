@@ -9,6 +9,7 @@ import java.util.Set;
 /**
  * Clause ORDER BY sûre pour les requêtes natives sur {@code specimen s} (pas de tri via {@link Pageable#getSort()}).
  */
+// TODO [ARCH] Ne peut on pas réutiliser les méthodes utilisés par les lazy model?
 public final class SpecimenFindSortSql {
 
     private static final String DEFAULT_ORDER_BY = "s.creation_time DESC, s.specimen_id ASC";

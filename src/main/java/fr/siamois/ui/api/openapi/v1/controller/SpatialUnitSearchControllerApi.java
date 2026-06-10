@@ -33,7 +33,7 @@ import java.util.List;
  * Recherche d'unités spatiales pour l'app mobile (autocomplétion), indépendamment du module « places » historique.
  */
 @RestController
-@RequestMapping("/api/v1/spatial-units")
+@RequestMapping("/api/v1/places")
 @Tag(name = OpenApiTags.SPATIAL_UNIT)
 @RequiredArgsConstructor
 public class SpatialUnitSearchControllerApi {

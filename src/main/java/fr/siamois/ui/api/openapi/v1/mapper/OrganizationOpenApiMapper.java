@@ -5,6 +5,7 @@ import fr.siamois.ui.api.openapi.v1.resource.organization.OrganizationResource;
 import org.springframework.stereotype.Component;
 
 @Component
+// TODO [ARCH] utiliser mapstruct
 public class OrganizationOpenApiMapper {
 
     public OrganizationResource toResource(InstitutionDTO dto) {
