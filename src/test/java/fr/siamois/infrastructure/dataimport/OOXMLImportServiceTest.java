@@ -1,5 +1,7 @@
 package fr.siamois.infrastructure.dataimport;
 
+import fr.siamois.dto.entity.ActionUnitDTO;
+import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.infrastructure.database.initializer.seeder.*;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
@@ -639,6 +641,238 @@ class OOXMLImportServiceTest {
         assertThat(result).isEqualTo(expected);
     }
 
+
+    // -------------------------------------------------------------------------
+    // parseStratiRels
+    // -------------------------------------------------------------------------
+
+    @Test
+    void parseStratiRels_nullSheet_returnsEmpty() {
+        assertThat(service.parseStratiRels(null)).isEmpty();
+    }
+
+    @Test
+    void parseStratiRels_noHeaderRow_returnsEmpty() {
+        Workbook wb = workbook();
+        Sheet s = wb.createSheet("Strati");
+        // no row created at all
+        assertThat(service.parseStratiRels(s)).isEmpty();
+    }
+
+    @Test
+    void parseStratiRels_missingUs1Column_returnsEmpty() {
+        Workbook wb = workbook();
+        Sheet s = sheet(wb, "Strati", "us2", "relation");
+        row(s, 1, "US-002", "uri?idt=th1&idc=1");
+        assertThat(service.parseStratiRels(s)).isEmpty();
+    }
+
+    @Test
+    void parseStratiRels_missingUs2Column_returnsEmpty() {
+        Workbook wb = workbook();
+        Sheet s = sheet(wb, "Strati", "us1", "relation");
+        row(s, 1, "US-001", "uri?idt=th1&idc=1");
+        assertThat(service.parseStratiRels(s)).isEmpty();
+    }
+
+    @Test
+    void parseStratiRels_fullValidRow_parsesAllFields() {
+        Workbook wb = workbook();
+        Sheet s = sheet(wb, "Strati",
+                "us1", "us2", "relation", "direction vocabulaire", "asynchrone", "incertain");
+        row(s, 1, "US-001", "US-002", "uri?idt=th240&idc=4287979", "True", "True", "False");
+
+        List<RecordingUnitStratiRelSeeder.RecordingUnitStratiRelDTO> specs = service.parseStratiRels(s);
+
+        assertThat(specs).hasSize(1);
+        RecordingUnitStratiRelSeeder.RecordingUnitStratiRelDTO dto = specs.get(0);
+        assertThat(dto.us1()).isEqualTo("US-001");
+        assertThat(dto.us2()).isEqualTo("US-002");
+        assertThat(dto.rel()).isEqualTo(new ConceptSeeder.ConceptKey("th240", "4287979"));
+        assertThat(dto.conceptDirection()).isTrue();
+        assertThat(dto.isAsynchronous()).isTrue();
+        assertThat(dto.isUncertain()).isFalse();
+    }
+
+    @Test
+    void parseStratiRels_booleanNotTrue_isFalse() {
+        Workbook wb = workbook();
+        Sheet s = sheet(wb, "Strati",
+                "us1", "us2", "relation", "direction vocabulaire", "asynchrone", "incertain");
+        row(s, 1, "US-001", "US-002", "uri?idt=th240&idc=1", "False", "false", "0");
+
+        RecordingUnitStratiRelSeeder.RecordingUnitStratiRelDTO dto = service.parseStratiRels(s).get(0);
+        assertThat(dto.conceptDirection()).isFalse();
+        assertThat(dto.isAsynchronous()).isFalse();
+        assertThat(dto.isUncertain()).isFalse();
+    }
+
+    @Test
+    void parseStratiRels_missingOptionalColumns_defaultsToFalseAndNullRelKey() {
+        Workbook wb = workbook();
+        Sheet s = sheet(wb, "Strati", "us1", "us2");
+        row(s, 1, "A-001", "B-002");
+
+        RecordingUnitStratiRelSeeder.RecordingUnitStratiRelDTO dto = service.parseStratiRels(s).get(0);
+        assertThat(dto.rel()).isNull();
+        assertThat(dto.conceptDirection()).isFalse();
+        assertThat(dto.isAsynchronous()).isFalse();
+        assertThat(dto.isUncertain()).isFalse();
+    }
+
+    @Test
+    void parseStratiRels_blankUs1_rowIsSkipped() {
+        Workbook wb = workbook();
+        Sheet s = sheet(wb, "Strati", "us1", "us2");
+        row(s, 1, "   ", "US-002");
+
+        assertThat(service.parseStratiRels(s)).isEmpty();
+    }
+
+    @Test
+    void parseStratiRels_blankUs2_rowIsSkipped() {
+        Workbook wb = workbook();
+        Sheet s = sheet(wb, "Strati", "us1", "us2");
+        row(s, 1, "US-001", "");
+
+        assertThat(service.parseStratiRels(s)).isEmpty();
+    }
+
+    @Test
+    void parseStratiRels_multipleRows_allParsed() {
+        Workbook wb = workbook();
+        Sheet s = sheet(wb, "Strati", "us1", "us2");
+        row(s, 1, "A", "B");
+        row(s, 2, "C", "D");
+
+        assertThat(service.parseStratiRels(s)).hasSize(2);
+    }
+
+    @Test
+    void parseStratiRels_rowsWithMixedBlankUs1_onlyValidRowsIncluded() {
+        Workbook wb = workbook();
+        Sheet s = sheet(wb, "Strati", "us1", "us2");
+        row(s, 1, "A", "B");
+        row(s, 2, "", "D");      // blank us1 → skipped
+        row(s, 3, "E", "F");
+
+        assertThat(service.parseStratiRels(s)).hasSize(2);
+    }
+
+    // -------------------------------------------------------------------------
+    // parsePhases
+    // -------------------------------------------------------------------------
+
+    @Test
+    void parsePhases_nullSheet_returnsEmpty() {
+        assertThat(service.parsePhases(null, OOXMLImportService.ImportScope.ALL, null)).isEmpty();
+    }
+
+    @Test
+    void parsePhases_noHeaderRow_returnsEmpty() {
+        Workbook wb = workbook();
+        Sheet s = wb.createSheet("Phase");
+        assertThat(service.parsePhases(s, OOXMLImportService.ImportScope.ALL, null)).isEmpty();
+    }
+
+    @Test
+    void parsePhases_blankIdentifier_rowIsSkipped() {
+        Workbook wb = workbook();
+        Sheet s = sheet(wb, "Phase", "Identifiant", "Titre");
+        row(s, 1, "   ", "titre quelconque");
+
+        assertThat(service.parsePhases(s, OOXMLImportService.ImportScope.ALL, null)).isEmpty();
+    }
+
+    @Test
+    void parsePhases_fullValidRow_withoutActionUnit_parsesAllFields() {
+        Workbook wb = workbook();
+        Sheet s = sheet(wb, "Phase",
+                "Identifiant", "Titre", "Type uri", "Description",
+                "Ordre", "Borne inferieure", "Borne superieure",
+                "Auteur", "Projet", "Institution");
+        row(s, 1,
+                "PH-01", "Phase 1", "uri?idt=th240&idc=100", "Une description",
+                "2", "1000", "2000",
+                "author@site.fr", "UA-001", "INST");
+
+        List<PhaseSeeder.PhaseSpecs> specs =
+                service.parsePhases(s, OOXMLImportService.ImportScope.ALL, null);
+
+        assertThat(specs).hasSize(1);
+        PhaseSeeder.PhaseSpecs ph = specs.get(0);
+        assertThat(ph.identifier()).isEqualTo("PH-01");
+        assertThat(ph.title()).isEqualTo("Phase 1");
+        assertThat(ph.type()).isEqualTo(new ConceptSeeder.ConceptKey("th240", "100"));
+        assertThat(ph.description()).isEqualTo("Une description");
+        assertThat(ph.orderNumber()).isEqualTo(2);
+        assertThat(ph.lowerBound()).isEqualTo(1000);
+        assertThat(ph.upperBound()).isEqualTo(2000);
+        assertThat(ph.authorEmail()).isEqualTo("author@site.fr");
+        assertThat(ph.actionUnitKey().fullIdentifier()).isEqualTo("UA-001");
+        assertThat(ph.actionUnitKey().institutionIdentifier()).isEqualTo("INST");
+    }
+
+    @Test
+    void parsePhases_withActionUnit_usesActionUnitIdentifiersInsteadOfSheetColumns() {
+        InstitutionDTO inst = new InstitutionDTO();
+        inst.setIdentifier("CODE-INST");
+
+        ActionUnitDTO au = new ActionUnitDTO();
+        au.setFullIdentifier("AU-FULL-ID");
+        au.setCreatedByInstitution(inst);
+
+        Workbook wb = workbook();
+        Sheet s = sheet(wb, "Phase", "Identifiant", "Titre", "Auteur");
+        row(s, 1, "PH-02", "Phase 2", "user@site.fr");
+
+        PhaseSeeder.PhaseSpecs ph =
+                service.parsePhases(s, OOXMLImportService.ImportScope.PROJECT, au).get(0);
+
+        assertThat(ph.actionUnitKey().fullIdentifier()).isEqualTo("AU-FULL-ID");
+        assertThat(ph.actionUnitKey().institutionIdentifier()).isEqualTo("CODE-INST");
+    }
+
+    @Test
+    void parsePhases_missingOptionalColumns_nullsForMissingFields() {
+        Workbook wb = workbook();
+        Sheet s = sheet(wb, "Phase", "Identifiant");
+        row(s, 1, "PH-03");
+
+        PhaseSeeder.PhaseSpecs ph =
+                service.parsePhases(s, OOXMLImportService.ImportScope.ALL, null).get(0);
+
+        assertThat(ph.identifier()).isEqualTo("PH-03");
+        assertThat(ph.title()).isNull();
+        assertThat(ph.type()).isNull();
+        assertThat(ph.description()).isNull();
+        assertThat(ph.orderNumber()).isNull();
+        assertThat(ph.lowerBound()).isNull();
+        assertThat(ph.upperBound()).isNull();
+        assertThat(ph.authorEmail()).isNull();
+    }
+
+    @Test
+    void parsePhases_multipleRows_allParsed() {
+        Workbook wb = workbook();
+        Sheet s = sheet(wb, "Phase", "Identifiant", "Titre");
+        row(s, 1, "PH-01", "Phase A");
+        row(s, 2, "PH-02", "Phase B");
+        row(s, 3, "PH-03", "Phase C");
+
+        assertThat(service.parsePhases(s, OOXMLImportService.ImportScope.ALL, null)).hasSize(3);
+    }
+
+    @Test
+    void parsePhases_mixedBlankIdentifiers_onlyNonBlankIncluded() {
+        Workbook wb = workbook();
+        Sheet s = sheet(wb, "Phase", "Identifiant", "Titre");
+        row(s, 1, "PH-01", "Phase A");
+        row(s, 2, "", "Phase B");    // blank identifier → skipped
+        row(s, 3, "PH-03", "Phase C");
+
+        assertThat(service.parsePhases(s, OOXMLImportService.ImportScope.ALL, null)).hasSize(2);
+    }
 
     @Test
     void extractThesaurusDomain_questionMarkAtStart_returnsEmptyString() {
