@@ -71,6 +71,7 @@
             **/ui/lazydatamodel/tree/**,
             **/utils/ExecutionTimeAspect.java,
             **/ui/table/**,
+            **/dto/**,
             **/ui/form/**,
             **/ui/custom/**,
             **/*ViewModel.*,
