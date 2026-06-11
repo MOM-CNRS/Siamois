@@ -7,6 +7,7 @@ import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -886,5 +887,168 @@ class OOXMLImportServiceTest {
         assertThat(result).isNull();
     }
 
+    // -------------------------------------------------------------------------
+    // Catch-block coverage: every parse* method must wrap unexpected exceptions
+    // in IllegalStateException("[Feuille '<name>'] : ...").
+    //
+    // Strategy:
+    //  - URI-parsing methods (extractIdtFromUri / extractIdcFromUri) throw when
+    //    the URI does not contain idt= or idc=.  Placing "bad-uri" in the type
+    //    column of a data row reliably reaches the outer catch.
+    //  - For parsePersons / parseRecordingRels that contain no URI calls,
+    //    a FORMULA cell (=1+1) in the key column triggers
+    //    "Cannot get a STRING value from a NUMERIC formula cell" inside
+    //    getStringCell(), which then propagates through forEachDataRow and is
+    //    wrapped by the outer catch.
+    // -------------------------------------------------------------------------
+
+    private static final String BAD_URI = "not-a-valid-uri";
+
+    /** Creates a formula cell (=1+1) whose getStringCellValue() throws. */
+    private void formulaCell(Row r, int col) {
+        r.createCell(col).setCellFormula("1+1");
+    }
+
+    @Test
+    void parseInstitutions_rowThrows_wrappedWithSheetName() {
+        Workbook wb = workbook();
+        Sheet s = sheet(wb, "Institution", "Nom", "Description", "Identifiant", "Email Admins", "Thesaurus");
+        row(s, 1, "INRAP", "Desc", "ID", "a@b.fr", BAD_URI);
+
+        IllegalStateException ex = assertThrows(IllegalStateException.class,
+                () -> service.parseInstitutions(s));
+
+        assertThat(ex.getMessage()).contains("[Feuille 'Institution']");
+    }
+
+    @Test
+    void parsePersons_rowThrows_wrappedWithSheetName() {
+        Workbook wb = workbook();
+        Sheet s = sheet(wb, "Personne", "Email", "Nom", "Prenom", "Identifiant");
+        Row r = s.createRow(1);
+        formulaCell(r, 0); // Email column – formula cell triggers ISE in getStringCell
+
+        IllegalStateException ex = assertThrows(IllegalStateException.class,
+                () -> service.parsePersons(s));
+
+        assertThat(ex.getMessage()).contains("[Feuille 'Personne']");
+    }
+
+    @Test
+    void parseSpatialUnits_rowThrows_wrappedWithSheetName() {
+        Workbook wb = workbook();
+        Sheet s = sheet(wb, "Lieu", "Nom", "Uri type", "Createur", "Institution", "Enfants");
+        row(s, 1, "Site Nord", BAD_URI, "sys", "INST", null);
+
+        IllegalStateException ex = assertThrows(IllegalStateException.class,
+                () -> service.parseSpatialUnits(s, OOXMLImportService.ImportScope.ALL, null));
+
+        assertThat(ex.getMessage()).contains("[Feuille 'Lieu']");
+    }
+
+    @Test
+    void parseRecordingRels_rowThrows_wrappedWithSheetName() {
+        Workbook wb = workbook();
+        Sheet s = sheet(wb, "Relations", "Parent", "Enfant");
+        Row r = s.createRow(1);
+        formulaCell(r, 0); // Parent column
+        r.createCell(1).setCellValue("child");
+
+        IllegalStateException ex = assertThrows(IllegalStateException.class,
+                () -> service.parseRecordingRels(s));
+
+        assertThat(ex.getMessage()).contains("[Feuille 'Relations']");
+    }
+
+    @Test
+    void parseStratiRels_rowThrows_wrappedWithSheetName() {
+        Workbook wb = workbook();
+        Sheet s = sheet(wb, "Strati", "us1", "us2", "relation");
+        row(s, 1, "A", "B", BAD_URI);
+
+        IllegalStateException ex = assertThrows(IllegalStateException.class,
+                () -> service.parseStratiRels(s));
+
+        assertThat(ex.getMessage()).contains("[Feuille 'Strati']");
+    }
+
+    @Test
+    void parseActionCodes_rowThrows_wrappedWithSheetName() {
+        Workbook wb = workbook();
+        Sheet s = sheet(wb, "ActionCode", "Code", "Type uri");
+        row(s, 1, "FOU", BAD_URI);
+
+        IllegalStateException ex = assertThrows(IllegalStateException.class,
+                () -> service.parseActionCodes(s));
+
+        assertThat(ex.getMessage()).contains("[Feuille 'ActionCode']");
+    }
+
+    @Test
+    void parseActionUnits_rowThrows_wrappedWithSheetName() {
+        Workbook wb = workbook();
+        Sheet s = sheet(wb, "Action", "Nom", "Identifiant", "Code", "Type uri",
+                "Createur", "Institution", "Date debut", "Date fin", "Contexte spatiale");
+        row(s, 1, "Fouille", "UA-001", "FOU", BAD_URI,
+                "user@fr", "INST", null, null, null);
+
+        IllegalStateException ex = assertThrows(IllegalStateException.class,
+                () -> service.parseActionUnits(s));
+
+        assertThat(ex.getMessage()).contains("[Feuille 'Action']");
+    }
+
+    @Test
+    void parseRecordingUnits_rowThrows_wrappedWithSheetName() {
+        Workbook wb = workbook();
+        Sheet s = sheet(wb, "UE",
+                "Identifiant", "Description", "Type uri", "Cycle uri",
+                "Couleur de la matrice", "Texture de la matrice", "Composition de la matrice",
+                "Agent uri", "Interpretation uri", "Author email", "Institution",
+                "Contributeurs email", "Date d'ouverture", "Date de fermeture",
+                "Unite spatiale", "Unite d'action");
+        row(s, 1,
+                "123", "desc", BAD_URI, null,
+                null, null, null,
+                null, null, "a@b.fr", "INST",
+                null, null, null, null, null);
+
+        IllegalStateException ex = assertThrows(IllegalStateException.class,
+                () -> service.parseRecordingUnits(s, OOXMLImportService.ImportScope.ALL, null));
+
+        assertThat(ex.getMessage()).contains("[Feuille 'UE']");
+    }
+
+    @Test
+    void parseSpecimens_rowThrows_wrappedWithSheetName() {
+        Workbook wb = workbook();
+        Sheet s = sheet(wb, "Spécimen",
+                "Identifiant", "Catégorie", "Matière", "Designatation",
+                "Institution", "Auteur fiche email", "Collecteur emails",
+                "Unité d'enregistrement");
+        row(s, 1, "SP-001", BAD_URI, null, null,
+                "INST", "a@b.fr", null, "US-001");
+
+        IllegalStateException ex = assertThrows(IllegalStateException.class,
+                () -> service.parseSpecimens(s, OOXMLImportService.ImportScope.ALL, null));
+
+        assertThat(ex.getMessage()).contains("[Feuille 'Spécimen']");
+    }
+
+    @Test
+    void parsePhases_rowThrows_wrappedWithSheetName() {
+        Workbook wb = workbook();
+        Sheet s = sheet(wb, "Phase",
+                "Identifiant", "Titre", "Type uri", "Description",
+                "Ordre", "Borne inferieure", "Borne superieure",
+                "Auteur", "Projet", "Institution");
+        row(s, 1, "PH-01", "Title", BAD_URI, "Desc",
+                null, null, null, "a@b.fr", "UA-001", "INST");
+
+        IllegalStateException ex = assertThrows(IllegalStateException.class,
+                () -> service.parsePhases(s, OOXMLImportService.ImportScope.ALL, null));
+
+        assertThat(ex.getMessage()).contains("[Feuille 'Phase']");
+    }
 
 }
