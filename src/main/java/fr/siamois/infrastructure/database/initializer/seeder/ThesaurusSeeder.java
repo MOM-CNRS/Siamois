@@ -50,6 +50,8 @@ public class ThesaurusSeeder {
                 else {
                     result.put(externalId, vocab);
                 }
+            } catch (DatabaseDataInitException e) {
+                throw e;
             } catch (Exception e) {
                 throw new IllegalStateException(
                         "[Thésaurus ligne " + (i + 1) + "] '" + s.externalId() + "' : " + e.getMessage(), e);

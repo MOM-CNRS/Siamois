@@ -450,7 +450,7 @@ class OOXMLImportServiceTest {
         assertThat(ru.matrixTexture()).isEqualTo("Sableux");
 
         // System fields
-        assertThat(ru.createdBy()).isEqualTo("system@siamois.fr");
+        assertThat(ru.createdBy()).isEqualTo(OOXMLImportService.SIAMOIS_SYSTEM);
         assertThat(ru.creationTime()).isNotNull();
     }
 

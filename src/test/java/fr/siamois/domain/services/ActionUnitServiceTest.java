@@ -21,6 +21,7 @@ import fr.siamois.dto.entity.*;
 import fr.siamois.infrastructure.database.repositories.SpatialUnitRepository;
 import fr.siamois.infrastructure.database.repositories.actionunit.ActionCodeRepository;
 import fr.siamois.infrastructure.database.repositories.actionunit.ActionUnitRepository;
+import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitRepository;
 import fr.siamois.infrastructure.database.repositories.specs.ActionUnitSpec;
 import fr.siamois.mapper.ActionUnitMapper;
 import fr.siamois.mapper.ConceptMapper;
@@ -50,6 +51,7 @@ import static org.mockito.Mockito.*;
 class ActionUnitServiceTest {
 
     @Mock private ActionUnitRepository actionUnitRepository;
+    @Mock private RecordingUnitRepository recordingUnitRepository;
     @Mock private ConceptService conceptService;
     @Mock private ActionCodeRepository actionCodeRepository;
     @Mock private ActionUnitMapper actionUnitMapper;

@@ -316,7 +316,7 @@ class CustomFormSeederTest {
 
         // Act + Assert
         List<CustomFormDTO> list = List.of(dto);
-        assertThrows(IllegalArgumentException.class, () -> seeder.seed(list));
+        assertThrows(IllegalStateException.class, () -> seeder.seed(list));
         verify(customFormRepository, never()).save(any());
     }
 
@@ -335,14 +335,14 @@ class CustomFormSeederTest {
         CustomColDTO colNull = colDTO(colSpec,
                 new EnabledWhenSpecSeedDTO(EnabledWhenSpecSeedDTO.Operator.IN, condSpec, null));
         List<CustomFormDTO> list = List.of(formWith(colNull));
-        assertThrows(IllegalArgumentException.class, () -> seeder.seed(list));
+        assertThrows(IllegalStateException.class, () -> seeder.seed(list));
 
         // empty values
         CustomColDTO colEmpty = colDTO(colSpec,
                 new EnabledWhenSpecSeedDTO(EnabledWhenSpecSeedDTO.Operator.IN, condSpec, List.of()));
 
         List<CustomFormDTO> list2 = List.of(formWith(colEmpty));
-        assertThrows(IllegalArgumentException.class, () -> seeder.seed(list2));
+        assertThrows(IllegalStateException.class, () -> seeder.seed(list2));
 
         verify(customFormRepository, never()).save(any());
     }
@@ -376,7 +376,7 @@ class CustomFormSeederTest {
         when(fieldSeeder.findFieldOrThrow(condSpec)).thenReturn(observedField);
 
         List<CustomFormDTO> list = List.of(formWith(col));
-        assertThrows(IllegalArgumentException.class, () -> seeder.seed(list));
+        assertThrows(IllegalStateException.class, () -> seeder.seed(list));
         verify(customFormRepository, never()).save(any());
     }
 
@@ -399,7 +399,7 @@ class CustomFormSeederTest {
         when(fieldSeeder.findFieldOrThrow(condSpec)).thenReturn(observedField);
 
         List<CustomFormDTO> list = List.of(formWith(col));
-        assertThrows(IllegalArgumentException.class, () -> seeder.seed(list));
+        assertThrows(IllegalStateException.class, () -> seeder.seed(list));
         verify(customFormRepository, never()).save(any());
     }
 
@@ -418,7 +418,7 @@ class CustomFormSeederTest {
                 .thenReturn(Optional.empty());
 
         List<CustomFormDTO> list = List.of(formWith(col));
-        assertThrows(IllegalArgumentException.class, () -> seeder.seed(list));
+        assertThrows(IllegalStateException.class, () -> seeder.seed(list));
         verify(customFormRepository, never()).save(any());
     }
 
@@ -441,7 +441,7 @@ class CustomFormSeederTest {
                 .thenReturn(Optional.empty());
         when(fieldSeeder.findFieldOrThrow(condSpec)).thenReturn(observedField);
         List<CustomFormDTO> list = List.of(formWith(col));
-        assertThrows(IllegalArgumentException.class, () -> seeder.seed(list));
+        assertThrows(IllegalStateException.class, () -> seeder.seed(list));
         verify(customFormRepository, never()).save(any());
     }
 

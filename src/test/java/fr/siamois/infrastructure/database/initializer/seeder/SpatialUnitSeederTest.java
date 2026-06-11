@@ -65,7 +65,7 @@ class SpatialUnitSeederTest {
 
         Concept c = new Concept();
         when(conceptSeeder.findConceptOrReturnNull("th240", "123456")).thenReturn(c);
-        when(personSeeder.findPersonOrReturnNull("author@siamois.fr")).thenReturn(null);
+        when(personSeeder.findOrCreatePerson("author@siamois.fr")).thenReturn(null);
         List<SpatialUnitSeeder.SpatialUnitSpecs> toInsert = List.of(
                 new SpatialUnitSeeder.SpatialUnitSpecs("name",
                         "th240",
@@ -92,7 +92,7 @@ class SpatialUnitSeederTest {
         Concept c = new Concept();
         Person p = new Person();
         when(conceptSeeder.findConceptOrReturnNull("th240", "123456")).thenReturn(c);
-        when(personSeeder.findPersonOrReturnNull("author@siamois.fr")).thenReturn(p);
+        when(personSeeder.findOrCreatePerson("author@siamois.fr")).thenReturn(p);
         when(institutionSeeder.findInstitutionOrReturnNull("test")).thenReturn(null);
         List<SpatialUnitSeeder.SpatialUnitSpecs> toInsert = List.of(
                 new SpatialUnitSeeder.SpatialUnitSpecs("name",
@@ -122,7 +122,7 @@ class SpatialUnitSeederTest {
         Institution i = new Institution();
         i.setId(1L);
         when(conceptSeeder.findConceptOrReturnNull("th240", "123456")).thenReturn(c);
-        when(personSeeder.findPersonOrReturnNull("author@siamois.fr")).thenReturn(p);
+        when(personSeeder.findOrCreatePerson("author@siamois.fr")).thenReturn(p);
         when(institutionSeeder.findInstitutionOrReturnNull("test")).thenReturn(i);
         when(spatialUnitRepository.findByNameAndInstitution("Name", 1L)).thenReturn(Optional.empty());
         List<SpatialUnitSeeder.SpatialUnitSpecs> toInsert = List.of(
@@ -157,7 +157,7 @@ class SpatialUnitSeederTest {
         i.setId(1L);
 
         when(conceptSeeder.findConceptOrReturnNull("th240", "123456")).thenReturn(c);
-        when(personSeeder.findPersonOrReturnNull("author@siamois.fr")).thenReturn(p);
+        when(personSeeder.findOrCreatePerson("author@siamois.fr")).thenReturn(p);
         when(institutionSeeder.findInstitutionOrReturnNull("test")).thenReturn(i);
         when(spatialUnitRepository.findByNameAndInstitution("Name", 1L)).thenReturn(Optional.of(child));
         when(spatialUnitRepository.findByNameAndInstitution("name", 1L)).thenReturn(Optional.of(new SpatialUnit()));
@@ -194,7 +194,7 @@ class SpatialUnitSeederTest {
         created.setName("created");
 
         when(conceptSeeder.findConceptOrReturnNull("th240", "123456")).thenReturn(c);
-        when(personSeeder.findPersonOrReturnNull("author@siamois.fr")).thenReturn(p);
+        when(personSeeder.findOrCreatePerson("author@siamois.fr")).thenReturn(p);
         when(institutionSeeder.findInstitutionOrReturnNull("test")).thenReturn(i);
         when(spatialUnitRepository.findByNameAndInstitution("Name", 1L)).thenReturn(Optional.of(child));
         when(spatialUnitRepository.findByNameAndInstitution("created", 1L)).thenReturn(Optional.empty());

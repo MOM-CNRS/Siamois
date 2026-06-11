@@ -563,7 +563,7 @@ public class OOXMLImportService {
             String ruStr = getStringCellOrNull(row, cols, "unite d'enregistrement");
             RecordingUnitSeeder.RecordingUnitKey recordingUnitKey =
                     (ruStr == null || ruStr.isBlank()) ? null : new RecordingUnitSeeder.RecordingUnitKey(ruStr,
-                            actionUnit.getFullIdentifier());
+                            actionUnit != null ? actionUnit.getFullIdentifier() : "");
 
             result.add(new SpecimenSeeder.SpecimenSpecs(
                     identStr,

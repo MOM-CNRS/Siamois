@@ -59,12 +59,12 @@ class InstitutionSeederTest {
 
         when(thesaurusSeeder.findVocabularyOrReturnNull("https://thesaurus.mom.fr", "th240")).thenReturn(null);
 
-        IllegalArgumentException ex = assertThrows(
-                IllegalArgumentException.class,
+        IllegalStateException ex = assertThrows(
+                IllegalStateException.class,
                 () -> institutionSeeder.seed(toInsert)
         );
 
-        assertThat(ex.getMessage()).contains("Invalid thesaurus: th240" );
+        assertThat(ex.getMessage()).contains("th240");
     }
 
     @Test
@@ -101,13 +101,12 @@ class InstitutionSeederTest {
 
         when(personSeeder.findPersonOrReturnNull(anyString())).thenReturn(null);
 
-        IllegalArgumentException ex = assertThrows(
-                IllegalArgumentException.class,
+        IllegalStateException ex = assertThrows(
+                IllegalStateException.class,
                 () -> institutionSeeder.seed(toInsert)
         );
 
-
-        assertThat(ex.getMessage()).contains("Invalid email: user@siamois.fr");
+        assertThat(ex.getMessage()).contains("user@siamois.fr");
 
     }
 

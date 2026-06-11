@@ -5,6 +5,7 @@ import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
+import fr.siamois.infrastructure.database.repositories.PhaseRepository;
 import fr.siamois.infrastructure.database.repositories.SpatialUnitRepository;
 import fr.siamois.infrastructure.database.repositories.actionunit.ActionUnitRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitRepository;
@@ -41,6 +42,8 @@ class RecordingUnitSeederTest {
     ActionUnitRepository actionUnitRepository;
     @Mock
     PersonSeeder personSeeder;
+    @Mock
+    PhaseRepository phaseRepository;
 
     @InjectMocks
     RecordingUnitSeeder seeder;
@@ -166,7 +169,7 @@ class RecordingUnitSeederTest {
                 .thenReturn(new Concept());
         when(institutionSeeder.findInstitutionOrReturnNull("chartres"))
                 .thenReturn(new Institution());
-        when(personSeeder.findPersonOrThrow("author@siamois.fr"))
+        when(personSeeder.findOrCreatePerson("author@siamois.fr"))
                 .thenThrow(new IllegalStateException("Person introuvable"));
 
         IllegalStateException ex = assertThrows(
@@ -220,7 +223,7 @@ class RecordingUnitSeederTest {
                 () -> seeder.seed(toInsert)
         );
 
-        assertThat(ex.getMessage()).contains("Spatial unit introuvable");
+        assertThat(ex.getMessage()).contains("Lieu Spatial introuvable");
 
     }
 
@@ -260,9 +263,6 @@ class RecordingUnitSeederTest {
 
         when(spatialUnitRepository.findByNameAndInstitution("Spatial", null))
                 .thenReturn(Optional.of(new SpatialUnit()));
-
-        when(actionUnitRepository.findByFullIdentifier("action-01"))
-                .thenReturn(Optional.empty());
 
         IllegalStateException ex = assertThrows(
                 IllegalStateException.class,
@@ -310,10 +310,12 @@ class RecordingUnitSeederTest {
         when(spatialUnitRepository.findByNameAndInstitution("Spatial", null))
                 .thenReturn(Optional.of(new SpatialUnit()));
 
-        when(actionUnitRepository.findByFullIdentifier("action-01"))
-                .thenReturn(Optional.of(new ActionUnit()));
+        ActionUnit au = new ActionUnit();
+        when(actionUnitRepository.findByIdentifierAndCreatedByInstitutionIdentifier("action-01", "chartres"))
+                .thenReturn(Optional.of(au));
 
-        when(recordingUnitRepository.findByFullIdentifierAndInstitutionId("chartres-C309_01-1100", null))
+        when(recordingUnitRepository.findByFullIdentifierAndInstitutionIdAndActionUnitFullIdentifier(
+                "chartres-C309_01-1100", null, null))
                 .thenReturn(Optional.of(new RecordingUnit()));
 
         seeder.seed(toInsert);
@@ -359,10 +361,12 @@ class RecordingUnitSeederTest {
         when(spatialUnitRepository.findByNameAndInstitution("Spatial", null))
                 .thenReturn(Optional.of(new SpatialUnit()));
 
-        when(actionUnitRepository.findByFullIdentifier("action-01"))
-                .thenReturn(Optional.of(new ActionUnit()));
+        ActionUnit au = new ActionUnit();
+        when(actionUnitRepository.findByIdentifierAndCreatedByInstitutionIdentifier("action-01", "chartres"))
+                .thenReturn(Optional.of(au));
 
-        when(recordingUnitRepository.findByFullIdentifierAndInstitutionId("chartres-C309_01-1100",null))
+        when(recordingUnitRepository.findByFullIdentifierAndInstitutionIdAndActionUnitFullIdentifier(
+                "chartres-C309_01-1100", null, null))
                 .thenReturn(Optional.empty());
 
         seeder.seed(toInsert);
@@ -379,7 +383,7 @@ class RecordingUnitSeederTest {
 
         RecordingUnit recordingUnit = new RecordingUnit(); recordingUnit.setFullIdentifier("RU-001");
 
-        when(recordingUnitRepository.findByFullIdentifierAndInstitutionId("RU-001", null))
+        when(recordingUnitRepository.findByFullIdentifierAndInstitutionIdAndActionUnitFullIdentifier("RU-001", null, ""))
                 .thenReturn(Optional.of(recordingUnit));
 
         // When
@@ -389,7 +393,7 @@ class RecordingUnitSeederTest {
         assertThat(result).isSameAs(recordingUnit);
 
         verify(recordingUnitRepository)
-                .findByFullIdentifierAndInstitutionId("RU-001", null);
+                .findByFullIdentifierAndInstitutionIdAndActionUnitFullIdentifier("RU-001", null, "");
     }
 
     @Test
@@ -398,7 +402,7 @@ class RecordingUnitSeederTest {
         RecordingUnitSeeder.RecordingUnitKey key =
                 new RecordingUnitSeeder.RecordingUnitKey("RU-404", "");
 
-        when(recordingUnitRepository.findByFullIdentifierAndInstitutionId("RU-404", 1L))
+        when(recordingUnitRepository.findByFullIdentifierAndInstitutionIdAndActionUnitFullIdentifier("RU-404", 1L, ""))
                 .thenReturn(Optional.empty());
 
         // When / Then
@@ -407,7 +411,7 @@ class RecordingUnitSeederTest {
                 .hasMessage("Recording unit introuvable");
 
         verify(recordingUnitRepository)
-                .findByFullIdentifierAndInstitutionId("RU-404", 1L);
+                .findByFullIdentifierAndInstitutionIdAndActionUnitFullIdentifier("RU-404", 1L, "");
     }
 
 
