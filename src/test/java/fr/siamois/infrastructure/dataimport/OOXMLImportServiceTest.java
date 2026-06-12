@@ -246,7 +246,7 @@ class OOXMLImportServiceTest {
         row(s, 2, "US 1", "uri?idt=th1&idc=2", "a@b.fr", "INST", null);
         row(s, 3, "US 2", "uri?idt=th1&idc=3", "a@b.fr", "INST", null);
 
-        List<SpatialUnitSeeder.SpatialUnitSpecs> specs = service.parseSpatialUnits(s, OOXMLImportService.ImportScope.ALL, null);
+        List<SpatialUnitSeeder.SpatialUnitSpecs> specs = service.parseSpatialUnits(s, null);
 
         SpatialUnitSeeder.SpatialUnitSpecs parent =
                 specs.stream()
@@ -601,7 +601,7 @@ class OOXMLImportServiceTest {
 
         // Execute
         List<SpecimenSeeder.SpecimenSpecs> specs =
-                service.parseSpecimens(s, OOXMLImportService.ImportScope.ALL, null);
+                service.parseSpecimens(s, null);
 
         // Assert
         assertThat(specs).hasSize(1);
@@ -766,14 +766,14 @@ class OOXMLImportServiceTest {
 
     @Test
     void parsePhases_nullSheet_returnsEmpty() {
-        assertThat(service.parsePhases(null, OOXMLImportService.ImportScope.ALL, null)).isEmpty();
+        assertThat(service.parsePhases(null, null)).isEmpty();
     }
 
     @Test
     void parsePhases_noHeaderRow_returnsEmpty() {
         Workbook wb = workbook();
         Sheet s = wb.createSheet("Phase");
-        assertThat(service.parsePhases(s, OOXMLImportService.ImportScope.ALL, null)).isEmpty();
+        assertThat(service.parsePhases(s, null)).isEmpty();
     }
 
     @Test
@@ -782,7 +782,7 @@ class OOXMLImportServiceTest {
         Sheet s = sheet(wb, "Phase", "Identifiant", "Titre");
         row(s, 1, "   ", "titre quelconque");
 
-        assertThat(service.parsePhases(s, OOXMLImportService.ImportScope.ALL, null)).isEmpty();
+        assertThat(service.parsePhases(s,  null)).isEmpty();
     }
 
     @Test
@@ -798,7 +798,7 @@ class OOXMLImportServiceTest {
                 "author@site.fr", "UA-001", "INST");
 
         List<PhaseSeeder.PhaseSpecs> specs =
-                service.parsePhases(s, OOXMLImportService.ImportScope.ALL, null);
+                service.parsePhases(s,  null);
 
         assertThat(specs).hasSize(1);
         PhaseSeeder.PhaseSpecs ph = specs.get(0);
@@ -828,7 +828,7 @@ class OOXMLImportServiceTest {
         row(s, 1, "PH-02", "Phase 2", "user@site.fr");
 
         PhaseSeeder.PhaseSpecs ph =
-                service.parsePhases(s, OOXMLImportService.ImportScope.PROJECT, au).get(0);
+                service.parsePhases(s,  au).get(0);
 
         assertThat(ph.actionUnitKey().fullIdentifier()).isEqualTo("AU-FULL-ID");
         assertThat(ph.actionUnitKey().institutionIdentifier()).isEqualTo("CODE-INST");
@@ -841,7 +841,7 @@ class OOXMLImportServiceTest {
         row(s, 1, "PH-03");
 
         PhaseSeeder.PhaseSpecs ph =
-                service.parsePhases(s, OOXMLImportService.ImportScope.ALL, null).get(0);
+                service.parsePhases(s, null).get(0);
 
         assertThat(ph.identifier()).isEqualTo("PH-03");
         assertThat(ph.title()).isNull();
@@ -861,7 +861,7 @@ class OOXMLImportServiceTest {
         row(s, 2, "PH-02", "Phase B");
         row(s, 3, "PH-03", "Phase C");
 
-        assertThat(service.parsePhases(s, OOXMLImportService.ImportScope.ALL, null)).hasSize(3);
+        assertThat(service.parsePhases(s,  null)).hasSize(3);
     }
 
     @Test
@@ -872,7 +872,7 @@ class OOXMLImportServiceTest {
         row(s, 2, "", "Phase B");    // blank identifier → skipped
         row(s, 3, "PH-03", "Phase C");
 
-        assertThat(service.parsePhases(s, OOXMLImportService.ImportScope.ALL, null)).hasSize(2);
+        assertThat(service.parsePhases(s, null)).hasSize(2);
     }
 
     @Test
@@ -941,7 +941,7 @@ class OOXMLImportServiceTest {
         row(s, 1, "Site Nord", BAD_URI, "sys", "INST", null);
 
         IllegalStateException ex = assertThrows(IllegalStateException.class,
-                () -> service.parseSpatialUnits(s, OOXMLImportService.ImportScope.ALL, null));
+                () -> service.parseSpatialUnits(s,  null));
 
         assertThat(ex.getMessage()).contains("[Feuille 'Lieu']");
     }
@@ -1030,7 +1030,7 @@ class OOXMLImportServiceTest {
                 "INST", "a@b.fr", null, "US-001");
 
         IllegalStateException ex = assertThrows(IllegalStateException.class,
-                () -> service.parseSpecimens(s, OOXMLImportService.ImportScope.ALL, null));
+                () -> service.parseSpecimens(s,null));
 
         assertThat(ex.getMessage()).contains("[Feuille 'Spécimen']");
     }
@@ -1046,7 +1046,7 @@ class OOXMLImportServiceTest {
                 null, null, null, "a@b.fr", "UA-001", "INST");
 
         IllegalStateException ex = assertThrows(IllegalStateException.class,
-                () -> service.parsePhases(s, OOXMLImportService.ImportScope.ALL, null));
+                () -> service.parsePhases(s, null));
 
         assertThat(ex.getMessage()).contains("[Feuille 'Phase']");
     }

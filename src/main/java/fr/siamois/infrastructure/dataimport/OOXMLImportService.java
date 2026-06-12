@@ -122,7 +122,7 @@ public class OOXMLImportService {
 
             Sheet phaseSheet = workbook.getSheet(sheetIdToName.getOrDefault("phase", "Phase"));
 
-            spatialUnits = parseSpatialUnits(spatialSheet, scope, actionUnitDTO);
+            spatialUnits = parseSpatialUnits(spatialSheet, actionUnitDTO);
             recordingUnits = parseRecordingUnits(recordingUnitSheet, scope, actionUnitDTO);
             specimenSpecs = parseSpecimens(specimenSheet, actionUnitDTO);
             phaseSpecs = parsePhases(phaseSheet, actionUnitDTO);
@@ -243,7 +243,6 @@ public class OOXMLImportService {
     }
 
     public List<SpatialUnitSeeder.SpatialUnitSpecs> parseSpatialUnits(Sheet sheet,
-                                                                      ImportScope scope,
                                                                       ActionUnitDTO actionUnit) {
         try {
             Map<String, Integer> cols = indexColumns(sheet.getRow(0));
@@ -521,53 +520,45 @@ public class OOXMLImportService {
     }
 
 
+    private RecordingUnitSeeder.RecordingUnitKey parseRecordingUnitKey(Row row, Map<String, Integer> cols, ActionUnitDTO actionUnit) {
+        String ruStr = getStringCellOrNull(row, cols, "unite d'enregistrement");
+        if (ruStr == null || ruStr.isBlank()) return null;
+        String actionFullId = actionUnit != null ? actionUnit.getFullIdentifier() : "";
+        return new RecordingUnitSeeder.RecordingUnitKey(ruStr, actionFullId);
+    }
+
+    private Optional<SpecimenSeeder.SpecimenSpecs> parseRowToSpecimen(Row row, Map<String, Integer> cols, ActionUnitDTO actionUnit) {
+        String identStr = getStringCellOrNull(row, cols, IDENTIFIANT);
+        if (identStr == null || identStr.isBlank()) return Optional.empty();
+
+        String institutionId = actionUnit != null ? actionUnit.getCreatedByInstitution().getIdentifier() : getStringCellOrNull(row, cols, INSTITUTION);
+        String auteurFiche   = getStringCellOrNull(row, cols, "auteur fiche email");
+        List<String> authors = (auteurFiche == null || auteurFiche.isBlank()) ? List.of() : List.of(auteurFiche.trim());
+
+        return Optional.of(new SpecimenSeeder.SpecimenSpecs(
+                identStr,
+                parseIntegerSafe(identStr),
+                conceptKeyFromUri(getStringCellOrNull(row, cols, "matiere")),
+                conceptKeyFromUri(getStringCellOrNull(row, cols, "categorie")),
+                conceptKeyFromUri(getStringCellOrNull(row, cols, "designation")),
+                SIAMOIS_SYSTEM,
+                institutionId,
+                authors,
+                parsePersonList(getStringCellOrNull(row, cols, "collecteurs emails")),
+                OffsetDateTime.now(ZoneOffset.UTC),
+                parseRecordingUnitKey(row, cols, actionUnit)
+        ));
+    }
+
     public List<SpecimenSeeder.SpecimenSpecs> parseSpecimens(Sheet sheet, ActionUnitDTO actionUnit) {
         if (sheet == null) return List.of();
         try {
-        Row header = sheet.getRow(0);
-        if (header == null) return List.of();
-
-        Map<String, Integer> cols = indexColumns(header);
-        List<SpecimenSeeder.SpecimenSpecs> result = new ArrayList<>();
-
-        forEachDataRow(sheet, row -> {
-            String identStr = getStringCellOrNull(row, cols, IDENTIFIANT);
-            if (identStr == null || identStr.isBlank()) return;
-
-            Integer identifier = parseIntegerSafe(identStr);
-
-            ConceptSeeder.ConceptKey typeKey        = conceptKeyFromUri(getStringCellOrNull(row, cols, "matiere"));
-            ConceptSeeder.ConceptKey categoryKey    = conceptKeyFromUri(getStringCellOrNull(row, cols, "categorie"));
-            ConceptSeeder.ConceptKey designationKey = conceptKeyFromUri(getStringCellOrNull(row, cols, "designation"));
-
-            String institutionId = actionUnit != null ? actionUnit.getCreatedByInstitution().getIdentifier() : getStringCellOrNull(row, cols, INSTITUTION);
-
-            String auteurFiche = getStringCellOrNull(row, cols, "auteur fiche email");
-            List<String> authors = (auteurFiche == null || auteurFiche.isBlank()) ? List.of() : List.of(auteurFiche.trim());
-
-            List<String> collectors = parsePersonList(getStringCellOrNull(row, cols, "collecteurs emails"));
-
-            String ruStr = getStringCellOrNull(row, cols, "unite d'enregistrement");
-            RecordingUnitSeeder.RecordingUnitKey recordingUnitKey =
-                    (ruStr == null || ruStr.isBlank()) ? null : new RecordingUnitSeeder.RecordingUnitKey(ruStr,
-                            actionUnit != null ? actionUnit.getFullIdentifier() : "");
-
-            result.add(new SpecimenSeeder.SpecimenSpecs(
-                    identStr,
-                    identifier,
-                    typeKey,
-                    categoryKey,
-                    designationKey,
-                    SIAMOIS_SYSTEM,
-                    institutionId,
-                    authors,
-                    collectors,
-                    OffsetDateTime.now(),
-                    recordingUnitKey
-            ));
-        });
-
-        return result;
+            Row header = sheet.getRow(0);
+            if (header == null) return List.of();
+            Map<String, Integer> cols = indexColumns(header);
+            List<SpecimenSeeder.SpecimenSpecs> result = new ArrayList<>();
+            forEachDataRow(sheet, row -> parseRowToSpecimen(row, cols, actionUnit).ifPresent(result::add));
+            return result;
         } catch (Exception e) {
             throw new IllegalStateException("[Feuille '" + sheet.getSheetName() + "'] : " + e.getMessage(), e);
         }
