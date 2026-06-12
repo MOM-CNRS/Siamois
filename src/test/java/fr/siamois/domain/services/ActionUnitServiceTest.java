@@ -90,8 +90,7 @@ class ActionUnitServiceTest {
 
     @BeforeEach
     void setUp() {
-        when(clock.instant()).thenReturn(NOW.toInstant());
-        when(clock.getZone()).thenReturn(ZoneOffset.UTC);
+
         spatialUnit1 = new SpatialUnit();
         actionUnit1 = new ActionUnit();
         actionUnit2 = new ActionUnit();
@@ -991,6 +990,8 @@ class ActionUnitServiceTest {
 
     @Test
     void isActionUnitStillOngoing_nowInRange_returnsTrue() {
+        when(clock.instant()).thenReturn(NOW.toInstant());
+        when(clock.getZone()).thenReturn(ZoneOffset.UTC);
         ActionUnitSummaryDTO au = new ActionUnitSummaryDTO();
         au.setBeginDate(NOW.minusDays(1));
         au.setEndDate(NOW.plusDays(1));
@@ -999,6 +1000,8 @@ class ActionUnitServiceTest {
 
     @Test
     void isActionUnitStillOngoing_nowBeforeBegin_returnsFalse() {
+        when(clock.instant()).thenReturn(NOW.toInstant());
+        when(clock.getZone()).thenReturn(ZoneOffset.UTC);
         ActionUnitSummaryDTO au = new ActionUnitSummaryDTO();
         au.setBeginDate(NOW.plusDays(1));
         au.setEndDate(NOW.plusDays(2));
@@ -1007,6 +1010,8 @@ class ActionUnitServiceTest {
 
     @Test
     void isActionUnitStillOngoing_nowAfterEnd_returnsFalse() {
+        when(clock.instant()).thenReturn(NOW.toInstant());
+        when(clock.getZone()).thenReturn(ZoneOffset.UTC);
         ActionUnitSummaryDTO au = new ActionUnitSummaryDTO();
         au.setBeginDate(NOW.minusDays(2));
         au.setEndDate(NOW.minusDays(1));
