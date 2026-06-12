@@ -1,0 +1,16 @@
+<ui:fragment xmlns="http://www.w3.org/1999/xhtml"
+             xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
+             xmlns:table="http://xmlns.jcp.org/jsf/composite/pages/shared/table">
+
+    <!--@elvariable id="tabModel" type="fr.siamois.ui.bean.panel.models.panel.single.tab.SpatialUnitTab"-->
+    <!--@elvariable id="panelIndex" type="java.lang.Integer"-->
+
+    <div class="spatial-context-panel">
+        <table:entityTable
+                tableModel="#{tabModel.tableModel}"
+                panelIndex="#{panelIndex}"
+                id="#{empty tableId ? 'spatialContextList' : tableId}"
+        />
+    </div>
+
+</ui:fragment>
