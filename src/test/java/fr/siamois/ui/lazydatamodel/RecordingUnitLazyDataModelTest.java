@@ -26,6 +26,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 
 import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -238,7 +239,7 @@ class RecordingUnitLazyDataModelTest {
         filterBy.put(RecordingUnitSpec.AUTHOR_FILTER, authorMeta);
 
         FilterMeta dateMeta = mock(FilterMeta.class);
-        List<LocalDate> dates = List.of(LocalDate.now());
+        List<LocalDate> dates = List.of(LocalDate.now(ZoneOffset.UTC));
         when(dateMeta.getFilterValue()).thenReturn(dates);
         filterBy.put(RecordingUnitSpec.OPENING_DATE_FILTER, dateMeta);
 

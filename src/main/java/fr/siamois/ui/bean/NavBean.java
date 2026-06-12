@@ -55,7 +55,7 @@ public class NavBean implements Serializable {
     private final transient BookmarkService bookmarkService;
     private final FlowBean flowBean;
     private final LangBean langBean;
-    private final ProjectDetailsBean projectDetailsBean;
+    private final transient ProjectDetailsBean projectDetailsBean;
 
     private String urlToGoBack; // URL to go back from settings
 

@@ -43,6 +43,8 @@ import org.springframework.core.convert.ConversionService;
 
 import java.io.Serializable;
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -118,7 +120,7 @@ public abstract class AbstractSingleEntity<T extends AbstractEntityDTO>
 
     @Override
     public void applyViewState(TableViewState state) {
-
+        // no view state so far
     };
 
     @Override
@@ -173,13 +175,13 @@ public abstract class AbstractSingleEntity<T extends AbstractEntityDTO>
         this.formContextServices = context.getBean(FormContextServices.class);
         this.langBean = context.getBean(LangBean.class);
         this.conversionService = context.getBean(ConversionService.class);
-        this.bookmarkService = context.getBean(BookmarkService.class);;
+        this.bookmarkService = context.getBean(BookmarkService.class);
     }
 
     // -------------------- Utility -------------------------
 
     public static String generateRandomActionUnitIdentifier() {
-        int currentYear = java.time.LocalDate.now().getYear();
+        int currentYear = LocalDate.now(ZoneOffset.UTC).getYear();
         return String.valueOf(currentYear);
     }
 

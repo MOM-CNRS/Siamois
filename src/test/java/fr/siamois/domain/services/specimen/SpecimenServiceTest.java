@@ -29,6 +29,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.*;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
@@ -378,7 +379,7 @@ class SpecimenServiceTest {
         RecordingUnitSummaryDTO ruDTO = new RecordingUnitSummaryDTO();
         ruDTO.setId(1L);
         SpecimenDTO currentDTO = new SpecimenDTO();
-        currentDTO.setCreationTime(OffsetDateTime.now());
+        currentDTO.setCreationTime(OffsetDateTime.now(ZoneOffset.UTC));
 
         Specimen nextSpecimen = new Specimen();
         SpecimenDTO nextDTO = new SpecimenDTO();
@@ -402,7 +403,7 @@ class SpecimenServiceTest {
         RecordingUnitSummaryDTO ruDTO = new RecordingUnitSummaryDTO();
         ruDTO.setId(1L);
         SpecimenDTO currentDTO = new SpecimenDTO();
-        currentDTO.setCreationTime(OffsetDateTime.now());
+        currentDTO.setCreationTime(OffsetDateTime.now(ZoneOffset.UTC));
 
         Specimen oldestSpecimen = new Specimen();
         SpecimenDTO oldestDTO = new SpecimenDTO();
@@ -428,7 +429,7 @@ class SpecimenServiceTest {
         RecordingUnitSummaryDTO ruDTO = new RecordingUnitSummaryDTO();
         ruDTO.setId(1L);
         SpecimenDTO currentDTO = new SpecimenDTO();
-        currentDTO.setCreationTime(OffsetDateTime.now());
+        currentDTO.setCreationTime(OffsetDateTime.now(ZoneOffset.UTC));
 
         Specimen prevSpecimen = new Specimen();
         SpecimenDTO prevDTO = new SpecimenDTO();

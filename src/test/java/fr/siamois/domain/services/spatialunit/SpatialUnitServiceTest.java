@@ -37,6 +37,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.*;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -597,7 +598,7 @@ class SpatialUnitServiceTest {
         InstitutionDTO institutionDTO = new InstitutionDTO();
         institutionDTO.setId(1L);
         SpatialUnitDTO currentDTO = new SpatialUnitDTO();
-        currentDTO.setCreationTime(OffsetDateTime.now());
+        currentDTO.setCreationTime(OffsetDateTime.now(ZoneOffset.UTC));
 
         SpatialUnit nextEntity = new SpatialUnit();
         SpatialUnitDTO nextDTO = new SpatialUnitDTO();
@@ -646,7 +647,7 @@ class SpatialUnitServiceTest {
         InstitutionDTO institutionDTO = new InstitutionDTO();
         institutionDTO.setId(1L);
         SpatialUnitDTO currentDTO = new SpatialUnitDTO();
-        currentDTO.setCreationTime(OffsetDateTime.now());
+        currentDTO.setCreationTime(OffsetDateTime.now(ZoneOffset.UTC));
 
         SpatialUnit prevEntity = new SpatialUnit();
         SpatialUnitDTO prevDTO = new SpatialUnitDTO();

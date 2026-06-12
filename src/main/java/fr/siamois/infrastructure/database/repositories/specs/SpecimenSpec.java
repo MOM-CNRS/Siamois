@@ -59,7 +59,7 @@ public class SpecimenSpec {
 
     @NonNull
     public static Specification<Specimen> recordingUnitInRecordingUnit(long recordingUnitId) {
-        return ((root, query, criteriaBuilder) -> criteriaBuilder.equal(root.get("recordingUnit").get("id"), recordingUnitId));
+        return ((root, query, criteriaBuilder) -> criteriaBuilder.equal(root.get(RECORDING_UNIT_FILTER).get("id"), recordingUnitId));
     }
 
 

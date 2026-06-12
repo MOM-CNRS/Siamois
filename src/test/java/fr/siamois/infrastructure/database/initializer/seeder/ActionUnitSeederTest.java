@@ -21,6 +21,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -140,7 +141,7 @@ class ActionUnitSeederTest {
                 "AU-EXIST", "Name X", "IDX", "AC002",
                 "vocB", "conB",
                 "a@b.c", "INST-2",
-                OffsetDateTime.now(), null,
+                OffsetDateTime.now(ZoneOffset.UTC), null,
                 null, null
         );
 

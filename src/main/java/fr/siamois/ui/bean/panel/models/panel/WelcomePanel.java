@@ -75,7 +75,7 @@ public class WelcomePanel extends AbstractPanel implements Serializable {
 
     @Override
     public void applyViewState(TableViewState state) {
-        // TODO document why this method is empty
+        // No view state
     }
 
     @Override

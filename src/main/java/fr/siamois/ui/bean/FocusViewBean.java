@@ -38,98 +38,52 @@ public class FocusViewBean implements Serializable {
     private String secondaryToken;
     private String backToken;
 
-    private AbstractPanel resolvePanel(String path) {
+    private record ParsedPath(String type, Long id, Integer tab, Long viewId) {
+        boolean isListPanel() { return id == null; }
+    }
 
-        if (path.startsWith("/")) {
-            path = path.substring(1);
+    private Map<String, String> parseQueryParams(String query) {
+        Map<String, String> params = new HashMap<>();
+        if (query.isBlank()) return params;
+        for (String param : query.split("&")) {
+            String[] kv = param.split("=", 2);
+            if (kv.length == 2) params.put(kv[0], kv[1]);
         }
+        return params;
+    }
 
+    private ParsedPath parsePath(String path) {
+        if (path.startsWith("/")) path = path.substring(1);
         String[] pathAndQuery = path.split("\\?", 2);
+        String[] parts = pathAndQuery[0].split("/");
+        Map<String, String> q = parseQueryParams(pathAndQuery.length > 1 ? pathAndQuery[1] : "");
+        return new ParsedPath(
+                parts[0],
+                parts.length > 1 ? Long.parseLong(parts[1]) : null,
+                q.containsKey("tab")    ? Integer.parseInt(q.get("tab"))    : null,
+                q.containsKey("viewId") ? Long.parseLong(q.get("viewId"))   : null
+        );
+    }
 
-        String cleanPath = pathAndQuery[0];
-
-        Map<String, String> queryParams = new HashMap<>();
-
-        if (pathAndQuery.length > 1) {
-
-            String query = pathAndQuery[1];
-
-            for (String param : query.split("&")) {
-
-                String[] kv = param.split("=", 2);
-
-                if (kv.length == 2) {
-                    queryParams.put(kv[0], kv[1]);
-                }
-            }
-        }
-
-        String[] parts = cleanPath.split("/");
-
-        String type = parts[0];
-
-        Long id = parts.length > 1
-                ? Long.parseLong(parts[1])
-                : null;
-
-        Integer tabParam = queryParams.containsKey("tab")
-                ? Integer.parseInt(queryParams.get("tab"))
-                : null;
-
-        Long viewId = queryParams.containsKey("viewId")
-                ? Long.parseLong(queryParams.get("viewId"))
-                : null;
-
-        boolean isListPanel = id == null;
-
-        AbstractPanel panel = switch (type) {
-
-            case "recording-unit" ->
-                    isListPanel
-                            ? panelFactory.createRecordingUnitListPanel(viewId)
-                            : panelFactory.createRecordingUnitPanel(id);
-
-            case "action-unit" ->
-                    isListPanel
-                            ? panelFactory.createActionUnitListPanel(viewId)
-                            : panelFactory.createActionUnitPanel(id);
-
-            case "spatial-unit" ->
-                    isListPanel
-                            ? panelFactory.createSpatialUnitListPanel(viewId)
-                            : panelFactory.createSpatialUnitPanel(id);
-
-            case "specimen" ->
-                    isListPanel
-                            ? panelFactory.createSpecimenListPanel(viewId)
-                            : panelFactory.createSpecimenPanel(id);
-
-            case "container" ->
-                    isListPanel
-                            ? panelFactory.createContainerListPanel()
-                            : panelFactory.createContainerPanel(id);
-
-            case "phase" ->
-                    isListPanel
-                            ? panelFactory.createPhaseListPanel()
-                            : panelFactory.createPhasePanel(id);
-
-            case "welcome" ->
-                    panelFactory.createWelcomePanel();
-
-            default ->
-                    throw new IllegalArgumentException(
-                            "Unknown panel type: " + type
-                    );
+    private AbstractPanel createPanel(ParsedPath p) {
+        return switch (p.type()) {
+            case "recording-unit" -> p.isListPanel() ? panelFactory.createRecordingUnitListPanel(p.viewId()) : panelFactory.createRecordingUnitPanel(p.id());
+            case "action-unit"    -> p.isListPanel() ? panelFactory.createActionUnitListPanel(p.viewId())    : panelFactory.createActionUnitPanel(p.id());
+            case "spatial-unit"   -> p.isListPanel() ? panelFactory.createSpatialUnitListPanel(p.viewId())   : panelFactory.createSpatialUnitPanel(p.id());
+            case "specimen"       -> p.isListPanel() ? panelFactory.createSpecimenListPanel(p.viewId())      : panelFactory.createSpecimenPanel(p.id());
+            case "container"      -> p.isListPanel() ? panelFactory.createContainerListPanel()               : panelFactory.createContainerPanel(p.id());
+            case "phase"          -> p.isListPanel() ? panelFactory.createPhaseListPanel()                   : panelFactory.createPhasePanel(p.id());
+            case "welcome"        -> panelFactory.createWelcomePanel();
+            default               -> throw new IllegalArgumentException("Unknown panel type: " + p.type());
         };
+    }
 
-        if (!isListPanel
-                && tabParam != null
-                && panel instanceof AbstractSingleEntityPanel singlePanel) {
-
-            singlePanel.setActiveTabIndex(tabParam);
+    private AbstractPanel resolvePanel(String path) {
+        ParsedPath parsed = parsePath(path);
+        AbstractPanel panel = createPanel(parsed);
+        if (!parsed.isListPanel() && parsed.tab() != null && panel instanceof AbstractSingleEntityPanel<?> sp) {
+            sp.setActiveTabIndex(parsed.tab());
         }
-
         return panel;
     }
 
@@ -146,13 +100,7 @@ public class FocusViewBean implements Serializable {
                 mainPanel.setGoBackUrl(decodeToken(backToken));
             }
             main.setIcon(mainPanel.getIcon());
-            if(mainPanel instanceof AbstractListPanel<?>) {
-                main.setTitle(mainPanel.resolveTitleOrTitleCode());
-            }
-            else {
-                main.setTitle(mainPanel.resolveTitleOrTitleCode());
-            }
-
+            main.setTitle(mainPanel.resolveTitleOrTitleCode());
             main.setUri(mainPanel.ressourceUri());
             main.setStyleClass(mainPanel.getPanelClass());
             newEntry.setMain(main);
