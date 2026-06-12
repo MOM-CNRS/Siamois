@@ -88,7 +88,7 @@ class DocumentContentOpenApiServiceTest {
         when(documentService.findById(8L)).thenReturn(Optional.of(doc));
         when(doc.getCreatedByInstitution()).thenReturn(inst);
         when(inst.getId()).thenReturn(10L);
-        when(documentService.findInputStreamOfDocument(eq(doc))).thenReturn(Optional.empty());
+        when(documentService.findInputStreamOfDocument(doc)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.requireDownloadableContent(8L, SCOPE))
                 .isInstanceOf(ResponseStatusException.class)

@@ -110,7 +110,7 @@ class VocabularyControllerApiTest {
         concept.setId(7L);
         ConceptAutocompleteDTO item = new ConceptAutocompleteDTO(concept, "Label", "fr");
         VocabulariesData payload = new VocabulariesData(Map.of("SIAS.CATEGORY", List.of(item)));
-        when(vocabularyOpenApiService.listVocabulariesForOrganization(eq(10L), eq(personDto), eq("fr")))
+        when(vocabularyOpenApiService.listVocabulariesForOrganization(10L, personDto, "fr"))
                 .thenReturn(payload);
 
         mockMvc.perform(get("/api/v1/vocabularies")

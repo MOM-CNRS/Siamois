@@ -104,7 +104,7 @@ class DocumentsControllerApiTest {
                 .thenReturn(new ProjectApiCaller(personDto, Set.of(10L), List.of()));
 
         byte[] data = new byte[]{1, 2, 3};
-        when(documentContentOpenApiService.requireDownloadableContent(eq(42L), eq(Set.of(10L))))
+        when(documentContentOpenApiService.requireDownloadableContent(42L, Set.of(10L)))
                 .thenReturn(new DocumentContentOpenApiService.DocumentFilePayload(
                         new ByteArrayInputStream(data),
                         MediaType.APPLICATION_PDF,
@@ -124,7 +124,7 @@ class DocumentsControllerApiTest {
         login();
         when(projectApiService.requireCaller())
                 .thenReturn(new ProjectApiCaller(personDto, Set.of(10L), List.of()));
-        when(documentContentOpenApiService.requireDownloadableContent(eq(100L), eq(Set.of(10L))))
+        when(documentContentOpenApiService.requireDownloadableContent(100L, Set.of(10L)))
                 .thenThrow(new ResponseStatusException(HttpStatus.NOT_FOUND, "Document not found"));
 
         mockMvc.perform(get("/api/v1/documents/100"))
@@ -159,7 +159,7 @@ class DocumentsControllerApiTest {
         when(projectApiService.requireCaller())
                 .thenReturn(new ProjectApiCaller(personDto, Set.of(10L), List.of()));
         doThrow(new ResponseStatusException(HttpStatus.NOT_FOUND, "Document not found"))
-                .when(documentContentOpenApiService).deleteAccessibleDocument(eq(99L), eq(Set.of(10L)));
+                .when(documentContentOpenApiService).deleteAccessibleDocument(99L, Set.of(10L));
 
         mockMvc.perform(delete("/api/v1/documents/99"))
                 .andExpect(status().isNotFound())
@@ -193,7 +193,7 @@ class DocumentsControllerApiTest {
         when(projectApiService.requireCaller())
                 .thenReturn(new ProjectApiCaller(personDto, Set.of(10L), List.of()));
         doThrow(new ResponseStatusException(HttpStatus.FORBIDDEN, "Organisation non accessible"))
-                .when(projectApiService).assertOrganizationInCallerScope(eq(99L), eq(Set.of(10L)));
+                .when(projectApiService).assertOrganizationInCallerScope(99L, Set.of(10L));
 
         mockMvc.perform(get("/api/v1/documents/form").param("organizationId", "99"))
                 .andExpect(status().isForbidden());

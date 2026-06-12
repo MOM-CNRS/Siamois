@@ -104,7 +104,7 @@ class FindControllerApiTest {
                 .thenReturn(new ProjectApiCaller(personDto, Set.of(10L), List.of()));
 
         FindMobilierFormData payload = new FindMobilierFormData(null, Map.of());
-        when(recordingUnitOpenApiService.buildFindMobilierForm(eq("5"), eq(personDto), eq(Set.of(10L)), eq("fr")))
+        when(recordingUnitOpenApiService.buildFindMobilierForm("5", personDto, Set.of(10L), "fr"))
                 .thenReturn(payload);
 
         mockMvc.perform(get("/api/v1/finds/5")
@@ -170,7 +170,7 @@ class FindControllerApiTest {
         mockMvc.perform(delete("/api/v1/finds/7"))
                 .andExpect(status().isNoContent());
 
-        verify(findOpenApiService).deleteFind(eq(7L), eq(personDto), eq(Set.of(10L)), eq("fr"));
+        verify(findOpenApiService).deleteFind(7L, personDto, Set.of(10L), "fr");
     }
 
     @Test
@@ -179,7 +179,7 @@ class FindControllerApiTest {
                 .thenReturn(new ProjectApiCaller(personDto, Set.of(10L), List.of()));
 
         FindMobilierFormData payload = new FindMobilierFormData(null, Map.of());
-        when(recordingUnitOpenApiService.buildFindUiForm(eq(10L), eq(personDto), eq("fr")))
+        when(recordingUnitOpenApiService.buildFindUiForm(10L, personDto, "fr"))
                 .thenReturn(payload);
 
         mockMvc.perform(get("/api/v1/finds/form")

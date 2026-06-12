@@ -269,7 +269,7 @@ class ProjectControllerApiTest {
 
         ProjectResource resource = new ProjectResource();
         resource.setId("1");
-        when(projectResponseMapper.toResource(eq(row), eq("en"))).thenReturn(resource);
+        when(projectResponseMapper.toResource(row, "en")).thenReturn(resource);
 
         mockMvc.perform(get("/api/v1/projects")
                         .param("offset", "0")
@@ -277,7 +277,7 @@ class ProjectControllerApiTest {
                         .header(HttpHeaders.ACCEPT_LANGUAGE, "en-US,en;q=0.9"))
                 .andExpect(status().isOk());
 
-        verify(projectResponseMapper).toResource(eq(row), eq("en"));
+        verify(projectResponseMapper).toResource(row, "en");
     }
 
     @Test
@@ -295,7 +295,7 @@ class ProjectControllerApiTest {
         login();
         when(personMapper.convert(person)).thenReturn(personDto);
         when(institutionService.findInstitutionsOfPerson(personDto)).thenReturn(Set.of(institutionDto));
-        when(actionUnitService.findAccessibleProjectByKey(eq("55"), eq(Set.of(100L))))
+        when(actionUnitService.findAccessibleProjectByKey("55", Set.of(100L)))
                 .thenThrow(new ActionUnitNotFoundException("missing"));
 
         mockMvc.perform(get("/api/v1/projects/55"))
@@ -312,7 +312,7 @@ class ProjectControllerApiTest {
         au.setId(5L);
         au.setName("Projet test");
         AccessibleProjectForApi row = new AccessibleProjectForApi(au, 1L, 0L);
-        when(actionUnitService.findAccessibleProjectByKey(eq("5"), eq(Set.of(100L)))).thenReturn(row);
+        when(actionUnitService.findAccessibleProjectByKey("5", Set.of(100L))).thenReturn(row);
 
         ProjectResource resource = new ProjectResource();
         resource.setResourceType("projects");
@@ -326,7 +326,7 @@ class ProjectControllerApiTest {
                 .andExpect(jsonPath("$.data.resourceType").value("projects"))
                 .andExpect(jsonPath("$.data.resourceId").value("5"));
 
-        verify(actionUnitService).findAccessibleProjectByKey(eq("5"), eq(Set.of(100L)));
+        verify(actionUnitService).findAccessibleProjectByKey("5", Set.of(100L));
     }
 
     @Test
@@ -338,7 +338,7 @@ class ProjectControllerApiTest {
         ProjectFormData formData = new ProjectFormData(
                 new RecordingUnitFormBundle(null, "Details", "", "{}"),
                 Map.of());
-        when(recordingUnitOpenApiService.buildProjectUiForm(eq(100L), eq(personDto), eq("fr")))
+        when(recordingUnitOpenApiService.buildProjectUiForm(100L, personDto, "fr"))
                 .thenReturn(formData);
 
         mockMvc.perform(get("/api/v1/projects/form")
@@ -366,7 +366,7 @@ class ProjectControllerApiTest {
         au.setId(12L);
         au.setName("Par full id");
         AccessibleProjectForApi row = new AccessibleProjectForApi(au, 0L, 0L);
-        when(actionUnitService.findAccessibleProjectByKey(eq("INST-PROJ-2025"), eq(Set.of(100L)))).thenReturn(row);
+        when(actionUnitService.findAccessibleProjectByKey("INST-PROJ-2025", Set.of(100L))).thenReturn(row);
 
         ProjectResource resource = new ProjectResource();
         resource.setResourceType("projects");
@@ -378,7 +378,7 @@ class ProjectControllerApiTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.name").value("Par full id"));
 
-        verify(actionUnitService).findAccessibleProjectByKey(eq("INST-PROJ-2025"), eq(Set.of(100L)));
+        verify(actionUnitService).findAccessibleProjectByKey("INST-PROJ-2025", Set.of(100L));
     }
 
     @Test
@@ -390,16 +390,16 @@ class ProjectControllerApiTest {
         ActionUnitDTO au = new ActionUnitDTO();
         au.setId(3L);
         AccessibleProjectForApi row = new AccessibleProjectForApi(au, 0L, 0L);
-        when(actionUnitService.findAccessibleProjectByKey(eq("3"), eq(Set.of(100L)))).thenReturn(row);
+        when(actionUnitService.findAccessibleProjectByKey("3", Set.of(100L))).thenReturn(row);
 
         ProjectResource resource = new ProjectResource();
         resource.setId("3");
-        when(projectResponseMapper.toResource(eq(row), eq("de"))).thenReturn(resource);
+        when(projectResponseMapper.toResource(row, "de")).thenReturn(resource);
 
         mockMvc.perform(get("/api/v1/projects/3").header(HttpHeaders.ACCEPT_LANGUAGE, "de-DE"))
                 .andExpect(status().isOk());
 
-        verify(projectResponseMapper).toResource(eq(row), eq("de"));
+        verify(projectResponseMapper).toResource(row, "de");
     }
 
     @Test
@@ -412,7 +412,7 @@ class ProjectControllerApiTest {
         au.setId(33L);
         au.setName("Chartres");
         AccessibleProjectForApi row = new AccessibleProjectForApi(au, 0L, 0L);
-        when(actionUnitService.findAccessibleProjectByKey(eq("C309_01"), eq(Set.of(100L)))).thenReturn(row);
+        when(actionUnitService.findAccessibleProjectByKey("C309_01", Set.of(100L))).thenReturn(row);
 
         ProjectResource resource = new ProjectResource();
         resource.setId("33");
@@ -423,7 +423,7 @@ class ProjectControllerApiTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.name").value("Chartres"));
 
-        verify(actionUnitService).findAccessibleProjectByKey(eq("C309_01"), eq(Set.of(100L)));
+        verify(actionUnitService).findAccessibleProjectByKey("C309_01", Set.of(100L));
     }
 
     @Test
@@ -448,7 +448,7 @@ class ProjectControllerApiTest {
         login();
         when(personMapper.convert(person)).thenReturn(personDto);
         when(institutionService.findInstitutionsOfPerson(personDto)).thenReturn(Set.of(institutionDto));
-        when(actionUnitService.findAccessibleProjectByKey(eq("5"), eq(Set.of(100L))))
+        when(actionUnitService.findAccessibleProjectByKey("5", Set.of(100L)))
                 .thenThrow(new ActionUnitNotFoundException("missing"));
 
         mockMvc.perform(get("/api/v1/projects/5/recording-units"))
@@ -464,7 +464,7 @@ class ProjectControllerApiTest {
         ActionUnitDTO au = new ActionUnitDTO();
         au.setId(5L);
         AccessibleProjectForApi row = new AccessibleProjectForApi(au, 1L, 0L);
-        when(actionUnitService.findAccessibleProjectByKey(eq("5"), eq(Set.of(100L)))).thenReturn(row);
+        when(actionUnitService.findAccessibleProjectByKey("5", Set.of(100L))).thenReturn(row);
 
         RecordingUnitDTO ruDto = new RecordingUnitDTO();
         ruDto.setId(42L);
@@ -480,7 +480,7 @@ class ProjectControllerApiTest {
         ruRes.setFullIdentifier("INST-PROJ-UE42");
         ruRes.setResourceType("recording-units");
         ruRes.setId("42");
-        when(recordingUnitResourceMapper.convert(eq(ruDto))).thenReturn(ruRes);
+        when(recordingUnitResourceMapper.convert(ruDto)).thenReturn(ruRes);
 
         mockMvc.perform(get("/api/v1/projects/5/recording-units").param("offset", "0").param("limit", "10"))
                 .andExpect(status().isOk())
@@ -500,7 +500,7 @@ class ProjectControllerApiTest {
         ActionUnitDTO au = new ActionUnitDTO();
         au.setId(5L);
         AccessibleProjectForApi row = new AccessibleProjectForApi(au, 0L, 0L);
-        when(actionUnitService.findAccessibleProjectByKey(eq("5"), eq(Set.of(100L)))).thenReturn(row);
+        when(actionUnitService.findAccessibleProjectByKey("5", Set.of(100L))).thenReturn(row);
 
         PageImpl<RecordingUnitDTO> page = new PageImpl<>(List.of(), PageRequest.of(0, 10), 0L);
         when(recordingUnitService.findByActionUnitId(eq(5L), eq(10), eq(0), any(Sort.class))).thenReturn(page);
@@ -537,7 +537,7 @@ class ProjectControllerApiTest {
         login();
         when(personMapper.convert(person)).thenReturn(personDto);
         when(institutionService.findInstitutionsOfPerson(personDto)).thenReturn(Set.of(institutionDto));
-        when(actionUnitService.findAccessibleProjectByKey(eq("5"), eq(Set.of(100L))))
+        when(actionUnitService.findAccessibleProjectByKey("5", Set.of(100L)))
                 .thenThrow(new ActionUnitNotFoundException("missing"));
 
         mockMvc.perform(get("/api/v1/projects/5/documents"))
@@ -553,10 +553,10 @@ class ProjectControllerApiTest {
         ActionUnitDTO au = new ActionUnitDTO();
         au.setId(7L);
         AccessibleProjectForApi row = new AccessibleProjectForApi(au, 0L, 0L);
-        when(actionUnitService.findAccessibleProjectByKey(eq("7"), eq(Set.of(100L)))).thenReturn(row);
+        when(actionUnitService.findAccessibleProjectByKey("7", Set.of(100L))).thenReturn(row);
 
         Document doc = mock(Document.class);
-        when(documentService.findForActionUnit(eq(au))).thenReturn(List.of(doc));
+        when(documentService.findForActionUnit(au)).thenReturn(List.of(doc));
 
         ProjectDocumentResource dr = new ProjectDocumentResource();
         dr.setResourceType("documents");
@@ -571,7 +571,7 @@ class ProjectControllerApiTest {
                 .andExpect(jsonPath("$.data.documents[0].resourceType").value("documents"))
                 .andExpect(jsonPath("$.data.documents[0].title").value("Plan de fouille"));
 
-        verify(documentService).findForActionUnit(eq(au));
+        verify(documentService).findForActionUnit(au);
         verify(projectDocumentOpenApiMapper).toResource(same(doc));
     }
 
@@ -584,8 +584,8 @@ class ProjectControllerApiTest {
         ActionUnitDTO au = new ActionUnitDTO();
         au.setId(2L);
         AccessibleProjectForApi row = new AccessibleProjectForApi(au, 0L, 0L);
-        when(actionUnitService.findAccessibleProjectByKey(eq("2"), eq(Set.of(100L)))).thenReturn(row);
-        when(documentService.findForActionUnit(eq(au))).thenReturn(List.of());
+        when(actionUnitService.findAccessibleProjectByKey("2", Set.of(100L))).thenReturn(row);
+        when(documentService.findForActionUnit(au)).thenReturn(List.of());
 
         mockMvc.perform(get("/api/v1/projects/2/documents"))
                 .andExpect(status().isOk())
@@ -641,7 +641,7 @@ class ProjectControllerApiTest {
         saved.setIdentifier("NOU");
         saved.setCreatedByInstitution(institutionDto);
         when(actionUnitService.save(any(), any(), any())).thenReturn(saved);
-        when(actionUnitService.findAccessibleProjectByKey(eq("77"), eq(Set.of(100L))))
+        when(actionUnitService.findAccessibleProjectByKey("77", Set.of(100L)))
                 .thenReturn(new AccessibleProjectForApi(saved, 0L, 0L));
 
         ProjectResource resource = new ProjectResource();
@@ -684,7 +684,7 @@ class ProjectControllerApiTest {
         au.setName("P");
         au.setCreatedByInstitution(institutionDto);
         AccessibleProjectForApi row = new AccessibleProjectForApi(au, 0L, 0L);
-        when(actionUnitService.findAccessibleProjectByKey(eq("1"), eq(Set.of(100L)))).thenReturn(row);
+        when(actionUnitService.findAccessibleProjectByKey("1", Set.of(100L))).thenReturn(row);
         when(permissionService.hasWritePermission(any(), any())).thenReturn(false);
 
         mockMvc.perform(patch("/api/v1/projects/1")
@@ -706,7 +706,7 @@ class ProjectControllerApiTest {
         au.setName("Avant");
         au.setCreatedByInstitution(institutionDto);
         AccessibleProjectForApi row = new AccessibleProjectForApi(au, 0L, 0L);
-        when(actionUnitService.findAccessibleProjectByKey(eq("8"), eq(Set.of(100L))))
+        when(actionUnitService.findAccessibleProjectByKey("8", Set.of(100L)))
                 .thenReturn(row)
                 .thenAnswer(invocation -> new AccessibleProjectForApi(au, 0L, 0L));
         when(permissionService.hasWritePermission(any(), any())).thenReturn(true);
@@ -738,7 +738,7 @@ class ProjectControllerApiTest {
         au.setName("P");
         au.setCreatedByInstitution(institutionDto);
         AccessibleProjectForApi row = new AccessibleProjectForApi(au, 0L, 0L);
-        when(actionUnitService.findAccessibleProjectByKey(eq("9"), eq(Set.of(100L))))
+        when(actionUnitService.findAccessibleProjectByKey("9", Set.of(100L)))
                 .thenReturn(row)
                 .thenAnswer(invocation -> new AccessibleProjectForApi(au, 0L, 0L));
         when(permissionService.hasWritePermission(any(), any())).thenReturn(true);
@@ -785,7 +785,7 @@ class ProjectControllerApiTest {
         au.setId(3L);
         au.setCreatedByInstitution(institutionDto);
         AccessibleProjectForApi row = new AccessibleProjectForApi(au, 2L, 0L);
-        when(actionUnitService.findAccessibleProjectByKey(eq("3"), eq(Set.of(100L)))).thenReturn(row);
+        when(actionUnitService.findAccessibleProjectByKey("3", Set.of(100L))).thenReturn(row);
         when(permissionService.hasWritePermission(any(), any())).thenReturn(true);
 
         mockMvc.perform(delete("/api/v1/projects/3"))
@@ -804,7 +804,7 @@ class ProjectControllerApiTest {
         au.setId(4L);
         au.setCreatedByInstitution(institutionDto);
         AccessibleProjectForApi row = new AccessibleProjectForApi(au, 0L, 1L);
-        when(actionUnitService.findAccessibleProjectByKey(eq("4"), eq(Set.of(100L)))).thenReturn(row);
+        when(actionUnitService.findAccessibleProjectByKey("4", Set.of(100L))).thenReturn(row);
         when(permissionService.hasWritePermission(any(), any())).thenReturn(true);
 
         mockMvc.perform(delete("/api/v1/projects/4"))
@@ -823,7 +823,7 @@ class ProjectControllerApiTest {
         au.setId(9L);
         au.setCreatedByInstitution(institutionDto);
         AccessibleProjectForApi row = new AccessibleProjectForApi(au, 0L, 0L);
-        when(actionUnitService.findAccessibleProjectByKey(eq("9"), eq(Set.of(100L)))).thenReturn(row);
+        when(actionUnitService.findAccessibleProjectByKey("9", Set.of(100L))).thenReturn(row);
         when(permissionService.hasWritePermission(any(), any())).thenReturn(true);
 
         mockMvc.perform(delete("/api/v1/projects/9"))

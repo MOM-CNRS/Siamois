@@ -118,6 +118,6 @@ class SpatialUnitSearchControllerApiTest {
                 .andExpect(jsonPath("$.data[0].name").value("Rue des Lilas"))
                 .andExpect(jsonPath("$.data[0].code").value("LILAS"));
 
-        verify(projectApiService).assertOrganizationInCallerScope(eq(10L), eq(Set.of(10L)));
+        verify(projectApiService).assertOrganizationInCallerScope(10L, Set.of(10L));
     }
 }

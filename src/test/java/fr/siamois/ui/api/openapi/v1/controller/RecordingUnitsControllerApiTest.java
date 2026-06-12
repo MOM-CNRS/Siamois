@@ -41,6 +41,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpHeaders;
@@ -239,11 +241,17 @@ class RecordingUnitsControllerApiTest {
                 .andExpect(jsonPath("$.data.recordingUnit.resourceId").value("5"));
     }
 
-    @Test
-    void getById_withoutAuth_returns401() throws Exception {
+    @ParameterizedTest
+    @ValueSource(strings = {
+            "/api/v1/recording-units/5",
+            "/api/v1/recording-units/5/mobiliers",
+            "/api/v1/recording-units/5/relations",
+            "/api/v1/recording-units/5/documents"
+    })
+    void get_withoutAuth_returns401(String url) throws Exception {
         SecurityContextHolder.clearContext();
 
-        mockMvc.perform(get("/api/v1/recording-units/5"))
+        mockMvc.perform(get(url))
                 .andExpect(status().isUnauthorized());
     }
 
@@ -300,14 +308,6 @@ class RecordingUnitsControllerApiTest {
         mockMvc.perform(get("/api/v1/recording-units/404-key"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.message").value("missing"));
-    }
-
-    @Test
-    void getFinds_withoutAuth_returns401() throws Exception {
-        SecurityContextHolder.clearContext();
-
-        mockMvc.perform(get("/api/v1/recording-units/5/mobiliers"))
-                .andExpect(status().isUnauthorized());
     }
 
     @Test
@@ -547,14 +547,6 @@ class RecordingUnitsControllerApiTest {
     }
 
     @Test
-    void getRelations_withoutAuth_returns401() throws Exception {
-        SecurityContextHolder.clearContext();
-
-        mockMvc.perform(get("/api/v1/recording-units/5/relations"))
-                .andExpect(status().isUnauthorized());
-    }
-
-    @Test
     void getRelations_whenRecordingUnitNotFound_returns404() throws Exception {
         when(personMapper.convert(person)).thenReturn(personDto);
         when(institutionService.findInstitutionsOfPerson(personDto)).thenReturn(Set.of(institutionDto));
@@ -715,14 +707,6 @@ class RecordingUnitsControllerApiTest {
                 .andExpect(jsonPath("$.data.parents[0].id").value(88));
 
         verify(recordingUnitOpenApiService).removeExistingParent("5", 88L, personDto, Set.of(10L));
-    }
-
-    @Test
-    void getRecordingUnitDocuments_withoutAuth_returns401() throws Exception {
-        SecurityContextHolder.clearContext();
-
-        mockMvc.perform(get("/api/v1/recording-units/5/documents"))
-                .andExpect(status().isUnauthorized());
     }
 
     @Test

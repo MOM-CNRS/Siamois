@@ -57,7 +57,7 @@ class AuthControllerApiTest {
         AuthUserResponse user = new AuthUserResponse(
                 1L, "a@b.fr", "user", "Jean", "Dupont", List.of(new OrganizationSummaryResponse(10L, "Org")));
         LoginResponse body = new LoginResponse("access-jwt", 900L, "Bearer", user);
-        when(authService.login(eq("a@b.fr"), eq("secret"))).thenReturn(body);
+        when(authService.login("a@b.fr", "secret")).thenReturn(body);
 
         mockMvc.perform(post("/api/v1/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)

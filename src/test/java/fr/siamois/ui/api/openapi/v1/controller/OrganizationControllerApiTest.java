@@ -279,7 +279,7 @@ class OrganizationControllerApiTest {
                 .andExpect(jsonPath("$.meta.total").value(2))
                 .andExpect(jsonPath("$.meta.offset").value(0));
 
-        verify(institutionService).findInstitutionsOfPerson(eq(personDto));
+        verify(institutionService).findInstitutionsOfPerson(personDto);
     }
 
     @Test
@@ -472,7 +472,7 @@ class OrganizationControllerApiTest {
 
         RecordingUnitDTO ru = new RecordingUnitDTO();
         ru.setId(100L);
-        when(recordingUnitService.findByFullIdentifierAndInstitutionIdDTO(eq("RU-100"), eq(10L), eq(List.of("specimen"))))
+        when(recordingUnitService.findByFullIdentifierAndInstitutionIdDTO("RU-100", 10L, List.of("specimen")))
                 .thenReturn(ru);
         when(recordingUnitResponseMapper.convert(ru)).thenReturn(new RecordingUnitResource());
 

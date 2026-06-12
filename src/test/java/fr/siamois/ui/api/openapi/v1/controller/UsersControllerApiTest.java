@@ -173,7 +173,7 @@ class UsersControllerApiTest {
                 new fr.siamois.ui.api.openapi.v1.service.ProjectApiCaller(
                         personDto, Set.of(100L), List.of(institutionDto)));
         when(institutionService.findById(100L)).thenReturn(institutionDto);
-        when(personService.findAllInInstitution(eq(100L), eq("mart"))).thenReturn(List.of());
+        when(personService.findAllInInstitution(100L, "mart")).thenReturn(List.of());
 
         mockMvc.perform(get("/api/v1/users")
                         .param("organizationId", "100")
