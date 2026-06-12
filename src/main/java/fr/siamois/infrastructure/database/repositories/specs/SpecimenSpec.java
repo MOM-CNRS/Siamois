@@ -29,7 +29,7 @@ public class SpecimenSpec {
 
     @NonNull
     public static Specification<Specimen> specimenInActionUnit(long actionUnitId) {
-        return ((root, query, criteriaBuilder) -> criteriaBuilder.equal(root.get("actionUnit").get("id"), actionUnitId));
+        return ((root, query, criteriaBuilder) -> criteriaBuilder.equal(root.get(ACTION_UNIT_FILTER).get("id"), actionUnitId));
     }
 
     @NonNull
@@ -39,7 +39,7 @@ public class SpecimenSpec {
 
     @NonNull
     public static Specification<Specimen> specimenInRecordingUnit(long recordingUnitId) {
-        return ((root, query, criteriaBuilder) -> criteriaBuilder.equal(root.get("recordingUnit").get("id"), recordingUnitId));
+        return ((root, query, criteriaBuilder) -> criteriaBuilder.equal(root.get(RECORDING_UNIT_FILTER).get("id"), recordingUnitId));
     }
 
     @NonNull

@@ -41,7 +41,7 @@ public class SpatialUnitSpec {
 
     @NonNull
     public static Specification<SpatialUnit> unitIsRoot() {
-        return ((root, query, criteriaBuilder) -> criteriaBuilder.isEmpty(root.get("parents")));
+        return ((root, query, criteriaBuilder) -> criteriaBuilder.isEmpty(root.get(PARENT_FILTER)));
     }
 
     @NonNull

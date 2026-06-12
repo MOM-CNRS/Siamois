@@ -43,7 +43,7 @@ public class ActionUnitSpec {
     @NonNull
     public static Specification<ActionUnit> actionUnitInSpatialUnit(long spatialUnitId) {
         return (root, query, cb) ->
-                cb.equal(root.get("mainLocation").get("id"), spatialUnitId);
+                cb.equal(root.get(SPATIAL_UNIT_FILTER).get("id"), spatialUnitId);
     }
 
     @NonNull

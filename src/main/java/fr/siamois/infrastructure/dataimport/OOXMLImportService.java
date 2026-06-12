@@ -29,6 +29,7 @@ public class OOXMLImportService {
     public static final String INSTITUTION = "institution";
     public static final String TYPE_URI = "type uri";
     public static final String SIAMOIS_SYSTEM = "siamois system";
+    public static final String DESCRIPTION = "description";
 
     public Map<String, String> readSheetMetadata(Workbook workbook) {
         Sheet metaSheet = workbook.getSheet("sheet_metadata");
@@ -143,7 +144,7 @@ public class OOXMLImportService {
                 String name = getStringCellOrNull(row, cols, "nom");
                 if (name == null || name.isBlank()) return;
 
-                String description = getStringCellOrNull(row, cols, "description");
+                String description = getStringCellOrNull(row, cols, DESCRIPTION);
                 String identifier  = getStringCellOrNull(row, cols, IDENTIFIANT);
                 String adminsRaw   = getStringCellOrNull(row, cols, "email admins");
                 String thesaurus   = getStringCellOrNull(row, cols, "thesaurus");
@@ -198,76 +199,61 @@ public class OOXMLImportService {
         }
     }
 
+    private void parseSpatialRow(Row row, Map<String, Integer> cols, ActionUnitDTO actionUnit,
+                                  Map<String, SpatialUnitSeeder.SpatialUnitSpecs> specsByName,
+                                  Map<String, String> childrenStringByName) {
+        String name = getStringCellOrNull(row, cols, "nom");
+        if (name == null || name.isBlank()) return;
+
+        String uriType     = getStringCellOrNull(row, cols, "uri type");
+        String institution = actionUnit != null ? actionUnit.getCreatedByInstitution().getIdentifier() : getStringCellOrNull(row, cols, INSTITUTION);
+        String enfantsRaw  = getStringCellOrNull(row, cols, "enfants");
+
+        SpatialUnitSeeder.SpatialUnitSpecs spec = new SpatialUnitSeeder.SpatialUnitSpecs(
+                name,
+                extractIdtFromUri(uriType).orElse(null),
+                extractIdcFromUri(uriType).orElse(null),
+                SIAMOIS_SYSTEM,
+                institution,
+                new HashSet<>()
+        );
+        specsByName.put(name, spec);
+
+        if (enfantsRaw != null && !enfantsRaw.isBlank()) {
+            childrenStringByName.put(name, enfantsRaw);
+        }
+    }
+
+    private void resolveChildrenKeys(Map<String, SpatialUnitSeeder.SpatialUnitSpecs> specsByName,
+                                      Map<String, String> childrenStringByName) {
+        for (Map.Entry<String, String> entry : childrenStringByName.entrySet()) {
+            Set<SpatialUnitSeeder.SpatialUnitKey> childrenKeys = Arrays.stream(entry.getValue().split("&&"))
+                    .map(String::trim)
+                    .filter(s -> !s.isBlank())
+                    .map(specsByName::get)
+                    .filter(Objects::nonNull)
+                    .map(child -> new SpatialUnitSeeder.SpatialUnitKey(child.name()))
+                    .collect(Collectors.toCollection(LinkedHashSet::new));
+
+            SpatialUnitSeeder.SpatialUnitSpecs parentSpec = specsByName.get(entry.getKey());
+            if (parentSpec != null && !childrenKeys.isEmpty()) {
+                parentSpec.childrenKey().addAll(childrenKeys);
+            }
+        }
+    }
+
     public List<SpatialUnitSeeder.SpatialUnitSpecs> parseSpatialUnits(Sheet sheet,
                                                                       ImportScope scope,
                                                                       ActionUnitDTO actionUnit) {
         try {
-        Row header = sheet.getRow(0);
-        Map<String, Integer> cols = indexColumns(header);
+            Map<String, Integer> cols = indexColumns(sheet.getRow(0));
+            Map<String, SpatialUnitSeeder.SpatialUnitSpecs> specsByName = new LinkedHashMap<>();
+            Map<String, String> childrenStringByName = new HashMap<>();
 
-        // Première passe : créer les specs SANS enfants, et indexer par nom
-        Map<String, SpatialUnitSeeder.SpatialUnitSpecs> specsByName = new LinkedHashMap<>();
-        Map<String, String> childrenStringByName = new HashMap<>();
+            forEachDataRow(sheet, row -> parseSpatialRow(row, cols, actionUnit, specsByName, childrenStringByName));
+            resolveChildrenKeys(specsByName, childrenStringByName);
 
-        forEachDataRow(sheet, row -> {
-            String name = getStringCellOrNull(row, cols, "nom");
-            if (name == null || name.isBlank()) return;
-
-            String uriType      = getStringCellOrNull(row, cols, "uri type");
-            String creatorEmail = SIAMOIS_SYSTEM;
-            String institution = actionUnit != null ? actionUnit.getCreatedByInstitution().getIdentifier() : getStringCellOrNull(row, cols, INSTITUTION);
-            String enfantsRaw   = getStringCellOrNull(row, cols, "enfants");
-
-            // 🔹 idt = vocabularyId, idc = conceptId
-            String vocabularyId = extractIdtFromUri(uriType).orElse(null);
-            String conceptId    = extractIdcFromUri(uriType).orElse(null);
-
-            // clé logique = nom Excel
-            SpatialUnitSeeder.SpatialUnitSpecs spec =
-                    new SpatialUnitSeeder.SpatialUnitSpecs(
-                            name,
-                            vocabularyId,
-                            conceptId,
-                            creatorEmail,
-                            institution,
-                            new HashSet<>()
-                    );
-
-            specsByName.put(name, spec);
-
-            if (enfantsRaw != null && !enfantsRaw.isBlank()) {
-                childrenStringByName.put(name, enfantsRaw);
-            }
-        });
-
-
-        // Deuxième passe : résoudre les enfants via les noms
-        for (Map.Entry<String, String> entry : childrenStringByName.entrySet()) {
-            String parentName  = entry.getKey();
-            String rawChildren = entry.getValue();
-
-            Set<SpatialUnitSeeder.SpatialUnitKey> childrenKeys = Arrays.stream(rawChildren.split("&&"))
-                    .map(String::trim)
-                    .filter(s -> !s.isBlank())
-                    .map(childName -> {
-                        SpatialUnitSeeder.SpatialUnitSpecs childSpec = specsByName.get(childName);
-                        if (childSpec == null) {
-                            return null;
-                        }
-                        // on suppose que la clé = key() ou name() de la spec
-                        return new SpatialUnitSeeder.SpatialUnitKey(childSpec.name());
-                    })
-                    .filter(Objects::nonNull)
-                    .collect(Collectors.toCollection(LinkedHashSet::new));
-
-            SpatialUnitSeeder.SpatialUnitSpecs parentSpec = specsByName.get(parentName);
-            if (parentSpec != null && childrenKeys != null && !childrenKeys.isEmpty()) {
-                // childrenKey() semble renvoyer un Set modifiable
-                parentSpec.childrenKey().addAll(childrenKeys);
-            }
-        }
-
-        return new ArrayList<>(specsByName.values());
+            return new ArrayList<>(specsByName.values());
         } catch (Exception e) {
             throw new IllegalStateException("[Feuille '" + sheet.getSheetName() + "'] : " + e.getMessage(), e);
         }
@@ -445,7 +431,7 @@ public class OOXMLImportService {
             Row row, Map<String, Integer> cols,
             @Nullable ActionUnitDTO actionUnit) {
         String identStr    = getStringCellOrNull(row, cols, IDENTIFIANT);
-        String description = getStringCellOrNull(row, cols, "description");
+        String description = getStringCellOrNull(row, cols, DESCRIPTION);
 
         if ((identStr == null || identStr.isBlank()) && (description == null || description.isBlank())) {
             return Optional.empty();
@@ -604,7 +590,7 @@ public class OOXMLImportService {
 
                 String title       = getStringCellOrNull(row, cols, "titre");
                 ConceptSeeder.ConceptKey type = conceptKeyFromUri(getStringCellOrNull(row, cols, TYPE_URI));
-                String description  = getStringCellOrNull(row, cols, "description");
+                String description  = getStringCellOrNull(row, cols, DESCRIPTION);
                 Integer orderNumber = getIntegerCellOrNull(row, cols, "ordre");
                 Integer lowerBound  = getIntegerCellOrNull(row, cols, "borne inferieure");
                 Integer upperBound  = getIntegerCellOrNull(row, cols, "borne superieure");

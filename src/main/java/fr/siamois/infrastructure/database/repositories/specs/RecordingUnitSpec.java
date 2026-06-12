@@ -53,7 +53,7 @@ public class RecordingUnitSpec {
 
     @NonNull
     public static Specification<RecordingUnit> recordingUnitInSpatialUnit(long spatialUnitId) {
-        return ((root, query, criteriaBuilder) -> criteriaBuilder.equal(root.get("spatialUnit").get("id"), spatialUnitId));
+        return ((root, query, criteriaBuilder) -> criteriaBuilder.equal(root.get(SPATIAL_UNIT_FILTER).get("id"), spatialUnitId));
     }
 
     @NonNull
@@ -118,7 +118,7 @@ public class RecordingUnitSpec {
 
     @NonNull
     public static Specification<RecordingUnit> unitIsRoot() {
-        return ((root, query, criteriaBuilder) -> criteriaBuilder.isEmpty(root.get("parents")));
+        return ((root, query, criteriaBuilder) -> criteriaBuilder.isEmpty(root.get(PARENT_FILTER)));
     }
 
     @NonNull
