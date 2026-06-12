@@ -344,7 +344,7 @@ class FieldConfigurationServiceTest {
     }
 
     @Test
-    void fetchAllConfiguredVocabularies_returnsMapPerFieldCode() throws NoConfigForFieldException {
+    void fetchAllConfiguredVocabularies_returnsMapPerFieldCode()  {
         String fieldCode = "TESTFIELD";
         when(conceptFieldConfigRepository.findDistinctFieldCodesForInstitutionAndUser(
                 userInfo.getInstitution().getId(), userInfo.getUser().getId()))

@@ -53,7 +53,6 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.server.ResponseStatusException;
@@ -63,7 +62,6 @@ import java.util.Map;
 import java.util.Set;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.hamcrest.Matchers.hasSize;
@@ -179,7 +177,7 @@ class RecordingUnitsControllerApiTest {
         resource.setResourceType("recording-units");
         resource.setId("5");
         when(recordingUnitOpenApiService.buildMobileDetail(
-                eq("5"), eq(personDto), eq(Set.of(10L)), eq(null), eq("fr")))
+                "5", personDto, Set.of(10L), null, "fr"))
                 .thenReturn(new RecordingUnitMobileDetailData(resource, null, Map.of(), Map.of()));
 
         mockMvc.perform(get("/api/v1/recording-units/5"))
@@ -233,7 +231,7 @@ class RecordingUnitsControllerApiTest {
         resource.setResourceType("recording-units");
         resource.setId("5");
         when(recordingUnitOpenApiService.buildMobileDetail(
-                eq("5"), eq(personDto), eq(Set.of(10L)), eq(List.of("specimen")), eq("fr")))
+                "5", personDto, Set.of(10L), List.of("specimen"), "fr"))
                 .thenReturn(new RecordingUnitMobileDetailData(resource, null, Map.of(), Map.of()));
 
         mockMvc.perform(get("/api/v1/recording-units/5").param("counts", "specimen"))
@@ -258,7 +256,7 @@ class RecordingUnitsControllerApiTest {
         resource.setResourceType("recording-units");
         resource.setId("7");
         when(recordingUnitOpenApiService.buildMobileDetail(
-                eq("7"), eq(personDto), eq(Set.of(10L)), eq(null), eq("en")))
+                "7", personDto, Set.of(10L), null, "en"))
                 .thenReturn(new RecordingUnitMobileDetailData(resource, null, Map.of(), Map.of()));
 
         mockMvc.perform(get("/api/v1/recording-units/7")
@@ -267,7 +265,7 @@ class RecordingUnitsControllerApiTest {
                 .andExpect(jsonPath("$.data.recordingUnit.resourceId").value("7"));
 
         verify(recordingUnitOpenApiService).buildMobileDetail(
-                eq("7"), eq(personDto), eq(Set.of(10L)), eq(null), eq("en"));
+                "7", personDto, Set.of(10L), null, "en");
     }
 
     @Test
@@ -282,14 +280,14 @@ class RecordingUnitsControllerApiTest {
         resource.setResourceType("recording-units");
         resource.setId("1");
         when(recordingUnitOpenApiService.buildMobileDetail(
-                eq("x-id"), eq(personDto), eq(Set.of(10L, 20L)), eq(null), eq("fr")))
+                "x-id", personDto, Set.of(10L, 20L), null, "fr"))
                 .thenReturn(new RecordingUnitMobileDetailData(resource, null, Map.of(), Map.of()));
 
         mockMvc.perform(get("/api/v1/recording-units/x-id"))
                 .andExpect(status().isOk());
 
         verify(recordingUnitOpenApiService).buildMobileDetail(
-                eq("x-id"), eq(personDto), eq(Set.of(10L, 20L)), eq(null), eq("fr"));
+                "x-id", personDto, Set.of(10L, 20L), null, "fr");
     }
 
     @Test
@@ -494,7 +492,7 @@ class RecordingUnitsControllerApiTest {
         when(institutionService.findInstitutionsOfPerson(personDto)).thenReturn(Set.of(institutionDto));
 
         StratigraphicRelationshipDTO rel = new StratigraphicRelationshipDTO();
-        when(recordingUnitOpenApiService.buildRecordingUnitRelations(eq("5"), eq(Set.of(10L))))
+        when(recordingUnitOpenApiService.buildRecordingUnitRelations("5", Set.of(10L)))
                 .thenReturn(new RecordingUnitRelationsData(List.of(rel), List.of(), List.of()));
 
         mockMvc.perform(get("/api/v1/recording-units/5/relations"))
@@ -506,7 +504,7 @@ class RecordingUnitsControllerApiTest {
                 .andExpect(jsonPath("$.data.children").isArray())
                 .andExpect(jsonPath("$.data.children.length()").value(0));
 
-        verify(recordingUnitOpenApiService).buildRecordingUnitRelations(eq("5"), eq(Set.of(10L)));
+        verify(recordingUnitOpenApiService).buildRecordingUnitRelations("5", Set.of(10L));
     }
 
     @Test
@@ -517,13 +515,13 @@ class RecordingUnitsControllerApiTest {
         when(institutionService.findInstitutionsOfPerson(personDto))
                 .thenReturn(Set.of(institutionDto, inst20));
 
-        when(recordingUnitOpenApiService.buildRecordingUnitRelations(eq("ru-key"), eq(Set.of(10L, 20L))))
+        when(recordingUnitOpenApiService.buildRecordingUnitRelations("ru-key", Set.of(10L, 20L)))
                 .thenReturn(new RecordingUnitRelationsData(List.of(), List.of(), List.of()));
 
         mockMvc.perform(get("/api/v1/recording-units/ru-key/relations"))
                 .andExpect(status().isOk());
 
-        verify(recordingUnitOpenApiService).buildRecordingUnitRelations(eq("ru-key"), eq(Set.of(10L, 20L)));
+        verify(recordingUnitOpenApiService).buildRecordingUnitRelations("ru-key", Set.of(10L, 20L));
     }
 
     @Test
@@ -537,7 +535,7 @@ class RecordingUnitsControllerApiTest {
         RecordingUnitSummaryDTO child = new RecordingUnitSummaryDTO();
         child.setId(100L);
         child.setFullIdentifier("INST-A-UE-C");
-        when(recordingUnitOpenApiService.buildRecordingUnitRelations(eq("5"), eq(Set.of(10L))))
+        when(recordingUnitOpenApiService.buildRecordingUnitRelations("5", Set.of(10L)))
                 .thenReturn(new RecordingUnitRelationsData(List.of(), List.of(parent), List.of(child)));
 
         mockMvc.perform(get("/api/v1/recording-units/5/relations"))
@@ -573,7 +571,7 @@ class RecordingUnitsControllerApiTest {
         when(personMapper.convert(person)).thenReturn(personDto);
         when(institutionService.findInstitutionsOfPerson(personDto)).thenReturn(Set.of(institutionDto));
 
-        when(recordingUnitOpenApiService.buildRecordingUnitChildren(eq("5"), eq(Set.of(10L))))
+        when(recordingUnitOpenApiService.buildRecordingUnitChildren("5", Set.of(10L)))
                 .thenReturn(new RecordingUnitChildrenData(List.of()));
 
         mockMvc.perform(get("/api/v1/recording-units/5/children"))
@@ -581,7 +579,7 @@ class RecordingUnitsControllerApiTest {
                 .andExpect(jsonPath("$.data.children").isArray())
                 .andExpect(jsonPath("$.data.children.length()").value(0));
 
-        verify(recordingUnitOpenApiService).buildRecordingUnitChildren(eq("5"), eq(Set.of(10L)));
+        verify(recordingUnitOpenApiService).buildRecordingUnitChildren("5", Set.of(10L));
     }
 
     @Test
@@ -592,7 +590,7 @@ class RecordingUnitsControllerApiTest {
         RecordingUnitSummaryDTO child = new RecordingUnitSummaryDTO();
         child.setId(100L);
         child.setFullIdentifier("INST-A-UE-C");
-        when(recordingUnitOpenApiService.buildRecordingUnitChildren(eq("5"), eq(Set.of(10L))))
+        when(recordingUnitOpenApiService.buildRecordingUnitChildren("5", Set.of(10L)))
                 .thenReturn(new RecordingUnitChildrenData(List.of(child)));
 
         mockMvc.perform(get("/api/v1/recording-units/5/children"))
@@ -614,7 +612,7 @@ class RecordingUnitsControllerApiTest {
         RecordingUnitSummaryDTO second = new RecordingUnitSummaryDTO();
         second.setId(20L);
         second.setFullIdentifier("UE-20");
-        when(recordingUnitOpenApiService.buildRecordingUnitChildren(eq("1"), eq(Set.of(10L))))
+        when(recordingUnitOpenApiService.buildRecordingUnitChildren("1", Set.of(10L)))
                 .thenReturn(new RecordingUnitChildrenData(List.of(first, second)));
 
         mockMvc.perform(get("/api/v1/recording-units/1/children"))
@@ -634,13 +632,13 @@ class RecordingUnitsControllerApiTest {
         when(institutionService.findInstitutionsOfPerson(personDto))
                 .thenReturn(Set.of(institutionDto, inst20));
 
-        when(recordingUnitOpenApiService.buildRecordingUnitChildren(eq("ru-key"), eq(Set.of(10L, 20L))))
+        when(recordingUnitOpenApiService.buildRecordingUnitChildren("ru-key", Set.of(10L, 20L)))
                 .thenReturn(new RecordingUnitChildrenData(List.of()));
 
         mockMvc.perform(get("/api/v1/recording-units/ru-key/children"))
                 .andExpect(status().isOk());
 
-        verify(recordingUnitOpenApiService).buildRecordingUnitChildren(eq("ru-key"), eq(Set.of(10L, 20L)));
+        verify(recordingUnitOpenApiService).buildRecordingUnitChildren("ru-key", Set.of(10L, 20L));
     }
 
     @Test
@@ -674,7 +672,7 @@ class RecordingUnitsControllerApiTest {
         RecordingUnitSummaryDTO child = new RecordingUnitSummaryDTO();
         child.setId(99L);
         RecordingUnitRelationsData relations = new RecordingUnitRelationsData(List.of(), List.of(), List.of(child));
-        when(recordingUnitOpenApiService.addExistingChild(eq("5"), eq(99L), eq(personDto), eq(Set.of(10L))))
+        when(recordingUnitOpenApiService.addExistingChild("5", 99L, personDto, Set.of(10L)))
                 .thenReturn(relations);
 
         mockMvc.perform(post("/api/v1/recording-units/5/children")
@@ -708,7 +706,7 @@ class RecordingUnitsControllerApiTest {
         RecordingUnitSummaryDTO parent = new RecordingUnitSummaryDTO();
         parent.setId(88L);
         RecordingUnitRelationsData relations = new RecordingUnitRelationsData(List.of(), List.of(parent), List.of());
-        when(recordingUnitOpenApiService.removeExistingParent(eq("5"), eq(88L), eq(personDto), eq(Set.of(10L))))
+        when(recordingUnitOpenApiService.removeExistingParent("5", 88L, personDto, Set.of(10L)))
                 .thenReturn(relations);
 
         mockMvc.perform(delete("/api/v1/recording-units/5/parents/88"))
@@ -749,7 +747,7 @@ class RecordingUnitsControllerApiTest {
         when(recordingUnitService.findAccessibleRecordingUnitByKey(eq("7"), eq(Set.of(10L)), isNull())).thenReturn(ruDto);
 
         Document doc = mock(Document.class);
-        when(documentService.findForRecordingUnit(eq(ruDto))).thenReturn(List.of(doc));
+        when(documentService.findForRecordingUnit(ruDto)).thenReturn(List.of(doc));
 
         ProjectDocumentResource dr = new ProjectDocumentResource();
         dr.setResourceType("documents");
@@ -764,7 +762,7 @@ class RecordingUnitsControllerApiTest {
                 .andExpect(jsonPath("$.data.documents[0].resourceType").value("documents"))
                 .andExpect(jsonPath("$.data.documents[0].title").value("Photo de coupe"));
 
-        verify(documentService).findForRecordingUnit(eq(ruDto));
+        verify(documentService).findForRecordingUnit(ruDto);
         verify(projectDocumentOpenApiMapper).toResource(same(doc));
     }
 
@@ -776,7 +774,7 @@ class RecordingUnitsControllerApiTest {
         RecordingUnitDTO ruDto = new RecordingUnitDTO();
         ruDto.setId(2L);
         when(recordingUnitService.findAccessibleRecordingUnitByKey(eq("2"), eq(Set.of(10L)), isNull())).thenReturn(ruDto);
-        when(documentService.findForRecordingUnit(eq(ruDto))).thenReturn(List.of());
+        when(documentService.findForRecordingUnit(ruDto)).thenReturn(List.of());
 
         mockMvc.perform(get("/api/v1/recording-units/2/documents"))
                 .andExpect(status().isOk())
@@ -795,7 +793,7 @@ class RecordingUnitsControllerApiTest {
         ruDto.setId(1L);
         when(recordingUnitService.findAccessibleRecordingUnitByKey(eq("ru-key"), eq(Set.of(10L, 20L)), isNull()))
                 .thenReturn(ruDto);
-        when(documentService.findForRecordingUnit(eq(ruDto))).thenReturn(List.of());
+        when(documentService.findForRecordingUnit(ruDto)).thenReturn(List.of());
 
         mockMvc.perform(get("/api/v1/recording-units/ru-key/documents"))
                 .andExpect(status().isOk())
@@ -814,7 +812,7 @@ class RecordingUnitsControllerApiTest {
         ruDto.setId(500L);
         when(recordingUnitService.findAccessibleRecordingUnitByKey(eq(fullId), eq(Set.of(10L)), isNull()))
                 .thenReturn(ruDto);
-        when(documentService.findForRecordingUnit(eq(ruDto))).thenReturn(List.of());
+        when(documentService.findForRecordingUnit(ruDto)).thenReturn(List.of());
 
         mockMvc.perform(get("/api/v1/recording-units/" + fullId + "/documents"))
                 .andExpect(status().isOk());
@@ -835,7 +833,7 @@ class RecordingUnitsControllerApiTest {
         when(doc30.getId()).thenReturn(30L);
         Document doc7 = mock(Document.class);
         when(doc7.getId()).thenReturn(7L);
-        when(documentService.findForRecordingUnit(eq(ruDto))).thenReturn(List.of(doc30, doc7));
+        when(documentService.findForRecordingUnit(ruDto)).thenReturn(List.of(doc30, doc7));
 
         ProjectDocumentResource r30 = new ProjectDocumentResource();
         r30.setResourceType("documents");
@@ -886,7 +884,7 @@ class RecordingUnitsControllerApiTest {
         ConceptDTO type = new ConceptDTO();
         type.setId(3L);
         RecordingUnitCreateFormData payload = new RecordingUnitCreateFormData(type, null, Map.of(), Map.of());
-        when(recordingUnitOpenApiService.buildRecordingUnitCreateForm(eq(10L), eq(3L), eq(personDto), eq("fr")))
+        when(recordingUnitOpenApiService.buildRecordingUnitCreateForm(10L, 3L, personDto, "fr"))
                 .thenReturn(payload);
 
         mockMvc.perform(get("/api/v1/recording-units/creation-form")
@@ -919,7 +917,7 @@ class RecordingUnitsControllerApiTest {
 
         ConceptDTO type = new ConceptDTO();
         type.setId(1L);
-        when(recordingUnitOpenApiService.buildRecordingUnitCreateForm(eq(10L), eq(1L), eq(personDto), eq("en")))
+        when(recordingUnitOpenApiService.buildRecordingUnitCreateForm(10L, 1L, personDto, "en"))
                 .thenReturn(new RecordingUnitCreateFormData(type, null, Map.of(), Map.of()));
 
         mockMvc.perform(get("/api/v1/recording-units/creation-form")
@@ -938,7 +936,7 @@ class RecordingUnitsControllerApiTest {
 
         ConceptDTO type = new ConceptDTO();
         type.setId(2L);
-        when(recordingUnitOpenApiService.buildRecordingUnitCreateForm(eq(10L), eq(2L), eq(personDto), eq("fr")))
+        when(recordingUnitOpenApiService.buildRecordingUnitCreateForm(10L, 2L, personDto, "fr"))
                 .thenReturn(new RecordingUnitCreateFormData(type, null, Map.of(), Map.of()));
 
         mockMvc.perform(get("/api/v1/recording-units/creation-form")
@@ -961,7 +959,7 @@ class RecordingUnitsControllerApiTest {
                 12L, "TEXT", "Libellé", null, null, false, null, null);
         Map<String, RecordingUnitFormFieldApi> fields = Map.of("12", field);
         RecordingUnitCreateFormData payload = new RecordingUnitCreateFormData(type, bundle, fields, Map.of());
-        when(recordingUnitOpenApiService.buildRecordingUnitCreateForm(eq(10L), eq(8L), eq(personDto), eq("fr")))
+        when(recordingUnitOpenApiService.buildRecordingUnitCreateForm(10L, 8L, personDto, "fr"))
                 .thenReturn(payload);
 
         mockMvc.perform(get("/api/v1/recording-units/creation-form")
@@ -990,7 +988,7 @@ class RecordingUnitsControllerApiTest {
         RecordingUnitDTO ru = new RecordingUnitDTO();
         ru.setId(5L);
         ru.setCreatedByInstitution(institutionDto);
-        when(recordingUnitService.requireAccessibleRecordingUnitByPrimaryKey(eq(5L), eq(Set.of(10L))))
+        when(recordingUnitService.requireAccessibleRecordingUnitByPrimaryKey(5L, Set.of(10L)))
                 .thenReturn(ru);
         when(permissionService.hasWritePermission(any(), any())).thenReturn(false);
 
@@ -1008,7 +1006,7 @@ class RecordingUnitsControllerApiTest {
         RecordingUnitDTO ru = new RecordingUnitDTO();
         ru.setId(9L);
         ru.setCreatedByInstitution(institutionDto);
-        when(recordingUnitService.requireAccessibleRecordingUnitByPrimaryKey(eq(9L), eq(Set.of(10L))))
+        when(recordingUnitService.requireAccessibleRecordingUnitByPrimaryKey(9L, Set.of(10L)))
                 .thenReturn(ru);
         when(permissionService.hasWritePermission(any(), any())).thenReturn(true);
         doNothing().when(recordingUnitService).deleteRecordingUnitById(9L);
@@ -1027,7 +1025,7 @@ class RecordingUnitsControllerApiTest {
         RecordingUnitDTO ru = new RecordingUnitDTO();
         ru.setId(3L);
         ru.setCreatedByInstitution(institutionDto);
-        when(recordingUnitService.requireAccessibleRecordingUnitByPrimaryKey(eq(3L), eq(Set.of(10L))))
+        when(recordingUnitService.requireAccessibleRecordingUnitByPrimaryKey(3L, Set.of(10L)))
                 .thenReturn(ru);
         when(permissionService.hasWritePermission(any(), any())).thenReturn(true);
         doThrow(new IllegalStateException("mobiliers")).when(recordingUnitService).deleteRecordingUnitById(3L);
