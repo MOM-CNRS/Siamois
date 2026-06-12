@@ -381,7 +381,7 @@ public class ActionUnitService implements ArkEntityService {
             return true;
         }
 
-        OffsetDateTime now = OffsetDateTime.now(clock);
+        OffsetDateTime now = OffsetDateTime.now();
         return !now.isBefore(beginDate) && !now.isAfter(endDate);
     }
 
