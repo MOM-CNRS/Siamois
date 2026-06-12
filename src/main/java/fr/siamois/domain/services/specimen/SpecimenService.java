@@ -231,10 +231,15 @@ public class SpecimenService implements ArkEntityService {
         if (accessibleInstitutionIds == null || accessibleInstitutionIds.isEmpty()) {
             return Optional.empty();
         }
-        SpecimenDTO dto = findById(specimenId);
-        if (dto == null) {
+        return resolveAccessibleById(specimenId, accessibleInstitutionIds);
+    }
+
+    private Optional<SpecimenDTO> resolveAccessibleById(long specimenId, Set<Long> accessibleInstitutionIds) {
+        Specimen specimenEntity = specimenRepository.findById(specimenId, Specimen.class).orElse(null);
+        if (specimenEntity == null) {
             return Optional.empty();
         }
+        SpecimenDTO dto = specimenMapper.convert(specimenEntity);
         InstitutionDTO inst = dto.getCreatedByInstitution();
         if (inst == null || inst.getId() == null || !accessibleInstitutionIds.contains(inst.getId())) {
             return Optional.empty();
@@ -258,7 +263,7 @@ public class SpecimenService implements ArkEntityService {
         if (key.chars().allMatch(Character::isDigit)) {
             try {
                 long numericId = Long.parseLong(key);
-                Optional<SpecimenDTO> byPk = findAccessibleById(numericId, accessibleInstitutionIds);
+                Optional<SpecimenDTO> byPk = resolveAccessibleById(numericId, accessibleInstitutionIds);
                 if (byPk.isPresent()) {
                     return byPk;
                 }
@@ -326,7 +331,7 @@ public class SpecimenService implements ArkEntityService {
             String langCode,
             Pageable pageable
     ) {
-        return findAllByInstitutionAndByRecordingUnitAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
+        return doFindAllByInstitutionAndRecordingUnit(
                 institutionId, recordingUnitId, fullIdentifier, categoryIds, global, langCode, null, pageable);
     }
 
@@ -341,16 +346,29 @@ public class SpecimenService implements ArkEntityService {
             String apiSortParam,
             Pageable pageable
     ) {
+        return doFindAllByInstitutionAndRecordingUnit(
+                institutionId, recordingUnitId, fullIdentifier, categoryIds, global, langCode, apiSortParam, pageable);
+    }
+
+    private Page<SpecimenDTO> doFindAllByInstitutionAndRecordingUnit(
+            Long institutionId,
+            Long recordingUnitId,
+            String fullIdentifier,
+            Long[] categoryIds,
+            String global,
+            String langCode,
+            String apiSortParam,
+            Pageable pageable
+    ) {
         String orderBy = apiSortParam != null && !apiSortParam.isBlank()
                 ? SpecimenFindSortSql.fromApiSortParam(apiSortParam)
                 : SpecimenFindSortSql.fromSpringSort(pageable.getSort());
         Pageable pageWithoutSort = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize());
-        Page<Specimen> specimenPage = specimenRepository
+        return specimenRepository
                 .findAllByInstitutionAndRecordingUnitIdAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
                         institutionId, recordingUnitId, fullIdentifier, categoryIds, global, langCode, orderBy,
-                        pageWithoutSort);
-
-        return specimenPage.map(specimenMapper::convert);
+                        pageWithoutSort)
+                .map(specimenMapper::convert);
     }
 
 

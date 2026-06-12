@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 @ResponseStatus(HttpStatus.CONFLICT)
 public class SyncRevisionConflictException extends RuntimeException {
 
-    private final SyncConflictData conflictData;
+    private final transient SyncConflictData conflictData;
 
     public SyncRevisionConflictException(SyncConflictData conflictData) {
         super("Conflit de synchronisation : l'entité a été modifiée sur le serveur.");

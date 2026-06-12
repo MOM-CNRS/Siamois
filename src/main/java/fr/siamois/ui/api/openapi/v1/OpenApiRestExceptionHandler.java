@@ -20,11 +20,14 @@ import java.util.UUID;
 @RestControllerAdvice(basePackages = "fr.siamois.ui.api.openapi.v1.controller")
 public class OpenApiRestExceptionHandler {
 
+    public static final String STRING = "error";
+    public static final String MESSAGE = "message";
+
     @ExceptionHandler(BadCredentialsException.class)
     public ResponseEntity<Map<String, String>> badCredentials(BadCredentialsException ex) {
         return ResponseEntity.status(401).body(Map.of(
-                "error", "unauthorized",
-                "message", ex.getMessage() != null ? ex.getMessage() : "Invalid credentials"));
+                STRING, "unauthorized",
+                MESSAGE, ex.getMessage() != null ? ex.getMessage() : "Invalid credentials"));
     }
 
     /**
@@ -35,8 +38,8 @@ public class OpenApiRestExceptionHandler {
         Throwable cause = ex.getMostSpecificCause();
         log.debug("OpenAPI request body not readable: {}", cause != null ? cause.getMessage() : ex.getMessage());
         return ResponseEntity.badRequest().body(Map.of(
-                "error", "bad_request",
-                "message",
+                STRING, "bad_request",
+                MESSAGE,
                 "Invalid or malformed JSON body. Use strict JSON with double-quoted keys and strings, "
                         + "e.g. {\"name\":\"value\"}. Ensure Content-Type is application/json."));
     }
@@ -56,8 +59,8 @@ public class OpenApiRestExceptionHandler {
             message = code == HttpStatus.UNAUTHORIZED.value() ? "Unauthorized" : "Error";
         }
         return ResponseEntity.status(ex.getStatusCode()).body(Map.of(
-                "error", code == HttpStatus.UNAUTHORIZED.value() ? "unauthorized" : "error",
-                "message", message));
+                STRING, code == HttpStatus.UNAUTHORIZED.value() ? "unauthorized" : STRING,
+                MESSAGE, message));
     }
 
     @ExceptionHandler(Exception.class)
@@ -65,8 +68,8 @@ public class OpenApiRestExceptionHandler {
         String correlationId = UUID.randomUUID().toString();
         log.error("[{}] Unhandled exception in OpenAPI controller", correlationId, ex);
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(
-                "error", "internal_error",
-                "message", "Internal Server Error",
+                STRING, "internal_error",
+                MESSAGE, "Internal Server Error",
                 "correlationId", correlationId));
     }
 }

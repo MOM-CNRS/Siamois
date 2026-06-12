@@ -721,7 +721,10 @@ public class ActionUnitService implements ArkEntityService {
             throw new ActionUnitNotFoundException("Project key must not be empty");
         }
         if (key.chars().allMatch(Character::isDigit)) {
-            return findById(Long.parseLong(key));
+            long id = Long.parseLong(key);
+            ActionUnit actionUnit = actionUnitRepository.findById(id)
+                    .orElseThrow(() -> new ActionUnitNotFoundException("ActionUnit not found with ID: " + id));
+            return convertWithCount(actionUnit);
         }
         Optional<ActionUnit> byFullId = actionUnitRepository.findByFullIdentifier(key);
         if (byFullId.isPresent()) {

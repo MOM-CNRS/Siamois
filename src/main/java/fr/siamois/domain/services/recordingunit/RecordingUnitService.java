@@ -74,6 +74,7 @@ import static fr.siamois.domain.models.ValidationStatus.*;
 @RequiredArgsConstructor
 public class RecordingUnitService implements ArkEntityService {
 
+    public static final String RECORDING_UNIT_NOT_FOUND_WITH_ID = "RecordingUnit not found with ID: ";
     private final RecordingUnitRepository recordingUnitRepository;
     private final PersonRepository personRepository;
     private final InstitutionService institutionService;
@@ -375,7 +376,7 @@ public class RecordingUnitService implements ArkEntityService {
     public RecordingUnitDTO findById(long id) {
         try {
             RecordingUnit recordingUnit = recordingUnitRepository.findById(id)
-                    .orElseThrow(() -> new RecordingUnitNotFoundException("RecordingUnit not found with ID: " + id));
+                    .orElseThrow(() -> new RecordingUnitNotFoundException(RECORDING_UNIT_NOT_FOUND_WITH_ID + id));
             return recordingUnitMapper.convert(recordingUnit);
         } catch (RuntimeException e) {
             log.error(e.getMessage(), e);
@@ -411,6 +412,12 @@ public class RecordingUnitService implements ArkEntityService {
     public AccessibleRecordingUnit findAccessibleRecordingUnitWithEntity(String idOrKey,
                                                                          Set<Long> accessibleInstitutionIds,
                                                                          List<String> counts) {
+        return resolveAccessibleRecordingUnit(idOrKey, accessibleInstitutionIds, counts);
+    }
+
+    private AccessibleRecordingUnit resolveAccessibleRecordingUnit(String idOrKey,
+                                                                    Set<Long> accessibleInstitutionIds,
+                                                                    List<String> counts) {
         RecordingUnit entity = resolveRecordingUnitEntityByKey(idOrKey, accessibleInstitutionIds);
         RecordingUnitDTO dto = recordingUnitMapper.convert(entity);
         if (counts != null && counts.contains("specimen") && dto.getId() != null) {
@@ -428,7 +435,7 @@ public class RecordingUnitService implements ArkEntityService {
     public RecordingUnitDTO findAccessibleRecordingUnitByKey(String idOrKey,
                                                              Set<Long> accessibleInstitutionIds,
                                                              List<String> counts) {
-        return findAccessibleRecordingUnitWithEntity(idOrKey, accessibleInstitutionIds, counts).dto();
+        return resolveAccessibleRecordingUnit(idOrKey, accessibleInstitutionIds, counts).dto();
     }
 
     /**
@@ -443,7 +450,7 @@ public class RecordingUnitService implements ArkEntityService {
         }
         RecordingUnit entity = recordingUnitRepository.findById(recordingUnitId)
                 .orElseThrow(() -> new RecordingUnitNotFoundException(
-                        "RecordingUnit not found with ID: " + recordingUnitId));
+                        RECORDING_UNIT_NOT_FOUND_WITH_ID + recordingUnitId));
         RecordingUnitDTO dto = recordingUnitMapper.convert(entity);
         Long instId = dto.getCreatedByInstitution() == null ? null : dto.getCreatedByInstitution().getId();
         if (instId == null || !accessibleInstitutionIds.contains(instId)) {
@@ -466,8 +473,29 @@ public class RecordingUnitService implements ArkEntityService {
     public void deleteRecordingUnitById(long recordingUnitId) {
         RecordingUnit ru = recordingUnitRepository.findById(recordingUnitId)
                 .orElseThrow(() -> new RecordingUnitNotFoundException(
-                        "RecordingUnit not found with ID: " + recordingUnitId));
+                        RECORDING_UNIT_NOT_FOUND_WITH_ID + recordingUnitId));
 
+        validateDeletable(ru, recordingUnitId);
+        unlinkParentChildRelations(ru);
+        clearStratigraphicRelationships(ru, recordingUnitId);
+        deleteLinkedData(recordingUnitId, ru);
+
+        CustomFormResponse formResponse = ru.getFormResponse();
+        ru.setFormResponse(null);
+        Long arkId = ru.getArk() != null ? ru.getArk().getInternalId() : null;
+
+        recordingUnitRepository.save(ru);
+
+        if (formResponse != null && formResponse.getId() != null) {
+            customFormResponseRepository.deleteById(formResponse.getId());
+        }
+        recordingUnitRepository.delete(ru);
+        if (arkId != null) {
+            arkRepository.deleteById(arkId);
+        }
+    }
+
+    private void validateDeletable(RecordingUnit ru, long recordingUnitId) {
         Long specimenCount = recordingUnitRepository.countSpecimensByRecordingUnitId(recordingUnitId);
         if (specimenCount != null && specimenCount > 0) {
             throw new IllegalStateException("Impossible de supprimer : l'unité d'enregistrement contient des mobiliers");
@@ -475,7 +503,9 @@ public class RecordingUnitService implements ArkEntityService {
         if (ru.getChildren() != null && !ru.getChildren().isEmpty()) {
             throw new IllegalStateException("Impossible de supprimer : l'unité d'enregistrement possède des unités filles");
         }
+    }
 
+    private void unlinkParentChildRelations(RecordingUnit ru) {
         if (ru.getParents() != null) {
             for (RecordingUnit parent : new HashSet<>(ru.getParents())) {
                 if (parent.getChildren() != null) {
@@ -487,7 +517,9 @@ public class RecordingUnitService implements ArkEntityService {
         if (ru.getChildren() != null) {
             ru.getChildren().clear();
         }
+    }
 
+    private void clearStratigraphicRelationships(RecordingUnit ru, long recordingUnitId) {
         List<StratigraphicRelationship> rels = stratigraphicRelationshipRepository.findAllInvolvingRecordingUnitId(recordingUnitId);
         if (!rels.isEmpty()) {
             stratigraphicRelationshipRepository.deleteAll(rels);
@@ -498,37 +530,20 @@ public class RecordingUnitService implements ArkEntityService {
         if (ru.getRelationshipsAsUnit2() != null) {
             ru.getRelationshipsAsUnit2().clear();
         }
+    }
 
+    private void deleteLinkedData(long recordingUnitId, RecordingUnit ru) {
         recordingUnitRepository.deleteContributorLinksForRecordingUnit(recordingUnitId);
         documentRepository.deleteAllRecordingUnitDocumentLinksByRecordingUnitId(recordingUnitId);
         recordingUnitIdCounterRepository.deleteAllByRecordingUnitId(recordingUnitId);
         if (recordingUnitIdInfoRepository.existsById(recordingUnitId)) {
             recordingUnitIdInfoRepository.deleteById(recordingUnitId);
         }
-
         if (ru.getContributors() != null) {
             ru.getContributors().clear();
         }
         if (ru.getDocuments() != null) {
             ru.getDocuments().clear();
-        }
-
-        CustomFormResponse formResponse = ru.getFormResponse();
-        if (formResponse != null) {
-            ru.setFormResponse(null);
-        }
-        Long arkId = ru.getArk() != null ? ru.getArk().getInternalId() : null;
-
-        recordingUnitRepository.save(ru);
-
-        if (formResponse != null && formResponse.getId() != null) {
-            customFormResponseRepository.deleteById(formResponse.getId());
-        }
-
-        recordingUnitRepository.delete(ru);
-
-        if (arkId != null) {
-            arkRepository.deleteById(arkId);
         }
     }
 
@@ -540,7 +555,7 @@ public class RecordingUnitService implements ArkEntityService {
     @Transactional(readOnly = true)
     public RecordingUnitRelationsBundle findRelationsForAccessibleRecordingUnit(String idOrKey,
                                                                                   Set<Long> accessibleInstitutionIds) {
-        RecordingUnit unit = findAccessibleRecordingUnitWithEntity(idOrKey, accessibleInstitutionIds, null).entity();
+        RecordingUnit unit = resolveAccessibleRecordingUnit(idOrKey, accessibleInstitutionIds, null).entity();
         Long id = unit.getId();
         List<StratigraphicRelationshipDTO> stratigraphic = stratigraphicRelationshipRepository
                 .findAllInvolvingRecordingUnitId(id).stream()
@@ -558,7 +573,7 @@ public class RecordingUnitService implements ArkEntityService {
     @Transactional(readOnly = true)
     public List<RecordingUnitSummaryDTO> findChildrenForAccessibleRecordingUnit(String idOrKey,
                                                                                   Set<Long> accessibleInstitutionIds) {
-        RecordingUnit unit = findAccessibleRecordingUnitWithEntity(idOrKey, accessibleInstitutionIds, null).entity();
+        RecordingUnit unit = resolveAccessibleRecordingUnit(idOrKey, accessibleInstitutionIds, null).entity();
         return toAdjacentUnitSummaries(unit.getChildren());
     }
 
@@ -577,10 +592,10 @@ public class RecordingUnitService implements ArkEntityService {
 
         RecordingUnit parent = recordingUnitRepository.findById(parentId)
                 .orElseThrow(() -> new RecordingUnitNotFoundException(
-                        "RecordingUnit not found with ID: " + parentId));
+                        RECORDING_UNIT_NOT_FOUND_WITH_ID + parentId));
         RecordingUnit child = recordingUnitRepository.findById(childId)
                 .orElseThrow(() -> new RecordingUnitNotFoundException(
-                        "RecordingUnit not found with ID: " + childId));
+                        RECORDING_UNIT_NOT_FOUND_WITH_ID + childId));
 
         assertSameActionUnit(parent, child);
 
@@ -608,10 +623,10 @@ public class RecordingUnitService implements ArkEntityService {
     public void removeHierarchyChild(long parentId, long childId) {
         RecordingUnit parent = recordingUnitRepository.findById(parentId)
                 .orElseThrow(() -> new RecordingUnitNotFoundException(
-                        "RecordingUnit not found with ID: " + parentId));
+                        RECORDING_UNIT_NOT_FOUND_WITH_ID + parentId));
         RecordingUnit child = recordingUnitRepository.findById(childId)
                 .orElseThrow(() -> new RecordingUnitNotFoundException(
-                        "RecordingUnit not found with ID: " + childId));
+                        RECORDING_UNIT_NOT_FOUND_WITH_ID + childId));
 
         if (parent.getChildren() == null || !parent.getChildren().contains(child)) {
             throw new IllegalStateException("Aucune relation parent/enfant directe entre ces unités");
@@ -653,27 +668,30 @@ public class RecordingUnitService implements ArkEntityService {
         if (key.isEmpty()) {
             throw new RecordingUnitNotFoundException("Recording unit key must not be empty");
         }
-
         if (key.chars().allMatch(Character::isDigit)) {
-            try {
-                long numericId = Long.parseLong(key);
-                Optional<RecordingUnit> byPk = recordingUnitRepository.findById(numericId);
-                if (byPk.isPresent()) {
-                    RecordingUnit entity = byPk.get();
-                    RecordingUnitDTO converted = recordingUnitMapper.convert(entity);
-                    Long instId = converted.getCreatedByInstitution() == null ? null
-                            : converted.getCreatedByInstitution().getId();
-                    if (instId != null && accessibleInstitutionIds.contains(instId)) {
-                        return entity;
-                    }
-                    throw new RecordingUnitNotFoundException("Recording unit not found with key: " + key);
-                }
-                return resolveRecordingUnitEntityByFullIdentifier(key, accessibleInstitutionIds);
-            } catch (NumberFormatException e) {
-                return resolveRecordingUnitEntityByFullIdentifier(key, accessibleInstitutionIds);
-            }
+            return resolveByNumericKey(key, accessibleInstitutionIds);
         }
         return resolveRecordingUnitEntityByFullIdentifier(key, accessibleInstitutionIds);
+    }
+
+    private RecordingUnit resolveByNumericKey(String key, Set<Long> accessibleInstitutionIds) {
+        try {
+            long numericId = Long.parseLong(key);
+            Optional<RecordingUnit> byPk = recordingUnitRepository.findById(numericId);
+            if (byPk.isEmpty()) {
+                return resolveRecordingUnitEntityByFullIdentifier(key, accessibleInstitutionIds);
+            }
+            RecordingUnit entity = byPk.get();
+            RecordingUnitDTO converted = recordingUnitMapper.convert(entity);
+            Long instId = converted.getCreatedByInstitution() == null ? null
+                    : converted.getCreatedByInstitution().getId();
+            if (instId != null && accessibleInstitutionIds.contains(instId)) {
+                return entity;
+            }
+            throw new RecordingUnitNotFoundException("Recording unit not found with key: " + key);
+        } catch (NumberFormatException e) {
+            return resolveRecordingUnitEntityByFullIdentifier(key, accessibleInstitutionIds);
+        }
     }
 
     private RecordingUnit resolveRecordingUnitEntityByFullIdentifier(String fullIdentifier,

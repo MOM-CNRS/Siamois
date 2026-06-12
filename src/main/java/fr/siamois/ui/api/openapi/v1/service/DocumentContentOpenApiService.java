@@ -30,6 +30,10 @@ public class DocumentContentOpenApiService {
      */
     @Transactional(readOnly = true)
     public Document requireAccessibleDocument(long documentId, Set<Long> accessibleInstitutionIds) {
+        return resolveAccessibleDocument(documentId, accessibleInstitutionIds);
+    }
+
+    private Document resolveAccessibleDocument(long documentId, Set<Long> accessibleInstitutionIds) {
         if (accessibleInstitutionIds == null || accessibleInstitutionIds.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Document not found");
         }
@@ -44,7 +48,7 @@ public class DocumentContentOpenApiService {
 
     @Transactional(readOnly = true)
     public DocumentFilePayload requireDownloadableContent(long documentId, Set<Long> accessibleInstitutionIds) {
-        Document doc = requireAccessibleDocument(documentId, accessibleInstitutionIds);
+        Document doc = resolveAccessibleDocument(documentId, accessibleInstitutionIds);
         InputStream stream = documentService.findInputStreamOfDocument(doc)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "File not found"));
         MediaType mediaType = resolveMediaType(doc.getMimeType());
@@ -67,7 +71,7 @@ public class DocumentContentOpenApiService {
      */
     @Transactional
     public void deleteAccessibleDocument(long documentId, Set<Long> accessibleInstitutionIds) {
-        Document doc = requireAccessibleDocument(documentId, accessibleInstitutionIds);
+        Document doc = resolveAccessibleDocument(documentId, accessibleInstitutionIds);
         documentService.deleteDocument(doc);
     }
 }

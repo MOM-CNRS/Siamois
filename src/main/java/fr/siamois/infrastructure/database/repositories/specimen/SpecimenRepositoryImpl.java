@@ -38,6 +38,7 @@ public class SpecimenRepositoryImpl implements SpecimenRepositoryCustom {
             + "  AND (CAST(:categoryIds AS BIGINT[]) IS NULL OR s.fk_specimen_type IN (:categoryIds)) "
             + "  AND (CAST(:global AS TEXT) IS NULL OR LOWER(s.full_identifier) LIKE LOWER(CONCAT('%', CAST(:global AS TEXT), '%'))  "
             + "                                     OR LOWER(rl.label_value) LIKE LOWER(CONCAT('%', CAST(:global AS TEXT), '%'))) ";
+    public static final String SELECT_S_RL_LABEL_VALUE_AS_C_LABEL = "SELECT s.*, rl.label_value AS c_label ";
 
     @PersistenceContext
     private EntityManager entityManager;
@@ -75,35 +76,35 @@ public class SpecimenRepositoryImpl implements SpecimenRepositoryCustom {
     private static String buildRankedSpecimenSelectSql(SpecimenFindSortSql.NativeOrderBy sort) {
         return switch (sort) {
             case DEFAULT, CREATION_TIME_DESC -> RANKED_LABELS_CTE
-                    + "SELECT s.*, rl.label_value AS c_label "
+                    + SELECT_S_RL_LABEL_VALUE_AS_C_LABEL
                     + FROM_WHERE
                     + " ORDER BY s.creation_time DESC, s.specimen_id ASC";
             case CREATION_TIME_ASC -> RANKED_LABELS_CTE
-                    + "SELECT s.*, rl.label_value AS c_label "
+                    + SELECT_S_RL_LABEL_VALUE_AS_C_LABEL
                     + FROM_WHERE
                     + " ORDER BY s.creation_time ASC, s.specimen_id ASC";
             case FULL_IDENTIFIER_ASC -> RANKED_LABELS_CTE
-                    + "SELECT s.*, rl.label_value AS c_label "
+                    + SELECT_S_RL_LABEL_VALUE_AS_C_LABEL
                     + FROM_WHERE
                     + " ORDER BY s.full_identifier ASC, s.specimen_id ASC";
             case FULL_IDENTIFIER_DESC -> RANKED_LABELS_CTE
-                    + "SELECT s.*, rl.label_value AS c_label "
+                    + SELECT_S_RL_LABEL_VALUE_AS_C_LABEL
                     + FROM_WHERE
                     + " ORDER BY s.full_identifier DESC, s.specimen_id ASC";
             case SPECIMEN_ID_ASC -> RANKED_LABELS_CTE
-                    + "SELECT s.*, rl.label_value AS c_label "
+                    + SELECT_S_RL_LABEL_VALUE_AS_C_LABEL
                     + FROM_WHERE
                     + " ORDER BY s.specimen_id ASC";
             case SPECIMEN_ID_DESC -> RANKED_LABELS_CTE
-                    + "SELECT s.*, rl.label_value AS c_label "
+                    + SELECT_S_RL_LABEL_VALUE_AS_C_LABEL
                     + FROM_WHERE
                     + " ORDER BY s.specimen_id DESC";
             case LABEL_ASC -> RANKED_LABELS_CTE
-                    + "SELECT s.*, rl.label_value AS c_label "
+                    + SELECT_S_RL_LABEL_VALUE_AS_C_LABEL
                     + FROM_WHERE
                     + " ORDER BY c_label ASC, s.specimen_id ASC";
             case LABEL_DESC -> RANKED_LABELS_CTE
-                    + "SELECT s.*, rl.label_value AS c_label "
+                    + SELECT_S_RL_LABEL_VALUE_AS_C_LABEL
                     + FROM_WHERE
                     + " ORDER BY c_label DESC, s.specimen_id ASC";
         };
