@@ -11,7 +11,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
@@ -42,7 +41,8 @@ class VocabularyOpenApiServiceTest {
     void listVocabulariesForOrganization_unknownOrganization_throws404() {
         when(institutionService.findById(10L)).thenReturn(null);
 
-        assertThatThrownBy(() -> service.listVocabulariesForOrganization(10L, new PersonDTO(), "fr"))
+        var personDto = new PersonDTO();
+        assertThatThrownBy(() -> service.listVocabulariesForOrganization(10L, personDto, "fr"))
                 .isInstanceOf(ResponseStatusException.class)
                 .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode().value()).isEqualTo(404));
     }

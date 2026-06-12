@@ -79,6 +79,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
+import java.time.Month;
 import java.time.OffsetDateTime;
 import java.util.Locale;
 import java.util.Optional;
@@ -560,7 +561,7 @@ class RecordingUnitOpenApiServiceTest {
         CustomFormResponseViewModel responseVm = new CustomFormResponseViewModel();
         responseVm.setAnswers(Map.of(dtFieldLayout, answerVm));
 
-        LocalDateTime saved = LocalDateTime.of(2024, 6, 1, 14, 30);
+        LocalDateTime saved = LocalDateTime.of(2024, Month.JUNE, 1, 14, 30);
         CustomFieldAnswerDateTime jpaDt = mock(CustomFieldAnswerDateTime.class);
         when(jpaDt.getValue()).thenReturn(saved);
 
@@ -656,7 +657,7 @@ class RecordingUnitOpenApiServiceTest {
         child.setId(202L);
         RecordingUnitService.RecordingUnitRelationsBundle bundle =
                 new RecordingUnitService.RecordingUnitRelationsBundle(List.of(strat), List.of(parent), List.of(child));
-        when(recordingUnitService.findRelationsForAccessibleRecordingUnit(eq("42"), eq(SCOPE))).thenReturn(bundle);
+        when(recordingUnitService.findRelationsForAccessibleRecordingUnit("42", SCOPE)).thenReturn(bundle);
 
         RecordingUnitRelationsData data = service.buildRecordingUnitRelations("42", SCOPE);
 
@@ -670,7 +671,7 @@ class RecordingUnitOpenApiServiceTest {
     void buildRecordingUnitChildren_wrapsListFromRecordingUnitService() {
         RecordingUnitSummaryDTO child = new RecordingUnitSummaryDTO();
         child.setId(301L);
-        when(recordingUnitService.findChildrenForAccessibleRecordingUnit(eq("5"), eq(SCOPE))).thenReturn(List.of(child));
+        when(recordingUnitService.findChildrenForAccessibleRecordingUnit("5", SCOPE)).thenReturn(List.of(child));
 
         RecordingUnitChildrenData data = service.buildRecordingUnitChildren("5", SCOPE);
 
@@ -680,7 +681,7 @@ class RecordingUnitOpenApiServiceTest {
 
     @Test
     void buildRecordingUnitChildren_emptyListFromService() {
-        when(recordingUnitService.findChildrenForAccessibleRecordingUnit(eq("9"), eq(SCOPE))).thenReturn(List.of());
+        when(recordingUnitService.findChildrenForAccessibleRecordingUnit("9", SCOPE)).thenReturn(List.of());
 
         RecordingUnitChildrenData data = service.buildRecordingUnitChildren("9", SCOPE);
 
@@ -701,7 +702,6 @@ class RecordingUnitOpenApiServiceTest {
                 .thenReturn(new RecordingUnitService.AccessibleRecordingUnit(parentEntity, parentDto));
         when(permissionService.hasWritePermission(any(UserInfo.class), eq(parentDto))).thenReturn(true);
         when(recordingUnitService.requireAccessibleRecordingUnitByPrimaryKey(99L, SCOPE)).thenReturn(new RecordingUnitDTO());
-        RecordingUnitRelationsData relations = new RecordingUnitRelationsData(List.of(), List.of(), List.of());
         when(recordingUnitService.findRelationsForAccessibleRecordingUnit("5", SCOPE)).thenReturn(
                 new RecordingUnitService.RecordingUnitRelationsBundle(List.of(), List.of(), List.of()));
 
@@ -1072,7 +1072,8 @@ class RecordingUnitOpenApiServiceTest {
     @Test
     void applySystemProjectFormFieldAnswers_withoutOrganization_throws400() {
         ActionUnitDTO shell = new ActionUnitDTO();
-        assertThatThrownBy(() -> service.applySystemProjectFormFieldAnswers(shell, Map.of("1", "x"), personDto, "fr"))
+        Map<String, Object> fieldAnswers = Map.of("1", "x");
+        assertThatThrownBy(() -> service.applySystemProjectFormFieldAnswers(shell, fieldAnswers, personDto, "fr"))
                 .isInstanceOf(ResponseStatusException.class)
                 .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST));
     }
@@ -1251,7 +1252,7 @@ class RecordingUnitOpenApiServiceTest {
     }
 
     @Test
-    void createRecordingUnit_success_persistsAndReturnsDetail() throws Exception {
+    void createRecordingUnit_success_persistsAndReturnsDetail() {
         InstitutionDTO inst = new InstitutionDTO();
         inst.setId(10L);
         ActionUnitDTO au = new ActionUnitDTO();
@@ -1362,7 +1363,8 @@ class RecordingUnitOpenApiServiceTest {
         when(recordingUnitService.findAccessibleRecordingUnitWithEntity(eq("1026"), eq(SCOPE), isNull()))
                 .thenReturn(new RecordingUnitService.AccessibleRecordingUnit(ruEntity, ruDto));
 
-        assertThatThrownBy(() -> service.patchRecordingUnit("1026", new RecordingUnitPatchRequest(), personDto, SCOPE, "fr"))
+        var patchRequest = new RecordingUnitPatchRequest();
+        assertThatThrownBy(() -> service.patchRecordingUnit("1026", patchRequest, personDto, SCOPE, "fr"))
                 .isInstanceOf(ResponseStatusException.class)
                 .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST));
     }

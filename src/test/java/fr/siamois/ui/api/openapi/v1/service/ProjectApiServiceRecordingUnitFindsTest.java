@@ -202,8 +202,9 @@ class ProjectApiServiceRecordingUnitFindsTest {
         when(recordingUnitService.findAccessibleRecordingUnitByKey(eq("x"), eq(SCOPE), isNull()))
                 .thenThrow(new RecordingUnitNotFoundException("gone"));
 
+        var callerDto = caller();
         assertThatThrownBy(() -> projectApiService.pageFindsForAccessibleRecordingUnit(
-                caller(), "x", 0, 10, null, null))
+                callerDto, "x", 0, 10, null, null))
                 .isInstanceOf(RecordingUnitNotFoundException.class)
                 .hasMessageContaining("gone");
     }
@@ -215,8 +216,9 @@ class ProjectApiServiceRecordingUnitFindsTest {
         ru.setCreatedByInstitution(null);
         when(recordingUnitService.findAccessibleRecordingUnitByKey(eq("8"), eq(SCOPE), isNull())).thenReturn(ru);
 
+        var callerDto = caller();
         assertThatThrownBy(() -> projectApiService.pageFindsForAccessibleRecordingUnit(
-                caller(), "8", 0, 10, null, null))
+                callerDto, "8", 0, 10, null, null))
                 .isInstanceOf(ResponseStatusException.class)
                 .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode().value())
                         .isEqualTo(HttpStatus.BAD_REQUEST.value()));
@@ -231,8 +233,9 @@ class ProjectApiServiceRecordingUnitFindsTest {
         ru.setCreatedByInstitution(inst);
         when(recordingUnitService.findAccessibleRecordingUnitByKey(eq("9"), eq(SCOPE), isNull())).thenReturn(ru);
 
+        var callerDto = caller();
         assertThatThrownBy(() -> projectApiService.pageFindsForAccessibleRecordingUnit(
-                caller(), "9", 0, 10, null, null))
+                callerDto, "9", 0, 10, null, null))
                 .isInstanceOf(ResponseStatusException.class)
                 .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode().value())
                         .isEqualTo(HttpStatus.BAD_REQUEST.value()));
@@ -247,8 +250,9 @@ class ProjectApiServiceRecordingUnitFindsTest {
         ru.setCreatedByInstitution(inst);
         when(recordingUnitService.findAccessibleRecordingUnitByKey(eq("ru"), eq(SCOPE), isNull())).thenReturn(ru);
 
+        var callerDto = caller();
         assertThatThrownBy(() -> projectApiService.pageFindsForAccessibleRecordingUnit(
-                caller(), "ru", 0, 10, null, null))
+                callerDto, "ru", 0, 10, null, null))
                 .isInstanceOf(ResponseStatusException.class)
                 .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode().value())
                         .isEqualTo(HttpStatus.BAD_REQUEST.value()));

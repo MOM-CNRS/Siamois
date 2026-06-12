@@ -10,7 +10,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
-import org.springframework.http.HttpStatus;
+
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
@@ -65,7 +65,6 @@ class UserOpenApiServiceTest {
         when(institutionService.findById(10L)).thenReturn(inst);
 
         PersonDTO a = user(1L, "Alice", "Martin", "alice");
-        PersonDTO b = user(2L, "Bob", "Dupont", "bob");
         PersonDTO c = user(3L, "Claire", "Martin", "claire");
         when(personService.findAllInInstitution(10L, "mart")).thenReturn(List.of(a, c));
 

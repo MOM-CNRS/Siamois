@@ -186,7 +186,8 @@ class ProjectApiServiceMutationTest {
         when(actionUnitService.findAccessibleProjectByKey("7", SCOPE)).thenReturn(row);
         when(permissionService.hasWritePermission(any(), same(au))).thenReturn(false);
 
-        assertThatThrownBy(() -> service.patchProject(caller, "7", new ProjectPatchRequest(), "fr"))
+        var patchRequest = new ProjectPatchRequest();
+        assertThatThrownBy(() -> service.patchProject(caller, "7", patchRequest, "fr"))
                 .isInstanceOf(ResponseStatusException.class)
                 .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN));
     }

@@ -136,7 +136,8 @@ class ProjectApiServiceRecordingUnitDocumentsTest {
         when(recordingUnitService.findAccessibleRecordingUnitByKey(eq("missing"), eq(SCOPE), isNull()))
                 .thenThrow(new RecordingUnitNotFoundException("gone"));
 
-        assertThatThrownBy(() -> projectApiService.listDocumentsForAccessibleRecordingUnit(caller(), "missing"))
+        var callerDto = caller();
+        assertThatThrownBy(() -> projectApiService.listDocumentsForAccessibleRecordingUnit(callerDto, "missing"))
                 .isInstanceOf(RecordingUnitNotFoundException.class)
                 .hasMessageContaining("gone");
     }

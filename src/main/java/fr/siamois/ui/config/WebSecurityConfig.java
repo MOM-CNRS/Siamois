@@ -1,10 +1,10 @@
 package fr.siamois.ui.config;
 
+import fr.siamois.infrastructure.database.repositories.person.PersonRepository;
 import fr.siamois.ui.config.handler.LoginSuccessHandler;
 import fr.siamois.ui.config.security.ApiUnauthorizedJsonWriter;
 import fr.siamois.ui.config.security.jwt.JwtAuthenticationFilter;
 import fr.siamois.ui.config.security.jwt.JwtService;
-import fr.siamois.infrastructure.database.repositories.person.PersonRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.actuate.autoconfigure.security.servlet.EndpointRequest;
 import org.springframework.boot.actuate.health.HealthEndpoint;
@@ -12,12 +12,12 @@ import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.annotation.web.configurers.CsrfConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.config.Customizer;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
