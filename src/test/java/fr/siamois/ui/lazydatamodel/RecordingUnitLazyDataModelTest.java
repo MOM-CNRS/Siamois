@@ -26,6 +26,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 
 import java.time.LocalDate;
+import java.time.Month;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -38,7 +39,7 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class RecordingUnitLazyDataModelTest {
 
-    private static final LocalDate TODAY = LocalDate.of(2024, 1, 15);
+    private static final LocalDate TODAY = LocalDate.of(2024, Month.JANUARY, 15);
 
     @Mock
     private RecordingUnitService recordingUnitService;
