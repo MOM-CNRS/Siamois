@@ -98,72 +98,6 @@ public class SpatialUnitService implements ArkEntityService {
         spatialUnitRepository.save(revision);
     }
 
-    /**
-     * Find all spatial units by institution and by name containing and by categories and by global containing
-     *
-     * @param institutionId The ID of the institution to filter by
-     * @param name          The name to filter by, can be null or empty
-     * @param categoryIds   The IDs of the categories to filter by, can be null or empty
-     * @param personIds     The IDs of the persons to filter by, can be null or empty
-     * @param global        The global search term to filter by, can be null or empty
-     * @param langCode      The language code to filter by, can be null or empty
-     * @param pageable      The pageable object to control pagination
-     * @return A page of SpatialUnit matching the criteria
-     */
-    @Transactional(readOnly = true)
-    public Page<SpatialUnitDTO> findAllByInstitutionAndByNameContainingAndByCategoriesAndByGlobalContaining(
-            Long institutionId,
-            String name, Long[] categoryIds, Long[] personIds, String global, String langCode, Pageable pageable) {
-
-        Page<SpatialUnit> res = spatialUnitRepository.findAllByInstitutionAndByNameContainingAndByCategoriesAndByGlobalContaining(
-                institutionId, name, categoryIds, personIds, global, langCode, pageable);
-
-        return res.map(spatialUnitMapper::convert);
-    }
-
-    /**
-     * Find all spatial units by parent and by name containing and by categories and by global containing
-     *
-     * @param parent      The parent spatial unit to filter by
-     * @param name        The name to filter by, can be null or empty
-     * @param categoryIds The IDs of the categories to filter by, can be null or empty
-     * @param personIds   The IDs of the persons to filter by, can be null or empty
-     * @param global      The global search term to filter by, can be null or empty
-     * @param langCode    The language code to filter by, can be null or empty
-     * @param pageable    The pageable object to control pagination
-     * @return A page of SpatialUnit matching the criteria
-     */
-    @Transactional(readOnly = true)
-    public Page<SpatialUnitDTO> findAllByParentAndByNameContainingAndByCategoriesAndByGlobalContaining(
-            SpatialUnitDTO parent,
-            String name, Long[] categoryIds, Long[] personIds, String global, String langCode, Pageable pageable) {
-        Page<SpatialUnit> res = spatialUnitRepository.findAllByParentAndByNameContainingAndByCategoriesAndByGlobalContaining(
-                parent.getId(), name, categoryIds, personIds, global, langCode, pageable);
-
-        return res.map(spatialUnitMapper::convert);
-    }
-
-    /**
-     * Find all spatial units by child and by name containing and by categories and by global containing
-     *
-     * @param child       The child spatial unit to filter by
-     * @param name        The name to filter by, can be null or empty
-     * @param categoryIds The IDs of the categories to filter by, can be null or empty
-     * @param personIds   The IDs of the persons to filter by, can be null or empty
-     * @param global      The global search term to filter by, can be null or empty
-     * @param langCode    The language code to filter by, can be null or empty
-     * @param pageable    The pageable object to control pagination
-     * @return A page of SpatialUnit matching the criteria
-     */
-    @Transactional(readOnly = true)
-    public Page<SpatialUnitDTO> findAllByChildAndByNameContainingAndByCategoriesAndByGlobalContaining(
-            SpatialUnitDTO child,
-            String name, Long[] categoryIds, Long[] personIds, String global, String langCode, Pageable pageable) {
-        Page<SpatialUnit> res = spatialUnitRepository.findAllByChildAndByNameContainingAndByCategoriesAndByGlobalContaining(
-                child.getId(), name, categoryIds, personIds, global, langCode, pageable);
-
-        return res.map(spatialUnitMapper::convert);
-    }
 
     /**
      * Find all spatial units of a given institution
@@ -442,6 +376,10 @@ public class SpatialUnitService implements ArkEntityService {
         }
 
         List<SpatialUnit> roots = new ArrayList<>(au.get().getSpatialContext());
+        SpatialUnit mainLocation = au.get().getMainLocation();
+        if (mainLocation != null && roots.stream().noneMatch(su -> mainLocation.getId().equals(su.getId()))) {
+            roots.add(0, mainLocation);
+        }
         List<Long> rootIds = roots.stream()
                 .map(SpatialUnit::getId)
                 .filter(Objects::nonNull)
@@ -580,6 +518,13 @@ public class SpatialUnitService implements ArkEntityService {
         return dto;
     }
 
+    public Page<SpatialUnitDTO> findAllByInstitutionAndByNameContainingAndByCategoriesAndByGlobalContaining(
+            Long institutionId, String name, Long[] categoryIds, String fullIdentifier, String global, String langCode, Pageable pageable) {
+        Specification<SpatialUnit> specs = SpatialUnitSpec.belongsToInstitution(institutionId)
+                .and(SpatialUnitSpec.nameContaining(name));
+        return spatialUnitRepository.findAll(specs, pageable).map(spatialUnitMapper::convert);
+    }
+
     public Page<SpatialUnitDTO> searchSpatialUnits(InstitutionDTO institutionDTO, FilterDTO filterDTO, Pageable pageable) {
         Specification<SpatialUnit> specs = prepareSpecs(institutionDTO, filterDTO);
         Page<SpatialUnit> result = spatialUnitRepository.findAll(specs, pageable);
@@ -591,6 +536,26 @@ public class SpatialUnitService implements ArkEntityService {
         Specification<SpatialUnit> specs = prepareSpecs(institutionDTO, filterDTO);
         return Math.toIntExact(spatialUnitRepository.count(specs));
     }
+
+    public Page<SpatialUnitDTO> searchSpatialUnitsInSpatialUnit(InstitutionDTO institutionDTO,
+                                                                SpatialUnitDTO spatialUnitDTO,
+                                                                FilterDTO filterDTO, Pageable pageable) {
+        Specification<SpatialUnit> specs = prepareSpecs(institutionDTO, filterDTO);
+        specs = specs.and(SpatialUnitSpec.spatialUnitInSpatialUnit(spatialUnitDTO.getId()));
+        Page<SpatialUnit> result = spatialUnitRepository.findAll(specs, pageable);
+        log.trace("Found {} SpatialUnits", result.getTotalElements());
+        return result.map(spatialUnitMapper::convert);
+    }
+
+    public int countSearchResultsInSpatialUnit(InstitutionDTO institutionDTO,
+                                               SpatialUnitDTO spatialUnitDTO,
+                                               FilterDTO filterDTO) {
+        Specification<SpatialUnit> specs = prepareSpecs(institutionDTO, filterDTO);
+        specs = specs.and(SpatialUnitSpec.spatialUnitInSpatialUnit(spatialUnitDTO.getId()));
+        return Math.toIntExact(spatialUnitRepository.count(specs));
+    }
+
+
 
     private Specification<SpatialUnit> prepareSpecs(InstitutionDTO institutionDTO, FilterDTO filterDTO) {
         Specification<SpatialUnit> base = SpatialUnitSpec.belongsToInstitution(institutionDTO.getId());
@@ -619,6 +584,10 @@ public class SpatialUnitService implements ArkEntityService {
 
         if (filterDTO.containsColumn(SpatialUnitSpec.CATEGORY_FILTER)) {
             specs = specs.and(SpatialUnitSpec.categoryIsIn(filterDTO.valueAsIdListOf(SpatialUnitSpec.CATEGORY_FILTER)));
+        }
+
+        if (filterDTO.containsColumn(SpatialUnitSpec.PARENT_FILTER)) {
+            specs = specs.and(SpatialUnitSpec.isChildOf(filterDTO.valueAsIdListOf(SpatialUnitSpec.PARENT_FILTER)));
         }
 
         return specs;

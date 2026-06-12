@@ -34,6 +34,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -125,7 +126,7 @@ public class InstitutionService {
      */
     public InstitutionDTO createInstitution(InstitutionDTO institution, String thesaurusUrl) throws InstitutionAlreadyExistException, FailedInstitutionSaveException, InvalidEndpointException, NotSiamoisThesaurusException {
         Optional<Institution> existing = institutionRepository.findInstitutionByIdentifier(institution.getIdentifier());
-        institution.setCreationDate(OffsetDateTime.now());
+        institution.setCreationDate(OffsetDateTime.now(ZoneOffset.UTC));
         if (existing.isPresent())
             throw new InstitutionAlreadyExistException("Institution with code " + institution.getIdentifier() + " already exists");
 

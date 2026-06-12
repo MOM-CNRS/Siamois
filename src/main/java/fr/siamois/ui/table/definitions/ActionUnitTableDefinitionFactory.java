@@ -3,7 +3,11 @@ package fr.siamois.ui.table.definitions;
 import fr.siamois.domain.models.form.customfield.CustomFieldText;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.dto.entity.ActionUnitDTO;
-import fr.siamois.ui.table.*;
+import fr.siamois.ui.table.column.CommandLinkColumn;
+import fr.siamois.ui.table.column.FormFieldColumn;
+import fr.siamois.ui.table.column.RelationColumn;
+import fr.siamois.ui.table.column.TableColumnAction;
+import fr.siamois.ui.table.viewmodel.EntityTableViewModel;
 
 import static fr.siamois.ui.bean.panel.models.panel.single.AbstractSingleEntity.SYSTEM_THESO;
 
@@ -58,8 +62,9 @@ public final class ActionUnitTableDefinitionFactory {
                         .filterable(false)
                         .sortField("name")
 
-                        // What to display inside <h:outputText>
-                        .valueKey("identifier")
+                        .iconClass("bi bi-arrow-down-square")
+                        .chipColor("var(--context-main-color)")
+                        .valueKey("name")
 
                         // What to do on click (Pattern A key)
                         .action(TableColumnAction.GO_TO_ACTION_UNIT)

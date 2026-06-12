@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -25,5 +26,14 @@ public interface ConceptFieldConfigRepository extends CrudRepository<ConceptFiel
                     "LIMIT 1"
     )
     Optional<ConceptFieldConfig> findOneByFieldCodeForUser(Long personId, Long institutionId, String fieldCode);
+
+    @Query(
+            nativeQuery = true,
+            value = "SELECT DISTINCT cfc.field_code FROM concept_field_config cfc "
+                    + "WHERE cfc.fk_institution_id = :institutionId "
+                    + "AND (cfc.fk_user_id IS NULL OR cfc.fk_user_id = :personId) "
+                    + "ORDER BY cfc.field_code"
+    )
+    List<String> findDistinctFieldCodesForInstitutionAndUser(Long institutionId, Long personId);
 
 }

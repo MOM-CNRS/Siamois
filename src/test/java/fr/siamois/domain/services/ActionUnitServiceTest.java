@@ -17,12 +17,20 @@ import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.dto.FilterDTO;
+import fr.siamois.dto.api.AccessibleProjectForApi;
 import fr.siamois.dto.entity.*;
+import fr.siamois.infrastructure.database.repositories.DocumentRepository;
 import fr.siamois.infrastructure.database.repositories.SpatialUnitRepository;
 import fr.siamois.infrastructure.database.repositories.actionunit.ActionCodeRepository;
 import fr.siamois.infrastructure.database.repositories.actionunit.ActionUnitRepository;
+import fr.siamois.infrastructure.database.repositories.person.PendingActionUnitRepository;
+import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitIdCounterRepository;
+import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitIdLabelRepository;
+import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitRepository;
+import fr.siamois.infrastructure.database.repositories.team.TeamMemberRepository;
 import fr.siamois.infrastructure.database.repositories.specs.ActionUnitSpec;
 import fr.siamois.mapper.ActionUnitMapper;
+import fr.siamois.dto.entity.SpatialUnitDTO;
 import fr.siamois.mapper.ConceptMapper;
 import fr.siamois.mapper.PersonMapper;
 import org.junit.jupiter.api.BeforeEach;
@@ -30,32 +38,47 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
+
+import static org.mockito.Answers.CALLS_REAL_METHODS;
+import static org.mockito.Mockito.mockStatic;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.*;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class ActionUnitServiceTest {
+    private static final OffsetDateTime NOW = OffsetDateTime.of(2024, 1, 15, 12, 0, 0, 0, ZoneOffset.UTC);
+
 
     @Mock private ActionUnitRepository actionUnitRepository;
+    @Mock private RecordingUnitRepository recordingUnitRepository;
     @Mock private ConceptService conceptService;
     @Mock private ActionCodeRepository actionCodeRepository;
     @Mock private ActionUnitMapper actionUnitMapper;
     @Mock private PersonMapper personMapper;
     @Mock private ConceptMapper conceptMapper;
     @Mock private SpatialUnitRepository spatialUnitRepository;
+    @Mock private TeamMemberRepository teamMemberRepository;
+    @Mock private DocumentRepository documentRepository;
+    @Mock private PendingActionUnitRepository pendingActionUnitRepository;
+    @Mock private RecordingUnitIdCounterRepository recordingUnitIdCounterRepository;
+    @Mock private RecordingUnitIdLabelRepository recordingUnitIdLabelRepository;
     @InjectMocks
     private ActionUnitService actionUnitService;
 
@@ -81,6 +104,7 @@ class ActionUnitServiceTest {
 
     @BeforeEach
     void setUp() {
+
         spatialUnit1 = new SpatialUnit();
         actionUnit1 = new ActionUnit();
         actionUnit2 = new ActionUnit();
@@ -314,84 +338,6 @@ class ActionUnitServiceTest {
     }
 
 
-    @Test
-    void findAllByInstitutionAndBySpatialUnitAndByNameContainingAndByCategoriesAndByGlobalContaining_Success() {
-        // Arrange
-        Long institutionId = 1L;
-        Long spatialUnitId = 1L;
-        String name = "test";
-        Long[] categoryIds = {1L, 2L};
-        Long[] personIds = {3L, 4L};
-        String global = "search";
-        String langCode = "fr";
-
-        // Création des objets mockés avec toutes les propriétés nécessaires
-        Institution institution = new Institution();
-        institution.setId(institutionId);
-        institution.setIdentifier("INST-001");
-
-        ActionUnit mockActionUnit1 = new ActionUnit();
-        mockActionUnit1.setId(1L);
-        mockActionUnit1.setCreatedByInstitution(institution); // Initialisation de l'institution
-
-        ActionUnit mockActionUnit2 = new ActionUnit();
-        mockActionUnit2.setId(2L);
-        mockActionUnit2.setCreatedByInstitution(institution); // Initialisation de l'institution
-
-        ActionUnitDTO mockActionUnitDTO1 = new ActionUnitDTO();
-        mockActionUnitDTO1.setId(1L);
-
-        ActionUnitDTO mockActionUnitDTO2 = new ActionUnitDTO();
-        mockActionUnitDTO2.setId(2L);
-
-        // Création de la page de résultats mockée
-        Page<ActionUnit> mockPage = new PageImpl<>(List.of(mockActionUnit1, mockActionUnit2));
-
-        // Configuration des mocks
-        when(actionUnitRepository.findAllByInstitutionAndBySpatialUnitAndByNameContainingAndByCategoriesAndByGlobalContaining(
-                institutionId,
-                spatialUnitId,
-                name,
-                categoryIds,
-                personIds,
-                global,
-                langCode,
-                pageable
-        )).thenReturn(mockPage);
-
-        when(actionUnitMapper.convert(mockActionUnit1)).thenReturn(mockActionUnitDTO1);
-        when(actionUnitMapper.convert(mockActionUnit2)).thenReturn(mockActionUnitDTO2);
-
-        // Act
-        Page<ActionUnitDTO> actualResult = actionUnitService.findAllByInstitutionAndBySpatialUnitAndByNameContainingAndByCategoriesAndByGlobalContaining(
-                institutionId,
-                spatialUnitId,
-                name,
-                categoryIds,
-                personIds,
-                global,
-                langCode,
-                pageable
-        );
-
-        // Assert
-        assertNotNull(actualResult, "La page ne doit pas être null");
-        assertEquals(2, actualResult.getTotalElements(), "La page doit contenir 2 éléments");
-        assertEquals(mockActionUnitDTO1, actualResult.getContent().get(0), "Le premier élément doit correspondre");
-        assertEquals(mockActionUnitDTO2, actualResult.getContent().get(1), "Le deuxième élément doit correspondre");
-
-        // Vérification des appels
-        verify(actionUnitRepository).findAllByInstitutionAndBySpatialUnitAndByNameContainingAndByCategoriesAndByGlobalContaining(
-                institutionId,
-                spatialUnitId,
-                name,
-                categoryIds,
-                personIds,
-                global,
-                langCode,
-        pageable
-        );
-    }
 
     @Test
     void existsChildrenByParentAndInstitution_shouldReturnTrue_whenChildrenExist() {
@@ -433,7 +379,7 @@ class ActionUnitServiceTest {
         institution.setId(1L);
         ActionUnitDTO current = new ActionUnitDTO();
         current.setId(100L);
-        current.setCreationTime(OffsetDateTime.now());
+        current.setCreationTime(NOW);
 
         ActionUnit nextEntity = new ActionUnit();
         ActionUnitDTO nextDTO = new ActionUnitDTO();
@@ -458,7 +404,7 @@ class ActionUnitServiceTest {
 
         ActionUnitDTO current = new ActionUnitDTO();
         current.setId(100L); // Évitez de laisser l'ID à null si possible
-        current.setCreationTime(OffsetDateTime.now());
+        current.setCreationTime(NOW);
 
         ActionUnit firstEntity = new ActionUnit();
         ActionUnitDTO firstDTO = new ActionUnitDTO();
@@ -488,7 +434,7 @@ class ActionUnitServiceTest {
         institution.setId(1L);
         ActionUnitDTO current = new ActionUnitDTO();
         current.setId(100L);
-        current.setCreationTime(OffsetDateTime.now());
+        current.setCreationTime(NOW);
 
         ActionUnit prevEntity = new ActionUnit();
         ActionUnitDTO prevDTO = new ActionUnitDTO();
@@ -512,7 +458,7 @@ class ActionUnitServiceTest {
 
         ActionUnitDTO current = new ActionUnitDTO();
         current.setId(100L); // Un ID pour éviter le null (ou utilisez any() dans le mock)
-        current.setCreationTime(OffsetDateTime.now());
+        current.setCreationTime(NOW);
 
         ActionUnit lastEntity = new ActionUnit();
         ActionUnitDTO lastDTO = new ActionUnitDTO();
@@ -544,7 +490,7 @@ class ActionUnitServiceTest {
 
         ActionUnitDTO current = new ActionUnitDTO();
         current.setId(100L);
-        current.setCreationTime(OffsetDateTime.now());
+        current.setCreationTime(NOW);
 
         // Mock de findNext : on simule qu'aucune entité suivante n'existe
         // On utilise eq(1L) et any() pour la flexibilité
@@ -624,9 +570,10 @@ class ActionUnitServiceTest {
         when(actionUnitRepository.findByNameAndCreatedByInstitutionId("dup", 1L))
                 .thenReturn(Optional.of(new ActionUnit()));
 
+        ConceptDTO conceptDto = new ConceptDTO();
         ActionUnitAlreadyExistsException ex = assertThrows(
                 ActionUnitAlreadyExistsException.class,
-                () -> actionUnitService.saveNotTransactional(info, dto, new ConceptDTO()));
+                () -> actionUnitService.saveNotTransactional(info, dto, conceptDto));
         assertThat(ex.getMessage()).contains("dup");
     }
 
@@ -641,9 +588,10 @@ class ActionUnitServiceTest {
         when(actionUnitRepository.findByIdentifierAndCreatedByInstitutionId("id-1", 1L))
                 .thenReturn(Optional.of(new ActionUnit()));
 
+        ConceptDTO conceptDto = new ConceptDTO();
         ActionUnitAlreadyExistsException ex = assertThrows(
                 ActionUnitAlreadyExistsException.class,
-                () -> actionUnitService.saveNotTransactional(info, dto, new ConceptDTO()));
+                () -> actionUnitService.saveNotTransactional(info, dto, conceptDto));
         assertThat(ex.getMessage()).contains("id-1");
     }
 
@@ -1052,32 +1000,41 @@ class ActionUnitServiceTest {
     @Test
     void isActionUnitStillOngoing_beginDateButNoEndDate_returnsTrue() {
         ActionUnitSummaryDTO au = new ActionUnitSummaryDTO();
-        au.setBeginDate(OffsetDateTime.now().minusDays(1));
+        au.setBeginDate(NOW.minusDays(1));
         assertTrue(actionUnitService.isActionUnitStillOngoing(au));
     }
 
     @Test
     void isActionUnitStillOngoing_nowInRange_returnsTrue() {
-        ActionUnitSummaryDTO au = new ActionUnitSummaryDTO();
-        au.setBeginDate(OffsetDateTime.now().minusDays(1));
-        au.setEndDate(OffsetDateTime.now().plusDays(1));
-        assertTrue(actionUnitService.isActionUnitStillOngoing(au));
+        try (MockedStatic<OffsetDateTime> mocked = mockStatic(OffsetDateTime.class, CALLS_REAL_METHODS)) {
+            mocked.when(OffsetDateTime::now).thenReturn(NOW);
+            ActionUnitSummaryDTO au = new ActionUnitSummaryDTO();
+            au.setBeginDate(NOW.minusDays(1));
+            au.setEndDate(NOW.plusDays(1));
+            assertTrue(actionUnitService.isActionUnitStillOngoing(au));
+        }
     }
 
     @Test
     void isActionUnitStillOngoing_nowBeforeBegin_returnsFalse() {
-        ActionUnitSummaryDTO au = new ActionUnitSummaryDTO();
-        au.setBeginDate(OffsetDateTime.now().plusDays(1));
-        au.setEndDate(OffsetDateTime.now().plusDays(2));
-        assertFalse(actionUnitService.isActionUnitStillOngoing(au));
+        try (MockedStatic<OffsetDateTime> mocked = mockStatic(OffsetDateTime.class, CALLS_REAL_METHODS)) {
+            mocked.when(OffsetDateTime::now).thenReturn(NOW);
+            ActionUnitSummaryDTO au = new ActionUnitSummaryDTO();
+            au.setBeginDate(NOW.plusDays(1));
+            au.setEndDate(NOW.plusDays(2));
+            assertFalse(actionUnitService.isActionUnitStillOngoing(au));
+        }
     }
 
     @Test
     void isActionUnitStillOngoing_nowAfterEnd_returnsFalse() {
-        ActionUnitSummaryDTO au = new ActionUnitSummaryDTO();
-        au.setBeginDate(OffsetDateTime.now().minusDays(2));
-        au.setEndDate(OffsetDateTime.now().minusDays(1));
-        assertFalse(actionUnitService.isActionUnitStillOngoing(au));
+        try (MockedStatic<OffsetDateTime> mocked = mockStatic(OffsetDateTime.class, CALLS_REAL_METHODS)) {
+            mocked.when(OffsetDateTime::now).thenReturn(NOW);
+            ActionUnitSummaryDTO au = new ActionUnitSummaryDTO();
+            au.setBeginDate(NOW.minusDays(2));
+            au.setEndDate(NOW.minusDays(1));
+            assertFalse(actionUnitService.isActionUnitStillOngoing(au));
+        }
     }
 
     // ------------------------------------------------------------------
@@ -1290,6 +1247,424 @@ class ActionUnitServiceTest {
         List<ActionUnitDTO> result = actionUnitService.findMatchingInInstitutionByName(inst, "q", 25);
 
         assertEquals(List.of(actionUnit1dto), result);
+    }
+
+    // ------------------------------------------------------------------
+    // findAccessibleProjects (API liste projets)
+    // ------------------------------------------------------------------
+
+    @Test
+    void findAccessibleProjects_emptyInstitutions_returnsEmptyPageWithoutDb() {
+        Pageable pageable1 = PageRequest.of(0, 20);
+
+        Page<AccessibleProjectForApi> page1 = actionUnitService.findAccessibleProjects(
+                Set.of(), null, null, pageable1);
+
+        assertThat(page1.getContent()).isEmpty();
+        assertThat(page1.getTotalElements()).isZero();
+        verifyNoInteractions(actionUnitRepository);
+        verifyNoInteractions(recordingUnitRepository);
+    }
+
+    @Test
+    void findAccessibleProjects_noActionUnits_skipsCountQueries() {
+        when(actionUnitRepository.findAll(any(Specification.class), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 20), 0));
+
+        Page<AccessibleProjectForApi> page1 = actionUnitService.findAccessibleProjects(
+                Set.of(1L), null, null, PageRequest.of(0, 20));
+
+        assertThat(page1.getContent()).isEmpty();
+        assertThat(page1.getTotalElements()).isZero();
+        verify(recordingUnitRepository, never()).countRecordingUnitsGroupedByActionUnitIds(any());
+        verify(actionUnitRepository, never()).countChildActionUnitsByParentIds(any());
+    }
+
+    @Test
+    void findAccessibleProjects_mapsDtosAndMergesAggregateCounts() {
+        // ActionUnit.equals() utilise fullIdentifier : sans valeurs distinctes, Mockito confond les arguments de convert().
+        actionUnit1.setFullIdentifier("TEST-FIND-AU-1");
+        actionUnit2.setFullIdentifier("TEST-FIND-AU-2");
+        actionUnit1dto.setId(1L);
+        actionUnit2dto.setId(2L);
+
+        when(actionUnitRepository.findAll(any(Specification.class), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(actionUnit1, actionUnit2), PageRequest.of(0, 20, Sort.by("name")), 2));
+        when(actionUnitMapper.convert(actionUnit1)).thenReturn(actionUnit1dto);
+        when(actionUnitMapper.convert(actionUnit2)).thenReturn(actionUnit2dto);
+        List<Object[]> ruRows = new ArrayList<>();
+        ruRows.add(new Object[]{1L, 5L});
+        ruRows.add(new Object[]{2L, 3L});
+        when(recordingUnitRepository.countRecordingUnitsGroupedByActionUnitIds(List.of(1L, 2L)))
+                .thenReturn(ruRows);
+        List<Object[]> childRows = new ArrayList<>();
+        childRows.add(new Object[]{1L, 1L});
+        when(actionUnitRepository.countChildActionUnitsByParentIds(List.of(1L, 2L)))
+                .thenReturn(childRows);
+
+        Page<AccessibleProjectForApi> page1 = actionUnitService.findAccessibleProjects(
+                Set.of(10L), null, "alpha", PageRequest.of(0, 20, Sort.by("name")));
+
+        assertThat(page1.getTotalElements()).isEqualTo(2);
+        assertThat(page1.getContent()).hasSize(2);
+        assertThat(page1.getContent().get(0).actionUnit().getId()).isEqualTo(1L);
+        assertThat(page1.getContent().get(1).actionUnit().getId()).isEqualTo(2L);
+        assertThat(page1.getContent().get(0).recordingUnitCount()).isEqualTo(5L);
+        assertThat(page1.getContent().get(0).childActionUnitCount()).isEqualTo(1L);
+        assertThat(page1.getContent().get(1).recordingUnitCount()).isEqualTo(3L);
+        assertThat(page1.getContent().get(1).childActionUnitCount()).isZero();
+        verify(recordingUnitRepository).countRecordingUnitsGroupedByActionUnitIds(List.of(1L, 2L));
+        verify(actionUnitRepository).countChildActionUnitsByParentIds(List.of(1L, 2L));
+    }
+
+    // ------------------------------------------------------------------
+    // findAccessibleProjectByKey
+    // ------------------------------------------------------------------
+
+    @Test
+    void findAccessibleProjectByKey_emptyInstitutions_throws() {
+        assertThrows(ActionUnitNotFoundException.class,
+                () -> actionUnitService.findAccessibleProjectByKey("1", Set.of()));
+    }
+
+    @Test
+    void findAccessibleProjectByKey_unknownNumericId_throws() {
+        when(actionUnitRepository.findById(99L)).thenReturn(Optional.empty());
+
+        Set<Long> institutionIds = Set.of(10L);
+        assertThrows(ActionUnitNotFoundException.class,
+                () -> actionUnitService.findAccessibleProjectByKey("99", institutionIds));
+    }
+
+    @Test
+    void findAccessibleProjectByKey_wrongInstitution_throws() {
+        actionUnit1.setFullIdentifier("DETAIL-AU-WRONG");
+        actionUnit1.setId(5L);
+        actionUnit1dto.setId(5L);
+        when(actionUnitRepository.findById(5L)).thenReturn(Optional.of(actionUnit1));
+        InstitutionDTO wrongInst = new InstitutionDTO();
+        wrongInst.setId(200L);
+        actionUnit1dto.setCreatedByInstitution(wrongInst);
+        when(actionUnitMapper.convert(actionUnit1)).thenReturn(actionUnit1dto);
+
+        Set<Long> institutionIds = Set.of(100L);
+        assertThrows(ActionUnitNotFoundException.class,
+                () -> actionUnitService.findAccessibleProjectByKey("5", institutionIds));
+    }
+
+    @Test
+    void findAccessibleProjectByKey_returnsRowWithCounts_forNumericKey() {
+        actionUnit1.setFullIdentifier("DETAIL-AU-OK");
+        actionUnit1.setId(5L);
+        actionUnit1dto.setId(5L);
+        when(actionUnitRepository.findById(5L)).thenReturn(Optional.of(actionUnit1));
+        InstitutionDTO inst = new InstitutionDTO();
+        inst.setId(100L);
+        actionUnit1dto.setCreatedByInstitution(inst);
+        when(actionUnitMapper.convert(actionUnit1)).thenReturn(actionUnit1dto);
+        List<Object[]> ruRows = new ArrayList<>();
+        ruRows.add(new Object[]{5L, 7L});
+        when(recordingUnitRepository.countRecordingUnitsGroupedByActionUnitIds(List.of(5L))).thenReturn(ruRows);
+        List<Object[]> childRows = new ArrayList<>();
+        childRows.add(new Object[]{5L, 2L});
+        when(actionUnitRepository.countChildActionUnitsByParentIds(List.of(5L))).thenReturn(childRows);
+
+        AccessibleProjectForApi result = actionUnitService.findAccessibleProjectByKey("5", Set.of(100L));
+
+        assertThat(result.actionUnit().getId()).isEqualTo(5L);
+        assertThat(result.recordingUnitCount()).isEqualTo(7L);
+        assertThat(result.childActionUnitCount()).isEqualTo(2L);
+    }
+
+    @Test
+    void findAccessibleProjectByKey_resolvesByFullIdentifierWhenNonNumeric() {
+        actionUnit1.setFullIdentifier("INST-PROJ-2025");
+        actionUnit1.setId(5L);
+        actionUnit1dto.setId(5L);
+        when(actionUnitRepository.findByFullIdentifier("INST-PROJ-2025")).thenReturn(Optional.of(actionUnit1));
+        InstitutionDTO inst = new InstitutionDTO();
+        inst.setId(100L);
+        actionUnit1dto.setCreatedByInstitution(inst);
+        when(actionUnitMapper.convert(actionUnit1)).thenReturn(actionUnit1dto);
+        when(recordingUnitRepository.countRecordingUnitsGroupedByActionUnitIds(List.of(5L)))
+                .thenReturn(new ArrayList<>());
+        when(actionUnitRepository.countChildActionUnitsByParentIds(List.of(5L)))
+                .thenReturn(new ArrayList<>());
+
+        AccessibleProjectForApi result = actionUnitService.findAccessibleProjectByKey("INST-PROJ-2025", Set.of(100L));
+
+        assertThat(result.actionUnit().getId()).isEqualTo(5L);
+        verify(actionUnitRepository, never()).findById(anyLong());
+    }
+
+    @Test
+    void findAccessibleProjectByKey_resolvesByIdentifierWhenFullIdentifierUnknown() {
+        when(actionUnitRepository.findByFullIdentifier("C309_01")).thenReturn(Optional.empty());
+        when(actionUnitRepository.findByIdentifierAndCreatedByInstitutionId("C309_01", 100L))
+                .thenReturn(Optional.of(actionUnit1));
+        actionUnit1.setFullIdentifier("SHORT-ID-TEST-AU");
+        actionUnit1.setId(33L);
+        actionUnit1dto.setId(33L);
+        InstitutionDTO inst = new InstitutionDTO();
+        inst.setId(100L);
+        actionUnit1dto.setCreatedByInstitution(inst);
+        when(actionUnitMapper.convert(actionUnit1)).thenReturn(actionUnit1dto);
+        when(recordingUnitRepository.countRecordingUnitsGroupedByActionUnitIds(List.of(33L)))
+                .thenReturn(new ArrayList<>());
+        when(actionUnitRepository.countChildActionUnitsByParentIds(List.of(33L)))
+                .thenReturn(new ArrayList<>());
+
+        AccessibleProjectForApi result = actionUnitService.findAccessibleProjectByKey("C309_01", Set.of(100L));
+
+        assertThat(result.actionUnit().getId()).isEqualTo(33L);
+        verify(actionUnitRepository).findByFullIdentifier("C309_01");
+        verify(actionUnitRepository).findByIdentifierAndCreatedByInstitutionId("C309_01", 100L);
+    }
+
+    @Test
+    void findAccessibleProjectByKey_scansInstitutionsForIdentifierUntilFound() {
+        when(actionUnitRepository.findByFullIdentifier("ID-SHORT")).thenReturn(Optional.empty());
+        when(actionUnitRepository.findByIdentifierAndCreatedByInstitutionId("ID-SHORT", 100L))
+                .thenReturn(Optional.empty());
+        when(actionUnitRepository.findByIdentifierAndCreatedByInstitutionId("ID-SHORT", 200L))
+                .thenReturn(Optional.of(actionUnit1));
+
+        actionUnit1.setFullIdentifier("AU-MULTI-INST");
+        actionUnit1.setId(77L);
+        actionUnit1dto.setId(77L);
+        InstitutionDTO inst200 = new InstitutionDTO();
+        inst200.setId(200L);
+        actionUnit1dto.setCreatedByInstitution(inst200);
+        when(actionUnitMapper.convert(actionUnit1)).thenReturn(actionUnit1dto);
+        when(recordingUnitRepository.countRecordingUnitsGroupedByActionUnitIds(List.of(77L)))
+                .thenReturn(new ArrayList<>());
+        when(actionUnitRepository.countChildActionUnitsByParentIds(List.of(77L)))
+                .thenReturn(new ArrayList<>());
+
+        Set<Long> institutionsInScanOrder = new LinkedHashSet<>();
+        institutionsInScanOrder.add(100L);
+        institutionsInScanOrder.add(200L);
+        AccessibleProjectForApi result = actionUnitService.findAccessibleProjectByKey("ID-SHORT", institutionsInScanOrder);
+
+        assertThat(result.actionUnit().getId()).isEqualTo(77L);
+        verify(actionUnitRepository).findByIdentifierAndCreatedByInstitutionId("ID-SHORT", 100L);
+        verify(actionUnitRepository).findByIdentifierAndCreatedByInstitutionId("ID-SHORT", 200L);
+
+    }
+    // findAllByActionManager
+    // ------------------------------------------------------------------
+
+    @Test
+    void findAllByActionManager_nullUser_returnsEmptySet() {
+        assertTrue(actionUnitService.findAllByActionManager(null).isEmpty());
+        verifyNoInteractions(actionUnitRepository);
+    }
+
+    @Test
+    void findAllByActionManager_userWithNullId_returnsEmptySet() {
+        PersonDTO user = new PersonDTO();
+        // id is null by default
+        assertTrue(actionUnitService.findAllByActionManager(user).isEmpty());
+        verifyNoInteractions(actionUnitRepository);
+    }
+
+    @Test
+    void findAllByActionManager_noUnitsFound_returnsEmptySet() {
+        PersonDTO user = new PersonDTO();
+        user.setId(5L);
+        when(actionUnitRepository.findAllByCreatedById(5L)).thenReturn(Set.of());
+
+        assertTrue(actionUnitService.findAllByActionManager(user).isEmpty());
+    }
+
+    @Test
+    void findAllByActionManager_unitsFound_delegatesToRepositoryAndMapsEachUnit() {
+        PersonDTO user = new PersonDTO();
+        user.setId(5L);
+        actionUnit1.setFullIdentifier("inst-AU-1");
+        actionUnit2.setFullIdentifier("inst-AU-2");
+        Set<ActionUnit> units = new HashSet<>(List.of(actionUnit1, actionUnit2));
+        when(actionUnitRepository.findAllByCreatedById(5L)).thenReturn(units);
+        when(actionUnitMapper.convert(any(ActionUnit.class))).thenReturn(actionUnit1dto);
+
+        Set<ActionUnitDTO> result = actionUnitService.findAllByActionManager(user);
+
+        assertNotNull(result);
+        verify(actionUnitRepository).findAllByCreatedById(5L);
+        verify(actionUnitMapper, times(2)).convert(any(ActionUnit.class));
+    }
+
+    @Test
+    void findAllByActionManager_returnsSet_notList() {
+        PersonDTO user = new PersonDTO();
+        user.setId(7L);
+        when(actionUnitRepository.findAllByCreatedById(7L)).thenReturn(Set.of(actionUnit1));
+        when(actionUnitMapper.convert(actionUnit1)).thenReturn(actionUnit1dto);
+
+        assertInstanceOf(Set.class, actionUnitService.findAllByActionManager(user));
+    }
+
+    // ------------------------------------------------------------------
+    // searchActionUnitsInSpatialUnit
+    // ------------------------------------------------------------------
+
+    @Test
+    void searchActionUnitsInSpatialUnit_happyPath_mapsResultsWithCount() {
+        InstitutionDTO inst = new InstitutionDTO(); inst.setId(1L);
+        SpatialUnitDTO su   = new SpatialUnitDTO(); su.setId(3L);
+        FilterDTO filters   = new FilterDTO(false);
+
+        when(actionUnitRepository.findAll(any(Specification.class), eq(pageable))).thenReturn(page);
+        when(actionUnitMapper.convert(actionUnit1)).thenReturn(actionUnit1dto);
+        when(actionUnitMapper.convert(actionUnit2)).thenReturn(actionUnit2dto);
+        when(recordingUnitRepository.countByActionContext(any())).thenReturn(0);
+
+        Page<ActionUnitDTO> result =
+                actionUnitService.searchActionUnitsInSpatialUnit(inst, su, filters, pageable);
+
+        assertEquals(2, result.getTotalElements());
+        verify(actionUnitRepository).findAll(any(Specification.class), eq(pageable));
+    }
+
+    @Test
+    void searchActionUnitsInSpatialUnit_emptyPage_returnsEmptyAndSkipsMapper() {
+        InstitutionDTO inst = new InstitutionDTO(); inst.setId(1L);
+        SpatialUnitDTO su   = new SpatialUnitDTO(); su.setId(3L);
+        FilterDTO filters   = new FilterDTO(false);
+
+        when(actionUnitRepository.findAll(any(Specification.class), eq(pageable)))
+                .thenReturn(new PageImpl<>(List.of()));
+
+        Page<ActionUnitDTO> result =
+                actionUnitService.searchActionUnitsInSpatialUnit(inst, su, filters, pageable);
+
+        assertTrue(result.isEmpty());
+        verifyNoInteractions(actionUnitMapper);
+    }
+
+    @Test
+    void searchActionUnitsInSpatialUnit_rootOnlyFalse_neverCallsListVariant() {
+        InstitutionDTO inst = new InstitutionDTO(); inst.setId(1L);
+        SpatialUnitDTO su   = new SpatialUnitDTO(); su.setId(3L);
+        FilterDTO filters   = new FilterDTO(false);
+
+        when(actionUnitRepository.findAll(any(Specification.class), eq(pageable)))
+                .thenReturn(new PageImpl<>(List.of()));
+
+        actionUnitService.searchActionUnitsInSpatialUnit(inst, su, filters, pageable);
+
+        verify(actionUnitRepository, never()).findAll(any(Specification.class));
+    }
+
+    @Test
+    void searchActionUnitsInSpatialUnit_convertWithCount_setsRecordingUnitCount() {
+        InstitutionDTO inst = new InstitutionDTO(); inst.setId(1L);
+        SpatialUnitDTO su   = new SpatialUnitDTO(); su.setId(3L);
+        FilterDTO filters   = new FilterDTO(false);
+        actionUnit1.setId(1L);
+
+        when(actionUnitRepository.findAll(any(Specification.class), eq(pageable)))
+                .thenReturn(new PageImpl<>(List.of(actionUnit1)));
+        when(actionUnitMapper.convert(actionUnit1)).thenReturn(actionUnit1dto);
+        when(recordingUnitRepository.countByActionContext(1L)).thenReturn(7);
+
+        Page<ActionUnitDTO> result =
+                actionUnitService.searchActionUnitsInSpatialUnit(inst, su, filters, pageable);
+
+        assertEquals(7, result.getContent().get(0).getRecordingUnitCount());
+    }
+
+    // ------------------------------------------------------------------
+    // countSearchResultsInSpatialUnit
+    // ------------------------------------------------------------------
+
+    @Test
+    void countSearchResultsInSpatialUnit_noFilters_delegatesToCount() {
+        InstitutionDTO inst = new InstitutionDTO(); inst.setId(1L);
+        SpatialUnitDTO su   = new SpatialUnitDTO(); su.setId(3L);
+        FilterDTO filters   = new FilterDTO(false);
+
+        when(actionUnitRepository.count(any(Specification.class))).thenReturn(5L);
+
+        assertEquals(5, actionUnitService.countSearchResultsInSpatialUnit(inst, su, filters));
+        verify(actionUnitRepository).count(any(Specification.class));
+    }
+
+    @Test
+    void countSearchResultsInSpatialUnit_withNameFilter_delegatesToCount() {
+        InstitutionDTO inst = new InstitutionDTO(); inst.setId(1L);
+        SpatialUnitDTO su   = new SpatialUnitDTO(); su.setId(3L);
+        FilterDTO filters   = new FilterDTO(false);
+        filters.add(ActionUnitSpec.NAME_FILTER, "test", FilterDTO.FilterType.CONTAINS);
+
+        when(actionUnitRepository.count(any(Specification.class))).thenReturn(2L);
+
+        assertEquals(2, actionUnitService.countSearchResultsInSpatialUnit(inst, su, filters));
+    }
+
+    @Test
+    void countSearchResultsInSpatialUnit_rootOnlyTrue_noUserFilters_neverCallsListFindAll() {
+        InstitutionDTO inst = new InstitutionDTO(); inst.setId(1L);
+        SpatialUnitDTO su   = new SpatialUnitDTO(); su.setId(3L);
+        FilterDTO filters   = new FilterDTO(true);
+
+        when(actionUnitRepository.count(any(Specification.class))).thenReturn(3L);
+
+        int result = actionUnitService.countSearchResultsInSpatialUnit(inst, su, filters);
+
+        assertEquals(3, result);
+        verify(actionUnitRepository, never()).findAll(any(Specification.class));
+    }
+
+    @Test
+    void countSearchResultsInSpatialUnit_rootOnlyTrue_withUserFilters_resolvesClosureThenCounts() {
+        InstitutionDTO inst = new InstitutionDTO(); inst.setId(1L);
+        SpatialUnitDTO su   = new SpatialUnitDTO(); su.setId(3L);
+        FilterDTO filters   = new FilterDTO(true);
+        filters.add(ActionUnitSpec.NAME_FILTER, "fouille", FilterDTO.FilterType.CONTAINS);
+
+        actionUnit1.setId(1L);
+        when(actionUnitRepository.findAll(any(Specification.class))).thenReturn(List.of(actionUnit1));
+        when(actionUnitRepository.findAncestorClosure(new Long[]{1L})).thenReturn(List.of(1L));
+        when(actionUnitRepository.count(any(Specification.class))).thenReturn(1L);
+
+        int result = actionUnitService.countSearchResultsInSpatialUnit(inst, su, filters);
+
+        assertEquals(1, result);
+        verify(actionUnitRepository).findAll(any(Specification.class));
+        verify(actionUnitRepository).findAncestorClosure(new Long[]{1L});
+    }
+
+    @Test
+    void countSearchResultsInSpatialUnit_rootOnlyTrue_noMatches_returnsZero() {
+        InstitutionDTO inst = new InstitutionDTO(); inst.setId(1L);
+        SpatialUnitDTO su   = new SpatialUnitDTO(); su.setId(3L);
+        FilterDTO filters   = new FilterDTO(true);
+        filters.add(ActionUnitSpec.NAME_FILTER, "absent", FilterDTO.FilterType.CONTAINS);
+
+        when(actionUnitRepository.findAll(any(Specification.class))).thenReturn(List.of());
+        when(actionUnitRepository.count(any(Specification.class))).thenReturn(0L);
+
+        int result = actionUnitService.countSearchResultsInSpatialUnit(inst, su, filters);
+
+        assertEquals(0, result);
+        verify(actionUnitRepository, never()).findAncestorClosure(any());
+    }
+
+    @Test
+    void countSearchResultsInSpatialUnit_cachedClosure_skipsFindAllListVariant() {
+        InstitutionDTO inst = new InstitutionDTO(); inst.setId(1L);
+        SpatialUnitDTO su   = new SpatialUnitDTO(); su.setId(3L);
+        FilterDTO filters   = new FilterDTO(true);
+        filters.add(ActionUnitSpec.NAME_FILTER, "fouille", FilterDTO.FilterType.CONTAINS);
+        filters.setAncestorClosure(Set.of(1L, 2L));
+
+        when(actionUnitRepository.count(any(Specification.class))).thenReturn(2L);
+
+        actionUnitService.countSearchResultsInSpatialUnit(inst, su, filters);
+
+        verify(actionUnitRepository, never()).findAll(any(Specification.class));
+        verify(actionUnitRepository, never()).findAncestorClosure(any());
     }
 
 }

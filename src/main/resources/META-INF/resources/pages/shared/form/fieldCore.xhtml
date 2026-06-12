@@ -8,7 +8,7 @@
     <!-- Expected @elvariable parameters -->
     <!--@elvariable id="bean" type="fr.siamois.ui.form.EntityFormContext"-->
     <!--@elvariable id="formCtx" type="fr.siamois.ui.form.EntityFormContext"-->
-    <!--@elvariable id="col" type="fr.siamois.ui.table.TableColumn"-->
+    <!--@elvariable id="col" type="fr.siamois.ui.table.column.TableColumn"-->
     <!--@elvariable id="prefix" type="java.lang.String"-->
     <!--@elvariable id="statusIndex" type="java.lang.Integer"-->
     <!--@elvariable id="rowIndex" type="java.lang.Integer"-->
@@ -100,6 +100,24 @@
             />
         </c:if>
 
+        <c:if test="#{col.field['class'].simpleName eq 'CustomFieldSelectMultipleFromFieldCode'}">
+            <!-- CONCEPT -->
+            <siaInplace:concept
+                    id="conceptMultiple"
+                    hasBeenModified="#{hasBeenModified}"
+                    field="#{col.field}"
+                    multiple="true"
+                    panelId="#{panelId}"
+                    required="#{col.required}"
+                    label="#{spatialUnitFieldBean.resolveCustomFieldLabel(col.field)}"
+                    mode="#{mode}"
+                    updateTargetsOnBlur="#{conceptFieldsUpdateTargetsOnBlur} #{updateTargetsOnBlur}"
+                    answer="#{answer}"
+                    panelStyleClass="#{panelStyleClass}"
+                    onConceptChanged="#{formCtx.setFieldConceptAnswerHasBeenModified}"
+            />
+        </c:if>
+
 
         <c:if test="#{col.field['class'].simpleName eq 'CustomFieldSelectOneActionUnit'}">
             <!-- Select one action -->
@@ -172,11 +190,72 @@
 
         </c:if>
 
+        <c:if test="#{col.field['class'].simpleName eq 'CustomFieldSelectMultipleContainer'}">
+
+            <siaInplace:containerMultiple
+                    id="containerMultiple"
+                    rendered="#{col.field['class'].simpleName eq 'CustomFieldSelectMultipleContainer'}"
+                    hasBeenModified="#{hasBeenModified}"
+                    field="#{col.field}"
+                    formCtx="#{formCtx}"
+                    multiple="true"
+                    mode="#{mode}"
+                    panelId="#{panelId}"
+                    onModified="#{formCtx.onFieldAnswerModifiedListener}"
+                    updateTargetsOnBlur="#{panelHeaderUpdateId}"
+                    required="#{col.required}"
+                    label="#{spatialUnitFieldBean.resolveCustomFieldLabel(col.field)}"
+                    answer="#{answer}"
+            />
+
+        </c:if>
+
+        <c:if test="#{col.field['class'].simpleName eq 'CustomFieldSelectMultiplePhase'}">
+
+            <siaInplace:phaseMultiple
+                    id="phaseMultiple"
+                    hasBeenModified="#{hasBeenModified}"
+                    field="#{col.field}"
+                    formCtx="#{formCtx}"
+                    multiple="true"
+                    mode="#{mode}"
+                    panelId="#{panelId}"
+                    onModified="#{formCtx.onFieldAnswerModifiedListener}"
+                    updateTargetsOnBlur="#{panelHeaderUpdateId}"
+                    required="#{col.required}"
+                    label="#{spatialUnitFieldBean.resolveCustomFieldLabel(col.field)}"
+                    answer="#{answer}"
+            />
+
+        </c:if>
+
         <c:if test="#{col.field['class'].simpleName eq 'CustomFieldSelectMultipleSpatialUnitTree'}">
 
             <siaInplace:spatialMultiple
                     id="spatialMultiple"
                     rendered="#{col.field['class'].simpleName eq 'CustomFieldSelectMultipleSpatialUnitTree'}"
+                    hasBeenModified="#{hasBeenModified}"
+                    field="#{col.field}"
+                    formCtx="#{formCtx}"
+                    multiple="true"
+                    mode="#{mode}"
+                    panelId="#{panelId}"
+                    compact="#{compact}"
+                    onModified="#{formCtx.onFieldAnswerModifiedListener}"
+                    updateTargetsOnBlur="#{panelHeaderUpdateId}"
+                    required="#{col.required}"
+                    label="#{spatialUnitFieldBean.resolveCustomFieldLabel(col.field)}"
+                    spatialUnitOptions="#{spatialUnitOptions}"
+                    answer="#{answer}"
+            />
+
+        </c:if>
+
+        <c:if test="#{col.field['class'].simpleName eq 'CustomFieldSelectMultipleSpecimen'}">
+
+            <siaInplace:specimen
+                    id="specimen"
+                    rendered="#{col.field['class'].simpleName eq 'CustomFieldSelectMultipleSpecimen'}"
                     hasBeenModified="#{hasBeenModified}"
                     field="#{col.field}"
                     formCtx="#{formCtx}"
@@ -203,6 +282,28 @@
                     formCtx="#{formCtx}"
                     multiple="true"
                     mode="#{mode}"
+                    compact="#{compact}"
+                    panelId="#{panelId}"
+                    onModified="#{formCtx.onFieldAnswerModifiedListener}"
+                    updateTargetsOnBlur="#{panelHeaderUpdateId}"
+                    required="#{col.required}"
+                    label="#{spatialUnitFieldBean.resolveCustomFieldLabel(col.field)}"
+                    spatialUnitOptions="#{spatialUnitOptions}"
+                    answer="#{answer}"
+            />
+
+        </c:if>
+
+        <c:if test="#{col.field['class'].simpleName eq 'CustomFieldSelectOneRecordingUnit'}">
+            <siaInplace:recordingUnitMultiple
+                    id="recordingUnitOne"
+                    rendered="#{col.field['class'].simpleName eq 'CustomFieldSelectOneRecordingUnit'}"
+                    hasBeenModified="#{hasBeenModified}"
+                    field="#{col.field}"
+                    formCtx="#{formCtx}"
+                    multiple="false"
+                    mode="#{mode}"
+                    compact="#{compact}"
                     panelId="#{panelId}"
                     onModified="#{formCtx.onFieldAnswerModifiedListener}"
                     updateTargetsOnBlur="#{panelHeaderUpdateId}"

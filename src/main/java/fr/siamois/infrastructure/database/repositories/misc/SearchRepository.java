@@ -62,9 +62,9 @@ public class SearchRepository {
                     resultSet.getString("matching_term"),
                     resultSet.getObject("action_unit_id", Long.class),
                     resultSet.getObject("spatial_unit_id", Long.class),
-                    resultSet.getObject("specimen_id", Long.class),
-                    resultSet.getLong("similarity_score")
-                    );
+                    resultSet.getObject("recording_unit_id", Long.class),
+                    resultSet.getObject("specimen_id", Long.class)
+            );
         } catch (SQLException e) {
             log.error("Error while processing search results for params", e);
             return null;

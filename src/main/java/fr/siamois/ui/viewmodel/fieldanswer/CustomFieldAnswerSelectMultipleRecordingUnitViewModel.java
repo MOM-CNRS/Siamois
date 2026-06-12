@@ -1,5 +1,6 @@
 package fr.siamois.ui.viewmodel.fieldanswer;
 
+import fr.siamois.dto.entity.ActionUnitSummaryDTO;
 import fr.siamois.dto.entity.RecordingUnitSummaryDTO;
 import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
 import lombok.Getter;
@@ -16,5 +17,6 @@ import java.util.List;
 public class CustomFieldAnswerSelectMultipleRecordingUnitViewModel extends CustomFieldAnswerViewModel implements Serializable {
     private List<RecordingUnitSummaryDTO> value = new ArrayList<>();
 
-    private ConceptAutocompleteDTO newType ;
+    private ConceptAutocompleteDTO newType;
+    private ActionUnitSummaryDTO newActionUnit;
 }

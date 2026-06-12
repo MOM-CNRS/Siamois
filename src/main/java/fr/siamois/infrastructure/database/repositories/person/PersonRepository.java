@@ -64,6 +64,8 @@ public interface PersonRepository extends JpaRepository<Person, Long> {
 
     Optional<Person> findByEmailIgnoreCase(String email);
 
+    Optional<Person> findByNameIgnoreCaseAndLastnameIgnoreCase(String name, String lastname);
+
     @Query(
             nativeQuery = true,
             value = "SELECT p.* FROM person p " +
@@ -96,6 +98,35 @@ public interface PersonRepository extends JpaRepository<Person, Long> {
                     "  AND NOT p.is_super_admin;"
     )
     long countPersonsInInstitution(Long institutionId);
+
+    /**
+     * Personnes rattachées à une institution (gestionnaires, gestionnaires d'action, membres d'équipe de projet),
+     * hors super-admins.
+     */
+    @Query(
+            value = """
+                    SELECT DISTINCT p.*
+                    FROM person p
+                             LEFT JOIN institution_manager im
+                                       ON p.person_id = im.fk_person_id AND im.fk_institution_id = :institutionId
+                             LEFT JOIN action_manager am
+                                       ON p.person_id = am.fk_person_id AND am.fk_institution_id = :institutionId
+                             LEFT JOIN team_member tm ON p.person_id = tm.fk_person_id
+                             LEFT JOIN action_unit au ON tm.fk_action_unit_id = au.action_unit_id
+                        AND au.fk_institution_id = :institutionId
+                    WHERE (im.fk_person_id IS NOT NULL
+                        OR am.fk_person_id IS NOT NULL
+                        OR au.action_unit_id IS NOT NULL)
+                      AND NOT p.is_super_admin
+                      AND (CAST(:search AS TEXT) IS NULL
+                        OR LOWER(COALESCE(p.name, '')) LIKE LOWER(CONCAT('%', CAST(:search AS TEXT), '%'))
+                        OR LOWER(COALESCE(p.lastname, '')) LIKE LOWER(CONCAT('%', CAST(:search AS TEXT), '%'))
+                        OR LOWER(p.mail) LIKE LOWER(CONCAT('%', CAST(:search AS TEXT), '%'))
+                        OR LOWER(CAST(p.username AS TEXT)) LIKE LOWER(CONCAT('%', CAST(:search AS TEXT), '%')))
+                    ORDER BY p.lastname NULLS LAST, p.name NULLS LAST, p.person_id ASC
+                    """,
+            nativeQuery = true)
+    List<Person> findAllInInstitution(@Param("institutionId") Long institutionId, @Param("search") String search);
 
     @Query(
             value = """

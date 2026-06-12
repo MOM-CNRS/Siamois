@@ -17,7 +17,7 @@ public class PersonDTO extends AbstractEntityDTO {
     private String username;
 
     public String displayName() {
-        return name + " " + lastname + " ("+email+")";
+        return name + " " + lastname ;
     }
 
 }

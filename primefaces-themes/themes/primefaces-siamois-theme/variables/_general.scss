@@ -1,14 +1,14 @@
 /// Size of the font
 /// @group general
-$fontSize: 1rem;
+$fontSize: 0.875rem;
 
 // Configuration for the font-face of the theme, defaults to the system font so left as blank
 //general
-$fontSize:1rem !default;
+$fontSize:0.875rem !default;
 
 /// Font of the theme
 /// @group general
-$fontFamily:'Inter';
+$fontFamily:"Inter", sans-serif;
 
 /// Primary text color
 /// @group general

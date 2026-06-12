@@ -12,10 +12,12 @@ import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.recordingunit.identifier.generic.RuIdentifierResolver;
 import fr.siamois.domain.services.specimen.SpecimenService;
 import fr.siamois.domain.services.vocabulary.LabelService;
+import fr.siamois.dto.FilterDTO;
 import fr.siamois.dto.entity.ActionUnitDTO;
 import fr.siamois.dto.entity.ConceptDTO;
 import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.dto.entity.RecordingUnitDTO;
+import fr.siamois.infrastructure.database.repositories.specs.SpecimenSpec;
 import fr.siamois.ui.bean.NavBean;
 import fr.siamois.ui.bean.RedirectBean;
 import fr.siamois.ui.bean.dialog.newunit.GenericNewUnitDialogBean;
@@ -27,14 +29,12 @@ import fr.siamois.ui.bean.panel.models.panel.single.tab.ActionSettingsTab;
 import fr.siamois.ui.bean.panel.models.panel.single.tab.RecordingTab;
 import fr.siamois.ui.bean.settings.team.TeamMembersBean;
 import fr.siamois.ui.form.dto.FormUiDto;
-import fr.siamois.ui.lazydatamodel.RecordingUnitInActionUnitLazyDataModel;
-import fr.siamois.ui.lazydatamodel.SpecimenInActionUnitLazyDataModel;
-import fr.siamois.ui.lazydatamodel.scope.RecordingUnitScope;
-import fr.siamois.ui.lazydatamodel.tree.RecordingUnitTreeTableLazyModel;
+import fr.siamois.ui.lazydatamodel.RecordingUnitLazyDataModel;
+import fr.siamois.ui.lazydatamodel.SpecimenLazyDataModel;
 import fr.siamois.ui.mapper.FormMapper;
-import fr.siamois.ui.table.RecordingUnitTableViewModel;
 import fr.siamois.ui.table.ToolbarCreateConfig;
 import fr.siamois.ui.table.definitions.RecordingUnitTableDefinitionFactory;
+import fr.siamois.ui.table.viewmodel.RecordingUnitTableViewModel;
 import fr.siamois.utils.MessageUtils;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -54,6 +54,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import static fr.siamois.dto.FilterDTO.FilterType.CONTAINS;
+import static fr.siamois.infrastructure.database.repositories.specs.RecordingUnitSpec.ACTION_UNIT_FILTER;
 
 /**
  * <p>This bean handles the spatial unit page</p>
@@ -113,10 +116,7 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnitDTO> im
     private transient List<ActionCode> secondaryActionCodes;
 
     // Linked recording units
-    private transient RecordingUnitInActionUnitLazyDataModel recordingUnitListLazyDataModel;
     private Integer totalRecordingUnitCount;
-    // Lazy model for recording unit in the spatial unit
-    private SpecimenInActionUnitLazyDataModel specimenLazyDataModel;
     private Integer totalSpecimenCount;
 
 
@@ -137,8 +137,7 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnitDTO> im
     }
 
 
-    @Override
-    public String ressourceUri() {
+    public String entityRessourceUri() {
         return String.format("/action-unit/%s", unit.getId());
     }
 
@@ -196,11 +195,8 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnitDTO> im
 
             initRecordingTab();
 
-            specimenLazyDataModel = new SpecimenInActionUnitLazyDataModel(
-                    specimenService,
-                    langBean,
-                    unit
-            );
+            SpecimenLazyDataModel specimenLazyDataModel = new SpecimenLazyDataModel(specimenService, sessionSettingsBean, langBean);
+            specimenLazyDataModel.withConstantFilter(SpecimenSpec.ACTION_UNIT_FILTER, List.of(unit.getId()), FilterDTO.FilterType.CONTAINS);
             specimenLazyDataModel.setSelectedUnits(new ArrayList<>());
 
             totalSpecimenCount = specimenService.countByActionContext(unit);
@@ -315,6 +311,11 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnitDTO> im
         return "/panel/header/actionUnitPanelHeader.xhtml";
     }
 
+    @Override
+    public UnitKind getCreationUnitKind() {
+        return UnitKind.ACTION;
+    }
+
     public void addNewSecondaryCode() {
         ActionCode code = new ActionCode();
         Concept c = new Concept();
@@ -369,20 +370,15 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnitDTO> im
     }
 
     public void initRecordingTab() {
-        RecordingUnitInActionUnitLazyDataModel actionLazyDataModel = new RecordingUnitInActionUnitLazyDataModel(
+        RecordingUnitLazyDataModel actionLazyDataModel = new RecordingUnitLazyDataModel(
                 recordingUnitService,
                 sessionSettingsBean,
-                langBean,
-                unit
+                langBean
         );
 
+        actionLazyDataModel.withConstantFilter(ACTION_UNIT_FILTER, List.of(unit.getId()), CONTAINS);
+
         totalRecordingUnitCount = recordingUnitService.countByActionContext(unit);
-        RecordingUnitTreeTableLazyModel rLazyTree = new RecordingUnitTreeTableLazyModel(
-                recordingUnitService, RecordingUnitScope.builder()
-                .actionId(unit.getId())
-                .type(RecordingUnitScope.Type.ACTION)
-                .build()
-        );
 
         recordingTabTableModel = new RecordingUnitTableViewModel(
                 actionLazyDataModel,
@@ -395,7 +391,6 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnitDTO> im
                 (GenericNewUnitDialogBean<RecordingUnitDTO>) genericNewUnitDialogBean,
                 recordingUnitWriteVerifier,
                 recordingUnitService,
-                rLazyTree,
                 langBean,
                 formContextServices
         );

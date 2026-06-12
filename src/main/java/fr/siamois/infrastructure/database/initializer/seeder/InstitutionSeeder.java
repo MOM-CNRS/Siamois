@@ -48,31 +48,41 @@ public class InstitutionSeeder {
         }
     }
 
+    private Set<Person> buildManagers(List<String> managerEmails) {
+        Set<Person> managers = new HashSet<>();
+        if (managerEmails == null) return managers;
+        for (var email : managerEmails) {
+            managers.add(SeederUtils.field("managerEmails[" + email + "]", () -> {
+                Person p = personSeeder.findPersonOrReturnNull(email);
+                if (p == null) throw new IllegalArgumentException("Email introuvable: " + email);
+                return p;
+            }));
+        }
+        return managers;
+    }
+
     public void seed(List<InstitutionSpec> specs) throws DatabaseDataInitException {
-        for (var s : specs) {
-            Set<Person> managers = new HashSet<>();
-            if (s.managerEmails != null) {
-                for (var email : s.managerEmails) {
-                    Person p = personSeeder.findPersonOrReturnNull(email);
-                    if(p == null) {
-                        throw new IllegalArgumentException("Invalid email: " + email);
-                    }
-                    managers.add(p);
-                }
-            }
+        for (int i = 0; i < specs.size(); i++) {
+            var s = specs.get(i);
+            try {
+                Set<Person> managers = buildManagers(s.managerEmails);
 
-            // find thesaurus
-            Vocabulary thesaurus = thesaurusSeeder.findVocabularyOrReturnNull(s.baseUri, s.externalId);
-            if(thesaurus == null) {
-                throw new IllegalArgumentException("Invalid thesaurus: " + s.externalId);
-            }
+                Vocabulary thesaurus = SeederUtils.field("thesaurus", () -> {
+                    Vocabulary t = thesaurusSeeder.findVocabularyOrReturnNull(s.baseUri, s.externalId);
+                    if (t == null) throw new IllegalArgumentException("Thésaurus introuvable: " + s.externalId);
+                    return t;
+                });
 
-            Institution toCreate = new Institution();
-            toCreate.setName(s.name);
-            toCreate.setIdentifier(s.identifier);
-            toCreate.setDescription(s.description);
-            toCreate.setManagers(managers);
-            getOrCreateInstitution(toCreate, thesaurus);
+                Institution toCreate = new Institution();
+                toCreate.setName(s.name);
+                toCreate.setIdentifier(s.identifier);
+                toCreate.setDescription(s.description);
+                toCreate.setManagers(managers);
+                getOrCreateInstitution(toCreate, thesaurus);
+            } catch (Exception e) {
+                throw new IllegalStateException(
+                        "[Institution ligne " + (i + 1) + "] '" + s.identifier() + "' : " + e.getMessage(), e);
+            }
         }
     }
 }

@@ -2,15 +2,20 @@ package fr.siamois.ui.bean.panel.models.panel.single;
 
 import fr.siamois.domain.models.document.Document;
 import fr.siamois.domain.models.exceptions.actionunit.ActionUnitNotFoundException;
+import fr.siamois.domain.models.exceptions.recordingunit.RecordingUnitNotFoundException;
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.customfield.CustomFieldDateTime;
 import fr.siamois.domain.models.form.customfield.CustomFieldInteger;
 import fr.siamois.domain.models.form.customform.CustomForm;
 import fr.siamois.domain.models.history.RevisionWithInfo;
+import fr.siamois.domain.services.authorization.writeverifier.RecordingUnitWriteVerifier;
 import fr.siamois.domain.services.person.PersonService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.specimen.SpecimenService;
+import fr.siamois.dto.FilterDTO;
 import fr.siamois.dto.entity.*;
+import fr.siamois.infrastructure.database.repositories.specs.RecordingUnitSpec;
+import fr.siamois.infrastructure.database.repositories.specs.SpecimenSpec;
 import fr.siamois.ui.bean.NavBean;
 import fr.siamois.ui.bean.RedirectBean;
 import fr.siamois.ui.bean.dialog.newunit.GenericNewUnitDialogBean;
@@ -21,14 +26,15 @@ import fr.siamois.ui.bean.panel.models.panel.AbstractPanel;
 import fr.siamois.ui.bean.panel.models.panel.single.tab.SpecimenTab;
 import fr.siamois.ui.bean.panel.models.panel.single.tab.StratigraphyTab;
 import fr.siamois.ui.form.dto.FormUiDto;
-import fr.siamois.ui.lazydatamodel.RecordingUnitChildrenLazyDataModel;
-import fr.siamois.ui.lazydatamodel.RecordingUnitParentsLazyDataModel;
-import fr.siamois.ui.lazydatamodel.SpecimenInRecordingUnitLazyDataModel;
-import fr.siamois.ui.table.RecordingUnitTableViewModel;
-import fr.siamois.ui.table.SpecimenTableViewModel;
+import fr.siamois.ui.lazydatamodel.RecordingUnitLazyDataModel;
+import fr.siamois.ui.lazydatamodel.SpecimenLazyDataModel;
 import fr.siamois.ui.table.ToolbarCreateConfig;
+import fr.siamois.ui.table.definitions.RecordingUnitTableDefinitionFactory;
 import fr.siamois.ui.table.definitions.SpecimenTableDefinitionFactory;
+import fr.siamois.ui.table.viewmodel.RecordingUnitTableViewModel;
+import fr.siamois.ui.table.viewmodel.SpecimenTableViewModel;
 import fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerStratigraphyViewModel;
+import fr.siamois.utils.MessageUtils;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
@@ -43,8 +49,10 @@ import org.springframework.stereotype.Component;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
+import java.time.Month;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 
 @Slf4j
@@ -62,15 +70,8 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
     private final transient SpecimenService specimenService;
     private final transient NavBean navBean;
     private final transient GenericNewUnitDialogBean<?> genericNewUnitDialogBean;
+    private final transient RecordingUnitWriteVerifier recordingUnitWriteVerifier;
 
-    // ---------- Locals
-    // Linked specimen
-    private transient SpecimenInRecordingUnitLazyDataModel specimenListLazyDataModel ;
-
-    // lazy model for children
-    private RecordingUnitChildrenLazyDataModel lazyDataModelChildren ;
-    // lazy model for parents
-    private RecordingUnitParentsLazyDataModel lazyDataModelParents ;
 
     // lazy model for children
     private transient RecordingUnitTableViewModel parentTableModel;
@@ -97,18 +98,57 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
         this.specimenService = context.getBean(SpecimenService.class);
         this.navBean = context.getBean(NavBean.class);
         this.genericNewUnitDialogBean = context.getBean(GenericNewUnitDialogBean.class);
+        this.recordingUnitWriteVerifier = context.getBean(RecordingUnitWriteVerifier.class);
 
     }
 
 
-    @Override
-    public String ressourceUri() {
+    public String entityRessourceUri() {
         return "/recording-unit/" + unitId;
     }
 
     @Override
     public String displayHeader() {
         return "/panel/header/recordingUnitPanelHeader.xhtml";
+    }
+
+    @Override
+    public UnitKind getCreationUnitKind() {
+        return UnitKind.RECORDING;
+    }
+
+    @Override
+    public NewUnitContext buildCreationContext(UnitKind kind) {
+        if (unit == null || unit.getActionUnit() == null) return super.buildCreationContext(kind);
+        return NewUnitContext.builder()
+                .kindToCreate(kind)
+                .trigger(NewUnitContext.Trigger.toolbar())
+                .scope(NewUnitContext.Scope.linkedTo("ACTION", unit.getActionUnit().getId()))
+                .build();
+    }
+
+    @Override
+    public boolean canDuplicate() {
+        return true;
+    }
+
+    @Override
+    public void duplicate() {
+        RecordingUnitDTO copy = new RecordingUnitDTO(unit);
+        copy.setParents(new HashSet<>());
+        copy.setAuthor(sessionSettingsBean.getAuthenticatedUser());
+        copy.setCreatedBy(sessionSettingsBean.getAuthenticatedUser());
+
+        RecordingUnitDTO saved = recordingUnitService.save(copy);
+        saved.setFullIdentifier(recordingUnitService.generateFullIdentifier(saved.getActionUnit(), saved));
+        if (recordingUnitService.fullIdentifierAlreadyExistInAction(saved)) {
+            saved.setFullIdentifier(saved.getActionUnit().getRecordingUnitIdentifierFormat());
+            MessageUtils.displayWarnMessage(langBean, "recordingunit.error.identifier.alreadyExists");
+        }
+        saved = recordingUnitService.save(saved);
+
+        flowBean.addRecordingUnitToOverview(saved.getId(), this, null);
+        MessageUtils.displayInfoMessage(langBean, "common.action.duplicateEntity", unit.getFullIdentifier());
     }
 
     /**
@@ -146,12 +186,8 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
             unit = recordingUnitService.findById(unitId);
 
 
-            specimenListLazyDataModel = new SpecimenInRecordingUnitLazyDataModel(
-                    specimenService,
-                    sessionSettingsBean,
-                    langBean,
-                    unit
-            );
+            SpecimenLazyDataModel specimenListLazyDataModel = new SpecimenLazyDataModel(specimenService, sessionSettingsBean, langBean);
+            specimenListLazyDataModel.withConstantFilter(SpecimenSpec.RECORDING_UNIT_FILTER, List.of(unit.getId()), FilterDTO.FilterType.CONTAINS);
             specimenListLazyDataModel.setSelectedUnits(new ArrayList<>());
 
 
@@ -161,21 +197,15 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
             specimenListLazyDataModel.setSelectedUnits(new ArrayList<>());
 
             // Get  the CHILDREN of the recording unit
-            lazyDataModelChildren = new RecordingUnitChildrenLazyDataModel(
-                    recordingUnitService,
-                    langBean,
-                    unit
-            );
+            RecordingUnitLazyDataModel lazyDataModelChildren = new RecordingUnitLazyDataModel(recordingUnitService, sessionSettingsBean, langBean);
+            lazyDataModelChildren.withConstantFilter(RecordingUnitSpec.PARENT_FILTER, List.of(unit.getId()), FilterDTO.FilterType.CONTAINS);
             selectedCategoriesChildren = new ArrayList<>();
             totalChildrenCount = 0;
             // Get all the Parents of the recording unit
             selectedCategoriesParents = new ArrayList<>();
             totalParentsCount = 0;
-            lazyDataModelParents = new RecordingUnitParentsLazyDataModel(
-                    recordingUnitService,
-                    langBean,
-                    unit
-            );
+
+            initChildTableModelForHierarchyTab(lazyDataModelChildren);
 
             // iniy stratigraphy module
             stratigraphyViewModel = new CustomFieldAnswerStratigraphyViewModel();
@@ -195,13 +225,15 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
             });
 
 
+        } catch (RecordingUnitNotFoundException e) {
+            log.warn("Recording unit id={} not found when loading panel", unitId);
+            this.errorMessage = langBean.msg("recordingunit.panel.notFound", String.valueOf(unitId));
         } catch (RuntimeException e) {
             this.errorMessage = "Failed to load recording unit: " + e.getMessage();
         }
 
-
         //history = historyAuditService.findAllRevisionForEntity(RecordingUnitDTO.class, unitId);
-        documents = documentService.findForRecordingUnit(unit);
+        documents = unit != null ? documentService.findForRecordingUnit(unit) : List.of();
     }
 
     @Override
@@ -225,9 +257,7 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
         Long actionUnitId = unit.getActionUnit().getId();
         if(isRoot) {
             command = "#{navBean.redirectToBookmarked('/action-unit/"+actionUnitId+"')}";
-        }
-        else {
-
+        } else {
             command = "#{flowBean.addActionUnitToOverview(" + actionUnitId + ", focusViewBean.mainPanel, 2)}";
         }
 
@@ -258,8 +288,11 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
             refreshUnit();
 
             if (this.unit == null) {
-                log.error("The Recording Unit page should not be accessed without ID or by direct page path");
-                errorMessage = "The Recording Unit page should not be accessed without ID or by direct page path";
+                if (errorMessage == null || errorMessage.isBlank()) {
+                    errorMessage = langBean.msg("recordingunit.panel.notFound", String.valueOf(unitId));
+                }
+                log.error("Recording unit panel opened without loadable unit for unitId={}", unitId);
+                return;
             }
 
             initSpecimenTab();
@@ -351,11 +384,11 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
             if (field instanceof CustomFieldDateTime dt) {
                 if ("openingDate".equals(field.getValueBinding()) && unit.getClosingDate() != null) {
                     dt.setMax(unit.getClosingDate().toLocalDateTime());
-                    dt.setMin(LocalDateTime.of(1000, 1, 1, 1, 1));
+                    dt.setMin(LocalDateTime.of(1000, Month.JANUARY, 1, 1, 1));
                 }
                 if ("closingDate".equals(field.getValueBinding()) && unit.getOpeningDate() != null) {
                     dt.setMin(unit.getOpeningDate().toLocalDateTime());
-                    dt.setMax(LocalDateTime.of(9999, 12, 31, 23, 59));
+                    dt.setMax(LocalDateTime.of(9999, Month.DECEMBER, 31, 23, 59));
                 }
             }
         }
@@ -428,13 +461,40 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
         return "/panel/tabview/recordingUnitTabView.xhtml";
     }
 
-    public void initSpecimenTab() {
-        SpecimenInRecordingUnitLazyDataModel lazyDataModel = new SpecimenInRecordingUnitLazyDataModel(
-                specimenService,
+    private void initChildTableModelForHierarchyTab(RecordingUnitLazyDataModel lazyDataModelChildren) {
+        if (unit == null) {
+            return;
+        }
+        childTableModel = new RecordingUnitTableViewModel(
+                lazyDataModelChildren,
+                formService,
                 sessionSettingsBean,
+                spatialUnitTreeService,
+                spatialUnitService,
+                navBean,
+                flowBean,
+                (GenericNewUnitDialogBean<RecordingUnitDTO>) genericNewUnitDialogBean,
+                recordingUnitWriteVerifier,
+                recordingUnitService,
                 langBean,
-                unit
+                formContextServices
         );
+        childTableModel.setParentPanel(this);
+        RecordingUnitTableDefinitionFactory.applyTo(childTableModel);
+        childTableModel.setToolbarCreateConfig(
+                ToolbarCreateConfig.builder()
+                        .kindToCreate(UnitKind.RECORDING)
+                        .scopeSupplier(() ->
+                                NewUnitContext.Scope.builder()
+                                        .key("ACTION")
+                                        .entityId(unit.getActionUnit().getId())
+                                        .build())
+                        .build());
+    }
+
+    public void initSpecimenTab() {
+        SpecimenLazyDataModel lazyDataModel = new SpecimenLazyDataModel(specimenService, sessionSettingsBean, langBean);
+        lazyDataModel.withConstantFilter(SpecimenSpec.RECORDING_UNIT_FILTER, List.of(unit.getId()), FilterDTO.FilterType.CONTAINS);
 
         specimenTableModel = new SpecimenTableViewModel(
                 lazyDataModel,

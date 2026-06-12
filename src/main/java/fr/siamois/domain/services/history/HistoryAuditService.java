@@ -129,7 +129,7 @@ public class HistoryAuditService {
     public <D extends AbstractEntityDTO> InfoRevisionEntity findLastRevisionInfoFor(Class<D> dtoClass, Long entityId) {
         Class<?> entityClass = registry.getEntityClass(dtoClass);
         if (entityClass == null) {
-            throw new IllegalArgumentException("No JPA Entity mapped for DTO: " + dtoClass.getName());
+            throw  new IllegalArgumentException("No JPA Entity mapped for DTO: " + dtoClass.getName());
         }
         Number maxRevisionNumber = (Number) auditReader.createQuery()
                 .forRevisionsOfEntity(entityClass, false, true)

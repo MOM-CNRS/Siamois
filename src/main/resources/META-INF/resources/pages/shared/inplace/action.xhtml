@@ -13,7 +13,6 @@
         <cc:attribute name="field" type="fr.siamois.domain.models.form.customfield.CustomFieldSelectOneActionUnit" required="true"/>
         <cc:attribute name="mode" type="String" required="false" default="READ"/>
         <cc:attribute name="updateTargetsOnBlur" type="String" required="false" default="@this"/>
-        <cc:attribute name="multiple" type="Boolean" required="false" default="false"/>
         <cc:attribute name="label" type="String" required="false"/>
         <cc:attribute name="required" type="java.lang.Boolean" required="true"/>
         <cc:attribute name="displayType" type="java.lang.Boolean" required="false" default="false"/>
@@ -21,34 +20,26 @@
 
     <cc:implementation>
         <p:outputPanel id="inplace">
-            <!-- ===== MODE DISPLAY ===== -->
-            <h:panelGroup rendered="#{cc.attrs.mode ne 'input'}">
-                <!-- Single value -->
-                <h:panelGroup rendered="#{(not cc.attrs.multiple) and (not empty cc.attrs.answer.value)}">
-                    <div style="display:flex;gap:0.5em;">
+            <div class="rum-wrapper action-unit">
+                <div class="rum-items">
+                    <h:panelGroup rendered="#{not empty cc.attrs.answer.value}">
                         <p:commandLink
-                                styleClass="action-unit"
-                                value="#{cc.attrs.answer.value.name}"
-                                action="#{flowBean.addActionUnitToOverview(cc.attrs.answer.value.id,
-                                focusViewBean.mainPanel,
-                                null
+                                styleClass="rum-chip-link"
+                                style="white-space: nowrap;"
+                                action="#{flowBean.addActionUnitToOverview(
+                                    cc.attrs.answer.value.id,
+                                    focusViewBean.mainPanel,
+                                    null
                                 )}"
                                 process="@this"
-                                update="@this">
+                                update="@none"
+                                onclick="event.stopPropagation();">
                             <f:param name="id" value="#{cc.attrs.answer.value.id}"/>
+                            #{cc.attrs.answer.value.name}
                         </p:commandLink>
-                        <p:chip
-                                rendered="#{cc.attrs.displayType}"
-                                label="#{labelBean.findLabelOf(cc.attrs.answer.value.type)}"
-                                styleClass="mr-2 action-unit-type-chip"/>
-                    </div>
-                </h:panelGroup>
-            </h:panelGroup>
-
-            <!-- ===== MODE EDIT ===== -->
-            <h:panelGroup id="inputGroup" rendered="#{cc.attrs.mode eq 'input'}">
-
-            </h:panelGroup>
+                    </h:panelGroup>
+                </div>
+            </div>
         </p:outputPanel>
     </cc:implementation>
 </ui:composition>

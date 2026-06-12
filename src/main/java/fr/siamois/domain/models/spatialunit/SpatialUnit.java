@@ -88,7 +88,6 @@ public class SpatialUnit extends TraceableEntity implements ArkEntity {
     @Column(name = "name", nullable = false, length = 200)
     protected String name;
 
-    @NotNull
     @OneToOne
     @JoinColumn(name = "fk_ark_id")
     protected Ark ark;

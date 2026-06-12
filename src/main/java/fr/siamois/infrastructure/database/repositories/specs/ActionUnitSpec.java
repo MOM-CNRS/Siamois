@@ -5,11 +5,15 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
 
+import java.util.Collection;
+import java.util.List;
+
 public class ActionUnitSpec {
 
     public static final String GLOBAL_FILTER = "global";
     public static final String NAME_FILTER = "name";
     public static final String ID_FILTER = "id";
+    public static final String SPATIAL_UNIT_FILTER = "mainLocation";
 
     private ActionUnitSpec() {
         throw new UnsupportedOperationException("Spec should never be instantiated");
@@ -35,6 +39,48 @@ public class ActionUnitSpec {
 
     public static Specification<ActionUnit> idIn(java.util.Collection<Long> ids) {
         return (root, query, criteriaBuilder) -> root.get("id").in(ids);
+    }
+
+    /**
+     * Action units whose owning institution is one of the given ids.
+     */
+    @NonNull
+    public static Specification<ActionUnit> institutionIdIn(@Nullable Collection<Long> institutionIds) {
+        return (root, query, cb) -> {
+            if (institutionIds == null || institutionIds.isEmpty()) {
+                return cb.disjunction();
+            }
+            return root.get("createdByInstitution").get("id").in(institutionIds);
+        };
+    }
+
+    /**
+     * Case-insensitive match on name, identifier, or full identifier (OR).
+     */
+    @NonNull
+    public static Specification<ActionUnit> projectSearch(@Nullable String search) {
+        return (root, query, cb) -> {
+            if (search == null || search.isBlank()) {
+                return cb.conjunction();
+            }
+            String pattern = "%" + search.toLowerCase() + "%";
+            return cb.or(
+                    cb.like(cb.lower(root.get("name")), pattern),
+                    cb.like(cb.lower(cb.coalesce(root.get("identifier"), "")), pattern),
+                    cb.like(cb.lower(cb.coalesce(root.get("fullIdentifier"), "")), pattern)
+            );
+        };
+    }
+
+    @NonNull
+    public static Specification<ActionUnit> actionUnitInSpatialUnit(long spatialUnitId) {
+        return (root, query, cb) ->
+                cb.equal(root.get(SPATIAL_UNIT_FILTER).get("id"), spatialUnitId);
+    }
+
+    @NonNull
+    public static Specification<ActionUnit> isInSpatialUnit(List<Long> ids) {
+        return (root, query, cb) -> cb.in(root.get(SPATIAL_UNIT_FILTER).get("id")).value(ids);
     }
 
 }

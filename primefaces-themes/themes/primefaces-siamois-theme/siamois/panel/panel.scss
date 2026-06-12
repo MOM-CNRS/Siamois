@@ -254,7 +254,8 @@ body .ui-autocomplete .ui-autocomplete-dropdown {
   z-index: 1000;
   border-left: 1px solid #ccc;
 
-
+  display: flex;
+  flex-direction: column;
 }
 
 .sideview-titlebar {

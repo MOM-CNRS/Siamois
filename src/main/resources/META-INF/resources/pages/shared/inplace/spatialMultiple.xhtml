@@ -27,162 +27,258 @@
         <cc:attribute name="displayType" type="java.lang.Boolean" required="false" default="false"/>
         <cc:attribute name="panelId" type="String" required="false"/>
         <cc:attribute name="formCtx" type="fr.siamois.ui.form.EntityFormContext" required="true"/>
+        <cc:attribute name="compact" type="java.lang.Boolean" required="false" default="true"
+                      shortDescription="true: show max 3 items + expand button, no wrap. false: show all items, wrap enabled."/>
     </cc:interface>
 
     <cc:implementation>
-        <p:inplace id="inplace" mode="#{cc.attrs.mode}" toggleable="false">
-            <f:facet name="output">
-                <!-- Single value -->
-                <h:panelGroup rendered="#{(not cc.attrs.multiple) and (not empty cc.attrs.answer.value)}">
-                    <div style="display:flex;gap:0.5em;">
-                        <p:commandLink
-                                styleClass="spatial-unit"
-                                value="#{cc.attrs.answer.value.name}"
-                                action="#{navBean.redirectToSpatialUnit}"
-                                ajax="false">
-                            <f:param name="id" value="#{cc.attrs.answer.value.id}"/>
-                        </p:commandLink>
 
-                        <p:chip rendered="#{cc.attrs.displayType}"
-                                label="#{labelBean.findLabelOf(cc.attrs.answer.value.category)}"
-                                styleClass="mr-2 spatial-unit-type-chip"/>
-                    </div>
+        <!-- ═══════════════════════════════════════════════════════════
+             VIEW MODE
+             ═══════════════════════════════════════════════════════════ -->
+        <p:outputPanel id="sumView" layout="block" style="display:contents">
+        <div id="sum_v_#{cc.clientId.replace(':','_')}" class="sum-wrapper spatial-unit #{cc.attrs.mode eq 'input' and empty cc.attrs.answer.value ? 'sum-empty' : ''}">
 
+            <div class="sum-items #{cc.attrs.compact ? 'compact' : ''}" >
+
+                <!-- Single value (multiple=false) -->
+                <h:panelGroup rendered="#{not cc.attrs.multiple and not empty cc.attrs.answer.value}">
+                    <p:commandLink
+                            styleClass="rum-chip-link"
+                            action="#{navBean.redirectToSpatialUnit}"
+                            ajax="false">
+                        <f:param name="id" value="#{cc.attrs.answer.value.id}"/>
+                        #{cc.attrs.answer.value.name}
+                    </p:commandLink>
                 </h:panelGroup>
-            </f:facet>
-            <f:facet name="input">
-                <p:autoComplete value="#{cc.attrs.answer.value}"
-                                id="select-multiple-spatial-unit"
-                                completeMethod="#{cc.attrs.formCtx.getSpatialUnitOptions}"
-                                panelStyleClass="spatial-unit"
-                                multiple="true"
-                                styleClass="spatial-unit #{cc.attrs.answer.hasBeenModified ? 'track-change sia-modified-field': 'track-change'}"
-                                required="false"
-                                var="su"
-                                itemValue="#{su}"
-                                itemLabel="#{su.name}"
-                                onmousedown="event.stopPropagation();"
-                                onclick="event.stopPropagation();"
-                                converter="#{placeSuggestionConverter}"
-                                forceSelection="true"
-                                scrollHeight="300"
-                                dropdown="true"
-                                showEmptyMessage="false"
-                                maxResults="#{fieldConfigurationService.resultLimit()}">
-                    <f:attribute name="field" value="#{cc.attrs.field}" />
 
-                    <p:ajax update="#{cc.attrs.updateTargetsOnBlur}"
-                            process="@this"
-                            onstart="$(PrimeFaces.escapeClientId('#{cc.clientId}:input')).removeClass('sia-modified-field'); showSpinner('#{cc.attrs.panelId}')"
-                            oncomplete="hideSpinner('#{cc.attrs.panelId}')"
-                            onerror="handleAutoSaveError(xhr, status, '#{cc.attrs.panelId}'); $(PrimeFaces.escapeClientId('#{cc.clientId}:input')).addClass('sia-modified-field');"
-                            listener="#{cc.attrs.onModified}"/>
+                <!-- Multiple values (multiple=true) -->
+                <h:panelGroup rendered="#{cc.attrs.multiple and not empty cc.attrs.answer.value}">
+                    <ui:repeat value="#{cc.attrs.answer.value}" var="su" varStatus="st">
+                        <span class="#{cc.attrs.compact and st.index ge 3 ? 'sum-extra' : ''}"
+                              style="#{cc.attrs.compact and st.index ge 3 ? 'display:none;' : ''}">
+                            <p:commandLink
+                                    styleClass="rum-chip-link spatial-unit"
+                                    action="#{navBean.redirectToSpatialUnit}"
+                                    ajax="false"
+                                    onclick="event.stopPropagation();">
+                                <f:param name="id" value="#{su.id}"/>
+                                #{su.name}
+                            </p:commandLink>
+                        </span>
+                    </ui:repeat>
+                </h:panelGroup>
 
-                    <p:ajax update="#{cc.attrs.updateTargetsOnBlur}"
-                            event="itemUnselect"
-                            process="@this"
-                            onstart="$(PrimeFaces.escapeClientId('#{cc.clientId}:input')).removeClass('sia-modified-field'); showSpinner('#{cc.attrs.panelId}')"
-                            oncomplete="hideSpinner('#{cc.attrs.panelId}')"
-                            onerror="handleAutoSaveError(xhr, status, '#{cc.attrs.panelId}'); $(PrimeFaces.escapeClientId('#{cc.clientId}:input')).addClass('sia-modified-field');"
-                            listener="#{cc.attrs.onModified}"/>
+            </div>
 
-                    <p:column>
+            <!-- +N / collapse — only in compact mode, always visible -->
+            <ui:fragment rendered="#{cc.attrs.compact and cc.attrs.multiple and not empty cc.attrs.answer.value and cc.attrs.answer.value.size() gt 3}">
+                <button type="button" class="sum-expand-badge sum-expand-btn"
+                        style="background: var(--main-color)"
+                        onclick="sumExpand('#{cc.clientId.replace(':','_')}')">
+                    +#{cc.attrs.answer.value.size() - 3}
+                </button>
+                <button type="button" class="sum-action-btn sum-collapse-btn" style="display:none"
+                        title="Réduire"
+                        onclick="sumCollapse('#{cc.clientId.replace(':','_')}')">
+                    <i class="bi bi-chevron-double-left"/>
+                </button>
+            </ui:fragment>
 
-                        <div style="display:flex;gap:0.5em;align-items: center">
-                            <i class="#{su.isExternal() ? 'bi bi-globe2' : 'bi bi-database'}"
-                               style="color: #{su.isExternal() ? 'var(--text-main)' : 'var(--siamois-green)'};"/>
-                            <div style="display:flex; flex-direction: column">
-                                <div style="display:flex; gap:0.5em; align-items: center;">
-                                    <p:outputLabel value="#{su.name}"/>
-                                    <p:chip
-                                            label="#{labelBean.findLabelOf(su.category)}"
-                                            styleClass="mr-2 spatial-unit-type-chip"/>
+            <div class="sum-actions">
 
-                                </div>
+                <!-- Pencil: enter edit mode (only when editable) -->
+                <ui:fragment rendered="#{cc.attrs.mode eq 'input'}">
+                    <button type="button" class="sum-action-btn"
+                            title="Edit"
+                            onclick="sumEdit('#{cc.clientId.replace(':','_')}')">
+                        <i class="bi bi-pencil"/>
+                    </button>
+                </ui:fragment>
 
-                                <small>#{su.code}</small>
+                <!-- Side overview — disabled, reserved for future use -->
+                <button type="button" class="sum-action-btn" disabled="disabled"
+                        title="Aperçu latéral (bientôt disponible)">
+                    <i class="bi bi-layout-sidebar-inset-reverse"/>
+                </button>
+
+            </div>
+        </div>
+        </p:outputPanel>
+
+        <!-- ═══════════════════════════════════════════════════════════
+             EDIT MODE (hidden by default, shown by sumEdit())
+             ═══════════════════════════════════════════════════════════ -->
+        <div id="sum_e_#{cc.clientId.replace(':','_')}" class="sum-edit-wrapper" style="display:none">
+
+            <p:autoComplete
+                    value="#{cc.attrs.answer.value}"
+                    id="select-multiple-spatial-unit"
+                    widgetVar="#{cc.clientId}_autoComplete"
+                    completeMethod="#{cc.attrs.formCtx.getSpatialUnitOptions}"
+                    panelStyleClass="spatial-unit"
+                    multiple="true"
+                    styleClass="spatial-unit #{cc.attrs.answer.hasBeenModified ? 'track-change sia-modified-field': 'track-change'}"
+                    required="false"
+                    var="su"
+                    itemValue="#{su}"
+                    itemLabel="#{su.name}"
+                    onmousedown="event.stopPropagation();"
+                    onclick="event.stopPropagation();"
+                    converter="#{placeSuggestionConverter}"
+                    forceSelection="true"
+                    unique="true"
+                    scrollHeight="300"
+                    dropdown="false"
+                    showEmptyMessage="false"
+                    maxResults="#{fieldConfigurationService.resultLimit()}">
+                <f:attribute name="field" value="#{cc.attrs.field}" />
+
+                <p:column>
+                    <div style="display:flex;gap:0.5em;align-items: center">
+                        <i class="#{su.isExternal() ? 'bi bi-globe2' : 'bi bi-database'}"
+                           style="color: #{su.isExternal() ? 'var(--text-main)' : 'var(--siamois-green)'};"/>
+                        <div style="display:flex; flex-direction: column">
+                            <div style="display:flex; gap:0.5em; align-items: center;">
+                                <p:outputLabel value="#{su.name}"/>
+                                <p:chip
+                                        label="#{labelBean.findLabelOf(su.category)}"
+                                        styleClass="mr-2 spatial-unit-type-chip"/>
                             </div>
-
-                            <p:chip
-                                    style="
-                                    background: transparent;
-                                    border: 1px solid #{su.isExternal() ? 'var(--text-main)' : 'var(--siamois-green)'};
-                                    color: #{su.isExternal() ? 'var(--text-main)' : 'var(--siamois-green)'};
-                                    margin-left:auto;"
-                                    label="#{su.sourceName}"
-                            />
-
+                            <small>#{su.code}</small>
                         </div>
-                    </p:column>
-
-                    <f:facet name="footer">
-                        <div id="footer" class="ui-fluid" style="padding:0.5rem 1rem 1rem 1rem">
-                            <p:commandButton
-                                    id="btnNouveau"
-                                    icon="bi bi-plus-lg"
-                                    process="@this"
-                                    oncomplete="PF('#{cc.clientId}_spatialUnitMenu').hide();var ov = PF('#{cc.clientId}_overlay'); ov.show(); ov.align();"
-                                    value="Nouveau"
-                                    update="#{cc.clientId}"/>
-                        </div>
-                    </f:facet>
-                </p:autoComplete>
-
-                <p:overlayPanel for="#{cc.clientId}:select-multiple-spatial-unit" my="left top" at="left bottom" showEvent="none"
-                                widgetVar="#{cc.clientId}_overlay"
-                                dismissable="false"
-                                autoHide="true"
-                                showCloseIcon="true"
-                                dynamic="true" id="overlayNouveau" appendTo="#{cc.clientId}"
-                                hideEffect="fade">
-
-
-                    <h:panelGrid columns="2" cellpadding="5" id="newGrid">
-                        <p:outputLabel for="newUnitName" value="Nom:"/>
-                        <p:inputText value="#{cc.attrs.answer.newName}"
-                                     id="newUnitName"
-                                     required="true"
+                        <p:chip
+                                style="
+                                background: transparent;
+                                border: 1px solid #{su.isExternal() ? 'var(--text-main)' : 'var(--siamois-green)'};
+                                color: #{su.isExternal() ? 'var(--text-main)' : 'var(--siamois-green)'};
+                                margin-left:auto;"
+                                label="#{su.sourceName}"
                         />
+                    </div>
+                </p:column>
 
-                        <p:outputLabel for="newUnitTypeAutocomplete" value="Type:"/>
-                        <p:autoComplete value="#{cc.attrs.answer.newType}"
-                                        id="newUnitTypeAutocomplete"
-                                        completeMethod="#{spatialUnitFieldBean.completeWithFieldCode}"
-                                        var="autocompleteDto"
-                                        panelStyleClass="#{cc.attrs.panelStyleClass}"
-                                        itemValue="#{autocompleteDto}"
-                                        itemLabel="#{autocompleteDto.conceptLabelToDisplay.label}"
-                                        required="true"
-                                        onmousedown="event.stopPropagation();"
-                                        onclick="event.stopPropagation();"
-                                        converter="#{conceptAutocompleteDTOConverter}"
-                                        forceSelection="true"
-                                        scrollHeight="300"
-                                        dropdown="true"
-                                        placeholder="#{langBean.msg('common.action.chooseConcept')}"
-                                        showEmptyMessage="false"
-                                        maxResults="#{fieldConfigurationService.resultLimit()}"
-                        >
-                            <f:attribute name="fieldCode" value="SIASU.TYPE"/>
-                        </p:autoComplete>
+                <p:ajax update="#{cc.attrs.updateTargetsOnBlur}"
+                        process="@this"
+                        onstart="$(PrimeFaces.escapeClientId('#{cc.clientId}:input')).removeClass('sia-modified-field'); showSpinner('#{cc.attrs.panelId}')"
+                        oncomplete="hideSpinner('#{cc.attrs.panelId}')"
+                        onerror="handleAutoSaveError(xhr, status, '#{cc.attrs.panelId}'); $(PrimeFaces.escapeClientId('#{cc.clientId}:input')).addClass('sia-modified-field');"
+                        listener="#{cc.attrs.onModified}"/>
 
+                <p:ajax update="#{cc.attrs.updateTargetsOnBlur}"
+                        event="itemUnselect"
+                        process="@this"
+                        onstart="$(PrimeFaces.escapeClientId('#{cc.clientId}:input')).removeClass('sia-modified-field'); showSpinner('#{cc.attrs.panelId}')"
+                        oncomplete="hideSpinner('#{cc.attrs.panelId}')"
+                        onerror="handleAutoSaveError(xhr, status, '#{cc.attrs.panelId}'); $(PrimeFaces.escapeClientId('#{cc.clientId}:input')).addClass('sia-modified-field');"
+                        listener="#{cc.attrs.onModified}"/>
+
+                <f:facet name="footer">
+                    <div class="ui-fluid" style="padding:0.5rem 1rem 1rem 1rem">
                         <p:commandButton
-                                style="background: var(--siamois-green-active);
-    border-color: var(--siamois-green-active);"
-                                value="Créer"
-                                action="#{cc.attrs.formCtx.saveNewPlaceFromField(
-                                            cc.attrs.answer
-                                        )}"
-                                process="newGrid"
-                                onsuccess="PF('#{cc.clientId}_overlay').hide();"
-                                update="select-multiple-spatial-unit overlayNouveau templateFormCC:templateForm:templateGrowl @this"/>
+                                id="btnNouveau"
+                                icon="bi bi-plus-lg"
+                                process="@this"
+                                action="#{cc.attrs.formCtx.initNewPlaceFromField(cc.attrs.answer)}"
+                                onclick="event.stopPropagation();"
+                                oncomplete="PF('#{cc.clientId}_autoComplete').hide(); var ov = PF('#{cc.clientId}_overlay'); ov.show(); ov.align();"
+                                value="Nouveau"
+                                update="@none"/>
+                    </div>
+                </f:facet>
 
-                    </h:panelGrid>
+            </p:autoComplete>
 
-                </p:overlayPanel>
+            <p:overlayPanel for="#{cc.clientId}:select-multiple-spatial-unit" my="left top" at="left bottom" showEvent="none"
+                            widgetVar="#{cc.clientId}_overlay"
+                            dismissable="false"
+                            autoHide="true"
+                            showCloseIcon="true"
+                            dynamic="true" id="overlayNouveau" appendTo="#{cc.clientId}"
+                            hideEffect="fade">
 
-            </f:facet>
-        </p:inplace>
+                <h:panelGrid columns="2" cellpadding="5" id="newGrid">
+                    <p:outputLabel for="newUnitName" value="Nom :"/>
+                    <p:inputText value="#{cc.attrs.answer.newName}"
+                                 id="newUnitName"
+                                 required="true"
+                    />
+
+                    <p:outputLabel for="newUnitTypeAutocomplete" value="Type :"/>
+                    <p:autoComplete value="#{cc.attrs.answer.newType}"
+                                    id="newUnitTypeAutocomplete"
+                                    completeMethod="#{spatialUnitFieldBean.completeWithFieldCode}"
+                                    var="autocompleteDto"
+                                    itemValue="#{autocompleteDto}"
+                                    itemLabel="#{autocompleteDto.conceptLabelToDisplay.label}"
+                                    required="true"
+                                    onmousedown="event.stopPropagation();"
+                                    onclick="event.stopPropagation();"
+                                    converter="#{conceptAutocompleteDTOConverter}"
+                                    forceSelection="true"
+                                    scrollHeight="300"
+                                    dropdown="true"
+                                    placeholder="#{langBean.msg('common.action.chooseConcept')}"
+                                    showEmptyMessage="false"
+                                    maxResults="#{fieldConfigurationService.resultLimit()}"
+                    >
+                        <f:attribute name="fieldCode" value="SIASU.TYPE"/>
+                    </p:autoComplete>
+
+                    <p:commandButton
+                            style="background: var(--siamois-green-active);
+border-color: var(--siamois-green-active);"
+                            value="Créer"
+                            action="#{cc.attrs.formCtx.saveNewPlaceFromField(cc.attrs.answer)}"
+                            process="newGrid"
+                            onsuccess="PF('#{cc.clientId}_overlay').hide();"
+                            update="select-multiple-spatial-unit overlayNouveau templateFormCC:templateForm:templateGrowl @this"
+                            resetValues="true"/>
+
+                </h:panelGrid>
+
+            </p:overlayPanel>
+
+            <!-- Close button: exit edit mode and refresh view panel -->
+            <button type="button" class="sum-action-btn"
+                    title="Fermer"
+                    onclick="sumClose('#{cc.clientId.replace(':','_')}'); PrimeFaces.ab({source:'#{cc.clientId}', process:'@none', update:'#{cc.clientId}:sumView'});">
+                <i class="bi bi-chevron-double-left"/>
+            </button>
+
+            <!-- Side overview — disabled, reserved for future use -->
+            <button type="button" class="sum-action-btn" disabled="disabled"
+                    title="Aperçu latéral (bientôt disponible)">
+                <i class="bi bi-layout-sidebar-inset-reverse"/>
+            </button>
+
+        </div>
+
+        <script>
+            function sumEdit(clientId) {
+                document.getElementById('sum_v_' + clientId).style.display = 'none';
+                document.getElementById('sum_e_' + clientId).style.display = 'flex';
+            }
+
+            function sumClose(clientId) {
+                document.getElementById('sum_v_' + clientId).style.display = 'flex';
+                document.getElementById('sum_e_' + clientId).style.display = 'none';
+            }
+
+            function sumExpand(clientId) {
+                var extras = document.querySelectorAll('#sum_v_' + clientId + ' .sum-extra');
+                extras.forEach(function(el) { el.style.display = ''; });
+                document.querySelector('#sum_v_' + clientId + ' .sum-expand-btn').style.display = 'none';
+                document.querySelector('#sum_v_' + clientId + ' .sum-collapse-btn').style.display = '';
+            }
+
+            function sumCollapse(clientId) {
+                var extras = document.querySelectorAll('#sum_v_' + clientId + ' .sum-extra');
+                extras.forEach(function(el) { el.style.display = 'none'; });
+                document.querySelector('#sum_v_' + clientId + ' .sum-expand-btn').style.display = '';
+                document.querySelector('#sum_v_' + clientId + ' .sum-collapse-btn').style.display = 'none';
+            }
+        </script>
 
     </cc:implementation>
 

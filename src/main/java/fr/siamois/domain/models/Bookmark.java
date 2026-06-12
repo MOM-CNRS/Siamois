@@ -5,8 +5,9 @@ import fr.siamois.domain.models.institution.Institution;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.CreationTimestamp;
 
-import java.util.Map;
+import java.time.Instant;
 
 @Data
 @Entity
@@ -31,38 +32,13 @@ public class Bookmark {
     @Column(name = "resource_uri", nullable = false, length = 2000)
     private String resourceUri;
 
+    @CreationTimestamp
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private Instant createdAt;
+
     @Override
     public String toString() {
         return String.format("Bookmark n°%s to %s", id, resourceUri);
     }
 
-    private static final Map<String, String> COLOR_MAP = Map.of(
-            "/spatial-unit", "var(--context-main-color)",
-            "/action-unit", "var(--context-main-color)",
-            "/recording-unit", "var(--ground-main-color)",
-            "/specimen", "var(--ground-main-color)"
-    );
-
-    private static final Map<String, String> ICON_MAP = Map.of(
-            "/spatial-unit", "bi bi-geo-alt",
-            "/action-unit", "bi bi-arrow-down-square",
-            "/recording-unit", "bi bi-pencil-square",
-            "/specimen", "bi bi-bucket"
-    );
-
-    public String getBookmarkColor() {
-        return COLOR_MAP.entrySet().stream()
-                .filter(entry -> resourceUri.startsWith(entry.getKey()))
-                .map(Map.Entry::getValue)
-                .findFirst()
-                .orElse("var(--siamois-green)");
-    }
-
-    public String getBookmarkIcon() {
-        return ICON_MAP.entrySet().stream()
-                .filter(entry -> resourceUri.startsWith(entry.getKey()))
-                .map(Map.Entry::getValue)
-                .findFirst()
-                .orElse("bi bi-bookmark");
-    }
 }

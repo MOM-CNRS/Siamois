@@ -30,12 +30,17 @@ public class ActionCodeSeeder {
 
     public record ActionCodeSpec(String code, String typeConceptExternalId, String typeVocabularyExternalId) {}
     public void seed(List<ActionCodeSpec> specs) {
-        for (var s : specs) {
-            // Find Type
-            Concept type = conceptRepository
-                    .findConceptByExternalIdIgnoreCase(s.typeVocabularyExternalId, s.typeConceptExternalId)
-                    .orElseThrow(() -> new IllegalStateException("Concept introuvable"));
-            getOrCreateActionCode(s.code, type);
+        for (int i = 0; i < specs.size(); i++) {
+            var s = specs.get(i);
+            try {
+                Concept type = SeederUtils.field("typeConceptExternalId", () -> conceptRepository
+                        .findConceptByExternalIdIgnoreCase(s.typeVocabularyExternalId, s.typeConceptExternalId)
+                        .orElseThrow(() -> new IllegalStateException("Concept introuvable")));
+                getOrCreateActionCode(s.code, type);
+            } catch (Exception e) {
+                throw new IllegalStateException(
+                        "[Code action ligne " + (i + 1) + "] '" + s.code + "' : " + e.getMessage(), e);
+            }
         }
     }
 }

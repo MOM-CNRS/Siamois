@@ -2,7 +2,7 @@ package fr.siamois.ui.bean.panel.models.panel.single;
 
 import fr.siamois.dto.entity.AbstractEntityDTO;
 import fr.siamois.ui.bean.panel.models.panel.single.tab.MultiHierarchyTab;
-import fr.siamois.ui.table.EntityTableViewModel;
+import fr.siamois.ui.table.viewmodel.EntityTableViewModel;
 import org.primefaces.model.menu.DefaultMenuModel;
 import org.primefaces.model.menu.MenuModel;
 import org.springframework.context.ApplicationContext;

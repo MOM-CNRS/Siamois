@@ -1,20 +1,34 @@
 package fr.siamois.domain.services.specimen;
 
+import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.exceptions.actionunit.ActionUnitNotFoundException;
 import fr.siamois.domain.models.institution.Institution;
+import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.specimen.Specimen;
 import fr.siamois.domain.services.ArkEntityService;
+import fr.siamois.dto.FilterDTO;
 import fr.siamois.dto.entity.*;
+import fr.siamois.infrastructure.database.repositories.ArkRepository;
+import fr.siamois.infrastructure.database.repositories.DocumentRepository;
+import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitRepository;
+import fr.siamois.infrastructure.database.repositories.specimen.SpecimenFindSortSql;
 import fr.siamois.infrastructure.database.repositories.specimen.SpecimenRepository;
+import fr.siamois.infrastructure.database.repositories.specs.SpecimenSpec;
 import fr.siamois.mapper.InstitutionMapper;
 import fr.siamois.mapper.SpecimenMapper;
+import fr.siamois.mapper.SpecimenSummaryMapper;
+import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
 
 import static fr.siamois.domain.models.ValidationStatus.*;
 
@@ -25,6 +39,10 @@ public class SpecimenService implements ArkEntityService {
     private final SpecimenRepository specimenRepository;
     private final SpecimenMapper specimenMapper;
     private final InstitutionMapper institutionMapper;
+    private final SpecimenSummaryMapper specimenSummaryMapper;
+    private final DocumentRepository documentRepository;
+    private final RecordingUnitRepository recordingUnitRepository;
+    private final ArkRepository arkRepository;
 
 
     @Override
@@ -42,6 +60,107 @@ public class SpecimenService implements ArkEntityService {
         // Generate next identifier
         Integer currentMaxIdentifier = specimenRepository.findMaxUsedIdentifierByRecordingUnit(specimen.getRecordingUnit().getId());
         return ((currentMaxIdentifier == null) ? 1 : currentMaxIdentifier + 1);
+    }
+
+    private Specimen newOrGetSpecimen(Specimen specimen) {
+        if (specimen.getId() != null) {
+            return specimenRepository.findById(specimen.getId()).orElse(specimen);
+        }
+        return specimen;
+    }
+
+    private void setupChilds(Specimen specimen, Specimen managedSpecimen) {
+        if (specimen.getChildren() == null) {
+            return;
+        }
+
+        Set<Long> incomingIds = specimen.getChildren().stream()
+                .filter(c -> c != null && c.getId() != null)
+                .map(Specimen::getId)
+                .collect(Collectors.toSet());
+
+        managedSpecimen.getChildren().removeIf(child -> !incomingIds.contains(child.getId()));
+
+        for (Long id : incomingIds) {
+            boolean alreadyPresent = managedSpecimen.getChildren().stream()
+                    .anyMatch(c -> c.getId().equals(id));
+            if (!alreadyPresent) {
+                Specimen child = specimenRepository.findById(id)
+                        .orElseThrow(() -> new IllegalArgumentException("Child not found: " + id));
+                managedSpecimen.getChildren().add(child);
+            }
+        }
+    }
+
+    private void setupParents(Specimen specimen, Specimen managedSpecimen) {
+        if (specimen.getParents() == null) {
+            return;
+        }
+
+        Set<Specimen> currentParents = new HashSet<>(managedSpecimen.getParents());
+        Set<Specimen> newParents = new HashSet<>();
+
+        for (Specimen parentRef : specimen.getParents()) {
+            Specimen parent = specimenRepository.findById(parentRef.getId())
+                    .orElseThrow(() -> new IllegalArgumentException("Parent not found: " + parentRef.getId()));
+            newParents.add(parent);
+        }
+
+        for (Specimen parent : newParents) {
+            if (!currentParents.contains(parent)) {
+                parent.getChildren().add(managedSpecimen);
+                specimenRepository.save(parent);
+            }
+        }
+
+        for (Specimen parent : currentParents) {
+            if (!newParents.contains(parent)) {
+                parent.getChildren().remove(managedSpecimen);
+                specimenRepository.save(parent);
+            }
+        }
+
+        managedSpecimen.getParents().clear();
+        managedSpecimen.getParents().addAll(newParents);
+    }
+
+    private <T> void synchronizeCollection(Collection<T> managedCollection, Collection<T> newCollection) {
+        if (managedCollection == null) {
+            return;
+        }
+        if (newCollection == null || newCollection.isEmpty()) {
+            managedCollection.clear();
+            return;
+        }
+        managedCollection.retainAll(newCollection);
+        for (T element : newCollection) {
+            if (!managedCollection.contains(element)) {
+                managedCollection.add(element);
+            }
+        }
+    }
+
+    private static void setupOtherFields(Specimen specimen, Specimen managedSpecimen) {
+        managedSpecimen.setArk(specimen.getArk());
+        managedSpecimen.setDescription(specimen.getDescription());
+        managedSpecimen.setCollectors(specimen.getCollectors());
+        managedSpecimen.setCollectionDate(specimen.getCollectionDate());
+        managedSpecimen.setWeight(specimen.getWeight());
+        managedSpecimen.setNormalizedInterpretation(specimen.getNormalizedInterpretation());
+        managedSpecimen.setValidated(specimen.getValidated());
+        managedSpecimen.setValidatedAt(specimen.getValidatedAt());
+        managedSpecimen.setValidatedBy(specimen.getValidatedBy());
+        managedSpecimen.setTaq(specimen.getTaq());
+        managedSpecimen.setTpq(specimen.getTpq());
+        managedSpecimen.setComments(specimen.getComments());
+        managedSpecimen.setOtherIdentifier(specimen.getOtherIdentifier());
+        managedSpecimen.setCategory(specimen.getCategory());
+        managedSpecimen.setIsolationNumber(specimen.getIsolationNumber());
+        managedSpecimen.setNumberOfElements(specimen.getNumberOfElements());
+        if (managedSpecimen.getCreatedBy() == null) {
+            managedSpecimen.setCreatedBy(specimen.getCreatedBy());
+        }
+        managedSpecimen.setChronologicalAttribution(specimen.getChronologicalAttribution());
     }
 
     /**
@@ -64,8 +183,17 @@ public class SpecimenService implements ArkEntityService {
         // Convertir SpecimenDTO en Specimen
         Specimen specimen = specimenMapper.invertConvert(toSave);
 
+        Specimen managedSpecimen = newOrGetSpecimen(specimen);
+        setupParents(specimen, managedSpecimen);
+        setupChilds(specimen, managedSpecimen);
+        setupOtherFields(specimen, managedSpecimen);
+        synchronizeCollection(managedSpecimen.getMaterialClass(), specimen.getMaterialClass());
+        synchronizeCollection(managedSpecimen.getMaterial(), specimen.getMaterial());
+        synchronizeCollection(managedSpecimen.getContainers(), specimen.getContainers());
+        synchronizeCollection(managedSpecimen.getPhases(), specimen.getPhases());
+
         // Sauvegarder l'entité Specimen
-        Specimen savedSpecimen = specimenRepository.save(specimen);
+        Specimen savedSpecimen = specimenRepository.save(managedSpecimen);
 
         // Convertir l'entité sauvegardée en SpecimenDTO et la retourner
         return specimenMapper.convert(savedSpecimen);
@@ -90,6 +218,63 @@ public class SpecimenService implements ArkEntityService {
         return specimen != null ? specimenMapper.convert(specimen) : null;
     }
 
+    /**
+     * Spécimen dont l'institution de rattachement est dans le périmètre donné (API OpenAPI).
+     */
+    @Transactional(readOnly = true)
+    public Optional<SpecimenDTO> findAccessibleById(long specimenId, Set<Long> accessibleInstitutionIds) {
+        if (accessibleInstitutionIds == null || accessibleInstitutionIds.isEmpty()) {
+            return Optional.empty();
+        }
+        return resolveAccessibleById(specimenId, accessibleInstitutionIds);
+    }
+
+    private Optional<SpecimenDTO> resolveAccessibleById(long specimenId, Set<Long> accessibleInstitutionIds) {
+        Specimen specimenEntity = specimenRepository.findById(specimenId, Specimen.class).orElse(null);
+        if (specimenEntity == null) {
+            return Optional.empty();
+        }
+        SpecimenDTO dto = specimenMapper.convert(specimenEntity);
+        InstitutionDTO inst = dto.getCreatedByInstitution();
+        if (inst == null || inst.getId() == null || !accessibleInstitutionIds.contains(inst.getId())) {
+            return Optional.empty();
+        }
+        return Optional.of(dto);
+    }
+
+    /**
+     * Spécimen accessible par clé API : {@code specimen_id} numérique ou {@code full_identifier}.
+     */
+    @Transactional(readOnly = true)
+    public Optional<SpecimenDTO> findAccessibleByKey(String idOrKey, Set<Long> accessibleInstitutionIds) {
+        if (accessibleInstitutionIds == null || accessibleInstitutionIds.isEmpty()) {
+            return Optional.empty();
+        }
+        String key = idOrKey == null ? "" : idOrKey.trim();
+        if (key.isEmpty()) {
+            return Optional.empty();
+        }
+
+        if (key.chars().allMatch(Character::isDigit)) {
+            try {
+                long numericId = Long.parseLong(key);
+                Optional<SpecimenDTO> byPk = resolveAccessibleById(numericId, accessibleInstitutionIds);
+                if (byPk.isPresent()) {
+                    return byPk;
+                }
+                return findAccessibleByFullIdentifier(key, accessibleInstitutionIds);
+            } catch (NumberFormatException e) {
+                return findAccessibleByFullIdentifier(key, accessibleInstitutionIds);
+            }
+        }
+        return findAccessibleByFullIdentifier(key, accessibleInstitutionIds);
+    }
+
+    private Optional<SpecimenDTO> findAccessibleByFullIdentifier(String fullIdentifier,
+                                                                 Set<Long> accessibleInstitutionIds) {
+        return specimenRepository.findFirstByFullIdentifierAndInstitutionIdIn(fullIdentifier, accessibleInstitutionIds)
+                .map(specimenMapper::convert);
+    }
 
     /**
      * Finds all specimens by institution and full identifier containing the specified string,
@@ -141,11 +326,44 @@ public class SpecimenService implements ArkEntityService {
             String langCode,
             Pageable pageable
     ) {
-        Page<Specimen> specimenPage = specimenRepository.findAllByInstitutionAndByRecordingUnitIdAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
-                institutionId, recordingUnitId, fullIdentifier, categoryIds, global, langCode, pageable
-        );
+        return doFindAllByInstitutionAndRecordingUnit(
+                institutionId, recordingUnitId, fullIdentifier, categoryIds, global, langCode, null, pageable);
+    }
 
-        return specimenPage.map(specimenMapper::convert);
+    @Transactional(readOnly = true)
+    public Page<SpecimenDTO> findAllByInstitutionAndByRecordingUnitAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
+            Long institutionId,
+            Long recordingUnitId,
+            String fullIdentifier,
+            Long[] categoryIds,
+            String global,
+            String langCode,
+            String apiSortParam,
+            Pageable pageable
+    ) {
+        return doFindAllByInstitutionAndRecordingUnit(
+                institutionId, recordingUnitId, fullIdentifier, categoryIds, global, langCode, apiSortParam, pageable);
+    }
+
+    private Page<SpecimenDTO> doFindAllByInstitutionAndRecordingUnit(
+            Long institutionId,
+            Long recordingUnitId,
+            String fullIdentifier,
+            Long[] categoryIds,
+            String global,
+            String langCode,
+            String apiSortParam,
+            Pageable pageable
+    ) {
+        String orderBy = apiSortParam != null && !apiSortParam.isBlank()
+                ? SpecimenFindSortSql.fromApiSortParam(apiSortParam)
+                : SpecimenFindSortSql.fromSpringSort(pageable.getSort());
+        Pageable pageWithoutSort = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize());
+        return specimenRepository
+                .findAllByInstitutionAndRecordingUnitIdAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
+                        institutionId, recordingUnitId, fullIdentifier, categoryIds, global, langCode, orderBy,
+                        pageWithoutSort)
+                .map(specimenMapper::convert);
     }
 
 
@@ -280,5 +498,157 @@ public class SpecimenService implements ArkEntityService {
 
         return specimenMapper.convert(specimenRepository.save(unit));
     }
+
+    public List<SpecimenSummaryDTO> findAllByActionUnit(@NotNull Long recordingUnitId) {
+
+        Long id = recordingUnitRepository.findById(recordingUnitId)
+                .map(RecordingUnit::getActionUnit)
+                .map(ActionUnit::getId)
+                .orElse(null);
+        return specimenRepository
+                .findFirst10ByActionUnitId(id)
+                .stream()
+                .map(specimenSummaryMapper::convert)
+                .toList();
+    }
+
+    /**
+     * Supprime un mobilier (spécimen) sans mouvements ni rattachement à un groupe.
+     * Détache les documents (sans les supprimer) et supprime l'ARK associé.
+     *
+     * @throws IllegalArgumentException si le spécimen n'existe pas
+     * @throws IllegalStateException si la suppression est interdite (contenu bloquant)
+     */
+    @Transactional
+    public void deleteSpecimenById(long specimenId) {
+        Specimen specimen = specimenRepository.findById(specimenId)
+                .orElseThrow(() -> new IllegalArgumentException("Mobilier introuvable: " + specimenId));
+
+        if (specimenRepository.countMovementsBySpecimenId(specimenId) > 0) {
+            throw new IllegalStateException("Impossible de supprimer : le mobilier a des mouvements associés");
+        }
+        if (specimenRepository.countGroupAttributionsBySpecimenId(specimenId) > 0) {
+            throw new IllegalStateException("Impossible de supprimer : le mobilier appartient à un ou plusieurs groupes");
+        }
+
+        documentRepository.deleteAllSpecimenDocumentLinksBySpecimenId(specimenId);
+
+        if (specimen.getAuthors() != null) {
+            specimen.getAuthors().clear();
+        }
+        if (specimen.getCollectors() != null) {
+            specimen.getCollectors().clear();
+        }
+        if (specimen.getDocuments() != null) {
+            specimen.getDocuments().clear();
+        }
+
+        Long arkId = specimen.getArk() != null ? specimen.getArk().getInternalId() : null;
+        specimenRepository.delete(specimen);
+
+        if (arkId != null) {
+            arkRepository.deleteById(arkId);
+        }
+    }
+
+    public Page<SpecimenDTO> searchSpecimen(InstitutionDTO institutionDTO, FilterDTO filters, Pageable pageable) {
+        Specification<Specimen> specs = prepareSpecs(institutionDTO, filters);
+
+        Page<Specimen> res = specimenRepository.findAll(specs, pageable);
+
+        return res.map(specimenMapper::convert);
+    }
+
+    public Page<SpecimenDTO> searchSpecimenInRecordingUnit(InstitutionDTO institutionDTO,
+                                                           RecordingUnitDTO recordingUnitDTO,
+                                                           FilterDTO filters, Pageable pageable) {
+        Specification<Specimen> specs = prepareSpecs(institutionDTO, filters);
+        specs = specs.and(SpecimenSpec.specimenInRecordingUnit(recordingUnitDTO.getId()));
+        Page<Specimen> res = specimenRepository.findAll(specs, pageable);
+
+        return res.map(specimenMapper::convert);
+    }
+
+    public Page<SpecimenDTO> searchSpecimenInActionUnit(InstitutionDTO institutionDTO,
+                                                           ActionUnitDTO actionUnitDTO,
+                                                           FilterDTO filters, Pageable pageable) {
+        Specification<Specimen> specs = prepareSpecs(institutionDTO, filters);
+        specs = specs.and(SpecimenSpec.specimenInActionUnit(actionUnitDTO.getId()));
+        Page<Specimen> res = specimenRepository.findAll(specs, pageable);
+
+        return res.map(specimenMapper::convert);
+    }
+
+    public int countSearchResultsInActionUnit(InstitutionDTO institutionDTO,
+                                              @NonNull ActionUnitDTO actionUnitDTO, FilterDTO filters) {
+        Specification<Specimen> specs = prepareSpecs(institutionDTO, filters);
+        specs = specs.and(SpecimenSpec.specimenInActionUnit(actionUnitDTO.getId()));
+        return Math.toIntExact(specimenRepository.count(specs));
+    }
+
+    public int countSearchResultsInRecordingUnit(InstitutionDTO institutionDTO,
+                                                 @NonNull RecordingUnitDTO recordingUnitDTO, FilterDTO filters) {
+        Specification<Specimen> specs = prepareSpecs(institutionDTO, filters);
+        specs = specs.and(SpecimenSpec.specimenInRecordingUnit(recordingUnitDTO.getId()));
+        return Math.toIntExact(specimenRepository.count(specs));
+    }
+
+    public int countSearchResults(InstitutionDTO institution, FilterDTO filters) {
+        Specification<Specimen> specs = prepareSpecs(institution, filters);
+        return Math.toIntExact(specimenRepository.count(specs));
+    }
+
+    public Specification<Specimen> prepareSpecs(@org.springframework.lang.NonNull InstitutionDTO institution,
+                                                @NonNull FilterDTO filters) {
+        Specification<Specimen> base = SpecimenSpec.specimenInInstitution(institution.getId());
+
+        if (filters.isRootOnly()) {
+            if (filters.hasUserFilters()) {
+                Collection<Long> closure = resolveAncestorClosure(institution, filters);
+                if (closure.isEmpty()) {
+                    return base.and((root, q, cb) -> cb.disjunction());
+                }
+                return base.and(SpecimenSpec.unitIsRoot()).and(SpecimenSpec.idIn(closure));
+            }
+            return base.and(SpecimenSpec.unitIsRoot());
+        }
+
+        return base.and(userFilterSpecs(filters));
+    }
+
+    public static Specification<Specimen> userFilterSpecs(@NonNull FilterDTO filters) {
+        Specification<Specimen> specification = Specification.where(null);
+
+        if (filters.containsColumn(SpecimenSpec.ACTION_UNIT_FILTER)) {
+            specification = specification.and(SpecimenSpec.isInActionUnit(filters.valueAsIdListOf(SpecimenSpec.ACTION_UNIT_FILTER)));
+        }
+
+        if (filters.containsColumn(SpecimenSpec.RECORDING_UNIT_FILTER)) {
+            specification = specification.and(SpecimenSpec.isInRecordingUnit(filters.valueAsIdListOf(SpecimenSpec.RECORDING_UNIT_FILTER)));
+        }
+
+        return specification;
+    }
+
+    private Collection<Long> resolveAncestorClosure(InstitutionDTO institution, FilterDTO filters) {
+        if (filters.getAncestorClosure() != null) {
+            return filters.getAncestorClosure();
+        }
+        Specification<Specimen> matchSpecs = SpecimenSpec
+                .specimenInInstitution(institution.getId())
+                .and(userFilterSpecs(filters));
+
+        List<Long> matchIds = specimenRepository.findAll(matchSpecs)
+                .stream()
+                .map(Specimen::getId)
+                .toList();
+        Set<Long> closure = matchIds.isEmpty()
+                ? Collections.emptySet()
+                : new HashSet<>(recordingUnitRepository.findAncestorClosure(matchIds.toArray(Long[]::new)));
+        filters.setAncestorClosure(closure);
+        filters.setMatchIds(new HashSet<>(matchIds));
+        return closure;
+    }
+
 
 }

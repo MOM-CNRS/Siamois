@@ -1,7 +1,6 @@
 <ui:composition xmlns="http://www.w3.org/1999/xhtml"
                 xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
                 xmlns:cc="http://xmlns.jcp.org/jsf/composite"
-                xmlns:h="http://java.sun.com/jsf/html"
                 xmlns:p="http://primefaces.org/ui"
 >
 
@@ -50,7 +49,7 @@
                     </p:selectBooleanCheckbox>
                 </div>
                 <p:menu overlay="true" trigger="btn" my="left top" at="left bottom">
-                    <p:menuitem value="Voir dans Opentheso" icon="sia-icon-opentheso"
+                    <p:menuitem value="Documentation" icon="bi bi-info-circle"
                                 target="_blank" url="#{cc.attrs.conceptUri}"/>
                     <p:divider rendered="#{cc.attrs.canBeRemoved}"/>
 

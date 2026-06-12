@@ -146,4 +146,15 @@ public class DocumentStorage {
         return Optional.empty();
     }
 
+    /**
+     * Supprime le fichier physique associé au document s'il existe (même logique de chemin que {@link #find}).
+     */
+    public void deleteStoredFile(Document document) {
+        find(document).ifPresent(file -> {
+            if (!file.delete()) {
+                log.warn("Could not delete file: {}", file.getAbsolutePath());
+            }
+        });
+    }
+
 }

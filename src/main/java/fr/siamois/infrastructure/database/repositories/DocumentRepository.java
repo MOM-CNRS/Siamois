@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.data.repository.history.RevisionRepository;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -123,4 +124,49 @@ public interface DocumentRepository extends CrudRepository<Document, Long>, Revi
                     "WHERE sud.fk_specimen_id = :specimenId AND sd.md5_sum = :hash"
     )
     boolean existsByHashInSpecimen(Long specimenId, String hash);
+
+    @Modifying
+    @Transactional
+    @Query(nativeQuery = true, value = "DELETE FROM action_unit_document WHERE fk_document_id = :documentId")
+    void deleteActionUnitDocumentLinks(@Param("documentId") Long documentId);
+
+    @Modifying
+    @Transactional
+    @Query(nativeQuery = true, value = "DELETE FROM action_unit_document WHERE fk_action_unit_id = :actionUnitId")
+    void deleteAllActionUnitDocumentLinksByActionUnitId(@Param("actionUnitId") Long actionUnitId);
+
+    @Modifying
+    @Transactional
+    @Query(nativeQuery = true, value = "DELETE FROM spatial_unit_document WHERE fk_document_id = :documentId")
+    void deleteSpatialUnitDocumentLinks(@Param("documentId") Long documentId);
+
+    @Modifying
+    @Transactional
+    @Query(nativeQuery = true, value = "DELETE FROM recording_unit_document WHERE fk_document_id = :documentId")
+    void deleteRecordingUnitDocumentLinks(@Param("documentId") Long documentId);
+
+    @Modifying
+    @Transactional
+    @Query(nativeQuery = true, value = "DELETE FROM recording_unit_document WHERE fk_recording_unit_id = :recordingUnitId")
+    void deleteAllRecordingUnitDocumentLinksByRecordingUnitId(@Param("recordingUnitId") Long recordingUnitId);
+
+    @Modifying
+    @Transactional
+    @Query(nativeQuery = true, value = "DELETE FROM specimen_document WHERE fk_document_id = :documentId")
+    void deleteSpecimenDocumentLinks(@Param("documentId") Long documentId);
+
+    @Modifying
+    @Transactional
+    @Query(nativeQuery = true, value = "DELETE FROM specimen_document WHERE fk_specimen_id = :specimenId")
+    void deleteAllSpecimenDocumentLinksBySpecimenId(@Param("specimenId") long specimenId);
+
+    @Modifying
+    @Transactional
+    @Query(nativeQuery = true, value = "DELETE FROM specimen_study_document WHERE fk_document_id = :documentId")
+    void deleteSpecimenStudyDocumentLinks(@Param("documentId") Long documentId);
+
+    @Modifying
+    @Transactional
+    @Query(nativeQuery = true, value = "DELETE FROM ru_study_document WHERE fk_document_id = :documentId")
+    void deleteRuStudyDocumentLinks(@Param("documentId") Long documentId);
 }

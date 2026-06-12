@@ -4,10 +4,12 @@ import com.sun.faces.config.ConfigureListener;
 import jakarta.faces.annotation.FacesConfig;
 import jakarta.faces.webapp.FacesServlet;
 import jakarta.servlet.ServletContext;
+import org.jboss.weld.environment.servlet.Listener;
 import org.springframework.boot.web.servlet.ServletListenerRegistrationBean;
 import org.springframework.boot.web.servlet.ServletRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.Ordered;
 import org.springframework.web.context.ServletContextAware;
 
 @FacesConfig
@@ -36,8 +38,20 @@ public class JsfConfig implements ServletContextAware {
         return registrationBean;
     }
 
+    /**
+     * Weld doit initialiser le BeanManager avant {@link ConfigureListener} (Mojarra exige CDI en Jakarta Faces 4).
+     */
+    @Bean
+    public ServletListenerRegistrationBean<Listener> weldServletListener() {
+        ServletListenerRegistrationBean<Listener> bean = new ServletListenerRegistrationBean<>(new Listener());
+        bean.setOrder(Ordered.HIGHEST_PRECEDENCE);
+        return bean;
+    }
+
     @Bean
     public ServletListenerRegistrationBean<ConfigureListener> jsfConfigureListener() {
-        return new ServletListenerRegistrationBean<>(new ConfigureListener());
+        ServletListenerRegistrationBean<ConfigureListener> bean = new ServletListenerRegistrationBean<>(new ConfigureListener());
+        bean.setOrder(Ordered.LOWEST_PRECEDENCE);
+        return bean;
     }
 }

@@ -24,36 +24,40 @@ public class UnitDefinitionSeeder {
     }
 
     public void seed(Vocabulary vocabulary, List<UnitDefinitionDTO> specs) {
-        for (var s : specs) {
-            Concept concept = conceptSeeder.findConceptOrReturnNull(s.getConcept().getVocabulary().getExternalVocabularyId(),
-                    s.getConcept().getExternalId());
+        for (int i = 0; i < specs.size(); i++) {
+            var s = specs.get(i);
+            try {
+                Concept concept = conceptSeeder.findConceptOrReturnNull(s.getConcept().getVocabulary().getExternalVocabularyId(),
+                        s.getConcept().getExternalId());
 
-            if (concept == null) {
-                conceptSeeder.seed(vocabulary,
-                        List.of(new ConceptSeeder.ConceptSpec(
+                if (concept == null) {
+                    conceptSeeder.seed(vocabulary,
+                            List.of(new ConceptSeeder.ConceptSpec(
+                                    s.getConcept().getVocabulary().getExternalVocabularyId(),
+                                    s.getConcept().getExternalId(),
+                                    s.getLabel(),
+                                    "fr"
+                            )));
+                }
+
+                UnitDefinition unitDefinition = mapper.invertConvert(s);
+
+                unitDefinition.setConcept(
+                        conceptSeeder.findConceptOrReturnNull(
                                 s.getConcept().getVocabulary().getExternalVocabularyId(),
-                                s.getConcept().getExternalId(),
-                                s.getLabel(),
-                                "fr"
-                        )));
+                                s.getConcept().getExternalId()
+                        )
+                );
+
+                UnitDefinition found = findUnitOrReturnNull(unitDefinition.getConcept());
+
+                if (found == null) {
+                    unitDefinitionRepository.save(unitDefinition);
+                }
+            } catch (Exception e) {
+                throw new IllegalStateException(
+                        "[Unité ligne " + (i + 1) + "] '" + s.getConcept().getExternalId() + "' : " + e.getMessage(), e);
             }
-
-            UnitDefinition unitDefinition = mapper.invertConvert(s);
-
-            unitDefinition.setConcept(
-                    conceptSeeder.findConceptOrReturnNull(
-                            s.getConcept().getVocabulary().getExternalVocabularyId(),
-                            s.getConcept().getExternalId()
-                    )
-            );
-
-
-            UnitDefinition found = findUnitOrReturnNull(unitDefinition.getConcept());
-
-            if (found == null) {
-                unitDefinitionRepository.save(unitDefinition);
-            }
-
         }
     }
 }

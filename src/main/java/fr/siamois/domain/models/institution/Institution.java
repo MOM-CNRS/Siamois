@@ -12,6 +12,7 @@ import org.hibernate.envers.NotAudited;
 import java.io.Serializable;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.HashSet;
 import java.util.Objects;
@@ -40,7 +41,7 @@ public class Institution implements Serializable {
     @DefaultValue("NOW()")
     @Column(name = "creation_date", nullable = false)
     @JsonIgnore
-    private OffsetDateTime creationDate = OffsetDateTime.now();
+    private OffsetDateTime creationDate = OffsetDateTime.now(ZoneOffset.UTC);
 
     @ManyToMany(fetch = FetchType.LAZY)
     @NotAudited

@@ -27,15 +27,6 @@ public class RecordingUnitLazyDataModel extends BaseRecordingUnitLazyDataModel {
     }
 
     @Override
-    protected Page<RecordingUnitDTO> loadRecordingUnits(String fullIdentifierFilter,
-                                                        Long[] categoryIds,
-                                                        Long[] personIds,
-                                                        String globalFilter,
-                                                        Pageable pageable) {
-        return Page.empty();
-    }
-
-    @Override
     protected Page<RecordingUnitDTO> loadData(FilterDTO filter, Pageable pageable) {
         return recordingUnitService.searchRecordingUnit(sessionSettings.getSelectedInstitution(), filter, pageable);
     }

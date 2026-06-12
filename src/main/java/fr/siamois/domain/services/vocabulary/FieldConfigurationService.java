@@ -30,8 +30,11 @@ import org.hibernate.Hibernate;
 import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -314,6 +317,28 @@ public class FieldConfigurationService {
 
     public int resultLimit() {
         return LIMIT_RESULTS;
+    }
+
+    /**
+     * Tous les vocabulaires (field_code → concepts) configurés pour l'institution et l'utilisateur courants.
+     * Chaque liste est limitée à {@link #LIMIT_RESULTS} concepts (même règle que l'autocomplete).
+     */
+    @NonNull
+    @Transactional(readOnly = true)
+    public Map<String, List<ConceptAutocompleteDTO>> fetchAllConfiguredVocabularies(@NonNull UserInfo info) {
+        Long institutionId = info.getInstitution().getId();
+        Long personId = info.getUser().getId();
+        List<String> fieldCodes = conceptFieldConfigRepository.findDistinctFieldCodesForInstitutionAndUser(
+                institutionId, personId);
+        Map<String, List<ConceptAutocompleteDTO>> out = new LinkedHashMap<>();
+        for (String fieldCode : fieldCodes) {
+            try {
+                out.put(fieldCode, fetchAutocomplete(info, fieldCode, null));
+            } catch (NoConfigForFieldException e) {
+                out.put(fieldCode, List.of());
+            }
+        }
+        return out;
     }
 
 }

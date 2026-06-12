@@ -1,7 +1,7 @@
 package fr.siamois.ui.bean.panel.models.panel.single.tab;
 
 import fr.siamois.dto.entity.RecordingUnitDTO;
-import fr.siamois.ui.table.RecordingUnitTableViewModel;
+import fr.siamois.ui.table.viewmodel.RecordingUnitTableViewModel;
 import lombok.Data;
 
 @Data

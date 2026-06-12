@@ -20,6 +20,7 @@ import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.tomcat.util.http.fileupload.InvalidFileNameException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.MimeType;
 
 import java.io.*;
@@ -62,7 +63,7 @@ public class DocumentService implements ArkEntityService {
 
     @Override
     public AbstractEntityDTO save(AbstractEntityDTO toSave) {
-        return null; // TODO IMPLEMENT
+        throw new UnsupportedOperationException("DocumentService.save(AbstractEntityDTO) is not implemented");
     }
 
     /**
@@ -167,6 +168,16 @@ public class DocumentService implements ArkEntityService {
     }
 
     /**
+     * Document persisté par identifiant technique ({@code document_id}).
+     */
+    public Optional<Document> findById(Long id) {
+        if (id == null) {
+            return Optional.empty();
+        }
+        return documentRepository.findById(id);
+    }
+
+    /**
      * Finds documents associated with a specific spatial unit.
      *
      * @param spatialUnit the spatial unit for which documents are to be found
@@ -260,6 +271,25 @@ public class DocumentService implements ArkEntityService {
         ByteArrayInputStream bais = new ByteArrayInputStream(result.get());
 
         return Optional.of(bais);
+    }
+
+    /**
+     * Supprime un document : liens de liaison (projets, UE, mobilier, etc.), fichier sur disque, ligne {@code siamois_document}.
+     */
+    @Transactional
+    public void deleteDocument(Document document) {
+        if (document == null || document.getId() == null) {
+            throw new IllegalArgumentException("Document id is required");
+        }
+        Long id = document.getId();
+        documentRepository.deleteActionUnitDocumentLinks(id);
+        documentRepository.deleteSpatialUnitDocumentLinks(id);
+        documentRepository.deleteRecordingUnitDocumentLinks(id);
+        documentRepository.deleteSpecimenDocumentLinks(id);
+        documentRepository.deleteSpecimenStudyDocumentLinks(id);
+        documentRepository.deleteRuStudyDocumentLinks(id);
+        documentStorage.deleteStoredFile(document);
+        documentRepository.delete(document);
     }
 
     /**

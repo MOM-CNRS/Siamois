@@ -6,10 +6,15 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.MessageSource;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.Locale;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.ArgumentMatchers.same;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -23,47 +28,75 @@ class LangServiceTest {
     @BeforeEach
     void setUp() {
         langService = new LangService(messageSource);
+        ReflectionTestUtils.setField(langService, "defaultLang", "fr");
     }
 
     @Test
-    void msg() {
-        String key = "greeting";
-        Locale locale = Locale.ENGLISH;
-        String expectedMessage = "Hello";
+    void msg_returnsMessageFromSource() {
+        when(messageSource.getMessage("greeting", null, Locale.ENGLISH)).thenReturn("Hello");
 
-        when(messageSource.getMessage(key, null, locale)).thenReturn(expectedMessage);
-
-        String actualMessage = langService.msg(key, locale);
-
-        assertEquals(expectedMessage, actualMessage);
+        assertThat(langService.msg("greeting", Locale.ENGLISH)).isEqualTo("Hello");
     }
 
     @Test
-    void testMsg() {
-        String format = "greeting";
-        Locale locale = Locale.ENGLISH;
-        String expectedMessage = "Hello, John!";
-        Object[] args = {"John"};
+    void msg_withArgs_formatsMessage() {
+        when(messageSource.getMessage("greeting", null, Locale.ENGLISH)).thenReturn("Hello, %s!");
 
-        when(messageSource.getMessage(format, null, locale)).thenReturn("Hello, %s!");
-
-        String actualMessage = langService.msg(format, locale, args);
-
-        assertEquals(expectedMessage, actualMessage);
+        assertThat(langService.msg("greeting", Locale.ENGLISH, "John")).isEqualTo("Hello, John!");
     }
 
     @Test
-    void getAvailableLanguages() {
+    void getAvailableLanguages_returnsConfiguredValues() {
         langService.setAvailableLanguages(new String[]{"en", "fr", "de"});
 
-        String[] languages = langService.getAvailableLanguages();
-
-        assertNotNull(languages);
-        assertNotEquals(0, languages.length, "Available languages should not be empty");
+        assertThat(langService.getAvailableLanguages()).containsExactly("en", "fr", "de");
     }
 
     @Test
-    void getDefaultLang() {
-        assertNull(langService.getDefaultLang());
+    void getDefaultLang_returnsConfiguredDefault() {
+        assertThat(langService.getDefaultLang()).isEqualTo("fr");
+    }
+
+    @Test
+    void localeForApiLang_nullOrBlank_usesDefaultLang() {
+        assertThat(langService.localeForApiLang(null)).isEqualTo(Locale.forLanguageTag("fr"));
+        assertThat(langService.localeForApiLang("  ")).isEqualTo(Locale.forLanguageTag("fr"));
+    }
+
+    @Test
+    void localeForApiLang_explicitLang_usesLanguageTag() {
+        assertThat(langService.localeForApiLang("en")).isEqualTo(Locale.forLanguageTag("en"));
+        assertThat(langService.localeForApiLang("de")).isEqualTo(Locale.forLanguageTag("de"));
+    }
+
+    @Test
+    void resolveMessage_nullOrBlankCode_returnsAsIs() {
+        assertThat(langService.resolveMessage(null, Locale.ENGLISH)).isNull();
+        assertThat(langService.resolveMessage("  ", Locale.ENGLISH)).isEqualTo("  ");
+    }
+
+    @Test
+    void resolveMessage_nullLocale_usesDefaultLang() {
+        when(messageSource.getMessage(eq("key"), isNull(), eq("key"), eq(Locale.forLanguageTag("fr"))))
+                .thenReturn("traduit");
+
+        assertThat(langService.resolveMessage("key", null)).isEqualTo("traduit");
+    }
+
+    @Test
+    void resolveMessage_withLocale_delegatesToMessageSourceWithFallbackCode() {
+        when(messageSource.getMessage("label.code", null, "label.code", Locale.ENGLISH))
+                .thenReturn("Label");
+
+        assertThat(langService.resolveMessage("label.code", Locale.ENGLISH)).isEqualTo("Label");
+        verify(messageSource).getMessage("label.code", null, "label.code", Locale.ENGLISH);
+    }
+
+    @Test
+    void resolveMessage_unknownKey_returnsOriginalCodeAsFallback() {
+        when(messageSource.getMessage(eq("unknown"), isNull(), eq("unknown"), same(Locale.FRENCH)))
+                .thenReturn("unknown");
+
+        assertThat(langService.resolveMessage("unknown", Locale.FRENCH)).isEqualTo("unknown");
     }
 }

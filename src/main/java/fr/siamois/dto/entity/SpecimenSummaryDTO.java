@@ -6,5 +6,5 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 public class SpecimenSummaryDTO extends AbstractEntityDTO {
-
+    protected String fullIdentifier;
 }

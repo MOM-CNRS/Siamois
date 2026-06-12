@@ -14,8 +14,8 @@ import fr.siamois.ui.bean.panel.models.PanelBreadcrumb;
 import fr.siamois.ui.form.FormContextServices;
 import fr.siamois.ui.lazydatamodel.BaseLazyDataModel;
 import fr.siamois.ui.lazydatamodel.SpecimenLazyDataModel;
-import fr.siamois.ui.table.SpecimenTableViewModel;
 import fr.siamois.ui.table.definitions.SpecimenTableDefinitionFactory;
+import fr.siamois.ui.table.viewmodel.SpecimenTableViewModel;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
@@ -122,6 +122,11 @@ public class SpecimenListPanel extends AbstractListPanel<SpecimenDTO>  implement
         return "bi bi-bucket";
     }
 
+    @Override
+    protected String getTableClientIdPrefix() {
+        return "specimenListForm:specimentList";
+    }
+
 
 
     public List<Person> authorsAvailable() {
@@ -157,6 +162,12 @@ public class SpecimenListPanel extends AbstractListPanel<SpecimenDTO>  implement
 
         public SpecimenListPanel.Builder breadcrumb(PanelBreadcrumb breadcrumb) {
             specimenListPanel.setBreadcrumb(breadcrumb);
+
+            return this;
+        }
+
+        public SpecimenListPanel.Builder viewId(Long viewId) {
+            specimenListPanel.setViewId(viewId);
 
             return this;
         }

@@ -10,7 +10,10 @@
 
     <!-- Content -->
 
-        <h:form id="singlePanelUnitForm-#{panelIndex}">
+        <h:form id="singlePanelUnitForm-#{panelIndex}"
+                style="display:flex; flex-direction:column; height: 100%; flex: 1 1 auto;
+    min-height: 0;
+    overflow: auto;">
             <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
 
             <!-- breadcrumbs if exists -->
@@ -22,7 +25,12 @@
             </p:outputPanel>
 
             <!-- Tabs -->
+            <div style="flex:1; min-height: 0;overflow: hidden" class="panel-tab-wrapper">
+
             <ui:include src="#{panelModel.getTabView()}"/>
+
+
+            </div>
 
             <!-- Save/Cancel Toolbar -->
             <p:toolbar class="panel-footer">

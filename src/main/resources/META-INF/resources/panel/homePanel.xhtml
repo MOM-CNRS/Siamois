@@ -37,7 +37,7 @@
 
                                         <p:outputPanel style="display: flex; gap:1em;">
                                             <i class="bi bi-pencil-square" style="color:var(--ground-main-color);"/>
-                                            <p:outputLabel value="#{actionUnit.recordingUnitList.size()} enregistrements"/>
+                                            <p:outputLabel value="#{actionUnit.recordingUnitCount} enregistrements"/>
                                         </p:outputPanel>
 
                                         <p:commandButton
@@ -159,6 +159,51 @@
                                     description="Mobiliers, prélèvements et VAB"
                                     newPanelId="panel-specimen-list-container"
                             />
+
+                        </p:column>
+
+                        <p:column styleClass="ui-g-12 ui-xs-12 ui-md-6 ui-lg-3">
+
+                            <siaCard:welcomeCard
+                                    icon="bi bi-layers"
+                                    cardStyleClass="sia-welcome-card sia-recording-unit"
+                                    chipStyleClass="recording-unit-count-chip-alt"
+                                    btnStyleClass="recording-unit-btn"
+                                    btnLabel="#{langBean.msg('homePanel.see.phase')}"
+                                    label="#{langBean.msg('common.entity.phases')}"
+                                    count="#{panelModel.nbOfPhases}"
+                                    btnAction="#{navBean.goToPhaseList(mode)}"
+                                    btnNewActionUpdate="newUnitForm"
+                                    btnNewActionOnComplete="PF('newUnitDiag').show();"
+                                    btnNewActionOnStart=""
+                                    btnNewAction="#{genericNewUnitDialogBean.openNewEntityDiag('PHASE')}"
+                                    isCreateAllowed="true"
+                                    description="Phases et sous-phases chronologiques"
+                                    newPanelId="panel-phase-list-container"
+                            />
+
+                        </p:column>
+
+                        <p:column styleClass="ui-g-12 ui-xs-12 ui-md-6 ui-lg-3">
+
+                            <siaCard:welcomeCard
+                                    icon="bi bi-box-seam"
+                                    cardStyleClass="sia-welcome-card sia-container"
+                                    chipStyleClass="container-count-chip-alt"
+                                    btnStyleClass="container-btn"
+                                    btnLabel="#{langBean.msg('homePanel.see.container')}"
+                                    label="#{langBean.msg('common.entity.containers')}"
+                                    count="0"
+                                    btnAction="#{navBean.goToContainerList(mode)}"
+                                    btnNewActionUpdate="newUnitForm"
+                                    btnNewActionOnComplete="PF('newUnitDiag').show();"
+                                    btnNewActionOnStart=""
+                                    btnNewAction="#{genericNewUnitDialogBean.openNewEntityDiag('CONTAINERS')}"
+                                    isCreateAllowed="false"
+                                    description="Contenants mobile (boites, sacs, etc.) pour le stockage des mobiliers et documents"
+                                    newPanelId="panel-container-list-container"
+                            />
+
 
                         </p:column>
 

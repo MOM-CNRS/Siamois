@@ -5,7 +5,7 @@
                 xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
                 xmlns:p="http://primefaces.org/ui"
                 xmlns:f="http://xmlns.jcp.org/jsf/core"
-                xmlns:form="http://java.sun.com/jsf/composite/pages/shared/form">
+>
 
     <ui:define name="head">
 
@@ -23,146 +23,159 @@
         <f:metadata>
             <f:viewParam name="main" value="#{focusViewBean.mainToken}"/>
             <f:viewParam name="s" value="#{focusViewBean.secondaryToken}"/>
+            <f:viewParam name="back" value="#{focusViewBean.backToken}"/>
             <f:viewAction action="#{focusViewBean.beforeInit}" onPostback="false"/>
         </f:metadata>
     </ui:define>
 
     <ui:define name="content">
 
-        <div style="display: flex; flex-direction: row; flex-shrink: 0">
-            <div id="search-bar" class="hide-small-screen" style="flex:8">
-                <form:csrfform formId="searchBarForm" id="searchBarCsrfForm">
-                    <article>
-                    <span class="ui-input-icon-right">
-                        <p:autoComplete id="searchAutocomplete"
-                                        styleClass="searchInput"
-                                        style="width: 100%"
-                                        value="#{searchBean.selected}"
-                                        var="result"
-                                        itemLabel="#{result.matchingTerm}"
-                                        itemValue="#{result}"
-                                        completeMethod="#{searchBean.completeText}"
-                                        scrollHeight="250"
-                        />
-                    </span>
-                    </article>
-                </form:csrfform>
-            </div>
-            <div id="smallScreenToolbar" class="show-small-screen" style="align-content: center; flex:1;
-            text-align:left; background: var(--siamois-green-light-100);padding: 0.5em">
-                <form:csrfform formId="toggleButtonSidebarPanelForm" id="toggleButtonSidebarPanelCsrfForm">
-                    <div style="display:flex;gap:1em;">
-                        <p:commandButton icon="bi bi-list" onclick="toggleSiamoisSidebar()">
-
-                        </p:commandButton>
-                        <h:panelGroup styleClass="ui-inputgroup">
-                            <h:panelGroup id="iconInstitSmallScreen" styleClass="ui-inputgroup-addon">
-                                <i class="bi bi-buildings"/>
-                            </h:panelGroup>
-                            <p:selectOneMenu
-                                    id="selectOneMenuInstitutionSmallScreen"
-                                    value="#{flowBean.selectedInstitution}"
-                                    filter="true"
-                                    style="max-width: 10em; text-overflow: ellipsis"
-                                    converter="#{institutionConverter}"
-                                    filterMatchMode="startsWith"
-                                    filterNormalize="true"
-                                    var="inst"
-                            >
-                                <f:selectItems value="#{flowBean.institutions}"
-                                               var="item"
-                                               itemValue="#{item}"
-                                               itemLabel="#{item.name}"
-                                />
-
-                                <p:column>
-                                    <h:outputText value="#{inst.name}"/>
-                                </p:column>
-
-                                <p:ajax event="change"
-                                        process="@this"
-                                        listener="#{flowBean.onInstitutionChange}"
-                                />
-                            </p:selectOneMenu>
-                        </h:panelGroup>
-                    </div>
-
-                </form:csrfform>
-            </div>
-            <div id="read-write-switch" style="align-content: center; flex:1;
-            text-align:right; background: var(--siamois-green-light-100);padding: 0.5em; gap:0.5em; display: flex; flex-direction: row-reverse;">
-                <h:form id="readWriteSwitchForm">
-                    <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
-                    <p:selectBooleanButton id="readWriteSwitchButton" value="#{flowBean.isWriteMode}"
-                                           offIcon="bi bi-eyeglasses" onIcon="bi bi-pen">
-                        <p:ajax event="valueChange" listener="#{flowBean.changeReadWriteMode()}"
-                                update="flow readWriteSwitchForm"
-                                onstart="PF('buiContent').show()" oncomplete="PF('buiContent').hide()"/>
-                    </p:selectBooleanButton>
-                    <p:tooltip for="readWriteSwitchButton" value="#{flowBean.readWriteSwitchTooltip}"
-                               position="bottom"/>
-                </h:form>
-                <h:form id="fieldDesktopSwitchForm">
-                    <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
-                    <p:selectBooleanButton style="display:none;" value="#{flowBean.isFieldMode}"
-                                           offIcon="bi bi-pc-display" onIcon="bi bi-phone" id="fieldOfficeSwitchButton">
-                        <p:ajax event="valueChange" listener="#{flowBean.changeFieldOfficeMode()}"
-                                update="flow fieldDesktopSwitchForm"
-                                onstart="PF('buiContent').show()" oncomplete="PF('buiContent').hide()"/>
-                    </p:selectBooleanButton>
-                    <p:tooltip for="fieldOfficeSwitchButton" value="#{flowBean.fieldOfficeSwitchTooltip}"
-                               position="bottom"/>
-                </h:form>
-                <ui:include src="/dialog/unsavedUpdates/unsavedUpdatesDialog.xhtml"/>
-            </div>
-        </div>
+        <ui:include src="/pages/shared/topbar.xhtml"/>
 
         <p:outputPanel style="display: flex;flex:1; flex-direction: row; overflow-y: hidden;" id="flow"
                        styleClass="focus">
 
             <h:form
-                    id="historyForm"
-                    styleClass="#{historyBean.historyOpen ? '' : 'is-collapsed'}"
+                    id="subSidebarForm"
+                    styleClass="sub-sidebar-container #{sidebarBean.visible ? '' : 'is-collapsed'} mode-#{sidebarBean.currentMode.name().toLowerCase()}"
                     style="height: 100%; flex-direction: column; align-items: center;"
             >
-                <div id="historyDiv" style="background: white;   width: 100%;  border: 1px solid #dee2e6;">
+                <style>
+                    .ui-datatable-invisible-header thead {
+                        display: none !important;
+                    }
 
-                    <p:commandButton
-                            id="toggle-history-btn"
-                            value="Historique"
-                            style="width: 100%"
-                            icon="bi bi-chevron-double-left"
-                            action="#{historyBean.toggleHistory}"
-                            update="@none"
-                            process="@this"
-                            oncomplete="toggleCollapseHistory();"
-                            styleClass="ui-button-flat"
-                    >
-                    </p:commandButton>
-                </div>
+                    .ui-datatable-invisible-header .ui-datatable-data tr td {
+                        border: none !important;
+                        padding: 4px 8px !important;
+                    }
+
+                    .bookmark-row {
+                        display: flex;
+                        align-items: center;
+                        width: 100%;
+                    }
+                </style>
 
                 <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
-                <p:outputPanel id="history" styleClass="history collapsed" style="height: 100%;width: 100%;">
-                    <p:dataScroller value="#{historyBean.items}"
-                                    mode="inline"
-                                    buffer="50"
-                                    style="height: 100%"
-                                    styleClass="panel-menu"
-                                    var="item" chunkSize="20">
-                        <f:facet name="loader">
-                            <p:commandButton type="button" value="+"/>
-                        </f:facet>
-                        <p:commandButton id="historyLink"
-                                         action="#{historyBean.redirectToEntry(item)}"
-                                         icon="#{item.icon}"
-                                         value="#{item.title}"
-                                         styleClass="#{item.styleClass} nav-link ui-button-flat">
-                        </p:commandButton>
-                        <p:tooltip for="@previous" value="#{item.title}"/>
+
+                <p:outputLabel id="sidebarAnimatedInner" class="sidebar-animated-inner"
+                               style="width: 320px; height: 100%; display: flex; flex-direction: column;">
+
+                    <div id="historyDiv" style="background: white; width: 100%; border: 1px solid #dee2e6;">
+                        <p:commandButton
+                                id="toggle-sidebar-btn"
+                                value="#{sidebarBean.currentMode == 'HISTORIQUE' ? 'Historique' : 'Favoris'}"
+                                style="width: 100%"
+                                icon="bi bi-chevron-double-left"
+                                action="#{sidebarBean.close()}"
+                                onstart="animateSidebarClose();"
+                                update="sidebarContent"
+                                process="@this"
+                                styleClass="ui-button-flat"
+                        />
+                    </div>
+
+                    <p:outputPanel id="sidebarContent" style="height: 100%; width: 100%; flex-grow: 1;">
+
+                        <p:outputPanel id="historyPanel" rendered="#{sidebarBean.currentMode == 'HISTORIQUE'}">
+                            <div style="height: 100%">
+                                <p:dataTable id="historyTable"
+                                             value="#{historyBean.items}"
+                                             var="historyItem"
+                                             rowKey="#{historyItem.id}"
+                                             scrollable="true"
+                                             scrollRows="40"
+                                             scrollHeight="100%"
+                                             virtualScroll="true"
+                                             styleClass="ui-datatable-invisible-header panel-menu">
 
 
-                    </p:dataScroller>
-                </p:outputPanel>
+
+                                    <p:column style="vertical-align: middle; width:100%">
+                                        <div class="bookmark-row" style="width: 100%;">
+
+                                                    <p:commandButton id="historyLink"
+                                                                     action="#{historyBean.redirectToEntry(historyItem)}"
+                                                                     icon="#{historyItem.icon}"
+                                                                     process="@this"
+                                                                     value="#{historyItem.title}"
+                                                                     styleClass="#{historyItem.styleClass} nav-link ui-button-flat bookmark-full-button"
+                                                                     style="width:100%">
+                                                    </p:commandButton>
+                                                    <p:tooltip for="historyLink"
+                                                               value="#{historyItem.title}"/>
+
+                                        </div>
+                                    </p:column>
+                                </p:dataTable>
+                            </div>
+                        </p:outputPanel>
+
+                        <p:outputPanel id="bookmarkPanel" style="height: 100%" rendered="#{sidebarBean.currentMode == 'BOOKMARKS'}">
+                                <p:dataTable id="bookmarksTable"
+                                             value="#{bookmarkMenuBean.lazyModel}"
+                                             var="bkm"
+                                             lazy="true"
+                                             editable="true"
+                                             rowKey="#{bkm.id}"
+                                             scrollable="true"
+                                             scrollRows="40"
+                                             scrollHeight="100%"
+                                             virtualScroll="true"
+                                             styleClass="ui-datatable-invisible-header panel-menu">
+
+                                    <p:ajax event="rowEdit" listener="#{bookmarkMenuBean.onRowEdit}"
+                                            update="bookmarksTable"/>
+                                    <p:ajax event="rowEditCancel" listener="#{bookmarkMenuBean.onRowCancel}"/>
+
+
+                                    <p:column style="vertical-align: middle; width:100%">
+                                        <div class="bookmark-row" style="width: 100%;">
+                                            <p:cellEditor style="width: 100%" >
+                                                <f:facet name="output">
+                                                    <p:commandButton id="bookmarkLink"
+                                                                     action="#{bookmarkMenuBean.redirectToEntry(bkm)}"
+                                                                     icon="#{bkm.bookmarkIcon}"
+                                                                     process="@this"
+                                                                     value="#{bookmarkMenuBean.resolveName(bkm)}"
+                                                                     styleClass="nav-link ui-button-flat bookmark-full-button"
+                                                                     style="color: #{bkm.bookmarkColor} !important; width:100%">
+                                                    </p:commandButton>
+                                                    <p:tooltip for="bookmarkLink"
+                                                               value="#{bookmarkMenuBean.getFilterTooltipSummary(bkm)}"/>
+                                                </f:facet>
+
+                                                <f:facet name="input">
+                                                    <div style="display: flex; align-items: center; width: 100%; padding: 4px 12px;">
+                                                        <i class="#{bkm.bookmarkIcon}"
+                                                           style="margin-right: 8px; color: #{bkm.bookmarkColor};"/>
+                                                        <p:inputText value="#{bkm.title}" style="width: 100%;"
+                                                                     required="true"/>
+                                                    </div>
+                                                </f:facet>
+                                            </p:cellEditor>
+                                        </div>
+                                    </p:column>
+
+                                    <p:column style="width: 40px; text-align: center; vertical-align: middle;">
+                                        <p:rowEditor rendered="#{bookmarkMenuBean.canEditViewNameOfBookmark(bkm)}"
+                                                     editTitle="Modifier" saveTitle="Valider" cancelTitle="Annuler" />
+                                    </p:column>
+
+                                    <p:column style="width: 40px; text-align: center; vertical-align: middle;">
+                                        <p:commandButton action="#{bookmarkMenuBean.deleteItem(bkm)}"
+                                                         icon="bi bi-trash"
+
+                                                         update="bookmarksTable"
+                                                         process="@this"
+                                                         styleClass="ui-button-flat ui-button-danger rounded-button"/>
+                                    </p:column>
+                                </p:dataTable>
+                        </p:outputPanel>
+
+                    </p:outputPanel>
+                </p:outputLabel>
             </h:form>
 
             <p:outputPanel id="flowContent" styleClass="flow fullscreen-flow focus">
@@ -176,20 +189,86 @@
                                 styleClass="#{focusViewBean.mainPanel.panelClass} panel-docked focus"
                                 style="border-radius: 0px; display: flex; flex-direction: column; border-top: 3px solid var(--main-color)"
                                 id="panel-${focusViewBean.mainPanel.prefixPanelIndex}">
+
                             <div class="sideview-titlebar" style="background: var(--siamois-green-light-100);">
-                                <h:form style="float:right;" id="actionForm-${focusViewBean.mainPanel.panelIndex}">
+                                <h:form style="float:right;display: flex;
+    gap: 1rem;" id="actionForm-${focusViewBean.mainPanel.panelIndex}">
                                     <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
+                                    <p:splitButton id="dirtyViewSplitButton"
+                                                   styleClass="view-edit-button"
+                                                   rendered="#{focusViewBean.mainPanel.canUserUpdateView()
+                                                   and focusViewBean.mainPanel.isDirty()}"
+                                                   value="Mettre à jour"
+                                                   icon="bi bi-bookmark"
+                                                   action="#{focusViewBean.mainPanel.updateCurrentView()}"
+                                                   update="panel-${focusViewBean.mainPanel.prefixPanelIndex}">
+                                        <p:menuitem value="Enregistrer comme nouvelle vue"
+                                                    update="panel-${focusViewBean.mainPanel.prefixPanelIndex}, subSidebarForm"
+                                                    action="#{focusViewBean.mainPanel.saveAsNewView()}"
+                                                    icon="bi bi-bookmark-plus"/>
+                                        <p:menuitem value="Réinitialiser la vue"
+                                                    update="panel-${focusViewBean.mainPanel.prefixPanelIndex}"
+                                                    action="#{focusViewBean.mainPanel.reinitializeView()}"
+                                                    icon="bi bi-arrow-clockwise"/>
+                                    </p:splitButton>
+                                    <p:splitButton value="Enregistrer comme nouvelle vue"
+                                                   styleClass="view-edit-button"
+                                                   update="panel-${focusViewBean.mainPanel.prefixPanelIndex}, subSidebarForm"
+                                                   rendered="#{(not focusViewBean.mainPanel.canUserUpdateView()) and focusViewBean.mainPanel.isDirty()}"
+                                                   action="#{focusViewBean.mainPanel.saveAsNewView()}"
+                                                   icon="bi bi-bookmark-plus">
+                                        <p:menuitem value="Réinitialiser la vue"
+                                                    update="panel-${focusViewBean.mainPanel.prefixPanelIndex}"
+                                                    action="#{focusViewBean.mainPanel.reinitializeView()}"
+                                                    icon="bi bi-arrow-clockwise"/>
+                                    </p:splitButton>
                                     <div style="padding: 3px;
                                             display: flex;
                                             border: 1px solid var(--siamois-green-light);
                                             border-radius: 15px;">
+
+                                        <p:commandLink id="closeFocusLink"
+                                                       rendered="#{not empty focusViewBean.mainPanel.goBackUrl}"
+                                                       styleClass="sideview-topbar-button"
+                                                       onclick="window.location.href='#{focusViewBean.mainPanel.goBackUrl}'; return false;"
+                                                       title="#{langBean.msg('nav.closeFocus')}">
+                                            <h:outputText styleClass="bi bi-arrows-angle-contract"/>
+                                        </p:commandLink>
                                         <p:commandLink id="bookmarkToggleButton"
                                                        styleClass="sideview-topbar-button"
-                                                       action="#{navBean.togglePanelBookmark(focusViewBean.mainPanel)}"
-                                                       update="bookmarkToggleButton navBarCsrfForm:siamoisNavForm">
-                                            <h:outputText styleClass="#{navBean.isPanelBookmarkedByUser(focusViewBean.mainPanel) ?
+                                                       action="#{focusViewBean.mainPanel.togglePanelBookmark()}"
+                                                       update="bookmarkToggleButton, navBarCsrfForm:siamoisNavForm, subSidebarForm, actionForm-#{focusViewBean.mainPanel.panelIndex}">
+                                            <h:outputText styleClass="#{focusViewBean.mainPanel.isBookmarked() ?
                             'ui-icon bi bi-bookmark-fill' : 'ui-icon bi bi-bookmark'}"/>
                                         </p:commandLink>
+                                        <p:commandLink id="createEntityBtn"
+                                                       rendered="#{focusViewBean.mainPanel.creationUnitKind != null and flowBean.isWriteMode}"
+                                                       styleClass="sideview-topbar-button"
+                                                       action="#{genericNewUnitDialogBean.openNewEntityDiag(focusViewBean.mainPanel.creationUnitKind, focusViewBean.mainPanel)}"
+                                                       update="newUnitForm"
+                                                       oncomplete="PF('newUnitDiag').show();"
+                                                       immediate="true">
+                                            <h:outputText styleClass="bi bi-plus-square"/>
+                                        </p:commandLink>
+                                        <p:tooltip for="createEntityBtn" value="Créer" position="bottom"/>
+                                        <p:commandLink id="duplicateBtn"
+                                                       rendered="#{focusViewBean.mainPanel.canDuplicate() and flowBean.isWriteMode}"
+                                                       styleClass="sideview-topbar-button"
+                                                       action="#{focusViewBean.mainPanel.duplicate()}"
+                                                       update="panel-${focusViewBean.mainPanel.prefixPanelIndex}-container"
+                                                       immediate="true">
+                                            <h:outputText styleClass="bi bi-copy"/>
+                                        </p:commandLink>
+                                        <p:tooltip for="duplicateBtn" value="Dupliquer" position="bottom"/>
+                                        <h:commandLink id="duplicateBtnDisabled"
+                                                      rendered="#{focusViewBean.mainPanel.creationUnitKind != null
+                                                                  and not focusViewBean.mainPanel.canDuplicate()
+                                                                  and flowBean.isWriteMode}"
+                                                      styleClass="sideview-topbar-button ui-commandlink ui-widget"
+                                                      style="opacity:0.4; cursor:not-allowed;">
+                                            <i class="bi bi-copy"/>
+                                        </h:commandLink>
+                                        <p:tooltip for="duplicateBtnDisabled" value="À venir" position="bottom" autoHide="false"/>
                                         <p:commandLink id="refreshPanelButton"
                                                        styleClass="sideview-topbar-button"
                                                        action="#{focusViewBean.mainPanel.refresh()}"
@@ -202,39 +281,25 @@
                                     </div>
 
                                 </h:form>
-                                <div style="display: flex;
+
+                                <h:form id="actionForm-${focusViewBean.mainPanel.panelIndex}-head">
+                                    <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
+                                    <div style="display: flex;
                                     gap: 0.5em;
                                     align-items: center;
                                     flex-wrap: wrap;">
-                                    <ui:include rendered="#{focusViewBean.mainPanel.displayHeader() != null}"
-                                                src="#{focusViewBean.mainPanel.displayHeader()}">
-                                        <ui:param name="panelModel" value="#{focusViewBean.mainPanel}"/>
-                                    </ui:include>
-                                </div>
+                                        <ui:include rendered="#{focusViewBean.mainPanel.displayHeader() != null}"
+                                                    src="#{focusViewBean.mainPanel.displayHeader()}">
+                                            <ui:param name="panelModel" value="#{focusViewBean.mainPanel}"/>
+                                        </ui:include>
+                                    </div>
+                                </h:form>
 
                             </div>
                             <p:outputPanel id="panelContent" deferred="false" loaded="#{focusViewBean.mainPanel.loaded}"
                                            deferredMode="visible" styleClass="focus" style="min-height: 0">
                                 <f:facet name="loading">
-                                    <div class="field" style="padding: 2em 3em;">
-                                        <p:skeleton class="mb-2"/>
-                                        <p:skeleton width="10rem" class="mb-2"/>
-                                        <p:skeleton width="5rem" class="mb-2"/>
-                                        <p:skeleton height="2rem" class="mb-2"/>
-                                        <p:skeleton width="10rem" height="4rem"/>
-                                        <p:skeleton width="10rem" class="mb-2"/>
-                                        <p:skeleton width="5rem" class="mb-2"/>
-                                        <p:skeleton height="2rem" class="mb-2"/>
-                                        <p:skeleton width="10rem" height="4rem"/>
-                                        <p:skeleton width="10rem" class="mb-2"/>
-                                        <p:skeleton width="5rem" class="mb-2"/>
-                                        <p:skeleton height="2rem" class="mb-2"/>
-                                        <p:skeleton width="10rem" height="4rem"/>
-                                        <p:skeleton width="10rem" class="mb-2"/>
-                                        <p:skeleton width="5rem" class="mb-2"/>
-                                        <p:skeleton height="2rem" class="mb-2"/>
-                                        <p:skeleton width="10rem" height="4rem"/>
-                                    </div>
+                                    <ui:include src="/pages/shared/panelLoadingSkeleton.xhtml"/>
                                 </f:facet>
                                 <p:ajax event="load" action="#{focusViewBean.mainPanel.loadData()}"
                                         update="panel-${focusViewBean.mainPanel.panelIndex}-container"/>
@@ -256,13 +321,7 @@
             </p:outputPanel>
         </p:outputPanel>
 
-        <p:blockUI block="flow" widgetVar="buiContent">
-            <i class="pi pi-spin pi-spinner" style="font-size: 3rem"/>
-        </p:blockUI>
-
-        <ui:include src="/dialog/document/newDocument.xhtml"/>
-        <ui:include src="/dialog/newunit/newUnitDialog.xhtml"/>
-        <ui:include src="/dialog/unsavedUpdates/unsavedUpdatesOnInstitutionChangeDialog.xhtml"/>
+        <ui:include src="/pages/shared/flowPageDialogs.xhtml"/>
 
     </ui:define>
 

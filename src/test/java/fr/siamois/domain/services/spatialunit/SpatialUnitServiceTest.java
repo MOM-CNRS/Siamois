@@ -37,6 +37,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.*;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -46,6 +47,8 @@ import static org.mockito.Mockito.*;
 @Slf4j
 @ExtendWith(MockitoExtension.class)
 class SpatialUnitServiceTest {
+    private static final OffsetDateTime NOW = OffsetDateTime.of(2024, 1, 15, 12, 0, 0, 0, ZoneOffset.UTC);
+
 
     @Mock
     private SpatialUnitRepository spatialUnitRepository;
@@ -111,125 +114,9 @@ class SpatialUnitServiceTest {
         pageDTO = new PageImpl<>(List.of(spatialUnit1DTO, spatialUnit2DTO));
 
 
-        lenient().when(spatialUnitRepository.findAllByParentAndByNameContainingAndByCategoriesAndByGlobalContaining(
-                any(Long.class),
-                any(String.class),
-                any(Long[].class),
-                any(Long[].class),
-                any(String.class),
-                any(String.class),
-                any(Pageable.class)
-        )).thenReturn(p);
-        lenient().when(spatialUnitRepository.findAllByChildAndByNameContainingAndByCategoriesAndByGlobalContaining(
-                any(Long.class),
-                any(String.class),
-                any(Long[].class),
-                any(Long[].class),
-                any(String.class),
-                any(String.class),
-                any(Pageable.class)
-        )).thenReturn(p);
-
     }
 
-    @Test
-    void testFindAllByInstitutionAndByNameContainingAndByCategoriesAndByGlobalContaining_Success() {
 
-        when(spatialUnitRepository.findAllByInstitutionAndByNameContainingAndByCategoriesAndByGlobalContaining(
-                any(Long.class),
-                any(String.class),
-                any(Long[].class),
-                any(Long[].class),
-                any(String.class),
-                any(String.class),
-                any(Pageable.class)
-        )).thenReturn(p);
-
-        // Act
-        Page<SpatialUnitDTO> actualResult = spatialUnitService.findAllByInstitutionAndByNameContainingAndByCategoriesAndByGlobalContaining(
-                1L, "null", new Long[2], new Long[2],"null", "fr", pageable
-        );
-
-        // Assert
-        assertThat(actualResult)
-                .hasSize(2);
-    }
-
-    @Test
-    void testFindAllByInstitutionAndByNameContainingAndByCategoriesAndByGlobalContaining_Exception() {
-
-        // Arrange
-        when(spatialUnitRepository.findAllByInstitutionAndByNameContainingAndByCategoriesAndByGlobalContaining(
-                any(Long.class),
-                any(String.class),
-                any(Long[].class),
-                any(Long[].class),
-                any(String.class),
-                any(String.class),
-                any(Pageable.class)
-        )).thenThrow(new RuntimeException("Database error"));
-
-        // Act & Assert
-        Exception exception = assertThrows(
-                Exception.class,
-                () -> spatialUnitService.findAllByInstitutionAndByNameContainingAndByCategoriesAndByGlobalContaining(
-                        1L, "null", new Long[2], new Long[2], "null", "fr", pageable
-                )
-        );
-
-        assertEquals("Database error", exception.getMessage());
-
-    }
-
-    @Test
-    void findAllChildOfSpatialUnit_Success() {
-
-        when(spatialUnitRepository.findAllByParentAndByNameContainingAndByCategoriesAndByGlobalContaining(
-                any(Long.class),
-                any(String.class),
-                any(Long[].class),
-                any(Long[].class),
-                any(String.class),
-                any(String.class),
-                any(Pageable.class)
-        )).thenReturn(p);
-
-        // Act
-        Page<SpatialUnitDTO> actualResult = spatialUnitService.findAllByParentAndByNameContainingAndByCategoriesAndByGlobalContaining(
-                spatialUnit1DTO, "null", new Long[2], new Long[2],"null", "fr", pageable);
-
-
-        // Assert
-        // Assert
-        assertThat(actualResult)
-                .hasSize(2);
-
-    }
-
-    @Test
-    void findAllChildOfSpatialUnit_Exception() {
-
-        // Arrange
-        when(spatialUnitRepository.findAllByParentAndByNameContainingAndByCategoriesAndByGlobalContaining(
-                any(Long.class),
-                any(String.class),
-                any(Long[].class),
-                any(Long[].class),
-                any(String.class),
-                any(String.class),
-                any(Pageable.class)
-        )).thenThrow(new RuntimeException("Database error"));
-
-        // Act & Assert
-        Exception exception = assertThrows(
-                Exception.class,
-                () -> spatialUnitService.findAllByParentAndByNameContainingAndByCategoriesAndByGlobalContaining(
-                        spatialUnit1DTO, "null", new Long[2],new Long[2], "null", "fr", pageable)
-        );
-
-        assertEquals("Database error", exception.getMessage());
-
-    }
 
     @Test
     void testFindById_Success() {
@@ -283,53 +170,6 @@ class SpatialUnitServiceTest {
         assertEquals("Database error", exception.getMessage());
     }
 
-    @Test
-    void findAllParentsOfSpatialUnit_Success() {
-
-        // Arrange
-        when(spatialUnitRepository.findAllByChildAndByNameContainingAndByCategoriesAndByGlobalContaining(
-                any(Long.class),
-                any(String.class),
-                any(Long[].class),
-                any(Long[].class),
-                any(String.class),
-                any(String.class),
-                any(Pageable.class)
-        )).thenReturn(p);
-
-        // Act
-        Page<SpatialUnitDTO> actualResult = spatialUnitService.findAllByChildAndByNameContainingAndByCategoriesAndByGlobalContaining(
-                spatialUnit1DTO, "null", new Long[2], new Long[2], "null", "fr", pageable);
-
-        // Assert
-        // Assert
-        assertThat(actualResult)
-                .hasSize(2);
-
-    }
-
-    @Test
-    void findAllParentsOfSpatialUnit_Exception() {
-        // Arrange
-        when(spatialUnitRepository.findAllByChildAndByNameContainingAndByCategoriesAndByGlobalContaining(
-                any(Long.class),
-                any(String.class),
-                any(Long[].class),
-                any(Long[].class),
-                any(String.class),
-                any(String.class),
-                any(Pageable.class)
-        )).thenThrow(new RuntimeException("Database error"));
-
-        // Act & Assert
-        Exception exception = assertThrows(
-                Exception.class,
-                () -> spatialUnitService.findAllByChildAndByNameContainingAndByCategoriesAndByGlobalContaining(
-                        spatialUnit1DTO, "null", new Long[2], new Long[2], "null", "fr", pageable)
-        );
-
-        assertEquals("Database error", exception.getMessage());
-    }
 
     @Test
     void findAllOfInstitution_Success() {
@@ -760,7 +600,7 @@ class SpatialUnitServiceTest {
         InstitutionDTO institutionDTO = new InstitutionDTO();
         institutionDTO.setId(1L);
         SpatialUnitDTO currentDTO = new SpatialUnitDTO();
-        currentDTO.setCreationTime(OffsetDateTime.now());
+        currentDTO.setCreationTime(NOW);
 
         SpatialUnit nextEntity = new SpatialUnit();
         SpatialUnitDTO nextDTO = new SpatialUnitDTO();
@@ -809,7 +649,7 @@ class SpatialUnitServiceTest {
         InstitutionDTO institutionDTO = new InstitutionDTO();
         institutionDTO.setId(1L);
         SpatialUnitDTO currentDTO = new SpatialUnitDTO();
-        currentDTO.setCreationTime(OffsetDateTime.now());
+        currentDTO.setCreationTime(NOW);
 
         SpatialUnit prevEntity = new SpatialUnit();
         SpatialUnitDTO prevDTO = new SpatialUnitDTO();
@@ -1205,5 +1045,132 @@ class SpatialUnitServiceTest {
         assertEquals(List.of(spatialUnit1DTO), result);
     }
 
+    // ------------------------------------------------------------------
+    // searchSpatialUnitsInSpatialUnit
+    // ------------------------------------------------------------------
+
+    @Test
+    void searchSpatialUnitsInSpatialUnit_happyPath_delegatesAndMapsPage() {
+        InstitutionDTO inst = new InstitutionDTO(); inst.setId(1L);
+        SpatialUnitDTO parent = new SpatialUnitDTO(); parent.setId(5L);
+        FilterDTO filters = new FilterDTO(false);
+
+        when(spatialUnitRepository.findAll(any(Specification.class), eq(pageable))).thenReturn(p);
+        when(spatialUnitMapper.convert(spatialUnit1)).thenReturn(spatialUnit1DTO);
+        when(spatialUnitMapper.convert(spatialUnit2)).thenReturn(spatialUnit2DTO);
+
+        Page<SpatialUnitDTO> result =
+                spatialUnitService.searchSpatialUnitsInSpatialUnit(inst, parent, filters, pageable);
+
+        assertEquals(2, result.getTotalElements());
+        verify(spatialUnitRepository).findAll(any(Specification.class), eq(pageable));
+    }
+
+    @Test
+    void searchSpatialUnitsInSpatialUnit_emptyPage_returnsEmptyAndSkipsMapper() {
+        InstitutionDTO inst = new InstitutionDTO(); inst.setId(1L);
+        SpatialUnitDTO parent = new SpatialUnitDTO(); parent.setId(5L);
+        FilterDTO filters = new FilterDTO(false);
+
+        when(spatialUnitRepository.findAll(any(Specification.class), eq(pageable)))
+                .thenReturn(new PageImpl<>(List.of()));
+
+        Page<SpatialUnitDTO> result =
+                spatialUnitService.searchSpatialUnitsInSpatialUnit(inst, parent, filters, pageable);
+
+        assertTrue(result.isEmpty());
+        verifyNoInteractions(spatialUnitMapper);
+    }
+
+    @Test
+    void searchSpatialUnitsInSpatialUnit_rootOnlyFalse_neverCallsListFindAll() {
+        InstitutionDTO inst = new InstitutionDTO(); inst.setId(1L);
+        SpatialUnitDTO parent = new SpatialUnitDTO(); parent.setId(5L);
+        FilterDTO filters = new FilterDTO(false);
+        filters.add(SpatialUnitSpec.NAME_FILTER, "site", FilterDTO.FilterType.CONTAINS);
+
+        when(spatialUnitRepository.findAll(any(Specification.class), eq(pageable)))
+                .thenReturn(new PageImpl<>(List.of()));
+
+        spatialUnitService.searchSpatialUnitsInSpatialUnit(inst, parent, filters, pageable);
+
+        verify(spatialUnitRepository, never()).findAll(any(Specification.class));
+    }
+
+    @Test
+    void searchSpatialUnitsInSpatialUnit_rootOnlyTrue_noUserFilters_neverResolveClosure() {
+        InstitutionDTO inst = new InstitutionDTO(); inst.setId(1L);
+        SpatialUnitDTO parent = new SpatialUnitDTO(); parent.setId(5L);
+        FilterDTO filters = new FilterDTO(true);
+
+        when(spatialUnitRepository.findAll(any(Specification.class), eq(pageable)))
+                .thenReturn(new PageImpl<>(List.of(spatialUnit1)));
+        when(spatialUnitMapper.convert(spatialUnit1)).thenReturn(spatialUnit1DTO);
+
+        spatialUnitService.searchSpatialUnitsInSpatialUnit(inst, parent, filters, pageable);
+
+        verify(spatialUnitRepository, never()).findAll(any(Specification.class));
+        verify(spatialUnitRepository, never()).findAncestorClosure(any());
+    }
+
+    @Test
+    void searchSpatialUnitsInSpatialUnit_rootOnlyTrue_withUserFilters_matchesFound_setsClosureAndMatchIds() {
+        InstitutionDTO inst = new InstitutionDTO(); inst.setId(1L);
+        SpatialUnitDTO parent = new SpatialUnitDTO(); parent.setId(5L);
+        FilterDTO filters = new FilterDTO(true);
+        filters.add(SpatialUnitSpec.NAME_FILTER, "fouille", FilterDTO.FilterType.CONTAINS);
+
+        when(spatialUnitRepository.findAll(any(Specification.class)))
+                .thenReturn(List.of(spatialUnit1));
+        when(spatialUnitRepository.findAncestorClosure(new Long[]{1L}))
+                .thenReturn(List.of(1L, 10L));
+        when(spatialUnitRepository.findAll(any(Specification.class), eq(pageable)))
+                .thenReturn(new PageImpl<>(List.of(spatialUnit1)));
+        when(spatialUnitMapper.convert(spatialUnit1)).thenReturn(spatialUnit1DTO);
+
+        spatialUnitService.searchSpatialUnitsInSpatialUnit(inst, parent, filters, pageable);
+
+        verify(spatialUnitRepository).findAll(any(Specification.class));
+        verify(spatialUnitRepository).findAncestorClosure(new Long[]{1L});
+        assertThat(filters.getMatchIds()).containsExactly(1L);
+        assertThat(new HashSet<>(filters.getAncestorClosure())).isEqualTo(Set.of(1L, 10L));
+    }
+
+    @Test
+    void searchSpatialUnitsInSpatialUnit_rootOnlyTrue_withUserFilters_noMatches_emptyClosureNoAncestorCall() {
+        InstitutionDTO inst = new InstitutionDTO(); inst.setId(1L);
+        SpatialUnitDTO parent = new SpatialUnitDTO(); parent.setId(5L);
+        FilterDTO filters = new FilterDTO(true);
+        filters.add(SpatialUnitSpec.NAME_FILTER, "absent", FilterDTO.FilterType.CONTAINS);
+
+        when(spatialUnitRepository.findAll(any(Specification.class)))
+                .thenReturn(List.of());
+        when(spatialUnitRepository.findAll(any(Specification.class), eq(pageable)))
+                .thenReturn(new PageImpl<>(List.of()));
+
+        Page<SpatialUnitDTO> result =
+                spatialUnitService.searchSpatialUnitsInSpatialUnit(inst, parent, filters, pageable);
+
+        assertTrue(result.isEmpty());
+        verify(spatialUnitRepository, never()).findAncestorClosure(any());
+        assertTrue(filters.getAncestorClosure().isEmpty());
+    }
+
+    @Test
+    void searchSpatialUnitsInSpatialUnit_cachedClosure_skipsFindAllListAndAncestorClosure() {
+        InstitutionDTO inst = new InstitutionDTO(); inst.setId(1L);
+        SpatialUnitDTO parent = new SpatialUnitDTO(); parent.setId(5L);
+        FilterDTO filters = new FilterDTO(true);
+        filters.add(SpatialUnitSpec.NAME_FILTER, "fouille", FilterDTO.FilterType.CONTAINS);
+        filters.setAncestorClosure(Set.of(1L, 2L));
+
+        when(spatialUnitRepository.findAll(any(Specification.class), eq(pageable)))
+                .thenReturn(new PageImpl<>(List.of()));
+
+        spatialUnitService.searchSpatialUnitsInSpatialUnit(inst, parent, filters, pageable);
+
+        verify(spatialUnitRepository, never()).findAll(any(Specification.class));
+        verify(spatialUnitRepository, never()).findAncestorClosure(any());
+    }
 
 }

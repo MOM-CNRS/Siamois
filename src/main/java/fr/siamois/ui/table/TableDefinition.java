@@ -1,6 +1,9 @@
 package fr.siamois.ui.table;
 
 import fr.siamois.domain.models.form.customfield.CustomField;
+import fr.siamois.ui.table.column.CommandLinkColumn;
+import fr.siamois.ui.table.column.FormFieldColumn;
+import fr.siamois.ui.table.column.TableColumn;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 
@@ -31,11 +34,6 @@ public class TableDefinition {
         }
     }
 
-    public List<TableColumn> getVisibleColumns() {
-        return columns.stream()
-                .filter(TableColumn::isVisible)
-                .toList();
-    }
 
     public List<FormFieldColumn> getFieldColumns() {
         return columns.stream()

@@ -42,7 +42,7 @@ public class ActionUnitSeeder {
 
     }
 
-    public record ActionUnitKey(String fullIdentifier) {}
+    public record ActionUnitKey(String fullIdentifier, String institutionIdentifier) {}
 
     private void getOrCreateActionUnit(ActionUnit actionUnit) {
         Optional<ActionUnit> opt = actionUnitRepository.findByFullIdentifier(actionUnit.getFullIdentifier());
@@ -53,38 +53,38 @@ public class ActionUnitSeeder {
 
     public void seed(List<ActionUnitSpecs> specs) {
 
-        for (var s : specs) {
-            // Find Type
-            Concept type = conceptRepository
+        for (int i = 0; i < specs.size(); i++) {
+            var s = specs.get(i);
+            try {
+            Concept type = SeederUtils.field("type", () -> conceptRepository
                     .findConceptByExternalIdIgnoreCase(s.typeVocabularyExtId, s.typeConceptExtId)
-                    .orElseThrow(() -> new IllegalStateException("Concept introuvable"));
-            // Find author
-            Person author = personRepository
+                    .orElseThrow(() -> new IllegalStateException("Concept introuvable")));
+            Person author = SeederUtils.field("authorEmail", () -> personRepository
                     .findByEmailIgnoreCase(s.authorEmail)
-                    .orElseThrow(() -> new IllegalStateException("Auteur introuvable"));
-            // Find action code
+                    .orElseThrow(() -> new IllegalStateException("Auteur introuvable")));
             ActionCode actionCode = null;
-            if(s.primaryActionCode!=null) {
-                actionCode = actionCodeRepository
+            if(s.primaryActionCode != null) {
+                actionCode = SeederUtils.field("primaryActionCode", () -> actionCodeRepository
                         .findById(s.primaryActionCode)
-                        .orElseThrow(() -> new IllegalStateException("Action code introuvable"));
+                        .orElseThrow(() -> new IllegalStateException("Action code introuvable")));
             }
 
-            // Find Institution
-            Institution institution = institutionRepository.findInstitutionByIdentifier(s.institutionIdentifier)
-                    .orElseThrow(() -> new IllegalStateException("Institution introuvable"));
+            Institution institution = SeederUtils.field("institutionIdentifier", () -> institutionRepository
+                    .findInstitutionByIdentifier(s.institutionIdentifier)
+                    .orElseThrow(() -> new IllegalStateException("Institution introuvable")));
             Set<SpatialUnit> spatialContext = new HashSet<>();
             if(s.spatialContextKeys != null) {
                 for(var childKey : s.spatialContextKeys) {
-                    SpatialUnit child = spatialUnitRepository.findByNameAndInstitution(childKey.unitName(), institution.getId())
-                            .orElseThrow(() -> new IllegalStateException("USp introuvable"));
-                    spatialContext.add(child);
+                    spatialContext.add(SeederUtils.field("spatialContext[" + childKey.unitName() + "]", () ->
+                            spatialUnitRepository.findByNameAndInstitution(childKey.unitName(), institution.getId())
+                                    .orElseThrow(() -> new IllegalStateException("USp introuvable"))));
                 }
             }
 
             SpatialUnit mainLocation = null;
             if(s.mainLocation != null) {
-                 mainLocation = spatialUnitRepository.findByNameAndInstitution(s.mainLocation.unitName(), institution.getId()).orElse(null);
+                mainLocation = SeederUtils.field("mainLocation", () ->
+                        spatialUnitRepository.findByNameAndInstitution(s.mainLocation.unitName(), institution.getId()).orElse(null));
             }
 
             ActionUnit toGetOrCreate = new ActionUnit();
@@ -104,6 +104,10 @@ public class ActionUnitSeeder {
             toGetOrCreate.setEndDate(s.endDate);
             getOrCreateActionUnit(toGetOrCreate);
 
+            } catch (Exception e) {
+                throw new IllegalStateException(
+                        "[Projet ligne " + (i + 1) + "] '" + s.fullIdentifier + "' : " + e.getMessage(), e);
+            }
         }
     }
 

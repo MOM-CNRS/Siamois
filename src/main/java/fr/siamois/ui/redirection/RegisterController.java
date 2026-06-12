@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.Optional;
 
 @Slf4j
@@ -46,7 +47,7 @@ public class RegisterController {
     }
 
     private static boolean invitationIsExpired(PendingPerson pendingPerson) {
-        return OffsetDateTime.now().isAfter(pendingPerson.getPendingInvitationExpirationDate());
+        return OffsetDateTime.now(ZoneOffset.UTC).isAfter(pendingPerson.getPendingInvitationExpirationDate());
     }
 
 }

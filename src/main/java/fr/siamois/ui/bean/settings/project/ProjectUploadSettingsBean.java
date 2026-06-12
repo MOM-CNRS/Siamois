@@ -1,0 +1,113 @@
+package fr.siamois.ui.bean.settings.project;
+
+
+import fr.siamois.domain.models.events.LoginEvent;
+import fr.siamois.dto.entity.ActionUnitDTO;
+import fr.siamois.infrastructure.database.initializer.seeder.ImportSpecs;
+import fr.siamois.infrastructure.database.initializer.seeder.ProjectDataSeeder;
+import fr.siamois.infrastructure.dataimport.OOXMLImportService;
+import jakarta.faces.application.FacesMessage;
+import jakarta.faces.context.FacesContext;
+import lombok.Data;
+import lombok.RequiredArgsConstructor;
+import org.primefaces.PrimeFaces;
+import org.primefaces.event.FileUploadEvent;
+import org.primefaces.model.DefaultStreamedContent;
+import org.primefaces.model.StreamedContent;
+import org.primefaces.model.file.UploadedFile;
+import org.springframework.context.annotation.Scope;
+import org.springframework.context.annotation.ScopedProxyMode;
+import org.springframework.context.event.EventListener;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.stereotype.Component;
+
+import java.io.IOException;
+import java.io.InputStream;
+
+@Component
+@Scope(value = "session", proxyMode = ScopedProxyMode.TARGET_CLASS)
+@RequiredArgsConstructor
+@Data
+public class ProjectUploadSettingsBean {
+
+    public static final String TEMPLATE_FORM_CC_TEMPLATE_FORM_TEMPLATE_GROWL = "templateFormCC:templateForm:templateGrowl";
+    private final OOXMLImportService importService;
+    private final ProjectDataSeeder seeder;
+
+    ActionUnitDTO project;
+    UploadedFile originalFile;
+    StreamedContent templateFile;
+    ImportSpecs specs;
+    boolean readyToUpload = false;
+
+    public void init(ActionUnitDTO project) {
+        reset();
+        this.project = project;
+
+        templateFile = DefaultStreamedContent.builder()
+                .name("Import_Chartres_Projet.xlsx")
+                .contentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+                .stream(() -> {
+                    try {
+                        return new ClassPathResource(
+                                "datasets/Import_Chartres_Projet.xlsx")
+                                .getInputStream();
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+                })
+                .build();
+    }
+    @EventListener(LoginEvent.class)
+    public void reset() {
+        project = null;
+        readyToUpload=false;
+        specs = null;
+        originalFile = null;
+    }
+
+    public void uploadSpec() {
+        if(specs == null) {
+            FacesContext.getCurrentInstance().addMessage(TEMPLATE_FORM_CC_TEMPLATE_FORM_TEMPLATE_GROWL,
+                    new FacesMessage(FacesMessage.SEVERITY_ERROR, "Rien à importer", null));
+            PrimeFaces.current().ajax().update(TEMPLATE_FORM_CC_TEMPLATE_FORM_TEMPLATE_GROWL);
+        }
+        try {
+            seeder.seedAll(specs,project);
+            FacesContext.getCurrentInstance().addMessage(TEMPLATE_FORM_CC_TEMPLATE_FORM_TEMPLATE_GROWL,
+                    new FacesMessage(FacesMessage.SEVERITY_INFO, "Données importées avec succès", null));
+            PrimeFaces.current().ajax().update(TEMPLATE_FORM_CC_TEMPLATE_FORM_TEMPLATE_GROWL);
+            reset();
+        } catch (Exception e) {
+            FacesContext.getCurrentInstance().addMessage(TEMPLATE_FORM_CC_TEMPLATE_FORM_TEMPLATE_GROWL,
+                    new FacesMessage(FacesMessage.SEVERITY_ERROR, "Une erreur est survenue", e.getMessage()));
+            PrimeFaces.current().ajax().update(TEMPLATE_FORM_CC_TEMPLATE_FORM_TEMPLATE_GROWL);
+        }
+    }
+
+    public void handleFileUpload(FileUploadEvent event) {
+        this.originalFile = null;
+        UploadedFile file = event.getFile();
+
+        // Vérification de base sur le fichier
+        if (file != null && file.getFileName() != null) {
+
+            // Utilisation du try-with-resources pour ouvrir et fermer le flux proprement
+            try (InputStream is = file.getInputStream()) {
+
+                // Appel de votre service d'import avec le flux d'entrée
+                this.specs = importService.importFromExcel(is,
+                        OOXMLImportService.ImportScope.PROJECT,
+                        project);
+                readyToUpload = true;
+
+            } catch (Exception e) {
+                // Gestion de l'erreur d'import ou de lecture de fichier
+                FacesContext.getCurrentInstance().addMessage(null,
+                        new FacesMessage(FacesMessage.SEVERITY_ERROR, "Erreur", "Échec du chargement du fichier : " + e.getMessage()));
+            }
+        }
+    }
+
+
+}

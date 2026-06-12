@@ -1,0 +1,83 @@
+package fr.siamois.domain.models.phase.form;
+
+import fr.siamois.domain.models.form.customform.CustomCol;
+import fr.siamois.domain.models.form.customform.CustomForm;
+import fr.siamois.domain.models.form.customform.CustomFormPanel;
+import fr.siamois.domain.models.form.customform.CustomRow;
+
+import static fr.siamois.ui.bean.panel.models.panel.single.AbstractSingleEntity.COLUMN_CLASS_NAME;
+
+public class PhaseDetailsForm extends PhaseForm {
+
+    public static CustomForm build() {
+        return new CustomForm.Builder()
+                .name("Phase details form")
+                .description("Contains the main form")
+                .addPanel(
+                        new CustomFormPanel.Builder()
+                                .name("common.header.general")
+                                .isSystemPanel(true)
+                                .addRow(new CustomRow.Builder()
+                                        .addColumn(new CustomCol.Builder()
+                                                .readOnly(true)
+                                                .className(COLUMN_CLASS_NAME)
+                                                .field(identifierField)
+                                                .build())
+                                        .addColumn(new CustomCol.Builder()
+                                                .readOnly(false)
+                                                .className(COLUMN_CLASS_NAME)
+                                                .field(typeField)
+                                                .build())
+                                        .addColumn(new CustomCol.Builder()
+                                                .readOnly(false)
+                                                .className(COLUMN_CLASS_NAME)
+                                                .field(titleField)
+                                                .build())
+                                        .build())
+                                .addRow(new CustomRow.Builder()
+                                        .addColumn(new CustomCol.Builder()
+                                                .readOnly(false)
+                                                .className(COLUMN_CLASS_NAME)
+                                                .field(orderNumberField)
+                                                .build())
+                                        .addColumn(new CustomCol.Builder()
+                                                .readOnly(false)
+                                                .className(COLUMN_CLASS_NAME)
+                                                .field(keywordsField)
+                                                .build())
+                                        .build())
+                                .addRow(new CustomRow.Builder()
+                                        .addColumn(new CustomCol.Builder()
+                                                .readOnly(false)
+                                                .className("ui-g-12 ui-md-12 ui-lg-12")
+                                                .field(descriptionField)
+                                                .build())
+                                        .build())
+                                .build()
+                )
+                .addPanel(
+                        new CustomFormPanel.Builder()
+                                .name("common.header.chronologie")
+                                .isSystemPanel(true)
+                                .addRow(new CustomRow.Builder()
+                                        .addColumn(new CustomCol.Builder()
+                                                .readOnly(false)
+                                                .className(COLUMN_CLASS_NAME)
+                                                .field(periodsField)
+                                                .build())
+                                        .addColumn(new CustomCol.Builder()
+                                                .readOnly(false)
+                                                .className(COLUMN_CLASS_NAME)
+                                                .field(lowerBoundField)
+                                                .build())
+                                        .addColumn(new CustomCol.Builder()
+                                                .readOnly(false)
+                                                .className(COLUMN_CLASS_NAME)
+                                                .field(upperBoundField)
+                                                .build())
+                                        .build())
+                                .build()
+                )
+                .build();
+    }
+}
