@@ -70,6 +70,8 @@ public class ActionUnitSpec {
                     cb.like(cb.lower(cb.coalesce(root.get("fullIdentifier"), "")), pattern)
             );
         };
+    }
+
     @NonNull
     public static Specification<ActionUnit> actionUnitInSpatialUnit(long spatialUnitId) {
         return (root, query, cb) ->
