@@ -16,6 +16,7 @@ import fr.siamois.utils.MessageUtils;
 import org.springframework.stereotype.Component;
 
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -59,7 +60,7 @@ public class RecordingUnitHandler implements INewUnitHandler<RecordingUnitDTO> {
     @Override public UnitKind kind() { return UnitKind.RECORDING; }
     @Override public RecordingUnitDTO newEmpty() {
         RecordingUnitDTO recordingUnit = new RecordingUnitDTO();
-        recordingUnit.setOpeningDate(OffsetDateTime.now());
+        recordingUnit.setOpeningDate(OffsetDateTime.now(ZoneOffset.UTC));
         return recordingUnit;
     }
 
@@ -142,7 +143,7 @@ public class RecordingUnitHandler implements INewUnitHandler<RecordingUnitDTO> {
             unit.setActionUnit(clicked.getActionUnit());
             unit.setAuthor(sessionSettingsBean.getAuthenticatedUser());
             unit.setContributors(List.of(sessionSettingsBean.getAuthenticatedUser()));
-            unit.setOpeningDate(OffsetDateTime.now());
+            unit.setOpeningDate(OffsetDateTime.now(ZoneOffset.UTC));
             unit.setSpatialUnit(clicked.getSpatialUnit());
         }
 
@@ -170,7 +171,7 @@ public class RecordingUnitHandler implements INewUnitHandler<RecordingUnitDTO> {
                 unit.setActionUnit(new ActionUnitSummaryDTO(au));
                 unit.setAuthor(sessionSettingsBean.getAuthenticatedUser());
                 unit.setContributors(List.of(sessionSettingsBean.getAuthenticatedUser()));
-                unit.setOpeningDate(OffsetDateTime.now());
+                unit.setOpeningDate(OffsetDateTime.now(ZoneOffset.UTC));
                 return ;
             }
         }

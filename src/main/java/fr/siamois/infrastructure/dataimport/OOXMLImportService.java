@@ -450,7 +450,7 @@ public class OOXMLImportService {
         OffsetDateTime beginDate = parseOptionalDate(row, cols, "date d'ouverture");
         OffsetDateTime endDate   = parseOptionalDate(row, cols, "date de fermeture");
 
-        OffsetDateTime creationTime = OffsetDateTime.now();
+        OffsetDateTime creationTime = OffsetDateTime.now(ZoneOffset.UTC);
         String createdBy = SIAMOIS_SYSTEM;
 
         SpatialUnitSeeder.SpatialUnitKey spatialKey = parseOptionalSpatialUnit(row, cols, "unite spatiale");

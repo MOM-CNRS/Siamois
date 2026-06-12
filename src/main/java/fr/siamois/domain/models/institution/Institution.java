@@ -13,6 +13,7 @@ import java.io.Serializable;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.time.ZoneOffset;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
@@ -40,7 +41,7 @@ public class Institution implements Serializable {
     @DefaultValue("NOW()")
     @Column(name = "creation_date", nullable = false)
     @JsonIgnore
-    private OffsetDateTime creationDate = OffsetDateTime.now();
+    private OffsetDateTime creationDate = OffsetDateTime.now(ZoneOffset.UTC);
 
     @ManyToMany(fetch = FetchType.LAZY)
     @NotAudited

@@ -50,6 +50,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
@@ -559,7 +560,7 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
             toSave.setAuthor(sessionSettingsBean.getAuthenticatedUser());
             toSave.setCreatedBy(sessionSettingsBean.getAuthenticatedUser());
             toSave.setContributors(List.of(sessionSettingsBean.getAuthenticatedUser()));
-            toSave.setOpeningDate(OffsetDateTime.now());
+            toSave.setOpeningDate(OffsetDateTime.now(ZoneOffset.UTC));
             toSave.setType(answer.getNewType().concept());
             toSave.setParents(new HashSet<>());
             toSave.setChildren(new HashSet<>());
@@ -623,7 +624,7 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
             toSave.setAuthor(sessionSettingsBean.getAuthenticatedUser());
             toSave.setCreatedBy(sessionSettingsBean.getAuthenticatedUser());
             toSave.setContributors(List.of(sessionSettingsBean.getAuthenticatedUser()));
-            toSave.setOpeningDate(OffsetDateTime.now());
+            toSave.setOpeningDate(OffsetDateTime.now(ZoneOffset.UTC));
             toSave.setType(answer.getNewType().concept());
             toSave.setParents(new HashSet<>());
             toSave.setChildren(new HashSet<>());

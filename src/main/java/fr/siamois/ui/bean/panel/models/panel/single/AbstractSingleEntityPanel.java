@@ -38,6 +38,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.Serializable;
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -388,7 +389,7 @@ public abstract class AbstractSingleEntityPanel<T extends AbstractEntityDTO> ext
             revision = new InfoRevisionEntity();
             UserInfo userInfo = sessionSettingsBean.getUserInfo();
             revision.setRevId(0L);
-            revision.setEpochTimestamp(OffsetDateTime.now().toEpochSecond());
+            revision.setEpochTimestamp(OffsetDateTime.now(ZoneOffset.UTC).toEpochSecond());
             revision.setUpdatedBy(conversionService.convert(userInfo.getUser(), Person.class));
             revision.setUpdatedFrom(conversionService.convert(userInfo.getInstitution(), Institution.class));
         }
