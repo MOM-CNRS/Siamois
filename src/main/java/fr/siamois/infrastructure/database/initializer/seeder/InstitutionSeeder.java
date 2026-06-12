@@ -48,20 +48,24 @@ public class InstitutionSeeder {
         }
     }
 
+    private Set<Person> buildManagers(List<String> managerEmails) {
+        Set<Person> managers = new HashSet<>();
+        if (managerEmails == null) return managers;
+        for (var email : managerEmails) {
+            managers.add(SeederUtils.field("managerEmails[" + email + "]", () -> {
+                Person p = personSeeder.findPersonOrReturnNull(email);
+                if (p == null) throw new IllegalArgumentException("Email introuvable: " + email);
+                return p;
+            }));
+        }
+        return managers;
+    }
+
     public void seed(List<InstitutionSpec> specs) throws DatabaseDataInitException {
         for (int i = 0; i < specs.size(); i++) {
             var s = specs.get(i);
             try {
-                Set<Person> managers = new HashSet<>();
-                if (s.managerEmails != null) {
-                    for (var email : s.managerEmails) {
-                        managers.add(SeederUtils.field("managerEmails[" + email + "]", () -> {
-                            Person p = personSeeder.findPersonOrReturnNull(email);
-                            if (p == null) throw new IllegalArgumentException("Email introuvable: " + email);
-                            return p;
-                        }));
-                    }
-                }
+                Set<Person> managers = buildManagers(s.managerEmails);
 
                 Vocabulary thesaurus = SeederUtils.field("thesaurus", () -> {
                     Vocabulary t = thesaurusSeeder.findVocabularyOrReturnNull(s.baseUri, s.externalId);
