@@ -44,6 +44,15 @@ public class CustomFieldSeeder {
         ).orElseThrow(() -> new IllegalStateException("Can't find field in Db"));
     }
 
+    private CustomField instantiate(CustomFieldSeederSpec s) throws DatabaseDataInitException {
+        try {
+            return s.answerClass().getDeclaredConstructor().newInstance();
+        } catch (InstantiationException | IllegalAccessException | InvocationTargetException |
+                 NoSuchMethodException e) {
+            throw new DatabaseDataInitException(e.getMessage(), e.getCause());
+        }
+    }
+
     public void seed(List<CustomFieldSeederSpec> specs) throws DatabaseDataInitException {
         for (int i = 0; i < specs.size(); i++) {
             var s = specs.get(i);
@@ -52,15 +61,7 @@ public class CustomFieldSeeder {
 
                 CustomField field = findFieldOrReturnNull(s,c);
                 if(field == null) {
-                    CustomField f;
-                    try {
-                        f = s.answerClass()
-                                .getDeclaredConstructor()
-                                .newInstance();
-                    } catch (InstantiationException | IllegalAccessException | InvocationTargetException |
-                             NoSuchMethodException e) {
-                        throw new DatabaseDataInitException(e.getMessage(), e.getCause());
-                    }
+                    CustomField f = instantiate(s);
 
                     f.setIsSystemField(s.isSystemField());
                     f.setValueBinding(s.valueBinding());

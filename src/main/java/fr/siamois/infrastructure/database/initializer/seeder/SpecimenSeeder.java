@@ -39,6 +39,15 @@ public class SpecimenSeeder {
 
     }
 
+    private List<Person> buildPersonList(List<String> emails, String fieldPrefix) {
+        List<Person> persons = new ArrayList<>();
+        if (emails == null) return persons;
+        for (var email : emails) {
+            persons.add(SeederUtils.field(fieldPrefix + "[" + email + "]", () -> personSeeder.findOrCreatePerson(email)));
+        }
+        return persons;
+    }
+
     private void getOrCreateSpecimen(Specimen specimen) {
 
         Optional<Specimen> opt = specimenRepository.findByFullIdentifierAndInstitutionIdAndRecordingUnitFullIdentifierAndActionUnitFullIdentifier(
@@ -65,18 +74,8 @@ public class SpecimenSeeder {
                     return inst;
                 });
 
-                List<Person> authors = new ArrayList<>();
-                List<Person> collectors = new ArrayList<>();
-                if (s.authors != null) {
-                    for (var email : s.authors) {
-                        authors.add(SeederUtils.field("authors[" + email + "]",    () -> personSeeder.findOrCreatePerson(email)));
-                    }
-                }
-                if (s.collectors != null) {
-                    for (var email : s.collectors) {
-                        collectors.add(SeederUtils.field("collectors[" + email + "]", () -> personSeeder.findOrCreatePerson(email)));
-                    }
-                }
+                List<Person> authors    = buildPersonList(s.authors,    "authors");
+                List<Person> collectors = buildPersonList(s.collectors, "collectors");
 
                 RecordingUnit ru = SeederUtils.field("UE", () -> recordingUnitSeeder.getRecordingUnitFromKey(s.recordingUnitKey, institutionId));
 
