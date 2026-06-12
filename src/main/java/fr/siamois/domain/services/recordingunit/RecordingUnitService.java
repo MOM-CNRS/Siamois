@@ -1163,7 +1163,7 @@ public class RecordingUnitService implements ArkEntityService {
                 dto.setSpecimenCount(specimenCounts.getOrDefault(dto.getId(), 0L));
                 dto.setParentsCount(dto.getParents() == null ? 0 : dto.getParents().size());
                 dto.setChildrenCount(dto.getChildren() == null ? 0 : dto.getChildren().size());
-                dto.setRelationshipCount(relationshipCounts.getOrDefault(dto.getId(), 0L).intValue());
+                dto.setRelationshipCount(relationshipCounts.getOrDefault(dto.getId(), 0L));
             });
         }
 

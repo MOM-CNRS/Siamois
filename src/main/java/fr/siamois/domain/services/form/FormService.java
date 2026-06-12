@@ -551,28 +551,6 @@ public class FormService {
         }
     }
 
-    private void handleConceptSet(CustomFieldAnswerViewModel answer, Object value) {
-        if (answer instanceof CustomFieldAnswerSelectMultipleFromFieldCodeViewModel multipleAnswer && value instanceof Set<?> values) {
-            List<ConceptAutocompleteDTO> autocompleteList = values.stream()
-                    .filter(ConceptDTO.class::isInstance)
-                    .map(ConceptDTO.class::cast)
-                    .map(concept -> new ConceptAutocompleteDTO(
-                            concept,
-                            labelBean.findLabelOf(concept),
-                            labelBean.getCurrentUserLang()
-                    ))
-                    .toList(); // Ou .collect(Collectors.toList()) selon votre version de Java
-
-            multipleAnswer.setValue(new ArrayList<>(autocompleteList));
-        }
-    }
-
-    private void handleSpecimenSet(CustomFieldAnswerViewModel answer, Object value) {
-        if (answer instanceof CustomFieldAnswerSelectMultipleSpecimenViewModel specimenAnswer && value instanceof Set<?> values) {
-            specimenAnswer.setValue(new ArrayList<>((Set<SpecimenSummaryDTO>) values));
-        }
-    }
-
     private PlaceSuggestionDTO mapToPlaceSuggestion(SpatialUnitSummaryDTO val) {
         PlaceSuggestionDTO dto = new PlaceSuggestionDTO();
         dto.setId(val.getId());

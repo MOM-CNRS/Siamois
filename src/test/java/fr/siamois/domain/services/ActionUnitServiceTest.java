@@ -38,7 +38,11 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
+
+import static org.mockito.Answers.CALLS_REAL_METHODS;
+import static org.mockito.Mockito.mockStatic;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -1001,32 +1005,35 @@ class ActionUnitServiceTest {
 
     @Test
     void isActionUnitStillOngoing_nowInRange_returnsTrue() {
-        when(clock.instant()).thenReturn(NOW.toInstant());
-        when(clock.getZone()).thenReturn(ZoneOffset.UTC);
-        ActionUnitSummaryDTO au = new ActionUnitSummaryDTO();
-        au.setBeginDate(NOW.minusDays(1));
-        au.setEndDate(NOW.plusDays(1));
-        assertTrue(actionUnitService.isActionUnitStillOngoing(au));
+        try (MockedStatic<OffsetDateTime> mocked = mockStatic(OffsetDateTime.class, CALLS_REAL_METHODS)) {
+            mocked.when(() -> OffsetDateTime.now()).thenReturn(NOW);
+            ActionUnitSummaryDTO au = new ActionUnitSummaryDTO();
+            au.setBeginDate(NOW.minusDays(1));
+            au.setEndDate(NOW.plusDays(1));
+            assertTrue(actionUnitService.isActionUnitStillOngoing(au));
+        }
     }
 
     @Test
     void isActionUnitStillOngoing_nowBeforeBegin_returnsFalse() {
-        when(clock.instant()).thenReturn(NOW.toInstant());
-        when(clock.getZone()).thenReturn(ZoneOffset.UTC);
-        ActionUnitSummaryDTO au = new ActionUnitSummaryDTO();
-        au.setBeginDate(NOW.plusDays(1));
-        au.setEndDate(NOW.plusDays(2));
-        assertFalse(actionUnitService.isActionUnitStillOngoing(au));
+        try (MockedStatic<OffsetDateTime> mocked = mockStatic(OffsetDateTime.class, CALLS_REAL_METHODS)) {
+            mocked.when(() -> OffsetDateTime.now()).thenReturn(NOW);
+            ActionUnitSummaryDTO au = new ActionUnitSummaryDTO();
+            au.setBeginDate(NOW.plusDays(1));
+            au.setEndDate(NOW.plusDays(2));
+            assertFalse(actionUnitService.isActionUnitStillOngoing(au));
+        }
     }
 
     @Test
     void isActionUnitStillOngoing_nowAfterEnd_returnsFalse() {
-        when(clock.instant()).thenReturn(NOW.toInstant());
-        when(clock.getZone()).thenReturn(ZoneOffset.UTC);
-        ActionUnitSummaryDTO au = new ActionUnitSummaryDTO();
-        au.setBeginDate(NOW.minusDays(2));
-        au.setEndDate(NOW.minusDays(1));
-        assertFalse(actionUnitService.isActionUnitStillOngoing(au));
+        try (MockedStatic<OffsetDateTime> mocked = mockStatic(OffsetDateTime.class, CALLS_REAL_METHODS)) {
+            mocked.when(() -> OffsetDateTime.now()).thenReturn(NOW);
+            ActionUnitSummaryDTO au = new ActionUnitSummaryDTO();
+            au.setBeginDate(NOW.minusDays(2));
+            au.setEndDate(NOW.minusDays(1));
+            assertFalse(actionUnitService.isActionUnitStillOngoing(au));
+        }
     }
 
     // ------------------------------------------------------------------
@@ -1439,6 +1446,8 @@ class ActionUnitServiceTest {
         assertThat(result.actionUnit().getId()).isEqualTo(77L);
         verify(actionUnitRepository).findByIdentifierAndCreatedByInstitutionId("ID-SHORT", 100L);
         verify(actionUnitRepository).findByIdentifierAndCreatedByInstitutionId("ID-SHORT", 200L);
+
+    }
     // findAllByActionManager
     // ------------------------------------------------------------------
 

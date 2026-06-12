@@ -1158,6 +1158,8 @@ class SpecimenServiceTest {
         specimenService.save(dto);
 
         assertTrue(managed.getMaterialClass().contains(matClass));
+
+    }
     // =====================================================================
     // searchSpecimen / searchSpecimenInRecordingUnit / prepareSpecs /
     // resolveAncestorClosure

@@ -26,13 +26,6 @@ import fr.siamois.ui.bean.panel.models.panel.AbstractPanel;
 import fr.siamois.ui.bean.panel.models.panel.single.tab.SpecimenTab;
 import fr.siamois.ui.bean.panel.models.panel.single.tab.StratigraphyTab;
 import fr.siamois.ui.form.dto.FormUiDto;
-import fr.siamois.ui.lazydatamodel.RecordingUnitChildrenLazyDataModel;
-import fr.siamois.ui.lazydatamodel.RecordingUnitParentsLazyDataModel;
-import fr.siamois.ui.lazydatamodel.SpecimenInRecordingUnitLazyDataModel;
-import fr.siamois.ui.lazydatamodel.scope.RecordingUnitScope;
-import fr.siamois.ui.lazydatamodel.tree.RecordingUnitTreeTableLazyModel;
-import fr.siamois.ui.table.RecordingUnitTableViewModel;
-import fr.siamois.ui.table.SpecimenTableViewModel;
 import fr.siamois.ui.lazydatamodel.RecordingUnitLazyDataModel;
 import fr.siamois.ui.lazydatamodel.SpecimenLazyDataModel;
 import fr.siamois.ui.table.ToolbarCreateConfig;
@@ -212,7 +205,7 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
             selectedCategoriesParents = new ArrayList<>();
             totalParentsCount = 0;
 
-            initChildTableModelForHierarchyTab();
+            initChildTableModelForHierarchyTab(lazyDataModelChildren);
 
             // iniy stratigraphy module
             stratigraphyViewModel = new CustomFieldAnswerStratigraphyViewModel();
@@ -468,16 +461,10 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
         return "/panel/tabview/recordingUnitTabView.xhtml";
     }
 
-    private void initChildTableModelForHierarchyTab() {
+    private void initChildTableModelForHierarchyTab(RecordingUnitLazyDataModel lazyDataModelChildren) {
         if (unit == null) {
             return;
         }
-        RecordingUnitTreeTableLazyModel tree = new RecordingUnitTreeTableLazyModel(
-                recordingUnitService,
-                RecordingUnitScope.builder()
-                        .type(RecordingUnitScope.Type.ACTION)
-                        .actionId(unit.getActionUnit().getId())
-                        .build());
         childTableModel = new RecordingUnitTableViewModel(
                 lazyDataModelChildren,
                 formService,
@@ -489,7 +476,6 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
                 (GenericNewUnitDialogBean<RecordingUnitDTO>) genericNewUnitDialogBean,
                 recordingUnitWriteVerifier,
                 recordingUnitService,
-                tree,
                 langBean,
                 formContextServices
         );

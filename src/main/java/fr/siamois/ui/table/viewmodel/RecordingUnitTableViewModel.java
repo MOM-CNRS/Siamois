@@ -205,7 +205,7 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
                 case PARENTS -> ru.getParentsCount() == null ? 0 : ru.getParentsCount();
                 case "children" -> ru.getChildrenCount() == null ? 0 : ru.getChildrenCount();
                 case "specimenList" -> ru.getSpecimenCount() == null ? 0 : (int) (long) ru.getSpecimenCount();
-                case "relationships" -> ru.getRelationshipCount() == null ? 0 : ru.getRelationshipCount();
+                case "relationships" -> ru.getRelationshipCount() == null ? 0 : (int) (long) ru.getRelationshipCount();
                 default -> 0;
             };
         }

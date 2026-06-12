@@ -129,7 +129,7 @@ public interface RecordingUnitRepository extends CrudRepository<RecordingUnit, L
             @Param("institutionId") Long institutionId
     );
 
-    Optional<RecordingUnit> findByFullIdentifier(@NotNull String fullIdentifier);
+    Optional<RecordingUnit> findByFullIdentifier(@NonNull String fullIdentifier);
 
     @Query(
             value = "SELECT ru.* FROM recording_unit ru " +

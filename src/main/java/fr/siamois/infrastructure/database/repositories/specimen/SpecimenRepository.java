@@ -18,7 +18,7 @@ import java.util.Optional;
 import java.util.Set;
 
 
-public interface SpecimenRepository extends JpaRepository<Specimen, Long>, RevisionRepository<Specimen, Long, Long>, JpaSpecificationExecutor<Specimen> {
+public interface SpecimenRepository extends JpaRepository<Specimen, Long>, RevisionRepository<Specimen, Long, Long>, JpaSpecificationExecutor<Specimen>, SpecimenRepositoryCustom {
     List<Specimen> findAllByArkIsNullAndCreatedByInstitution(@NotNull Institution createdByInstitution);
 
     <T> Optional<T> findById(Long id, Class<T> type);
