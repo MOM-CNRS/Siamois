@@ -38,6 +38,8 @@ import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class SpecimenServiceTest {
+    private static final OffsetDateTime NOW = OffsetDateTime.of(2024, 1, 15, 12, 0, 0, 0, ZoneOffset.UTC);
+
 
     @Mock
     private SpecimenRepository specimenRepository;
@@ -379,7 +381,7 @@ class SpecimenServiceTest {
         RecordingUnitSummaryDTO ruDTO = new RecordingUnitSummaryDTO();
         ruDTO.setId(1L);
         SpecimenDTO currentDTO = new SpecimenDTO();
-        currentDTO.setCreationTime(OffsetDateTime.now(ZoneOffset.UTC));
+        currentDTO.setCreationTime(NOW);
 
         Specimen nextSpecimen = new Specimen();
         SpecimenDTO nextDTO = new SpecimenDTO();
@@ -403,7 +405,7 @@ class SpecimenServiceTest {
         RecordingUnitSummaryDTO ruDTO = new RecordingUnitSummaryDTO();
         ruDTO.setId(1L);
         SpecimenDTO currentDTO = new SpecimenDTO();
-        currentDTO.setCreationTime(OffsetDateTime.now(ZoneOffset.UTC));
+        currentDTO.setCreationTime(NOW);
 
         Specimen oldestSpecimen = new Specimen();
         SpecimenDTO oldestDTO = new SpecimenDTO();
@@ -429,7 +431,7 @@ class SpecimenServiceTest {
         RecordingUnitSummaryDTO ruDTO = new RecordingUnitSummaryDTO();
         ruDTO.setId(1L);
         SpecimenDTO currentDTO = new SpecimenDTO();
-        currentDTO.setCreationTime(OffsetDateTime.now(ZoneOffset.UTC));
+        currentDTO.setCreationTime(NOW);
 
         Specimen prevSpecimen = new Specimen();
         SpecimenDTO prevDTO = new SpecimenDTO();

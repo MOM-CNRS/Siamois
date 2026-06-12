@@ -33,6 +33,8 @@ import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class ActionUnitSeederTest {
+    private static final OffsetDateTime NOW = OffsetDateTime.of(2024, 1, 15, 12, 0, 0, 0, ZoneOffset.UTC);
+
 
     @Mock PersonRepository personRepository;
     @Mock ActionCodeRepository actionCodeRepository;
@@ -141,7 +143,7 @@ class ActionUnitSeederTest {
                 "AU-EXIST", "Name X", "IDX", "AC002",
                 "vocB", "conB",
                 "a@b.c", "INST-2",
-                OffsetDateTime.now(ZoneOffset.UTC), null,
+                NOW, null,
                 null, null
         );
 

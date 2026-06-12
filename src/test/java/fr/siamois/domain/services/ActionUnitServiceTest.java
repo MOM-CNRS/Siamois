@@ -51,6 +51,8 @@ import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class ActionUnitServiceTest {
+    private static final OffsetDateTime NOW = OffsetDateTime.of(2024, 1, 15, 12, 0, 0, 0, ZoneOffset.UTC);
+
 
     @Mock private ActionUnitRepository actionUnitRepository;
     @Mock private RecordingUnitRepository recordingUnitRepository;
@@ -359,7 +361,7 @@ class ActionUnitServiceTest {
         institution.setId(1L);
         ActionUnitDTO current = new ActionUnitDTO();
         current.setId(100L);
-        current.setCreationTime(OffsetDateTime.now(ZoneOffset.UTC));
+        current.setCreationTime(NOW);
 
         ActionUnit nextEntity = new ActionUnit();
         ActionUnitDTO nextDTO = new ActionUnitDTO();
@@ -384,7 +386,7 @@ class ActionUnitServiceTest {
 
         ActionUnitDTO current = new ActionUnitDTO();
         current.setId(100L); // Évitez de laisser l'ID à null si possible
-        current.setCreationTime(OffsetDateTime.now(ZoneOffset.UTC));
+        current.setCreationTime(NOW);
 
         ActionUnit firstEntity = new ActionUnit();
         ActionUnitDTO firstDTO = new ActionUnitDTO();
@@ -414,7 +416,7 @@ class ActionUnitServiceTest {
         institution.setId(1L);
         ActionUnitDTO current = new ActionUnitDTO();
         current.setId(100L);
-        current.setCreationTime(OffsetDateTime.now(ZoneOffset.UTC));
+        current.setCreationTime(NOW);
 
         ActionUnit prevEntity = new ActionUnit();
         ActionUnitDTO prevDTO = new ActionUnitDTO();
@@ -438,7 +440,7 @@ class ActionUnitServiceTest {
 
         ActionUnitDTO current = new ActionUnitDTO();
         current.setId(100L); // Un ID pour éviter le null (ou utilisez any() dans le mock)
-        current.setCreationTime(OffsetDateTime.now(ZoneOffset.UTC));
+        current.setCreationTime(NOW);
 
         ActionUnit lastEntity = new ActionUnit();
         ActionUnitDTO lastDTO = new ActionUnitDTO();
@@ -470,7 +472,7 @@ class ActionUnitServiceTest {
 
         ActionUnitDTO current = new ActionUnitDTO();
         current.setId(100L);
-        current.setCreationTime(OffsetDateTime.now(ZoneOffset.UTC));
+        current.setCreationTime(NOW);
 
         // Mock de findNext : on simule qu'aucune entité suivante n'existe
         // On utilise eq(1L) et any() pour la flexibilité
@@ -978,31 +980,31 @@ class ActionUnitServiceTest {
     @Test
     void isActionUnitStillOngoing_beginDateButNoEndDate_returnsTrue() {
         ActionUnitSummaryDTO au = new ActionUnitSummaryDTO();
-        au.setBeginDate(OffsetDateTime.now(ZoneOffset.UTC).minusDays(1));
+        au.setBeginDate(NOW.minusDays(1));
         assertTrue(actionUnitService.isActionUnitStillOngoing(au));
     }
 
     @Test
     void isActionUnitStillOngoing_nowInRange_returnsTrue() {
         ActionUnitSummaryDTO au = new ActionUnitSummaryDTO();
-        au.setBeginDate(OffsetDateTime.now(ZoneOffset.UTC).minusDays(1));
-        au.setEndDate(OffsetDateTime.now(ZoneOffset.UTC).plusDays(1));
+        au.setBeginDate(NOW.minusDays(1));
+        au.setEndDate(NOW.plusDays(1));
         assertTrue(actionUnitService.isActionUnitStillOngoing(au));
     }
 
     @Test
     void isActionUnitStillOngoing_nowBeforeBegin_returnsFalse() {
         ActionUnitSummaryDTO au = new ActionUnitSummaryDTO();
-        au.setBeginDate(OffsetDateTime.now(ZoneOffset.UTC).plusDays(1));
-        au.setEndDate(OffsetDateTime.now(ZoneOffset.UTC).plusDays(2));
+        au.setBeginDate(NOW.plusDays(1));
+        au.setEndDate(NOW.plusDays(2));
         assertFalse(actionUnitService.isActionUnitStillOngoing(au));
     }
 
     @Test
     void isActionUnitStillOngoing_nowAfterEnd_returnsFalse() {
         ActionUnitSummaryDTO au = new ActionUnitSummaryDTO();
-        au.setBeginDate(OffsetDateTime.now(ZoneOffset.UTC).minusDays(2));
-        au.setEndDate(OffsetDateTime.now(ZoneOffset.UTC).minusDays(1));
+        au.setBeginDate(NOW.minusDays(2));
+        au.setEndDate(NOW.minusDays(1));
         assertFalse(actionUnitService.isActionUnitStillOngoing(au));
     }
 

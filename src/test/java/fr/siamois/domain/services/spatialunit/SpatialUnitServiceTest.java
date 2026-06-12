@@ -47,6 +47,8 @@ import static org.mockito.Mockito.*;
 @Slf4j
 @ExtendWith(MockitoExtension.class)
 class SpatialUnitServiceTest {
+    private static final OffsetDateTime NOW = OffsetDateTime.of(2024, 1, 15, 12, 0, 0, 0, ZoneOffset.UTC);
+
 
     @Mock
     private SpatialUnitRepository spatialUnitRepository;
@@ -598,7 +600,7 @@ class SpatialUnitServiceTest {
         InstitutionDTO institutionDTO = new InstitutionDTO();
         institutionDTO.setId(1L);
         SpatialUnitDTO currentDTO = new SpatialUnitDTO();
-        currentDTO.setCreationTime(OffsetDateTime.now(ZoneOffset.UTC));
+        currentDTO.setCreationTime(NOW);
 
         SpatialUnit nextEntity = new SpatialUnit();
         SpatialUnitDTO nextDTO = new SpatialUnitDTO();
@@ -647,7 +649,7 @@ class SpatialUnitServiceTest {
         InstitutionDTO institutionDTO = new InstitutionDTO();
         institutionDTO.setId(1L);
         SpatialUnitDTO currentDTO = new SpatialUnitDTO();
-        currentDTO.setCreationTime(OffsetDateTime.now(ZoneOffset.UTC));
+        currentDTO.setCreationTime(NOW);
 
         SpatialUnit prevEntity = new SpatialUnit();
         SpatialUnitDTO prevDTO = new SpatialUnitDTO();

@@ -30,6 +30,8 @@ import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class PendingPersonServiceTest {
+    private static final OffsetDateTime NOW = OffsetDateTime.of(2024, 1, 15, 12, 0, 0, 0, ZoneOffset.UTC);
+
 
     @Mock
     private HttpServletRequest httpServletRequest;
@@ -60,7 +62,7 @@ class PendingPersonServiceTest {
         pendingPerson = new PendingPerson();
         pendingPerson.setEmail("test@example.com");
         pendingPerson.setRegisterToken("testToken");
-        pendingPerson.setPendingInvitationExpirationDate(OffsetDateTime.now(ZoneOffset.UTC).plusDays(3));
+        pendingPerson.setPendingInvitationExpirationDate(NOW.plusDays(3));
 
         institution = new Institution();
         institution.setName("Test Institution");
