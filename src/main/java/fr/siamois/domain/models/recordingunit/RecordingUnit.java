@@ -67,7 +67,7 @@ public class RecordingUnit extends RecordingUnitParent implements ArkEntity, Ref
 
     /**
      * Révision de synchronisation : incrémentée à chaque sauvegarde.
-     * Utilisée par l'API mobile pour la détection de conflits (optimistic locking).
+     * Utilisée par l'API pour la détection de conflits (optimistic locking).
      */
     @Version
     @Column(name = "sync_revision", nullable = false)

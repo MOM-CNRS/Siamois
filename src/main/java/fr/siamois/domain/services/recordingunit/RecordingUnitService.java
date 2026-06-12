@@ -903,14 +903,6 @@ public class RecordingUnitService implements ArkEntityService {
         return dto;
     }
 
-    public Page<RecordingUnitDTO> findByInstitutionId(Long institutionId,
-                                                      int limit,
-                                                      int offset) {
-        int pageNumber = limit > 0 ? offset / limit : 0;
-        Pageable pageable = PageRequest.of(pageNumber, limit);
-        Page<RecordingUnit> page = recordingUnitRepository.findByCreatedByInstitutionId(institutionId, pageable);
-        return page.map(recordingUnitMapper::convert);
-    }
 
     public Page<RecordingUnitDTO> findByActionUnitId(Long actionUnitId, int limit, int offset, Sort sort) {
         int pageNumber = offset / limit;

@@ -35,7 +35,6 @@ public class RecordingUnitResource
     private String description;
     private GeometryDTO geom;
 
-
     private RelationshipToOne<ConceptResourceIdentifier> type;
     private RelationshipToOne<PersonResourceIdentifier> author;
     private RelationshipToMany<PersonResourceIdentifier> contributors;
@@ -47,6 +46,7 @@ public class RecordingUnitResource
     private String matrixColor;
 
     private RelationshipToOne<OrganizationResourceIdentifier> organization;
+
     private RelationshipToOne<ProjectResourceIdentifier> project;
 
 }

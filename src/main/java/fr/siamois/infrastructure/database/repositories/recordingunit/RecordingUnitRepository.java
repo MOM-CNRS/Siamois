@@ -326,8 +326,6 @@ public interface RecordingUnitRepository extends CrudRepository<RecordingUnit, L
     """, nativeQuery = true)
     boolean existsRootChildrenByAction(Long actionId);
 
-    Page<RecordingUnit> findByCreatedByInstitutionId(Long institutionId, Pageable pageable);
-
     Optional<RecordingUnit> findFirstByActionUnitIdAndCreationTimeAfterOrderByCreationTimeAsc(
             Long actionUnitId,
             OffsetDateTime createdAt);
