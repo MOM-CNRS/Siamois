@@ -222,7 +222,8 @@ public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
 
     public boolean isConceptFilter(TableColumn column) {
         return column instanceof FormFieldColumn ffc
-                && ffc.getField() instanceof CustomFieldSelectOneFromFieldCode;
+                && (ffc.getField() instanceof CustomFieldSelectOneFromFieldCode
+                    || ffc.getField() instanceof CustomFieldSelectMultipleFromFieldCode);
     }
 
     public boolean isPersonFilter(TableColumn column) {
@@ -252,9 +253,13 @@ public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
     }
 
     public String getFieldCode(TableColumn column) {
-        if (column instanceof FormFieldColumn ffc
-                && ffc.getField() instanceof CustomFieldSelectOneFromFieldCode cf) {
-            return cf.getFieldCode();
+        if (column instanceof FormFieldColumn ffc) {
+            if (ffc.getField() instanceof CustomFieldSelectOneFromFieldCode cf) {
+                return cf.getFieldCode();
+            }
+            if (ffc.getField() instanceof CustomFieldSelectMultipleFromFieldCode cf) {
+                return cf.getFieldCode();
+            }
         }
         return null;
     }

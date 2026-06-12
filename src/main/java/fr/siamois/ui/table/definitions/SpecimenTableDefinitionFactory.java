@@ -297,7 +297,7 @@ public final class SpecimenTableDefinitionFactory {
                         .headerKey("specimen.field.materialClass")
                         .field(materialClassField)
                         .sortable(false)
-                        .filterable(false)
+                        .filterable(true)
                         .visible(true)
                         .required(false)
                         .build()

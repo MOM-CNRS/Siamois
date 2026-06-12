@@ -8,9 +8,11 @@ import fr.siamois.domain.models.history.RevisionWithInfo;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.authorization.writeverifier.RecordingUnitWriteVerifier;
+import fr.siamois.domain.services.authorization.writeverifier.SpatialUnitWriteVerifier;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.recordingunit.identifier.generic.RuIdentifierResolver;
 import fr.siamois.domain.services.specimen.SpecimenService;
+import fr.siamois.dto.entity.SpecimenDTO;
 import fr.siamois.domain.services.vocabulary.LabelService;
 import fr.siamois.dto.FilterDTO;
 import fr.siamois.dto.entity.ActionUnitDTO;
@@ -27,14 +29,24 @@ import fr.siamois.ui.bean.panel.models.PanelBreadcrumb;
 import fr.siamois.ui.bean.panel.models.panel.AbstractPanel;
 import fr.siamois.ui.bean.panel.models.panel.single.tab.ActionSettingsTab;
 import fr.siamois.ui.bean.panel.models.panel.single.tab.RecordingTab;
+import fr.siamois.ui.bean.panel.models.panel.single.tab.SpecimenTab;
+import fr.siamois.ui.bean.panel.models.panel.single.tab.SpatialUnitTab;
 import fr.siamois.ui.bean.settings.team.TeamMembersBean;
 import fr.siamois.ui.form.dto.FormUiDto;
 import fr.siamois.ui.lazydatamodel.RecordingUnitLazyDataModel;
 import fr.siamois.ui.lazydatamodel.SpecimenLazyDataModel;
+import fr.siamois.ui.lazydatamodel.ActionUnitSpecimenLazyDataModel;
+import fr.siamois.ui.lazydatamodel.SpatialContextLazyDataModel;
+import fr.siamois.dto.entity.SpatialUnitDTO;
+import fr.siamois.dto.entity.SpatialUnitSummaryDTO;
 import fr.siamois.ui.mapper.FormMapper;
 import fr.siamois.ui.table.ToolbarCreateConfig;
 import fr.siamois.ui.table.definitions.RecordingUnitTableDefinitionFactory;
+import fr.siamois.ui.table.definitions.SpecimenTableDefinitionFactory;
+import fr.siamois.ui.table.definitions.SpatialUnitTableDefinitionFactory;
 import fr.siamois.ui.table.viewmodel.RecordingUnitTableViewModel;
+import fr.siamois.ui.table.viewmodel.SpecimenTableViewModel;
+import fr.siamois.ui.table.viewmodel.SpatialUnitTableViewModel;
 import fr.siamois.utils.MessageUtils;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -83,6 +95,7 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnitDTO> im
     private final transient GenericNewUnitDialogBean<?> genericNewUnitDialogBean;
     private final transient InstitutionService institutionService;
     private final transient RecordingUnitWriteVerifier recordingUnitWriteVerifier;
+    private final transient SpatialUnitWriteVerifier spatialUnitWriteVerifier;
     private final transient FormMapper formMapper;
 
     // For entering new code
@@ -137,6 +150,7 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnitDTO> im
         this.genericNewUnitDialogBean = context.getBean(GenericNewUnitDialogBean.class);
         this.institutionService = context.getBean(InstitutionService.class);
         this.recordingUnitWriteVerifier = context.getBean(RecordingUnitWriteVerifier.class);
+        this.spatialUnitWriteVerifier = context.getBean(SpatialUnitWriteVerifier.class);
         this.formMapper = context.getBean(FormMapper.class);
     }
 
@@ -580,6 +594,65 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnitDTO> im
                 vm,
                 totalRecordingUnitCount);
         newTab.setCustomTitle(langBean.msg("common.entity.recordingUnits") + " #" + dynamicTabCounter);
+        newTab.setCloseable(true);
+
+        tabs.add(newTab);
+        activeTabIndex = tabs.size() - 1;
+    }
+
+    public void addSpecimenTab() {
+        dynamicTabCounter++;
+
+        ActionUnitSpecimenLazyDataModel lazyModel = new ActionUnitSpecimenLazyDataModel(
+                specimenService, sessionSettingsBean, langBean, unit);
+        lazyModel.setSelectedUnits(new ArrayList<>());
+
+        SpecimenTableViewModel vm = new SpecimenTableViewModel(
+                lazyModel, formService, sessionSettingsBean,
+                spatialUnitTreeService, spatialUnitService, navBean, flowBean,
+                (GenericNewUnitDialogBean<SpecimenDTO>) genericNewUnitDialogBean,
+                formContextServices);
+        vm.setParentPanel(this);
+        SpecimenTableDefinitionFactory.applyTo(vm);
+
+        SpecimenTab newTab = new SpecimenTab(
+                "common.entity.specimen",
+                "bi bi-bucket",
+                "dynamicSpecimenTab_" + dynamicTabCounter,
+                vm,
+                totalSpecimenCount);
+        newTab.setCustomTitle(langBean.msg("common.entity.specimen") + " #" + dynamicTabCounter);
+        newTab.setCloseable(true);
+
+        tabs.add(newTab);
+        activeTabIndex = tabs.size() - 1;
+    }
+
+    public void addSpatialContextTab() {
+        dynamicTabCounter++;
+
+        List<Long> spatialContextIds = unit.getSpatialContext().stream()
+                .map(SpatialUnitSummaryDTO::getId)
+                .toList();
+
+        SpatialContextLazyDataModel lazyModel = new SpatialContextLazyDataModel(
+                spatialUnitService, sessionSettingsBean, spatialContextIds);
+
+        SpatialUnitTableViewModel vm = new SpatialUnitTableViewModel(
+                lazyModel, formService, sessionSettingsBean,
+                spatialUnitTreeService, spatialUnitService, navBean, flowBean,
+                (GenericNewUnitDialogBean<SpatialUnitDTO>) genericNewUnitDialogBean,
+                spatialUnitWriteVerifier, institutionService, formContextServices);
+        vm.setParentPanel(this);
+        SpatialUnitTableDefinitionFactory.applyTo(vm);
+
+        SpatialUnitTab newTab = new SpatialUnitTab(
+                "common.entity.spatialUnits",
+                "bi bi-geo-alt",
+                "dynamicSpatialContextTab_" + dynamicTabCounter,
+                vm,
+                spatialContextIds.size());
+        newTab.setCustomTitle(langBean.msg("common.entity.spatialUnits") + " #" + dynamicTabCounter);
         newTab.setCloseable(true);
 
         tabs.add(newTab);

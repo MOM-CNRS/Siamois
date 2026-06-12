@@ -548,6 +548,20 @@ public class SpatialUnitService implements ArkEntityService {
         return Math.toIntExact(spatialUnitRepository.count(specs));
     }
 
+    public Page<SpatialUnitDTO> searchSpatialUnitsByIds(InstitutionDTO institutionDTO, List<Long> ids, FilterDTO filterDTO, Pageable pageable) {
+        Specification<SpatialUnit> specs = SpatialUnitSpec.belongsToInstitution(institutionDTO.getId())
+                .and(SpatialUnitSpec.idIn(ids))
+                .and(userFilterSpecs(filterDTO));
+        return spatialUnitRepository.findAll(specs, pageable).map(spatialUnitMapper::convert);
+    }
+
+    public int countSearchResultsByIds(InstitutionDTO institutionDTO, List<Long> ids, FilterDTO filterDTO) {
+        Specification<SpatialUnit> specs = SpatialUnitSpec.belongsToInstitution(institutionDTO.getId())
+                .and(SpatialUnitSpec.idIn(ids))
+                .and(userFilterSpecs(filterDTO));
+        return Math.toIntExact(spatialUnitRepository.count(specs));
+    }
+
 
 
     private Specification<SpatialUnit> prepareSpecs(InstitutionDTO institutionDTO, FilterDTO filterDTO) {

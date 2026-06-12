@@ -15,6 +15,18 @@
                      update=":singlePanelUnitForm-#{panelIndex}:singlePanelUnitTabs"
                      onstart="showProgressBar(PF('pbBarAjax_#{panelIndex}'), 'var(--main-color)');"
                      oncomplete="hideProgressBar(PF('pbBarAjax_#{panelIndex}'));"/>
+    <p:remoteCommand name="addSpecimenTabCmd#{panelModel.unitId}"
+                     action="#{panelModel.addSpecimenTab()}"
+                     process="@this"
+                     update=":singlePanelUnitForm-#{panelIndex}:singlePanelUnitTabs"
+                     onstart="showProgressBar(PF('pbBarAjax_#{panelIndex}'), 'var(--main-color)');"
+                     oncomplete="hideProgressBar(PF('pbBarAjax_#{panelIndex}'));"/>
+    <p:remoteCommand name="addSpatialContextTabCmd#{panelModel.unitId}"
+                     action="#{panelModel.addSpatialContextTab()}"
+                     process="@this"
+                     update=":singlePanelUnitForm-#{panelIndex}:singlePanelUnitTabs"
+                     onstart="showProgressBar(PF('pbBarAjax_#{panelIndex}'), 'var(--main-color)');"
+                     oncomplete="hideProgressBar(PF('pbBarAjax_#{panelIndex}'));"/>
     <p:remoteCommand name="removeTabCmd#{panelModel.unitId}"
                      action="#{panelModel.removeTabByIdFromParam()}"
                      process="@this"
@@ -25,7 +37,8 @@
                      update=":singlePanelUnitForm-#{panelIndex}:singlePanelUnitTabs"/>
 
     <!-- Tabs -->
-    <p:tabView id="singlePanelUnitTabs" activeIndex="#{panelModel.activeTabIndex}" dynamic="true">
+    <p:tabView id="singlePanelUnitTabs" activeIndex="#{panelModel.activeTabIndex}" dynamic="true"
+               styleClass="action-unit-tabview">
 
         <f:facet name="actions">
             <p:splitButton value="#{langBean.msg('panel.tab.add')}"
@@ -34,7 +47,13 @@
                            onclick="addRecordingUnitTabCmd#{panelModel.unitId}();">
                 <p:menuitem value="#{langBean.msg('common.entity.recordingUnits')}"
                             icon="bi bi-pencil-square"
-                            onclick="addRecordingUnitTabCmd#{panelModel.unitId}();"/>
+                            onclick="addRecordingUnitTabCmd#{panelModel.unitId}(); return false;"/>
+                <p:menuitem value="#{langBean.msg('common.entity.specimen')}"
+                            icon="bi bi-bucket"
+                            onclick="addSpecimenTabCmd#{panelModel.unitId}(); return false;"/>
+                <p:menuitem value="#{langBean.msg('common.entity.spatialUnits')}"
+                            icon="bi bi-geo-alt"
+                            onclick="addSpatialContextTabCmd#{panelModel.unitId}(); return false;"/>
             </p:splitButton>
         </f:facet>
 
@@ -113,7 +132,7 @@
         </p:tab>
 
         <!-- Settings-->
-        <p:tab>
+        <p:tab rendered="false">
 
             <f:facet name="title">
 

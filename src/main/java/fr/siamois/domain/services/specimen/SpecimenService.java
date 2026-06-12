@@ -528,6 +528,10 @@ public class SpecimenService implements ArkEntityService {
             specification = specification.and(SpecimenSpec.isInRecordingUnit(filters.valueAsIdListOf(SpecimenSpec.RECORDING_UNIT_FILTER)));
         }
 
+        if (filters.containsColumn(SpecimenSpec.MATERIAL_CLASS_FILTER)) {
+            specification = specification.and(SpecimenSpec.materialClassIsIn(filters.valueAsIdListOf(SpecimenSpec.MATERIAL_CLASS_FILTER)));
+        }
+
         return specification;
     }
 

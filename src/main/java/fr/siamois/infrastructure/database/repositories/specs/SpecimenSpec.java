@@ -10,6 +10,7 @@ public class SpecimenSpec {
 
     public static final String ACTION_UNIT_FILTER = "actionUnit";
     public static final String RECORDING_UNIT_FILTER = "recordingUnit";
+    public static final String MATERIAL_CLASS_FILTER = "materialClass";
 
     private SpecimenSpec() {
         throw new UnsupportedOperationException("Spec should never be instantiated");
@@ -29,12 +30,21 @@ public class SpecimenSpec {
 
     @NonNull
     public static Specification<Specimen> specimenInActionUnit(long actionUnitId) {
-        return ((root, query, criteriaBuilder) -> criteriaBuilder.equal(root.get(ACTION_UNIT_FILTER).get("id"), actionUnitId));
+        return ((root, query, criteriaBuilder) -> criteriaBuilder.equal(
+                root.get(RECORDING_UNIT_FILTER).get("actionUnit").get("id"), actionUnitId));
     }
 
     @NonNull
     public static Specification<Specimen> isInActionUnit(List<Long> ids) {
-        return (root, query, cb) -> cb.in(root.get(ACTION_UNIT_FILTER).get("id")).value(ids);
+        return (root, query, cb) -> cb.in(root.get(RECORDING_UNIT_FILTER).get("actionUnit").get("id")).value(ids);
+    }
+
+    @NonNull
+    public static Specification<Specimen> materialClassIsIn(List<Long> conceptIds) {
+        return (root, query, cb) -> {
+            query.distinct(true);
+            return root.join(MATERIAL_CLASS_FILTER).get("id").in(conceptIds);
+        };
     }
 
     @NonNull

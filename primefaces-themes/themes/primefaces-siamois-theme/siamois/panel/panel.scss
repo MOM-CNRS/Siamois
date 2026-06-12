@@ -286,6 +286,19 @@ body .ui-autocomplete .ui-autocomplete-dropdown {
   background: white;
 }
 
+/* Move the "add tab" split button to the left, near the tab names */
+.action-unit-tabview .ui-tabview-nav-container {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+
+.action-unit-tabview .ui-tabview-nav-content {
+  order: -1;
+  flex-shrink: 0;
+  margin-right: 0.5rem;
+}
+
 
 
 

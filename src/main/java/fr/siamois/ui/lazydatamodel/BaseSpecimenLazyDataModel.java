@@ -4,13 +4,16 @@ package fr.siamois.ui.lazydatamodel;
 import fr.siamois.domain.models.exceptions.recordingunit.FailedRecordingUnitSaveException;
 import fr.siamois.domain.models.form.customfield.CustomFieldSelectOneFromFieldCode;
 import fr.siamois.domain.services.specimen.SpecimenService;
+import fr.siamois.dto.FilterDTO;
 import fr.siamois.dto.entity.ConceptDTO;
 import fr.siamois.dto.entity.SpecimenDTO;
+import fr.siamois.infrastructure.database.repositories.specs.SpecimenSpec;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.utils.MessageUtils;
 import lombok.Getter;
 import lombok.Setter;
 import org.primefaces.event.RowEditEvent;
+import org.primefaces.model.FilterMeta;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -56,6 +59,16 @@ public abstract class BaseSpecimenLazyDataModel extends BaseLazyDataModel<Specim
         return specimen != null ? Long.toString(specimen.getId()) : null;
     }
 
+
+    @Override
+    protected void prepareFilterDTO(Map<String, FilterMeta> filterBy, FilterDTO filterDTO) {
+        if (filterBy == null || filterBy.isEmpty()) return;
+
+        FilterMeta materialClassMeta = filterBy.get(SpecimenSpec.MATERIAL_CLASS_FILTER);
+        if (materialClassMeta != null && materialClassMeta.getFilterValue() instanceof List<?> ids && !ids.isEmpty()) {
+            filterDTO.add(SpecimenSpec.MATERIAL_CLASS_FILTER, ids, FilterDTO.FilterType.CONTAINS);
+        }
+    }
 
     @Override
     public SpecimenDTO getRowData(String rowKey) {
