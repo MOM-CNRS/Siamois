@@ -50,6 +50,7 @@
 
                 <p:autoComplete value="#{cc.attrs.answer.value}"
                                 id="select-one-spatial-unit"
+                                widgetVar="#{cc.clientId}_autoComplete"
                                 completeMethod="#{cc.attrs.formCtx.getSpatialUnitOptions}"
                                 panelStyleClass="spatial-unit"
                                 styleClass="spatial-unit #{cc.attrs.answer.hasBeenModified ? 'track-change sia-modified-field': 'track-change'}"
@@ -105,9 +106,10 @@
                                     id="btnNouveau"
                                     icon="bi bi-plus-lg"
                                     process="@this"
-                                    oncomplete="PF('#{cc.clientId}_spatialUnitMenu').hide();var ov = PF('#{cc.clientId}_overlay'); ov.show(); ov.align();"
+                                    action="#{cc.attrs.formCtx.initNewPlaceFromField(cc.attrs.answer)}"
+                                    oncomplete="PF('#{cc.clientId}_autoComplete').hide(); var ov = PF('#{cc.clientId}_overlay'); ov.show(); ov.align();"
                                     value="Nouveau"
-                                    update="#{cc.clientId}"/>
+                                    update="#{cc.clientId}:newGrid"/>
                         </div>
                     </f:facet>
                 </p:autoComplete>
@@ -116,6 +118,8 @@
                                 widgetVar="#{cc.clientId}_overlay"
                                 dismissable="false"
                                 autoHide="true"
+                                styleClass="new-entity-overlay"
+                                style="max-width: 50rem;"
                                 showCloseIcon="true"
                                 dynamic="true" id="overlayNouveau" appendTo="#{cc.clientId}"
                                 hideEffect="fade">

@@ -168,41 +168,31 @@
                                 </script>
                             </li>
                             <li class="nav-item">
-                                <p:commandLink
-                                        id="historyLink"
-                                        type="button"
-                                        action="#{historyBean.toggleHistory}"
-                                        update="@none"
-                                        oncomplete="toggleCollapseHistory();"
-                                        styleClass="nav-link"
-                                >
+                                <p:commandLink action="#{sidebarBean.toggleMode('HISTORIQUE')}"
+                                               update="subSidebarForm:sidebarAnimatedInner"
+                                               process="@this"
+                                               id="historyLinkNav"
+                                               oncomplete="handleSidebarToggle('HISTORIQUE');"
+                                               styleClass="nav-link">
                                     <i class="bi bi-clock-fill"/>
                                     <span class="menu-text">Historique</span>
-                                    <p:tooltip for="historyLink" value="Historique"/>
+                                    <p:tooltip for="historyLinkNav" value="Historique"/>
                                 </p:commandLink>
-
+                            </li>
+                            <li class="nav-item">
+                                <p:commandLink action="#{sidebarBean.toggleMode('BOOKMARKS')}"
+                                               update="subSidebarForm:sidebarAnimatedInner"
+                                               process="@this"
+                                               id="bookmarksLinkNav"
+                                               oncomplete="handleSidebarToggle('BOOKMARKS'); setTimeout(function(){ var el = document.querySelector('[id$=bookmarksTable] .ui-datatable-scrollable-body'); if(el){ el.scrollTop = 1; el.scrollTop = 0; } }, 150);"
+                                               styleClass="nav-link">
+                                    <i class="bi bi-bookmark-fill"/>
+                                    <span class="menu-text">Favoris</span>
+                                    <p:tooltip for="bookmarksLinkNav" value="Favoris"/>
+                                </p:commandLink>
                             </li>
                             <p:divider/>
-                            <h:panelGroup id="bookmarkGroup" layout="none"
-                                          rendered="#{navBean.bookmarkedPanels.size() > 0}">
 
-                                <li class="nav-header">
-                                    #{langBean.msg('nav.header.bookmark')}
-                                </li>
-                                <ui:repeat value="#{navBean.bookmarkedPanels}" var="bookmark">
-                                    <p:autoUpdate/>
-                                    <li class="nav-item">
-                                        <h:commandLink id="bookmarkLink"
-                                                       action="#{navBean.redirectToBookmarked(bookmark.getResourceUri())}"
-                                                       styleClass="nav-link">
-                                            <i class="#{bookmark.getBookmarkIcon()}"
-                                               style="color: #{bookmark.getBookmarkColor()}"/>
-                                            <span class="menu-text">#{navBean.bookmarkTitle(bookmark)}</span>
-                                        </h:commandLink>
-                                        <p:tooltip for="bookmarkLink" value="#{navBean.bookmarkTitle(bookmark)}"/>
-                                    </li>
-                                </ui:repeat>
-                            </h:panelGroup>
                         </ul>
                     </form:csrfform>
                 </div>
@@ -317,6 +307,19 @@
                                 <span class="menu-text">#{langBean.msg('nav.organisationManagement')}</span>
                                 <p:tooltip for="organisationManagementLink"
                                            value="#{langBean.msg('nav.organisationManagement.hint')}"/>
+                            </h:commandLink>
+                        </li>
+                    </ul>
+
+                    <ul class="nav flex-column">
+                        <li class="nav-header">#{langBean.msg("nav.header.projects")}</li>
+                        <li class="nav-item">
+                            <h:commandLink action="#{navBean.goToProjectsSettings()}" styleClass="nav-link"
+                                           id="projectsManagementLink">
+                                <i class="bi bi-arrow-down-square"/>
+                                <span class="menu-text">#{langBean.msg('nav.projectsManagement')}</span>
+                                <p:tooltip for="projectsManagementLink"
+                                           value="#{langBean.msg('nav.projectsManagement.hint')}"/>
                             </h:commandLink>
                         </li>
                     </ul>

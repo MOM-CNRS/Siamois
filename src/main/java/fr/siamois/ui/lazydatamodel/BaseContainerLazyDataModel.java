@@ -2,7 +2,6 @@ package fr.siamois.ui.lazydatamodel;
 
 import fr.siamois.dto.SortDTO;
 import fr.siamois.dto.entity.ContainerDTO;
-import fr.siamois.infrastructure.database.repositories.specs.ActionUnitSpec;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -24,7 +23,7 @@ public abstract class BaseContainerLazyDataModel extends BaseLazyDataModel<Conta
     @Override
     protected SortDTO getDefaultSortDTO() {
         SortDTO sortDTO = new SortDTO();
-        sortDTO.add(ActionUnitSpec.ID_FILTER, SortDTO.SortOrder.ASC);
+        sortDTO.add("id", SortDTO.SortOrder.ASC);
         return sortDTO;
     }
 

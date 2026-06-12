@@ -56,9 +56,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.*;
 
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
@@ -70,6 +70,8 @@ import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class RecordingUnitServiceTest {
+    private static final OffsetDateTime NOW = OffsetDateTime.of(2024, 1, 15, 12, 0, 0, 0, ZoneOffset.UTC);
+
 
     @Mock
     private RecordingUnitRepository recordingUnitRepository;
@@ -433,99 +435,7 @@ class RecordingUnitServiceTest {
     }
 
 
-    @Test
-    void testFindAllByInstitutionAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining_Success() {
-        // Arrange
-        Long institutionId = 1L;
-        String fullIdentifier = "test";
-        Long[] categoryIds = {1L, 2L};
-        String global = "search";
-        String langCode = "fr";
 
-        // Mock RecordingUnit objects
-        RecordingUnit recordingUnit11 = new RecordingUnit();
-        recordingUnit11.setId(1L);
-        recordingUnit11.setParents(new HashSet<>());
-        recordingUnit11.setChildren(new HashSet<>());
-
-        RecordingUnit recordingUnit22 = new RecordingUnit();
-        recordingUnit22.setId(2L);
-        recordingUnit22.setParents(new HashSet<>());
-        recordingUnit22.setChildren(new HashSet<>());
-
-        List<RecordingUnit> recordingUnits = Arrays.asList(recordingUnit11, recordingUnit22);
-
-        // Mock Page<RecordingUnit>
-        Page<RecordingUnit> page2 = new PageImpl<>(recordingUnits);
-
-        // Mock DTOs
-        RecordingUnitDTO recordingUnit1DTO2 = new RecordingUnitDTO();
-        recordingUnit1DTO2.setId(1L);
-
-        RecordingUnitDTO recordingUnit2DTO2 = new RecordingUnitDTO();
-        recordingUnit2DTO2.setId(2L);
-
-        // Mock repository call
-        when(recordingUnitRepository.findAllByInstitutionAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
-                eq(institutionId),
-                eq(fullIdentifier),
-                eq(categoryIds),
-                eq(global),
-                eq(langCode),
-                any(Pageable.class)
-        )).thenReturn(page2);
-
-        // Mock mapper conversion
-        when(recordingUnitMapper.convert(recordingUnit11)).thenReturn(recordingUnit1DTO2);
-        when(recordingUnitMapper.convert(recordingUnit22)).thenReturn(recordingUnit2DTO2);
-
-        // Act
-        Page<RecordingUnitDTO> actualResult = recordingUnitService.findAllByInstitutionAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
-                institutionId, fullIdentifier, categoryIds, global, langCode, pageable
-        );
-
-        // Assert
-        assertNotNull(actualResult);
-        assertEquals(2, actualResult.getContent().size());
-    }
-
-    @Test
-    void findAllByInstitutionAndByActionUnitAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining_Success() {
-        // Arrange
-        Long institutionId = 1L;
-        Long actionId = 1L;
-        String fullIdentifier = "test";
-        Long[] categoryIds = {1L, 2L};
-        String global = "global";
-        String langCode = "fr";
-        Pageable pageable2 = Pageable.unpaged();
-
-        RecordingUnit unit1 = new RecordingUnit();
-        RecordingUnit unit2 = new RecordingUnit();
-        Page<RecordingUnit> page2 = new PageImpl<>(List.of(unit1, unit2));
-
-        RecordingUnitDTO dto1 = new RecordingUnitDTO();
-        RecordingUnitDTO dto2 = new RecordingUnitDTO();
-        Page<RecordingUnitDTO> expectedPageDto = new PageImpl<>(List.of(dto1, dto2));
-
-        when(recordingUnitRepository.findAllByInstitutionAndByActionUnitAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
-                institutionId, actionId, fullIdentifier, categoryIds, global, langCode, pageable2
-        )).thenReturn(page2);
-
-        when(recordingUnitMapper.convert(unit1)).thenReturn(dto1);
-        when(recordingUnitMapper.convert(unit2)).thenReturn(dto2);
-
-        // Act
-        Page<RecordingUnitDTO> result = recordingUnitService.findAllByInstitutionAndByActionUnitAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
-                institutionId, actionId, fullIdentifier, categoryIds, global, langCode, pageable2
-        );
-
-        // Assert
-        assertThat(result).isEqualTo(expectedPageDto);
-        verify(recordingUnitRepository).findAllByInstitutionAndByActionUnitAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
-                institutionId, actionId, fullIdentifier, categoryIds, global, langCode, pageable2
-        );
-    }
 
     @Test
     void canCreateSpecimen_returnsTrue_whenUserIsManagerOfCreatingInstitution() {
@@ -593,77 +503,7 @@ class RecordingUnitServiceTest {
         verify(actionUnitService, never()).isActionUnitStillOngoing(any());
     }
 
-    @Test
-    void testFindAllByChildAndByNameContainingAndByCategoriesAndByGlobalContaining_Success() {
-        // Arrange
-        Long[] categoryIds = new Long[]{1L, 2L}; // Example category IDs
-        Page<RecordingUnit> page2 = new PageImpl<>(Arrays.asList(recordingUnit1, recordingUnit2));
 
-        when(recordingUnitRepository.findAllByChildAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
-                any(Long.class),
-                any(String.class),
-                any(Long[].class),
-                any(String.class),
-                any(String.class),
-                any(Pageable.class)
-        )).thenReturn(page2);
-
-        // Act
-        Page<RecordingUnitDTO> actualResult = recordingUnitService.findAllByChildAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
-                1L, "null", categoryIds, "null", "fr", pageable
-        );
-
-        // Assert
-        assertEquals(2, actualResult.getContent().size());
-    }
-
-
-    @Test
-    void testFindAllByParentAndByNameContainingAndByCategoriesAndByGlobalContaining_Success() {
-
-        when(recordingUnitRepository.findAllByParentAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
-                any(Long.class),
-                any(String.class),
-                any(Long[].class),
-                any(String.class),
-                any(String.class),
-                any(Pageable.class)
-        )).thenReturn(page);
-
-        // Act
-        Page<RecordingUnitDTO> actualResult = recordingUnitService.findAllByParentAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
-                1L, "null", new Long[2], "null", "fr", pageable
-        );
-
-        // Assert
-        assertEquals(2, actualResult.getContent().size());
-    }
-
-    @Test
-    void test_findAllBySpatialUnitAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining_Success() {
-
-        when(recordingUnitRepository.findAllBySpatialUnitAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
-                any(Long.class),
-                any(String.class),
-                any(Long[].class),
-                any(String.class),
-                any(String.class),
-                any(Pageable.class)
-        )).thenReturn(page);
-
-        // Act
-        Page<RecordingUnitDTO> actualResult = recordingUnitService.findAllBySpatialUnitAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
-                1L, "null", new Long[2], "null", "fr", pageable
-        );
-
-        // Assert
-        assertNotNull(actualResult);
-        assertEquals(2, actualResult.getContent().size());
-        verify(recordingUnitRepository).findAllBySpatialUnitAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
-                eq(1L), anyString(), any(Long[].class), anyString(), anyString(), any(Pageable.class)
-        );
-
-    }
 
     @Test
     void testCountBySpatialContext() {
@@ -1378,7 +1218,7 @@ class RecordingUnitServiceTest {
         ActionUnitSummaryDTO action = new ActionUnitSummaryDTO();
         action.setId(10L);
         RecordingUnitDTO current = new RecordingUnitDTO();
-        current.setCreationTime(OffsetDateTime.now());
+        current.setCreationTime(NOW);
 
         RecordingUnit nextEntity = new RecordingUnit();
         RecordingUnitDTO nextDTO = new RecordingUnitDTO();
@@ -1427,7 +1267,7 @@ class RecordingUnitServiceTest {
         ActionUnitSummaryDTO action = new ActionUnitSummaryDTO();
         action.setId(10L);
         RecordingUnitDTO current = new RecordingUnitDTO();
-        current.setCreationTime(OffsetDateTime.now());
+        current.setCreationTime(NOW);
 
         RecordingUnit prevEntity = new RecordingUnit();
         RecordingUnitDTO prevDTO = new RecordingUnitDTO();
@@ -1701,9 +1541,9 @@ class RecordingUnitServiceTest {
         filters.add(RecordingUnitSpec.ACTION_UNIT_FILTER, List.of(3L), FilterDTO.FilterType.CONTAINS);
         filters.add(RecordingUnitSpec.CONTRIBUTORS_FILTER, List.of(4L), FilterDTO.FilterType.CONTAINS);
         filters.add(RecordingUnitSpec.TYPE_FILTER, List.of(5L), FilterDTO.FilterType.CONTAINS);
-        filters.add(RecordingUnitSpec.OPENING_DATE_FILTER, List.of(OffsetDateTime.now(), OffsetDateTime.now().plusDays(1)),
+        filters.add(RecordingUnitSpec.OPENING_DATE_FILTER, List.of(NOW, NOW.plusDays(1)),
                 FilterDTO.FilterType.CONTAINS);
-        filters.add(RecordingUnitSpec.CLOSING_DATE_FILTER, List.of(OffsetDateTime.now(), OffsetDateTime.now().plusDays(1)),
+        filters.add(RecordingUnitSpec.CLOSING_DATE_FILTER, List.of(NOW, NOW.plusDays(1)),
                 FilterDTO.FilterType.CONTAINS);
 
         Specification<RecordingUnit> spec = RecordingUnitService.userFilterSpecs(filters);

@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 
 @RestControllerAdvice(basePackages = "fr.siamois.ui.api.openapi.v1")
 public class RestExceptionHandler {
@@ -24,7 +25,7 @@ public class RestExceptionHandler {
                 .error("Not Found")
                 .message(ex.getMessage())
                 .path(request.getRequestURI())
-                .timestamp(OffsetDateTime.now())
+                .timestamp(OffsetDateTime.now(ZoneOffset.UTC))
                 .build();
 
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
@@ -53,7 +54,7 @@ public class RestExceptionHandler {
                 .error(ex.getStatusCode().toString())
                 .message(ex.getReason())
                 .path(request.getRequestURI())
-                .timestamp(OffsetDateTime.now())
+                .timestamp(OffsetDateTime.now(ZoneOffset.UTC))
                 .build();
 
         return ResponseEntity.status(ex.getStatusCode()).body(error);
@@ -69,7 +70,7 @@ public class RestExceptionHandler {
                 .error("Internal Server Error")
                 .message("Une erreur interne est survenue")
                 .path(request.getRequestURI())
-                .timestamp(OffsetDateTime.now())
+                .timestamp(OffsetDateTime.now(ZoneOffset.UTC))
                 .build();
 
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);

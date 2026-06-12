@@ -5,6 +5,7 @@ import fr.siamois.domain.models.form.customfield.CustomFieldText;
 import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerText;
 import fr.siamois.domain.models.vocabulary.Vocabulary;
 import fr.siamois.domain.models.vocabulary.VocabularyType;
+import fr.siamois.domain.services.BookmarkService;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.document.DocumentService;
 import fr.siamois.domain.services.form.FormService;
@@ -14,12 +15,15 @@ import fr.siamois.domain.services.vocabulary.FieldConfigurationService;
 import fr.siamois.dto.entity.AbstractEntityDTO;
 import fr.siamois.dto.entity.ConceptDTO;
 import fr.siamois.dto.entity.SpatialUnitSummaryDTO;
+import fr.siamois.dto.view.TableViewState;
 import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
 import fr.siamois.ui.bean.LabelBean;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
 import fr.siamois.ui.bean.panel.EntityForm;
 import fr.siamois.ui.bean.panel.models.panel.AbstractPanel;
+import fr.siamois.ui.bean.panel.models.panel.list.AbstractListPanel;
+import fr.siamois.ui.bean.panel.models.panel.single.tab.EntityListTab;
 import fr.siamois.ui.form.EntityFormContext;
 import fr.siamois.ui.form.FormContextServices;
 import fr.siamois.ui.form.dto.CustomColUiDto;
@@ -33,11 +37,14 @@ import jakarta.faces.event.ActionEvent;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
+import org.primefaces.PrimeFaces;
 import org.springframework.context.ApplicationContext;
 import org.springframework.core.convert.ConversionService;
 
 import java.io.Serializable;
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -53,6 +60,8 @@ import java.util.Set;
 public abstract class AbstractSingleEntity<T extends AbstractEntityDTO>
         extends AbstractPanel
         implements EntityForm<T>, Serializable {
+
+
 
     public static final String FIELD = "field";
     public static final String COLUMN_CLASS_NAME = "ui-g-12 ui-md-6 ui-lg-3";
@@ -71,6 +80,7 @@ public abstract class AbstractSingleEntity<T extends AbstractEntityDTO>
     protected final transient FormService formService;
     protected final transient FormContextServices formContextServices;
     protected final transient ConversionService conversionService;
+    protected final transient BookmarkService bookmarkService;
 
     // -------------------- Local state ---------------------
 
@@ -78,10 +88,45 @@ public abstract class AbstractSingleEntity<T extends AbstractEntityDTO>
 
     protected transient FormUiDto detailsForm;
 
+    @Override
+    public void togglePanelBookmark() {
+        if(Boolean.TRUE.equals(bookmarkService.isRessourceBookmarkedByUser(sessionSettingsBean.getUserInfo(), buildBookmarkUrl()))) {
+            bookmarkService.delete(sessionSettingsBean.getUserInfo(), buildBookmarkUrl());
+        }
+        else {
+            // ADD THE VIEW IF EXIST, DUPLICATE IF NOT YOUR OWN VIEW
+            bookmarkService.save(sessionSettingsBean.getUserInfo(), buildBookmarkUrl(), titleCodeOrTitle);
+        }
+    }
+
+
+    @Override
+    public boolean isBookmarked(
+
+    ) {
+        return bookmarkService.isRessourceBookmarkedByUser(sessionSettingsBean.getUserInfo(), buildBookmarkUrl());
+    }
+
     /**
      * Per-entity form context. Holds answers, enabled rules, spatial tree state, etc.
      */
     protected transient EntityFormContext<T> formContext;
+
+    @Override
+    public String buildBookmarkUrl() {
+
+            return  this.ressourceUri();
+    }
+
+    @Override
+    public void applyViewState(TableViewState state) {
+        // no view state so far
+    }
+
+    @Override
+    public boolean isDirty() {
+        return false;
+    }
 
     // -------------------- Vocabulary constants ------------
 
@@ -99,7 +144,7 @@ public abstract class AbstractSingleEntity<T extends AbstractEntityDTO>
 
     // -------------------- Constructors --------------------
 
-    protected AbstractSingleEntity(ApplicationContext context) {
+    protected AbstractSingleEntity(ApplicationContext context, BookmarkService bookmarkService) {
         this.sessionSettingsBean = context.getBean(SessionSettingsBean.class);
         this.fieldConfigurationService = context.getBean(FieldConfigurationService.class);
         this.spatialUnitTreeService = context.getBean(SpatialUnitTreeService.class);
@@ -111,6 +156,7 @@ public abstract class AbstractSingleEntity<T extends AbstractEntityDTO>
         this.formContextServices = context.getBean(FormContextServices.class);
         this.langBean = context.getBean(LangBean.class);
         this.conversionService = context.getBean(ConversionService.class);
+        this.bookmarkService = bookmarkService;
     }
 
     protected AbstractSingleEntity(String titleCodeOrTitle,
@@ -129,12 +175,13 @@ public abstract class AbstractSingleEntity<T extends AbstractEntityDTO>
         this.formContextServices = context.getBean(FormContextServices.class);
         this.langBean = context.getBean(LangBean.class);
         this.conversionService = context.getBean(ConversionService.class);
+        this.bookmarkService = context.getBean(BookmarkService.class);
     }
 
     // -------------------- Utility -------------------------
 
     public static String generateRandomActionUnitIdentifier() {
-        int currentYear = java.time.LocalDate.now().getYear();
+        int currentYear = LocalDate.now(ZoneOffset.UTC).getYear();
         return String.valueOf(currentYear);
     }
 
@@ -185,23 +232,44 @@ public abstract class AbstractSingleEntity<T extends AbstractEntityDTO>
      * Helper for children: once unit + detailsForm are set,
      * call this to initialize the EntityFormContext.
      */
+    private void updateEntityListTabsIfPresent(AbstractSingleEntityPanel<?> singlePanel) {
+        if (singlePanel.getTabs() == null) return;
+        singlePanel.getTabs().stream()
+                .filter(EntityListTab.class::isInstance)
+                .map(t -> (EntityListTab<?>) t)
+                .forEach(t -> {
+                    if (t.getTableModel() != null) t.getTableModel().updateIfPresent(unit);
+                });
+    }
+
+    private void handlePostSave() {
+        if (isRoot || parentOrOverview == null) return;
+        if (parentOrOverview instanceof AbstractListPanel<?> listPanel) {
+            listPanel.updateRowInTableModel(unit);
+            PrimeFaces.current().ajax().update(listPanel.getRowUpdateTarget(unit.getId()));
+        } else if (parentOrOverview instanceof AbstractSingleEntityPanel<?> singlePanel) {
+            updateEntityListTabsIfPresent(singlePanel);
+            PrimeFaces.current().ajax().update(
+                    "singlePanelUnitForm-" + singlePanel.getPanelIndex() + ":singlePanelUnitTabs"
+            );
+        }
+    }
+
     public void initFormContext(boolean forceInit) {
         if (unit == null) {
             log.warn("initFormContext called with null unit");
             return;
         }
-        PanelFieldSource fieldSource = new PanelFieldSource(detailsForm);
         if (formContext == null || forceInit) {
             formContext = new EntityFormContext<>(
                     unit,
-                    fieldSource,
+                    new PanelFieldSource(detailsForm),
                     formContextServices,
                     conversionService,
-                    // callback appelé quand le champ de scope change
                     (field, concept) -> onFormScopeChanged(concept),
-                    // nom de la propriété qui porte le scope (ex: "type")
                     getFormScopePropertyName()
             );
+            formContext.addPostSaveCallback(this::handlePostSave);
         }
         formContext.init(forceInit);
     }

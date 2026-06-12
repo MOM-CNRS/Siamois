@@ -1,0 +1,231 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui:composition template="/template.xhtml"
+                xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:h="http://xmlns.jcp.org/jsf/html"
+                xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
+                xmlns:p="http://primefaces.org/ui"
+                xmlns:form="http://java.sun.com/jsf/composite/pages/shared/form"
+                xmlns:f="http://java.sun.com/jsf/core">
+
+    <ui:define name="metadata">
+    <f:event type="preRenderView" listener="#{navBean.onPreRenderView}"/>
+    <f:event type="preRenderView" listener="#{projectDetailsBean.checkProjectOrRedirect}"/>
+    </ui:define>
+
+    <ui:define name="head">
+        <h:outputStylesheet library="css" name="settings.css"/>
+    </ui:define>
+
+    <ui:define name="content">
+        <main class="container-lg">
+            <form:csrfform formId="breadCrumbForm"
+                           styleClass="breadCrumpForm"
+                           style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+
+                <p:breadCrumb homeDisplay="false" style="flex-grow: 1; border: none; background: transparent; padding: 0;">
+                    <p:menuitem value="Projets" action="#{projectDetailsBean.goToProjectList()}"/>
+                    <p:menuitem value="#{projectDetailsBean.project.name}" action="#{projectDetailsBean.backToProjectSettings()}"/>
+                    <p:menuitem value="Importer et exporter les données"/>
+                </p:breadCrumb>
+
+            </form:csrfform>
+
+            <form:csrfform formId="linkToActionForm" style="margin-top: 1em;"
+            >
+
+
+                <p:commandButton action="#{navBean.redirectToActionUnit()}"
+                                 icon="bi bi-database"
+                                 value="Ouvrir le projet dans l'application"
+                                 process="@this"
+                                 styleClass="ui-button-flat">
+                    <f:param name="id" value="#{projectDetailsBean.project.id}" />
+                </p:commandButton>
+
+            </form:csrfform>
+
+            <form:csrfform formId="projectImportForm" styleClass="sia-settings-form">
+                <div class="field-value-group">
+                    <div class="field-value-content">
+                        <p:selectOneButton value="import" style="margin: auto; border-radius: 20px;">
+                            <f:selectItem itemLabel="Importer" itemValue="import"/>
+                            <f:selectItem itemLabel="Exporter" itemValue="export" itemDisabled="true"/>
+                        </p:selectOneButton>
+                        <p:commandButton value="Télécharger un exemple" icon="pi pi-arrow-down"
+                                         styleClass="ui-button-outlined" style="background-color: white;">
+                            <p:fileDownload value="#{projectUploadSettingsBean.templateFile}"/>
+                        </p:commandButton>
+
+                        <div class="custom-upload-container">
+                            <p:fileUpload listener="#{projectUploadSettingsBean.handleFileUpload}"
+                                          mode="advanced"
+                                          dragDrop="true"
+                                          auto="true"
+                                          update="messages, projectImportForm:uploadOverview, projectImportForm:uploadButtons"
+                                          allowTypes="/(\.|\/)(xlsx|xls)$/"
+                                          invalidSizeMessage="Le fichier dépasse la limite de 10 Mo."
+                                          invalidFileMessage="Seuls les fichiers .xlsx et .xls sont autorisés."
+                                          styleClass="modern-dropzone"
+                                          label="Faire glisser le fichier ici ou cliquer pour chercher un fichier"/>
+
+                            <p:growl id="messages" showDetail="true" keepAlive="true"/>
+                        </div>
+
+                        <p:outputPanel id="uploadOverview">
+                            <p:tabView rendered="#{projectUploadSettingsBean.specs != null}">
+
+                                <p:tab title="Lieu">
+                                    <f:facet name="title">
+                                        <div style="display: flex; gap: 0.5em; align-items: center;">
+                                            <span>Lieu</span>
+                                            <p:badge value="#{projectUploadSettingsBean.specs.spatialUnits().size()}"
+                                                     style="background-color: var(--siamois-green);" class="ml-1"/>
+                                        </div>
+                                    </f:facet>
+                                    <div style="padding: 1em;">
+                                        <p:dataTable value="#{projectUploadSettingsBean.specs.spatialUnits()}" var="usp"
+                                                     paginator="true" rows="10" size="small" stripedRows="true"
+                                                     paginatorPosition="bottom" emptyMessage="Aucun lieu trouvé">
+                                            <p:column headerText="Nom" sortBy="#{usp.name()}">
+                                                <h:outputText value="#{usp.name()}" />
+                                            </p:column>
+                                        </p:dataTable>
+                                    </div>
+                                </p:tab>
+
+
+                                <p:tab title="UE">
+                                    <f:facet name="title">
+                                        <div style="display: flex; gap: 0.5em; align-items: center;">
+                                            <span>UE</span>
+                                            <p:badge value="#{projectUploadSettingsBean.specs.recordingUnits().size()}"
+                                                     style="background-color: var(--siamois-green);" class="ml-1"/>
+                                        </div>
+                                    </f:facet>
+                                    <div style="padding: 1em;">
+                                        <p:dataTable value="#{projectUploadSettingsBean.specs.recordingUnits()}" var="ue"
+                                                     paginator="true" rows="10" size="small" stripedRows="true"
+                                                     paginatorPosition="bottom" emptyMessage="Aucune unité d'enregistrement trouvée">
+                                            <p:column headerText="Identifiant" sortBy="#{ue.fullIdentifier()}">
+                                                <h:outputText value="#{ue.fullIdentifier()}" />
+                                            </p:column>
+                                        </p:dataTable>
+                                    </div>
+                                </p:tab>
+
+                                <p:tab title="Regroupements d'UE">
+                                    <f:facet name="title">
+                                        <div style="display: flex; gap: 0.5em; align-items: center;">
+                                            <span>Regroupements d'UE</span>
+                                            <p:badge value="#{projectUploadSettingsBean.specs.recordingUnitRelSpecs().size()}"
+                                                     style="background-color: var(--siamois-green);" class="ml-1"/>
+                                        </div>
+                                    </f:facet>
+                                    <div style="padding: 1em;">
+                                        <p:dataTable value="#{projectUploadSettingsBean.specs.recordingUnitRelSpecs()}" var="rel"
+                                                     paginator="true" rows="10" size="small" stripedRows="true"
+                                                     paginatorPosition="bottom" emptyMessage="Aucune relation d'UE trouvée">
+                                            <p:column headerText="UE Parent" sortBy="#{rel.parent()}">
+                                                <h:outputText value="#{rel.parent()}" />
+                                            </p:column>
+                                            <p:column headerText="UE Enfant" sortBy="#{rel.child()}">
+                                                <h:outputText value="#{rel.child()}" />
+                                            </p:column>
+                                        </p:dataTable>
+                                    </div>
+                                </p:tab>
+
+                                <p:tab title="Stratigraphie">
+                                    <f:facet name="title">
+                                        <div style="display: flex; gap: 0.5em; align-items: center;">
+                                            <span>Stratigraphie</span>
+                                            <p:badge value="#{projectUploadSettingsBean.specs.recordingUnitStratiRelSpecs().size()}"
+                                                     style="background-color: var(--siamois-green);" class="ml-1"/>
+                                        </div>
+                                    </f:facet>
+                                    <div style="padding: 1em;">
+                                        <p:dataTable value="#{projectUploadSettingsBean.specs.recordingUnitStratiRelSpecs()}" var="strati"
+                                                     paginator="true" rows="10" size="small" stripedRows="true"
+                                                     paginatorPosition="bottom" emptyMessage="Aucune relation stratigraphique trouvée">
+                                            <p:column headerText="US 1" sortBy="#{strati.us1()}">
+                                                <h:outputText value="#{strati.us1()}" />
+                                            </p:column>
+                                            <p:column headerText="US 2" sortBy="#{strati.us2()}">
+                                                <h:outputText value="#{strati.us2()}" />
+                                            </p:column>
+                                        </p:dataTable>
+                                    </div>
+                                </p:tab>
+
+                                <p:tab title="Mobilier">
+                                    <f:facet name="title">
+                                        <div style="display: flex; gap: 0.5em; align-items: center;">
+                                            <span>Mobilier</span>
+                                            <p:badge value="#{projectUploadSettingsBean.specs.specimenSpecs().size()}"
+                                                     style="background-color: var(--siamois-green);" class="ml-1"/>
+                                        </div>
+                                    </f:facet>
+                                    <div style="padding: 1em;">
+                                        <p:dataTable value="#{projectUploadSettingsBean.specs.specimenSpecs()}" var="specimen"
+                                                     paginator="true" rows="10" size="small" stripedRows="true"
+                                                     paginatorPosition="bottom" emptyMessage="Aucun mobilier trouvé">
+                                            <p:column headerText="Identifiant" sortBy="#{specimen.fullIdentifier()}">
+                                                <h:outputText value="#{specimen.fullIdentifier()}" />
+                                            </p:column>
+                                        </p:dataTable>
+                                    </div>
+                                </p:tab>
+
+                                <p:tab title="Regroupement de mobilier">
+                                    <f:facet name="title">
+                                        <div style="display: flex; gap: 0.5em; align-items: center;">
+                                            <span>Regroupement de mobilier</span>
+                                            <p:badge value="#{0}" style="background-color: var(--siamois-green);" class="ml-1"/>
+                                        </div>
+                                    </f:facet>
+                                    <div style="padding: 3em; text-align: center; color: var(--text-secondary);">
+                                        Aucune donnée ou structure à importer pour cette feuille.
+                                    </div>
+                                </p:tab>
+
+                                <p:tab title="Phase">
+                                    <f:facet name="title">
+                                        <div style="display: flex; gap: 0.5em; align-items: center;">
+                                            <span>Phase</span>
+                                            <p:badge value="#{projectUploadSettingsBean.specs.phaseSpecs().size()}"
+                                                     style="background-color: var(--siamois-green);" class="ml-1"/>
+                                        </div>
+                                    </f:facet>
+                                    <div style="padding: 1em;">
+                                        <p:dataTable value="#{projectUploadSettingsBean.specs.phaseSpecs()}" var="phase"
+                                                     paginator="true" rows="10" size="small" stripedRows="true"
+                                                     paginatorPosition="bottom" emptyMessage="Aucune phase trouvée">
+                                            <p:column headerText="Identifiant" sortBy="#{phase.identifier()}">
+                                                <h:outputText value="#{phase.identifier()}" />
+                                            </p:column>
+                                            <p:column headerText="Titre" sortBy="#{phase.title()}">
+                                                <h:outputText value="#{phase.title()}" />
+                                            </p:column>
+                                        </p:dataTable>
+                                    </div>
+                                </p:tab>
+                            </p:tabView>
+                        </p:outputPanel>
+
+                        <p:outputPanel id="uploadButtons" layout="block" styleClass="field-value-save">
+                            <p:commandButton action="#{projectDetailsBean.backToProjectSettings()}"
+                                             style="background-color: white;"
+                                             value="Retour" styleClass="ui-button-flat"/>
+                            <p:commandButton rendered="#{projectUploadSettingsBean.readyToUpload == true}"
+                                             value="Importer les données"
+                                             update="projectImportForm:uploadButtons"
+                                             action="#{projectUploadSettingsBean.uploadSpec()}"
+                                             styleClass="ui-button-success"/>
+                        </p:outputPanel>
+
+                    </div>
+                </div>
+            </form:csrfform>
+        </main>
+    </ui:define>
+</ui:composition>

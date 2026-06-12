@@ -6,12 +6,14 @@ import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.specimen.Specimen;
 import fr.siamois.domain.services.ArkEntityService;
+import fr.siamois.dto.FilterDTO;
 import fr.siamois.dto.entity.*;
 import fr.siamois.infrastructure.database.repositories.ArkRepository;
 import fr.siamois.infrastructure.database.repositories.DocumentRepository;
 import fr.siamois.infrastructure.database.repositories.specimen.SpecimenFindSortSql;
 import fr.siamois.infrastructure.database.repositories.specimen.SpecimenRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitRepository;
+import fr.siamois.infrastructure.database.repositories.specs.SpecimenSpec;
 import fr.siamois.mapper.InstitutionMapper;
 import fr.siamois.mapper.SpecimenSummaryMapper;
 import fr.siamois.mapper.SpecimenMapper;
@@ -20,6 +22,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -189,6 +193,8 @@ public class SpecimenService implements ArkEntityService {
         setupOtherFields(specimen, managedSpecimen);
         synchronizeCollection(managedSpecimen.getMaterialClass(), specimen.getMaterialClass());
         synchronizeCollection(managedSpecimen.getMaterial(), specimen.getMaterial());
+        synchronizeCollection(managedSpecimen.getContainers(), specimen.getContainers());
+        synchronizeCollection(managedSpecimen.getPhases(), specimen.getPhases());
 
         // Sauvegarder l'entité Specimen
         Specimen savedSpecimen = specimenRepository.save(managedSpecimen);
@@ -530,5 +536,105 @@ public class SpecimenService implements ArkEntityService {
             arkRepository.deleteById(arkId);
         }
     }
+
+    public Page<SpecimenDTO> searchSpecimen(InstitutionDTO institutionDTO, FilterDTO filters, Pageable pageable) {
+        Specification<Specimen> specs = prepareSpecs(institutionDTO, filters);
+
+        Page<Specimen> res = specimenRepository.findAll(specs, pageable);
+
+        return res.map(specimenMapper::convert);
+    }
+
+    public Page<SpecimenDTO> searchSpecimenInRecordingUnit(InstitutionDTO institutionDTO,
+                                                           RecordingUnitDTO recordingUnitDTO,
+                                                           FilterDTO filters, Pageable pageable) {
+        Specification<Specimen> specs = prepareSpecs(institutionDTO, filters);
+        specs = specs.and(SpecimenSpec.specimenInRecordingUnit(recordingUnitDTO.getId()));
+        Page<Specimen> res = specimenRepository.findAll(specs, pageable);
+
+        return res.map(specimenMapper::convert);
+    }
+
+    public Page<SpecimenDTO> searchSpecimenInActionUnit(InstitutionDTO institutionDTO,
+                                                           ActionUnitDTO actionUnitDTO,
+                                                           FilterDTO filters, Pageable pageable) {
+        Specification<Specimen> specs = prepareSpecs(institutionDTO, filters);
+        specs = specs.and(SpecimenSpec.specimenInActionUnit(actionUnitDTO.getId()));
+        Page<Specimen> res = specimenRepository.findAll(specs, pageable);
+
+        return res.map(specimenMapper::convert);
+    }
+
+    public int countSearchResultsInActionUnit(InstitutionDTO institutionDTO,
+                                              @NonNull ActionUnitDTO actionUnitDTO, FilterDTO filters) {
+        Specification<Specimen> specs = prepareSpecs(institutionDTO, filters);
+        specs = specs.and(SpecimenSpec.specimenInActionUnit(actionUnitDTO.getId()));
+        return Math.toIntExact(specimenRepository.count(specs));
+    }
+
+    public int countSearchResultsInRecordingUnit(InstitutionDTO institutionDTO,
+                                                 @NonNull RecordingUnitDTO recordingUnitDTO, FilterDTO filters) {
+        Specification<Specimen> specs = prepareSpecs(institutionDTO, filters);
+        specs = specs.and(SpecimenSpec.specimenInRecordingUnit(recordingUnitDTO.getId()));
+        return Math.toIntExact(specimenRepository.count(specs));
+    }
+
+    public int countSearchResults(InstitutionDTO institution, FilterDTO filters) {
+        Specification<Specimen> specs = prepareSpecs(institution, filters);
+        return Math.toIntExact(specimenRepository.count(specs));
+    }
+
+    public Specification<Specimen> prepareSpecs(@org.springframework.lang.NonNull InstitutionDTO institution,
+                                                @NonNull FilterDTO filters) {
+        Specification<Specimen> base = SpecimenSpec.specimenInInstitution(institution.getId());
+
+        if (filters.isRootOnly()) {
+            if (filters.hasUserFilters()) {
+                Collection<Long> closure = resolveAncestorClosure(institution, filters);
+                if (closure.isEmpty()) {
+                    return base.and((root, q, cb) -> cb.disjunction());
+                }
+                return base.and(SpecimenSpec.unitIsRoot()).and(SpecimenSpec.idIn(closure));
+            }
+            return base.and(SpecimenSpec.unitIsRoot());
+        }
+
+        return base.and(userFilterSpecs(filters));
+    }
+
+    public static Specification<Specimen> userFilterSpecs(@NonNull FilterDTO filters) {
+        Specification<Specimen> specification = Specification.where(null);
+
+        if (filters.containsColumn(SpecimenSpec.ACTION_UNIT_FILTER)) {
+            specification = specification.and(SpecimenSpec.isInActionUnit(filters.valueAsIdListOf(SpecimenSpec.ACTION_UNIT_FILTER)));
+        }
+
+        if (filters.containsColumn(SpecimenSpec.RECORDING_UNIT_FILTER)) {
+            specification = specification.and(SpecimenSpec.isInRecordingUnit(filters.valueAsIdListOf(SpecimenSpec.RECORDING_UNIT_FILTER)));
+        }
+
+        return specification;
+    }
+
+    private Collection<Long> resolveAncestorClosure(InstitutionDTO institution, FilterDTO filters) {
+        if (filters.getAncestorClosure() != null) {
+            return filters.getAncestorClosure();
+        }
+        Specification<Specimen> matchSpecs = SpecimenSpec
+                .specimenInInstitution(institution.getId())
+                .and(userFilterSpecs(filters));
+
+        List<Long> matchIds = specimenRepository.findAll(matchSpecs)
+                .stream()
+                .map(Specimen::getId)
+                .toList();
+        Set<Long> closure = matchIds.isEmpty()
+                ? Collections.emptySet()
+                : new HashSet<>(recordingUnitRepository.findAncestorClosure(matchIds.toArray(Long[]::new)));
+        filters.setAncestorClosure(closure);
+        filters.setMatchIds(new HashSet<>(matchIds));
+        return closure;
+    }
+
 
 }

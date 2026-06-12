@@ -34,24 +34,24 @@ class RecordingUnitRelSeederTest {
         RecordingUnit child2 = new RecordingUnit();   child2.setFullIdentifier("C2");
 
         // Mockito : renvoyer les objets à partir des clés
-        when(recordingUnitSeeder.getRecordingUnitFromKey(new RecordingUnitSeeder.RecordingUnitKey("P1"), 1L))
+        when(recordingUnitSeeder.getRecordingUnitFromKey(new RecordingUnitSeeder.RecordingUnitKey("P1",""), 1L))
                 .thenReturn(parent1);
-        when(recordingUnitSeeder.getRecordingUnitFromKey(new RecordingUnitSeeder.RecordingUnitKey("P2"), 1L))
+        when(recordingUnitSeeder.getRecordingUnitFromKey(new RecordingUnitSeeder.RecordingUnitKey("P2",""), 1L))
                 .thenReturn(parent2);
-        when(recordingUnitSeeder.getRecordingUnitFromKey(new RecordingUnitSeeder.RecordingUnitKey("C1"), 1L))
+        when(recordingUnitSeeder.getRecordingUnitFromKey(new RecordingUnitSeeder.RecordingUnitKey("C1",""), 1L))
                 .thenReturn(child1);
-        when(recordingUnitSeeder.getRecordingUnitFromKey(new RecordingUnitSeeder.RecordingUnitKey("C2"), 1L))
+        when(recordingUnitSeeder.getRecordingUnitFromKey(new RecordingUnitSeeder.RecordingUnitKey("C2",""), 1L))
                 .thenReturn(child2);
 
         // Données de test
-        List<RecordingUnitRelSeeder.RecordingUnitDTO> specs = List.of(
-                new RecordingUnitRelSeeder.RecordingUnitDTO("P1", "C1"),
-                new RecordingUnitRelSeeder.RecordingUnitDTO("P1", "C2"),
-                new RecordingUnitRelSeeder.RecordingUnitDTO("P2", "C1")
+        List<RecordingUnitRelSeeder.RecordingUnitRelDTO> specs = List.of(
+                new RecordingUnitRelSeeder.RecordingUnitRelDTO("P1", "C1"),
+                new RecordingUnitRelSeeder.RecordingUnitRelDTO("P1", "C2"),
+                new RecordingUnitRelSeeder.RecordingUnitRelDTO("P2", "C1")
         );
 
         // Appel de la méthode
-        relSeeder.seed(specs, 1L);
+        relSeeder.seed(specs, 1L, "");
 
         // Vérifier que les enfants ont été ajoutés aux parents
         assertThat(parent1.getChildren()).containsExactlyInAnyOrder(child1, child2);
@@ -71,17 +71,17 @@ class RecordingUnitRelSeederTest {
         RecordingUnit parent = new RecordingUnit(); parent.setFullIdentifier("P1");
         parent.setChildren(new HashSet<>());
 
-        when(recordingUnitSeeder.getRecordingUnitFromKey(new RecordingUnitSeeder.RecordingUnitKey("P1"), 1L))
+        when(recordingUnitSeeder.getRecordingUnitFromKey(new RecordingUnitSeeder.RecordingUnitKey("P1",""), 1L))
                 .thenReturn(parent);
         // Simuler un enfant introuvable (null)
-        when(recordingUnitSeeder.getRecordingUnitFromKey(new RecordingUnitSeeder.RecordingUnitKey("C1"), 1L))
+        when(recordingUnitSeeder.getRecordingUnitFromKey(new RecordingUnitSeeder.RecordingUnitKey("C1",""), 1L))
                 .thenReturn(null);
 
-        List<RecordingUnitRelSeeder.RecordingUnitDTO> specs = List.of(
-                new RecordingUnitRelSeeder.RecordingUnitDTO("P1", "C1")
+        List<RecordingUnitRelSeeder.RecordingUnitRelDTO> specs = List.of(
+                new RecordingUnitRelSeeder.RecordingUnitRelDTO("P1", "C1")
         );
 
-        relSeeder.seed(specs, 1L);
+        relSeeder.seed(specs, 1L,"");
 
         // Aucun enfant ajouté
         assertThat(parent.getChildren()).isEmpty();

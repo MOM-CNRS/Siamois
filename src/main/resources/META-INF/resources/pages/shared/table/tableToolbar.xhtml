@@ -4,7 +4,7 @@
                 xmlns:p="http://primefaces.org/ui"
 >
 
-    <!--@elvariable id="tableModel" type="fr.siamois.ui.table.EntityTableViewModel"-->
+    <!--@elvariable id="tableModel" type="fr.siamois.ui.table.viewmodel.EntityTableViewModel"-->
 
     <p:toolbar id="tableToolbar">
         <p:toolbarGroup>
@@ -23,17 +23,37 @@
     flex-direction: column;
     gap: 1em;">
                             <!-- Toggle Switch -->
-                            <p:toggleSwitch
-                                    rendered="#{tableModel.isSwitchVisible()}"
-                                    value="#{tableModel.treeMode}"
-                                    onIcon="bi bi-list-nested"
-                                    offIcon="bi bi-list">
-                                <p:ajax process="@this" update=":#{cc.clientId}:tableContainer"
-                                        listener="#{tableModel.onSwitchTreeMode}"
-                                        onstart="PF('#{cc.clientId}_buiTables').show()"
-                                        oncomplete="PF('#{cc.clientId}_buiTables').hide()"/>
+                            <div style="display: flex; gap:1em; align-items: center">
+                                <p:toggleSwitch
+                                        rendered="#{tableModel.isSwitchVisible()}"
+                                        value="#{tableModel.treeMode}"
+                                        onIcon="bi bi-list-nested"
+                                        offIcon="bi bi-list">
+                                    <p:ajax process="@this"
+                                            update=":#{cc.clientId}:tableContainer, #{tableModel.parentPanel.actionToolbarId}"
+                                            listener="#{tableModel.onSwitchTreeMode}"
+                                            onstart="PF('#{cc.clientId}_buiTables').show()"
+                                            oncomplete="PF('#{cc.clientId}_buiTables').hide()"/>
 
-                            </p:toggleSwitch>
+                                </p:toggleSwitch>
+                                <span>#{tableModel.treeMode ? 'Mode Arborescence' : 'Mode Liste'}</span>
+                            </div>
+
+                            <div style="display: flex; gap:1em; align-items: center">
+                                <p:toggleSwitch
+                                        id="manualColumnToggle"
+                                        value="#{tableModel.columnFilteringEnabled}"
+                                        onIcon="pi pi-filter" offIcon="pi pi-filter-slash"
+                                        styleClass="vertical-align-middle ml-3">
+
+                                    <p:ajax update=":#{cc.clientId}:#{tableId}, #{tableModel.parentPanel.actionToolbarId}"
+                                            listener="#{tableModel.onColumnFilteringToggle}" />
+                                </p:toggleSwitch>
+                                <span>#{tableModel.columnFilteringEnabled ? 'Filtres activés' : 'Filtres désactivés'}</span>
+                            </div>
+
+
+
                             <!-- Column Toggler -->
                             <p:commandButton
                                     id="toggler" type="button"
@@ -42,7 +62,9 @@
                             <p:columnToggler
                                     datasource=":#{cc.clientId}:#{tableId}"
                                     trigger=":#{cc.clientId}:#{tableId}:toggler">
-                                <p:ajax event="toggle" listener="#{cc.attrs.tableModel.onToggle}"/>
+                                <p:ajax event="toggle"
+                                        update="#{tableModel.parentPanel.actionToolbarId}"
+                                        listener="#{cc.attrs.tableModel.onToggle}"/>
                             </p:columnToggler>
                         </div>
                     </p:overlayPanel>
@@ -54,18 +76,10 @@
                                      value="#{tableModel.globalFilter}"
                                      onkeyup="PrimeFaces.debounce(() => PF('#{cc.clientId}_#{tableId}').filter(), 500)"
                                      placeholder="#{langBean.msg('common.action.search')}"
-                                     disabled="#{not tableModel.columnFilteringEnabled}"
+                                     disabled="true"
                         />
                     </span>
-                    <p:toggleSwitch
-                            id="manualColumnToggle"
-                            value="#{tableModel.columnFilteringEnabled}"
-                            onIcon="pi pi-filter" offIcon="pi pi-filter-slash"
-                            styleClass="vertical-align-middle ml-3">
 
-                        <p:ajax update=":#{cc.clientId}:#{tableId}"
-                                listener="#{tableModel.onColumnFilteringToggle}" />
-                    </p:toggleSwitch>
                 </div>
             </p:toolbarGroup>
         </p:toolbarGroup>

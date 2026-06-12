@@ -59,29 +59,25 @@ public class SpatialUnitSeeder {
 
     public Map<String, SpatialUnit> seed(List<SpatialUnitSpecs> specs) {
         Map<String, SpatialUnit> result = new HashMap<>();
-        for (var s : specs) {
-
-            // Find Type
-
-            Concept type = conceptSeeder.findConceptOrReturnNull(s.typeVocabularyExtId, s.typeConceptExtId);
-            if(type == null) {
-                throw new IllegalStateException("Concept introuvable");
-            }
-
-            // Find author
-            Person author = personSeeder.findPersonOrReturnNull(s.authorEmail);
-            if(author == null) {
-                throw new IllegalStateException("Auteur introuvable");
-            }
-
-            // Find Institution
-            Institution institution = institutionSeeder.findInstitutionOrReturnNull(s.institutionIdentifier);
-            if(institution == null) {
-                throw new IllegalStateException("Institution introuvable");
-            }
-
-            // Find children
-            Set<SpatialUnit> children = initializeChildren(institution.getId(), s.childrenKey);
+        for (int i = 0; i < specs.size(); i++) {
+            var s = specs.get(i);
+            try {
+            Concept type = SeederUtils.field("type", () -> {
+                Concept c = conceptSeeder.findConceptOrReturnNull(s.typeVocabularyExtId, s.typeConceptExtId);
+                if (c == null) throw new IllegalStateException("Concept introuvable");
+                return c;
+            });
+            Person author = SeederUtils.field("auteur", () -> {
+                Person p = personSeeder.findOrCreatePerson(s.authorEmail);
+                if (p == null) throw new IllegalStateException("Auteur introuvable");
+                return p;
+            });
+            Institution institution = SeederUtils.field("institutionIdentifier", () -> {
+                Institution inst = institutionSeeder.findInstitutionOrReturnNull(s.institutionIdentifier);
+                if (inst == null) throw new IllegalStateException("Institution introuvable");
+                return inst;
+            });
+            Set<SpatialUnit> children = SeederUtils.field("childrenKey", () -> initializeChildren(institution.getId(), s.childrenKey));
 
             SpatialUnit toGetOrCreate = new SpatialUnit();
             toGetOrCreate.setName(s.name);
@@ -91,6 +87,11 @@ public class SpatialUnitSeeder {
             toGetOrCreate.setChildren(children);
 
             result.put(s.name, getOrCreateSpatialUnit(toGetOrCreate));
+
+            } catch (Exception e) {
+                throw new IllegalStateException(
+                        "[Lieu Ligne " + (i + 1) + "] '" + s.name + "' : " + e.getMessage(), e);
+            }
         }
         return result;
     }

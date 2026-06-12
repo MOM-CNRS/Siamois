@@ -156,7 +156,7 @@ public class RecordingUnitService implements ArkEntityService {
             managedRecordingUnit.setCreatedByInstitution(recordingUnit.getCreatedByInstitution());
             managedRecordingUnit.setFullIdentifier(recordingUnit.getFullIdentifier());
             setupOtherFields(recordingUnit, managedRecordingUnit);
-
+            synchronizeCollection(managedRecordingUnit.getPhases(), recordingUnit.getPhases());
 
             RecordingUnit toReturn = recordingUnitRepository.save(managedRecordingUnit);
 
@@ -169,6 +169,13 @@ public class RecordingUnitService implements ArkEntityService {
             log.error(e.getMessage(), e);
             throw new FailedRecordingUnitSaveException(e.getMessage());
         }
+    }
+
+    private <T> void synchronizeCollection(java.util.Collection<T> managed, java.util.Collection<T> incoming) {
+        if (managed == null) return;
+        if (incoming == null || incoming.isEmpty()) { managed.clear(); return; }
+        managed.retainAll(incoming);
+        for (T item : incoming) { if (!managed.contains(item)) managed.add(item); }
     }
 
     private RecordingUnit newOrGetRecordingUnit(RecordingUnit recordingUnit) {
@@ -697,61 +704,7 @@ public class RecordingUnitService implements ArkEntityService {
         return recordingUnitRepository.countByCreatedByInstitutionId(institutionId);
     }
 
-    /**
-     * Find all recording units by institution and filter by full identifier, categories, and global search.
-     *
-     * @param institutionId  The ID of the institution to filter by.
-     * @param fullIdentifier The full identifier to search for (can be partial).
-     * @param categoryIds    The IDs of categories to filter by (can be null).
-     * @param global         The global search term to filter by (can be null).
-     * @param langCode       The language code for localization (can be null).
-     * @param pageable       The pagination information.
-     * @return A page of RecordingUnit matching the criteria.
-     */
-    @Transactional
-    public Page<RecordingUnitDTO> findAllByInstitutionAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
-            Long institutionId,
-            String fullIdentifier,
-            Long[] categoryIds,
-            String global,
-            String langCode,
-            Pageable pageable
-    ) {
-        Page<RecordingUnit> res = recordingUnitRepository.findAllByInstitutionAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
-                institutionId, fullIdentifier, categoryIds, global, langCode, pageable
-        );
 
-        return res.map(recordingUnitMapper::convert);
-    }
-
-    /**
-     * Find all recording units by institution, action unit, full identifier, categories, and global search.
-     *
-     * @param institutionId  The ID of the institution to filter by.
-     * @param actionId       The ID of the action unit to filter by.
-     * @param fullIdentifier The full identifier to search for (can be partial).
-     * @param categoryIds    The IDs of categories to filter by (can be null).
-     * @param global         The global search term to filter by (can be null).
-     * @param langCode       The language code for localization (can be null).
-     * @param pageable       The pagination information.
-     * @return A page of RecordingUnit matching the criteria.
-     */
-    @Transactional
-    public Page<RecordingUnitDTO> findAllByInstitutionAndByActionUnitAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
-            Long institutionId,
-            Long actionId,
-            String fullIdentifier,
-            Long[] categoryIds,
-            String global,
-            String langCode,
-            Pageable pageable
-    ) {
-        Page<RecordingUnit> res = recordingUnitRepository.findAllByInstitutionAndByActionUnitAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
-                institutionId, actionId, fullIdentifier, categoryIds, global, langCode, pageable
-        );
-
-        return res.map(recordingUnitMapper::convert);
-    }
 
     /**
      * Verify if the user has the permission to create specimen in the context of a recording unit
@@ -768,45 +721,7 @@ public class RecordingUnitService implements ArkEntityService {
                         && actionUnitService.isActionUnitStillOngoing(action));
     }
 
-    public Page<RecordingUnitDTO> findAllByParentAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
-            Long recordingUnitId,
-            String fullIdentifierFilter,
-            Long[] categoryIds,
-            String globalFilter,
-            String languageCode,
-            Pageable pageable) {
 
-        Page<RecordingUnit> res = recordingUnitRepository.findAllByParentAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
-                recordingUnitId, fullIdentifierFilter, categoryIds, globalFilter, languageCode, pageable
-        );
-
-        return res
-                .map(recordingUnitMapper::convert);
-    }
-
-    public Page<RecordingUnitDTO> findAllByChildAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(Long childId,
-                                                                                                               String fullIdentifierFilter,
-                                                                                                               Long[] categoryIds,
-                                                                                                               String globalFilter, String languageCode, Pageable pageable) {
-        Page<RecordingUnit> res = recordingUnitRepository.findAllByChildAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
-                childId, fullIdentifierFilter, categoryIds, globalFilter, languageCode, pageable
-        );
-
-        return res.map(recordingUnitMapper::convert);
-    }
-
-    public Page<RecordingUnitDTO> findAllBySpatialUnitAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(Long spatialUnitId,
-                                                                                                                     String fullIdentifierFilter,
-                                                                                                                     Long[] categoryIds,
-                                                                                                                     String globalFilter, String languageCode, Pageable pageable
-
-    ) {
-        Page<RecordingUnit> res = recordingUnitRepository.findAllBySpatialUnitAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
-                spatialUnitId, fullIdentifierFilter, categoryIds, globalFilter, languageCode, pageable
-        );
-
-        return res.map(recordingUnitMapper::convert);
-    }
 
     /**
      * Count the number of RecordingUnits associated with a specific SpatialUnit.
@@ -1122,6 +1037,16 @@ public class RecordingUnitService implements ArkEntityService {
                 .toList();
     }
 
+    public List<RecordingUnitSummaryDTO> autocompleteInActionUnit(@NotNull Long actionUnitId, String query, int limit) {
+        return recordingUnitRepository
+                .findByActionUnitIdAndFullIdentifierContainingIgnoreCaseOrderByFullIdentifierAsc(
+                        actionUnitId, query == null ? "" : query,
+                        org.springframework.data.domain.PageRequest.of(0, limit))
+                .stream()
+                .map(unit -> conversionService.convert(unit, RecordingUnitSummaryDTO.class))
+                .toList();
+    }
+
     /**
      * Find all direct parents of a given SpatialUnit
      *
@@ -1217,10 +1142,32 @@ public class RecordingUnitService implements ArkEntityService {
 
     public Page<RecordingUnitDTO> searchRecordingUnit(InstitutionDTO institution, FilterDTO filters, Pageable pageable) {
         Specification<RecordingUnit> specs = prepareSpecs(institution, filters);
+        Page<RecordingUnitDTO> page = recordingUnitRepository.findAll(specs, pageable)
+                .map(recordingUnitMapper::toLightDto);
 
-        Page<RecordingUnit> results = recordingUnitRepository.findAll(specs, pageable);
+        List<Long> ids = page.getContent().stream()
+                .map(RecordingUnitDTO::getId)
+                .filter(Objects::nonNull)
+                .toList();
 
-        return results.map(recordingUnitMapper::toLightDto);
+        if (!ids.isEmpty()) {
+            Map<Long, Long> specimenCounts = recordingUnitRepository.countSpecimensByIds(ids).stream()
+                    .collect(java.util.stream.Collectors.toMap(
+                            row -> ((Number) row[0]).longValue(),
+                            row -> ((Number) row[1]).longValue()));
+            Map<Long, Long> relationshipCounts = recordingUnitRepository.countRelationshipsByIds(ids).stream()
+                    .collect(java.util.stream.Collectors.toMap(
+                            row -> ((Number) row[0]).longValue(),
+                            row -> ((Number) row[1]).longValue()));
+            page.getContent().forEach(dto -> {
+                dto.setSpecimenCount(specimenCounts.getOrDefault(dto.getId(), 0L));
+                dto.setParentsCount(dto.getParents() == null ? 0 : dto.getParents().size());
+                dto.setChildrenCount(dto.getChildren() == null ? 0 : dto.getChildren().size());
+                dto.setRelationshipCount(relationshipCounts.getOrDefault(dto.getId(), 0L).intValue());
+            });
+        }
+
+        return page;
     }
 
     public Page<RecordingUnitDTO> searchRecordingUnitInActionUnit(InstitutionDTO institutionDTO, @NonNull ActionUnitDTO actionUnitDTO, FilterDTO filters, Pageable pageable) {
@@ -1230,9 +1177,41 @@ public class RecordingUnitService implements ArkEntityService {
         return results.map(recordingUnitMapper::convert);
     }
 
+    public Page<RecordingUnitDTO> searchRecordingUnitInRecordingUnit(InstitutionDTO institutionDTO,
+                                                                     @NonNull RecordingUnitDTO recordingUnitDTO,
+                                                                     FilterDTO filters, Pageable pageable) {
+        Specification<RecordingUnit> specs = prepareSpecs(institutionDTO, filters);
+        specs = specs.and(RecordingUnitSpec.recordingUnitInRecordingUnit(recordingUnitDTO.getId()));
+        Page<RecordingUnit> results = recordingUnitRepository.findAll(specs, pageable);
+        return results.map(recordingUnitMapper::convert);
+    }
+
+    public Page<RecordingUnitDTO> searchRecordingUnitInSpatialUnit(InstitutionDTO institutionDTO,
+                                                                     @NonNull SpatialUnitDTO spatialUnitDTO,
+                                                                     FilterDTO filters, Pageable pageable) {
+        Specification<RecordingUnit> specs = prepareSpecs(institutionDTO, filters);
+        specs = specs.and(RecordingUnitSpec.recordingUnitInSpatialUnit(spatialUnitDTO.getId()));
+        Page<RecordingUnit> results = recordingUnitRepository.findAll(specs, pageable);
+        return results.map(recordingUnitMapper::convert);
+    }
+
     public int countSearchResultsInActionUnit(InstitutionDTO institutionDTO, @NonNull ActionUnitDTO actionUnitDTO, FilterDTO filters) {
         Specification<RecordingUnit> specs = prepareSpecs(institutionDTO, filters);
         specs = specs.and(RecordingUnitSpec.recordingUnitInActionUnit(actionUnitDTO.getId()));
+        return Math.toIntExact(recordingUnitRepository.count(specs));
+    }
+
+    public int countSearchResultsInRecordingUnit(InstitutionDTO institutionDTO,
+                                                 @NonNull RecordingUnitDTO recordingUnitDTO, FilterDTO filters) {
+        Specification<RecordingUnit> specs = prepareSpecs(institutionDTO, filters);
+        specs = specs.and(RecordingUnitSpec.recordingUnitInRecordingUnit(recordingUnitDTO.getId()));
+        return Math.toIntExact(recordingUnitRepository.count(specs));
+    }
+
+    public int countSearchResultsInSpatialUnit(InstitutionDTO institutionDTO,
+                                                 @NonNull SpatialUnitDTO spatialUnitDTO, FilterDTO filters) {
+        Specification<RecordingUnit> specs = prepareSpecs(institutionDTO, filters);
+        specs = specs.and(RecordingUnitSpec.recordingUnitInSpatialUnit(spatialUnitDTO.getId()));
         return Math.toIntExact(recordingUnitRepository.count(specs));
     }
 
@@ -1294,6 +1273,10 @@ public class RecordingUnitService implements ArkEntityService {
                 FilterDTO.DateRange range = filters.valueAsDateRangeOf(dateFilter);
                 specification = specification.and(RecordingUnitSpec.dateFieldBetween(dateFilter, range.from(), range.to()));
             }
+        }
+
+        if (filters.containsColumn(RecordingUnitSpec.PARENT_FILTER)) {
+            specification = specification.and(RecordingUnitSpec.isChildOf(filters.valueAsIdListOf(RecordingUnitSpec.PARENT_FILTER)));
         }
 
         return specification;

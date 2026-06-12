@@ -3,7 +3,11 @@ package fr.siamois.ui.table.definitions;
 import fr.siamois.domain.models.form.customfield.*;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.dto.entity.RecordingUnitDTO;
-import fr.siamois.ui.table.*;
+import fr.siamois.ui.table.column.CommandLinkColumn;
+import fr.siamois.ui.table.column.FormFieldColumn;
+import fr.siamois.ui.table.column.RelationColumn;
+import fr.siamois.ui.table.column.TableColumnAction;
+import fr.siamois.ui.table.viewmodel.EntityTableViewModel;
 
 import static fr.siamois.ui.bean.panel.models.panel.single.AbstractSingleEntity.SYSTEM_THESO;
 
@@ -66,6 +70,14 @@ public final class RecordingUnitTableDefinitionFactory {
         Concept matrixColorConcept = new Concept.Builder()
                 .vocabulary(SYSTEM_THESO)
                 .externalId("Couleur de la matrice")
+                .build();
+        Concept isPartOfConcept = new Concept.Builder()
+                .vocabulary(SYSTEM_THESO)
+                .externalId("4289277")
+                .build();
+        Concept containsConcept = new Concept.Builder()
+                .vocabulary(SYSTEM_THESO)
+                .externalId("4289278")
                 .build();
 
         CustomFieldText recordingUnitIdField =  CustomFieldText.builder()
@@ -133,6 +145,21 @@ public final class RecordingUnitTableDefinitionFactory {
                 .valueBinding("spatialUnit")
                 .concept(spatialConcept)
                 .build();
+        CustomFieldSelectMultipleRecordingUnit
+                isPartOfField = CustomFieldSelectMultipleRecordingUnit.builder()
+                .label("common.field.parents")
+                .isSystemField(true)
+                .id(10L)
+                .valueBinding("parents")
+                .concept(isPartOfConcept)
+                .build();
+        CustomFieldSelectMultipleRecordingUnit containsField = CustomFieldSelectMultipleRecordingUnit.builder()
+                .label("common.field.children")
+                .isSystemField(true)
+                .id(11L)
+                .valueBinding("children")
+                .concept(containsConcept)
+                .build();
 
         dateField.setId(2L);
         typeField.setId(1L);
@@ -152,7 +179,8 @@ public final class RecordingUnitTableDefinitionFactory {
                         .filterable(true)
                         .sortField("full_identifier")
 
-                        // What to display inside <h:outputText>
+                        .iconClass("bi bi-pencil-square")
+                        .chipColor("var(--ground-main-color)")
                         .valueKey("fullIdentifier")
 
                         // What to do on click (Pattern A key)
@@ -179,6 +207,30 @@ public final class RecordingUnitTableDefinitionFactory {
 
         tableModel.getTableDefinition().addColumn(
                 FormFieldColumn.builder()
+                        .id("isPartOf")
+                        .headerKey("common.field.parents")
+                        .field(isPartOfField)
+                        .sortable(false)
+                        .filterable(false)
+                        .visible(true)
+                        .required(false)
+                        .build()
+        );
+
+        tableModel.getTableDefinition().addColumn(
+                FormFieldColumn.builder()
+                        .id("contains")
+                        .headerKey("common.field.children")
+                        .field(containsField)
+                        .sortable(false)
+                        .filterable(false)
+                        .visible(true)
+                        .required(false)
+                        .build()
+        );
+
+        tableModel.getTableDefinition().addColumn(
+                FormFieldColumn.builder()
                         .id("action")
                         .headerKey("recordingunit.field.actionUnit")
                         .field(actionField)
@@ -199,6 +251,31 @@ public final class RecordingUnitTableDefinitionFactory {
                         .filterable(true)
                         .visible(true)
                         .required(true)
+                        .build()
+        );
+
+        Concept phasesConcept = new Concept.Builder()
+                .vocabulary(SYSTEM_THESO)
+                .externalId("recordingunit.phases")
+                .build();
+
+        CustomFieldSelectMultiplePhase phasesField = CustomFieldSelectMultiplePhase.builder()
+                .label("recordingunit.field.phases")
+                .isSystemField(true)
+                .id(20L)
+                .valueBinding("phases")
+                .concept(phasesConcept)
+                .build();
+
+        tableModel.getTableDefinition().addColumn(
+                FormFieldColumn.builder()
+                        .id("phases")
+                        .headerKey("recordingunit.field.phases")
+                        .field(phasesField)
+                        .sortable(false)
+                        .filterable(false)
+                        .visible(true)
+                        .required(false)
                         .build()
         );
 
@@ -280,7 +357,7 @@ public final class RecordingUnitTableDefinitionFactory {
                         .field(matrixColor)
                         .sortable(true)
                         .filterable(true)
-                        .visible(true)
+                        .visible(false)
                         .required(false)
                         .build()
         );
@@ -292,7 +369,7 @@ public final class RecordingUnitTableDefinitionFactory {
                         .field(dateField)
                         .sortable(true)
                         .filterable(true)
-                        .visible(true)
+                        .visible(false)
                         .required(true)
                         .build()
         );
@@ -314,11 +391,10 @@ public final class RecordingUnitTableDefinitionFactory {
                         .field(contributorsField)
                         .sortable(false)
                         .filterable(true)
-                        .visible(true)
+                        .visible(false)
                         .required(false)
                         .build()
         );
-
 
 
 

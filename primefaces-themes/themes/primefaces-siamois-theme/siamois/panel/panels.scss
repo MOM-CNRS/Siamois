@@ -4,9 +4,37 @@
 // Mixin that creates themed styles
 @mixin themed-panel($panel-selector, $main-color, $light50-color, $light100-color, $light200-color, $dark-color) {
 
+  body .bookmark-row button.#{$panel-selector}-panel {
+    color: #{$main-color} !important;
+  }
+
+  body .#{$panel-selector} {
+
+    .ui-commandlink.rum-chip-link:hover {
+      opacity: 0.85;
+      border: 1px solid var(--light-color-200);
+      color: var(--text-main);
+      text-decoration: none;
+      background: var(--light-color-50);
+    }
+
+    .ui-commandlink.rum-chip-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      color: var(--text-main);
+      border-radius: 12px;
+      padding: 0.375rem 0.75rem;
+      text-decoration: none;
+      cursor: pointer;
+      background: white;
+      transition: opacity 0.2s;
+      border: 1px solid var(--light-color-200);
+    }
+
+  }
+
   .#{$panel-selector} {
-
-
 
 
     // CSS custom properties for this panel
@@ -189,6 +217,9 @@
 
   // Input fields
   .ui-inputfield {
+
+    font-size: 0.875rem;
+
     &.ui-state-hover {
       border-color: var(--siamois-green-light-200);
     }
@@ -255,8 +286,9 @@
   }
 
   .ui-autocomplete .ui-autocomplete-multiple-container .ui-autocomplete-token {
-    background-color: var(--siamois-green);
-    color: white;
+    background-color: white;
+    border: 1px solid var(--main-color);
+    color: 1px solid var(--main-color);
   }
 
 
@@ -400,3 +432,4 @@
 @include themed-panel('recording-unit', var(--ground-main-color), var(--ground-light-color-50), var(--ground-light-color-100), var(--ground-light-color-200), var(--ground-dark-color));
 @include themed-panel('specimen', var(--ground-main-color), var(--ground-light-color-50), var(--ground-light-color-100), var(--ground-light-color-200), var(--ground-dark-color));
 @include themed-panel('container', var(--third-main-color), var(--third-light-color-50), var(--third-light-color-100), var(--third-light-color-200), var(--third-dark-color));
+@include themed-panel('phase', var(--ground-main-color), var(--ground-light-color-50), var(--ground-light-color-100), var(--ground-light-color-200), var(--ground-dark-color));

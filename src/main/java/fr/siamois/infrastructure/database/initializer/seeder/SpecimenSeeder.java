@@ -39,9 +39,22 @@ public class SpecimenSeeder {
 
     }
 
+    private List<Person> buildPersonList(List<String> emails, String fieldPrefix) {
+        List<Person> persons = new ArrayList<>();
+        if (emails == null) return persons;
+        for (var email : emails) {
+            persons.add(SeederUtils.field(fieldPrefix + "[" + email + "]", () -> personSeeder.findOrCreatePerson(email)));
+        }
+        return persons;
+    }
+
     private void getOrCreateSpecimen(Specimen specimen) {
 
-        Optional<Specimen> opt = specimenRepository.findByFullIdentifier(specimen.getFullIdentifier());
+        Optional<Specimen> opt = specimenRepository.findByFullIdentifierAndInstitutionIdAndRecordingUnitFullIdentifierAndActionUnitFullIdentifier(
+                specimen.getFullIdentifier(),
+                specimen.getCreatedByInstitution().getId(),
+                specimen.getRecordingUnit().getFullIdentifier(),
+                specimen.getRecordingUnit().getActionUnit().getFullIdentifier());
         if (opt.isEmpty()) {
             specimenRepository.save(specimen);
         }
@@ -50,47 +63,37 @@ public class SpecimenSeeder {
 
     public void seed(List<SpecimenSpecs> specs, Long institutionId) {
 
-        for (var s : specs) {
-            // Find Type
-            Concept cat = conceptSeeder.findConceptOrThrow(s.category);
-            // Find author
-            Person author = personSeeder.findPersonOrThrow(s.authorEmail);
+        for (int i = 0; i < specs.size(); i++) {
+            var s = specs.get(i);
+            try {
+                Concept cat      = SeederUtils.field("category",              () -> conceptSeeder.findConceptOrThrow(s.category));
+                Person author    = SeederUtils.field("authorEmail",           () -> personSeeder.findOrCreatePerson(s.authorEmail));
+                Institution institution = SeederUtils.field("institutionIdentifier", () -> {
+                    Institution inst = institutionSeeder.findInstitutionOrReturnNull(s.institutionIdentifier);
+                    if (inst == null) throw new IllegalStateException("Institution introuvable");
+                    return inst;
+                });
 
-            // Find Institution
-            Institution institution = institutionSeeder.findInstitutionOrReturnNull(s.institutionIdentifier);
-            if(institution == null ) {
-                throw new IllegalStateException("Institution introuvable");
+                List<Person> authors    = buildPersonList(s.authors,    "authors");
+                List<Person> collectors = buildPersonList(s.collectors, "collectors");
+
+                RecordingUnit ru = SeederUtils.field("UE", () -> recordingUnitSeeder.getRecordingUnitFromKey(s.recordingUnitKey, institutionId));
+
+                Specimen toGetOrCreate = new Specimen();
+                toGetOrCreate.setCreatedByInstitution(institution);
+                toGetOrCreate.setIdentifier(s.identifier);
+                toGetOrCreate.setCategory(cat);
+                toGetOrCreate.setCreatedBy(author);
+                toGetOrCreate.setFullIdentifier(s.fullIdentifier);
+                toGetOrCreate.setRecordingUnit(ru);
+                toGetOrCreate.setAuthors(authors);
+                toGetOrCreate.setCollectors(collectors);
+                toGetOrCreate.setCreationTime(s.creationTime);
+                getOrCreateSpecimen(toGetOrCreate);
+            } catch (Exception e) {
+                throw new IllegalStateException(
+                        "[Spécimen ligne " + (i + 1) + "] '" + s.fullIdentifier() + "' : " + e.getMessage(), e);
             }
-
-            List<Person> authors = new ArrayList<>();
-            List<Person> collectors = new ArrayList<>();
-            if (s.authors != null) {
-                for (var email : s.authors) {
-                    Person p = personSeeder.findPersonOrThrow(email);
-                    authors.add(p);
-                }
-            }
-            if (s.collectors != null) {
-                for (var email : s.collectors) {
-                    Person p = personSeeder.findPersonOrThrow(email);
-                    collectors.add(p);
-                }
-            }
-
-            RecordingUnit ru = recordingUnitSeeder.getRecordingUnitFromKey(s.recordingUnitKey, institutionId);
-
-            Specimen toGetOrCreate = new Specimen();
-            toGetOrCreate.setCreatedByInstitution(institution);
-            toGetOrCreate.setIdentifier(s.identifier);
-            toGetOrCreate.setCategory(cat);
-            toGetOrCreate.setCreatedBy(author);
-            toGetOrCreate.setFullIdentifier(s.fullIdentifier);
-            toGetOrCreate.setRecordingUnit(ru);
-            toGetOrCreate.setAuthors(authors);
-            toGetOrCreate.setCollectors(collectors);
-            toGetOrCreate.setCreationTime(s.creationTime);
-            getOrCreateSpecimen(toGetOrCreate);
-
         }
     }
 }

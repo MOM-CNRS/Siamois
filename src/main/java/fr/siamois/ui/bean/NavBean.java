@@ -10,6 +10,8 @@ import fr.siamois.ui.bean.converter.InstitutionConverter;
 import fr.siamois.ui.bean.panel.FlowBean;
 import fr.siamois.ui.bean.panel.models.panel.AbstractPanel;
 import fr.siamois.ui.bean.settings.InstitutionListSettingsBean;
+import fr.siamois.ui.bean.settings.project.ProjectDetailsBean;
+import fr.siamois.ui.bean.settings.project.ProjectListBean;
 import fr.siamois.utils.MessageUtils;
 import io.micrometer.common.lang.Nullable;
 import jakarta.faces.context.FacesContext;
@@ -49,9 +51,11 @@ public class NavBean implements Serializable {
     private final transient InstitutionService institutionService;
     private final RedirectBean redirectBean;
     private final InstitutionListSettingsBean institutionListSettingsBean;
+    private final ProjectListBean projectListBean;
     private final transient BookmarkService bookmarkService;
     private final FlowBean flowBean;
     private final LangBean langBean;
+    private final transient ProjectDetailsBean projectDetailsBean;
 
     private String urlToGoBack; // URL to go back from settings
 
@@ -73,16 +77,18 @@ public class NavBean implements Serializable {
                    InstitutionConverter converter,
                    InstitutionService institutionService,
                    RedirectBean redirectBean,
-                   InstitutionListSettingsBean institutionListSettingsBean, BookmarkService bookmarkService, FlowBean flowBean, LangBean langBean) {
+                   InstitutionListSettingsBean institutionListSettingsBean, ProjectListBean projectListBean, BookmarkService bookmarkService, FlowBean flowBean, LangBean langBean, ProjectDetailsBean projectDetailsBean) {
         this.sessionSettingsBean = sessionSettingsBean;
         this.institutionChangeEventPublisher = institutionChangeEventPublisher;
         this.converter = converter;
         this.institutionService = institutionService;
         this.redirectBean = redirectBean;
         this.institutionListSettingsBean = institutionListSettingsBean;
+        this.projectListBean = projectListBean;
         this.bookmarkService = bookmarkService;
         this.flowBean = flowBean;
         this.langBean = langBean;
+        this.projectDetailsBean = projectDetailsBean;
     }
 
     public InstitutionDTO getSelectedInstitution() {
@@ -101,17 +107,24 @@ public class NavBean implements Serializable {
         return applicationMode == ApplicationMode.SETTINGS;
     }
 
+    public void onPreRenderView() {
+        String viewId = FacesContext.getCurrentInstance().getViewRoot().getViewId();
+        if (viewId != null && viewId.contains("/settings")) {
+            applicationMode = ApplicationMode.SETTINGS;
+        }
+    }
+
     public void goToOrganisationSettings() {
         institutionListSettingsBean.init();
         redirectBean.redirectTo("/settings/organisation");
     }
 
     public void addToBookmarkedPanels(AbstractPanel panel) {
-        bookmarkedPanels.add(bookmarkService.save(sessionSettingsBean.getUserInfo(), panel));
+        bookmarkService.save(sessionSettingsBean.getUserInfo(), panel);
     }
 
     public void removeFromBookmarkedPanels(AbstractPanel panel) {
-        bookmarkService.delete(sessionSettingsBean.getUserInfo(), panel);
+        bookmarkService.delete(sessionSettingsBean.getUserInfo(), panel.ressourceUri());
     }
 
     public List<Bookmark> getBookmarkedPanels() {
@@ -122,14 +135,14 @@ public class NavBean implements Serializable {
     }
 
     public void reloadBookmarkedPanels() {
-        bookmarkedPanels = bookmarkService.findAll(sessionSettingsBean.getUserInfo());
+        // todo ?
     }
 
-    public String bookmarkTitle(Bookmark bookmark) {
+    public String bookmarkTitle(BookmarkDTO bookmark) {
         try {
-            return langBean.msg(bookmark.getTitleCode());
+            return langBean.msg(bookmark.getTitle());
         } catch (NoSuchMessageException e) {
-            return bookmark.getTitleCode();
+            return bookmark.getTitle();
         }
     }
 
@@ -143,7 +156,7 @@ public class NavBean implements Serializable {
 
         bookmarkService.save(
                 sessionSettingsBean.getUserInfo(),
-                ressourceBaseUri+ id,
+                ressourceBaseUri + id,
                 titleCodeOrTitle
         );
         MessageUtils.displayInfoMessage(langBean, COMMON_BOOKMARK_SAVED);
@@ -152,13 +165,13 @@ public class NavBean implements Serializable {
 
     public void bookmarkRecordingUnit(RecordingUnitDTO recordingUnit) {
 
-        bookmarkUnit(recordingUnit.getId(),recordingUnit.getFullIdentifier(),RECORDING_UNIT_BASE_URI);
+        bookmarkUnit(recordingUnit.getId(), recordingUnit.getFullIdentifier(), RECORDING_UNIT_BASE_URI);
 
     }
 
     public void unBookmarkRecordingUnit(RecordingUnitDTO recordingUnit) {
 
-        unBookmark(RECORDING_UNIT_BASE_URI+recordingUnit.getId());
+        unBookmark(RECORDING_UNIT_BASE_URI + recordingUnit.getId());
 
     }
 
@@ -177,7 +190,7 @@ public class NavBean implements Serializable {
 
         bookmarkService.save(
                 sessionSettingsBean.getUserInfo(),
-                SPATIAL_UNIT_BASE_URI+ su.getId(),
+                SPATIAL_UNIT_BASE_URI + su.getId(),
                 su.getName()
         );
         MessageUtils.displayInfoMessage(langBean, COMMON_BOOKMARK_SAVED);
@@ -196,10 +209,9 @@ public class NavBean implements Serializable {
     }
 
     public void toggleRecordingUnitBookmark(RecordingUnitDTO recordingUnit) {
-        if(Boolean.TRUE.equals(isRessourceBookmarkedByUser(RECORDING_UNIT_BASE_URI + recordingUnit.getId()))) {
+        if (Boolean.TRUE.equals(isRessourceBookmarkedByUser(RECORDING_UNIT_BASE_URI + recordingUnit.getId()))) {
             unBookmarkRecordingUnit(recordingUnit);
-        }
-        else {
+        } else {
             bookmarkRecordingUnit(recordingUnit);
         }
         reloadBookmarkedPanels();
@@ -207,35 +219,33 @@ public class NavBean implements Serializable {
 
     public void toggleSpatialUnitBookmark(SpatialUnitDTO su) {
         final String uri = SPATIAL_UNIT_BASE_URI + su.getId();
-        if(Boolean.TRUE.equals(isRessourceBookmarkedByUser(uri))) {
+        if (Boolean.TRUE.equals(isRessourceBookmarkedByUser(uri))) {
             unBookmark(uri);
-        }
-        else {
+        } else {
             bookmark(su);
         }
         reloadBookmarkedPanels();
     }
 
     public void toggleSpecimenBookmark(SpecimenDTO specimen) {
-        if(Boolean.TRUE.equals(isRessourceBookmarkedByUser(SPECIMEN_BASE_URI + specimen.getId()))) {
+        if (Boolean.TRUE.equals(isRessourceBookmarkedByUser(SPECIMEN_BASE_URI + specimen.getId()))) {
             unBookmark(SPECIMEN_BASE_URI + specimen.getId());
-        }
-        else {
+        } else {
             bookmark(specimen);
         }
         reloadBookmarkedPanels();
     }
 
     public Boolean isRecordingUnitBookmarkedByUser(String fullIdentifier) {
-        return isRessourceBookmarkedByUser(RECORDING_UNIT_BASE_URI+fullIdentifier);
+        return isRessourceBookmarkedByUser(RECORDING_UNIT_BASE_URI + fullIdentifier);
     }
 
     public Boolean isSpatialUnitBookmarkedByUser(Long id) {
-        return isRessourceBookmarkedByUser(SPATIAL_UNIT_BASE_URI+id);
+        return isRessourceBookmarkedByUser(SPATIAL_UNIT_BASE_URI + id);
     }
 
     public Boolean isSpecimenBookmarkedByUser(String fullIdentifier) {
-        return isRessourceBookmarkedByUser(SPECIMEN_BASE_URI+fullIdentifier);
+        return isRessourceBookmarkedByUser(SPECIMEN_BASE_URI + fullIdentifier);
     }
 
     public Boolean isPanelBookmarkedByUser(AbstractPanel panel) {
@@ -243,10 +253,9 @@ public class NavBean implements Serializable {
     }
 
     public void togglePanelBookmark(AbstractPanel panel) {
-        if(Boolean.TRUE.equals(isPanelBookmarkedByUser(panel))) {
+        if (Boolean.TRUE.equals(isPanelBookmarkedByUser(panel))) {
             removeFromBookmarkedPanels(panel);
-        }
-        else {
+        } else {
             addToBookmarkedPanels(panel);
         }
         reloadBookmarkedPanels();
@@ -268,57 +277,73 @@ public class NavBean implements Serializable {
         }
     }
 
+    public void goToProjectsSettings() {
+        setApplicationMode(NavBean.ApplicationMode.SETTINGS);
+        projectListBean.init();
+        redirectBean.redirectTo("/settings/project");
+    }
+
     public enum ApplicationMode {
         SIAMOIS,
         SETTINGS
     }
 
     public void goToActionUnitList(String mode) throws IOException {
-        if(Objects.equals(mode, FLOW)) {
+        if (Objects.equals(mode, FLOW)) {
             flowBean.addActionUnitListPanel();
             flowBean.redirectToDashboard();
         }
-        if(Objects.equals(mode, FOCUS)) {
+        if (Objects.equals(mode, FOCUS)) {
             flowBean.redirectToFocus("/action-unit");
         }
     }
 
     public void goToContainerList(String mode) throws IOException {
-        if(Objects.equals(mode, FLOW)) {
+        if (Objects.equals(mode, FLOW)) {
             flowBean.addContainerListPanel();
             flowBean.redirectToDashboard();
         }
-        if(Objects.equals(mode, FOCUS)) {
+        if (Objects.equals(mode, FOCUS)) {
             flowBean.redirectToFocus("/container");
         }
     }
 
+    public void goToPhaseList(String mode) throws IOException {
+        if (Objects.equals(mode, FLOW)) {
+            flowBean.addPhaseListPanel();
+            flowBean.redirectToDashboard();
+        }
+        if (Objects.equals(mode, FOCUS)) {
+            flowBean.redirectToFocus("/phase");
+        }
+    }
+
     public void goToRecordingUnitList(String mode) throws IOException {
-        if(Objects.equals(mode, FLOW)) {
+        if (Objects.equals(mode, FLOW)) {
             flowBean.addRecordingUnitListPanel();
             flowBean.redirectToDashboard();
         }
-        if(Objects.equals(mode, FOCUS)) {
+        if (Objects.equals(mode, FOCUS)) {
             flowBean.redirectToFocus("/recording-unit");
         }
     }
 
     public void goToSpatialUnitList(String mode) throws IOException {
-        if(Objects.equals(mode, FLOW)) {
+        if (Objects.equals(mode, FLOW)) {
             flowBean.addSpatialUnitListPanel();
             flowBean.redirectToDashboard();
         }
-        if(Objects.equals(mode, FOCUS)) {
+        if (Objects.equals(mode, FOCUS)) {
             flowBean.redirectToFocus("/spatial-unit");
         }
     }
 
     public void goToSpecimenList(String mode) throws IOException {
-        if(Objects.equals(mode, FLOW)) {
+        if (Objects.equals(mode, FLOW)) {
             flowBean.addSpecimenListPanel();
             flowBean.redirectToDashboard();
         }
-        if(Objects.equals(mode, FOCUS)) {
+        if (Objects.equals(mode, FOCUS)) {
             flowBean.redirectToFocus("/specimen");
         }
     }
@@ -337,6 +362,15 @@ public class NavBean implements Serializable {
                 .getRequestParameterMap()
                 .get("id");
         flowBean.redirectToFocus("/action-unit/" + id);
+    }
+
+    public void redirectToActionUnitSettings(ActionUnitDTO actionUnit) throws IOException {
+        setApplicationMode(NavBean.ApplicationMode.SETTINGS);
+        projectListBean.init();
+        String path = projectListBean.redirectToProject(actionUnit);
+        FacesContext facesContext = FacesContext.getCurrentInstance();
+        String contextPath = facesContext.getExternalContext().getRequestContextPath();
+        facesContext.getExternalContext().redirect(contextPath + path);
     }
 
     public void redirectToActionUnit(Long actionUnitId, @Nullable Integer tabIndex) throws IOException {

@@ -26,6 +26,10 @@
                 name="panelIndex"
                 type="java.lang.String"
                 required="true"/>
+        <cc:attribute
+                name="formCtx"
+                type="fr.siamois.ui.form.EntityFormContext"
+                required="true"/>
 
     </cc:interface>
 
@@ -84,25 +88,88 @@
                             </p:autoComplete>
                             <p:message for="relationshipVocab"/>
 
-                            <p:selectOneMenu id="selectRU"
-                                             style="width: 10em"
-                                             filter="true"
-                                             panelStyleClass="recording-unit"
-                                             value="#{cc.attrs.answer.targetToAdd}"
-                                             var="ru"
-                                             converter="#{recordingUnitSummaryConverter}">
-                                <f:selectItems
-                                        var="unit"
-                                        itemValue="#{unit}"
-                                        itemLabel="#{unit.fullIdentifier}"
-                                        value="#{cc.attrs.recordingUnitOptions}"/>
-
-                                <p:column>
-                                    #{ru.fullIdentifier}
-                                </p:column>
-
-                            </p:selectOneMenu>
+                            <p:autoComplete id="selectRU"
+                                            style="width: 10em"
+                                            value="#{cc.attrs.answer.targetToAdd}"
+                                            var="ru"
+                                            itemValue="#{ru}"
+                                            itemLabel="#{ru.fullIdentifier}"
+                                            completeMethod="#{cc.attrs.formCtx.completeRecordingUnitOptions}"
+                                            converter="#{recordingUnitSummaryConverter}"
+                                            forceSelection="true"
+                                            scrollHeight="300"
+                                            dropdown="false"
+                                            showEmptyMessage="false"
+                                            maxResults="10"
+                                            onmousedown="event.stopPropagation();"
+                                            onclick="event.stopPropagation();">
+                                <f:facet name="footer">
+                                    <div class="ui-fluid" style="padding:0.5rem 1rem 1rem 1rem">
+                                        <p:commandButton
+                                                id="btnNouveauStrati"
+                                                icon="bi bi-plus-lg"
+                                                process="@this"
+                                                action="#{cc.attrs.formCtx.initNewRuDefaults(cc.attrs.answer)}"
+                                                onclick="event.stopPropagation();"
+                                                oncomplete="PF('#{cc.clientId}_stratiOverlay').show(); PF('#{cc.clientId}_stratiOverlay').align();"
+                                                value="Nouveau"
+                                                update="@none"/>
+                                    </div>
+                                </f:facet>
+                            </p:autoComplete>
                             <p:message for="selectRU"/>
+
+                            <p:overlayPanel for="#{cc.clientId}:selectRU"
+                                            my="left top" at="left bottom"
+                                            showEvent="none"
+                                            widgetVar="#{cc.clientId}_stratiOverlay"
+                                            dismissable="false"
+                                            styleClass="new-entity-overlay"
+                                            autoHide="true"
+                                            style="max-width: 50rem;"
+                                            showCloseIcon="true"
+                                            dynamic="true"
+                                            id="overlayNouveauStrati"
+                                            appendTo="#{cc.clientId}"
+                                            hideEffect="fade">
+                                <h:panelGrid columns="2" cellpadding="5" id="newStratiRuGrid">
+                                    <p:outputLabel for="newStratiRuProject" value="Projet :"/>
+                                    <p:autoComplete value="#{cc.attrs.answer.newActionUnit}"
+                                                    id="newStratiRuProject"
+                                                    completeMethod="#{cc.attrs.formCtx.completeActionUnitOptions}"
+                                                    var="au" itemValue="#{au}" itemLabel="#{au.name}"
+                                                    converter="#{actionUnitSummaryConverter}"
+                                                    required="true" forceSelection="true" scrollHeight="300" dropdown="true"
+                                                    placeholder="Rechercher un projet…" showEmptyMessage="false"
+                                                    maxResults="#{fieldConfigurationService.resultLimit()}"
+                                                    onmousedown="event.stopPropagation();" onclick="event.stopPropagation();">
+                                        <p:ajax event="itemSelect" process="@this" update="@none"/>
+                                    </p:autoComplete>
+
+                                    <p:outputLabel for="newStratiRuType" value="Type :"/>
+                                    <p:autoComplete value="#{cc.attrs.answer.newType}"
+                                                    id="newStratiRuType"
+                                                    completeMethod="#{spatialUnitFieldBean.completeWithFieldCode}"
+                                                    var="autocompleteDto"
+                                                    itemValue="#{autocompleteDto}" itemLabel="#{autocompleteDto.conceptLabelToDisplay.label}"
+                                                    required="true" converter="#{conceptAutocompleteDTOConverter}"
+                                                    forceSelection="true" scrollHeight="300" dropdown="true"
+                                                    placeholder="#{langBean.msg('common.action.chooseConcept')}"
+                                                    showEmptyMessage="false" maxResults="#{fieldConfigurationService.resultLimit()}"
+                                                    onmousedown="event.stopPropagation();" onclick="event.stopPropagation();">
+                                        <f:attribute name="fieldCode" value="SIARU.TYPE"/>
+                                    </p:autoComplete>
+
+                                    <p:commandButton
+                                            style="background: var(--siamois-green-active); border-color: var(--siamois-green-active);"
+                                            value="Créer"
+                                            action="#{cc.attrs.formCtx.saveNewTargetRuForStrati(cc.attrs.answer)}"
+                                            process="newStratiRuGrid"
+                                            onsuccess="PF('#{cc.clientId}_stratiOverlay').hide();"
+                                            update="selectRU overlayNouveauStrati templateFormCC:templateForm:templateGrowl @this"
+                                            resetValues="true"/>
+                                </h:panelGrid>
+                            </p:overlayPanel>
 
                             <p:selectBooleanCheckbox style="width: 10em" itemLabel="Incertain"
                                                      value="#{cc.attrs.answer.isUncertainToAdd}"/>

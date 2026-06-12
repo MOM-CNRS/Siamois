@@ -11,8 +11,6 @@ import fr.siamois.utils.MessageUtils;
 import lombok.Getter;
 import lombok.Setter;
 import org.primefaces.event.RowEditEvent;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -47,9 +45,6 @@ public abstract class BaseSpecimenLazyDataModel extends BaseLazyDataModel<Specim
         FIELD_MAPPING = Collections.unmodifiableMap(map); // Ensure immutability
     }
 
-    protected abstract Page<SpecimenDTO> loadSpecimens(
-            String nameFilter, Long[] categoryIds, Long[] personIds,
-            String globalFilter, Pageable pageable);
 
     @Override
     protected Map<String, String> getFieldMapping() {

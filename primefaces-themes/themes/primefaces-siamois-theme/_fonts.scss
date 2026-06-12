@@ -1,1 +1,33 @@
 // Configuration for the font-face of the theme, defaults to the system font so left as blank
+
+
+/* Déclaration pour la version "Droite" (Normal) */
+@font-face {
+  font-family: 'Inter';
+  src: url("#{resource['fonts:Inter-VariableFont_opsz,wght.ttf']}") format('truetype');
+  /* Déclare que cette police supporte toutes les graisses de 100 à 900 */
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Déclaration pour la version "Italique" */
+@font-face {
+  font-family: 'Inter';
+  src: url("#{resource['fonts:Inter-Italic-VariableFont_opsz,wght.ttf']}") format('truetype');
+  /* Déclare que cette police supporte toutes les graisses de 100 à 900 */
+  font-weight: 100 900;
+  font-style: italic;
+  font-display: swap;
+}
+
+body .ui-widget {
+  font-family: "Inter", sans-serif !important;
+}
+
+html,
+body,
+#root {
+  font-family: "Inter", sans-serif !important;
+  font-size: 0.8250rem;
+}

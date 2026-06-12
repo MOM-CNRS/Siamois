@@ -7,10 +7,12 @@ import fr.siamois.domain.models.FieldCode;
 import fr.siamois.domain.models.TraceableEntity;
 import fr.siamois.domain.models.ark.Ark;
 import fr.siamois.domain.models.auth.Person;
+import fr.siamois.domain.models.container.Container;
 import fr.siamois.domain.models.document.Document;
 import fr.siamois.domain.models.exceptions.actionunit.NullActionUnitIdentifierException;
 import fr.siamois.domain.models.form.customform.CustomForm;
 import fr.siamois.domain.models.form.measurement.MeasurementAnswer;
+import fr.siamois.domain.models.phase.Phase;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.specimen.form.SpecimenDetailsForm;
 import fr.siamois.domain.models.specimen.form.SpecimenNewUnitForm;
@@ -180,6 +182,24 @@ public class Specimen extends TraceableEntity implements ArkEntity {
     @JoinColumn(name = "fk_weight")
     @Audited(targetAuditMode = NOT_AUDITED)
     private MeasurementAnswer weight;
+
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+            name = "specimen_container",
+            joinColumns = @JoinColumn(name = "fk_specimen_id"),
+            inverseJoinColumns = @JoinColumn(name = "fk_container_id")
+    )
+    @NotAudited
+    private Set<Container> containers = new HashSet<>();
+
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+            name = "specimen_phase",
+            joinColumns = @JoinColumn(name = "fk_specimen_id"),
+            inverseJoinColumns = @JoinColumn(name = "fk_phase_id")
+    )
+    @NotAudited
+    private Set<Phase> phases = new HashSet<>();
 
     @NotNull
     @Column(name = "full_identifier")

@@ -17,9 +17,9 @@ import fr.siamois.ui.bean.panel.models.PanelBreadcrumb;
 import fr.siamois.ui.form.FormContextServices;
 import fr.siamois.ui.lazydatamodel.BaseLazyDataModel;
 import fr.siamois.ui.lazydatamodel.ContainerLazyDataModel;
-import fr.siamois.ui.table.ContainerTableViewModel;
 import fr.siamois.ui.table.ToolbarCreateConfig;
 import fr.siamois.ui.table.definitions.ContainerTableDefinitionFactory;
+import fr.siamois.ui.table.viewmodel.ContainerTableViewModel;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
@@ -87,7 +87,6 @@ public class ContainerListPanel extends AbstractListPanel<ContainerDTO> implemen
                 navBean,
                 flowBean,
                 genericNewUnitDialogBean,
-                null,
                 institutionService,
                 formContextServices,
                 actionUnitService,
@@ -134,6 +133,11 @@ public class ContainerListPanel extends AbstractListPanel<ContainerDTO> implemen
     @Override
     protected String getBreadcrumbIcon() {
         return "bi bi-box-seam";
+    }
+
+    @Override
+    protected String getTableClientIdPrefix() {
+        return "containerListForm:containerList";
     }
 
 

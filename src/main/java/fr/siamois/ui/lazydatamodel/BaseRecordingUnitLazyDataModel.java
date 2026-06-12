@@ -15,8 +15,6 @@ import lombok.Getter;
 import lombok.Setter;
 import org.primefaces.event.RowEditEvent;
 import org.primefaces.model.FilterMeta;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 
 import java.time.LocalDate;
 import java.util.Collections;
@@ -52,27 +50,6 @@ public abstract class BaseRecordingUnitLazyDataModel extends BaseLazyDataModel<R
         FIELD_MAPPING = Collections.unmodifiableMap(map); // Ensure immutability
     }
 
-    /**
-     * This method was used with the previous implementation of load.
-     * @deprecated  Sub-lazy models should implement {@link BaseLazyDataModel#loadData(FilterDTO, Pageable)} with {@link BaseLazyDataModel#prepareFilterDTO(Map, FilterDTO)} and {@link BaseLazyDataModel#prepareSortDTO(Map, SortDTO)}
-     * @param nameFilter The filter for name
-     * @param categoryIds The IDs of the concepts for the category
-     * @param personIds The IDs of the persons
-     * @param globalFilter The input of the global filter
-     * @param pageable The page count
-     * @return Page with data
-     */
-    @Deprecated(forRemoval = true, since = "0.8.12-dev.0")
-    protected abstract Page<RecordingUnitDTO> loadRecordingUnits(
-            String nameFilter, Long[] categoryIds, Long[] personIds,
-            String globalFilter, Pageable pageable);
-
-    @Override
-    protected SortDTO getDefaultSortDTO() {
-        SortDTO sortDTO = new SortDTO();
-        sortDTO.add(RecordingUnitSpec.ID_FILTER, SortDTO.SortOrder.ASC);
-        return sortDTO;
-    }
 
     @Override
     protected Map<String, String> getFieldMapping() {
@@ -166,6 +143,13 @@ public abstract class BaseRecordingUnitLazyDataModel extends BaseLazyDataModel<R
 
         // Add it to the model
         addRowToModel(newRec);
+    }
+
+    @Override
+    protected SortDTO getDefaultSortDTO() {
+        SortDTO sortDTO = new SortDTO();
+        sortDTO.add("id", SortDTO.SortOrder.ASC);
+        return sortDTO;
     }
 
 

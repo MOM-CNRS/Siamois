@@ -51,16 +51,21 @@ public class ConceptSeeder {
 
     public record ConceptSpec(String vocabularyId, String externalId, String label, String lang) {}
     public void seed(Vocabulary vocab, List<ConceptSpec> specs) {
-        for (var s : specs) {
-            Concept concept = findConceptOrReturnNull(s.vocabularyId(), s.externalId());
-            if(concept == null) {
-                var c = new Concept();
-                c.setExternalId(s.externalId());
-                c.setVocabulary(vocab);
-                concept = conceptRepo.save(c);
+        for (int i = 0; i < specs.size(); i++) {
+            var s = specs.get(i);
+            try {
+                Concept concept = findConceptOrReturnNull(s.vocabularyId(), s.externalId());
+                if(concept == null) {
+                    var c = new Concept();
+                    c.setExternalId(s.externalId());
+                    c.setVocabulary(vocab);
+                    concept = conceptRepo.save(c);
+                }
+                saveLabel(concept, s.label, s.lang);
+            } catch (Exception e) {
+                throw new IllegalStateException(
+                        "[Concept ligne " + (i + 1) + "] '" + s.externalId() + "' : " + e.getMessage(), e);
             }
-            saveLabel(concept, s.label, s.lang);
-
         }
     }
 }

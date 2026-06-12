@@ -16,11 +16,9 @@ import fr.siamois.ui.bean.panel.models.PanelBreadcrumb;
 import fr.siamois.ui.form.FormContextServices;
 import fr.siamois.ui.lazydatamodel.ActionUnitLazyDataModel;
 import fr.siamois.ui.lazydatamodel.BaseLazyDataModel;
-import fr.siamois.ui.lazydatamodel.scope.ActionUnitScope;
-import fr.siamois.ui.lazydatamodel.tree.ActionUnitTreeTableLazyModel;
-import fr.siamois.ui.table.ActionUnitTableViewModel;
 import fr.siamois.ui.table.ToolbarCreateConfig;
 import fr.siamois.ui.table.definitions.ActionUnitTableDefinitionFactory;
+import fr.siamois.ui.table.viewmodel.ActionUnitTableViewModel;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
@@ -33,8 +31,6 @@ import org.springframework.stereotype.Component;
 
 import java.io.Serializable;
 import java.util.List;
-
-import static fr.siamois.ui.lazydatamodel.scope.ActionUnitScope.Type.INSTITUTION;
 
 
 @Slf4j
@@ -77,11 +73,6 @@ public class ActionUnitListPanel extends AbstractListPanel<ActionUnitDTO> implem
     @Override
     protected BaseLazyDataModel<ActionUnitDTO> createLazyDataModel() {
         ActionUnitLazyDataModel lazy =  new ActionUnitLazyDataModel(actionUnitService, sessionSettingsBean);
-        ActionUnitTreeTableLazyModel lazyTree = new ActionUnitTreeTableLazyModel(actionUnitService,
-                ActionUnitScope.builder()
-                        .institutionId(sessionSettingsBean.getSelectedInstitution().getId())
-                        .type(INSTITUTION)
-                        .build());
 
         // construction de la vue de table autour du lazy
         tableModel = new ActionUnitTableViewModel(
@@ -93,7 +84,6 @@ public class ActionUnitListPanel extends AbstractListPanel<ActionUnitDTO> implem
                 navBean,
                 flowBean,
                 genericNewUnitDialogBean,
-                lazyTree,
                 institutionService,
                 formContextServices,
                 actionUnitService,
@@ -141,6 +131,11 @@ public class ActionUnitListPanel extends AbstractListPanel<ActionUnitDTO> implem
         return "bi bi-arrow-down-square";
     }
 
+    @Override
+    protected String getTableClientIdPrefix() {
+        return "actionUnitListPanelForm:actionUnitList";
+    }
+
 
 
     public List<Person> authorsAvailable() {
@@ -170,6 +165,11 @@ public class ActionUnitListPanel extends AbstractListPanel<ActionUnitDTO> implem
         public ActionUnitListPanel.ActionUnitListPanelBuilder breadcrumb(PanelBreadcrumb breadcrumb) {
             actionUnitListPanel.setBreadcrumb(breadcrumb);
 
+            return this;
+        }
+
+        public ActionUnitListPanel.ActionUnitListPanelBuilder viewId(Long viewId) {
+            actionUnitListPanel.setViewId(viewId);
             return this;
         }
 

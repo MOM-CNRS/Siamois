@@ -20,6 +20,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
@@ -29,6 +30,8 @@ import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class PendingPersonServiceTest {
+    private static final OffsetDateTime NOW = OffsetDateTime.of(2024, 1, 15, 12, 0, 0, 0, ZoneOffset.UTC);
+
 
     @Mock
     private HttpServletRequest httpServletRequest;
@@ -59,7 +62,7 @@ class PendingPersonServiceTest {
         pendingPerson = new PendingPerson();
         pendingPerson.setEmail("test@example.com");
         pendingPerson.setRegisterToken("testToken");
-        pendingPerson.setPendingInvitationExpirationDate(OffsetDateTime.now().plusDays(3));
+        pendingPerson.setPendingInvitationExpirationDate(NOW.plusDays(3));
 
         institution = new Institution();
         institution.setName("Test Institution");

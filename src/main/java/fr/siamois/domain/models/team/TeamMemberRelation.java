@@ -11,6 +11,7 @@ import lombok.*;
 
 import java.io.Serializable;
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.Objects;
 
 @Entity
@@ -38,7 +39,7 @@ public class TeamMemberRelation implements Serializable{
 
     @DefaultValue("NOW()")
     @Column(name = "added_at", nullable = false, updatable = false)
-    private OffsetDateTime addedAt = OffsetDateTime.now();
+    private OffsetDateTime addedAt = OffsetDateTime.now(ZoneOffset.UTC);
 
     public TeamMemberRelation(ActionUnitDTO actionUnitDTO, PersonDTO personDTO) {
         ActionUnit au = new ActionUnit(); au.setId(actionUnitDTO.getId());

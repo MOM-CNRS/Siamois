@@ -36,6 +36,7 @@ public class SpecimenDTO extends AbstractEntityDTO {
     private Integer numberOfElements;
     private MeasurementAnswerDTO weight;
     private Set<ContainerDTO> containers;
+    private Set<PhaseDTO> phases;
 
     public SpecimenDTO(SpecimenDTO original) {
 
@@ -64,6 +65,7 @@ public class SpecimenDTO extends AbstractEntityDTO {
                 "numberOfElements",
                 "weight",
                 "containers",
+                "phases",
                 "type"
         );
     }

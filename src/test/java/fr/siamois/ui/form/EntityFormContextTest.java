@@ -14,6 +14,7 @@ import fr.siamois.domain.services.spatialunit.SpatialUnitTreeService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.dto.PlaceSuggestionDTO;
 import fr.siamois.dto.entity.*;
+import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
 import fr.siamois.mapper.ConceptMapper;
 import fr.siamois.ui.form.fieldsource.FieldSource;
@@ -54,6 +55,8 @@ class EntityFormContextTest {
     @Mock
     private GeoApiService geoApiService;
 
+    @Mock
+    private ConceptRepository conceptRepository;
     @Mock
     private ConceptService conceptService;
     @Mock
@@ -496,7 +499,8 @@ class EntityFormContextTest {
         when(institutionDTO.getId()).thenReturn(1L);
         when(spatialUnitService.findTop3ByInstitutionIdBySimilarity(1L, query))
                 .thenReturn(List.of(createInternalDTO("1", "Lyon")));
-        when(conceptService.findById(418)).thenReturn(Optional.of(concept));
+        when(formContextServices.getConceptRepository()).thenReturn(conceptRepository);
+        when(conceptRepository.findConceptByExternalIdIgnoreCase("th252", "4288314")).thenReturn(Optional.of(concept));
         when(conceptMapper.convert(concept)).thenReturn(conceptDTO);
         when(geoPlatService.search(query))
                 .thenReturn(List.of(createFullAddress("Lyon 1")));

@@ -45,6 +45,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.util.*;
@@ -61,44 +62,20 @@ import java.util.stream.Collectors;
 public class ActionUnitService implements ArkEntityService {
 
     private final ActionUnitRepository actionUnitRepository;
+    private final RecordingUnitRepository recordingUnitRepository;
     private final ConceptService conceptService;
     private final ActionCodeRepository actionCodeRepository;
     private final ActionUnitMapper actionUnitMapper;
     private final PersonMapper personMapper;
     private final SpatialUnitRepository spatialUnitRepository;
     private final ConceptMapper conceptMapper;
-    private final RecordingUnitRepository recordingUnitRepository;
     private final TeamMemberRepository teamMemberRepository;
     private final DocumentRepository documentRepository;
     private final PendingActionUnitRepository pendingActionUnitRepository;
     private final RecordingUnitIdCounterRepository recordingUnitIdCounterRepository;
     private final RecordingUnitIdLabelRepository recordingUnitIdLabelRepository;
 
-    /**
-     * Find all Action Units by institution, spatial unit, name, categories, persons, and global search.
-     *
-     * @param institutionId The ID of the institution to filter by
-     * @param spatialUnitId The ID of the spatial unit to filter by
-     * @param name          The name to search for in Action Units
-     * @param categoryIds   The IDs of categories to filter by
-     * @param personIds     The IDs of persons to filter by
-     * @param global        The global search term to filter by
-     * @param langCode      The language code to filter by
-     * @param pageable      The pagination information
-     * @return A page of Action Units matching the criteria
-     */
-    @Transactional(readOnly = true)
-    public Page<ActionUnitDTO> findAllByInstitutionAndBySpatialUnitAndByNameContainingAndByCategoriesAndByGlobalContaining(
-            Long institutionId, Long spatialUnitId,
-            String name, Long[] categoryIds, Long[] personIds, String global, String langCode, Pageable pageable) {
 
-        Page<ActionUnit> res = actionUnitRepository.findAllByInstitutionAndBySpatialUnitAndByNameContainingAndByCategoriesAndByGlobalContaining(
-                institutionId, spatialUnitId, name, categoryIds, personIds, global, langCode, pageable);
-
-        //wireChildrenAndParents(res.getContent());  // Load and attach spatial hierarchy relationships
-
-        return res.map(actionUnitMapper::convert);
-    }
 
     /**
      * Find an action unit by its ID
@@ -113,7 +90,7 @@ public class ActionUnitService implements ArkEntityService {
         try {
             ActionUnit actionUnit = actionUnitRepository.findById(id)
                     .orElseThrow(() -> new ActionUnitNotFoundException("ActionUnit not found with ID: " + id));
-            return actionUnitMapper.convert(actionUnit);
+            return convertWithCount(actionUnit);
         } catch (RuntimeException e) {
             log.error(e.getMessage(), e);
             throw e;
@@ -123,14 +100,13 @@ public class ActionUnitService implements ArkEntityService {
     /**
      * Save an ActionUnit without a transaction.
      *
-     * @param info        User information containing the user and institution
+     * @param info           User information containing the user and institution
      * @param actionUnitDTO  The ActionUnit to save
      * @param typeConceptDTO The concept type of the ActionUnit
      * @return The saved ActionUnit
      */
     public ActionUnit saveNotTransactional(UserInfo info, ActionUnitDTO actionUnitDTO, ConceptDTO typeConceptDTO)
             throws ActionUnitAlreadyExistsException {
-
 
 
         Optional<ActionUnit> existingName = actionUnitRepository.findByNameAndCreatedByInstitutionId(actionUnitDTO.getName(), info.getInstitution().getId());
@@ -148,15 +124,14 @@ public class ActionUnitService implements ArkEntityService {
         }
 
 
-
         actionUnitDTO.setCreatedByInstitution(info.getInstitution());
-        if(actionUnitDTO.getCreationTime() == null) {
+        if (actionUnitDTO.getCreationTime() == null) {
             actionUnitDTO.setCreationTime(OffsetDateTime.now(ZoneId.systemDefault()));
         }
 
         // Generate unique identifier if not presents
         if (actionUnitDTO.getFullIdentifier() == null) {
-            if(actionUnitDTO.getIdentifier() == null) {
+            if (actionUnitDTO.getIdentifier() == null) {
                 throw new NullActionUnitIdentifierException("ActionUnit identifier must be set");
             }
             actionUnitDTO.setFullIdentifier(actionUnitDTO.getIdentifier());
@@ -169,7 +144,7 @@ public class ActionUnitService implements ArkEntityService {
         Person user = personMapper.invertConvert(info.getUser());
         actionUnit.setCreatedBy(user);
 
-        if(actionUnitDTO.getMainLocation() != null && actionUnitDTO.getMainLocation().getId() == null) {
+        if (actionUnitDTO.getMainLocation() != null && actionUnitDTO.getMainLocation().getId() == null) {
             SpatialUnit toSave = new SpatialUnit();
             toSave.setCategory(actionUnit.getMainLocation().getCategory());
             toSave.setName(actionUnitDTO.getMainLocation().getName());
@@ -207,7 +182,6 @@ public class ActionUnitService implements ArkEntityService {
             // Mise à jour de la relation ManyToMany ou OneToMany
             actionUnit.setSpatialContext(persistentContext);
         }
-
 
 
         try {
@@ -322,13 +296,13 @@ public class ActionUnitService implements ArkEntityService {
      * If there is no next, returns the oldest one (wraps around).
      *
      * @param institution The institution to find ActionUnits for
-     * @param current The current ActionUnit to find the next one from
+     * @param current     The current ActionUnit to find the next one from
      * @return The next ActionUnitDTO, or the oldest one if there is no next
      */
     public ActionUnitDTO findNextByInstitution(InstitutionDTO institution, ActionUnitDTO current) {
         return actionUnitRepository
                 .findNext(
-                        institution.getId(), current.getCreationTime(),current.getId())
+                        institution.getId(), current.getCreationTime(), current.getId())
                 .map(actionUnitMapper::convert)
                 .orElseGet(() -> actionUnitRepository
                         .findFirst(institution.getId())
@@ -342,13 +316,13 @@ public class ActionUnitService implements ArkEntityService {
      * If there is no previous, returns the most recent one (wraps around).
      *
      * @param institution The institution to find ActionUnits for
-     * @param current The current ActionUnit to find the previous one from
+     * @param current     The current ActionUnit to find the previous one from
      * @return The previous ActionUnitDTO, or the most recent one if there is no previous
      */
     public ActionUnitDTO findPreviousByInstitution(InstitutionDTO institution, ActionUnitDTO current) {
         return actionUnitRepository
                 .findPrevious(
-                        institution.getId(), current.getCreationTime(),current.getId())
+                        institution.getId(), current.getCreationTime(), current.getId())
                 .map(actionUnitMapper::convert)
                 .orElseGet(() -> actionUnitRepository
                         .findLast(institution.getId())
@@ -407,7 +381,7 @@ public class ActionUnitService implements ArkEntityService {
             return true;
         }
 
-        OffsetDateTime now = OffsetDateTime.now();
+        OffsetDateTime now = OffsetDateTime.now(clock);
         return !now.isBefore(beginDate) && !now.isAfter(endDate);
     }
 
@@ -454,7 +428,7 @@ public class ActionUnitService implements ArkEntityService {
     /**
      * Get all ActionUnit in the institution that are linked to a spatial unit
      *
-     * @param spatialId     the spatial unit id
+     * @param spatialId the spatial unit id
      * @return The list of ActionUnit
      */
     public List<ActionUnitDTO> findBySpatialContext(Long spatialId) {
@@ -468,7 +442,7 @@ public class ActionUnitService implements ArkEntityService {
     public List<ActionUnitDTO> findByTeamMember(PersonDTO member, InstitutionDTO institution, long limit) {
         List<ActionUnit> actionUnits = actionUnitRepository.findByTeamMemberOrCreatorAndInstitutionLimit(member.getId(), institution.getId(), limit);
         return actionUnits.stream()
-                .map(actionUnitMapper::convert)
+                .map(this::convertWithCount)
                 .toList();
     }
 
@@ -524,16 +498,39 @@ public class ActionUnitService implements ArkEntityService {
 
     public Page<ActionUnitDTO> searchActionUnits(InstitutionDTO institutionDTO, FilterDTO filters, Pageable pageable) {
         Specification<ActionUnit> specs = prepareSpecs(institutionDTO, filters);
-
         Page<ActionUnit> res = actionUnitRepository.findAll(specs, pageable);
-
         if (filters.containsColumn("name")) {
-            String nameContains = filters.valueOfAsString("name");
-            log.trace("{} éléments trouvées pour {} (Page {}/{})", res.getTotalElements(), nameContains,res.getNumber() + 1, res.getTotalPages());
+            log.trace("{} éléments trouvées pour {} (Page {}/{})", res.getTotalElements(), filters.valueOfAsString("name"), res.getNumber() + 1, res.getTotalPages());
         }
-
-        return res.map(actionUnitMapper::convert);
+        return res.map(this::convertWithCount);
     }
+
+
+    public int countSearchResultsInSpatialUnit(InstitutionDTO institutionDTO, SpatialUnitDTO spatialUnitDTO,
+                                               FilterDTO filters) {
+        Specification<ActionUnit> specs = prepareSpecs(institutionDTO, filters);
+        specs = specs.and(ActionUnitSpec.actionUnitInSpatialUnit(spatialUnitDTO.getId()));
+        return Math.toIntExact(actionUnitRepository.count(specs));
+    }
+
+    public Page<ActionUnitDTO> searchActionUnitsInSpatialUnit(InstitutionDTO institutionDTO,
+                                                              SpatialUnitDTO spatialUnitDTO, FilterDTO filters, Pageable pageable) {
+        Specification<ActionUnit> specs = prepareSpecs(institutionDTO, filters);
+        specs = specs.and(ActionUnitSpec.actionUnitInSpatialUnit(spatialUnitDTO.getId()));
+        Page<ActionUnit> res = actionUnitRepository.findAll(specs, pageable);
+        if (filters.containsColumn("name")) {
+            log.trace("{} éléments trouvées pour {} (Page {}/{})", res.getTotalElements(), filters.valueOfAsString("name"), res.getNumber() + 1, res.getTotalPages());
+        }
+        return res.map(this::convertWithCount);
+    }
+
+    private ActionUnitDTO convertWithCount(ActionUnit au) {
+        ActionUnitDTO dto = actionUnitMapper.convert(au);
+        Integer count = recordingUnitRepository.countByActionContext(au.getId());
+        dto.setRecordingUnitCount(count != null ? count : 0);
+        return dto;
+    }
+
 
     public int countSearchResults(InstitutionDTO institutionDTO, FilterDTO filters) {
         Specification<ActionUnit> specs = prepareSpecs(institutionDTO, filters);
@@ -567,6 +564,10 @@ public class ActionUnitService implements ArkEntityService {
             specs = specs.and(ActionUnitSpec.nameContaining(nameFilter.valueAsString()));
         } else if (globalFilter != null && globalFilter.getType() == FilterDTO.FilterType.CONTAINS) {
             specs = specs.and(ActionUnitSpec.nameContaining(globalFilter.valueAsString()));
+        }
+
+        if (filters.containsColumn(ActionUnitSpec.SPATIAL_UNIT_FILTER)) {
+            specs = specs.and(ActionUnitSpec.isInSpatialUnit(filters.valueAsIdListOf(ActionUnitSpec.SPATIAL_UNIT_FILTER)));
         }
 
         return specs;
@@ -747,4 +748,16 @@ public class ActionUnitService implements ArkEntityService {
         }
         return m;
     }
+    public Set<ActionUnitDTO> findAllByActionManager(PersonDTO user) {
+        if (user == null || user.getId() == null) {
+            return Collections.emptySet();
+        }
+
+        Set<ActionUnit> actionUnits = actionUnitRepository.findAllByCreatedById(user.getId());
+
+        return actionUnits.stream()
+                .map(actionUnitMapper::convert)
+                .collect(Collectors.toSet());
+    }
+
 }

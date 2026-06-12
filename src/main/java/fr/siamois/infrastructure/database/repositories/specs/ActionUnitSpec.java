@@ -6,12 +6,14 @@ import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
 
 import java.util.Collection;
+import java.util.List;
 
 public class ActionUnitSpec {
 
     public static final String GLOBAL_FILTER = "global";
     public static final String NAME_FILTER = "name";
     public static final String ID_FILTER = "id";
+    public static final String SPATIAL_UNIT_FILTER = "mainLocation";
 
     private ActionUnitSpec() {
         throw new UnsupportedOperationException("Spec should never be instantiated");
@@ -68,6 +70,15 @@ public class ActionUnitSpec {
                     cb.like(cb.lower(cb.coalesce(root.get("fullIdentifier"), "")), pattern)
             );
         };
+    @NonNull
+    public static Specification<ActionUnit> actionUnitInSpatialUnit(long spatialUnitId) {
+        return (root, query, cb) ->
+                cb.equal(root.get(SPATIAL_UNIT_FILTER).get("id"), spatialUnitId);
+    }
+
+    @NonNull
+    public static Specification<ActionUnit> isInSpatialUnit(List<Long> ids) {
+        return (root, query, cb) -> cb.in(root.get(SPATIAL_UNIT_FILTER).get("id")).value(ids);
     }
 
 }

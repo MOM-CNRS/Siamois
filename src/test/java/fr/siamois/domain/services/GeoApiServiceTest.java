@@ -1,11 +1,11 @@
 package fr.siamois.domain.services;
 
 import fr.siamois.domain.models.vocabulary.Concept;
-import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.dto.PlaceSuggestionDTO;
 import fr.siamois.dto.entity.ConceptDTO;
 import fr.siamois.infrastructure.api.dto.geoapi.CommuneListResponse;
 import fr.siamois.infrastructure.api.dto.geoapi.CommuneResponse;
+import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRepository;
 import fr.siamois.mapper.ConceptMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -20,6 +20,7 @@ import java.net.URI;
 import java.util.List;
 import java.util.Optional;
 
+
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -30,7 +31,7 @@ import static org.mockito.Mockito.*;
 class GeoApiServiceTest {
 
     @Mock
-    private ConceptService conceptService;
+    private ConceptRepository conceptRepository;
 
     @Mock
     private ConceptMapper conceptMapper;
@@ -85,7 +86,7 @@ class GeoApiServiceTest {
         when(restTemplate.getForObject(uri, CommuneListResponse.class))
                 .thenReturn(apiResponse);
 
-        when(conceptService.findById(417)).thenReturn(Optional.of(mockConcept));
+        when(conceptRepository.findConceptByExternalIdIgnoreCase("th252", "4287976")).thenReturn(Optional.of(mockConcept));
         when(conceptMapper.convert(mockConcept)).thenReturn(mockConceptDTO);
 
         // Act

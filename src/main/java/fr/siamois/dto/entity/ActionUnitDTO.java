@@ -30,6 +30,7 @@ public class ActionUnitDTO extends AbstractEntityDTO {
     private OffsetDateTime beginDate;
     private OffsetDateTime endDate;
     private ActionCodeDTO primaryActionCode;
+    private int recordingUnitCount;
 
     public List<String> getBindableFieldNames() {
         return List.of("type", "name", "identifier", "spatialContext", "beginDate", "endDate", "primaryActionCode", "mainLocation");

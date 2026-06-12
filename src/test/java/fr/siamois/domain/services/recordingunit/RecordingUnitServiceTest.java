@@ -9,13 +9,15 @@ import fr.siamois.domain.models.recordingunit.StratigraphicRelationship;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.recordingunit.identifier.generic.RuIdentifierResolver;
 import fr.siamois.domain.services.vocabulary.ConceptService;
+import fr.siamois.dto.FilterDTO;
 import fr.siamois.dto.StratigraphicRelationshipDTO;
-import fr.siamois.dto.entity.AbstractEntityDTO;
-import fr.siamois.dto.entity.RecordingUnitDTO;
-import fr.siamois.dto.entity.RecordingUnitSummaryDTO;
+import fr.siamois.dto.entity.*;
 import fr.siamois.infrastructure.database.repositories.person.PersonRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitRepository;
+import fr.siamois.infrastructure.database.repositories.specs.RecordingUnitSpec;
 import fr.siamois.mapper.RecordingUnitMapper;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -28,6 +30,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 
 import java.util.*;
 
@@ -769,5 +772,239 @@ class RecordingUnitServiceTest {
         assertThat(result.getTotalElements()).isZero();
         verify(recordingUnitRepository, times(1)).findByCreatedByInstitutionId(institutionId, pageable);
         verify(recordingUnitMapper, never()).convert(any(RecordingUnit.class));
+    }
+
+    // =====================================================================
+    // autocompleteInActionUnit / searchRecordingUnitInRecordingUnit /
+    // countSearchResultsInRecordingUnit
+    // =====================================================================
+
+    @Nested
+    class AutocompleteAndSearchInRecordingUnitTests {
+
+        InstitutionDTO institution;
+        RecordingUnitDTO recordingUnitDTO;
+        Pageable pageable;
+        RecordingUnit ru;
+        RecordingUnitDTO ruDTO;
+
+        @BeforeEach
+        void init() {
+            institution = new InstitutionDTO();
+            institution.setId(1L);
+
+            recordingUnitDTO = new RecordingUnitDTO();
+            recordingUnitDTO.setId(7L);
+
+            pageable = PageRequest.of(0, 10);
+
+            ru = new RecordingUnit();
+            ru.setId(42L);
+
+            ruDTO = new RecordingUnitDTO();
+            ruDTO.setId(42L);
+        }
+
+        // ------------------------------------------------------------------
+        // autocompleteInActionUnit
+        // ------------------------------------------------------------------
+
+        @Test
+        void autocompleteInActionUnit_withQuery_delegatesToRepositoryAndConverts() {
+            RecordingUnitSummaryDTO summaryDTO = new RecordingUnitSummaryDTO();
+            when(recordingUnitRepository
+                    .findByActionUnitIdAndFullIdentifierContainingIgnoreCaseOrderByFullIdentifierAsc(
+                            eq(10L), eq("US-"), any(Pageable.class)))
+                    .thenReturn(List.of(ru));
+            when(conversionService.convert(ru, RecordingUnitSummaryDTO.class)).thenReturn(summaryDTO);
+
+            List<RecordingUnitSummaryDTO> result =
+                    recordingUnitService.autocompleteInActionUnit(10L, "US-", 5);
+
+            assertThat(result).hasSize(1);
+            assertThat(result.get(0)).isSameAs(summaryDTO);
+            verify(recordingUnitRepository)
+                    .findByActionUnitIdAndFullIdentifierContainingIgnoreCaseOrderByFullIdentifierAsc(
+                            eq(10L), eq("US-"), any(Pageable.class));
+        }
+
+        @Test
+        void autocompleteInActionUnit_nullQuery_treatedAsEmptyString() {
+            when(recordingUnitRepository
+                    .findByActionUnitIdAndFullIdentifierContainingIgnoreCaseOrderByFullIdentifierAsc(
+                            eq(10L), eq(""), any(Pageable.class)))
+                    .thenReturn(List.of());
+
+            List<RecordingUnitSummaryDTO> result =
+                    recordingUnitService.autocompleteInActionUnit(10L, null, 5);
+
+            assertThat(result).isEmpty();
+            verify(recordingUnitRepository)
+                    .findByActionUnitIdAndFullIdentifierContainingIgnoreCaseOrderByFullIdentifierAsc(
+                            eq(10L), eq(""), any(Pageable.class));
+        }
+
+        @Test
+        void autocompleteInActionUnit_respectsLimit() {
+            ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
+            when(recordingUnitRepository
+                    .findByActionUnitIdAndFullIdentifierContainingIgnoreCaseOrderByFullIdentifierAsc(
+                            anyLong(), anyString(), pageableCaptor.capture()))
+                    .thenReturn(List.of());
+
+            recordingUnitService.autocompleteInActionUnit(10L, "x", 3);
+
+            assertThat(pageableCaptor.getValue().getPageSize()).isEqualTo(3);
+        }
+
+        @Test
+        void autocompleteInActionUnit_noResults_returnsEmptyList() {
+            when(recordingUnitRepository
+                    .findByActionUnitIdAndFullIdentifierContainingIgnoreCaseOrderByFullIdentifierAsc(
+                            anyLong(), anyString(), any()))
+                    .thenReturn(List.of());
+
+            assertThat(recordingUnitService.autocompleteInActionUnit(10L, "zzz", 10)).isEmpty();
+            verifyNoInteractions(conversionService);
+        }
+
+        // ------------------------------------------------------------------
+        // searchRecordingUnitInRecordingUnit
+        // ------------------------------------------------------------------
+
+        @Test
+        void searchRecordingUnitInRecordingUnit_happyPath_delegatesAndMapsPage() {
+            FilterDTO filters = new FilterDTO(false);
+            Page<RecordingUnit> page = new PageImpl<>(List.of(ru));
+
+            when(recordingUnitRepository.findAll(any(Specification.class), eq(pageable)))
+                    .thenReturn(page);
+            when(recordingUnitMapper.convert(ru)).thenReturn(ruDTO);
+
+            Page<RecordingUnitDTO> result = recordingUnitService.searchRecordingUnitInRecordingUnit(
+                    institution, recordingUnitDTO, filters, pageable);
+
+            assertThat(result.getTotalElements()).isEqualTo(1);
+            assertThat(result.getContent().get(0)).isSameAs(ruDTO);
+            verify(recordingUnitRepository).findAll(any(Specification.class), eq(pageable));
+        }
+
+        @Test
+        void searchRecordingUnitInRecordingUnit_emptyPage_returnsEmpty() {
+            FilterDTO filters = new FilterDTO(false);
+            when(recordingUnitRepository.findAll(any(Specification.class), eq(pageable)))
+                    .thenReturn(new PageImpl<>(List.of()));
+
+            Page<RecordingUnitDTO> result = recordingUnitService.searchRecordingUnitInRecordingUnit(
+                    institution, recordingUnitDTO, filters, pageable);
+
+            assertTrue(result.isEmpty());
+            verifyNoInteractions(recordingUnitMapper);
+        }
+
+        @Test
+        void searchRecordingUnitInRecordingUnit_rootOnlyFalse_neverCallsListFindAll() {
+            FilterDTO filters = new FilterDTO(false);
+            filters.add(RecordingUnitSpec.AUTHOR_FILTER, List.of(5L), FilterDTO.FilterType.EQUAL);
+            when(recordingUnitRepository.findAll(any(Specification.class), eq(pageable)))
+                    .thenReturn(new PageImpl<>(List.of()));
+
+            recordingUnitService.searchRecordingUnitInRecordingUnit(
+                    institution, recordingUnitDTO, filters, pageable);
+
+            verify(recordingUnitRepository, never()).findAll(any(Specification.class));
+        }
+
+        // ------------------------------------------------------------------
+        // countSearchResultsInRecordingUnit
+        // ------------------------------------------------------------------
+
+        @Test
+        void countSearchResultsInRecordingUnit_noFilters_returnsRepositoryCount() {
+            FilterDTO filters = new FilterDTO(false);
+            when(recordingUnitRepository.count(any(Specification.class))).thenReturn(8L);
+
+            int result = recordingUnitService.countSearchResultsInRecordingUnit(
+                    institution, recordingUnitDTO, filters);
+
+            assertThat(result).isEqualTo(8);
+            verify(recordingUnitRepository).count(any(Specification.class));
+        }
+
+        @Test
+        void countSearchResultsInRecordingUnit_withUserFilters_returnsRepositoryCount() {
+            FilterDTO filters = new FilterDTO(false);
+            filters.add(RecordingUnitSpec.AUTHOR_FILTER, List.of(3L), FilterDTO.FilterType.EQUAL);
+            when(recordingUnitRepository.count(any(Specification.class))).thenReturn(3L);
+
+            int result = recordingUnitService.countSearchResultsInRecordingUnit(
+                    institution, recordingUnitDTO, filters);
+
+            assertThat(result).isEqualTo(3);
+        }
+
+        @Test
+        void countSearchResultsInRecordingUnit_rootOnlyTrue_noUserFilters_countWithRootSpec() {
+            FilterDTO filters = new FilterDTO(true);
+            when(recordingUnitRepository.count(any(Specification.class))).thenReturn(2L);
+
+            int result = recordingUnitService.countSearchResultsInRecordingUnit(
+                    institution, recordingUnitDTO, filters);
+
+            assertThat(result).isEqualTo(2);
+            verify(recordingUnitRepository).count(any(Specification.class));
+            verify(recordingUnitRepository, never()).findAll(any(Specification.class));
+        }
+
+        @Test
+        void countSearchResultsInRecordingUnit_rootOnlyTrue_userFilters_resolvesClosureFirst() {
+            FilterDTO filters = new FilterDTO(true);
+            filters.add(RecordingUnitSpec.AUTHOR_FILTER, List.of(9L), FilterDTO.FilterType.EQUAL);
+
+            ru.setId(42L);
+            when(recordingUnitRepository.findAll(any(Specification.class)))
+                    .thenReturn(List.of(ru));
+            when(recordingUnitRepository.findAncestorClosure(new Long[]{42L}))
+                    .thenReturn(List.of(42L, 1L));
+            when(recordingUnitRepository.count(any(Specification.class))).thenReturn(1L);
+
+            int result = recordingUnitService.countSearchResultsInRecordingUnit(
+                    institution, recordingUnitDTO, filters);
+
+            assertThat(result).isEqualTo(1);
+            verify(recordingUnitRepository).findAll(any(Specification.class));
+            verify(recordingUnitRepository).findAncestorClosure(new Long[]{42L});
+        }
+
+        @Test
+        void countSearchResultsInRecordingUnit_rootOnlyTrue_userFilters_noMatches_returnsZero() {
+            FilterDTO filters = new FilterDTO(true);
+            filters.add(RecordingUnitSpec.AUTHOR_FILTER, List.of(9L), FilterDTO.FilterType.EQUAL);
+
+            when(recordingUnitRepository.findAll(any(Specification.class)))
+                    .thenReturn(List.of());
+            when(recordingUnitRepository.count(any(Specification.class))).thenReturn(0L);
+
+            int result = recordingUnitService.countSearchResultsInRecordingUnit(
+                    institution, recordingUnitDTO, filters);
+
+            assertThat(result).isZero();
+            verify(recordingUnitRepository, never()).findAncestorClosure(any());
+        }
+
+        @Test
+        void countSearchResultsInRecordingUnit_cachedClosure_skipsFindAllListVariant() {
+            FilterDTO filters = new FilterDTO(true);
+            filters.add(RecordingUnitSpec.AUTHOR_FILTER, List.of(9L), FilterDTO.FilterType.EQUAL);
+            filters.setAncestorClosure(Set.of(42L, 1L));
+
+            when(recordingUnitRepository.count(any(Specification.class))).thenReturn(2L);
+
+            recordingUnitService.countSearchResultsInRecordingUnit(
+                    institution, recordingUnitDTO, filters);
+
+            verify(recordingUnitRepository, never()).findAll(any(Specification.class));
+            verify(recordingUnitRepository, never()).findAncestorClosure(any());
+        }
     }
 }

@@ -326,6 +326,12 @@ public class FormService {
             }
             return new HashSet<>(a.getValue());
         }
+        if (answer instanceof CustomFieldAnswerSelectMultipleContainerViewModel a) {
+            return a.getValue() != null ? new HashSet<>(a.getValue()) : null;
+        }
+        if (answer instanceof CustomFieldAnswerSelectMultiplePhaseViewModel a) {
+            return a.getValue() != null ? new HashSet<>(a.getValue()) : null;
+        }
 
         return null;
     }
@@ -416,6 +422,9 @@ public class FormService {
         handlers.put(CustomFieldAnswerSelectMultipleSpatialUnitTreeViewModel.class, this::handleSpatialUnitSet);
         handlers.put(CustomFieldAnswerSelectMultipleRecordingUnitViewModel.class, this::handleRecordingUnitSet);
         handlers.put(CustomFieldAnswerMeasurementViewModel.class, this::handleMeasurement);
+        handlers.put(CustomFieldAnswerSelectMultipleContainerViewModel.class, this::handleContainerSet);
+        handlers.put(CustomFieldAnswerSelectMultipleSpecimenViewModel.class, this::handleSpecimenSet);
+        handlers.put(CustomFieldAnswerSelectMultiplePhaseViewModel.class, this::handlePhaseSet);
         handlers.put(CustomFieldAnswerSelectMultipleFromFieldCodeViewModel.class, this::handleConceptSet);
         handlers.put(CustomFieldAnswerSelectMultipleSpecimenViewModel.class, this::handleSpecimenSet);
 
@@ -530,6 +539,40 @@ public class FormService {
         }
     }
 
+    private void handleContainerSet(CustomFieldAnswerViewModel answer, Object value) {
+        if (answer instanceof CustomFieldAnswerSelectMultipleContainerViewModel containerAnswer && value instanceof Set<?> values) {
+            containerAnswer.setValue(new ArrayList<>((Set<ContainerDTO>) values));
+        }
+    }
+
+    private void handlePhaseSet(CustomFieldAnswerViewModel answer, Object value) {
+        if (answer instanceof CustomFieldAnswerSelectMultiplePhaseViewModel phaseAnswer && value instanceof Set<?> values) {
+            phaseAnswer.setValue(new ArrayList<>((Set<PhaseDTO>) values));
+        }
+    }
+
+    private void handleConceptSet(CustomFieldAnswerViewModel answer, Object value) {
+        if (answer instanceof CustomFieldAnswerSelectMultipleFromFieldCodeViewModel multipleAnswer && value instanceof Set<?> values) {
+            List<ConceptAutocompleteDTO> autocompleteList = values.stream()
+                    .filter(ConceptDTO.class::isInstance)
+                    .map(ConceptDTO.class::cast)
+                    .map(concept -> new ConceptAutocompleteDTO(
+                            concept,
+                            labelBean.findLabelOf(concept),
+                            labelBean.getCurrentUserLang()
+                    ))
+                    .toList(); // Ou .collect(Collectors.toList()) selon votre version de Java
+
+            multipleAnswer.setValue(new ArrayList<>(autocompleteList));
+        }
+    }
+
+    private void handleSpecimenSet(CustomFieldAnswerViewModel answer, Object value) {
+        if (answer instanceof CustomFieldAnswerSelectMultipleSpecimenViewModel specimenAnswer && value instanceof Set<?> values) {
+            specimenAnswer.setValue(new ArrayList<>((Set<SpecimenSummaryDTO>) values));
+        }
+    }
+
     private PlaceSuggestionDTO mapToPlaceSuggestion(SpatialUnitSummaryDTO val) {
         PlaceSuggestionDTO dto = new PlaceSuggestionDTO();
         dto.setId(val.getId());
@@ -541,8 +584,8 @@ public class FormService {
     }
 
     private void handleRecordingUnitSet(CustomFieldAnswerViewModel answer, Object value) {
-        if (answer instanceof CustomFieldAnswerSelectMultipleRecordingUnitViewModel ans) {
-            ans.setValue(new ArrayList<>((Set<RecordingUnitSummaryDTO>) value));
+        if (answer instanceof CustomFieldAnswerSelectMultipleRecordingUnitViewModel ans && value instanceof Set<?> values) {
+            ans.setValue(new ArrayList<>((Set<RecordingUnitSummaryDTO>) values));
         }
     }
 

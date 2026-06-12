@@ -21,6 +21,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -32,6 +33,8 @@ import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class ActionUnitSeederTest {
+    private static final OffsetDateTime NOW = OffsetDateTime.of(2024, 1, 15, 12, 0, 0, 0, ZoneOffset.UTC);
+
 
     @Mock PersonRepository personRepository;
     @Mock ActionCodeRepository actionCodeRepository;
@@ -140,7 +143,7 @@ class ActionUnitSeederTest {
                 "AU-EXIST", "Name X", "IDX", "AC002",
                 "vocB", "conB",
                 "a@b.c", "INST-2",
-                OffsetDateTime.now(), null,
+                NOW, null,
                 null, null
         );
 

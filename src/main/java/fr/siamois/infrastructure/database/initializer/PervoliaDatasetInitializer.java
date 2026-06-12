@@ -9,14 +9,12 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
 import java.io.InputStream;
 
 @Slf4j
-@Component
 @Getter
 @Setter
 public class PervoliaDatasetInitializer  {
@@ -25,8 +23,6 @@ public class PervoliaDatasetInitializer  {
 
     @Value("${siamois.admin.email}")
     private String adminEmail;
-
-
 
     private final ConceptSeeder conceptSeeder;
     private final PersonSeeder personSeeder;
@@ -80,7 +76,7 @@ public class PervoliaDatasetInitializer  {
             if (is == null) {
                 throw new IllegalStateException("Impossible de trouver Import Pervolia.xlsx");
             }
-            specs = ooxmlImportService.importFromExcel(is);
+            specs = ooxmlImportService.importFromExcel(is, OOXMLImportService.ImportScope.ALL, null);
         } catch (IOException e) {
             throw new DatabaseDataInitException(e.getMessage(), e);
         }

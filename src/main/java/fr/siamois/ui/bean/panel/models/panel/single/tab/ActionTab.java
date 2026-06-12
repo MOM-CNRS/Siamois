@@ -1,7 +1,7 @@
 package fr.siamois.ui.bean.panel.models.panel.single.tab;
 
 import fr.siamois.dto.entity.ActionUnitDTO;
-import fr.siamois.ui.table.ActionUnitTableViewModel;
+import fr.siamois.ui.table.viewmodel.ActionUnitTableViewModel;
 
 
 public class ActionTab extends EntityListTab<ActionUnitDTO> {

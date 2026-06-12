@@ -1,7 +1,7 @@
 package fr.siamois.ui.bean.panel.models.panel.single.tab;
 
 import fr.siamois.dto.entity.SpecimenDTO;
-import fr.siamois.ui.table.SpecimenTableViewModel;
+import fr.siamois.ui.table.viewmodel.SpecimenTableViewModel;
 
 
 public class SpecimenTab extends EntityListTab<SpecimenDTO> {

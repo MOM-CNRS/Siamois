@@ -29,7 +29,6 @@ public class HistoryBean {
     private final FlowBean flowBean;
 
     private List<HistoryItem> items = new ArrayList<>() ;
-    private boolean historyOpen = false;
 
     public void redirectToEntry(HistoryItem entry) throws IOException {
 
@@ -37,9 +36,6 @@ public class HistoryBean {
 
     }
 
-    public void toggleHistory() {
-        historyOpen = !historyOpen;
-    }
 
     public void addItem(HistoryItem item) {
 

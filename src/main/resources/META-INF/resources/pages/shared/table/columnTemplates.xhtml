@@ -6,12 +6,13 @@
                 xmlns:cellheader="http://java.sun.com/jsf/composite/pages/shared/cellheader"
 >
 
-    <!--@elvariable id="column" type="fr.siamois.ui.table.FormFieldColumn"-->
-    <!--@elvariable id="tableModel" type="fr.siamois.ui.table.EntityTableViewModel"-->
+    <!--@elvariable id="column" type="fr.siamois.ui.table.column.FormFieldColumn"-->
+    <!--@elvariable id="tableModel" type="fr.siamois.ui.table.viewmodel.EntityTableViewModel"-->
     
     <!-- Header -->
     <f:facet name="header">
-        <p:outputPanel rendered="#{column.type ne 'COMMAND_LINK'}" layout="inline">
+        <p:outputPanel rendered="#{column.type ne 'COMMAND_LINK'}" layout="inline" style="display:flex; align-items:center; gap:0.5em;">
+            <i class="#{column.type eq 'FORM_FIELD' ? column.field.icon : ''}"></i>
             #{langBean.msg(column.headerKey)}
         </p:outputPanel>
         <p:outputPanel rendered="#{column.type eq 'COMMAND_LINK'}" layout="inline">
@@ -49,16 +50,21 @@
         <f:facet name="header">
             <cellheader:withIcon icon="#{column.headerIcon}" text="#{langBean.msg(column.headerKey)}"/>
         </f:facet>
+        <style>
+            .relation-col-btn { visibility: hidden; }
+            tr:hover .relation-col-btn,
+            .ui-row-hover .relation-col-btn { visibility: visible; }
+        </style>
         <div style="display:flex; gap:1em; align-items:center;">
             <span>#{tableModel.resolveCount(column, item)}</span>
-            <p:commandButton
-                    icon="#{column.viewIcon}"
-                    action="#{tableModel.handleRelationAction(column, item, 'VIEW_RELATION')}"
-                    styleClass="sia-icon-btn"
+            <p:commandButton styleClass="ui-button-flat relation-col-btn"
                     process="#{column.processExpr}"
                     update="#{column.updateExpr}"
                     onstart="#{column.onstartJs}"
-                    oncomplete="#{column.oncompleteJs}"/>
+                    action="#{tableModel.handleRelationAction(column, item, 'VIEW_RELATION')}"
+                    oncomplete="#{column.oncompleteJs}"
+                    icon="bi bi-layout-sidebar-inset-reverse"
+                    title="Ouvrir dans l'aperçu"/>
         </div>
     </ui:fragment>
 </ui:composition>

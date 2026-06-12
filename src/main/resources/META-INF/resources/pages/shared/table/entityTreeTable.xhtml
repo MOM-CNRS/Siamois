@@ -4,44 +4,10 @@
                 xmlns:p="http://primefaces.org/ui"
                 xmlns:f="http://java.sun.com/jsf/core"
                 xmlns:c="http://java.sun.com/jsp/jstl/core"
-                xmlns:custom="http://siamois.fr/jsf/custom"
+                xmlns:custom="http://siamois.fr/jsf/custom" xmlns:h="http://java.sun.com/jsf/html"
 >
 
-    <!--@elvariable id="tableModel" type="fr.siamois.ui.table.EntityTableViewModel"-->
-
-    <style>
-        .filter-table-column-hidden .ui-column-filter {
-            display: none !important;
-        }
-
-        .ui-treetable thead th {
-            text-align: left;
-            vertical-align: top;
-        }
-
-        .ui-treetable thead th .ui-column-title,
-        .ui-treetable thead th .ui-sortable-column-icon {
-            display: inline-block;
-            vertical-align: middle;
-        }
-
-        .ui-treetable thead th .ui-column-filter {
-            display: block;
-            width: 100%;
-            margin-top: 0.5rem;
-            box-sizing: border-box;
-        }
-
-        /* Highlight rows that actually matched the search; ancestors brought
-           in only to keep the path visible stay neutral. */
-        .ui-treetable tr.search-match > td {
-            background-color: rgba(255, 221, 87, 0.25);
-            font-weight: 600;
-        }
-        .ui-treetable tr.search-match:hover > td {
-            background-color: rgba(255, 221, 87, 0.4);
-        }
-    </style>
+    <!--@elvariable id="tableModel" type="fr.siamois.ui.table.viewmodel.EntityTableViewModel"-->
 
     <p:blockUI block="entityTreeTable" trigger="#{cc.clientId}:entityTreeTable" widgetVar="#{cc.clientId}_buiTreeTables">
         <i class="pi pi-spin pi-spinner" style="font-size: 3rem"/>
@@ -63,9 +29,10 @@
                  propagateSelectionUp="false"
                  propagateSelectionDown="false"
                  allowUnsorting="true"
-                 sortBy="#{tableModel.treeLazyModel.sortBy}"
+                 sortBy="#{tableModel.lazyDataModel.sortBy}"
                  sortMode="multiple"
                  partialUpdate="false"
+                 resizableColumns="true"
                  emptyMessage="#{langBean.msg('recordingUnitList.empty')}"
                  rowsPerPageTemplate="5,10,15,20,25,50,100"
                               rows="#{tableModel.defaultPageSize}"
@@ -78,6 +45,9 @@
                           columnFilteringEnabled="#{tableModel.columnFilteringEnabled}"
                           rowStyleClass="#{tableModel.getRowStyleClass(item)}"
     >
+        <p:ajax event="select" action="#{tableModel.handleSelectionChange()}" update="selectedCountChip"/>
+        <p:ajax event="unselect" action="#{tableModel.handleSelectionChange()}" update="selectedCountChip"/>
+
         <p:ajax event="filter" process="@this" oncomplete="if (args &amp;&amp; args.newRowCount !== undefined) { PF('#{cc.clientId}_entityTreeTable').getPaginator().setTotalRecords(args.newRowCount); }" />
         <f:facet name="header">
             <ui:include src="/pages/shared/table/tableToolbar.xhtml">
@@ -87,86 +57,122 @@
             </ui:include>
         </f:facet>
 
-        <p:column style="width: min-content;"
-                  styleClass="small-cell"
-                  selectionBox="true" id="selectionCol"  toggleable="false"/>
+        <p:column styleClass="small-cell" selectionBox="true" toggleable="false">
+            <f:facet name="header">
+                <p:chip id="selectedCountChip"
+                        style="background-color: var(--siamois-green-light-100)"
+                        label="#{tableModel.getSelectedAndTotalCount()}"
+                />
+            </f:facet>
+        </p:column>
 
-        <!-- link -->
-        <p:column style="width: min-content;"
-                  styleClass="small-cell"
-                  id="linkCol" toggleable="false">
+        <!-- Merged: status | id-chip | row-actions -->
+        <p:column styleClass="small-cell" exportable="false" toggleable="false" id="statusIdActionsCol"
+                  style="width: 1%; white-space: nowrap;">
 
+            <p:outputPanel id="mergedCell" layout="block">
+                <div class="mca-wrapper">
 
+                    <!-- Status (left) -->
+                    <ui:include src="/panel/header/validationButton.xhtml">
+                        <ui:param name="disabled" value="true"/>
+                        <ui:param name="unit" value="#{item}"/>
+                    </ui:include>
 
-        <p:commandButton
-                id="openRowLink"
-                styleClass="hidden-column"
-                action="#{tableModel.handleAction(tableModel.tableDefinition.commandLinkColumn, item)}"
-                onstart="#{tableModel.tableDefinition.commandLinkColumn.onstartJs}"
-                immediate="true"
-                process="@this"
-                icon="bi bi-layout-sidebar-inset-reverse"
-                oncomplete="#{tableModel.getOnCompleteJs(item)}"
-        >
-            <f:attribute name="mode" value="mode"/>
-        </p:commandButton>
-        <p:contextMenu for="openRowLink">
-            <p:menuitem value="Ouvrir dans un panel" disabled="true" icon="bi bi-box-arrow-in-up"/>
-            <p:menuitem value="Ouvrir en mode Focus" disabled="true" icon="bi bi-arrows-angle-expand"/>
-            <p:menuitem value="Ouvrir dans l'aperçu lateral" icon="bi bi-layout-sidebar-inset-reverse"
-                        action="#{tableModel.handleAction(tableModel.tableDefinition.commandLinkColumn, item)}"
-                        onstart="#{tableModel.tableDefinition.commandLinkColumn.onstartJs}"
-                        oncomplete="#{tableModel.getOnCompleteJs(item)}"
-            />
-        </p:contextMenu>
-    </p:column>
+                    <!-- Chip / ID (middle, flex-grow) -->
+                    <div class="mca-chip-area">
 
+                        <!-- READ mode -->
+                        <h:panelGroup rendered="#{not tableModel.isEditingLink(item)}"
+                                      styleClass="chip-cell-wrapper">
+                            <p:commandLink id="chipNavigate"
+                                           styleClass="chip-nav-link"
+                                           action="#{tableModel.handleAction(tableModel.tableDefinition.commandLinkColumn, item)}"
+                                           onstart="#{tableModel.tableDefinition.commandLinkColumn.onstartJs}"
+                                           oncomplete="#{tableModel.getOnCompleteJs(item)}"
+                                           immediate="true"
+                                           process="@this">
+                                <p:chip label="#{tableModel.resolveText(tableModel.tableDefinition.commandLinkColumn, item)}"
+                                        icon="#{tableModel.tableDefinition.commandLinkColumn.iconClass}"
+                                        styleClass="entity-nav-chip"
+                                        style="background: #{tableModel.tableDefinition.commandLinkColumn.chipColor}; color: white;"/>
+                            </p:commandLink>
 
+                            <div class="chip-cell-actions">
+                                <p:commandButton id="editChipBtn"
+                                                 rendered="#{tableModel.tableDefinition.commandLinkColumn.editable}"
+                                                 icon="bi bi-pencil"
+                                                 styleClass="rum-action-btn"
+                                                 action="#{tableModel.startEditLink(item)}"
+                                                 update="mergedCell"
+                                                 process="@this"
+                                                 title="Modifier"/>
+                            </div>
 
-    <!-- Actions Column -->
-    <p:column exportable="false" toggleable="false" id="actionsCol" styleClass="small-cell" style="min-width: 1px;">
-        <p:toolbar id="actionButtonToolbar" style="padding-top: 0;
-            padding-bottom: 0;">
-            <p:toolbarGroup id="actionButtonToolbarGroup" styleClass="action-col">
-                <ui:repeat id="buttons" value="#{tableModel.rowActions}" var="action" varStatus="status">
-                    <p:commandButton
-                            id="btnAction"
-                            rendered="#{tableModel.isRendered(action, item)}"
-                            icon="#{tableModel.resolveIcon(action, item)}"
-                            action="#{tableModel.handleRowAction(action, node)}"
-                            process="#{empty action.processExpr ? '@this' : action.processExpr}"
-                            update="#{action.updateSelfTable ? (':'.concat(cc.clientId).concat(':entityTreeTable')) : action.updateExpr}"
-                            styleClass="#{action.styleClass}"/>
-                    <p:tooltip
-                            id="btnActionTooltip"
-                            autoHide="false" value="#{tableModel.getRowActionTooltipCode(action,item)}"
-                            position="bottom"
-                            for="btnAction"
-                    />
+                            <p:contextMenu for="chipNavigate">
+                                <p:menuitem value="Ouvrir dans un panel" disabled="true" icon="bi bi-box-arrow-in-up"/>
+                                <p:menuitem value="Ouvrir en mode Focus" disabled="true" icon="bi bi-arrows-angle-expand"/>
+                                <p:menuitem value="Ouvrir dans l'aperçu lateral" icon="bi bi-layout-sidebar-inset-reverse"
+                                            action="#{tableModel.handleAction(tableModel.tableDefinition.commandLinkColumn, item)}"
+                                            onstart="#{tableModel.tableDefinition.commandLinkColumn.onstartJs}"
+                                            oncomplete="#{tableModel.getOnCompleteJs(item)}"/>
+                            </p:contextMenu>
+                        </h:panelGroup>
 
+                        <!-- EDIT mode -->
+                        <h:panelGroup rendered="#{tableModel.isEditingLink(item)}"
+                                      style="display:flex; align-items:center; gap:4px;">
+                            <p:inputText id="editLinkInput"
+                                         value="#{tableModel.editingLinkValue}"
+                                         style="min-width: 8em;"/>
+                            <p:commandButton icon="bi bi-check"
+                                             styleClass="rum-action-btn"
+                                             title="Valider"
+                                             action="#{tableModel.applyLinkEdit(item)}"
+                                             update="mergedCell"
+                                             process="editLinkInput @this"/>
+                            <p:commandButton icon="bi bi-x"
+                                             styleClass="rum-action-btn"
+                                             title="Annuler"
+                                             action="#{tableModel.cancelEditLink()}"
+                                             update="mergedCell"
+                                             process="@this"/>
+                        </h:panelGroup>
 
-                </ui:repeat>
-            </p:toolbarGroup>
-        </p:toolbar>
-    </p:column>
+                    </div>
 
-    <p:column style="width: min-content;"
-              styleClass="small-cell"
-              headerText="Statut"
-              id="statusCol" toggleable="false"
-    >
-        <ui:include src="/panel/header/validationButton.xhtml" >
-            <ui:param name="disabled" value="true"/>
-            <ui:param name="unit" value="#{item}"/>
-        </ui:include>
-    </p:column>
+                    <!-- Row actions (right) -->
+                    <div class="mca-row-actions">
+                        <ui:repeat value="#{tableModel.rowActions}" var="action" varStatus="status">
+                            <p:commandButton
+                                    id="btnAction"
+                                    rendered="#{tableModel.isRendered(action, item)}"
+                                    icon="#{tableModel.resolveIcon(action, item)}"
+                                    action="#{tableModel.handleRowAction(action, node)}"
+                                    process="#{empty action.processExpr ? '@this' : action.processExpr}"
+                                    update="#{action.updateSelfTable ? (':'.concat(cc.clientId).concat(':entityTreeTable')) : action.updateExpr}"
+                                    styleClass="#{action.styleClass}"/>
+                            <p:tooltip
+                                    id="btnActionTooltip"
+                                    autoHide="false"
+                                    value="#{tableModel.getRowActionTooltipCode(action, item)}"
+                                    position="bottom"
+                                    for="btnAction"/>
+                        </ui:repeat>
+                    </div>
+
+                </div>
+            </p:outputPanel>
+        </p:column>
 
     <c:forEach var="column" items="#{tableModel.columns}" varStatus="colStatus">
         <p:column
                 id="col_#{colStatus.index}"
                 styleClass="small-cell"
                 style="min-width: #{column.type != 'COMMAND_LINK' ? '10em' : ''};"
+                resizable="true"
                 sortable="#{column.sortable}"
+                visible="#{column.visible}"
                 filterable="#{column.filterable}"
                 field="#{column.field == null ? null : column.field.valueBinding}"
                 filterBy="#{column.field.valueBinding}"
@@ -192,6 +198,8 @@
         </p:column>
     </c:forEach>
 
+    <!-- Filler: absorbs remaining width so real columns stick left -->
+    <p:column style="width: 100%;" exportable="false" toggleable="false" id="fillerCol"/>
 
 </custom:lazyTreeTable>
 

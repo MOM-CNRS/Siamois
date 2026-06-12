@@ -175,21 +175,24 @@ public class CustomFormSeeder {
 
 
     public void seed(List<CustomFormDTO> specs)  {
-        for (var s : specs) {
-            CustomForm form = findOrNull(s);
-            if(form == null) {
-                // Verify layout validity
-                CustomForm f = null;
-                f = new CustomForm();
-                f.setName(s.name());
-                f.setDescription(s.description());
-                f.setLayout(convertLayoutFromDto(s.layout()));
-                customFormRepository.save(f);
-            }
-            else {
-                form.setLayout(convertLayoutFromDto(s.layout()));
-                // appliquer les modifications
-                customFormRepository.save(form);
+        for (int i = 0; i < specs.size(); i++) {
+            var s = specs.get(i);
+            try {
+                CustomForm form = findOrNull(s);
+                if(form == null) {
+                    CustomForm f = new CustomForm();
+                    f.setName(s.name());
+                    f.setDescription(s.description());
+                    f.setLayout(convertLayoutFromDto(s.layout()));
+                    customFormRepository.save(f);
+                }
+                else {
+                    form.setLayout(convertLayoutFromDto(s.layout()));
+                    customFormRepository.save(form);
+                }
+            } catch (Exception e) {
+                throw new IllegalStateException(
+                        "[Formulaire ligne " + (i + 1) + "] '" + s.name() + "' : " + e.getMessage(), e);
             }
         }
     }

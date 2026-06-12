@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:h="http://xmlns.jcp.org/jsf/html"
+                xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
+                xmlns:p="http://primefaces.org/ui"
+                xmlns:f="http://xmlns.jcp.org/jsf/core"
+                xmlns:form="http://java.sun.com/jsf/composite/pages/shared/form">
+
+    <div style="display: flex; flex-direction: row; flex-shrink: 0">
+        <div id="search-bar" class="hide-small-screen" style="flex:8">
+            <form:csrfform formId="searchBarForm" id="searchBarCsrfForm">
+                <article>
+                <span class="ui-input-icon-right">
+                    <p:autoComplete id="searchAutocomplete"
+                                    styleClass="searchInput"
+                                    style="width: 100%"
+                                    value="#{searchBean.selected}"
+                                    var="result"
+                                    itemLabel="#{result.matchingTerm}"
+                                    itemValue="#{result}"
+                                    completeMethod="#{searchBean.completeText}"
+                                    converter="#{searchResultConverter}"
+                                    scrollHeight="250"
+                                    forceSelection="true">
+
+                        <p:column>
+                            <div style="display:flex; align-items:center; gap:0.5em;">
+                                <i class="#{not empty result.recordingUnitId ? 'bi bi-pencil-square' :
+                                            not empty result.spatialUnitId   ? 'bi bi-geo-alt' :
+                                            not empty result.actionUnitId    ? 'bi bi-arrow-down-square' :
+                                                                               'bi bi-bucket'}"/>
+                                <span style="flex:1">#{result.matchingTerm}</span>
+                                <small style="color:var(--text-secondary,#6c757d); flex-shrink:0">
+                                    #{not empty result.recordingUnitId ? 'UE' :
+                                      not empty result.spatialUnitId   ? 'Lieu' :
+                                      not empty result.actionUnitId    ? 'Projet' :
+                                                                         'Mobilier'}
+                                </small>
+                            </div>
+                        </p:column>
+
+                        <p:ajax event="itemSelect"
+                                listener="#{searchBean.onResultSelect}"
+                                process="@this"
+                                update="@none"/>
+
+                    </p:autoComplete>
+                </span>
+                </article>
+            </form:csrfform>
+        </div>
+        <div id="smallScreenToolbar" class="show-small-screen" style="align-content: center; flex:1;
+        text-align:left; background: var(--siamois-green-light-100);padding: 0.5em">
+            <form:csrfform formId="toggleButtonSidebarPanelForm" id="toggleButtonSidebarPanelCsrfForm">
+                <div style="display:flex;gap:1em;">
+                    <p:commandButton icon="bi bi-list" onclick="toggleSiamoisSidebar()">
+
+                    </p:commandButton>
+                    <h:panelGroup styleClass="ui-inputgroup">
+                        <h:panelGroup id="iconInstitSmallScreen" styleClass="ui-inputgroup-addon">
+                            <i class="bi bi-buildings"/>
+                        </h:panelGroup>
+                        <p:selectOneMenu
+                                id="selectOneMenuInstitutionSmallScreen"
+                                value="#{flowBean.selectedInstitution}"
+                                filter="true"
+                                style="max-width: 10em; text-overflow: ellipsis"
+                                converter="#{institutionConverter}"
+                                filterMatchMode="startsWith"
+                                filterNormalize="true"
+                                var="inst"
+                        >
+                            <f:selectItems value="#{flowBean.institutions}"
+                                           var="item"
+                                           itemValue="#{item}"
+                                           itemLabel="#{item.name}"
+                            />
+
+                            <p:column>
+                                <h:outputText value="#{inst.name}"/>
+                            </p:column>
+
+                            <p:ajax event="change"
+                                    process="@this"
+                                    listener="#{flowBean.onInstitutionChange}"
+                            />
+                        </p:selectOneMenu>
+                    </h:panelGroup>
+                </div>
+
+            </form:csrfform>
+        </div>
+        <div id="read-write-switch" style="align-content: center; flex:1;
+        text-align:right; background: var(--siamois-green-light-100);padding: 0.5em; gap:0.5em; display: flex; flex-direction: row-reverse;">
+            <h:form id="readWriteSwitchForm">
+                <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
+                <p:selectBooleanButton id="readWriteSwitchButton" value="#{flowBean.isWriteMode}"
+                                       offIcon="bi bi-eyeglasses" onIcon="bi bi-pen">
+                    <p:ajax event="valueChange" listener="#{flowBean.changeReadWriteMode()}"
+                            update="flow readWriteSwitchForm"
+                            onstart="PF('buiContent').show()" oncomplete="PF('buiContent').hide()"/>
+                </p:selectBooleanButton>
+                <p:tooltip for="readWriteSwitchButton" value="#{flowBean.readWriteSwitchTooltip}"
+                           position="bottom"/>
+            </h:form>
+            <h:form id="fieldDesktopSwitchForm">
+                <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
+                <p:selectBooleanButton style="display:none;" value="#{flowBean.isFieldMode}"
+                                       offIcon="bi bi-pc-display" onIcon="bi bi-phone" id="fieldOfficeSwitchButton">
+                    <p:ajax event="valueChange" listener="#{flowBean.changeFieldOfficeMode()}"
+                            update="flow fieldDesktopSwitchForm"
+                            onstart="PF('buiContent').show()" oncomplete="PF('buiContent').hide()"/>
+                </p:selectBooleanButton>
+                <p:tooltip for="fieldOfficeSwitchButton" value="#{flowBean.fieldOfficeSwitchTooltip}"
+                           position="bottom"/>
+            </h:form>
+            <ui:include src="/dialog/unsavedUpdates/unsavedUpdatesDialog.xhtml"/>
+        </div>
+    </div>
+
+</ui:composition>
