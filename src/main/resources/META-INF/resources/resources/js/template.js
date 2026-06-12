@@ -26,21 +26,21 @@ function toggleCollapseSidebar() {
 
 function animateSidebarClose() {
     // Manually force the CSS collapse transition right before AJAX finishes
-    var sidebar = document.getElementById('subSidebarForm');
+    let sidebar = document.getElementById('subSidebarForm');
     if (sidebar) {
         sidebar.classList.add('is-collapsed');
     }
 }
 
 function handleSidebarToggle(targetMode) {
-    var sidebar = document.getElementById('subSidebarForm');
+    let sidebar = document.getElementById('subSidebarForm');
     if (!sidebar) return;
 
     // Normalize input to lowercase to match our JSF class naming structure
-    var requestedModeClass = 'mode-' + targetMode.toLowerCase();
+    let requestedModeClass = 'mode-' + targetMode.toLowerCase();
 
-    var isCurrentlyCollapsed = sidebar.classList.contains('is-collapsed');
-    var isSameModeActive = sidebar.classList.contains(requestedModeClass);
+    let isCurrentlyCollapsed = sidebar.classList.contains('is-collapsed');
+    let isSameModeActive = sidebar.classList.contains(requestedModeClass);
 
     if (!isCurrentlyCollapsed && isSameModeActive) {
         // toggle the button already open

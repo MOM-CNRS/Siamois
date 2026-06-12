@@ -46,6 +46,7 @@ import org.springframework.stereotype.Component;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
+import java.time.Month;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -373,11 +374,11 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
             if (field instanceof CustomFieldDateTime dt) {
                 if ("openingDate".equals(field.getValueBinding()) && unit.getClosingDate() != null) {
                     dt.setMax(unit.getClosingDate().toLocalDateTime());
-                    dt.setMin(LocalDateTime.of(1000, 1, 1, 1, 1));
+                    dt.setMin(LocalDateTime.of(1000, Month.JANUARY, 1, 1, 1));
                 }
                 if ("closingDate".equals(field.getValueBinding()) && unit.getOpeningDate() != null) {
                     dt.setMin(unit.getOpeningDate().toLocalDateTime());
-                    dt.setMax(LocalDateTime.of(9999, 12, 31, 23, 59));
+                    dt.setMax(LocalDateTime.of(9999, Month.DECEMBER, 31, 23, 59));
                 }
             }
         }

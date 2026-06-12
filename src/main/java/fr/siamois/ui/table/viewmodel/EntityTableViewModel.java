@@ -59,6 +59,7 @@ public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
 
     public static final String CONTAINER = "-container');";
     public static final int LIMIT = 100;
+    public static final String LABEL = "label";
     @Setter
     protected String globalFilter = "";
 
@@ -355,7 +356,6 @@ public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
 
     public void onToggle(ColumnToggleEvent e) {
         Integer index = (Integer) e.getData();
-        //UIColumn column = e.getColumn();
         Visibility visibility = e.getVisibility();
         // 4 bc the first 4 columns are fixed
         tableDefinition.getColumns().get(index - 2).setVisible(visibility == Visibility.VISIBLE);
@@ -668,7 +668,7 @@ public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
         if (lazyDataModel != null) {
             lazyDataModel.updateEntityInCache((T) entity);
         }
-        rowContexts.remove((ID) entity.getId());
+        rowContexts.remove(entity.getId());
     }
 
     /**
@@ -701,63 +701,6 @@ public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
         }
     }
 
-    @SuppressWarnings("unchecked")
-    private List<Long> castLongList(Object value) {
-
-        if (value == null) {
-            return List.of();
-        }
-
-        if (value instanceof List<?> list) {
-
-            return list.stream()
-                    .filter(Objects::nonNull)
-                    .map(v -> {
-
-                        // legacy numeric support
-                        if (v instanceof Number n) {
-                            return n.longValue();
-                        }
-
-                        if (v instanceof String s) {
-                            return Long.parseLong(s);
-                        }
-
-                        // new object support:
-                        // { "id": 12, "label": "Specimen" }
-                        if (v instanceof Map<?, ?> map) {
-
-                            Object id = map.get("id");
-
-                            if (id instanceof Number n) {
-                                return n.longValue();
-                            }
-
-                            if (id instanceof String s) {
-                                return Long.parseLong(s);
-                            }
-                        }
-
-                        throw new IllegalArgumentException(
-                                "Cannot convert value to Long: " + v
-                        );
-                    })
-                    .toList();
-        }
-
-        // single value fallback
-        if (value instanceof Number n) {
-            return List.of(n.longValue());
-        }
-
-        if (value instanceof String s) {
-            return List.of(Long.parseLong(s));
-        }
-
-        throw new IllegalArgumentException(
-                "Unsupported filter value type: " + value.getClass()
-        );
-    }
 
     @SuppressWarnings("unchecked")
     private List<Date> castDateList(Object value) {
@@ -826,7 +769,7 @@ public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
                                                 ((Number) raw.get("id")).longValue();
 
                                         String label =
-                                                (String) raw.get("label");
+                                                (String) raw.get(LABEL);
 
                                         ConceptDTO concept =
                                                 new ConceptDTO();
@@ -860,7 +803,7 @@ public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
                                                 ((Number) raw.get("id")).longValue();
 
                                         String label =
-                                                (String) raw.get("label");
+                                                (String) raw.get(LABEL);
 
                                         PersonDTO dto =
                                                 new PersonDTO();
@@ -893,7 +836,7 @@ public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
                                                 ((Number) raw.get("id")).longValue();
 
                                         String label =
-                                                (String) raw.get("label");
+                                                (String) raw.get(LABEL);
 
                                         ActionUnitDTO dto =
                                                 new ActionUnitDTO();
@@ -925,7 +868,7 @@ public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
                                                 ((Number) raw.get("id")).longValue();
 
                                         String label =
-                                                (String) raw.get("label");
+                                                (String) raw.get(LABEL);
 
                                         SpatialUnitDTO dto =
                                                 new SpatialUnitDTO();
@@ -954,6 +897,8 @@ public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
                             dates
                     );
                 }
+
+                default -> { throw new IllegalArgumentException("Invalid value for column: " + state.getColumnId()); }
             }
         }
 
@@ -980,7 +925,7 @@ public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
                     values.stream()
                             .map(v -> Map.of(
                                     "id", v.concept().getId(),
-                                    "label", v.getConceptLabelToDisplay().getLabel()
+                                    LABEL, v.getConceptLabelToDisplay().getLabel()
                             ))
                             .toList()
             );
@@ -1001,7 +946,7 @@ public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
                     values.stream()
                             .map(v -> Map.of(
                                     "id", v.getId(),
-                                    "label", v.displayName()
+                                    LABEL, v.displayName()
                             ))
                             .toList()
             );
@@ -1022,7 +967,7 @@ public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
                     values.stream()
                             .map(v -> Map.of(
                                     "id", v.getId(),
-                                    "label", v.getName()
+                                    LABEL, v.getName()
                             ))
                             .toList()
             );
@@ -1043,7 +988,7 @@ public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
                     values.stream()
                             .map(v -> Map.of(
                                     "id", v.getId(),
-                                    "label", v.getName()
+                                    LABEL, v.getName()
                             ))
                             .toList()
             );

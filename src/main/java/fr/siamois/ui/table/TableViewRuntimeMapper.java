@@ -26,11 +26,9 @@ public class TableViewRuntimeMapper {
                             cs.setVisible(c.isVisible());
                             return cs;
                         })
-                        .collect(Collectors.toList())
+                        .toList()
         );
 
-        // sorting
-        //state.setSorting(model.getLazyDataModel().getSortStates());
 
         // filters
         state.setFilters(model.extractFilterStates());
@@ -61,11 +59,6 @@ public class TableViewRuntimeMapper {
         // filters
         if (state.getFilters() != null) {
             model.applyFilterStates(state.getFilters());
-        }
-
-        // sorting
-        if (state.getSorting() != null) {
-            //model.getLazyDataModel().setSortStates(state.getSorting());
         }
 
     }

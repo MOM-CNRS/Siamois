@@ -18,6 +18,9 @@ import static fr.siamois.ui.bean.panel.models.panel.single.AbstractSingleEntity.
 public class ContainerTableDefinitionFactory {
 
     public static final String THIS = "@this";
+    public static final String CONTAINER_FIELD_IDENTIFIER = "container.field.identifier";
+    public static final String CENTIMETRE = "Centimètre";
+    public static final String IDENTIFIER = "identifier";
 
     private ContainerTableDefinitionFactory() {}
 
@@ -56,11 +59,11 @@ public class ContainerTableDefinitionFactory {
                 .build();
 
         CustomFieldText identifierField = CustomFieldText.builder()
-                .label("container.field.identifier")
+                .label(CONTAINER_FIELD_IDENTIFIER)
                 .isSystemField(true)
                 .isTextArea(false)
                 .id(1L)
-                .valueBinding("identifier")
+                .valueBinding(IDENTIFIER)
                 .concept(identifierConcept)
                 .build();
 
@@ -87,7 +90,7 @@ public class ContainerTableDefinitionFactory {
                 .isSystemField(true)
                 .id(4L)
                 .valueBinding("length")
-                .unit(new UnitDefinition(null, null, "Centimètre", "cm", UnitDefinition.Dimension.LENGTH, 0.01, false))
+                .unit(new UnitDefinition(null, null, CENTIMETRE, "cm", UnitDefinition.Dimension.LENGTH, 0.01, false))
                 .concept(lengthConcept)
                 .build();
 
@@ -96,8 +99,9 @@ public class ContainerTableDefinitionFactory {
                 .isSystemField(true)
                 .id(5L)
                 .valueBinding("width")
-                .unit(new UnitDefinition(null, null, "Centimètre", "cm", UnitDefinition.Dimension.LENGTH, 0.01, false))
+                .unit(new UnitDefinition(null, null, CENTIMETRE, "cm", UnitDefinition.Dimension.LENGTH, 0.01, false))
                 .concept(widthConcept)
+
                 .build();
 
         CustomFieldMeasurement heightField = CustomFieldMeasurement.builder()
@@ -105,7 +109,7 @@ public class ContainerTableDefinitionFactory {
                 .isSystemField(true)
                 .id(6L)
                 .valueBinding("height")
-                .unit(new UnitDefinition(null, null, "Centimètre", "cm", UnitDefinition.Dimension.LENGTH, 0.01, false))
+                .unit(new UnitDefinition(null, null, CENTIMETRE, "cm", UnitDefinition.Dimension.LENGTH, 0.01, false))
                 .concept(heightConcept)
                 .build();
 
@@ -122,15 +126,15 @@ public class ContainerTableDefinitionFactory {
         tableModel.getTableDefinition().setCommandLinkColumn(
                 CommandLinkColumn.builder()
                         .id("identifierCol")
-                        .headerKey("container.field.identifier")
+                        .headerKey(CONTAINER_FIELD_IDENTIFIER)
                         .visible(true)
                         .toggleable(false)
                         .sortable(false)
                         .filterable(false)
-                        .sortField("identifier")
+                        .sortField(IDENTIFIER)
                         .iconClass("bi bi-box-seam")
                         .chipColor("var(--third-main-color)")
-                        .valueKey("identifier")
+                        .valueKey(IDENTIFIER)
                         .action(TableColumnAction.GO_TO_CONTAINER)
                         .processExpr(THIS)
                         .updateExpr("flow")
@@ -142,8 +146,8 @@ public class ContainerTableDefinitionFactory {
         // --- Visible columns ---
         tableModel.getTableDefinition().addColumn(
                 FormFieldColumn.builder()
-                        .id("identifier")
-                        .headerKey("container.field.identifier")
+                        .id(IDENTIFIER)
+                        .headerKey(CONTAINER_FIELD_IDENTIFIER)
                         .field(identifierField)
                         .sortable(true)
                         .filterable(true)
