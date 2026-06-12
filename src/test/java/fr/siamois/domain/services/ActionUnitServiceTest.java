@@ -51,7 +51,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 
-import java.time.Clock;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.*;
@@ -571,9 +570,10 @@ class ActionUnitServiceTest {
         when(actionUnitRepository.findByNameAndCreatedByInstitutionId("dup", 1L))
                 .thenReturn(Optional.of(new ActionUnit()));
 
+        ConceptDTO conceptDto = new ConceptDTO();
         ActionUnitAlreadyExistsException ex = assertThrows(
                 ActionUnitAlreadyExistsException.class,
-                () -> actionUnitService.saveNotTransactional(info, dto, new ConceptDTO()));
+                () -> actionUnitService.saveNotTransactional(info, dto, conceptDto));
         assertThat(ex.getMessage()).contains("dup");
     }
 
@@ -588,9 +588,10 @@ class ActionUnitServiceTest {
         when(actionUnitRepository.findByIdentifierAndCreatedByInstitutionId("id-1", 1L))
                 .thenReturn(Optional.of(new ActionUnit()));
 
+        ConceptDTO conceptDto = new ConceptDTO();
         ActionUnitAlreadyExistsException ex = assertThrows(
                 ActionUnitAlreadyExistsException.class,
-                () -> actionUnitService.saveNotTransactional(info, dto, new ConceptDTO()));
+                () -> actionUnitService.saveNotTransactional(info, dto, conceptDto));
         assertThat(ex.getMessage()).contains("id-1");
     }
 
@@ -1006,7 +1007,7 @@ class ActionUnitServiceTest {
     @Test
     void isActionUnitStillOngoing_nowInRange_returnsTrue() {
         try (MockedStatic<OffsetDateTime> mocked = mockStatic(OffsetDateTime.class, CALLS_REAL_METHODS)) {
-            mocked.when(() -> OffsetDateTime.now()).thenReturn(NOW);
+            mocked.when(OffsetDateTime::now).thenReturn(NOW);
             ActionUnitSummaryDTO au = new ActionUnitSummaryDTO();
             au.setBeginDate(NOW.minusDays(1));
             au.setEndDate(NOW.plusDays(1));
@@ -1017,7 +1018,7 @@ class ActionUnitServiceTest {
     @Test
     void isActionUnitStillOngoing_nowBeforeBegin_returnsFalse() {
         try (MockedStatic<OffsetDateTime> mocked = mockStatic(OffsetDateTime.class, CALLS_REAL_METHODS)) {
-            mocked.when(() -> OffsetDateTime.now()).thenReturn(NOW);
+            mocked.when(OffsetDateTime::now).thenReturn(NOW);
             ActionUnitSummaryDTO au = new ActionUnitSummaryDTO();
             au.setBeginDate(NOW.plusDays(1));
             au.setEndDate(NOW.plusDays(2));
@@ -1028,7 +1029,7 @@ class ActionUnitServiceTest {
     @Test
     void isActionUnitStillOngoing_nowAfterEnd_returnsFalse() {
         try (MockedStatic<OffsetDateTime> mocked = mockStatic(OffsetDateTime.class, CALLS_REAL_METHODS)) {
-            mocked.when(() -> OffsetDateTime.now()).thenReturn(NOW);
+            mocked.when(OffsetDateTime::now).thenReturn(NOW);
             ActionUnitSummaryDTO au = new ActionUnitSummaryDTO();
             au.setBeginDate(NOW.minusDays(2));
             au.setEndDate(NOW.minusDays(1));
@@ -1254,13 +1255,13 @@ class ActionUnitServiceTest {
 
     @Test
     void findAccessibleProjects_emptyInstitutions_returnsEmptyPageWithoutDb() {
-        Pageable pageable = PageRequest.of(0, 20);
+        Pageable pageable1 = PageRequest.of(0, 20);
 
-        Page<AccessibleProjectForApi> page = actionUnitService.findAccessibleProjects(
-                Set.of(), null, null, pageable);
+        Page<AccessibleProjectForApi> page1 = actionUnitService.findAccessibleProjects(
+                Set.of(), null, null, pageable1);
 
-        assertThat(page.getContent()).isEmpty();
-        assertThat(page.getTotalElements()).isZero();
+        assertThat(page1.getContent()).isEmpty();
+        assertThat(page1.getTotalElements()).isZero();
         verifyNoInteractions(actionUnitRepository);
         verifyNoInteractions(recordingUnitRepository);
     }
@@ -1270,11 +1271,11 @@ class ActionUnitServiceTest {
         when(actionUnitRepository.findAll(any(Specification.class), any(Pageable.class)))
                 .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 20), 0));
 
-        Page<AccessibleProjectForApi> page = actionUnitService.findAccessibleProjects(
+        Page<AccessibleProjectForApi> page1 = actionUnitService.findAccessibleProjects(
                 Set.of(1L), null, null, PageRequest.of(0, 20));
 
-        assertThat(page.getContent()).isEmpty();
-        assertThat(page.getTotalElements()).isZero();
+        assertThat(page1.getContent()).isEmpty();
+        assertThat(page1.getTotalElements()).isZero();
         verify(recordingUnitRepository, never()).countRecordingUnitsGroupedByActionUnitIds(any());
         verify(actionUnitRepository, never()).countChildActionUnitsByParentIds(any());
     }
@@ -1294,26 +1295,26 @@ class ActionUnitServiceTest {
         List<Object[]> ruRows = new ArrayList<>();
         ruRows.add(new Object[]{1L, 5L});
         ruRows.add(new Object[]{2L, 3L});
-        when(recordingUnitRepository.countRecordingUnitsGroupedByActionUnitIds(eq(List.of(1L, 2L))))
+        when(recordingUnitRepository.countRecordingUnitsGroupedByActionUnitIds(List.of(1L, 2L)))
                 .thenReturn(ruRows);
         List<Object[]> childRows = new ArrayList<>();
         childRows.add(new Object[]{1L, 1L});
-        when(actionUnitRepository.countChildActionUnitsByParentIds(eq(List.of(1L, 2L))))
+        when(actionUnitRepository.countChildActionUnitsByParentIds(List.of(1L, 2L)))
                 .thenReturn(childRows);
 
-        Page<AccessibleProjectForApi> page = actionUnitService.findAccessibleProjects(
+        Page<AccessibleProjectForApi> page1 = actionUnitService.findAccessibleProjects(
                 Set.of(10L), null, "alpha", PageRequest.of(0, 20, Sort.by("name")));
 
-        assertThat(page.getTotalElements()).isEqualTo(2);
-        assertThat(page.getContent()).hasSize(2);
-        assertThat(page.getContent().get(0).actionUnit().getId()).isEqualTo(1L);
-        assertThat(page.getContent().get(1).actionUnit().getId()).isEqualTo(2L);
-        assertThat(page.getContent().get(0).recordingUnitCount()).isEqualTo(5L);
-        assertThat(page.getContent().get(0).childActionUnitCount()).isEqualTo(1L);
-        assertThat(page.getContent().get(1).recordingUnitCount()).isEqualTo(3L);
-        assertThat(page.getContent().get(1).childActionUnitCount()).isZero();
-        verify(recordingUnitRepository).countRecordingUnitsGroupedByActionUnitIds(eq(List.of(1L, 2L)));
-        verify(actionUnitRepository).countChildActionUnitsByParentIds(eq(List.of(1L, 2L)));
+        assertThat(page1.getTotalElements()).isEqualTo(2);
+        assertThat(page1.getContent()).hasSize(2);
+        assertThat(page1.getContent().get(0).actionUnit().getId()).isEqualTo(1L);
+        assertThat(page1.getContent().get(1).actionUnit().getId()).isEqualTo(2L);
+        assertThat(page1.getContent().get(0).recordingUnitCount()).isEqualTo(5L);
+        assertThat(page1.getContent().get(0).childActionUnitCount()).isEqualTo(1L);
+        assertThat(page1.getContent().get(1).recordingUnitCount()).isEqualTo(3L);
+        assertThat(page1.getContent().get(1).childActionUnitCount()).isZero();
+        verify(recordingUnitRepository).countRecordingUnitsGroupedByActionUnitIds(List.of(1L, 2L));
+        verify(actionUnitRepository).countChildActionUnitsByParentIds(List.of(1L, 2L));
     }
 
     // ------------------------------------------------------------------
@@ -1330,8 +1331,9 @@ class ActionUnitServiceTest {
     void findAccessibleProjectByKey_unknownNumericId_throws() {
         when(actionUnitRepository.findById(99L)).thenReturn(Optional.empty());
 
+        Set<Long> institutionIds = Set.of(10L);
         assertThrows(ActionUnitNotFoundException.class,
-                () -> actionUnitService.findAccessibleProjectByKey("99", Set.of(10L)));
+                () -> actionUnitService.findAccessibleProjectByKey("99", institutionIds));
     }
 
     @Test
@@ -1345,8 +1347,9 @@ class ActionUnitServiceTest {
         actionUnit1dto.setCreatedByInstitution(wrongInst);
         when(actionUnitMapper.convert(actionUnit1)).thenReturn(actionUnit1dto);
 
+        Set<Long> institutionIds = Set.of(100L);
         assertThrows(ActionUnitNotFoundException.class,
-                () -> actionUnitService.findAccessibleProjectByKey("5", Set.of(100L)));
+                () -> actionUnitService.findAccessibleProjectByKey("5", institutionIds));
     }
 
     @Test
@@ -1361,10 +1364,10 @@ class ActionUnitServiceTest {
         when(actionUnitMapper.convert(actionUnit1)).thenReturn(actionUnit1dto);
         List<Object[]> ruRows = new ArrayList<>();
         ruRows.add(new Object[]{5L, 7L});
-        when(recordingUnitRepository.countRecordingUnitsGroupedByActionUnitIds(eq(List.of(5L)))).thenReturn(ruRows);
+        when(recordingUnitRepository.countRecordingUnitsGroupedByActionUnitIds(List.of(5L))).thenReturn(ruRows);
         List<Object[]> childRows = new ArrayList<>();
         childRows.add(new Object[]{5L, 2L});
-        when(actionUnitRepository.countChildActionUnitsByParentIds(eq(List.of(5L)))).thenReturn(childRows);
+        when(actionUnitRepository.countChildActionUnitsByParentIds(List.of(5L))).thenReturn(childRows);
 
         AccessibleProjectForApi result = actionUnitService.findAccessibleProjectByKey("5", Set.of(100L));
 
@@ -1383,9 +1386,9 @@ class ActionUnitServiceTest {
         inst.setId(100L);
         actionUnit1dto.setCreatedByInstitution(inst);
         when(actionUnitMapper.convert(actionUnit1)).thenReturn(actionUnit1dto);
-        when(recordingUnitRepository.countRecordingUnitsGroupedByActionUnitIds(eq(List.of(5L))))
+        when(recordingUnitRepository.countRecordingUnitsGroupedByActionUnitIds(List.of(5L)))
                 .thenReturn(new ArrayList<>());
-        when(actionUnitRepository.countChildActionUnitsByParentIds(eq(List.of(5L))))
+        when(actionUnitRepository.countChildActionUnitsByParentIds(List.of(5L)))
                 .thenReturn(new ArrayList<>());
 
         AccessibleProjectForApi result = actionUnitService.findAccessibleProjectByKey("INST-PROJ-2025", Set.of(100L));
@@ -1406,9 +1409,9 @@ class ActionUnitServiceTest {
         inst.setId(100L);
         actionUnit1dto.setCreatedByInstitution(inst);
         when(actionUnitMapper.convert(actionUnit1)).thenReturn(actionUnit1dto);
-        when(recordingUnitRepository.countRecordingUnitsGroupedByActionUnitIds(eq(List.of(33L))))
+        when(recordingUnitRepository.countRecordingUnitsGroupedByActionUnitIds(List.of(33L)))
                 .thenReturn(new ArrayList<>());
-        when(actionUnitRepository.countChildActionUnitsByParentIds(eq(List.of(33L))))
+        when(actionUnitRepository.countChildActionUnitsByParentIds(List.of(33L)))
                 .thenReturn(new ArrayList<>());
 
         AccessibleProjectForApi result = actionUnitService.findAccessibleProjectByKey("C309_01", Set.of(100L));
@@ -1433,9 +1436,9 @@ class ActionUnitServiceTest {
         inst200.setId(200L);
         actionUnit1dto.setCreatedByInstitution(inst200);
         when(actionUnitMapper.convert(actionUnit1)).thenReturn(actionUnit1dto);
-        when(recordingUnitRepository.countRecordingUnitsGroupedByActionUnitIds(eq(List.of(77L))))
+        when(recordingUnitRepository.countRecordingUnitsGroupedByActionUnitIds(List.of(77L)))
                 .thenReturn(new ArrayList<>());
-        when(actionUnitRepository.countChildActionUnitsByParentIds(eq(List.of(77L))))
+        when(actionUnitRepository.countChildActionUnitsByParentIds(List.of(77L)))
                 .thenReturn(new ArrayList<>());
 
         Set<Long> institutionsInScanOrder = new LinkedHashSet<>();

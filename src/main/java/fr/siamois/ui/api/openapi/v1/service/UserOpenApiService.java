@@ -20,8 +20,9 @@ import java.util.Set;
 @Service
 public class UserOpenApiService {
 
+    public static final String LASTNAME = "lastname";
     private static final Set<String> ALLOWED_SORT_FIELDS = Set.of(
-            "id", "name", "lastname", "email", "username"
+            "id", "name", LASTNAME, "email", "username"
     );
 
     private final PersonService personService;
@@ -67,10 +68,10 @@ public class UserOpenApiService {
 
     private static Sort parseUserSort(String sortParam) {
         if (sortParam == null || sortParam.isBlank()) {
-            return Sort.by(Sort.Direction.ASC, "lastname");
+            return Sort.by(Sort.Direction.ASC, LASTNAME);
         }
         String[] parts = sortParam.split(":", 2);
-        String property = ALLOWED_SORT_FIELDS.contains(parts[0].trim()) ? parts[0].trim() : "lastname";
+        String property = ALLOWED_SORT_FIELDS.contains(parts[0].trim()) ? parts[0].trim() : LASTNAME;
         Sort.Direction dir = parts.length > 1 && "desc".equalsIgnoreCase(parts[1].trim())
                 ? Sort.Direction.DESC
                 : Sort.Direction.ASC;
@@ -81,7 +82,7 @@ public class UserOpenApiService {
         if (persons.isEmpty()) {
             return List.of();
         }
-        Sort.Order order = sort.stream().findFirst().orElse(new Sort.Order(Sort.Direction.ASC, "lastname"));
+        Sort.Order order = sort.stream().findFirst().orElse(new Sort.Order(Sort.Direction.ASC, LASTNAME));
         Comparator<PersonDTO> cmp = switch (order.getProperty()) {
             case "id" -> Comparator.comparing(PersonDTO::getId, Comparator.nullsLast(Long::compareTo));
             case "name" -> Comparator.comparing(PersonDTO::getName, Comparator.nullsLast(String::compareToIgnoreCase));

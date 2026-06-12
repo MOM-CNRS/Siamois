@@ -185,7 +185,8 @@ class FindOpenApiServiceTest {
         when(recordingUnitService.findAccessibleRecordingUnitByKey("UE-1", SCOPE, null)).thenReturn(recordingUnit);
         stubTypeConcept();
 
-        assertThatThrownBy(() -> service.createFind(createRequest("UE-1", "3"), personDto, SCOPE, LANG))
+        var request = createRequest("UE-1", "3");
+        assertThatThrownBy(() -> service.createFind(request, personDto, SCOPE, LANG))
                 .isInstanceOf(ResponseStatusException.class)
                 .extracting(ex -> ((ResponseStatusException) ex).getReason())
                 .isEqualTo("UE sans organisation");
@@ -198,7 +199,8 @@ class FindOpenApiServiceTest {
         when(recordingUnitService.findAccessibleRecordingUnitByKey("UE-1", SCOPE, null)).thenReturn(recordingUnit);
         stubTypeConcept();
 
-        assertThatThrownBy(() -> service.createFind(createRequest("UE-1", "3"), personDto, SCOPE, LANG))
+        var request = createRequest("UE-1", "3");
+        assertThatThrownBy(() -> service.createFind(request, personDto, SCOPE, LANG))
                 .isInstanceOf(ResponseStatusException.class)
                 .extracting(ex -> ((ResponseStatusException) ex).getReason())
                 .isEqualTo("UE sans organisation");
@@ -210,7 +212,8 @@ class FindOpenApiServiceTest {
         stubTypeConcept();
         when(permissionService.hasWritePermission(any(), any(RecordingUnitDTO.class))).thenReturn(false);
 
-        assertThatThrownBy(() -> service.createFind(createRequest("UE-1", "3"), personDto, SCOPE, LANG))
+        var request = createRequest("UE-1", "3");
+        assertThatThrownBy(() -> service.createFind(request, personDto, SCOPE, LANG))
                 .isInstanceOf(ResponseStatusException.class)
                 .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN));
     }
@@ -220,7 +223,8 @@ class FindOpenApiServiceTest {
         when(recordingUnitService.findAccessibleRecordingUnitByKey("UE-1", SCOPE, null)).thenReturn(recordingUnit);
         when(conceptRepository.findById(3L)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> service.createFind(createRequest("UE-1", "3"), personDto, SCOPE, LANG))
+        var request = createRequest("UE-1", "3");
+        assertThatThrownBy(() -> service.createFind(request, personDto, SCOPE, LANG))
                 .isInstanceOf(ResponseStatusException.class)
                 .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND));
     }
@@ -692,7 +696,8 @@ class FindOpenApiServiceTest {
     void patchFind_notFound_throws404() {
         when(specimenService.findAccessibleById(99L, SCOPE)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> service.patchFind(99L, new FindPatchRequest(), personDto, SCOPE, LANG))
+        var patchRequest = new FindPatchRequest();
+        assertThatThrownBy(() -> service.patchFind(99L, patchRequest, personDto, SCOPE, LANG))
                 .isInstanceOf(ResponseStatusException.class)
                 .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND));
     }
@@ -703,7 +708,8 @@ class FindOpenApiServiceTest {
         specimen.setCreatedByInstitution(null);
         when(specimenService.findAccessibleById(7L, SCOPE)).thenReturn(Optional.of(specimen));
 
-        assertThatThrownBy(() -> service.patchFind(7L, new FindPatchRequest(), personDto, SCOPE, LANG))
+        var patchRequest = new FindPatchRequest();
+        assertThatThrownBy(() -> service.patchFind(7L, patchRequest, personDto, SCOPE, LANG))
                 .isInstanceOf(ResponseStatusException.class)
                 .extracting(ex -> ((ResponseStatusException) ex).getReason())
                 .isEqualTo("Mobilier sans organisation");
@@ -715,7 +721,8 @@ class FindOpenApiServiceTest {
         specimen.setCreatedByInstitution(new InstitutionDTO());
         when(specimenService.findAccessibleById(7L, SCOPE)).thenReturn(Optional.of(specimen));
 
-        assertThatThrownBy(() -> service.patchFind(7L, new FindPatchRequest(), personDto, SCOPE, LANG))
+        var patchRequest = new FindPatchRequest();
+        assertThatThrownBy(() -> service.patchFind(7L, patchRequest, personDto, SCOPE, LANG))
                 .isInstanceOf(ResponseStatusException.class)
                 .extracting(ex -> ((ResponseStatusException) ex).getReason())
                 .isEqualTo("Mobilier sans organisation");
@@ -727,7 +734,8 @@ class FindOpenApiServiceTest {
         specimen.setRecordingUnit(null);
         when(specimenService.findAccessibleById(7L, SCOPE)).thenReturn(Optional.of(specimen));
 
-        assertThatThrownBy(() -> service.patchFind(7L, new FindPatchRequest(), personDto, SCOPE, LANG))
+        var patchRequest = new FindPatchRequest();
+        assertThatThrownBy(() -> service.patchFind(7L, patchRequest, personDto, SCOPE, LANG))
                 .isInstanceOf(ResponseStatusException.class)
                 .extracting(ex -> ((ResponseStatusException) ex).getReason())
                 .isEqualTo("Mobilier sans unité d'enregistrement");
@@ -740,7 +748,8 @@ class FindOpenApiServiceTest {
         when(recordingUnitService.requireAccessibleRecordingUnitByPrimaryKey(42L, SCOPE)).thenReturn(recordingUnit);
         when(permissionService.hasWritePermission(any(), any(RecordingUnitDTO.class))).thenReturn(false);
 
-        assertThatThrownBy(() -> service.patchFind(7L, new FindPatchRequest(), personDto, SCOPE, LANG))
+        var patchRequest = new FindPatchRequest();
+        assertThatThrownBy(() -> service.patchFind(7L, patchRequest, personDto, SCOPE, LANG))
                 .isInstanceOf(ResponseStatusException.class)
                 .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN));
     }

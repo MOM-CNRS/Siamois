@@ -1788,12 +1788,12 @@ class RecordingUnitServiceTest {
             inst.setId(100L);
             entity.setCreatedByInstitution(inst);
 
-            RecordingUnitDTO dto = new RecordingUnitDTO();
-            dto.setId(42L);
-            dto.setCreatedByInstitution(instDto);
+            RecordingUnitDTO dto1 = new RecordingUnitDTO();
+            dto1.setId(42L);
+            dto1.setCreatedByInstitution(instDto);
 
             when(recordingUnitRepository.findById(42L)).thenReturn(Optional.of(entity));
-            when(recordingUnitMapper.convert(entity)).thenReturn(dto);
+            when(recordingUnitMapper.convert(entity)).thenReturn(dto1);
 
             RecordingUnitDTO result = recordingUnitService.findAccessibleRecordingUnitByKey(
                     "42", Set.of(100L), null);
@@ -1812,12 +1812,12 @@ class RecordingUnitServiceTest {
             inst.setId(100L);
             entity.setCreatedByInstitution(inst);
 
-            RecordingUnitDTO dto = new RecordingUnitDTO();
-            dto.setId(7L);
-            dto.setCreatedByInstitution(instDto);
+            RecordingUnitDTO dto1 = new RecordingUnitDTO();
+            dto1.setId(7L);
+            dto1.setCreatedByInstitution(instDto);
 
             when(recordingUnitRepository.findById(7L)).thenReturn(Optional.of(entity));
-            when(recordingUnitMapper.convert(entity)).thenReturn(dto);
+            when(recordingUnitMapper.convert(entity)).thenReturn(dto1);
             when(recordingUnitRepository.countSpecimensByRecordingUnitId(7L)).thenReturn(4L);
 
             var accessible = recordingUnitService.findAccessibleRecordingUnitWithEntity(
@@ -1835,23 +1835,24 @@ class RecordingUnitServiceTest {
 
         @Test
         void findAccessibleRecordingUnitByKey_blankKey_throwsNotFound() {
+            Set<Long> institutionIds = Set.of(1L);
             assertThrows(RecordingUnitNotFoundException.class,
-                    () -> recordingUnitService.findAccessibleRecordingUnitByKey("  ", Set.of(1L), null));
+                    () -> recordingUnitService.findAccessibleRecordingUnitByKey("  ", institutionIds, null));
         }
 
         @Test
         void findAccessibleRecordingUnitByKey_nonNumeric_resolvesByFullIdentifier() {
             RecordingUnit entity = new RecordingUnit();
             entity.setId(9L);
-            RecordingUnitDTO dto = new RecordingUnitDTO();
-            dto.setId(9L);
+            RecordingUnitDTO dto1 = new RecordingUnitDTO();
+            dto1.setId(9L);
             InstitutionDTO instDto = new InstitutionDTO();
             instDto.setId(1L);
-            dto.setCreatedByInstitution(instDto);
+            dto1.setCreatedByInstitution(instDto);
 
             when(recordingUnitRepository.findFirstByFullIdentifierAndInstitutionIdIn("UE-ABC", Set.of(1L)))
                     .thenReturn(Optional.of(entity));
-            when(recordingUnitMapper.convert(entity)).thenReturn(dto);
+            when(recordingUnitMapper.convert(entity)).thenReturn(dto1);
 
             RecordingUnitDTO result = recordingUnitService.findAccessibleRecordingUnitByKey(
                     "UE-ABC", Set.of(1L), null);
@@ -1865,12 +1866,12 @@ class RecordingUnitServiceTest {
             instDto.setId(5L);
             RecordingUnit entity = new RecordingUnit();
             entity.setId(3L);
-            RecordingUnitDTO dto = new RecordingUnitDTO();
-            dto.setId(3L);
-            dto.setCreatedByInstitution(instDto);
+            RecordingUnitDTO dto1 = new RecordingUnitDTO();
+            dto1.setId(3L);
+            dto1.setCreatedByInstitution(instDto);
 
             when(recordingUnitRepository.findById(3L)).thenReturn(Optional.of(entity));
-            when(recordingUnitMapper.convert(entity)).thenReturn(dto);
+            when(recordingUnitMapper.convert(entity)).thenReturn(dto1);
 
             RecordingUnitDTO result = recordingUnitService.requireAccessibleRecordingUnitByPrimaryKey(3L, Set.of(5L));
 
@@ -1881,17 +1882,18 @@ class RecordingUnitServiceTest {
         void requireAccessibleRecordingUnitByPrimaryKey_outOfScope_throws() {
             RecordingUnit entity = new RecordingUnit();
             entity.setId(3L);
-            RecordingUnitDTO dto = new RecordingUnitDTO();
-            dto.setId(3L);
+            RecordingUnitDTO dto1 = new RecordingUnitDTO();
+            dto1.setId(3L);
             InstitutionDTO instDto = new InstitutionDTO();
             instDto.setId(99L);
-            dto.setCreatedByInstitution(instDto);
+            dto1.setCreatedByInstitution(instDto);
 
             when(recordingUnitRepository.findById(3L)).thenReturn(Optional.of(entity));
-            when(recordingUnitMapper.convert(entity)).thenReturn(dto);
+            when(recordingUnitMapper.convert(entity)).thenReturn(dto1);
 
+            Set<Long> institutionIds = Set.of(5L);
             assertThrows(RecordingUnitNotFoundException.class,
-                    () -> recordingUnitService.requireAccessibleRecordingUnitByPrimaryKey(3L, Set.of(5L)));
+                    () -> recordingUnitService.requireAccessibleRecordingUnitByPrimaryKey(3L, institutionIds));
         }
 
         @Test
@@ -1909,17 +1911,17 @@ class RecordingUnitServiceTest {
             entity.setParents(Set.of(parent));
             entity.setChildren(Set.of(child));
 
-            RecordingUnitDTO dto = new RecordingUnitDTO();
-            dto.setId(1L);
+            RecordingUnitDTO dto1 = new RecordingUnitDTO();
+            dto1.setId(1L);
             InstitutionDTO instDto = new InstitutionDTO();
             instDto.setId(10L);
-            dto.setCreatedByInstitution(instDto);
+            dto1.setCreatedByInstitution(instDto);
 
             StratigraphicRelationship rel = new StratigraphicRelationship();
             StratigraphicRelationshipDTO relDto = new StratigraphicRelationshipDTO();
 
             when(recordingUnitRepository.findById(1L)).thenReturn(Optional.of(entity));
-            when(recordingUnitMapper.convert(entity)).thenReturn(dto);
+            when(recordingUnitMapper.convert(entity)).thenReturn(dto1);
             when(stratigraphicRelationshipRepository.findAllInvolvingRecordingUnitId(1L)).thenReturn(List.of(rel));
             when(stratigraphicRelationshipMapper.convert(rel)).thenReturn(relDto);
             when(recordingUnitSummaryMapper.convert(any(RecordingUnit.class))).thenAnswer(invocation -> {
@@ -1949,17 +1951,17 @@ class RecordingUnitServiceTest {
             child.setId(5L);
             entity.setChildren(Set.of(child));
 
-            RecordingUnitDTO dto = new RecordingUnitDTO();
-            dto.setId(1L);
+            RecordingUnitDTO dto1 = new RecordingUnitDTO();
+            dto1.setId(1L);
             InstitutionDTO instDto = new InstitutionDTO();
             instDto.setId(10L);
-            dto.setCreatedByInstitution(instDto);
+            dto1.setCreatedByInstitution(instDto);
 
             RecordingUnitSummaryDTO childSummary = new RecordingUnitSummaryDTO();
             childSummary.setId(5L);
 
             when(recordingUnitRepository.findById(1L)).thenReturn(Optional.of(entity));
-            when(recordingUnitMapper.convert(entity)).thenReturn(dto);
+            when(recordingUnitMapper.convert(entity)).thenReturn(dto1);
             when(recordingUnitSummaryMapper.convert(child)).thenReturn(childSummary);
 
             List<RecordingUnitSummaryDTO> children = recordingUnitService.findChildrenForAccessibleRecordingUnit(
@@ -1974,11 +1976,11 @@ class RecordingUnitServiceTest {
             RecordingUnit ru = new RecordingUnit();
             ru.setId(8L);
             Page<RecordingUnit> entityPage = new PageImpl<>(List.of(ru), PageRequest.of(0, 10), 1);
-            RecordingUnitDTO dto = new RecordingUnitDTO();
-            dto.setId(8L);
+            RecordingUnitDTO dto1 = new RecordingUnitDTO();
+            dto1.setId(8L);
 
             when(recordingUnitRepository.findAllByActionUnitId(eq(2L), any(Pageable.class))).thenReturn(entityPage);
-            when(recordingUnitMapper.convert(ru)).thenReturn(dto);
+            when(recordingUnitMapper.convert(ru)).thenReturn(dto1);
             when(recordingUnitRepository.countSpecimensByRecordingUnitId(8L)).thenReturn(2L);
             when(recordingUnitRepository.countStratigraphicRelationshipsByRecordingUnitId(8L)).thenReturn(3L);
 

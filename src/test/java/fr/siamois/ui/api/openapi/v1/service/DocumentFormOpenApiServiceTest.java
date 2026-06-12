@@ -45,7 +45,8 @@ class DocumentFormOpenApiServiceTest {
         PersonDTO person = new PersonDTO();
         when(institutionService.findById(10L)).thenReturn(null);
 
-        assertThatThrownBy(() -> service.buildForm(person, 10L, Set.of(10L), "fr", null))
+        Set<Long> institutionIds = Set.of(10L);
+        assertThatThrownBy(() -> service.buildForm(person, 10L, institutionIds, "fr", null))
                 .isInstanceOf(ResponseStatusException.class)
                 .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode().value()).isEqualTo(404));
     }
