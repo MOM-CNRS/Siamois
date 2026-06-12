@@ -40,6 +40,8 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 
+import java.time.Clock;
+import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.*;
@@ -62,6 +64,7 @@ class ActionUnitServiceTest {
     @Mock private PersonMapper personMapper;
     @Mock private ConceptMapper conceptMapper;
     @Mock private SpatialUnitRepository spatialUnitRepository;
+    @Mock private Clock clock;
     @InjectMocks
     private ActionUnitService actionUnitService;
 
@@ -87,6 +90,8 @@ class ActionUnitServiceTest {
 
     @BeforeEach
     void setUp() {
+        when(clock.instant()).thenReturn(NOW.toInstant());
+        when(clock.getZone()).thenReturn(ZoneOffset.UTC);
         spatialUnit1 = new SpatialUnit();
         actionUnit1 = new ActionUnit();
         actionUnit2 = new ActionUnit();
