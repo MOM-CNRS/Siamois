@@ -1,6 +1,8 @@
 package fr.siamois.ui.bean.dialog.newunit;
 
 import fr.siamois.domain.models.actionunit.ActionUnit;
+import fr.siamois.domain.models.container.Container;
+import fr.siamois.domain.models.phase.Phase;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.specimen.Specimen;
@@ -45,9 +47,19 @@ public enum UnitKind {
             "container-panel",
             "bi bi-box-seam",
             "container-autocomplete",
-            "common.entity.specimen.updated",
-            "/contaner/",
-            Specimen.NEW_UNIT_FORM
+            "common.entity.container.updated",
+            "/container/",
+            Container.NEW_UNIT_FORM
+    )),
+    PHASE(new UnitKindConfig(
+            "/phase/new",
+            "Nouvelle phase",
+            "phase-panel",
+            "bi bi-layers",
+            "phase-autocomplete",
+            "common.entity.phase.updated",
+            "/phase/",
+            Phase.NEW_UNIT_FORM
     )),
     RECORDING(new UnitKindConfig(
             "/recording-unit/new",

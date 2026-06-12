@@ -39,7 +39,7 @@ public abstract class BaseSpatialUnitLazyDataModel extends BaseLazyDataModel<Spa
     @Override
     protected SortDTO getDefaultSortDTO() {
         SortDTO sortDTO = new SortDTO();
-        sortDTO.add(SpatialUnitSpec.ID_FILTER, SortDTO.SortOrder.ASC);
+        sortDTO.add("id", SortDTO.SortOrder.ASC);
         return sortDTO;
     }
 

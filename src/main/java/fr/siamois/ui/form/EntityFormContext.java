@@ -7,7 +7,6 @@ import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.customfield.CustomFieldMeasurement;
 import fr.siamois.domain.models.form.customfield.CustomFieldSelectMultipleSpatialUnitTree;
 import fr.siamois.domain.models.form.customfield.CustomFieldSelectOneSpatialUnit;
-import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.GeoApiService;
 import fr.siamois.domain.services.GeoPlatService;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
@@ -17,9 +16,11 @@ import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitTreeService;
 import fr.siamois.domain.services.specimen.SpecimenService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
+import fr.siamois.dto.FilterDTO;
 import fr.siamois.dto.PlaceSuggestionDTO;
 import fr.siamois.dto.StratigraphicRelationshipDTO;
 import fr.siamois.dto.entity.*;
+import fr.siamois.infrastructure.database.repositories.specs.ActionUnitSpec;
 import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
 import fr.siamois.mapper.ConceptMapper;
 import fr.siamois.ui.bean.LangBean;
@@ -28,10 +29,7 @@ import fr.siamois.ui.form.fieldsource.FieldSource;
 import fr.siamois.ui.form.rules.ColumnApplier;
 import fr.siamois.ui.form.rules.EnabledRulesEngine;
 import fr.siamois.ui.form.rules.ValueProvider;
-import fr.siamois.ui.form.savestrategy.ActionUnitSaveStrategy;
-import fr.siamois.ui.form.savestrategy.RecordingUnitSaveStrategy;
-import fr.siamois.ui.form.savestrategy.SpatialUnitSaveStrategy;
-import fr.siamois.ui.form.savestrategy.SpecimenSaveStrategy;
+import fr.siamois.ui.form.savestrategy.*;
 import fr.siamois.ui.viewmodel.CustomFormResponseViewModel;
 import fr.siamois.ui.viewmodel.TreeUiStateViewModel;
 import fr.siamois.ui.viewmodel.fieldanswer.*;
@@ -49,7 +47,10 @@ import org.primefaces.event.SelectEvent;
 import org.primefaces.model.TreeNode;
 import org.springframework.core.convert.ConversionService;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
@@ -78,6 +79,7 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
     public static final String SELECT_RU = "selectRU";
     public static final String DATABASE_ID = "databaseId";
     public static final String FIELD = "field";
+    public static final String DIALOG_UNSAVED_ERROR = "dialog.unsaved.error";
 
     private T unit;
 
@@ -104,7 +106,14 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
 
 
 
+
     private List<SpatialUnitSummaryDTO> options; // spatial unit options
+
+    private final List<Runnable> postSaveCallbacks = new ArrayList<>();
+
+    public void addPostSaveCallback(Runnable callback) {
+        postSaveCallbacks.add(callback);
+    }
 
 
     private CustomFormResponseViewModel formResponse;
@@ -138,6 +147,8 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
         SAVE_STRATEGIES.put(ActionUnitDTO.class, new ActionUnitSaveStrategy());
         SAVE_STRATEGIES.put(SpatialUnitDTO.class, new SpatialUnitSaveStrategy());
         SAVE_STRATEGIES.put(SpecimenDTO.class, new SpecimenSaveStrategy());
+        SAVE_STRATEGIES.put(ContainerDTO.class, new ContainerSaveStrategy());
+        SAVE_STRATEGIES.put(PhaseDTO.class, new PhaseSaveStrategy());
     }
 
     public EntityFormContext(T unit,
@@ -444,8 +455,11 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
         }
 
         if (Objects.equals(source, "GEOPLAT")) {
-            Concept addressConcept = conceptService.findById(418).orElse(new Concept());
-            ConceptDTO conceptDTO = conceptMapper.convert(addressConcept);
+
+            ConceptDTO conceptDTO = conceptMapper.convert(
+                    services.getConceptRepository().findConceptByExternalIdIgnoreCase("th252", "4288314")
+                            .orElseThrow()
+            );
 
             return geoPlatService.search(query).stream()
                     .map(r -> {
@@ -510,7 +524,7 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
             }
 
         } catch (Exception e) {
-            MessageUtils.displayErrorMessage(langBean, "dialog.unsaved.error", e.getMessage());
+            MessageUtils.displayErrorMessage(langBean, DIALOG_UNSAVED_ERROR, e.getMessage());
         }
 
     }
@@ -527,7 +541,103 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
                 this.save();
             }
         } catch (Exception e) {
-            MessageUtils.displayErrorMessage(langBean, "dialog.unsaved.error", e.getMessage());
+            MessageUtils.displayErrorMessage(langBean, DIALOG_UNSAVED_ERROR, e.getMessage());
+        }
+    }
+
+    public void saveNewRecordingUnitFromField(CustomFieldAnswerViewModel rawAnswer) {
+        if (!(rawAnswer instanceof CustomFieldAnswerSelectMultipleRecordingUnitViewModel answer)) {
+            return;
+        }
+        if (answer.getNewType() == null || answer.getNewActionUnit() == null) {
+            MessageUtils.displayErrorMessage(langBean, DIALOG_UNSAVED_ERROR, "Le projet et le type sont obligatoires");
+            return;
+        }
+        try {
+            ActionUnitSummaryDTO actionUnit = answer.getNewActionUnit();
+            RecordingUnitDTO toSave = new RecordingUnitDTO();
+            toSave.setActionUnit(actionUnit);
+            toSave.setCreatedByInstitution(actionUnit.getCreatedByInstitution());
+            toSave.setAuthor(sessionSettingsBean.getAuthenticatedUser());
+            toSave.setCreatedBy(sessionSettingsBean.getAuthenticatedUser());
+            toSave.setContributors(List.of(sessionSettingsBean.getAuthenticatedUser()));
+            toSave.setOpeningDate(OffsetDateTime.now(ZoneOffset.UTC));
+            toSave.setType(answer.getNewType().concept());
+            toSave.setParents(new HashSet<>());
+            toSave.setChildren(new HashSet<>());
+
+            RecordingUnitDTO created = recordingUnitService.save(toSave);
+            String fullIdentifier = recordingUnitService.generateFullIdentifier(created.getActionUnit(), created);
+            created.setFullIdentifier(fullIdentifier);
+            created = recordingUnitService.save(created);
+
+            answer.getValue().add(new RecordingUnitSummaryDTO(created));
+            answer.setNewType(null);
+            answer.setNewActionUnit(null);
+
+            if (unit.getId() != null) {
+                this.save();
+            }
+        } catch (Exception e) {
+            MessageUtils.displayErrorMessage(langBean, DIALOG_UNSAVED_ERROR, e.getMessage());
+        }
+    }
+
+    /**
+     * Complete ActionUnit options for the "new RU" overlay autocomplete.
+     * Scoped to the current institution.
+     */
+    public List<ActionUnitSummaryDTO> completeActionUnitOptions(String query) {
+        return services.getActionUnitService()
+                .findMatchingInInstitutionByName(sessionSettingsBean.getSelectedInstitution(), query, 20)
+                .stream()
+                .map(ActionUnitSummaryDTO::new)
+                .toList();
+    }
+
+    /**
+     * Pre-fills {@code newActionUnit} with the parent's action unit so the overlay opens
+     * with the project already selected.
+     */
+    public void initNewRuDefaults(CustomFieldAnswerViewModel rawAnswer) {
+        if (rawAnswer instanceof CustomFieldAnswerSelectMultipleRecordingUnitViewModel answer) {
+            if (answer.getNewActionUnit() == null && unit instanceof RecordingUnitDTO ru) {
+                answer.setNewActionUnit(ru.getActionUnit());
+            }
+        } else if (rawAnswer instanceof CustomFieldAnswerStratigraphyViewModel stratiAnswer && stratiAnswer.getNewActionUnit() == null && unit instanceof RecordingUnitDTO ru) {
+                stratiAnswer.setNewActionUnit(ru.getActionUnit());
+        }
+    }
+
+    public void saveNewTargetRuForStrati(CustomFieldAnswerViewModel rawAnswer) {
+        if (!(rawAnswer instanceof CustomFieldAnswerStratigraphyViewModel answer)) return;
+        if (answer.getNewType() == null || answer.getNewActionUnit() == null) {
+            MessageUtils.displayErrorMessage(langBean, DIALOG_UNSAVED_ERROR, "Le projet et le type sont obligatoires");
+            return;
+        }
+        try {
+            ActionUnitSummaryDTO actionUnit = answer.getNewActionUnit();
+            RecordingUnitDTO toSave = new RecordingUnitDTO();
+            toSave.setActionUnit(actionUnit);
+            toSave.setCreatedByInstitution(actionUnit.getCreatedByInstitution());
+            toSave.setAuthor(sessionSettingsBean.getAuthenticatedUser());
+            toSave.setCreatedBy(sessionSettingsBean.getAuthenticatedUser());
+            toSave.setContributors(List.of(sessionSettingsBean.getAuthenticatedUser()));
+            toSave.setOpeningDate(OffsetDateTime.now(ZoneOffset.UTC));
+            toSave.setType(answer.getNewType().concept());
+            toSave.setParents(new HashSet<>());
+            toSave.setChildren(new HashSet<>());
+
+            RecordingUnitDTO created = recordingUnitService.save(toSave);
+            String fullIdentifier = recordingUnitService.generateFullIdentifier(created.getActionUnit(), created);
+            created.setFullIdentifier(fullIdentifier);
+            created = recordingUnitService.save(created);
+
+            answer.setTargetToAdd(new RecordingUnitSummaryDTO(created));
+            answer.setNewType(null);
+            answer.setNewActionUnit(null);
+        } catch (Exception e) {
+            MessageUtils.displayErrorMessage(langBean, DIALOG_UNSAVED_ERROR, e.getMessage());
         }
     }
 
@@ -563,13 +673,88 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
         return Collections.emptyList();
     }
 
+    public List<PhaseDTO> getPhaseOptions(String query) {
+        FilterDTO filter = new FilterDTO();
+        filter.add(ActionUnitSpec.GLOBAL_FILTER, query, FilterDTO.FilterType.CONTAINS);
+        InstitutionDTO institution = sessionSettingsBean.getSelectedInstitution();
+        return services.getPhaseService()
+                .searchPhases(institution, filter,
+                        PageRequest.of(0, services.getFieldConfigurationService().resultLimit()))
+                .getContent();
+    }
+
     public List<ContainerDTO> getContainerOptions(String query) {
-        // todo : implement real
-        ContainerDTO containerDTO = new ContainerDTO();
-        containerDTO.setIdentifier("SAC-001");
-        ContainerDTO container = new ContainerDTO();
-        container.setIdentifier("CAISSE-002");
-        return List.of(containerDTO, container);
+        FilterDTO filter = new FilterDTO();
+        filter.add(ActionUnitSpec.GLOBAL_FILTER, query, FilterDTO.FilterType.CONTAINS);
+        InstitutionDTO institution = sessionSettingsBean.getSelectedInstitution();
+        return services.getContainerService()
+                .searchContainers(institution, filter,
+                        PageRequest.of(0, services.getFieldConfigurationService().resultLimit()))
+                .getContent();
+    }
+
+    public void saveNewPhaseFromField(CustomFieldAnswerViewModel rawAnswer) {
+        if (!(rawAnswer instanceof CustomFieldAnswerSelectMultiplePhaseViewModel answer)) {
+            return;
+        }
+        if (answer.getNewIdentifier() == null || answer.getNewIdentifier().isBlank()) {
+            MessageUtils.displayErrorMessage(langBean, DIALOG_UNSAVED_ERROR, "L'identifiant est obligatoire");
+            return;
+        }
+        try {
+            PhaseDTO toSave = new PhaseDTO();
+            toSave.setIdentifier(answer.getNewIdentifier());
+            toSave.setTitle(answer.getNewTitle());
+            toSave.setOrderNumber(answer.getNewOrderNumber());
+            if (answer.getNewType() != null) {
+                toSave.setType(answer.getNewType().getConceptLabelToDisplay().getConcept());
+            }
+            toSave.setCreatedBy(sessionSettingsBean.getAuthenticatedUser());
+            toSave.setCreatedByInstitution(sessionSettingsBean.getSelectedInstitution());
+
+            PhaseDTO created = services.getPhaseService().save(toSave);
+            answer.getValue().add(created);
+            answer.setNewIdentifier(null);
+            answer.setNewTitle(null);
+            answer.setNewOrderNumber(null);
+            answer.setNewType(null);
+
+            if (unit.getId() != null) {
+                this.save();
+            }
+        } catch (Exception e) {
+            MessageUtils.displayErrorMessage(langBean, DIALOG_UNSAVED_ERROR, e.getMessage());
+        }
+    }
+
+    public void saveNewContainerFromField(CustomFieldAnswerViewModel rawAnswer) {
+        if (!(rawAnswer instanceof CustomFieldAnswerSelectMultipleContainerViewModel answer)) {
+            return;
+        }
+        if (answer.getNewIdentifier() == null || answer.getNewIdentifier().isBlank()) {
+            MessageUtils.displayErrorMessage(langBean, DIALOG_UNSAVED_ERROR, "L'identifiant est obligatoire");
+            return;
+        }
+        try {
+            ContainerDTO toSave = new ContainerDTO();
+            toSave.setIdentifier(answer.getNewIdentifier());
+            if (answer.getNewType() != null) {
+                toSave.setType(answer.getNewType().getConceptLabelToDisplay().getConcept());
+            }
+            toSave.setCreatedBy(sessionSettingsBean.getAuthenticatedUser());
+            toSave.setCreatedByInstitution(sessionSettingsBean.getSelectedInstitution());
+
+            ContainerDTO created = services.getContainerService().save(toSave);
+            answer.getValue().add(created);
+            answer.setNewIdentifier(null);
+            answer.setNewType(null);
+
+            if (unit.getId() != null) {
+                this.save();
+            }
+        } catch (Exception e) {
+            MessageUtils.displayErrorMessage(langBean, DIALOG_UNSAVED_ERROR, e.getMessage());
+        }
     }
 
     /**
@@ -579,7 +764,8 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
      */
     public List<RecordingUnitSummaryDTO> completeRecordingUnitOptions(String query) {
         if (unit instanceof RecordingUnitDTO recordingUnit) {
-            return recordingUnitService.findAllByActionUnit(recordingUnit.getActionUnit().getId());
+            return recordingUnitService.autocompleteInActionUnit(
+                    recordingUnit.getActionUnit().getId(), query, services.getFieldConfigurationService().resultLimit());
         }
         return Collections.emptyList();
     }
@@ -810,7 +996,11 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
     public boolean save() {
         EntityFormContextSaveStrategy<T> strategy = (EntityFormContextSaveStrategy<T>) SAVE_STRATEGIES.get(unit.getClass());
         if (strategy != null) {
-            return strategy.save(this);
+            boolean success = strategy.save(this);
+            if (success) {
+                postSaveCallbacks.forEach(Runnable::run);
+            }
+            return success;
         } else {
             throw new UnsupportedOperationException(
                     "No save strategy defined for type: " + unit.getClass().getSimpleName()

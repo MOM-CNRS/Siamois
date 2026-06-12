@@ -6,8 +6,8 @@
                 xmlns:c="http://java.sun.com/jsp/jstl/core"
 >
 
-    <!--@elvariable id="tableModel" type="fr.siamois.ui.table.EntityTableViewModel"-->
-    <!--@elvariable id="column" type="fr.siamois.ui.table.TableColumn"-->
+    <!--@elvariable id="tableModel" type="fr.siamois.ui.table.viewmodel.EntityTableViewModel"-->
+    <!--@elvariable id="column" type="fr.siamois.ui.table.column.TableColumn"-->
 
     <c:if test="#{tableModel.isConceptFilter(column) and tableModel.columnFilteringEnabled}">
         <f:facet name="filter">
@@ -27,10 +27,13 @@
                                 panelStyleClass="sia-autocomplete-panel"
                                 placeholder="#{langBean.msg('common.action.chooseConcept')}">
                     <f:attribute name="fieldCode" value="#{tableModel.getFieldCode(column)}"/>
-                    <p:ajax event="itemSelect" process="@this" update="@none" global="false" delay="500"
+
+                    <p:ajax event="itemSelect"
+                            update="#{tableModel.parentPanel.actionToolbarId}"
+                            process="@this" global="false" delay="500"
                             oncomplete="PF('#{cc.clientId}_#{tableModel.treeMode ? 'entityTreeTable' : 'entityDatatable'}').filter()"/>
 
-                    <p:ajax event="itemUnselect" process="@this" update="@none" global="false" delay="500"
+                    <p:ajax event="itemUnselect" process="@this" update="#{tableModel.parentPanel.actionToolbarId}" global="false" delay="500"
                             oncomplete="PF('#{cc.clientId}_#{tableModel.treeMode ? 'entityTreeTable' : 'entityDatatable'}').filter()"/>
                 </p:autoComplete>
             </div>
@@ -53,9 +56,9 @@
                                 showEmptyMessage="false"
                                 appendTo="@(body)"
                                 panelStyleClass="sia-autocomplete-panel">
-                    <p:ajax event="itemSelect" process="@this" update="@none" global="false" delay="500"
+                    <p:ajax event="itemSelect" process="@this" update="#{tableModel.parentPanel.actionToolbarId}" global="false" delay="500"
                             oncomplete="PF('#{cc.clientId}_#{tableModel.treeMode ? 'entityTreeTable' : 'entityDatatable'}').filter()"/>
-                    <p:ajax event="itemUnselect" process="@this" update="@none" global="false" delay="500"
+                    <p:ajax event="itemUnselect" process="@this" update="#{tableModel.parentPanel.actionToolbarId}" global="false" delay="500"
                             oncomplete="PF('#{cc.clientId}_#{tableModel.treeMode ? 'entityTreeTable' : 'entityDatatable'}').filter()"/>
                 </p:autoComplete>
             </div>
@@ -78,9 +81,9 @@
                                 showEmptyMessage="false"
                                 appendTo="@(body)"
                                 panelStyleClass="sia-autocomplete-panel">
-                    <p:ajax event="itemSelect" process="@this" update="@none" global="false" delay="500"
+                    <p:ajax event="itemSelect" process="@this" update="#{tableModel.parentPanel.actionToolbarId}" global="false" delay="500"
                             oncomplete="PF('#{cc.clientId}_#{tableModel.treeMode ? 'entityTreeTable' : 'entityDatatable'}').filter()"/>
-                    <p:ajax event="itemUnselect" process="@this" update="@none" global="false" delay="500"
+                    <p:ajax event="itemUnselect" process="@this" update="#{tableModel.parentPanel.actionToolbarId}" global="false" delay="500"
                             oncomplete="PF('#{cc.clientId}_#{tableModel.treeMode ? 'entityTreeTable' : 'entityDatatable'}').filter()"/>
                 </p:autoComplete>
             </div>
@@ -103,9 +106,9 @@
                                 showEmptyMessage="false"
                                 appendTo="@(body)"
                                 panelStyleClass="sia-autocomplete-panel">
-                    <p:ajax event="itemSelect" process="@this" update="@none" global="false" delay="500"
+                    <p:ajax event="itemSelect" process="@this" update="#{tableModel.parentPanel.actionToolbarId}" global="false" delay="500"
                             oncomplete="PF('#{cc.clientId}_#{tableModel.treeMode ? 'entityTreeTable' : 'entityDatatable'}').filter()"/>
-                    <p:ajax event="itemUnselect" process="@this" update="@none" global="false" delay="500"
+                    <p:ajax event="itemUnselect" process="@this" update="#{tableModel.parentPanel.actionToolbarId}" global="false" delay="500"
                             oncomplete="PF('#{cc.clientId}_#{tableModel.treeMode ? 'entityTreeTable' : 'entityDatatable'}').filter()"/>
                 </p:autoComplete>
             </div>
@@ -122,9 +125,9 @@
                               showButtonBar="true"
                               appendTo="@(body)"
                               panelStyleClass="sia-autocomplete-panel">
-                    <p:ajax event="dateSelect" process="@this" update="@none" global="false" delay="500"
+                    <p:ajax event="dateSelect" process="@this" update="#{tableModel.parentPanel.actionToolbarId}" global="false" delay="500"
                             oncomplete="PF('#{cc.clientId}_#{tableModel.treeMode ? 'entityTreeTable' : 'entityDatatable'}').filter()"/>
-                    <p:ajax event="change" process="@this" update="@none" global="false" delay="500"
+                    <p:ajax event="change" process="@this" update="#{tableModel.parentPanel.actionToolbarId}" global="false" delay="500"
                             oncomplete="PF('#{cc.clientId}_#{tableModel.treeMode ? 'entityTreeTable' : 'entityDatatable'}').filter()"/>
                 </p:datePicker>
             </div>

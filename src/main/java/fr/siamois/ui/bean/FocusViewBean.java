@@ -11,6 +11,8 @@ import lombok.RequiredArgsConstructor;
 
 import java.io.Serializable;
 import java.util.Base64;
+import java.util.HashMap;
+import java.util.Map;
 
 @Named
 @ViewScoped
@@ -34,65 +36,54 @@ public class FocusViewBean implements Serializable {
     // tokens reçus depuis l'URL
     private String mainToken;
     private String secondaryToken;
+    private String backToken;
+
+    private record ParsedPath(String type, Long id, Integer tab, Long viewId) {
+        boolean isListPanel() { return id == null; }
+    }
+
+    private Map<String, String> parseQueryParams(String query) {
+        Map<String, String> params = new HashMap<>();
+        if (query.isBlank()) return params;
+        for (String param : query.split("&")) {
+            String[] kv = param.split("=", 2);
+            if (kv.length == 2) params.put(kv[0], kv[1]);
+        }
+        return params;
+    }
+
+    private ParsedPath parsePath(String path) {
+        if (path.startsWith("/")) path = path.substring(1);
+        String[] pathAndQuery = path.split("\\?", 2);
+        String[] parts = pathAndQuery[0].split("/");
+        Map<String, String> q = parseQueryParams(pathAndQuery.length > 1 ? pathAndQuery[1] : "");
+        return new ParsedPath(
+                parts[0],
+                parts.length > 1 ? Long.parseLong(parts[1]) : null,
+                q.containsKey("tab")    ? Integer.parseInt(q.get("tab"))    : null,
+                q.containsKey("viewId") ? Long.parseLong(q.get("viewId"))   : null
+        );
+    }
+
+    private AbstractPanel createPanel(ParsedPath p) {
+        return switch (p.type()) {
+            case "recording-unit" -> p.isListPanel() ? panelFactory.createRecordingUnitListPanel(p.viewId()) : panelFactory.createRecordingUnitPanel(p.id());
+            case "action-unit"    -> p.isListPanel() ? panelFactory.createActionUnitListPanel(p.viewId())    : panelFactory.createActionUnitPanel(p.id());
+            case "spatial-unit"   -> p.isListPanel() ? panelFactory.createSpatialUnitListPanel(p.viewId())   : panelFactory.createSpatialUnitPanel(p.id());
+            case "specimen"       -> p.isListPanel() ? panelFactory.createSpecimenListPanel(p.viewId())      : panelFactory.createSpecimenPanel(p.id());
+            case "container"      -> p.isListPanel() ? panelFactory.createContainerListPanel()               : panelFactory.createContainerPanel(p.id());
+            case "phase"          -> p.isListPanel() ? panelFactory.createPhaseListPanel()                   : panelFactory.createPhasePanel(p.id());
+            case "welcome"        -> panelFactory.createWelcomePanel();
+            default               -> throw new IllegalArgumentException("Unknown panel type: " + p.type());
+        };
+    }
 
     private AbstractPanel resolvePanel(String path) {
-        // Remove leading '/' if present
-        if (path.startsWith("/")) {
-            path = path.substring(1);
+        ParsedPath parsed = parsePath(path);
+        AbstractPanel panel = createPanel(parsed);
+        if (!parsed.isListPanel() && parsed.tab() != null && panel instanceof AbstractSingleEntityPanel<?> sp) {
+            sp.setActiveTabIndex(parsed.tab());
         }
-
-        String[] parts = path.split("/");
-        String type = parts[0];
-
-        // Séparer l'ID du paramètre (ex: "3?tab=2" -> id = "3", tab = "2")
-        Long id = null;
-        Integer tabParam = null;
-        if (parts.length > 1) {
-            String idWithParam = parts[1];
-            if (idWithParam.contains("?")) {
-                String[] idAndParam = idWithParam.split("\\?", 2);
-                id = Long.parseLong(idAndParam[0]);
-                // Extraire le paramètre "tab" si présent
-                String[] params = idAndParam[1].split("&");
-                for (String param : params) {
-                    if (param.startsWith("tab=")) {
-                        tabParam = Integer.parseInt(param.substring(4));
-                        break;
-                    }
-                }
-            } else {
-                id = Long.parseLong(idWithParam);
-            }
-        }
-
-        // Déterminer si c'est un panel de liste ou un panel unitaire
-        boolean isListPanel = id == null;
-// Créer le panel
-        AbstractPanel panel = switch (type) {
-            case "recording-unit" ->
-                    isListPanel ? panelFactory.createRecordingUnitListPanel()
-                            : panelFactory.createRecordingUnitPanel(id);
-            case "action-unit" ->
-                    isListPanel ? panelFactory.createActionUnitListPanel()
-                            : panelFactory.createActionUnitPanel(id);
-            case "spatial-unit" ->
-                    isListPanel ? panelFactory.createSpatialUnitListPanel()
-                            : panelFactory.createSpatialUnitPanel(id);
-            case "specimen" ->
-                    isListPanel ? panelFactory.createSpecimenListPanel()
-                            : panelFactory.createSpecimenPanel(id);
-            case "container" ->
-                    isListPanel ? panelFactory.createContainerListPanel() :
-            null;
-            case "welcome" -> panelFactory.createWelcomePanel();
-            default -> throw new IllegalArgumentException("Unknown panel type: " + type);
-        };
-
-        // Si c'est un panel unitaire et qu'un tab est spécifié, appliquer le paramètre
-        if (!isListPanel && tabParam != null && panel instanceof AbstractSingleEntityPanel abstractSingleEntityPanel) {
-            abstractSingleEntityPanel.setActiveTabIndex(tabParam);
-        }
-
         return panel;
     }
 
@@ -105,14 +96,11 @@ public class FocusViewBean implements Serializable {
             String decoded = decodeToken(mainToken);
             mainPanel = resolvePanel(decoded);
             mainPanel.setRoot(true);
+            if (backToken != null) {
+                mainPanel.setGoBackUrl(decodeToken(backToken));
+            }
             main.setIcon(mainPanel.getIcon());
-            if(mainPanel instanceof AbstractListPanel<?>) {
-                main.setTitle(langBean.msg(mainPanel.getTitleCodeOrTitle()));
-            }
-            else {
-                main.setTitle(mainPanel.getTitleCodeOrTitle());
-            }
-
+            main.setTitle(mainPanel.resolveTitleOrTitleCode());
             main.setUri(mainPanel.ressourceUri());
             main.setStyleClass(mainPanel.getPanelClass());
             newEntry.setMain(main);
@@ -128,10 +116,10 @@ public class FocusViewBean implements Serializable {
             overviewPanel.setParentOrOverview(mainPanel);
             side.setIcon(overviewPanel.getIcon());
             if(overviewPanel instanceof AbstractListPanel<?>) {
-                side.setTitle(langBean.msg(overviewPanel.getTitleCodeOrTitle()));
+                side.setTitle(langBean.msg(overviewPanel.resolveTitleOrTitleCode()));
             }
             else {
-                side.setTitle(overviewPanel.getTitleCodeOrTitle());
+                side.setTitle(overviewPanel.resolveTitleOrTitleCode());
             }
 
             side.setUri(overviewPanel.ressourceUri());

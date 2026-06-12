@@ -10,7 +10,10 @@ import fr.siamois.domain.models.history.RevisionWithInfo;
 import fr.siamois.domain.services.person.PersonService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.specimen.SpecimenService;
+import fr.siamois.dto.FilterDTO;
 import fr.siamois.dto.entity.*;
+import fr.siamois.infrastructure.database.repositories.specs.RecordingUnitSpec;
+import fr.siamois.infrastructure.database.repositories.specs.SpecimenSpec;
 import fr.siamois.ui.bean.NavBean;
 import fr.siamois.ui.bean.RedirectBean;
 import fr.siamois.ui.bean.dialog.newunit.GenericNewUnitDialogBean;
@@ -21,14 +24,14 @@ import fr.siamois.ui.bean.panel.models.panel.AbstractPanel;
 import fr.siamois.ui.bean.panel.models.panel.single.tab.SpecimenTab;
 import fr.siamois.ui.bean.panel.models.panel.single.tab.StratigraphyTab;
 import fr.siamois.ui.form.dto.FormUiDto;
-import fr.siamois.ui.lazydatamodel.RecordingUnitChildrenLazyDataModel;
-import fr.siamois.ui.lazydatamodel.RecordingUnitParentsLazyDataModel;
-import fr.siamois.ui.lazydatamodel.SpecimenInRecordingUnitLazyDataModel;
-import fr.siamois.ui.table.RecordingUnitTableViewModel;
-import fr.siamois.ui.table.SpecimenTableViewModel;
+import fr.siamois.ui.lazydatamodel.RecordingUnitLazyDataModel;
+import fr.siamois.ui.lazydatamodel.SpecimenLazyDataModel;
 import fr.siamois.ui.table.ToolbarCreateConfig;
 import fr.siamois.ui.table.definitions.SpecimenTableDefinitionFactory;
+import fr.siamois.ui.table.viewmodel.RecordingUnitTableViewModel;
+import fr.siamois.ui.table.viewmodel.SpecimenTableViewModel;
 import fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerStratigraphyViewModel;
+import fr.siamois.utils.MessageUtils;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
@@ -43,8 +46,10 @@ import org.springframework.stereotype.Component;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
+import java.time.Month;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 
 @Slf4j
@@ -63,14 +68,6 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
     private final transient NavBean navBean;
     private final transient GenericNewUnitDialogBean<?> genericNewUnitDialogBean;
 
-    // ---------- Locals
-    // Linked specimen
-    private transient SpecimenInRecordingUnitLazyDataModel specimenListLazyDataModel ;
-
-    // lazy model for children
-    private RecordingUnitChildrenLazyDataModel lazyDataModelChildren ;
-    // lazy model for parents
-    private RecordingUnitParentsLazyDataModel lazyDataModelParents ;
 
     // lazy model for children
     private transient RecordingUnitTableViewModel parentTableModel;
@@ -101,14 +98,52 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
     }
 
 
-    @Override
-    public String ressourceUri() {
+    public String entityRessourceUri() {
         return "/recording-unit/" + unitId;
     }
 
     @Override
     public String displayHeader() {
         return "/panel/header/recordingUnitPanelHeader.xhtml";
+    }
+
+    @Override
+    public UnitKind getCreationUnitKind() {
+        return UnitKind.RECORDING;
+    }
+
+    @Override
+    public NewUnitContext buildCreationContext(UnitKind kind) {
+        if (unit == null || unit.getActionUnit() == null) return super.buildCreationContext(kind);
+        return NewUnitContext.builder()
+                .kindToCreate(kind)
+                .trigger(NewUnitContext.Trigger.toolbar())
+                .scope(NewUnitContext.Scope.linkedTo("ACTION", unit.getActionUnit().getId()))
+                .build();
+    }
+
+    @Override
+    public boolean canDuplicate() {
+        return true;
+    }
+
+    @Override
+    public void duplicate() {
+        RecordingUnitDTO copy = new RecordingUnitDTO(unit);
+        copy.setParents(new HashSet<>());
+        copy.setAuthor(sessionSettingsBean.getAuthenticatedUser());
+        copy.setCreatedBy(sessionSettingsBean.getAuthenticatedUser());
+
+        RecordingUnitDTO saved = recordingUnitService.save(copy);
+        saved.setFullIdentifier(recordingUnitService.generateFullIdentifier(saved.getActionUnit(), saved));
+        if (recordingUnitService.fullIdentifierAlreadyExistInAction(saved)) {
+            saved.setFullIdentifier(saved.getActionUnit().getRecordingUnitIdentifierFormat());
+            MessageUtils.displayWarnMessage(langBean, "recordingunit.error.identifier.alreadyExists");
+        }
+        saved = recordingUnitService.save(saved);
+
+        flowBean.addRecordingUnitToOverview(saved.getId(), this, null);
+        MessageUtils.displayInfoMessage(langBean, "common.action.duplicateEntity", unit.getFullIdentifier());
     }
 
     /**
@@ -146,12 +181,8 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
             unit = recordingUnitService.findById(unitId);
 
 
-            specimenListLazyDataModel = new SpecimenInRecordingUnitLazyDataModel(
-                    specimenService,
-                    sessionSettingsBean,
-                    langBean,
-                    unit
-            );
+            SpecimenLazyDataModel specimenListLazyDataModel = new SpecimenLazyDataModel(specimenService, sessionSettingsBean, langBean);
+            specimenListLazyDataModel.withConstantFilter(SpecimenSpec.RECORDING_UNIT_FILTER, List.of(unit.getId()), FilterDTO.FilterType.CONTAINS);
             specimenListLazyDataModel.setSelectedUnits(new ArrayList<>());
 
 
@@ -161,21 +192,13 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
             specimenListLazyDataModel.setSelectedUnits(new ArrayList<>());
 
             // Get  the CHILDREN of the recording unit
-            lazyDataModelChildren = new RecordingUnitChildrenLazyDataModel(
-                    recordingUnitService,
-                    langBean,
-                    unit
-            );
+            RecordingUnitLazyDataModel lazyDataModelChildren = new RecordingUnitLazyDataModel(recordingUnitService, sessionSettingsBean, langBean);
+            lazyDataModelChildren.withConstantFilter(RecordingUnitSpec.PARENT_FILTER, List.of(unit.getId()), FilterDTO.FilterType.CONTAINS);
             selectedCategoriesChildren = new ArrayList<>();
             totalChildrenCount = 0;
             // Get all the Parents of the recording unit
             selectedCategoriesParents = new ArrayList<>();
             totalParentsCount = 0;
-            lazyDataModelParents = new RecordingUnitParentsLazyDataModel(
-                    recordingUnitService,
-                    langBean,
-                    unit
-            );
 
             // iniy stratigraphy module
             stratigraphyViewModel = new CustomFieldAnswerStratigraphyViewModel();
@@ -351,11 +374,11 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
             if (field instanceof CustomFieldDateTime dt) {
                 if ("openingDate".equals(field.getValueBinding()) && unit.getClosingDate() != null) {
                     dt.setMax(unit.getClosingDate().toLocalDateTime());
-                    dt.setMin(LocalDateTime.of(1000, 1, 1, 1, 1));
+                    dt.setMin(LocalDateTime.of(1000, Month.JANUARY, 1, 1, 1));
                 }
                 if ("closingDate".equals(field.getValueBinding()) && unit.getOpeningDate() != null) {
                     dt.setMin(unit.getOpeningDate().toLocalDateTime());
-                    dt.setMax(LocalDateTime.of(9999, 12, 31, 23, 59));
+                    dt.setMax(LocalDateTime.of(9999, Month.DECEMBER, 31, 23, 59));
                 }
             }
         }
@@ -429,12 +452,8 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
     }
 
     public void initSpecimenTab() {
-        SpecimenInRecordingUnitLazyDataModel lazyDataModel = new SpecimenInRecordingUnitLazyDataModel(
-                specimenService,
-                sessionSettingsBean,
-                langBean,
-                unit
-        );
+        SpecimenLazyDataModel lazyDataModel = new SpecimenLazyDataModel(specimenService, sessionSettingsBean, langBean);
+        lazyDataModel.withConstantFilter(SpecimenSpec.RECORDING_UNIT_FILTER, List.of(unit.getId()), FilterDTO.FilterType.CONTAINS);
 
         specimenTableModel = new SpecimenTableViewModel(
                 lazyDataModel,

@@ -17,28 +17,34 @@ public class RecordingUnitRelSeeder {
     private final RecordingUnitSeeder recordingUnitSeeder;
     private final RecordingUnitRepository recordingUnitRepository;
 
-    public record RecordingUnitDTO(String parent, String child) {
+    public record RecordingUnitRelDTO(String parent, String child) {
 
     }
 
-    public void seed(List<RecordingUnitDTO> specs, Long institutionId) {
+    public void seed(List<RecordingUnitRelDTO> specs, Long institutionId, String actionUnitIdentifier) {
         // Step 1: Group children by parent identifier
         Map<String, List<RecordingUnit>> parentToChildren = new HashMap<>();
-        for (var s : specs) {
-            String parentKey = s.parent;
-            RecordingUnit child = recordingUnitSeeder.getRecordingUnitFromKey(
-                    new RecordingUnitSeeder.RecordingUnitKey(s.child),
-                    institutionId
-            );
-            if(child==null) continue;
-            parentToChildren.computeIfAbsent(parentKey, k -> new ArrayList<>()).add(child);
+        for (int i = 0; i < specs.size(); i++) {
+            var s = specs.get(i);
+            try {
+                String parentKey = s.parent;
+                RecordingUnit child = recordingUnitSeeder.getRecordingUnitFromKey(
+                        new RecordingUnitSeeder.RecordingUnitKey(s.child, actionUnitIdentifier),
+                        institutionId
+                );
+                if(child==null) continue;
+                parentToChildren.computeIfAbsent(parentKey, k -> new ArrayList<>()).add(child);
+            } catch (Exception e) {
+                throw new IllegalStateException(
+                        "[Relation UE ligne " + (i + 1) + "] '" + s.parent + " -> " + s.child + "' : " + e.getMessage(), e);
+            }
         }
 
         // Step 2: Update parents with their children
 
         for (Map.Entry<String, List<RecordingUnit>> entry : parentToChildren.entrySet()) {
             RecordingUnit parent = recordingUnitSeeder.getRecordingUnitFromKey(
-                    new RecordingUnitSeeder.RecordingUnitKey(entry.getKey()),
+                    new RecordingUnitSeeder.RecordingUnitKey(entry.getKey(), actionUnitIdentifier),
                     institutionId
             );
             parent.getChildren().addAll(entry.getValue());
@@ -47,7 +53,7 @@ public class RecordingUnitRelSeeder {
         // Step 3: Save all parents at once
         recordingUnitRepository.saveAll(parentToChildren.keySet().stream()
                 .map(key -> recordingUnitSeeder.getRecordingUnitFromKey(
-                        new RecordingUnitSeeder.RecordingUnitKey(key),
+                        new RecordingUnitSeeder.RecordingUnitKey(key, actionUnitIdentifier),
                         institutionId
                 ))
                 .toList());

@@ -1,5 +1,6 @@
 package fr.siamois.ui.table;
 
+import fr.siamois.ui.table.column.TableColumnAction;
 import lombok.Builder;
 import lombok.Data;
 

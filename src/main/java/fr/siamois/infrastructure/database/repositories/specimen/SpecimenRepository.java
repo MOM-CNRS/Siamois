@@ -6,6 +6,7 @@ import jakarta.validation.constraints.NotNull;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.history.RevisionRepository;
@@ -16,7 +17,7 @@ import java.util.List;
 import java.util.Optional;
 
 
-public interface SpecimenRepository extends JpaRepository<Specimen, Long>, RevisionRepository<Specimen, Long, Long> {
+public interface SpecimenRepository extends JpaRepository<Specimen, Long>, RevisionRepository<Specimen, Long, Long>, JpaSpecificationExecutor<Specimen> {
     List<Specimen> findAllByArkIsNullAndCreatedByInstitution(@NotNull Institution createdByInstitution);
 
     <T> Optional<T> findById(Long id, Class<T> type);
@@ -306,7 +307,23 @@ public interface SpecimenRepository extends JpaRepository<Specimen, Long>, Revis
             Pageable pageable);
 
 
-    Optional<Specimen> findByFullIdentifierAndCreatedByInstitution(String i, Institution createdInstitution);
+    @Query(
+            value = "SELECT s.* " +
+                    "FROM specimen s " +
+                    "JOIN recording_unit ru ON s.fk_recording_unit_id = ru.recording_unit_id " +
+                    "JOIN action_unit au ON ru.fk_action_unit_id = au.action_unit_id " +
+                    "WHERE s.full_identifier = :fullIdentifier " +
+                    "AND s.fk_institution_id = :institutionId " +
+                    "AND ru.full_identifier = :recordingUnitFullIdentifier " +
+                    "AND au.full_identifier = :actionUnitFullIdentifier",
+            nativeQuery = true
+    )
+    Optional<Specimen> findByFullIdentifierAndInstitutionIdAndRecordingUnitFullIdentifierAndActionUnitFullIdentifier(
+            @Param("fullIdentifier") String fullIdentifier,
+            @Param("institutionId") Long institutionId,
+            @Param("recordingUnitFullIdentifier") String recordingUnitFullIdentifier,
+            @Param("actionUnitFullIdentifier") String actionUnitFullIdentifier
+    );
 
     Optional<Specimen> findByFullIdentifier(@NotNull String fullIdentifier);
 

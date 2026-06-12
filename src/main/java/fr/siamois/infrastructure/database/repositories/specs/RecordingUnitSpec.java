@@ -19,6 +19,7 @@ public class RecordingUnitSpec {
     public static final String CONTRIBUTORS_FILTER = "contributors";
     public static final String TYPE_FILTER = "type";
     public static final String ID_FILTER = "id";
+    public static final String PARENT_FILTER = "parents";
 
 
     private RecordingUnitSpec() {
@@ -48,6 +49,16 @@ public class RecordingUnitSpec {
     @NonNull
     public static Specification<RecordingUnit> recordingUnitInActionUnit(long actionUnitId) {
         return ((root, query, criteriaBuilder) -> criteriaBuilder.equal(root.get(ACTION_UNIT_FILTER).get("id"), actionUnitId));
+    }
+
+    @NonNull
+    public static Specification<RecordingUnit> recordingUnitInSpatialUnit(long spatialUnitId) {
+        return ((root, query, criteriaBuilder) -> criteriaBuilder.equal(root.get(SPATIAL_UNIT_FILTER).get("id"), spatialUnitId));
+    }
+
+    @NonNull
+    public static Specification<RecordingUnit> recordingUnitInRecordingUnit(long id) {
+        return ((root, query, criteriaBuilder) -> criteriaBuilder.equal(root.get("parent").get("id"), id));
     }
 
     @NonNull
@@ -107,12 +118,20 @@ public class RecordingUnitSpec {
 
     @NonNull
     public static Specification<RecordingUnit> unitIsRoot() {
-        return ((root, query, criteriaBuilder) -> criteriaBuilder.isEmpty(root.get("parents")));
+        return ((root, query, criteriaBuilder) -> criteriaBuilder.isEmpty(root.get(PARENT_FILTER)));
     }
 
     @NonNull
     public static Specification<RecordingUnit> idIn(java.util.Collection<Long> ids) {
         return (root, query, criteriaBuilder) -> root.get("id").in(ids);
+    }
+
+    @NonNull
+    public static Specification<RecordingUnit> isChildOf(List<Long> parentIds) {
+        return (root, query, cb) -> {
+            jakarta.persistence.criteria.Join<RecordingUnit, RecordingUnit> parentsJoin = root.join(PARENT_FILTER);
+            return cb.in(parentsJoin.get("id")).value(parentIds);
+        };
     }
 
 }

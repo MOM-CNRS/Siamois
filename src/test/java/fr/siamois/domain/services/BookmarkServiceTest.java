@@ -4,9 +4,11 @@ import fr.siamois.domain.models.Bookmark;
 import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.institution.Institution;
+import fr.siamois.dto.entity.BookmarkDTO;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.infrastructure.database.repositories.BookmarkRepository;
+import fr.siamois.mapper.BookmarkMapper;
 import fr.siamois.mapper.InstitutionMapper;
 import fr.siamois.mapper.PersonMapper;
 import fr.siamois.ui.bean.panel.models.panel.AbstractPanel;
@@ -16,6 +18,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 import java.util.Collections;
 import java.util.List;
@@ -37,6 +43,13 @@ class BookmarkServiceTest {
     @InjectMocks
     private BookmarkService bookmarkService;
 
+    @Mock
+    private BookmarkMapper bookmarkMapper; // Ajoute ce mock si ce n'est pas déjà fait
+
+    // Dans ta configuration de test (@BeforeEach ou variables de classe) :
+    private Pageable pageable = PageRequest.of(0, 10);
+    private BookmarkDTO bookmarkDTO = new BookmarkDTO();
+
     private UserInfo userInfo;
     private Person person;
     private Institution institution;
@@ -57,35 +70,55 @@ class BookmarkServiceTest {
 
     @Test
     void testFindAllReturnsBookmarks() {
-
+        // GIVEN
         Bookmark bookmark = new Bookmark();
+        // Encapsulation de l'entité dans une page Spring Data
+        Page<Bookmark> entriesPage = new PageImpl<>(List.of(bookmark), pageable, 1);
 
         when(personMapper.invertConvert(any(PersonDTO.class))).thenReturn(person);
         when(institutionMapper.invertConvert(any(InstitutionDTO.class))).thenReturn(institution);
-        when(bookmarkRepository.findByPersonAndInstitution(person, institution)).thenReturn(List.of(bookmark));
 
-        List<Bookmark> result = bookmarkService.findAll(userInfo);
+        // On passe le pageable au repository mocké
+        when(bookmarkRepository.findByPersonAndInstitution(person, institution, pageable))
+                .thenReturn(entriesPage);
 
+        // On mocke la conversion interne de la Page vers le DTO
+        when(bookmarkMapper.toDto(bookmark)).thenReturn(bookmarkDTO);
+
+        // WHEN
+        Page<BookmarkDTO> result = bookmarkService.findAll(userInfo, pageable);
+
+        // THEN
         assertNotNull(result);
-        assertEquals(1, result.size());
-        assertEquals(bookmark, result.get(0));
+        assertEquals(1, result.getTotalElements());
+        assertEquals(bookmarkDTO, result.getContent().get(0));
+
         verify(bookmarkRepository, times(1))
-                .findByPersonAndInstitution(person, institution);
+                .findByPersonAndInstitution(person, institution, pageable);
     }
 
     @Test
     void testFindAllReturnsEmptyList() {
+        // GIVEN
+        Page<Bookmark> emptyPage = new PageImpl<>(Collections.emptyList(), pageable, 0);
+
         when(personMapper.invertConvert(any(PersonDTO.class))).thenReturn(person);
         when(institutionMapper.invertConvert(any(InstitutionDTO.class))).thenReturn(institution);
-        when(bookmarkRepository.findByPersonAndInstitution(person, institution))
-                .thenReturn(Collections.emptyList());
 
-        List<Bookmark> result = bookmarkService.findAll(userInfo);
+        // Mock du repository avec le paramètre pageable
+        when(bookmarkRepository.findByPersonAndInstitution(person, institution, pageable))
+                .thenReturn(emptyPage);
 
+        // WHEN
+        Page<BookmarkDTO> result = bookmarkService.findAll(userInfo, pageable);
+
+        // THEN
         assertNotNull(result);
         assertTrue(result.isEmpty());
+        assertEquals(0, result.getTotalElements());
+
         verify(bookmarkRepository, times(1))
-                .findByPersonAndInstitution(person, institution);
+                .findByPersonAndInstitution(person, institution, pageable);
     }
 
     @Test

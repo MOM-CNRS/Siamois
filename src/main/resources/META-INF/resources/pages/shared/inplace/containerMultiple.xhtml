@@ -2,8 +2,9 @@
         xmlns="http://www.w3.org/1999/xhtml"
         xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
         xmlns:cc="http://java.sun.com/jsf/composite"
-        xmlns:p="http://primefaces.org/ui" xmlns:f="http://java.sun.com/jsf/core" xmlns:h="http://java.sun.com/jsf/html"
->
+        xmlns:p="http://primefaces.org/ui"
+        xmlns:f="http://java.sun.com/jsf/core"
+        xmlns:h="http://java.sun.com/jsf/html">
 
     <cc:interface>
         <cc:attribute name="answer"
@@ -23,124 +24,221 @@
         <cc:attribute name="displayType" type="java.lang.Boolean" required="false" default="false"/>
         <cc:attribute name="panelId" type="String" required="false"/>
         <cc:attribute name="formCtx" type="fr.siamois.ui.form.EntityFormContext" required="true"/>
+        <cc:attribute name="compact" type="java.lang.Boolean" required="false" default="true"
+                      shortDescription="true: show max 3 items + expand button, no wrap. false: show all items, wrap enabled."/>
     </cc:interface>
 
     <cc:implementation>
-        <p:inplace id="inplace" mode="#{cc.attrs.mode}" toggleable="false">
-            <f:facet name="output">
-                <!-- Single value -->
-                <h:panelGroup rendered="#{(not cc.attrs.multiple) and (not empty cc.attrs.answer.value)}">
 
+        <!-- ═══════════════════════════════════════════════════════════
+             VIEW MODE
+             ═══════════════════════════════════════════════════════════ -->
+        <p:outputPanel id="containerView" layout="block" style="display:contents">
+        <div id="rum_v_#{cc.clientId.replace(':','_')}" class="rum-wrapper container #{cc.attrs.mode eq 'input' and empty cc.attrs.answer.value ? 'rum-empty' : ''}">
 
+            <div class="rum-items #{cc.attrs.compact ? 'compact' : ''}" style="#{cc.attrs.compact ? 'flex-wrap:nowrap' : 'flex-wrap:wrap'}">
+
+                <!-- Single value (multiple=false) -->
+                <h:panelGroup rendered="#{not cc.attrs.multiple and not empty cc.attrs.answer.value}">
+                    <p:commandLink
+                            styleClass="rum-chip-link"
+                            style="white-space: nowrap;"
+                            action="#{flowBean.addContainerToOverview(
+                                cc.attrs.answer.value.id,
+                                focusViewBean.mainPanel,
+                                null
+                            )}"
+                            process="@this"
+                            update="@this">
+                        <f:param name="id" value="#{cc.attrs.answer.value.id}"/>
+                        #{cc.attrs.answer.value.identifier}
+                    </p:commandLink>
                 </h:panelGroup>
-            </f:facet>
-            <f:facet name="input">
-                <p:autoComplete value="#{cc.attrs.answer.value}"
-                                id="select-multiple-container"
-                                completeMethod="#{cc.attrs.formCtx.getContainerOptions}"
-                                panelStyleClass="container"
-                                multiple="true"
-                                styleClass="spatial-unit #{cc.attrs.answer.hasBeenModified ? 'track-change sia-modified-field': 'track-change'}"
-                                required="false"
-                                var="c"
-                                itemValue="#{c}"
-                                itemLabel="#{c.identifier}"
-                                onmousedown="event.stopPropagation();"
-                                onclick="event.stopPropagation();"
-                                converter="#{containerConverter}"
-                                forceSelection="true"
-                                unique="true"
-                                scrollHeight="300"
-                                dropdown="false"
-                                showEmptyMessage="false"
-                                maxResults="#{fieldConfigurationService.resultLimit()}">
-                    <f:attribute name="field" value="#{cc.attrs.field}" />
 
-                    <p:ajax update="#{cc.attrs.updateTargetsOnBlur}"
-                            process="@this"
-                            onstart="$(PrimeFaces.escapeClientId('#{cc.clientId}:input')).removeClass('sia-modified-field'); showSpinner('#{cc.attrs.panelId}')"
-                            oncomplete="hideSpinner('#{cc.attrs.panelId}')"
-                            onerror="handleAutoSaveError(xhr, status, '#{cc.attrs.panelId}'); $(PrimeFaces.escapeClientId('#{cc.clientId}:input')).addClass('sia-modified-field');"
-                            listener="#{cc.attrs.onModified}"/>
-
-                    <p:ajax update="#{cc.attrs.updateTargetsOnBlur}"
-                            event="itemUnselect"
-                            process="@this"
-                            onstart="$(PrimeFaces.escapeClientId('#{cc.clientId}:input')).removeClass('sia-modified-field'); showSpinner('#{cc.attrs.panelId}')"
-                            oncomplete="hideSpinner('#{cc.attrs.panelId}')"
-                            onerror="handleAutoSaveError(xhr, status, '#{cc.attrs.panelId}'); $(PrimeFaces.escapeClientId('#{cc.clientId}:input')).addClass('sia-modified-field');"
-                            listener="#{cc.attrs.onModified}"/>
-
-
-
-                    <f:facet name="footer">
-                        <div id="footer" class="ui-fluid" style="padding:0.5rem 1rem 1rem 1rem">
-                            <p:commandButton
-                                    id="btnNouveau"
-                                    icon="bi bi-plus-lg"
+                <!-- Multiple values (multiple=true) -->
+                <h:panelGroup rendered="#{cc.attrs.multiple and not empty cc.attrs.answer.value}">
+                    <ui:repeat value="#{cc.attrs.answer.value}" var="c" varStatus="st">
+                        <span class="#{cc.attrs.compact and st.index ge 3 ? 'rum-extra' : ''}"
+                              style="#{cc.attrs.compact and st.index ge 3 ? 'display:none;' : ''}">
+                            <p:commandLink
+                                    styleClass="rum-chip-link"
+                                    style="white-space: nowrap;"
+                                    action="#{flowBean.addContainerToOverview(
+                                        c.id,
+                                        focusViewBean.mainPanel,
+                                        null
+                                    )}"
                                     process="@this"
-                                    oncomplete="PF('#{cc.clientId}_containerMenu').hide();var ov = PF('#{cc.clientId}_overlay'); ov.show(); ov.align();"
-                                    value="Nouveau"
-                                    update="#{cc.clientId}"/>
-                        </div>
-                    </f:facet>
-                </p:autoComplete>
+                                    update="@none"
+                                    onclick="event.stopPropagation();">
+                                <f:param name="id" value="#{c.id}"/>
+                                #{c.identifier}
+                            </p:commandLink>
+                        </span>
+                    </ui:repeat>
+                </h:panelGroup>
 
-                <p:overlayPanel for="#{cc.clientId}:select-multiple-container" my="left top" at="left bottom" showEvent="none"
-                                widgetVar="#{cc.clientId}_overlay"
-                                dismissable="false"
-                                autoHide="true"
-                                showCloseIcon="true"
-                                dynamic="true" id="overlayNouveau" appendTo="#{cc.clientId}"
-                                hideEffect="fade">
+            </div>
 
+            <!-- +N / collapse — only in compact mode -->
+            <ui:fragment rendered="#{cc.attrs.compact and cc.attrs.multiple and not empty cc.attrs.answer.value and cc.attrs.answer.value.size() gt 3}">
+                <button type="button" class="rum-expand-badge rum-expand-btn"
+                        style="background: var(--third-main-color)"
+                        onclick="rumExpand('#{cc.clientId.replace(':','_')}')">
+                    +#{cc.attrs.answer.value.size() - 3}
+                </button>
+                <button type="button" class="rum-action-btn rum-collapse-btn" style="display:none"
+                        title="Réduire"
+                        onclick="rumCollapse('#{cc.clientId.replace(':','_')}')">
+                    <i class="bi bi-chevron-double-left"/>
+                </button>
+            </ui:fragment>
 
-                    <h:panelGrid columns="2" cellpadding="5" id="newGrid">
-                            <p:outputLabel for="newUnitId" value="Identifant:"/>
-                        <p:inputText value="#{cc.attrs.answer.newId}"
-                                     id="newUnitName"
-                                     required="true"
-                        />
+            <div class="rum-actions">
+                <ui:fragment rendered="#{cc.attrs.mode eq 'input'}">
+                    <button type="button" class="rum-action-btn"
+                            title="Modifier"
+                            onclick="rumEdit('#{cc.clientId.replace(':','_')}')">
+                        <i class="bi bi-pencil"/>
+                    </button>
+                </ui:fragment>
 
-                        <p:outputLabel for="newUnitTypeAutocomplete" value="Type:"/>
-                        <p:autoComplete value="#{cc.attrs.answer.newType}"
-                                        id="newUnitTypeAutocomplete"
-                                        completeMethod="#{spatialUnitFieldBean.completeWithFieldCode}"
-                                        var="autocompleteDto"
-                                        panelStyleClass="#{cc.attrs.panelStyleClass}"
-                                        itemValue="#{autocompleteDto}"
-                                        itemLabel="#{autocompleteDto.conceptLabelToDisplay.label}"
-                                        required="true"
-                                        onmousedown="event.stopPropagation();"
-                                        onclick="event.stopPropagation();"
-                                        converter="#{conceptAutocompleteDTOConverter}"
-                                        forceSelection="true"
-                                        scrollHeight="300"
-                                        dropdown="true"
-                                        placeholder="#{langBean.msg('common.action.chooseConcept')}"
-                                        showEmptyMessage="false"
-                                        maxResults="#{fieldConfigurationService.resultLimit()}"
-                        >
-                            <f:attribute name="fieldCode" value="SIACONT.TYPE"/>
-                        </p:autoComplete>
+                <button type="button" class="rum-action-btn" disabled="disabled"
+                        title="Aperçu latéral (bientôt disponible)">
+                    <i class="bi bi-layout-sidebar-inset-reverse"/>
+                </button>
+            </div>
+        </div>
+        </p:outputPanel>
 
+        <!-- ═══════════════════════════════════════════════════════════
+             EDIT MODE (hidden by default, shown by rumEdit())
+             ═══════════════════════════════════════════════════════════ -->
+        <div id="rum_e_#{cc.clientId.replace(':','_')}" class="rum-edit-wrapper" style="display:none">
+
+            <p:autoComplete
+                    value="#{cc.attrs.answer.value}"
+                    id="select-multiple-container"
+                    widgetVar="#{cc.clientId}_autoComplete"
+                    completeMethod="#{cc.attrs.formCtx.getContainerOptions}"
+                    panelStyleClass="container"
+                    multiple="#{cc.attrs.multiple}"
+                    styleClass="container #{cc.attrs.answer.hasBeenModified ? 'track-change sia-modified-field' : 'track-change'}"
+                    required="false"
+                    var="c"
+                    itemValue="#{c}"
+                    itemLabel="#{c.identifier}"
+                    converter="#{containerConverter}"
+                    forceSelection="true"
+                    unique="true"
+                    scrollHeight="300"
+                    dropdown="false"
+                    showEmptyMessage="false"
+                    maxResults="#{fieldConfigurationService.resultLimit()}"
+                    onmousedown="event.stopPropagation();"
+                    onclick="event.stopPropagation();">
+
+                <f:attribute name="field" value="#{cc.attrs.field}"/>
+
+                <p:ajax
+                        update="#{cc.attrs.updateTargetsOnBlur}"
+                        process="@this"
+                        onstart="showSpinner('#{cc.attrs.panelId}');"
+                        oncomplete="hideSpinner('#{cc.attrs.panelId}');"
+                        onerror="handleAutoSaveError(xhr, status, '#{cc.attrs.panelId}');"
+                        listener="#{cc.attrs.onModified}"/>
+
+                <p:ajax
+                        event="itemUnselect"
+                        update="#{cc.attrs.updateTargetsOnBlur}"
+                        process="@this"
+                        onstart="showSpinner('#{cc.attrs.panelId}');"
+                        oncomplete="hideSpinner('#{cc.attrs.panelId}');"
+                        onerror="handleAutoSaveError(xhr, status, '#{cc.attrs.panelId}');"
+                        listener="#{cc.attrs.onModified}"/>
+
+                <f:facet name="footer">
+                    <div class="ui-fluid" style="padding:0.5rem 1rem 1rem 1rem">
                         <p:commandButton
-                                style="background: var(--siamois-green-active);
-    border-color: var(--siamois-green-active);"
-                                value="Créer"
-                                action="#{cc.attrs.formCtx.saveNewContainerFromField(
-                                            cc.attrs.answer
-                                        )}"
-                                process="newGrid"
-                                onsuccess="PF('#{cc.clientId}_overlay').hide();"
-                                update="select-multiple-container overlayNouveau templateFormCC:templateForm:templateGrowl @this"/>
+                                id="btnNouveau"
+                                icon="bi bi-plus-lg"
+                                process="@this"
+                                onclick="event.stopPropagation();"
+                                oncomplete="PF('#{cc.clientId}_autoComplete').hide(); var ov = PF('#{cc.clientId}_overlay'); ov.show(); ov.align();"
+                                value="Nouveau"
+                                update="@none"/>
+                    </div>
+                </f:facet>
 
-                    </h:panelGrid>
+            </p:autoComplete>
 
-                </p:overlayPanel>
+            <p:overlayPanel for="#{cc.clientId}:select-multiple-container"
+                            my="left top" at="left bottom"
+                            showEvent="none"
+                            widgetVar="#{cc.clientId}_overlay"
+                            dismissable="false"
+                            styleClass="new-entity-overlay"
+                            autoHide="true"
+                            style="max-width: 40rem;"
+                            showCloseIcon="true"
+                            dynamic="true"
+                            id="overlayNouveau"
+                            appendTo="#{cc.clientId}"
+                            hideEffect="fade">
 
-            </f:facet>
-        </p:inplace>
+                <h:panelGrid columns="2" cellpadding="5" id="newGrid">
+
+                    <p:outputLabel for="newContainerIdentifier" value="Identifiant :"/>
+                    <p:inputText value="#{cc.attrs.answer.newIdentifier}"
+                                 id="newContainerIdentifier"
+                                 required="true"/>
+
+                    <p:outputLabel for="newContainerTypeAutocomplete" value="Type :"/>
+                    <p:autoComplete value="#{cc.attrs.answer.newType}"
+                                    id="newContainerTypeAutocomplete"
+                                    completeMethod="#{spatialUnitFieldBean.completeWithFieldCode}"
+                                    var="autocompleteDto"
+                                    itemValue="#{autocompleteDto}"
+                                    itemLabel="#{autocompleteDto.conceptLabelToDisplay.label}"
+                                    required="false"
+                                    onmousedown="event.stopPropagation();"
+                                    onclick="event.stopPropagation();"
+                                    converter="#{conceptAutocompleteDTOConverter}"
+                                    forceSelection="true"
+                                    scrollHeight="300"
+                                    dropdown="true"
+                                    placeholder="#{langBean.msg('common.action.chooseConcept')}"
+                                    showEmptyMessage="false"
+                                    maxResults="#{fieldConfigurationService.resultLimit()}">
+                        <f:attribute name="fieldCode" value="SIAC.TYPE"/>
+                    </p:autoComplete>
+
+                    <p:commandButton
+                            style="background: var(--siamois-green-active); border-color: var(--siamois-green-active);"
+                            value="Créer"
+                            action="#{cc.attrs.formCtx.saveNewContainerFromField(cc.attrs.answer)}"
+                            process="newGrid"
+                            onsuccess="PF('#{cc.clientId}_overlay').hide();"
+                            update="select-multiple-container overlayNouveau templateFormCC:templateForm:templateGrowl @this"
+                            resetValues="true"/>
+
+                </h:panelGrid>
+
+            </p:overlayPanel>
+
+            <!-- Close button: exit edit mode and refresh view panel -->
+            <button type="button" class="rum-action-btn"
+                    title="Fermer"
+                    onclick="rumClose('#{cc.clientId.replace(':','_')}'); PrimeFaces.ab({source:'#{cc.clientId}', process:'@none', update:'#{cc.clientId}:containerView'});">
+                <i class="bi bi-chevron-double-left"/>
+            </button>
+
+            <button type="button" class="rum-action-btn" disabled="disabled"
+                    title="Aperçu latéral (bientôt disponible)">
+                <i class="bi bi-layout-sidebar-inset-reverse"/>
+            </button>
+
+        </div>
 
     </cc:implementation>
 

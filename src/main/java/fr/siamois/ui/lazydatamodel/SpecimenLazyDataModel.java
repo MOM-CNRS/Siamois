@@ -21,28 +21,15 @@ public class SpecimenLazyDataModel extends BaseSpecimenLazyDataModel {
         this.sessionSettings = sessionSettings;
     }
 
-    @Override
-    protected Page<SpecimenDTO> loadSpecimens(String fullIdentifierFilter,
-                                              Long[] categoryIds,
-                                              Long[] personIds,
-                                              String globalFilter,
-                                              Pageable pageable) {
-        return Page.empty();
-    }
 
 
     @Override
     protected Page<SpecimenDTO> loadData(FilterDTO filter, Pageable pageable) {
-        return specimenService.findAllByInstitutionAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
-                sessionSettings.getSelectedInstitution().getId(),
-                null, null, null,
-                langBean.getLanguageCode(),
-                pageable
-        );
+        return specimenService.searchSpecimen(sessionSettings.getSelectedInstitution(), filter, pageable);
     }
 
     @Override
     protected int countWithFilter(FilterDTO filters) {
-        return 0;
+        return specimenService.countSearchResults(sessionSettings.getSelectedInstitution(), filters);
     }
 }

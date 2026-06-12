@@ -1,5 +1,8 @@
 package fr.siamois.ui.bean.panel.models.panel;
 
+import fr.siamois.dto.view.TableViewState;
+import fr.siamois.ui.bean.dialog.newunit.NewUnitContext;
+import fr.siamois.ui.bean.dialog.newunit.UnitKind;
 import fr.siamois.ui.bean.panel.models.PanelBreadcrumb;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -23,6 +26,7 @@ public abstract class AbstractPanel implements Serializable {
     protected String titleCodeOrTitle;
     protected String panelClass;
     protected String icon;
+    private String goBackUrl;
     @Getter(AccessLevel.NONE)
     protected PanelBreadcrumb breadcrumb;
     @Getter(AccessLevel.NONE)
@@ -30,9 +34,28 @@ public abstract class AbstractPanel implements Serializable {
     protected Boolean collapsed = false;
     protected Boolean loaded = false;
     protected boolean isRoot = true; // Is the panel a root panel or an overview
-    protected AbstractPanel parentOrOverview; // if root, the panel can display and overview
+    protected AbstractPanel parentOrOverview; // if root, the panel can display have an overview
     protected String errorMessage;
 
+
+    public abstract String buildBookmarkUrl();
+
+    public abstract void applyViewState(TableViewState state);
+
+    public abstract boolean isDirty();
+
+    public abstract boolean isBookmarked();
+
+    public abstract void togglePanelBookmark() ;
+
+    public String getActionToolbarId() {
+        if (isRoot) {
+            return "actionForm-"+getPanelIndex();
+        }
+        return "actionForm-"+parentOrOverview.getPanelIndex();
+    }
+
+    public abstract boolean canUserUpdateView();
 
     public void loadData() {
         // deffer loading here ?
@@ -103,6 +126,25 @@ public abstract class AbstractPanel implements Serializable {
      */
     public String displayHeader() {
         return null;
+    }
+
+    public UnitKind getCreationUnitKind() {
+        return null;
+    }
+
+    public NewUnitContext buildCreationContext(UnitKind kind) {
+        return NewUnitContext.builder()
+                .kindToCreate(kind)
+                .trigger(NewUnitContext.Trigger.homePanel())
+                .build();
+    }
+
+    public boolean canDuplicate() {
+        return false;
+    }
+
+    public void duplicate() {
+        // no-op by default
     }
 
     public boolean isBreadcrumbVisible() {

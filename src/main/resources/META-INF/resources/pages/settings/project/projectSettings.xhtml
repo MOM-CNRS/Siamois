@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui:composition template="/template.xhtml"
+                xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:h="http://xmlns.jcp.org/jsf/html"
+                xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
+                xmlns:settings="http://java.sun.com/jsf/composite/pages/settings/components"
+                xmlns:p="http://primefaces.org/ui"
+                xmlns:form="http://java.sun.com/jsf/composite/pages/shared/form"
+                xmlns:f="http://java.sun.com/jsf/core">
+
+    <ui:define name="metadata">
+    <f:event type="preRenderView" listener="#{navBean.onPreRenderView}"/>
+    <f:event type="preRenderView" listener="#{projectDetailsBean.checkProjectOrRedirect}"/>
+    </ui:define>
+
+    <ui:define name="head">
+        <h:outputStylesheet library="css" name="settings.css"/>
+    </ui:define>
+
+    <ui:define name="content">
+        <main class="container-lg">
+
+            <form:csrfform formId="breadCrumbForm"
+                           styleClass="breadCrumpForm"
+                           style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+
+                <p:breadCrumb homeDisplay="false" style="flex-grow: 1; border: none; background: transparent; padding: 0;">
+                    <p:menuitem value="Projets" action="#{projectDetailsBean.goToProjectList()}"/>
+                    <p:menuitem value="#{projectDetailsBean.project.name}"/>
+                </p:breadCrumb>
+
+
+            </form:csrfform>
+            <form:csrfform formId="linkToActionForm" style="margin-top: 1em;"
+            >
+
+
+                <p:commandButton action="#{navBean.redirectToActionUnit()}"
+                                 icon="bi bi-database"
+                                 value="Ouvrir le projet dans l'application"
+                                 process="@this"
+                                 styleClass="ui-button-flat">
+                    <f:param name="id" value="#{projectDetailsBean.project.id}" />
+                </p:commandButton>
+
+            </form:csrfform>
+            <settings:settingsCategory
+                    title="#{projectDetailsBean.project.name}"
+                    formId="projectDetailsForm"
+                    options="#{projectDetailsBean.elements}"
+            />
+        </main>
+    </ui:define>
+
+</ui:composition>

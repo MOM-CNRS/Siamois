@@ -13,7 +13,6 @@ import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.annotation.Order;
-import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
@@ -21,7 +20,6 @@ import java.io.InputStream;
 import java.util.List;
 
 @Slf4j
-@Component
 @Getter
 @Setter
 @Order
@@ -68,6 +66,7 @@ public class ChartresDatasetInitializer implements DatabaseInitializer {
     @Override
     @Transactional
     public void initialize() throws DatabaseDataInitException {
+
         // run only if not inserted
         RecordingUnit existing = recordingUnitService
                 .findByFullIdentifierAndInstitutionIdentifier("1000", "chartres");
@@ -87,7 +86,7 @@ public class ChartresDatasetInitializer implements DatabaseInitializer {
             if (is == null) {
                 throw new IllegalStateException("Impossible de trouver Import Chartres.xlsx");
             }
-            specs = ooxmlImportService.importFromExcel(is);
+            specs = ooxmlImportService.importFromExcel(is, OOXMLImportService.ImportScope.ALL, null);
         } catch (IOException e) {
             throw new DatabaseDataInitException(e.getMessage(), e);
         }
@@ -101,8 +100,8 @@ public class ChartresDatasetInitializer implements DatabaseInitializer {
         recordingUnitSeeder.seed(specs.recordingUnits());
         specimenSeeder.seed(specs.specimenSpecs(), ch.getId());
         recordingUnitSeeder.seed(specs.recordingUnits());
-        recordingUnitRelSeeder.seed(specs.recordingUnitRelSpecs(), ch.getId());
-        recordingUnitStratiRelSeeder.seed(specs.recordingUnitStratiRelSpecs(), ch.getId());
+        recordingUnitRelSeeder.seed(specs.recordingUnitRelSpecs(), ch.getId(), null);
+        recordingUnitStratiRelSeeder.seed(specs.recordingUnitStratiRelSpecs(), ch.getId(), null);
 
     }
 }

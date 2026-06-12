@@ -1,6 +1,7 @@
 package fr.siamois.ui.viewmodel.fieldanswer;
 
 import fr.siamois.dto.StratigraphicRelationshipDTO;
+import fr.siamois.dto.entity.ActionUnitSummaryDTO;
 import fr.siamois.dto.entity.RecordingUnitSummaryDTO;
 import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
 import jakarta.faces.component.UIComponent;
@@ -29,6 +30,8 @@ public class CustomFieldAnswerStratigraphyViewModel extends CustomFieldAnswerVie
         private transient Runnable onDelete;
 
         // New rel form
+        private transient ActionUnitSummaryDTO newActionUnit;
+        private transient ConceptAutocompleteDTO newType;
         private transient ConceptAutocompleteDTO conceptToAdd;
         private transient RecordingUnitSummaryDTO sourceToAdd = new RecordingUnitSummaryDTO(); // always the recording unit the panel is about
         private transient RecordingUnitSummaryDTO targetToAdd;

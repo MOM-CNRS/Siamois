@@ -15,11 +15,9 @@ import fr.siamois.ui.bean.panel.models.PanelBreadcrumb;
 import fr.siamois.ui.form.FormContextServices;
 import fr.siamois.ui.lazydatamodel.BaseLazyDataModel;
 import fr.siamois.ui.lazydatamodel.SpatialUnitLazyDataModel;
-import fr.siamois.ui.lazydatamodel.scope.SpatialUnitScope;
-import fr.siamois.ui.lazydatamodel.tree.SpatialUnitTreeTableLazyModel;
-import fr.siamois.ui.table.SpatialUnitTableViewModel;
 import fr.siamois.ui.table.ToolbarCreateConfig;
 import fr.siamois.ui.table.definitions.SpatialUnitTableDefinitionFactory;
+import fr.siamois.ui.table.viewmodel.SpatialUnitTableViewModel;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.springframework.beans.factory.ObjectProvider;
@@ -31,8 +29,6 @@ import org.springframework.stereotype.Component;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
-
-import static fr.siamois.ui.lazydatamodel.scope.SpatialUnitScope.Type.INSTITUTION;
 
 @EqualsAndHashCode(callSuper = true, onlyExplicitlyIncluded = true)
 @Data
@@ -88,6 +84,11 @@ public class SpatialUnitListPanel extends AbstractListPanel<SpatialUnitDTO>  imp
         return "bi bi-geo-alt";
     }
 
+    @Override
+    protected String getTableClientIdPrefix() {
+        return "spatialUnitListPanelForm:spatialUnitList";
+    }
+
 
     @Override
     public String displayHeader() {
@@ -104,12 +105,6 @@ public class SpatialUnitListPanel extends AbstractListPanel<SpatialUnitDTO>  imp
     @Override
     protected BaseLazyDataModel<SpatialUnitDTO> createLazyDataModel() {
         SpatialUnitLazyDataModel lazy = new SpatialUnitLazyDataModel(spatialUnitService, sessionSettingsBean);
-        SpatialUnitTreeTableLazyModel lazyTree = new SpatialUnitTreeTableLazyModel(spatialUnitService,
-                SpatialUnitScope.builder()
-                        .institutionId(sessionSettingsBean.getSelectedInstitution().getId())
-                        .type(INSTITUTION)
-                        .build());
-
         // construction de la vue de table autour du lazy
         tableModel = new SpatialUnitTableViewModel(
                 lazy,
@@ -121,7 +116,6 @@ public class SpatialUnitListPanel extends AbstractListPanel<SpatialUnitDTO>  imp
                 flowBean,
                 genericNewUnitDialogBean,
                 spatialUnitWriteVerifier,
-                lazyTree,
                 institutionService,
                 formContextServices
         );
@@ -162,6 +156,12 @@ public class SpatialUnitListPanel extends AbstractListPanel<SpatialUnitDTO>  imp
 
         public SpatialUnitListPanel.SpatialUnitListPanelBuilder breadcrumb(PanelBreadcrumb breadcrumb) {
             spatialUnitListPanel.setBreadcrumb(breadcrumb);
+
+            return this;
+        }
+
+        public SpatialUnitListPanel.SpatialUnitListPanelBuilder viewId(Long viewId) {
+            spatialUnitListPanel.setViewId(viewId);
 
             return this;
         }

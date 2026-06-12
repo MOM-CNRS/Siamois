@@ -4,8 +4,11 @@
                 xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
                 xmlns:h="http://xmlns.jcp.org/jsf/html"
                 xmlns:p="http://primefaces.org/ui"
-                xmlns:form="http://java.sun.com/jsf/composite/pages/shared/form"
->
+                xmlns:form="http://java.sun.com/jsf/composite/pages/shared/form">
+
+    <ui:define name="metadata">
+    <f:event type="preRenderView" listener="#{navBean.onPreRenderView}"/>
+    </ui:define>
 
     <ui:define name="head">
         <h:outputStylesheet library="css" name="settings.css"/>

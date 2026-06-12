@@ -1,6 +1,7 @@
 package fr.siamois.infrastructure.database.repositories.specs;
 
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
+import jakarta.persistence.criteria.Join;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
@@ -12,6 +13,7 @@ public class SpatialUnitSpec {
     public static final String NAME_FILTER = "name";
     public static final String CATEGORY_FILTER = "category";
     public static final String ID_FILTER = "id";
+    public static final String PARENT_FILTER = "parents";
 
     private SpatialUnitSpec() {
         throw new UnsupportedOperationException("Spec should never be instantiated");
@@ -39,11 +41,28 @@ public class SpatialUnitSpec {
 
     @NonNull
     public static Specification<SpatialUnit> unitIsRoot() {
-        return ((root, query, criteriaBuilder) -> criteriaBuilder.isEmpty(root.get("parents")));
+        return ((root, query, criteriaBuilder) -> criteriaBuilder.isEmpty(root.get(PARENT_FILTER)));
     }
 
     @NonNull
     public static Specification<SpatialUnit> idIn(java.util.Collection<Long> ids) {
         return (root, query, criteriaBuilder) -> root.get("id").in(ids);
+    }
+
+
+    @NonNull
+    public static Specification<SpatialUnit> spatialUnitInSpatialUnit(Long id) {
+        return (root, query, criteriaBuilder) -> {
+            Join<SpatialUnit, SpatialUnit> parentsJoin = root.join(PARENT_FILTER);
+            return criteriaBuilder.equal(parentsJoin.get("id"), id);
+        };
+    }
+
+    @NonNull
+    public static Specification<SpatialUnit> isChildOf(List<Long> parentIds) {
+        return (root, query, cb) -> {
+            Join<SpatialUnit, SpatialUnit> parentsJoin = root.join(PARENT_FILTER);
+            return cb.in(parentsJoin.get("id")).value(parentIds);
+        };
     }
 }

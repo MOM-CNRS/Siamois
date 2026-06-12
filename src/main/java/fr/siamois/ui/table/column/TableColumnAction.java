@@ -1,0 +1,22 @@
+package fr.siamois.ui.table.column;
+
+/**
+ * Supported command actions for table link columns.
+ */
+public enum TableColumnAction {
+    GO_TO_RECORDING_UNIT,
+    VIEW_RELATION,
+    ADD_RELATION,
+    TOGGLE_BOOKMARK,
+    DUPLICATE_ROW,
+    GO_TO_SPATIAL_UNIT,
+    GO_TO_ACTION_UNIT,
+    GO_TO_SPECIMEN,
+    GO_TO_CONTAINER,
+    GO_TO_PHASE,
+    NEW_ACTION,
+    NEW_CHILDREN,
+    NEW_PARENT,
+    NEW_SPECIMEN,
+    OPEN_ENTITY
+}

@@ -12,6 +12,8 @@ import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.dto.entity.RecordingUnitDTO;
 import fr.siamois.dto.entity.SpecimenDTO;
 import fr.siamois.ui.bean.RedirectBean;
+import fr.siamois.ui.bean.dialog.newunit.NewUnitContext;
+import fr.siamois.ui.bean.dialog.newunit.UnitKind;
 import fr.siamois.ui.bean.panel.models.PanelBreadcrumb;
 import fr.siamois.ui.bean.panel.models.panel.AbstractPanel;
 import fr.siamois.ui.form.dto.FormUiDto;
@@ -74,14 +76,28 @@ public class SpecimenPanel extends AbstractSingleEntityPanel<SpecimenDTO>  imple
         this.redirectBean = context.getBean(RedirectBean.class);
     }
 
-    @Override
-    public String ressourceUri() {
+    public String entityRessourceUri() {
         return "/specimen/" + unitId;
     }
 
     @Override
     public String displayHeader() {
         return "/panel/header/specimenPanelHeader.xhtml";
+    }
+
+    @Override
+    public UnitKind getCreationUnitKind() {
+        return UnitKind.SPECIMEN;
+    }
+
+    @Override
+    public NewUnitContext buildCreationContext(UnitKind kind) {
+        if (unit == null || unit.getRecordingUnit() == null) return super.buildCreationContext(kind);
+        return NewUnitContext.builder()
+                .kindToCreate(kind)
+                .trigger(NewUnitContext.Trigger.toolbar())
+                .scope(NewUnitContext.Scope.linkedTo("RECORDING", unit.getRecordingUnit().getId()))
+                .build();
     }
 
 

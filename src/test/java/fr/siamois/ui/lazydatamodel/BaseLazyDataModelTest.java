@@ -3,6 +3,7 @@ package fr.siamois.ui.lazydatamodel;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.dto.FilterDTO;
 import fr.siamois.dto.SortDTO;
+import fr.siamois.dto.entity.RecordingUnitDTO;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Answers;
@@ -446,6 +447,7 @@ class BaseLazyDataModelTest {
                 FilterMeta.builder().field("globalFilter").filterValue("needle").matchMode(MatchMode.GLOBAL).build());
 
         Set<String> seenColumns = new HashSet<>();
+        model.initialized = true;
         model.counter = filter -> {
             seenColumns.addAll(filter.getColumns());
             return 3;
@@ -667,5 +669,145 @@ class BaseLazyDataModelTest {
         assertEquals(List.of("new", "a", "b"), model.getQueryResult());
     }
 
+    // ------------------------------------------------------------------
+    // Concrete DTO model used by updateEntityInCache tests
+    // ------------------------------------------------------------------
+
+    private static class DtoLazyDataModel extends BaseLazyDataModel<RecordingUnitDTO> {
+        @Override protected Page<RecordingUnitDTO> loadData(FilterDTO f, Pageable p) { return new PageImpl<>(List.of()); }
+        @Override protected int countWithFilter(FilterDTO f) { return 0; }
+        @Override public String getRowKey(RecordingUnitDTO e) { return e != null ? String.valueOf(e.getId()) : null; }
+    }
+
+    private static RecordingUnitDTO dto(long id) {
+        RecordingUnitDTO d = new RecordingUnitDTO();
+        d.setId(id);
+        return d;
+    }
+
+    // ------------------------------------------------------------------
+    // updateEntityInCache
+    // ------------------------------------------------------------------
+
+    @Test
+    void updateEntityInCache_queryResultNull_isNoOp() {
+        DtoLazyDataModel model = new DtoLazyDataModel();
+        // queryResult is null by default
+        RecordingUnitDTO updated = dto(1L);
+
+        model.updateEntityInCache(updated);
+
+        assertNull(model.getQueryResult());
+    }
+
+    @Test
+    void updateEntityInCache_updatedEntityNull_isNoOp() {
+        DtoLazyDataModel model = new DtoLazyDataModel();
+        List<RecordingUnitDTO> initial = new ArrayList<>(List.of(dto(1L)));
+        model.setQueryResult(initial);
+
+        model.updateEntityInCache(null);
+
+        assertSame(initial, model.getQueryResult());
+    }
+
+    @Test
+    void updateEntityInCache_entityIdNull_isNoOp() {
+        DtoLazyDataModel model = new DtoLazyDataModel();
+        RecordingUnitDTO existing = dto(1L);
+        model.setQueryResult(new ArrayList<>(List.of(existing)));
+
+        RecordingUnitDTO noId = new RecordingUnitDTO(); // id == null
+
+        model.updateEntityInCache(noId);
+
+        assertEquals(List.of(existing), model.getQueryResult());
+    }
+
+    @Test
+    void updateEntityInCache_entityFoundInCache_replacesItInQueryResultAndWrappedData() {
+        DtoLazyDataModel model = new DtoLazyDataModel();
+        RecordingUnitDTO old = dto(10L);
+        model.setQueryResult(new ArrayList<>(List.of(old)));
+        model.setWrappedData(new ArrayList<>(List.of(old)));
+
+        RecordingUnitDTO updated = dto(10L);
+        updated.setFullIdentifier("NEW");
+
+        model.updateEntityInCache(updated);
+
+        assertSame(updated, model.getQueryResult().get(0));
+        assertSame(updated, model.getWrappedData().get(0));
+    }
+
+    @Test
+    void updateEntityInCache_entityNotInCache_queryResultUnchanged() {
+        DtoLazyDataModel model = new DtoLazyDataModel();
+        RecordingUnitDTO existing = dto(1L);
+        List<RecordingUnitDTO> original = new ArrayList<>(List.of(existing));
+        model.setQueryResult(original);
+
+        RecordingUnitDTO absent = dto(999L);
+        model.updateEntityInCache(absent);
+
+        assertEquals(List.of(existing), model.getQueryResult());
+    }
+
+    @Test
+    void updateEntityInCache_multipleItemsInCache_onlyMatchingOneReplaced() {
+        DtoLazyDataModel model = new DtoLazyDataModel();
+        RecordingUnitDTO a = dto(1L);
+        RecordingUnitDTO b = dto(2L);
+        RecordingUnitDTO c = dto(3L);
+        model.setQueryResult(new ArrayList<>(List.of(a, b, c)));
+
+        RecordingUnitDTO updatedB = dto(2L);
+        updatedB.setFullIdentifier("B-UPDATED");
+
+        model.updateEntityInCache(updatedB);
+
+        List<RecordingUnitDTO> result = model.getQueryResult();
+        assertSame(a, result.get(0));
+        assertSame(updatedB, result.get(1));
+        assertSame(c, result.get(2));
+    }
+
+    @Test
+    void updateEntityInCache_matchAtFirstPosition_replacedCorrectly() {
+        DtoLazyDataModel model = new DtoLazyDataModel();
+        RecordingUnitDTO first = dto(5L);
+        RecordingUnitDTO second = dto(6L);
+        model.setQueryResult(new ArrayList<>(List.of(first, second)));
+
+        RecordingUnitDTO updated = dto(5L);
+        model.updateEntityInCache(updated);
+
+        assertSame(updated, model.getQueryResult().get(0));
+        assertSame(second, model.getQueryResult().get(1));
+    }
+
+    @Test
+    void updateEntityInCache_matchAtLastPosition_replacedCorrectly() {
+        DtoLazyDataModel model = new DtoLazyDataModel();
+        RecordingUnitDTO first = dto(5L);
+        RecordingUnitDTO last = dto(6L);
+        model.setQueryResult(new ArrayList<>(List.of(first, last)));
+
+        RecordingUnitDTO updated = dto(6L);
+        model.updateEntityInCache(updated);
+
+        assertSame(first, model.getQueryResult().get(0));
+        assertSame(updated, model.getQueryResult().get(1));
+    }
+
+    @Test
+    void updateEntityInCache_sizePreservedAfterUpdate() {
+        DtoLazyDataModel model = new DtoLazyDataModel();
+        model.setQueryResult(new ArrayList<>(List.of(dto(1L), dto(2L), dto(3L))));
+
+        model.updateEntityInCache(dto(2L));
+
+        assertEquals(3, model.getQueryResult().size());
+    }
 
 }

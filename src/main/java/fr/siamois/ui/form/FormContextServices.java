@@ -1,7 +1,9 @@
 package fr.siamois.ui.form;
 
+import fr.siamois.domain.services.ContainerService;
 import fr.siamois.domain.services.GeoApiService;
 import fr.siamois.domain.services.GeoPlatService;
+import fr.siamois.domain.services.PhaseService;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.form.CustomFieldMeasurementService;
 import fr.siamois.domain.services.form.FormService;
@@ -10,6 +12,8 @@ import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitTreeService;
 import fr.siamois.domain.services.specimen.SpecimenService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
+import fr.siamois.domain.services.vocabulary.FieldConfigurationService;
+import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRepository;
 import fr.siamois.mapper.ConceptMapper;
 import fr.siamois.mapper.PlaceSuggestionMapper;
 import fr.siamois.ui.bean.LangBean;
@@ -26,6 +30,8 @@ public class FormContextServices {
 
     private final FormService formService;
     private final LangBean langBean;
+    private final ContainerService containerService;
+    private final PhaseService phaseService;
     private final SpatialUnitTreeService spatialUnitTreeService;
     private final SpatialUnitService spatialUnitService;
     private final SpecimenService specimenService;
@@ -39,4 +45,6 @@ public class FormContextServices {
     private final ConceptMapper conceptMapper;
     private final PlaceSuggestionMapper placeSuggestionMapper;
     private final CustomFieldMeasurementService customFieldMeasurementService;
+    private final FieldConfigurationService fieldConfigurationService;
+    private final ConceptRepository conceptRepository;
 }

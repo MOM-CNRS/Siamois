@@ -8,7 +8,7 @@
     <!-- Expected @elvariable parameters -->
     <!--@elvariable id="bean" type="fr.siamois.ui.form.EntityFormContext"-->
     <!--@elvariable id="formCtx" type="fr.siamois.ui.form.EntityFormContext"-->
-    <!--@elvariable id="col" type="fr.siamois.ui.table.TableColumn"-->
+    <!--@elvariable id="col" type="fr.siamois.ui.table.column.TableColumn"-->
     <!--@elvariable id="prefix" type="java.lang.String"-->
     <!--@elvariable id="statusIndex" type="java.lang.Integer"-->
     <!--@elvariable id="rowIndex" type="java.lang.Integer"-->
@@ -210,6 +210,25 @@
 
         </c:if>
 
+        <c:if test="#{col.field['class'].simpleName eq 'CustomFieldSelectMultiplePhase'}">
+
+            <siaInplace:phaseMultiple
+                    id="phaseMultiple"
+                    hasBeenModified="#{hasBeenModified}"
+                    field="#{col.field}"
+                    formCtx="#{formCtx}"
+                    multiple="true"
+                    mode="#{mode}"
+                    panelId="#{panelId}"
+                    onModified="#{formCtx.onFieldAnswerModifiedListener}"
+                    updateTargetsOnBlur="#{panelHeaderUpdateId}"
+                    required="#{col.required}"
+                    label="#{spatialUnitFieldBean.resolveCustomFieldLabel(col.field)}"
+                    answer="#{answer}"
+            />
+
+        </c:if>
+
         <c:if test="#{col.field['class'].simpleName eq 'CustomFieldSelectMultipleSpatialUnitTree'}">
 
             <siaInplace:spatialMultiple
@@ -221,6 +240,7 @@
                     multiple="true"
                     mode="#{mode}"
                     panelId="#{panelId}"
+                    compact="#{compact}"
                     onModified="#{formCtx.onFieldAnswerModifiedListener}"
                     updateTargetsOnBlur="#{panelHeaderUpdateId}"
                     required="#{col.required}"
@@ -262,6 +282,7 @@
                     formCtx="#{formCtx}"
                     multiple="true"
                     mode="#{mode}"
+                    compact="#{compact}"
                     panelId="#{panelId}"
                     onModified="#{formCtx.onFieldAnswerModifiedListener}"
                     updateTargetsOnBlur="#{panelHeaderUpdateId}"
@@ -282,6 +303,7 @@
                     formCtx="#{formCtx}"
                     multiple="false"
                     mode="#{mode}"
+                    compact="#{compact}"
                     panelId="#{panelId}"
                     onModified="#{formCtx.onFieldAnswerModifiedListener}"
                     updateTargetsOnBlur="#{panelHeaderUpdateId}"

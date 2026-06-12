@@ -261,6 +261,12 @@ public class FormService {
         if (answer instanceof CustomFieldAnswerSelectMultipleSpecimenViewModel a) {
             return a.getValue() != null ? new HashSet<>(a.getValue()) : null;
         }
+        if (answer instanceof CustomFieldAnswerSelectMultipleContainerViewModel a) {
+            return a.getValue() != null ? new HashSet<>(a.getValue()) : null;
+        }
+        if (answer instanceof CustomFieldAnswerSelectMultiplePhaseViewModel a) {
+            return a.getValue() != null ? new HashSet<>(a.getValue()) : null;
+        }
 
         return null;
     }
@@ -334,6 +340,7 @@ public class FormService {
         handlers.put(CustomFieldAnswerMeasurementViewModel.class, this::handleMeasurement);
         handlers.put(CustomFieldAnswerSelectMultipleContainerViewModel.class, this::handleContainerSet);
         handlers.put(CustomFieldAnswerSelectMultipleSpecimenViewModel.class, this::handleSpecimenSet);
+        handlers.put(CustomFieldAnswerSelectMultiplePhaseViewModel.class, this::handlePhaseSet);
         handlers.put(CustomFieldAnswerSelectMultipleFromFieldCodeViewModel.class, this::handleConceptSet);
 
         Class<? extends CustomFieldAnswerViewModel> answerClass = answer.getClass();
@@ -459,6 +466,12 @@ public class FormService {
         }
     }
 
+    private void handlePhaseSet(CustomFieldAnswerViewModel answer, Object value) {
+        if (answer instanceof CustomFieldAnswerSelectMultiplePhaseViewModel phaseAnswer && value instanceof Set<?> values) {
+            phaseAnswer.setValue(new ArrayList<>((Set<PhaseDTO>) values));
+        }
+    }
+
     private void handleConceptSet(CustomFieldAnswerViewModel answer, Object value) {
         if (answer instanceof CustomFieldAnswerSelectMultipleFromFieldCodeViewModel multipleAnswer && value instanceof Set<?> values) {
             List<ConceptAutocompleteDTO> autocompleteList = values.stream()
@@ -492,8 +505,8 @@ public class FormService {
     }
 
     private void handleRecordingUnitSet(CustomFieldAnswerViewModel answer, Object value) {
-        if (answer instanceof CustomFieldAnswerSelectMultipleRecordingUnitViewModel ans) {
-            ans.setValue(new ArrayList<>((Set<RecordingUnitSummaryDTO>) value));
+        if (answer instanceof CustomFieldAnswerSelectMultipleRecordingUnitViewModel ans && value instanceof Set<?> values) {
+            ans.setValue(new ArrayList<>((Set<RecordingUnitSummaryDTO>) values));
         }
     }
 

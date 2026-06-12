@@ -4,13 +4,14 @@ import org.hibernate.envers.RevisionType;
 
 import java.time.Instant;
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.Objects;
 
 public record RevisionWithInfo<T>(T entity, InfoRevisionEntity revisionEntity,
                                   RevisionType revisionType) implements Comparable<RevisionWithInfo<T>> {
     public OffsetDateTime getDate() {
         Instant instant = Instant.ofEpochMilli(revisionEntity.getEpochTimestamp());
-        return OffsetDateTime.ofInstant(instant, OffsetDateTime.now().getOffset());
+        return OffsetDateTime.ofInstant(instant, OffsetDateTime.now(ZoneOffset.UTC).getOffset());
     }
 
     /**

@@ -38,6 +38,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.Serializable;
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -87,7 +88,27 @@ public abstract class AbstractSingleEntityPanel<T extends AbstractEntityDTO> ext
 
     public void refresh() {
         refreshUnit();
+        if (tabs != null) {
+            tabs.stream()
+                .filter(EntityListTab.class::isInstance)
+                .map(t -> (EntityListTab<?>) t)
+                .forEach(t -> {
+                    if (t.getTableModel() != null) {
+                        t.getTableModel().resetRowContexts();
+                    }
+                });
+        }
     }
+
+    @Override
+    public String ressourceUri() {
+        String base = entityRessourceUri();
+        return (activeTabIndex != null && activeTabIndex > 0)
+                ? base + "?tab=" + activeTabIndex
+                : base;
+    }
+
+    public abstract String entityRessourceUri();
 
     @Override
     public String display() {
@@ -368,7 +389,7 @@ public abstract class AbstractSingleEntityPanel<T extends AbstractEntityDTO> ext
             revision = new InfoRevisionEntity();
             UserInfo userInfo = sessionSettingsBean.getUserInfo();
             revision.setRevId(0L);
-            revision.setEpochTimestamp(OffsetDateTime.now().toEpochSecond());
+            revision.setEpochTimestamp(OffsetDateTime.now(ZoneOffset.UTC).toEpochSecond());
             revision.setUpdatedBy(conversionService.convert(userInfo.getUser(), Person.class));
             revision.setUpdatedFrom(conversionService.convert(userInfo.getInstitution(), Institution.class));
         }
@@ -435,6 +456,11 @@ public abstract class AbstractSingleEntityPanel<T extends AbstractEntityDTO> ext
     @Override
     public boolean hasPreviousNext() {
         return true;
+    }
+
+    @Override
+    public boolean canUserUpdateView() {
+        return false;
     }
 
 

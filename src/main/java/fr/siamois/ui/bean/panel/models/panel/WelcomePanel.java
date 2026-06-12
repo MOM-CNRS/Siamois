@@ -2,10 +2,13 @@ package fr.siamois.ui.bean.panel.models.panel;
 
 
 import fr.siamois.domain.models.events.LangageChangeEvent;
+import fr.siamois.domain.services.BookmarkService;
+import fr.siamois.domain.services.PhaseService;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.domain.services.specimen.SpecimenService;
+import fr.siamois.dto.view.TableViewState;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
 import fr.siamois.ui.bean.panel.models.PanelBreadcrumb;
@@ -32,14 +35,53 @@ public class WelcomePanel extends AbstractPanel implements Serializable {
     private final transient ActionUnitService actionUnitService;
     private final transient SpatialUnitService spatialUnitService;
     private final transient SpecimenService specimenService;
+    private final transient PhaseService phaseService;
     private final LangBean langBean;
+    private final transient BookmarkService bookmarkService;
 
     // Locals
     private long nbOfSpatialUnits;
     private long nbOfActionUnits;
     private long nbOfRecordingUnits;
     private long nbOfSpecimen;
+    private long nbOfPhases;
 
+    @Override
+    public String buildBookmarkUrl() {
+        return this.ressourceUri();
+    }
+
+    @Override
+    public void togglePanelBookmark() {
+        if(Boolean.TRUE.equals(bookmarkService.isRessourceBookmarkedByUser(sessionSettingsBean.getUserInfo(), buildBookmarkUrl()))) {
+            bookmarkService.delete(sessionSettingsBean.getUserInfo(), buildBookmarkUrl());
+        }
+        else {
+            bookmarkService.save(sessionSettingsBean.getUserInfo(), buildBookmarkUrl(), titleCodeOrTitle);
+        }
+    }
+
+    @Override
+    public boolean canUserUpdateView() {
+        return false;
+    }
+
+    @Override
+    public boolean isBookmarked(
+
+    ) {
+        return bookmarkService.isRessourceBookmarkedByUser(sessionSettingsBean.getUserInfo(), buildBookmarkUrl());
+    }
+
+    @Override
+    public void applyViewState(TableViewState state) {
+        // No view state
+    }
+
+    @Override
+    public boolean isDirty() {
+        return false;
+    }
 
     public boolean hasPreviousNext() {
         return false;
@@ -57,8 +99,8 @@ public class WelcomePanel extends AbstractPanel implements Serializable {
     public WelcomePanel(SessionSettingsBean sessionSettingsBean,
                         RecordingUnitService recordingUnitService,
                         ActionUnitService actionUnitService,
-                        SpatialUnitService spatialUnitService, SpecimenService specimenService,
-                        LangBean langBean
+                        SpatialUnitService spatialUnitService, SpecimenService specimenService, PhaseService phaseService,
+                        LangBean langBean, BookmarkService bookmarkService
     ) {
         super("common.location.home", "bi bi-house", "siamois-panel");
 
@@ -67,7 +109,9 @@ public class WelcomePanel extends AbstractPanel implements Serializable {
         this.actionUnitService = actionUnitService;
         this.spatialUnitService = spatialUnitService;
         this.specimenService = specimenService;
+        this.phaseService = phaseService;
         this.langBean = langBean;
+        this.bookmarkService = bookmarkService;
 
         setBreadcrumb(new PanelBreadcrumb());
         setIsBreadcrumbVisible(false);
@@ -82,6 +126,7 @@ public class WelcomePanel extends AbstractPanel implements Serializable {
         nbOfSpatialUnits = 0;
         nbOfRecordingUnits = 0;
         nbOfSpecimen = 0;
+        nbOfPhases = 0;
         refreshName();
 
         try {
@@ -89,6 +134,7 @@ public class WelcomePanel extends AbstractPanel implements Serializable {
             nbOfActionUnits = actionUnitService.countByInstitutionId(sessionSettingsBean.getSelectedInstitution().getId());
             nbOfSpatialUnits = spatialUnitService.countByInstitutionId(sessionSettingsBean.getSelectedInstitution().getId());
             nbOfSpecimen = specimenService.countByInstitution(sessionSettingsBean.getSelectedInstitution());
+            nbOfPhases = phaseService.countSearchResults(sessionSettingsBean.getSelectedInstitution(), new fr.siamois.dto.FilterDTO());
         }
         catch(RuntimeException e) {
             log.error(e.getMessage());

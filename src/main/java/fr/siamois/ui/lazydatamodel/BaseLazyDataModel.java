@@ -3,6 +3,7 @@ package fr.siamois.ui.lazydatamodel;
 import fr.siamois.domain.models.vocabulary.label.ConceptLabel;
 import fr.siamois.dto.FilterDTO;
 import fr.siamois.dto.SortDTO;
+import fr.siamois.dto.entity.AbstractEntityDTO;
 import lombok.Getter;
 import lombok.Setter;
 import org.primefaces.model.FilterMeta;
@@ -29,7 +30,7 @@ public abstract class BaseLazyDataModel<T> extends LazyDataModel<T> implements L
 
     // Page, Sort and Filter state
     protected int first = 0;
-    protected int pageSizeState = 10;
+    protected int pageSizeState = 20;
     protected transient Set<SortMeta> sortBy = new HashSet<>();
 
     // Cache
@@ -38,7 +39,28 @@ public abstract class BaseLazyDataModel<T> extends LazyDataModel<T> implements L
     protected int cachedPageSize;
     protected transient Map<String, SortMeta> cachedSortBy = new HashMap<>();
     protected transient List<T> queryResult;
+    protected transient List<T> filtered;
     protected int cachedRowCount;
+
+    // For filter initialization
+    protected transient Map<String, FilterMeta> initialFilter = new HashMap<>();
+    protected boolean initialized = false;
+
+    // Constant filters: applied after prepareFilterDTO on every load/count, cannot be overridden by the user.
+    private final Map<String, FilterDTO.FilterInfo> constantFilters = new LinkedHashMap<>();
+
+    /**
+     * Register a filter that is always injected into every query regardless of what the user has set.
+     * Typical use: scope a generic lazy model to a parent entity without creating a subclass.
+     * <pre>
+     *   new RecordingUnitLazyDataModel(svc, settings, lang)
+     *       .withConstantFilter(ACTION_UNIT_FILTER, List.of(actionUnit), CONTAINS)
+     * </pre>
+     */
+    public BaseLazyDataModel<T> withConstantFilter(String key, Object value, FilterDTO.FilterType type) {
+        constantFilters.put(key, new FilterDTO.FilterInfo(value, type));
+        return this;
+    }
 
     @Getter
     @Setter
@@ -83,7 +105,7 @@ public abstract class BaseLazyDataModel<T> extends LazyDataModel<T> implements L
     protected transient List<ConceptLabel> selectedTypes = new ArrayList<>();
     protected transient List<ConceptLabel> selectedAuthors = new ArrayList<>();
     protected String nameFilter;
-    protected transient List<T> selectedUnits;
+    protected transient List<T> selectedUnits = new ArrayList<>();
 
     protected Map<String, String> getFieldMapping() {
         return Collections.emptyMap();
@@ -186,6 +208,9 @@ public abstract class BaseLazyDataModel<T> extends LazyDataModel<T> implements L
         if (!columnFilteringEnabled) {
             map = new HashMap<>();
         }
+        if(!initialized) {
+            map = initialFilter;
+        }
         Map<String, FilterMeta> activeFilters = prepareFilters(map);
 
         for (Map.Entry<String, FilterMeta> entry : activeFilters.entrySet()) {
@@ -195,6 +220,7 @@ public abstract class BaseLazyDataModel<T> extends LazyDataModel<T> implements L
                 filterDTO.add(entry.getKey(), entry.getValue().getFilterValue(), FilterDTO.FilterType.CONTAINS);
             }
         }
+        constantFilters.forEach((k, v) -> filterDTO.addScopeFilter(k, v.getFilter(), v.getType()));
         return countWithFilter(filterDTO);
     }
 
@@ -205,6 +231,10 @@ public abstract class BaseLazyDataModel<T> extends LazyDataModel<T> implements L
         Map<String, SortMeta> activeSorts = prepareSorts(sortBy);
         if (!columnFilteringEnabled) {
             filterBy = new HashMap<>();
+        }
+        if(!initialized) {
+            filterBy = initialFilter;
+            initialized = true;
         }
         Map<String, FilterMeta> activeFilters = prepareFilters(filterBy);
 
@@ -230,6 +260,7 @@ public abstract class BaseLazyDataModel<T> extends LazyDataModel<T> implements L
         SortDTO sortDTO = new SortDTO();
 
         prepareFilterDTO(activeFilters, filterDTO);
+        constantFilters.forEach((k, v) -> filterDTO.addScopeFilter(k, v.getFilter(), v.getType()));
         prepareSortDTO(activeSorts, sortDTO);
 
         Pageable pageable = PageRequest.of(pageNumber, pageSizeState, buildSort(sortDTO));
@@ -314,6 +345,23 @@ public abstract class BaseLazyDataModel<T> extends LazyDataModel<T> implements L
         return Math.min(last, total);
     }
 
+    public void updateEntityInCache(T updatedEntity) {
+        if (queryResult == null || updatedEntity == null) return;
+        if (!(updatedEntity instanceof AbstractEntityDTO dto)) return;
+        Long id = dto.getId();
+        if (id == null) return;
+
+        List<T> mutable = new ArrayList<>(queryResult);
+        for (int i = 0; i < mutable.size(); i++) {
+            if (mutable.get(i) instanceof AbstractEntityDTO existing && id.equals(existing.getId())) {
+                mutable.set(i, updatedEntity);
+                setWrappedData(mutable);
+                setQueryResult(mutable);
+                return;
+            }
+        }
+    }
+
     public void addRowToModel(T newUnit) {
         // Increment the total against the previously known total — using the
         // wrappedData size would replace the total with the page size and break
@@ -334,4 +382,5 @@ public abstract class BaseLazyDataModel<T> extends LazyDataModel<T> implements L
             modifiableCopy.remove(modifiableCopy.size() - 1);
         }
     }
+
 }

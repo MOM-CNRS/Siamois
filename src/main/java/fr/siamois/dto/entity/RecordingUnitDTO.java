@@ -24,6 +24,7 @@ public class RecordingUnitDTO extends AbstractEntityDTO {
     protected ActionUnitSummaryDTO actionUnit;
     protected Integer parentsCount;
     protected Integer childrenCount;
+    protected Integer relationshipCount;
     protected OffsetDateTime openingDate;
     protected OffsetDateTime closingDate;
     protected ConceptDTO geomorphologicalCycle;
@@ -49,6 +50,7 @@ public class RecordingUnitDTO extends AbstractEntityDTO {
     // Write dto
     private Set<RecordingUnitSummaryDTO> parents;
     private Set<RecordingUnitSummaryDTO> children;
+    private Set<PhaseDTO> phases;
 
 
     public RecordingUnitDTO(RecordingUnitDTO original) {
@@ -82,6 +84,6 @@ public class RecordingUnitDTO extends AbstractEntityDTO {
                 "parents", "children", "comments", "zInf", "zSup",
                 "geomorphologicalCycle", "normalizedInterpretation", "author", "geomorphologicalAgent",
                 "matrixComposition", "matrixColor", "matrixTexture", "erosionShape", "erosionOrientation",
-                "erosionProfile", "taq", "tpq", "chronologicalPhase", "fullIdentifier");
+                "erosionProfile", "taq", "tpq", "chronologicalPhase", "fullIdentifier", "phases");
     }
 }

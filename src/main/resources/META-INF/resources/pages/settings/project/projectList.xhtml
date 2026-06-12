@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui:composition template="/template.xhtml"
+                xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
+                xmlns:comp="http://java.sun.com/jsf/composite/pages/settings/components"
+                xmlns:p="http://primefaces.org/ui"
+                xmlns:h="http://java.sun.com/jsf/html" xmlns:f="http://java.sun.com/jsf/core">
+
+    <ui:define name="head">
+        <h:outputStylesheet library="css" name="settings.css"/>
+    </ui:define>
+
+    <ui:define name="metadata">
+        <f:event type="preRenderView" listener="#{navBean.onPreRenderView}"/>
+    </ui:define>
+
+    <ui:define name="content">
+        <main >
+
+            <comp:datatable
+                    createButtonLabel="NULL"
+                    formId="projectListForm"
+                    title="#{langBean.msg('projectList.breadcrumb')}"
+                    description="#{langBean.msg('projectList.description')}"
+                    filterAction="#{projectListBean.filter()}"
+                    searchInputTextValue="#{projectListBean.searchInput}"
+                    addAction="#{projectListBean.filter()}"
+                    renderCreateButton="false"
+            >
+                <p:commandButton action="#{navBean.goToActionUnitList('FOCUS')}"
+                                 icon="bi bi-database"
+                                 value="Voir et créer des projets dans l'application"
+                                 process="@this"
+                                 styleClass="ui-button-flat">
+                </p:commandButton>
+
+                <p:dataTable
+                        id="actionUnitTable"
+                        value="#{projectListBean.filteredActionUnits}"
+                        var="au"
+                        sortMode="single"
+                        widgetVar="actionUnitDatatable"
+                        rowKey="#{au.id}"
+                >
+                    <p:column headerText="Institution">
+                        <p:outputLabel value="#{au.createdByInstitution.name}"/>
+                    </p:column>
+                    <p:column headerText="#{langBean.msg('actionManagers.header.name')}">
+                        <p:outputLabel value="#{au.name}"/>
+                    </p:column>
+                    <p:column headerText="Identifiant">
+                        <p:outputLabel value="#{au.fullIdentifier}"/>
+                    </p:column>
+                    <p:column headerText="#{langBean.msg('actionManagers.header.numberOfMembers')}">
+                        <p:outputLabel value="#{projectListBean.numberOfMemberInActionUnit(au)}"/>
+                    </p:column>
+                    <p:column headerText="#{langBean.msg('organisationSettings.titles.actionManager')}">
+                        <p:outputLabel value="#{au.createdBy.displayName()}"/>
+                    </p:column>
+                    <p:column>
+                        <p:commandButton
+                                icon="bi bi-three-dots"
+                                action="#{projectListBean.redirectToProject(au)}"
+                        />
+                    </p:column>
+                </p:dataTable>
+            </comp:datatable>
+        </main>
+    </ui:define>
+
+</ui:composition>

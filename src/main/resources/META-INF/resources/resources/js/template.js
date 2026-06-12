@@ -24,20 +24,56 @@ function toggleCollapseSidebar() {
     }
 }
 
-function toggleCollapseHistory() {
-    const $historyForm = $('#historyForm');
-    const $history = $('#historyForm\\:history');
-    const $buttons = $history.find('.panel-menu button');
-
-    // On bascule la classe
-    $historyForm.toggleClass('is-collapsed');
-
-    // On gère l'aspect visuel des boutons en fonction de l'état
-    if ($historyForm.hasClass('is-collapsed')) {
-        $buttons.addClass('ui-button-icon-only');
-    } else {
-        $buttons.removeClass('ui-button-icon-only');
+function animateSidebarClose() {
+    // Manually force the CSS collapse transition right before AJAX finishes
+    let sidebar = document.getElementById('subSidebarForm');
+    if (sidebar) {
+        sidebar.classList.add('is-collapsed');
     }
+}
+
+function handleSidebarToggle(targetMode) {
+    let sidebar = document.getElementById('subSidebarForm');
+    if (!sidebar) return;
+
+    // Normalize input to lowercase to match our JSF class naming structure
+    let requestedModeClass = 'mode-' + targetMode.toLowerCase();
+
+    let isCurrentlyCollapsed = sidebar.classList.contains('is-collapsed');
+    let isSameModeActive = sidebar.classList.contains(requestedModeClass);
+
+    if (!isCurrentlyCollapsed && isSameModeActive) {
+        // toggle the button already open
+        sidebar.classList.add('is-collapsed');
+    }
+    else if (!isCurrentlyCollapsed && !isSameModeActive) {
+        // CASE 2: The sidebar is open, but you clicked the OTHER icon.
+        // Action: Do NOT close it. Keep it wide open so the user just sees the content swap.
+        // Optional: You can manually swap the class immediately for a smoother transition feel
+        sidebar.className = sidebar.className.replace(/mode-\w+/g, requestedModeClass);
+    }
+    else {
+        sidebar.className = sidebar.className.replace(/mode-\w+/g, requestedModeClass);
+        sidebar.classList.remove('is-collapsed');
+    }
+}
+
+function toggleCollapseHistory(history) {
+
+    if(history) {
+        const $historyForm = $('#subSidebarForm');
+        const $history = $('#subSidebarForm\\:sidebarContent');
+        const $buttons = $history.find('.panel-menu button');
+
+
+        // On gère l'aspect visuel des boutons en fonction de l'état
+        if ($historyForm.hasClass('is-collapsed')) {
+            $buttons.addClass('ui-button-icon-only');
+        } else {
+            $buttons.removeClass('ui-button-icon-only');
+        }
+    }
+
 }
 
 
@@ -157,7 +193,7 @@ function hideSpinner(panelId) {
 function handleAutoSaveError(xhr, status, panelId) {
     hideSpinner(panelId);
     // Show error message (e.g., growl)
-    PF('templateGrowlVar').renderMessage({
+    PF('templateGrowllet').renderMessage({
         summary: 'Error',
         detail: 'Failed to save changes. Please try again.',
         severity: 'error'
@@ -213,14 +249,14 @@ function scrollAfterExpand(selector) {
 
 // ********** PANEL PROGRESS BAR
 // Function to show the progress bar with the custom color
-function showProgressBar(widgetVar, color) {
-    const progressBarValue = widgetVar.jq.find('.ui-progressbar-value');
+function showProgressBar(widgetlet, color) {
+    const progressBarValue = widgetlet.jq.find('.ui-progressbar-value');
     progressBarValue.css('background-color', color).show();
 }
 
 // Function to hide the progress bar and reset its color
-function hideProgressBar(widgetVar) {
-    const progressBarValue = widgetVar.jq.find('.ui-progressbar-value');
+function hideProgressBar(widgetlet) {
+    const progressBarValue = widgetlet.jq.find('.ui-progressbar-value');
     progressBarValue.css('background-color', 'transparent').hide();
 }
 
@@ -362,6 +398,59 @@ $(globalThis).on("popstate", function(e) {
         location.reload()
 
 });
+
+function rumExpand(id) {
+    let view = document.getElementById('rum_v_' + id);
+    if (!view) return;
+    view.querySelectorAll('.rum-extra').forEach(function(el) { el.style.display = ''; });
+    let expandBtn = view.querySelector('.rum-expand-btn');
+    if (expandBtn) expandBtn.style.display = 'none';
+    let collapseBtn = view.querySelector('.rum-collapse-btn');
+    if (collapseBtn) collapseBtn.style.display = '';
+}
+
+function rumCollapse(id) {
+    let view = document.getElementById('rum_v_' + id);
+    if (!view) return;
+    view.querySelectorAll('.rum-extra').forEach(function(el) { el.style.display = 'none'; });
+    let expandBtn = view.querySelector('.rum-expand-btn');
+    if (expandBtn) expandBtn.style.display = '';
+    let collapseBtn = view.querySelector('.rum-collapse-btn');
+    if (collapseBtn) collapseBtn.style.display = 'none';
+}
+
+function rumEdit(id) {
+    let view = document.getElementById('rum_v_' + id);
+    let edit = document.getElementById('rum_e_' + id);
+    if (view) view.style.display = 'none';
+    if (edit) {
+        edit.style.display = '';
+        let input = edit.querySelector('input[type="text"]');
+        if (input) setTimeout(function() { input.focus(); }, 50);
+    }
+}
+
+function rumClose(id) {
+    let edit = document.getElementById('rum_e_' + id);
+    let view = document.getElementById('rum_v_' + id);
+    if (edit) edit.style.display = 'none';
+    if (view) view.style.display = '';
+}
+
+function ruInplaceOnBlur(clientId) {
+    let _id = clientId.replace(/:/g, '_');
+    console.log('[ruInplaceOnBlur] id=' + _id + ' justShown=' + window['ruJustShown_' + _id]);
+    setTimeout(function() {
+        let justShown = window['ruJustShown_' + _id];
+        let panelOpen = $('.ui-autocomplete-panel:visible').length > 0;
+        let ov = PF(_id + '_ruOverlay');
+        let overlayOpen = ov != null && ov.isVisible();
+        console.log('[ruInplaceOnBlur] after timeout — justShown=' + justShown + ' panelOpen=' + panelOpen + ' overlayOpen=' + overlayOpen);
+        if (!justShown && !panelOpen && !overlayOpen) {
+            PF('inplace_' + _id).save();
+        }
+    }, 150);
+}
 
 
 
