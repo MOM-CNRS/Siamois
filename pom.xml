@@ -6,7 +6,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>fr.siamois</groupId>
     <artifactId>siamois</artifactId>
-    <version>0.11.7</version>
+    <version>0.11.9</version>
     <packaging>jar</packaging>
     <name>siamois</name>
 
@@ -71,6 +71,7 @@
             **/ui/lazydatamodel/tree/**,
             **/utils/ExecutionTimeAspect.java,
             **/ui/table/**,
+            **/dto/**,
             **/ui/form/**,
             **/ui/custom/**,
             **/*ViewModel.*,

@@ -7,12 +7,16 @@ import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.specimen.Specimen;
 import fr.siamois.domain.models.vocabulary.Concept;
+import fr.siamois.dto.FilterDTO;
 import fr.siamois.dto.entity.*;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitRepository;
 import fr.siamois.infrastructure.database.repositories.specimen.SpecimenRepository;
+import fr.siamois.infrastructure.database.repositories.specs.SpecimenSpec;
 import fr.siamois.mapper.InstitutionMapper;
 import fr.siamois.mapper.SpecimenMapper;
 import fr.siamois.mapper.SpecimenSummaryMapper;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -22,18 +26,20 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 
 import java.time.OffsetDateTime;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.time.ZoneOffset;
+import java.util.*;
 
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class SpecimenServiceTest {
+    private static final OffsetDateTime NOW = OffsetDateTime.of(2024, 1, 15, 12, 0, 0, 0, ZoneOffset.UTC);
+
 
     @Mock
     private SpecimenRepository specimenRepository;
@@ -375,7 +381,7 @@ class SpecimenServiceTest {
         RecordingUnitSummaryDTO ruDTO = new RecordingUnitSummaryDTO();
         ruDTO.setId(1L);
         SpecimenDTO currentDTO = new SpecimenDTO();
-        currentDTO.setCreationTime(OffsetDateTime.now());
+        currentDTO.setCreationTime(NOW);
 
         Specimen nextSpecimen = new Specimen();
         SpecimenDTO nextDTO = new SpecimenDTO();
@@ -399,7 +405,7 @@ class SpecimenServiceTest {
         RecordingUnitSummaryDTO ruDTO = new RecordingUnitSummaryDTO();
         ruDTO.setId(1L);
         SpecimenDTO currentDTO = new SpecimenDTO();
-        currentDTO.setCreationTime(OffsetDateTime.now());
+        currentDTO.setCreationTime(NOW);
 
         Specimen oldestSpecimen = new Specimen();
         SpecimenDTO oldestDTO = new SpecimenDTO();
@@ -425,7 +431,7 @@ class SpecimenServiceTest {
         RecordingUnitSummaryDTO ruDTO = new RecordingUnitSummaryDTO();
         ruDTO.setId(1L);
         SpecimenDTO currentDTO = new SpecimenDTO();
-        currentDTO.setCreationTime(OffsetDateTime.now());
+        currentDTO.setCreationTime(NOW);
 
         Specimen prevSpecimen = new Specimen();
         SpecimenDTO prevDTO = new SpecimenDTO();
@@ -719,6 +725,224 @@ class SpecimenServiceTest {
         assertTrue(managedSpecimen.getChildren().contains(newChildManaged));
         assertEquals(1, managedSpecimen.getChildren().size());
         verify(specimenRepository).findById(502L);
+    }
+
+    // =====================================================================
+    // searchSpecimen / searchSpecimenInRecordingUnit / prepareSpecs /
+    // resolveAncestorClosure
+    // =====================================================================
+
+    @Nested
+    class SearchAndPrepareSpecsTests {
+
+        InstitutionDTO institution;
+        RecordingUnitDTO recordingUnitDTO;
+        Pageable pageable;
+        Specimen specimen;
+        SpecimenDTO specimenDTO;
+
+        @BeforeEach
+        void init() {
+            institution = new InstitutionDTO();
+            institution.setId(1L);
+
+            recordingUnitDTO = new RecordingUnitDTO();
+            recordingUnitDTO.setId(5L);
+
+            pageable = PageRequest.of(0, 10);
+
+            specimen = new Specimen();
+            specimen.setId(100L);
+
+            specimenDTO = new SpecimenDTO();
+            specimenDTO.setId(100L);
+        }
+
+        // ------------------------------------------------------------------
+        // searchSpecimen — rootOnly=false
+        // ------------------------------------------------------------------
+
+        @Test
+        void searchSpecimen_noFilters_delegatesAndMapsPage() {
+            FilterDTO filters = new FilterDTO(false);
+            Page<Specimen> page = new PageImpl<>(List.of(specimen));
+
+            when(specimenRepository.findAll(any(Specification.class), eq(pageable))).thenReturn(page);
+            when(specimenMapper.convert(specimen)).thenReturn(specimenDTO);
+
+            Page<SpecimenDTO> result = specimenService.searchSpecimen(institution, filters, pageable);
+
+            assertThat(result.getTotalElements()).isEqualTo(1);
+            assertThat(result.getContent().get(0)).isSameAs(specimenDTO);
+            verify(specimenRepository).findAll(any(Specification.class), eq(pageable));
+        }
+
+        @Test
+        void searchSpecimen_emptyPage_returnsEmptyAndSkipsMapper() {
+            FilterDTO filters = new FilterDTO(false);
+            when(specimenRepository.findAll(any(Specification.class), eq(pageable)))
+                    .thenReturn(new PageImpl<>(List.of()));
+
+            Page<SpecimenDTO> result = specimenService.searchSpecimen(institution, filters, pageable);
+
+            assertTrue(result.isEmpty());
+            verifyNoInteractions(specimenMapper);
+        }
+
+        @Test
+        void searchSpecimen_rootOnlyFalse_neverCallsListVariantOfFindAll() {
+            FilterDTO filters = new FilterDTO(false);
+            filters.add(SpecimenSpec.ACTION_UNIT_FILTER, List.of(2L), FilterDTO.FilterType.EQUAL);
+            when(specimenRepository.findAll(any(Specification.class), eq(pageable)))
+                    .thenReturn(new PageImpl<>(List.of()));
+
+            specimenService.searchSpecimen(institution, filters, pageable);
+
+            // list variant (used only in closure resolution) must not be called
+            verify(specimenRepository, never()).findAll(any(Specification.class));
+        }
+
+        // ------------------------------------------------------------------
+        // searchSpecimenInRecordingUnit
+        // ------------------------------------------------------------------
+
+        @Test
+        void searchSpecimenInRecordingUnit_happyPath_delegatesAndMapsPage() {
+            FilterDTO filters = new FilterDTO(false);
+            Page<Specimen> page = new PageImpl<>(List.of(specimen));
+
+            when(specimenRepository.findAll(any(Specification.class), eq(pageable))).thenReturn(page);
+            when(specimenMapper.convert(specimen)).thenReturn(specimenDTO);
+
+            Page<SpecimenDTO> result = specimenService.searchSpecimenInRecordingUnit(
+                    institution, recordingUnitDTO, filters, pageable);
+
+            assertThat(result.getTotalElements()).isEqualTo(1);
+            assertThat(result.getContent().get(0)).isSameAs(specimenDTO);
+            verify(specimenRepository).findAll(any(Specification.class), eq(pageable));
+        }
+
+        @Test
+        void searchSpecimenInRecordingUnit_emptyPage_returnsEmpty() {
+            FilterDTO filters = new FilterDTO(false);
+            when(specimenRepository.findAll(any(Specification.class), eq(pageable)))
+                    .thenReturn(new PageImpl<>(List.of()));
+
+            Page<SpecimenDTO> result = specimenService.searchSpecimenInRecordingUnit(
+                    institution, recordingUnitDTO, filters, pageable);
+
+            assertTrue(result.isEmpty());
+        }
+
+        // ------------------------------------------------------------------
+        // prepareSpecs — rootOnly=true, no user filters
+        // ------------------------------------------------------------------
+
+        @Test
+        void prepareSpecs_rootOnlyTrue_noUserFilters_doesNotResolveClosureAndCallsPageVariant() {
+            FilterDTO filters = new FilterDTO(true);
+            // No user filters → hasUserFilters() == false
+            Page<Specimen> page = new PageImpl<>(List.of(specimen));
+            when(specimenRepository.findAll(any(Specification.class), eq(pageable))).thenReturn(page);
+            when(specimenMapper.convert(specimen)).thenReturn(specimenDTO);
+
+            specimenService.searchSpecimen(institution, filters, pageable);
+
+            // list findAll (closure resolution) must NOT be called
+            verify(specimenRepository, never()).findAll(any(Specification.class));
+            verifyNoInteractions(recordingUnitRepository);
+        }
+
+        // ------------------------------------------------------------------
+        // prepareSpecs — rootOnly=true, user filters, matches found
+        // ------------------------------------------------------------------
+
+        @Test
+        void prepareSpecs_rootOnlyTrue_withUserFilters_matchesFound_setsClosureAndMatchIds() {
+            FilterDTO filters = new FilterDTO(true);
+            filters.add(SpecimenSpec.ACTION_UNIT_FILTER, List.of(2L), FilterDTO.FilterType.EQUAL);
+
+            specimen.setId(100L);
+            when(specimenRepository.findAll(any(Specification.class)))
+                    .thenReturn(List.of(specimen));
+            when(recordingUnitRepository.findAncestorClosure(new Long[]{100L}))
+                    .thenReturn(List.of(100L, 200L));
+            when(specimenRepository.findAll(any(Specification.class), eq(pageable)))
+                    .thenReturn(new PageImpl<>(List.of(specimen)));
+            when(specimenMapper.convert(specimen)).thenReturn(specimenDTO);
+
+            specimenService.searchSpecimen(institution, filters, pageable);
+
+            verify(specimenRepository).findAll(any(Specification.class));
+            verify(recordingUnitRepository).findAncestorClosure(new Long[]{100L});
+            assertThat(filters.getAncestorClosure()).isNotNull();
+            assertEquals(Set.of(100L), filters.getMatchIds());
+        }
+
+        @Test
+        void prepareSpecs_rootOnlyTrue_withUserFilters_matchesFound_closureStoredInFilters() {
+            FilterDTO filters = new FilterDTO(true);
+            filters.add(SpecimenSpec.ACTION_UNIT_FILTER, List.of(3L), FilterDTO.FilterType.EQUAL);
+
+            Specimen s1 = new Specimen(); s1.setId(10L);
+            Specimen s2 = new Specimen(); s2.setId(20L);
+
+            when(specimenRepository.findAll(any(Specification.class)))
+                    .thenReturn(List.of(s1, s2));
+            when(recordingUnitRepository.findAncestorClosure(any(Long[].class)))
+                    .thenReturn(List.of(10L, 20L, 30L));
+            when(specimenRepository.findAll(any(Specification.class), eq(pageable)))
+                    .thenReturn(new PageImpl<>(List.of()));
+
+            specimenService.searchSpecimen(institution, filters, pageable);
+
+            assertThat(new HashSet<>(filters.getAncestorClosure()))
+                    .isEqualTo(new HashSet<>(Set.of(10L, 20L, 30L)));
+            assertThat(filters.getMatchIds()).isEqualTo(Set.of(10L, 20L));
+        }
+
+        // ------------------------------------------------------------------
+        // prepareSpecs — rootOnly=true, user filters, no matches
+        // ------------------------------------------------------------------
+
+        @Test
+        void prepareSpecs_rootOnlyTrue_withUserFilters_noMatches_emptyClosureNoAncestorCall() {
+            FilterDTO filters = new FilterDTO(true);
+            filters.add(SpecimenSpec.ACTION_UNIT_FILTER, List.of(99L), FilterDTO.FilterType.EQUAL);
+
+            when(specimenRepository.findAll(any(Specification.class)))
+                    .thenReturn(Collections.emptyList());
+            when(specimenRepository.findAll(any(Specification.class), eq(pageable)))
+                    .thenReturn(new PageImpl<>(List.of()));
+
+            Page<SpecimenDTO> result = specimenService.searchSpecimen(institution, filters, pageable);
+
+            verify(recordingUnitRepository, never()).findAncestorClosure(any());
+            assertTrue(result.isEmpty());
+            assertThat(filters.getAncestorClosure()).isNotNull();
+            assertTrue(filters.getAncestorClosure().isEmpty());
+        }
+
+        // ------------------------------------------------------------------
+        // resolveAncestorClosure — cached closure is reused
+        // ------------------------------------------------------------------
+
+        @Test
+        void resolveAncestorClosure_whenClosureAlreadyCached_reusesItWithoutQueryingRepos() {
+            FilterDTO filters = new FilterDTO(true);
+            filters.add(SpecimenSpec.ACTION_UNIT_FILTER, List.of(2L), FilterDTO.FilterType.EQUAL);
+            // Pre-populate closure so the cache branch is taken
+            filters.setAncestorClosure(Set.of(55L, 66L));
+
+            when(specimenRepository.findAll(any(Specification.class), eq(pageable)))
+                    .thenReturn(new PageImpl<>(List.of()));
+
+            specimenService.searchSpecimen(institution, filters, pageable);
+
+            // list-variant and ancestor-closure query must NOT be called
+            verify(specimenRepository, never()).findAll(any(Specification.class));
+            verifyNoInteractions(recordingUnitRepository);
+        }
     }
 
 }

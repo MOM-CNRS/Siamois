@@ -48,6 +48,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -59,6 +60,8 @@ import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class RecordingUnitServiceTest {
+    private static final OffsetDateTime NOW = OffsetDateTime.of(2024, 1, 15, 12, 0, 0, 0, ZoneOffset.UTC);
+
 
     @Mock
     private RecordingUnitRepository recordingUnitRepository;
@@ -1181,7 +1184,7 @@ class RecordingUnitServiceTest {
         ActionUnitSummaryDTO action = new ActionUnitSummaryDTO();
         action.setId(10L);
         RecordingUnitDTO current = new RecordingUnitDTO();
-        current.setCreationTime(OffsetDateTime.now());
+        current.setCreationTime(NOW);
 
         RecordingUnit nextEntity = new RecordingUnit();
         RecordingUnitDTO nextDTO = new RecordingUnitDTO();
@@ -1230,7 +1233,7 @@ class RecordingUnitServiceTest {
         ActionUnitSummaryDTO action = new ActionUnitSummaryDTO();
         action.setId(10L);
         RecordingUnitDTO current = new RecordingUnitDTO();
-        current.setCreationTime(OffsetDateTime.now());
+        current.setCreationTime(NOW);
 
         RecordingUnit prevEntity = new RecordingUnit();
         RecordingUnitDTO prevDTO = new RecordingUnitDTO();
@@ -1504,9 +1507,9 @@ class RecordingUnitServiceTest {
         filters.add(RecordingUnitSpec.ACTION_UNIT_FILTER, List.of(3L), FilterDTO.FilterType.CONTAINS);
         filters.add(RecordingUnitSpec.CONTRIBUTORS_FILTER, List.of(4L), FilterDTO.FilterType.CONTAINS);
         filters.add(RecordingUnitSpec.TYPE_FILTER, List.of(5L), FilterDTO.FilterType.CONTAINS);
-        filters.add(RecordingUnitSpec.OPENING_DATE_FILTER, List.of(OffsetDateTime.now(), OffsetDateTime.now().plusDays(1)),
+        filters.add(RecordingUnitSpec.OPENING_DATE_FILTER, List.of(NOW, NOW.plusDays(1)),
                 FilterDTO.FilterType.CONTAINS);
-        filters.add(RecordingUnitSpec.CLOSING_DATE_FILTER, List.of(OffsetDateTime.now(), OffsetDateTime.now().plusDays(1)),
+        filters.add(RecordingUnitSpec.CLOSING_DATE_FILTER, List.of(NOW, NOW.plusDays(1)),
                 FilterDTO.FilterType.CONTAINS);
 
         Specification<RecordingUnit> spec = RecordingUnitService.userFilterSpecs(filters);

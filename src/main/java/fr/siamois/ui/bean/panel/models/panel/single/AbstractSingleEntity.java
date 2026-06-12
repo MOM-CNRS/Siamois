@@ -43,6 +43,8 @@ import org.springframework.core.convert.ConversionService;
 
 import java.io.Serializable;
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -118,8 +120,8 @@ public abstract class AbstractSingleEntity<T extends AbstractEntityDTO>
 
     @Override
     public void applyViewState(TableViewState state) {
-
-    };
+        // no view state so far
+    }
 
     @Override
     public boolean isDirty() {
@@ -173,13 +175,13 @@ public abstract class AbstractSingleEntity<T extends AbstractEntityDTO>
         this.formContextServices = context.getBean(FormContextServices.class);
         this.langBean = context.getBean(LangBean.class);
         this.conversionService = context.getBean(ConversionService.class);
-        this.bookmarkService = context.getBean(BookmarkService.class);;
+        this.bookmarkService = context.getBean(BookmarkService.class);
     }
 
     // -------------------- Utility -------------------------
 
     public static String generateRandomActionUnitIdentifier() {
-        int currentYear = java.time.LocalDate.now().getYear();
+        int currentYear = LocalDate.now(ZoneOffset.UTC).getYear();
         return String.valueOf(currentYear);
     }
 
@@ -230,43 +232,44 @@ public abstract class AbstractSingleEntity<T extends AbstractEntityDTO>
      * Helper for children: once unit + detailsForm are set,
      * call this to initialize the EntityFormContext.
      */
+    private void updateEntityListTabsIfPresent(AbstractSingleEntityPanel<?> singlePanel) {
+        if (singlePanel.getTabs() == null) return;
+        singlePanel.getTabs().stream()
+                .filter(EntityListTab.class::isInstance)
+                .map(t -> (EntityListTab<?>) t)
+                .forEach(t -> {
+                    if (t.getTableModel() != null) t.getTableModel().updateIfPresent(unit);
+                });
+    }
+
+    private void handlePostSave() {
+        if (isRoot || parentOrOverview == null) return;
+        if (parentOrOverview instanceof AbstractListPanel<?> listPanel) {
+            listPanel.updateRowInTableModel(unit);
+            PrimeFaces.current().ajax().update(listPanel.getRowUpdateTarget(unit.getId()));
+        } else if (parentOrOverview instanceof AbstractSingleEntityPanel<?> singlePanel) {
+            updateEntityListTabsIfPresent(singlePanel);
+            PrimeFaces.current().ajax().update(
+                    "singlePanelUnitForm-" + singlePanel.getPanelIndex() + ":singlePanelUnitTabs"
+            );
+        }
+    }
+
     public void initFormContext(boolean forceInit) {
         if (unit == null) {
             log.warn("initFormContext called with null unit");
             return;
         }
-        PanelFieldSource fieldSource = new PanelFieldSource(detailsForm);
         if (formContext == null || forceInit) {
             formContext = new EntityFormContext<>(
                     unit,
-                    fieldSource,
+                    new PanelFieldSource(detailsForm),
                     formContextServices,
                     conversionService,
-                    // callback appelé quand le champ de scope change
                     (field, concept) -> onFormScopeChanged(concept),
-                    // nom de la propriété qui porte le scope (ex: "type")
                     getFormScopePropertyName()
             );
-            formContext.addPostSaveCallback(() -> {
-                if (!isRoot && parentOrOverview != null) {
-                    if (parentOrOverview instanceof AbstractListPanel<?> listPanel) {
-                        listPanel.updateRowInTableModel(unit);
-                        PrimeFaces.current().ajax().update(listPanel.getRowUpdateTarget(unit.getId()));
-                    } else if (parentOrOverview instanceof AbstractSingleEntityPanel<?> singlePanel) {
-                        if (singlePanel.getTabs() != null) {
-                            singlePanel.getTabs().stream()
-                                .filter(EntityListTab.class::isInstance)
-                                .map(t -> (EntityListTab<?>) t)
-                                .forEach(t -> {
-                                    if (t.getTableModel() != null) t.getTableModel().updateIfPresent(unit);
-                                });
-                        }
-                        PrimeFaces.current().ajax().update(
-                            "singlePanelUnitForm-" + singlePanel.getPanelIndex() + ":singlePanelUnitTabs"
-                        );
-                    }
-                }
-            });
+            formContext.addPostSaveCallback(this::handlePostSave);
         }
         formContext.init(forceInit);
     }

@@ -26,7 +26,12 @@ import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import fr.siamois.dto.entity.RecordingUnitSummaryDTO;
+import org.junit.jupiter.api.Nested;
+
+import java.lang.reflect.Method;
 import java.time.LocalDateTime;
+import java.time.Month;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.*;
@@ -292,7 +297,7 @@ class FormServiceTest {
         countAnswer.setValue(99);
 
         CustomFieldAnswerDateTimeViewModel  createdAtAnswer = new CustomFieldAnswerDateTimeViewModel ();
-        createdAtAnswer.setValue(LocalDateTime.of(2022, 5, 6, 7, 8, 9));
+        createdAtAnswer.setValue(LocalDateTime.of(2022, Month.MAY, 6, 7, 8, 9));
 
         CustomFormResponseViewModel  response = new CustomFormResponseViewModel ();
         Map<CustomField, CustomFieldAnswerViewModel > answers = new HashMap<>();
@@ -365,7 +370,7 @@ class FormServiceTest {
 
 
         CustomFieldAnswerDateTimeViewModel  createdAtAnswer = new CustomFieldAnswerDateTimeViewModel ();
-        createdAtAnswer.setValue(LocalDateTime.of(2023, 1, 1, 12, 0));
+        createdAtAnswer.setValue(LocalDateTime.of(2023, Month.JANUARY, 1, 12, 0));
 
         // CustomFieldAnswerSelectOneFromFieldCode: Use uiVal to set the concept
         ConceptDTO concept = mock(ConceptDTO.class);
@@ -993,8 +998,142 @@ class FormServiceTest {
         assertNull(result);
     }
 
+    // =====================================================================
+    // handlePhaseSet / handleRecordingUnitSet
+    // Accessed via the private populateSystemFieldValue dispatcher.
+    // =====================================================================
 
+    /** Reflective helper to invoke populateSystemFieldValue(answer, value). */
+    private void populate(CustomFieldAnswerViewModel answer, Object value) throws Exception {
+        Method m = FormService.class.getDeclaredMethod(
+                "populateSystemFieldValue", CustomFieldAnswerViewModel.class, Object.class);
+        m.setAccessible(true);
+        m.invoke(formService, answer, value);
+    }
 
+    @Nested
+    class HandlePhaseSetTests {
+
+        @Test
+        void phaseSet_withPhaseDTOSet_setsListOnAnswer() throws Exception {
+            CustomFieldAnswerSelectMultiplePhaseViewModel answer =
+                    new CustomFieldAnswerSelectMultiplePhaseViewModel();
+            PhaseDTO p1 = new PhaseDTO(); p1.setId(1L);
+            PhaseDTO p2 = new PhaseDTO(); p2.setId(2L);
+
+            populate(answer, new LinkedHashSet<>(Set.of(p1, p2)));
+
+            assertNotNull(answer.getValue());
+            assertEquals(2, answer.getValue().size());
+            assertTrue(answer.getValue().containsAll(Set.of(p1, p2)));
+        }
+
+        @Test
+        void phaseSet_withEmptySet_setsEmptyListOnAnswer() throws Exception {
+            CustomFieldAnswerSelectMultiplePhaseViewModel answer =
+                    new CustomFieldAnswerSelectMultiplePhaseViewModel();
+
+            populate(answer, new HashSet<PhaseDTO>());
+
+            assertNotNull(answer.getValue());
+            assertTrue(answer.getValue().isEmpty());
+        }
+
+        @Test
+        void phaseSet_withNullValue_leavesAnswerUnchanged() throws Exception {
+            CustomFieldAnswerSelectMultiplePhaseViewModel answer =
+                    new CustomFieldAnswerSelectMultiplePhaseViewModel();
+            List<PhaseDTO> before = answer.getValue();
+
+            populate(answer, null);
+
+            assertSame(before, answer.getValue());
+        }
+
+        @Test
+        void phaseSet_withNonSetValue_leavesAnswerUnchanged() throws Exception {
+            CustomFieldAnswerSelectMultiplePhaseViewModel answer =
+                    new CustomFieldAnswerSelectMultiplePhaseViewModel();
+            List<PhaseDTO> before = answer.getValue();
+
+            populate(answer, "not-a-set");
+
+            assertSame(before, answer.getValue());
+        }
+
+        @Test
+        void phaseSet_resultIsNewListInstance() throws Exception {
+            CustomFieldAnswerSelectMultiplePhaseViewModel answer =
+                    new CustomFieldAnswerSelectMultiplePhaseViewModel();
+            Set<PhaseDTO> input = new HashSet<>(Set.of(new PhaseDTO()));
+
+            populate(answer, input);
+
+            assertNotSame(input, answer.getValue());
+        }
+    }
+
+    @Nested
+    class HandleRecordingUnitSetTests {
+
+        @Test
+        void recordingUnitSet_withRecordingUnitSummarySet_setsListOnAnswer() throws Exception {
+            CustomFieldAnswerSelectMultipleRecordingUnitViewModel answer =
+                    new CustomFieldAnswerSelectMultipleRecordingUnitViewModel();
+            RecordingUnitSummaryDTO ru1 = new RecordingUnitSummaryDTO(); ru1.setId(10L);
+            RecordingUnitSummaryDTO ru2 = new RecordingUnitSummaryDTO(); ru2.setId(20L);
+
+            populate(answer, new LinkedHashSet<>(Set.of(ru1, ru2)));
+
+            assertNotNull(answer.getValue());
+            assertEquals(2, answer.getValue().size());
+            assertTrue(answer.getValue().containsAll(Set.of(ru1, ru2)));
+        }
+
+        @Test
+        void recordingUnitSet_withEmptySet_setsEmptyListOnAnswer() throws Exception {
+            CustomFieldAnswerSelectMultipleRecordingUnitViewModel answer =
+                    new CustomFieldAnswerSelectMultipleRecordingUnitViewModel();
+
+            populate(answer, new HashSet<RecordingUnitSummaryDTO>());
+
+            assertNotNull(answer.getValue());
+            assertTrue(answer.getValue().isEmpty());
+        }
+
+        @Test
+        void recordingUnitSet_withNullValue_leavesAnswerUnchanged() throws Exception {
+            CustomFieldAnswerSelectMultipleRecordingUnitViewModel answer =
+                    new CustomFieldAnswerSelectMultipleRecordingUnitViewModel();
+            List<RecordingUnitSummaryDTO> before = answer.getValue();
+
+            populate(answer, null);
+
+            assertSame(before, answer.getValue());
+        }
+
+        @Test
+        void recordingUnitSet_withNonSetValue_leavesAnswerUnchanged() throws Exception {
+            CustomFieldAnswerSelectMultipleRecordingUnitViewModel answer =
+                    new CustomFieldAnswerSelectMultipleRecordingUnitViewModel();
+            List<RecordingUnitSummaryDTO> before = answer.getValue();
+
+            populate(answer, List.of(new RecordingUnitSummaryDTO()));
+
+            assertSame(before, answer.getValue());
+        }
+
+        @Test
+        void recordingUnitSet_resultIsNewListInstance() throws Exception {
+            CustomFieldAnswerSelectMultipleRecordingUnitViewModel answer =
+                    new CustomFieldAnswerSelectMultipleRecordingUnitViewModel();
+            Set<RecordingUnitSummaryDTO> input = new HashSet<>(Set.of(new RecordingUnitSummaryDTO()));
+
+            populate(answer, input);
+
+            assertNotSame(input, answer.getValue());
+        }
+    }
 
 
 

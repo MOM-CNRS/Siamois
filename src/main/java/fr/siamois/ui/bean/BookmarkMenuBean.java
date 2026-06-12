@@ -39,8 +39,8 @@ public class BookmarkMenuBean implements Serializable {
 
     private final FlowBean flowBean;
     private final SessionSettingsBean sessionSettingsBean;
-    private final BookmarkService bookmarkService;
-    private final UiViewService uiViewService;
+    private final transient BookmarkService bookmarkService;
+    private final transient UiViewService uiViewService;
     private final NavBean navBean;
 
     // PrimeFaces Lazy Model

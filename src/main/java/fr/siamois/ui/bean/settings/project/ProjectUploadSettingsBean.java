@@ -30,6 +30,7 @@ import java.io.InputStream;
 @Data
 public class ProjectUploadSettingsBean {
 
+    public static final String TEMPLATE_FORM_CC_TEMPLATE_FORM_TEMPLATE_GROWL = "templateFormCC:templateForm:templateGrowl";
     private final OOXMLImportService importService;
     private final ProjectDataSeeder seeder;
 
@@ -67,20 +68,20 @@ public class ProjectUploadSettingsBean {
 
     public void uploadSpec() {
         if(specs == null) {
-            FacesContext.getCurrentInstance().addMessage("templateFormCC:templateForm:templateGrowl",
+            FacesContext.getCurrentInstance().addMessage(TEMPLATE_FORM_CC_TEMPLATE_FORM_TEMPLATE_GROWL,
                     new FacesMessage(FacesMessage.SEVERITY_ERROR, "Rien à importer", null));
-            PrimeFaces.current().ajax().update("templateFormCC:templateForm:templateGrowl");
+            PrimeFaces.current().ajax().update(TEMPLATE_FORM_CC_TEMPLATE_FORM_TEMPLATE_GROWL);
         }
         try {
             seeder.seedAll(specs,project);
-            FacesContext.getCurrentInstance().addMessage("templateFormCC:templateForm:templateGrowl",
+            FacesContext.getCurrentInstance().addMessage(TEMPLATE_FORM_CC_TEMPLATE_FORM_TEMPLATE_GROWL,
                     new FacesMessage(FacesMessage.SEVERITY_INFO, "Données importées avec succès", null));
-            PrimeFaces.current().ajax().update("templateFormCC:templateForm:templateGrowl");
+            PrimeFaces.current().ajax().update(TEMPLATE_FORM_CC_TEMPLATE_FORM_TEMPLATE_GROWL);
             reset();
         } catch (Exception e) {
-            FacesContext.getCurrentInstance().addMessage("templateFormCC:templateForm:templateGrowl",
+            FacesContext.getCurrentInstance().addMessage(TEMPLATE_FORM_CC_TEMPLATE_FORM_TEMPLATE_GROWL,
                     new FacesMessage(FacesMessage.SEVERITY_ERROR, "Une erreur est survenue", e.getMessage()));
-            PrimeFaces.current().ajax().update("templateFormCC:templateForm:templateGrowl");
+            PrimeFaces.current().ajax().update(TEMPLATE_FORM_CC_TEMPLATE_FORM_TEMPLATE_GROWL);
         }
     }
 

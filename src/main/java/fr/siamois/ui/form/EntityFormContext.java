@@ -50,6 +50,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
@@ -78,6 +79,7 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
     public static final String SELECT_RU = "selectRU";
     public static final String DATABASE_ID = "databaseId";
     public static final String FIELD = "field";
+    public static final String DIALOG_UNSAVED_ERROR = "dialog.unsaved.error";
 
     private T unit;
 
@@ -522,7 +524,7 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
             }
 
         } catch (Exception e) {
-            MessageUtils.displayErrorMessage(langBean, "dialog.unsaved.error", e.getMessage());
+            MessageUtils.displayErrorMessage(langBean, DIALOG_UNSAVED_ERROR, e.getMessage());
         }
 
     }
@@ -539,7 +541,7 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
                 this.save();
             }
         } catch (Exception e) {
-            MessageUtils.displayErrorMessage(langBean, "dialog.unsaved.error", e.getMessage());
+            MessageUtils.displayErrorMessage(langBean, DIALOG_UNSAVED_ERROR, e.getMessage());
         }
     }
 
@@ -548,7 +550,7 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
             return;
         }
         if (answer.getNewType() == null || answer.getNewActionUnit() == null) {
-            MessageUtils.displayErrorMessage(langBean, "dialog.unsaved.error", "Le projet et le type sont obligatoires");
+            MessageUtils.displayErrorMessage(langBean, DIALOG_UNSAVED_ERROR, "Le projet et le type sont obligatoires");
             return;
         }
         try {
@@ -559,7 +561,7 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
             toSave.setAuthor(sessionSettingsBean.getAuthenticatedUser());
             toSave.setCreatedBy(sessionSettingsBean.getAuthenticatedUser());
             toSave.setContributors(List.of(sessionSettingsBean.getAuthenticatedUser()));
-            toSave.setOpeningDate(OffsetDateTime.now());
+            toSave.setOpeningDate(OffsetDateTime.now(ZoneOffset.UTC));
             toSave.setType(answer.getNewType().concept());
             toSave.setParents(new HashSet<>());
             toSave.setChildren(new HashSet<>());
@@ -577,7 +579,7 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
                 this.save();
             }
         } catch (Exception e) {
-            MessageUtils.displayErrorMessage(langBean, "dialog.unsaved.error", e.getMessage());
+            MessageUtils.displayErrorMessage(langBean, DIALOG_UNSAVED_ERROR, e.getMessage());
         }
     }
 
@@ -602,17 +604,15 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
             if (answer.getNewActionUnit() == null && unit instanceof RecordingUnitDTO ru) {
                 answer.setNewActionUnit(ru.getActionUnit());
             }
-        } else if (rawAnswer instanceof CustomFieldAnswerStratigraphyViewModel stratiAnswer) {
-            if (stratiAnswer.getNewActionUnit() == null && unit instanceof RecordingUnitDTO ru) {
+        } else if (rawAnswer instanceof CustomFieldAnswerStratigraphyViewModel stratiAnswer && stratiAnswer.getNewActionUnit() == null && unit instanceof RecordingUnitDTO ru) {
                 stratiAnswer.setNewActionUnit(ru.getActionUnit());
-            }
         }
     }
 
     public void saveNewTargetRuForStrati(CustomFieldAnswerViewModel rawAnswer) {
         if (!(rawAnswer instanceof CustomFieldAnswerStratigraphyViewModel answer)) return;
         if (answer.getNewType() == null || answer.getNewActionUnit() == null) {
-            MessageUtils.displayErrorMessage(langBean, "dialog.unsaved.error", "Le projet et le type sont obligatoires");
+            MessageUtils.displayErrorMessage(langBean, DIALOG_UNSAVED_ERROR, "Le projet et le type sont obligatoires");
             return;
         }
         try {
@@ -623,7 +623,7 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
             toSave.setAuthor(sessionSettingsBean.getAuthenticatedUser());
             toSave.setCreatedBy(sessionSettingsBean.getAuthenticatedUser());
             toSave.setContributors(List.of(sessionSettingsBean.getAuthenticatedUser()));
-            toSave.setOpeningDate(OffsetDateTime.now());
+            toSave.setOpeningDate(OffsetDateTime.now(ZoneOffset.UTC));
             toSave.setType(answer.getNewType().concept());
             toSave.setParents(new HashSet<>());
             toSave.setChildren(new HashSet<>());
@@ -637,7 +637,7 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
             answer.setNewType(null);
             answer.setNewActionUnit(null);
         } catch (Exception e) {
-            MessageUtils.displayErrorMessage(langBean, "dialog.unsaved.error", e.getMessage());
+            MessageUtils.displayErrorMessage(langBean, DIALOG_UNSAVED_ERROR, e.getMessage());
         }
     }
 
@@ -698,7 +698,7 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
             return;
         }
         if (answer.getNewIdentifier() == null || answer.getNewIdentifier().isBlank()) {
-            MessageUtils.displayErrorMessage(langBean, "dialog.unsaved.error", "L'identifiant est obligatoire");
+            MessageUtils.displayErrorMessage(langBean, DIALOG_UNSAVED_ERROR, "L'identifiant est obligatoire");
             return;
         }
         try {
@@ -723,7 +723,7 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
                 this.save();
             }
         } catch (Exception e) {
-            MessageUtils.displayErrorMessage(langBean, "dialog.unsaved.error", e.getMessage());
+            MessageUtils.displayErrorMessage(langBean, DIALOG_UNSAVED_ERROR, e.getMessage());
         }
     }
 
@@ -732,7 +732,7 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
             return;
         }
         if (answer.getNewIdentifier() == null || answer.getNewIdentifier().isBlank()) {
-            MessageUtils.displayErrorMessage(langBean, "dialog.unsaved.error", "L'identifiant est obligatoire");
+            MessageUtils.displayErrorMessage(langBean, DIALOG_UNSAVED_ERROR, "L'identifiant est obligatoire");
             return;
         }
         try {
@@ -753,7 +753,7 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
                 this.save();
             }
         } catch (Exception e) {
-            MessageUtils.displayErrorMessage(langBean, "dialog.unsaved.error", e.getMessage());
+            MessageUtils.displayErrorMessage(langBean, DIALOG_UNSAVED_ERROR, e.getMessage());
         }
     }
 

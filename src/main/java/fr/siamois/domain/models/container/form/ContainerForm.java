@@ -84,13 +84,14 @@ public abstract class ContainerForm {
             .concept(spatialUnitConcept)
             .build();
 
+    public static final String CENTRIMETRE = "Centimètre";
     @Transient
     protected static final CustomFieldMeasurement lengthField = CustomFieldMeasurement.builder()
             .label("container.field.length")
             .isSystemField(true)
             .id(4L)
             .valueBinding("length")
-            .unit(new UnitDefinition(null, null, "Centimètre", "cm", UnitDefinition.Dimension.LENGTH, 0.01, false))
+            .unit(new UnitDefinition(null, null, CENTRIMETRE, "cm", UnitDefinition.Dimension.LENGTH, 0.01, false))
             .concept(lengthConcept)
             .build();
 
@@ -100,7 +101,7 @@ public abstract class ContainerForm {
             .isSystemField(true)
             .id(5L)
             .valueBinding("width")
-            .unit(new UnitDefinition(null, null, "Centimètre", "cm", UnitDefinition.Dimension.LENGTH, 0.01, false))
+            .unit(new UnitDefinition(null, null, CENTRIMETRE, "cm", UnitDefinition.Dimension.LENGTH, 0.01, false))
             .concept(widthConcept)
             .build();
 
@@ -110,7 +111,7 @@ public abstract class ContainerForm {
             .isSystemField(true)
             .id(6L)
             .valueBinding("height")
-            .unit(new UnitDefinition(null, null, "Centimètre", "cm", UnitDefinition.Dimension.LENGTH, 0.01, false))
+            .unit(new UnitDefinition(null, null, CENTRIMETRE, "cm", UnitDefinition.Dimension.LENGTH, 0.01, false))
             .concept(heightConcept)
             .build();
 

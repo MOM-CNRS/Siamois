@@ -1,10 +1,13 @@
 package fr.siamois.infrastructure.dataimport;
 
+import fr.siamois.dto.entity.ActionUnitDTO;
+import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.infrastructure.database.initializer.seeder.*;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -13,6 +16,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.time.LocalDate;
+import java.time.Month;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.Date;
@@ -137,7 +141,7 @@ class OOXMLImportServiceTest {
         Cell c = r.createCell(0);
 
         c.setCellValue(Date.from(
-                LocalDate.of(2024, 2, 10)
+                LocalDate.of(2024, Month.FEBRUARY, 10)
                         .atStartOfDay(ZoneOffset.UTC)  // <-- UTC
                         .toInstant()
         ));
@@ -148,7 +152,7 @@ class OOXMLImportServiceTest {
 
         OffsetDateTime dt = service.parseOffsetDateTime(c);
         assertThat(dt).isEqualTo(
-                LocalDate.of(2024, 2, 10).atStartOfDay().atOffset(ZoneOffset.UTC)
+                LocalDate.of(2024, Month.FEBRUARY, 10).atStartOfDay().atOffset(ZoneOffset.UTC)
         );
     }
 
@@ -243,7 +247,7 @@ class OOXMLImportServiceTest {
         row(s, 2, "US 1", "uri?idt=th1&idc=2", "a@b.fr", "INST", null);
         row(s, 3, "US 2", "uri?idt=th1&idc=3", "a@b.fr", "INST", null);
 
-        List<SpatialUnitSeeder.SpatialUnitSpecs> specs = service.parseSpatialUnits(s, OOXMLImportService.ImportScope.ALL, null);
+        List<SpatialUnitSeeder.SpatialUnitSpecs> specs = service.parseSpatialUnits(s, null);
 
         SpatialUnitSeeder.SpatialUnitSpecs parent =
                 specs.stream()
@@ -450,7 +454,7 @@ class OOXMLImportServiceTest {
         assertThat(ru.matrixTexture()).isEqualTo("Sableux");
 
         // System fields
-        assertThat(ru.createdBy()).isEqualTo("system@siamois.fr");
+        assertThat(ru.createdBy()).isEqualTo(OOXMLImportService.SIAMOIS_SYSTEM);
         assertThat(ru.creationTime()).isNotNull();
     }
 
@@ -598,7 +602,7 @@ class OOXMLImportServiceTest {
 
         // Execute
         List<SpecimenSeeder.SpecimenSpecs> specs =
-                service.parseSpecimens(s, OOXMLImportService.ImportScope.ALL, null);
+                service.parseSpecimens(s, null);
 
         // Assert
         assertThat(specs).hasSize(1);
@@ -640,6 +644,238 @@ class OOXMLImportServiceTest {
     }
 
 
+    // -------------------------------------------------------------------------
+    // parseStratiRels
+    // -------------------------------------------------------------------------
+
+    @Test
+    void parseStratiRels_nullSheet_returnsEmpty() {
+        assertThat(service.parseStratiRels(null)).isEmpty();
+    }
+
+    @Test
+    void parseStratiRels_noHeaderRow_returnsEmpty() {
+        Workbook wb = workbook();
+        Sheet s = wb.createSheet("Strati");
+        // no row created at all
+        assertThat(service.parseStratiRels(s)).isEmpty();
+    }
+
+    @Test
+    void parseStratiRels_missingUs1Column_returnsEmpty() {
+        Workbook wb = workbook();
+        Sheet s = sheet(wb, "Strati", "us2", "relation");
+        row(s, 1, "US-002", "uri?idt=th1&idc=1");
+        assertThat(service.parseStratiRels(s)).isEmpty();
+    }
+
+    @Test
+    void parseStratiRels_missingUs2Column_returnsEmpty() {
+        Workbook wb = workbook();
+        Sheet s = sheet(wb, "Strati", "us1", "relation");
+        row(s, 1, "US-001", "uri?idt=th1&idc=1");
+        assertThat(service.parseStratiRels(s)).isEmpty();
+    }
+
+    @Test
+    void parseStratiRels_fullValidRow_parsesAllFields() {
+        Workbook wb = workbook();
+        Sheet s = sheet(wb, "Strati",
+                "us1", "us2", "relation", "direction vocabulaire", "asynchrone", "incertain");
+        row(s, 1, "US-001", "US-002", "uri?idt=th240&idc=4287979", "True", "True", "False");
+
+        List<RecordingUnitStratiRelSeeder.RecordingUnitStratiRelDTO> specs = service.parseStratiRels(s);
+
+        assertThat(specs).hasSize(1);
+        RecordingUnitStratiRelSeeder.RecordingUnitStratiRelDTO dto = specs.get(0);
+        assertThat(dto.us1()).isEqualTo("US-001");
+        assertThat(dto.us2()).isEqualTo("US-002");
+        assertThat(dto.rel()).isEqualTo(new ConceptSeeder.ConceptKey("th240", "4287979"));
+        assertThat(dto.conceptDirection()).isTrue();
+        assertThat(dto.isAsynchronous()).isTrue();
+        assertThat(dto.isUncertain()).isFalse();
+    }
+
+    @Test
+    void parseStratiRels_booleanNotTrue_isFalse() {
+        Workbook wb = workbook();
+        Sheet s = sheet(wb, "Strati",
+                "us1", "us2", "relation", "direction vocabulaire", "asynchrone", "incertain");
+        row(s, 1, "US-001", "US-002", "uri?idt=th240&idc=1", "False", "false", "0");
+
+        RecordingUnitStratiRelSeeder.RecordingUnitStratiRelDTO dto = service.parseStratiRels(s).get(0);
+        assertThat(dto.conceptDirection()).isFalse();
+        assertThat(dto.isAsynchronous()).isFalse();
+        assertThat(dto.isUncertain()).isFalse();
+    }
+
+    @Test
+    void parseStratiRels_missingOptionalColumns_defaultsToFalseAndNullRelKey() {
+        Workbook wb = workbook();
+        Sheet s = sheet(wb, "Strati", "us1", "us2");
+        row(s, 1, "A-001", "B-002");
+
+        RecordingUnitStratiRelSeeder.RecordingUnitStratiRelDTO dto = service.parseStratiRels(s).get(0);
+        assertThat(dto.rel()).isNull();
+        assertThat(dto.conceptDirection()).isFalse();
+        assertThat(dto.isAsynchronous()).isFalse();
+        assertThat(dto.isUncertain()).isFalse();
+    }
+
+    @Test
+    void parseStratiRels_blankUs1_rowIsSkipped() {
+        Workbook wb = workbook();
+        Sheet s = sheet(wb, "Strati", "us1", "us2");
+        row(s, 1, "   ", "US-002");
+
+        assertThat(service.parseStratiRels(s)).isEmpty();
+    }
+
+    @Test
+    void parseStratiRels_blankUs2_rowIsSkipped() {
+        Workbook wb = workbook();
+        Sheet s = sheet(wb, "Strati", "us1", "us2");
+        row(s, 1, "US-001", "");
+
+        assertThat(service.parseStratiRels(s)).isEmpty();
+    }
+
+    @Test
+    void parseStratiRels_multipleRows_allParsed() {
+        Workbook wb = workbook();
+        Sheet s = sheet(wb, "Strati", "us1", "us2");
+        row(s, 1, "A", "B");
+        row(s, 2, "C", "D");
+
+        assertThat(service.parseStratiRels(s)).hasSize(2);
+    }
+
+    @Test
+    void parseStratiRels_rowsWithMixedBlankUs1_onlyValidRowsIncluded() {
+        Workbook wb = workbook();
+        Sheet s = sheet(wb, "Strati", "us1", "us2");
+        row(s, 1, "A", "B");
+        row(s, 2, "", "D");      // blank us1 → skipped
+        row(s, 3, "E", "F");
+
+        assertThat(service.parseStratiRels(s)).hasSize(2);
+    }
+
+    // -------------------------------------------------------------------------
+    // parsePhases
+    // -------------------------------------------------------------------------
+
+    @Test
+    void parsePhases_nullSheet_returnsEmpty() {
+        assertThat(service.parsePhases(null, null)).isEmpty();
+    }
+
+    @Test
+    void parsePhases_noHeaderRow_returnsEmpty() {
+        Workbook wb = workbook();
+        Sheet s = wb.createSheet("Phase");
+        assertThat(service.parsePhases(s, null)).isEmpty();
+    }
+
+    @Test
+    void parsePhases_blankIdentifier_rowIsSkipped() {
+        Workbook wb = workbook();
+        Sheet s = sheet(wb, "Phase", "Identifiant", "Titre");
+        row(s, 1, "   ", "titre quelconque");
+
+        assertThat(service.parsePhases(s,  null)).isEmpty();
+    }
+
+    @Test
+    void parsePhases_fullValidRow_withoutActionUnit_parsesAllFields() {
+        Workbook wb = workbook();
+        Sheet s = sheet(wb, "Phase",
+                "Identifiant", "Titre", "Type uri", "Description",
+                "Ordre", "Borne inferieure", "Borne superieure",
+                "Auteur", "Projet", "Institution");
+        row(s, 1,
+                "PH-01", "Phase 1", "uri?idt=th240&idc=100", "Une description",
+                "2", "1000", "2000",
+                "author@site.fr", "UA-001", "INST");
+
+        List<PhaseSeeder.PhaseSpecs> specs =
+                service.parsePhases(s,  null);
+
+        assertThat(specs).hasSize(1);
+        PhaseSeeder.PhaseSpecs ph = specs.get(0);
+        assertThat(ph.identifier()).isEqualTo("PH-01");
+        assertThat(ph.title()).isEqualTo("Phase 1");
+        assertThat(ph.type()).isEqualTo(new ConceptSeeder.ConceptKey("th240", "100"));
+        assertThat(ph.description()).isEqualTo("Une description");
+        assertThat(ph.orderNumber()).isEqualTo(2);
+        assertThat(ph.lowerBound()).isEqualTo(1000);
+        assertThat(ph.upperBound()).isEqualTo(2000);
+        assertThat(ph.authorEmail()).isEqualTo("author@site.fr");
+        assertThat(ph.actionUnitKey().fullIdentifier()).isEqualTo("UA-001");
+        assertThat(ph.actionUnitKey().institutionIdentifier()).isEqualTo("INST");
+    }
+
+    @Test
+    void parsePhases_withActionUnit_usesActionUnitIdentifiersInsteadOfSheetColumns() {
+        InstitutionDTO inst = new InstitutionDTO();
+        inst.setIdentifier("CODE-INST");
+
+        ActionUnitDTO au = new ActionUnitDTO();
+        au.setFullIdentifier("AU-FULL-ID");
+        au.setCreatedByInstitution(inst);
+
+        Workbook wb = workbook();
+        Sheet s = sheet(wb, "Phase", "Identifiant", "Titre", "Auteur");
+        row(s, 1, "PH-02", "Phase 2", "user@site.fr");
+
+        PhaseSeeder.PhaseSpecs ph =
+                service.parsePhases(s,  au).get(0);
+
+        assertThat(ph.actionUnitKey().fullIdentifier()).isEqualTo("AU-FULL-ID");
+        assertThat(ph.actionUnitKey().institutionIdentifier()).isEqualTo("CODE-INST");
+    }
+
+    @Test
+    void parsePhases_missingOptionalColumns_nullsForMissingFields() {
+        Workbook wb = workbook();
+        Sheet s = sheet(wb, "Phase", "Identifiant");
+        row(s, 1, "PH-03");
+
+        PhaseSeeder.PhaseSpecs ph =
+                service.parsePhases(s, null).get(0);
+
+        assertThat(ph.identifier()).isEqualTo("PH-03");
+        assertThat(ph.title()).isNull();
+        assertThat(ph.type()).isNull();
+        assertThat(ph.description()).isNull();
+        assertThat(ph.orderNumber()).isNull();
+        assertThat(ph.lowerBound()).isNull();
+        assertThat(ph.upperBound()).isNull();
+        assertThat(ph.authorEmail()).isNull();
+    }
+
+    @Test
+    void parsePhases_multipleRows_allParsed() {
+        Workbook wb = workbook();
+        Sheet s = sheet(wb, "Phase", "Identifiant", "Titre");
+        row(s, 1, "PH-01", "Phase A");
+        row(s, 2, "PH-02", "Phase B");
+        row(s, 3, "PH-03", "Phase C");
+
+        assertThat(service.parsePhases(s,  null)).hasSize(3);
+    }
+
+    @Test
+    void parsePhases_mixedBlankIdentifiers_onlyNonBlankIncluded() {
+        Workbook wb = workbook();
+        Sheet s = sheet(wb, "Phase", "Identifiant", "Titre");
+        row(s, 1, "PH-01", "Phase A");
+        row(s, 2, "", "Phase B");    // blank identifier → skipped
+        row(s, 3, "PH-03", "Phase C");
+
+        assertThat(service.parsePhases(s, null)).hasSize(2);
+    }
+
     @Test
     void extractThesaurusDomain_questionMarkAtStart_returnsEmptyString() {
         // given
@@ -652,5 +888,168 @@ class OOXMLImportServiceTest {
         assertThat(result).isNull();
     }
 
+    // -------------------------------------------------------------------------
+    // Catch-block coverage: every parse* method must wrap unexpected exceptions
+    // in IllegalStateException("[Feuille '<name>'] : ...").
+    //
+    // Strategy:
+    //  - URI-parsing methods (extractIdtFromUri / extractIdcFromUri) throw when
+    //    the URI does not contain idt= or idc=.  Placing "bad-uri" in the type
+    //    column of a data row reliably reaches the outer catch.
+    //  - For parsePersons / parseRecordingRels that contain no URI calls,
+    //    a FORMULA cell (=1+1) in the key column triggers
+    //    "Cannot get a STRING value from a NUMERIC formula cell" inside
+    //    getStringCell(), which then propagates through forEachDataRow and is
+    //    wrapped by the outer catch.
+    // -------------------------------------------------------------------------
+
+    private static final String BAD_URI = "not-a-valid-uri";
+
+    /** Creates a formula cell (=1+1) whose getStringCellValue() throws. */
+    private void formulaCell(Row r, int col) {
+        r.createCell(col).setCellFormula("1+1");
+    }
+
+    @Test
+    void parseInstitutions_rowThrows_wrappedWithSheetName() {
+        Workbook wb = workbook();
+        Sheet s = sheet(wb, "Institution", "Nom", "Description", "Identifiant", "Email Admins", "Thesaurus");
+        row(s, 1, "INRAP", "Desc", "ID", "a@b.fr", BAD_URI);
+
+        IllegalStateException ex = assertThrows(IllegalStateException.class,
+                () -> service.parseInstitutions(s));
+
+        assertThat(ex.getMessage()).contains("[Feuille 'Institution']");
+    }
+
+    @Test
+    void parsePersons_rowThrows_wrappedWithSheetName() {
+        Workbook wb = workbook();
+        Sheet s = sheet(wb, "Personne", "Email", "Nom", "Prenom", "Identifiant");
+        Row r = s.createRow(1);
+        formulaCell(r, 0); // Email column – formula cell triggers ISE in getStringCell
+
+        IllegalStateException ex = assertThrows(IllegalStateException.class,
+                () -> service.parsePersons(s));
+
+        assertThat(ex.getMessage()).contains("[Feuille 'Personne']");
+    }
+
+    @Test
+    void parseSpatialUnits_rowThrows_wrappedWithSheetName() {
+        Workbook wb = workbook();
+        Sheet s = sheet(wb, "Lieu", "Nom", "Uri type", "Createur", "Institution", "Enfants");
+        row(s, 1, "Site Nord", BAD_URI, "sys", "INST", null);
+
+        IllegalStateException ex = assertThrows(IllegalStateException.class,
+                () -> service.parseSpatialUnits(s,  null));
+
+        assertThat(ex.getMessage()).contains("[Feuille 'Lieu']");
+    }
+
+    @Test
+    void parseRecordingRels_rowThrows_wrappedWithSheetName() {
+        Workbook wb = workbook();
+        Sheet s = sheet(wb, "Relations", "Parent", "Enfant");
+        Row r = s.createRow(1);
+        formulaCell(r, 0); // Parent column
+        r.createCell(1).setCellValue("child");
+
+        IllegalStateException ex = assertThrows(IllegalStateException.class,
+                () -> service.parseRecordingRels(s));
+
+        assertThat(ex.getMessage()).contains("[Feuille 'Relations']");
+    }
+
+    @Test
+    void parseStratiRels_rowThrows_wrappedWithSheetName() {
+        Workbook wb = workbook();
+        Sheet s = sheet(wb, "Strati", "us1", "us2", "relation");
+        row(s, 1, "A", "B", BAD_URI);
+
+        IllegalStateException ex = assertThrows(IllegalStateException.class,
+                () -> service.parseStratiRels(s));
+
+        assertThat(ex.getMessage()).contains("[Feuille 'Strati']");
+    }
+
+    @Test
+    void parseActionCodes_rowThrows_wrappedWithSheetName() {
+        Workbook wb = workbook();
+        Sheet s = sheet(wb, "ActionCode", "Code", "Type uri");
+        row(s, 1, "FOU", BAD_URI);
+
+        IllegalStateException ex = assertThrows(IllegalStateException.class,
+                () -> service.parseActionCodes(s));
+
+        assertThat(ex.getMessage()).contains("[Feuille 'ActionCode']");
+    }
+
+    @Test
+    void parseActionUnits_rowThrows_wrappedWithSheetName() {
+        Workbook wb = workbook();
+        Sheet s = sheet(wb, "Action", "Nom", "Identifiant", "Code", "Type uri",
+                "Createur", "Institution", "Date debut", "Date fin", "Contexte spatiale");
+        row(s, 1, "Fouille", "UA-001", "FOU", BAD_URI,
+                "user@fr", "INST", null, null, null);
+
+        IllegalStateException ex = assertThrows(IllegalStateException.class,
+                () -> service.parseActionUnits(s));
+
+        assertThat(ex.getMessage()).contains("[Feuille 'Action']");
+    }
+
+    @Test
+    void parseRecordingUnits_rowThrows_wrappedWithSheetName() {
+        Workbook wb = workbook();
+        Sheet s = sheet(wb, "UE",
+                "Identifiant", "Description", "Type uri", "Cycle uri",
+                "Couleur de la matrice", "Texture de la matrice", "Composition de la matrice",
+                "Agent uri", "Interpretation uri", "Author email", "Institution",
+                "Contributeurs email", "Date d'ouverture", "Date de fermeture",
+                "Unite spatiale", "Unite d'action");
+        row(s, 1,
+                "123", "desc", BAD_URI, null,
+                null, null, null,
+                null, null, "a@b.fr", "INST",
+                null, null, null, null, null);
+
+        IllegalStateException ex = assertThrows(IllegalStateException.class,
+                () -> service.parseRecordingUnits(s, OOXMLImportService.ImportScope.ALL, null));
+
+        assertThat(ex.getMessage()).contains("[Feuille 'UE']");
+    }
+
+    @Test
+    void parseSpecimens_rowThrows_wrappedWithSheetName() {
+        Workbook wb = workbook();
+        Sheet s = sheet(wb, "Spécimen",
+                "Identifiant", "Catégorie", "Matière", "Designatation",
+                "Institution", "Auteur fiche email", "Collecteur emails",
+                "Unité d'enregistrement");
+        row(s, 1, "SP-001", BAD_URI, null, null,
+                "INST", "a@b.fr", null, "US-001");
+
+        IllegalStateException ex = assertThrows(IllegalStateException.class,
+                () -> service.parseSpecimens(s,null));
+
+        assertThat(ex.getMessage()).contains("[Feuille 'Spécimen']");
+    }
+
+    @Test
+    void parsePhases_rowThrows_wrappedWithSheetName() {
+        Workbook wb = workbook();
+        Sheet s = sheet(wb, "Phase",
+                "Identifiant", "Titre", "Type uri", "Description",
+                "Ordre", "Borne inferieure", "Borne superieure",
+                "Auteur", "Projet", "Institution");
+        row(s, 1, "PH-01", "Title", BAD_URI, "Desc",
+                null, null, null, "a@b.fr", "UA-001", "INST");
+
+        IllegalStateException ex = assertThrows(IllegalStateException.class,
+                () -> service.parsePhases(s, null));
+
+        assertThat(ex.getMessage()).contains("[Feuille 'Phase']");
+    }
 
 }

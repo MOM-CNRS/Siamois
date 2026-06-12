@@ -17,6 +17,8 @@ import static fr.siamois.ui.bean.panel.models.panel.single.AbstractSingleEntity.
 public class PhaseTableDefinitionFactory {
 
     private static final String THIS = "@this";
+    public static final String PHASE_FIELD_IDENTIFIER = "phase.field.identifier";
+    public static final String IDENTIFIER = "identifier";
 
     private PhaseTableDefinitionFactory() {}
 
@@ -34,8 +36,8 @@ public class PhaseTableDefinitionFactory {
         Concept descriptionConcept = new Concept.Builder().vocabulary(SYSTEM_THESO).externalId("phase.description").build();
 
         CustomFieldText identifierField = CustomFieldText.builder()
-                .label("phase.field.identifier").isSystemField(true).isTextArea(false)
-                .id(1L).valueBinding("identifier").concept(identifierConcept).build();
+                .label(PHASE_FIELD_IDENTIFIER).isSystemField(true).isTextArea(false)
+                .id(1L).valueBinding(IDENTIFIER).concept(identifierConcept).build();
 
         CustomFieldSelectOneFromFieldCode typeField = CustomFieldSelectOneFromFieldCode.builder()
                 .label("phase.field.type").isSystemField(true).id(2L)
@@ -77,12 +79,12 @@ public class PhaseTableDefinitionFactory {
         tableModel.getTableDefinition().setCommandLinkColumn(
                 CommandLinkColumn.builder()
                         .id("identifierCol")
-                        .headerKey("phase.field.identifier")
+                        .headerKey(PHASE_FIELD_IDENTIFIER)
                         .visible(true).toggleable(false).sortable(false).filterable(false)
-                        .sortField("identifier")
+                        .sortField(IDENTIFIER)
                         .iconClass("bi bi-layers")
                         .chipColor("var(--ground-main-color)")
-                        .valueKey("identifier")
+                        .valueKey(IDENTIFIER)
                         .action(TableColumnAction.GO_TO_PHASE)
                         .processExpr(THIS)
                         .updateExpr("flow")
@@ -93,7 +95,7 @@ public class PhaseTableDefinitionFactory {
 
         // Visible columns
         tableModel.getTableDefinition().addColumn(FormFieldColumn.builder()
-                .id("identifier").headerKey("phase.field.identifier").field(identifierField)
+                .id(IDENTIFIER).headerKey(PHASE_FIELD_IDENTIFIER).field(identifierField)
                 .sortable(true).filterable(true).visible(true).required(true).build());
 
         tableModel.getTableDefinition().addColumn(FormFieldColumn.builder()

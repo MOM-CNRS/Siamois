@@ -26,21 +26,21 @@ function toggleCollapseSidebar() {
 
 function animateSidebarClose() {
     // Manually force the CSS collapse transition right before AJAX finishes
-    var sidebar = document.getElementById('subSidebarForm');
+    let sidebar = document.getElementById('subSidebarForm');
     if (sidebar) {
         sidebar.classList.add('is-collapsed');
     }
 }
 
 function handleSidebarToggle(targetMode) {
-    var sidebar = document.getElementById('subSidebarForm');
+    let sidebar = document.getElementById('subSidebarForm');
     if (!sidebar) return;
 
     // Normalize input to lowercase to match our JSF class naming structure
-    var requestedModeClass = 'mode-' + targetMode.toLowerCase();
+    let requestedModeClass = 'mode-' + targetMode.toLowerCase();
 
-    var isCurrentlyCollapsed = sidebar.classList.contains('is-collapsed');
-    var isSameModeActive = sidebar.classList.contains(requestedModeClass);
+    let isCurrentlyCollapsed = sidebar.classList.contains('is-collapsed');
+    let isSameModeActive = sidebar.classList.contains(requestedModeClass);
 
     if (!isCurrentlyCollapsed && isSameModeActive) {
         // toggle the button already open
@@ -193,7 +193,7 @@ function hideSpinner(panelId) {
 function handleAutoSaveError(xhr, status, panelId) {
     hideSpinner(panelId);
     // Show error message (e.g., growl)
-    PF('templateGrowlVar').renderMessage({
+    PF('templateGrowllet').renderMessage({
         summary: 'Error',
         detail: 'Failed to save changes. Please try again.',
         severity: 'error'
@@ -249,14 +249,14 @@ function scrollAfterExpand(selector) {
 
 // ********** PANEL PROGRESS BAR
 // Function to show the progress bar with the custom color
-function showProgressBar(widgetVar, color) {
-    const progressBarValue = widgetVar.jq.find('.ui-progressbar-value');
+function showProgressBar(widgetlet, color) {
+    const progressBarValue = widgetlet.jq.find('.ui-progressbar-value');
     progressBarValue.css('background-color', color).show();
 }
 
 // Function to hide the progress bar and reset its color
-function hideProgressBar(widgetVar) {
-    const progressBarValue = widgetVar.jq.find('.ui-progressbar-value');
+function hideProgressBar(widgetlet) {
+    const progressBarValue = widgetlet.jq.find('.ui-progressbar-value');
     progressBarValue.css('background-color', 'transparent').hide();
 }
 
@@ -400,51 +400,51 @@ $(globalThis).on("popstate", function(e) {
 });
 
 function rumExpand(id) {
-    var view = document.getElementById('rum_v_' + id);
+    let view = document.getElementById('rum_v_' + id);
     if (!view) return;
     view.querySelectorAll('.rum-extra').forEach(function(el) { el.style.display = ''; });
-    var expandBtn = view.querySelector('.rum-expand-btn');
+    let expandBtn = view.querySelector('.rum-expand-btn');
     if (expandBtn) expandBtn.style.display = 'none';
-    var collapseBtn = view.querySelector('.rum-collapse-btn');
+    let collapseBtn = view.querySelector('.rum-collapse-btn');
     if (collapseBtn) collapseBtn.style.display = '';
 }
 
 function rumCollapse(id) {
-    var view = document.getElementById('rum_v_' + id);
+    let view = document.getElementById('rum_v_' + id);
     if (!view) return;
     view.querySelectorAll('.rum-extra').forEach(function(el) { el.style.display = 'none'; });
-    var expandBtn = view.querySelector('.rum-expand-btn');
+    let expandBtn = view.querySelector('.rum-expand-btn');
     if (expandBtn) expandBtn.style.display = '';
-    var collapseBtn = view.querySelector('.rum-collapse-btn');
+    let collapseBtn = view.querySelector('.rum-collapse-btn');
     if (collapseBtn) collapseBtn.style.display = 'none';
 }
 
 function rumEdit(id) {
-    var view = document.getElementById('rum_v_' + id);
-    var edit = document.getElementById('rum_e_' + id);
+    let view = document.getElementById('rum_v_' + id);
+    let edit = document.getElementById('rum_e_' + id);
     if (view) view.style.display = 'none';
     if (edit) {
         edit.style.display = '';
-        var input = edit.querySelector('input[type="text"]');
+        let input = edit.querySelector('input[type="text"]');
         if (input) setTimeout(function() { input.focus(); }, 50);
     }
 }
 
 function rumClose(id) {
-    var edit = document.getElementById('rum_e_' + id);
-    var view = document.getElementById('rum_v_' + id);
+    let edit = document.getElementById('rum_e_' + id);
+    let view = document.getElementById('rum_v_' + id);
     if (edit) edit.style.display = 'none';
     if (view) view.style.display = '';
 }
 
 function ruInplaceOnBlur(clientId) {
-    var _id = clientId.replace(/:/g, '_');
+    let _id = clientId.replace(/:/g, '_');
     console.log('[ruInplaceOnBlur] id=' + _id + ' justShown=' + window['ruJustShown_' + _id]);
     setTimeout(function() {
-        var justShown = window['ruJustShown_' + _id];
-        var panelOpen = $('.ui-autocomplete-panel:visible').length > 0;
-        var ov = PF(_id + '_ruOverlay');
-        var overlayOpen = ov != null && ov.isVisible();
+        let justShown = window['ruJustShown_' + _id];
+        let panelOpen = $('.ui-autocomplete-panel:visible').length > 0;
+        let ov = PF(_id + '_ruOverlay');
+        let overlayOpen = ov != null && ov.isVisible();
         console.log('[ruInplaceOnBlur] after timeout — justShown=' + justShown + ' panelOpen=' + panelOpen + ' overlayOpen=' + overlayOpen);
         if (!justShown && !panelOpen && !overlayOpen) {
             PF('inplace_' + _id).save();

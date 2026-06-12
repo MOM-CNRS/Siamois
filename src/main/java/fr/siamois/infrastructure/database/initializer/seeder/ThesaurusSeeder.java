@@ -29,27 +29,25 @@ public class ThesaurusSeeder {
                 .orElse(null);
     }
 
+    private Vocabulary findOrCreateVocabulary(String baseUri, String externalId) throws DatabaseDataInitException {
+        Vocabulary vocab = findVocabularyOrReturnNull(baseUri, externalId);
+        if (vocab != null) return vocab;
+        String fullUri = baseUri + "?idt=" + externalId;
+        try {
+            return vocabularyService.findOrCreateVocabularyOfUri(fullUri);
+        } catch (InvalidEndpointException e) {
+            throw new DatabaseDataInitException("Error creating vocabulary from URI: " + fullUri, e);
+        }
+    }
+
     public Map<String, Vocabulary> seed(List<ThesaurusSpec> specs) throws DatabaseDataInitException {
         Map<String, Vocabulary> result = new HashMap<>();
         for (int i = 0; i < specs.size(); i++) {
             var s = specs.get(i);
             try {
-                String baseUri = s.baseUri();
-                String externalId = s.externalId();
-
-                Vocabulary vocab = findVocabularyOrReturnNull(baseUri, externalId);
-
-                if(vocab == null) {
-                    String fullUri = baseUri + "?idt=" + externalId;
-                    try {
-                        result.put(externalId, vocabularyService.findOrCreateVocabularyOfUri(fullUri));
-                    } catch (InvalidEndpointException e) {
-                        throw new DatabaseDataInitException("Error creating vocabulary from URI: " + fullUri, e);
-                    }
-                }
-                else {
-                    result.put(externalId, vocab);
-                }
+                result.put(s.externalId(), findOrCreateVocabulary(s.baseUri(), s.externalId()));
+            } catch (DatabaseDataInitException e) {
+                throw e;
             } catch (Exception e) {
                 throw new IllegalStateException(
                         "[Thésaurus ligne " + (i + 1) + "] '" + s.externalId() + "' : " + e.getMessage(), e);

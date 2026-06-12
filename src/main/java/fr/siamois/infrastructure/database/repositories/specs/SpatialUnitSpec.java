@@ -41,7 +41,7 @@ public class SpatialUnitSpec {
 
     @NonNull
     public static Specification<SpatialUnit> unitIsRoot() {
-        return ((root, query, criteriaBuilder) -> criteriaBuilder.isEmpty(root.get("parents")));
+        return ((root, query, criteriaBuilder) -> criteriaBuilder.isEmpty(root.get(PARENT_FILTER)));
     }
 
     @NonNull
@@ -53,7 +53,7 @@ public class SpatialUnitSpec {
     @NonNull
     public static Specification<SpatialUnit> spatialUnitInSpatialUnit(Long id) {
         return (root, query, criteriaBuilder) -> {
-            Join<SpatialUnit, SpatialUnit> parentsJoin = root.join("parents");
+            Join<SpatialUnit, SpatialUnit> parentsJoin = root.join(PARENT_FILTER);
             return criteriaBuilder.equal(parentsJoin.get("id"), id);
         };
     }

@@ -50,21 +50,15 @@ public class ProjectDetailsBean {
         }));
 
         elements.add(new OptionElement("bi bi-people", langBean.msg("projectSettings.titles.members"),
-                "(A venir) Les membres du projet et leurs rôles", () -> {
-            return null;
-        }));
+                "(A venir) Les membres du projet et leurs rôles", () -> null));
 
         elements.add(new OptionElement("bi bi-ui-radios",
                 langBean.msg("projectSettings.titles.tables"),
-                "(A venir) Gérer les tables, types, formulaires et identifiants du projet", () -> {
-            return null;
-        }));
+                "(A venir) Gérer les tables, types, formulaires et identifiants du projet", () -> null));
 
         elements.add(new OptionElement("bi bi-table",
                 "\uD83D\uDEA7 Thésaurus",
-                "(A venir) Gestion du thésaurus du projet", () -> {
-            return null;
-        }));
+                "(A venir) Gestion du thésaurus du projet", () -> null));
 
 
     }

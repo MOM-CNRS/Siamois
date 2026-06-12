@@ -16,6 +16,7 @@ import fr.siamois.ui.exceptions.CannotInitializeNewUnitDialogException;
 import org.springframework.stereotype.Component;
 
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
 
 @Component
@@ -95,7 +96,7 @@ public class SpecimenHandler implements INewUnitHandler<SpecimenDTO> {
             unit.setCreatedBy(sessionSettingsBean.getAuthenticatedUser());
             unit.setAuthors(List.of(sessionSettingsBean.getAuthenticatedUser()));
             unit.setCollectors(List.of(sessionSettingsBean.getAuthenticatedUser()));
-            unit.setCollectionDate(OffsetDateTime.now());
+            unit.setCollectionDate(OffsetDateTime.now(ZoneOffset.UTC));
         }
 
     }
@@ -116,7 +117,7 @@ public class SpecimenHandler implements INewUnitHandler<SpecimenDTO> {
             unit.setCreatedBy(sessionSettingsBean.getAuthenticatedUser());
             unit.setAuthors(List.of(sessionSettingsBean.getAuthenticatedUser()));
             unit.setCollectors(List.of(sessionSettingsBean.getAuthenticatedUser()));
-            unit.setCollectionDate(OffsetDateTime.now());
+            unit.setCollectionDate(OffsetDateTime.now(ZoneOffset.UTC));
             return;
 
         }

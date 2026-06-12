@@ -1,5 +1,6 @@
 package fr.siamois.infrastructure.database.initializer.seeder;
 
+import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.specimen.Specimen;
@@ -54,7 +55,7 @@ class SpecimenSeederTest {
                         List.of("author@siamois.fr"),
                         List.of("author@siamois.fr"),
                         OffsetDateTime.of(2012, 6, 22, 0, 0, 0, 0, ZoneOffset.UTC),
-                        new RecordingUnitSeeder.RecordingUnitKey("chartres-C309_01-1100")
+                        new RecordingUnitSeeder.RecordingUnitKey("chartres-C309_01-1100", "")
                 )
         );
     }
@@ -64,7 +65,7 @@ class SpecimenSeederTest {
     void seed_AuthorDoesNotExist() {
 
 
-        when(personSeeder.findPersonOrThrow("author@siamois.fr"))
+        when(personSeeder.findOrCreatePerson("author@siamois.fr"))
                 .thenThrow(new IllegalStateException("Person introuvable"));
 
         IllegalStateException ex = assertThrows(
@@ -95,11 +96,18 @@ class SpecimenSeederTest {
     @Test
     void seed_AlreadyExists() {
 
+        ActionUnit au = new ActionUnit();
+        au.setFullIdentifier("action-full-id");
+        RecordingUnit ru = new RecordingUnit();
+        ru.setFullIdentifier("chartres-C309_01-1100");
+        ru.setActionUnit(au);
+
         when(institutionSeeder.findInstitutionOrReturnNull("chartres"))
                 .thenReturn(new Institution());
-        when(recordingUnitSeeder.getRecordingUnitFromKey(new RecordingUnitSeeder.RecordingUnitKey("chartres-C309_01-1100"),1L))
-                .thenReturn(new RecordingUnit());
-        when(specimenRepository.findByFullIdentifier("chartres-C309_01-1100-1"))
+        when(recordingUnitSeeder.getRecordingUnitFromKey(new RecordingUnitSeeder.RecordingUnitKey("chartres-C309_01-1100",""),1L))
+                .thenReturn(ru);
+        when(specimenRepository.findByFullIdentifierAndInstitutionIdAndRecordingUnitFullIdentifierAndActionUnitFullIdentifier(
+                "chartres-C309_01-1100-1", null, "chartres-C309_01-1100", "action-full-id"))
                 .thenReturn(Optional.of(new Specimen()));
 
         seeder.seed(toInsert,1L);
@@ -111,12 +119,16 @@ class SpecimenSeederTest {
     @Test
     void seed_Created() {
 
+        ActionUnit au = new ActionUnit();
+        au.setFullIdentifier("action-full-id");
+        RecordingUnit returned = new RecordingUnit();
+        returned.setFullIdentifier("chartres-C309_01-1100");
+        returned.setActionUnit(au);
+
         when(institutionSeeder.findInstitutionOrReturnNull("chartres"))
                 .thenReturn(new Institution());
-        when(recordingUnitSeeder.getRecordingUnitFromKey(new RecordingUnitSeeder.RecordingUnitKey("chartres-C309_01-1100"),1L))
-                .thenReturn(new RecordingUnit());
-        when(specimenRepository.findByFullIdentifier("chartres-C309_01-1100-1"))
-                .thenReturn(Optional.empty());
+        when(recordingUnitSeeder.getRecordingUnitFromKey(new RecordingUnitSeeder.RecordingUnitKey("chartres-C309_01-1100",""),1L))
+                .thenReturn(returned);
 
         seeder.seed(toInsert,1L);
 

@@ -10,6 +10,7 @@ import lombok.*;
 
 import java.io.Serializable;
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 
 @Entity
 @Table(name = "action_manager")
@@ -32,7 +33,7 @@ public class ActionManagerRelation {
 
     @DefaultValue("NOW()")
     @Column(name = "added_at", nullable = false, updatable = false)
-    private OffsetDateTime addedAt = OffsetDateTime.now();
+    private OffsetDateTime addedAt = OffsetDateTime.now(ZoneOffset.UTC);
 
     public ActionManagerRelation(InstitutionDTO institution, PersonDTO person) {
         this.id = new ActionManagerId(institution.getId(), person.getId());
