@@ -31,6 +31,7 @@ import org.junit.jupiter.api.Nested;
 
 import java.lang.reflect.Method;
 import java.time.LocalDateTime;
+import java.time.Month;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.*;
@@ -296,7 +297,7 @@ class FormServiceTest {
         countAnswer.setValue(99);
 
         CustomFieldAnswerDateTimeViewModel  createdAtAnswer = new CustomFieldAnswerDateTimeViewModel ();
-        createdAtAnswer.setValue(LocalDateTime.of(2022, 5, 6, 7, 8, 9));
+        createdAtAnswer.setValue(LocalDateTime.of(2022, Month.MAY, 6, 7, 8, 9));
 
         CustomFormResponseViewModel  response = new CustomFormResponseViewModel ();
         Map<CustomField, CustomFieldAnswerViewModel > answers = new HashMap<>();
@@ -369,7 +370,7 @@ class FormServiceTest {
 
 
         CustomFieldAnswerDateTimeViewModel  createdAtAnswer = new CustomFieldAnswerDateTimeViewModel ();
-        createdAtAnswer.setValue(LocalDateTime.of(2023, 1, 1, 12, 0));
+        createdAtAnswer.setValue(LocalDateTime.of(2023, Month.JANUARY, 1, 12, 0));
 
         // CustomFieldAnswerSelectOneFromFieldCode: Use uiVal to set the concept
         ConceptDTO concept = mock(ConceptDTO.class);

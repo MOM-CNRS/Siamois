@@ -283,7 +283,7 @@ class FilterStateTooltipHelperTest {
     @Test
     void buildTooltip_dateType_isSkippedViaDefault() {
         Map<String, FilterState> map = new LinkedHashMap<>();
-        map.put("d", state(FilterState.FilterType.DATE, new Date()));
+        map.put("d", state(FilterState.FilterType.DATE, new Date(0)));
 
         assertFalse(FilterStateTooltipHelper.buildTooltip(map).contains("•"));
     }

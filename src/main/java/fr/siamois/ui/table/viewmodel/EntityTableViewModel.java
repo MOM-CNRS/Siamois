@@ -898,7 +898,7 @@ public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
                     );
                 }
 
-                default -> { throw new IllegalArgumentException("Invalid value for column: " + state.getColumnId()); }
+                default -> throw new IllegalArgumentException("Invalid value for column: " + state.getColumnId());
             }
         }
 

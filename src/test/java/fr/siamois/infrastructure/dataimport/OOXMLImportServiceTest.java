@@ -16,6 +16,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.time.LocalDate;
+import java.time.Month;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.Date;
@@ -140,7 +141,7 @@ class OOXMLImportServiceTest {
         Cell c = r.createCell(0);
 
         c.setCellValue(Date.from(
-                LocalDate.of(2024, 2, 10)
+                LocalDate.of(2024, Month.FEBRUARY, 10)
                         .atStartOfDay(ZoneOffset.UTC)  // <-- UTC
                         .toInstant()
         ));
@@ -151,7 +152,7 @@ class OOXMLImportServiceTest {
 
         OffsetDateTime dt = service.parseOffsetDateTime(c);
         assertThat(dt).isEqualTo(
-                LocalDate.of(2024, 2, 10).atStartOfDay().atOffset(ZoneOffset.UTC)
+                LocalDate.of(2024, Month.FEBRUARY, 10).atStartOfDay().atOffset(ZoneOffset.UTC)
         );
     }
 

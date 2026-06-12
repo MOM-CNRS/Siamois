@@ -70,8 +70,8 @@ class PhaseSeederTest {
         when(actionUnitRepository.findByIdentifierAndCreatedByInstitutionIdentifier("UA-001", "INST"))
                 .thenReturn(Optional.empty());
 
-        IllegalStateException ex = assertThrows(IllegalStateException.class,
-                () -> seeder.seed(List.of(spec("PH-01", null, null))));
+        var specs = List.of(spec("PH-01", null, null));
+        IllegalStateException ex = assertThrows(IllegalStateException.class, () -> seeder.seed(specs));
 
         assertThat(ex.getMessage()).contains("Projet introuvable");
     }
@@ -159,8 +159,8 @@ class PhaseSeederTest {
         when(conceptSeeder.findConceptOrThrow(typeKey))
                 .thenThrow(new IllegalStateException("Concept introuvable"));
 
-        IllegalStateException ex = assertThrows(IllegalStateException.class,
-                () -> seeder.seed(List.of(spec("PH-03", typeKey, null))));
+        var specs = List.of(spec("PH-03", typeKey, null));
+        IllegalStateException ex = assertThrows(IllegalStateException.class, () -> seeder.seed(specs));
 
         assertThat(ex.getMessage()).contains("Concept introuvable");
     }
@@ -228,8 +228,8 @@ class PhaseSeederTest {
         when(actionUnitRepository.findByIdentifierAndCreatedByInstitutionIdentifier("UA-001", "INST"))
                 .thenReturn(Optional.empty());
 
-        IllegalStateException ex = assertThrows(IllegalStateException.class,
-                () -> seeder.seed(List.of(spec("PH-ERR", null, null))));
+        var specs = List.of(spec("PH-ERR", null, null));
+        IllegalStateException ex = assertThrows(IllegalStateException.class, () -> seeder.seed(specs));
 
         assertThat(ex.getMessage()).contains("[Phase ligne 1]");
         assertThat(ex.getMessage()).contains("PH-ERR");

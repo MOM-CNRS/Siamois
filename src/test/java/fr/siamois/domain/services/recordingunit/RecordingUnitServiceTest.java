@@ -996,7 +996,7 @@ class RecordingUnitServiceTest {
             int result = recordingUnitService.countSearchResultsInRecordingUnit(
                     institution, recordingUnitDTO, filters);
 
-            assertThat(result).isEqualTo(0);
+            assertThat(result).isZero();
             verify(recordingUnitRepository, never()).findAncestorClosure(any());
         }
 
