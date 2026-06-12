@@ -124,8 +124,8 @@ public class OOXMLImportService {
 
             spatialUnits = parseSpatialUnits(spatialSheet, scope, actionUnitDTO);
             recordingUnits = parseRecordingUnits(recordingUnitSheet, scope, actionUnitDTO);
-            specimenSpecs = parseSpecimens(specimenSheet, scope, actionUnitDTO);
-            phaseSpecs = parsePhases(phaseSheet, scope, actionUnitDTO);
+            specimenSpecs = parseSpecimens(specimenSheet, actionUnitDTO);
+            phaseSpecs = parsePhases(phaseSheet, actionUnitDTO);
             recordingUnitDTOS = parseRecordingRels(recordingRelSheet);
             stratiDTOS = parseStratiRels(stratiSheet);
 
@@ -521,7 +521,7 @@ public class OOXMLImportService {
     }
 
 
-    public List<SpecimenSeeder.SpecimenSpecs> parseSpecimens(Sheet sheet, ImportScope scope, ActionUnitDTO actionUnit) {
+    public List<SpecimenSeeder.SpecimenSpecs> parseSpecimens(Sheet sheet, ActionUnitDTO actionUnit) {
         if (sheet == null) return List.of();
         try {
         Row header = sheet.getRow(0);
@@ -575,7 +575,7 @@ public class OOXMLImportService {
 
 
 
-    public List<PhaseSeeder.PhaseSpecs> parsePhases(Sheet sheet, ImportScope scope, ActionUnitDTO actionUnit) {
+    public List<PhaseSeeder.PhaseSpecs> parsePhases(Sheet sheet, ActionUnitDTO actionUnit) {
         if (sheet == null) return List.of();
         try {
             Row header = sheet.getRow(0);
