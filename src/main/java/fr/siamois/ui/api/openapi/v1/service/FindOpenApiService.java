@@ -37,6 +37,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -95,7 +96,7 @@ public class FindOpenApiService {
         shell.setCreatedBy(personDto);
         shell.setAuthors(new ArrayList<>(List.of(personDto)));
         shell.setCollectors(new ArrayList<>(List.of(personDto)));
-        shell.setCollectionDate(OffsetDateTime.now());
+        shell.setCollectionDate(OffsetDateTime.now(ZoneOffset.UTC));
         shell.setValidated(ValidationStatus.INCOMPLETE);
 
         Map<String, Object> fieldAnswers = request.getFieldAnswers() != null ? request.getFieldAnswers() : Map.of();
@@ -212,93 +213,108 @@ public class FindOpenApiService {
             return;
         }
         for (Map.Entry<String, Object> e : fieldAnswers.entrySet()) {
-            long fieldId;
-            try {
-                fieldId = Long.parseLong(e.getKey());
-            } catch (NumberFormatException ex) {
-                log.debug("Clé de champ ignorée (non numérique): {}", e.getKey());
-                continue;
-            }
-            CustomField field = fieldSource.findFieldById(fieldId);
-            if (field == null) {
-                log.debug("Champ id={} absent du formulaire effectif", fieldId);
-                continue;
-            }
-            CustomFieldAnswerViewModel vm = findViewModelForField(response.getAnswers(), field);
-            if (vm == null) {
-                continue;
-            }
-            Object typed;
-            try {
-                typed = coerceAnswerValue(field, e.getValue());
-            } catch (ResponseStatusException rex) {
-                throw rex;
-            } catch (RuntimeException ex) {
-                log.warn("Valeur ignorée pour champ id={} ({}): {}", fieldId, field.getClass().getSimpleName(), ex.toString());
-                continue;
-            }
-            if (typed == null && e.getValue() != null) {
-                log.debug("Valeur non convertible pour champ id={} type {}", fieldId, field.getClass().getSimpleName());
-                continue;
-            }
-            formService.applyTypedValueToAnswer(vm, typed);
+            mergeOneFieldAnswer(response, fieldSource, e.getKey(), e.getValue());
         }
     }
 
+    private void mergeOneFieldAnswer(CustomFormResponseViewModel response,
+                                     FieldSource fieldSource,
+                                     String key,
+                                     Object value) {
+        long fieldId;
+        try {
+            fieldId = Long.parseLong(key);
+        } catch (NumberFormatException ex) {
+            log.debug("Clé de champ ignorée (non numérique): {}", key);
+            return;
+        }
+        CustomField field = fieldSource.findFieldById(fieldId);
+        if (field == null) {
+            log.debug("Champ id={} absent du formulaire effectif", fieldId);
+            return;
+        }
+        CustomFieldAnswerViewModel vm = findViewModelForField(response.getAnswers(), field);
+        if (vm == null) {
+            return;
+        }
+        Object typed;
+        try {
+            typed = coerceAnswerValue(field, value);
+        } catch (ResponseStatusException rex) {
+            throw rex;
+        } catch (RuntimeException ex) {
+            log.warn("Valeur ignorée pour champ id={} ({}): {}", fieldId, field.getClass().getSimpleName(), ex.toString());
+            return;
+        }
+        if (typed == null && value != null) {
+            log.debug("Valeur non convertible pour champ id={} type {}", fieldId, field.getClass().getSimpleName());
+            return;
+        }
+        formService.applyTypedValueToAnswer(vm, typed);
+    }
+
     private Object coerceAnswerValue(CustomField field, Object raw) {
-        if (raw == null) {
-            return null;
-        }
-        if (field instanceof CustomFieldInteger) {
-            if (raw instanceof Number n) {
-                return n.intValue();
-            }
-            return Integer.parseInt(String.valueOf(raw));
-        }
-        if (field instanceof CustomFieldText) {
-            return String.valueOf(raw);
-        }
-        if (field instanceof CustomFieldDateTime) {
-            if (raw instanceof OffsetDateTime odt) {
-                return odt;
-            }
-            if (raw instanceof String s) {
-                return OffsetDateTime.parse(s);
-            }
-            throw new IllegalArgumentException("Format datetime attendu (chaîne ISO-8601 ou OffsetDateTime)");
-        }
-        if (field instanceof CustomFieldSelectOneFromFieldCode) {
-            long conceptId = requireLongId(raw, "concept");
-            Concept c = conceptRepository.findById(conceptId)
-                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Concept introuvable: " + conceptId));
-            return conceptMapper.convert(c);
-        }
-        if (field instanceof CustomFieldSelectOnePerson) {
-            long personId = requireLongId(raw, "personne");
-            Person p = personService.findById(personId);
-            if (p == null) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Personne introuvable: " + personId);
-            }
-            return personMapper.convert(p);
-        }
-        if (field instanceof CustomFieldSelectOneActionUnit) {
-            long actionId = requireLongId(raw, "unité d'action");
-            ActionUnitDTO au = actionUnitService.findById(actionId);
-            if (au == null) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Projet introuvable: " + actionId);
-            }
-            return actionUnitSummaryFromFull(au);
-        }
-        if (field instanceof CustomFieldSelectOneSpatialUnit) {
-            long suId = requireLongId(raw, "unité spatiale");
-            try {
-                return new SpatialUnitSummaryDTO(spatialUnitService.findById(suId));
-            } catch (RuntimeException ex) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unité spatiale introuvable: " + suId);
-            }
-        }
+        if (raw == null) return null;
+        if (field instanceof CustomFieldInteger) return coerceInteger(raw);
+        if (field instanceof CustomFieldText) return String.valueOf(raw);
+        if (field instanceof CustomFieldDateTime) return coerceDateTime(raw);
+        if (field instanceof CustomFieldSelectOneFromFieldCode) return coerceConcept(raw);
+        if (field instanceof CustomFieldSelectOnePerson) return coercePerson(raw);
+        if (field instanceof CustomFieldSelectOneActionUnit) return coerceActionUnit(raw);
+        if (field instanceof CustomFieldSelectOneSpatialUnit) return coerceSpatialUnit(raw);
         log.debug("Type de champ non pris en charge pour l'API v1: {}", field.getClass().getSimpleName());
         return null;
+    }
+
+    private Object coerceInteger(Object raw) {
+        if (raw instanceof Number n) {
+            return n.intValue();
+        }
+        return Integer.parseInt(String.valueOf(raw));
+    }
+
+    private Object coerceDateTime(Object raw) {
+        if (raw instanceof OffsetDateTime odt) {
+            return odt;
+        }
+        if (raw instanceof String s) {
+            return OffsetDateTime.parse(s);
+        }
+        throw new IllegalArgumentException("Format datetime attendu (chaîne ISO-8601 ou OffsetDateTime)");
+    }
+
+    private Object coerceConcept(Object raw) {
+        long conceptId = requireLongId(raw, "concept");
+        Concept c = conceptRepository.findById(conceptId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Concept introuvable: " + conceptId));
+        return conceptMapper.convert(c);
+    }
+
+    private Object coercePerson(Object raw) {
+        long personId = requireLongId(raw, "personne");
+        Person p = personService.findById(personId);
+        if (p == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Personne introuvable: " + personId);
+        }
+        return personMapper.convert(p);
+    }
+
+    private Object coerceActionUnit(Object raw) {
+        long actionId = requireLongId(raw, "unité d'action");
+        ActionUnitDTO au = actionUnitService.findById(actionId);
+        if (au == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Projet introuvable: " + actionId);
+        }
+        return actionUnitSummaryFromFull(au);
+    }
+
+    private Object coerceSpatialUnit(Object raw) {
+        long suId = requireLongId(raw, "unité spatiale");
+        try {
+            return new SpatialUnitSummaryDTO(spatialUnitService.findById(suId));
+        } catch (RuntimeException ex) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unité spatiale introuvable: " + suId);
+        }
     }
 
     private static ActionUnitSummaryDTO actionUnitSummaryFromFull(ActionUnitDTO au) {

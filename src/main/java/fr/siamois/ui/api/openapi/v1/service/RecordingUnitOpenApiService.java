@@ -83,6 +83,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -121,6 +122,12 @@ public class RecordingUnitOpenApiService {
     @Transactional(readOnly = true)
     public RecordingUnitMobileDetailData buildMobileDetail(String recordingUnitKey, PersonDTO personDto, Set<Long> accessibleInstitutionIds,
                                                            List<String> counts, String lang) {
+        return resolveMobileDetail(recordingUnitKey, personDto, accessibleInstitutionIds, counts, lang);
+    }
+
+    private RecordingUnitMobileDetailData resolveMobileDetail(String recordingUnitKey, PersonDTO personDto,
+                                                               Set<Long> accessibleInstitutionIds,
+                                                               List<String> counts, String lang) {
         RecordingUnitService.AccessibleRecordingUnit bundle =
                 recordingUnitService.findAccessibleRecordingUnitWithEntity(recordingUnitKey, accessibleInstitutionIds, counts);
         RecordingUnitDTO dto = bundle.dto();
@@ -443,23 +450,25 @@ public class RecordingUnitOpenApiService {
         for (Map.Entry<CustomField, CustomFieldAnswer> e : persisted.getAnswers().entrySet()) {
             CustomField field = e.getKey();
             CustomFieldAnswerViewModel vm = findViewModelForField(response.getAnswers(), field);
-            if (vm == null) {
-                continue;
+            if (vm != null) {
+                applyOnePersistedAnswer(e.getValue(), vm, lang);
             }
-            CustomFieldAnswer jpa = e.getValue();
-            if (jpa instanceof CustomFieldAnswerInteger jpaInt && vm instanceof CustomFieldAnswerIntegerViewModel vmInt) {
-                vmInt.setValue(jpaInt.getValue());
-            } else if (jpa instanceof CustomFieldAnswerText jpaText && vm instanceof CustomFieldAnswerTextViewModel vmText) {
-                vmText.setValue(jpaText.getValue());
-            } else if (jpa instanceof CustomFieldAnswerDateTime jpaDt && vm instanceof CustomFieldAnswerDateTimeViewModel vmDt) {
-                vmDt.setValue(jpaDt.getValue());
-            } else if (jpa instanceof CustomFieldAnswerSelectOne jpaSel
-                    && vm instanceof CustomFieldAnswerSelectOneFromFieldCodeViewModel vmFc
-                    && jpaSel.getValue() != null) {
-                ConceptDTO conceptDto = conceptMapper.convert(jpaSel.getValue());
-                String label = conceptDto.getExternalId() != null ? conceptDto.getExternalId() : "";
-                vmFc.setValue(new ConceptAutocompleteDTO(conceptDto, label, lang));
-            }
+        }
+    }
+
+    private void applyOnePersistedAnswer(CustomFieldAnswer jpa, CustomFieldAnswerViewModel vm, String lang) {
+        if (jpa instanceof CustomFieldAnswerInteger jpaInt && vm instanceof CustomFieldAnswerIntegerViewModel vmInt) {
+            vmInt.setValue(jpaInt.getValue());
+        } else if (jpa instanceof CustomFieldAnswerText jpaText && vm instanceof CustomFieldAnswerTextViewModel vmText) {
+            vmText.setValue(jpaText.getValue());
+        } else if (jpa instanceof CustomFieldAnswerDateTime jpaDt && vm instanceof CustomFieldAnswerDateTimeViewModel vmDt) {
+            vmDt.setValue(jpaDt.getValue());
+        } else if (jpa instanceof CustomFieldAnswerSelectOne jpaSel
+                && vm instanceof CustomFieldAnswerSelectOneFromFieldCodeViewModel vmFc
+                && jpaSel.getValue() != null) {
+            ConceptDTO conceptDto = conceptMapper.convert(jpaSel.getValue());
+            String label = conceptDto.getExternalId() != null ? conceptDto.getExternalId() : "";
+            vmFc.setValue(new ConceptAutocompleteDTO(conceptDto, label, lang));
         }
     }
 
@@ -488,6 +497,11 @@ public class RecordingUnitOpenApiService {
     @Transactional(readOnly = true)
     public RecordingUnitRelationsData buildRecordingUnitRelations(String recordingUnitKey,
                                                                   Set<Long> accessibleInstitutionIds) {
+        return resolveRecordingUnitRelations(recordingUnitKey, accessibleInstitutionIds);
+    }
+
+    private RecordingUnitRelationsData resolveRecordingUnitRelations(String recordingUnitKey,
+                                                                      Set<Long> accessibleInstitutionIds) {
         RecordingUnitService.RecordingUnitRelationsBundle bundle =
                 recordingUnitService.findRelationsForAccessibleRecordingUnit(recordingUnitKey, accessibleInstitutionIds);
         return new RecordingUnitRelationsData(
@@ -517,7 +531,7 @@ public class RecordingUnitOpenApiService {
                 relatedRecordingUnitId, accessibleInstitutionIds);
         mutateHierarchy(() -> recordingUnitService.addHierarchyChild(
                 parent.entity().getId(), relatedRecordingUnitId));
-        return buildRecordingUnitRelations(recordingUnitKey, accessibleInstitutionIds);
+        return resolveRecordingUnitRelations(recordingUnitKey, accessibleInstitutionIds);
     }
 
     @Transactional
@@ -533,7 +547,7 @@ public class RecordingUnitOpenApiService {
                 relatedRecordingUnitId, accessibleInstitutionIds);
         mutateHierarchy(() -> recordingUnitService.addHierarchyChild(
                 relatedRecordingUnitId, child.entity().getId()));
-        return buildRecordingUnitRelations(recordingUnitKey, accessibleInstitutionIds);
+        return resolveRecordingUnitRelations(recordingUnitKey, accessibleInstitutionIds);
     }
 
     @Transactional
@@ -549,7 +563,7 @@ public class RecordingUnitOpenApiService {
                 relatedRecordingUnitId, accessibleInstitutionIds);
         mutateHierarchy(() -> recordingUnitService.removeHierarchyChild(
                 parent.entity().getId(), relatedRecordingUnitId));
-        return buildRecordingUnitRelations(recordingUnitKey, accessibleInstitutionIds);
+        return resolveRecordingUnitRelations(recordingUnitKey, accessibleInstitutionIds);
     }
 
     @Transactional
@@ -565,7 +579,7 @@ public class RecordingUnitOpenApiService {
                 relatedRecordingUnitId, accessibleInstitutionIds);
         mutateHierarchy(() -> recordingUnitService.removeHierarchyChild(
                 relatedRecordingUnitId, child.entity().getId()));
-        return buildRecordingUnitRelations(recordingUnitKey, accessibleInstitutionIds);
+        return resolveRecordingUnitRelations(recordingUnitKey, accessibleInstitutionIds);
     }
 
     private void assertWritePermission(RecordingUnitDTO dto, PersonDTO personDto) {
@@ -623,29 +637,7 @@ public class RecordingUnitOpenApiService {
                     "Aucun formulaire personnalisé pour ce type d'UE et cette organisation");
         }
 
-        RecordingUnitDTO shell = new RecordingUnitDTO();
-        shell.setType(typeDto);
-        shell.setCreatedByInstitution(institution);
-        shell.setActionUnit(actionUnitSummaryFromFull(au));
-        shell.setAuthor(personDto);
-        shell.setCreatedBy(personDto);
-        shell.setContributors(new ArrayList<>(List.of(personDto)));
-        shell.setOpeningDate(OffsetDateTime.now());
-        shell.setValidated(ValidationStatus.INCOMPLETE);
-        shell.setParents(new HashSet<>());
-        shell.setChildren(new HashSet<>());
-
-        List<SpatialUnitSummaryDTO> suOptions = spatialUnitService.getSpatialUnitOptionsFor(shell);
-        if (!suOptions.isEmpty()) {
-            shell.setSpatialUnit(suOptions.get(0));
-        }
-
-        shell.resetFullIdentifier();
-        if (shell.getFullIdentifier() == null || shell.getFullIdentifier().isBlank()) {
-            String fmt = au.getRecordingUnitIdentifierFormat();
-            shell.setFullIdentifier(fmt != null && !fmt.isBlank() ? fmt : "PENDING");
-        }
-        shell.setIdentifier("0");
+        RecordingUnitDTO shell = initRecordingUnitShell(typeDto, au, institution, personDto);
 
         RecordingUnitDTO created = OpenApiExecutionContext.callWithUserInfo(userInfo, () -> {
             FormUiDto formUiDto = conversionService.convert(customForm, FormUiDto.class);
@@ -653,28 +645,56 @@ public class RecordingUnitOpenApiService {
             CustomFormResponseViewModel response = formService.initOrReuseResponse(null, shell, fieldSource, true);
             mergeFieldAnswers(shell, response, fieldSource, request.getFieldAnswers(), lang);
             formService.updateJpaEntityFromResponse(response, shell);
-
-            RecordingUnitDTO saved;
-            try {
-                saved = recordingUnitService.save(shell);
-            } catch (FailedRecordingUnitSaveException e) {
-                throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage(), e);
-            }
-
-            String generated = recordingUnitService.generateFullIdentifier(saved.getActionUnit(), saved);
-            saved.setFullIdentifier(generated);
-            if (recordingUnitService.fullIdentifierAlreadyExistInAction(saved)) {
-                saved.setFullIdentifier(saved.getActionUnit().getRecordingUnitIdentifierFormat());
-            }
-            try {
-                return recordingUnitService.save(saved);
-            } catch (FailedRecordingUnitSaveException e) {
-                throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage(), e);
-            }
+            return saveWithGeneratedIdentifier(shell);
         });
 
         String key = created.getId() != null ? String.valueOf(created.getId()) : created.getFullIdentifier();
-        return buildMobileDetail(key, personDto, accessibleInstitutionIds, null, lang);
+        return resolveMobileDetail(key, personDto, accessibleInstitutionIds, null, lang);
+    }
+
+    private RecordingUnitDTO initRecordingUnitShell(ConceptDTO typeDto, ActionUnitDTO au,
+                                                     InstitutionDTO institution, PersonDTO personDto) {
+        RecordingUnitDTO shell = new RecordingUnitDTO();
+        shell.setType(typeDto);
+        shell.setCreatedByInstitution(institution);
+        shell.setActionUnit(actionUnitSummaryFromFull(au));
+        shell.setAuthor(personDto);
+        shell.setCreatedBy(personDto);
+        shell.setContributors(new ArrayList<>(List.of(personDto)));
+        shell.setOpeningDate(OffsetDateTime.now(ZoneOffset.UTC));
+        shell.setValidated(ValidationStatus.INCOMPLETE);
+        shell.setParents(new HashSet<>());
+        shell.setChildren(new HashSet<>());
+        List<SpatialUnitSummaryDTO> suOptions = spatialUnitService.getSpatialUnitOptionsFor(shell);
+        if (!suOptions.isEmpty()) {
+            shell.setSpatialUnit(suOptions.get(0));
+        }
+        shell.resetFullIdentifier();
+        if (shell.getFullIdentifier() == null || shell.getFullIdentifier().isBlank()) {
+            String fmt = au.getRecordingUnitIdentifierFormat();
+            shell.setFullIdentifier(fmt != null && !fmt.isBlank() ? fmt : "PENDING");
+        }
+        shell.setIdentifier("0");
+        return shell;
+    }
+
+    private RecordingUnitDTO saveWithGeneratedIdentifier(RecordingUnitDTO dto) {
+        RecordingUnitDTO saved;
+        try {
+            saved = recordingUnitService.save(dto);
+        } catch (FailedRecordingUnitSaveException e) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage(), e);
+        }
+        String generated = recordingUnitService.generateFullIdentifier(saved.getActionUnit(), saved);
+        saved.setFullIdentifier(generated);
+        if (recordingUnitService.fullIdentifierAlreadyExistInAction(saved)) {
+            saved.setFullIdentifier(saved.getActionUnit().getRecordingUnitIdentifierFormat());
+        }
+        try {
+            return recordingUnitService.save(saved);
+        } catch (FailedRecordingUnitSaveException e) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage(), e);
+        }
     }
 
     /**
@@ -710,7 +730,7 @@ public class RecordingUnitOpenApiService {
 
         Map<String, Object> answers = request.getFieldAnswers() != null ? request.getFieldAnswers() : Map.of();
         if (answers.isEmpty()) {
-            return buildMobileDetail(recordingUnitKey, personDto, accessibleInstitutionIds, null, lang);
+            return resolveMobileDetail(recordingUnitKey, personDto, accessibleInstitutionIds, null, lang);
         }
 
         CustomForm customForm = formService.findCustomFormByRecordingUnitTypeAndInstitutionId(dto.getType(), institution);
@@ -734,7 +754,7 @@ public class RecordingUnitOpenApiService {
             }
         });
 
-        return buildMobileDetail(recordingUnitKey, personDto, accessibleInstitutionIds, null, lang);
+        return resolveMobileDetail(recordingUnitKey, personDto, accessibleInstitutionIds, null, lang);
     }
 
     private void assertSyncRevisionIfRequested(String recordingUnitKey,
@@ -750,7 +770,7 @@ public class RecordingUnitOpenApiService {
         if (expectedRevision == current) {
             return;
         }
-        RecordingUnitMobileDetailData serverState = buildMobileDetail(
+        RecordingUnitMobileDetailData serverState = resolveMobileDetail(
                 recordingUnitKey, personDto, accessibleInstitutionIds, null, lang);
         throw new SyncRevisionConflictException(new SyncConflictData(
                 "recording_unit",
@@ -799,93 +819,103 @@ public class RecordingUnitOpenApiService {
             return;
         }
         for (Map.Entry<String, Object> e : fieldAnswers.entrySet()) {
-            Long fieldId;
-            try {
-                fieldId = Long.parseLong(e.getKey());
-            } catch (NumberFormatException ex) {
-                log.debug("Clé de champ ignorée (non numérique): {}", e.getKey());
-                continue;
-            }
-            CustomField field = fieldSource.findFieldById(fieldId);
-            if (field == null) {
-                log.debug("Champ id={} absent du formulaire effectif", fieldId);
-                continue;
-            }
-            CustomFieldAnswerViewModel vm = findViewModelForField(response.getAnswers(), field);
-            if (vm == null) {
-                continue;
-            }
-            Object typed;
-            try {
-                typed = coerceAnswerValue(field, e.getValue(), recordingUnitForCoercion);
-            } catch (ResponseStatusException rex) {
-                throw rex;
-            } catch (RuntimeException ex) {
-                log.warn("Valeur ignorée pour champ id={} ({}): {}", fieldId, field.getClass().getSimpleName(), ex.toString());
-                continue;
-            }
-            if (typed == null && e.getValue() != null) {
-                log.debug("Valeur non convertible pour champ id={} type {}", fieldId, field.getClass().getSimpleName());
-                continue;
-            }
-            formService.applyTypedValueToAnswer(vm, typed);
+            mergeOneFieldAnswerInternal(response, fieldSource, e.getKey(), e.getValue(), recordingUnitForCoercion);
         }
     }
 
+    private void mergeOneFieldAnswerInternal(CustomFormResponseViewModel response,
+                                              FieldSource fieldSource,
+                                              String key,
+                                              Object value,
+                                              RecordingUnitDTO recordingUnitForCoercion) {
+        Long fieldId;
+        try {
+            fieldId = Long.parseLong(key);
+        } catch (NumberFormatException ex) {
+            log.debug("Clé de champ ignorée (non numérique): {}", key);
+            return;
+        }
+        CustomField field = fieldSource.findFieldById(fieldId);
+        if (field == null) {
+            log.debug("Champ id={} absent du formulaire effectif", fieldId);
+            return;
+        }
+        CustomFieldAnswerViewModel vm = findViewModelForField(response.getAnswers(), field);
+        if (vm == null) {
+            return;
+        }
+        Object typed;
+        try {
+            typed = coerceAnswerValue(field, value, recordingUnitForCoercion);
+        } catch (ResponseStatusException rex) {
+            throw rex;
+        } catch (RuntimeException ex) {
+            log.warn("Valeur ignorée pour champ id={} ({}): {}", fieldId, field.getClass().getSimpleName(), ex.toString());
+            return;
+        }
+        if (typed == null && value != null) {
+            log.debug("Valeur non convertible pour champ id={} type {}", fieldId, field.getClass().getSimpleName());
+            return;
+        }
+        formService.applyTypedValueToAnswer(vm, typed);
+    }
+
     private Object coerceAnswerValue(CustomField field, Object raw, RecordingUnitDTO ru) {
-        if (raw == null) {
-            return null;
-        }
-        if (field instanceof CustomFieldInteger) {
-            if (raw instanceof Number n) {
-                return n.intValue();
-            }
-            return Integer.parseInt(String.valueOf(raw));
-        }
-        if (field instanceof CustomFieldText) {
-            return String.valueOf(raw);
-        }
-        if (field instanceof CustomFieldDateTime) {
-            if (raw instanceof OffsetDateTime odt) {
-                return odt;
-            }
-            if (raw instanceof String s) {
-                return OffsetDateTime.parse(s);
-            }
-            throw new IllegalArgumentException("Format datetime attendu (chaîne ISO-8601 ou OffsetDateTime)");
-        }
-        if (field instanceof CustomFieldSelectOneFromFieldCode) {
-            long conceptId = requireLongId(raw, "concept");
-            Concept c = conceptRepository.findById(conceptId)
-                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Concept introuvable: " + conceptId));
-            return conceptMapper.convert(c);
-        }
-        if (field instanceof CustomFieldSelectOnePerson) {
-            long personId = requireLongId(raw, "personne");
-            Person p = personService.findById(personId);
-            if (p == null) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Personne introuvable: " + personId);
-            }
-            return personMapper.convert(p);
-        }
-        if (field instanceof CustomFieldSelectOneActionUnit) {
-            long actionId = requireLongId(raw, "unité d'action");
-            ActionUnitDTO au = actionUnitService.findById(actionId);
-            if (au == null) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Projet introuvable: " + actionId);
-            }
-            return actionUnitSummaryFromFull(au);
-        }
-        if (field instanceof CustomFieldSelectOneSpatialUnit) {
-            long suId = requireLongId(raw, "unité spatiale");
-            try {
-                return new SpatialUnitSummaryDTO(spatialUnitService.findById(suId));
-            } catch (RuntimeException ex) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unité spatiale introuvable: " + suId);
-            }
-        }
+        if (raw == null) return null;
+        if (field instanceof CustomFieldInteger) return ruCoerceInteger(raw);
+        if (field instanceof CustomFieldText) return String.valueOf(raw);
+        if (field instanceof CustomFieldDateTime) return ruCoerceDateTime(raw);
+        if (field instanceof CustomFieldSelectOneFromFieldCode) return ruCoerceConcept(raw);
+        if (field instanceof CustomFieldSelectOnePerson) return ruCoercePerson(raw);
+        if (field instanceof CustomFieldSelectOneActionUnit) return ruCoerceActionUnit(raw);
+        if (field instanceof CustomFieldSelectOneSpatialUnit) return ruCoerceSpatialUnit(raw);
         log.debug("Type de champ non pris en charge pour l'API v1: {}", field.getClass().getSimpleName());
         return null;
+    }
+
+    private static Object ruCoerceInteger(Object raw) {
+        if (raw instanceof Number n) return n.intValue();
+        return Integer.parseInt(String.valueOf(raw));
+    }
+
+    private static Object ruCoerceDateTime(Object raw) {
+        if (raw instanceof OffsetDateTime odt) return odt;
+        if (raw instanceof String s) return OffsetDateTime.parse(s);
+        throw new IllegalArgumentException("Format datetime attendu (chaîne ISO-8601 ou OffsetDateTime)");
+    }
+
+    private Object ruCoerceConcept(Object raw) {
+        long conceptId = requireLongId(raw, "concept");
+        Concept c = conceptRepository.findById(conceptId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Concept introuvable: " + conceptId));
+        return conceptMapper.convert(c);
+    }
+
+    private Object ruCoercePerson(Object raw) {
+        long personId = requireLongId(raw, "personne");
+        Person p = personService.findById(personId);
+        if (p == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Personne introuvable: " + personId);
+        }
+        return personMapper.convert(p);
+    }
+
+    private Object ruCoerceActionUnit(Object raw) {
+        long actionId = requireLongId(raw, "unité d'action");
+        ActionUnitDTO au = actionUnitService.findById(actionId);
+        if (au == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Projet introuvable: " + actionId);
+        }
+        return actionUnitSummaryFromFull(au);
+    }
+
+    private Object ruCoerceSpatialUnit(Object raw) {
+        long suId = requireLongId(raw, "unité spatiale");
+        try {
+            return new SpatialUnitSummaryDTO(spatialUnitService.findById(suId));
+        } catch (RuntimeException ex) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unité spatiale introuvable: " + suId);
+        }
     }
 
     private static long requireLongId(Object raw, String label) {

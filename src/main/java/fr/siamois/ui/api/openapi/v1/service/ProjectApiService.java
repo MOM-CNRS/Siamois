@@ -46,16 +46,18 @@ public class ProjectApiService {
 
     public static final int MAX_PAGE_SIZE = 200;
 
+    public static final String CREATION_TIME = "creationTime";
+    public static final String IDENTIFIER = "identifier";
     private static final Set<String> ALLOWED_PROJECT_SORT_FIELDS = Set.of(
-            "name", "identifier", "fullIdentifier", "creationTime"
+            "name", IDENTIFIER, "fullIdentifier", CREATION_TIME
     );
 
     private static final Set<String> ALLOWED_RECORDING_UNIT_SORT_FIELDS = Set.of(
-            "creationTime", "id", "identifier", "fullIdentifier", "openingDate", "closingDate"
+            CREATION_TIME, "id", IDENTIFIER, "fullIdentifier", "openingDate", "closingDate"
     );
 
     private static final Set<String> ALLOWED_ORGANIZATION_SORT_FIELDS = Set.of(
-            "id", "name", "identifier", "creationDate"
+            "id", "name", IDENTIFIER, "creationDate"
     );
 
     private final InstitutionService institutionService;
@@ -441,7 +443,7 @@ public class ProjectApiService {
      * Défaut : {@code creationTime:desc, id:desc}.
      */
     private static Sort parseSortWithStableId(String sortParam, Set<String> allowedFields) {
-        Sort defaultSort = Sort.by(Sort.Direction.DESC, "creationTime").and(Sort.by(Sort.Direction.DESC, "id"));
+        Sort defaultSort = Sort.by(Sort.Direction.DESC, CREATION_TIME).and(Sort.by(Sort.Direction.DESC, "id"));
         if (sortParam == null || sortParam.isBlank()) return defaultSort;
         String[] parts = sortParam.split(":", 2);
         String property = parts[0].trim();
@@ -469,7 +471,7 @@ public class ProjectApiService {
         Sort.Order order = sort.stream().findFirst().orElse(new Sort.Order(Sort.Direction.ASC, "name"));
         Comparator<InstitutionDTO> cmp = switch (order.getProperty()) {
             case "id" -> Comparator.comparing(InstitutionDTO::getId, Comparator.nullsLast(Long::compareTo));
-            case "identifier" -> Comparator.comparing(
+            case IDENTIFIER -> Comparator.comparing(
                     InstitutionDTO::getIdentifier, Comparator.nullsLast(String::compareToIgnoreCase));
             case "creationDate" -> Comparator.comparing(
                     InstitutionDTO::getCreationDate, Comparator.nullsLast(Comparator.naturalOrder()));

@@ -26,6 +26,7 @@ import java.util.Set;
 @RequiredArgsConstructor
 public class DocumentFormOpenApiService {
 
+    public static final String CONCEPT_SELECT = "CONCEPT_SELECT";
     private final InstitutionService institutionService;
     private final DocumentContentOpenApiService documentContentOpenApiService;
     private final ConceptMapper conceptMapper;
@@ -60,9 +61,9 @@ public class DocumentFormOpenApiService {
         return List.of(
                 new DocumentFormFieldApi("title", "TEXT", null, Document.MAX_TITLE_LENGTH),
                 new DocumentFormFieldApi("description", "TEXTAREA", null, Document.MAX_DESCRIPTION_LENGTH),
-                new DocumentFormFieldApi("nature", "CONCEPT_SELECT", Document.NATURE_FIELD_CODE, null),
-                new DocumentFormFieldApi("scale", "CONCEPT_SELECT", Document.SCALE_FIELD_CODE, null),
-                new DocumentFormFieldApi("format", "CONCEPT_SELECT", Document.FORMAT_FIELD_CODE, null),
+                new DocumentFormFieldApi("nature", CONCEPT_SELECT, Document.NATURE_FIELD_CODE, null),
+                new DocumentFormFieldApi("scale", CONCEPT_SELECT, Document.SCALE_FIELD_CODE, null),
+                new DocumentFormFieldApi("format", CONCEPT_SELECT, Document.FORMAT_FIELD_CODE, null),
                 new DocumentFormFieldApi("file", "FILE", null, null)
         );
     }
