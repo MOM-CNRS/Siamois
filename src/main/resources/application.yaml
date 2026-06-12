@@ -24,6 +24,10 @@ siamois:
   documents:
     folder-path: ${SIAMOIS_DOCUMENTS_PATH}
     allowed-types: image/jpeg, image/png, image/svg+xml, image/tiff, image/webp, image/apng, application/pdf
+  jwt:
+    # HS256 : au moins 256 bits — utiliser une valeur forte en prod (variable SIAMOIS_JWT_SECRET).
+    secret: ${SIAMOIS_JWT_SECRET:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef}
+    access-token-validity: PT15M
 
 
 spring:
@@ -88,3 +92,11 @@ logging:
       springframework: INFO
       hibernate:
         SQL: INFO
+
+springdoc:
+  swagger-ui:
+    tags-sorter: alpha
+    operations-sorter: alpha
+    doc-expansion: none
+    display-request-duration: true
+  default-produces-media-type: application/json

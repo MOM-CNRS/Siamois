@@ -1,9 +1,8 @@
 package fr.siamois.domain.services.form;
 
 
-import fr.siamois.domain.models.form.customfield.CustomField;
-import fr.siamois.domain.models.form.customfield.CustomFieldMeasurement;
-import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerId;
+import fr.siamois.domain.models.form.customfield.*;
+import fr.siamois.domain.models.form.customfieldanswer.*;
 import fr.siamois.domain.models.form.customform.CustomForm;
 import fr.siamois.domain.models.form.customform.EnabledWhenJson;
 import fr.siamois.domain.models.form.customform.ValueMatcher;
@@ -22,6 +21,7 @@ import fr.siamois.ui.viewmodel.CustomFormResponseViewModel;
 import fr.siamois.ui.viewmodel.fieldanswer.*;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -32,6 +32,7 @@ import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.*;
 import java.util.function.BiConsumer;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 /**
@@ -78,6 +79,21 @@ public class FormService {
         return optForm.orElseGet(() -> formRepository.findEffectiveFormByTypeAndInstitution(null, institution.getId()).orElse(null));
     }
 
+    // --------- Answer creators
+
+    private static final Map<Class<? extends CustomField>, Supplier<? extends CustomFieldAnswer>> ANSWER_CREATORS =
+            Map.ofEntries(
+                    Map.entry(CustomFieldText.class, CustomFieldAnswerText::new),
+                    Map.entry(CustomFieldSelectOneFromFieldCode.class, CustomFieldAnswerSelectOneFromFieldCode::new),
+                    Map.entry(CustomFieldSelectMultiplePerson.class, CustomFieldAnswerSelectMultiplePerson::new),
+                    Map.entry(CustomFieldDateTime.class, CustomFieldAnswerDateTime::new),
+                    Map.entry(CustomFieldSelectOneActionUnit.class, CustomFieldAnswerSelectOneActionUnit::new),
+                    Map.entry(CustomFieldSelectOneSpatialUnit.class, CustomFieldAnswerSelectOneSpatialUnit::new),
+                    Map.entry(CustomFieldSelectMultipleSpatialUnitTree.class, CustomFieldAnswerSelectMultipleSpatialUnitTree::new),
+                    Map.entry(CustomFieldSelectOneActionCode.class, CustomFieldAnswerSelectOneActionCode::new),
+                    Map.entry(CustomFieldInteger.class, CustomFieldAnswerInteger::new),
+                    Map.entry(CustomFieldSelectOnePerson.class, CustomFieldAnswerSelectOnePerson::new)
+            );
 
     /**
      * Create or reuse a CustomFormResponse for the given entity + field source.
@@ -130,6 +146,27 @@ public class FormService {
         return response;
     }
 
+    /**
+     * Create or reuse a CustomFormResponse for the given entity + field source.
+     *
+     * @param answers   the answers
+     * @param jpaEntity entity we bind system fields against
+     * @param field     the fiels
+     */
+    public void initOneAnswer(CustomFormResponseViewModel answers,
+                              Object jpaEntity,
+                              CustomField field) {
+
+
+        List<String> bindableFields = getBindableFieldNames(jpaEntity);
+
+        CustomFieldAnswerViewModel answer = answers.getAnswers().get(field);
+
+        if (answer != null) {
+            initializeAnswer(answer, field, jpaEntity, bindableFields);
+        }
+
+    }
 
     // ------------------- Enabled rules
 
@@ -219,47 +256,75 @@ public class FormService {
     }
 
     private static Object extractValueFromAnswer(CustomFieldAnswerViewModel answer) {
-        if (answer == null) return null;
+        if (answer instanceof CustomFieldAnswerDateTimeViewModel a && a.getValue() != null) {
+            return a.getValue().atOffset(ZoneOffset.UTC);
+        } else if (answer instanceof CustomFieldAnswerTextViewModel a) {
+            return a.getValue();
+        } else if (answer instanceof CustomFieldAnswerSelectMultiplePersonViewModel a) {
+            return a.getValue();
+        } else if (answer instanceof CustomFieldAnswerSelectOnePersonViewModel a) {
+            return a.getValue();
+        } else if (answer instanceof CustomFieldAnswerMeasurementViewModel a) {
+            if (a.getValue() != null && a.getValue().getNumericValue() != null) {
+                return a.getValue();
+            }
+            return null;
+        } else if (answer instanceof CustomFieldAnswerSelectOneFromFieldCodeViewModel a) {
+            try {
+                return a.getValue().concept();
+            } catch (NullPointerException e) {
+                return null;
+            }
+        } else if (answer instanceof CustomFieldAnswerSelectOneActionUnitViewModel a) {
+            return a.getValue();
+        } else if (answer instanceof CustomFieldAnswerSelectOneSpatialUnitViewModel a) {
+            if (a.getValue() != null) {
+                // Convert back to place dto (single selection)
+                PlaceSuggestionDTO ans = a.getValue();
+                SpatialUnitSummaryDTO dto = new SpatialUnitSummaryDTO();
+                dto.setId(ans.getId());
+                dto.setName(ans.getName());
+                dto.setCode(ans.getCode());
+                dto.setCategory(ans.getCategory());
+                return dto;
+            } else {
+                return null;
+            }
 
-        // 1. Group all simple models that just return their direct value
-        if (answer instanceof CustomFieldAnswerTextViewModel a) return a.getValue();
-        if (answer instanceof CustomFieldAnswerIntegerViewModel a) return a.getValue();
-        if (answer instanceof CustomFieldAnswerSelectOneActionUnitViewModel a) return a.getValue();
-        if (answer instanceof CustomFieldAnswerSelectOneActionCodeViewModel a) return a.getValue();
-        if (answer instanceof CustomFieldAnswerSelectOneAddressViewModel a) return a.getValue();
-        if (answer instanceof CustomFieldAnswerSelectOnePersonViewModel a) return a.getValue();
-        if (answer instanceof CustomFieldAnswerSelectMultiplePersonViewModel a) return a.getValue();
-
-        // 2. Handle complex extractions using Java 17 pattern matching
-        if (answer instanceof CustomFieldAnswerDateTimeViewModel a) {
-            return a.getValue() != null ? a.getValue().atOffset(ZoneOffset.UTC) : null;
-        }
-        if (answer instanceof CustomFieldAnswerMeasurementViewModel a) {
-            return (a.getValue() != null && a.getValue().getNumericValue() != null) ? a.getValue() : null;
-        }
-        if (answer instanceof CustomFieldAnswerSelectOneFromFieldCodeViewModel a) {
-            return a.getValue() != null ? a.getValue().concept() : null;
-        }
-        if (answer instanceof CustomFieldAnswerSelectMultipleFromFieldCodeViewModel a) {
-            return a.getValue() == null ? Set.of() : a.getValue().stream()
-                    .filter(Objects::nonNull)
+        } else if (answer instanceof CustomFieldAnswerSelectMultipleSpatialUnitTreeViewModel a) {
+            // Convert each PlaceSuggestionDTO in the list to SpatialUnitSummaryDTO
+            List<PlaceSuggestionDTO> placeSuggestionList = a.getValue();
+            return placeSuggestionList.stream()
+                    .map(place -> {
+                        SpatialUnitSummaryDTO dto = new SpatialUnitSummaryDTO();
+                        dto.setId(place.getId());
+                        dto.setName(place.getName());
+                        dto.setCode(place.getCode());
+                        dto.setCategory(place.getCategory());
+                        return dto;
+                    })
+                    .collect(Collectors.toSet());
+        } else if (answer instanceof CustomFieldAnswerSelectOneActionCodeViewModel a) {
+            return a.getValue();
+        } else if (answer instanceof CustomFieldAnswerIntegerViewModel a) {
+            return a.getValue();
+        } else if (answer instanceof CustomFieldAnswerSelectOneAddressViewModel a) {
+            return a.getValue();
+        } else if (answer instanceof CustomFieldAnswerSelectMultipleRecordingUnitViewModel a) {
+            return new HashSet<>(a.getValue());
+        } else if (answer instanceof CustomFieldAnswerSelectMultipleFromFieldCodeViewModel a) {
+            if (a.getValue() == null) {
+                return null;
+            }
+            return a.getValue().stream()
                     .map(ConceptAutocompleteDTO::concept)
-                    .collect(Collectors.toSet());
-        }
-        if (answer instanceof CustomFieldAnswerSelectOneSpatialUnitViewModel a) {
-            return a.getValue() != null ? toSpatialUnitSummary(a.getValue()) : null;
-        }
-        if (answer instanceof CustomFieldAnswerSelectMultipleSpatialUnitTreeViewModel a) {
-            return a.getValue() == null ? Set.of() : a.getValue().stream()
                     .filter(Objects::nonNull)
-                    .map(FormService::toSpatialUnitSummary)
                     .collect(Collectors.toSet());
-        }
-        if (answer instanceof CustomFieldAnswerSelectMultipleRecordingUnitViewModel a) {
-            return a.getValue() != null ? new HashSet<>(a.getValue()) : null;
-        }
-        if (answer instanceof CustomFieldAnswerSelectMultipleSpecimenViewModel a) {
-            return a.getValue() != null ? new HashSet<>(a.getValue()) : null;
+        } else if (answer instanceof CustomFieldAnswerSelectMultipleSpecimenViewModel a) {
+            if (a.getValue() == null) {
+                return null;
+            }
+            return new HashSet<>(a.getValue());
         }
         if (answer instanceof CustomFieldAnswerSelectMultipleContainerViewModel a) {
             return a.getValue() != null ? new HashSet<>(a.getValue()) : null;
@@ -271,13 +336,25 @@ public class FormService {
         return null;
     }
 
-    private static SpatialUnitSummaryDTO toSpatialUnitSummary(PlaceSuggestionDTO ans) {
-        SpatialUnitSummaryDTO dto = new SpatialUnitSummaryDTO();
-        dto.setId(ans.getId());
-        dto.setName(ans.getName());
-        dto.setCode(ans.getCode());
-        dto.setCategory(ans.getCategory());
-        return dto;
+    /**
+     * Valeur exposable pour une API (JSON), y compris cas particulier stratigraphie.
+     */
+    @Nullable
+    public Object readAnswerValueForApi(@Nullable CustomFieldAnswerViewModel answer) {
+        if (answer == null) {
+            return null;
+        }
+        if (answer instanceof CustomFieldAnswerStratigraphyViewModel s) {
+            Map<String, Object> out = new LinkedHashMap<>();
+            out.put("anterior", s.getAnteriorRelationships() != null
+                    ? new ArrayList<>(s.getAnteriorRelationships()) : List.of());
+            out.put("posterior", s.getPosteriorRelationships() != null
+                    ? new ArrayList<>(s.getPosteriorRelationships()) : List.of());
+            out.put("synchronous", s.getSynchronousRelationships() != null
+                    ? new ArrayList<>(s.getSynchronousRelationships()) : List.of());
+            return out;
+        }
+        return extractValueFromAnswer(answer);
     }
 
     // -------------- Internal helpers
@@ -321,6 +398,14 @@ public class FormService {
     }
 
 
+    /**
+     * Applique une valeur déjà typée (comme pour {@link #readAnswerValueForApi}) sur une réponse de champ.
+     * Utile pour l’API OpenAPI qui sérialise les mêmes formes que le détail formulaire.
+     */
+    public void applyTypedValueToAnswer(CustomFieldAnswerViewModel answer, Object value) {
+        populateSystemFieldValue(answer, value);
+    }
+
     private void populateSystemFieldValue(CustomFieldAnswerViewModel answer, Object value) {
 
         Map<Class<? extends CustomFieldAnswerViewModel>, BiConsumer<CustomFieldAnswerViewModel, Object>> handlers = new HashMap<>();
@@ -330,7 +415,6 @@ public class FormService {
         handlers.put(CustomFieldAnswerSelectMultiplePersonViewModel.class, this::handlePersonList);
         handlers.put(CustomFieldAnswerSelectOneFromFieldCodeViewModel.class, this::handleConcept);
         handlers.put(CustomFieldAnswerSelectOneActionUnitViewModel.class, this::handleActionUnit);
-        handlers.put(CustomFieldAnswerSelectOneRecordingUnitViewModel.class, this::handleRecordingUnit);
         handlers.put(CustomFieldAnswerSelectOneSpatialUnitViewModel.class, this::handleSpatialUnit);
         handlers.put(CustomFieldAnswerSelectOneActionCodeViewModel.class, this::handleActionCode);
         handlers.put(CustomFieldAnswerIntegerViewModel.class, this::handleInteger);
@@ -342,6 +426,7 @@ public class FormService {
         handlers.put(CustomFieldAnswerSelectMultipleSpecimenViewModel.class, this::handleSpecimenSet);
         handlers.put(CustomFieldAnswerSelectMultiplePhaseViewModel.class, this::handlePhaseSet);
         handlers.put(CustomFieldAnswerSelectMultipleFromFieldCodeViewModel.class, this::handleConceptSet);
+        handlers.put(CustomFieldAnswerSelectMultipleSpecimenViewModel.class, this::handleSpecimenSet);
 
         Class<? extends CustomFieldAnswerViewModel> answerClass = answer.getClass();
         BiConsumer<CustomFieldAnswerViewModel, Object> handler = handlers.get(answerClass);
@@ -415,17 +500,11 @@ public class FormService {
         }
     }
 
-    private void handleRecordingUnit(CustomFieldAnswerViewModel answer, Object value) {
-        if (answer instanceof CustomFieldAnswerSelectOneRecordingUnitViewModel actionUnitAnswer) {
-            actionUnitAnswer.setValue((RecordingUnitSummaryDTO) value);
-        }
-    }
-
     private void handleSpatialUnit(CustomFieldAnswerViewModel answer, Object value) {
         if (answer instanceof CustomFieldAnswerSelectOneSpatialUnitViewModel spatialUnitAnswer) {
             // Convert to place suggestion
             SpatialUnitSummaryDTO val = (SpatialUnitSummaryDTO) value;
-            PlaceSuggestionDTO dto;
+            PlaceSuggestionDTO dto ;
             if (val != null) {
                 dto = mapToPlaceSuggestion(val);
                 spatialUnitAnswer.setValue(dto);
@@ -472,28 +551,6 @@ public class FormService {
         }
     }
 
-    private void handleConceptSet(CustomFieldAnswerViewModel answer, Object value) {
-        if (answer instanceof CustomFieldAnswerSelectMultipleFromFieldCodeViewModel multipleAnswer && value instanceof Set<?> values) {
-            List<ConceptAutocompleteDTO> autocompleteList = values.stream()
-                    .filter(ConceptDTO.class::isInstance)
-                    .map(ConceptDTO.class::cast)
-                    .map(concept -> new ConceptAutocompleteDTO(
-                            concept,
-                            labelBean.findLabelOf(concept),
-                            labelBean.getCurrentUserLang()
-                    ))
-                    .toList(); // Ou .collect(Collectors.toList()) selon votre version de Java
-
-            multipleAnswer.setValue(new ArrayList<>(autocompleteList));
-        }
-    }
-
-    private void handleSpecimenSet(CustomFieldAnswerViewModel answer, Object value) {
-        if (answer instanceof CustomFieldAnswerSelectMultipleSpecimenViewModel specimenAnswer && value instanceof Set<?> values) {
-            specimenAnswer.setValue(new ArrayList<>((Set<SpecimenSummaryDTO>) values));
-        }
-    }
-
     private PlaceSuggestionDTO mapToPlaceSuggestion(SpatialUnitSummaryDTO val) {
         PlaceSuggestionDTO dto = new PlaceSuggestionDTO();
         dto.setId(val.getId());
@@ -507,6 +564,34 @@ public class FormService {
     private void handleRecordingUnitSet(CustomFieldAnswerViewModel answer, Object value) {
         if (answer instanceof CustomFieldAnswerSelectMultipleRecordingUnitViewModel ans && value instanceof Set<?> values) {
             ans.setValue(new ArrayList<>((Set<RecordingUnitSummaryDTO>) values));
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private void handleConceptSet(CustomFieldAnswerViewModel answer, Object value) {
+        if (answer instanceof CustomFieldAnswerSelectMultipleFromFieldCodeViewModel multiAnswer
+                && value instanceof Collection<?> concepts) {
+            List<ConceptAutocompleteDTO> dtos = concepts.stream()
+                    .filter(ConceptDTO.class::isInstance)
+                    .map(ConceptDTO.class::cast)
+                    .map(c -> new ConceptAutocompleteDTO(
+                            c,
+                            labelBean.findLabelOf(c),
+                            labelBean.getCurrentUserLang()))
+                    .toList();
+            multiAnswer.setValue(new ArrayList<>(dtos));
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private void handleSpecimenSet(CustomFieldAnswerViewModel answer, Object value) {
+        if (answer instanceof CustomFieldAnswerSelectMultipleSpecimenViewModel multiAnswer
+                && value instanceof Collection<?> specimens) {
+            List<SpecimenSummaryDTO> list = specimens.stream()
+                    .filter(SpecimenSummaryDTO.class::isInstance)
+                    .map(SpecimenSummaryDTO.class::cast)
+                    .toList();
+            multiAnswer.setValue(new ArrayList<>(list));
         }
     }
 

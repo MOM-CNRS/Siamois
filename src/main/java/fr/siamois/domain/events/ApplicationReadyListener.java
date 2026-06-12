@@ -9,19 +9,19 @@ import fr.siamois.utils.context.SystemUserLoader;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.context.event.EventListener;
 import org.springframework.core.annotation.AnnotationUtils;
+import org.springframework.stereotype.Component;
 
 import java.util.List;
 
 /**
- * ApplicationReadyListener is a Spring configuration class that listens for the ApplicationReadyEvent.
+ * Listens for the ApplicationReadyEvent.
  * It initializes the database using the provided DatabaseInitializer instances when the application is ready.
  * If any initialization fails, it logs the error and exits the application with a non-zero status.
  */
 @Slf4j
-@Configuration
+@Component
 @RequiredArgsConstructor
 public class ApplicationReadyListener {
 

@@ -1,5 +1,6 @@
 package fr.siamois.ui.api.handler;
 
+import fr.siamois.domain.models.exceptions.actionunit.ActionUnitNotFoundException;
 import fr.siamois.domain.models.exceptions.recordingunit.RecordingUnitNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
@@ -25,6 +26,22 @@ public class RestExceptionHandler {
                 .message(ex.getMessage())
                 .path(request.getRequestURI())
                 .timestamp(OffsetDateTime.now(ZoneOffset.UTC))
+                .build();
+
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+    }
+
+    @ExceptionHandler(ActionUnitNotFoundException.class)
+    public ResponseEntity<ApiError> handleActionUnitNotFound(
+            ActionUnitNotFoundException ex,
+            HttpServletRequest request) {
+
+        ApiError error = ApiError.builder()
+                .status(HttpStatus.NOT_FOUND.value())
+                .error("Not Found")
+                .message(ex.getMessage())
+                .path(request.getRequestURI())
+                .timestamp(OffsetDateTime.now())
                 .build();
 
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);

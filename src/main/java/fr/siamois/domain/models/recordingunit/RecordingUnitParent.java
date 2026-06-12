@@ -30,7 +30,6 @@ import static org.hibernate.envers.RelationTargetAuditMode.NOT_AUDITED;
 @Audited
 public abstract class RecordingUnitParent extends TraceableEntity {
 
-    @NotNull
     @OneToOne(fetch = FetchType.EAGER, cascade = {CascadeType.MERGE, CascadeType.PERSIST})
     @JoinColumn(name = "fk_ark_id")
     protected Ark ark;
@@ -107,7 +106,6 @@ public abstract class RecordingUnitParent extends TraceableEntity {
     @JsonIgnore
     protected ActionUnit actionUnit;
 
-    @NotNull
     @Column(name = "identifier")
     protected Integer identifier;
 

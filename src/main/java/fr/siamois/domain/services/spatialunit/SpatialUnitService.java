@@ -518,6 +518,13 @@ public class SpatialUnitService implements ArkEntityService {
         return dto;
     }
 
+    public Page<SpatialUnitDTO> findAllByInstitutionAndByNameContainingAndByCategoriesAndByGlobalContaining(
+            Long institutionId, String name, Long[] categoryIds, String fullIdentifier, String global, String langCode, Pageable pageable) {
+        Specification<SpatialUnit> specs = SpatialUnitSpec.belongsToInstitution(institutionId)
+                .and(SpatialUnitSpec.nameContaining(name));
+        return spatialUnitRepository.findAll(specs, pageable).map(spatialUnitMapper::convert);
+    }
+
     public Page<SpatialUnitDTO> searchSpatialUnits(InstitutionDTO institutionDTO, FilterDTO filterDTO, Pageable pageable) {
         Specification<SpatialUnit> specs = prepareSpecs(institutionDTO, filterDTO);
         Page<SpatialUnit> result = spatialUnitRepository.findAll(specs, pageable);

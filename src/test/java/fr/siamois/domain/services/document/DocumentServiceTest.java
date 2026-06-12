@@ -454,4 +454,156 @@ class DocumentServiceTest {
 
     }
 
+    @Test
+    void deleteDocument_removesLinksStorageAndEntity() {
+        long id = 12L;
+        Document document = new Document();
+        document.setId(id);
+        Institution institution = new Institution();
+        institution.setId(3L);
+        document.setCreatedByInstitution(institution);
+
+        documentService.deleteDocument(document);
+
+        verify(documentRepository).deleteActionUnitDocumentLinks(id);
+        verify(documentRepository).deleteSpatialUnitDocumentLinks(id);
+        verify(documentRepository).deleteRecordingUnitDocumentLinks(id);
+        verify(documentRepository).deleteSpecimenDocumentLinks(id);
+        verify(documentRepository).deleteSpecimenStudyDocumentLinks(id);
+        verify(documentRepository).deleteRuStudyDocumentLinks(id);
+        verify(documentStorage).deleteStoredFile(document);
+        verify(documentRepository).delete(document);
+    }
+
+    @Test
+    void deleteDocument_nullId_throws() {
+        Document document = new Document();
+        assertThrows(IllegalArgumentException.class, () -> documentService.deleteDocument(document));
+    }
+
+    @Test
+    void findById_null_returnsEmpty() {
+        assertTrue(documentService.findById(null).isEmpty());
+    }
+
+    @Test
+    void findById_present_delegatesToRepository() {
+        Document document = new Document();
+        document.setId(5L);
+        when(documentRepository.findById(5L)).thenReturn(Optional.of(document));
+
+        assertTrue(documentService.findById(5L).isPresent());
+        verify(documentRepository).findById(5L);
+    }
+
+    @Test
+    void save_AbstractEntityDTO_throwsUnsupportedOperation() {
+        AbstractEntityDTO dto = mock(AbstractEntityDTO.class);
+        assertThrows(UnsupportedOperationException.class, () -> documentService.save(dto));
+    }
+
+    @Test
+    void findForActionUnit_delegatesToRepository() {
+        ActionUnitDTO actionUnit = new ActionUnitDTO();
+        actionUnit.setId(11L);
+        Document doc = new Document();
+        when(documentRepository.findDocumentsByActionUnit(11L)).thenReturn(List.of(doc));
+
+        List<Document> result = documentService.findForActionUnit(actionUnit);
+
+        assertEquals(1, result.size());
+        verify(documentRepository).findDocumentsByActionUnit(11L);
+    }
+
+    @Test
+    void findForRecordingUnit_delegatesToRepository() {
+        RecordingUnitDTO ru = new RecordingUnitDTO();
+        ru.setId(22L);
+        Document doc = new Document();
+        when(documentRepository.findDocumentsByRecordingUnit(22L)).thenReturn(List.of(doc));
+
+        List<Document> result = documentService.findForRecordingUnit(ru);
+
+        assertEquals(1, result.size());
+        verify(documentRepository).findDocumentsByRecordingUnit(22L);
+    }
+
+    @Test
+    void findForSpecimen_delegatesToRepository() {
+        SpecimenDTO specimen = new SpecimenDTO();
+        specimen.setId(33L);
+        Document doc = new Document();
+        when(documentRepository.findDocumentsBySpecimen(33L)).thenReturn(List.of(doc));
+
+        List<Document> result = documentService.findForSpecimen(specimen);
+
+        assertEquals(1, result.size());
+        verify(documentRepository).findDocumentsBySpecimen(33L);
+    }
+
+    @Test
+    void checkFileData_acceptsAnyMimeWhenWildcardConfigured() {
+        Document document = new Document();
+        document.setMimeType("application/octet-stream");
+        document.setFileName("file.bin");
+        document.setSize(100L);
+        when(documentStorage.supportedMimeTypes()).thenReturn(List.of(MimeType.valueOf("*/*")));
+        when(documentStorage.getMaxUploadSize()).thenReturn("10MB");
+
+        assertDoesNotThrow(() -> documentService.checkFileData(document));
+    }
+
+    @Test
+    void checkFileData_validDocument_passes() {
+        Document document = new Document();
+        document.setMimeType("application/pdf");
+        document.setFileName("ok.pdf");
+        document.setSize(1024L);
+        when(documentStorage.supportedMimeTypes()).thenReturn(mimeTypes);
+        when(documentStorage.getMaxUploadSize()).thenReturn("10MB");
+
+        assertDoesNotThrow(() -> documentService.checkFileData(document));
+    }
+
+    @Test
+    void saveFile_generatesUniqueFileCodeAfterCollision() throws Exception {
+        UserInfo userInfo = new UserInfo(new InstitutionDTO(), new PersonDTO(), "fr");
+        userInfo.getInstitution().setId(1L);
+        userInfo.getInstitution().setIdentifier("fr");
+        Document document = new Document();
+        document.setMimeType("application/pdf");
+        document.setFileName("test.pdf");
+        document.setSize(512L);
+        InputStream inputStream = new ByteArrayInputStream("payload".getBytes());
+
+        when(personMapper.invertConvert(any(PersonDTO.class))).thenReturn(new Person());
+        when(institutionMapper.invertConvert(any(InstitutionDTO.class))).thenReturn(new Institution());
+        when(documentRepository.save(document)).thenReturn(document);
+        when(documentStorage.supportedMimeTypes()).thenReturn(mimeTypes);
+        when(documentStorage.getMaxUploadSize()).thenReturn("10MB");
+        when(documentRepository.existsByFileCode(anyString())).thenReturn(true, false);
+
+        Document result = documentService.saveFile(userInfo, document, inputStream, "/ctx");
+
+        assertNotNull(result.getFileCode());
+        verify(documentRepository, atLeast(2)).existsByFileCode(anyString());
+    }
+
+    @Test
+    void saveFile_throwsWhenFileCodeGenerationExhausted() {
+        UserInfo userInfo = new UserInfo(new InstitutionDTO(), new PersonDTO(), "fr");
+        userInfo.getInstitution().setId(1L);
+        Document document = new Document();
+        document.setMimeType("application/pdf");
+        document.setFileName("test.pdf");
+        document.setSize(512L);
+        InputStream inputStream = new ByteArrayInputStream("payload".getBytes());
+
+        when(documentStorage.supportedMimeTypes()).thenReturn(mimeTypes);
+        when(documentStorage.getMaxUploadSize()).thenReturn("10MB");
+        when(documentRepository.existsByFileCode(anyString())).thenReturn(true);
+
+        assertThrows(IllegalStateException.class,
+                () -> documentService.saveFile(userInfo, document, inputStream, "/ctx"));
+    }
 }

@@ -1,0 +1,41 @@
+package fr.siamois.ui.api.openapi.v1.mapper;
+
+import fr.siamois.dto.entity.SpatialUnitSummaryDTO;
+import fr.siamois.ui.api.openapi.v1.generic.response.RelationshipToOne;
+import fr.siamois.ui.api.openapi.v1.resource.project.PlaceResourceIdentifier;
+import org.junit.jupiter.api.Test;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+class SpatialUnitPlaceRelationshipMapperTest {
+
+  private final SpatialUnitPlaceRelationshipMapper mapper = new SpatialUnitPlaceRelationshipMapper() {};
+
+  @Test
+  void spatialUnitToPlace_nullSummary_returnsNull() {
+    assertThat(mapper.spatialUnitToPlace(null)).isNull();
+  }
+
+  @Test
+  void spatialUnitToPlace_withId_buildsPlaceRelationship() {
+    SpatialUnitSummaryDTO summary = new SpatialUnitSummaryDTO();
+    summary.setId(15L);
+
+    RelationshipToOne<PlaceResourceIdentifier> relationship = mapper.spatialUnitToPlace(summary);
+
+    assertThat(relationship).isNotNull();
+    assertThat(relationship.getData().getResourceType()).isEqualTo("places");
+    assertThat(relationship.getData().getId()).isEqualTo("15");
+  }
+
+  @Test
+  void spatialUnitToPlace_withoutId_leavesResourceIdUnset() {
+    SpatialUnitSummaryDTO summary = new SpatialUnitSummaryDTO();
+
+    RelationshipToOne<PlaceResourceIdentifier> relationship = mapper.spatialUnitToPlace(summary);
+
+    assertThat(relationship).isNotNull();
+    assertThat(relationship.getData().getResourceType()).isEqualTo("places");
+    assertThat(relationship.getData().getId()).isNull();
+  }
+}

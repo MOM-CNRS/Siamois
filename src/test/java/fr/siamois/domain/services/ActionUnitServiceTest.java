@@ -17,11 +17,17 @@ import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.dto.FilterDTO;
+import fr.siamois.dto.api.AccessibleProjectForApi;
 import fr.siamois.dto.entity.*;
+import fr.siamois.infrastructure.database.repositories.DocumentRepository;
 import fr.siamois.infrastructure.database.repositories.SpatialUnitRepository;
 import fr.siamois.infrastructure.database.repositories.actionunit.ActionCodeRepository;
 import fr.siamois.infrastructure.database.repositories.actionunit.ActionUnitRepository;
+import fr.siamois.infrastructure.database.repositories.person.PendingActionUnitRepository;
+import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitIdCounterRepository;
+import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitIdLabelRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitRepository;
+import fr.siamois.infrastructure.database.repositories.team.TeamMemberRepository;
 import fr.siamois.infrastructure.database.repositories.specs.ActionUnitSpec;
 import fr.siamois.mapper.ActionUnitMapper;
 import fr.siamois.dto.entity.SpatialUnitDTO;
@@ -32,15 +38,19 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
+
+import static org.mockito.Answers.CALLS_REAL_METHODS;
+import static org.mockito.Mockito.mockStatic;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 
-import java.time.Clock;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.*;
@@ -48,6 +58,7 @@ import java.util.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -63,7 +74,11 @@ class ActionUnitServiceTest {
     @Mock private PersonMapper personMapper;
     @Mock private ConceptMapper conceptMapper;
     @Mock private SpatialUnitRepository spatialUnitRepository;
-    @Mock private Clock clock;
+    @Mock private TeamMemberRepository teamMemberRepository;
+    @Mock private DocumentRepository documentRepository;
+    @Mock private PendingActionUnitRepository pendingActionUnitRepository;
+    @Mock private RecordingUnitIdCounterRepository recordingUnitIdCounterRepository;
+    @Mock private RecordingUnitIdLabelRepository recordingUnitIdLabelRepository;
     @InjectMocks
     private ActionUnitService actionUnitService;
 
@@ -555,9 +570,10 @@ class ActionUnitServiceTest {
         when(actionUnitRepository.findByNameAndCreatedByInstitutionId("dup", 1L))
                 .thenReturn(Optional.of(new ActionUnit()));
 
+        ConceptDTO conceptDto = new ConceptDTO();
         ActionUnitAlreadyExistsException ex = assertThrows(
                 ActionUnitAlreadyExistsException.class,
-                () -> actionUnitService.saveNotTransactional(info, dto, new ConceptDTO()));
+                () -> actionUnitService.saveNotTransactional(info, dto, conceptDto));
         assertThat(ex.getMessage()).contains("dup");
     }
 
@@ -572,9 +588,10 @@ class ActionUnitServiceTest {
         when(actionUnitRepository.findByIdentifierAndCreatedByInstitutionId("id-1", 1L))
                 .thenReturn(Optional.of(new ActionUnit()));
 
+        ConceptDTO conceptDto = new ConceptDTO();
         ActionUnitAlreadyExistsException ex = assertThrows(
                 ActionUnitAlreadyExistsException.class,
-                () -> actionUnitService.saveNotTransactional(info, dto, new ConceptDTO()));
+                () -> actionUnitService.saveNotTransactional(info, dto, conceptDto));
         assertThat(ex.getMessage()).contains("id-1");
     }
 
@@ -989,32 +1006,35 @@ class ActionUnitServiceTest {
 
     @Test
     void isActionUnitStillOngoing_nowInRange_returnsTrue() {
-        when(clock.instant()).thenReturn(NOW.toInstant());
-        when(clock.getZone()).thenReturn(ZoneOffset.UTC);
-        ActionUnitSummaryDTO au = new ActionUnitSummaryDTO();
-        au.setBeginDate(NOW.minusDays(1));
-        au.setEndDate(NOW.plusDays(1));
-        assertTrue(actionUnitService.isActionUnitStillOngoing(au));
+        try (MockedStatic<OffsetDateTime> mocked = mockStatic(OffsetDateTime.class, CALLS_REAL_METHODS)) {
+            mocked.when(OffsetDateTime::now).thenReturn(NOW);
+            ActionUnitSummaryDTO au = new ActionUnitSummaryDTO();
+            au.setBeginDate(NOW.minusDays(1));
+            au.setEndDate(NOW.plusDays(1));
+            assertTrue(actionUnitService.isActionUnitStillOngoing(au));
+        }
     }
 
     @Test
     void isActionUnitStillOngoing_nowBeforeBegin_returnsFalse() {
-        when(clock.instant()).thenReturn(NOW.toInstant());
-        when(clock.getZone()).thenReturn(ZoneOffset.UTC);
-        ActionUnitSummaryDTO au = new ActionUnitSummaryDTO();
-        au.setBeginDate(NOW.plusDays(1));
-        au.setEndDate(NOW.plusDays(2));
-        assertFalse(actionUnitService.isActionUnitStillOngoing(au));
+        try (MockedStatic<OffsetDateTime> mocked = mockStatic(OffsetDateTime.class, CALLS_REAL_METHODS)) {
+            mocked.when(OffsetDateTime::now).thenReturn(NOW);
+            ActionUnitSummaryDTO au = new ActionUnitSummaryDTO();
+            au.setBeginDate(NOW.plusDays(1));
+            au.setEndDate(NOW.plusDays(2));
+            assertFalse(actionUnitService.isActionUnitStillOngoing(au));
+        }
     }
 
     @Test
     void isActionUnitStillOngoing_nowAfterEnd_returnsFalse() {
-        when(clock.instant()).thenReturn(NOW.toInstant());
-        when(clock.getZone()).thenReturn(ZoneOffset.UTC);
-        ActionUnitSummaryDTO au = new ActionUnitSummaryDTO();
-        au.setBeginDate(NOW.minusDays(2));
-        au.setEndDate(NOW.minusDays(1));
-        assertFalse(actionUnitService.isActionUnitStillOngoing(au));
+        try (MockedStatic<OffsetDateTime> mocked = mockStatic(OffsetDateTime.class, CALLS_REAL_METHODS)) {
+            mocked.when(OffsetDateTime::now).thenReturn(NOW);
+            ActionUnitSummaryDTO au = new ActionUnitSummaryDTO();
+            au.setBeginDate(NOW.minusDays(2));
+            au.setEndDate(NOW.minusDays(1));
+            assertFalse(actionUnitService.isActionUnitStillOngoing(au));
+        }
     }
 
     // ------------------------------------------------------------------
@@ -1230,6 +1250,207 @@ class ActionUnitServiceTest {
     }
 
     // ------------------------------------------------------------------
+    // findAccessibleProjects (API liste projets)
+    // ------------------------------------------------------------------
+
+    @Test
+    void findAccessibleProjects_emptyInstitutions_returnsEmptyPageWithoutDb() {
+        Pageable pageable1 = PageRequest.of(0, 20);
+
+        Page<AccessibleProjectForApi> page1 = actionUnitService.findAccessibleProjects(
+                Set.of(), null, null, pageable1);
+
+        assertThat(page1.getContent()).isEmpty();
+        assertThat(page1.getTotalElements()).isZero();
+        verifyNoInteractions(actionUnitRepository);
+        verifyNoInteractions(recordingUnitRepository);
+    }
+
+    @Test
+    void findAccessibleProjects_noActionUnits_skipsCountQueries() {
+        when(actionUnitRepository.findAll(any(Specification.class), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 20), 0));
+
+        Page<AccessibleProjectForApi> page1 = actionUnitService.findAccessibleProjects(
+                Set.of(1L), null, null, PageRequest.of(0, 20));
+
+        assertThat(page1.getContent()).isEmpty();
+        assertThat(page1.getTotalElements()).isZero();
+        verify(recordingUnitRepository, never()).countRecordingUnitsGroupedByActionUnitIds(any());
+        verify(actionUnitRepository, never()).countChildActionUnitsByParentIds(any());
+    }
+
+    @Test
+    void findAccessibleProjects_mapsDtosAndMergesAggregateCounts() {
+        // ActionUnit.equals() utilise fullIdentifier : sans valeurs distinctes, Mockito confond les arguments de convert().
+        actionUnit1.setFullIdentifier("TEST-FIND-AU-1");
+        actionUnit2.setFullIdentifier("TEST-FIND-AU-2");
+        actionUnit1dto.setId(1L);
+        actionUnit2dto.setId(2L);
+
+        when(actionUnitRepository.findAll(any(Specification.class), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(actionUnit1, actionUnit2), PageRequest.of(0, 20, Sort.by("name")), 2));
+        when(actionUnitMapper.convert(actionUnit1)).thenReturn(actionUnit1dto);
+        when(actionUnitMapper.convert(actionUnit2)).thenReturn(actionUnit2dto);
+        List<Object[]> ruRows = new ArrayList<>();
+        ruRows.add(new Object[]{1L, 5L});
+        ruRows.add(new Object[]{2L, 3L});
+        when(recordingUnitRepository.countRecordingUnitsGroupedByActionUnitIds(List.of(1L, 2L)))
+                .thenReturn(ruRows);
+        List<Object[]> childRows = new ArrayList<>();
+        childRows.add(new Object[]{1L, 1L});
+        when(actionUnitRepository.countChildActionUnitsByParentIds(List.of(1L, 2L)))
+                .thenReturn(childRows);
+
+        Page<AccessibleProjectForApi> page1 = actionUnitService.findAccessibleProjects(
+                Set.of(10L), null, "alpha", PageRequest.of(0, 20, Sort.by("name")));
+
+        assertThat(page1.getTotalElements()).isEqualTo(2);
+        assertThat(page1.getContent()).hasSize(2);
+        assertThat(page1.getContent().get(0).actionUnit().getId()).isEqualTo(1L);
+        assertThat(page1.getContent().get(1).actionUnit().getId()).isEqualTo(2L);
+        assertThat(page1.getContent().get(0).recordingUnitCount()).isEqualTo(5L);
+        assertThat(page1.getContent().get(0).childActionUnitCount()).isEqualTo(1L);
+        assertThat(page1.getContent().get(1).recordingUnitCount()).isEqualTo(3L);
+        assertThat(page1.getContent().get(1).childActionUnitCount()).isZero();
+        verify(recordingUnitRepository).countRecordingUnitsGroupedByActionUnitIds(List.of(1L, 2L));
+        verify(actionUnitRepository).countChildActionUnitsByParentIds(List.of(1L, 2L));
+    }
+
+    // ------------------------------------------------------------------
+    // findAccessibleProjectByKey
+    // ------------------------------------------------------------------
+
+    @Test
+    void findAccessibleProjectByKey_emptyInstitutions_throws() {
+        assertThrows(ActionUnitNotFoundException.class,
+                () -> actionUnitService.findAccessibleProjectByKey("1", Set.of()));
+    }
+
+    @Test
+    void findAccessibleProjectByKey_unknownNumericId_throws() {
+        when(actionUnitRepository.findById(99L)).thenReturn(Optional.empty());
+
+        Set<Long> institutionIds = Set.of(10L);
+        assertThrows(ActionUnitNotFoundException.class,
+                () -> actionUnitService.findAccessibleProjectByKey("99", institutionIds));
+    }
+
+    @Test
+    void findAccessibleProjectByKey_wrongInstitution_throws() {
+        actionUnit1.setFullIdentifier("DETAIL-AU-WRONG");
+        actionUnit1.setId(5L);
+        actionUnit1dto.setId(5L);
+        when(actionUnitRepository.findById(5L)).thenReturn(Optional.of(actionUnit1));
+        InstitutionDTO wrongInst = new InstitutionDTO();
+        wrongInst.setId(200L);
+        actionUnit1dto.setCreatedByInstitution(wrongInst);
+        when(actionUnitMapper.convert(actionUnit1)).thenReturn(actionUnit1dto);
+
+        Set<Long> institutionIds = Set.of(100L);
+        assertThrows(ActionUnitNotFoundException.class,
+                () -> actionUnitService.findAccessibleProjectByKey("5", institutionIds));
+    }
+
+    @Test
+    void findAccessibleProjectByKey_returnsRowWithCounts_forNumericKey() {
+        actionUnit1.setFullIdentifier("DETAIL-AU-OK");
+        actionUnit1.setId(5L);
+        actionUnit1dto.setId(5L);
+        when(actionUnitRepository.findById(5L)).thenReturn(Optional.of(actionUnit1));
+        InstitutionDTO inst = new InstitutionDTO();
+        inst.setId(100L);
+        actionUnit1dto.setCreatedByInstitution(inst);
+        when(actionUnitMapper.convert(actionUnit1)).thenReturn(actionUnit1dto);
+        List<Object[]> ruRows = new ArrayList<>();
+        ruRows.add(new Object[]{5L, 7L});
+        when(recordingUnitRepository.countRecordingUnitsGroupedByActionUnitIds(List.of(5L))).thenReturn(ruRows);
+        List<Object[]> childRows = new ArrayList<>();
+        childRows.add(new Object[]{5L, 2L});
+        when(actionUnitRepository.countChildActionUnitsByParentIds(List.of(5L))).thenReturn(childRows);
+
+        AccessibleProjectForApi result = actionUnitService.findAccessibleProjectByKey("5", Set.of(100L));
+
+        assertThat(result.actionUnit().getId()).isEqualTo(5L);
+        assertThat(result.recordingUnitCount()).isEqualTo(7L);
+        assertThat(result.childActionUnitCount()).isEqualTo(2L);
+    }
+
+    @Test
+    void findAccessibleProjectByKey_resolvesByFullIdentifierWhenNonNumeric() {
+        actionUnit1.setFullIdentifier("INST-PROJ-2025");
+        actionUnit1.setId(5L);
+        actionUnit1dto.setId(5L);
+        when(actionUnitRepository.findByFullIdentifier("INST-PROJ-2025")).thenReturn(Optional.of(actionUnit1));
+        InstitutionDTO inst = new InstitutionDTO();
+        inst.setId(100L);
+        actionUnit1dto.setCreatedByInstitution(inst);
+        when(actionUnitMapper.convert(actionUnit1)).thenReturn(actionUnit1dto);
+        when(recordingUnitRepository.countRecordingUnitsGroupedByActionUnitIds(List.of(5L)))
+                .thenReturn(new ArrayList<>());
+        when(actionUnitRepository.countChildActionUnitsByParentIds(List.of(5L)))
+                .thenReturn(new ArrayList<>());
+
+        AccessibleProjectForApi result = actionUnitService.findAccessibleProjectByKey("INST-PROJ-2025", Set.of(100L));
+
+        assertThat(result.actionUnit().getId()).isEqualTo(5L);
+        verify(actionUnitRepository, never()).findById(anyLong());
+    }
+
+    @Test
+    void findAccessibleProjectByKey_resolvesByIdentifierWhenFullIdentifierUnknown() {
+        when(actionUnitRepository.findByFullIdentifier("C309_01")).thenReturn(Optional.empty());
+        when(actionUnitRepository.findByIdentifierAndCreatedByInstitutionId("C309_01", 100L))
+                .thenReturn(Optional.of(actionUnit1));
+        actionUnit1.setFullIdentifier("SHORT-ID-TEST-AU");
+        actionUnit1.setId(33L);
+        actionUnit1dto.setId(33L);
+        InstitutionDTO inst = new InstitutionDTO();
+        inst.setId(100L);
+        actionUnit1dto.setCreatedByInstitution(inst);
+        when(actionUnitMapper.convert(actionUnit1)).thenReturn(actionUnit1dto);
+        when(recordingUnitRepository.countRecordingUnitsGroupedByActionUnitIds(List.of(33L)))
+                .thenReturn(new ArrayList<>());
+        when(actionUnitRepository.countChildActionUnitsByParentIds(List.of(33L)))
+                .thenReturn(new ArrayList<>());
+
+        AccessibleProjectForApi result = actionUnitService.findAccessibleProjectByKey("C309_01", Set.of(100L));
+
+        assertThat(result.actionUnit().getId()).isEqualTo(33L);
+        verify(actionUnitRepository).findByFullIdentifier("C309_01");
+        verify(actionUnitRepository).findByIdentifierAndCreatedByInstitutionId("C309_01", 100L);
+    }
+
+    @Test
+    void findAccessibleProjectByKey_scansInstitutionsForIdentifierUntilFound() {
+        when(actionUnitRepository.findByFullIdentifier("ID-SHORT")).thenReturn(Optional.empty());
+        when(actionUnitRepository.findByIdentifierAndCreatedByInstitutionId("ID-SHORT", 100L))
+                .thenReturn(Optional.empty());
+        when(actionUnitRepository.findByIdentifierAndCreatedByInstitutionId("ID-SHORT", 200L))
+                .thenReturn(Optional.of(actionUnit1));
+
+        actionUnit1.setFullIdentifier("AU-MULTI-INST");
+        actionUnit1.setId(77L);
+        actionUnit1dto.setId(77L);
+        InstitutionDTO inst200 = new InstitutionDTO();
+        inst200.setId(200L);
+        actionUnit1dto.setCreatedByInstitution(inst200);
+        when(actionUnitMapper.convert(actionUnit1)).thenReturn(actionUnit1dto);
+        when(recordingUnitRepository.countRecordingUnitsGroupedByActionUnitIds(List.of(77L)))
+                .thenReturn(new ArrayList<>());
+        when(actionUnitRepository.countChildActionUnitsByParentIds(List.of(77L)))
+                .thenReturn(new ArrayList<>());
+
+        Set<Long> institutionsInScanOrder = new LinkedHashSet<>();
+        institutionsInScanOrder.add(100L);
+        institutionsInScanOrder.add(200L);
+        AccessibleProjectForApi result = actionUnitService.findAccessibleProjectByKey("ID-SHORT", institutionsInScanOrder);
+
+        assertThat(result.actionUnit().getId()).isEqualTo(77L);
+        verify(actionUnitRepository).findByIdentifierAndCreatedByInstitutionId("ID-SHORT", 100L);
+        verify(actionUnitRepository).findByIdentifierAndCreatedByInstitutionId("ID-SHORT", 200L);
+
+    }
     // findAllByActionManager
     // ------------------------------------------------------------------
 

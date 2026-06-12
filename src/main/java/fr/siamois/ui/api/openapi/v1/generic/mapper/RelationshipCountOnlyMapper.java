@@ -5,6 +5,7 @@ import fr.siamois.ui.mapper.adapter.ConversionServiceAdapter;
 import org.mapstruct.InjectionStrategy;
 import org.mapstruct.Mapper;
 import org.mapstruct.MappingConstants;
+import org.mapstruct.Named;
 import org.springframework.core.convert.converter.Converter;
 
 @Mapper(uses = ConversionServiceAdapter.class,
@@ -13,6 +14,7 @@ import org.springframework.core.convert.converter.Converter;
 public interface RelationshipCountOnlyMapper
         extends Converter<Long, RelationshipCountOnly> {
 
+    @Named("countOnly")
     default RelationshipCountOnly convert(Long count) {
         return new RelationshipCountOnly(count);
     }

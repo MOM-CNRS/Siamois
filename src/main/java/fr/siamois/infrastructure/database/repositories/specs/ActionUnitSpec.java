@@ -5,6 +5,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
 
+import java.util.Collection;
 import java.util.List;
 
 public class ActionUnitSpec {
@@ -38,6 +39,37 @@ public class ActionUnitSpec {
 
     public static Specification<ActionUnit> idIn(java.util.Collection<Long> ids) {
         return (root, query, criteriaBuilder) -> root.get("id").in(ids);
+    }
+
+    /**
+     * Action units whose owning institution is one of the given ids.
+     */
+    @NonNull
+    public static Specification<ActionUnit> institutionIdIn(@Nullable Collection<Long> institutionIds) {
+        return (root, query, cb) -> {
+            if (institutionIds == null || institutionIds.isEmpty()) {
+                return cb.disjunction();
+            }
+            return root.get("createdByInstitution").get("id").in(institutionIds);
+        };
+    }
+
+    /**
+     * Case-insensitive match on name, identifier, or full identifier (OR).
+     */
+    @NonNull
+    public static Specification<ActionUnit> projectSearch(@Nullable String search) {
+        return (root, query, cb) -> {
+            if (search == null || search.isBlank()) {
+                return cb.conjunction();
+            }
+            String pattern = "%" + search.toLowerCase() + "%";
+            return cb.or(
+                    cb.like(cb.lower(root.get("name")), pattern),
+                    cb.like(cb.lower(cb.coalesce(root.get("identifier"), "")), pattern),
+                    cb.like(cb.lower(cb.coalesce(root.get("fullIdentifier"), "")), pattern)
+            );
+        };
     }
 
     @NonNull

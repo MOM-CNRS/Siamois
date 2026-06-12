@@ -15,9 +15,10 @@ import org.springframework.data.repository.query.Param;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 
-public interface SpecimenRepository extends JpaRepository<Specimen, Long>, RevisionRepository<Specimen, Long, Long>, JpaSpecificationExecutor<Specimen> {
+public interface SpecimenRepository extends JpaRepository<Specimen, Long>, RevisionRepository<Specimen, Long, Long>, JpaSpecificationExecutor<Specimen>, SpecimenRepositoryCustom {
     List<Specimen> findAllByArkIsNullAndCreatedByInstitution(@NotNull Institution createdByInstitution);
 
     <T> Optional<T> findById(Long id, Class<T> type);
@@ -106,73 +107,6 @@ public interface SpecimenRepository extends JpaRepository<Specimen, Long>, Revis
     )
     @Modifying
     int updateTypeByIds(@Param("type") Long type, @Param("ids") List<Long> ids);
-
-    @Query(
-            nativeQuery = true,
-            value = "WITH ranked_labels AS ( " +
-                    "    SELECT " +
-                    "        l.fk_concept_id, " +
-                    "        l.label_value, " +
-                    "        l.lang_code, " +
-                    "        ROW_NUMBER() OVER ( " +
-                    "            PARTITION BY l.fk_concept_id " +
-                    "            ORDER BY  " +
-                    "                CASE  " +
-                    "                    WHEN l.lang_code = :langCode THEN 1 " +
-                    "                    WHEN l.lang_code = 'en' THEN 2 " +
-                    "                    ELSE 3 " +
-                    "                END " +
-                    "        ) AS rank " +
-                    "    FROM label l " +
-                    ") " +
-                    "SELECT " +
-                    "    s.*, " +
-                    "    rl.label_value AS c_label " +
-                    "FROM specimen s " +
-                    "LEFT JOIN concept c ON s.fk_specimen_type = c.concept_id " +
-                    "LEFT JOIN ranked_labels rl ON c.concept_id = rl.fk_concept_id AND rl.rank = 1 " +
-                    "WHERE s.fk_institution_id = :institutionId " +
-                    "  AND s.fk_recording_unit_id = :recordingUnitId " +
-                    "  AND (CAST(:fullIdentifier AS TEXT) IS NULL OR LOWER(s.full_identifier) LIKE LOWER(CONCAT('%', CAST(:fullIdentifier AS TEXT), '%'))) " +
-                    "  AND (CAST(:categoryIds AS BIGINT[]) IS NULL OR s.fk_specimen_type IN (:categoryIds)) " +
-                    "  AND (CAST(:global AS TEXT) IS NULL OR LOWER(s.full_identifier) LIKE LOWER(CONCAT('%', CAST(:global AS TEXT), '%'))  " +
-                    "                                     OR LOWER(rl.label_value) LIKE LOWER(CONCAT('%', CAST(:global AS TEXT), '%'))) ",
-            countQuery = "WITH ranked_labels AS ( " +
-                    "    SELECT " +
-                    "        l.fk_concept_id, " +
-                    "        l.label_value, " +
-                    "        l.lang_code, " +
-                    "        ROW_NUMBER() OVER ( " +
-                    "            PARTITION BY l.fk_concept_id " +
-                    "            ORDER BY  " +
-                    "                CASE  " +
-                    "                    WHEN l.lang_code = :langCode THEN 1 " +
-                    "                    WHEN l.lang_code = 'en' THEN 2 " +
-                    "                    ELSE 3 " +
-                    "                END " +
-                    "        ) AS rank " +
-                    "    FROM label l " +
-                    ") " +
-                    "SELECT " +
-                    "    count(s) " +
-                    "FROM specimen s " +
-                    "LEFT JOIN concept c ON s.fk_specimen_type = c.concept_id " +
-                    "LEFT JOIN ranked_labels rl ON c.concept_id = rl.fk_concept_id AND rl.rank = 1 " +
-                    "WHERE s.fk_institution_id = :institutionId " +
-                    "  AND s.fk_recording_unit_id = :recordingUnitId " +
-                    "  AND (CAST(:fullIdentifier AS TEXT) IS NULL OR LOWER(s.full_identifier) LIKE LOWER(CONCAT('%', CAST(:fullIdentifier AS TEXT), '%'))) " +
-                    "  AND (CAST(:categoryIds AS BIGINT[]) IS NULL OR s.fk_specimen_type IN (:categoryIds)) " +
-                    "  AND (CAST(:global AS TEXT) IS NULL OR LOWER(s.full_identifier) LIKE LOWER(CONCAT('%', CAST(:global AS TEXT), '%'))  " +
-                    "                                     OR LOWER(rl.label_value) LIKE LOWER(CONCAT('%', CAST(:global AS TEXT), '%'))) "
-    )
-    Page<Specimen> findAllByInstitutionAndByRecordingUnitIdAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
-            @Param("institutionId") Long institutionId,
-            @Param("recordingUnitId") Long recordingUnitId,
-            @Param("fullIdentifier") String fullIdentifier,
-            @Param("categoryIds") Long[] categoryIds,
-            @Param("global") String global,
-            @Param("langCode") String langCode,
-            Pageable pageable);
 
     @Query(
             nativeQuery = true,
@@ -328,6 +262,19 @@ public interface SpecimenRepository extends JpaRepository<Specimen, Long>, Revis
     Optional<Specimen> findByFullIdentifier(@NotNull String fullIdentifier);
 
     @Query(
+            value = "SELECT s.* FROM specimen s " +
+                    "JOIN institution i ON s.fk_institution_id = i.institution_id " +
+                    "WHERE s.full_identifier = :fullIdentifier " +
+                    "AND i.institution_id IN :institutionIds " +
+                    "LIMIT 1",
+            nativeQuery = true
+    )
+    Optional<Specimen> findFirstByFullIdentifierAndInstitutionIdIn(
+            @Param("fullIdentifier") String fullIdentifier,
+            @Param("institutionIds") Set<Long> institutionIds
+    );
+
+    @Query(
             value = "SELECT COUNT(*) FROM specimen s "+
                     "LEFT JOIN recording_unit ru ON s.fk_recording_unit_id = ru.recording_unit_id "+
                     "WHERE ru.fk_spatial_unit_id = :spatialUnitId",
@@ -353,5 +300,11 @@ public interface SpecimenRepository extends JpaRepository<Specimen, Long>, Revis
 
     @Query("SELECT s FROM Specimen s WHERE s.recordingUnit.actionUnit.id = :actionUnitId")
     List<Specimen> findFirst10ByActionUnitId(@Param("actionUnitId") Long actionUnitId);
+
+    @Query(nativeQuery = true, value = "SELECT COUNT(*) FROM specimen_movement WHERE fk_specimen_id = :specimenId")
+    long countMovementsBySpecimenId(@Param("specimenId") long specimenId);
+
+    @Query(nativeQuery = true, value = "SELECT COUNT(*) FROM specimen_group_attribution WHERE fk_specimen_id = :specimenId")
+    long countGroupAttributionsBySpecimenId(@Param("specimenId") long specimenId);
 }
 

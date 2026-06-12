@@ -100,6 +100,19 @@ public abstract class AbstractSingleEntityPanel<T extends AbstractEntityDTO> ext
         }
     }
 
+    /**
+     * PrimeFaces {@code p:outputPanel} peut émettre l'événement {@code load} après le premier rendu.
+     * Si l'initialisation a eu lieu hors cycle JSF (ex. forward MVC) ou si des champs transitoires
+     * n'étaient pas encore prêts, on recharge l'entité et le formulaire ici.
+     */
+    @Override
+    public void loadData() {
+        if (unitId != null && (unit == null || detailsForm == null || formContext == null)) {
+            refreshUnit();
+        }
+        super.loadData();
+    }
+
     @Override
     public String ressourceUri() {
         String base = entityRessourceUri();

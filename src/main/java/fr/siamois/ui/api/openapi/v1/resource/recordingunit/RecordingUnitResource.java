@@ -7,19 +7,24 @@ import fr.siamois.ui.api.openapi.v1.generic.response.geom.GeometryDTO;
 import fr.siamois.ui.api.openapi.v1.resource.concept.ConceptResourceIdentifier;
 import fr.siamois.ui.api.openapi.v1.resource.organization.OrganizationResourceIdentifier;
 import fr.siamois.ui.api.openapi.v1.resource.person.PersonResourceIdentifier;
+import fr.siamois.ui.api.openapi.v1.resource.project.PlaceResourceIdentifier;
 import fr.siamois.ui.api.openapi.v1.resource.project.ProjectResourceIdentifier;
-import lombok.AllArgsConstructor;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
 
 import java.time.OffsetDateTime;
 
 
 @Data
-@AllArgsConstructor
+@NoArgsConstructor
 @EqualsAndHashCode(callSuper = false)
 public class RecordingUnitResource
         extends RecordingUnitResourceIdentifier {
+
+    @Schema(description = "Révision de synchronisation (optimistic locking)")
+    private Long syncRevision;
 
     private String identifier;
     private String fullIdentifier;
@@ -32,8 +37,15 @@ public class RecordingUnitResource
 
 
     private RelationshipToOne<ConceptResourceIdentifier> type;
+    private RelationshipToOne<PersonResourceIdentifier> author;
     private RelationshipToMany<PersonResourceIdentifier> contributors;
     private RelationshipCountOnly specimen;
+    private RelationshipCountOnly stratigraphicRelationships;
+    private RelationshipToOne<PlaceResourceIdentifier> place;
+
+    @Schema(description = "Couleur de la matrice (libellé ou code selon saisie)")
+    private String matrixColor;
+
     private RelationshipToOne<OrganizationResourceIdentifier> organization;
     private RelationshipToOne<ProjectResourceIdentifier> project;
 

@@ -22,16 +22,23 @@ import fr.siamois.domain.services.recordingunit.identifier.generic.RuIdentifierR
 import fr.siamois.domain.services.recordingunit.identifier.generic.RuNumericalIdentifierResolver;
 import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.dto.FilterDTO;
+import fr.siamois.dto.StratigraphicRelationshipDTO;
 import fr.siamois.dto.entity.*;
 import fr.siamois.infrastructure.api.dto.ConceptFieldDTO;
 import fr.siamois.infrastructure.database.repositories.person.PersonRepository;
+import fr.siamois.infrastructure.database.repositories.ArkRepository;
+import fr.siamois.infrastructure.database.repositories.DocumentRepository;
+import fr.siamois.infrastructure.database.repositories.form.CustomFormResponseRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitIdCounterRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitIdInfoRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitRepository;
+import fr.siamois.infrastructure.database.repositories.recordingunit.StratigraphicRelationshipRepository;
 import fr.siamois.infrastructure.database.repositories.specs.RecordingUnitSpec;
 import fr.siamois.infrastructure.database.repositories.team.TeamMemberRepository;
 import fr.siamois.mapper.ActionUnitSummaryMapper;
 import fr.siamois.mapper.RecordingUnitMapper;
+import fr.siamois.mapper.RecordingUnitSummaryMapper;
+import fr.siamois.mapper.StatigraphicRelationshipMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -41,6 +48,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationContext;
+import org.springframework.core.convert.ConversionService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
@@ -54,6 +62,8 @@ import java.util.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.*;
 
@@ -87,6 +97,20 @@ class RecordingUnitServiceTest {
     private RecordingUnitMapper recordingUnitMapper;
     @Mock
     private ActionUnitSummaryMapper actionUnitSummaryMapper;
+    @Mock
+    private DocumentRepository documentRepository;
+    @Mock
+    private CustomFormResponseRepository customFormResponseRepository;
+    @Mock
+    private ArkRepository arkRepository;
+    @Mock
+    private StratigraphicRelationshipRepository stratigraphicRelationshipRepository;
+    @Mock
+    private StatigraphicRelationshipMapper stratigraphicRelationshipMapper;
+    @Mock
+    private RecordingUnitSummaryMapper recordingUnitSummaryMapper;
+    @Mock
+    private ConversionService conversionService;
 
 
     @InjectMocks
@@ -167,7 +191,9 @@ class RecordingUnitServiceTest {
         user = new PersonDTO();
         userInfo = new UserInfo(parentInstitutionDto, user, "fr");
 
-
+        // setupParents appelle findAllById même pour une liste vide ; sans stub, Mockito renvoie null → NPE.
+        lenient().when(recordingUnitRepository.findAllById(argThat(list -> list == null || !list.iterator().hasNext())))
+                .thenReturn(Collections.emptyList());
     }
 
     @Test
@@ -269,9 +295,14 @@ class RecordingUnitServiceTest {
 
         // Le service cherche l'unité existante car l'ID est 1L
         when(recordingUnitRepository.findById(1L)).thenReturn(Optional.of(managedUnit));
-        when(recordingUnitRepository.findById(10L)).thenReturn(Optional.of(parentEntity));
         when(recordingUnitRepository.findById(2L)).thenReturn(Optional.of(targetUnit2));
         when(recordingUnitRepository.findById(3L)).thenReturn(Optional.of(targetUnit3));
+        when(recordingUnitRepository.findAllById(argThat(ids -> {
+            List<Long> collected = new ArrayList<>();
+            ids.forEach(collected::add);
+            return collected.equals(List.of(10L));
+        }))).thenReturn(List.of(parentEntity));
+        when(recordingUnitRepository.saveAll(anyList())).thenAnswer(inv -> inv.getArgument(0));
 
         when(recordingUnitRepository.save(any(RecordingUnit.class))).thenAnswer(inv -> inv.getArgument(0));
         when(personRepository.findAllById(anyList())).thenReturn(List.of(new Person()));
@@ -285,7 +316,11 @@ class RecordingUnitServiceTest {
         // --- 5. Assertions ---
         assertNotNull(result);
         verify(recordingUnitRepository, atLeastOnce()).save(any(RecordingUnit.class));
-        verify(recordingUnitRepository).findById(10L);
+        verify(recordingUnitRepository).findAllById(argThat(ids -> {
+            List<Long> collected = new ArrayList<>();
+            ids.forEach(collected::add);
+            return collected.equals(List.of(10L));
+        }));
         verify(recordingUnitRepository).findById(2L);
         verify(recordingUnitRepository).findById(3L);
     }
@@ -785,8 +820,8 @@ class RecordingUnitServiceTest {
         // 3. Mocks
         when(recordingUnitMapper.invertConvert(recordingUnitToSave2)).thenReturn(entityToSave);
 
-        // Simulation de l'échec de récupération du parent en base
-        when(recordingUnitRepository.findById(nonExistentParentId)).thenReturn(Optional.empty());
+        // setupParents charge les parents via findAllById (plus findById unitaire)
+        when(recordingUnitRepository.findAllById(List.of(nonExistentParentId))).thenReturn(Collections.emptyList());
 
         // Act & Assert
         FailedRecordingUnitSaveException exception = assertThrows(
@@ -794,10 +829,9 @@ class RecordingUnitServiceTest {
                 () -> recordingUnitService.save(recordingUnitToSave2)
         );
 
-        // Vérification du message (encapsulé par le try/catch du service)
-        assertEquals("Parent not found: " + nonExistentParentId, exception.getMessage());
+        assertEquals("Some parents not found: [" + nonExistentParentId + "]", exception.getMessage());
 
-        verify(recordingUnitRepository).findById(nonExistentParentId);
+        verify(recordingUnitRepository).findAllById(List.of(nonExistentParentId));
     }
 
 
@@ -1713,8 +1747,12 @@ class RecordingUnitServiceTest {
         // Mock finding the parent
         when(recordingUnitRepository.findById(parentId)).thenReturn(Optional.of(managedParent));
 
-        // Mock finding the NEW child (This is the call inside the 'if (!alreadyPresent)' block)
-        when(recordingUnitRepository.findById(newChildId)).thenReturn(Optional.of(newChildEntity));
+        // setupChilds résout les enfants manquants via findAllById
+        when(recordingUnitRepository.findAllById(argThat(ids -> {
+            List<Long> collected = new ArrayList<>();
+            ids.forEach(collected::add);
+            return collected.size() == 1 && collected.contains(newChildId);
+        }))).thenReturn(List.of(newChildEntity));
 
         // Mock save
         when(recordingUnitRepository.save(any(RecordingUnit.class))).thenAnswer(i -> i.getArgument(0));
@@ -1729,8 +1767,302 @@ class RecordingUnitServiceTest {
 
         assertEquals(1, managedParent.getChildren().size());
 
-        // Verify the repository was actually called to fetch the new child
-        verify(recordingUnitRepository).findById(newChildId);
+        verify(recordingUnitRepository).findAllById(argThat(ids -> {
+            List<Long> collected = new ArrayList<>();
+            ids.forEach(collected::add);
+            return collected.size() == 1 && collected.contains(newChildId);
+        }));
+    }
+
+    @Nested
+    @DisplayName("OpenAPI access and lifecycle")
+    class OpenApiAccessAndLifecycle {
+
+        @Test
+        void findAccessibleRecordingUnitByKey_numericId_inScope() {
+            InstitutionDTO instDto = new InstitutionDTO();
+            instDto.setId(100L);
+            RecordingUnit entity = new RecordingUnit();
+            entity.setId(42L);
+            Institution inst = new Institution();
+            inst.setId(100L);
+            entity.setCreatedByInstitution(inst);
+
+            RecordingUnitDTO dto1 = new RecordingUnitDTO();
+            dto1.setId(42L);
+            dto1.setCreatedByInstitution(instDto);
+
+            when(recordingUnitRepository.findById(42L)).thenReturn(Optional.of(entity));
+            when(recordingUnitMapper.convert(entity)).thenReturn(dto1);
+
+            RecordingUnitDTO result = recordingUnitService.findAccessibleRecordingUnitByKey(
+                    "42", Set.of(100L), null);
+
+            assertEquals(42L, result.getId());
+            verify(recordingUnitRepository, never()).findFirstByFullIdentifierAndInstitutionIdIn(any(), any());
+        }
+
+        @Test
+        void findAccessibleRecordingUnitWithEntity_loadsSpecimenCount() {
+            InstitutionDTO instDto = new InstitutionDTO();
+            instDto.setId(100L);
+            RecordingUnit entity = new RecordingUnit();
+            entity.setId(7L);
+            Institution inst = new Institution();
+            inst.setId(100L);
+            entity.setCreatedByInstitution(inst);
+
+            RecordingUnitDTO dto1 = new RecordingUnitDTO();
+            dto1.setId(7L);
+            dto1.setCreatedByInstitution(instDto);
+
+            when(recordingUnitRepository.findById(7L)).thenReturn(Optional.of(entity));
+            when(recordingUnitMapper.convert(entity)).thenReturn(dto1);
+            when(recordingUnitRepository.countSpecimensByRecordingUnitId(7L)).thenReturn(4L);
+
+            var accessible = recordingUnitService.findAccessibleRecordingUnitWithEntity(
+                    "7", Set.of(100L), List.of("specimen"));
+
+            assertEquals(4L, accessible.dto().getSpecimenCount());
+            assertSame(entity, accessible.entity());
+        }
+
+        @Test
+        void findAccessibleRecordingUnitByKey_emptyScope_throwsNotFound() {
+            assertThrows(RecordingUnitNotFoundException.class,
+                    () -> recordingUnitService.findAccessibleRecordingUnitByKey("1", Set.of(), null));
+        }
+
+        @Test
+        void findAccessibleRecordingUnitByKey_blankKey_throwsNotFound() {
+            Set<Long> institutionIds = Set.of(1L);
+            assertThrows(RecordingUnitNotFoundException.class,
+                    () -> recordingUnitService.findAccessibleRecordingUnitByKey("  ", institutionIds, null));
+        }
+
+        @Test
+        void findAccessibleRecordingUnitByKey_nonNumeric_resolvesByFullIdentifier() {
+            RecordingUnit entity = new RecordingUnit();
+            entity.setId(9L);
+            RecordingUnitDTO dto1 = new RecordingUnitDTO();
+            dto1.setId(9L);
+            InstitutionDTO instDto = new InstitutionDTO();
+            instDto.setId(1L);
+            dto1.setCreatedByInstitution(instDto);
+
+            when(recordingUnitRepository.findFirstByFullIdentifierAndInstitutionIdIn("UE-ABC", Set.of(1L)))
+                    .thenReturn(Optional.of(entity));
+            when(recordingUnitMapper.convert(entity)).thenReturn(dto1);
+
+            RecordingUnitDTO result = recordingUnitService.findAccessibleRecordingUnitByKey(
+                    "UE-ABC", Set.of(1L), null);
+
+            assertEquals(9L, result.getId());
+        }
+
+        @Test
+        void requireAccessibleRecordingUnitByPrimaryKey_success() {
+            InstitutionDTO instDto = new InstitutionDTO();
+            instDto.setId(5L);
+            RecordingUnit entity = new RecordingUnit();
+            entity.setId(3L);
+            RecordingUnitDTO dto1 = new RecordingUnitDTO();
+            dto1.setId(3L);
+            dto1.setCreatedByInstitution(instDto);
+
+            when(recordingUnitRepository.findById(3L)).thenReturn(Optional.of(entity));
+            when(recordingUnitMapper.convert(entity)).thenReturn(dto1);
+
+            RecordingUnitDTO result = recordingUnitService.requireAccessibleRecordingUnitByPrimaryKey(3L, Set.of(5L));
+
+            assertEquals(3L, result.getId());
+        }
+
+        @Test
+        void requireAccessibleRecordingUnitByPrimaryKey_outOfScope_throws() {
+            RecordingUnit entity = new RecordingUnit();
+            entity.setId(3L);
+            RecordingUnitDTO dto1 = new RecordingUnitDTO();
+            dto1.setId(3L);
+            InstitutionDTO instDto = new InstitutionDTO();
+            instDto.setId(99L);
+            dto1.setCreatedByInstitution(instDto);
+
+            when(recordingUnitRepository.findById(3L)).thenReturn(Optional.of(entity));
+            when(recordingUnitMapper.convert(entity)).thenReturn(dto1);
+
+            Set<Long> institutionIds = Set.of(5L);
+            assertThrows(RecordingUnitNotFoundException.class,
+                    () -> recordingUnitService.requireAccessibleRecordingUnitByPrimaryKey(3L, institutionIds));
+        }
+
+        @Test
+        void findRelationsForAccessibleRecordingUnit_mapsStratigraphyAndHierarchy() {
+            RecordingUnit entity = new RecordingUnit();
+            entity.setId(1L);
+            Institution inst = new Institution();
+            inst.setId(10L);
+            entity.setCreatedByInstitution(inst);
+
+            RecordingUnit parent = new RecordingUnit();
+            parent.setId(2L);
+            RecordingUnit child = new RecordingUnit();
+            child.setId(3L);
+            entity.setParents(Set.of(parent));
+            entity.setChildren(Set.of(child));
+
+            RecordingUnitDTO dto1 = new RecordingUnitDTO();
+            dto1.setId(1L);
+            InstitutionDTO instDto = new InstitutionDTO();
+            instDto.setId(10L);
+            dto1.setCreatedByInstitution(instDto);
+
+            StratigraphicRelationship rel = new StratigraphicRelationship();
+            StratigraphicRelationshipDTO relDto = new StratigraphicRelationshipDTO();
+
+            when(recordingUnitRepository.findById(1L)).thenReturn(Optional.of(entity));
+            when(recordingUnitMapper.convert(entity)).thenReturn(dto1);
+            when(stratigraphicRelationshipRepository.findAllInvolvingRecordingUnitId(1L)).thenReturn(List.of(rel));
+            when(stratigraphicRelationshipMapper.convert(rel)).thenReturn(relDto);
+            when(recordingUnitSummaryMapper.convert(any(RecordingUnit.class))).thenAnswer(invocation -> {
+                RecordingUnit ru = invocation.getArgument(0);
+                RecordingUnitSummaryDTO summary = new RecordingUnitSummaryDTO();
+                summary.setId(ru.getId());
+                return summary;
+            });
+
+            var bundle = recordingUnitService.findRelationsForAccessibleRecordingUnit("1", Set.of(10L));
+
+            assertEquals(1, bundle.stratigraphicRelationships().size());
+            assertEquals(1, bundle.parents().size());
+            assertEquals(1, bundle.children().size());
+            assertEquals(2L, bundle.parents().get(0).getId());
+            assertEquals(3L, bundle.children().get(0).getId());
+        }
+
+        @Test
+        void findChildrenForAccessibleRecordingUnit_returnsChildSummaries() {
+            RecordingUnit entity = new RecordingUnit();
+            entity.setId(1L);
+            Institution inst = new Institution();
+            inst.setId(10L);
+            entity.setCreatedByInstitution(inst);
+            RecordingUnit child = new RecordingUnit();
+            child.setId(5L);
+            entity.setChildren(Set.of(child));
+
+            RecordingUnitDTO dto1 = new RecordingUnitDTO();
+            dto1.setId(1L);
+            InstitutionDTO instDto = new InstitutionDTO();
+            instDto.setId(10L);
+            dto1.setCreatedByInstitution(instDto);
+
+            RecordingUnitSummaryDTO childSummary = new RecordingUnitSummaryDTO();
+            childSummary.setId(5L);
+
+            when(recordingUnitRepository.findById(1L)).thenReturn(Optional.of(entity));
+            when(recordingUnitMapper.convert(entity)).thenReturn(dto1);
+            when(recordingUnitSummaryMapper.convert(child)).thenReturn(childSummary);
+
+            List<RecordingUnitSummaryDTO> children = recordingUnitService.findChildrenForAccessibleRecordingUnit(
+                    "1", Set.of(10L));
+
+            assertEquals(1, children.size());
+            assertEquals(5L, children.get(0).getId());
+        }
+
+        @Test
+        void findByActionUnitId_enrichesSpecimenAndRelationshipCounts() {
+            RecordingUnit ru = new RecordingUnit();
+            ru.setId(8L);
+            Page<RecordingUnit> entityPage = new PageImpl<>(List.of(ru), PageRequest.of(0, 10), 1);
+            RecordingUnitDTO dto1 = new RecordingUnitDTO();
+            dto1.setId(8L);
+
+            when(recordingUnitRepository.findAllByActionUnitId(eq(2L), any(Pageable.class))).thenReturn(entityPage);
+            when(recordingUnitMapper.convert(ru)).thenReturn(dto1);
+            when(recordingUnitRepository.countSpecimensByRecordingUnitId(8L)).thenReturn(2L);
+            when(recordingUnitRepository.countStratigraphicRelationshipsByRecordingUnitId(8L)).thenReturn(3L);
+
+            Page<RecordingUnitDTO> result = recordingUnitService.findByActionUnitId(2L, 10, 0,
+                    org.springframework.data.domain.Sort.by("id"));
+
+            assertEquals(1, result.getTotalElements());
+            assertEquals(2L, result.getContent().get(0).getSpecimenCount());
+            assertEquals(3L, result.getContent().get(0).getRelationshipCount());
+        }
+
+        @Test
+        void findByActionIdAndFullId_delegatesToRepository() {
+            RecordingUnit ru = new RecordingUnit();
+            ru.setId(1L);
+            when(recordingUnitRepository.findByFullIdentifierAndActionUnitId("UE-1", 3L)).thenReturn(List.of(ru));
+
+            List<RecordingUnit> result = recordingUnitService.findByActionIdAndFullId(3L, "UE-1");
+
+            assertEquals(1, result.size());
+        }
+
+        @Test
+        void deleteRecordingUnitById_success() {
+            RecordingUnit ru = new RecordingUnit();
+            ru.setId(20L);
+            ru.setParents(new HashSet<>());
+            ru.setChildren(new HashSet<>());
+            ru.setRelationshipsAsUnit1(new HashSet<>());
+            ru.setRelationshipsAsUnit2(new HashSet<>());
+            ru.setContributors(new ArrayList<>());
+            ru.setDocuments(new HashSet<>());
+
+            when(recordingUnitRepository.findById(20L)).thenReturn(Optional.of(ru));
+            when(recordingUnitRepository.countSpecimensByRecordingUnitId(20L)).thenReturn(0L);
+            when(stratigraphicRelationshipRepository.findAllInvolvingRecordingUnitId(20L)).thenReturn(List.of());
+            when(recordingUnitIdInfoRepository.existsById(20L)).thenReturn(false);
+            when(recordingUnitRepository.save(ru)).thenReturn(ru);
+
+            recordingUnitService.deleteRecordingUnitById(20L);
+
+            verify(recordingUnitRepository).deleteContributorLinksForRecordingUnit(20L);
+            verify(documentRepository).deleteAllRecordingUnitDocumentLinksByRecordingUnitId(20L);
+            verify(recordingUnitIdCounterRepository).deleteAllByRecordingUnitId(20L);
+            verify(recordingUnitRepository).delete(ru);
+        }
+
+        @Test
+        void deleteRecordingUnitById_withSpecimens_throwsIllegalState() {
+            RecordingUnit ru = new RecordingUnit();
+            ru.setId(20L);
+            when(recordingUnitRepository.findById(20L)).thenReturn(Optional.of(ru));
+            when(recordingUnitRepository.countSpecimensByRecordingUnitId(20L)).thenReturn(2L);
+
+            assertThrows(IllegalStateException.class,
+                    () -> recordingUnitService.deleteRecordingUnitById(20L));
+        }
+
+        @Test
+        void deleteRecordingUnitById_withStudies_throwsIllegalState() {
+            RecordingUnit ru = new RecordingUnit();
+            ru.setId(20L);
+            when(recordingUnitRepository.findById(20L)).thenReturn(Optional.of(ru));
+            when(recordingUnitRepository.countSpecimensByRecordingUnitId(20L)).thenReturn(1L);
+
+            assertThrows(IllegalStateException.class,
+                    () -> recordingUnitService.deleteRecordingUnitById(20L));
+        }
+
+        @Test
+        void deleteRecordingUnitById_withChildren_throwsIllegalState() {
+            RecordingUnit ru = new RecordingUnit();
+            ru.setId(20L);
+            RecordingUnit child = new RecordingUnit();
+            child.setId(21L);
+            ru.setChildren(new HashSet<>(Set.of(child)));
+            when(recordingUnitRepository.findById(20L)).thenReturn(Optional.of(ru));
+            when(recordingUnitRepository.countSpecimensByRecordingUnitId(20L)).thenReturn(0L);
+
+            assertThrows(IllegalStateException.class,
+                    () -> recordingUnitService.deleteRecordingUnitById(20L));
+        }
     }
 
 }

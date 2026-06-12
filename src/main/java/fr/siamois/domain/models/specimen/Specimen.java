@@ -101,7 +101,6 @@ public class Specimen extends TraceableEntity implements ArkEntity {
     @FieldCode
     public static final String CLASS_FIELD = "SIAS.CLASS";
 
-    @NotNull
     @OneToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "fk_ark_id")
     protected Ark ark;
@@ -157,11 +156,9 @@ public class Specimen extends TraceableEntity implements ArkEntity {
     @JoinColumn(name = "fk_recording_unit_id")
     protected RecordingUnit recordingUnit;
 
-    @NotNull
     @Column(name = "identifier")
     protected Integer identifier;
 
-    @NotNull
     @Column(name = "isolat_identifier")
     protected String isolationNumber;
 
@@ -171,7 +168,6 @@ public class Specimen extends TraceableEntity implements ArkEntity {
     @Column(name = "tpq")
     protected Integer tpq;
 
-    @NotNull
     @Column(name = "other_identifier")
     protected String otherIdentifier;
 

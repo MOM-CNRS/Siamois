@@ -18,19 +18,24 @@ import java.util.Set;
 @NoArgsConstructor
 public class RecordingUnitDTO extends AbstractEntityDTO {
 
+  /** Révision serveur pour détection de conflit (optimistic locking). */
+    protected Long syncRevision;
+
     protected String identifier;
     protected String fullIdentifier;
     protected ConceptDTO type;
     protected ActionUnitSummaryDTO actionUnit;
     protected Integer parentsCount;
     protected Integer childrenCount;
-    protected Integer relationshipCount;
     protected OffsetDateTime openingDate;
     protected OffsetDateTime closingDate;
     protected ConceptDTO geomorphologicalCycle;
     protected ConceptDTO geomorphologicalAgent;
     protected ConceptDTO normalizedInterpretation;
     protected Long specimenCount;
+    /** Nombre de relations stratigraphiques (unité en tant qu'extrémité 1 ou 2). */
+    protected Long relationshipCount;
+    protected String matrixColor;
     protected PersonDTO author;
     protected String description;
     protected List<PersonDTO> contributors = new ArrayList<>();
@@ -59,6 +64,8 @@ public class RecordingUnitDTO extends AbstractEntityDTO {
         createdByInstitution = original.getCreatedByInstitution();
         description = original.getDescription();
         spatialUnit = original.getSpatialUnit();
+        matrixColor = original.getMatrixColor();
+        relationshipCount = original.getRelationshipCount();
     }
 
     /**

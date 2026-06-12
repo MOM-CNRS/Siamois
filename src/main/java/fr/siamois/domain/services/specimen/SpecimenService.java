@@ -8,7 +8,10 @@ import fr.siamois.domain.models.specimen.Specimen;
 import fr.siamois.domain.services.ArkEntityService;
 import fr.siamois.dto.FilterDTO;
 import fr.siamois.dto.entity.*;
+import fr.siamois.infrastructure.database.repositories.ArkRepository;
+import fr.siamois.infrastructure.database.repositories.DocumentRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitRepository;
+import fr.siamois.infrastructure.database.repositories.specimen.SpecimenFindSortSql;
 import fr.siamois.infrastructure.database.repositories.specimen.SpecimenRepository;
 import fr.siamois.infrastructure.database.repositories.specs.SpecimenSpec;
 import fr.siamois.mapper.InstitutionMapper;
@@ -17,6 +20,7 @@ import fr.siamois.mapper.SpecimenSummaryMapper;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.lang.NonNull;
@@ -33,11 +37,12 @@ import static fr.siamois.domain.models.ValidationStatus.*;
 public class SpecimenService implements ArkEntityService {
 
     private final SpecimenRepository specimenRepository;
-    private final RecordingUnitRepository recordingUnitRepository;
     private final SpecimenMapper specimenMapper;
-    private final SpecimenSummaryMapper specimenSummaryMapper;
     private final InstitutionMapper institutionMapper;
-
+    private final SpecimenSummaryMapper specimenSummaryMapper;
+    private final DocumentRepository documentRepository;
+    private final RecordingUnitRepository recordingUnitRepository;
+    private final ArkRepository arkRepository;
 
 
     @Override
@@ -58,14 +63,10 @@ public class SpecimenService implements ArkEntityService {
     }
 
     private Specimen newOrGetSpecimen(Specimen specimen) {
-        Specimen managedSpecimen;
         if (specimen.getId() != null) {
-            Optional<Specimen> optRecordingUnit = specimenRepository.findById(specimen.getId());
-            managedSpecimen = optRecordingUnit.orElse(specimen);
-        } else {
-            managedSpecimen = specimen;
+            return specimenRepository.findById(specimen.getId()).orElse(specimen);
         }
-        return managedSpecimen;
+        return specimen;
     }
 
     private void setupChilds(Specimen specimen, Specimen managedSpecimen) {
@@ -73,21 +74,16 @@ public class SpecimenService implements ArkEntityService {
             return;
         }
 
-        // 1. Get the IDs of the children we WANT to have
         Set<Long> incomingIds = specimen.getChildren().stream()
                 .filter(c -> c != null && c.getId() != null)
                 .map(Specimen::getId)
                 .collect(Collectors.toSet());
 
-        // 2. Remove children no longer in the list
-        managedSpecimen.getChildren().removeIf(child ->
-                !incomingIds.contains(child.getId()));
+        managedSpecimen.getChildren().removeIf(child -> !incomingIds.contains(child.getId()));
 
-        // 3. Add new children
         for (Long id : incomingIds) {
             boolean alreadyPresent = managedSpecimen.getChildren().stream()
                     .anyMatch(c -> c.getId().equals(id));
-
             if (!alreadyPresent) {
                 Specimen child = specimenRepository.findById(id)
                         .orElseThrow(() -> new IllegalArgumentException("Child not found: " + id));
@@ -101,18 +97,15 @@ public class SpecimenService implements ArkEntityService {
             return;
         }
 
-        // Fetch current parents of managedSpecimen
         Set<Specimen> currentParents = new HashSet<>(managedSpecimen.getParents());
         Set<Specimen> newParents = new HashSet<>();
 
-        // Build the set of new parents
         for (Specimen parentRef : specimen.getParents()) {
             Specimen parent = specimenRepository.findById(parentRef.getId())
                     .orElseThrow(() -> new IllegalArgumentException("Parent not found: " + parentRef.getId()));
             newParents.add(parent);
         }
 
-        // Find parents to add (in newParents but not in currentParents)
         for (Specimen parent : newParents) {
             if (!currentParents.contains(parent)) {
                 parent.getChildren().add(managedSpecimen);
@@ -120,7 +113,6 @@ public class SpecimenService implements ArkEntityService {
             }
         }
 
-        // Find parents to remove (in currentParents but not in newParents)
         for (Specimen parent : currentParents) {
             if (!newParents.contains(parent)) {
                 parent.getChildren().remove(managedSpecimen);
@@ -128,33 +120,19 @@ public class SpecimenService implements ArkEntityService {
             }
         }
 
-        // Update the parents list of managedSpecimen
         managedSpecimen.getParents().clear();
         managedSpecimen.getParents().addAll(newParents);
     }
 
-    /**
-     * Synchronize collection
-     *
-     * @param managedCollection La collection issue de l'entité managée (ex: managedSpecimen.getMaterialClass())
-     * @param newCollection     La collection contenant les nouvelles données (ex: specimen.getMaterialClass())
-     * @param <T>               Le type de l'entité (ici Concept)
-     */
     private <T> void synchronizeCollection(Collection<T> managedCollection, Collection<T> newCollection) {
         if (managedCollection == null) {
-            return; // Sécurité si la collection de l'entité n'est pas initialisée
+            return;
         }
-
-        // 1. Si la nouvelle collection est nulle ou vide, on vide simplement la collection managée
         if (newCollection == null || newCollection.isEmpty()) {
             managedCollection.clear();
             return;
         }
-
-        // 2. Supprimer les éléments qui ne sont plus présents dans la nouvelle collection
         managedCollection.retainAll(newCollection);
-
-        // 3. Ajouter les éléments de la nouvelle collection qui n'étaient pas encore présents
         for (T element : newCollection) {
             if (!managedCollection.contains(element)) {
                 managedCollection.add(element);
@@ -163,7 +141,6 @@ public class SpecimenService implements ArkEntityService {
     }
 
     private static void setupOtherFields(Specimen specimen, Specimen managedSpecimen) {
-
         managedSpecimen.setArk(specimen.getArk());
         managedSpecimen.setDescription(specimen.getDescription());
         managedSpecimen.setCollectors(specimen.getCollectors());
@@ -179,16 +156,11 @@ public class SpecimenService implements ArkEntityService {
         managedSpecimen.setOtherIdentifier(specimen.getOtherIdentifier());
         managedSpecimen.setCategory(specimen.getCategory());
         managedSpecimen.setIsolationNumber(specimen.getIsolationNumber());
-        managedSpecimen.setWeight(specimen.getWeight());
         managedSpecimen.setNumberOfElements(specimen.getNumberOfElements());
-
         if (managedSpecimen.getCreatedBy() == null) {
             managedSpecimen.setCreatedBy(specimen.getCreatedBy());
         }
-
-
         managedSpecimen.setChronologicalAttribution(specimen.getChronologicalAttribution());
-
     }
 
     /**
@@ -212,21 +184,19 @@ public class SpecimenService implements ArkEntityService {
         Specimen specimen = specimenMapper.invertConvert(toSave);
 
         Specimen managedSpecimen = newOrGetSpecimen(specimen);
-
         setupParents(specimen, managedSpecimen);
         setupChilds(specimen, managedSpecimen);
         setupOtherFields(specimen, managedSpecimen);
-
         synchronizeCollection(managedSpecimen.getMaterialClass(), specimen.getMaterialClass());
         synchronizeCollection(managedSpecimen.getMaterial(), specimen.getMaterial());
         synchronizeCollection(managedSpecimen.getContainers(), specimen.getContainers());
         synchronizeCollection(managedSpecimen.getPhases(), specimen.getPhases());
 
         // Sauvegarder l'entité Specimen
-        managedSpecimen = specimenRepository.save(managedSpecimen);
+        Specimen savedSpecimen = specimenRepository.save(managedSpecimen);
 
         // Convertir l'entité sauvegardée en SpecimenDTO et la retourner
-        return specimenMapper.convert(managedSpecimen);
+        return specimenMapper.convert(savedSpecimen);
     }
 
     @Override
@@ -248,6 +218,63 @@ public class SpecimenService implements ArkEntityService {
         return specimen != null ? specimenMapper.convert(specimen) : null;
     }
 
+    /**
+     * Spécimen dont l'institution de rattachement est dans le périmètre donné (API OpenAPI).
+     */
+    @Transactional(readOnly = true)
+    public Optional<SpecimenDTO> findAccessibleById(long specimenId, Set<Long> accessibleInstitutionIds) {
+        if (accessibleInstitutionIds == null || accessibleInstitutionIds.isEmpty()) {
+            return Optional.empty();
+        }
+        return resolveAccessibleById(specimenId, accessibleInstitutionIds);
+    }
+
+    private Optional<SpecimenDTO> resolveAccessibleById(long specimenId, Set<Long> accessibleInstitutionIds) {
+        Specimen specimenEntity = specimenRepository.findById(specimenId, Specimen.class).orElse(null);
+        if (specimenEntity == null) {
+            return Optional.empty();
+        }
+        SpecimenDTO dto = specimenMapper.convert(specimenEntity);
+        InstitutionDTO inst = dto.getCreatedByInstitution();
+        if (inst == null || inst.getId() == null || !accessibleInstitutionIds.contains(inst.getId())) {
+            return Optional.empty();
+        }
+        return Optional.of(dto);
+    }
+
+    /**
+     * Spécimen accessible par clé API : {@code specimen_id} numérique ou {@code full_identifier}.
+     */
+    @Transactional(readOnly = true)
+    public Optional<SpecimenDTO> findAccessibleByKey(String idOrKey, Set<Long> accessibleInstitutionIds) {
+        if (accessibleInstitutionIds == null || accessibleInstitutionIds.isEmpty()) {
+            return Optional.empty();
+        }
+        String key = idOrKey == null ? "" : idOrKey.trim();
+        if (key.isEmpty()) {
+            return Optional.empty();
+        }
+
+        if (key.chars().allMatch(Character::isDigit)) {
+            try {
+                long numericId = Long.parseLong(key);
+                Optional<SpecimenDTO> byPk = resolveAccessibleById(numericId, accessibleInstitutionIds);
+                if (byPk.isPresent()) {
+                    return byPk;
+                }
+                return findAccessibleByFullIdentifier(key, accessibleInstitutionIds);
+            } catch (NumberFormatException e) {
+                return findAccessibleByFullIdentifier(key, accessibleInstitutionIds);
+            }
+        }
+        return findAccessibleByFullIdentifier(key, accessibleInstitutionIds);
+    }
+
+    private Optional<SpecimenDTO> findAccessibleByFullIdentifier(String fullIdentifier,
+                                                                 Set<Long> accessibleInstitutionIds) {
+        return specimenRepository.findFirstByFullIdentifierAndInstitutionIdIn(fullIdentifier, accessibleInstitutionIds)
+                .map(specimenMapper::convert);
+    }
 
     /**
      * Finds all specimens by institution and full identifier containing the specified string,
@@ -299,11 +326,44 @@ public class SpecimenService implements ArkEntityService {
             String langCode,
             Pageable pageable
     ) {
-        Page<Specimen> specimenPage = specimenRepository.findAllByInstitutionAndByRecordingUnitIdAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
-                institutionId, recordingUnitId, fullIdentifier, categoryIds, global, langCode, pageable
-        );
+        return doFindAllByInstitutionAndRecordingUnit(
+                institutionId, recordingUnitId, fullIdentifier, categoryIds, global, langCode, null, pageable);
+    }
 
-        return specimenPage.map(specimenMapper::convert);
+    @Transactional(readOnly = true)
+    public Page<SpecimenDTO> findAllByInstitutionAndByRecordingUnitAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
+            Long institutionId,
+            Long recordingUnitId,
+            String fullIdentifier,
+            Long[] categoryIds,
+            String global,
+            String langCode,
+            String apiSortParam,
+            Pageable pageable
+    ) {
+        return doFindAllByInstitutionAndRecordingUnit(
+                institutionId, recordingUnitId, fullIdentifier, categoryIds, global, langCode, apiSortParam, pageable);
+    }
+
+    private Page<SpecimenDTO> doFindAllByInstitutionAndRecordingUnit(
+            Long institutionId,
+            Long recordingUnitId,
+            String fullIdentifier,
+            Long[] categoryIds,
+            String global,
+            String langCode,
+            String apiSortParam,
+            Pageable pageable
+    ) {
+        String orderBy = apiSortParam != null && !apiSortParam.isBlank()
+                ? SpecimenFindSortSql.fromApiSortParam(apiSortParam)
+                : SpecimenFindSortSql.fromSpringSort(pageable.getSort());
+        Pageable pageWithoutSort = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize());
+        return specimenRepository
+                .findAllByInstitutionAndRecordingUnitIdAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
+                        institutionId, recordingUnitId, fullIdentifier, categoryIds, global, langCode, orderBy,
+                        pageWithoutSort)
+                .map(specimenMapper::convert);
     }
 
 
@@ -450,6 +510,45 @@ public class SpecimenService implements ArkEntityService {
                 .stream()
                 .map(specimenSummaryMapper::convert)
                 .toList();
+    }
+
+    /**
+     * Supprime un mobilier (spécimen) sans mouvements ni rattachement à un groupe.
+     * Détache les documents (sans les supprimer) et supprime l'ARK associé.
+     *
+     * @throws IllegalArgumentException si le spécimen n'existe pas
+     * @throws IllegalStateException si la suppression est interdite (contenu bloquant)
+     */
+    @Transactional
+    public void deleteSpecimenById(long specimenId) {
+        Specimen specimen = specimenRepository.findById(specimenId)
+                .orElseThrow(() -> new IllegalArgumentException("Mobilier introuvable: " + specimenId));
+
+        if (specimenRepository.countMovementsBySpecimenId(specimenId) > 0) {
+            throw new IllegalStateException("Impossible de supprimer : le mobilier a des mouvements associés");
+        }
+        if (specimenRepository.countGroupAttributionsBySpecimenId(specimenId) > 0) {
+            throw new IllegalStateException("Impossible de supprimer : le mobilier appartient à un ou plusieurs groupes");
+        }
+
+        documentRepository.deleteAllSpecimenDocumentLinksBySpecimenId(specimenId);
+
+        if (specimen.getAuthors() != null) {
+            specimen.getAuthors().clear();
+        }
+        if (specimen.getCollectors() != null) {
+            specimen.getCollectors().clear();
+        }
+        if (specimen.getDocuments() != null) {
+            specimen.getDocuments().clear();
+        }
+
+        Long arkId = specimen.getArk() != null ? specimen.getArk().getInternalId() : null;
+        specimenRepository.delete(specimen);
+
+        if (arkId != null) {
+            arkRepository.deleteById(arkId);
+        }
     }
 
     public Page<SpecimenDTO> searchSpecimen(InstitutionDTO institutionDTO, FilterDTO filters, Pageable pageable) {
